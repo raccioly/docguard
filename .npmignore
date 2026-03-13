@@ -1,0 +1,28 @@
+# Development
+.git/
+.github/
+.specguard.json
+Research/
+docs-canonical/
+docs-implementation/
+
+# Generated docs (templates are included via templates/)
+DRIFT-LOG.md
+ROADMAP.md
+COMPARISONS.md
+
+# Tests
+tests/
+
+# Config
+.gitignore
+.eslintrc*
+.prettierrc*
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

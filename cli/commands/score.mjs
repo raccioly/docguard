@@ -22,45 +22,14 @@ export function runScore(projectDir, config, flags) {
   console.log(`${c.bold}📊 SpecGuard Score — ${config.projectName}${c.reset}`);
   console.log(`${c.dim}   Directory: ${projectDir}${c.reset}\n`);
 
-  const scores = {};
-
-  // ── Structure Score ──
-  scores.structure = calcStructureScore(projectDir, config);
-
-  // ── Doc Quality Score ──
-  scores.docQuality = calcDocQualityScore(projectDir, config);
-
-  // ── Testing Score ──
-  scores.testing = calcTestingScore(projectDir, config);
-
-  // ── Security Score ──
-  scores.security = calcSecurityScore(projectDir, config);
-
-  // ── Environment Score ──
-  scores.environment = calcEnvironmentScore(projectDir, config);
-
-  // ── Drift Score ──
-  scores.drift = calcDriftScore(projectDir, config);
-
-  // ── Changelog Score ──
-  scores.changelog = calcChangelogScore(projectDir, config);
-
-  // ── Architecture Score ──
-  scores.architecture = calcArchitectureScore(projectDir, config);
-
-  // ── Calculate weighted total ──
-  let totalScore = 0;
-  for (const [category, score] of Object.entries(scores)) {
-    totalScore += (score / 100) * WEIGHTS[category];
-  }
-  totalScore = Math.round(totalScore);
+  const { scores, totalScore, grade } = calcAllScores(projectDir, config);
 
   // ── Display Results ──
   if (flags.format === 'json') {
     const result = {
       project: config.projectName,
       score: totalScore,
-      grade: getGrade(totalScore),
+      grade,
       categories: {},
     };
     for (const [cat, score] of Object.entries(scores)) {
@@ -87,7 +56,6 @@ export function runScore(projectDir, config, flags) {
 
   console.log(`\n${c.bold}  ─────────────────────────────────────${c.reset}`);
 
-  const grade = getGrade(totalScore);
   const gradeColor = totalScore >= 80 ? c.green : totalScore >= 60 ? c.yellow : c.red;
   console.log(`  ${gradeColor}${c.bold}CDD Maturity Score: ${totalScore}/100 (${grade})${c.reset}`);
 
@@ -116,6 +84,35 @@ export function runScore(projectDir, config, flags) {
     }
     console.log('');
   }
+}
+
+/**
+ * Internal scoring — returns data without printing.
+ * Used by badge, ci, and other commands that need the score.
+ */
+export function runScoreInternal(projectDir, config) {
+  const { scores, totalScore, grade } = calcAllScores(projectDir, config);
+  return { score: totalScore, grade, categories: scores };
+}
+
+function calcAllScores(projectDir, config) {
+  const scores = {};
+  scores.structure = calcStructureScore(projectDir, config);
+  scores.docQuality = calcDocQualityScore(projectDir, config);
+  scores.testing = calcTestingScore(projectDir, config);
+  scores.security = calcSecurityScore(projectDir, config);
+  scores.environment = calcEnvironmentScore(projectDir, config);
+  scores.drift = calcDriftScore(projectDir, config);
+  scores.changelog = calcChangelogScore(projectDir, config);
+  scores.architecture = calcArchitectureScore(projectDir, config);
+
+  let totalScore = 0;
+  for (const [category, score] of Object.entries(scores)) {
+    totalScore += (score / 100) * WEIGHTS[category];
+  }
+  totalScore = Math.round(totalScore);
+
+  return { scores, totalScore, grade: getGrade(totalScore) };
 }
 
 // ── Scoring Functions ──────────────────────────────────────────────────────

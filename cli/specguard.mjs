@@ -24,6 +24,8 @@ import { runDiff } from './commands/diff.mjs';
 import { runAgents } from './commands/agents.mjs';
 import { runGenerate } from './commands/generate.mjs';
 import { runHooks } from './commands/hooks.mjs';
+import { runBadge } from './commands/badge.mjs';
+import { runCI } from './commands/ci.mjs';
 
 // ── Colors (ANSI escape codes, zero deps) ──────────────────────────────────
 export const c = {
@@ -188,7 +190,7 @@ function deepMerge(target, source) {
 function printBanner() {
   console.log(`
 ${c.cyan}${c.bold}  ╔═══════════════════════════════════════════╗
-  ║         SpecGuard v0.3.0                  ║
+  ║         SpecGuard v0.4.0                  ║
   ║   Canonical-Driven Development (CDD)      ║
   ╚═══════════════════════════════════════════╝${c.reset}
 `);
@@ -209,6 +211,8 @@ ${c.bold}Commands:${c.reset}
   ${c.green}agents${c.reset}    Generate agent-specific config files from AGENTS.md
   ${c.green}generate${c.reset}  Reverse-engineer canonical docs from existing code
   ${c.green}hooks${c.reset}     Install git hooks (pre-commit, pre-push, commit-msg)
+  ${c.green}badge${c.reset}     Generate CDD score badges for README
+  ${c.green}ci${c.reset}        Single command for CI/CD pipelines (guard + score)
 
 ${c.bold}Options:${c.reset}
   --dir <path>    Project directory (default: current directory)
@@ -220,6 +224,8 @@ ${c.bold}Options:${c.reset}
   --type <name>   Hook type: pre-commit, pre-push, commit-msg
   --list          List available hooks and their status
   --remove        Remove installed SpecGuard hooks
+  --threshold <n> Minimum score for CI pass (used with ci command)
+  --fail-on-warning  Fail CI on warnings (used with ci command)
   --help          Show this help message
   --version       Show version
 
@@ -281,6 +287,11 @@ function main() {
       flags.list = true;
     } else if (args[i] === '--remove') {
       flags.remove = true;
+    } else if (args[i] === '--threshold' && args[i + 1]) {
+      flags.threshold = args[i + 1];
+      i++;
+    } else if (args[i] === '--fail-on-warning') {
+      flags.failOnWarning = true;
     }
   }
 
@@ -292,7 +303,7 @@ function main() {
   }
 
   if (command === '--version' || command === '-v') {
-    console.log('specguard v0.3.0');
+    console.log('specguard v0.4.0');
     process.exit(0);
   }
 
@@ -325,6 +336,14 @@ function main() {
       break;
     case 'hooks':
       runHooks(projectDir, config, flags);
+      break;
+    case 'badge':
+    case 'badges':
+      runBadge(projectDir, config, flags);
+      break;
+    case 'ci':
+    case 'pipeline':
+      runCI(projectDir, config, flags);
       break;
     default:
       console.error(`${c.red}Unknown command: ${command}${c.reset}`);

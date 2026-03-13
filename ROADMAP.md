@@ -1,6 +1,6 @@
 # SpecGuard Roadmap
 
-<!-- specguard:version 0.3.0 -->
+<!-- specguard:version 0.4.0 -->
 <!-- specguard:status living -->
 <!-- specguard:last-reviewed 2026-03-12 -->
 <!-- specguard:owner @raccioly -->
@@ -10,7 +10,7 @@
 | Metadata | Value |
 |----------|-------|
 | **Status** | ![Status](https://img.shields.io/badge/status-active-brightgreen) |
-| **Version** | `0.3.0` |
+| **Version** | `0.4.0` |
 | **Last Updated** | 2026-03-12 |
 | **Owner** | [@raccioly](https://github.com/raccioly) |
 
@@ -96,9 +96,10 @@ Deep integration with development tools and platforms.
 - [x] Pre-commit hook generator (guard validation)
 - [x] Pre-push hook generator (minimum score enforcement)
 - [x] Commit-msg hook (conventional commits validation)
+- [x] Badge service (shields.io CDD score, type, guarded-by badges)
+- [x] CI command (guard + score pipeline, JSON output, thresholds)
+- [x] npm publish preparation (.npmignore, prepublishOnly, CI dry-run)
 - [ ] VS Code extension (inline CDD warnings) — future
-- [ ] Badge service (dynamic CDD score badge) — future
-- [ ] npm publish to registry — ready, pending publish
 
 ## Phase 5: Dashboard 💭
 

@@ -15,62 +15,72 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Full git history for freshness validator
+
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
 
-      # Test help
-      - name: CLI Help
-        run: node cli/specguard.mjs --help
+      # ── Automated Test Suite ──
+      - name: Run Tests
+        run: npm test
 
-      # Test version
+      # ── Self-validation (dogfooding) ──
       - name: CLI Version
         run: node cli/specguard.mjs --version
 
-      # Test audit
-      - name: Audit (before init)
+      - name: Audit
         run: node cli/specguard.mjs audit
 
-      # Test score (before init)
-      - name: Score (before init)
+      - name: Guard (self-check)
+        run: node cli/specguard.mjs guard
+
+      - name: Score
         run: node cli/specguard.mjs score
 
-      # Test score JSON output
       - name: Score JSON
         run: node cli/specguard.mjs score --format json
 
-      # Test init
-      - name: Init CDD docs
+      - name: Diff
+        run: node cli/specguard.mjs diff
+
+      - name: Badge
+        run: node cli/specguard.mjs badge
+
+      # ── Cross-project tests ──
+      - name: Init in temp dir
         run: |
           mkdir -p /tmp/specguard-test
           node cli/specguard.mjs init --dir /tmp/specguard-test
 
-      # Test audit after init
-      - name: Audit (after init)
+      - name: Audit after init
         run: node cli/specguard.mjs audit --dir /tmp/specguard-test
 
-      # Test score after init
-      - name: Score (after init)
-        run: node cli/specguard.mjs score --dir /tmp/specguard-test
-
-      # Test guard after init
-      - name: Guard (after init)
-        run: node cli/specguard.mjs guard --dir /tmp/specguard-test || true
-
-      # Test diff
-      - name: Diff
-        run: node cli/specguard.mjs diff --dir /tmp/specguard-test
-
-      # Test generate
-      - name: Generate (empty project)
+      - name: Generate in empty dir
         run: |
           mkdir -p /tmp/specguard-gen
           node cli/specguard.mjs generate --dir /tmp/specguard-gen
 
-      # Test generate --force
       - name: Generate --force
         run: node cli/specguard.mjs generate --dir /tmp/specguard-gen --force
 
-      # Test agents
       - name: Agents
         run: node cli/specguard.mjs agents --dir /tmp/specguard-test
+
+      - name: Hooks --list
+        run: node cli/specguard.mjs hooks --list
+
+  # ── npm publish dry-run on tags ──
+  publish-check:
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: 'https://registry.npmjs.org'
+      - name: Publish dry-run
+        run: npm publish --dry-run
