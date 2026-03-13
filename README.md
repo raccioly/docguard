@@ -22,18 +22,21 @@
 
 **SpecGuard** is the CLI tool that enforces CDD — auditing, generating, and guarding your project documentation.
 
-📖 **[Read the full philosophy](PHILOSOPHY.md)** | 📋 **[Read the standard](STANDARD.md)** | ⚖️ **[See comparisons](COMPARISONS.md)**
+📖 **[Read the full philosophy](PHILOSOPHY.md)** | 📋 **[Read the standard](STANDARD.md)** | ⚖️ **[See comparisons](COMPARISONS.md)** | 🗺️ **[Roadmap](ROADMAP.md)**
 
 ---
 
 ## Quick Start
 
 ```bash
-# Audit your project (what docs exist/missing?)
-npx specguard audit
+# Generate CDD docs from an existing codebase (the killer feature)
+npx specguard generate
 
-# Initialize CDD docs from templates
+# Or start from scratch with templates
 npx specguard init
+
+# Check your CDD maturity score
+npx specguard score
 
 # Validate project alignment (use in CI/pre-commit)
 npx specguard guard
@@ -43,75 +46,131 @@ No installation needed. Zero dependencies. Works with Node.js 18+.
 
 ---
 
-## What Does It Do?
+## 7 Commands
 
-### 🔍 Audit Mode
-Scan your project and see what CDD documentation exists or is missing:
+### 🔮 Generate — Reverse-engineer docs from code
+```
+$ npx specguard generate
 
+🔮 SpecGuard Generate — my-project
+   Scanning codebase to generate canonical documentation...
+
+  Detected Stack:
+    language: TypeScript ^5.0
+    framework: Next.js ^14.0
+    database: PostgreSQL
+    orm: Drizzle 0.33
+    testing: Vitest
+    hosting: AWS Amplify
+
+  ✅ ARCHITECTURE.md (4 components, 6 tech)
+  ✅ DATA-MODEL.md (12 entities detected)
+  ✅ ENVIRONMENT.md (18 env vars detected)
+  ✅ TEST-SPEC.md (45 tests, 8/10 services mapped)
+  ✅ SECURITY.md (auth: NextAuth.js)
+  ✅ AGENTS.md
+  ✅ CHANGELOG.md
+  ✅ DRIFT-LOG.md
+
+  Generated: 8  Skipped: 0
+```
+
+**Detects:** Next.js, React, Vue, Angular, Fastify, Express, Hono, Django, FastAPI, SvelteKit, and more.  
+**Scans for:** Routes, models, services, tests, env vars, components, middleware.
+
+### 📊 Score — CDD maturity assessment
+```
+$ npx specguard score
+
+  Category Breakdown
+
+  structure      ████████████████████ 100%  (×25) = 25 pts
+  docQuality     ██████████████████░░ 90%   (×20) = 18 pts
+  testing        █████████░░░░░░░░░░░ 45%   (×15) = 7 pts
+  security       █████████████████░░░ 85%   (×10) = 9 pts
+  environment    ██████████████░░░░░░ 70%   (×10) = 7 pts
+  drift          ████████████████████ 100%  (×10) = 10 pts
+  changelog      ██████████████░░░░░░ 70%   (×5)  = 4 pts
+  architecture   █████████████████░░░ 85%   (×5)  = 4 pts
+
+  CDD Maturity Score: 83/100 (A)
+  Great — Strong CDD compliance
+
+  Top improvements:
+  → testing: Add tests/ directory and configure TEST-SPEC.md
+```
+
+### 🔍 Diff — Canonical docs vs code comparison
+```
+$ npx specguard diff
+
+  🛣️ API Routes
+    In code but not documented:
+      + src/routes/webhooks.ts
+      + src/routes/admin/settings.ts
+    ✓ In sync: 12 routes
+
+  🔧 Environment Variables
+    Documented but not found in .env.example:
+      − REDIS_URL
+```
+
+### 🤖 Agents — Generate agent-specific configs
+```
+$ npx specguard agents
+
+  ✅ Cursor: .cursor/rules/cdd.mdc
+  ✅ GitHub Copilot: .github/copilot-instructions.md
+  ✅ Cline: .clinerules
+  ✅ Windsurf: .windsurfrules
+  ✅ Claude Code: CLAUDE.md
+  ✅ Gemini CLI: .gemini/settings.json
+
+  Created: 6  Skipped: 0
+```
+
+### 🔍 Audit — What docs exist/missing
 ```
 $ npx specguard audit
 
-📋 SpecGuard Audit — my-project
-
-  Canonical Documentation:
-    ✅ docs-canonical/ARCHITECTURE.md
-    ✅ docs-canonical/DATA-MODEL.md
-    ❌ docs-canonical/SECURITY.md
-    ❌ docs-canonical/TEST-SPEC.md
-    ❌ docs-canonical/ENVIRONMENT.md
-
-  Agent Instructions:
-    ✅ AGENTS.md
-
-  Change Tracking:
-    ✅ CHANGELOG.md
-    ❌ DRIFT-LOG.md
-
-  Score: 4/8 required files (50%)
+  Score: 8/8 required files (100%)
 ```
 
-### 🏗️ Init Mode
-Create all CDD documentation from professional templates:
-
+### 🏗️ Init — Create CDD docs from templates
 ```
 $ npx specguard init
 
-  ✅ Created: docs-canonical/ARCHITECTURE.md
-  ✅ Created: docs-canonical/DATA-MODEL.md
-  ✅ Created: docs-canonical/SECURITY.md
-  ✅ Created: docs-canonical/TEST-SPEC.md
-  ✅ Created: docs-canonical/ENVIRONMENT.md
-  ✅ Created: AGENTS.md
-  ✅ Created: CHANGELOG.md
-  ✅ Created: DRIFT-LOG.md
-  ✅ Created: .specguard.json
+  Created 9 files (8 docs + .specguard.json)
 ```
 
-### 🛡️ Guard Mode
-Validate your project against its canonical docs (perfect for CI/CD):
-
+### 🛡️ Guard — Validate project against docs
 ```
 $ npx specguard guard
 
-🛡️  SpecGuard Guard — my-project
-
   ✅ Structure      8/8 checks passed
   ✅ Doc Sections   10/10 checks passed
-  ✅ Docs-Sync      14/14 checks passed
   ✅ Drift          1/1 checks passed
-  ✅ Changelog      2/2 checks passed
-  ⚠️  Test-Spec     6/8 checks passed
-  ✅ Environment    4/4 checks passed
-
-  ⚠️  WARN — 45/47 passed, 2 warning(s)
 ```
 
 ---
 
-## 8 Validators
+## CLI Flags
+
+| Flag | Description | Commands |
+|------|-------------|----------|
+| `--dir <path>` | Project directory (default: `.`) | All |
+| `--verbose` | Show detailed output | All |
+| `--format json` | Output as JSON for CI/CD | score, diff |
+| `--fix` | Auto-create missing files | guard |
+| `--force` | Overwrite existing files | generate, agents, init |
+| `--agent <name>` | Target specific agent | agents |
+
+---
+
+## 9 Validators
 
 | # | Validator | What It Checks | Default |
-|---|-----------|---------------|---------|
+|---|-----------|---------------|---------| 
 | 1 | **Structure** | Required CDD files exist | ✅ On |
 | 2 | **Doc Sections** | Canonical docs have required sections | ✅ On |
 | 3 | **Docs-Sync** | Routes/services referenced in docs | ✅ On |
@@ -121,6 +180,31 @@ $ npx specguard guard
 | 7 | **Environment** | Env vars documented, .env.example exists | ✅ On |
 | 8 | **Security** | No hardcoded secrets in source code | ❌ Off |
 | 9 | **Architecture** | Imports follow layer boundaries | ❌ Off |
+
+---
+
+## 16 Templates
+
+Every template includes professional metadata: `specguard:version`, `specguard:status`, badges, and revision history.
+
+| Template | Type | Purpose |
+|----------|------|---------|
+| ARCHITECTURE.md | Canonical | System design, components, boundaries |
+| DATA-MODEL.md | Canonical | Schemas, entities, relationships |
+| SECURITY.md | Canonical | Auth, permissions, secrets |
+| TEST-SPEC.md | Canonical | Required tests, coverage |
+| ENVIRONMENT.md | Canonical | Env vars, setup steps |
+| DEPLOYMENT.md | Canonical | Infrastructure, CI/CD, DNS |
+| ADR.md | Canonical | Architecture Decision Records |
+| ROADMAP.md | Canonical | Project phases, feature tracking |
+| KNOWN-GOTCHAS.md | Implementation | Symptom/gotcha/fix entries |
+| TROUBLESHOOTING.md | Implementation | Error diagnosis guides |
+| RUNBOOKS.md | Implementation | Operational procedures |
+| VENDOR-BUGS.md | Implementation | Third-party issue tracker |
+| CURRENT-STATE.md | Implementation | Deployment status, tech debt |
+| AGENTS.md | Agent | AI agent behavior rules |
+| CHANGELOG.md | Tracking | Change log |
+| DRIFT-LOG.md | Tracking | Deviation tracking |
 
 ---
 
@@ -135,33 +219,16 @@ your-project/
 │   ├── TEST-SPEC.md             # Required tests, coverage rules
 │   └── ENVIRONMENT.md           # Environment variables, setup
 │
+├── docs-implementation/         # Current state (optional)
+│   ├── KNOWN-GOTCHAS.md         # Lessons learned
+│   ├── TROUBLESHOOTING.md       # Error solutions
+│   ├── RUNBOOKS.md              # Operational procedures
+│   └── CURRENT-STATE.md         # What's deployed now
+│
 ├── AGENTS.md                    # AI agent behavior rules
 ├── CHANGELOG.md                 # Change tracking
 ├── DRIFT-LOG.md                 # Documented deviations
 └── .specguard.json              # SpecGuard configuration
-```
-
----
-
-## Configuration
-
-Create `.specguard.json` in your project root:
-
-```json
-{
-  "projectName": "my-project",
-  "version": "0.1",
-  "validators": {
-    "structure": true,
-    "docsSync": true,
-    "drift": true,
-    "changelog": true,
-    "architecture": false,
-    "testSpec": true,
-    "security": false,
-    "environment": true
-  }
-}
 ```
 
 ---
@@ -182,6 +249,7 @@ jobs:
         with:
           node-version: '20'
       - run: npx specguard guard
+      - run: npx specguard score --format json
 ```
 
 ### Pre-commit Hook
@@ -198,28 +266,18 @@ npx specguard guard
 
 SpecGuard works with **every major AI coding agent**:
 
-| Agent | Compatibility |
-|-------|:---:|
-| Google Antigravity | ✅ |
-| Claude Code | ✅ |
-| GitHub Copilot | ✅ |
-| Cursor | ✅ |
-| Windsurf | ✅ |
-| Cline | ✅ |
-| Gemini CLI | ✅ |
-| Kiro (AWS) | ✅ |
+| Agent | Compatibility | Auto-Generate Config |
+|-------|:---:|:---:|
+| Google Antigravity | ✅ | — |
+| Claude Code | ✅ | `specguard agents --agent claude` |
+| GitHub Copilot | ✅ | `specguard agents --agent copilot` |
+| Cursor | ✅ | `specguard agents --agent cursor` |
+| Windsurf | ✅ | `specguard agents --agent windsurf` |
+| Cline | ✅ | `specguard agents --agent cline` |
+| Gemini CLI | ✅ | `specguard agents --agent gemini` |
+| Kiro (AWS) | ✅ | — |
 
 All canonical docs are **plain markdown** — any agent can read them. No vendor lock-in.
-
----
-
-## How CDD Relates to Other Methodologies
-
-| Methodology | Relationship |
-|-------------|-------------|
-| **SDD** (Spec-Driven Dev) | CDD Phase 1-2. Use Spec Kit for generation, SpecGuard for governance. |
-| **TDD** (Test-Driven Dev) | TEST-SPEC.md defines policy; TDD implements the tests. |
-| **AGENTS.md** | One of CDD's 8 required files — fully compatible. |
 
 ---
 
