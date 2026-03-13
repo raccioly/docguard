@@ -84,6 +84,59 @@ export function validateDocsSync(projectDir, config) {
     }
   }
 
+  // ── Cross-check route files against OpenAPI spec ──
+  // If an OpenAPI spec exists AND route files exist, verify routes have matching paths
+  const openapiPatterns = [
+    'openapi.yaml', 'openapi.yml', 'openapi.json',
+    'swagger.yaml', 'swagger.yml', 'swagger.json',
+    'api/openapi.yaml', 'api/openapi.yml', 'api/openapi.json',
+    'docs/openapi.yaml', 'docs/openapi.yml',
+  ];
+
+  let openapiContent = '';
+  let openapiFile = null;
+  for (const pattern of openapiPatterns) {
+    const specPath = resolve(projectDir, pattern);
+    if (existsSync(specPath)) {
+      try {
+        openapiContent = readFileSync(specPath, 'utf-8').toLowerCase();
+        openapiFile = pattern;
+      } catch { /* ignore */ }
+      break;
+    }
+  }
+
+  if (openapiContent && openapiFile) {
+    // Check that route files have corresponding paths in OpenAPI spec
+    for (const { dir } of routePatterns) {
+      const routeDir = resolve(projectDir, dir);
+      if (!existsSync(routeDir)) continue;
+
+      const files = getFilesRecursive(routeDir);
+      for (const file of files) {
+        const ext = extname(file);
+        if (!['.ts', '.js', '.mjs'].includes(ext)) continue;
+
+        // Skip index/middleware files
+        const name = basename(file, ext).toLowerCase();
+        if (name === 'index' || name === 'middleware' || name.startsWith('_')) continue;
+
+        results.total++;
+
+        // Check if a likely route path exists in the OpenAPI spec
+        // Route file "users.ts" → check for "/users" in spec
+        if (openapiContent.includes(`/${name}`) || openapiContent.includes(`"${name}"`)) {
+          results.passed++;
+        } else {
+          results.warnings.push(
+            `Route file ${basename(file)} exists but no /${name} path found in ${openapiFile}. ` +
+            `Run your spec generator (e.g., zod-to-openapi) to update the API spec`
+          );
+        }
+      }
+    }
+  }
+
   return results;
 }
 

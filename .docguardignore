@@ -1,0 +1,9 @@
+# DocGuard Ignore — files to exclude from validation
+# Format: one pattern per line, # comments, blank lines skipped
+
+# Research documents (external/archival — not project source docs)
+Research/
+Research/**
+
+# VS Code extension build artifacts
+vscode-extension/out/

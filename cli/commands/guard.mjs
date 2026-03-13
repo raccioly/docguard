@@ -22,6 +22,10 @@ import { validateDocsDiff } from '../validators/docs-diff.mjs';
 import { validateMetadataSync } from '../validators/metadata-sync.mjs';
 import { validateMetricsConsistency } from '../validators/metrics-consistency.mjs';
 import { validateDocsCoverage } from '../validators/docs-coverage.mjs';
+import { validateDocQuality } from '../validators/doc-quality.mjs';
+import { validateTodoTracking } from '../validators/todo-tracking.mjs';
+import { validateSchemaSync } from '../validators/schema-sync.mjs';
+import { validateSpecKitIntegration } from '../scanners/speckit.mjs';
 
 /**
  * Internal guard — returns structured data, no console output, no process.exit.
@@ -57,6 +61,10 @@ export function runGuardInternal(projectDir, config) {
     { key: 'docsDiff', name: 'Docs-Diff', fn: () => validateDocsDiff(projectDir, config) },
     { key: 'metadataSync', name: 'Metadata-Sync', fn: () => validateMetadataSync(projectDir, config) },
     { key: 'docsCoverage', name: 'Docs-Coverage', fn: () => validateDocsCoverage(projectDir, config) },
+    { key: 'docQuality', name: 'Doc-Quality', fn: () => validateDocQuality(projectDir, config) },
+    { key: 'todoTracking', name: 'TODO-Tracking', fn: () => validateTodoTracking(projectDir, config) },
+    { key: 'schemaSync', name: 'Schema-Sync', fn: () => validateSchemaSync(projectDir, config) },
+    { key: 'specKit', name: 'Spec-Kit', fn: () => validateSpecKitIntegration(projectDir, config) },
     // Metrics-Consistency runs post-loop (needs guard results)
   ];
 

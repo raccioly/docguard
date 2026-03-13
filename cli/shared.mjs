@@ -62,6 +62,41 @@ export const PROFILES = {
       freshness: true,
     },
   },
+  'enterprise-ai': {
+    description: 'EU AI Act compliance — Annex IV documentation requirements, ALCOA+ alignment, strict freshness. For AI/ML projects under regulatory scrutiny.',
+    requiredFiles: {
+      canonical: [
+        'docs-canonical/ARCHITECTURE.md',
+        'docs-canonical/DATA-MODEL.md',
+        'docs-canonical/SECURITY.md',
+        'docs-canonical/TEST-SPEC.md',
+        'docs-canonical/ENVIRONMENT.md',
+      ],
+      agentFile: ['AGENTS.md', 'CLAUDE.md'],
+      changelog: 'CHANGELOG.md',
+      driftLog: 'DRIFT-LOG.md',
+    },
+    validators: {
+      structure: true,
+      docsSync: true,
+      drift: true,
+      changelog: true,
+      architecture: true,
+      testSpec: true,
+      security: true,
+      environment: true,
+      freshness: true,
+      docQuality: true,
+      todoTracking: true,
+      schemaSync: true,
+    },
+    // Stricter freshness threshold — 14 days instead of 30
+    freshness: { maxDaysStale: 14 },
+    // SECURITY.md must have Risk Assessment section
+    requiredSections: {
+      'SECURITY.md': ['Risk Assessment', 'Threat Model'],
+    },
+  },
 };
 
 // ── .docguardignore Support ───────────────────────────────────────────────

@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-03-13
+
+### Added
+- **Doc Quality Validator** — 8 deterministic writing quality metrics (passive voice, readability, atomicity, sentence length, negation/conditional load). Inspired by IEEE 830/ISO 29148.
+- **Understanding Integration** — Optional deep scan via the [Understanding](https://github.com/Testimonial/understanding) CLI for full 31-metric doc quality analysis. Runs automatically when `understanding` CLI is installed, providing actionable insights alongside DocGuard's native 8 metrics. Credit: Testimonial/understanding project.
+- **Spec Kit Integration** — Auto-detects [Spec Kit](https://github.com/github/spec-kit) projects (`.specify/`, `specs/`, `constitution.md`, `memory/`), maps Spec Kit artifacts to CDD canonical docs, and supports `docguard generate --from-speckit` for one-command conversion. Validates spec.md requirement IDs trace to tests. Credit: GitHub Spec Kit framework.
+- **Requirement Traceability (V-Model)** — scans docs for requirement IDs (REQ-001, FR-001, US-001, etc.) and validates they trace to test files. Opt-in by convention: just add IDs and DocGuard auto-enforces. Inspired by [spec-kit-v-model](https://github.com/leocamello/spec-kit-v-model) and IEEE 1016.
+- **TODO/FIXME Tracking** — detects untracked code annotations and skipped tests without explanation. Inspired by [spec-kit-cleanup](https://github.com/dsrednicki/spec-kit-cleanup).
+- **Schema Sync Validator** — detects database models from 7 ORM frameworks (Prisma, Drizzle, TypeORM, Sequelize, Knex, Django, Rails) and validates they're documented in DATA-MODEL.md.
+- **`docguard llms` command** — generates `llms.txt` from canonical docs following the [llms.txt standard](https://llmstxt.org/) (Jeremy Howard, Answer.AI, 2024).
+- **ALCOA+ Compliance Scoring** — maps existing validators to the 9 FDA data integrity attributes (Attributable, Legible, Contemporaneous, Original, Accurate, Complete, Consistent, Enduring, Available). Always shown in `docguard score` output with per-attribute evidence, gaps, and fix recommendations.
+- **`enterprise-ai` profile** — EU AI Act Annex IV compliance profile with stricter freshness (14-day threshold), required DATA-MODEL.md, and Risk Assessment section in SECURITY.md.
+- **OpenAPI cross-check** — if route files and an OpenAPI spec exist, validates routes have matching paths in the spec. Warns to re-run spec generator if out of sync.
+
+### Changed
+- Validator count: 14 → 18 validators, 108 → 130+ automated checks
+- `docguard score` now always shows ALCOA+ compliance breakdown
+
 ## [0.8.2] - 2026-03-13
 
 ### Added

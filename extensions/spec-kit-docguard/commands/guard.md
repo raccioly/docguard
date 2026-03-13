@@ -4,7 +4,7 @@ description: "Validate project against canonical documentation"
 
 # DocGuard Guard
 
-Validate your project against its canonical documentation. Runs 108 automated checks across 14 validators with quality labels.
+Validate your project against its canonical documentation. Runs 130+ automated checks across 18 validators with quality labels.
 
 ## User Input
 

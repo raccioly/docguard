@@ -15,7 +15,7 @@
 
 ## System Overview
 
-DocGuard is a zero-dependency Node.js CLI tool that enforces **Canonical-Driven Development (CDD)** — a methodology where documentation is the source of truth, and code is validated against it. DocGuard audits, scores, and guards project documentation, generates AI-actionable fix prompts, and integrates with CI/CD pipelines and VS Code.
+DocGuard is a zero-dependency Node.js CLI tool. It enforces **Canonical-Driven Development (CDD)** — a methodology where documentation is the source of truth. DocGuard audits, scores, and guards project documentation. It generates AI-actionable fix prompts and integrates with CI/CD pipelines and VS Code.
 
 It targets development teams and AI coding agents that need to maintain documentation quality across projects of any stack (JavaScript, Python, Java, etc.).
 
@@ -25,7 +25,7 @@ It targets development teams and AI coding agents that need to maintain document
 |-----------|---------------|----------|-----------|
 | **CLI Entry Point** | Argument parsing, config loading, command routing | `cli/` | `docguard.mjs` |
 | **Commands** | 11 user-facing commands (audit, init, guard, score, diff, agents, generate, hooks, badge, ci, fix) | `cli/commands/` | `*.mjs` |
-| **Validators** | 16 independent validation modules that check specific aspects of CDD compliance | `cli/validators/` | `*.mjs` |
+| **Validators** | 18 independent validation modules that check specific aspects of CDD compliance | `cli/validators/` | `*.mjs` |
 | **Templates** | Document skeletons (ARCHITECTURE, SECURITY, etc.) and slash command files for AI agents | `templates/` | `*.template`, `commands/*.md` |
 | **VS Code Extension** | Status bar score, inline diagnostics, Code Actions, file watchers | `vscode-extension/` | `extension.js`, `package.json` |
 | **Tests** | Command-level integration tests using `node:test` | `tests/` | `commands.test.mjs` |
@@ -59,11 +59,11 @@ The architecture follows a strict 3-layer model where each layer can only import
 
 | Layer | Contains | Can Import From | Cannot Import From |
 |-------|----------|----------------|--------------------|
-| **Commands** (`cli/commands/`) | User-facing command logic | Validators, Config (via `docguard.mjs` exports) | Other commands (no cross-command imports) |
-| **Validators** (`cli/validators/`) | Independent validation modules | Node.js built-ins only (`fs`, `path`, `child_process`) | Commands, Config |
-| **Entry Point** (`cli/docguard.mjs`) | Config loading, ANSI colors, argument parsing, command dispatch | Commands (imports all command modules) | Validators directly |
+| **Commands** (`cli/commands/`) | User-facing command logic | Validators, Config (via `docguard.mjs` exports) | Isolated — each command is self-contained |
+| **Validators** (`cli/validators/`) | Independent validation modules | Node.js built-ins only (`fs`, `path`, `child_process`) | Isolated — pure functions only |
+| **Entry Point** (`cli/docguard.mjs`) | Config loading, ANSI colors, argument parsing, command dispatch | Commands (imports all command modules) | Calls validators only through commands |
 
-**Key Rule**: Validators are pure functions — they receive `projectDir` and `config`, and return results. They never import from commands or the CLI entry point.
+**Key Rule**: Validators are pure functions. They receive `projectDir` and `config`, then return results. They stay isolated from commands and the CLI entry point.
 
 ```mermaid
 graph TD
@@ -142,17 +142,17 @@ docguard guard → validates the newly written document
 
 | Decision | Rationale |
 |----------|-----------|
-| **Zero dependencies** | CLI tools should be instant to install. No `node_modules` means no supply chain risk, no version conflicts. |
-| **Config-driven validation** | `.docguard.json` allows projects to customize which validators run and what's required. A CLI project doesn't need database docs. |
-| **Validators are independent** | Each validator is a self-contained module that can be enabled/disabled. Adding a new validator never breaks existing ones. |
-| **AI as author, CLI as orchestrator** | The CLI detects problems and generates structured prompts. It never writes documentation content — that's the AI's job. |
+| **Zero dependencies** | CLI tools should install instantly. Avoiding `node_modules` eliminates supply chain risk and version conflicts. |
+| **Config-driven validation** | `.docguard.json` lets projects customize which validators run. A CLI project can skip database docs. |
+| **Validators are independent** | Each validator is a self-contained module. Adding a validator keeps existing ones stable. |
+| **AI as author, CLI as orchestrator** | The CLI detects problems and generates structured prompts. Documentation writing is the AI's responsibility. |
 | **Exit codes for CI** | `0` (pass), `1` (fail), `2` (warn) enables `docguard ci` to gate deployments. |
 
 ---
 
 ## External Dependencies
 
-DocGuard has **zero runtime dependencies**. All functionality uses Node.js built-in modules:
+DocGuard has **zero runtime dependencies**. All functionality uses Node.js built-in modules.
 
 | Module | Usage |
 |--------|-------|

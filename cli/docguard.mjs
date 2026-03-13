@@ -37,6 +37,7 @@ import { runWatch } from './commands/watch.mjs';
 import { runDiagnose } from './commands/diagnose.mjs';
 import { runPublish } from './commands/publish.mjs';
 import { runTrace } from './commands/trace.mjs';
+import { runLlms } from './commands/llms.mjs';
 
 // ── Shared constants (imported to break circular dependencies) ──────────
 import { c, PROFILES } from './shared.mjs';
@@ -354,6 +355,8 @@ async function main() {
       flags.signals = true;
     } else if (args[i] === '--debate') {
       flags.debate = true;
+    } else if (args[i] === '--stdout') {
+      flags.stdout = true;
     }
   }
 
@@ -426,6 +429,9 @@ async function main() {
     case 'trace':
     case 'traceability':
       runTrace(projectDir, config, flags);
+      break;
+    case 'llms':
+      runLlms(projectDir, config, flags);
       break;
     default:
       console.error(`${c.red}Unknown command: ${command}${c.reset}`);

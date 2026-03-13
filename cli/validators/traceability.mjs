@@ -1,15 +1,20 @@
 /**
  * Traceability Validator — Checks that canonical docs are linked to source code
  * 
- * Returns warnings for PARTIAL/UNLINKED canonical docs, and errors for MISSING ones.
- * This runs as part of `docguard guard` on every invocation.
+ * Two modes:
+ *   1. Source Traceability: Canonical docs reference actual source files
+ *   2. Requirement Traceability (V-Model): Requirement IDs in docs trace to tests
  *
- * Inspired by ISO/IEC/IEEE 29119 traceability requirements
- * and Lopez et al., AITPG (IEEE TSE 2026).
+ * Requirement traceability is opt-in by convention — if no requirement IDs are
+ * found (REQ-001, FR-001, etc.), the check silently passes. Once you add IDs,
+ * DocGuard automatically enforces traceability.
+ *
+ * Inspired by ISO/IEC/IEEE 29119, IEEE 1016, and V-Model methodology.
+ * V-Model concepts informed by spec-kit-v-model (github.com/leocamello/spec-kit-v-model).
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { resolve, join, relative, basename } from 'node:path';
+import { resolve, join, relative, basename, extname } from 'node:path';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build', 'coverage',
@@ -65,10 +70,25 @@ const TRACE_MAP = {
   },
 };
 
+// ──── Default requirement ID patterns ────
+// Users can override via config.traceability.requirementPattern
+const DEFAULT_REQ_PATTERNS = [
+  /\b(REQ)-(\d{2,4})\b/g,
+  /\b(FR)-(\d{2,4})\b/g,
+  /\b(NFR)-(\d{2,4})\b/g,
+  /\b(US)-(\d{2,4})\b/g,
+  /\b(STORY)-(\d{2,4})\b/g,
+  /\b(AC)-(\d{2,4})\b/g,
+  /\b(UC)-(\d{2,4})\b/g,
+  /\b(SYS)-(\d{2,4})\b/g,
+  /\b(ARCH)-(\d{2,4})\b/g,
+  /\b(MOD)-(\d{2,4})\b/g,
+];
+
 /**
- * Validate traceability — ensures canonical docs have corresponding source artifacts.
+ * Validate traceability — ensures canonical docs have corresponding source artifacts,
+ * and requirement IDs trace through to test files.
  * Respects config.requiredFiles.canonical — only checks docs the user requires.
- * Also warns about orphaned files (exist but excluded from config).
  * @returns {{ errors: string[], warnings: string[], passed: number, total: number }}
  */
 export function validateTraceability(projectDir, config) {
@@ -92,7 +112,7 @@ export function validateTraceability(projectDir, config) {
   const projectFiles = [];
   scanDir(projectDir, projectDir, projectFiles);
 
-  // ── Check required docs for traceability ──
+  // ── Part 1: Source Traceability (existing) ──
   for (const [docName, traceInfo] of Object.entries(TRACE_MAP)) {
     // Skip docs not in the user's required list
     if (!requiredDocs.has(docName)) continue;
@@ -130,7 +150,173 @@ export function validateTraceability(projectDir, config) {
     }
   } catch { /* ignore */ }
 
+  // ── Part 2: Requirement ID Traceability (V-Model) ──
+  const reqResult = validateRequirementTraceability(projectDir, config, projectFiles);
+  errors.push(...reqResult.errors);
+  warnings.push(...reqResult.warnings);
+  passed += reqResult.passed;
+  total += reqResult.total;
+
   return { errors, warnings, passed, total };
+}
+
+// ──── Requirement ID Traceability ────────────────────────────────────────────
+
+/**
+ * Scan docs for requirement IDs and verify they appear in test files.
+ *
+ * Behavior:
+ *   - If no requirement IDs found anywhere → silently passes (0 checks)
+ *   - If IDs found → validates each has a matching test reference
+ *   - Reports untraced requirements and orphaned test refs
+ */
+function validateRequirementTraceability(projectDir, config, projectFiles) {
+  const errors = [];
+  const warnings = [];
+  let passed = 0;
+  let total = 0;
+
+  // Get requirement patterns (user-configurable or defaults)
+  const customPattern = config.traceability?.requirementPattern;
+  const patterns = customPattern
+    ? [new RegExp(customPattern, 'g')]
+    : DEFAULT_REQ_PATTERNS;
+
+  // ── Step 1: Collect requirement IDs from documentation ──
+  const reqIds = new Map(); // reqId → { file, line }
+  const docSearchPaths = getRequirementDocPaths(projectDir, config);
+
+  for (const docPath of docSearchPaths) {
+    if (!existsSync(docPath)) continue;
+
+    const content = readFileSync(docPath, 'utf-8');
+    const lines = content.split('\n');
+    const docName = relative(projectDir, docPath);
+
+    for (let i = 0; i < lines.length; i++) {
+      for (const pattern of patterns) {
+        // Reset regex lastIndex for each line
+        pattern.lastIndex = 0;
+        let match;
+        while ((match = pattern.exec(lines[i])) !== null) {
+          const reqId = match[0]; // e.g., "REQ-001"
+          if (!reqIds.has(reqId)) {
+            reqIds.set(reqId, { file: docName, line: i + 1 });
+          }
+        }
+      }
+    }
+  }
+
+  // If no requirement IDs found, silently pass — this project doesn't use them
+  if (reqIds.size === 0) {
+    return { errors, warnings, passed, total };
+  }
+
+  // ── Step 2: Scan test files for requirement ID references ──
+  const testFiles = projectFiles.filter(f =>
+    /\.(test|spec)\.(mjs|cjs|[jt]sx?)$/.test(f) ||
+    /__tests__\//.test(f) ||
+    /tests?\//.test(f)
+  );
+
+  const testRefs = new Map(); // reqId → [{ file, line }]
+
+  for (const relPath of testFiles) {
+    const fullPath = resolve(projectDir, relPath);
+    if (!existsSync(fullPath)) continue;
+
+    let content;
+    try { content = readFileSync(fullPath, 'utf-8'); } catch { continue; }
+    const lines = content.split('\n');
+
+    for (let i = 0; i < lines.length; i++) {
+      for (const pattern of patterns) {
+        pattern.lastIndex = 0;
+        let match;
+        while ((match = pattern.exec(lines[i])) !== null) {
+          const reqId = match[0];
+          if (!testRefs.has(reqId)) testRefs.set(reqId, []);
+          testRefs.get(reqId).push({ file: relPath, line: i + 1 });
+        }
+      }
+    }
+  }
+
+  // ── Step 3: Report traceability results ──
+
+  // Check each documented requirement has at least one test reference
+  for (const [reqId, location] of reqIds) {
+    total++;
+    if (testRefs.has(reqId)) {
+      passed++;
+    } else {
+      warnings.push(
+        `Requirement ${reqId} (${location.file}:${location.line}) has no test coverage. ` +
+        `Add @req ${reqId} comment to the test that verifies this requirement`
+      );
+    }
+  }
+
+  // Check for orphaned test refs (tests referencing non-existent requirements)
+  for (const [reqId, refs] of testRefs) {
+    if (!reqIds.has(reqId)) {
+      total++;
+      warnings.push(
+        `Test references ${reqId} (${refs[0].file}:${refs[0].line}) but no requirement ` +
+        `with this ID exists in documentation. Remove the reference or add the requirement to docs`
+      );
+    }
+  }
+
+  return { errors, warnings, passed, total };
+}
+
+/**
+ * Get all file paths where requirement IDs might be defined.
+ * Checks: docs-canonical/*.md, spec.md, REQUIREMENTS.md, specs/[feature]/spec.md
+ */
+function getRequirementDocPaths(projectDir, config) {
+  const paths = [];
+
+  // docs-canonical/ directory
+  const docsDir = resolve(projectDir, 'docs-canonical');
+  if (existsSync(docsDir)) {
+    try {
+      for (const f of readdirSync(docsDir)) {
+        if (extname(f).toLowerCase() === '.md') {
+          paths.push(join(docsDir, f));
+        }
+      }
+    } catch { /* ignore */ }
+  }
+
+  // Root-level docs
+  const rootDocs = ['REQUIREMENTS.md', 'spec.md', 'README.md'];
+  for (const doc of rootDocs) {
+    const p = resolve(projectDir, doc);
+    if (existsSync(p)) paths.push(p);
+  }
+
+  // User-configured requirement docs
+  const configDocs = config.traceability?.requirementDocs || [];
+  for (const doc of configDocs) {
+    const p = resolve(projectDir, doc);
+    if (existsSync(p) && !paths.includes(p)) paths.push(p);
+  }
+
+  // Spec Kit artifacts: specs/*/spec.md
+  const specsDir = resolve(projectDir, 'specs');
+  if (existsSync(specsDir)) {
+    try {
+      for (const feature of readdirSync(specsDir)) {
+        const specPath = join(specsDir, feature, 'spec.md');
+        if (existsSync(specPath)) paths.push(specPath);
+      }
+    } catch { /* ignore */ }
+  }
+
+  return paths;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────

@@ -131,6 +131,30 @@ export function runScore(projectDir, config, flags) {
     console.log(`  ${c.dim}Methodology: CJE multi-signal composite (Lopez et al., TRACE, IEEE TMLCN 2026)${c.reset}\n`);
   }
 
+  // ── ALCOA+ Compliance Scoring ──
+  // Maps existing validators to the 9 ALCOA+ attributes (FDA data integrity framework)
+  // Always shown — gives enterprise positioning value
+  const alcoa = computeAlcoaCompliance(projectDir, config, scores);
+
+  console.log(`  ${c.bold}🏛️  ALCOA+ Compliance${c.reset} ${c.dim}(FDA Data Integrity Framework)${c.reset}`);
+  console.log(`  ${c.dim}─────────────────────────────────${c.reset}`);
+
+  for (const attr of alcoa.attributes) {
+    const icon = attr.met ? `${c.green}✅` : `${c.yellow}⚠️`;
+    const status = attr.met ? `${c.green}${attr.evidence}` : `${c.yellow}${attr.gap}`;
+    console.log(`  ${icon} ${attr.name.padEnd(16)}${c.reset} — ${status}${c.reset}`);
+    if (!attr.met && attr.fix) {
+      console.log(`  ${c.dim}     Fix: ${attr.fix}${c.reset}`);
+    }
+  }
+
+  const alcoaColor = alcoa.score >= 78 ? c.green : alcoa.score >= 56 ? c.yellow : c.red;
+  console.log(`\n  ${alcoaColor}${c.bold}ALCOA+ Score: ${alcoa.score}% (${alcoa.met}/${alcoa.total} attributes)${c.reset}`);
+  if (alcoa.met < alcoa.total) {
+    console.log(`  ${c.dim}${alcoa.total - alcoa.met} action(s) needed for full compliance${c.reset}`);
+  }
+  console.log('');
+
   // Badge snippet
   const bColor = totalScore >= 90 ? 'brightgreen' : totalScore >= 80 ? 'green' : totalScore >= 70 ? 'yellowgreen' : totalScore >= 60 ? 'yellow' : totalScore >= 50 ? 'orange' : 'red';
   const badgeUrl = `https://img.shields.io/badge/CDD_Score-${totalScore}%2F100_(${grade})-${bColor}`;
@@ -144,6 +168,144 @@ export function runScore(projectDir, config, flags) {
 export function runScoreInternal(projectDir, config) {
   const { scores, totalScore, grade } = calcAllScores(projectDir, config);
   return { score: totalScore, grade, categories: scores };
+}
+
+/**
+ * ALCOA+ Compliance Scoring
+ *
+ * Maps DocGuard's existing validators to the 9 ALCOA+ attributes
+ * (FDA 21 CFR Part 11 / EMA Annex 11 data integrity framework).
+ *
+ * ALCOA+ = Attributable, Legible, Contemporaneous, Original, Accurate
+ *        + Complete, Consistent, Enduring, Available
+ *
+ * Reference: WHO Technical Report Series, No. 996, 2016, Annex 5
+ */
+function computeAlcoaCompliance(projectDir, config, scores) {
+  const attributes = [];
+
+  // 1. Attributable — Can we trace who wrote/reviewed docs?
+  const hasGit = existsSync(resolve(projectDir, '.git'));
+  const docsDir = resolve(projectDir, 'docs-canonical');
+  let hasReviewedMeta = false;
+  if (existsSync(docsDir)) {
+    try {
+      const docs = readdirSync(docsDir).filter(f => f.endsWith('.md'));
+      for (const doc of docs) {
+        const content = readFileSync(join(docsDir, doc), 'utf-8');
+        if (content.includes('docguard:last-reviewed') || content.includes('last-reviewed')) {
+          hasReviewedMeta = true;
+          break;
+        }
+      }
+    } catch { /* ignore */ }
+  }
+  attributes.push({
+    name: 'Attributable',
+    met: hasGit,
+    evidence: hasGit ? `Git authorship found${hasReviewedMeta ? ', review metadata present' : ''}` : null,
+    gap: !hasGit ? 'No version control found' : null,
+    fix: !hasGit ? 'Initialize git repository: git init' : null,
+  });
+
+  // 2. Legible — Are docs readable and well-written?
+  const legible = scores.docQuality >= 60;
+  attributes.push({
+    name: 'Legible',
+    met: legible,
+    evidence: legible ? `Doc quality score: ${scores.docQuality}% (readable)` : null,
+    gap: !legible ? `Doc quality score: ${scores.docQuality}% (needs improvement)` : null,
+    fix: !legible ? 'Run docguard diagnose for specific readability improvements' : null,
+  });
+
+  // 3. Contemporaneous — Are docs kept current?
+  let freshnessMet = true;
+  if (existsSync(docsDir)) {
+    try {
+      const docs = readdirSync(docsDir).filter(f => f.endsWith('.md'));
+      for (const doc of docs) {
+        const stat_ = statSync(join(docsDir, doc));
+        const daysSinceModified = (Date.now() - stat_.mtimeMs) / (1000 * 60 * 60 * 24);
+        if (daysSinceModified > 30) {
+          freshnessMet = false;
+          break;
+        }
+      }
+    } catch { /* ignore */ }
+  }
+  attributes.push({
+    name: 'Contemporaneous',
+    met: freshnessMet,
+    evidence: freshnessMet ? 'All docs updated within 30 days' : null,
+    gap: !freshnessMet ? 'Some docs not updated in 30+ days' : null,
+    fix: !freshnessMet ? 'Review and update stale docs, add <!-- docguard:last-reviewed YYYY-MM-DD -->' : null,
+  });
+
+  // 4. Original — Are docs stored as originals (not copies)?
+  const hasCanonicalDir = existsSync(docsDir);
+  attributes.push({
+    name: 'Original',
+    met: hasCanonicalDir,
+    evidence: hasCanonicalDir ? 'Canonical docs present as markdown originals' : null,
+    gap: !hasCanonicalDir ? 'No docs-canonical/ directory found' : null,
+    fix: !hasCanonicalDir ? 'Run docguard init to create canonical documentation' : null,
+  });
+
+  // 5. Accurate — Do docs match the code?
+  const accurate = scores.drift >= 80 && scores.docQuality >= 50;
+  attributes.push({
+    name: 'Accurate',
+    met: accurate,
+    evidence: accurate ? `Drift: ${scores.drift}%, doc quality: ${scores.docQuality}%` : null,
+    gap: !accurate ? `Drift: ${scores.drift}%, doc quality: ${scores.docQuality}% — docs may be inaccurate` : null,
+    fix: !accurate ? 'Run docguard diagnose to find doc/code mismatches' : null,
+  });
+
+  // 6. Complete — Are all required docs present?
+  const complete = scores.structure >= 80;
+  attributes.push({
+    name: 'Complete',
+    met: complete,
+    evidence: complete ? `Structure score: ${scores.structure}% — required docs present` : null,
+    gap: !complete ? `Structure score: ${scores.structure}% — missing required docs` : null,
+    fix: !complete ? 'Run docguard init to create missing documentation' : null,
+  });
+
+  // 7. Consistent — Are versions, metadata, and references in sync?
+  const consistent = scores.changelog >= 50;
+  attributes.push({
+    name: 'Consistent',
+    met: consistent,
+    evidence: consistent ? `Changelog: ${scores.changelog}% — versions tracked` : null,
+    gap: !consistent ? `Changelog: ${scores.changelog}% — version inconsistencies` : null,
+    fix: !consistent ? 'Update CHANGELOG.md with [Unreleased] section and version headers' : null,
+  });
+
+  // 8. Enduring — Will docs survive infrastructure changes?
+  const enduring = hasGit;
+  attributes.push({
+    name: 'Enduring',
+    met: enduring,
+    evidence: enduring ? 'Git-backed repository with version history' : null,
+    gap: !enduring ? 'No version control — docs could be lost' : null,
+    fix: !enduring ? 'Initialize git repository: git init' : null,
+  });
+
+  // 9. Available — Can anyone access the docs?
+  const available = hasCanonicalDir;
+  attributes.push({
+    name: 'Available',
+    met: available,
+    evidence: available ? 'Docs in plain markdown — no vendor lock-in, universally accessible' : null,
+    gap: !available ? 'No docs directory found' : null,
+    fix: !available ? 'Run docguard init to create accessible documentation' : null,
+  });
+
+  const met = attributes.filter(a => a.met).length;
+  const total = attributes.length;
+  const score = Math.round((met / total) * 100);
+
+  return { attributes, met, total, score };
 }
 
 function calcAllScores(projectDir, config) {

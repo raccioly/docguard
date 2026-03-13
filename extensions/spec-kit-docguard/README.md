@@ -11,7 +11,7 @@ Adds 6 DocGuard commands to Spec Kit:
 
 | Command | Description |
 |---------|-------------|
-| `speckit.docguard.guard` | Validate project against canonical docs (108 checks, 14 validators) |
+| `speckit.docguard.guard` | Validate project against canonical docs (130+ checks, 18 validators) |
 | `speckit.docguard.diagnose` | Diagnose issues + generate AI-ready fix prompts |
 | `speckit.docguard.score` | CDD maturity score (0-100) with multi-signal breakdown |
 | `speckit.docguard.trace` | Requirements traceability matrix (ISO 29119) |
@@ -35,7 +35,7 @@ specify extension add --dev /path/to/spec-kit-docguard
 ### Direct URL
 
 ```bash
-specify extension add --from https://github.com/raccioly/docguard/archive/refs/tags/v0.8.0.zip
+specify extension add --from https://github.com/raccioly/docguard/archive/refs/tags/v0.9.0.zip
 ```
 
 ## Requirements

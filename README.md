@@ -223,13 +223,13 @@ $ npx docguard-cli guard
 
 ---
 
-## 14 Validators
+## 19 Validators
 
 | # | Validator | What It Checks | Default |
 |---|-----------|---------------|---------| 
 | 1 | **Structure** | Required CDD files exist | ✅ On |
 | 2 | **Doc Sections** | Canonical docs have required sections | ✅ On |
-| 3 | **Docs-Sync** | Routes/services referenced in docs | ✅ On |
+| 3 | **Docs-Sync** | Routes/services referenced in docs + OpenAPI cross-check | ✅ On |
 | 4 | **Drift** | `// DRIFT:` comments logged in DRIFT-LOG.md | ✅ On |
 | 5 | **Changelog** | CHANGELOG.md has [Unreleased] section | ✅ On |
 | 6 | **Test-Spec** | Tests exist per TEST-SPEC.md rules | ✅ On |
@@ -237,16 +237,19 @@ $ npx docguard-cli guard
 | 8 | **Security** | No hardcoded secrets in source code | ✅ On |
 | 9 | **Architecture** | Imports follow layer boundaries | ✅ On |
 | 10 | **Freshness** | Docs not stale relative to code changes | ✅ On |
-| 11 | **Traceability** | Canonical docs linked to source code | ✅ On |
+| 11 | **Traceability** | Canonical docs linked to source + V-Model requirement IDs | ✅ On |
 | 12 | **Docs-Diff** | Code artifacts match documented entities | ✅ On |
 | 13 | **Metadata-Sync** | Version refs consistent across docs | ✅ On |
 | 14 | **Docs-Coverage** | Code features referenced in documentation | ✅ On |
 | 15 | **Metrics-Consistency** | Hardcoded numbers match actual counts | ✅ On |
-| 16 | **Docs-Sync** | Source files have matching doc entries | ✅ On |
+| 16 | **Doc-Quality** | Writing quality (readability, passive voice, atomicity) | ✅ On |
+| 17 | **TODO-Tracking** | Untracked TODOs/FIXMEs and skipped tests | ✅ On |
+| 18 | **Schema-Sync** | Database models documented in DATA-MODEL.md | ✅ On |
+| 19 | **Spec-Kit** | GitHub Spec Kit artifact detection and CDD mapping | ✅ On |
 
 ---
 
-## 16 Templates
+## 18 Templates
 
 Every template includes professional metadata: `docguard:version`, `docguard:status`, badges, and revision history.
 
@@ -260,6 +263,7 @@ Every template includes professional metadata: `docguard:version`, `docguard:sta
 | DEPLOYMENT.md | Canonical | Infrastructure, CI/CD, DNS |
 | ADR.md | Canonical | Architecture Decision Records |
 | ROADMAP.md | Canonical | Project phases, feature tracking |
+| REQUIREMENTS.md | Canonical | Requirement IDs, V-Model traceability |
 | KNOWN-GOTCHAS.md | Implementation | Symptom/gotcha/fix entries |
 | TROUBLESHOOTING.md | Implementation | Error diagnosis guides |
 | RUNBOOKS.md | Implementation | Operational procedures |
@@ -268,6 +272,7 @@ Every template includes professional metadata: `docguard:version`, `docguard:sta
 | AGENTS.md | Agent | AI agent behavior rules |
 | CHANGELOG.md | Tracking | Change log |
 | DRIFT-LOG.md | Tracking | Deviation tracking |
+| llms.txt | Generated | AI-friendly project summary (llmstxt.org) |
 
 ---
 
@@ -280,7 +285,8 @@ your-project/
 │   ├── DATA-MODEL.md            # Database schemas, entity relationships
 │   ├── SECURITY.md              # Auth, permissions, secrets
 │   ├── TEST-SPEC.md             # Required tests, coverage rules
-│   └── ENVIRONMENT.md           # Environment variables, setup
+│   ├── ENVIRONMENT.md           # Environment variables, setup
+│   └── REQUIREMENTS.md          # Requirement IDs, V-Model traceability
 │
 ├── docs-implementation/         # Current state (optional)
 │   ├── KNOWN-GOTCHAS.md         # Lessons learned
@@ -291,6 +297,7 @@ your-project/
 ├── AGENTS.md                    # AI agent behavior rules
 ├── CHANGELOG.md                 # Change tracking
 ├── DRIFT-LOG.md                 # Documented deviations
+├── llms.txt                     # AI-friendly project summary
 └── .docguard.json              # DocGuard configuration
 ```
 
