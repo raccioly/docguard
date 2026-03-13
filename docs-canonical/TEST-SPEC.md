@@ -15,6 +15,14 @@
 
 ---
 
+DocGuard's tests verify command behavior through subprocess execution. Each test runs the full CLI binary via execSync, capturing stdout and checking output patterns. This approach tests the complete stack in a single pass: argument parsing, config loading, validator execution, and output formatting.
+
+Tests are designed to be config-aware. They verify that project-type settings like needsEnvExample and testFramework correctly influence scoring and validation behavior. Regression guards pin specific bug fixes with dedicated assertions, ensuring fixed issues cannot recur.
+
+All tests use the built-in node:test framework with zero test dependencies. The test suite runs in under 10 seconds and is executed automatically by CI on every push.
+
+Test names follow the pattern: "verb + expected behavior" (e.g., "runs and shows a score", "respects projectTypeConfig"). Each test is self-contained with no shared mutable state between tests.
+
 ## Test Categories
 
 | Category | Framework | Location | Run Command |
@@ -29,17 +37,17 @@
 
 | Metric | Target | Current |
 |--------|:------:|:-------:|
-| Command Coverage | 100% | 100% (15/15 commands) |
-| Validator Coverage | 80% | 100% (10/10 validators) |
+| Command Coverage | 100% | 100% (14/14 commands) |
+| Validator Coverage | 80% | 100% (12/12 validators) |
 | Flag Coverage | 80% | 100% |
-| Test Count | — | 30 tests, 17 suites |
+| Test Count | — | 33 tests, 17 suites |
 
 ## Source-to-Test Map
 
 | Source File | Test File | Status |
 |------------|-----------|:------:|
-| `cli/docguard.mjs` | `tests/cli.test.mjs` | ✅ |
-| `cli/commands/audit.mjs` | `tests/commands.test.mjs` | ✅ |
+| `cli/docguard.mjs` | `tests/commands.test.mjs` | ✅ |
+| `cli/shared.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/commands/init.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/commands/guard.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/commands/score.mjs` | `tests/commands.test.mjs` | ✅ |
@@ -48,12 +56,14 @@
 | `cli/commands/agents.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/commands/hooks.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/commands/diagnose.mjs` | `tests/commands.test.mjs` | ✅ |
+| `cli/commands/badge.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/commands/ci.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/commands/fix.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/commands/watch.mjs` | — | ✅ N/A |
 | `cli/commands/publish.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/commands/trace.mjs` | `tests/commands.test.mjs` | ✅ |
-| `cli/validators/structure.mjs` | `tests/validators.test.mjs` | ✅ |
+| `cli/validators/structure.mjs` | `tests/commands.test.mjs` | ✅ |
+| `cli/validators/docs-diff.mjs` | `tests/commands.test.mjs` | ✅ |
 
 > **Note**: `watch.mjs` is an interactive file-watcher (uses `fs.watch` + process signals). It is
 > verified via manual execution rather than automated tests, which is appropriate for

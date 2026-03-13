@@ -16,7 +16,7 @@
 import { existsSync, readFileSync, mkdirSync } from 'node:fs';
 import { resolve, basename } from 'node:path';
 import { execSync } from 'node:child_process';
-import { c } from '../docguard.mjs';
+import { c } from '../shared.mjs';
 
 // ── Document Quality Definitions ───────────────────────────────────────────
 // What each doc SHOULD contain, and what to look for in the codebase

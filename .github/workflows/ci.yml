@@ -30,9 +30,6 @@ jobs:
       - name: CLI Version
         run: node cli/docguard.mjs --version
 
-      - name: Audit
-        run: node cli/docguard.mjs audit
-
       - name: Guard (self-check)
         run: node cli/docguard.mjs guard
 
@@ -48,14 +45,17 @@ jobs:
       - name: Badge
         run: node cli/docguard.mjs badge
 
+      - name: Diagnose
+        run: node cli/docguard.mjs diagnose
+
       # ── Cross-project tests ──
       - name: Init in temp dir
         run: |
           mkdir -p /tmp/docguard-test
-          node cli/docguard.mjs init --dir /tmp/docguard-test
+          node cli/docguard.mjs init --dir /tmp/docguard-test --force
 
-      - name: Audit after init
-        run: node cli/docguard.mjs audit --dir /tmp/docguard-test
+      - name: Guard after init
+        run: node cli/docguard.mjs guard --dir /tmp/docguard-test
 
       - name: Generate in empty dir
         run: |

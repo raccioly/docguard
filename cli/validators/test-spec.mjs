@@ -37,6 +37,7 @@ export function validateTestSpec(projectDir, config) {
       if (cells.length < 3) continue;
 
       const sourceFile = cells[0];
+      const testFile = cells[1];
       const status = cells[cells.length - 1]; // Last column is always status
 
       // Skip template/example rows and italic placeholder rows
@@ -55,6 +56,38 @@ export function validateTestSpec(projectDir, config) {
       } else if (status && status.includes('✅')) {
         results.total++;
         results.passed++;
+      }
+
+      // ── File existence checks ───────────────────────────────────────
+      // Verify source file still exists (catch stale map entries)
+      const cleanSource = sourceFile.replace(/`/g, '').trim();
+      if (cleanSource && cleanSource !== '—' && cleanSource !== 'Source File') {
+        const sourcePath = resolve(projectDir, cleanSource);
+        if (!existsSync(sourcePath)) {
+          results.total++;
+          results.warnings.push(
+            `Source-to-Test Map: source file \`${cleanSource}\` not found on disk — stale entry?`
+          );
+        } else {
+          results.total++;
+          results.passed++;
+        }
+      }
+
+      // Verify test file exists (catch wrong/stale test references)
+      const cleanTest = testFile ? testFile.replace(/`/g, '').trim() : '';
+      if (cleanTest && cleanTest !== '—' && cleanTest !== 'Test File' &&
+          cleanTest !== 'Unit Test' && !cleanTest.includes('N/A')) {
+        const testPath = resolve(projectDir, cleanTest);
+        if (!existsSync(testPath)) {
+          results.total++;
+          results.warnings.push(
+            `Source-to-Test Map: test file \`${cleanTest}\` not found — referenced by ${cleanSource}`
+          );
+        } else {
+          results.total++;
+          results.passed++;
+        }
       }
     }
   }

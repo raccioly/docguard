@@ -53,3 +53,16 @@
 |--------|---------------|------|
 | Health | <!-- e.g. /health returns 200 --> | |
 | Auth | <!-- e.g. Login flow completes --> | |
+
+## Recommended Test Patterns
+
+<!-- DocGuard validates that files listed in the Source-to-Test Map exist on disk.
+     Keep the map up to date — stale entries will trigger warnings. -->
+
+| Pattern | Description | Priority |
+|---------|-------------|----------|
+| Config-awareness | Test behavior changes per `.docguard.json` / env config | ⚠️ High |
+| Individual functions | Test each module/function directly, not just via CLI | ⚠️ High |
+| Edge cases | Empty inputs, missing files, invalid config | ✅ Medium |
+| Error paths | Verify graceful failure, not just happy path | ✅ Medium |
+| Regression guards | Pin specific bug fixes with dedicated tests | ✅ Medium |

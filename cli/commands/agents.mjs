@@ -5,7 +5,7 @@
 
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
-import { c } from '../docguard.mjs';
+import { c } from '../shared.mjs';
 
 const AGENT_TARGETS = {
   cursor: {

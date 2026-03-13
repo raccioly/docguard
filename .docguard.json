@@ -31,9 +31,9 @@
     "docsSync": true,
     "drift": true,
     "changelog": true,
-    "architecture": false,
+    "architecture": true,
     "testSpec": true,
-    "security": false,
+    "security": true,
     "environment": true,
     "freshness": true
   }

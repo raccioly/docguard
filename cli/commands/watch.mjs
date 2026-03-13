@@ -9,7 +9,7 @@
 
 import { watch as fsWatch, existsSync, readdirSync, statSync } from 'node:fs';
 import { resolve, relative, extname } from 'node:path';
-import { c } from '../docguard.mjs';
+import { c } from '../shared.mjs';
 import { runGuardInternal } from './guard.mjs';
 
 const DEBOUNCE_MS = 500;

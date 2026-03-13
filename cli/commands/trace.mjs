@@ -8,7 +8,7 @@
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, extname, basename, relative } from 'node:path';
-import { c } from '../docguard.mjs';
+import { c } from '../shared.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build', 'coverage',

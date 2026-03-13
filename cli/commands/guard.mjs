@@ -7,7 +7,7 @@
  *   runGuardInternal() → returns data, no side effects (for diagnose, ci)
  */
 
-import { c } from '../docguard.mjs';
+import { c } from '../shared.mjs';
 import { validateStructure, validateDocSections } from '../validators/structure.mjs';
 import { validateDrift } from '../validators/drift.mjs';
 import { validateChangelog } from '../validators/changelog.mjs';
@@ -18,6 +18,7 @@ import { validateDocsSync } from '../validators/docs-sync.mjs';
 import { validateArchitecture } from '../validators/architecture.mjs';
 import { validateFreshness } from '../validators/freshness.mjs';
 import { validateTraceability } from '../validators/traceability.mjs';
+import { validateDocsDiff } from '../validators/docs-diff.mjs';
 
 /**
  * Internal guard — returns structured data, no console output, no process.exit.
@@ -50,6 +51,7 @@ export function runGuardInternal(projectDir, config) {
       return { errors, warnings, passed, total: passed + warnings.length + errors.length };
     }},
     { key: 'traceability', name: 'Traceability', fn: () => validateTraceability(projectDir, config) },
+    { key: 'docsDiff', name: 'Docs-Diff', fn: () => validateDocsDiff(projectDir, config) },
   ];
 
   for (const { key, name, fn } of validatorMap) {
@@ -168,6 +170,12 @@ export function runGuard(projectDir, config, flags) {
   if (data.status !== 'PASS') {
     console.log(`  ${c.dim}Run ${c.cyan}docguard diagnose${c.dim} to get AI fix prompts.${c.reset}`);
   }
+
+  // Badge snippet
+  const pct = data.total > 0 ? Math.round((data.passed / data.total) * 100) : 0;
+  const bColor = pct >= 90 ? 'brightgreen' : pct >= 70 ? 'green' : pct >= 50 ? 'yellow' : 'red';
+  const badgeUrl = `https://img.shields.io/badge/CDD_Guard-${data.passed}%2F${data.total}_passed-${bColor}`;
+  console.log(`\n  ${c.dim}📎 Badge: ![CDD Guard](${badgeUrl})${c.reset}`);
 
   console.log('');
 

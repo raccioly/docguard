@@ -5,7 +5,7 @@
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, extname, basename } from 'node:path';
-import { c } from '../docguard.mjs';
+import { c } from '../shared.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build',
@@ -99,10 +99,13 @@ function diffRoutes(dir) {
 
   // Extract route-like patterns from ARCHITECTURE.md
   const docRoutes = new Set();
-  const routeRegex = /(?:\/api\/\S+|GET|POST|PUT|DELETE|PATCH)\s+(\S+)/gi;
+  const routeRegex = /(?:\/api\/\S+|(?:GET|POST|PUT|DELETE|PATCH)\s+(\/\S+))/gi;
   let match;
   while ((match = routeRegex.exec(content)) !== null) {
-    docRoutes.add(match[1] || match[0]);
+    const route = match[1] || match[0];
+    // Skip markdown table syntax and non-route content
+    if (route.startsWith('|') || route.startsWith('(') || route.length < 3) continue;
+    docRoutes.add(route);
   }
 
   // Also check for paths in tables
@@ -183,6 +186,14 @@ function diffEntities(dir) {
     'weighted', 'method', 'provider', 'token', 'expiry', 'role',
     'permissions', 'secret', 'rotation', 'access', 'variable', 'tool',
     'command', 'run', 'component', 'responsibility', 'location', 'tests',
+    // Data types — common in table schemas, not entity names
+    'string', 'boolean', 'number', 'integer', 'float', 'double', 'decimal',
+    'array', 'object', 'null', 'undefined', 'enum', 'varchar', 'text',
+    'timestamp', 'uuid', 'bigint', 'serial', 'json', 'jsonb', 'blob',
+    'char', 'date', 'time', 'datetime', 'binary', 'bit', 'money',
+    // Common table headers and template words
+    'true', 'false', 'header', 'checks', 'project', 'count', 'grade',
+    'breakdown', 'issuecount', 'autofixable', 'projectname', 'projecttype',
   ]);
   while ((match = tableRegex.exec(content)) !== null) {
     const name = match[1];

@@ -3,7 +3,7 @@
  * Outputs badge markdown or JSON for README, CI, and dashboards.
  */
 
-import { c } from '../docguard.mjs';
+import { c } from '../shared.mjs';
 import { runScoreInternal } from './score.mjs';
 
 export function runBadge(projectDir, config, flags) {

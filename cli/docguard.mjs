@@ -22,7 +22,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PKG = JSON.parse(readFileSync(resolve(__dirname, '..', 'package.json'), 'utf-8'));
 const VERSION = PKG.version;
-import { runAudit } from './commands/audit.mjs';
+// audit is now an alias for guard (old audit.mjs deleted — guard does everything it did + more)
 import { runInit } from './commands/init.mjs';
 import { runGuard } from './commands/guard.mjs';
 import { runScore } from './commands/score.mjs';
@@ -38,66 +38,9 @@ import { runDiagnose } from './commands/diagnose.mjs';
 import { runPublish } from './commands/publish.mjs';
 import { runTrace } from './commands/trace.mjs';
 
-// ── Colors (ANSI escape codes, zero deps) ──────────────────────────────────
-export const c = {
-  reset: '\x1b[0m',
-  bold: '\x1b[1m',
-  dim: '\x1b[2m',
-  red: '\x1b[31m',
-  green: '\x1b[32m',
-  yellow: '\x1b[33m',
-  blue: '\x1b[34m',
-  cyan: '\x1b[36m',
-  white: '\x1b[37m',
-  bgRed: '\x1b[41m',
-  bgGreen: '\x1b[42m',
-  bgYellow: '\x1b[43m',
-};
-// ── Compliance Profiles ───────────────────────────────────────────────────
-// Profiles layer between defaults and user config — they're preset bundles
-// that adjust what docs are required and which validators run.
-const PROFILES = {
-  starter: {
-    description: 'Minimal CDD — just architecture + changelog. For side projects and prototypes.',
-    requiredFiles: {
-      canonical: [
-        'docs-canonical/ARCHITECTURE.md',
-      ],
-      agentFile: ['AGENTS.md', 'CLAUDE.md'],
-      changelog: 'CHANGELOG.md',
-      driftLog: 'DRIFT-LOG.md',
-    },
-    validators: {
-      structure: true,
-      docsSync: true,
-      drift: false,
-      changelog: true,
-      architecture: false,
-      testSpec: false,
-      security: false,
-      environment: false,
-      freshness: false,
-    },
-  },
-  standard: {
-    description: 'Full CDD — all 5 canonical docs. For team projects.',
-    // Uses the defaults — no overrides needed
-  },
-  enterprise: {
-    description: 'Strict CDD — all docs, all validators, freshness enforced. For regulated/enterprise projects.',
-    validators: {
-      structure: true,
-      docsSync: true,
-      drift: true,
-      changelog: true,
-      architecture: true,
-      testSpec: true,
-      security: true,
-      environment: true,
-      freshness: true,
-    },
-  },
-};
+// ── Shared constants (imported to break circular dependencies) ──────────
+import { c, PROFILES } from './shared.mjs';
+export { c, PROFILES };
 
 // ── Config Loading ─────────────────────────────────────────────────────────
 export function loadConfig(projectDir) {
@@ -195,8 +138,7 @@ export function loadConfig(projectDir) {
   return defaults;
 }
 
-// Export profiles for use by other commands (init --profile)
-export { PROFILES };
+// PROFILES is exported from shared.mjs (re-exported at line 43)
 
 /**
  * Auto-detect project type from package.json and file structure.
@@ -273,22 +215,31 @@ function printHelp() {
   console.log(`${c.bold}Usage:${c.reset}
   docguard <command> [options]
 
-${c.bold}Commands:${c.reset}
-  ${c.green}audit${c.reset}      Scan project, report what CDD docs exist or are missing
-  ${c.green}init${c.reset}       Initialize CDD documentation from templates
-  ${c.green}guard${c.reset}      Validate project against its canonical documentation
-  ${c.green}score${c.reset}      Calculate CDD maturity score (0-100)
-  ${c.green}diagnose${c.reset}   AI orchestrator — chains guard→fix in one command
-  ${c.green}diff${c.reset}       Show gaps between canonical docs and code
-  ${c.green}agents${c.reset}     Generate agent-specific config files from AGENTS.md
+${c.bold}Getting Started:${c.reset}
+  ${c.green}init${c.reset}       Initialize CDD docs (interactive setup)
   ${c.green}generate${c.reset}   Reverse-engineer canonical docs from existing code
-  ${c.green}hooks${c.reset}      Install git hooks (pre-commit, pre-push, commit-msg)
+
+${c.bold}Enforcement:${c.reset}
+  ${c.green}guard${c.reset}      Validate project against canonical docs (51+ checks)
+  ${c.green}diagnose${c.reset}   AI orchestrator — guard → fix in one command
+
+${c.bold}Analysis:${c.reset}
+  ${c.green}score${c.reset}      CDD maturity score (0-100)
+  ${c.green}trace${c.reset}      Requirements traceability matrix
+  ${c.green}diff${c.reset}       Show gaps between docs and code (detailed view)
+
+${c.bold}CI/CD & Automation:${c.reset}
+  ${c.green}ci${c.reset}         Pipeline gate (guard + score, exit codes)
+  ${c.green}hooks${c.reset}      Install/manage git hooks
+  ${c.green}watch${c.reset}      Watch for changes, re-run guard
+
+${c.bold}Utilities:${c.reset}
+  ${c.green}fix${c.reset}        Generate AI fix instructions for specific docs
+  ${c.green}agents${c.reset}     Generate agent config files (AGENTS.md, CLAUDE.md)
   ${c.green}badge${c.reset}      Generate CDD score badges for README
-  ${c.green}ci${c.reset}         Single command for CI/CD pipelines (guard + score)
-  ${c.green}fix${c.reset}        Find issues and generate AI fix instructions
-  ${c.green}watch${c.reset}      Watch for file changes and re-run guard automatically
-  ${c.green}publish${c.reset}    Scaffold external docs (Mintlify, Docusaurus)
-  ${c.green}trace${c.reset}      Generate requirements traceability matrix
+
+${c.bold}Experimental:${c.reset}
+  ${c.dim}publish${c.reset}    Scaffold external doc sites (Mintlify)
 
 ${c.bold}Options:${c.reset}
   --dir <path>    Project directory (default: current directory)
@@ -305,7 +256,6 @@ ${c.bold}Options:${c.reset}
   --auto          Auto-fix what's possible (used with fix command)
   --doc <name>    Generate AI prompt for specific doc (architecture, security, etc.)
   --profile <p>   Compliance profile: starter, standard, enterprise (init command)
-  --platform <p>  Doc platform: mintlify (publish command)
   --tax           Show estimated documentation maintenance cost (with score)
   --help          Show this help message
   --version       Show version
@@ -319,11 +269,11 @@ ${c.bold}Examples:${c.reset}
   ${c.dim}# AI auto-diagnose and fix${c.reset}
   docguard diagnose
 
-  ${c.dim}# Quick start for a side project${c.reset}
-  docguard init --profile starter
-
-  ${c.dim}# Full CDD init (default)${c.reset}
+  ${c.dim}# Interactive setup (asks which docs you need)${c.reset}
   docguard init
+
+  ${c.dim}# Quick start for a side project${c.reset}
+  docguard init --profile starter --skip-prompts
 
   ${c.dim}# See documentation tax estimate${c.reset}
   docguard score --tax
@@ -339,7 +289,7 @@ ${c.bold}Learn more:${c.reset}
 }
 
 // ── Main ───────────────────────────────────────────────────────────────────
-function main() {
+async function main() {
   const args = process.argv.slice(2);
   const command = args[0];
 
@@ -425,10 +375,11 @@ function main() {
 
   switch (command) {
     case 'audit':
-      runAudit(projectDir, config, flags);
+      // audit is an alias for guard — guard does everything the old audit did + 50 more checks
+      runGuard(projectDir, config, flags);
       break;
     case 'init':
-      runInit(projectDir, config, flags);
+      await runInit(projectDir, config, flags);
       break;
     case 'guard':
       runGuard(projectDir, config, flags);

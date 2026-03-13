@@ -5,7 +5,7 @@
 
 import { existsSync, writeFileSync, mkdirSync, chmodSync, readFileSync, unlinkSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { c } from '../docguard.mjs';
+import { c } from '../shared.mjs';
 
 const HOOKS = {
   'pre-commit': {

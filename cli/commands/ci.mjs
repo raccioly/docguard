@@ -8,7 +8,7 @@
  *   2 = Guard warnings only
  */
 
-import { c } from '../docguard.mjs';
+import { c } from '../shared.mjs';
 import { runGuardInternal } from './guard.mjs';
 import { runScoreInternal } from './score.mjs';
 

@@ -7,7 +7,7 @@
 
 import { existsSync, readFileSync, writeFileSync, readdirSync, statSync, mkdirSync } from 'node:fs';
 import { resolve, join, extname, basename, relative, dirname } from 'node:path';
-import { c } from '../docguard.mjs';
+import { c } from '../shared.mjs';
 import { detectDocTools } from '../scanners/doc-tools.mjs';
 import { scanRoutesDeep } from '../scanners/routes.mjs';
 import { scanSchemasDeep, generateERDiagram } from '../scanners/schemas.mjs';

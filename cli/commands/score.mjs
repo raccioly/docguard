@@ -6,7 +6,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, extname } from 'node:path';
 import { execSync } from 'node:child_process';
-import { c } from '../docguard.mjs';
+import { c } from '../shared.mjs';
 
 const WEIGHTS = {
   structure: 25,     // Required files exist
@@ -23,7 +23,7 @@ export function runScore(projectDir, config, flags) {
   console.log(`${c.bold}📊 DocGuard Score — ${config.projectName}${c.reset}`);
   console.log(`${c.dim}   Directory: ${projectDir}${c.reset}\n`);
 
-  const { scores, totalScore, grade } = calcAllScores(projectDir, config);
+  const { scores, totalScore, grade, details } = calcAllScores(projectDir, config);
 
   // ── Display Results ──
   if (flags.format === 'json') {
@@ -80,7 +80,7 @@ export function runScore(projectDir, config, flags) {
   if (weakest.length > 0) {
     console.log(`  ${c.bold}Top improvements:${c.reset}`);
     for (const [cat, score] of weakest) {
-      const suggestion = getSuggestion(cat, score);
+      const suggestion = getSuggestion(cat, score, details);
       console.log(`  ${c.yellow}→ ${cat}${c.reset}: ${suggestion}`);
     }
     console.log('');
@@ -130,6 +130,11 @@ export function runScore(projectDir, config, flags) {
     console.log(`  ${c.dim}Quality labels: HIGH (≥90%), MEDIUM (50-89%), LOW (<50%)${c.reset}`);
     console.log(`  ${c.dim}Methodology: CJE multi-signal composite (Lopez et al., TRACE, IEEE TMLCN 2026)${c.reset}\n`);
   }
+
+  // Badge snippet
+  const bColor = totalScore >= 90 ? 'brightgreen' : totalScore >= 80 ? 'green' : totalScore >= 70 ? 'yellowgreen' : totalScore >= 60 ? 'yellow' : totalScore >= 50 ? 'orange' : 'red';
+  const badgeUrl = `https://img.shields.io/badge/CDD_Score-${totalScore}%2F100_(${grade})-${bColor}`;
+  console.log(`  ${c.dim}📎 Badge: ![CDD Score](${badgeUrl})${c.reset}\n`);
 }
 
 /**
@@ -143,8 +148,12 @@ export function runScoreInternal(projectDir, config) {
 
 function calcAllScores(projectDir, config) {
   const scores = {};
+  const details = {}; // Per-category failure details for actionable suggestions
+
   scores.structure = calcStructureScore(projectDir, config);
-  scores.docQuality = calcDocQualityScore(projectDir, config);
+  const dqResult = calcDocQualityScore(projectDir, config);
+  scores.docQuality = dqResult.score;
+  details.docQuality = dqResult.failures;
   scores.testing = calcTestingScore(projectDir, config);
   scores.security = calcSecurityScore(projectDir, config);
   scores.environment = calcEnvironmentScore(projectDir, config);
@@ -158,7 +167,7 @@ function calcAllScores(projectDir, config) {
   }
   totalScore = Math.round(totalScore);
 
-  return { scores, totalScore, grade: getGrade(totalScore) };
+  return { scores, totalScore, grade: getGrade(totalScore), details };
 }
 
 // ── Scoring Functions ──────────────────────────────────────────────────────
@@ -196,32 +205,42 @@ function calcDocQualityScore(dir, config) {
 
   let found = 0;
   let total = 0;
+  const failures = []; // Track specific failures for actionable suggestions
 
   for (const [file, sections] of Object.entries(checks)) {
     const fullPath = resolve(dir, file);
-    if (!existsSync(fullPath)) continue;
+    if (!existsSync(fullPath)) {
+      failures.push({ file, issue: 'file missing' });
+      continue;
+    }
 
     const content = readFileSync(fullPath, 'utf-8');
+    const docName = file.replace('docs-canonical/', '').replace('.md', '').toLowerCase();
 
     for (const section of sections) {
       total++;
-      if (content.includes(section)) found++;
+      if (content.includes(section)) {
+        found++;
+      } else {
+        failures.push({ file, issue: `missing section: ${section}`, fixCmd: `docguard fix --doc ${docName}` });
+      }
     }
 
-    // Bonus: check if doc has docguard metadata
-    total++;
-    if (content.includes('docguard:version')) found++;
-
-    // Bonus: check if doc has more than just template placeholders
+    // Check if doc has more than just template placeholders
     total++;
     const lines = content.split('\n').filter(l => l.trim() && !l.startsWith('#') && !l.startsWith('|') && !l.startsWith('>') && !l.startsWith('<!--'));
-    if (lines.length > 5) found++;
+    if (lines.length > 5) {
+      found++;
+    } else {
+      failures.push({ file, issue: `thin content (${lines.length} lines — need >5)`, fixCmd: `docguard fix --doc ${docName}` });
+    }
   }
 
-  return total === 0 ? 0 : Math.round((found / total) * 100);
+  const score = total === 0 ? 0 : Math.round((found / total) * 100);
+  return { score, failures };
 }
 
-function calcTestingScore(dir) {
+function calcTestingScore(dir, config) {
   let score = 0;
 
   // Check test directory exists
@@ -232,10 +251,28 @@ function calcTestingScore(dir) {
   // Check test spec exists
   if (existsSync(resolve(dir, 'docs-canonical/TEST-SPEC.md'))) score += 30;
 
-  // Check for test config files
+  // Check for test config files OR built-in test runner
   const testConfigs = ['jest.config.js', 'jest.config.ts', 'vitest.config.ts', 'vitest.config.js', 'pytest.ini', 'setup.cfg', '.mocharc.yml'];
   const hasTestConfig = testConfigs.some(f => existsSync(resolve(dir, f)));
-  if (hasTestConfig) score += 15;
+
+  if (hasTestConfig) {
+    score += 15;
+  } else {
+    // Check if using node:test (no config needed) — look in package.json scripts
+    const ptc = config.projectTypeConfig || {};
+    const pkgPath = resolve(dir, 'package.json');
+    if (ptc.testFramework === 'node:test') {
+      score += 15; // Config says node:test — no config file needed
+    } else if (existsSync(pkgPath)) {
+      try {
+        const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
+        const testScript = pkg.scripts?.test || '';
+        if (testScript.includes('node --test') || testScript.includes('node:test')) {
+          score += 15; // Using built-in test runner
+        }
+      } catch { /* skip */ }
+    }
+  }
 
   // Check for CI test step
   const ciFiles = ['.github/workflows/ci.yml', '.github/workflows/test.yml'];
@@ -245,8 +282,9 @@ function calcTestingScore(dir) {
   return Math.min(100, score);
 }
 
-function calcSecurityScore(dir) {
+function calcSecurityScore(dir, config) {
   let score = 0;
+  const ptc = config.projectTypeConfig || {};
 
   // SECURITY.md exists
   if (existsSync(resolve(dir, 'docs-canonical/SECURITY.md'))) score += 30;
@@ -262,17 +300,28 @@ function calcSecurityScore(dir) {
   // No .env file committed (check if .env exists but .gitignore covers it)
   if (!existsSync(resolve(dir, '.env')) || existsSync(gitignorePath)) score += 15;
 
-  // .env.example exists (safe template)
-  if (existsSync(resolve(dir, '.env.example'))) score += 15;
+  // .env.example exists (safe template) — only check if project needs env vars
+  if (ptc.needsEnvExample === false) {
+    score += 15; // Full marks — project doesn't need env vars
+  } else if (existsSync(resolve(dir, '.env.example'))) {
+    score += 15;
+  }
 
   return Math.min(100, score);
 }
 
-function calcEnvironmentScore(dir) {
+function calcEnvironmentScore(dir, config) {
   let score = 0;
+  const ptc = config.projectTypeConfig || {};
 
   if (existsSync(resolve(dir, 'docs-canonical/ENVIRONMENT.md'))) score += 40;
-  if (existsSync(resolve(dir, '.env.example'))) score += 30;
+
+  // .env.example — only check if project needs env vars
+  if (ptc.needsEnvExample === false) {
+    score += 30; // Full marks — project doesn't need env vars
+  } else if (existsSync(resolve(dir, '.env.example'))) {
+    score += 30;
+  }
 
   // Check for setup documentation
   const readmePath = resolve(dir, 'README.md');
@@ -352,16 +401,31 @@ function getGrade(score) {
   return 'F';
 }
 
-function getSuggestion(category, score) {
+function getSuggestion(category, score, details) {
+  // Dynamic, specific suggestions based on actual failures
+  if (category === 'docQuality' && details?.docQuality?.length > 0) {
+    const failures = details.docQuality;
+    // Group by doc
+    const byDoc = {};
+    for (const f of failures) {
+      const doc = f.file.replace('docs-canonical/', '');
+      if (!byDoc[doc]) byDoc[doc] = [];
+      byDoc[doc].push(f.issue);
+    }
+    const parts = Object.entries(byDoc).map(([doc, issues]) => `${doc}: ${issues.join(', ')}`);
+    const fixCmd = failures.find(f => f.fixCmd)?.fixCmd || 'docguard fix';
+    return `${parts.join(' | ')} → Run \`${fixCmd}\``;
+  }
+
   const suggestions = {
     structure: 'Run `docguard init` to create missing documentation',
-    docQuality: 'Fill in template sections — replace placeholders with real content',
+    docQuality: 'Run `docguard fix` to get AI prompts for each doc that needs content',
     testing: 'Add tests/ directory and configure TEST-SPEC.md',
-    security: 'Create SECURITY.md and add .env to .gitignore',
-    environment: 'Document env variables and create .env.example',
+    security: 'Create SECURITY.md and add .env to .gitignore → Run `docguard fix --doc security`',
+    environment: 'Document env variables and create .env.example → Run `docguard fix --doc environment`',
     drift: 'Create DRIFT-LOG.md and log any code deviations',
     changelog: 'Maintain CHANGELOG.md with [Unreleased] section',
-    architecture: 'Add layer boundaries and Mermaid diagrams to ARCHITECTURE.md',
+    architecture: 'Add layer boundaries and Mermaid diagrams → Run `docguard fix --doc architecture`',
   };
   return suggestions[category] || 'Review and improve this area';
 }

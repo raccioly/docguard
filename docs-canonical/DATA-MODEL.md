@@ -13,9 +13,9 @@
 
 ---
 
-## Overview
+## Entities
 
-DocGuard has **no database**. It is a stateless CLI tool that reads project files and produces output. The "data model" consists of configuration files it reads and the document formats it validates.
+DocGuard has **no database**. It is a stateless CLI tool that reads project files and produces output. The "data model" consists of the configuration schemas, validator output formats, and document metadata structures documented below. All data is file-system based — DocGuard reads `.docguard.json`, scans the project directory, and validates canonical documents against the codebase.
 
 ## Configuration: `.docguard.json`
 

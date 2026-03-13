@@ -20,8 +20,8 @@ const run = (args, cwd) => execSync(`node ${CLI} ${args}`, {
 describe('docguard --help', () => {
   it('shows help text', () => {
     const output = run('--help');
-    assert.match(output, /Commands:/);
-    assert.match(output, /audit/);
+    assert.match(output, /Getting Started:/);
+    assert.match(output, /Enforcement:/);
     assert.match(output, /guard/);
     assert.match(output, /score/);
     assert.match(output, /diff/);
@@ -38,19 +38,34 @@ describe('docguard --help', () => {
 
 describe('docguard audit', () => {
   it('runs on DocGuard itself', () => {
-    const output = run('audit');
-    assert.match(output, /DocGuard Audit/);
-    assert.match(output, /Canonical Documentation/);
+    try {
+      const output = run('audit');
+      assert.match(output, /DocGuard Guard/);
+    } catch (e) {
+      // audit aliases to guard, which may exit with code 2 for warnings
+      const output = e.stdout || '';
+      assert.match(output, /DocGuard Guard/);
+    }
   });
 
-  it('shows 100% for DocGuard project', () => {
-    const output = run('audit');
-    assert.match(output, /100%/);
+  it('runs validators like guard does', () => {
+    try {
+      const output = run('audit');
+      assert.match(output, /Structure/);
+    } catch (e) {
+      const output = e.stdout || '';
+      assert.match(output, /Structure/);
+    }
   });
 
-  it('shows all categories with --verbose', () => {
-    const output = run('audit --verbose');
-    assert.match(output, /Implementation Documentation/);
+  it('shows validator results with --verbose', () => {
+    try {
+      const output = run('audit --verbose');
+      assert.match(output, /Structure/);
+    } catch (e) {
+      const output = e.stdout || '';
+      assert.match(output, /Structure/);
+    }
   });
 });
 
@@ -70,6 +85,31 @@ describe('docguard score', () => {
     assert.ok(typeof json.score === 'number');
     assert.ok(typeof json.grade === 'string');
     assert.ok(json.score >= 0 && json.score <= 100);
+  });
+
+  it('respects projectTypeConfig — CLI projects not penalized for missing .env.example', () => {
+    const output = run('score --format json');
+    const jsonStart = output.indexOf('{');
+    const json = JSON.parse(output.slice(jsonStart));
+    // DocGuard is a CLI with needsEnvExample: false — env/security should get full marks
+    assert.ok(json.categories.environment.score === 100,
+      `environment should be 100 for CLI (got ${json.categories.environment.score})`);
+    assert.ok(json.categories.security.score === 100,
+      `security should be 100 for CLI (got ${json.categories.security.score})`);
+  });
+
+  it('gives full testing score for node:test projects', () => {
+    const output = run('score --format json');
+    const jsonStart = output.indexOf('{');
+    const json = JSON.parse(output.slice(jsonStart));
+    // DocGuard uses node:test — should get full testing marks
+    assert.ok(json.categories.testing.score === 100,
+      `testing should be 100 for node:test project (got ${json.categories.testing.score})`);
+  });
+
+  it('shows badge snippet', () => {
+    const output = run('score');
+    assert.match(output, /Badge:.*CDD_Score/);
   });
 });
 
@@ -92,7 +132,7 @@ describe('docguard init', () => {
   it('creates docs in a temp directory', () => {
     const tmpDir = mkdtempSync(join(tmpdir(), 'sg-test-'));
     try {
-      const output = run(`init --dir ${tmpDir}`);
+      const output = run(`init --dir ${tmpDir} --force`);
       assert.match(output, /Created/);
       assert.ok(existsSync(join(tmpDir, 'docs-canonical', 'ARCHITECTURE.md')));
       assert.ok(existsSync(join(tmpDir, 'AGENTS.md')));
@@ -202,7 +242,7 @@ describe('init auto-detection', () => {
         bin: { 'test-cli': './cli.js' }
       }));
 
-      run(`init --dir ${tmpDir}`);
+      run(`init --dir ${tmpDir} --force`);
 
       const config = JSON.parse(readFileSync(
         join(tmpDir, '.docguard.json'), 'utf-8'
@@ -217,10 +257,10 @@ describe('init auto-detection', () => {
 });
 
 describe('docguard help completeness', () => {
-  it('lists all 12 commands', () => {
+  it('lists all major commands', () => {
     const output = run('--help');
-    const expectedCommands = ['audit', 'init', 'guard', 'score', 'diff',
-      'agents', 'generate', 'hooks', 'badge', 'ci', 'fix', 'watch'];
+    const expectedCommands = ['init', 'guard', 'score', 'diff',
+      'agents', 'generate', 'hooks', 'badge', 'ci', 'fix', 'watch', 'diagnose'];
     for (const cmd of expectedCommands) {
       assert.match(output, new RegExp(cmd), `Help should list '${cmd}' command`);
     }
@@ -240,7 +280,7 @@ describe('compliance profiles', () => {
   it('starter profile creates minimal files', () => {
     const tmpDir = mkdtempSync(join(tmpdir(), 'sg-starter-'));
     try {
-      run(`init --dir ${tmpDir} --profile starter`);
+      run(`init --dir ${tmpDir} --profile starter --force`);
 
       // Should create ARCHITECTURE.md but NOT DATA-MODEL.md
       assert.ok(existsSync(join(tmpDir, 'docs-canonical', 'ARCHITECTURE.md')));

@@ -53,6 +53,25 @@ The architecture follows a strict 3-layer model where each layer can only import
 
 **Key Rule**: Validators are pure functions — they receive `projectDir` and `config`, and return results. They never import from commands or the CLI entry point.
 
+```mermaid
+graph TD
+    A["CLI Entry Point<br/>docguard.mjs"] --> B["Shared Constants<br/>shared.mjs"]
+    A --> C["Commands<br/>cli/commands/*.mjs"]
+    C --> B
+    C --> D["Validators<br/>cli/validators/*.mjs"]
+    D --> E["Node.js Built-ins<br/>fs, path, child_process"]
+    C --> E
+    A --> F[".docguard.json<br/>Project Config"]
+    D --> G["docs-canonical/<br/>Canonical Docs"]
+
+    style A fill:#4a9eff,color:#fff
+    style B fill:#6c757d,color:#fff
+    style C fill:#28a745,color:#fff
+    style D fill:#ffc107,color:#000
+    style F fill:#17a2b8,color:#fff
+    style G fill:#e83e8c,color:#fff
+```
+
 ## Data Flow
 
 ### Request Lifecycle: `docguard guard`
@@ -116,6 +135,25 @@ docguard guard → validates the newly written document
 | **Validators are independent** | Each validator is a self-contained module that can be enabled/disabled. Adding a new validator never breaks existing ones. |
 | **AI as author, CLI as orchestrator** | The CLI detects problems and generates structured prompts. It never writes documentation content — that's the AI's job. |
 | **Exit codes for CI** | `0` (pass), `1` (fail), `2` (warn) enables `docguard ci` to gate deployments. |
+
+---
+
+## External Dependencies
+
+DocGuard has **zero runtime dependencies**. All functionality uses Node.js built-in modules:
+
+| Module | Usage |
+|--------|-------|
+| `node:fs` | File system operations (read docs, check existence) |
+| `node:path` | Path resolution and manipulation |
+| `node:child_process` | Git operations (freshness checks) |
+| `node:url` | ES Module URL resolution |
+| `node:readline` | Interactive prompts (init command) |
+| `node:test` | Built-in test framework |
+| `node:assert` | Test assertions |
+| `node:os` | Temp directory for tests |
+
+**Dev dependencies**: None. Tests use `node:test` (built-in since Node.js 18).
 
 ---
 

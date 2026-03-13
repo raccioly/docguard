@@ -13,7 +13,7 @@
  *   --format prompt  Full AI-ready prompt (all issues combined)
  */
 
-import { c } from '../docguard.mjs';
+import { c } from '../shared.mjs';
 import { runGuardInternal } from './guard.mjs';
 import { runScoreInternal } from './score.mjs';
 import { existsSync, readFileSync, mkdirSync } from 'node:fs';

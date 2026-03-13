@@ -1,11 +1,13 @@
 /**
  * Init Command — Initialize CDD documentation from templates
+ * Interactive setup: asks which docs the user needs + suggests hooks.
  */
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync } from 'node:fs';
-import { resolve, dirname, join } from 'node:path';
+import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { c, PROFILES } from '../docguard.mjs';
+import { createInterface } from 'node:readline';
+import { c, PROFILES } from '../shared.mjs';
 
 function detectProjectType(dir) {
   const pkgPath = resolve(dir, 'package.json');
@@ -29,7 +31,21 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const TEMPLATES_DIR = resolve(__dirname, '../../templates');
 
-export function runInit(projectDir, config, flags) {
+// ── Readline helper ──────────────────────────────────────────────────────
+
+function askQuestion(prompt) {
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  return new Promise(res => {
+    rl.question(prompt, answer => {
+      rl.close();
+      res(answer);
+    });
+  });
+}
+
+// ── Init Command ─────────────────────────────────────────────────────────
+
+export async function runInit(projectDir, config, flags) {
   const profileName = flags.profile || 'standard';
   const profile = PROFILES[profileName];
 
@@ -43,29 +59,63 @@ export function runInit(projectDir, config, flags) {
   console.log(`${c.dim}   Directory: ${projectDir}${c.reset}`);
   console.log(`${c.dim}   Profile:   ${profileName} — ${profile.description}${c.reset}\n`);
 
+  // Detect project type
+  const detectedType = detectProjectType(projectDir);
+  console.log(`  ${c.dim}Auto-detected project type: ${c.cyan}${detectedType}${c.reset}\n`);
+
+  // ── Doc catalog ────────────────────────────────────────────────────────
+  const allDocs = [
+    { key: 'ARCHITECTURE', file: 'docs-canonical/ARCHITECTURE.md', template: 'ARCHITECTURE.md.template', desc: 'System architecture, tech stack, layer boundaries', defaultYes: true },
+    { key: 'DATA-MODEL', file: 'docs-canonical/DATA-MODEL.md', template: 'DATA-MODEL.md.template', desc: 'Database schemas, entities, relationships', defaultYes: ['webapp', 'api'].includes(detectedType) },
+    { key: 'SECURITY', file: 'docs-canonical/SECURITY.md', template: 'SECURITY.md.template', desc: 'Auth, secrets, security controls', defaultYes: ['webapp', 'api'].includes(detectedType) },
+    { key: 'TEST-SPEC', file: 'docs-canonical/TEST-SPEC.md', template: 'TEST-SPEC.md.template', desc: 'Test strategy, coverage requirements', defaultYes: true },
+    { key: 'ENVIRONMENT', file: 'docs-canonical/ENVIRONMENT.md', template: 'ENVIRONMENT.md.template', desc: 'Environment variables, deployment config', defaultYes: ['webapp', 'api'].includes(detectedType) },
+  ];
+
+  let selectedDocs;
+
+  if (flags.skipPrompts || flags.force) {
+    // Non-interactive — use profile defaults
+    const profileCanonical = profile.requiredFiles?.canonical || allDocs.map(d => d.file);
+    selectedDocs = allDocs.filter(d => profileCanonical.includes(d.file));
+    console.log(`  ${c.dim}Non-interactive mode — using ${profileName} profile defaults${c.reset}\n`);
+  } else {
+    // Interactive — ask about each doc
+    console.log(`  ${c.bold}Which canonical docs does your project need?${c.reset}`);
+    console.log(`  ${c.dim}(press Enter for default, type y or n)${c.reset}\n`);
+
+    selectedDocs = [];
+    for (const doc of allDocs) {
+      const defaultLabel = doc.defaultYes ? 'Y/n' : 'y/N';
+      const answer = await askQuestion(`    ${doc.key} — ${doc.desc} [${defaultLabel}]: `);
+      const trimmed = answer.trim().toLowerCase();
+
+      const include = doc.defaultYes
+        ? (trimmed === '' || trimmed === 'y' || trimmed === 'yes')
+        : (trimmed === 'y' || trimmed === 'yes');
+
+      if (include) {
+        selectedDocs.push(doc);
+      }
+    }
+    console.log('');
+  }
+
+  // ── Create selected doc files ──────────────────────────────────────────
   const created = [];
   const skipped = [];
 
-  // Map template files to their destinations
-  const allMappings = [
-    { template: 'ARCHITECTURE.md.template', dest: 'docs-canonical/ARCHITECTURE.md' },
-    { template: 'DATA-MODEL.md.template', dest: 'docs-canonical/DATA-MODEL.md' },
-    { template: 'SECURITY.md.template', dest: 'docs-canonical/SECURITY.md' },
-    { template: 'TEST-SPEC.md.template', dest: 'docs-canonical/TEST-SPEC.md' },
-    { template: 'ENVIRONMENT.md.template', dest: 'docs-canonical/ENVIRONMENT.md' },
+  // Always create tracking files
+  const alwaysCreate = [
     { template: 'AGENTS.md.template', dest: 'AGENTS.md' },
     { template: 'CHANGELOG.md.template', dest: 'CHANGELOG.md' },
     { template: 'DRIFT-LOG.md.template', dest: 'DRIFT-LOG.md' },
   ];
 
-  // Filter based on profile — starter only gets required files
-  const profileRequiredFiles = profile.requiredFiles
-    ? new Set([...profile.requiredFiles.canonical, profile.requiredFiles.changelog, profile.requiredFiles.driftLog, ...profile.requiredFiles.agentFile])
-    : null;
-
-  const fileMappings = profileRequiredFiles
-    ? allMappings.filter(m => profileRequiredFiles.has(m.dest))
-    : allMappings;
+  const fileMappings = [
+    ...selectedDocs.map(d => ({ template: d.template, dest: d.file })),
+    ...alwaysCreate,
+  ];
 
   for (const mapping of fileMappings) {
     const destPath = resolve(projectDir, mapping.dest);
@@ -77,35 +127,26 @@ export function runInit(projectDir, config, flags) {
       continue;
     }
 
-    // Ensure directory exists
     const destDir = dirname(destPath);
     if (!existsSync(destDir)) {
       mkdirSync(destDir, { recursive: true });
     }
 
-    // Read template and write
     if (existsSync(templatePath)) {
       const content = readFileSync(templatePath, 'utf-8');
-      // Replace template date placeholder with today's date
       const today = new Date().toISOString().split('T')[0];
       const processed = content.replace(/YYYY-MM-DD/g, today);
       writeFileSync(destPath, processed, 'utf-8');
       created.push(mapping.dest);
       console.log(`  ${c.green}✅${c.reset} Created: ${c.cyan}${mapping.dest}${c.reset}`);
     } else {
-      console.log(
-        `  ${c.red}❌${c.reset} Template not found: ${mapping.template}`
-      );
+      console.log(`  ${c.red}❌${c.reset} Template not found: ${mapping.template}`);
     }
   }
 
-  // Create .docguard.json if it doesn't exist — auto-detect project type
+  // ── Create .docguard.json ──────────────────────────────────────────────
   const configPath = resolve(projectDir, '.docguard.json');
   if (!existsSync(configPath)) {
-    // Detect project type from package.json
-    const detectedType = detectProjectType(projectDir);
-
-    // Get appropriate defaults for this project type
     const typeDefaults = {
       cli:     { needsEnvVars: false, needsEnvExample: false, needsE2E: false, needsDatabase: false },
       library: { needsEnvVars: false, needsEnvExample: false, needsE2E: false, needsDatabase: false },
@@ -122,6 +163,9 @@ export function runInit(projectDir, config, flags) {
       profile: profileName,
       projectType: detectedType,
       projectTypeConfig: ptc,
+      requiredFiles: {
+        canonical: selectedDocs.map(d => d.file),
+      },
       validators: profile.validators || {
         structure: true,
         docsSync: true,
@@ -137,18 +181,17 @@ export function runInit(projectDir, config, flags) {
 
     writeFileSync(configPath, JSON.stringify(defaultConfig, null, 2) + '\n', 'utf-8');
     created.push('.docguard.json');
-    console.log(`  ${c.green}✅${c.reset} Created: ${c.cyan}.docguard.json${c.reset} ${c.dim}(auto-detected: ${detectedType})${c.reset}`);
+    console.log(`  ${c.green}✅${c.reset} Created: ${c.cyan}.docguard.json${c.reset} ${c.dim}(${selectedDocs.length} docs selected, type: ${detectedType})${c.reset}`);
   } else {
     skipped.push('.docguard.json');
     console.log(`  ${c.yellow}⏭️${c.reset}  .docguard.json ${c.dim}(already exists)${c.reset}`);
   }
 
-  // Install slash commands for AI agents — detect which agents are in use
+  // ── Slash commands for AI agents ───────────────────────────────────────
   const commandsSourceDir = resolve(TEMPLATES_DIR, 'commands');
   if (existsSync(commandsSourceDir)) {
     const commandFiles = readdirSync(commandsSourceDir).filter(f => f.endsWith('.md'));
 
-    // Detect which AI agent directories exist in the project
     const agentDirs = [
       { name: 'GitHub Copilot', path: '.github/commands' },
       { name: 'Cursor', path: '.cursor/rules' },
@@ -157,12 +200,10 @@ export function runInit(projectDir, config, flags) {
       { name: 'Antigravity', path: '.agents/workflows' },
     ];
 
-    // Find which agent dirs already exist in the project
     const detected = agentDirs.filter(a =>
-      existsSync(resolve(projectDir, a.path.split('/')[0])) // check parent dir exists
+      existsSync(resolve(projectDir, a.path.split('/')[0]))
     );
 
-    // If none detected, default to .github/commands (most universal)
     const targets = detected.length > 0
       ? detected
       : [{ name: 'GitHub (default)', path: '.github/commands' }];
@@ -203,47 +244,44 @@ export function runInit(projectDir, config, flags) {
     }
   }
 
-  // Summary
+  // ── Summary ────────────────────────────────────────────────────────────
   console.log(`\n${c.bold}  ─────────────────────────────────────${c.reset}`);
   console.log(`  ${c.green}Created:${c.reset} ${created.length} files`);
   if (skipped.length > 0) {
     console.log(`  ${c.yellow}Skipped:${c.reset} ${skipped.length} files (already exist)`);
   }
 
-  if (flags.skipPrompts) {
-    // Simple instructions, no AI prompts
-    console.log(`\n  ${c.bold}Next steps:${c.reset}`);
-    console.log(`  ${c.dim}Run${c.reset} ${c.cyan}docguard diagnose${c.reset} ${c.dim}to get AI prompts for filling docs.${c.reset}`);
-    console.log(`  ${c.dim}Then verify:${c.reset} ${c.cyan}docguard guard${c.reset}\n`);
-  } else {
-    // Auto-populate: output AI research prompts for each created canonical doc
-    const createdDocs = created.filter(f => f.startsWith('docs-canonical/'));
+  // ── Hooks suggestion ──────────────────────────────────────────────────
+  console.log(`\n  ${c.bold}💡 Automation:${c.reset}`);
+  console.log(`  ${c.dim}Auto-guard on commit:${c.reset}  ${c.cyan}docguard hooks --type pre-commit${c.reset}`);
+  console.log(`  ${c.dim}Auto-guard on push:${c.reset}   ${c.cyan}docguard hooks --type pre-push${c.reset}`);
 
-    if (createdDocs.length > 0) {
-      console.log(`\n  ${c.bold}🤖 AI Auto-Populate${c.reset}`);
-      console.log(`  ${c.dim}The files above are skeleton templates. Your AI agent should fill them.${c.reset}`);
-      console.log(`  ${c.dim}Run this single command to get a full remediation plan:${c.reset}\n`);
-      console.log(`  ${c.cyan}${c.bold}docguard diagnose${c.reset}\n`);
-      console.log(`  ${c.dim}Or generate prompts for individual docs:${c.reset}`);
+  // ── Next steps ─────────────────────────────────────────────────────────
+  const createdDocs = created.filter(f => f.startsWith('docs-canonical/'));
 
-      const docNameMap = {
-        'docs-canonical/ARCHITECTURE.md': 'architecture',
-        'docs-canonical/DATA-MODEL.md': 'data-model',
-        'docs-canonical/SECURITY.md': 'security',
-        'docs-canonical/TEST-SPEC.md': 'test-spec',
-        'docs-canonical/ENVIRONMENT.md': 'environment',
-      };
+  if (createdDocs.length > 0) {
+    console.log(`\n  ${c.bold}🤖 AI Auto-Populate${c.reset}`);
+    console.log(`  ${c.dim}The files above are skeleton templates. Your AI agent should fill them.${c.reset}`);
+    console.log(`  ${c.dim}Run this single command to get a full remediation plan:${c.reset}\n`);
+    console.log(`  ${c.cyan}${c.bold}docguard diagnose${c.reset}\n`);
+    console.log(`  ${c.dim}Or generate prompts for individual docs:${c.reset}`);
 
-      for (const doc of createdDocs) {
-        const target = docNameMap[doc];
-        if (target) {
-          console.log(`  ${c.cyan}docguard fix --doc ${target}${c.reset}`);
-        }
+    const docNameMap = {
+      'docs-canonical/ARCHITECTURE.md': 'architecture',
+      'docs-canonical/DATA-MODEL.md': 'data-model',
+      'docs-canonical/SECURITY.md': 'security',
+      'docs-canonical/TEST-SPEC.md': 'test-spec',
+      'docs-canonical/ENVIRONMENT.md': 'environment',
+    };
+
+    for (const doc of createdDocs) {
+      const target = docNameMap[doc];
+      if (target) {
+        console.log(`  ${c.cyan}docguard fix --doc ${target}${c.reset}`);
       }
-      console.log(`\n  ${c.dim}Then verify:${c.reset} ${c.cyan}docguard guard${c.reset}\n`);
-    } else {
-      console.log(`\n  ${c.dim}Run${c.reset} ${c.cyan}docguard diagnose${c.reset} ${c.dim}to check for issues.${c.reset}\n`);
     }
+    console.log(`\n  ${c.dim}Then verify:${c.reset} ${c.cyan}docguard guard${c.reset}\n`);
+  } else {
+    console.log(`\n  ${c.dim}Run${c.reset} ${c.cyan}docguard diagnose${c.reset} ${c.dim}to check for issues.${c.reset}\n`);
   }
 }
-
