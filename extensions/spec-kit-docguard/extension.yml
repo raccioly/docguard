@@ -3,8 +3,8 @@ schema_version: "1.0"
 extension:
   id: "docguard"
   name: "DocGuard — CDD Enforcement"
-  version: "0.7.3"
-  description: "Canonical-Driven Development enforcement. Generates, validates, scores, and traces your project documentation against 51 automated checks. Zero dependencies."
+  version: "0.8.0"
+  description: "Canonical-Driven Development enforcement. Generates, validates, scores, and traces your project documentation against 92 automated checks. Zero dependencies."
   author: "Ricardo Accioly"
   repository: "https://github.com/raccioly/docguard"
   license: "MIT"
@@ -23,7 +23,7 @@ provides:
   commands:
     - name: "speckit.docguard.guard"
       file: "commands/guard.md"
-      description: "Validate project against canonical documentation (51 checks)"
+      description: "Validate project against canonical documentation (92 checks)"
       aliases: ["speckit.guard"]
 
     - name: "speckit.docguard.diagnose"
