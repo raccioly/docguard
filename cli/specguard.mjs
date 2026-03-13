@@ -22,6 +22,7 @@ import { runGuard } from './commands/guard.mjs';
 import { runScore } from './commands/score.mjs';
 import { runDiff } from './commands/diff.mjs';
 import { runAgents } from './commands/agents.mjs';
+import { runGenerate } from './commands/generate.mjs';
 
 // ── Colors (ANSI escape codes, zero deps) ──────────────────────────────────
 export const c = {
@@ -122,6 +123,7 @@ ${c.bold}Commands:${c.reset}
   ${c.green}score${c.reset}     Calculate CDD maturity score (0-100)
   ${c.green}diff${c.reset}      Show gaps between canonical docs and code
   ${c.green}agents${c.reset}    Generate agent-specific config files from AGENTS.md
+  ${c.green}generate${c.reset}  Reverse-engineer canonical docs from existing code
 
 ${c.bold}Options:${c.reset}
   --dir <path>    Project directory (default: current directory)
@@ -221,6 +223,10 @@ function main() {
       break;
     case 'agents':
       runAgents(projectDir, config, flags);
+      break;
+    case 'generate':
+    case 'gen':
+      runGenerate(projectDir, config, flags);
       break;
     default:
       console.error(`${c.red}Unknown command: ${command}${c.reset}`);
