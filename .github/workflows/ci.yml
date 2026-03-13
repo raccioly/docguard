@@ -54,8 +54,9 @@ jobs:
           mkdir -p /tmp/docguard-test
           node cli/docguard.mjs init --dir /tmp/docguard-test --force
 
-      - name: Guard after init
-        run: node cli/docguard.mjs guard --dir /tmp/docguard-test
+      - name: Guard after init (exit 2 = warnings OK for empty projects)
+        run: |
+          node cli/docguard.mjs guard --dir /tmp/docguard-test || [ $? -eq 2 ]
 
       - name: Generate in empty dir
         run: |
