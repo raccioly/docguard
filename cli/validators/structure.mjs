@@ -54,18 +54,23 @@ export function validateStructure(projectDir, config) {
  */
 export function validateDocSections(projectDir, config) {
   const results = { name: 'doc-sections', errors: [], warnings: [], passed: 0, total: 0 };
+  const ptc = config.projectTypeConfig || {};
 
   const requiredSections = {
     'docs-canonical/ARCHITECTURE.md': ['## System Overview', '## Component Map', '## Tech Stack'],
-    'docs-canonical/DATA-MODEL.md': ['## Entities'],
+    'docs-canonical/DATA-MODEL.md': ptc.needsDatabase !== false
+      ? ['## Entities']
+      : [], // CLI/library projects don't need entity docs
     'docs-canonical/SECURITY.md': ['## Authentication', '## Secrets Management'],
     'docs-canonical/TEST-SPEC.md': ['## Test Categories', '## Coverage Rules'],
-    'docs-canonical/ENVIRONMENT.md': ['## Environment Variables', '## Setup Steps'],
+    'docs-canonical/ENVIRONMENT.md': ptc.needsEnvVars !== false
+      ? ['## Environment Variables', '## Setup Steps']
+      : ['## Setup Steps'], // Always need setup steps, env vars optional
   };
 
   for (const [file, sections] of Object.entries(requiredSections)) {
     const fullPath = resolve(projectDir, file);
-    if (!existsSync(fullPath)) continue; // Structure validator handles missing files
+    if (!existsSync(fullPath)) continue;
 
     const content = readFileSync(fullPath, 'utf-8');
 

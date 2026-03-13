@@ -1,99 +1,106 @@
 # Contributing to SpecGuard
 
-Thank you for your interest in contributing to SpecGuard! Whether you're a developer, technical writer, or documentation enthusiast — there's a place for you here.
-
----
-
-## Ways to Contribute
-
-### 📝 Documentation
-- Improve `STANDARD.md` with clearer examples
-- Add stack-specific guides (Django, Spring Boot, etc.)
-- Translate documentation to other languages
-
-### 🔧 Code
-- Add new validators
-- Improve existing validators
-- Add framework detection (auto-detect stack in generate mode)
-- Create stack-specific configurations
-
-### 🧪 Testing
-- Test SpecGuard against your own projects
-- Report edge cases and false positives
-- Add automated tests for validators
-
-### 💡 Ideas
-- Open an issue to discuss new features
-- Share how you use CDD in your workflow
-- Suggest integrations with other tools
-
----
+Thank you for your interest in contributing to SpecGuard! This document provides guidelines for contributing.
 
 ## Getting Started
 
-```bash
-# Clone the repo
-git clone https://github.com/raccioly/specguard.git
-cd specguard
-
-# No install needed — zero dependencies!
-
-# Run the CLI
-node cli/specguard.mjs --help
-
-# Test against itself
-node cli/specguard.mjs audit
-node cli/specguard.mjs guard --verbose
-```
-
----
+1. **Fork** the repository
+2. **Clone** your fork: `git clone https://github.com/YOUR_USERNAME/specguard.git`
+3. **Install**: `npm install` (only dev dependencies — SpecGuard itself has zero runtime deps)
+4. **Run tests**: `npm test`
+5. **Run SpecGuard on itself**: `node cli/specguard.mjs guard`
 
 ## Development Workflow
 
-This project follows **Canonical-Driven Development** (we eat our own dog food 🐕):
+SpecGuard follows Canonical-Driven Development (CDD). Before making changes:
 
-1. **Research first** — Check `docs-canonical/` before suggesting changes
-2. **Open an issue** — Describe what you want to change and why
-3. **Fork & branch** — `feature/your-feature` or `fix/your-fix`
-4. **Write code** — Match existing style, add `// DRIFT:` if deviating from docs
-5. **Test** — Run `node cli/specguard.mjs guard` and ensure it passes
-6. **PR** — Reference the issue, describe changes, update CHANGELOG.md
+```bash
+# 1. Check current compliance
+node cli/specguard.mjs guard
 
----
+# 2. Make your changes
+
+# 3. Run tests
+npm test
+
+# 4. Verify docs still pass
+node cli/specguard.mjs guard
+
+# 5. Update CHANGELOG.md with your changes
+```
+
+## Project Structure
+
+```
+cli/
+  specguard.mjs         ← Entry point, config loading, command routing
+  commands/             ← 11 user-facing commands
+  validators/           ← 9 independent validation modules
+templates/              ← CDD document templates + slash commands
+vscode-extension/       ← VS Code extension
+tests/                  ← Integration tests
+docs-canonical/         ← SpecGuard's own CDD documentation
+```
+
+## Architecture Rules
+
+- **Zero dependencies**: SpecGuard has no `node_modules` runtime deps. Keep it that way.
+- **Validators are pure**: Each validator receives `(projectDir, config)` and returns results. No side effects.
+- **Commands don't cross-import**: Commands import from validators, never from other commands.
+- **AI is the author**: The CLI flags problems and generates prompts. It never writes doc content.
+
+## Adding a New Command
+
+1. Create `cli/commands/your-command.mjs` with an exported `runYourCommand(projectDir, config, flags)` function
+2. Import it in `cli/specguard.mjs`
+3. Add it to the help text, command routing switch, and argument parsing
+4. Add tests in `tests/commands.test.mjs`
+5. Update `CHANGELOG.md`
+
+## Adding a New Validator
+
+1. Create `cli/validators/your-validator.mjs`
+2. Import it in `cli/commands/guard.mjs`
+3. Add enable/disable support in `.specguard.json` validators config
+4. Add tests
+5. Update `docs-canonical/ARCHITECTURE.md` with the new validator
+
+## Commit Messages
+
+Follow [Conventional Commits](https://www.conventionalcommits.org/):
+
+```
+feat: add new validator for API docs
+fix: handle missing package.json gracefully
+docs: update ARCHITECTURE.md with new component
+refactor: extract scoring logic into shared function
+test: add edge case tests for score command
+```
+
+## Pull Request Process
+
+1. Ensure `npm test` passes with no failures
+2. Ensure `node cli/specguard.mjs guard` passes
+3. Update `CHANGELOG.md` under `[Unreleased]`
+4. Update relevant docs in `docs-canonical/` if architecture changed
+5. Request review
 
 ## Code Style
 
-- **Zero dependencies** — Don't add npm packages. Use Node.js built-in modules only.
-- **ESM modules** — Use `import/export`, not `require`
-- **Pure functions** — Validators should be pure: take dir + config, return results
-- **ANSI colors** — Use the `c` helper from `specguard.mjs` for terminal colors
+- ES Modules (`import`/`export`) throughout
+- Node.js built-ins only (`node:fs`, `node:path`, `node:child_process`, `node:test`)
+- ANSI colors via the shared `c` object from `specguard.mjs`
+- No TypeScript — plain JavaScript for maximum portability
 
----
+## Reporting Bugs
 
-## Validator Structure
-
-Each validator follows this pattern:
-
-```javascript
-// cli/validators/your-validator.mjs
-
-export function validateYourThing(projectDir, config) {
-  const results = {
-    name: 'your-thing',
-    errors: [],    // Hard failures (exit code 1)
-    warnings: [],  // Soft warnings (exit code 2)
-    passed: 0,
-    total: 0,
-  };
-
-  // Your validation logic here
-
-  return results;
-}
-```
-
----
+Open a GitHub issue with:
+- SpecGuard version (`specguard --version`)
+- Node.js version (`node --version`)
+- OS and version
+- Steps to reproduce
+- Expected vs actual behavior
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the [MIT License](LICENSE).
+By contributing, you agree that your contributions will be licensed under the MIT License.
