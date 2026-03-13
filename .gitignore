@@ -1,6 +1,9 @@
 # Dependencies
 node_modules/
 
+# Internal research (not part of the public package)
+Research/
+
 # Environment files
 .env
 .env.local
