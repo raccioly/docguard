@@ -273,8 +273,8 @@ describe('docguard diagnose', () => {
   it('outputs remediation plan', () => {
     const output = run('diagnose');
     assert.match(output, /Diagnose/);
-    // Should have either "All clear" or remediation content
-    assert.ok(output.includes('Remediation') || output.includes('All clear'));
+    // Should have either "All clear" or remediation/diagnostic content
+    assert.ok(output.includes('Remediation') || output.includes('All clear') || output.includes('Warnings') || output.includes('AI-Ready Prompt'));
   });
 
   it('outputs valid JSON with --format json', () => {

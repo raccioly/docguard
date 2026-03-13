@@ -406,8 +406,8 @@ function generateArchitecture(dir, config, stack, scan, flags, docTools) {
     componentRows.push(`| Storybook | UI component docs | .storybook/ (${docTools.storybook.storyCount || '?'} stories) | |`);
   }
 
-  // Doc tools section
-  const docToolRows = [];
+  // Doc tools section — always include DocGuard since it generated these docs
+  const docToolRows = ['| DocGuard | `.docguard.json` | Active |'];
   if (docTools?._detected?.length > 0) {
     for (const tool of docTools._detected) {
       const info = docTools[tool];

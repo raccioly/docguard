@@ -17,6 +17,7 @@ import { validateSecurity } from '../validators/security.mjs';
 import { validateDocsSync } from '../validators/docs-sync.mjs';
 import { validateArchitecture } from '../validators/architecture.mjs';
 import { validateFreshness } from '../validators/freshness.mjs';
+import { validateTraceability } from '../validators/traceability.mjs';
 
 /**
  * Internal guard — returns structured data, no console output, no process.exit.
@@ -48,6 +49,7 @@ export function runGuardInternal(projectDir, config) {
       }
       return { errors, warnings, passed, total: passed + warnings.length + errors.length };
     }},
+    { key: 'traceability', name: 'Traceability', fn: () => validateTraceability(projectDir, config) },
   ];
 
   for (const { key, name, fn } of validatorMap) {

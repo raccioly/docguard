@@ -53,7 +53,7 @@ const TRACE_MAP = {
   'TEST-SPEC.md': {
     standard: 'ISO/IEC/IEEE 29119-3',
     sourcePatterns: [
-      { label: 'Test files', glob: /\.(test|spec)\.[jt]sx?$/ },
+      { label: 'Test files', glob: /\.(test|spec)\.(mjs|cjs|[jt]sx?)$/ },
       { label: 'Test config', glob: /(jest|vitest|playwright|cypress)\.config/ },
       { label: 'E2E tests', glob: /(e2e|integration)\// },
     ],
