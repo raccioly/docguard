@@ -225,4 +225,46 @@ describe('specguard help completeness', () => {
       assert.match(output, new RegExp(cmd), `Help should list '${cmd}' command`);
     }
   });
+
+  it('shows profile options in help', () => {
+    const output = run('--help');
+    assert.match(output, /starter/);
+    assert.match(output, /standard/);
+    assert.match(output, /enterprise/);
+    assert.match(output, /--profile/);
+    assert.match(output, /--tax/);
+  });
+});
+
+describe('compliance profiles', () => {
+  it('starter profile creates minimal files', () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), 'sg-starter-'));
+    try {
+      run(`init --dir ${tmpDir} --profile starter`);
+
+      // Should create ARCHITECTURE.md but NOT DATA-MODEL.md
+      assert.ok(existsSync(join(tmpDir, 'docs-canonical', 'ARCHITECTURE.md')));
+      assert.ok(!existsSync(join(tmpDir, 'docs-canonical', 'DATA-MODEL.md')));
+      assert.ok(!existsSync(join(tmpDir, 'docs-canonical', 'SECURITY.md')));
+      assert.ok(!existsSync(join(tmpDir, 'docs-canonical', 'TEST-SPEC.md')));
+
+      // Config should have starter profile
+      const config = JSON.parse(readFileSync(join(tmpDir, '.specguard.json'), 'utf-8'));
+      assert.equal(config.profile, 'starter');
+      assert.equal(config.validators.freshness, false);
+      assert.equal(config.validators.testSpec, false);
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('score --tax', () => {
+  it('shows doc tax estimate', () => {
+    const output = run('score --tax');
+    assert.match(output, /Documentation Tax Estimate/);
+    assert.match(output, /Tracked docs/);
+    assert.match(output, /Est\. maintenance/);
+    assert.match(output, /Tax-to-value ratio/);
+  });
 });

@@ -44,6 +44,51 @@ export const c = {
   bgGreen: '\x1b[42m',
   bgYellow: '\x1b[43m',
 };
+// ── Compliance Profiles ───────────────────────────────────────────────────
+// Profiles layer between defaults and user config — they're preset bundles
+// that adjust what docs are required and which validators run.
+const PROFILES = {
+  starter: {
+    description: 'Minimal CDD — just architecture + changelog. For side projects and prototypes.',
+    requiredFiles: {
+      canonical: [
+        'docs-canonical/ARCHITECTURE.md',
+      ],
+      agentFile: ['AGENTS.md', 'CLAUDE.md'],
+      changelog: 'CHANGELOG.md',
+      driftLog: 'DRIFT-LOG.md',
+    },
+    validators: {
+      structure: true,
+      docsSync: true,
+      drift: false,
+      changelog: true,
+      architecture: false,
+      testSpec: false,
+      security: false,
+      environment: false,
+      freshness: false,
+    },
+  },
+  standard: {
+    description: 'Full CDD — all 5 canonical docs. For team projects.',
+    // Uses the defaults — no overrides needed
+  },
+  enterprise: {
+    description: 'Strict CDD — all docs, all validators, freshness enforced. For regulated/enterprise projects.',
+    validators: {
+      structure: true,
+      docsSync: true,
+      drift: true,
+      changelog: true,
+      architecture: true,
+      testSpec: true,
+      security: true,
+      environment: true,
+      freshness: true,
+    },
+  },
+};
 
 // ── Config Loading ─────────────────────────────────────────────────────────
 export function loadConfig(projectDir) {
@@ -51,6 +96,7 @@ export function loadConfig(projectDir) {
   const defaults = {
     projectName: basename(projectDir),
     version: '0.2',
+    profile: 'standard',
     requiredFiles: {
       canonical: [
         'docs-canonical/ARCHITECTURE.md',
@@ -106,7 +152,18 @@ export function loadConfig(projectDir) {
   if (existsSync(configPath)) {
     try {
       const userConfig = JSON.parse(readFileSync(configPath, 'utf-8'));
-      const merged = deepMerge(defaults, userConfig);
+
+      // Apply profile presets BEFORE merging user config
+      // Profile sets the baseline, user config can override anything
+      const profileName = userConfig.profile || defaults.profile;
+      const profilePreset = PROFILES[profileName];
+      const withProfile = profilePreset
+        ? deepMerge(defaults, profilePreset)
+        : defaults;
+
+      const merged = deepMerge(withProfile, userConfig);
+      merged.profile = profileName;
+
       // Auto-detect project type if not set
       if (!merged.projectType) {
         merged.projectType = autoDetectProjectType(projectDir);
@@ -128,6 +185,9 @@ export function loadConfig(projectDir) {
   defaults.projectTypeConfig = getProjectTypeDefaults(defaults.projectType);
   return defaults;
 }
+
+// Export profiles for use by other commands (init --profile)
+export { PROFILES };
 
 /**
  * Auto-detect project type from package.json and file structure.
@@ -232,22 +292,29 @@ ${c.bold}Options:${c.reset}
   --fail-on-warning  Fail CI on warnings (used with ci command)
   --auto          Auto-fix what's possible (used with fix command)
   --doc <name>    Generate AI prompt for specific doc (architecture, security, etc.)
+  --profile <p>   Compliance profile: starter, standard, enterprise (init command)
+  --tax           Show estimated documentation maintenance cost (with score)
   --help          Show this help message
   --version       Show version
 
+${c.bold}Profiles:${c.reset}
+  ${c.green}starter${c.reset}      Minimal CDD — just ARCHITECTURE.md + CHANGELOG (side projects)
+  ${c.green}standard${c.reset}     Full CDD — all 5 canonical docs (default, team projects)
+  ${c.green}enterprise${c.reset}   Strict CDD — all docs + all validators + freshness enforced
+
 ${c.bold}Examples:${c.reset}
-  ${c.dim}# Audit current project${c.reset}
-  specguard audit
+  ${c.dim}# Quick start for a side project${c.reset}
+  specguard init --profile starter
 
-  ${c.dim}# Initialize CDD docs in a project${c.reset}
-  specguard init --dir ./my-project
+  ${c.dim}# Full CDD init (default)${c.reset}
+  specguard init
 
-  ${c.dim}# Run guard checks (for CI/pre-commit)${c.reset}
-  specguard guard
+  ${c.dim}# See documentation tax estimate${c.reset}
+  specguard score --tax
 
 ${c.bold}Configuration:${c.reset}
   Create ${c.cyan}.specguard.json${c.reset} in your project root to customize validators.
-  See: https://github.com/ricardoaccioly/specguard
+  See: https://github.com/raccioly/specguard
 
 ${c.bold}Learn more:${c.reset}
   Canonical-Driven Development: ${c.cyan}PHILOSOPHY.md${c.reset}
@@ -303,6 +370,11 @@ function main() {
     } else if (args[i] === '--doc' && args[i + 1]) {
       flags.doc = args[i + 1];
       i++;
+    } else if (args[i] === '--profile' && args[i + 1]) {
+      flags.profile = args[i + 1];
+      i++;
+    } else if (args[i] === '--tax') {
+      flags.tax = true;
     }
   }
 

@@ -5,7 +5,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { c } from '../specguard.mjs';
+import { c, PROFILES } from '../specguard.mjs';
 
 function detectProjectType(dir) {
   const pkgPath = resolve(dir, 'package.json');
@@ -30,14 +30,24 @@ const __dirname = dirname(__filename);
 const TEMPLATES_DIR = resolve(__dirname, '../../templates');
 
 export function runInit(projectDir, config, flags) {
+  const profileName = flags.profile || 'standard';
+  const profile = PROFILES[profileName];
+
+  if (!profile) {
+    console.error(`${c.red}Unknown profile: ${profileName}${c.reset}`);
+    console.log(`Available profiles: ${Object.keys(PROFILES).join(', ')}`);
+    process.exit(1);
+  }
+
   console.log(`${c.bold}🏗️  SpecGuard Init — ${config.projectName}${c.reset}`);
-  console.log(`${c.dim}   Directory: ${projectDir}${c.reset}\n`);
+  console.log(`${c.dim}   Directory: ${projectDir}${c.reset}`);
+  console.log(`${c.dim}   Profile:   ${profileName} — ${profile.description}${c.reset}\n`);
 
   const created = [];
   const skipped = [];
 
   // Map template files to their destinations
-  const fileMappings = [
+  const allMappings = [
     { template: 'ARCHITECTURE.md.template', dest: 'docs-canonical/ARCHITECTURE.md' },
     { template: 'DATA-MODEL.md.template', dest: 'docs-canonical/DATA-MODEL.md' },
     { template: 'SECURITY.md.template', dest: 'docs-canonical/SECURITY.md' },
@@ -47,6 +57,15 @@ export function runInit(projectDir, config, flags) {
     { template: 'CHANGELOG.md.template', dest: 'CHANGELOG.md' },
     { template: 'DRIFT-LOG.md.template', dest: 'DRIFT-LOG.md' },
   ];
+
+  // Filter based on profile — starter only gets required files
+  const profileRequiredFiles = profile.requiredFiles
+    ? new Set([...profile.requiredFiles.canonical, profile.requiredFiles.changelog, profile.requiredFiles.driftLog, ...profile.requiredFiles.agentFile])
+    : null;
+
+  const fileMappings = profileRequiredFiles
+    ? allMappings.filter(m => profileRequiredFiles.has(m.dest))
+    : allMappings;
 
   for (const mapping of fileMappings) {
     const destPath = resolve(projectDir, mapping.dest);
@@ -100,9 +119,10 @@ export function runInit(projectDir, config, flags) {
     const defaultConfig = {
       projectName: config.projectName,
       version: '0.4',
+      profile: profileName,
       projectType: detectedType,
       projectTypeConfig: ptc,
-      validators: {
+      validators: profile.validators || {
         structure: true,
         docsSync: true,
         drift: true,

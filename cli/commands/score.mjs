@@ -5,6 +5,7 @@
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, extname } from 'node:path';
+import { execSync } from 'node:child_process';
 import { c } from '../specguard.mjs';
 
 const WEIGHTS = {
@@ -83,6 +84,20 @@ export function runScore(projectDir, config, flags) {
       console.log(`  ${c.yellow}→ ${cat}${c.reset}: ${suggestion}`);
     }
     console.log('');
+  }
+
+  // ── Tax Estimate (--tax flag) ──
+  if (flags.tax) {
+    const tax = estimateDocTax(projectDir, config, scores);
+    const taxColor = tax.level === 'LOW' ? c.green : tax.level === 'MEDIUM' ? c.yellow : c.red;
+
+    console.log(`  ${c.bold}📋 Documentation Tax Estimate${c.reset}`);
+    console.log(`  ${c.dim}─────────────────────────────────${c.reset}`);
+    console.log(`  Tracked docs:        ${c.cyan}${tax.docCount}${c.reset} files`);
+    console.log(`  Active profile:      ${c.cyan}${config.profile || 'standard'}${c.reset}`);
+    console.log(`  Est. maintenance:    ${c.bold}~${tax.minutesPerWeek} min/week${c.reset}`);
+    console.log(`  Tax-to-value ratio:  ${taxColor}${c.bold}${tax.level}${c.reset}`);
+    console.log(`  ${c.dim}${tax.recommendation}${c.reset}\n`);
   }
 }
 
@@ -318,4 +333,64 @@ function getSuggestion(category, score) {
     architecture: 'Add layer boundaries and Mermaid diagrams to ARCHITECTURE.md',
   };
   return suggestions[category] || 'Review and improve this area';
+}
+
+/**
+ * Estimate documentation maintenance "tax" — how much time docs cost per week.
+ * Based on: doc count, code churn, and current doc quality scores.
+ */
+function estimateDocTax(projectDir, config, scores) {
+  // Count tracked docs
+  const canonicalDir = resolve(projectDir, 'docs-canonical');
+  let docCount = 0;
+  if (existsSync(canonicalDir)) {
+    try {
+      docCount = readdirSync(canonicalDir).filter(f => f.endsWith('.md')).length;
+    } catch { /* ignore */ }
+  }
+  // Add root tracking files
+  if (existsSync(resolve(projectDir, 'CHANGELOG.md'))) docCount++;
+  if (existsSync(resolve(projectDir, 'DRIFT-LOG.md'))) docCount++;
+
+  // Estimate code churn (commits in last 30 days)
+  let recentCommits = 0;
+  try {
+    const output = execSync('git log --oneline --since="30 days ago" 2>/dev/null | wc -l', {
+      cwd: projectDir,
+      encoding: 'utf-8',
+    }).trim();
+    recentCommits = parseInt(output, 10) || 0;
+  } catch {
+    recentCommits = 10; // Default assumption
+  }
+
+  // Calculate estimated minutes per week
+  // Base: ~3 min per tracked doc per week (review time)
+  // Churn multiplier: more commits = more potential doc updates
+  const baseMinutes = docCount * 3;
+  const churnMultiplier = recentCommits > 50 ? 1.5 : recentCommits > 20 ? 1.2 : 1.0;
+
+  // Quality discount: higher scores = less rework needed
+  const avgScore = Object.values(scores).reduce((a, b) => a + b, 0) / Object.values(scores).length;
+  const qualityDiscount = avgScore > 80 ? 0.7 : avgScore > 60 ? 0.85 : 1.0;
+
+  // AI discount: if docs are AI-maintained, tax drops significantly
+  const aiDiscount = 0.3; // AI writes ~70% of docs
+
+  const minutesPerWeek = Math.max(5, Math.round(baseMinutes * churnMultiplier * qualityDiscount * aiDiscount));
+
+  // Determine tax level
+  let level, recommendation;
+  if (minutesPerWeek <= 10) {
+    level = 'LOW';
+    recommendation = 'Docs save more time than they cost. Current setup is sustainable.';
+  } else if (minutesPerWeek <= 25) {
+    level = 'MEDIUM';
+    recommendation = 'Consider using `specguard fix --doc` to let AI handle updates.';
+  } else {
+    level = 'HIGH';
+    recommendation = 'Consider switching to "starter" profile to reduce doc overhead.';
+  }
+
+  return { docCount, minutesPerWeek, level, recommendation };
 }
