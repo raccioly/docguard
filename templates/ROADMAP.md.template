@@ -1,0 +1,82 @@
+# Roadmap
+
+<!-- specguard:version 0.1.0 -->
+<!-- specguard:status living -->
+<!-- specguard:last-reviewed YYYY-MM-DD -->
+<!-- specguard:owner @your-github-username -->
+
+> **Canonical document** — Design intent. The planned evolution of this project.  
+> Updated as priorities shift. Completed items move to CHANGELOG.md.
+
+| Metadata | Value |
+|----------|-------|
+| **Status** | ![Status](https://img.shields.io/badge/status-living-blue) |
+| **Version** | `0.1.0` |
+| **Last Updated** | YYYY-MM-DD |
+| **Owner** | @your-github-username |
+
+---
+
+## Vision
+
+<!-- One sentence: where is this project going? -->
+
+## Current Phase
+
+<!-- What phase is the project in right now? -->
+
+| Phase | Name | Status | Timeline |
+|:-----:|------|:------:|----------|
+| 0 | <!-- e.g. Foundation --> | ✅ Complete | <!-- e.g. Q1 2026 --> |
+| 1 | <!-- e.g. Core Features --> | 🔄 In Progress | <!-- e.g. Q2 2026 --> |
+| 2 | <!-- e.g. Integrations --> | ⏳ Planned | <!-- e.g. Q3 2026 --> |
+| 3 | <!-- e.g. Scale --> | 💭 Future | <!-- e.g. Q4 2026 --> |
+
+---
+
+## Phase 0: <!-- Name --> ✅
+
+<!-- Summary of what was accomplished -->
+
+- [x] <!-- Completed item 1 -->
+- [x] <!-- Completed item 2 -->
+
+## Phase 1: <!-- Name --> 🔄
+
+<!-- What's being built now -->
+
+- [x] <!-- Already done -->
+- [ ] <!-- In progress -->
+- [ ] <!-- Planned this phase -->
+
+## Phase 2: <!-- Name --> ⏳
+
+<!-- What comes after the current phase -->
+
+- [ ] <!-- Feature 1 -->
+- [ ] <!-- Feature 2 -->
+
+## Phase 3: <!-- Name --> 💭
+
+<!-- Longer-term vision -->
+
+- [ ] <!-- Feature 1 -->
+- [ ] <!-- Feature 2 -->
+
+---
+
+## Parking Lot
+
+<!-- Ideas that don't have a phase yet — captured so they're not lost -->
+
+| Idea | Source | Notes |
+|------|--------|-------|
+| | <!-- e.g. user request, team discussion --> | |
+
+---
+
+## Revision History
+
+| Date | Description |
+|------|------------|
+| YYYY-MM-DD | Initial roadmap created |
