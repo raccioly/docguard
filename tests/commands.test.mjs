@@ -324,8 +324,9 @@ describe('help completeness v0.5', () => {
     assert.match(output, /AI orchestrator/);
   });
 
-  it('shows v0.5.0', () => {
+  it('shows current version from package.json', () => {
+    const pkg = JSON.parse(readFileSync(join(import.meta.dirname, '..', 'package.json'), 'utf-8'));
     const output = run('--version');
-    assert.match(output, /0\.5\.0/);
+    assert.ok(output.includes(pkg.version), `Expected version ${pkg.version} in output: ${output}`);
   });
 });

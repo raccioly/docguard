@@ -6,8 +6,11 @@
  */
 
 import { existsSync, readFileSync, writeFileSync, readdirSync, statSync, mkdirSync } from 'node:fs';
-import { resolve, join, extname, basename, relative } from 'node:path';
+import { resolve, join, extname, basename, relative, dirname } from 'node:path';
 import { c } from '../docguard.mjs';
+import { detectDocTools } from '../scanners/doc-tools.mjs';
+import { scanRoutesDeep } from '../scanners/routes.mjs';
+import { scanSchemasDeep, generateERDiagram } from '../scanners/schemas.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build', 'coverage',
@@ -33,10 +36,38 @@ export function runGenerate(projectDir, config, flags) {
   }
   console.log('');
 
-  // ── 2. Scan Project Structure ──
+  // ── 2. Detect Existing Doc Tools ──
+  const docTools = detectDocTools(projectDir);
+  if (docTools._detected.length > 0) {
+    console.log(`  ${c.bold}Detected Documentation Tools:${c.reset}`);
+    for (const tool of docTools._detected) {
+      const info = docTools[tool];
+      const details = info.config || info.path || info.middleware || '';
+      let extra = '';
+      if (tool === 'openapi' && info.endpoints) extra = ` — ${info.endpoints.length} endpoints, ${info.schemas?.length || 0} schemas`;
+      if (tool === 'storybook' && info.storyCount) extra = ` — ${info.storyCount} stories`;
+      console.log(`    ${c.cyan}${tool}:${c.reset} ${details}${extra}`);
+    }
+    console.log('');
+  }
+
+  // ── 3. Scan Project Structure ──
   const scan = scanProject(projectDir);
 
-  // ── 3. Generate Documents ──
+  // ── 4. Deep Scan Routes ──
+  const deepRoutes = scanRoutesDeep(projectDir, stack, docTools);
+  if (deepRoutes.length > 0) {
+    console.log(`  ${c.bold}Route Scanning:${c.reset} ${deepRoutes.length} endpoints found (source: ${deepRoutes[0]?.source || 'code'})`);
+  }
+
+  // ── 5. Deep Scan Schemas ──
+  const deepSchemas = scanSchemasDeep(projectDir, stack, docTools);
+  if (deepSchemas.entities.length > 0) {
+    console.log(`  ${c.bold}Schema Scanning:${c.reset} ${deepSchemas.entities.length} entities, ${deepSchemas.relationships.length} relationships (source: ${deepSchemas.source})`);
+  }
+  console.log('');
+
+  // ── 6. Generate Documents ──
   const docsDir = resolve(projectDir, 'docs-canonical');
   if (!existsSync(docsDir)) {
     mkdirSync(docsDir, { recursive: true });
@@ -45,12 +76,18 @@ export function runGenerate(projectDir, config, flags) {
   let created = 0;
   let skipped = 0;
 
-  // Generate ARCHITECTURE.md
-  const archResult = generateArchitecture(projectDir, config, stack, scan, flags);
+  // Generate ARCHITECTURE.md (arc42-aligned)
+  const archResult = generateArchitecture(projectDir, config, stack, scan, flags, docTools);
   if (archResult) { created++; } else { skipped++; }
 
-  // Generate DATA-MODEL.md
-  const dataResult = generateDataModel(projectDir, config, stack, scan, flags);
+  // Generate API-REFERENCE.md (NEW — from deep route scanning)
+  if (deepRoutes.length > 0) {
+    const apiResult = generateApiReference(projectDir, config, stack, deepRoutes, flags);
+    if (apiResult) { created++; } else { skipped++; }
+  }
+
+  // Generate DATA-MODEL.md (enhanced with deep schema scanning)
+  const dataResult = generateDataModel(projectDir, config, stack, scan, flags, deepSchemas);
   if (dataResult) { created++; } else { skipped++; }
 
   // Generate ENVIRONMENT.md
@@ -65,13 +102,16 @@ export function runGenerate(projectDir, config, flags) {
   const secResult = generateSecurity(projectDir, config, stack, scan, flags);
   if (secResult) { created++; } else { skipped++; }
 
-  // Generate root files
-  const rootResults = generateRootFiles(projectDir, config, stack, scan, flags);
+  // Generate root files (AGENTS.md, CHANGELOG, DRIFT-LOG)
+  const rootResults = generateRootFiles(projectDir, config, stack, scan, flags, docTools);
   created += rootResults.created;
   skipped += rootResults.skipped;
 
   console.log(`\n${c.bold}  ─────────────────────────────────────${c.reset}`);
   console.log(`  ${c.green}Generated: ${created}${c.reset}  Skipped: ${skipped} (already exist)`);
+  if (docTools._detected.length > 0) {
+    console.log(`  ${c.dim}Leveraged: ${docTools._detected.join(', ')} (existing tools detected)${c.reset}`);
+  }
   console.log(`\n  ${c.yellow}${c.bold}⚠️  Review all generated docs!${c.reset}`);
   console.log(`  ${c.dim}Generated docs are a starting point — review and refine them.${c.reset}`);
   console.log(`  ${c.dim}Run ${c.cyan}docguard score${c.dim} to check your CDD maturity.${c.reset}\n`);
@@ -278,7 +318,7 @@ function countFilesAndLines(dir, scan) {
 
 // ── Document Generators ────────────────────────────────────────────────────
 
-function generateArchitecture(dir, config, stack, scan, flags) {
+function generateArchitecture(dir, config, stack, scan, flags, docTools) {
   const path = resolve(dir, 'docs-canonical/ARCHITECTURE.md');
   if (existsSync(path) && !flags.force) {
     console.log(`  ${c.dim}⏭️  ARCHITECTURE.md (exists)${c.reset}`);
@@ -297,7 +337,238 @@ function generateArchitecture(dir, config, stack, scan, flags) {
   if (scan.components.length > 0) componentRows.push(`| UI Components | Frontend components | ${scan.components.length} files | |`);
   if (scan.middlewares.length > 0) componentRows.push(`| Middleware | Request processing | ${scan.middlewares.join(', ')} | |`);
 
+  // Storybook integration
+  if (docTools?.storybook?.found) {
+    componentRows.push(`| Storybook | UI component docs | .storybook/ (${docTools.storybook.storyCount || '?'} stories) | |`);
+  }
+
+  // Doc tools section
+  const docToolRows = [];
+  if (docTools?._detected?.length > 0) {
+    for (const tool of docTools._detected) {
+      const info = docTools[tool];
+      docToolRows.push(`| ${tool} | ${info.config || info.path || info.middleware || 'detected'} | Active |`);
+    }
+  }
+
   const content = `# Architecture
+
+<!-- docguard:version 0.1.0 -->
+<!-- docguard:status draft -->
+<!-- docguard:last-reviewed ${new Date().toISOString().split('T')[0]} -->
+<!-- docguard:generated true -->
+<!-- docguard:standards arc42, C4 -->
+
+> **Auto-generated by DocGuard.** Review and refine this document.
+> Follows [arc42](https://arc42.org) structure and [C4 Model](https://c4model.com) diagrams.
+
+| Metadata | Value |
+|----------|-------|
+| **Status** | ![Status](https://img.shields.io/badge/status-draft-yellow) |
+| **Version** | \`0.1.0\` |
+| **Last Updated** | ${new Date().toISOString().split('T')[0]} |
+| **Project Size** | ${scan.totalFiles} files, ~${Math.round(scan.totalLines / 1000)}K lines |
+
+---
+
+## 1. Introduction & Goals
+<!-- arc42: §1 — Introduction and Goals -->
+
+<!-- TODO: Describe what this system does, who it's for, and key quality goals -->
+${config.projectName} is a ${stack.framework || stack.language || 'software'} application.
+
+### Quality Goals
+
+| Priority | Quality Goal | Scenario |
+|----------|-------------|----------|
+| 1 | <!-- e.g. Performance --> | <!-- e.g. Response time < 200ms --> |
+| 2 | <!-- e.g. Security --> | <!-- e.g. All endpoints authenticated --> |
+| 3 | <!-- e.g. Maintainability --> | <!-- e.g. New feature in < 1 day --> |
+
+## 2. Constraints
+<!-- arc42: §2 — Constraints -->
+
+| Type | Constraint | Background |
+|------|-----------|------------|
+| Technical | ${stack.language || 'TBD'} | Primary language |
+| Technical | ${stack.framework || 'TBD'} | Framework |
+| Infrastructure | ${stack.hosting || 'TBD'} | Hosting provider |
+
+## 3. Context & Scope
+<!-- arc42: §3 — Context and Scope (C4 Level 1: System Context) -->
+
+\\\`\\\`\\\`mermaid
+graph TD
+    U[Users/Clients] --> S[${config.projectName}]
+    S --> DB[(${stack.database || 'Database'})]
+    S --> EXT[External Services]
+\\\`\\\`\\\`
+
+## 4. Solution Strategy
+<!-- arc42: §4 — Solution Strategy -->
+
+See \\\`docs-canonical/ADR.md\\\` for architecture decision records.
+
+## 5. Building Block View
+<!-- arc42: §5 — Building Block View (C4 Level 2: Container) -->
+
+| Component | Responsibility | Location | Tests |
+|-----------|---------------|----------|-------|
+${componentRows.join('\\n') || '| <!-- Add components --> | | | |'}
+
+\\\`\\\`\\\`mermaid
+graph TD
+    A[Client] --> B[${stack.framework || 'API'}]
+    B --> C[Services]
+    C --> D[${stack.database || 'Database'}]
+    ${scan.middlewares.length > 0 ? 'A --> M[Middleware] --> B' : ''}
+    ${scan.components.length > 0 ? 'A --> UI[UI Components]' : ''}
+\\\`\\\`\\\`
+
+## 6. Runtime View
+<!-- arc42: §6 — Runtime View -->
+
+\\\`\\\`\\\`mermaid
+sequenceDiagram
+    participant C as Client
+    participant A as ${stack.framework || 'API'}
+    participant S as Service
+    participant D as ${stack.database || 'DB'}
+    C->>A: Request
+    A->>S: Process
+    S->>D: Query
+    D-->>S: Result
+    S-->>A: Response
+    A-->>C: JSON
+\\\`\\\`\\\`
+
+## 7. Deployment View
+<!-- arc42: §7 — Deployment View -->
+
+See \\\`docs-canonical/DEPLOYMENT.md\\\` for details.
+
+| Environment | Infrastructure | URL |
+|-------------|---------------|-----|
+| Development | localhost | http://localhost:3000 |
+| Staging | ${stack.hosting || 'TBD'} | <!-- TODO --> |
+| Production | ${stack.hosting || 'TBD'} | <!-- TODO --> |
+
+## 8. Crosscutting Concepts
+<!-- arc42: §8 — Crosscutting Concepts -->
+
+### Tech Stack
+
+| Category | Technology | Version | License |
+|----------|-----------|---------|---------|
+${techRows || '| <!-- Add technologies --> | | | |'}
+${docToolRows.length > 0 ? `
+### Documentation Tools
+
+| Tool | Config | Status |
+|------|--------|--------|
+${docToolRows.join('\\n')}
+` : ''}
+
+### Layer Boundaries
+
+| Layer | Can Import From | Cannot Import From |
+|-------|----------------|-------------------|
+${scan.routes.length > 0 ? '| Routes/Handlers | Services, Middleware | Models (direct) |' : ''}
+${scan.services.length > 0 ? '| Services | Repositories, Utils | Routes |' : ''}
+${scan.models.length > 0 ? '| Models/Repositories | Utils | Services, Routes |' : ''}
+
+## 9. Architecture Decisions
+<!-- arc42: §9 — Architecture Decisions -->
+
+See \\\`docs-canonical/ADR.md\\\` for the full decision log.
+
+## 10. Quality Requirements
+<!-- arc42: §10 — Quality Requirements -->
+
+See \\\`docs-canonical/TEST-SPEC.md\\\` for test requirements and coverage targets.
+
+## 11. Risks & Technical Debt
+<!-- arc42: §11 — Risk Assessment and Technical Debt -->
+
+See \\\`DRIFT-LOG.md\\\` for documented deviations from canonical specs.
+See \\\`docs-canonical/KNOWN-GOTCHAS.md\\\` for known issues.
+
+## 12. Glossary
+<!-- arc42: §12 — Glossary -->
+
+| Term | Definition |
+|------|-----------|
+| CDD | Canonical-Driven Development — documentation as the source of truth |
+| Canonical Doc | A specification document that defines system behavior |
+| Drift | Conscious deviation from canonical documentation |
+
+---
+
+## Revision History
+
+| Version | Date | Author | Changes |
+|---------|------|--------|---------|
+| 0.1.0 | ${new Date().toISOString().split('T')[0]} | DocGuard Generate | Auto-generated (arc42 + C4 aligned) |
+`;
+
+  writeFileSync(path, content, 'utf-8');
+  console.log(`  ${c.green}✅ ARCHITECTURE.md${c.reset} (arc42 §1-§12, ${componentRows.length} components, ${Object.values(stack).filter(Boolean).length} tech)`);
+  return true;
+}
+
+// ── API Reference Generator (NEW — from deep route scanning) ───────────────
+
+function generateApiReference(dir, config, stack, deepRoutes, flags) {
+  const path = resolve(dir, 'docs-canonical/API-REFERENCE.md');
+  if (existsSync(path) && !flags.force) {
+    console.log(`  ${c.dim}⏭️  API-REFERENCE.md (exists)${c.reset}`);
+    return false;
+  }
+
+  // Group routes by resource (first path segment after /api/)
+  const groups = {};
+  for (const route of deepRoutes) {
+    const parts = route.path.split('/').filter(Boolean);
+    const resource = parts[1] || parts[0] || 'root';
+    if (!groups[resource]) groups[resource] = [];
+    groups[resource].push(route);
+  }
+
+  // Build endpoint table
+  const endpointRows = deepRoutes
+    .sort((a, b) => a.path.localeCompare(b.path) || a.method.localeCompare(b.method))
+    .map(r => `| \`${r.method}\` | \`${r.path}\` | ${r.handler || '—'} | ${r.auth ? '🔒' : '🔓'} | ${r.description || '—'} |`)
+    .join('\n');
+
+  // Build per-resource sections
+  const resourceSections = Object.entries(groups)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([resource, routes]) => {
+      const routeDetails = routes.map(r => `#### ${r.method} \`${r.path}\`
+
+> Source: \`${r.file}\`${r.source ? ` (${r.source})` : ''}
+
+- **Auth:** ${r.auth ? 'Required' : 'None'}
+- **Handler:** ${r.handler || '—'}
+${r.description ? `- **Description:** ${r.description}` : ''}
+
+| Parameter | In | Type | Required | Description |
+|-----------|-----|------|:--------:|-------------|
+| <!-- TODO --> | | | | |
+
+| Status | Response |
+|--------|----------|
+| 200 | Success |
+| 400 | Bad Request |
+| 401 | Unauthorized |
+`).join('\n');
+
+      return `### ${resource.charAt(0).toUpperCase() + resource.slice(1)}
+
+${routeDetails}`;
+    }).join('\n---\n\n');
+
+  const content = `# API Reference
 
 <!-- docguard:version 0.1.0 -->
 <!-- docguard:status draft -->
@@ -309,47 +580,24 @@ function generateArchitecture(dir, config, stack, scan, flags) {
 | Metadata | Value |
 |----------|-------|
 | **Status** | ![Status](https://img.shields.io/badge/status-draft-yellow) |
-| **Version** | \`0.1.0\` |
-| **Last Updated** | ${new Date().toISOString().split('T')[0]} |
-| **Project Size** | ${scan.totalFiles} files, ~${Math.round(scan.totalLines / 1000)}K lines |
+| **Base URL** | \`http://localhost:3000\` |
+| **Auth** | <!-- TODO: Describe auth mechanism --> |
+| **Total Endpoints** | ${deepRoutes.length} |
+| **Source** | ${deepRoutes[0]?.source || 'code scan'} |
 
 ---
 
-## System Overview
+## Endpoints Summary
 
-<!-- TODO: Describe what this system does and who it's for -->
-${config.projectName} is a ${stack.framework || stack.language || 'software'} application.
+| Method | Path | Handler | Auth | Description |
+|--------|------|---------|:----:|-------------|
+${endpointRows}
 
-## Component Map
+---
 
-| Component | Responsibility | Location | Tests |
-|-----------|---------------|----------|-------|
-${componentRows.join('\n') || '| <!-- Add components --> | | | |'}
+## Endpoint Details
 
-## Tech Stack
-
-| Category | Technology | Version | License |
-|----------|-----------|---------|---------|
-${techRows || '| <!-- Add technologies --> | | | |'}
-
-## Layer Boundaries
-
-<!-- TODO: Define which layers can import from which -->
-
-| Layer | Can Import From | Cannot Import From |
-|-------|----------------|-------------------|
-${scan.routes.length > 0 ? '| Routes/Handlers | Services, Middleware | Models (direct) |' : ''}
-${scan.services.length > 0 ? '| Services | Repositories, Utils | Routes |' : ''}
-${scan.models.length > 0 ? '| Models/Repositories | Utils | Services, Routes |' : ''}
-
-## Diagrams
-
-\`\`\`mermaid
-graph TD
-    A[Client] --> B[${stack.framework || 'API'}]
-    B --> C[Services]
-    C --> D[${stack.database || 'Database'}]
-\`\`\`
+${resourceSections}
 
 ---
 
@@ -357,49 +605,101 @@ graph TD
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
-| 0.1.0 | ${new Date().toISOString().split('T')[0]} | DocGuard Generate | Auto-generated from codebase scan |
+| 0.1.0 | ${new Date().toISOString().split('T')[0]} | DocGuard Generate | Auto-generated (${deepRoutes.length} endpoints from ${deepRoutes[0]?.source || 'code'}) |
 `;
 
   writeFileSync(path, content, 'utf-8');
-  console.log(`  ${c.green}✅ ARCHITECTURE.md${c.reset} (${componentRows.length} components, ${Object.values(stack).filter(Boolean).length} tech)`);
+  console.log(`  ${c.green}✅ API-REFERENCE.md${c.reset} (${deepRoutes.length} endpoints, ${Object.keys(groups).length} resources)`);
   return true;
 }
 
-function generateDataModel(dir, config, stack, scan, flags) {
+// ── Enhanced Data Model Generator ──────────────────────────────────────────
+
+function generateDataModel(dir, config, stack, scan, flags, deepSchemas) {
   const path = resolve(dir, 'docs-canonical/DATA-MODEL.md');
   if (existsSync(path) && !flags.force) {
     console.log(`  ${c.dim}⏭️  DATA-MODEL.md (exists)${c.reset}`);
     return false;
   }
 
-  // Parse model files for entity names
-  const entities = [];
-  for (const modelFile of scan.models) {
-    const name = basename(modelFile, extname(modelFile));
-    if (name !== 'index' && name !== 'schema') {
-      entities.push({
-        name: name.charAt(0).toUpperCase() + name.slice(1),
-        file: modelFile,
-      });
-    }
-  }
+  // Use deep schemas if available, fallback to basic scan
+  let entities = [];
+  let relationships = [];
+  let schemaSource = 'file scan';
 
-  // Check for Prisma schema
-  const prismaPath = resolve(dir, 'prisma/schema.prisma');
-  if (existsSync(prismaPath)) {
-    const prismaContent = readFileSync(prismaPath, 'utf-8');
-    const modelRegex = /model\s+(\w+)\s*\{/g;
-    let match;
-    while ((match = modelRegex.exec(prismaContent)) !== null) {
-      if (!entities.find(e => e.name.toLowerCase() === match[1].toLowerCase())) {
-        entities.push({ name: match[1], file: 'prisma/schema.prisma' });
+  if (deepSchemas && deepSchemas.entities.length > 0) {
+    entities = deepSchemas.entities;
+    relationships = deepSchemas.relationships;
+    schemaSource = deepSchemas.source;
+  } else {
+    // Fallback: basic entity detection from file names
+    for (const modelFile of scan.models) {
+      const name = basename(modelFile, extname(modelFile));
+      if (name !== 'index' && name !== 'schema') {
+        entities.push({
+          name: name.charAt(0).toUpperCase() + name.slice(1),
+          fields: [],
+          file: modelFile,
+          source: 'file',
+        });
       }
     }
   }
 
-  const entityRows = entities.map(e =>
-    `| ${e.name} | ${stack.database || 'TBD'} | ${e.name.toLowerCase()}Id | See \`${e.file}\` |`
-  ).join('\n');
+  // Build entity summary table
+  const entityRows = entities
+    .filter(e => e.source !== 'prisma-enum')
+    .map(e => {
+      const pk = e.fields?.find(f => f.primaryKey);
+      return `| ${e.name} | ${stack.database || 'TBD'} | ${pk ? pk.name : e.name.toLowerCase() + 'Id'} | ${e.file || '—'} | ${e.fields?.length || 0} fields |`;
+    }).join('\n');
+
+  // Build detailed entity sections
+  const entitySections = entities
+    .filter(e => e.source !== 'prisma-enum')
+    .map(e => {
+      if (!e.fields || e.fields.length === 0) {
+        return `### ${e.name}
+
+> Source: \`${e.file || 'unknown'}\`
+
+| Field | Type | Required | Default | Constraints | Description |
+|-------|------|----------|---------|-------------|-------------|
+| <!-- TODO: Fill in fields --> | | | | | |
+`;
+      }
+      const fieldRows = e.fields.map(f =>
+        `| ${f.name} | ${f.type} | ${f.required ? '✓' : '✗'} | ${f.default || '—'} | ${f.primaryKey ? 'PK' : ''}${f.unique ? ' UK' : ''} | ${f.description || ''} |`
+      ).join('\n');
+
+      return `### ${e.name}
+
+> Source: \`${e.file || 'unknown'}\` (${e.source || 'detected'})
+
+| Field | Type | Required | Default | Constraints | Description |
+|-------|------|:--------:|---------|-------------|-------------|
+${fieldRows}
+`;
+    }).join('\n');
+
+  // Build enum sections (if Prisma enums found)
+  const enums = entities.filter(e => e.source === 'prisma-enum');
+  const enumSection = enums.length > 0 ? `## Enums
+
+${enums.map(e => `### ${e.name}
+
+| Value |
+|-------|
+${e.fields.map(f => `| ${f.name} |`).join('\n')}
+`).join('\n')}` : '';
+
+  // Build relationship table
+  const relRows = relationships.length > 0
+    ? relationships.map(r => `| ${r.from} | ${r.to} | ${r.type} | ${r.field} | — |`).join('\n')
+    : '| <!-- No relationships detected --> | | | | |';
+
+  // Generate mermaid ER diagram
+  const erDiagram = generateERDiagram(entities, relationships);
 
   const content = `# Data Model
 
@@ -416,35 +716,43 @@ function generateDataModel(dir, config, stack, scan, flags) {
 | **Version** | \`0.1.0\` |
 | **Database** | ${stack.database || 'TBD'} |
 | **ORM** | ${stack.orm || 'None detected'} |
+| **Schema Source** | ${schemaSource} |
+| **Entities** | ${entities.filter(e => e.source !== 'prisma-enum').length} |
+| **Relationships** | ${relationships.length} |
 
 ---
 
-## Entities
+## Entity Summary
 
-| Entity | Storage | Primary Key | Description |
-|--------|---------|-------------|-------------|
-${entityRows || '| <!-- No models detected --> | | | |'}
+| Entity | Storage | Primary Key | Source | Fields |
+|--------|---------|-------------|--------|--------|
+${entityRows || '| <!-- No models detected --> | | | | |'}
 
-${entities.map(e => `### ${e.name}
+---
 
-> Source: \`${e.file}\`
+## Entity Details
 
-| Field | Type | Required | Default | Constraints | Description |
-|-------|------|----------|---------|-------------|-------------|
-| <!-- TODO: Fill in fields --> | | | | | |
-`).join('\n')}
+${entitySections}
+${enumSection}
 
 ## Relationships
 
 | From | To | Type | FK/Reference | Cascade |
 |------|-----|------|-------------|---------|
-| <!-- TODO --> | | | | |
+${relRows}
+${erDiagram ? `
+## Entity-Relationship Diagram
+
+\`\`\`mermaid
+${erDiagram}
+\`\`\`
+` : ''}
 
 ## Indexes
 
 | Table | Index Name | Fields | Type | Purpose |
 |-------|-----------|--------|------|---------|
-| <!-- TODO --> | | | | |
+| <!-- TODO: Document indexes --> | | | | |
 
 ---
 
@@ -452,11 +760,11 @@ ${entities.map(e => `### ${e.name}
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
-| 0.1.0 | ${new Date().toISOString().split('T')[0]} | DocGuard Generate | Auto-generated (${entities.length} entities found) |
+| 0.1.0 | ${new Date().toISOString().split('T')[0]} | DocGuard Generate | Auto-generated (${entities.length} entities, ${relationships.length} relationships from ${schemaSource}) |
 `;
 
   writeFileSync(path, content, 'utf-8');
-  console.log(`  ${c.green}✅ DATA-MODEL.md${c.reset} (${entities.length} entities detected)`);
+  console.log(`  ${c.green}✅ DATA-MODEL.md${c.reset} (${entities.length} entities, ${relationships.length} relationships from ${schemaSource})`);
   return true;
 }
 
@@ -674,14 +982,17 @@ ${scan.envVars.filter(v => isSecretVar(v.name)).map(v =>
   return true;
 }
 
-function generateRootFiles(dir, config, stack, scan, flags) {
+function generateRootFiles(dir, config, stack, scan, flags, docTools) {
   let created = 0;
   let skipped = 0;
 
-  // AGENTS.md
+  // AGENTS.md (AGENTS.md Standard compliant)
   const agentsPath = resolve(dir, 'AGENTS.md');
   if (!existsSync(agentsPath) || flags.force) {
     const content = `# AI Agent Instructions — ${config.projectName}
+
+<!-- Standard: https://agents.md -->
+<!-- Generated by DocGuard — AGENTS.md standard compliant -->
 
 > This project follows **Canonical-Driven Development (CDD)**.
 > Documentation is the source of truth. Read before coding.
@@ -690,10 +1001,11 @@ function generateRootFiles(dir, config, stack, scan, flags) {
 
 1. **Read** \`docs-canonical/\` before suggesting changes
 2. **Check** existing patterns in the codebase
-3. **Confirm** your approach before writing code
-4. **Implement** matching existing code style
-5. **Log** any deviations in \`DRIFT-LOG.md\` with \`// DRIFT: reason\`
-6. **Run DocGuard** after changes — \`npx docguard guard\`
+3. **Run** \`npx docguard-cli diagnose\` to see what needs fixing
+4. **Confirm** your approach before writing code
+5. **Implement** matching existing code style
+6. **Log** any deviations in \`DRIFT-LOG.md\` with \`// DRIFT: reason\`
+7. **Verify** with \`npx docguard-cli guard\` — all checks must pass
 
 ## Project Stack
 
@@ -703,30 +1015,68 @@ ${Object.entries(stack).filter(([, v]) => v).map(([k, v]) => `- **${k}**: ${v}`)
 
 | File | Purpose |
 |------|---------|
-| \`docs-canonical/ARCHITECTURE.md\` | System design |
-| \`docs-canonical/DATA-MODEL.md\` | Database schemas |
+| \`docs-canonical/ARCHITECTURE.md\` | System design (arc42 aligned) |
+| \`docs-canonical/API-REFERENCE.md\` | API endpoint documentation |
+| \`docs-canonical/DATA-MODEL.md\` | Database schemas & entities |
 | \`docs-canonical/SECURITY.md\` | Auth & secrets |
 | \`docs-canonical/TEST-SPEC.md\` | Test requirements |
 | \`docs-canonical/ENVIRONMENT.md\` | Environment setup |
+| \`AGENTS.md\` | AI agent instructions (this file) |
 | \`CHANGELOG.md\` | Change tracking |
 | \`DRIFT-LOG.md\` | Documented deviations |
 
-## DocGuard — Documentation Enforcement
+## Permissions & Guardrails
+
+> **IMPORTANT:** These limits apply to all AI agents working on this project.
+
+### Allowed
+
+- Read any file in the repository
+- Modify files within \`src/\`, \`tests/\`, and \`docs-canonical/\`
+- Run test commands (\`npm test\`, \`npx docguard-cli guard\`)
+- Create new files in appropriate directories
+
+### Not Allowed
+
+- Modify \`.env\` files or secrets
+- Push commits or create releases without explicit approval
+- Delete or rename canonical documentation files
+- Bypass DocGuard checks (\`docguard guard\` must pass)
+- Install new dependencies without approval
+
+### Safety Rules
+
+- Never hardcode secrets, tokens, or API keys
+- Always validate inputs before processing
+- Never expose internal paths or stack traces to users
+- Run \`npx docguard-cli guard\` before every commit
+
+## Monorepo Support
+
+<!-- If this is a monorepo, nested AGENTS.md files in subdirectories
+     override these instructions for their scope. -->
+
+| Scope | AGENTS.md Location |
+|-------|-------------------|
+| Root (default) | \`./AGENTS.md\` |
+| <!-- e.g. packages/api --> | <!-- packages/api/AGENTS.md --> |
+
+## DocGuard Commands
 
 \`\`\`bash
-npx docguard guard          # Validate compliance
-npx docguard fix            # Find issues with fix instructions
-npx docguard fix --format prompt  # AI-ready fix prompt
-npx docguard fix --auto     # Auto-fix missing files
-npx docguard score          # CDD maturity score
+npx docguard-cli guard          # Validate compliance
+npx docguard-cli diagnose       # Identify issues + AI fix prompts
+npx docguard-cli fix --doc ARCH # Fix specific document
+npx docguard-cli score          # CDD maturity score (0-100)
+npx docguard-cli generate       # Generate docs from code
 \`\`\`
 
 ### AI Agent Workflow (IMPORTANT)
 
-1. **Before work**: Run \`npx docguard guard\` — understand compliance state
-2. **After changes**: Run \`npx docguard fix --format prompt\` — get fix instructions
+1. **Before work**: Run \`npx docguard-cli guard\` — understand compliance state
+2. **After changes**: Run \`npx docguard-cli diagnose\` — get fix instructions
 3. **Fix issues**: Each issue has an \`ai_instruction\` — follow it exactly
-4. **Verify**: Run \`npx docguard guard\` again — must pass before commit
+4. **Verify**: Run \`npx docguard-cli guard\` again — must pass before commit
 5. **Update CHANGELOG**: All changes need a changelog entry
 
 ## Rules
@@ -738,7 +1088,7 @@ npx docguard score          # CDD maturity score
 - Documentation changes must pass \`docguard guard\`
 `;
     writeFileSync(agentsPath, content, 'utf-8');
-    console.log(`  ${c.green}✅ AGENTS.md${c.reset}`);
+    console.log(`  ${c.green}✅ AGENTS.md${c.reset} (AGENTS.md standard compliant)`);
     created++;
   } else {
     console.log(`  ${c.dim}⏭️  AGENTS.md (exists)${c.reset}`);

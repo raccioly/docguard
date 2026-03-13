@@ -15,7 +15,13 @@
  */
 
 import { readFileSync, existsSync } from 'node:fs';
-import { resolve, basename } from 'node:path';
+import { resolve, basename, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+// Read version from package.json (single source of truth)
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const PKG = JSON.parse(readFileSync(resolve(__dirname, '..', 'package.json'), 'utf-8'));
+const VERSION = PKG.version;
 import { runAudit } from './commands/audit.mjs';
 import { runInit } from './commands/init.mjs';
 import { runGuard } from './commands/guard.mjs';
@@ -29,6 +35,7 @@ import { runCI } from './commands/ci.mjs';
 import { runFix } from './commands/fix.mjs';
 import { runWatch } from './commands/watch.mjs';
 import { runDiagnose } from './commands/diagnose.mjs';
+import { runPublish } from './commands/publish.mjs';
 
 // ── Colors (ANSI escape codes, zero deps) ──────────────────────────────────
 export const c = {
@@ -253,7 +260,7 @@ function deepMerge(target, source) {
 function printBanner() {
   console.log(`
 ${c.cyan}${c.bold}  ╔═══════════════════════════════════════════╗
-  ║         DocGuard v0.5.0                  ║
+  ║         DocGuard v${VERSION.padEnd(27)}║
   ║   Canonical-Driven Development (CDD)      ║
   ╚═══════════════════════════════════════════╝${c.reset}
 `);
@@ -279,6 +286,7 @@ ${c.bold}Commands:${c.reset}
   ${c.green}ci${c.reset}         Single command for CI/CD pipelines (guard + score)
   ${c.green}fix${c.reset}        Find issues and generate AI fix instructions
   ${c.green}watch${c.reset}      Watch for file changes and re-run guard automatically
+  ${c.green}publish${c.reset}    Scaffold external docs (Mintlify, Docusaurus)
 
 ${c.bold}Options:${c.reset}
   --dir <path>    Project directory (default: current directory)
@@ -295,6 +303,7 @@ ${c.bold}Options:${c.reset}
   --auto          Auto-fix what's possible (used with fix command)
   --doc <name>    Generate AI prompt for specific doc (architecture, security, etc.)
   --profile <p>   Compliance profile: starter, standard, enterprise (init command)
+  --platform <p>  Doc platform: mintlify (publish command)
   --tax           Show estimated documentation maintenance cost (with score)
   --help          Show this help message
   --version       Show version
@@ -384,6 +393,9 @@ function main() {
       flags.autoFix = true;
     } else if (args[i] === '--skip-prompts') {
       flags.skipPrompts = true;
+    } else if (args[i] === '--platform' && args[i + 1]) {
+      flags.platform = args[i + 1];
+      i++;
     }
   }
 
@@ -395,7 +407,7 @@ function main() {
   }
 
   if (command === '--version' || command === '-v') {
-    console.log('docguard v0.5.0');
+    console.log(`docguard v${VERSION}`);
     process.exit(0);
   }
 
@@ -447,6 +459,10 @@ function main() {
       break;
     case 'watch':
       runWatch(projectDir, config, flags);
+      break;
+    case 'publish':
+    case 'pub':
+      runPublish(projectDir, config, flags);
       break;
     default:
       console.error(`${c.red}Unknown command: ${command}${c.reset}`);
