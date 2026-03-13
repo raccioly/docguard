@@ -7,6 +7,24 @@ import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { c } from '../specguard.mjs';
 
+function detectProjectType(dir) {
+  const pkgPath = resolve(dir, 'package.json');
+  if (existsSync(pkgPath)) {
+    try {
+      const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
+      const allDeps = { ...(pkg.dependencies || {}), ...(pkg.devDependencies || {}) };
+      if (pkg.bin) return 'cli';
+      if (allDeps.next || allDeps.react || allDeps.vue || allDeps['@angular/core'] ||
+          allDeps.svelte || allDeps.nuxt) return 'webapp';
+      if (allDeps.express || allDeps.fastify || allDeps.hono || allDeps.koa) return 'api';
+      if (pkg.main || pkg.exports || pkg.module) return 'library';
+    } catch { /* fall through */ }
+  }
+  if (existsSync(resolve(dir, 'manage.py'))) return 'webapp';
+  if (existsSync(resolve(dir, 'setup.py')) || existsSync(resolve(dir, 'pyproject.toml'))) return 'library';
+  return 'unknown';
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const TEMPLATES_DIR = resolve(__dirname, '../../templates');
@@ -62,13 +80,28 @@ export function runInit(projectDir, config, flags) {
     }
   }
 
-  // Create .specguard.json if it doesn't exist
+  // Create .specguard.json if it doesn't exist — auto-detect project type
   const configPath = resolve(projectDir, '.specguard.json');
   if (!existsSync(configPath)) {
+    // Detect project type from package.json
+    const detectedType = detectProjectType(projectDir);
+
+    // Get appropriate defaults for this project type
+    const typeDefaults = {
+      cli:     { needsEnvVars: false, needsEnvExample: false, needsE2E: false, needsDatabase: false },
+      library: { needsEnvVars: false, needsEnvExample: false, needsE2E: false, needsDatabase: false },
+      webapp:  { needsEnvVars: true,  needsEnvExample: true,  needsE2E: true,  needsDatabase: true },
+      api:     { needsEnvVars: true,  needsEnvExample: true,  needsE2E: false, needsDatabase: true },
+      unknown: { needsEnvVars: true,  needsEnvExample: true,  needsE2E: false, needsDatabase: true },
+    };
+
+    const ptc = typeDefaults[detectedType] || typeDefaults.unknown;
+
     const defaultConfig = {
-      $schema: 'https://specguard.dev/schema/v0.1.json',
       projectName: config.projectName,
-      version: '0.1',
+      version: '0.4',
+      projectType: detectedType,
+      projectTypeConfig: ptc,
       validators: {
         structure: true,
         docsSync: true,
@@ -78,11 +111,13 @@ export function runInit(projectDir, config, flags) {
         testSpec: true,
         security: false,
         environment: true,
+        freshness: true,
       },
     };
+
     writeFileSync(configPath, JSON.stringify(defaultConfig, null, 2) + '\n', 'utf-8');
     created.push('.specguard.json');
-    console.log(`  ${c.green}✅${c.reset} Created: ${c.cyan}.specguard.json${c.reset}`);
+    console.log(`  ${c.green}✅${c.reset} Created: ${c.cyan}.specguard.json${c.reset} ${c.dim}(auto-detected: ${detectedType})${c.reset}`);
   } else {
     skipped.push('.specguard.json');
     console.log(`  ${c.yellow}⏭️${c.reset}  .specguard.json ${c.dim}(already exists)${c.reset}`);
