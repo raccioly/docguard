@@ -4,7 +4,7 @@ description: "Validate project against canonical documentation"
 
 # DocGuard Guard
 
-Validate your project against its canonical documentation. Runs 51 automated checks across 10 validators with quality labels.
+Validate your project against its canonical documentation. Runs 92 automated checks across 12 validators with quality labels.
 
 ## User Input
 
@@ -40,6 +40,7 @@ npx --yes docguard-cli@latest guard $ARGUMENTS
 | Architecture | Layer boundaries and diagrams present |
 | Freshness | Docs updated after recent code changes |
 | Traceability | Canonical docs linked to source code |
+| Docs-Diff | Entity/route/field drift between code and docs |
 
 ## Flags
 
