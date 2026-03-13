@@ -67,6 +67,8 @@ const TRACE_MAP = {
 
 /**
  * Validate traceability — ensures canonical docs have corresponding source artifacts.
+ * Respects config.requiredFiles.canonical — only checks docs the user requires.
+ * Also warns about orphaned files (exist but excluded from config).
  * @returns {{ errors: string[], warnings: string[], passed: number, total: number }}
  */
 export function validateTraceability(projectDir, config) {
@@ -81,23 +83,26 @@ export function validateTraceability(projectDir, config) {
     return { errors, warnings, passed: 0, total: 0 };
   }
 
+  // Build set of required doc basenames from config
+  const requiredDocs = new Set(
+    (config.requiredFiles?.canonical || []).map(f => basename(f))
+  );
+
   // Scan project files once
   const projectFiles = [];
   scanDir(projectDir, projectDir, projectFiles);
 
+  // ── Check required docs for traceability ──
   for (const [docName, traceInfo] of Object.entries(TRACE_MAP)) {
+    // Skip docs not in the user's required list
+    if (!requiredDocs.has(docName)) continue;
+
     total++;
     const docPath = resolve(docsDir, docName);
     const docExists = existsSync(docPath);
 
     if (!docExists) {
-      // Only warn for API-REFERENCE.md (not all projects have APIs)
-      if (docName === 'API-REFERENCE.md') {
-        // Don't count API-REFERENCE as missing — it's optional
-        total--;
-      } else {
-        warnings.push(`${docName} — document missing, no traceability possible`);
-      }
+      warnings.push(`${docName} — required but missing, no traceability possible`);
       continue;
     }
 
@@ -114,6 +119,16 @@ export function validateTraceability(projectDir, config) {
       warnings.push(`${docName} — exists but no matching source code found (unlinked doc)`);
     }
   }
+
+  // ── Detect orphaned files (exist but not required) ──
+  try {
+    const existingDocs = readdirSync(docsDir).filter(f => f.endsWith('.md'));
+    for (const docFile of existingDocs) {
+      if (!requiredDocs.has(docFile) && TRACE_MAP[docFile]) {
+        warnings.push(`${docFile} — file exists in docs-canonical/ but is not in your requiredFiles config. Consider deleting it or adding it to .docguard.json requiredFiles.canonical`);
+      }
+    }
+  } catch { /* ignore */ }
 
   return { errors, warnings, passed, total };
 }

@@ -89,7 +89,12 @@ export function runTrace(projectDir, config, flags) {
   console.log(`${c.dim}   Directory: ${projectDir}${c.reset}`);
   console.log(`${c.dim}   Generating requirements traceability matrix...${c.reset}\n`);
 
-  // ── 1. Inventory canonical docs ──
+  // ── 1. Build set of required doc basenames from config ──
+  const requiredDocs = new Set(
+    (config.requiredFiles?.canonical || []).map(f => basename(f))
+  );
+
+  // ── 2. Inventory canonical docs ──
   const docsDir = resolve(projectDir, 'docs-canonical');
   const canonicalDocs = [];
   if (existsSync(docsDir)) {
@@ -98,16 +103,26 @@ export function runTrace(projectDir, config, flags) {
     }
   }
 
-  // ── 2. Scan project files ──
+  // ── 3. Scan project files ──
   const projectFiles = [];
   scanDir(projectDir, projectDir, projectFiles);
 
-  // ── 3. Build traceability matrix ──
+  // ── 4. Build traceability matrix (only required docs) ──
   const matrix = [];
+  const orphanedDocs = [];
 
   for (const [docName, traceInfo] of Object.entries(TRACE_MAP)) {
     const docPath = resolve(docsDir, docName);
     const docExists = existsSync(docPath);
+
+    // Check if this doc is excluded from config
+    if (!requiredDocs.has(docName)) {
+      if (docExists) {
+        orphanedDocs.push(docName);
+      }
+      continue; // Skip excluded docs from the matrix
+    }
+
     let lastModified = null;
     let docSize = 0;
 
@@ -152,15 +167,15 @@ export function runTrace(projectDir, config, flags) {
     });
   }
 
-  // ── 4. Output ──
+  // ── 5. Output ──
   if (flags.format === 'json') {
-    outputJSON(config.projectName, matrix);
+    outputJSON(config.projectName, matrix, orphanedDocs);
   } else {
-    outputText(config.projectName, matrix, canonicalDocs);
+    outputText(config.projectName, matrix, canonicalDocs, orphanedDocs);
   }
 }
 
-function outputJSON(projectName, matrix) {
+function outputJSON(projectName, matrix, orphanedDocs) {
   const result = {
     project: projectName,
     traceability: matrix.map(m => ({
@@ -173,19 +188,21 @@ function outputJSON(projectName, matrix) {
       tests: m.relatedTests.length,
       traces: m.traces,
     })),
+    orphanedDocs,
     summary: {
       total: matrix.length,
       traced: matrix.filter(m => m.coverageSignal === 'TRACED').length,
       partial: matrix.filter(m => m.coverageSignal === 'PARTIAL').length,
       unlinked: matrix.filter(m => m.coverageSignal === 'UNLINKED').length,
       missing: matrix.filter(m => m.coverageSignal === 'MISSING').length,
+      orphaned: orphanedDocs.length,
     },
     timestamp: new Date().toISOString(),
   };
   console.log(JSON.stringify(result, null, 2));
 }
 
-function outputText(projectName, matrix, canonicalDocs) {
+function outputText(projectName, matrix, canonicalDocs, orphanedDocs) {
   // Header table
   console.log(`  ${c.bold}Traceability Matrix${c.reset}\n`);
   console.log(`  ${c.dim}${'Document'.padEnd(22)} ${'Standard'.padEnd(28)} ${'Status'.padEnd(10)} ${'Sources'.padEnd(9)} ${'Tests'.padEnd(7)} ${'Last Modified'}${c.reset}`);
@@ -255,6 +272,16 @@ function outputText(projectName, matrix, canonicalDocs) {
   if (missing > 0 || unlinked > 0) {
     console.log(`\n  ${c.dim}Run ${c.cyan}docguard generate${c.dim} to create missing docs.${c.reset}`);
     console.log(`  ${c.dim}Run ${c.cyan}docguard diagnose${c.dim} to fix coverage gaps.${c.reset}`);
+  }
+
+  // ── Orphaned docs warning ──
+  if (orphanedDocs.length > 0) {
+    console.log(`\n  ${c.yellow}⚠️  Orphaned Files (${orphanedDocs.length})${c.reset}`);
+    console.log(`  ${c.dim}These files exist in docs-canonical/ but are excluded from your config:${c.reset}`);
+    for (const doc of orphanedDocs) {
+      console.log(`     ${c.yellow}→${c.reset} ${doc}`);
+    }
+    console.log(`  ${c.dim}Delete them or add to .docguard.json requiredFiles.canonical${c.reset}`);
   }
 
   console.log(`\n  ${c.dim}Traceability methodology: ISO/IEC/IEEE 29119 (Lopez et al., AITPG, IEEE TSE 2026)${c.reset}\n`);
