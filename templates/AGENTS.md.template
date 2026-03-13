@@ -1,0 +1,47 @@
+# Agent Instructions
+
+> This project follows **Canonical-Driven Development (CDD)**.  
+> Read canonical docs before making changes. Log drift when deviating.
+
+---
+
+## Project Overview
+
+<!-- What this project is, in 2-3 sentences -->
+
+## Project Documentation (CDD)
+
+This project uses Canonical-Driven Development. Key locations:
+
+- **Canonical docs** (design intent, READ-ONLY): `docs-canonical/`
+- **Implementation docs** (current state): `docs-implementation/`
+- **Drift tracking**: `DRIFT-LOG.md`
+- **Change tracking**: `CHANGELOG.md`
+
+## Build & Dev Commands
+
+| Command | Purpose |
+|---------|---------|
+| <!-- e.g. npm install --> | Install dependencies |
+| <!-- e.g. npm run dev --> | Start development server |
+| <!-- e.g. npm test --> | Run unit tests |
+| <!-- e.g. npm run test:e2e --> | Run E2E tests |
+
+## Workflow Rules
+
+1. **Research first** — Check `docs-canonical/` before suggesting changes
+2. **Confirm before implementing** — Show a plan, wait for approval
+3. **Match existing patterns** — Search codebase for similar implementations
+4. **Document drift** — If deviating from canonical docs, add `// DRIFT: reason`
+5. **Update changelog** — All changes need a `CHANGELOG.md` entry
+
+## Code Conventions
+
+<!-- Project-specific style rules -->
+
+## File Change Rules
+
+- Changes to >3 files require explicit approval
+- Schema/data model changes require `DATA-MODEL.md` update
+- New dependencies require justification
+- Never commit without explicit approval

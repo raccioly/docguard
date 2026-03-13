@@ -1,0 +1,50 @@
+# Architecture
+
+> **Canonical document** — Design intent. This file describes WHAT the system is designed to be.  
+> Last updated: YYYY-MM-DD
+
+---
+
+## System Overview
+
+<!-- One paragraph: What does this system do? Who is it for? -->
+
+## Component Map
+
+<!-- Major modules/packages and their responsibilities -->
+
+| Component | Responsibility | Location |
+|-----------|---------------|----------|
+| <!-- e.g. API Server --> | <!-- e.g. Handles HTTP requests --> | <!-- e.g. src/server/ --> |
+| | | |
+| | | |
+
+## Layer Boundaries
+
+<!-- Which layers can call which? Prevents architecture drift. -->
+
+| Layer | Can Import From | Cannot Import From |
+|-------|----------------|-------------------|
+| <!-- e.g. Handlers --> | <!-- e.g. Services, Middleware --> | <!-- e.g. Repositories --> |
+| | | |
+
+## Tech Stack
+
+| Category | Technology | Version |
+|----------|-----------|---------|
+| Language | | |
+| Framework | | |
+| Database | | |
+| Auth | | |
+| Hosting | | |
+
+## Diagrams
+
+<!-- Architecture diagrams using Mermaid, ASCII art, or linked images -->
+
+```mermaid
+graph TD
+    A[Client] --> B[API Gateway]
+    B --> C[Service Layer]
+    C --> D[Database]
+```

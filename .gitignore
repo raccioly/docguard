@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.production
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Build artifacts
+dist/
+build/
+coverage/
+
+# SpecGuard generated docs (for THIS project testing)
+# Note: In real projects, docs-canonical/ SHOULD be committed.
+# These are excluded here because they're template-generated test files.

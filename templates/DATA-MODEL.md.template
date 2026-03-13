@@ -1,0 +1,39 @@
+# Data Model
+
+> **Canonical document** — Design intent. This file describes the data structures and their relationships.  
+> Last updated: YYYY-MM-DD
+
+---
+
+## Entities
+
+<!-- All data entities (tables, collections, models) -->
+
+| Entity | Storage | Primary Key | Description |
+|--------|---------|-------------|-------------|
+| <!-- e.g. User --> | <!-- e.g. users table --> | <!-- e.g. userId (UUID) --> | <!-- e.g. Registered users --> |
+| | | | |
+
+## Schema Definitions
+
+<!-- Define fields for each entity -->
+
+### <!-- EntityName -->
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| | | | |
+
+## Relationships
+
+| From | To | Type | Description |
+|------|-----|------|-------------|
+| | | <!-- 1:1, 1:many, many:many --> | |
+
+## Indexes
+
+<!-- Indexes for query performance — document which index each query uses -->
+
+| Table | Index Name | Fields | Purpose |
+|-------|-----------|--------|---------|
+| | | | |

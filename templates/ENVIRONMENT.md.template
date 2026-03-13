@@ -1,0 +1,43 @@
+# Environment & Configuration
+
+> **Canonical document** — Design intent. This file documents everything needed to run this project.  
+> Last updated: YYYY-MM-DD
+
+---
+
+## Prerequisites
+
+<!-- Runtime requirements, tools, and accounts needed -->
+
+| Requirement | Version | Purpose |
+|------------|---------|----------|
+| <!-- e.g. Node.js --> | <!-- e.g. 20.x+ --> | <!-- e.g. Runtime --> |
+| | | |
+
+## Environment Variables
+
+<!-- All environment variables the project needs -->
+
+| Variable | Required | Default | Description | Where to Get |
+|----------|----------|---------|-------------|-------------|
+| <!-- e.g. DATABASE_URL --> | ✅ Yes | — | <!-- e.g. DB connection string --> | <!-- e.g. AWS Console → RDS --> |
+| <!-- e.g. API_PORT --> | ❌ No | 3000 | <!-- e.g. Server port --> | — |
+
+## Configuration Files
+
+<!-- Config files, their purpose, and whether templates exist -->
+
+| File | Purpose | Template |
+|------|---------|----------|
+| <!-- e.g. .env.local --> | <!-- e.g. Local dev secrets --> | <!-- e.g. .env.example --> |
+| | | |
+
+## Setup Steps
+
+<!-- How to go from a fresh clone to a running project -->
+
+1. Clone the repository
+2. <!-- e.g. Copy `.env.example` to `.env.local` -->
+3. <!-- e.g. Fill in required environment variables -->
+4. <!-- e.g. Run `npm install` -->
+5. <!-- e.g. Run `npm run dev` -->

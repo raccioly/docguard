@@ -1,0 +1,48 @@
+{
+  "name": "specguard",
+  "version": "0.1.0",
+  "description": "The enforcement tool for Canonical-Driven Development (CDD). Audit, generate, and guard your project documentation.",
+  "type": "module",
+  "bin": {
+    "specguard": "./cli/specguard.mjs"
+  },
+  "scripts": {
+    "specguard": "node cli/specguard.mjs",
+    "audit": "node cli/specguard.mjs audit",
+    "guard": "node cli/specguard.mjs guard",
+    "init": "node cli/specguard.mjs init",
+    "test": "node --test tests/"
+  },
+  "keywords": [
+    "canonical-driven-development",
+    "cdd",
+    "documentation",
+    "governance",
+    "ai-agents",
+    "spec-guard",
+    "specguard",
+    "validation",
+    "cli",
+    "developer-tools",
+    "documentation-standard"
+  ],
+  "author": "Ricardo Accioly",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ricardoaccioly/specguard"
+  },
+  "homepage": "https://github.com/ricardoaccioly/specguard#readme",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "cli/",
+    "templates/",
+    "STANDARD.md",
+    "PHILOSOPHY.md",
+    "README.md",
+    "LICENSE"
+  ],
+  "dependencies": {}
+}

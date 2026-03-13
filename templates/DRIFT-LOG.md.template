@@ -1,0 +1,18 @@
+# Drift Log
+
+> Documents conscious deviations from canonical specifications.  
+> Every `// DRIFT:` comment in code MUST have a matching entry here.
+
+---
+
+## Active Drift
+
+| ID | File | Line | Canonical Doc | Deviation | Reason | Date |
+|----|------|------|--------------|-----------|--------|------|
+| <!-- D-001 --> | <!-- src/file.ts --> | <!-- 42 --> | <!-- ARCHITECTURE.md --> | <!-- What deviates --> | <!-- Why --> | <!-- YYYY-MM-DD --> |
+
+## Resolved Drift
+
+| ID | Resolution | Date |
+|----|-----------|------|
+| <!-- D-000 --> | <!-- How it was resolved --> | <!-- YYYY-MM-DD --> |
