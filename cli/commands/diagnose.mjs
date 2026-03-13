@@ -160,9 +160,9 @@ export function runDiagnose(projectDir, config, flags) {
   if (flags.format === 'json') {
     outputJSON(guardData, scoreData, issues);
   } else if (flags.format === 'prompt') {
-    outputPrompt(projectDir, guardData, scoreData, issues);
+    outputPrompt(projectDir, guardData, scoreData, issues, flags);
   } else {
-    outputText(projectDir, guardData, scoreData, issues);
+    outputText(projectDir, guardData, scoreData, issues, flags);
   }
 }
 
@@ -226,7 +226,7 @@ function outputJSON(guardData, scoreData, issues) {
   console.log(JSON.stringify(result, null, 2));
 }
 
-function outputText(projectDir, guardData, scoreData, issues) {
+function outputText(projectDir, guardData, scoreData, issues, flags) {
   console.log(`${c.bold}🔍 DocGuard Diagnose — ${guardData.project}${c.reset}`);
   console.log(`${c.dim}   Profile: ${guardData.profile} | Score: ${scoreData.score}/100 (${scoreData.grade})${c.reset}`);
   console.log(`${c.dim}   Guard:   ${guardData.passed}/${guardData.total} passed | Status: ${guardData.status}${c.reset}\n`);
@@ -271,16 +271,26 @@ function outputText(projectDir, guardData, scoreData, issues) {
   }
 
   // ── AI Prompt (always shown in text mode for easy copy) ──
-  console.log(`  ${c.bold}🤖 AI-Ready Prompt:${c.reset}`);
-  console.log(`  ${c.dim}Copy everything below and paste to your AI agent:${c.reset}\n`);
-  outputPrompt(undefined, guardData, scoreData, issues);
+  if (flags && flags.debate) {
+    // Multi-perspective debate prompts (AITPG/TRACE-inspired)
+    console.log(`  ${c.bold}🤖 Multi-Perspective AI Debate Prompt:${c.reset}`);
+    console.log(`  ${c.dim}Copy everything below and paste to your AI agent:${c.reset}\n`);
+    outputDebatePrompt(projectDir, guardData, scoreData, issues);
+  } else {
+    console.log(`  ${c.bold}🤖 AI-Ready Prompt:${c.reset}`);
+    console.log(`  ${c.dim}Copy everything below and paste to your AI agent:${c.reset}\n`);
+    outputPrompt(undefined, guardData, scoreData, issues, flags);
+  }
 }
 
-function outputPrompt(projectDir, guardData, scoreData, issues) {
+function outputPrompt(projectDir, guardData, scoreData, issues, flags) {
   if (issues.length === 0) {
     console.log('No issues to fix. Documentation is healthy.');
     return;
   }
+
+  // Detect agent capability for prompt complexity (inspired by CJE equalizer effect, TRACE 2026)
+  const agentTier = detectAgentTier(projectDir || '.');
 
   const lines = [];
   lines.push(`TASK: Fix ${issues.length} documentation issue(s) in project "${guardData.project}"`);
@@ -315,6 +325,11 @@ function outputPrompt(projectDir, guardData, scoreData, issues) {
     if (group.docTarget) {
       lines.push(`   Then research the codebase and write real content for this document.`);
     }
+    // Agent-aware: add extra detail for smaller models
+    if (agentTier === 'basic') {
+      lines.push(`   NOTE: Review the codebase file by file. Look for patterns matching this issue.`);
+      lines.push(`   Check docs-canonical/ for the expected format. Compare against existing docs.`);
+    }
     for (const msg of group.issues) {
       lines.push(`   - ${msg}`);
     }
@@ -327,5 +342,123 @@ function outputPrompt(projectDir, guardData, scoreData, issues) {
   lines.push('Expected result: All checks pass (0 errors, 0 warnings)');
   lines.push(`Target score: ≥${scoreData.score + 5}/100`);
 
+  // Agent-aware: add explicit checklist for basic-tier agents
+  if (agentTier === 'basic') {
+    lines.push('');
+    lines.push('VERIFICATION CHECKLIST (complete each step):');
+    lines.push('□ Read each file in docs-canonical/ before editing');
+    lines.push('□ Run `docguard guard` after each file change');
+    lines.push('□ Confirm 0 errors before moving to next issue');
+    lines.push('□ Run `docguard score` to confirm improvement');
+  }
+
   console.log(lines.join('\n'));
+}
+
+/**
+ * Generate multi-perspective debate prompts.
+ * Inspired by AITPG multi-agent role specialization (Positive/Negative/Edge + Critic)
+ * and TRACE adversarial debate (Advocate/Challenger/Mediator/Explainer).
+ * Lopez et al., IEEE TSE/TMLCN 2026.
+ */
+function outputDebatePrompt(projectDir, guardData, scoreData, issues) {
+  const lines = [];
+
+  lines.push('═══════════════════════════════════════════════════════');
+  lines.push('MULTI-PERSPECTIVE DOCUMENTATION ANALYSIS');
+  lines.push(`Project: "${guardData.project}" | Score: ${scoreData.score}/100 | Issues: ${issues.length}`);
+  lines.push('Methodology: Multi-agent debate (Lopez et al., AITPG/TRACE, IEEE 2026)');
+  lines.push('═══════════════════════════════════════════════════════');
+  lines.push('');
+
+  // Issue context
+  lines.push('CONTEXT — Current Issues:');
+  for (let i = 0; i < issues.length; i++) {
+    lines.push(`  ${i + 1}. [${issues[i].severity.toUpperCase()}] [${issues[i].validator}] ${issues[i].message}`);
+  }
+  lines.push('');
+
+  // ── Agent 1: Advocate ──
+  lines.push('───────────────────────────────────────────────────────');
+  lines.push('PERSPECTIVE 1: ADVOCATE (What is working well)');
+  lines.push('───────────────────────────────────────────────────────');
+  lines.push('Role: You are the Advocate agent. Your job is to identify what the project');
+  lines.push('documentation is doing RIGHT and which patterns should be PRESERVED.');
+  lines.push('');
+  lines.push('Instructions:');
+  lines.push('1. Read all files in docs-canonical/');
+  lines.push('2. Identify which documents are well-structured and complete');
+  lines.push('3. Note which naming conventions, section formats, and patterns are consistent');
+  lines.push('4. List 3-5 strengths that must be preserved during remediation');
+  lines.push('');
+
+  // ── Agent 2: Challenger ──
+  lines.push('───────────────────────────────────────────────────────');
+  lines.push('PERSPECTIVE 2: CHALLENGER (What is broken or risky)');
+  lines.push('───────────────────────────────────────────────────────');
+  lines.push('Role: You are the Challenger agent. Your job is to STRESS-TEST the documentation');
+  lines.push('and identify gaps, inconsistencies, and risks that the issues list might miss.');
+  lines.push('');
+  lines.push('Instructions:');
+  lines.push('1. For each issue listed above, explain WHY it matters and what the root cause is');
+  lines.push('2. Identify any ADDITIONAL issues not caught by docguard guard');
+  lines.push('3. Check: Are there undocumented API routes? Missing env vars? Stale references?');
+  lines.push('4. Rank all issues by business impact (P0 = blocks deployment, P1 = degrades quality, P2 = cosmetic)');
+  lines.push('');
+
+  // ── Agent 3: Synthesizer ──
+  lines.push('───────────────────────────────────────────────────────');
+  lines.push('PERSPECTIVE 3: SYNTHESIZER (Prioritized remediation plan)');
+  lines.push('───────────────────────────────────────────────────────');
+  lines.push('Role: You are the Synthesizer agent. Given the Advocate\'s strengths and the');
+  lines.push('Challenger\'s gaps, produce a PRIORITIZED and ACTIONABLE remediation plan.');
+  lines.push('');
+  lines.push('Instructions:');
+  lines.push('1. Preserve the patterns the Advocate identified as strengths');
+  lines.push('2. Address the Challenger\'s issues in priority order (P0 → P1 → P2)');
+  lines.push('3. For each fix, specify:');
+  lines.push('   a. Which file to edit');
+  lines.push('   b. What section to add or modify');
+  lines.push('   c. What content to write (be specific, not vague)');
+  lines.push('4. After all fixes, verify with: docguard guard');
+  lines.push(`5. Target score: ≥${Math.min(scoreData.score + 10, 100)}/100`);
+  lines.push('');
+  lines.push('═══════════════════════════════════════════════════════');
+  lines.push('Execute all three perspectives in sequence, then implement the Synthesizer\'s plan.');
+  lines.push('═══════════════════════════════════════════════════════');
+
+  console.log(lines.join('\n'));
+}
+
+/**
+ * Detect the AI agent tier from AGENTS.md or .docguard.json.
+ * Returns 'advanced' (concise prompts) or 'basic' (verbose step-by-step).
+ * Inspired by CJE equalizer effect (Lopez et al., TRACE, IEEE TMLCN 2026).
+ */
+function detectAgentTier(projectDir) {
+  // Check .docguard.json for explicit agent config
+  const configPath = resolve(projectDir, '.docguard.json');
+  if (existsSync(configPath)) {
+    try {
+      const config = JSON.parse(readFileSync(configPath, 'utf-8'));
+      if (config.agentTier) return config.agentTier;
+    } catch { /* ignore */ }
+  }
+
+  // Check AGENTS.md for known agent names
+  const agentFiles = ['AGENTS.md', 'CLAUDE.md', '.github/copilot-instructions.md'];
+  for (const file of agentFiles) {
+    const agentPath = resolve(projectDir, file);
+    if (existsSync(agentPath)) {
+      const content = readFileSync(agentPath, 'utf-8').toLowerCase();
+      // Advanced agents: Claude, GPT-4, Gemini Pro
+      const advancedMarkers = ['claude', 'gpt-4', 'gemini pro', 'gemini 2', 'opus', 'sonnet'];
+      if (advancedMarkers.some(m => content.includes(m))) {
+        return 'advanced';
+      }
+    }
+  }
+
+  // Default to advanced (most users run modern models)
+  return 'advanced';
 }

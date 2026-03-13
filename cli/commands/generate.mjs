@@ -23,6 +23,70 @@ const CODE_EXTENSIONS = new Set([
   '.py', '.java', '.go', '.rs', '.rb', '.php', '.cs',
 ]);
 
+/**
+ * Standards citation map — each doc type maps to its governing industry standard.
+ * Inspired by RAG-grounded standards alignment (Lopez et al., AITPG, IEEE TSE 2026).
+ */
+const STANDARDS_CITATIONS = {
+  'ARCHITECTURE.md': {
+    standard: 'arc42 Template + C4 Model',
+    reference: 'Starke, G. & Brown, S. "arc42 — Architecture communication template." https://arc42.org | Brown, S. "The C4 Model for visualising software architecture." https://c4model.com',
+    sections: '§1 Introduction, §2 Constraints, §3 Context, §4 Solution Strategy, §5 Building Blocks, §6 Runtime, §7 Deployment, §8 Crosscutting, §9 ADRs, §10 Quality, §11 Risks, §12 Glossary',
+  },
+  'DATA-MODEL.md': {
+    standard: 'C4 Component Diagram + Entity-Relationship (Chen notation)',
+    reference: 'Brown, S. "C4 Model — Component diagrams." https://c4model.com | Chen, P. "The Entity-Relationship Model." ACM TODS 1(1), 1976',
+    sections: 'Entities, Relationships, ER Diagrams (Mermaid), Field-level definitions',
+  },
+  'TEST-SPEC.md': {
+    standard: 'ISO/IEC/IEEE 29119-3:2022 — Test Documentation',
+    reference: 'ISO/IEC/IEEE, "Software and systems engineering — Software testing — Part 3: Test documentation." International Standard, 2022',
+    sections: 'Test Categories, Coverage Rules, Test Matrix, Tool Configuration',
+  },
+  'SECURITY.md': {
+    standard: 'OWASP ASVS v4.0 + CWE Top 25',
+    reference: 'OWASP Foundation, "Application Security Verification Standard v4.0." https://owasp.org/asvs | MITRE, "CWE Top 25." https://cwe.mitre.org/top25',
+    sections: 'Authentication, Secrets Management, Access Control, Input Validation',
+  },
+  'ENVIRONMENT.md': {
+    standard: '12-Factor App Methodology',
+    reference: 'Wiggins, A. "The Twelve-Factor App." https://12factor.net',
+    sections: 'Environment Variables, Config Separation, Setup Steps, Provider Configuration',
+  },
+  'API-REFERENCE.md': {
+    standard: 'OpenAPI Specification 3.1',
+    reference: 'OpenAPI Initiative, "OpenAPI Specification v3.1.0." https://spec.openapis.org/oas/v3.1.0',
+    sections: 'Endpoints, Request/Response schemas, Authentication, Error codes',
+  },
+};
+
+/**
+ * Append a standards citation footer to generated doc content.
+ * @param {string} content - The generated markdown content
+ * @param {string} docName - The filename (e.g., 'ARCHITECTURE.md')
+ * @returns {string} Content with citation footer appended
+ */
+function appendStandardsCitation(content, docName) {
+  const citation = STANDARDS_CITATIONS[docName];
+  if (!citation) return content;
+
+  const footer = `
+---
+
+## Standards Reference
+
+> **Aligned with**: ${citation.standard}
+>
+> **Sections covered**: ${citation.sections}
+>
+> **Reference**: ${citation.reference}
+>
+> *Standards alignment inspired by RAG-grounded generation (Lopez et al., AITPG, IEEE TSE 2026).*
+`;
+
+  return content.trimEnd() + '\n' + footer;
+}
+
 export function runGenerate(projectDir, config, flags) {
   console.log(`${c.bold}🔮 DocGuard Generate — ${config.projectName}${c.reset}`);
   console.log(`${c.dim}   Directory: ${projectDir}${c.reset}`);
@@ -511,7 +575,7 @@ See \\\`docs-canonical/KNOWN-GOTCHAS.md\\\` for known issues.
 | 0.1.0 | ${new Date().toISOString().split('T')[0]} | DocGuard Generate | Auto-generated (arc42 + C4 aligned) |
 `;
 
-  writeFileSync(path, content, 'utf-8');
+  writeFileSync(path, appendStandardsCitation(content, 'ARCHITECTURE.md'), 'utf-8');
   console.log(`  ${c.green}✅ ARCHITECTURE.md${c.reset} (arc42 §1-§12, ${componentRows.length} components, ${Object.values(stack).filter(Boolean).length} tech)`);
   return true;
 }
@@ -608,7 +672,7 @@ ${resourceSections}
 | 0.1.0 | ${new Date().toISOString().split('T')[0]} | DocGuard Generate | Auto-generated (${deepRoutes.length} endpoints from ${deepRoutes[0]?.source || 'code'}) |
 `;
 
-  writeFileSync(path, content, 'utf-8');
+  writeFileSync(path, appendStandardsCitation(content, 'API-REFERENCE.md'), 'utf-8');
   console.log(`  ${c.green}✅ API-REFERENCE.md${c.reset} (${deepRoutes.length} endpoints, ${Object.keys(groups).length} resources)`);
   return true;
 }
@@ -763,7 +827,7 @@ ${erDiagram}
 | 0.1.0 | ${new Date().toISOString().split('T')[0]} | DocGuard Generate | Auto-generated (${entities.length} entities, ${relationships.length} relationships from ${schemaSource}) |
 `;
 
-  writeFileSync(path, content, 'utf-8');
+  writeFileSync(path, appendStandardsCitation(content, 'DATA-MODEL.md'), 'utf-8');
   console.log(`  ${c.green}✅ DATA-MODEL.md${c.reset} (${entities.length} entities, ${relationships.length} relationships from ${schemaSource})`);
   return true;
 }
@@ -826,7 +890,7 @@ ${envVarRows || '| <!-- No .env.example found --> | | | | |'}
 | 0.1.0 | ${new Date().toISOString().split('T')[0]} | DocGuard Generate | Auto-generated (${scan.envVars.length} env vars found) |
 `;
 
-  writeFileSync(path, content, 'utf-8');
+  writeFileSync(path, appendStandardsCitation(content, 'ENVIRONMENT.md'), 'utf-8');
   console.log(`  ${c.green}✅ ENVIRONMENT.md${c.reset} (${scan.envVars.length} env vars detected)`);
   return true;
 }
@@ -911,7 +975,7 @@ ${serviceRows || '| <!-- No services found --> | | | |'}
 | 0.1.0 | ${new Date().toISOString().split('T')[0]} | DocGuard Generate | Auto-generated (${scan.tests.length} test files, ${serviceMap.filter(s => s.status === '✅').length}/${serviceMap.length} mapped) |
 `;
 
-  writeFileSync(path, content, 'utf-8');
+  writeFileSync(path, appendStandardsCitation(content, 'TEST-SPEC.md'), 'utf-8');
   console.log(`  ${c.green}✅ TEST-SPEC.md${c.reset} (${scan.tests.length} tests, ${serviceMap.filter(s => s.status === '✅').length}/${serviceMap.length} services mapped)`);
   return true;
 }
@@ -977,7 +1041,7 @@ ${scan.envVars.filter(v => isSecretVar(v.name)).map(v =>
 | 0.1.0 | ${new Date().toISOString().split('T')[0]} | DocGuard Generate | Auto-generated |
 `;
 
-  writeFileSync(path, content, 'utf-8');
+  writeFileSync(path, appendStandardsCitation(content, 'SECURITY.md'), 'utf-8');
   console.log(`  ${c.green}✅ SECURITY.md${c.reset} (auth: ${stack.auth || 'not detected'})`);
   return true;
 }

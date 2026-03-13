@@ -99,6 +99,37 @@ export function runScore(projectDir, config, flags) {
     console.log(`  Tax-to-value ratio:  ${taxColor}${c.bold}${tax.level}${c.reset}`);
     console.log(`  ${c.dim}${tax.recommendation}${c.reset}\n`);
   }
+
+  // ── Multi-Signal Breakdown (--signals flag) ──
+  // Inspired by CJE multi-signal composite scoring (Lopez et al., TRACE, IEEE TMLCN 2026)
+  if (flags.signals) {
+    console.log(`  ${c.bold}📡 Multi-Signal Quality Breakdown${c.reset}`);
+    console.log(`  ${c.dim}─────────────────────────────────${c.reset}`);
+
+    const signals = [
+      { name: 'Structure',     score: scores.structure,    weight: WEIGHTS.structure,    description: 'Required files exist' },
+      { name: 'Doc Quality',   score: scores.docQuality,   weight: WEIGHTS.docQuality,   description: 'Docs have required sections + content' },
+      { name: 'Testing',       score: scores.testing,      weight: WEIGHTS.testing,      description: 'Test spec alignment' },
+      { name: 'Security',      score: scores.security,     weight: WEIGHTS.security,     description: 'No hardcoded secrets, .gitignore' },
+      { name: 'Environment',   score: scores.environment,  weight: WEIGHTS.environment,  description: 'Env docs, .env.example' },
+      { name: 'Drift',         score: scores.drift,        weight: WEIGHTS.drift,        description: 'Drift tracking discipline' },
+      { name: 'Changelog',     score: scores.changelog,    weight: WEIGHTS.changelog,    description: 'Changelog maintenance' },
+      { name: 'Architecture',  score: scores.architecture, weight: WEIGHTS.architecture, description: 'Layer boundary compliance' },
+    ];
+
+    for (const sig of signals) {
+      const weighted = Math.round((sig.score / 100) * sig.weight);
+      const quality = sig.score >= 90 ? 'HIGH' : sig.score >= 50 ? 'MEDIUM' : 'LOW';
+      const qColor = quality === 'HIGH' ? c.green : quality === 'MEDIUM' ? c.yellow : c.red;
+      const bar = renderBar(sig.score);
+
+      console.log(`  ${bar} ${qColor}[${quality}]${c.reset} ${sig.name.padEnd(14)} ${sig.score}% → ${c.bold}${weighted}/${sig.weight}${c.reset} pts  ${c.dim}${sig.description}${c.reset}`);
+    }
+
+    console.log(`\n  ${c.dim}Composite: Σ(signal_score × weight) = ${totalScore}/100${c.reset}`);
+    console.log(`  ${c.dim}Quality labels: HIGH (≥90%), MEDIUM (50-89%), LOW (<50%)${c.reset}`);
+    console.log(`  ${c.dim}Methodology: CJE multi-signal composite (Lopez et al., TRACE, IEEE TMLCN 2026)${c.reset}\n`);
+  }
 }
 
 /**

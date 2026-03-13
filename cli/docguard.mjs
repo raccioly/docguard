@@ -36,6 +36,7 @@ import { runFix } from './commands/fix.mjs';
 import { runWatch } from './commands/watch.mjs';
 import { runDiagnose } from './commands/diagnose.mjs';
 import { runPublish } from './commands/publish.mjs';
+import { runTrace } from './commands/trace.mjs';
 
 // ── Colors (ANSI escape codes, zero deps) ──────────────────────────────────
 export const c = {
@@ -287,6 +288,7 @@ ${c.bold}Commands:${c.reset}
   ${c.green}fix${c.reset}        Find issues and generate AI fix instructions
   ${c.green}watch${c.reset}      Watch for file changes and re-run guard automatically
   ${c.green}publish${c.reset}    Scaffold external docs (Mintlify, Docusaurus)
+  ${c.green}trace${c.reset}      Generate requirements traceability matrix
 
 ${c.bold}Options:${c.reset}
   --dir <path>    Project directory (default: current directory)
@@ -398,6 +400,10 @@ function main() {
       i++;
     } else if (args[i] === '--no-fix') {
       flags.noFix = true;
+    } else if (args[i] === '--signals') {
+      flags.signals = true;
+    } else if (args[i] === '--debate') {
+      flags.debate = true;
     }
   }
 
@@ -465,6 +471,10 @@ function main() {
     case 'publish':
     case 'pub':
       runPublish(projectDir, config, flags);
+      break;
+    case 'trace':
+    case 'traceability':
+      runTrace(projectDir, config, flags);
       break;
     default:
       console.error(`${c.red}Unknown command: ${command}${c.reset}`);

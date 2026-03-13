@@ -143,6 +143,28 @@ CDD is designed for progressive adoption:
 
 ---
 
+## Academic Foundations
+
+CDD is a practitioner methodology, but its core patterns align with peer-reviewed research in AI-driven documentation and quality evaluation:
+
+### The Three-Stage Pipeline
+
+DocGuard's architecture follows a **generate → validate → evaluate** pipeline inspired by the AITPG framework (Lopez et al., IEEE TSE 2026), which demonstrated that multi-agent debate over RAG-grounded standards produces 32% more comprehensive documentation while maintaining semantic alignment with expert references.
+
+### Calibrated Quality Evaluation
+
+DocGuard's quality scoring (HIGH/MEDIUM/LOW labels, multi-signal composite scores) adapts the Calibrated Judge Evaluation (CJE) framework from TRACE (Lopez et al., IEEE TMLCN 2026), which showed that weighted multi-signal scoring with confidence intervals provides actionable quality gating for enterprise deployment.
+
+### Standards-Grounded Generation
+
+Both AITPG and TRACE demonstrate that grounding AI-generated content in vectorized standards (ISO 29119, 3GPP) dramatically improves output quality. DocGuard applies this principle by mapping each canonical document to its relevant industry standard (arc42, C4, OWASP ASVS, ISO 29119, OpenAPI 3.1, 12-Factor App).
+
+> **Full citations**: See [CONTRIBUTING.md — Research & Academic Credits](CONTRIBUTING.md#research--academic-credits)
+>
+> **Lead researcher**: [Martin Manuel Lopez](https://github.com/martinmanuel9) · [ORCID 0009-0002-7652-2385](https://orcid.org/0009-0002-7652-2385), University of Arizona
+
+---
+
 ## License
 
 This philosophy document and the CDD methodology are released under the [MIT License](https://opensource.org/licenses/MIT).

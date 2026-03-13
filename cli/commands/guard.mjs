@@ -52,7 +52,7 @@ export function runGuardInternal(projectDir, config) {
 
   for (const { key, name, fn } of validatorMap) {
     if (validators[key] === false) {
-      results.push({ name, key, status: 'skipped', errors: [], warnings: [], passed: 0, total: 0 });
+      results.push({ name, key, status: 'skipped', quality: null, errors: [], warnings: [], passed: 0, total: 0 });
       continue;
     }
 
@@ -61,9 +61,22 @@ export function runGuardInternal(projectDir, config) {
       const hasErrors = result.errors.length > 0;
       const hasWarnings = result.warnings.length > 0;
       const status = hasErrors ? 'fail' : hasWarnings ? 'warn' : 'pass';
-      results.push({ ...result, name, key, status });
+
+      // Quality label: HIGH/MEDIUM/LOW (inspired by CJE quality stratification, Lopez et al. TRACE 2026)
+      let quality;
+      if (hasErrors) {
+        quality = 'LOW';
+      } else if (hasWarnings) {
+        quality = 'MEDIUM';
+      } else {
+        // Pass — check coverage ratio for HIGH vs MEDIUM
+        const ratio = result.total > 0 ? result.passed / result.total : 1;
+        quality = ratio >= 0.9 ? 'HIGH' : 'MEDIUM';
+      }
+
+      results.push({ ...result, name, key, status, quality });
     } catch (err) {
-      results.push({ name, key, status: 'fail', errors: [err.message], warnings: [], passed: 0, total: 1 });
+      results.push({ name, key, status: 'fail', quality: 'LOW', errors: [err.message], warnings: [], passed: 0, total: 1 });
     }
   }
 
@@ -114,12 +127,16 @@ export function runGuard(projectDir, config, flags) {
       continue;
     }
 
+    // Quality label badge
+    const qColor = v.quality === 'HIGH' ? c.green : v.quality === 'MEDIUM' ? c.yellow : c.red;
+    const qBadge = `${qColor}[${v.quality}]${c.reset}`;
+
     if (v.status === 'pass') {
-      console.log(`  ${c.green}✅ ${v.name}${c.reset}${c.dim}      ${v.passed}/${v.total} checks passed${c.reset}`);
+      console.log(`  ${c.green}✅ ${v.name}${c.reset} ${qBadge}${c.dim}  ${v.passed}/${v.total} checks passed${c.reset}`);
     } else if (v.status === 'fail') {
-      console.log(`  ${c.red}❌ ${v.name}${c.reset}${c.dim}      ${v.passed}/${v.total} checks passed${c.reset}`);
+      console.log(`  ${c.red}❌ ${v.name}${c.reset} ${qBadge}${c.dim}  ${v.passed}/${v.total} checks passed${c.reset}`);
     } else {
-      console.log(`  ${c.yellow}⚠️  ${v.name}${c.reset}${c.dim}      ${v.passed}/${v.total} checks passed${c.reset}`);
+      console.log(`  ${c.yellow}⚠️  ${v.name}${c.reset} ${qBadge}${c.dim}  ${v.passed}/${v.total} checks passed${c.reset}`);
     }
 
     if (flags.verbose || v.status === 'fail') {

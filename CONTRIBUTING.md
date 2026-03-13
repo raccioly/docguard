@@ -101,6 +101,39 @@ Open a GitHub issue with:
 - Steps to reproduce
 - Expected vs actual behavior
 
+## Research & Academic Credits
+
+DocGuard's architecture is informed by peer-reviewed research in AI-driven documentation generation and multi-agent quality evaluation. We gratefully acknowledge the following contributions:
+
+### Key Research Contributors
+
+- **[Martin Manuel Lopez](https://github.com/martinmanuel9)** · [ORCID 0009-0002-7652-2385](https://orcid.org/0009-0002-7652-2385)
+  - Ph.D. Candidate, Dept. of Electrical and Computer Engineering, University of Arizona
+  - Lead author on AITPG and TRACE — the two papers that informed DocGuard's quality evaluation, multi-perspective analysis, and standards-grounded generation patterns
+
+### Cited Papers
+
+The following papers directly influenced DocGuard's design:
+
+> **[1]** M. M. Lopez, M. W. U. Rahman, C. Farthing, J. Battle, K. Buckley, G. Altintarla, and S. Hariri, "AITPG: Agentic AI-Driven Test Plan Generator using Multi-Agent Debate and Retrieval-Augmented Generation," *IEEE Transactions on Software Engineering*, 2026.
+> — Introduced the three-stage pipeline (generate → debate → calibrated evaluation), RAG-grounded standards alignment, and multi-agent role specialization (Positive/Negative/Edge + Critic) for documentation generation.
+
+> **[2]** M. M. Lopez, M. W. U. Rahman, C. Farthing, J. Battle, K. Buckley, G. Altintarla, and S. Hariri, "TRACE: Telecommunications Root Cause Analysis through Calibrated Explainability via Multi-Agent Debate," *IEEE Transactions on Machine Learning in Communications and Networking*, 2026.
+> — Introduced Calibrated Judge Evaluation (CJE) with weighted multi-signal composite scoring, HIGH/MEDIUM/LOW quality labels, the "equalizer effect" for agent-aware prompt scaling, and adversarial debate (Advocate/Challenger/Mediator/Explainer) for robust quality assessment.
+
+### Concepts Adopted in DocGuard
+
+| DocGuard Feature | Research Origin | Paper |
+|-----------------|----------------|-------|
+| Quality labels (HIGH/MED/LOW) in `guard` output | CJE quality stratification | TRACE [2] |
+| Standards citations in generated docs | RAG-grounded standards alignment | AITPG [1] |
+| Multi-signal composite scoring in `score` | 5-signal weighted composite (Eq. 1) | TRACE [2] |
+| Traceability matrix (`trace` command) | Requirements traceability | AITPG [1] |
+| Multi-perspective `diagnose --debate` prompts | Multi-agent role specialization | AITPG [1], TRACE [2] |
+| Agent-aware prompt complexity | CJE equalizer effect | TRACE [2] |
+
+---
+
 ## License
 
 By contributing, you agree that your contributions will be licensed under the MIT License.
