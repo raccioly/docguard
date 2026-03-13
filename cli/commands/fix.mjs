@@ -16,7 +16,7 @@
 import { existsSync, readFileSync, mkdirSync } from 'node:fs';
 import { resolve, basename } from 'node:path';
 import { execSync } from 'node:child_process';
-import { c } from '../specguard.mjs';
+import { c } from '../docguard.mjs';
 
 // ── Document Quality Definitions ───────────────────────────────────────────
 // What each doc SHOULD contain, and what to look for in the codebase
@@ -49,7 +49,7 @@ WRITE THE DOCUMENT:
 - Key Design Decisions: Why the architecture is the way it is
 - Technology Choices: List frameworks/tools and why they were chosen
 
-FORMAT: Use the specguard metadata header (version, status, last-reviewed).
+FORMAT: Use the docguard metadata header (version, status, last-reviewed).
 IMPORTANT: Use REAL file paths, REAL module names, REAL dependency names. No placeholders.`,
   },
 
@@ -70,7 +70,7 @@ RESEARCH STEPS:
 3. Check for migration files in migrations/, db/, prisma/, etc.
 4. Look for TypeScript interfaces/types that define data shapes
 5. Check for Zod schemas, JSON schemas, or validation files
-6. If no database: document the config file format (.specguard.json, etc.)
+6. If no database: document the config file format (.docguard.json, etc.)
 
 WRITE THE DOCUMENT:
 - If database project: Document each table with columns, types, constraints, indexes, relationships
@@ -187,7 +187,7 @@ export function runFix(projectDir, config, flags) {
   }
 
   if (!isJson && !isPrompt) {
-    console.log(`${c.bold}🔧 SpecGuard Fix — ${config.projectName}${c.reset}`);
+    console.log(`${c.bold}🔧 DocGuard Fix — ${config.projectName}${c.reset}`);
     console.log(`${c.dim}   Directory: ${projectDir}${c.reset}`);
     console.log(`${c.dim}   Scanning for issues...${c.reset}\n`);
   }
@@ -198,7 +198,7 @@ export function runFix(projectDir, config, flags) {
     const fixed = autoFixIssues(projectDir, config, issues);
     if (!isJson) {
       console.log(`  ${c.green}✅ Created ${fixed} skeleton file(s)${c.reset}`);
-      console.log(`  ${c.dim}   Now run ${c.cyan}specguard fix --format prompt${c.dim} to generate AI instructions for filling them in${c.reset}\n`);
+      console.log(`  ${c.dim}   Now run ${c.cyan}docguard fix --format prompt${c.dim} to generate AI instructions for filling them in${c.reset}\n`);
     }
     const remaining = collectIssues(projectDir, config);
     outputResults(remaining, projectDir, config, flags);
@@ -230,8 +230,8 @@ function collectIssues(projectDir, config) {
         autoFixable: true,
         fix: {
           action: 'create',
-          command: 'specguard fix --auto',
-          ai_instruction: `Create ${file} with real project content. Run: specguard fix --doc ${basename(file, '.md').toLowerCase()}`,
+          command: 'docguard fix --auto',
+          ai_instruction: `Create ${file} with real project content. Run: docguard fix --doc ${basename(file, '.md').toLowerCase()}`,
         },
       });
     }
@@ -250,8 +250,8 @@ function collectIssues(projectDir, config) {
       autoFixable: true,
       fix: {
         action: 'create',
-        command: 'specguard fix --auto',
-        ai_instruction: 'Create AGENTS.md with project stack, workflow rules, and SpecGuard integration.',
+        command: 'docguard fix --auto',
+        ai_instruction: 'Create AGENTS.md with project stack, workflow rules, and DocGuard integration.',
       },
     });
   }
@@ -273,7 +273,7 @@ function collectIssues(projectDir, config) {
         autoFixable: false,
         fix: {
           action: 'rewrite',
-          ai_instruction: `This document is just a template. Run: specguard fix --doc ${basename(filePath, '.md').toLowerCase()}\nThen have your AI assistant execute the generated prompt to write real content.`,
+          ai_instruction: `This document is just a template. Run: docguard fix --doc ${basename(filePath, '.md').toLowerCase()}\nThen have your AI assistant execute the generated prompt to write real content.`,
         },
       });
     } else if (quality.score === 'partial') {
@@ -285,25 +285,25 @@ function collectIssues(projectDir, config) {
         autoFixable: false,
         fix: {
           action: 'improve',
-          ai_instruction: `Improve ${filePath}. ${quality.failedSignals.join('. ')}.\nRun: specguard fix --doc ${basename(filePath, '.md').toLowerCase()} --format prompt`,
+          ai_instruction: `Improve ${filePath}. ${quality.failedSignals.join('. ')}.\nRun: docguard fix --doc ${basename(filePath, '.md').toLowerCase()} --format prompt`,
         },
       });
     }
     // quality.score === 'good' → no issue
   }
 
-  // 3. Missing .specguard.json
-  if (!existsSync(resolve(projectDir, '.specguard.json'))) {
+  // 3. Missing .docguard.json
+  if (!existsSync(resolve(projectDir, '.docguard.json'))) {
     issues.push({
       type: 'missing-config',
       severity: 'info',
-      file: '.specguard.json',
-      message: 'No .specguard.json — using defaults',
+      file: '.docguard.json',
+      message: 'No .docguard.json — using defaults',
       autoFixable: true,
       fix: {
         action: 'create',
-        command: 'specguard fix --auto',
-        ai_instruction: 'Create .specguard.json with projectName, projectType, and projectTypeConfig.',
+        command: 'docguard fix --auto',
+        ai_instruction: 'Create .docguard.json with projectName, projectType, and projectTypeConfig.',
       },
     });
   }
@@ -452,9 +452,9 @@ function generateDocPrompt(projectDir, config, docName) {
 
   console.log(expectations.aiResearchInstructions.trim());
 
-  console.log(`\nVALIDATION: After writing, run \`npx specguard guard\` to verify the document passes all checks.`);
+  console.log(`\nVALIDATION: After writing, run \`npx docguard guard\` to verify the document passes all checks.`);
   console.log(`The document should have NO <!-- TODO --> or <!-- e.g. --> placeholders.`);
-  console.log(`Set the specguard:status header to 'active' (not 'draft').`);
+  console.log(`Set the docguard:status header to 'active' (not 'draft').`);
 }
 
 // ── Auto-Fix (skeleton creation only) ──────────────────────────────────────
@@ -471,7 +471,7 @@ function autoFixIssues(projectDir, config, issues) {
   }
 
   try {
-    const cliPath = resolve(import.meta.dirname, '..', 'specguard.mjs');
+    const cliPath = resolve(import.meta.dirname, '..', 'docguard.mjs');
     execSync(`node ${cliPath} init --dir "${projectDir}"`, {
       encoding: 'utf-8',
       stdio: 'pipe',
@@ -521,7 +521,7 @@ function outputResults(issues, projectDir, config, flags) {
   if (isPrompt) {
     // Smart prompt that groups by action type
     console.log(`You are working on "${config.projectName}" (${config.projectType || 'unknown'} project).`);
-    console.log(`SpecGuard found ${issues.length} documentation issue(s).\n`);
+    console.log(`DocGuard found ${issues.length} documentation issue(s).\n`);
 
     // Group: empty/missing docs first (these need AI to write)
     const needsWriting = issues.filter(i => i.type === 'empty-doc' || i.type === 'missing-file');
@@ -530,11 +530,11 @@ function outputResults(issues, projectDir, config, flags) {
 
     if (needsWriting.length > 0) {
       console.log('## Documents That Need To Be Written\n');
-      console.log('These documents are empty templates or missing. For each one, run the specguard fix --doc command to get detailed research instructions:\n');
+      console.log('These documents are empty templates or missing. For each one, run the docguard fix --doc command to get detailed research instructions:\n');
       for (const issue of needsWriting) {
         const docKey = basename(issue.file, '.md').toLowerCase();
         console.log(`- **${issue.file}**: ${issue.message}`);
-        console.log(`  → Run: \`specguard fix --doc ${docKey}\` for AI research prompt\n`);
+        console.log(`  → Run: \`docguard fix --doc ${docKey}\` for AI research prompt\n`);
       }
     }
 
@@ -554,7 +554,7 @@ function outputResults(issues, projectDir, config, flags) {
       }
     }
 
-    console.log('\nAfter fixing, run `specguard guard` to verify compliance.');
+    console.log('\nAfter fixing, run `docguard guard` to verify compliance.');
     return;
   }
 
@@ -569,9 +569,9 @@ function outputResults(issues, projectDir, config, flags) {
       console.log(`    ${c.red}✖${c.reset} ${e.message}`);
       if (e.type === 'empty-doc') {
         const docKey = basename(e.file, '.md').toLowerCase();
-        console.log(`      ${c.dim}Run: ${c.cyan}specguard fix --doc ${docKey}${c.dim} → paste prompt into AI${c.reset}`);
+        console.log(`      ${c.dim}Run: ${c.cyan}docguard fix --doc ${docKey}${c.dim} → paste prompt into AI${c.reset}`);
       } else {
-        console.log(`      ${c.dim}Run: ${c.cyan}${e.fix.command || 'specguard fix --auto'}${c.reset}`);
+        console.log(`      ${c.dim}Run: ${c.cyan}${e.fix.command || 'docguard fix --auto'}${c.reset}`);
       }
     }
     console.log('');
@@ -583,7 +583,7 @@ function outputResults(issues, projectDir, config, flags) {
       console.log(`    ${c.yellow}⚠${c.reset} ${w.message}`);
       if (w.type === 'partial-doc') {
         const docKey = basename(w.file, '.md').toLowerCase();
-        console.log(`      ${c.dim}Run: ${c.cyan}specguard fix --doc ${docKey}${c.dim} → paste prompt into AI${c.reset}`);
+        console.log(`      ${c.dim}Run: ${c.cyan}docguard fix --doc ${docKey}${c.dim} → paste prompt into AI${c.reset}`);
       } else {
         console.log(`      ${c.dim}${w.fix.ai_instruction.slice(0, 100)}${c.reset}`);
       }
@@ -603,8 +603,8 @@ function outputResults(issues, projectDir, config, flags) {
   console.log(`  ${c.bold}Total: ${issues.length} issue(s)${c.reset}`);
   console.log('');
   console.log(`  ${c.dim}${c.bold}Workflow:${c.reset}`);
-  console.log(`  ${c.dim}  1. ${c.cyan}specguard fix --auto${c.dim}            Create skeleton files${c.reset}`);
-  console.log(`  ${c.dim}  2. ${c.cyan}specguard fix --doc architecture${c.dim}  Get AI prompt for each doc${c.reset}`);
+  console.log(`  ${c.dim}  1. ${c.cyan}docguard fix --auto${c.dim}            Create skeleton files${c.reset}`);
+  console.log(`  ${c.dim}  2. ${c.cyan}docguard fix --doc architecture${c.dim}  Get AI prompt for each doc${c.reset}`);
   console.log(`  ${c.dim}  3. Paste prompt into your AI assistant (Copilot, Cursor, Claude)${c.reset}`);
-  console.log(`  ${c.dim}  4. ${c.cyan}specguard guard${c.dim}                  Verify compliance${c.reset}\n`);
+  console.log(`  ${c.dim}  4. ${c.cyan}docguard guard${c.dim}                  Verify compliance${c.reset}\n`);
 }

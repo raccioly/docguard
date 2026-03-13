@@ -73,7 +73,7 @@ This is a fundamental philosophical difference:
 | Docs are disposable artifacts | Docs are authoritative sources |
 | No governance, no warnings | Validators catch misalignment |
 
-SpecGuard CAN generate docs from existing codebases (for adoption). But the intent is that once generated, those docs become the canonical source — and future code must conform to them.
+DocGuard CAN generate docs from existing codebases (for adoption). But the intent is that once generated, those docs become the canonical source — and future code must conform to them.
 
 ---
 
@@ -103,10 +103,10 @@ CDD doesn't replace existing methodologies. It enhances them:
 Write canonical docs first. The TEST-SPEC.md in your canonical docs declares what tests must exist. TDD then drives the implementation of those tests. CDD governs the test policy; TDD governs the test implementation.
 
 ### CDD + BDD (Behavior-Driven Development)
-Behavior specifications can live in `docs-canonical/FEATURES.md`. BDD's Given/When/Then scenarios become part of the canonical record. SpecGuard can validate that corresponding E2E tests exist.
+Behavior specifications can live in `docs-canonical/FEATURES.md`. BDD's Given/When/Then scenarios become part of the canonical record. DocGuard can validate that corresponding E2E tests exist.
 
 ### CDD + SDD (Spec-Driven Development)
-SDD tools like GitHub Spec Kit handle the generation phase (spec → code). CDD adds the governance phase (code ↔ spec, continuously). Use Spec Kit for Phase 1-2 of the CDD lifecycle, then SpecGuard for Phase 3-4.
+SDD tools like GitHub Spec Kit handle the generation phase (spec → code). CDD adds the governance phase (code ↔ spec, continuously). Use Spec Kit for Phase 1-2 of the CDD lifecycle, then DocGuard for Phase 3-4.
 
 ### CDD + Agile/Scrum
 Canonical docs don't need to be waterfall-length documents. A 30-line `ARCHITECTURE.md` is valid. The key is that it EXISTS, is MAINTAINED, and is VALIDATED. Sprint-by-sprint, canonical docs grow alongside the codebase.
@@ -123,9 +123,9 @@ If your project follows CDD:
 
 3. **Drift is conscious** — every deviation from the plan is documented, justified, and trackable. No silent rot.
 
-4. **Quality is enforceable** — SpecGuard validators run in CI/CD, catching missing tests, undocumented routes, and unlogged drift before code ships.
+4. **Quality is enforceable** — DocGuard validators run in CI/CD, catching missing tests, undocumented routes, and unlogged drift before code ships.
 
-5. **Documentation stays alive** — because it's validated on every commit, docs can't rot. If code changes, SpecGuard catches the misalignment.
+5. **Documentation stays alive** — because it's validated on every commit, docs can't rot. If code changes, DocGuard catches the misalignment.
 
 ---
 
@@ -135,9 +135,9 @@ CDD is designed for progressive adoption:
 
 **Day 1**: Create `AGENTS.md` and `docs-canonical/ARCHITECTURE.md`. Two files. That's CDD.
 
-**Week 1**: Add `DATA-MODEL.md`, `SECURITY.md`, `TEST-SPEC.md`, `ENVIRONMENT.md`. Run `specguard audit` to see your score.
+**Week 1**: Add `DATA-MODEL.md`, `SECURITY.md`, `TEST-SPEC.md`, `ENVIRONMENT.md`. Run `docguard audit` to see your score.
 
-**Month 1**: Add `DRIFT-LOG.md`, `CHANGELOG.md`. Run `specguard guard` in your pre-commit hook. You're now fully CDD-compliant.
+**Month 1**: Add `DRIFT-LOG.md`, `CHANGELOG.md`. Run `docguard guard` in your pre-commit hook. You're now fully CDD-compliant.
 
 **Forever**: Every commit is validated. Every drift is logged. Every agent understands your project.
 

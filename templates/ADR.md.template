@@ -1,8 +1,8 @@
 # Architecture Decision Records (ADR)
 
-<!-- specguard:version 0.1.0 -->
-<!-- specguard:status living -->
-<!-- specguard:last-reviewed YYYY-MM-DD -->
+<!-- docguard:version 0.1.0 -->
+<!-- docguard:status living -->
+<!-- docguard:last-reviewed YYYY-MM-DD -->
 
 > **Canonical document** — Design intent. Records significant architectural decisions and their rationale.  
 > Once accepted, ADRs are immutable. Superseded ADRs are preserved with a link to their replacement.

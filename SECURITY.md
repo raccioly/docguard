@@ -9,7 +9,7 @@
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in SpecGuard, please report it responsibly:
+If you discover a security vulnerability in DocGuard, please report it responsibly:
 
 1. **Do NOT** open a public GitHub issue for security vulnerabilities
 2. **Email** the maintainers directly (see repository contact info)
@@ -23,7 +23,7 @@ We will acknowledge your report within 48 hours and provide a timeline for a fix
 
 ## Security Model
 
-SpecGuard is a **local CLI tool** with a minimal attack surface:
+DocGuard is a **local CLI tool** with a minimal attack surface:
 
 - **Zero npm dependencies** — no supply chain risk
 - **No network requests** — runs entirely offline
@@ -35,6 +35,6 @@ For full details, see [docs-canonical/SECURITY.md](./docs-canonical/SECURITY.md)
 
 ## Best Practices for Users
 
-- Keep Node.js updated (SpecGuard requires ≥ 18)
-- Review generated git hooks before enabling (`specguard hooks`)
+- Keep Node.js updated (DocGuard requires ≥ 18)
+- Review generated git hooks before enabling (`docguard hooks`)
 - Review generated documentation before committing

@@ -1,4 +1,4 @@
-# /specguard.update — Update canonical docs after code changes
+# /docguard.update — Update canonical docs after code changes
 
 You are an AI agent that updates documentation to reflect recent code changes.
 
@@ -31,14 +31,14 @@ For each affected document:
 1. Read the current document
 2. Read the relevant source code changes
 3. Update the specific section that changed
-4. Update the `specguard:last-reviewed` date to today
+4. Update the `docguard:last-reviewed` date to today
 5. Add entry to CHANGELOG.md under [Unreleased]
 
 ## Step 4: Verify
 
 ```bash
-npx specguard guard
-npx specguard score
+npx docguard guard
+npx docguard score
 ```
 
 All checks should pass. Report the changes made.

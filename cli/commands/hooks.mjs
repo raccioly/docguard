@@ -1,45 +1,45 @@
 /**
- * Hooks Command — Generate pre-commit/pre-push hooks for SpecGuard
+ * Hooks Command — Generate pre-commit/pre-push hooks for DocGuard
  * Creates git hooks that run guard/score before commits.
  */
 
 import { existsSync, writeFileSync, mkdirSync, chmodSync, readFileSync, unlinkSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { c } from '../specguard.mjs';
+import { c } from '../docguard.mjs';
 
 const HOOKS = {
   'pre-commit': {
-    description: 'Run specguard guard before every commit',
+    description: 'Run docguard guard before every commit',
     content: `#!/bin/sh
-# SpecGuard pre-commit hook
+# DocGuard pre-commit hook
 # Validates CDD compliance before allowing commits
-# Install: specguard hooks --type pre-commit
+# Install: docguard hooks --type pre-commit
 # Remove: rm .git/hooks/pre-commit
 
-echo "🛡️  Running SpecGuard guard..."
+echo "🛡️  Running DocGuard guard..."
 
-# Check if specguard is available
+# Check if docguard is available
 if command -v npx &> /dev/null; then
-  npx specguard guard
+  npx docguard guard
   EXIT_CODE=$?
-elif command -v specguard &> /dev/null; then
-  specguard guard
+elif command -v docguard &> /dev/null; then
+  docguard guard
   EXIT_CODE=$?
 else
-  echo "⚠️  SpecGuard not found. Skipping guard check."
-  echo "   Install: npm install -g specguard"
+  echo "⚠️  DocGuard not found. Skipping guard check."
+  echo "   Install: npm install -g docguard"
   exit 0
 fi
 
 if [ $EXIT_CODE -eq 1 ]; then
   echo ""
-  echo "❌ SpecGuard guard FAILED — commit blocked"
+  echo "❌ DocGuard guard FAILED — commit blocked"
   echo "   Fix the errors above, then try again."
   echo "   To skip: git commit --no-verify"
   exit 1
 elif [ $EXIT_CODE -eq 2 ]; then
   echo ""
-  echo "⚠️  SpecGuard guard found warnings — commit allowed"
+  echo "⚠️  DocGuard guard found warnings — commit allowed"
 fi
 
 exit 0
@@ -47,24 +47,24 @@ exit 0
   },
 
   'pre-push': {
-    description: 'Run specguard score check before push (enforce minimum score)',
+    description: 'Run docguard score check before push (enforce minimum score)',
     content: `#!/bin/sh
-# SpecGuard pre-push hook
+# DocGuard pre-push hook
 # Enforces minimum CDD score before allowing push
-# Install: specguard hooks --type pre-push
+# Install: docguard hooks --type pre-push
 # Remove: rm .git/hooks/pre-push
 
 MIN_SCORE=60
 
-echo "📊 Running SpecGuard score check (minimum: $MIN_SCORE)..."
+echo "📊 Running DocGuard score check (minimum: $MIN_SCORE)..."
 
 # Get score as JSON
 if command -v npx &> /dev/null; then
-  RESULT=$(npx specguard score --format json 2>/dev/null)
-elif command -v specguard &> /dev/null; then
-  RESULT=$(specguard score --format json 2>/dev/null)
+  RESULT=$(npx docguard score --format json 2>/dev/null)
+elif command -v docguard &> /dev/null; then
+  RESULT=$(docguard score --format json 2>/dev/null)
 else
-  echo "⚠️  SpecGuard not found. Skipping score check."
+  echo "⚠️  DocGuard not found. Skipping score check."
   exit 0
 fi
 
@@ -81,7 +81,7 @@ echo "   CDD Score: $SCORE/100"
 if [ "$SCORE" -lt "$MIN_SCORE" ]; then
   echo ""
   echo "❌ CDD score $SCORE is below minimum $MIN_SCORE — push blocked"
-  echo "   Run: specguard score  (for details)"
+  echo "   Run: docguard score  (for details)"
   echo "   To skip: git push --no-verify"
   exit 1
 fi
@@ -94,9 +94,9 @@ exit 0
   'commit-msg': {
     description: 'Validate commit message format (conventional commits)',
     content: `#!/bin/sh
-# SpecGuard commit-msg hook
+# DocGuard commit-msg hook
 # Validates conventional commit message format
-# Install: specguard hooks --type commit-msg
+# Install: docguard hooks --type commit-msg
 # Remove: rm .git/hooks/commit-msg
 
 COMMIT_MSG_FILE=$1
@@ -129,7 +129,7 @@ exit 0
 };
 
 export function runHooks(projectDir, config, flags) {
-  console.log(`${c.bold}🪝 SpecGuard Hooks — ${config.projectName}${c.reset}`);
+  console.log(`${c.bold}🪝 DocGuard Hooks — ${config.projectName}${c.reset}`);
   console.log(`${c.dim}   Directory: ${projectDir}${c.reset}\n`);
 
   // Check if .git exists
@@ -163,8 +163,8 @@ export function runHooks(projectDir, config, flags) {
       const status = installed ? `${c.green}✅ installed${c.reset}` : `${c.dim}not installed${c.reset}`;
       console.log(`    ${c.cyan}${name}${c.reset}: ${hook.description} [${status}]`);
     }
-    console.log(`\n  ${c.dim}Install: specguard hooks --type <name>${c.reset}`);
-    console.log(`  ${c.dim}Install all: specguard hooks${c.reset}\n`);
+    console.log(`\n  ${c.dim}Install: docguard hooks --type <name>${c.reset}`);
+    console.log(`  ${c.dim}Install all: docguard hooks${c.reset}\n`);
     return;
   }
 
@@ -175,12 +175,12 @@ export function runHooks(projectDir, config, flags) {
       const hookPath = resolve(hooksDir, name);
       if (existsSync(hookPath)) {
         const content = readFileSync(hookPath, 'utf-8');
-        if (content.includes('SpecGuard')) {
+        if (content.includes('DocGuard')) {
           unlinkSync(hookPath);
           console.log(`  ${c.yellow}🗑️  Removed: ${name}${c.reset}`);
           removed++;
         } else {
-          console.log(`  ${c.dim}⏭️  ${name}: not a SpecGuard hook (skipped)${c.reset}`);
+          console.log(`  ${c.dim}⏭️  ${name}: not a DocGuard hook (skipped)${c.reset}`);
         }
       }
     }
@@ -196,10 +196,10 @@ export function runHooks(projectDir, config, flags) {
     const hookPath = resolve(hooksDir, name);
 
     if (existsSync(hookPath) && !flags.force) {
-      // Check if it's already a SpecGuard hook
+      // Check if it's already a DocGuard hook
       const existing = readFileSync(hookPath, 'utf-8');
-      if (existing.includes('SpecGuard')) {
-        console.log(`  ${c.dim}⏭️  ${name} (SpecGuard hook already installed)${c.reset}`);
+      if (existing.includes('DocGuard')) {
+        console.log(`  ${c.dim}⏭️  ${name} (DocGuard hook already installed)${c.reset}`);
         skipped++;
         continue;
       }
@@ -220,7 +220,7 @@ export function runHooks(projectDir, config, flags) {
   if (installed > 0) {
     console.log(`\n  ${c.dim}Hooks run automatically on git operations.${c.reset}`);
     console.log(`  ${c.dim}Skip with: git commit --no-verify${c.reset}`);
-    console.log(`  ${c.dim}Remove with: specguard hooks --remove${c.reset}`);
+    console.log(`  ${c.dim}Remove with: docguard hooks --remove${c.reset}`);
   }
 
   console.log('');

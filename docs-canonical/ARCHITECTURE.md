@@ -1,8 +1,8 @@
 # Architecture
 
-<!-- specguard:version 0.4.0 -->
-<!-- specguard:status active -->
-<!-- specguard:last-reviewed 2026-03-13 -->
+<!-- docguard:version 0.4.0 -->
+<!-- docguard:status active -->
+<!-- docguard:last-reviewed 2026-03-13 -->
 
 | Metadata | Value |
 |----------|-------|
@@ -15,7 +15,7 @@
 
 ## System Overview
 
-SpecGuard is a zero-dependency Node.js CLI tool that enforces **Canonical-Driven Development (CDD)** — a methodology where documentation is the source of truth, and code is validated against it. SpecGuard audits, scores, and guards project documentation, generates AI-actionable fix prompts, and integrates with CI/CD pipelines and VS Code.
+DocGuard is a zero-dependency Node.js CLI tool that enforces **Canonical-Driven Development (CDD)** — a methodology where documentation is the source of truth, and code is validated against it. DocGuard audits, scores, and guards project documentation, generates AI-actionable fix prompts, and integrates with CI/CD pipelines and VS Code.
 
 It targets development teams and AI coding agents that need to maintain documentation quality across projects of any stack (JavaScript, Python, Java, etc.).
 
@@ -23,7 +23,7 @@ It targets development teams and AI coding agents that need to maintain document
 
 | Component | Responsibility | Location | Key Files |
 |-----------|---------------|----------|-----------|
-| **CLI Entry Point** | Argument parsing, config loading, command routing | `cli/` | `specguard.mjs` |
+| **CLI Entry Point** | Argument parsing, config loading, command routing | `cli/` | `docguard.mjs` |
 | **Commands** | 11 user-facing commands (audit, init, guard, score, diff, agents, generate, hooks, badge, ci, fix) | `cli/commands/` | `*.mjs` |
 | **Validators** | 9 independent validation modules that check specific aspects of CDD compliance | `cli/validators/` | `*.mjs` |
 | **Templates** | Document skeletons (ARCHITECTURE, SECURITY, etc.) and slash command files for AI agents | `templates/` | `*.template`, `commands/*.md` |
@@ -47,24 +47,24 @@ The architecture follows a strict 3-layer model where each layer can only import
 
 | Layer | Contains | Can Import From | Cannot Import From |
 |-------|----------|----------------|--------------------|
-| **Commands** (`cli/commands/`) | User-facing command logic | Validators, Config (via `specguard.mjs` exports) | Other commands (no cross-command imports) |
+| **Commands** (`cli/commands/`) | User-facing command logic | Validators, Config (via `docguard.mjs` exports) | Other commands (no cross-command imports) |
 | **Validators** (`cli/validators/`) | Independent validation modules | Node.js built-ins only (`fs`, `path`, `child_process`) | Commands, Config |
-| **Entry Point** (`cli/specguard.mjs`) | Config loading, ANSI colors, argument parsing, command dispatch | Commands (imports all command modules) | Validators directly |
+| **Entry Point** (`cli/docguard.mjs`) | Config loading, ANSI colors, argument parsing, command dispatch | Commands (imports all command modules) | Validators directly |
 
 **Key Rule**: Validators are pure functions — they receive `projectDir` and `config`, and return results. They never import from commands or the CLI entry point.
 
 ## Data Flow
 
-### Request Lifecycle: `specguard guard`
+### Request Lifecycle: `docguard guard`
 
 ```
-User runs: npx specguard guard
+User runs: npx docguard guard
      │
      ▼
-specguard.mjs
+docguard.mjs
   ├── parseArgs(process.argv)      → flags: { format, dir, ... }
-  ├── loadConfig(projectDir)       → .specguard.json → merged with defaults
-  │     ├── Reads .specguard.json
+  ├── loadConfig(projectDir)       → .docguard.json → merged with defaults
+  │     ├── Reads .docguard.json
   │     ├── Reads package.json (name, type detection)
   │     └── Merges: defaults ← config ← CLI flags
   │
@@ -72,7 +72,7 @@ specguard.mjs
 guard.mjs
   ├── For each enabled validator:
   │     ├── structure.mjs    → checks docs-canonical/ exists, required files present
-  │     ├── docs-sync.mjs    → checks SpecGuard metadata headers
+  │     ├── docs-sync.mjs    → checks DocGuard metadata headers
   │     ├── drift.mjs        → checks DRIFT-LOG.md for staleness
   │     ├── changelog.mjs    → checks Unreleased section, version entries
   │     ├── architecture.mjs → validates component map, layer boundaries
@@ -88,7 +88,7 @@ Output (text | json)
   └── Exit code: 0 (pass) | 1 (fail) | 2 (warn)
 ```
 
-### AI Fix Flow: `specguard fix --doc architecture`
+### AI Fix Flow: `docguard fix --doc architecture`
 
 ```
 fix.mjs
@@ -104,7 +104,7 @@ AI Agent (Claude Code, Cursor, Copilot, etc.)
   ├── Writes docs-canonical/ARCHITECTURE.md with real content
   │
   ▼
-specguard guard → validates the newly written document
+docguard guard → validates the newly written document
 ```
 
 ## Key Design Decisions
@@ -112,10 +112,10 @@ specguard guard → validates the newly written document
 | Decision | Rationale |
 |----------|-----------|
 | **Zero dependencies** | CLI tools should be instant to install. No `node_modules` means no supply chain risk, no version conflicts. |
-| **Config-driven validation** | `.specguard.json` allows projects to customize which validators run and what's required. A CLI project doesn't need database docs. |
+| **Config-driven validation** | `.docguard.json` allows projects to customize which validators run and what's required. A CLI project doesn't need database docs. |
 | **Validators are independent** | Each validator is a self-contained module that can be enabled/disabled. Adding a new validator never breaks existing ones. |
 | **AI as author, CLI as orchestrator** | The CLI detects problems and generates structured prompts. It never writes documentation content — that's the AI's job. |
-| **Exit codes for CI** | `0` (pass), `1` (fail), `2` (warn) enables `specguard ci` to gate deployments. |
+| **Exit codes for CI** | `0` (pass), `1` (fail), `2` (warn) enables `docguard ci` to gate deployments. |
 
 ---
 
@@ -123,5 +123,5 @@ specguard guard → validates the newly written document
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
-| 0.4.0 | 2026-03-13 | SpecGuard Team | Complete rewrite with real project data, AI orchestration architecture |
-| 0.1.0 | 2026-03-13 | SpecGuard Generate | Auto-generated skeleton |
+| 0.4.0 | 2026-03-13 | DocGuard Team | Complete rewrite with real project data, AI orchestration architecture |
+| 0.1.0 | 2026-03-13 | DocGuard Generate | Auto-generated skeleton |

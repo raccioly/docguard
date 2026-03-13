@@ -1,8 +1,8 @@
 # Operational Runbooks
 
-<!-- specguard:version 0.1.0 -->
-<!-- specguard:status living -->
-<!-- specguard:last-reviewed YYYY-MM-DD -->
+<!-- docguard:version 0.1.0 -->
+<!-- docguard:status living -->
+<!-- docguard:last-reviewed YYYY-MM-DD -->
 
 > **Implementation document** — Current state. Step-by-step procedures for operations.  
 > Each runbook is a self-contained procedure that can be executed independently.

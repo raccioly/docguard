@@ -1,5 +1,5 @@
 /**
- * SpecGuard CLI Tests — Tests all commands and flags
+ * DocGuard CLI Tests — Tests all commands and flags
  * Run with: npm test
  */
 
@@ -10,14 +10,14 @@ import { mkdtempSync, rmSync, existsSync, writeFileSync, readFileSync } from 'no
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
-const CLI = join(import.meta.dirname, '..', 'cli', 'specguard.mjs');
+const CLI = join(import.meta.dirname, '..', 'cli', 'docguard.mjs');
 const run = (args, cwd) => execSync(`node ${CLI} ${args}`, {
   encoding: 'utf-8',
   cwd: cwd || join(import.meta.dirname, '..'),
   env: { ...process.env, NO_COLOR: '1' },
 });
 
-describe('specguard --help', () => {
+describe('docguard --help', () => {
   it('shows help text', () => {
     const output = run('--help');
     assert.match(output, /Commands:/);
@@ -32,18 +32,18 @@ describe('specguard --help', () => {
 
   it('shows version', () => {
     const output = run('--version');
-    assert.match(output, /specguard v\d+\.\d+\.\d+/);
+    assert.match(output, /docguard v\d+\.\d+\.\d+/);
   });
 });
 
-describe('specguard audit', () => {
-  it('runs on SpecGuard itself', () => {
+describe('docguard audit', () => {
+  it('runs on DocGuard itself', () => {
     const output = run('audit');
-    assert.match(output, /SpecGuard Audit/);
+    assert.match(output, /DocGuard Audit/);
     assert.match(output, /Canonical Documentation/);
   });
 
-  it('shows 100% for SpecGuard project', () => {
+  it('shows 100% for DocGuard project', () => {
     const output = run('audit');
     assert.match(output, /100%/);
   });
@@ -54,7 +54,7 @@ describe('specguard audit', () => {
   });
 });
 
-describe('specguard score', () => {
+describe('docguard score', () => {
   it('runs and shows a score', () => {
     const output = run('score');
     assert.match(output, /CDD Maturity Score:/);
@@ -73,13 +73,13 @@ describe('specguard score', () => {
   });
 });
 
-describe('specguard diff', () => {
+describe('docguard diff', () => {
   it('runs without errors', () => {
     const output = run('diff');
-    assert.match(output, /SpecGuard Diff/);
+    assert.match(output, /DocGuard Diff/);
   });
 
-  it('shows no false positives on SpecGuard', () => {
+  it('shows no false positives on DocGuard', () => {
     const output = run('diff');
     // Should not flag template words as entities
     assert.ok(!output.includes('− metadata'));
@@ -88,7 +88,7 @@ describe('specguard diff', () => {
   });
 });
 
-describe('specguard init', () => {
+describe('docguard init', () => {
   it('creates docs in a temp directory', () => {
     const tmpDir = mkdtempSync(join(tmpdir(), 'sg-test-'));
     try {
@@ -96,14 +96,14 @@ describe('specguard init', () => {
       assert.match(output, /Created/);
       assert.ok(existsSync(join(tmpDir, 'docs-canonical', 'ARCHITECTURE.md')));
       assert.ok(existsSync(join(tmpDir, 'AGENTS.md')));
-      assert.ok(existsSync(join(tmpDir, '.specguard.json')));
+      assert.ok(existsSync(join(tmpDir, '.docguard.json')));
     } finally {
       rmSync(tmpDir, { recursive: true, force: true });
     }
   });
 });
 
-describe('specguard generate', () => {
+describe('docguard generate', () => {
   it('generates docs in empty dir', () => {
     const tmpDir = mkdtempSync(join(tmpdir(), 'sg-gen-'));
     try {
@@ -129,7 +129,7 @@ describe('specguard generate', () => {
   });
 });
 
-describe('specguard hooks', () => {
+describe('docguard hooks', () => {
   it('lists available hooks', () => {
     const output = run('hooks --list');
     assert.match(output, /pre-commit/);
@@ -138,7 +138,7 @@ describe('specguard hooks', () => {
   });
 });
 
-describe('specguard guard', () => {
+describe('docguard guard', () => {
   it('runs all validators', () => {
     try {
       run('guard');
@@ -152,7 +152,7 @@ describe('specguard guard', () => {
 });
 
 describe('project type detection', () => {
-  it('detects SpecGuard as CLI project', () => {
+  it('detects DocGuard as CLI project', () => {
     const output = run('score --format json');
     const jsonStart = output.indexOf('{');
     const json = JSON.parse(output.slice(jsonStart));
@@ -160,7 +160,7 @@ describe('project type detection', () => {
   });
 });
 
-describe('specguard fix', () => {
+describe('docguard fix', () => {
   it('runs and shows issues or clean status', () => {
     const output = run('fix');
     // Should either show "No issues" or show issue list
@@ -205,7 +205,7 @@ describe('init auto-detection', () => {
       run(`init --dir ${tmpDir}`);
 
       const config = JSON.parse(readFileSync(
-        join(tmpDir, '.specguard.json'), 'utf-8'
+        join(tmpDir, '.docguard.json'), 'utf-8'
       ));
       assert.equal(config.projectType, 'cli');
       assert.equal(config.projectTypeConfig.needsDatabase, false);
@@ -216,7 +216,7 @@ describe('init auto-detection', () => {
   });
 });
 
-describe('specguard help completeness', () => {
+describe('docguard help completeness', () => {
   it('lists all 12 commands', () => {
     const output = run('--help');
     const expectedCommands = ['audit', 'init', 'guard', 'score', 'diff',
@@ -249,7 +249,7 @@ describe('compliance profiles', () => {
       assert.ok(!existsSync(join(tmpDir, 'docs-canonical', 'TEST-SPEC.md')));
 
       // Config should have starter profile
-      const config = JSON.parse(readFileSync(join(tmpDir, '.specguard.json'), 'utf-8'));
+      const config = JSON.parse(readFileSync(join(tmpDir, '.docguard.json'), 'utf-8'));
       assert.equal(config.profile, 'starter');
       assert.equal(config.validators.freshness, false);
       assert.equal(config.validators.testSpec, false);
@@ -269,7 +269,7 @@ describe('score --tax', () => {
   });
 });
 
-describe('specguard diagnose', () => {
+describe('docguard diagnose', () => {
   it('outputs remediation plan', () => {
     const output = run('diagnose');
     assert.match(output, /Diagnose/);

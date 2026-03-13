@@ -1,21 +1,21 @@
 {
-  "name": "specguard",
+  "name": "docguard",
   "version": "0.5.0",
   "description": "The enforcement tool for Canonical-Driven Development (CDD). Audit, generate, and guard your project documentation.",
   "type": "module",
   "bin": {
-    "specguard": "./cli/specguard.mjs"
+    "docguard": "./cli/docguard.mjs"
   },
   "scripts": {
-    "specguard": "node cli/specguard.mjs",
-    "audit": "node cli/specguard.mjs audit",
-    "guard": "node cli/specguard.mjs guard",
-    "init": "node cli/specguard.mjs init",
-    "score": "node cli/specguard.mjs score",
-    "diff": "node cli/specguard.mjs diff",
-    "generate": "node cli/specguard.mjs generate",
-    "hooks": "node cli/specguard.mjs hooks",
-    "prepublishOnly": "node cli/specguard.mjs --version",
+    "docguard": "node cli/docguard.mjs",
+    "audit": "node cli/docguard.mjs audit",
+    "guard": "node cli/docguard.mjs guard",
+    "init": "node cli/docguard.mjs init",
+    "score": "node cli/docguard.mjs score",
+    "diff": "node cli/docguard.mjs diff",
+    "generate": "node cli/docguard.mjs generate",
+    "hooks": "node cli/docguard.mjs hooks",
+    "prepublishOnly": "node cli/docguard.mjs --version",
     "test": "node --test tests/*.test.mjs"
   },
   "keywords": [
@@ -25,7 +25,7 @@
     "governance",
     "ai-agents",
     "spec-guard",
-    "specguard",
+    "docguard",
     "validation",
     "cli",
     "developer-tools",
@@ -35,11 +35,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/raccioly/specguard"
+    "url": "https://github.com/raccioly/docguard"
   },
-  "homepage": "https://github.com/raccioly/specguard#readme",
+  "homepage": "https://github.com/raccioly/docguard#readme",
   "bugs": {
-    "url": "https://github.com/raccioly/specguard/issues"
+    "url": "https://github.com/raccioly/docguard/issues"
   },
   "engines": {
     "node": ">=18.0.0"

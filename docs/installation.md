@@ -10,17 +10,17 @@
 No installation needed. Run directly:
 
 ```bash
-npx specguard --help
+npx docguard --help
 ```
 
-This downloads and runs SpecGuard on demand. Always uses the latest version.
+This downloads and runs DocGuard on demand. Always uses the latest version.
 
 ## Install as Dev Dependency
 
 For projects that want a pinned version:
 
 ```bash
-npm install --save-dev specguard
+npm install --save-dev docguard
 ```
 
 Then use via npm scripts in `package.json`:
@@ -28,9 +28,9 @@ Then use via npm scripts in `package.json`:
 ```json
 {
   "scripts": {
-    "guard": "specguard guard",
-    "score": "specguard score",
-    "lint:docs": "specguard ci --threshold 70"
+    "guard": "docguard guard",
+    "score": "docguard score",
+    "lint:docs": "docguard ci --threshold 70"
   }
 }
 ```
@@ -38,31 +38,31 @@ Then use via npm scripts in `package.json`:
 ## Install Globally
 
 ```bash
-npm install -g specguard
+npm install -g docguard
 ```
 
 Then use anywhere:
 
 ```bash
-specguard guard
-specguard score
+docguard guard
+docguard score
 ```
 
 ## Verify Installation
 
 ```bash
-npx specguard --version
+npx docguard --version
 ```
 
-Should output `SpecGuard v0.4.0` (or current version).
+Should output `DocGuard v0.4.0` (or current version).
 
 ## CI/CD Installation
 
 In GitHub Actions or similar:
 
 ```yaml
-- name: Run SpecGuard
-  run: npx specguard ci --threshold 70
+- name: Run DocGuard
+  run: npx docguard ci --threshold 70
 ```
 
 No separate install step needed — `npx` handles it.
@@ -71,11 +71,11 @@ No separate install step needed — `npx` handles it.
 
 ```bash
 # If installed as dev dependency
-npm update specguard
+npm update docguard
 
 # If installed globally
-npm update -g specguard
+npm update -g docguard
 
 # If using npx — always runs latest automatically
-npx specguard@latest --version
+npx docguard@latest --version
 ```

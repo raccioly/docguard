@@ -1,9 +1,9 @@
 # Deployment
 
-<!-- specguard:version 0.1.0 -->
-<!-- specguard:status draft | review | approved -->
-<!-- specguard:last-reviewed YYYY-MM-DD -->
-<!-- specguard:owner @your-github-username -->
+<!-- docguard:version 0.1.0 -->
+<!-- docguard:status draft | review | approved -->
+<!-- docguard:last-reviewed YYYY-MM-DD -->
+<!-- docguard:owner @your-github-username -->
 
 > **Canonical document** — Design intent. Describes how the system is deployed.  
 > For step-by-step procedures, see `docs-implementation/RUNBOOKS.md`.

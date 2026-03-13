@@ -1,8 +1,8 @@
 # Known Gotchas
 
-<!-- specguard:version 0.1.0 -->
-<!-- specguard:status living -->
-<!-- specguard:last-reviewed YYYY-MM-DD -->
+<!-- docguard:version 0.1.0 -->
+<!-- docguard:status living -->
+<!-- docguard:last-reviewed YYYY-MM-DD -->
 
 > **Implementation document** — Current state. Lessons learned during development and operations.  
 > This is a living document. Add entries as you discover them.

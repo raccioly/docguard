@@ -1,6 +1,6 @@
 # Configuration
 
-SpecGuard is configured via `.specguard.json` in the project root. If no config file exists, sensible defaults are used with auto-detection.
+DocGuard is configured via `.docguard.json` in the project root. If no config file exists, sensible defaults are used with auto-detection.
 
 ## Full Reference
 
@@ -64,7 +64,7 @@ See [Profiles](./profiles.md) for details.
 | Validator | Default | What It Checks |
 |-----------|---------|----------------|
 | `structure` | `true` | `docs-canonical/` exists, required files present, expected sections |
-| `docsSync` | `true` | AGENTS.md references SpecGuard workflow |
+| `docsSync` | `true` | AGENTS.md references DocGuard workflow |
 | `drift` | `true` | DRIFT-LOG.md exists and has entries when code deviates |
 | `changelog` | `true` | CHANGELOG.md has [Unreleased] section, version entries |
 | `architecture` | varies | Component map, layer boundaries, import graph analysis |
@@ -75,7 +75,7 @@ See [Profiles](./profiles.md) for details.
 
 ## Project Type Detection
 
-SpecGuard auto-detects your project type from `package.json`:
+DocGuard auto-detects your project type from `package.json`:
 
 | Signal | Detected Type |
 |--------|--------------|

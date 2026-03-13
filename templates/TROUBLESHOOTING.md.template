@@ -1,8 +1,8 @@
 # Troubleshooting Guide
 
-<!-- specguard:version 0.1.0 -->
-<!-- specguard:status living -->
-<!-- specguard:last-reviewed YYYY-MM-DD -->
+<!-- docguard:version 0.1.0 -->
+<!-- docguard:status living -->
+<!-- docguard:last-reviewed YYYY-MM-DD -->
 
 > **Implementation document** — Current state. Solutions for common issues.  
 > Organized by category. Each entry includes symptoms, diagnosis, and fix.

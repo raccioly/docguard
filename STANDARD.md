@@ -1,4 +1,4 @@
-# SpecGuard Standard v0.1
+# DocGuard Standard v0.1
 
 > **The open specification for Canonical-Driven Development.**  
 > Document first. Any agent understands. Machine-enforceable.
@@ -11,7 +11,7 @@ This standard defines **Canonical-Driven Development (CDD)** — a full-lifecycl
 
 It provides a **universal, language-agnostic documentation structure** that makes any software project fully understandable by AI coding agents (Claude, Gemini, Copilot, Cursor, Kiro, and future agents) while keeping documentation useful for human developers.
 
-**SpecGuard** is the CLI tool that enforces this standard — auditing, generating, and guarding project documentation.
+**DocGuard** is the CLI tool that enforces this standard — auditing, generating, and guarding project documentation.
 
 ---
 
@@ -52,7 +52,7 @@ CDD is not a phase — it's the entire lifecycle:
 │  ┌─────────────────┐          ┌─────────────────┐               │
 │  │ Validate code    │    ←    │ Update canonical  │              │
 │  │ matches docs     │    →    │ docs, log drift,  │              │
-│  │ (SpecGuard)      │         │ track changes     │              │
+│  │ (DocGuard)      │         │ track changes     │              │
 │  └─────────────────┘          └─────────────────┘               │
 │                                                                 │
 │  ↺ Continuous — Phases 2-4 repeat for every change              │
@@ -73,13 +73,13 @@ When code must deviate from canonical docs:
 2. Log the deviation in `DRIFT-LOG.md`
 3. Never silently deviate — all drift is conscious and documented
 
-### 2.5 SpecGuard: The CDD Enforcement Tool
+### 2.5 DocGuard: The CDD Enforcement Tool
 
 | Mode | Command | What It Does |
 |------|---------|-------------|
-| **🔍 Audit** | `specguard audit` | Scan a project, report what documentation exists or is missing |
-| **🏗️ Generate** | `specguard generate` | Analyze a codebase, auto-create canonical documentation |
-| **✅ Guard** | `specguard guard` | Validate that code stays aligned with its documentation |
+| **🔍 Audit** | `docguard audit` | Scan a project, report what documentation exists or is missing |
+| **🏗️ Generate** | `docguard generate` | Analyze a codebase, auto-create canonical documentation |
+| **✅ Guard** | `docguard guard` | Validate that code stays aligned with its documentation |
 
 ---
 
@@ -143,17 +143,17 @@ project-root/
 │
 ├── AGENT-REFERENCE.md               # Lookup tables: "when X changes, update Y"
 ├── CONTRIBUTING.md                  # How to contribute (human & AI contributors)
-└── README.md                        # Project overview (universal, not SpecGuard-specific)
+└── README.md                        # Project overview (universal, not DocGuard-specific)
 ```
 
 > [!NOTE]
-> **Project type determines relevance.** A CLI tool may skip `DATA-MODEL.md`. A frontend may have a thin `SECURITY.md`. Use `.specguard.json` to configure which files are required for YOUR project.
+> **Project type determines relevance.** A CLI tool may skip `DATA-MODEL.md`. A frontend may have a thin `SECURITY.md`. Use `.docguard.json` to configure which files are required for YOUR project.
 
 ### 4.3 Configuration
 
 ```
 project-root/
-└── .specguard.json              # Project-specific config (overrides defaults)
+└── .docguard.json              # Project-specific config (overrides defaults)
 ```
 
 ---
@@ -551,13 +551,13 @@ const cache = new Map();
 
 ---
 
-## 7. Configuration (.specguard.json)
+## 7. Configuration (.docguard.json)
 
 Project-level configuration file that customizes validation for the specific project.
 
 ```json
 {
-  "$schema": "https://specguard.dev/schema/v0.1.json",
+  "$schema": "https://docguard.dev/schema/v0.1.json",
   "projectName": "my-project",
   "version": "0.1",
 
@@ -635,30 +635,30 @@ Project-level configuration file that customizes validation for the specific pro
 
 ### 9.1 With AGENTS.md Standard
 
-SpecGuard is fully compatible with the [AGENTS.md standard](https://agents.md). Your `AGENTS.md` file serves dual purpose: both for the AGENTS.md ecosystem and for SpecGuard validation.
+DocGuard is fully compatible with the [AGENTS.md standard](https://agents.md). Your `AGENTS.md` file serves dual purpose: both for the AGENTS.md ecosystem and for DocGuard validation.
 
 ### 9.2 With GitHub Spec Kit (SDD)
 
-Spec-Driven Development (SDD) is the **Build phase** of CDD. SpecGuard can import from Spec Kit projects:
+Spec-Driven Development (SDD) is the **Build phase** of CDD. DocGuard can import from Spec Kit projects:
 
-| Spec Kit File | SpecGuard Equivalent |
+| Spec Kit File | DocGuard Equivalent |
 |--------------|---------------------|
 | `.specify/memory/constitution.md` | `AGENTS.md` |
 | `specs/<feature>/spec.md` | `docs-canonical/FEATURES.md` |
 | `specs/<feature>/plan.md` | `docs-canonical/ARCHITECTURE.md` |
 
-Use `specguard init --from-speckit` to bridge.
+Use `docguard init --from-speckit` to bridge.
 
 > [!TIP]
-> **CDD encompasses SDD.** If you're already using Spec Kit, you're doing Phase 1-2 of CDD. Add SpecGuard for Phase 3-4 (Guard + Evolve) and adopt the full CDD lifecycle.
+> **CDD encompasses SDD.** If you're already using Spec Kit, you're doing Phase 1-2 of CDD. Add DocGuard for Phase 3-4 (Guard + Evolve) and adopt the full CDD lifecycle.
 
 ### 9.3 With Cursor Rules
 
-Cursor rules (`.cursor/rules/`) are IDE-specific. SpecGuard's `AGENTS.md` provides the universal equivalent that works across all agents.
+Cursor rules (`.cursor/rules/`) are IDE-specific. DocGuard's `AGENTS.md` provides the universal equivalent that works across all agents.
 
 ### 9.4 With Kiro
 
-Kiro's steering files and specs are IDE-native. SpecGuard's markdown files are repo-native and portable. Both can coexist.
+Kiro's steering files and specs are IDE-native. DocGuard's markdown files are repo-native and portable. Both can coexist.
 
 ---
 
@@ -666,12 +666,12 @@ Kiro's steering files and specs are IDE-native. SpecGuard's markdown files are r
 
 ### 10.1 Audit Mode
 
-Scans a project and reports what SpecGuard documentation exists or is missing.
+Scans a project and reports what DocGuard documentation exists or is missing.
 
 ```
-$ specguard audit
+$ docguard audit
 
-📋 SpecGuard Audit — my-project
+📋 DocGuard Audit — my-project
 
   docs-canonical/ARCHITECTURE.md   ✅ Exists
   docs-canonical/DATA-MODEL.md     ✅ Exists
@@ -690,7 +690,7 @@ $ specguard audit
 Analyzes an existing codebase and auto-generates canonical documentation.
 
 ```
-$ specguard generate
+$ docguard generate
 
 📋 Analyzing codebase...
 
@@ -717,9 +717,9 @@ $ specguard generate
 Validates the project against its own canonical documentation. Designed for CI/CD and pre-commit hooks.
 
 ```
-$ specguard guard
+$ docguard guard
 
-📋 SpecGuard — my-project
+📋 DocGuard — my-project
 
   ✅ Structure      7/7 required files present
   ✅ Docs-Sync      14/14 routes documented

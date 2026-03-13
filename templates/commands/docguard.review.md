@@ -1,11 +1,11 @@
-# /specguard.review — Review documentation vs code for drift
+# /docguard.review — Review documentation vs code for drift
 
 You are an AI agent reviewing documentation quality and detecting drift between docs and code.
 
 ## Step 1: Run Diff
 
 ```bash
-npx specguard diff
+npx docguard diff
 ```
 
 Read the output carefully. It shows where documentation no longer matches the codebase.
@@ -13,7 +13,7 @@ Read the output carefully. It shows where documentation no longer matches the co
 ## Step 2: Run Guard
 
 ```bash
-npx specguard guard
+npx docguard guard
 ```
 
 Note any failed validators — these indicate docs that need updating.
@@ -31,14 +31,14 @@ For each file listed in the guard output with a freshness warning:
 For each stale or drifted document:
 1. Read the relevant source code files
 2. Update the document to match current implementation
-3. Update the `specguard:last-reviewed` date to today
+3. Update the `docguard:last-reviewed` date to today
 4. If the change is intentional drift, add an entry to DRIFT-LOG.md
 
 ## Step 5: Verify
 
 ```bash
-npx specguard guard
-npx specguard score
+npx docguard guard
+npx docguard score
 ```
 
 Report the final results to the user.

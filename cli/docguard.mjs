@@ -1,17 +1,17 @@
 #!/usr/bin/env node
 
 /**
- * SpecGuard CLI — The enforcement tool for Canonical-Driven Development (CDD)
+ * DocGuard CLI — The enforcement tool for Canonical-Driven Development (CDD)
  * 
  * Zero dependencies. Pure Node.js.
  * 
  * Usage:
- *   npx specguard audit     — Scan project, report what docs exist/missing
- *   npx specguard init      — Initialize CDD docs from templates
- *   npx specguard guard     — Validate project against its canonical docs
- *   npx specguard --help    — Show help
+ *   npx docguard audit     — Scan project, report what docs exist/missing
+ *   npx docguard init      — Initialize CDD docs from templates
+ *   npx docguard guard     — Validate project against its canonical docs
+ *   npx docguard --help    — Show help
  * 
- * @see https://github.com/raccioly/specguard
+ * @see https://github.com/raccioly/docguard
  */
 
 import { readFileSync, existsSync } from 'node:fs';
@@ -93,7 +93,7 @@ const PROFILES = {
 
 // ── Config Loading ─────────────────────────────────────────────────────────
 export function loadConfig(projectDir) {
-  const configPath = resolve(projectDir, '.specguard.json');
+  const configPath = resolve(projectDir, '.docguard.json');
   const defaults = {
     projectName: basename(projectDir),
     version: '0.2',
@@ -176,7 +176,7 @@ export function loadConfig(projectDir) {
       };
       return merged;
     } catch (e) {
-      console.error(`${c.red}Error parsing .specguard.json: ${e.message}${c.reset}`);
+      console.error(`${c.red}Error parsing .docguard.json: ${e.message}${c.reset}`);
       process.exit(1);
     }
   }
@@ -253,7 +253,7 @@ function deepMerge(target, source) {
 function printBanner() {
   console.log(`
 ${c.cyan}${c.bold}  ╔═══════════════════════════════════════════╗
-  ║         SpecGuard v0.5.0                  ║
+  ║         DocGuard v0.5.0                  ║
   ║   Canonical-Driven Development (CDD)      ║
   ╚═══════════════════════════════════════════╝${c.reset}
 `);
@@ -263,7 +263,7 @@ ${c.cyan}${c.bold}  ╔═══════════════════
 function printHelp() {
   printBanner();
   console.log(`${c.bold}Usage:${c.reset}
-  specguard <command> [options]
+  docguard <command> [options]
 
 ${c.bold}Commands:${c.reset}
   ${c.green}audit${c.reset}      Scan project, report what CDD docs exist or are missing
@@ -289,7 +289,7 @@ ${c.bold}Options:${c.reset}
   --agent <name>  Target specific agent (for agents command)
   --type <name>   Hook type: pre-commit, pre-push, commit-msg
   --list          List available hooks and their status
-  --remove        Remove installed SpecGuard hooks
+  --remove        Remove installed DocGuard hooks
   --threshold <n> Minimum score for CI pass (used with ci command)
   --fail-on-warning  Fail CI on warnings (used with ci command)
   --auto          Auto-fix what's possible (used with fix command)
@@ -306,20 +306,20 @@ ${c.bold}Profiles:${c.reset}
 
 ${c.bold}Examples:${c.reset}
   ${c.dim}# AI auto-diagnose and fix${c.reset}
-  specguard diagnose
+  docguard diagnose
 
   ${c.dim}# Quick start for a side project${c.reset}
-  specguard init --profile starter
+  docguard init --profile starter
 
   ${c.dim}# Full CDD init (default)${c.reset}
-  specguard init
+  docguard init
 
   ${c.dim}# See documentation tax estimate${c.reset}
-  specguard score --tax
+  docguard score --tax
 
 ${c.bold}Configuration:${c.reset}
-  Create ${c.cyan}.specguard.json${c.reset} in your project root to customize validators.
-  See: https://github.com/raccioly/specguard
+  Create ${c.cyan}.docguard.json${c.reset} in your project root to customize validators.
+  See: https://github.com/raccioly/docguard
 
 ${c.bold}Learn more:${c.reset}
   Canonical-Driven Development: ${c.cyan}PHILOSOPHY.md${c.reset}
@@ -395,7 +395,7 @@ function main() {
   }
 
   if (command === '--version' || command === '-v') {
-    console.log('specguard v0.5.0');
+    console.log('docguard v0.5.0');
     process.exit(0);
   }
 
@@ -450,7 +450,7 @@ function main() {
       break;
     default:
       console.error(`${c.red}Unknown command: ${command}${c.reset}`);
-      console.log(`Run ${c.cyan}specguard --help${c.reset} for usage.`);
+      console.log(`Run ${c.cyan}docguard --help${c.reset} for usage.`);
       process.exit(1);
   }
 }

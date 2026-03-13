@@ -1,6 +1,6 @@
 ---
 name: 🐛 Bug Report
-about: Report a bug in SpecGuard
+about: Report a bug in DocGuard
 title: '[BUG] '
 labels: bug
 assignees: ''
@@ -10,7 +10,7 @@ assignees: ''
 <!-- A clear description of what the bug is -->
 
 ## To Reproduce
-1. Run `specguard ...`
+1. Run `docguard ...`
 2. See error
 
 ## Expected behavior
@@ -19,11 +19,11 @@ assignees: ''
 ## Environment
 - **OS**: <!-- e.g. macOS 15, Ubuntu 24 -->
 - **Node.js**: <!-- e.g. 20.x -->
-- **SpecGuard**: <!-- e.g. 0.1.0 -->
+- **DocGuard**: <!-- e.g. 0.1.0 -->
 
-## SpecGuard config
+## DocGuard config
 ```json
-<!-- Paste your .specguard.json here -->
+<!-- Paste your .docguard.json here -->
 ```
 
 ## Additional context

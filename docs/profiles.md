@@ -1,6 +1,6 @@
 # Compliance Profiles
 
-SpecGuard supports three compliance profiles to match different project needs.
+DocGuard supports three compliance profiles to match different project needs.
 
 ## The Problem: Document Tax
 
@@ -11,7 +11,7 @@ Requiring all 5 canonical docs for a weekend side project is overkill. Requiring
 ### `starter` — For side projects and prototypes
 
 ```bash
-npx specguard init --profile starter
+npx docguard init --profile starter
 ```
 
 **Creates:** ARCHITECTURE.md, CHANGELOG.md, AGENTS.md, DRIFT-LOG.md
@@ -25,8 +25,8 @@ npx specguard init --profile starter
 ### `standard` — For team projects (default)
 
 ```bash
-npx specguard init                    # default profile
-npx specguard init --profile standard # explicit
+npx docguard init                    # default profile
+npx docguard init --profile standard # explicit
 ```
 
 **Creates:** All 5 canonical docs + AGENTS.md + CHANGELOG.md + DRIFT-LOG.md
@@ -40,7 +40,7 @@ npx specguard init --profile standard # explicit
 ### `enterprise` — For regulated and critical projects
 
 ```bash
-npx specguard init --profile enterprise
+npx docguard init --profile enterprise
 ```
 
 **Creates:** All 5 canonical docs + all tracking files
@@ -54,10 +54,10 @@ npx specguard init --profile enterprise
 ### At init time
 
 ```bash
-npx specguard init --profile starter
+npx docguard init --profile starter
 ```
 
-### In `.specguard.json`
+### In `.docguard.json`
 
 ```json
 {
@@ -92,12 +92,12 @@ starter  →  standard  →  enterprise
 2. When your team grows, switch to `standard` — add all 5 docs
 3. When you need compliance, switch to `enterprise` — enable all validators
 
-Change the `"profile"` field in `.specguard.json` and run `specguard diagnose` to see what's missing.
+Change the `"profile"` field in `.docguard.json` and run `docguard diagnose` to see what's missing.
 
 ## Measuring the Cost
 
 ```bash
-npx specguard score --tax
+npx docguard score --tax
 ```
 
 Shows estimated weekly maintenance time. If the tax is HIGH, consider downgrading your profile. If LOW, you might benefit from upgrading.

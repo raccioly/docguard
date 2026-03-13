@@ -13,7 +13,7 @@
  *   --format prompt  Full AI-ready prompt (all issues combined)
  */
 
-import { c } from '../specguard.mjs';
+import { c } from '../docguard.mjs';
 import { runGuardInternal } from './guard.mjs';
 import { runScoreInternal } from './score.mjs';
 import { existsSync, readFileSync } from 'node:fs';
@@ -37,17 +37,17 @@ const VALIDATOR_TO_DOC = {
 const FIX_INSTRUCTIONS = {
   'Structure': {
     action: 'Create missing files',
-    command: 'specguard init',
+    command: 'docguard init',
     description: 'Run init to create missing documentation templates.',
   },
   'Doc Sections': {
     action: 'Fill document sections',
-    command: 'specguard fix --doc',
+    command: 'docguard fix --doc',
     description: 'Documents exist but have missing or placeholder sections. Use fix --doc to generate AI content prompts.',
   },
   'Docs-Sync': {
     action: 'Sync documentation references',
-    command: 'specguard fix --doc architecture',
+    command: 'docguard fix --doc architecture',
     description: 'Documentation references are out of sync with code. Review and update component maps.',
   },
   'Drift': {
@@ -60,22 +60,22 @@ const FIX_INSTRUCTIONS = {
   },
   'Test-Spec': {
     action: 'Update TEST-SPEC.md',
-    command: 'specguard fix --doc test-spec',
+    command: 'docguard fix --doc test-spec',
     description: 'Test documentation needs updating to match actual test structure.',
   },
   'Environment': {
     action: 'Update ENVIRONMENT.md',
-    command: 'specguard fix --doc environment',
+    command: 'docguard fix --doc environment',
     description: 'Environment documentation is missing or incomplete.',
   },
   'Security': {
     action: 'Update SECURITY.md',
-    command: 'specguard fix --doc security',
+    command: 'docguard fix --doc security',
     description: 'Security documentation needs updating.',
   },
   'Architecture': {
     action: 'Update ARCHITECTURE.md',
-    command: 'specguard fix --doc architecture',
+    command: 'docguard fix --doc architecture',
     description: 'Architecture documentation doesn\'t match the codebase.',
   },
   'Freshness': {
@@ -129,7 +129,7 @@ export function runDiagnose(projectDir, config, flags) {
         const docMap = { 'architecture': 'architecture', 'data-model': 'data-model', 'security': 'security', 'test-spec': 'test-spec', 'environment': 'environment' };
         issue.docTarget = docMap[docName] || null;
         if (issue.docTarget) {
-          issue.command = `specguard fix --doc ${issue.docTarget}`;
+          issue.command = `docguard fix --doc ${issue.docTarget}`;
         }
       }
     }
@@ -169,13 +169,13 @@ function outputJSON(guardData, scoreData, issues) {
 }
 
 function outputText(projectDir, guardData, scoreData, issues) {
-  console.log(`${c.bold}🔍 SpecGuard Diagnose — ${guardData.project}${c.reset}`);
+  console.log(`${c.bold}🔍 DocGuard Diagnose — ${guardData.project}${c.reset}`);
   console.log(`${c.dim}   Profile: ${guardData.profile} | Score: ${scoreData.score}/100 (${scoreData.grade})${c.reset}`);
   console.log(`${c.dim}   Guard:   ${guardData.passed}/${guardData.total} passed | Status: ${guardData.status}${c.reset}\n`);
 
   if (issues.length === 0) {
     console.log(`  ${c.green}${c.bold}✅ All clear!${c.reset} No issues found.\n`);
-    console.log(`  ${c.dim}Your documentation is healthy. Run \`specguard score --tax\` to see maintenance estimate.${c.reset}\n`);
+    console.log(`  ${c.dim}Your documentation is healthy. Run \`docguard score --tax\` to see maintenance estimate.${c.reset}\n`);
     return;
   }
 
@@ -208,7 +208,7 @@ function outputText(projectDir, guardData, scoreData, issues) {
     for (let i = 0; i < commands.length; i++) {
       console.log(`  ${c.cyan}${i + 1}. ${commands[i]}${c.reset}`);
     }
-    console.log(`  ${c.cyan}${commands.length + 1}. specguard guard${c.reset} ${c.dim}← verify fixes${c.reset}`);
+    console.log(`  ${c.cyan}${commands.length + 1}. docguard guard${c.reset} ${c.dim}← verify fixes${c.reset}`);
     console.log('');
   }
 
@@ -265,7 +265,7 @@ function outputPrompt(projectDir, guardData, scoreData, issues) {
 
   lines.push('');
   lines.push('VALIDATION:');
-  lines.push('After making all fixes, run: specguard guard');
+  lines.push('After making all fixes, run: docguard guard');
   lines.push('Expected result: All checks pass (0 errors, 0 warnings)');
   lines.push(`Target score: ≥${scoreData.score + 5}/100`);
 

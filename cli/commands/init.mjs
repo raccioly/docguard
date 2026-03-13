@@ -5,7 +5,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { c, PROFILES } from '../specguard.mjs';
+import { c, PROFILES } from '../docguard.mjs';
 
 function detectProjectType(dir) {
   const pkgPath = resolve(dir, 'package.json');
@@ -39,7 +39,7 @@ export function runInit(projectDir, config, flags) {
     process.exit(1);
   }
 
-  console.log(`${c.bold}🏗️  SpecGuard Init — ${config.projectName}${c.reset}`);
+  console.log(`${c.bold}🏗️  DocGuard Init — ${config.projectName}${c.reset}`);
   console.log(`${c.dim}   Directory: ${projectDir}${c.reset}`);
   console.log(`${c.dim}   Profile:   ${profileName} — ${profile.description}${c.reset}\n`);
 
@@ -99,8 +99,8 @@ export function runInit(projectDir, config, flags) {
     }
   }
 
-  // Create .specguard.json if it doesn't exist — auto-detect project type
-  const configPath = resolve(projectDir, '.specguard.json');
+  // Create .docguard.json if it doesn't exist — auto-detect project type
+  const configPath = resolve(projectDir, '.docguard.json');
   if (!existsSync(configPath)) {
     // Detect project type from package.json
     const detectedType = detectProjectType(projectDir);
@@ -136,11 +136,11 @@ export function runInit(projectDir, config, flags) {
     };
 
     writeFileSync(configPath, JSON.stringify(defaultConfig, null, 2) + '\n', 'utf-8');
-    created.push('.specguard.json');
-    console.log(`  ${c.green}✅${c.reset} Created: ${c.cyan}.specguard.json${c.reset} ${c.dim}(auto-detected: ${detectedType})${c.reset}`);
+    created.push('.docguard.json');
+    console.log(`  ${c.green}✅${c.reset} Created: ${c.cyan}.docguard.json${c.reset} ${c.dim}(auto-detected: ${detectedType})${c.reset}`);
   } else {
-    skipped.push('.specguard.json');
-    console.log(`  ${c.yellow}⏭️${c.reset}  .specguard.json ${c.dim}(already exists)${c.reset}`);
+    skipped.push('.docguard.json');
+    console.log(`  ${c.yellow}⏭️${c.reset}  .docguard.json ${c.dim}(already exists)${c.reset}`);
   }
 
   // Install slash commands for AI agents — detect which agents are in use
@@ -213,8 +213,8 @@ export function runInit(projectDir, config, flags) {
   if (flags.skipPrompts) {
     // Simple instructions, no AI prompts
     console.log(`\n  ${c.bold}Next steps:${c.reset}`);
-    console.log(`  ${c.dim}Run${c.reset} ${c.cyan}specguard diagnose${c.reset} ${c.dim}to get AI prompts for filling docs.${c.reset}`);
-    console.log(`  ${c.dim}Then verify:${c.reset} ${c.cyan}specguard guard${c.reset}\n`);
+    console.log(`  ${c.dim}Run${c.reset} ${c.cyan}docguard diagnose${c.reset} ${c.dim}to get AI prompts for filling docs.${c.reset}`);
+    console.log(`  ${c.dim}Then verify:${c.reset} ${c.cyan}docguard guard${c.reset}\n`);
   } else {
     // Auto-populate: output AI research prompts for each created canonical doc
     const createdDocs = created.filter(f => f.startsWith('docs-canonical/'));
@@ -223,7 +223,7 @@ export function runInit(projectDir, config, flags) {
       console.log(`\n  ${c.bold}🤖 AI Auto-Populate${c.reset}`);
       console.log(`  ${c.dim}The files above are skeleton templates. Your AI agent should fill them.${c.reset}`);
       console.log(`  ${c.dim}Run this single command to get a full remediation plan:${c.reset}\n`);
-      console.log(`  ${c.cyan}${c.bold}specguard diagnose${c.reset}\n`);
+      console.log(`  ${c.cyan}${c.bold}docguard diagnose${c.reset}\n`);
       console.log(`  ${c.dim}Or generate prompts for individual docs:${c.reset}`);
 
       const docNameMap = {
@@ -237,12 +237,12 @@ export function runInit(projectDir, config, flags) {
       for (const doc of createdDocs) {
         const target = docNameMap[doc];
         if (target) {
-          console.log(`  ${c.cyan}specguard fix --doc ${target}${c.reset}`);
+          console.log(`  ${c.cyan}docguard fix --doc ${target}${c.reset}`);
         }
       }
-      console.log(`\n  ${c.dim}Then verify:${c.reset} ${c.cyan}specguard guard${c.reset}\n`);
+      console.log(`\n  ${c.dim}Then verify:${c.reset} ${c.cyan}docguard guard${c.reset}\n`);
     } else {
-      console.log(`\n  ${c.dim}Run${c.reset} ${c.cyan}specguard diagnose${c.reset} ${c.dim}to check for issues.${c.reset}\n`);
+      console.log(`\n  ${c.dim}Run${c.reset} ${c.cyan}docguard diagnose${c.reset} ${c.dim}to check for issues.${c.reset}\n`);
     }
   }
 }

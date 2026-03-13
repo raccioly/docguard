@@ -7,7 +7,7 @@
  *   runGuardInternal() → returns data, no side effects (for diagnose, ci)
  */
 
-import { c } from '../specguard.mjs';
+import { c } from '../docguard.mjs';
 import { validateStructure, validateDocSections } from '../validators/structure.mjs';
 import { validateDrift } from '../validators/drift.mjs';
 import { validateChangelog } from '../validators/changelog.mjs';
@@ -103,7 +103,7 @@ export function runGuard(projectDir, config, flags) {
   }
 
   // ── Text output ──
-  console.log(`${c.bold}🛡️  SpecGuard Guard — ${config.projectName}${c.reset}`);
+  console.log(`${c.bold}🛡️  DocGuard Guard — ${config.projectName}${c.reset}`);
   console.log(`${c.dim}   Directory: ${projectDir}${c.reset}\n`);
 
   for (const v of data.validators) {
@@ -147,7 +147,7 @@ export function runGuard(projectDir, config, flags) {
 
   // Next step hint — always point to diagnose when issues exist
   if (data.status !== 'PASS') {
-    console.log(`  ${c.dim}Run ${c.cyan}specguard diagnose${c.dim} to get AI fix prompts.${c.reset}`);
+    console.log(`  ${c.dim}Run ${c.cyan}docguard diagnose${c.dim} to get AI fix prompts.${c.reset}`);
   }
 
   console.log('');

@@ -1,4 +1,4 @@
-# SpecGuard — Quick Start
+# DocGuard — Quick Start
 
 Get AI-enforced documentation in under 5 minutes.
 
@@ -8,7 +8,7 @@ Get AI-enforced documentation in under 5 minutes.
 
 ```bash
 cd your-project
-npx specguard init --profile starter
+npx docguard init --profile starter
 ```
 
 Creates only ARCHITECTURE.md + CHANGELOG — the bare minimum.
@@ -17,7 +17,7 @@ Creates only ARCHITECTURE.md + CHANGELOG — the bare minimum.
 
 ```bash
 cd your-project
-npx specguard init
+npx docguard init
 ```
 
 Creates all 5 canonical docs + tracking files + AI slash commands.
@@ -26,7 +26,7 @@ Creates all 5 canonical docs + tracking files + AI slash commands.
 
 ```bash
 cd your-project
-npx specguard generate
+npx docguard generate
 ```
 
 Scans your codebase and generates pre-filled documentation.
@@ -36,7 +36,7 @@ Scans your codebase and generates pre-filled documentation.
 After init creates skeleton templates, run **one command**:
 
 ```bash
-npx specguard diagnose
+npx docguard diagnose
 ```
 
 This outputs a complete AI remediation plan. If you're using Claude Code, Cursor, Copilot, or Antigravity, the AI reads the output and writes every doc automatically.
@@ -52,28 +52,28 @@ diagnose  →  AI reads prompts  →  AI fixes docs  →  guard verifies
 ## Verify
 
 ```bash
-npx specguard guard        # Pass/fail check
-npx specguard score        # 0-100 maturity score
-npx specguard score --tax  # How much time docs cost you
+npx docguard guard        # Pass/fail check
+npx docguard score        # 0-100 maturity score
+npx docguard score --tax  # How much time docs cost you
 ```
 
 ## Automate
 
 ```bash
 # Git hooks (auto-check on commit/push)
-npx specguard hooks
+npx docguard hooks
 
 # CI/CD pipelines
-npx specguard ci --threshold 70
+npx docguard ci --threshold 70
 
 # Live watch mode with auto-fix
-npx specguard watch --auto-fix
+npx docguard watch --auto-fix
 ```
 
 ## What's Next?
 
 - [Commands Reference](./commands.md) — All 13 commands
-- [Configuration](./configuration.md) — `.specguard.json` options
+- [Configuration](./configuration.md) — `.docguard.json` options
 - [Profiles](./profiles.md) — Starter vs Standard vs Enterprise
-- [AI Integration](./ai-integration.md) — How AI agents use SpecGuard
+- [AI Integration](./ai-integration.md) — How AI agents use DocGuard
 - [FAQ](./faq.md) — Common questions

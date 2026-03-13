@@ -8,7 +8,7 @@
 
 ### CDD vs Spec-Driven Development (Spec Kit)
 
-| Dimension | SDD (Spec Kit) | CDD (SpecGuard) |
+| Dimension | SDD (Spec Kit) | CDD (DocGuard) |
 |-----------|---------------|-----------------|
 | **Scope** | Feature-level specs | Full-project documentation |
 | **Lifecycle** | Spec → Code (one-time) | Spec ↔ Code (continuous) |
@@ -20,7 +20,7 @@
 | **Agent support** | 20+ agents | 25+ agents (same format) |
 | **Relationship** | CDD Phase 1-2 | CDD Phase 1-4 (full lifecycle) |
 
-**Verdict**: SDD is a subset of CDD. Use Spec Kit for generation, SpecGuard for governance. They complement each other.
+**Verdict**: SDD is a subset of CDD. Use Spec Kit for generation, DocGuard for governance. They complement each other.
 
 ---
 
@@ -113,23 +113,23 @@ Research confirms LLMs prioritize information at the beginning and end of their 
 
 **2. Validation is structural, not semantic.**
 
-SpecGuard can check:
+DocGuard can check:
 - ✅ "Does ARCHITECTURE.md exist?" (structure)
 - ✅ "Does it have a `## Component Map` section?" (structure)
 - ❌ "Is the component map ACCURATE?" (semantic — cannot validate)
 
-If ARCHITECTURE.md says "we use PostgreSQL" but the code switched to MongoDB, SpecGuard won't catch it. Only a human (or AI agent reading both code and docs) would notice.
+If ARCHITECTURE.md says "we use PostgreSQL" but the code switched to MongoDB, DocGuard won't catch it. Only a human (or AI agent reading both code and docs) would notice.
 
-**CDD mitigation**: This is why DRIFT-LOG.md exists. The discipline of logging drift means the HUMAN (or AI agent following the rules) documents when code deviates. It's not perfect — if someone silently deviates without adding `// DRIFT:`, SpecGuard won't catch it.
+**CDD mitigation**: This is why DRIFT-LOG.md exists. The discipline of logging drift means the HUMAN (or AI agent following the rules) documents when code deviates. It's not perfect — if someone silently deviates without adding `// DRIFT:`, DocGuard won't catch it.
 
 **Is this a fatal flaw?** No. No tool can guarantee content accuracy — not Spec Kit, not Kiro, not anything. What CDD does is make non-compliance VISIBLE (missing drift entries, undocumented routes). It can't prevent bad behavior, but it can flag missing documentation.
 
 **3. Documentation CAN rot — even with validators.**
 
-The #1 criticism of any documentation-first approach: docs go stale. SpecGuard validators prevent STRUCTURAL rot (missing files, missing sections). But CONTENT rot (outdated descriptions, wrong version numbers) can still happen.
+The #1 criticism of any documentation-first approach: docs go stale. DocGuard validators prevent STRUCTURAL rot (missing files, missing sections). But CONTENT rot (outdated descriptions, wrong version numbers) can still happen.
 
 **CDD mitigation**: 
-- CI/CD integration (specguard guard on every PR) catches structural problems
+- CI/CD integration (docguard guard on every PR) catches structural problems
 - The two-tier model means canonical docs change LESS frequently than implementation docs
 - DRIFT-LOG creates a paper trail that naturally prompts review
 - AI agents asked to "research docs first" will flag obvious inconsistencies
@@ -154,7 +154,7 @@ Even with a well-written AGENTS.md that says "research docs first," agents somet
 
 **CDD mitigation**: 
 - The user's existing enforcement rules (Step 1 Research, Step 2 Confirm) in AGENTS.md help
-- SpecGuard guard in pre-commit hooks catches the OUTPUT (missing changelog, unlogged drift) regardless of whether the agent followed the process
+- DocGuard guard in pre-commit hooks catches the OUTPUT (missing changelog, unlogged drift) regardless of whether the agent followed the process
 - This is the same as how linters catch style violations — you don't rely on discipline, you rely on automation
 
 **Is this acceptable?** Yes. No governance system relies on 100% compliance. The combination of agent instructions + automated validation catches most issues.
@@ -203,7 +203,7 @@ For existing projects without documentation:
 Existing project (no docs)
         │
         ▼
-   specguard generate          ← AI analyzes codebase
+   docguard generate          ← AI analyzes codebase
         │
         ▼
    docs-canonical/ created     ← High-quality drafts
@@ -212,7 +212,7 @@ Existing project (no docs)
    Human reviews & refines     ← 30 min review vs 30 hours writing
         │
         ▼
-   specguard guard enabled     ← Continuous enforcement from here
+   docguard guard enabled     ← Continuous enforcement from here
 ```
 
 This is a CRUCIAL adoption path because:

@@ -1,9 +1,9 @@
 # Roadmap
 
-<!-- specguard:version 0.1.0 -->
-<!-- specguard:status living -->
-<!-- specguard:last-reviewed YYYY-MM-DD -->
-<!-- specguard:owner @your-github-username -->
+<!-- docguard:version 0.1.0 -->
+<!-- docguard:status living -->
+<!-- docguard:last-reviewed YYYY-MM-DD -->
+<!-- docguard:owner @your-github-username -->
 
 > **Canonical document** — Design intent. The planned evolution of this project.  
 > Updated as priorities shift. Completed items move to CHANGELOG.md.

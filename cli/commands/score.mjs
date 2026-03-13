@@ -6,7 +6,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, extname } from 'node:path';
 import { execSync } from 'node:child_process';
-import { c } from '../specguard.mjs';
+import { c } from '../docguard.mjs';
 
 const WEIGHTS = {
   structure: 25,     // Required files exist
@@ -20,7 +20,7 @@ const WEIGHTS = {
 };
 
 export function runScore(projectDir, config, flags) {
-  console.log(`${c.bold}📊 SpecGuard Score — ${config.projectName}${c.reset}`);
+  console.log(`${c.bold}📊 DocGuard Score — ${config.projectName}${c.reset}`);
   console.log(`${c.dim}   Directory: ${projectDir}${c.reset}\n`);
 
   const { scores, totalScore, grade } = calcAllScores(projectDir, config);
@@ -67,7 +67,7 @@ export function runScore(projectDir, config, flags) {
     'B': 'Good — Most CDD practices in place',
     'C': 'Fair — Partial CDD adoption',
     'D': 'Needs Work — Significant gaps',
-    'F': 'Not Started — Run `specguard init` first',
+    'F': 'Not Started — Run `docguard init` first',
   };
   console.log(`  ${c.dim}${descriptions[grade]}${c.reset}\n`);
 
@@ -177,9 +177,9 @@ function calcDocQualityScore(dir, config) {
       if (content.includes(section)) found++;
     }
 
-    // Bonus: check if doc has specguard metadata
+    // Bonus: check if doc has docguard metadata
     total++;
-    if (content.includes('specguard:version')) found++;
+    if (content.includes('docguard:version')) found++;
 
     // Bonus: check if doc has more than just template placeholders
     total++;
@@ -323,7 +323,7 @@ function getGrade(score) {
 
 function getSuggestion(category, score) {
   const suggestions = {
-    structure: 'Run `specguard init` to create missing documentation',
+    structure: 'Run `docguard init` to create missing documentation',
     docQuality: 'Fill in template sections — replace placeholders with real content',
     testing: 'Add tests/ directory and configure TEST-SPEC.md',
     security: 'Create SECURITY.md and add .env to .gitignore',
@@ -386,7 +386,7 @@ function estimateDocTax(projectDir, config, scores) {
     recommendation = 'Docs save more time than they cost. Current setup is sustainable.';
   } else if (minutesPerWeek <= 25) {
     level = 'MEDIUM';
-    recommendation = 'Consider using `specguard fix --doc` to let AI handle updates.';
+    recommendation = 'Consider using `docguard fix --doc` to let AI handle updates.';
   } else {
     level = 'HIGH';
     recommendation = 'Consider switching to "starter" profile to reduce doc overhead.';

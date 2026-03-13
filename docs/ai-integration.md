@@ -1,18 +1,18 @@
 # AI Integration Guide
 
-SpecGuard is **AI-native**. It generates prompts that AI agents execute — the human reviews, not writes.
+DocGuard is **AI-native**. It generates prompts that AI agents execute — the human reviews, not writes.
 
 ## How It Works
 
 ```
-specguard diagnose  →  AI reads output  →  AI writes docs  →  specguard guard  →  ✅
+docguard diagnose  →  AI reads output  →  AI writes docs  →  docguard guard  →  ✅
 ```
 
-SpecGuard is designed to be used **by** AI agents, not just **for** humans.
+DocGuard is designed to be used **by** AI agents, not just **for** humans.
 
 ## Supported AI Agents
 
-SpecGuard works with any AI coding agent that can read CLI output:
+DocGuard works with any AI coding agent that can read CLI output:
 
 | Agent | Integration |
 |-------|------------|
@@ -25,7 +25,7 @@ SpecGuard works with any AI coding agent that can read CLI output:
 
 ## Slash Commands
 
-`specguard init` auto-installs slash commands for detected AI agents:
+`docguard init` auto-installs slash commands for detected AI agents:
 
 ```
 .github/commands/diagnose.md     # GitHub Copilot
@@ -39,22 +39,22 @@ SpecGuard works with any AI coding agent that can read CLI output:
 ### Step 1: Diagnose
 
 ```bash
-npx specguard diagnose
+npx docguard diagnose
 ```
 
 Output:
 ```
-🔍 SpecGuard Diagnose — my-project
+🔍 DocGuard Diagnose — my-project
    Profile: standard | Score: 75/100 (B)
    Guard:   35/41 passed | Status: WARN
 
   Warnings (3):
   ⚠ [Freshness] docs-canonical/ARCHITECTURE.md — 15 commits since last update
-    Fix: specguard fix --doc architecture
+    Fix: docguard fix --doc architecture
 
   📋 Remediation Plan:
-  1. specguard fix --doc architecture
-  2. specguard guard ← verify fixes
+  1. docguard fix --doc architecture
+  2. docguard guard ← verify fixes
 
   🤖 AI-Ready Prompt:
   TASK: Fix 3 documentation issue(s) in project "my-project"
@@ -63,10 +63,10 @@ Output:
 
 ### Step 2: AI Fixes
 
-The AI reads the remediation plan and executes `specguard fix --doc <name>` for each issue. Each fix command outputs research instructions:
+The AI reads the remediation plan and executes `docguard fix --doc <name>` for each issue. Each fix command outputs research instructions:
 
 ```bash
-npx specguard fix --doc architecture
+npx docguard fix --doc architecture
 ```
 
 Output:
@@ -90,7 +90,7 @@ WRITE THE DOCUMENT:
 ### Step 3: Verify
 
 ```bash
-npx specguard guard
+npx docguard guard
 ```
 
 If all checks pass → done. If issues remain → repeat from Step 1.
@@ -100,7 +100,7 @@ If all checks pass → done. If issues remain → repeat from Step 1.
 For programmatic integration:
 
 ```bash
-npx specguard diagnose --format json
+npx docguard diagnose --format json
 ```
 
 ```json
@@ -115,16 +115,16 @@ npx specguard diagnose --format json
       "severity": "warning",
       "validator": "Freshness",
       "message": "ARCHITECTURE.md — 15 commits since last update",
-      "command": "specguard fix --doc architecture",
+      "command": "docguard fix --doc architecture",
       "docTarget": "architecture"
     }
   ],
-  "fixCommands": ["specguard fix --doc architecture"]
+  "fixCommands": ["docguard fix --doc architecture"]
 }
 ```
 
 ```bash
-npx specguard guard --format json
+npx docguard guard --format json
 ```
 
 ```json
@@ -144,20 +144,20 @@ npx specguard guard --format json
 
 ### GitHub Actions
 
-SpecGuard ships a ready-to-use workflow:
+DocGuard ships a ready-to-use workflow:
 
 ```yaml
-# .github/workflows/specguard.yml
-name: SpecGuard CDD Check
+# .github/workflows/docguard.yml
+name: DocGuard CDD Check
 on: [pull_request]
 jobs:
-  specguard:
+  docguard:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: '20' }
-      - run: npx specguard ci --format json --threshold 70
+      - run: npx docguard ci --format json --threshold 70
 ```
 
 Or copy `templates/ci/github-actions.yml` from this repo.
@@ -165,7 +165,7 @@ Or copy `templates/ci/github-actions.yml` from this repo.
 ### Pre-commit Hook
 
 ```bash
-npx specguard hooks
+npx docguard hooks
 ```
 
 Automatically runs `guard` before every commit.

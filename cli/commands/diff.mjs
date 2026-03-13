@@ -5,7 +5,7 @@
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, extname, basename } from 'node:path';
-import { c } from '../specguard.mjs';
+import { c } from '../docguard.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build',
@@ -19,7 +19,7 @@ const CODE_EXTENSIONS = new Set([
 ]);
 
 export function runDiff(projectDir, config, flags) {
-  console.log(`${c.bold}🔍 SpecGuard Diff — ${config.projectName}${c.reset}`);
+  console.log(`${c.bold}🔍 DocGuard Diff — ${config.projectName}${c.reset}`);
   console.log(`${c.dim}   Directory: ${projectDir}${c.reset}\n`);
 
   const results = [];

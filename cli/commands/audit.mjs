@@ -5,10 +5,10 @@
 
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { c } from '../specguard.mjs';
+import { c } from '../docguard.mjs';
 
 export function runAudit(projectDir, config, flags) {
-  console.log(`${c.bold}📋 SpecGuard Audit — ${config.projectName}${c.reset}`);
+  console.log(`${c.bold}📋 DocGuard Audit — ${config.projectName}${c.reset}`);
   console.log(`${c.dim}   Directory: ${projectDir}${c.reset}\n`);
 
   const results = { found: 0, missing: 0, optional: 0, total: 0, details: [] };
@@ -79,12 +79,12 @@ export function runAudit(projectDir, config, flags) {
   }
 
   if (results.missing > 0) {
-    console.log(`\n  ${c.yellow}💡 Run ${c.cyan}specguard init${c.yellow} to create missing docs from templates.${c.reset}`);
-    console.log(`  ${c.yellow}💡 Run ${c.cyan}specguard generate${c.yellow} to auto-fill docs from your codebase.${c.reset}`);
+    console.log(`\n  ${c.yellow}💡 Run ${c.cyan}docguard init${c.yellow} to create missing docs from templates.${c.reset}`);
+    console.log(`  ${c.yellow}💡 Run ${c.cyan}docguard generate${c.yellow} to auto-fill docs from your codebase.${c.reset}`);
   } else {
     console.log(`\n  ${c.green}🎉 All required CDD documentation present!${c.reset}`);
-    console.log(`  ${c.dim}Run ${c.cyan}specguard guard${c.dim} to validate content alignment.${c.reset}`);
-    console.log(`  ${c.dim}Run ${c.cyan}specguard score${c.dim} to check your CDD maturity.${c.reset}`);
+    console.log(`  ${c.dim}Run ${c.cyan}docguard guard${c.dim} to validate content alignment.${c.reset}`);
+    console.log(`  ${c.dim}Run ${c.cyan}docguard score${c.dim} to check your CDD maturity.${c.reset}`);
   }
 
   console.log('');

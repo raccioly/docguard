@@ -1,8 +1,8 @@
 # Current State
 
-<!-- specguard:version 0.1.0 -->
-<!-- specguard:status living -->
-<!-- specguard:last-reviewed YYYY-MM-DD -->
+<!-- docguard:version 0.1.0 -->
+<!-- docguard:status living -->
+<!-- docguard:last-reviewed YYYY-MM-DD -->
 
 > **Implementation document** — Current state. What is actually deployed and working right now.  
 > Updated continuously as implementation progresses.

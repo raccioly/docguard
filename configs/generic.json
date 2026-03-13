@@ -1,5 +1,5 @@
 {
-  "$schema": "https://specguard.dev/schema/v0.1.json",
+  "$schema": "https://docguard.dev/schema/v0.1.json",
   "projectName": "my-generic-project",
   "version": "0.1",
 

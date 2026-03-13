@@ -1,6 +1,6 @@
 # Commands Reference
 
-SpecGuard v0.5.0 — 13 commands, zero dependencies.
+DocGuard v0.5.0 — 13 commands, zero dependencies.
 
 ## The AI Loop
 
@@ -14,14 +14,14 @@ diagnose (identify + fix)  →  AI executes  →  guard (verify)
 
 ## Primary Commands
 
-### `specguard diagnose` (alias: `dx`)
+### `docguard diagnose` (alias: `dx`)
 
 **The AI orchestrator.** Runs all validators, maps every failure to an AI fix prompt, outputs a remediation plan.
 
 ```bash
-npx specguard diagnose                # Human-readable remediation plan
-npx specguard diagnose --format json  # Structured for automation
-npx specguard diagnose --format prompt # Raw AI prompt (all issues combined)
+npx docguard diagnose                # Human-readable remediation plan
+npx docguard diagnose --format json  # Structured for automation
+npx docguard diagnose --format prompt # Raw AI prompt (all issues combined)
 ```
 
 **JSON output includes:**
@@ -30,19 +30,19 @@ npx specguard diagnose --format prompt # Raw AI prompt (all issues combined)
 - `score` — current CDD maturity score
 - `grade` — letter grade (A+ to F)
 
-### `specguard guard`
+### `docguard guard`
 
 **Identify issues.** Validate project against canonical docs. Use for CI gates and pre-commit hooks.
 
 ```bash
-npx specguard guard                   # Text output
-npx specguard guard --format json     # Structured JSON
-npx specguard guard --verbose         # Show all check details
+npx docguard guard                   # Text output
+npx docguard guard --format json     # Structured JSON
+npx docguard guard --verbose         # Show all check details
 ```
 
 **Exit codes:** `0` (pass), `1` (errors), `2` (warnings)
 
-When issues are found, guard outputs: `Run specguard diagnose to get AI fix prompts.`
+When issues are found, guard outputs: `Run docguard diagnose to get AI fix prompts.`
 
 **JSON output includes:**
 ```json
@@ -58,14 +58,14 @@ When issues are found, guard outputs: `Run specguard diagnose to get AI fix prom
 }
 ```
 
-### `specguard score`
+### `docguard score`
 
 **CDD maturity score** (0-100) with category breakdown.
 
 ```bash
-npx specguard score                   # Visual bar chart
-npx specguard score --format json     # Structured JSON
-npx specguard score --tax             # Documentation tax estimate
+npx docguard score                   # Visual bar chart
+npx docguard score --format json     # Structured JSON
+npx docguard score --tax             # Documentation tax estimate
 ```
 
 **`--tax` output:**
@@ -84,16 +84,16 @@ Tax-to-value ratio:  LOW
 
 ## Setup Commands
 
-### `specguard init`
+### `docguard init`
 
 **Initialize CDD documentation** from templates.
 
 ```bash
-npx specguard init                           # Full CDD (standard profile)
-npx specguard init --profile starter         # Minimal: ARCHITECTURE + CHANGELOG
-npx specguard init --profile enterprise      # Everything + strict validators
-npx specguard init --dir /path/to/project    # Specify directory
-npx specguard init --skip-prompts            # No AI prompt output
+npx docguard init                           # Full CDD (standard profile)
+npx docguard init --profile starter         # Minimal: ARCHITECTURE + CHANGELOG
+npx docguard init --profile enterprise      # Everything + strict validators
+npx docguard init --dir /path/to/project    # Specify directory
+npx docguard init --skip-prompts            # No AI prompt output
 ```
 
 **Profiles:**
@@ -104,117 +104,117 @@ npx specguard init --skip-prompts            # No AI prompt output
 | `standard` | All 5 canonical + tracking | Most validators (default) |
 | `enterprise` | All docs | All validators + freshness |
 
-### `specguard generate`
+### `docguard generate`
 
 **Reverse-engineer docs from existing code.** Scans your codebase and creates pre-filled documentation.
 
 ```bash
-npx specguard generate
-npx specguard generate --dir /path/to/project
+npx docguard generate
+npx docguard generate --dir /path/to/project
 ```
 
 **Detects:** Next.js, React, Vue, Angular, Express, Fastify, Hono, Django, FastAPI, SvelteKit, and more.
 
-### `specguard audit`
+### `docguard audit`
 
 **Scan and report** which CDD documents exist, are missing, or need attention.
 
 ```bash
-npx specguard audit
+npx docguard audit
 ```
 
 ---
 
 ## AI Integration Commands
 
-### `specguard fix`
+### `docguard fix`
 
 **Find issues and generate AI fix instructions.**
 
 ```bash
-npx specguard fix                    # Human-readable issue list
-npx specguard fix --format json      # Machine-readable for VS Code/CI
-npx specguard fix --format prompt    # AI-ready prompt
-npx specguard fix --auto             # Create missing skeleton files
+npx docguard fix                    # Human-readable issue list
+npx docguard fix --format json      # Machine-readable for VS Code/CI
+npx docguard fix --format prompt    # AI-ready prompt
+npx docguard fix --auto             # Create missing skeleton files
 ```
 
-### `specguard fix --doc <name>`
+### `docguard fix --doc <name>`
 
 **Generate a deep AI research prompt** for a specific document.
 
 ```bash
-npx specguard fix --doc architecture
-npx specguard fix --doc data-model
-npx specguard fix --doc security
-npx specguard fix --doc test-spec
-npx specguard fix --doc environment
+npx docguard fix --doc architecture
+npx docguard fix --doc data-model
+npx docguard fix --doc security
+npx docguard fix --doc test-spec
+npx docguard fix --doc environment
 ```
 
 **Output includes:** TASK, PURPOSE, RESEARCH STEPS (what to grep/read), WRITE THE DOCUMENT (expected sections).
 
-### `specguard agents`
+### `docguard agents`
 
 **Generate agent-specific config files** from AGENTS.md.
 
 ```bash
-npx specguard agents
-npx specguard agents --list
+npx docguard agents
+npx docguard agents --list
 ```
 
 ---
 
 ## DevOps Commands
 
-### `specguard ci`
+### `docguard ci`
 
 **Single command for CI/CD pipelines.** Runs guard + score internally (no subprocess).
 
 ```bash
-npx specguard ci                              # Basic check
-npx specguard ci --threshold 70               # Fail below score 70
-npx specguard ci --threshold 80 --fail-on-warning  # Strict mode
-npx specguard ci --format json                # JSON for GitHub Actions
+npx docguard ci                              # Basic check
+npx docguard ci --threshold 70               # Fail below score 70
+npx docguard ci --threshold 80 --fail-on-warning  # Strict mode
+npx docguard ci --format json                # JSON for GitHub Actions
 ```
 
-### `specguard hooks`
+### `docguard hooks`
 
 **Install git hooks** for automatic validation.
 
 ```bash
-npx specguard hooks              # Install all hooks
-npx specguard hooks --list       # Show installed hooks
-npx specguard hooks --remove     # Remove hooks
+npx docguard hooks              # Install all hooks
+npx docguard hooks --list       # Show installed hooks
+npx docguard hooks --remove     # Remove hooks
 ```
 
 **Hooks installed:**
-- `pre-commit` → runs `specguard guard`
-- `pre-push` → runs `specguard score` with threshold
+- `pre-commit` → runs `docguard guard`
+- `pre-push` → runs `docguard score` with threshold
 - `commit-msg` → validates conventional commit format
 
-### `specguard watch`
+### `docguard watch`
 
 **Live watch mode** — re-runs guard on file changes.
 
 ```bash
-npx specguard watch              # Watch and re-run guard
-npx specguard watch --auto-fix   # Also output AI fix prompts on failure
+npx docguard watch              # Watch and re-run guard
+npx docguard watch --auto-fix   # Also output AI fix prompts on failure
 ```
 
-### `specguard badge`
+### `docguard badge`
 
 **Generate shields.io badges** for README.
 
 ```bash
-npx specguard badge
-npx specguard badge --format json
+npx docguard badge
+npx docguard badge --format json
 ```
 
-### `specguard diff`
+### `docguard diff`
 
 **Show gaps** between documentation and actual codebase.
 
 ```bash
-npx specguard diff
+npx docguard diff
 ```
 
 ---

@@ -1,13 +1,13 @@
 {
-  "name": "specguard-vscode",
-  "displayName": "SpecGuard — CDD Compliance",
+  "name": "docguard-vscode",
+  "displayName": "DocGuard — CDD Compliance",
   "description": "Canonical-Driven Development (CDD) enforcement for VS Code. Inline warnings, CDD score in status bar, and guard commands.",
   "version": "0.4.0",
   "publisher": "raccioly",
   "icon": "icon.png",
   "repository": {
     "type": "git",
-    "url": "https://github.com/raccioly/specguard"
+    "url": "https://github.com/raccioly/docguard"
   },
   "engines": {
     "vscode": "^1.80.0"
@@ -17,11 +17,11 @@
     "canonical-driven-development",
     "cdd",
     "documentation",
-    "specguard",
+    "docguard",
     "governance"
   ],
   "activationEvents": [
-    "workspaceContains:.specguard.json",
+    "workspaceContains:.docguard.json",
     "workspaceContains:docs-canonical",
     "workspaceContains:AGENTS.md"
   ],
@@ -29,57 +29,57 @@
   "contributes": {
     "commands": [
       {
-        "command": "specguard.audit",
-        "title": "SpecGuard: Audit Documentation"
+        "command": "docguard.audit",
+        "title": "DocGuard: Audit Documentation"
       },
       {
-        "command": "specguard.guard",
-        "title": "SpecGuard: Guard (Validate)"
+        "command": "docguard.guard",
+        "title": "DocGuard: Guard (Validate)"
       },
       {
-        "command": "specguard.score",
-        "title": "SpecGuard: Show CDD Score"
+        "command": "docguard.score",
+        "title": "DocGuard: Show CDD Score"
       },
       {
-        "command": "specguard.badge",
-        "title": "SpecGuard: Generate Badges"
+        "command": "docguard.badge",
+        "title": "DocGuard: Generate Badges"
       },
       {
-        "command": "specguard.init",
-        "title": "SpecGuard: Initialize CDD Docs"
+        "command": "docguard.init",
+        "title": "DocGuard: Initialize CDD Docs"
       },
       {
-        "command": "specguard.refresh",
-        "title": "SpecGuard: Refresh Score"
+        "command": "docguard.refresh",
+        "title": "DocGuard: Refresh Score"
       },
       {
-        "command": "specguard.fix",
-        "title": "SpecGuard: Find & Fix Issues"
+        "command": "docguard.fix",
+        "title": "DocGuard: Find & Fix Issues"
       },
       {
-        "command": "specguard.fixAuto",
-        "title": "SpecGuard: Auto-Fix Missing Docs"
+        "command": "docguard.fixAuto",
+        "title": "DocGuard: Auto-Fix Missing Docs"
       }
     ],
     "configuration": {
-      "title": "SpecGuard",
+      "title": "DocGuard",
       "properties": {
-        "specguard.autoRefresh": {
+        "docguard.autoRefresh": {
           "type": "boolean",
           "default": true,
           "description": "Automatically refresh CDD score when canonical docs change"
         },
-        "specguard.showStatusBar": {
+        "docguard.showStatusBar": {
           "type": "boolean",
           "default": true,
           "description": "Show CDD score in the status bar"
         },
-        "specguard.nodePath": {
+        "docguard.nodePath": {
           "type": "string",
           "default": "node",
           "description": "Path to Node.js executable"
         },
-        "specguard.scoreThreshold": {
+        "docguard.scoreThreshold": {
           "type": "number",
           "default": 60,
           "description": "Minimum acceptable CDD score (below this shows warning)"

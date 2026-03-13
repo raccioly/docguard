@@ -5,7 +5,7 @@
 
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
-import { c } from '../specguard.mjs';
+import { c } from '../docguard.mjs';
 
 const AGENT_TARGETS = {
   cursor: {
@@ -41,13 +41,13 @@ const AGENT_TARGETS = {
 };
 
 export function runAgents(projectDir, config, flags) {
-  console.log(`${c.bold}🤖 SpecGuard Agents — ${config.projectName}${c.reset}`);
+  console.log(`${c.bold}🤖 DocGuard Agents — ${config.projectName}${c.reset}`);
   console.log(`${c.dim}   Directory: ${projectDir}${c.reset}\n`);
 
   // Read AGENTS.md content
   const agentsPath = resolve(projectDir, 'AGENTS.md');
   if (!existsSync(agentsPath)) {
-    console.log(`  ${c.red}❌ AGENTS.md not found. Run ${c.cyan}specguard init${c.red} first.${c.reset}\n`);
+    console.log(`  ${c.red}❌ AGENTS.md not found. Run ${c.cyan}docguard init${c.red} first.${c.reset}\n`);
     process.exit(1);
   }
 

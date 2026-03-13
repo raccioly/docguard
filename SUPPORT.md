@@ -2,7 +2,7 @@
 
 ## Getting Help
 
-If you're having trouble with SpecGuard, here's how to get help:
+If you're having trouble with DocGuard, here's how to get help:
 
 ### 📖 Documentation
 
@@ -12,9 +12,9 @@ If you're having trouble with SpecGuard, here's how to get help:
 
 ### 🐛 Bug Reports
 
-Found a bug? [Open a GitHub issue](https://github.com/raccioly/specguard/issues/new) with:
+Found a bug? [Open a GitHub issue](https://github.com/raccioly/docguard/issues/new) with:
 
-- SpecGuard version (`specguard --version`)
+- DocGuard version (`docguard --version`)
 - Node.js version (`node --version`)
 - Your OS and version
 - Steps to reproduce the issue
@@ -22,14 +22,14 @@ Found a bug? [Open a GitHub issue](https://github.com/raccioly/specguard/issues/
 
 ### 💡 Feature Requests
 
-Have an idea? [Open a GitHub issue](https://github.com/raccioly/specguard/issues/new) with the `enhancement` label.
+Have an idea? [Open a GitHub issue](https://github.com/raccioly/docguard/issues/new) with the `enhancement` label.
 
 ### 💬 Questions
 
-For general questions about CDD methodology or SpecGuard usage:
+For general questions about CDD methodology or DocGuard usage:
 
 1. Check the [docs/](./docs/) directory first
-2. Search [existing issues](https://github.com/raccioly/specguard/issues) — someone may have asked the same question
+2. Search [existing issues](https://github.com/raccioly/docguard/issues) — someone may have asked the same question
 3. Open a new issue with the `question` label
 
 ### 🔧 Self-Diagnosis
@@ -37,15 +37,15 @@ For general questions about CDD methodology or SpecGuard usage:
 Run these commands to diagnose common issues:
 
 ```bash
-# Check SpecGuard version
-npx specguard --version
+# Check DocGuard version
+npx docguard --version
 
 # Run the full diagnostic
-npx specguard fix
+npx docguard fix
 
 # Check your project's CDD score
-npx specguard score
+npx docguard score
 
 # Validate all documentation
-npx specguard guard
+npx docguard guard
 ```

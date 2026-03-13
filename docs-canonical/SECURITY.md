@@ -1,8 +1,8 @@
 # Security
 
-<!-- specguard:version 0.4.0 -->
-<!-- specguard:status active -->
-<!-- specguard:last-reviewed 2026-03-13 -->
+<!-- docguard:version 0.4.0 -->
+<!-- docguard:status active -->
+<!-- docguard:last-reviewed 2026-03-13 -->
 
 | Metadata | Value |
 |----------|-------|
@@ -13,33 +13,33 @@
 
 ## Overview
 
-SpecGuard is a **local CLI tool** that runs entirely on the user's machine. It reads project files from the filesystem and produces terminal output. It makes **no network requests**, requires **no authentication**, and stores **no credentials**.
+DocGuard is a **local CLI tool** that runs entirely on the user's machine. It reads project files from the filesystem and produces terminal output. It makes **no network requests**, requires **no authentication**, and stores **no credentials**.
 
 ## Authentication
 
 | Method | Provider | Scope |
 |--------|---------|-------|
-| **None required** | N/A | SpecGuard is a local-only CLI tool. No auth is needed. |
+| **None required** | N/A | DocGuard is a local-only CLI tool. No auth is needed. |
 
-SpecGuard operates purely on the local filesystem. It does not communicate with any server, API, or cloud service.
+DocGuard operates purely on the local filesystem. It does not communicate with any server, API, or cloud service.
 
 ## Authorization
 
 | Role | Permissions | Notes |
 |------|-----------|-------|
-| **User** (local machine) | Full access — read/write project files | SpecGuard runs with the permissions of the user invoking it |
+| **User** (local machine) | Full access — read/write project files | DocGuard runs with the permissions of the user invoking it |
 | **CI Pipeline** | Read-only (guard, score, ci commands) | CI typically only runs validation, not init/generate |
-| **AI Agent** | Depends on AI agent permissions | AI agents run SpecGuard via terminal — they inherit the user's or CI's permissions |
+| **AI Agent** | Depends on AI agent permissions | AI agents run DocGuard via terminal — they inherit the user's or CI's permissions |
 
-There is no RBAC system. SpecGuard inherits filesystem permissions from the calling process.
+There is no RBAC system. DocGuard inherits filesystem permissions from the calling process.
 
 ## Secrets Management
 
 | Secret | Storage | Used By | Notes |
 |--------|---------|---------|-------|
-| **None** | N/A | N/A | SpecGuard requires no API keys, tokens, or credentials |
+| **None** | N/A | N/A | DocGuard requires no API keys, tokens, or credentials |
 
-### What SpecGuard Does NOT Do
+### What DocGuard Does NOT Do
 
 - Does **not** read `.env` files for its own use (it checks if your project has one)
 - Does **not** make HTTP requests to any API
@@ -50,8 +50,8 @@ There is no RBAC system. SpecGuard inherits filesystem permissions from the call
 
 | Boundary | Trusted | Untrusted |
 |----------|---------|-----------|
-| **File reads** | Project files within `projectDir` | SpecGuard only reads files within the project directory and its own templates |
-| **File writes** | `specguard init`, `specguard generate`, `specguard hooks` | Only writes to `docs-canonical/`, root docs, `.specguard.json`, `.git/hooks/` |
+| **File reads** | Project files within `projectDir` | DocGuard only reads files within the project directory and its own templates |
+| **File writes** | `docguard init`, `docguard generate`, `docguard hooks` | Only writes to `docs-canonical/`, root docs, `.docguard.json`, `.git/hooks/` |
 | **Child processes** | `git log`, `git diff` (freshness validator) | Only executes `git` commands with safe flags (no mutations) |
 | **User input** | CLI arguments parsed by the entry point | No user input is passed to `exec()` unsanitized |
 
@@ -74,7 +74,7 @@ There is no RBAC system. SpecGuard inherits filesystem permissions from the call
 
 | Category | Status |
 |----------|--------|
-| **npm dependencies** | **Zero** — SpecGuard has no `node_modules` |
+| **npm dependencies** | **Zero** — DocGuard has no `node_modules` |
 | **Runtime dependencies** | Node.js ≥ 18, `git` (optional, for freshness checks) |
 | **Transitive dependencies** | None |
 | **Known vulnerabilities** | None — no dependency tree to audit |
@@ -83,7 +83,7 @@ The zero-dependency architecture is a deliberate security decision: no supply ch
 
 ## .gitignore Audit
 
-SpecGuard's own `.gitignore` excludes:
+DocGuard's own `.gitignore` excludes:
 
 | Pattern | Purpose |
 |---------|---------|
@@ -107,5 +107,5 @@ SpecGuard's own `.gitignore` excludes:
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
-| 0.4.0 | 2026-03-13 | SpecGuard Team | Complete rewrite — documented zero-auth model, command safety levels, supply chain posture |
-| 0.1.0 | 2026-03-13 | SpecGuard Generate | Auto-generated skeleton |
+| 0.4.0 | 2026-03-13 | DocGuard Team | Complete rewrite — documented zero-auth model, command safety levels, supply chain posture |
+| 0.1.0 | 2026-03-13 | DocGuard Generate | Auto-generated skeleton |

@@ -3,11 +3,11 @@
  * Outputs badge markdown or JSON for README, CI, and dashboards.
  */
 
-import { c } from '../specguard.mjs';
+import { c } from '../docguard.mjs';
 import { runScoreInternal } from './score.mjs';
 
 export function runBadge(projectDir, config, flags) {
-  console.log(`${c.bold}🏷️  SpecGuard Badge — ${config.projectName}${c.reset}`);
+  console.log(`${c.bold}🏷️  DocGuard Badge — ${config.projectName}${c.reset}`);
   console.log(`${c.dim}   Directory: ${projectDir}${c.reset}\n`);
 
   // Get score internally
@@ -33,9 +33,9 @@ export function runBadge(projectDir, config, flags) {
   const typeBadgeUrl = `https://img.shields.io/badge/type-${projectType}-blue`;
   const typeBadgeMarkdown = `![Type](${typeBadgeUrl})`;
 
-  // SpecGuard badge
-  const sgBadgeUrl = `https://img.shields.io/badge/guarded_by-SpecGuard-cyan`;
-  const sgBadgeMarkdown = `![SpecGuard](${sgBadgeUrl})`;
+  // DocGuard badge
+  const sgBadgeUrl = `https://img.shields.io/badge/guarded_by-DocGuard-cyan`;
+  const sgBadgeMarkdown = `![DocGuard](${sgBadgeUrl})`;
 
   if (flags.format === 'json') {
     const result = {
@@ -46,7 +46,7 @@ export function runBadge(projectDir, config, flags) {
       badges: {
         score: { url: badgeUrl, markdown: badgeMarkdown },
         type: { url: typeBadgeUrl, markdown: typeBadgeMarkdown },
-        specguard: { url: sgBadgeUrl, markdown: sgBadgeMarkdown },
+        docguard: { url: sgBadgeUrl, markdown: sgBadgeMarkdown },
       },
       readmeSnippet: `${badgeMarkdown} ${typeBadgeMarkdown} ${sgBadgeMarkdown}`,
     };
@@ -61,7 +61,7 @@ export function runBadge(projectDir, config, flags) {
   console.log(`  ${c.bold}Type Badge:${c.reset}`);
   console.log(`    ${c.cyan}${typeBadgeMarkdown}${c.reset}\n`);
 
-  console.log(`  ${c.bold}SpecGuard Badge:${c.reset}`);
+  console.log(`  ${c.bold}DocGuard Badge:${c.reset}`);
   console.log(`    ${c.cyan}${sgBadgeMarkdown}${c.reset}\n`);
 
   console.log(`  ${c.bold}README snippet:${c.reset}`);

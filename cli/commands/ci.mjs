@@ -8,7 +8,7 @@
  *   2 = Guard warnings only
  */
 
-import { c } from '../specguard.mjs';
+import { c } from '../docguard.mjs';
 import { runGuardInternal } from './guard.mjs';
 import { runScoreInternal } from './score.mjs';
 
@@ -18,7 +18,7 @@ export function runCI(projectDir, config, flags) {
   const isJson = flags.format === 'json';
 
   if (!isJson) {
-    console.log(`${c.bold}🔄 SpecGuard CI — ${config.projectName}${c.reset}`);
+    console.log(`${c.bold}🔄 DocGuard CI — ${config.projectName}${c.reset}`);
     console.log(`${c.dim}   Directory: ${projectDir}${c.reset}`);
     if (threshold > 0) console.log(`${c.dim}   Score threshold: ${threshold}${c.reset}`);
     console.log('');

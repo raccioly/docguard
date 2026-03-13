@@ -1,6 +1,6 @@
 ---
 name: ✨ Feature Request
-about: Suggest a new feature for SpecGuard
+about: Suggest a new feature for DocGuard
 title: '[FEATURE] '
 labels: enhancement
 assignees: ''

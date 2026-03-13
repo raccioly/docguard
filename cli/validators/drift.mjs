@@ -14,7 +14,7 @@ const CODE_EXTENSIONS = new Set([
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build',
   'coverage', '.cache', '__pycache__', '.venv', 'vendor',
-  'cli', // Exclude SpecGuard's own source (contains DRIFT: in regex patterns)
+  'cli', // Exclude DocGuard's own source (contains DRIFT: in regex patterns)
 ]);
 
 export function validateDrift(projectDir, config) {

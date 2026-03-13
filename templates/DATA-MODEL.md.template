@@ -1,9 +1,9 @@
 # Data Model
 
-<!-- specguard:version 0.1.0 -->
-<!-- specguard:status draft | review | approved -->
-<!-- specguard:last-reviewed YYYY-MM-DD -->
-<!-- specguard:owner @your-github-username -->
+<!-- docguard:version 0.1.0 -->
+<!-- docguard:status draft | review | approved -->
+<!-- docguard:last-reviewed YYYY-MM-DD -->
+<!-- docguard:owner @your-github-username -->
 
 > **Canonical document** — Design intent. This file describes the data structures and their relationships.  
 > ⚠️ Schema changes require this doc to be updated FIRST.

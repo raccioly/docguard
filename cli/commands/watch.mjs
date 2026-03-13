@@ -9,7 +9,7 @@
 
 import { watch as fsWatch, existsSync, readdirSync, statSync } from 'node:fs';
 import { resolve, relative, extname } from 'node:path';
-import { c } from '../specguard.mjs';
+import { c } from '../docguard.mjs';
 import { runGuardInternal } from './guard.mjs';
 
 const DEBOUNCE_MS = 500;
@@ -22,7 +22,7 @@ const WATCH_EXTS = new Set([
 ]);
 
 export function runWatch(projectDir, config, flags) {
-  console.log(`${c.bold}👁️  SpecGuard Watch — ${config.projectName}${c.reset}`);
+  console.log(`${c.bold}👁️  DocGuard Watch — ${config.projectName}${c.reset}`);
   console.log(`${c.dim}   Directory: ${projectDir}${c.reset}`);
   if (flags.autoFix) {
     console.log(`${c.cyan}   Mode: auto-fix (will output AI prompts on failures)${c.reset}`);
@@ -98,12 +98,12 @@ function runGuardQuiet(projectDir, config, flags) {
         for (const msg of [...v.errors, ...v.warnings]) {
           console.log(`  ${c.yellow}→${c.reset} [${v.name}] ${msg}`);
           if (docTarget) {
-            console.log(`    ${c.dim}Fix: specguard fix --doc ${docTarget}${c.reset}`);
+            console.log(`    ${c.dim}Fix: docguard fix --doc ${docTarget}${c.reset}`);
           }
         }
       }
 
-      console.log(`\n  ${c.dim}Or run: specguard diagnose (for full AI remediation prompt)${c.reset}`);
+      console.log(`\n  ${c.dim}Or run: docguard diagnose (for full AI remediation prompt)${c.reset}`);
     }
   } catch (err) {
     console.log(`${c.red}   Guard failed: ${err.message}${c.reset}`);

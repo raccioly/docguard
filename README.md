@@ -1,4 +1,4 @@
-# SpecGuard
+# DocGuard
 
 > **AI-native documentation enforcement for Canonical-Driven Development (CDD).**  
 > AI diagnoses. AI fixes. AI verifies. Humans review.
@@ -20,7 +20,7 @@
 | Docs are optional | Docs are required and validated |
 | One agent, one context | Any agent, shared context |
 
-**SpecGuard** is the CLI tool that enforces CDD — auditing, generating, and guarding your project documentation.
+**DocGuard** is the CLI tool that enforces CDD — auditing, generating, and guarding your project documentation.
 
 📖 **[Read the full philosophy](PHILOSOPHY.md)** | 📋 **[Read the standard](STANDARD.md)** | ⚖️ **[See comparisons](COMPARISONS.md)** | 🗺️ **[Roadmap](ROADMAP.md)**
 
@@ -30,19 +30,19 @@
 
 ```bash
 # The primary command — AI diagnoses AND fixes everything
-npx specguard diagnose
+npx docguard diagnose
 
 # Generate CDD docs from an existing codebase
-npx specguard generate
+npx docguard generate
 
 # Start from scratch (minimal setup for side projects)
-npx specguard init --profile starter
+npx docguard init --profile starter
 
 # Start from scratch (full enterprise setup)
-npx specguard init
+npx docguard init
 
 # CI gate — pass/fail for pipelines
-npx specguard guard
+npx docguard guard
 ```
 
 No installation needed. Zero dependencies. Works with Node.js 18+.
@@ -63,9 +63,9 @@ diagnose  →  AI reads prompts  →  AI fixes docs  →  guard verifies
 
 ### 🔮 Generate — Reverse-engineer docs from code
 ```
-$ npx specguard generate
+$ npx docguard generate
 
-🔮 SpecGuard Generate — my-project
+🔮 DocGuard Generate — my-project
    Scanning codebase to generate canonical documentation...
 
   Detected Stack:
@@ -93,7 +93,7 @@ $ npx specguard generate
 
 ### 📊 Score — CDD maturity assessment
 ```
-$ npx specguard score
+$ npx docguard score
 
   Category Breakdown
 
@@ -115,7 +115,7 @@ $ npx specguard score
 
 ### 🔍 Diff — Canonical docs vs code comparison
 ```
-$ npx specguard diff
+$ npx docguard diff
 
   🛣️ API Routes
     In code but not documented:
@@ -130,7 +130,7 @@ $ npx specguard diff
 
 ### 🤖 Agents — Generate agent-specific configs
 ```
-$ npx specguard agents
+$ npx docguard agents
 
   ✅ Cursor: .cursor/rules/cdd.mdc
   ✅ GitHub Copilot: .github/copilot-instructions.md
@@ -144,21 +144,21 @@ $ npx specguard agents
 
 ### 🔍 Audit — What docs exist/missing
 ```
-$ npx specguard audit
+$ npx docguard audit
 
   Score: 8/8 required files (100%)
 ```
 
 ### 🏗️ Init — Create CDD docs from templates
 ```
-$ npx specguard init
+$ npx docguard init
 
-  Created 9 files (8 docs + .specguard.json)
+  Created 9 files (8 docs + .docguard.json)
 ```
 
 ### 🛡️ Guard — Validate project against docs
 ```
-$ npx specguard guard
+$ npx docguard guard
 
   ✅ Structure      8/8 checks passed
   ✅ Doc Sections   10/10 checks passed
@@ -198,7 +198,7 @@ $ npx specguard guard
 
 ## 16 Templates
 
-Every template includes professional metadata: `specguard:version`, `specguard:status`, badges, and revision history.
+Every template includes professional metadata: `docguard:version`, `docguard:status`, badges, and revision history.
 
 | Template | Type | Purpose |
 |----------|------|---------|
@@ -241,7 +241,7 @@ your-project/
 ├── AGENTS.md                    # AI agent behavior rules
 ├── CHANGELOG.md                 # Change tracking
 ├── DRIFT-LOG.md                 # Documented deviations
-└── .specguard.json              # SpecGuard configuration
+└── .docguard.json              # DocGuard configuration
 ```
 
 ---
@@ -251,7 +251,7 @@ your-project/
 ### GitHub Actions
 
 ```yaml
-name: SpecGuard
+name: DocGuard
 on: [pull_request]
 jobs:
   guard:
@@ -261,8 +261,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: npx specguard guard
-      - run: npx specguard score --format json
+      - run: npx docguard guard
+      - run: npx docguard score --format json
 ```
 
 ### Pre-commit Hook
@@ -270,24 +270,24 @@ jobs:
 ```bash
 # .git/hooks/pre-commit
 #!/bin/sh
-npx specguard guard
+npx docguard guard
 ```
 
 ---
 
 ## Agent Compatibility
 
-SpecGuard works with **every major AI coding agent**:
+DocGuard works with **every major AI coding agent**:
 
 | Agent | Compatibility | Auto-Generate Config |
 |-------|:---:|:---:|
 | Google Antigravity | ✅ | — |
-| Claude Code | ✅ | `specguard agents --agent claude` |
-| GitHub Copilot | ✅ | `specguard agents --agent copilot` |
-| Cursor | ✅ | `specguard agents --agent cursor` |
-| Windsurf | ✅ | `specguard agents --agent windsurf` |
-| Cline | ✅ | `specguard agents --agent cline` |
-| Gemini CLI | ✅ | `specguard agents --agent gemini` |
+| Claude Code | ✅ | `docguard agents --agent claude` |
+| GitHub Copilot | ✅ | `docguard agents --agent copilot` |
+| Cursor | ✅ | `docguard agents --agent cursor` |
+| Windsurf | ✅ | `docguard agents --agent windsurf` |
+| Cline | ✅ | `docguard agents --agent cline` |
+| Gemini CLI | ✅ | `docguard agents --agent gemini` |
 | Kiro (AWS) | ✅ | — |
 
 All canonical docs are **plain markdown** — any agent can read them. No vendor lock-in.

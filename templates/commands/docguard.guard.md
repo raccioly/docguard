@@ -1,11 +1,11 @@
-# /specguard.guard — Validate CDD compliance and fix any issues
+# /docguard.guard — Validate CDD compliance and fix any issues
 
-You are an AI agent enforcing Canonical-Driven Development (CDD) compliance using SpecGuard.
+You are an AI agent enforcing Canonical-Driven Development (CDD) compliance using DocGuard.
 
 ## Step 1: Run Guard
 
 ```bash
-npx specguard guard
+npx docguard guard
 ```
 
 Read the output. It shows pass/fail for each validator:
@@ -16,18 +16,18 @@ Read the output. It shows pass/fail for each validator:
 ### If all checks pass:
 Report success and the score:
 ```bash
-npx specguard score
+npx docguard score
 ```
 
 ### If checks fail:
 Run the fix workflow:
 ```bash
-npx specguard fix
+npx docguard fix
 ```
 
 Read the output to understand what needs fixing. For documents that need real content:
 ```bash
-npx specguard fix --doc <name>
+npx docguard fix --doc <name>
 ```
 
 Execute the research steps in the output, write real content, then re-run guard to verify.

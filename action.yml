@@ -1,4 +1,4 @@
-name: 'SpecGuard — CDD Compliance'
+name: 'DocGuard — CDD Compliance'
 description: 'Audit, guard, and score your project for Canonical-Driven Development compliance.'
 author: 'Ricardo Accioly'
 
@@ -40,7 +40,7 @@ outputs:
     description: 'CDD grade (A+, A, B, C, D, F)'
     value: ${{ steps.run.outputs.grade }}
   result:
-    description: 'Full JSON result from SpecGuard'
+    description: 'Full JSON result from DocGuard'
     value: ${{ steps.run.outputs.result }}
 
 runs:
@@ -51,11 +51,11 @@ runs:
       with:
         node-version: ${{ inputs.node-version }}
 
-    - name: Install SpecGuard
+    - name: Install DocGuard
       shell: bash
-      run: npm install -g specguard@latest || npx specguard --version
+      run: npm install -g docguard@latest || npx docguard --version
 
-    - name: Run SpecGuard
+    - name: Run DocGuard
       id: run
       shell: bash
       working-directory: ${{ inputs.working-directory }}
@@ -73,7 +73,7 @@ runs:
 
         # Run the command
         if [ "$CMD" = "score" ]; then
-          RESULT=$(npx specguard score $FLAGS 2>&1)
+          RESULT=$(npx docguard score $FLAGS 2>&1)
           EXIT_CODE=$?
 
           # Extract score from JSON output
@@ -98,25 +98,25 @@ runs:
             exit 1
           fi
         elif [ "$CMD" = "guard" ]; then
-          npx specguard guard $FLAGS
+          npx docguard guard $FLAGS
           EXIT_CODE=$?
 
           # Handle fail-on-warning
           if [ "${{ inputs.fail-on-warning }}" = "true" ] && [ "$EXIT_CODE" = "2" ]; then
             echo ""
-            echo "::error::SpecGuard guard found warnings (fail-on-warning is enabled)"
+            echo "::error::DocGuard guard found warnings (fail-on-warning is enabled)"
             exit 1
           fi
 
           # Exit code 2 = warnings only (not failure by default)
           if [ "$EXIT_CODE" = "2" ] && [ "${{ inputs.fail-on-warning }}" != "true" ]; then
-            echo "::warning::SpecGuard guard found warnings"
+            echo "::warning::DocGuard guard found warnings"
             exit 0
           fi
 
           exit $EXIT_CODE
         else
-          npx specguard $CMD $FLAGS
+          npx docguard $CMD $FLAGS
           EXIT_CODE=$?
           exit $EXIT_CODE
         fi
@@ -130,13 +130,13 @@ runs:
           const grade = '${{ steps.run.outputs.grade }}' || '?';
 
           const emoji = parseInt(score) >= 80 ? '✅' : parseInt(score) >= 60 ? '⚠️' : '❌';
-          const body = `## ${emoji} SpecGuard CDD Score: ${score}/100 (${grade})
+          const body = `## ${emoji} DocGuard CDD Score: ${score}/100 (${grade})
 
           | Category | Score |
           |----------|-------|
-          | Run \`specguard score --format json\` for full breakdown | |
+          | Run \`docguard score --format json\` for full breakdown | |
 
-          > *Automated by [SpecGuard](https://github.com/raccioly/specguard)*`;
+          > *Automated by [DocGuard](https://github.com/raccioly/docguard)*`;
 
           // Find existing comment
           const comments = await github.rest.issues.listComments({
@@ -146,7 +146,7 @@ runs:
           });
 
           const existing = comments.data.find(c =>
-            c.body.includes('SpecGuard CDD Score') && c.user.type === 'Bot'
+            c.body.includes('DocGuard CDD Score') && c.user.type === 'Bot'
           );
 
           if (existing) {

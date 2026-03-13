@@ -1,4 +1,4 @@
-name: SpecGuard CI
+name: DocGuard CI
 
 on:
   push:
@@ -28,48 +28,48 @@ jobs:
 
       # ── Self-validation (dogfooding) ──
       - name: CLI Version
-        run: node cli/specguard.mjs --version
+        run: node cli/docguard.mjs --version
 
       - name: Audit
-        run: node cli/specguard.mjs audit
+        run: node cli/docguard.mjs audit
 
       - name: Guard (self-check)
-        run: node cli/specguard.mjs guard
+        run: node cli/docguard.mjs guard
 
       - name: Score
-        run: node cli/specguard.mjs score
+        run: node cli/docguard.mjs score
 
       - name: Score JSON
-        run: node cli/specguard.mjs score --format json
+        run: node cli/docguard.mjs score --format json
 
       - name: Diff
-        run: node cli/specguard.mjs diff
+        run: node cli/docguard.mjs diff
 
       - name: Badge
-        run: node cli/specguard.mjs badge
+        run: node cli/docguard.mjs badge
 
       # ── Cross-project tests ──
       - name: Init in temp dir
         run: |
-          mkdir -p /tmp/specguard-test
-          node cli/specguard.mjs init --dir /tmp/specguard-test
+          mkdir -p /tmp/docguard-test
+          node cli/docguard.mjs init --dir /tmp/docguard-test
 
       - name: Audit after init
-        run: node cli/specguard.mjs audit --dir /tmp/specguard-test
+        run: node cli/docguard.mjs audit --dir /tmp/docguard-test
 
       - name: Generate in empty dir
         run: |
-          mkdir -p /tmp/specguard-gen
-          node cli/specguard.mjs generate --dir /tmp/specguard-gen
+          mkdir -p /tmp/docguard-gen
+          node cli/docguard.mjs generate --dir /tmp/docguard-gen
 
       - name: Generate --force
-        run: node cli/specguard.mjs generate --dir /tmp/specguard-gen --force
+        run: node cli/docguard.mjs generate --dir /tmp/docguard-gen --force
 
       - name: Agents
-        run: node cli/specguard.mjs agents --dir /tmp/specguard-test
+        run: node cli/docguard.mjs agents --dir /tmp/docguard-test
 
       - name: Hooks --list
-        run: node cli/specguard.mjs hooks --list
+        run: node cli/docguard.mjs hooks --list
 
   # ── npm publish dry-run on tags ──
   publish-check:

@@ -1,11 +1,11 @@
-# SpecGuard Roadmap
+# DocGuard Roadmap
 
-<!-- specguard:version 0.4.0 -->
-<!-- specguard:status living -->
-<!-- specguard:last-reviewed 2026-03-12 -->
-<!-- specguard:owner @raccioly -->
+<!-- docguard:version 0.4.0 -->
+<!-- docguard:status living -->
+<!-- docguard:last-reviewed 2026-03-12 -->
+<!-- docguard:owner @raccioly -->
 
-> The planned evolution of SpecGuard and Canonical-Driven Development (CDD).
+> The planned evolution of DocGuard and Canonical-Driven Development (CDD).
 
 | Metadata | Value |
 |----------|-------|
@@ -37,7 +37,7 @@ Make **Canonical-Driven Development** the industry standard for AI-age software 
 
 ## Phase 0: Research & Standard ✅
 
-Defined the CDD methodology and created the SpecGuard specification.
+Defined the CDD methodology and created the DocGuard specification.
 
 - [x] Landscape analysis (Spec Kit, AGENTS.md, Kiro, Cursor)
 - [x] CDD philosophy and three pillars
@@ -49,9 +49,9 @@ Defined the CDD methodology and created the SpecGuard specification.
 
 Built the zero-dependency CLI tool with 9 validators and 8 core templates.
 
-- [x] `specguard audit` — scan project, report documentation status
-- [x] `specguard init` — create CDD docs from professional templates
-- [x] `specguard guard` — validate project against canonical docs
+- [x] `docguard audit` — scan project, report documentation status
+- [x] `docguard init` — create CDD docs from professional templates
+- [x] `docguard guard` — validate project against canonical docs
 - [x] 9 validators: structure, doc-sections, docs-sync, drift, changelog, test-spec, environment, security, architecture
 - [x] 8 core templates with versioning headers, badges, and revision history
 - [x] Stack-specific configs (Next.js, Fastify, Python, generic)
@@ -62,21 +62,21 @@ Built the zero-dependency CLI tool with 9 validators and 8 core templates.
 
 Expanded the CLI with scoring, diffing, and agent integration.
 
-- [x] `specguard score` — CDD maturity score (0-100) with weighted categories and bar charts
-- [x] `specguard diff` — canonical docs ↔ implementation comparison
-- [x] `specguard agents` — auto-generate configs for 6 AI agents (Cursor, Copilot, Cline, Windsurf, Claude, Gemini)
+- [x] `docguard score` — CDD maturity score (0-100) with weighted categories and bar charts
+- [x] `docguard diff` — canonical docs ↔ implementation comparison
+- [x] `docguard agents` — auto-generate configs for 6 AI agents (Cursor, Copilot, Cline, Windsurf, Claude, Gemini)
 - [x] `--format json` output for CI integration
 - [x] `--fix` flag for auto-creating missing files
 - [x] `--force` flag for overwriting existing files
 - [x] `--agent <name>` flag for targeting specific agents
 - [x] 8 additional templates: KNOWN-GOTCHAS, TROUBLESHOOTING, RUNBOOKS, VENDOR-BUGS, CURRENT-STATE, ADR, DEPLOYMENT, ROADMAP
-- [ ] npm publish (`npx specguard` works globally)
+- [ ] npm publish (`npx docguard` works globally)
 
 ## Phase 3: AI Generate Mode ✅
 
 The killer feature — reverse-engineer documentation from existing codebases.
 
-- [x] `specguard generate` command
+- [x] `docguard generate` command
 - [x] Framework auto-detection (15+ frameworks: Next.js, React, Vue, Angular, Fastify, Express, Django, etc.)
 - [x] Database detection (8+: PostgreSQL, MySQL, MongoDB, DynamoDB, SQLite, etc.)
 - [x] ORM detection (Drizzle, Prisma, TypeORM, Sequelize, Knex)
@@ -120,5 +120,5 @@ We welcome contributions at any phase! See [CONTRIBUTING.md](CONTRIBUTING.md) to
 Priority areas for contributions:
 - **Templates** — Add stack-specific templates (Django, Spring Boot, Go)
 - **Validators** — Write new validation rules
-- **Testing** — Run SpecGuard against your projects and report issues
+- **Testing** — Run DocGuard against your projects and report issues
 - **Documentation** — Improve the standard and guides

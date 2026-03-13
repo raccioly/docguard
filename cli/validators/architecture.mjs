@@ -2,7 +2,7 @@
  * Architecture Validator — Enhanced with automatic import analysis
  * 
  * Two modes:
- * 1. Config-driven: Uses `layers` from .specguard.json (existing behavior)
+ * 1. Config-driven: Uses `layers` from .docguard.json (existing behavior)
  * 2. Auto-detect: Scans ARCHITECTURE.md for layer boundary declarations,
  *    then validates imports across the codebase.
  * 

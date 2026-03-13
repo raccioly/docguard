@@ -1,5 +1,5 @@
 {
-  "projectName": "specguard",
+  "projectName": "docguard",
   "version": "0.3",
 
   "projectType": "cli",
@@ -23,7 +23,7 @@
     "needsE2E": false,
     "needsDatabase": false,
     "testFramework": "node:test",
-    "runCommand": "node cli/specguard.mjs"
+    "runCommand": "node cli/docguard.mjs"
   },
 
   "validators": {
