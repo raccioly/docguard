@@ -1,0 +1,37 @@
+{
+  "$schema": "https://specguard.dev/schema/v0.1.json",
+  "projectName": "my-python-app",
+  "version": "0.1",
+
+  "sourcePatterns": {
+    "routes": "app/routes/**/*.py",
+    "services": "app/services/**/*.py",
+    "tests": "tests/**/*.py"
+  },
+
+  "layers": {
+    "routes": {
+      "dir": "app/routes",
+      "canImport": ["services", "middleware", "schemas"]
+    },
+    "services": {
+      "dir": "app/services",
+      "canImport": ["repositories", "utils", "models"]
+    },
+    "repositories": {
+      "dir": "app/repositories",
+      "canImport": ["models", "utils"]
+    }
+  },
+
+  "validators": {
+    "structure": true,
+    "docsSync": true,
+    "drift": true,
+    "changelog": true,
+    "architecture": true,
+    "testSpec": true,
+    "security": true,
+    "environment": true
+  }
+}

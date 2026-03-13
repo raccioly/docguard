@@ -1,0 +1,37 @@
+{
+  "$schema": "https://specguard.dev/schema/v0.1.json",
+  "projectName": "my-nextjs-app",
+  "version": "0.1",
+
+  "sourcePatterns": {
+    "routes": "src/app/api/**/*.{ts,js}",
+    "services": "src/services/**/*.{ts,js}",
+    "tests": "tests/**/*.test.{ts,js}"
+  },
+
+  "layers": {
+    "handlers": {
+      "dir": "src/app/api",
+      "canImport": ["services", "middleware", "schemas", "lib"]
+    },
+    "services": {
+      "dir": "src/services",
+      "canImport": ["repositories", "utils", "models", "lib", "schemas"]
+    },
+    "repositories": {
+      "dir": "src/repositories",
+      "canImport": ["models", "utils", "lib"]
+    }
+  },
+
+  "validators": {
+    "structure": true,
+    "docsSync": true,
+    "drift": true,
+    "changelog": true,
+    "architecture": true,
+    "testSpec": true,
+    "security": true,
+    "environment": true
+  }
+}

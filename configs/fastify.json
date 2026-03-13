@@ -1,0 +1,37 @@
+{
+  "$schema": "https://specguard.dev/schema/v0.1.json",
+  "projectName": "my-fastify-api",
+  "version": "0.1",
+
+  "sourcePatterns": {
+    "routes": "src/routes/**/*.{ts,js}",
+    "services": "src/services/**/*.{ts,js}",
+    "tests": "tests/**/*.test.{ts,js}"
+  },
+
+  "layers": {
+    "routes": {
+      "dir": "src/routes",
+      "canImport": ["services", "middleware", "schemas", "plugins"]
+    },
+    "services": {
+      "dir": "src/services",
+      "canImport": ["repositories", "utils", "models"]
+    },
+    "repositories": {
+      "dir": "src/repositories",
+      "canImport": ["models", "utils"]
+    }
+  },
+
+  "validators": {
+    "structure": true,
+    "docsSync": true,
+    "drift": true,
+    "changelog": true,
+    "architecture": true,
+    "testSpec": true,
+    "security": true,
+    "environment": true
+  }
+}

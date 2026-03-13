@@ -1,0 +1,22 @@
+{
+  "$schema": "https://specguard.dev/schema/v0.1.json",
+  "projectName": "my-generic-project",
+  "version": "0.1",
+
+  "sourcePatterns": {
+    "routes": "src/**/*.{ts,js,py,java,go}",
+    "services": "src/**/*.{ts,js,py,java,go}",
+    "tests": "tests/**/*.{test,spec}.{ts,js,py,java,go}"
+  },
+
+  "validators": {
+    "structure": true,
+    "docsSync": false,
+    "drift": true,
+    "changelog": true,
+    "architecture": false,
+    "testSpec": true,
+    "security": false,
+    "environment": true
+  }
+}
