@@ -3,7 +3,7 @@
  * Now respects projectTypeConfig (e.g., skip E2E for CLI tools)
  */
 
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 export function validateTestSpec(projectDir, config) {
@@ -130,19 +130,66 @@ export function validateTestSpec(projectDir, config) {
     }
   }
 
-  // If no test spec entries parsed, check if test directory exists
+  // If no test spec entries parsed, check if tests exist anywhere
   if (results.total === 0) {
     results.total = 1;
+
+    // 1. Check top-level test dirs
     const commonTestDirs = ['tests', 'test', '__tests__', 'spec'];
     const hasTestDir = commonTestDirs.some(d =>
       existsSync(resolve(projectDir, d))
     );
-    if (hasTestDir) {
+
+    // 2. Check co-located tests (src/**/__tests__/, src/**/*.test.*)
+    let hasColocated = false;
+    if (!hasTestDir) {
+      const sourceRoots = ['src', 'app', 'lib', 'packages'];
+      for (const root of sourceRoots) {
+        const rootPath = resolve(projectDir, root);
+        if (existsSync(rootPath) && hasTestFilesRecursive(rootPath)) {
+          hasColocated = true;
+          break;
+        }
+      }
+    }
+
+    // 3. Check vitest/jest config for custom patterns
+    let hasConfigTests = false;
+    if (!hasTestDir && !hasColocated) {
+      const configs = ['vitest.config.ts', 'vitest.config.js', 'jest.config.ts', 'jest.config.js'];
+      hasConfigTests = configs.some(f => existsSync(resolve(projectDir, f)));
+    }
+
+    if (hasTestDir || hasColocated || hasConfigTests) {
       results.passed = 1;
     } else {
-      results.warnings.push('No test directory found (expected: tests/, test/, __tests__/)');
+      results.warnings.push(
+        'No test directory or co-located test files found. ' +
+        'Expected: tests/, src/**/__tests__/, or src/**/*.test.* files'
+      );
     }
   }
 
   return results;
+}
+
+/** Recursively check if a directory contains test files */
+function hasTestFilesRecursive(dir) {
+  const ignore = new Set(['node_modules', '.git', 'dist', 'build', 'coverage']);
+  let entries;
+  try { entries = readdirSync(dir); } catch { return false; }
+  for (const entry of entries) {
+    if (ignore.has(entry) || entry.startsWith('.')) continue;
+    const full = resolve(dir, entry);
+    try {
+      const s = statSync(full);
+      if (s.isDirectory()) {
+        if (entry === '__tests__' || entry === '__test__') return true;
+        if (hasTestFilesRecursive(full)) return true;
+      } else if (/\.(test|spec)\.[^.]+$/.test(entry)) {
+        return true;
+      }
+    } catch { continue; }
+  }
+  return false;
 }

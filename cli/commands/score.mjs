@@ -405,43 +405,129 @@ function calcDocQualityScore(dir, config) {
 function calcTestingScore(dir, config) {
   let score = 0;
 
-  // Check test directory exists
+  // ── Check 1: Test files exist (40 pts) ──
+  // Check top-level test directories
   const testDirs = ['tests', 'test', '__tests__', 'spec', 'e2e'];
-  const hasTestDir = testDirs.some(d => existsSync(resolve(dir, d)));
-  if (hasTestDir) score += 40;
+  const hasTopLevelTestDir = testDirs.some(d => existsSync(resolve(dir, d)));
 
-  // Check test spec exists
+  // Check co-located tests: src/**/__tests__/ and src/**/*.test.* / src/**/*.spec.*
+  let hasColocatedTests = false;
+  if (!hasTopLevelTestDir) {
+    hasColocatedTests = findColocatedTests(dir);
+  }
+
+  // Check vitest/jest config for custom test patterns
+  let hasConfigTests = false;
+  if (!hasTopLevelTestDir && !hasColocatedTests) {
+    const testConfigs = ['vitest.config.ts', 'vitest.config.js', 'vitest.config.mts', 'jest.config.ts', 'jest.config.js'];
+    for (const cfgFile of testConfigs) {
+      const cfgPath = resolve(dir, cfgFile);
+      if (existsSync(cfgPath)) {
+        try {
+          const cfgContent = readFileSync(cfgPath, 'utf-8');
+          const includeMatch = cfgContent.match(/include\s*:\s*\[([^\]]+)\]/);
+          if (includeMatch) {
+            const patterns = includeMatch[1].match(/['"]([^'"]+)['"]/g);
+            if (patterns) {
+              for (const p of patterns) {
+                const pattern = p.replace(/['"]|\s/g, '');
+                const rootDir = pattern.split('/')[0];
+                if (rootDir && rootDir !== '**' && rootDir !== '*') {
+                  const fullDir = resolve(dir, rootDir);
+                  if (existsSync(fullDir)) {
+                    hasConfigTests = true;
+                    break;
+                  }
+                }
+              }
+            }
+          }
+        } catch { /* config parse may fail */ }
+        break;
+      }
+    }
+  }
+
+  if (hasTopLevelTestDir || hasColocatedTests || hasConfigTests) score += 40;
+
+  // ── Check 2: TEST-SPEC.md exists (30 pts) ──
   if (existsSync(resolve(dir, 'docs-canonical/TEST-SPEC.md'))) score += 30;
 
-  // Check for test config files OR built-in test runner
-  const testConfigs = ['jest.config.js', 'jest.config.ts', 'vitest.config.ts', 'vitest.config.js', 'pytest.ini', 'setup.cfg', '.mocharc.yml'];
-  const hasTestConfig = testConfigs.some(f => existsSync(resolve(dir, f)));
+  // ── Check 3: Test config or built-in runner (15 pts) ──
+  const testConfigs2 = ['jest.config.js', 'jest.config.ts', 'vitest.config.ts', 'vitest.config.js', 'pytest.ini', 'setup.cfg', '.mocharc.yml'];
+  const hasTestConfig = testConfigs2.some(f => existsSync(resolve(dir, f)));
 
   if (hasTestConfig) {
     score += 15;
   } else {
-    // Check if using node:test (no config needed) — look in package.json scripts
     const ptc = config.projectTypeConfig || {};
     const pkgPath = resolve(dir, 'package.json');
     if (ptc.testFramework === 'node:test') {
-      score += 15; // Config says node:test — no config file needed
+      score += 15;
     } else if (existsSync(pkgPath)) {
       try {
         const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
         const testScript = pkg.scripts?.test || '';
         if (testScript.includes('node --test') || testScript.includes('node:test')) {
-          score += 15; // Using built-in test runner
+          score += 15;
         }
       } catch { /* skip */ }
     }
   }
 
-  // Check for CI test step
+  // ── Check 4: CI test step (15 pts) ──
   const ciFiles = ['.github/workflows/ci.yml', '.github/workflows/test.yml'];
   const hasCITest = ciFiles.some(f => existsSync(resolve(dir, f)));
   if (hasCITest) score += 15;
 
   return Math.min(100, score);
+}
+
+/**
+ * Scan common source directories for co-located test files.
+ * Checks: __tests__/ dirs, *.test.*, *.spec.* anywhere in src/, app/, lib/, packages/
+ * Also checks root-level for *.test.* files.
+ */
+function findColocatedTests(dir) {
+  // Scan these common source roots for co-located tests
+  const sourceRoots = ['src', 'app', 'lib', 'packages', 'modules'];
+  const ignoreSet = new Set(['node_modules', '.git', 'dist', 'build', '.next', 'coverage', '.cache']);
+
+  for (const root of sourceRoots) {
+    const rootDir = resolve(dir, root);
+    if (!existsSync(rootDir)) continue;
+    if (walkForTests(rootDir, ignoreSet)) return true;
+  }
+
+  // Also check root-level for *.test.* files (some projects put tests at root)
+  try {
+    const rootEntries = readdirSync(dir);
+    for (const entry of rootEntries) {
+      if (/\.(test|spec)\.[^.]+$/.test(entry)) return true;
+    }
+  } catch { /* ignore */ }
+
+  return false;
+}
+
+/** Recursively walk a dir looking for test files. Returns true as soon as one is found. */
+function walkForTests(d, ignoreSet) {
+  let entries;
+  try { entries = readdirSync(d); } catch { return false; }
+  for (const entry of entries) {
+    if (ignoreSet.has(entry) || entry.startsWith('.')) continue;
+    const full = join(d, entry);
+    try {
+      const s = statSync(full);
+      if (s.isDirectory()) {
+        if (entry === '__tests__' || entry === '__test__') return true;
+        if (walkForTests(full, ignoreSet)) return true;
+      } else {
+        if (/\.(test|spec)\.[^.]+$/.test(entry)) return true;
+      }
+    } catch { continue; }
+  }
+  return false;
 }
 
 function calcSecurityScore(dir, config) {

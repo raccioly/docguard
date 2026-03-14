@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-03-13
+
+### Fixed
+- **Test detection**: `calcTestingScore` now detects co-located tests in `src/`, `app/`, `lib/`, `packages/`, `modules/` — not just top-level `tests/` directories. Projects using `src/**/__tests__/` or `src/**/*.test.*` patterns now score correctly.
+- **Test-spec fallback**: Validator fallback check now scans for co-located test files and checks vitest/jest config presence.
+- **Vitest config support**: Score calculation now reads `vitest.config.ts`/`jest.config.ts` include patterns to detect custom test directories.
+
 ## [0.9.0] - 2026-03-13
 
 ### Added
