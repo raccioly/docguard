@@ -2,7 +2,7 @@
 
 <!-- docguard:version 0.4.0 -->
 <!-- docguard:status living -->
-<!-- docguard:last-reviewed 2026-03-12 -->
+<!-- docguard:last-reviewed 2026-03-14 -->
 <!-- docguard:owner @raccioly -->
 
 > The planned evolution of DocGuard and Canonical-Driven Development (CDD).
