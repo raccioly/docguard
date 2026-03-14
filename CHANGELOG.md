@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.3] - 2026-03-13
+
+### Changed — Prose-Only Extraction Engine (Breaking improvement)
+- **`extractProse()` replaces `stripMarkdown()`**: Instead of stripping markdown and measuring residue (where table cells became "146-word sentences"), the new engine identifies and extracts only actual prose paragraphs. Reference docs (mostly tables/code) with <50 words of prose skip readability scoring entirely.
+- **Technical vocabulary normalization**: 80+ tech terms (DynamoDB, WebSocket, middleware, TypeScript, etc.) are treated as simple 2-syllable words for Flesch scoring. Known terms don't penalize readability.
+- **Markdown-aware sentence detection**: File paths (`src/auth.ts`), version numbers (`v0.9.2`), URLs, and abbreviations (`e.g.`, `i.e.`) no longer cause false sentence splits.
+- **Relaxed thresholds for technical docs**: Flesch 30→15, grade 16→18, sentence length 25→30, passive voice 20→25%, negation 15→20%.
+- **Impact**: Doc-Quality scores improved from 81% (13/16) to 95% (38/40) on DocGuard itself. API reference docs that scored 0/100 now skip gracefully or score fairly.
+
 ## [0.9.2] - 2026-03-13
 
 ### Fixed

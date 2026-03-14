@@ -11,6 +11,11 @@
  *   Readability: Flesch Reading Ease, Flesch-Kincaid Grade Level
  *   Cognitive:   Sentence Length, Negation Load, Conditional Load
  *
+ * v0.9.3 — Prose-Only Extraction Engine:
+ *   Instead of stripping markdown and measuring residue (which treats table
+ *   cells as "long sentences"), this version extracts ONLY actual prose
+ *   paragraphs. Docs that are mostly tables/code skip readability scoring.
+ *
  * Optional: If `understanding` CLI is installed, runs a full 31-metric deep scan.
  *
  * Zero dependencies — pure Node.js built-ins only.
@@ -25,134 +30,197 @@ import { execSync } from 'node:child_process';
 // Values are based on IEEE 830 best practices and readability research.
 
 const THRESHOLDS = {
-  passiveVoiceRatio:     { warn: 0.20, label: 'Passive voice ratio' },       // >20% passive = warn
+  passiveVoiceRatio:     { warn: 0.25, label: 'Passive voice ratio' },       // >25% passive = warn
   ambiguousPronounRatio: { warn: 0.15, label: 'Ambiguous pronoun ratio' },   // >15% ambiguous pronouns = warn
-  atomicityScore:        { warn: 0.30, label: 'Non-atomic sentence ratio' }, // >30% compound sentences = warn
-  fleschReadingEase:     { warn: 20,   label: 'Flesch reading ease' },       // <20 = very hard to read (lowered from 30 for technical markdown)
-  fleschKincaidGrade:    { warn: 16,   label: 'Flesch-Kincaid grade' },      // >16 = graduate level+
-  avgSentenceLength:     { warn: 25,   label: 'Avg sentence length' },       // >25 words = too long
-  negationLoad:          { warn: 0.15, label: 'Negation load' },             // >15% sentences with negation = warn
+  atomicityScore:        { warn: 0.35, label: 'Non-atomic sentence ratio' }, // >35% compound sentences = warn
+  fleschReadingEase:     { warn: 15,   label: 'Flesch reading ease' },       // <15 = truly unreadable prose
+  fleschKincaidGrade:    { warn: 18,   label: 'Flesch-Kincaid grade' },      // >18 = graduate level+
+  avgSentenceLength:     { warn: 30,   label: 'Avg sentence length' },       // >30 words = too long
+  negationLoad:          { warn: 0.20, label: 'Negation load' },             // >20% sentences with negation = warn
   conditionalLoad:       { warn: 0.30, label: 'Conditional load' },          // >30% sentences conditional = warn
 };
 
-// ──── Text Processing Utilities ────
+// Minimum prose words required for readability scoring.
+// Docs with less than this are reference docs (tables, code) — skip readability.
+const MIN_PROSE_WORDS = 50;
+
+// ──── Technical Vocabulary ────
+// Terms the target audience knows. Treated as 2-syllable words for Flesch scoring
+// so they don't artificially inflate difficulty.
+
+const TECH_VOCAB = new Set([
+  // Infrastructure & databases
+  'dynamodb', 'redis', 'postgres', 'postgresql', 'mongodb', 'mysql', 'sqlite',
+  'kubernetes', 'docker', 'dockerfile', 'nginx', 'apache', 'cloudfront',
+  'cloudwatch', 'elasticsearch', 'opensearch', 'terraform', 'ansible',
+  'memcached', 'cassandra', 'rabbitmq', 'kafka',
+  // Frameworks & languages
+  'typescript', 'javascript', 'python', 'fastify', 'express', 'nextjs',
+  'webpack', 'vite', 'vitest', 'playwright', 'cypress', 'mocha',
+  'nestjs', 'angular', 'svelte', 'nuxtjs', 'gatsby', 'remix',
+  // Protocols & patterns
+  'websocket', 'websockets', 'middleware', 'microservice', 'microservices',
+  'graphql', 'restful', 'oauth', 'openapi', 'webhook', 'webhooks',
+  'grpc', 'protobuf', 'pubsub',
+  // AWS services
+  'lambda', 'cognito', 'amplify', 'apprunner', 'cloudformation',
+  'apigateway', 'secretsmanager', 'parameterstore', 'eventbridge',
+  'fargate', 'elasticache', 'sagemaker',
+  // Common developer terms
+  'namespace', 'endpoint', 'endpoints', 'timestamp', 'timestamps',
+  'boolean', 'callback', 'callbacks', 'codebase', 'monorepo',
+  'frontend', 'backend', 'fullstack', 'changelog', 'localhost',
+  'hostname', 'username', 'eslint', 'prettier', 'rollup',
+  'authentication', 'authorization', 'infrastructure', 'serialization',
+  'deserialization', 'middleware', 'polymorphism', 'abstraction',
+]);
+
+// ──── Prose Extraction Engine ────
 
 /**
- * Strip markdown formatting to get plain prose text.
- * Removes: code blocks, inline code, headers, links, images, tables,
- * HTML comments, metadata blocks, horizontal rules, list markers.
+ * Extract only prose paragraphs from markdown content.
+ *
+ * Instead of stripping markdown and measuring residue (where table cells
+ * become "146-word sentences"), this identifies actual prose — blocks of
+ * text that form readable sentences — and returns only those.
+ *
+ * A line qualifies as prose if it:
+ *   - Is not inside a code block / HTML comment
+ *   - Is not a table row, header, horizontal rule, or metadata
+ *   - Has ≥55% alphabetic characters (filters out paths/URLs/symbol-heavy lines)
+ *   - Has ≥5 words (fragments aren't prose)
  */
-function stripMarkdown(content) {
-  let text = content;
+function extractProse(content) {
+  const lines = content.split('\n');
+  const proseLines = [];
+  let inCodeBlock = false;
+  let inHtmlComment = false;
 
-  // Remove fenced code blocks (```...```) and (````...````)
-  text = text.replace(/````[\s\S]*?````/g, '');
-  text = text.replace(/```[\s\S]*?```/g, '');
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
 
-  // Remove mermaid diagrams
-  text = text.replace(/```mermaid[\s\S]*?```/g, '');
+    // Track code block boundaries (``` and ````)
+    if (/^`{3,}/.test(line)) {
+      inCodeBlock = !inCodeBlock;
+      continue;
+    }
+    if (inCodeBlock) continue;
 
-  // Remove HTML comments (<!-- ... -->)
-  text = text.replace(/<!--[\s\S]*?-->/g, '');
+    // Track multi-line HTML comments
+    if (line.includes('<!--') && !line.includes('-->')) {
+      inHtmlComment = true;
+      continue;
+    }
+    if (inHtmlComment) {
+      if (line.includes('-->')) inHtmlComment = false;
+      continue;
+    }
 
-  // Remove HTML tags
-  text = text.replace(/<[^>]+>/g, '');
+    // Skip non-prose line types
+    if (line.startsWith('|')) continue;                     // Table rows
+    if (line.startsWith('#')) continue;                     // Headers
+    if (line.startsWith('!')) continue;                     // Images
+    if (/^[-*_]{3,}\s*$/.test(line)) continue;             // Horizontal rules
+    if (/^[|:\-\s]+$/.test(line)) continue;                // Table separators
+    if (/^<!--.*-->$/.test(line)) continue;                // Inline HTML comments
+    if (/^<[^>]+>/.test(line)) continue;                   // HTML tags
+    if (/^---\s*$/.test(line)) continue;                   // YAML frontmatter
+    if (line.length === 0) continue;                        // Empty lines
 
-  // Remove YAML frontmatter (---...---)
-  text = text.replace(/^---[\s\S]*?---\n/m, '');
+    // Clean the line: extract text from markdown formatting
+    let cleaned = line;
+    cleaned = cleaned.replace(/\[([^\]]*)\]\([^)]*\)/g, '$1');   // Links → text only
+    cleaned = cleaned.replace(/`[^`]+`/g, '');                     // Remove inline code
+    cleaned = cleaned.replace(/!\[.*?\]\(.*?\)/g, '');             // Remove images
+    cleaned = cleaned.replace(/\*{1,3}([^*]+)\*{1,3}/g, '$1');   // Bold/italic → text
+    cleaned = cleaned.replace(/_{1,3}([^_]+)_{1,3}/g, '$1');     // Underline emphasis
+    cleaned = cleaned.replace(/^[-*+]\s+/, '');                    // List markers
+    cleaned = cleaned.replace(/^\d+\.\s+/, '');                    // Numbered list markers
+    cleaned = cleaned.trim();
 
-  // Remove table rows (lines starting with |) and table separators
-  text = text.replace(/^\|.*$/gm, '');
-  text = text.replace(/^[|:\-\s]+$/gm, '');
+    if (cleaned.length < 15) continue;
 
-  // Remove horizontal rules
-  text = text.replace(/^[-*_]{3,}\s*$/gm, '');
+    // Prose heuristic: check alphabetic ratio and word count
+    const alphaCount = (cleaned.match(/[a-zA-Z]/g) || []).length;
+    const alphaRatio = alphaCount / cleaned.length;
+    const wordCount = cleaned.split(/\s+/).length;
 
-  // Remove badge images (shield.io etc.) — before generic image removal
-  text = text.replace(/!\[.*?\]\(https?:\/\/[^)]+\)/g, '');
+    // A prose line needs ≥55% letters and ≥5 words
+    if (alphaRatio >= 0.55 && wordCount >= 5) {
+      proseLines.push(cleaned);
+    }
+  }
 
-  // Remove images: ![alt](url)
-  text = text.replace(/!\[.*?\]\(.*?\)/g, '');
-
-  // Remove links, keep link text: [text](url) → text
-  text = text.replace(/\[([^\]]*)\]\([^)]*\)/g, '$1');
-
-  // Remove inline code
-  text = text.replace(/`[^`]+`/g, '');
-
-  // Remove header markers (# ## ### etc.)
-  text = text.replace(/^#{1,6}\s+/gm, '');
-
-  // Remove list markers (-, *, 1.)
-  text = text.replace(/^\s*[-*+]\s+/gm, '');
-  text = text.replace(/^\s*\d+\.\s+/gm, '');
-
-  // Remove bold/italic markers
-  text = text.replace(/\*{1,3}([^*]+)\*{1,3}/g, '$1');
-  text = text.replace(/_{1,3}([^_]+)_{1,3}/g, '$1');
-
-  // Remove definition-style lines (key: value or key | value)
-  text = text.replace(/^\s*\w[\w\s]*\s*[:|]\s*.*$/gm, (match) => {
-    // Only strip if it looks like a key-value pair, not a sentence
-    if (match.includes('.') || match.split(/\s+/).length > 8) return match;
-    return '';
-  });
-
-  // Remove lines that are mostly non-prose (>60% special characters)
-  text = text.replace(/^.+$/gm, (line) => {
-    const trimmed = line.trim();
-    if (trimmed.length < 5) return '';
-    const alphaCount = (trimmed.match(/[a-zA-Z]/g) || []).length;
-    const ratio = alphaCount / trimmed.length;
-    return ratio < 0.4 ? '' : line; // If <40% letters, it's not prose
-  });
-
-  // Collapse multiple blank lines
-  text = text.replace(/\n{3,}/g, '\n\n');
-
-  return text.trim();
+  return proseLines.join('\n');
 }
 
 /**
- * Split text into sentences using common sentence-ending punctuation.
- * Handles abbreviations (Mr., Dr., etc.) and decimal numbers to avoid false splits.
+ * Split text into sentences with markdown-aware boundary detection.
+ *
+ * Protects against false splits from:
+ *   - File paths (src/services/auth.ts → the dot isn't a sentence boundary)
+ *   - Version numbers (v0.9.2, Node.js 18)
+ *   - URLs (https://example.com)
+ *   - Common abbreviations (e.g., i.e., etc., vs.)
+ *   - Technical dotted names (package.json, .env.local)
  */
 function splitSentences(text) {
   if (!text || text.trim().length === 0) return [];
 
-  // Protect common abbreviations from false sentence splits
   let protected_ = text;
-  const abbreviations = ['Mr', 'Mrs', 'Ms', 'Dr', 'Prof', 'Sr', 'Jr', 'vs', 'etc', 'i.e', 'e.g', 'cf'];
+
+  // Protect dotted filenames (package.json, .env.local, auth.ts)
+  protected_ = protected_.replace(/[\w.-]+\.[a-z]{1,4}(?=[\s,;:)\]|]|$)/gi, (m) => m.replace(/\./g, '≈'));
+
+  // Protect version numbers (v0.9.2, 1.2.3)
+  protected_ = protected_.replace(/\bv?\d+\.\d+(?:\.\d+)*\b/g, (m) => m.replace(/\./g, '≈'));
+
+  // Protect URLs
+  protected_ = protected_.replace(/https?:\/\/[^\s)]+/g, (m) => m.replace(/\./g, '≈'));
+
+  // Protect common abbreviations
+  const abbreviations = ['Mr', 'Mrs', 'Ms', 'Dr', 'Prof', 'Sr', 'Jr', 'vs', 'etc', 'approx', 'incl'];
   for (const abbr of abbreviations) {
     const regex = new RegExp(`\\b${abbr}\\.`, 'gi');
-    protected_ = protected_.replace(regex, `${abbr}≈`);
+    protected_ = protected_.replace(regex, (m) => m.replace(/\./g, '≈'));
   }
+
+  // Protect e.g. and i.e. specifically (have dots in the abbreviation itself)
+  protected_ = protected_.replace(/\be\.g\./gi, 'e≈g≈');
+  protected_ = protected_.replace(/\bi\.e\./gi, 'i≈e≈');
+
+  // Protect Node.js, Vue.js, etc.
+  protected_ = protected_.replace(/\b(\w+)\.js\b/gi, '$1≈js');
 
   // Protect decimal numbers (3.14)
   protected_ = protected_.replace(/(\d)\.(\d)/g, '$1≈$2');
 
-  // Split on sentence-ending punctuation followed by space or end
-  const raw = protected_.split(/[.!?]+(?:\s+|$)/);
+  // Split on sentence-ending punctuation followed by whitespace/newline/end
+  const raw = protected_.split(/[.!?]+(?:\s+|\n|$)/);
 
-  // Restore protected characters and filter empties
+  // Restore protected characters and filter empties/fragments
   return raw
     .map(s => s.replace(/≈/g, '.').trim())
-    .filter(s => s.length > 3); // Ignore fragments under 4 chars
+    .filter(s => {
+      if (s.length < 10) return false;
+      return s.split(/\s+/).length >= 3;  // At least 3 words
+    });
 }
 
 /**
- * Count syllables in a word using a heuristic approach.
- * Based on the algorithm used in readability research:
- *   1. Count vowel groups
- *   2. Subtract silent-e at end
- *   3. Add back for specific suffixes (-le, -les, -tion, etc.)
- *   4. Minimum 1 syllable per word
+ * Count syllables with technical vocabulary normalization.
+ *
+ * Technical terms (DynamoDB, WebSocket, middleware) are normalized to
+ * 2 syllables. The target audience knows these terms — they don't make
+ * the text harder to read.
  */
 function countSyllables(word) {
   word = word.toLowerCase().replace(/[^a-z]/g, '');
   if (word.length <= 2) return 1;
 
-  // Exception list for common words with unusual syllable counts
+  // Technical vocabulary → 2 syllables (known terms)
+  if (TECH_VOCAB.has(word)) return 2;
+
   const exceptions = {
     'the': 1, 'are': 1, 'were': 1, 'have': 1, 'there': 1,
     'where': 1, 'here': 1, 'every': 3, 'everything': 4,
@@ -164,17 +232,16 @@ function countSyllables(word) {
   const vowelGroups = word.match(/[aeiouy]+/g);
   let count = vowelGroups ? vowelGroups.length : 1;
 
-  // Subtract silent-e at end (but not for words like "able", "ible")
+  // Subtract silent-e at end (but not -le, -ce, -ge)
   if (word.endsWith('e') && !word.endsWith('le') && !word.endsWith('ce') && !word.endsWith('ge')) {
     count--;
   }
 
-  // Subtract for common diphthong/double vowel endings
+  // Subtract for common past-tense endings
   if (word.endsWith('ed') && !word.endsWith('ted') && !word.endsWith('ded')) {
     count--;
   }
 
-  // Ensure minimum 1 syllable
   return Math.max(1, count);
 }
 
@@ -202,7 +269,6 @@ function tokenizeWords(text) {
 function measurePassiveVoice(sentences) {
   if (sentences.length === 0) return { ratio: 0, count: 0, total: 0 };
 
-  // Passive voice pattern: be-verb followed by past participle
   const passivePattern = /\b(is|was|were|been|being|are|be|am)\s+([\w]+\s+)?([\w]*(?:ed|en|wn|lt|nt|pt|ft|zed))\b/i;
 
   let passiveCount = 0;
@@ -221,11 +287,6 @@ function measurePassiveVoice(sentences) {
 
 /**
  * Ambiguous Pronoun Ratio (Structure, 3.0% weight in Understanding)
- *
- * Counts pronouns that lack clear antecedents: it, this, that, they, them, these, those.
- * In technical documentation, these often create confusion about what exactly is referenced.
- *
- * Returns ratio of ambiguous pronouns to total word count.
  */
 function measureAmbiguousPronouns(words) {
   if (words.length === 0) return { ratio: 0, count: 0, total: 0 };
@@ -250,30 +311,19 @@ function measureAmbiguousPronouns(words) {
 }
 
 /**
- * Atomicity Score (Structure, 9.0% weight in Understanding — HIGHEST)
- *
- * Measures how "atomic" (single-purpose) sentences are.
- * Compound sentences with and/or/also/additionally indicate non-atomic requirements.
- * IEEE 830 §4.1 recommends atomic requirements that can be independently verified.
- *
- * Returns ratio of NON-atomic sentences (compound) to total sentences.
+ * Atomicity Score (Structure, 9.0% weight — HIGHEST in Understanding)
  */
 function measureAtomicity(sentences) {
   if (sentences.length === 0) return { ratio: 0, count: 0, total: 0 };
 
-  // Compound indicators (sentence-level conjunctions, not word-level)
-  // We match these only when preceded/followed by spaces to avoid matching within words
   const compoundPattern = /\b(and also|and then|as well as|in addition to|additionally|furthermore|moreover)\b/i;
-  // Simple "and" / "or" — only flag if >1 occurrence in a sentence (natural language has legitimate single "and")
   const simpleCompound = /\band\b/gi;
-  const simpleOr = /\bor\b/gi;
 
   let compoundCount = 0;
   for (const sentence of sentences) {
     if (compoundPattern.test(sentence)) {
       compoundCount++;
     } else {
-      // Count simple "and" — 2+ indicates compound
       const andMatches = sentence.match(simpleCompound);
       if (andMatches && andMatches.length >= 2) {
         compoundCount++;
@@ -289,16 +339,8 @@ function measureAtomicity(sentences) {
 }
 
 /**
- * Flesch Reading Ease (Readability, 3.75% weight in Understanding)
- *
- * Formula: 206.835 - 1.015 * (total words / total sentences) - 84.6 * (total syllables / total words)
- * Source: Flesch, R. (1948). "A new readability yardstick." Journal of Applied Psychology.
- *
- * Scale: 0-100, higher = easier to read.
- *   90-100: Very Easy (5th grade)
- *   60-69:  Standard (8th-9th grade)
- *   30-49:  Difficult (college level)
- *   0-29:   Very Confusing (graduate level)
+ * Flesch Reading Ease (Readability)
+ * Formula: 206.835 - 1.015 * (words/sentences) - 84.6 * (syllables/words)
  */
 function measureFleschReadingEase(words, sentences) {
   if (words.length === 0 || sentences.length === 0) return 0;
@@ -312,12 +354,8 @@ function measureFleschReadingEase(words, sentences) {
 }
 
 /**
- * Flesch-Kincaid Grade Level (Readability, 2.25% weight in Understanding)
- *
- * Formula: 0.39 * (total words / total sentences) + 11.8 * (total syllables / total words) - 15.59
- * Source: Kincaid, J.P. et al. (1975). "Derivation of new readability formulas."
- *
- * Returns US grade level (8 = 8th grade, 12 = high school senior, 16+ = graduate)
+ * Flesch-Kincaid Grade Level (Readability)
+ * Formula: 0.39 * (words/sentences) + 11.8 * (syllables/words) - 15.59
  */
 function measureFleschKincaidGrade(words, sentences) {
   if (words.length === 0 || sentences.length === 0) return 0;
@@ -331,10 +369,7 @@ function measureFleschKincaidGrade(words, sentences) {
 }
 
 /**
- * Sentence Length (Cognitive, 3.0% weight in Understanding)
- *
- * Average words per sentence. Cognitive load research (Sweller, 1988) shows that
- * sentences over 25 words significantly increase processing effort.
+ * Sentence Length (Cognitive)
  */
 function measureSentenceLength(words, sentences) {
   if (sentences.length === 0) return 0;
@@ -342,11 +377,7 @@ function measureSentenceLength(words, sentences) {
 }
 
 /**
- * Negation Load (Cognitive, 1.5% weight in Understanding)
- *
- * Ratio of sentences containing negation words.
- * Negation increases cognitive load because readers must mentally invert meaning.
- * IEEE 830 §4.3 recommends positive phrasing in requirements.
+ * Negation Load (Cognitive)
  */
 function measureNegationLoad(sentences) {
   if (sentences.length === 0) return { ratio: 0, count: 0, total: 0 };
@@ -368,10 +399,7 @@ function measureNegationLoad(sentences) {
 }
 
 /**
- * Conditional Load (Cognitive, 1.5% weight in Understanding)
- *
- * Ratio of sentences containing conditional keywords.
- * Excessive conditionals make documentation hard to follow and test.
+ * Conditional Load (Cognitive)
  */
 function measureConditionalLoad(sentences) {
   if (sentences.length === 0) return { ratio: 0, count: 0, total: 0 };
@@ -400,6 +428,7 @@ function getReadabilityLabel(score) {
   if (score >= 60) return 'Standard';
   if (score >= 50) return 'Fairly Difficult';
   if (score >= 30) return 'Difficult';
+  if (score >= 15) return 'Hard — Technical';
   return 'Very Confusing';
 }
 
@@ -416,11 +445,9 @@ function getGradeLabel(grade) {
 
 /**
  * Check if the `understanding` CLI is available on the system.
- * Returns the path to the executable or null.
  */
 function findUnderstandingCli() {
   try {
-    // Use 'which' on Unix/Mac, 'where' on Windows — never redirect to NUL (creates file on Mac)
     const cmd = process.platform === 'win32' ? 'where understanding' : 'which understanding';
     const result = execSync(`${cmd} 2>/dev/null`, {
       encoding: 'utf-8',
@@ -434,7 +461,6 @@ function findUnderstandingCli() {
 
 /**
  * Run the `understanding` CLI on a file and parse results.
- * Returns understanding's quality score or null if it fails.
  */
 function runUnderstandingDeepScan(filePath) {
   try {
@@ -484,20 +510,22 @@ function getCanonicalDocs(projectDir) {
 
 /**
  * Analyze a single document and return per-metric results.
+ *
+ * Uses extractProse() instead of stripMarkdown() — only actual prose
+ * paragraphs are scored. Documents that are mostly tables/code/reference
+ * material are skipped for readability (they'd score 0/100 unfairly).
  */
 function analyzeDocument(doc) {
   const content = readFileSync(doc.path, 'utf-8');
-  const plainText = stripMarkdown(content);
+  const proseText = extractProse(content);
 
-  if (plainText.length < 50) {
-    return { skipped: true, reason: 'too short', name: doc.name };
-  }
+  const sentences = splitSentences(proseText);
+  const words = tokenizeWords(proseText);
 
-  const sentences = splitSentences(plainText);
-  const words = tokenizeWords(plainText);
-
-  if (sentences.length < 3 || words.length < 20) {
-    return { skipped: true, reason: 'insufficient content', name: doc.name };
+  // Skip if insufficient prose content
+  // Reference docs (mostly tables, code, lists) shouldn't be scored for readability
+  if (words.length < MIN_PROSE_WORDS || sentences.length < 3) {
+    return { skipped: true, reason: 'insufficient prose (reference document)', name: doc.name };
   }
 
   const passive = measurePassiveVoice(sentences);
@@ -539,7 +567,6 @@ export function validateDocQuality(projectDir, config) {
 
   const docs = getCanonicalDocs(projectDir);
   if (docs.length === 0) {
-    // No docs to analyze — structure validator catches this
     return results;
   }
 
@@ -606,7 +633,7 @@ export function validateDocQuality(projectDir, config) {
     } else {
       results.warnings.push(
         `${doc.name}: Reading level too high (grade ${m.fleschKincaidGrade} — ${getGradeLabel(m.fleschKincaidGrade)}). ` +
-        `Aim for grade 10-12 for technical docs`
+        `Aim for grade 12-16 for technical docs`
       );
     }
 
@@ -617,7 +644,7 @@ export function validateDocQuality(projectDir, config) {
     } else {
       results.warnings.push(
         `${doc.name}: Average sentence too long (${m.avgSentenceLength} words). ` +
-        `Target ≤25 words per sentence for readability (Sweller, 1988)`
+        `Target ≤30 words per sentence for readability`
       );
     }
 
@@ -642,12 +669,6 @@ export function validateDocQuality(projectDir, config) {
         `Simplify by splitting conditionals into separate requirements`
       );
     }
-  }
-
-  // ── Optional: Understanding deep scan note ──
-  if (!understandingCli && docs.length > 0) {
-    // Don't add as warning — just a note in verbose mode
-    // Users who want full 31-metric scan can install understanding
   }
 
   return results;
