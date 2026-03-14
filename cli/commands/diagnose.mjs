@@ -120,10 +120,10 @@ export function runDiagnose(projectDir, config, flags) {
         });
       } catch { /* init may partially succeed */ }
 
-      // Run generate to fill in content
+      // Run generate to fill in MISSING content only (never --force, which would overwrite existing docs)
       try {
         const cliPath = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'docguard.mjs');
-        execSync(`node "${cliPath}" generate --dir "${projectDir}" --force`, {
+        execSync(`node "${cliPath}" generate --dir "${projectDir}"`, {
           encoding: 'utf-8',
           stdio: 'pipe',
         });

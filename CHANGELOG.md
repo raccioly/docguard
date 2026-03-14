@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.4] - 2026-03-13
+
+### Fixed — Critical: Generate File Safety (Data Loss Prevention)
+- **`diagnose --auto` no longer passes `--force` to `generate`**: This was the root cause of silent doc overwriting. `diagnose --auto` now only creates missing files, never overwrites existing ones.
+- **`.bak` backup on `--force`**: When `generate --force` is explicitly used, all existing files are backed up as `.bak` before being overwritten. Content is never permanently lost.
+- **`--force` warning banner**: Shows how many existing files will be overwritten before proceeding.
+- **`safeWrite()` helper**: All 9 write operations in generate now go through a single safety wrapper.
+
 ## [0.9.3] - 2026-03-13
 
 ### Changed — Prose-Only Extraction Engine (Breaking improvement)

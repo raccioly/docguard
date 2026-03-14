@@ -5,7 +5,7 @@
  * This is the "killer feature" — take any project and auto-generate CDD docs.
  */
 
-import { existsSync, readFileSync, writeFileSync, readdirSync, statSync, mkdirSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, readdirSync, statSync, mkdirSync, copyFileSync } from 'node:fs';
 import { resolve, join, extname, basename, relative, dirname } from 'node:path';
 import { c } from '../shared.mjs';
 import { detectDocTools } from '../scanners/doc-tools.mjs';
@@ -17,6 +17,30 @@ const IGNORE_DIRS = new Set([
   '.cache', '__pycache__', '.venv', 'vendor', '.turbo', '.vercel',
   '.amplify-hosting', '.serverless',
 ]);
+
+/**
+ * Create a .bak backup of an existing file before --force overwrites it.
+ * Only backs up if the file exists and has content.
+ */
+function backupFile(filePath) {
+  if (existsSync(filePath)) {
+    try {
+      const content = readFileSync(filePath, 'utf-8');
+      if (content.trim().length > 0) {
+        copyFileSync(filePath, filePath + '.bak');
+      }
+    } catch { /* backup failure is non-fatal */ }
+  }
+}
+
+/**
+ * Safe write — creates a .bak backup before overwriting existing files.
+ * Call this instead of raw writeFileSync when generating docs.
+ */
+function safeWrite(filePath, content) {
+  backupFile(filePath);
+  writeFileSync(filePath, content, 'utf-8');
+}
 
 const CODE_EXTENSIONS = new Set([
   '.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx',
@@ -135,6 +159,21 @@ export function runGenerate(projectDir, config, flags) {
   const docsDir = resolve(projectDir, 'docs-canonical');
   if (!existsSync(docsDir)) {
     mkdirSync(docsDir, { recursive: true });
+  }
+
+  // ── Safety: warn if --force will overwrite existing files ──
+  if (flags.force) {
+    const targetFiles = [
+      'docs-canonical/ARCHITECTURE.md', 'docs-canonical/API-REFERENCE.md',
+      'docs-canonical/DATA-MODEL.md', 'docs-canonical/ENVIRONMENT.md',
+      'docs-canonical/TEST-SPEC.md', 'docs-canonical/SECURITY.md',
+      'AGENTS.md', 'CHANGELOG.md', 'DRIFT-LOG.md',
+    ];
+    const existing = targetFiles.filter(f => existsSync(resolve(projectDir, f)));
+    if (existing.length > 0) {
+      console.log(`  ${c.yellow}⚠️  --force: ${existing.length} existing file(s) will be overwritten.${c.reset}`);
+      console.log(`  ${c.dim}   Backups saved as .bak files.${c.reset}\n`);
+    }
   }
 
   let created = 0;
@@ -633,7 +672,7 @@ See \\\`docs-canonical/KNOWN-GOTCHAS.md\\\` for known issues.
 | 0.1.0 | ${new Date().toISOString().split('T')[0]} | DocGuard Generate | Auto-generated (arc42 + C4 aligned) |
 `;
 
-  writeFileSync(path, appendStandardsCitation(content, 'ARCHITECTURE.md'), 'utf-8');
+  safeWrite(path, appendStandardsCitation(content, 'ARCHITECTURE.md'), 'utf-8');
   console.log(`  ${c.green}✅ ARCHITECTURE.md${c.reset} (arc42 §1-§12, ${componentRows.length} components, ${Object.values(stack).filter(Boolean).length} tech)`);
   return true;
 }
@@ -730,7 +769,7 @@ ${resourceSections}
 | 0.1.0 | ${new Date().toISOString().split('T')[0]} | DocGuard Generate | Auto-generated (${deepRoutes.length} endpoints from ${deepRoutes[0]?.source || 'code'}) |
 `;
 
-  writeFileSync(path, appendStandardsCitation(content, 'API-REFERENCE.md'), 'utf-8');
+  safeWrite(path, appendStandardsCitation(content, 'API-REFERENCE.md'), 'utf-8');
   console.log(`  ${c.green}✅ API-REFERENCE.md${c.reset} (${deepRoutes.length} endpoints, ${Object.keys(groups).length} resources)`);
   return true;
 }
@@ -885,7 +924,7 @@ ${erDiagram}
 | 0.1.0 | ${new Date().toISOString().split('T')[0]} | DocGuard Generate | Auto-generated (${entities.length} entities, ${relationships.length} relationships from ${schemaSource}) |
 `;
 
-  writeFileSync(path, appendStandardsCitation(content, 'DATA-MODEL.md'), 'utf-8');
+  safeWrite(path, appendStandardsCitation(content, 'DATA-MODEL.md'), 'utf-8');
   console.log(`  ${c.green}✅ DATA-MODEL.md${c.reset} (${entities.length} entities, ${relationships.length} relationships from ${schemaSource})`);
   return true;
 }
@@ -948,7 +987,7 @@ ${envVarRows || '| <!-- No .env.example found --> | | | | |'}
 | 0.1.0 | ${new Date().toISOString().split('T')[0]} | DocGuard Generate | Auto-generated (${scan.envVars.length} env vars found) |
 `;
 
-  writeFileSync(path, appendStandardsCitation(content, 'ENVIRONMENT.md'), 'utf-8');
+  safeWrite(path, appendStandardsCitation(content, 'ENVIRONMENT.md'), 'utf-8');
   console.log(`  ${c.green}✅ ENVIRONMENT.md${c.reset} (${scan.envVars.length} env vars detected)`);
   return true;
 }
@@ -1033,7 +1072,7 @@ ${serviceRows || '| <!-- No services found --> | | | |'}
 | 0.1.0 | ${new Date().toISOString().split('T')[0]} | DocGuard Generate | Auto-generated (${scan.tests.length} test files, ${serviceMap.filter(s => s.status === '✅').length}/${serviceMap.length} mapped) |
 `;
 
-  writeFileSync(path, appendStandardsCitation(content, 'TEST-SPEC.md'), 'utf-8');
+  safeWrite(path, appendStandardsCitation(content, 'TEST-SPEC.md'), 'utf-8');
   console.log(`  ${c.green}✅ TEST-SPEC.md${c.reset} (${scan.tests.length} tests, ${serviceMap.filter(s => s.status === '✅').length}/${serviceMap.length} services mapped)`);
   return true;
 }
@@ -1099,7 +1138,7 @@ ${scan.envVars.filter(v => isSecretVar(v.name)).map(v =>
 | 0.1.0 | ${new Date().toISOString().split('T')[0]} | DocGuard Generate | Auto-generated |
 `;
 
-  writeFileSync(path, appendStandardsCitation(content, 'SECURITY.md'), 'utf-8');
+  safeWrite(path, appendStandardsCitation(content, 'SECURITY.md'), 'utf-8');
   console.log(`  ${c.green}✅ SECURITY.md${c.reset} (auth: ${stack.auth || 'not detected'})`);
   return true;
 }
@@ -1209,7 +1248,7 @@ npx docguard-cli generate       # Generate docs from code
 - Test requirements in TEST-SPEC.md must be met
 - Documentation changes must pass \`docguard guard\`
 `;
-    writeFileSync(agentsPath, content, 'utf-8');
+    safeWrite(agentsPath, content);
     console.log(`  ${c.green}✅ AGENTS.md${c.reset} (AGENTS.md standard compliant)`);
     created++;
   } else {
@@ -1231,7 +1270,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 - CDD documentation via DocGuard generate
 `;
-    writeFileSync(changelogPath, content, 'utf-8');
+    safeWrite(changelogPath, content);
     console.log(`  ${c.green}✅ CHANGELOG.md${c.reset}`);
     created++;
   } else {
@@ -1251,7 +1290,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 |------|------|---------------|-------------------|----------|------------|
 | | | | | | |
 `;
-    writeFileSync(driftPath, content, 'utf-8');
+    safeWrite(driftPath, content);
     console.log(`  ${c.green}✅ DRIFT-LOG.md${c.reset}`);
     created++;
   } else {
