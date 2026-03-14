@@ -16,7 +16,7 @@
 import { c } from '../shared.mjs';
 import { runGuardInternal } from './guard.mjs';
 import { runScoreInternal } from './score.mjs';
-import { existsSync, readFileSync, mkdirSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';

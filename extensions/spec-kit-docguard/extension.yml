@@ -3,7 +3,7 @@ schema_version: "1.0"
 extension:
   id: "docguard"
   name: "DocGuard — CDD Enforcement"
-  version: "0.9.0"
+  version: "0.9.1"
   description: "Canonical-Driven Development enforcement. Generates, validates, scores, and traces your project documentation against 127+ automated checks. Zero dependencies."
   author: "Ricardo Accioly"
   repository: "https://github.com/raccioly/docguard"

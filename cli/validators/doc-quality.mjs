@@ -28,7 +28,7 @@ const THRESHOLDS = {
   passiveVoiceRatio:     { warn: 0.20, label: 'Passive voice ratio' },       // >20% passive = warn
   ambiguousPronounRatio: { warn: 0.15, label: 'Ambiguous pronoun ratio' },   // >15% ambiguous pronouns = warn
   atomicityScore:        { warn: 0.30, label: 'Non-atomic sentence ratio' }, // >30% compound sentences = warn
-  fleschReadingEase:     { warn: 30,   label: 'Flesch reading ease' },       // <30 = very hard to read
+  fleschReadingEase:     { warn: 20,   label: 'Flesch reading ease' },       // <20 = very hard to read (lowered from 30 for technical markdown)
   fleschKincaidGrade:    { warn: 16,   label: 'Flesch-Kincaid grade' },      // >16 = graduate level+
   avgSentenceLength:     { warn: 25,   label: 'Avg sentence length' },       // >25 words = too long
   negationLoad:          { warn: 0.15, label: 'Negation load' },             // >15% sentences with negation = warn
@@ -49,17 +49,27 @@ function stripMarkdown(content) {
   text = text.replace(/````[\s\S]*?````/g, '');
   text = text.replace(/```[\s\S]*?```/g, '');
 
+  // Remove mermaid diagrams
+  text = text.replace(/```mermaid[\s\S]*?```/g, '');
+
   // Remove HTML comments (<!-- ... -->)
   text = text.replace(/<!--[\s\S]*?-->/g, '');
+
+  // Remove HTML tags
+  text = text.replace(/<[^>]+>/g, '');
 
   // Remove YAML frontmatter (---...---)
   text = text.replace(/^---[\s\S]*?---\n/m, '');
 
-  // Remove table rows (lines starting with |)
+  // Remove table rows (lines starting with |) and table separators
   text = text.replace(/^\|.*$/gm, '');
+  text = text.replace(/^[|:\-\s]+$/gm, '');
 
   // Remove horizontal rules
   text = text.replace(/^[-*_]{3,}\s*$/gm, '');
+
+  // Remove badge images (shield.io etc.) — before generic image removal
+  text = text.replace(/!\[.*?\]\(https?:\/\/[^)]+\)/g, '');
 
   // Remove images: ![alt](url)
   text = text.replace(/!\[.*?\]\(.*?\)/g, '');
@@ -81,8 +91,21 @@ function stripMarkdown(content) {
   text = text.replace(/\*{1,3}([^*]+)\*{1,3}/g, '$1');
   text = text.replace(/_{1,3}([^_]+)_{1,3}/g, '$1');
 
-  // Remove badge images (shield.io etc.)
-  text = text.replace(/!\[.*?\]\(https:\/\/img\.shields\.io\/.*?\)/g, '');
+  // Remove definition-style lines (key: value or key | value)
+  text = text.replace(/^\s*\w[\w\s]*\s*[:|]\s*.*$/gm, (match) => {
+    // Only strip if it looks like a key-value pair, not a sentence
+    if (match.includes('.') || match.split(/\s+/).length > 8) return match;
+    return '';
+  });
+
+  // Remove lines that are mostly non-prose (>60% special characters)
+  text = text.replace(/^.+$/gm, (line) => {
+    const trimmed = line.trim();
+    if (trimmed.length < 5) return '';
+    const alphaCount = (trimmed.match(/[a-zA-Z]/g) || []).length;
+    const ratio = alphaCount / trimmed.length;
+    return ratio < 0.4 ? '' : line; // If <40% letters, it's not prose
+  });
 
   // Collapse multiple blank lines
   text = text.replace(/\n{3,}/g, '\n\n');
@@ -397,7 +420,9 @@ function getGradeLabel(grade) {
  */
 function findUnderstandingCli() {
   try {
-    const result = execSync('which understanding 2>/dev/null || where understanding 2>NUL', {
+    // Use 'which' on Unix/Mac, 'where' on Windows — never redirect to NUL (creates file on Mac)
+    const cmd = process.platform === 'win32' ? 'where understanding' : 'which understanding';
+    const result = execSync(`${cmd} 2>/dev/null`, {
       encoding: 'utf-8',
       timeout: 3000,
     }).trim();

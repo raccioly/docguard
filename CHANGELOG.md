@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.2] - 2026-03-13
+
+### Fixed
+- **Flesch readability false positives**: Improved `stripMarkdown()` to remove mermaid diagrams, HTML tags, definition-style lines, and lines with >60% special characters. Docs with tables no longer score 0/100.
+- **Flesch threshold**: Lowered from 30→20 for technical documentation — developer docs inherently score lower than prose.
+- **NUL file on macOS**: `findUnderstandingCli()` used Windows `2>NUL` redirect which created a stray `NUL` file on Mac/Linux. Now uses platform-specific `which`/`where`.
+- **Unused import**: Removed `mkdirSync` from `diagnose.mjs` (was imported but never used).
+
+### Verified
+- `diagnose` is read-only by default — file creation only happens with explicit `--auto` flag.
+- `metrics-consistency` properly reads `.docguardignore` patterns.
+
 ## [0.9.1] - 2026-03-13
 
 ### Fixed
