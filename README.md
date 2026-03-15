@@ -435,7 +435,7 @@ npx docguard-cli hooks --type pre-commit
 ### GitHub Marketplace
 
 ```yaml
-- uses: raccioly/docguard@v0.9.5
+- uses: raccioly/docguard@v0.9.7
   with:
     command: guard
     fail-on-warning: true
