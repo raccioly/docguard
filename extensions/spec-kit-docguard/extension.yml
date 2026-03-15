@@ -27,12 +27,12 @@ provides:
       aliases: ["docguard.guard"]
 
     - name: "speckit.docguard.fix"
-      file: "commands/fix.md"
+      file: "commands/generate.md"
       description: "AI-driven documentation repair with codebase research and validation loops"
       aliases: ["docguard.fix"]
 
     - name: "speckit.docguard.review"
-      file: "commands/review.md"
+      file: "commands/diagnose.md"
       description: "Cross-document semantic consistency analysis (read-only)"
       aliases: ["docguard.review"]
 
@@ -42,11 +42,11 @@ provides:
       aliases: ["docguard.score"]
 
     - name: "speckit.docguard.diagnose"
-      file: "commands/review.md"
+      file: "commands/diagnose.md"
       description: "Diagnose all issues and generate a complete AI remediation plan"
 
     - name: "speckit.docguard.generate"
-      file: "commands/fix.md"
+      file: "commands/generate.md"
       description: "Reverse-engineer canonical docs from existing codebase"
 
   # Helper scripts for CI/CD and automation
