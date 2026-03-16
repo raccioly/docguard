@@ -38,6 +38,8 @@ import { runDiagnose } from './commands/diagnose.mjs';
 import { runPublish } from './commands/publish.mjs';
 import { runTrace } from './commands/trace.mjs';
 import { runLlms } from './commands/llms.mjs';
+import { runSetup } from './commands/setup.mjs';
+import { ensureSkills } from './ensure-skills.mjs';
 
 // ── Shared constants (imported to break circular dependencies) ──────────
 import { c, PROFILES } from './shared.mjs';
@@ -218,6 +220,7 @@ function printHelp() {
 
 ${c.bold}Getting Started:${c.reset}
   ${c.green}init${c.reset}       Initialize CDD docs (interactive setup)
+  ${c.green}setup${c.reset}      Full onboarding wizard (skills, integrations, hooks)
   ${c.green}generate${c.reset}   Reverse-engineer canonical docs from existing code
 
 ${c.bold}Enforcement:${c.reset}
@@ -376,6 +379,11 @@ async function main() {
 
   const config = loadConfig(projectDir);
 
+  // Silent auto-check: install skills/commands if missing
+  if (command !== 'setup' && command !== 'init') {
+    ensureSkills(projectDir, flags);
+  }
+
   switch (command) {
     case 'audit':
       // audit is an alias for guard — guard does everything the old audit did + 50 more checks
@@ -383,6 +391,10 @@ async function main() {
       break;
     case 'init':
       await runInit(projectDir, config, flags);
+      break;
+    case 'setup':
+    case 'onboard':
+      await runSetup(projectDir, config, flags);
       break;
     case 'guard':
       runGuard(projectDir, config, flags);

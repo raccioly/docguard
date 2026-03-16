@@ -8,6 +8,7 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createInterface } from 'node:readline';
 import { c, PROFILES } from '../shared.mjs';
+import { ensureSkills } from '../ensure-skills.mjs';
 
 function detectProjectType(dir) {
   const pkgPath = resolve(dir, 'package.json');
@@ -285,4 +286,7 @@ export async function runInit(projectDir, config, flags) {
   } else {
     console.log(`\n  ${c.dim}Run${c.reset} ${c.cyan}docguard diagnose${c.reset} ${c.dim}to check for issues.${c.reset}\n`);
   }
+
+  // Auto-install skills and commands
+  ensureSkills(projectDir, flags);
 }
