@@ -157,7 +157,12 @@ function diffEntities(dir) {
     'EntityName', 'Entity', 'metadata', 'tbd', 'cascade', 'fields',
     'purpose', 'version', 'author', 'example', 'TODO', 'Overview',
     'Revision', 'History', 'Entities', 'Relationships', 'Indexes',
-    'Migration', 'Strategy',
+    'Migration', 'Strategy', 'Trade-offs', 'Tradeoffs', 'Notes',
+    'Summary', 'Details', 'Configuration', 'Setup', 'Reference',
+    'Appendix', 'Glossary', 'FAQ', 'Introduction', 'Background',
+    'Prerequisites', 'Requirements', 'Assumptions', 'Constraints',
+    'Dependencies', 'Architecture', 'Design', 'Implementation',
+    'Testing', 'Deployment', 'Monitoring', 'Operations', 'Security',
   ]);
 
   const headerRegex = /^### (\S+)/gm;
@@ -165,9 +170,11 @@ function diffEntities(dir) {
   while ((match = headerRegex.exec(content)) !== null) {
     const name = match[1].replace(/[`*]/g, '');
     // Skip template placeholders (<!-- ... -->) and noise words
-    if (name.startsWith('<!--') || name.length <= 1 || HEADER_NOISE.has(name) || HEADER_NOISE.has(name.toLowerCase())) {
+    if (name.startsWith('<!--') || name.length <= 2 || HEADER_NOISE.has(name) || HEADER_NOISE.has(name.toLowerCase())) {
       continue;
     }
+    // Skip hyphenated words (e.g., 'Trade-offs', 'Set-up') — these are section titles, not entities
+    if (name.includes('-')) continue;
     docEntities.add(name.toLowerCase());
   }
 
@@ -194,10 +201,16 @@ function diffEntities(dir) {
     // Common table headers and template words
     'true', 'false', 'header', 'checks', 'project', 'count', 'grade',
     'breakdown', 'issuecount', 'autofixable', 'projectname', 'projecttype',
+    // Common doc section words (not entity names)
+    'trade', 'offs', 'tradeoffs', 'setup', 'overview', 'summary',
+    'details', 'configuration', 'reference', 'pattern', 'patterns',
+    'strategy', 'approach', 'impact', 'benefit', 'risk', 'concern',
+    'action', 'result', 'outcome', 'inverted', 'composite', 'secondary',
   ]);
   while ((match = tableRegex.exec(content)) !== null) {
     const name = match[1];
-    if (name.length > 2 && !TABLE_NOISE.has(name.toLowerCase())) {
+    // Skip short names (<=3 chars) and noise words
+    if (name.length > 3 && !TABLE_NOISE.has(name.toLowerCase())) {
       docEntities.add(name.toLowerCase());
     }
   }

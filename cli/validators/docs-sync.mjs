@@ -118,18 +118,53 @@ export function validateDocsSync(projectDir, config) {
         if (!['.ts', '.js', '.mjs'].includes(ext)) continue;
 
         // Skip index/middleware files
-        const name = basename(file, ext).toLowerCase();
-        if (name === 'index' || name === 'middleware' || name.startsWith('_')) continue;
+        const rawName = basename(file, ext).toLowerCase();
+        if (rawName === 'index' || rawName === 'middleware' || rawName.startsWith('_')) continue;
 
         results.total++;
 
-        // Check if a likely route path exists in the OpenAPI spec
-        // Route file "users.ts" → check for "/users" in spec
-        if (openapiContent.includes(`/${name}`) || openapiContent.includes(`"${name}"`)) {
+        // Strategy 1: Parse the route file for actual route paths
+        // Look for router.get('/path'), app.post('/path'), etc.
+        let routeFileContent = '';
+        try { routeFileContent = readFileSync(file, 'utf-8').toLowerCase(); } catch { /* skip */ }
+
+        const actualRoutes = [];
+        const routeDefRegex = /(?:router|app|route)\s*\.\s*(?:get|post|put|delete|patch|all|use)\s*\(\s*['"`](\/[^'"`]*)['"`]/gi;
+        let routeMatch;
+        while ((routeMatch = routeDefRegex.exec(routeFileContent)) !== null) {
+          actualRoutes.push(routeMatch[1]);
+        }
+
+        let matched = false;
+
+        if (actualRoutes.length > 0) {
+          // Check if ANY of the actual route paths appear in the OpenAPI spec
+          matched = actualRoutes.some(route => {
+            // Normalize: /api/conversations/:id → /api/conversations
+            const basePath = route.replace(/\/:[^/]+/g, '').replace(/\/{[^}]+}/g, '');
+            return openapiContent.includes(basePath) || openapiContent.includes(route);
+          });
+        } else {
+          // Strategy 2 (fallback): Strip common suffixes and check filename
+          // userRoutes.ts → 'user', conversationRoutes.ts → 'conversation'
+          const cleanName = rawName
+            .replace(/routes?$/i, '')
+            .replace(/controllers?$/i, '')
+            .replace(/handlers?$/i, '')
+            .replace(/router$/i, '');
+
+          if (cleanName.length > 0) {
+            matched = openapiContent.includes(`/${cleanName}`) ||
+                      openapiContent.includes(`"${cleanName}"`) ||
+                      openapiContent.includes(`'${cleanName}'`);
+          }
+        }
+
+        if (matched) {
           results.passed++;
         } else {
           results.warnings.push(
-            `Route file ${basename(file)} exists but no /${name} path found in ${openapiFile}. ` +
+            `Route file ${basename(file)} exists but no matching paths found in ${openapiFile}. ` +
             `Run your spec generator (e.g., zod-to-openapi) to update the API spec`
           );
         }

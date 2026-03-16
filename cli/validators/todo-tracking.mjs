@@ -110,14 +110,19 @@ function checkSkippedTests(projectDir) {
       const isSkipped = SKIP_PATTERNS.some(p => p.test(line));
       if (!isSkipped) continue;
 
-      // Check surrounding lines (1 above, 1 below, and inline) for explanation
-      const prevLine = i > 0 ? lines[i - 1] : '';
-      const nextLine = i < lines.length - 1 ? lines[i + 1] : '';
+      // Check surrounding lines (3 above, 1 below, and inline) for explanation
+      // Developers commonly place block comments above the skip call
+      const surroundingLines = [];
+      for (let j = Math.max(0, i - 3); j <= Math.min(lines.length - 1, i + 1); j++) {
+        surroundingLines.push(lines[j]);
+      }
+
+      // Also check for block comment pattern: /* REASON: ... */ or /** ... REASON: ... */
+      const blockCommentPattern = /\/\*[\s\S]*?(REASON|SKIP|TODO|FIXME|NOTE|WHY)\s*:/i;
 
       const hasReason =
-        SKIP_REASON_PATTERN.test(prevLine) ||
-        SKIP_REASON_PATTERN.test(line) ||
-        SKIP_REASON_PATTERN.test(nextLine);
+        surroundingLines.some(l => SKIP_REASON_PATTERN.test(l)) ||
+        blockCommentPattern.test(surroundingLines.join('\n'));
 
       if (hasReason) {
         skippedWithReason++;
