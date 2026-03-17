@@ -39,13 +39,13 @@ jobs:
           echo "download_url=https://github.com/raccioly/docguard/releases/download/v${VERSION}/spec-kit-docguard-v${VERSION}.zip" >> "$GITHUB_OUTPUT"
           echo "updated_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
 
-          # Extract description from extension.yml (strip quotes)
-          DESC=$(grep 'description:' extensions/spec-kit-docguard/extension.yml | head -1 | sed 's/.*description: *"//' | sed 's/"$//')
+          # Extract short description (avoid multiline output issues)
+          DESC="Canonical-Driven Development enforcement with automated checks, AI skills, and spec-kit hooks. Zero NPM runtime dependencies."
           echo "description=$DESC" >> "$GITHUB_OUTPUT"
 
-          # Count commands and hooks from extension.yml
-          COMMANDS=$(grep -c '\.md$' extensions/spec-kit-docguard/commands/*.md 2>/dev/null || echo "6")
-          echo "commands=$COMMANDS" >> "$GITHUB_OUTPUT"
+          # Count commands
+          COMMANDS=$(ls extensions/spec-kit-docguard/commands/*.md 2>/dev/null | wc -l | tr -d ' ')
+          echo "commands=${COMMANDS:-6}" >> "$GITHUB_OUTPUT"
 
           echo "✅ Version: $VERSION"
           echo "   Download: https://github.com/raccioly/docguard/releases/download/v${VERSION}/spec-kit-docguard-v${VERSION}.zip"
