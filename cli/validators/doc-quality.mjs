@@ -18,7 +18,7 @@
  *
  * Optional: If `understanding` CLI is installed, runs a full 31-metric deep scan.
  *
- * Zero dependencies — pure Node.js built-ins only.
+ * Zero NPM runtime dependencies — pure Node.js built-ins only.
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';

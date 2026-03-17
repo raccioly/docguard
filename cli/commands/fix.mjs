@@ -453,7 +453,7 @@ function generateDocPrompt(projectDir, config, docName) {
 
   console.log(expectations.aiResearchInstructions.trim());
 
-  console.log(`\nVALIDATION: After writing, run \`npx docguard guard\` to verify the document passes all checks.`);
+  console.log(`\nVALIDATION: After writing, run \`npx docguard-cli guard\` to verify the document passes all checks.`);
   console.log(`The document should have NO <!-- TODO --> or <!-- e.g. --> placeholders.`);
   console.log(`Set the docguard:status header to 'active' (not 'draft').`);
 }

@@ -3,8 +3,8 @@ schema_version: "1.0"
 extension:
   id: "docguard"
   name: "DocGuard — CDD Enforcement"
-  version: "0.9.8"
-  description: "Canonical-Driven Development enforcement with enterprise-grade AI skills. 19 automated validators, structured research workflows, quality validation loops, and spec-kit integration hooks. Zero dependencies."
+  version: "0.9.9"
+  description: "Canonical-Driven Development enforcement as a true spec-kit extension. LLM-first design with 19 automated validators, 4 AI behavior skills, spec-kit skill chaining, and workflow hooks. Zero NPM runtime dependencies."
   author: "Ricardo Accioly"
   repository: "https://github.com/raccioly/docguard"
   license: "MIT"
@@ -12,12 +12,16 @@ extension:
 
 requires:
   speckit_version: ">=0.1.0"
+  framework: "spec-kit"  # DocGuard builds on spec-kit conventions (.specify/, skills, constitution)
   tools:
     - name: "node"
       required: true
       version: ">=18.0.0"
     - name: "npx"
       required: true
+    - name: "specify"
+      required: false
+      description: "Spec Kit CLI — enables auto-initialization of SDD workflow during docguard init"
 
 provides:
   commands:

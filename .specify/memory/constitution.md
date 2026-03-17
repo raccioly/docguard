@@ -1,50 +1,76 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!-- Sync Impact Report
+  Version change: 0.0.0 → 1.0.0
+  Modified principles: N/A (initial creation)
+  Added sections: Core Principles (7), Technology Constraints, Extension & Spec Kit Compliance, Governance
+  Removed sections: N/A
+  Templates requiring updates: ✅ constitution-template.md (reference only, not modified)
+  Follow-up TODOs: None
+-->
+
+# DocGuard Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. LLM-First, CLI-Second
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+DocGuard is built for AI coding agents. Every feature MUST be designed for LLM consumption first, with CLI as a secondary interface. Skills (behavior protocols) take priority over CLI commands (step-lists). When DocGuard detects an AI agent environment, it MUST surface skill-based instructions. CLI output MUST be machine-parseable (JSON mode) alongside human-readable text.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### II. Zero NPM Runtime Dependencies (NON-NEGOTIABLE)
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+DocGuard has zero `node_modules` at runtime. All Node.js functionality uses built-in modules only (`node:fs`, `node:path`, `node:child_process`, `node:test`, `node:url`, `node:readline`, `node:os`, `node:assert`). This maximizes portability, eliminates supply chain risk, and ensures instant `npx` usage. Dev dependencies are also zero — tests use `node:test`. DocGuard depends on spec-kit as a **framework convention** (`.specify/` directory structure, skill architecture, constitution pattern). This is an integration, not a code dependency. When the `specify` CLI is available, DocGuard MUST leverage it for initialization and skill management.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### III. Documentation as Source of Truth
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+Canonical-Driven Development means documentation drives code, not the other way around. DocGuard enforces this by validating code against `docs-canonical/` and detecting drift. Any deviation from canonical docs MUST be logged in `DRIFT-LOG.md` with `// DRIFT: reason` inline comments. The `docguard guard` command is the enforcement gate.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+### IV. Validator Isolation
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+Each of the 19 validators is a pure, self-contained function. Validators receive `projectDir` and `config`, then return results. No validator may import another validator or depend on command-level logic. This ensures adding or modifying validators never breaks existing ones.
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+### V. AI as Author, CLI as Orchestrator
+
+The CLI detects problems and generates structured prompts. The AI agent writes the actual documentation. DocGuard MUST NOT generate final documentation content itself — it provides research instructions, templates, and validation. The `fix`, `diagnose`, and `generate` commands produce AI-actionable output, not finished documents.
+
+### VI. Safe Writes
+
+All file write operations MUST use defensive patterns. Before overwriting any file, DocGuard creates backups. The `--force` flag is required to overwrite existing files. Init and setup commands skip files that already exist unless explicitly forced.
+
+### VII. Spec Kit Extension Compliance
+
+DocGuard is a community extension of GitHub Spec Kit. It MUST follow spec-kit conventions: `extension.yml` schema, skill architecture (`SKILL.md` files with YAML frontmatter), workflow hooks (`after_implement`, `before_tasks`, `after_tasks`), and the `.specify/` directory structure. DocGuard MUST always install spec-kit core skills alongside its own skills so users get the complete spec-driven development workflow.
+
+## Technology Constraints
+
+- **Language**: JavaScript (ES Modules only, no CommonJS)
+- **Runtime**: Node.js ≥ 18 (for native `node:test` and ES module support)
+- **Dependencies**: None. Zero. Ever. This is a hard constraint.
+- **Distribution**: npm (`docguard-cli`) + PyPI (`docguard`)
+- **Testing**: `node:test` + `node:assert` (built-in, no framework)
+- **Extension**: VS Code Extension API for editor integration
+- **Config**: `.docguard.json` for project-level customization
+- **Profiles**: starter, standard, enterprise compliance levels
+- **Output**: Text (human) + JSON (machine) dual output for all commands
+
+## Extension & Spec Kit Compliance
+
+- DocGuard MUST declare all skills, scripts, hooks, and commands in `extension.yml`
+- DocGuard MUST bundle spec-kit core skills so users don't need a separate install
+- All 4 DocGuard skills (`docguard-guard`, `docguard-fix`, `docguard-review`, `docguard-score`) MUST follow spec-kit skill architecture: YAML frontmatter with `name`, `description`, `compatibility`, `metadata`
+- Workflow hooks MUST be optional (never force execution)
+- The `ensureSkills()` function MUST auto-detect and install both DocGuard skills AND spec-kit core skills
+- DocGuard MUST detect agent environment (LLM vs CLI) and adapt its output accordingly
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+This constitution supersedes all ad-hoc practices. Amendments require:
+1. Documentation of the change in `DRIFT-LOG.md` if deviating
+2. Update this constitution with a version bump
+3. Update `CHANGELOG.md` with the change
+4. All PRs MUST pass `docguard guard` before merge
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+Versioning follows semantic versioning:
+- **MAJOR**: Principle removal or backward-incompatible redefinition
+- **MINOR**: New principle added or materially expanded guidance
+- **PATCH**: Clarification, wording, typo fix
+
+**Version**: 1.0.0 | **Ratified**: 2026-03-17 | **Last Amended**: 2026-03-17

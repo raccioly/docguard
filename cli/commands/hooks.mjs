@@ -20,7 +20,7 @@ echo "🛡️  Running DocGuard guard..."
 
 # Check if docguard is available
 if command -v npx &> /dev/null; then
-  npx docguard guard
+  npx docguard-cli guard
   EXIT_CODE=$?
 elif command -v docguard &> /dev/null; then
   docguard guard
@@ -60,7 +60,7 @@ echo "📊 Running DocGuard score check (minimum: $MIN_SCORE)..."
 
 # Get score as JSON
 if command -v npx &> /dev/null; then
-  RESULT=$(npx docguard score --format json 2>/dev/null)
+  RESULT=$(npx docguard-cli score --format json 2>/dev/null)
 elif command -v docguard &> /dev/null; then
   RESULT=$(docguard score --format json 2>/dev/null)
 else

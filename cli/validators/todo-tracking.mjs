@@ -9,7 +9,7 @@
  * Inspired by spec-kit-cleanup (github.com/dsrednicki/spec-kit-cleanup)
  * which uses tiered issue classification for code hygiene.
  *
- * Zero dependencies — pure Node.js built-ins only.
+ * Zero NPM runtime dependencies — pure Node.js built-ins only.
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';

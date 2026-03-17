@@ -19,7 +19,7 @@
  * Credit: Integration with GitHub's Spec Kit framework
  *         (github.com/github/spec-kit)
  *
- * Zero dependencies — pure Node.js built-ins only.
+ * Zero NPM runtime dependencies — pure Node.js built-ins only.
  */
 
 import { existsSync, readFileSync, readdirSync, statSync, copyFileSync, writeFileSync } from 'node:fs';

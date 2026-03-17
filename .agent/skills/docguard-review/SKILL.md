@@ -6,9 +6,10 @@ description: Cross-document consistency analysis and quality assessment. Perform
 compatibility: Requires DocGuard CLI installed (npm i -g docguard-cli or npx docguard-cli)
 metadata:
   author: docguard
-  version: 0.9.5
+  version: 0.9.9
   source: extensions/spec-kit-docguard/skills/docguard-review
 ---
+<!-- docguard:version: 0.9.9 -->
 
 # DocGuard Review Skill
 
@@ -163,7 +164,10 @@ Output a structured markdown report (do NOT write to disk):
 
 Based on findings:
 - **If CRITICAL issues**: "Run `/docguard.fix --doc [name]` to resolve blocking issues"
+- **If spec-related gaps**: "Run `/speckit.specify` to update specifications" or "/speckit.clarify to resolve ambiguities"
+- **If architecture drift**: "Run `/speckit.plan` to realign implementation plan with codebase"
 - **If only LOW/MEDIUM**: "Documentation is healthy. Consider `/docguard.fix` for polish"
+- **If constitution missing**: "Run `/speckit.constitution` to establish project principles"
 - **If all clean**: "Documentation is excellent. No action needed."
 
 Ask: "Would you like me to fix the top N issues? (I'll show you what I plan to change before applying)"

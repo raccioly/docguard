@@ -13,7 +13,8 @@
  * Each step shows current status (✅/⚠️) and offers to fix what's missing.
  * Supports --skip-prompts for non-interactive CI mode.
  *
- * Zero dependencies — pure Node.js built-ins only.
+ * Zero NPM runtime dependencies — pure Node.js built-ins only.
+ * Framework dependency: spec-kit (convention, not code).
  */
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync } from 'node:fs';
@@ -22,7 +23,7 @@ import { fileURLToPath } from 'node:url';
 import { createInterface } from 'node:readline';
 import { execSync } from 'node:child_process';
 import { c } from '../shared.mjs';
-import { ensureSkills } from '../ensure-skills.mjs';
+import { ensureSkills, detectAgentMode, isSpecKitInitialized, getDetectedAgent } from '../ensure-skills.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -211,11 +212,17 @@ export async function runSetup(projectDir, config, flags) {
 
   console.log(`  ${c.bold}Step 3/7: AI Skills${c.reset}`);
 
-  const skillNames = ['docguard-guard', 'docguard-fix', 'docguard-review', 'docguard-score'];
+  const docguardSkills = ['docguard-guard', 'docguard-fix', 'docguard-review', 'docguard-score'];
+  const speckitSkills = [
+    'speckit-specify', 'speckit-plan', 'speckit-tasks', 'speckit-implement',
+    'speckit-analyze', 'speckit-clarify', 'speckit-checklist', 'speckit-constitution',
+    'speckit-taskstoissues',
+  ];
+  const allSkillNames = [...docguardSkills, ...speckitSkills];
   const skillsDest = resolve(projectDir, '.agent/skills');
   let missingSkills = [];
 
-  for (const skill of skillNames) {
+  for (const skill of allSkillNames) {
     const skillPath = resolve(skillsDest, skill, 'SKILL.md');
     if (existsSync(skillPath)) {
       console.log(`  ${c.green}✅${c.reset} ${skill}`);
@@ -227,19 +234,28 @@ export async function runSetup(projectDir, config, flags) {
   }
 
   if (missingSkills.length > 0) {
-    const install = interactive
-      ? await askYesNo(`     → Install ${missingSkills.length} AI skill(s) to .agent/skills/?`)
-      : true;
+    const hasSpeckitMissing = missingSkills.some(s => s.startsWith('speckit-'));
+    const hasDocguardMissing = missingSkills.some(s => s.startsWith('docguard-'));
 
-    if (install) {
-      for (const skill of missingSkills) {
-        const srcSkill = resolve(SKILLS_SOURCE, skill, 'SKILL.md');
-        const destDir = resolve(skillsDest, skill);
-        if (existsSync(srcSkill)) {
-          if (!existsSync(destDir)) mkdirSync(destDir, { recursive: true });
-          writeFileSync(resolve(destDir, 'SKILL.md'), readFileSync(srcSkill, 'utf-8'), 'utf-8');
-          console.log(`     ${c.green}✅ Installed ${skill}${c.reset}`);
-          configured++;
+    if (hasSpeckitMissing) {
+      console.log(`  ${c.dim}   Spec-kit skills installed via: ${c.cyan}specify init --here --force --ai-skills${c.reset}`);
+    }
+
+    if (hasDocguardMissing) {
+      const install = interactive
+        ? await askYesNo(`     → Install ${missingSkills.filter(s => s.startsWith('docguard-')).length} DocGuard skill(s) to .agent/skills/?`)
+        : true;
+
+      if (install) {
+        for (const skill of missingSkills.filter(s => s.startsWith('docguard-'))) {
+          const srcSkill = resolve(SKILLS_SOURCE, skill, 'SKILL.md');
+          const destDir = resolve(skillsDest, skill);
+          if (existsSync(srcSkill)) {
+            if (!existsSync(destDir)) mkdirSync(destDir, { recursive: true });
+            writeFileSync(resolve(destDir, 'SKILL.md'), readFileSync(srcSkill, 'utf-8'), 'utf-8');
+            console.log(`     ${c.green}✅ Installed ${skill}${c.reset}`);
+            configured++;
+          }
         }
       }
     }
@@ -354,16 +370,20 @@ export async function runSetup(projectDir, config, flags) {
 
   console.log(`  ${c.bold}Step 6/7: Integrations${c.reset}`);
 
-  // Check spec-kit framework
-  const speckitDir = resolve(projectDir, '.speckit');
-  const hasSpeckit = existsSync(speckitDir) || existsSync(resolve(projectDir, 'spec.md'));
-  if (hasSpeckit) {
-    console.log(`  ${c.green}✅${c.reset} spec-kit ${c.dim}(spec-driven development configured)${c.reset}`);
+  // Check spec-kit framework (Extension-First: detect .specify/ directory)
+  const specKitInitialized = isSpecKitInitialized(projectDir);
+  const specifyDir = resolve(projectDir, '.specify');
+  if (specKitInitialized) {
+    const agent = getDetectedAgent(projectDir);
+    console.log(`  ${c.green}✅${c.reset} spec-kit ${c.dim}(SDD configured${agent ? `, agent: ${agent}` : ''})${c.reset}`);
     alreadyGood++;
+  } else if (existsSync(specifyDir)) {
+    console.log(`  ${c.yellow}⚠️${c.reset}  spec-kit ${c.dim}(.specify/ exists but not fully initialized)${c.reset}`);
+    console.log(`  ${c.dim}     Run: ${c.cyan}specify init --here --force --ai-skills${c.reset}`);
   } else {
-    console.log(`  ${c.dim}──${c.reset}  spec-kit ${c.dim}(not configured — optional)${c.reset}`);
-    console.log(`  ${c.dim}     Spec Kit enables spec-driven development with AI agents${c.reset}`);
-    console.log(`  ${c.dim}     See: ${c.cyan}https://github.com/github/spec-kit${c.reset}`);
+    console.log(`  ${c.dim}──${c.reset}  spec-kit ${c.dim}(not configured — recommended for full SDD+CDD workflow)${c.reset}`);
+    console.log(`  ${c.dim}     Install: ${c.cyan}uv tool install specify-cli --from git+https://github.com/github/spec-kit.git${c.reset}`);
+    console.log(`  ${c.dim}     Then: ${c.cyan}docguard init${c.reset} ${c.dim}(will auto-run specify init)${c.reset}`);
   }
 
   // Check for spec-kit extensions
@@ -421,8 +441,8 @@ export async function runSetup(projectDir, config, flags) {
             if (!existsSync(hooksDir)) mkdirSync(hooksDir, { recursive: true });
 
             const hookContent = existsSync(preCommitHook)
-              ? readFileSync(preCommitHook, 'utf-8') + '\n\n# DocGuard CDD validation\nnpx docguard guard --fail-on-warning\n'
-              : '#!/bin/sh\n\n# DocGuard CDD validation\nnpx docguard guard --fail-on-warning\n';
+              ? readFileSync(preCommitHook, 'utf-8') + '\n\n# DocGuard CDD validation\nnpx docguard-cli guard --fail-on-warning\n'
+              : '#!/bin/sh\n\n# DocGuard CDD validation\nnpx docguard-cli guard --fail-on-warning\n';
 
             writeFileSync(preCommitHook, hookContent, { mode: 0o755 });
             console.log(`     ${c.green}✅ Pre-commit hook installed${c.reset}`);
@@ -447,9 +467,19 @@ export async function runSetup(projectDir, config, flags) {
     console.log(`  ${c.dim}No changes made.${c.reset}`);
   }
 
-  console.log(`\n  ${c.bold}Next steps:${c.reset}`);
-  console.log(`  ${c.dim}Fill docs:${c.reset}      ${c.cyan}docguard diagnose${c.reset}`);
-  console.log(`  ${c.dim}Validate:${c.reset}       ${c.cyan}docguard guard${c.reset}`);
-  console.log(`  ${c.dim}Check score:${c.reset}    ${c.cyan}docguard score${c.reset}`);
+  const agentMode = detectAgentMode(projectDir);
+  console.log(`\n  ${c.bold}Next steps:${c.reset} ${c.dim}(${agentMode === 'llm' ? 'LLM mode' : 'CLI mode'})${c.reset}`);
+  if (agentMode === 'llm') {
+    if (!isSpecKitInitialized(projectDir)) {
+      console.log(`  ${c.dim}Bootstrap:${c.reset}      ${c.cyan}/speckit.constitution${c.reset}`);
+    }
+    console.log(`  ${c.dim}Fill docs:${c.reset}      ${c.cyan}/docguard.guard${c.reset}`);
+    console.log(`  ${c.dim}Fix issues:${c.reset}     ${c.cyan}/docguard.fix${c.reset}`);
+    console.log(`  ${c.dim}Review:${c.reset}         ${c.cyan}/docguard.review${c.reset}`);
+  } else {
+    console.log(`  ${c.dim}Fill docs:${c.reset}      ${c.cyan}docguard diagnose${c.reset}`);
+    console.log(`  ${c.dim}Validate:${c.reset}       ${c.cyan}docguard guard${c.reset}`);
+    console.log(`  ${c.dim}Check score:${c.reset}    ${c.cyan}docguard score${c.reset}`);
+  }
   console.log('');
 }

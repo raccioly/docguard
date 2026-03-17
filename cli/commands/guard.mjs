@@ -8,6 +8,7 @@
  */
 
 import { c } from '../shared.mjs';
+import { detectAgentMode, isSpecKitInitialized } from '../ensure-skills.mjs';
 import { validateStructure, validateDocSections } from '../validators/structure.mjs';
 import { validateDrift } from '../validators/drift.mjs';
 import { validateChangelog } from '../validators/changelog.mjs';
@@ -197,7 +198,12 @@ export function runGuard(projectDir, config, flags) {
 
   // Next step hint — always point to diagnose when issues exist
   if (data.status !== 'PASS') {
-    console.log(`  ${c.dim}Run ${c.cyan}docguard diagnose${c.dim} to get AI fix prompts.${c.reset}`);
+    const agentMode = detectAgentMode(projectDir);
+    if (agentMode === 'llm') {
+      console.log(`  ${c.dim}Use ${c.cyan}/docguard.diagnose${c.dim} to get AI fix prompts.${c.reset}`);
+    } else {
+      console.log(`  ${c.dim}Run ${c.cyan}docguard diagnose${c.dim} to get AI fix prompts.${c.reset}`);
+    }
   }
 
   // Badge snippet
@@ -205,6 +211,11 @@ export function runGuard(projectDir, config, flags) {
   const bColor = pct >= 90 ? 'brightgreen' : pct >= 70 ? 'green' : pct >= 50 ? 'yellow' : 'red';
   const badgeUrl = `https://img.shields.io/badge/CDD_Guard-${data.passed}%2F${data.total}_passed-${bColor}`;
   console.log(`\n  ${c.dim}📎 Badge: ![CDD Guard](${badgeUrl})${c.reset}`);
+
+  // Spec-kit reminder — persistent nudge if not initialized
+  if (!isSpecKitInitialized(projectDir)) {
+    console.log(`\n  ${c.yellow}💡${c.reset} ${c.dim}Enhance DocGuard with Spec Kit: ${c.cyan}uv tool install specify-cli --from git+https://github.com/github/spec-kit.git${c.reset}`);
+  }
 
   console.log('');
 

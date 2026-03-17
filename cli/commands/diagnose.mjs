@@ -16,6 +16,7 @@
 import { c } from '../shared.mjs';
 import { runGuardInternal } from './guard.mjs';
 import { runScoreInternal } from './score.mjs';
+import { detectAgentMode, isSpecKitInitialized } from '../ensure-skills.mjs';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -35,23 +36,26 @@ const VALIDATOR_TO_DOC = {
   'Freshness':     null,       // freshness — maps to stale doc
 };
 
-// Actionable fix instructions per validator
+// Actionable fix instructions per validator (LLM-first: includes both skill and CLI commands)
 const FIX_INSTRUCTIONS = {
   'Structure': {
     action: 'Create missing files',
     command: 'docguard init',
+    llmCommand: '/docguard.init',
     description: 'Run init to create missing documentation templates.',
     autoFixable: true,
   },
   'Doc Sections': {
     action: 'Fill document sections',
     command: 'docguard fix --doc',
-    description: 'Documents exist but have missing or placeholder sections. Use fix --doc to generate AI content prompts.',
+    llmCommand: '/docguard.fix --doc',
+    description: 'Documents exist but have missing or placeholder sections. Use the docguard-fix skill to generate content.',
     autoFixable: false,
   },
   'Docs-Sync': {
     action: 'Sync documentation references',
     command: 'docguard fix --doc architecture',
+    llmCommand: '/docguard.fix --doc architecture',
     description: 'Documentation references are out of sync with code. Review and update component maps.',
     autoFixable: false,
   },
@@ -68,35 +72,44 @@ const FIX_INSTRUCTIONS = {
   'Test-Spec': {
     action: 'Update TEST-SPEC.md',
     command: 'docguard fix --doc test-spec',
+    llmCommand: '/docguard.fix --doc test-spec',
     description: 'Test documentation needs updating to match actual test structure.',
     autoFixable: false,
   },
   'Environment': {
     action: 'Update ENVIRONMENT.md',
     command: 'docguard fix --doc environment',
+    llmCommand: '/docguard.fix --doc environment',
     description: 'Environment documentation is missing or incomplete.',
     autoFixable: false,
   },
   'Security': {
     action: 'Update SECURITY.md',
     command: 'docguard fix --doc security',
+    llmCommand: '/docguard.fix --doc security',
     description: 'Security documentation needs updating.',
     autoFixable: false,
   },
   'Architecture': {
     action: 'Update ARCHITECTURE.md',
     command: 'docguard fix --doc architecture',
+    llmCommand: '/docguard.fix --doc architecture',
     description: 'Architecture documentation doesn\'t match the codebase.',
     autoFixable: false,
   },
   'Freshness': {
     action: 'Review stale documents',
+    command: 'docguard fix --doc',
+    llmCommand: '/docguard.fix --doc',
     description: 'Documents haven\'t been reviewed since recent code changes. Re-run fix --doc for each stale doc.',
     autoFixable: false,
   },
 };
 
 export function runDiagnose(projectDir, config, flags) {
+  // ── Step 0: Detect agent mode (LLM-first) ──
+  const agentMode = detectAgentMode(projectDir);
+
   // ── Step 1: Run guard internally ──
   let guardData = runGuardInternal(projectDir, config);
   const scoreData = runScoreInternal(projectDir, config);
@@ -140,10 +153,15 @@ export function runDiagnose(projectDir, config, flags) {
         }
       }
     } else if (!shouldAutoFix && (hasStructural || autoFixable.length > 0) && (!flags.format || flags.format === 'text')) {
-      // Suggest-only mode: tell user what they can do
+      // Suggest-only mode: tell user what they can do (LLM-first)
       console.log(`  ${c.yellow}💡 ${autoFixable.length + (hasStructural ? 1 : 0)} issue(s) can be auto-fixed.${c.reset} Run with ${c.cyan}--auto${c.reset} to create/regenerate docs, or manually:`);
-      if (hasStructural) console.log(`     ${c.dim}docguard init --dir .${c.reset}`);
-      if (autoFixable.length > 0) console.log(`     ${c.dim}docguard generate --dir . --force${c.reset}`);
+      if (agentMode === 'llm') {
+        if (hasStructural) console.log(`     ${c.dim}/docguard.init${c.reset}`);
+        if (autoFixable.length > 0) console.log(`     ${c.dim}/docguard.fix${c.reset}`);
+      } else {
+        if (hasStructural) console.log(`     ${c.dim}docguard init --dir .${c.reset}`);
+        if (autoFixable.length > 0) console.log(`     ${c.dim}docguard generate --dir . --force${c.reset}`);
+      }
       console.log('');
     }
   }
@@ -157,7 +175,9 @@ export function runDiagnose(projectDir, config, flags) {
         const docMap = { 'architecture': 'architecture', 'data-model': 'data-model', 'security': 'security', 'test-spec': 'test-spec', 'environment': 'environment' };
         issue.docTarget = docMap[docName] || null;
         if (issue.docTarget) {
-          issue.command = `docguard fix --doc ${issue.docTarget}`;
+          issue.command = agentMode === 'llm'
+            ? `/docguard.fix --doc ${issue.docTarget}`
+            : `docguard fix --doc ${issue.docTarget}`;
         }
       }
     }
@@ -167,9 +187,9 @@ export function runDiagnose(projectDir, config, flags) {
   if (flags.format === 'json') {
     outputJSON(guardData, scoreData, issues);
   } else if (flags.format === 'prompt') {
-    outputPrompt(projectDir, guardData, scoreData, issues, flags);
+    outputPrompt(projectDir, guardData, scoreData, issues, flags, agentMode);
   } else {
-    outputText(projectDir, guardData, scoreData, issues, flags);
+    outputText(projectDir, guardData, scoreData, issues, flags, agentMode);
   }
 }
 
@@ -191,6 +211,7 @@ function collectIssues(guardData) {
         message: err,
         action: fixInfo.action,
         command: fixInfo.command || null,
+        llmCommand: fixInfo.llmCommand || null,
         docTarget,
         autoFixable: fixInfo.autoFixable || false,
       });
@@ -202,6 +223,7 @@ function collectIssues(guardData) {
         message: warn,
         action: fixInfo.action,
         command: fixInfo.command || null,
+        llmCommand: fixInfo.llmCommand || null,
         docTarget,
         autoFixable: fixInfo.autoFixable || false,
       });
@@ -233,14 +255,18 @@ function outputJSON(guardData, scoreData, issues) {
   console.log(JSON.stringify(result, null, 2));
 }
 
-function outputText(projectDir, guardData, scoreData, issues, flags) {
+function outputText(projectDir, guardData, scoreData, issues, flags, agentMode = 'llm') {
   console.log(`${c.bold}🔍 DocGuard Diagnose — ${guardData.project}${c.reset}`);
-  console.log(`${c.dim}   Profile: ${guardData.profile} | Score: ${scoreData.score}/100 (${scoreData.grade})${c.reset}`);
+  console.log(`${c.dim}   Profile: ${guardData.profile} | Score: ${scoreData.score}/100 (${scoreData.grade}) | Mode: ${agentMode.toUpperCase()}${c.reset}`);
   console.log(`${c.dim}   Guard:   ${guardData.passed}/${guardData.total} passed | Status: ${guardData.status}${c.reset}\n`);
 
   if (issues.length === 0) {
     console.log(`  ${c.green}${c.bold}✅ All clear!${c.reset} No issues found.\n`);
-    console.log(`  ${c.dim}Your documentation is healthy. Run \`docguard score --tax\` to see maintenance estimate.${c.reset}\n`);
+    if (agentMode === 'llm') {
+      console.log(`  ${c.dim}Your documentation is healthy. Use ${c.cyan}/docguard.guard${c.dim} to re-validate after changes.${c.reset}\n`);
+    } else {
+      console.log(`  ${c.dim}Your documentation is healthy. Run \`docguard score --tax\` to see maintenance estimate.${c.reset}\n`);
+    }
     return;
   }
 
@@ -252,7 +278,8 @@ function outputText(projectDir, guardData, scoreData, issues, flags) {
     console.log(`  ${c.red}${c.bold}Errors (${errors.length}):${c.reset}`);
     for (const e of errors) {
       console.log(`  ${c.red}✗${c.reset} [${e.validator}] ${e.message}`);
-      if (e.command) console.log(`    ${c.dim}Fix: ${e.command}${c.reset}`);
+      const cmd = agentMode === 'llm' && e.llmCommand ? e.llmCommand : e.command;
+      if (cmd) console.log(`    ${c.dim}Fix: ${cmd}${c.reset}`);
     }
     console.log('');
   }
@@ -261,19 +288,21 @@ function outputText(projectDir, guardData, scoreData, issues, flags) {
     console.log(`  ${c.yellow}${c.bold}Warnings (${warnings.length}):${c.reset}`);
     for (const w of warnings) {
       console.log(`  ${c.yellow}⚠${c.reset} [${w.validator}] ${w.message}`);
-      if (w.command) console.log(`    ${c.dim}Fix: ${w.command}${c.reset}`);
+      const cmd = agentMode === 'llm' && w.llmCommand ? w.llmCommand : w.command;
+      if (cmd) console.log(`    ${c.dim}Fix: ${cmd}${c.reset}`);
     }
     console.log('');
   }
 
-  // ── Remediation Plan ──
+  // ── Remediation Plan (LLM-first) ──
   const commands = [...new Set(issues.filter(i => i.command).map(i => i.command))];
   if (commands.length > 0) {
     console.log(`  ${c.bold}📋 Remediation Plan:${c.reset}`);
     for (let i = 0; i < commands.length; i++) {
       console.log(`  ${c.cyan}${i + 1}. ${commands[i]}${c.reset}`);
     }
-    console.log(`  ${c.cyan}${commands.length + 1}. docguard guard${c.reset} ${c.dim}← verify fixes${c.reset}`);
+    const verifyCmd = agentMode === 'llm' ? '/docguard.guard' : 'docguard guard';
+    console.log(`  ${c.cyan}${commands.length + 1}. ${verifyCmd}${c.reset} ${c.dim}← verify fixes${c.reset}`);
     console.log('');
   }
 
@@ -282,15 +311,15 @@ function outputText(projectDir, guardData, scoreData, issues, flags) {
     // Multi-perspective debate prompts (AITPG/TRACE-inspired)
     console.log(`  ${c.bold}🤖 Multi-Perspective AI Debate Prompt:${c.reset}`);
     console.log(`  ${c.dim}Copy everything below and paste to your AI agent:${c.reset}\n`);
-    outputDebatePrompt(projectDir, guardData, scoreData, issues);
+    outputDebatePrompt(projectDir, guardData, scoreData, issues, agentMode);
   } else {
     console.log(`  ${c.bold}🤖 AI-Ready Prompt:${c.reset}`);
     console.log(`  ${c.dim}Copy everything below and paste to your AI agent:${c.reset}\n`);
-    outputPrompt(undefined, guardData, scoreData, issues, flags);
+    outputPrompt(undefined, guardData, scoreData, issues, flags, agentMode);
   }
 }
 
-function outputPrompt(projectDir, guardData, scoreData, issues, flags) {
+function outputPrompt(projectDir, guardData, scoreData, issues, flags, agentMode = 'llm') {
   if (issues.length === 0) {
     console.log('No issues to fix. Documentation is healthy.');
     return;
@@ -345,7 +374,11 @@ function outputPrompt(projectDir, guardData, scoreData, issues, flags) {
 
   lines.push('');
   lines.push('VALIDATION:');
-  lines.push('After making all fixes, run: docguard guard');
+  if (agentMode === 'llm') {
+    lines.push('After making all fixes, use the /docguard.guard skill to verify');
+  } else {
+    lines.push('After making all fixes, run: docguard guard');
+  }
   lines.push('Expected result: All checks pass (0 errors, 0 warnings)');
   lines.push(`Target score: ≥${Math.min(scoreData.score + 5, 100)}/100`);
 
@@ -354,9 +387,15 @@ function outputPrompt(projectDir, guardData, scoreData, issues, flags) {
     lines.push('');
     lines.push('VERIFICATION CHECKLIST (complete each step):');
     lines.push('□ Read each file in docs-canonical/ before editing');
-    lines.push('□ Run `docguard guard` after each file change');
-    lines.push('□ Confirm 0 errors before moving to next issue');
-    lines.push('□ Run `docguard score` to confirm improvement');
+    if (agentMode === 'llm') {
+      lines.push('□ Run /docguard.guard after each file change');
+      lines.push('□ Confirm 0 errors before moving to next issue');
+      lines.push('□ Run /docguard.score to confirm improvement');
+    } else {
+      lines.push('□ Run `docguard guard` after each file change');
+      lines.push('□ Confirm 0 errors before moving to next issue');
+      lines.push('□ Run `docguard score` to confirm improvement');
+    }
   }
 
   console.log(lines.join('\n'));
@@ -368,7 +407,7 @@ function outputPrompt(projectDir, guardData, scoreData, issues, flags) {
  * and TRACE adversarial debate (Advocate/Challenger/Mediator/Explainer).
  * Lopez et al., IEEE TSE/TMLCN 2026.
  */
-function outputDebatePrompt(projectDir, guardData, scoreData, issues) {
+function outputDebatePrompt(projectDir, guardData, scoreData, issues, agentMode = 'llm') {
   const lines = [];
 
   lines.push('═══════════════════════════════════════════════════════');
@@ -427,7 +466,8 @@ function outputDebatePrompt(projectDir, guardData, scoreData, issues) {
   lines.push('   a. Which file to edit');
   lines.push('   b. What section to add or modify');
   lines.push('   c. What content to write (be specific, not vague)');
-  lines.push('4. After all fixes, verify with: docguard guard');
+  const verifyCmd = agentMode === 'llm' ? '/docguard.guard' : 'docguard guard';
+  lines.push(`4. After all fixes, verify with: ${verifyCmd}`);
   lines.push(`5. Target score: ≥${Math.min(scoreData.score + 10, 100)}/100`);
   lines.push('');
   lines.push('═══════════════════════════════════════════════════════');

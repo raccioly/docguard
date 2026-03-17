@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.9] - 2026-03-17
+
+### Added — Extension-First Architecture & Spec-Kit Integration Gate
+
+#### Spec-Kit Integration Gate
+- **`ensureSpecKit()`** — Runs on every command. Auto-initializes spec-kit when `specify` CLI is available. Shows a prominent yellow-box reminder every time when spec-kit is not installed (persistent, no dismiss).
+- **`detectAIAgent(projectDir)`** — Maps 12 filesystem signals to spec-kit `--ai` flag values: `.cursor/` → `cursor-agent`, `.claude/` or `CLAUDE.md` → `claude`, `.gemini/` → `gemini`, `.agents/` → `agy` (Antigravity), `.github/copilot-instructions.md` → `copilot`, `.windsurf/` → `windsurf`, `.codex/` → `codex`, `.roo/` → `roo`, `.amp/` → `amp`, `.kiro/` → `kiro-cli`, `.tabnine/` → `tabnine`. Falls back to `--ai generic` when no agent detected.
+- **Strong init push** — `docguard init` now shows a prominent red-bordered box when spec-kit is missing, listing exactly what users miss: 9 AI skills, constitution, SDD workflow, agent detection. Provides both `uv` and `pip` install commands.
+- **Guard footer reminder** — `docguard guard` shows a 1-line spec-kit install nudge after results when not initialized.
+- **Skill auto-update** — `ensureSkills()` now compares installed SKILL.md `docguard:version` against package version. Automatically overwrites stale skills on DocGuard update.
+
+#### LLM-First Output
+- **`detectAgentMode(projectDir)`** — Returns `'llm'` or `'cli'` based on filesystem signals and `.specify/init-options.json`. All adaptive commands check this.
+- **`diagnose.mjs`** — All `FIX_INSTRUCTIONS` now include `llmCommand` fields (e.g., `/docguard.fix --doc architecture`). Issue collection propagates `llmCommand` to output. Remediation plan, verification checklist, and debate prompts all adapt to agent mode.
+- **`guard.mjs`** — "Next step" hint now shows `/docguard.diagnose` in LLM mode.
+- **`init.mjs`** — Next steps show skill commands (`/docguard.guard`, `/docguard.fix`) in LLM mode, CLI commands (`docguard diagnose`) in CLI mode.
+- **`setup.mjs`** — Next steps adapt to agent mode.
+
+#### Spec-Kit Skill Chaining
+- **`docguard-guard` SKILL.md** — Now chains to `/speckit.specify`, `/speckit.plan`, `/speckit.clarify`, and checks `constitution.md`.
+- **`docguard-review` SKILL.md** — Offers spec-kit skills for specification-level issues.
+- **`extension.yml`** — Declares `framework: spec-kit` and `specify` as optional tool.
+
+### Fixed
+- **`npx docguard guard`** → `npx docguard-cli guard` — The npm package name is `docguard-cli`, not `docguard`. Fixed in `hooks.mjs`, `setup.mjs`, `fix.mjs`, `docguard.mjs` (pre-existing bug).
+- **Hardcoded `--ai agy`** → Dynamic `detectAIAgent()` — `init.mjs` and `setup.mjs` no longer hardcode Antigravity as the agent.
+- **`llmCommand` never propagated** — `collectIssues()` in `diagnose.mjs` was not copying `llmCommand` from `FIX_INSTRUCTIONS` to issue objects, so LLM-first fix hints silently fell back to CLI commands.
+- **Debate prompt not LLM-aware** — `outputDebatePrompt()` now receives `agentMode` and adapts verification commands.
+- **Basic-tier checklist hardcoded** — Verification checklist for basic-tier agents now adapts to LLM/CLI mode.
+- **Stale "Zero dependencies" doc comments** — Updated 6 files to "Zero NPM runtime dependencies" matching the constitution.
+- **Platform-aware `--script`** — `specify init` now uses `--script ps` on Windows, `--script sh` on Unix.
+
+### Changed
+- **Constitution** — Principle II amended from "Zero Dependencies" to "Zero NPM Runtime Dependencies" (spec-kit is a framework convention, not a code dependency).
+- **SKILL.md metadata** — All 4 skills updated from `0.9.5`/`0.9.8` to `0.9.9`. Added `docguard:version` comment for auto-update mechanism.
+- **`ensure-skills.mjs`** — Full rewrite: 6 exports (`ensureSkills`, `ensureSpecKit`, `detectAgentMode`, `detectAIAgent`, `getDetectedAgent`, `isSpecKitAvailable`, `isSpecKitInitialized`).
+- **22 files changed**, +567/−203 lines.
+
 ## [0.9.6] - 2026-03-14
 
 ### Added — Enterprise AI Skills Architecture

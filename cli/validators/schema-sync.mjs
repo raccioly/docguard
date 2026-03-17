@@ -6,7 +6,7 @@
  *
  * Supported: Prisma, Drizzle, Sequelize, TypeORM, Knex, Django, Rails
  *
- * Zero dependencies — pure Node.js built-ins only.
+ * Zero NPM runtime dependencies — pure Node.js built-ins only.
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';

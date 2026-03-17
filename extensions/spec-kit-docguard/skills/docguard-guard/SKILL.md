@@ -7,9 +7,10 @@ description: Run DocGuard guard validation against Canonical-Driven Development 
 compatibility: Requires DocGuard CLI installed (npm i -g docguard-cli or npx docguard-cli)
 metadata:
   author: docguard
-  version: 0.9.5
+  version: 0.9.9
   source: extensions/spec-kit-docguard/skills/docguard-guard
 ---
+<!-- docguard:version: 0.9.9 -->
 
 # DocGuard Guard Skill
 
@@ -155,12 +156,16 @@ Present the user with options:
 - **Track progress** — if user runs guard multiple times, compare before/after
 - If user provides `$ARGUMENTS` like "just structure" or "only security", filter report to those validators
 
-## Integration with Spec Kit
+## Integration with Spec Kit (Extension-First)
 
-If this project has `.specify/` directory (spec-kit enabled):
+DocGuard is a spec-kit extension. When this project has a `.specify/` directory:
+- Read `.specify/memory/constitution.md` for project principles that constrain documentation
 - Include Spec-Kit validator results in the triage
 - Cross-reference spec quality issues with `specs/*/spec.md` file paths
-- Suggest `/speckit.analyze` if spec-related findings exceed 3
+- When specification issues found → suggest `/speckit.specify` or `/speckit.clarify`
+- When architecture gaps found → suggest `/speckit.plan`
+- When cross-artifact inconsistencies exceed 3 → suggest `/speckit.analyze`
+- When no constitution exists → suggest `/speckit.constitution` as first step
 
 ## Context
 

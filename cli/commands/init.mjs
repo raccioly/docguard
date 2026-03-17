@@ -1,14 +1,21 @@
 /**
  * Init Command — Initialize CDD documentation from templates
- * Interactive setup: asks which docs the user needs + suggests hooks.
+ *
+ * Extension-First: When `specify` CLI is available, DocGuard delegates
+ * LLM/IDE detection and spec-kit skill installation to spec-kit.
+ * DocGuard then layers CDD-specific docs on top.
+ *
+ * Fallback: When `specify` is not available, DocGuard runs standalone
+ * with a warning suggesting spec-kit installation.
  */
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createInterface } from 'node:readline';
+import { execSync } from 'node:child_process';
 import { c, PROFILES } from '../shared.mjs';
-import { ensureSkills } from '../ensure-skills.mjs';
+import { ensureSkills, detectAgentMode, detectAIAgent, isSpecKitAvailable, isSpecKitInitialized, getDetectedAgent } from '../ensure-skills.mjs';
 
 function detectProjectType(dir) {
   const pkgPath = resolve(dir, 'package.json');
@@ -189,61 +196,57 @@ export async function runInit(projectDir, config, flags) {
     console.log(`  ${c.yellow}⏭️${c.reset}  .docguard.json ${c.dim}(already exists)${c.reset}`);
   }
 
-  // ── Slash commands for AI agents ───────────────────────────────────────
-  const commandsSourceDir = resolve(TEMPLATES_DIR, 'commands');
-  if (existsSync(commandsSourceDir)) {
-    const commandFiles = readdirSync(commandsSourceDir).filter(f => f.endsWith('.md'));
+  // ── Spec-Kit Integration (Extension-First) ────────────────────────────
+  // Delegate LLM/IDE detection and spec-kit skill install to `specify init`
+  const specKitAvailable = isSpecKitAvailable();
+  const specKitInitialized = isSpecKitInitialized(projectDir);
 
-    const agentDirs = [
-      { name: 'GitHub Copilot', path: '.github/commands' },
-      { name: 'Cursor', path: '.cursor/rules' },
-      { name: 'Google Gemini', path: '.gemini/commands' },
-      { name: 'Claude Code', path: '.claude/commands' },
-      { name: 'Antigravity', path: '.agents/workflows' },
-    ];
+  if (specKitAvailable && !specKitInitialized) {
+    console.log(`\n  ${c.bold}🌱 Spec Kit Integration${c.reset}`);
 
-    const detected = agentDirs.filter(a =>
-      existsSync(resolve(projectDir, a.path.split('/')[0]))
-    );
+    // Detect which AI agent is in use (matches spec-kit's --ai flag)
+    const detectedAgent = detectAIAgent(projectDir);
+    const aiFlag = detectedAgent
+      ? `--ai ${detectedAgent}`
+      : '--ai generic --ai-commands-dir .agent/commands/';
 
-    const targets = detected.length > 0
-      ? detected
-      : [{ name: 'GitHub (default)', path: '.github/commands' }];
-
-    let totalCreated = 0;
-    const installedLocations = [];
-
-    for (const target of targets) {
-      const destDir = resolve(projectDir, target.path);
-      if (!existsSync(destDir)) {
-        mkdirSync(destDir, { recursive: true });
-      }
-
-      let dirCreated = 0;
-      for (const file of commandFiles) {
-        const destPath = resolve(destDir, file);
-        if (!existsSync(destPath)) {
-          const content = readFileSync(resolve(commandsSourceDir, file), 'utf-8');
-          writeFileSync(destPath, content, 'utf-8');
-          dirCreated++;
-        }
-      }
-
-      if (dirCreated > 0) {
-        totalCreated += dirCreated;
-        installedLocations.push(`${target.path}/ (${target.name})`);
-      }
+    console.log(`  ${c.dim}Running specify init (agent: ${detectedAgent || 'generic'})...${c.reset}`);
+    try {
+      const scriptFlag = process.platform === 'win32' ? '--script ps' : '--script sh';
+      execSync(
+        `specify init --here --force ${aiFlag} --ai-skills --ignore-agent-tools --no-git ${scriptFlag}`,
+        { cwd: projectDir, encoding: 'utf-8', stdio: 'pipe', timeout: 30000 }
+      );
+      console.log(`  ${c.green}✅${c.reset} Spec Kit initialized ${c.dim}(.specify/, spec-kit skills, agent: ${detectedAgent || 'generic'})${c.reset}`);
+      created.push('.specify/ (spec-kit foundation)');
+    } catch (err) {
+      console.log(`  ${c.yellow}⚠️${c.reset}  Spec Kit init had issues ${c.dim}(continuing with DocGuard standalone)${c.reset}`);
+      if (flags.debug) console.log(`     ${c.dim}${err.message}${c.reset}`);
     }
-
-    if (totalCreated > 0) {
-      created.push(`slash commands (${installedLocations.length} location(s))`);
-      console.log(`  ${c.green}✅${c.reset} Installed ${c.cyan}slash commands${c.reset} for AI agents:`);
-      for (const loc of installedLocations) {
-        console.log(`     ${c.dim}→ ${loc}${c.reset}`);
-      }
-    } else {
-      console.log(`  ${c.yellow}⏭️${c.reset}  Slash commands ${c.dim}(already installed)${c.reset}`);
-    }
+  } else if (specKitInitialized) {
+    const agent = getDetectedAgent(projectDir);
+    console.log(`\n  ${c.green}✅${c.reset} Spec Kit already initialized${agent ? ` ${c.dim}(agent: ${agent})${c.reset}` : ''}`);
+  } else {
+    console.log(`\n  ${c.red}┌─────────────────────────────────────────────────────────────┐${c.reset}`);
+    console.log(`  ${c.red}│${c.reset}  ${c.bold}⚠️  Spec Kit not installed — running in standalone mode${c.reset}     ${c.red}│${c.reset}`);
+    console.log(`  ${c.red}│${c.reset}                                                              ${c.red}│${c.reset}`);
+    console.log(`  ${c.red}│${c.reset}  DocGuard is designed as a Spec Kit extension.               ${c.red}│${c.reset}`);
+    console.log(`  ${c.red}│${c.reset}  Without Spec Kit, you get ${c.bold}4 skills${c.reset}. With it: ${c.bold}13 skills${c.reset}.    ${c.red}│${c.reset}`);
+    console.log(`  ${c.red}│${c.reset}                                                              ${c.red}│${c.reset}`);
+    console.log(`  ${c.red}│${c.reset}  ${c.bold}What you're missing:${c.reset}                                       ${c.red}│${c.reset}`);
+    console.log(`  ${c.red}│${c.reset}   • 9 Spec Kit AI skills (specify, plan, tasks, implement)  ${c.red}│${c.reset}`);
+    console.log(`  ${c.red}│${c.reset}   • Project constitution (${c.cyan}constitution.md${c.reset})                 ${c.red}│${c.reset}`);
+    console.log(`  ${c.red}│${c.reset}   • Full SDD + CDD integrated workflow                     ${c.red}│${c.reset}`);
+    console.log(`  ${c.red}│${c.reset}   • AI agent auto-detection and config                     ${c.red}│${c.reset}`);
+    console.log(`  ${c.red}│${c.reset}                                                              ${c.red}│${c.reset}`);
+    console.log(`  ${c.red}│${c.reset}  ${c.bold}Install with:${c.reset}                                              ${c.red}│${c.reset}`);
+    console.log(`  ${c.red}│${c.reset}  ${c.cyan}uv tool install specify-cli \\${c.reset}                              ${c.red}│${c.reset}`);
+    console.log(`  ${c.red}│${c.reset}  ${c.cyan}  --from git+https://github.com/github/spec-kit.git${c.reset}       ${c.red}│${c.reset}`);
+    console.log(`  ${c.red}│${c.reset}                                                              ${c.red}│${c.reset}`);
+    console.log(`  ${c.red}│${c.reset}  ${c.dim}Alternative: ${c.cyan}pip install specify-cli${c.reset}                       ${c.red}│${c.reset}`);
+    console.log(`  ${c.red}│${c.reset}                                                              ${c.red}│${c.reset}`);
+    console.log(`  ${c.red}│${c.reset}  ${c.dim}Then re-run: ${c.cyan}docguard init${c.reset}                                 ${c.red}│${c.reset}`);
+    console.log(`  ${c.red}└─────────────────────────────────────────────────────────────┘${c.reset}`);
   }
 
   // ── Summary ────────────────────────────────────────────────────────────
@@ -258,35 +261,53 @@ export async function runInit(projectDir, config, flags) {
   console.log(`  ${c.dim}Auto-guard on commit:${c.reset}  ${c.cyan}docguard hooks --type pre-commit${c.reset}`);
   console.log(`  ${c.dim}Auto-guard on push:${c.reset}   ${c.cyan}docguard hooks --type pre-push${c.reset}`);
 
-  // ── Next steps ─────────────────────────────────────────────────────────
+  // ── Next Steps (LLM-First) ─────────────────────────────────────────────
+  const agentMode = detectAgentMode(projectDir);
   const createdDocs = created.filter(f => f.startsWith('docs-canonical/'));
 
   if (createdDocs.length > 0) {
-    console.log(`\n  ${c.bold}🤖 AI Auto-Populate${c.reset}`);
+    console.log(`\n  ${c.bold}🤖 Next Steps${c.reset} ${c.dim}(${agentMode === 'llm' ? 'LLM mode' : 'CLI mode'})${c.reset}`);
     console.log(`  ${c.dim}The files above are skeleton templates. Your AI agent should fill them.${c.reset}`);
-    console.log(`  ${c.dim}Run this single command to get a full remediation plan:${c.reset}\n`);
-    console.log(`  ${c.cyan}${c.bold}docguard diagnose${c.reset}\n`);
-    console.log(`  ${c.dim}Or generate prompts for individual docs:${c.reset}`);
 
-    const docNameMap = {
-      'docs-canonical/ARCHITECTURE.md': 'architecture',
-      'docs-canonical/DATA-MODEL.md': 'data-model',
-      'docs-canonical/SECURITY.md': 'security',
-      'docs-canonical/TEST-SPEC.md': 'test-spec',
-      'docs-canonical/ENVIRONMENT.md': 'environment',
-    };
-
-    for (const doc of createdDocs) {
-      const target = docNameMap[doc];
-      if (target) {
-        console.log(`  ${c.cyan}docguard fix --doc ${target}${c.reset}`);
+    if (agentMode === 'llm') {
+      // LLM-first: show skill commands
+      console.log(`\n  ${c.bold}Use these skills in your AI agent:${c.reset}`);
+      if (isSpecKitInitialized(projectDir)) {
+        console.log(`  ${c.cyan}1. /speckit.constitution${c.reset} ${c.dim}← establish project principles${c.reset}`);
       }
+      console.log(`  ${c.cyan}${isSpecKitInitialized(projectDir) ? '2' : '1'}. /docguard.guard${c.reset}    ${c.dim}← validate documentation${c.reset}`);
+
+      const docNameMap = {
+        'docs-canonical/ARCHITECTURE.md': 'architecture',
+        'docs-canonical/DATA-MODEL.md': 'data-model',
+        'docs-canonical/SECURITY.md': 'security',
+        'docs-canonical/TEST-SPEC.md': 'test-spec',
+        'docs-canonical/ENVIRONMENT.md': 'environment',
+      };
+
+      const fixTargets = createdDocs.map(d => docNameMap[d]).filter(Boolean);
+      if (fixTargets.length > 0) {
+        console.log(`\n  ${c.dim}Fix individual docs with the docguard-fix skill:${c.reset}`);
+        for (const target of fixTargets) {
+          console.log(`  ${c.cyan}/docguard.fix --doc ${target}${c.reset}`);
+        }
+      }
+      console.log(`\n  ${c.dim}Then verify:${c.reset} ${c.cyan}/docguard.guard${c.reset}`);
+    } else {
+      // CLI fallback
+      console.log(`\n  ${c.dim}Get a full remediation plan:${c.reset}`);
+      console.log(`  ${c.cyan}${c.bold}docguard diagnose${c.reset}\n`);
+      console.log(`  ${c.dim}Then verify:${c.reset} ${c.cyan}docguard guard${c.reset}`);
     }
-    console.log(`\n  ${c.dim}Then verify:${c.reset} ${c.cyan}docguard guard${c.reset}\n`);
+    console.log('');
   } else {
-    console.log(`\n  ${c.dim}Run${c.reset} ${c.cyan}docguard diagnose${c.reset} ${c.dim}to check for issues.${c.reset}\n`);
+    if (agentMode === 'llm') {
+      console.log(`\n  ${c.dim}Use${c.reset} ${c.cyan}/docguard.guard${c.reset} ${c.dim}in your AI agent to check for issues.${c.reset}\n`);
+    } else {
+      console.log(`\n  ${c.dim}Run${c.reset} ${c.cyan}docguard diagnose${c.reset} ${c.dim}to check for issues.${c.reset}\n`);
+    }
   }
 
-  // Auto-install skills and commands
+  // Auto-install DocGuard skills and commands (spec-kit skills handled by specify init)
   ensureSkills(projectDir, flags);
 }

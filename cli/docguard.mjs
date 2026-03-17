@@ -3,13 +3,13 @@
 /**
  * DocGuard CLI — The enforcement tool for Canonical-Driven Development (CDD)
  * 
- * Zero dependencies. Pure Node.js.
+ * Zero NPM runtime dependencies. Pure Node.js.
  * 
  * Usage:
- *   npx docguard audit     — Scan project, report what docs exist/missing
- *   npx docguard init      — Initialize CDD docs from templates
- *   npx docguard guard     — Validate project against its canonical docs
- *   npx docguard --help    — Show help
+ *   npx docguard-cli audit     — Scan project, report what docs exist/missing
+ *   npx docguard-cli init      — Initialize CDD docs from templates
+ *   npx docguard-cli guard     — Validate project against its canonical docs
+ *   npx docguard-cli --help    — Show help
  * 
  * @see https://github.com/raccioly/docguard
  */
