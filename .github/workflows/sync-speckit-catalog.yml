@@ -90,14 +90,14 @@ jobs:
             const fs = require('fs');
             const catalog = JSON.parse(fs.readFileSync('extensions/catalog.community.json', 'utf-8'));
 
-            if (!catalog.docguard) {
-              console.error('❌ DocGuard entry not found in catalog.community.json');
+            if (!catalog.extensions || !catalog.extensions.docguard) {
+              console.error('❌ DocGuard entry not found in catalog.extensions');
               process.exit(1);
             }
 
-            catalog.docguard.version = '$VERSION';
-            catalog.docguard.download_url = '$DOWNLOAD_URL';
-            catalog.docguard.updated_at = '$UPDATED_AT';
+            catalog.extensions.docguard.version = '$VERSION';
+            catalog.extensions.docguard.download_url = '$DOWNLOAD_URL';
+            catalog.extensions.docguard.updated_at = '$UPDATED_AT';
 
             fs.writeFileSync(
               'extensions/catalog.community.json',
