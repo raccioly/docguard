@@ -68,6 +68,8 @@ jobs:
       tag: v${{ needs.detect-version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch all history + tags for reliable tag detection
 
       - name: Create and push tag
         env:
@@ -76,17 +78,16 @@ jobs:
           VERSION="${{ needs.detect-version.outputs.version }}"
           TAG="v${VERSION}"
 
-          # Check if tag already exists
-          if git rev-parse "$TAG" >/dev/null 2>&1; then
-            echo "Tag $TAG already exists, skipping"
-            exit 0
+          # Check if tag already exists on remote (not just local)
+          if git ls-remote --tags origin | grep -q "refs/tags/$TAG$"; then
+            echo "✅ Tag $TAG already exists on remote, skipping tag creation"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git tag -a "$TAG" -m "Release $TAG"
+            git push origin "$TAG"
+            echo "✅ Tag $TAG created and pushed"
           fi
-
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -a "$TAG" -m "Release $TAG"
-          git push origin "$TAG"
-          echo "✅ Tag $TAG created and pushed"
 
       - name: Generate release notes from CHANGELOG
         id: notes
@@ -108,10 +109,15 @@ jobs:
         run: |
           VERSION="${{ needs.detect-version.outputs.version }}"
           TAG="v${VERSION}"
-          gh release create "$TAG" \
-            --title "DocGuard $TAG" \
-            --notes-file /tmp/release-notes.md \
-            --latest
+          # Skip if release already exists (e.g., manually created)
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "✅ Release $TAG already exists, skipping"
+          else
+            gh release create "$TAG" \
+              --title "DocGuard $TAG" \
+              --notes-file /tmp/release-notes.md \
+              --latest
+          fi
 
   # ── Step 4: Build and attach spec-kit extension ZIP ────────────────────
   build-extension:
