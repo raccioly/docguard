@@ -11,7 +11,7 @@
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, extname, basename, relative } from 'node:path';
-import { shouldIgnore, buildIgnoreFilter } from '../shared-ignore.mjs';
+import { shouldIgnore, globMatch } from '../shared-ignore.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build',
@@ -139,7 +139,7 @@ function diffEnvVars(dir) {
  * Diff test files between TEST-SPEC.md and actual code.
  * Uses config.testPatterns if available, otherwise falls back to
  * scanning standard test directories.
- * Always ignores node_modules via shared ignore filter.
+ * Always ignores node_modules via globMatch().
  */
 function diffTests(dir, config) {
   const testSpecPath = resolve(dir, 'docs-canonical/TEST-SPEC.md');
@@ -153,17 +153,12 @@ function diffTests(dir, config) {
     docTests.add(match[1]);
   }
 
+  // Collect test files from disk using globMatch (always excludes node_modules)
   const codeTests = new Set();
-
-  // Use testPatterns from config if available
   const testPatterns = config?.testPatterns || [];
+
   if (testPatterns.length > 0) {
-    // Use configured patterns to find test files
-    const patternFilter = buildIgnoreFilter(testPatterns.map(p => {
-      // Invert the pattern: we WANT files matching these patterns
-      return p;
-    }));
-    // Walk the project and collect matching test files
+    // Use configured patterns — globMatch handles node_modules exclusion
     const allTestFiles = getTestFilesFromPatterns(dir, testPatterns, config);
     for (const f of allTestFiles) {
       codeTests.add(f);
@@ -192,17 +187,18 @@ function diffTests(dir, config) {
 
 /**
  * Find test files matching configured testPatterns.
- * Walks the project tree, skipping node_modules and ignored dirs.
+ * Uses globMatch() for pattern matching — always excludes node_modules.
+ * Results are deduplicated via Set (handles overlapping patterns).
  */
 function getTestFilesFromPatterns(dir, patterns, config) {
-  const results = [];
-  const testFileRegex = /\.(test|spec)\.(mjs|cjs|[jt]sx?)$/;
+  const results = new Set();
 
   function walk(currentDir) {
     let entries;
     try { entries = readdirSync(currentDir); } catch { return; }
 
     for (const entry of entries) {
+      // Skip node_modules and other ignored dirs at directory level (fast path)
       if (IGNORE_DIRS.has(entry) || entry.startsWith('.')) continue;
       const fullPath = join(currentDir, entry);
       try {
@@ -211,15 +207,11 @@ function getTestFilesFromPatterns(dir, patterns, config) {
           walk(fullPath);
         } else if (stat.isFile()) {
           const relPath = relative(dir, fullPath);
-          // Skip files in ignored paths
+          // Skip files in globally ignored paths
           if (config && shouldIgnore(relPath, config)) continue;
-          // Check if it matches test file naming patterns
-          if (testFileRegex.test(entry) || /__(tests|test)__/.test(relPath)) {
-            // Check if it matches any of the configured test patterns
-            const patternFilter = buildIgnoreFilter(patterns);
-            if (patternFilter(relPath)) {
-              results.push(relPath);
-            }
+          // Use globMatch for positive pattern matching (rejects node_modules internally)
+          if (globMatch(relPath, patterns)) {
+            results.add(relPath);
           }
         }
       } catch { /* skip */ }
@@ -227,7 +219,7 @@ function getTestFilesFromPatterns(dir, patterns, config) {
   }
 
   walk(dir);
-  return results;
+  return [...results];
 }
 
 function getFilesRecursive(dir, config) {

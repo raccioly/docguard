@@ -74,3 +74,46 @@ export function shouldIgnore(relPath, config, validatorKey) {
 
   return false;
 }
+
+/**
+ * Convert a glob pattern to a RegExp for POSITIVE matching.
+ * Unlike globToRegex (used for ignore filtering), this anchors the match
+ * to the full relative path from the project root.
+ *
+ * Supports: * (any chars except /), ** (any path segments), . (literal dot).
+ *
+ * @param {string} pattern - Glob pattern (e.g., "backend/**\/__tests__/**\/*.test.ts")
+ * @returns {RegExp}
+ */
+function globToMatchRegex(pattern) {
+  // Normalize: replace **/ with a placeholder that means "zero or more path segments"
+  let escaped = pattern
+    .replace(/\./g, '\\.')
+    .replace(/\*\*\//g, '§STARSTAR§')   // **/ → zero-or-more segments
+    .replace(/\*\*/g, '.*')             // standalone ** → any chars
+    .replace(/\*/g, '[^/]*')            // single * → any chars except /
+    .replace(/§STARSTAR§/g, '(.*/)?');  // **/ → optional path prefix
+  return new RegExp(`^${escaped}$`);
+}
+
+/**
+ * Check if a relative path matches ANY of the given glob patterns.
+ * Purpose-built for POSITIVE matching (e.g., "is this a test file?").
+ *
+ * ALWAYS rejects paths containing node_modules at any depth.
+ * This is the correct function for test file discovery — do NOT use
+ * buildIgnoreFilter() for this purpose.
+ *
+ * @param {string} relPath - Relative path from project root
+ * @param {string[]} patterns - Array of glob patterns to match against
+ * @returns {boolean} - true if path matches a pattern AND is not in node_modules
+ */
+export function globMatch(relPath, patterns) {
+  if (!relPath || !patterns || patterns.length === 0) return false;
+
+  // Always reject paths containing node_modules at any depth
+  if (/(?:^|[/\\])node_modules(?:[/\\]|$)/.test(relPath)) return false;
+
+  const regexes = patterns.map(p => globToMatchRegex(p));
+  return regexes.some(r => r.test(relPath));
+}

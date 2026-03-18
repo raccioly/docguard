@@ -498,3 +498,98 @@ describe('testPatterns config', () => {
       `Testing score should be >= 85 (got ${json.categories.testing.score})`);
   });
 });
+
+describe('globMatch — positive pattern matching with node_modules exclusion', () => {
+  // Import globMatch dynamically
+  let globMatch;
+
+  it('loads globMatch from shared-ignore.mjs', async () => {
+    const mod = await import(join(__dirname, '..', 'cli', 'shared-ignore.mjs'));
+    globMatch = mod.globMatch;
+    assert.ok(typeof globMatch === 'function', 'globMatch should be a function');
+  });
+
+  it('rejects paths containing node_modules at root', async () => {
+    if (!globMatch) {
+      const mod = await import(join(__dirname, '..', 'cli', 'shared-ignore.mjs'));
+      globMatch = mod.globMatch;
+    }
+    const patterns = ['**/__tests__/**/*.test.ts'];
+    assert.equal(globMatch('node_modules/zod/__tests__/foo.test.ts', patterns), false,
+      'Should reject root-level node_modules');
+  });
+
+  it('rejects paths containing node_modules at any depth', async () => {
+    if (!globMatch) {
+      const mod = await import(join(__dirname, '..', 'cli', 'shared-ignore.mjs'));
+      globMatch = mod.globMatch;
+    }
+    const patterns = ['backend/**/__tests__/**/*.test.ts'];
+    assert.equal(globMatch('backend/node_modules/zod/__tests__/string.test.ts', patterns), false,
+      'Should reject nested node_modules');
+    assert.equal(globMatch('packages/foo/node_modules/bar/__tests__/baz.test.ts', patterns), false,
+      'Should reject deeply nested node_modules');
+  });
+
+  it('matches valid test paths', async () => {
+    if (!globMatch) {
+      const mod = await import(join(__dirname, '..', 'cli', 'shared-ignore.mjs'));
+      globMatch = mod.globMatch;
+    }
+    const patterns = ['backend/**/__tests__/**/*.test.ts'];
+    assert.equal(globMatch('backend/src/__tests__/auth.test.ts', patterns), true,
+      'Should match valid test file');
+    assert.equal(globMatch('backend/src/controllers/__tests__/admin.test.ts', patterns), true,
+      'Should match deeply nested test file');
+  });
+
+  it('handles multiple patterns', async () => {
+    if (!globMatch) {
+      const mod = await import(join(__dirname, '..', 'cli', 'shared-ignore.mjs'));
+      globMatch = mod.globMatch;
+    }
+    const patterns = [
+      'backend/**/__tests__/**/*.test.ts',
+      'e2e/**/*.spec.ts',
+    ];
+    assert.equal(globMatch('backend/src/__tests__/auth.test.ts', patterns), true,
+      'Should match first pattern');
+    assert.equal(globMatch('e2e/login.spec.ts', patterns), true,
+      'Should match second pattern');
+    assert.equal(globMatch('frontend/src/app.ts', patterns), false,
+      'Should not match unrelated file');
+  });
+});
+
+describe('CI detection expansion', () => {
+  it('score detects buildspec.yml as CI config', () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), 'docguard-ci-'));
+    try {
+      // Create minimal project structure
+      writeFileSync(join(tmpDir, 'package.json'), JSON.stringify({
+        name: 'test-ci', version: '1.0.0',
+        scripts: { test: 'vitest' },
+      }));
+      mkdirSync(join(tmpDir, 'docs-canonical'), { recursive: true });
+      writeFileSync(join(tmpDir, 'docs-canonical/TEST-SPEC.md'), '# Test Spec\n');
+      writeFileSync(join(tmpDir, 'buildspec.yml'), 'version: 0.2\nphases:\n  build:\n    commands:\n      - npm test\n');
+      mkdirSync(join(tmpDir, 'tests'), { recursive: true });
+      writeFileSync(join(tmpDir, 'tests/sample.test.js'), 'test("ok", () => {});\n');
+      writeFileSync(join(tmpDir, 'vitest.config.ts'), 'export default {};\n');
+
+      const output = execSync(`node "${CLI}" score --format json`, {
+        cwd: tmpDir, encoding: 'utf-8', timeout: 15000,
+      });
+      const jsonStart = output.indexOf('{');
+      if (jsonStart >= 0) {
+        const json = JSON.parse(output.slice(jsonStart));
+        // With buildspec.yml, the testing CI check should award full 15 points
+        // testing score: tests exist (40) + TEST-SPEC.md (30) + vitest config (15) + CI (15) = 100
+        assert.ok(json.categories.testing.score >= 85,
+          `Testing score with buildspec.yml should be >= 85 (got ${json.categories.testing.score})`);
+      }
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+});

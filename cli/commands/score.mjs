@@ -494,8 +494,30 @@ function calcTestingScore(dir, config) {
   }
 
   // ── Check 4: CI test step (15 pts) ──
-  const ciFiles = ['.github/workflows/ci.yml', '.github/workflows/test.yml'];
-  const hasCITest = ciFiles.some(f => existsSync(resolve(dir, f)));
+  // Support multiple CI systems — not just GitHub Actions
+  const ciFiles = [
+    '.github/workflows/ci.yml', '.github/workflows/test.yml',
+    '.github/workflows/ci.yaml', '.github/workflows/test.yaml',
+    'buildspec.yml', 'buildspec.test.yml',     // AWS CodeBuild
+    'amplify.yml',                              // AWS Amplify
+    'Jenkinsfile',                              // Jenkins
+    '.circleci/config.yml',                     // CircleCI
+    '.gitlab-ci.yml',                           // GitLab CI
+    '.travis.yml',                              // Travis CI
+  ];
+  let hasCITest = ciFiles.some(f => existsSync(resolve(dir, f)));
+
+  // Also check turbo.json for "test" pipeline task
+  if (!hasCITest) {
+    const turboPath = resolve(dir, 'turbo.json');
+    if (existsSync(turboPath)) {
+      try {
+        const turboContent = readFileSync(turboPath, 'utf-8');
+        if (/"test"/.test(turboContent)) hasCITest = true;
+      } catch { /* skip */ }
+    }
+  }
+
   if (hasCITest) score += 15;
 
   return Math.min(100, score);

@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.11] - 2026-03-18
+
+### Added
+- **`globMatch()` in `shared-ignore.mjs`** — Purpose-built positive file matching with hardcoded `node_modules` exclusion at any depth. Distinct from `buildIgnoreFilter()` (which is for ignore/skip filtering).
+- **6 new tests** — `globMatch` node_modules rejection (2), valid path matching (1), multi-pattern (1), CI detection (1), function load (1). Total tests: 46.
+
+### Fixed
+- **Docs-Diff no longer scans `node_modules` for test files** — `getTestFilesFromPatterns()` now uses `globMatch()` instead of repurposing `buildIgnoreFilter()`. The `**` glob no longer matches through `node_modules/` directories.
+- **CI detection supports enterprise systems** — `calcTestingScore()` now recognizes `buildspec.yml`, `amplify.yml`, `Jenkinsfile`, `.circleci/config.yml`, `.gitlab-ci.yml`, `.travis.yml`, and `turbo.json` with a `"test"` task.
+- **Multi-pattern test resolution works correctly** — `testPatterns` array resolves files from all patterns with proper deduplication via Set.
+
 ## [0.9.10] - 2026-03-18
 
 ### Added — Unified Ignore System & Scorer Alignment
