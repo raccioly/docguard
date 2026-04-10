@@ -535,7 +535,7 @@ function generateArchitecture(dir, config, stack, scan, flags, docTools) {
 ## 1. Introduction & Goals
 <!-- arc42: §1 — Introduction and Goals -->
 
-<!-- TODO: Describe what this system does, who it's for, and key quality goals -->
+<!-- TBD: Describe what this system does, who it's for, and key quality goals -->
 ${config.projectName} is a ${stack.framework || stack.language || 'software'} application.
 
 ### Quality Goals
@@ -611,8 +611,8 @@ See \\\`docs-canonical/DEPLOYMENT.md\\\` for details.
 | Environment | Infrastructure | URL |
 |-------------|---------------|-----|
 | Development | localhost | http://localhost:3000 |
-| Staging | ${stack.hosting || 'TBD'} | <!-- TODO --> |
-| Production | ${stack.hosting || 'TBD'} | <!-- TODO --> |
+| Staging | ${stack.hosting || 'TBD'} | <!-- TBD --> |
+| Production | ${stack.hosting || 'TBD'} | <!-- TBD --> |
 
 ## 8. Crosscutting Concepts
 <!-- arc42: §8 — Crosscutting Concepts -->
@@ -715,7 +715,7 @@ ${r.description ? `- **Description:** ${r.description}` : ''}
 
 | Parameter | In | Type | Required | Description |
 |-----------|-----|------|:--------:|-------------|
-| <!-- TODO --> | | | | |
+| <!-- TBD --> | | | | |
 
 | Status | Response |
 |--------|----------|
@@ -742,7 +742,7 @@ ${routeDetails}`;
 |----------|-------|
 | **Status** | ![Status](https://img.shields.io/badge/status-draft-yellow) |
 | **Base URL** | \`http://localhost:3000\` |
-| **Auth** | <!-- TODO: Describe auth mechanism --> |
+| **Auth** | <!-- TBD: Describe auth mechanism --> |
 | **Total Endpoints** | ${deepRoutes.length} |
 | **Source** | ${deepRoutes[0]?.source || 'code scan'} |
 
@@ -826,7 +826,7 @@ function generateDataModel(dir, config, stack, scan, flags, deepSchemas) {
 
 | Field | Type | Required | Default | Constraints | Description |
 |-------|------|----------|---------|-------------|-------------|
-| <!-- TODO: Fill in fields --> | | | | | |
+| <!-- TBD: Fill in fields --> | | | | | |
 `;
       }
       const fieldRows = e.fields.map(f =>
@@ -913,7 +913,7 @@ ${erDiagram}
 
 | Table | Index Name | Fields | Type | Purpose |
 |-------|-----------|--------|------|---------|
-| <!-- TODO: Document indexes --> | | | | |
+| <!-- TBD: Document indexes --> | | | | |
 
 ---
 
@@ -1046,9 +1046,9 @@ function generateTestSpec(dir, config, stack, scan, flags) {
 
 | Metric | Target | Current |
 |--------|:------:|:-------:|
-| Line Coverage | 80% | <!-- TODO --> |
-| Branch Coverage | 70% | <!-- TODO --> |
-| Function Coverage | 80% | <!-- TODO --> |
+| Line Coverage | 80% | <!-- TBD --> |
+| Branch Coverage | 70% | <!-- TBD --> |
+| Function Coverage | 80% | <!-- TBD --> |
 
 ## Service-to-Test Map
 
@@ -1103,7 +1103,7 @@ function generateSecurity(dir, config, stack, scan, flags) {
 
 | Method | Provider | Token Type | Expiry |
 |--------|---------|-----------|--------|
-| ${stack.auth || '<!-- TODO -->'} | | | |
+| ${stack.auth || '<!-- TBD -->'} | | | |
 
 ## Authorization
 
@@ -1117,8 +1117,8 @@ function generateSecurity(dir, config, stack, scan, flags) {
 | Secret | Storage | Rotation | Access |
 |--------|---------|----------|--------|
 ${scan.envVars.filter(v => isSecretVar(v.name)).map(v =>
-  `| \`${v.name}\` | Environment Variable | <!-- TODO --> | Application |`
-).join('\n') || '| <!-- TODO --> | | | |'}
+  `| \`${v.name}\` | Environment Variable | <!-- TBD --> | Application |`
+).join('\n') || '| <!-- TBD --> | | | |'}
 
 ## Security Rules
 
