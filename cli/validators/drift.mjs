@@ -4,6 +4,7 @@
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, extname } from 'node:path';
+import { c } from '../shared.mjs';
 
 const CODE_EXTENSIONS = new Set([
   '.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx',
@@ -94,8 +95,8 @@ function walkDir(dir, callback) {
       } else if (stat.isFile()) {
         callback(fullPath);
       }
-    } catch {
-      // Skip files we can't read
+    } catch (e) {
+      console.error(`${c.yellow}⚠ Warning: Could not read ${fullPath} during drift validation: ${e.message}${c.reset}`);
     }
   }
 }
