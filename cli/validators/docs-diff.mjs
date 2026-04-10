@@ -190,7 +190,7 @@ function diffTests(dir, config) {
  * Uses globMatch() for pattern matching — always excludes node_modules.
  * Results are deduplicated via Set (handles overlapping patterns).
  */
-function getTestFilesFromPatterns(dir, patterns, config) {
+export function getTestFilesFromPatterns(dir, patterns, config) {
   const results = new Set();
 
   function walk(currentDir) {
