@@ -6,6 +6,7 @@
  */
 
 import { existsSync, readFileSync, writeFileSync, readdirSync, statSync, mkdirSync, copyFileSync } from 'node:fs';
+import { readFile, readdir, stat } from 'node:fs/promises';
 import { resolve, join, extname, basename, relative, dirname } from 'node:path';
 import { c } from '../shared.mjs';
 import { detectDocTools } from '../scanners/doc-tools.mjs';
@@ -111,13 +112,13 @@ function appendStandardsCitation(content, docName) {
   return content.trimEnd() + '\n' + footer;
 }
 
-export function runGenerate(projectDir, config, flags) {
+export async function runGenerate(projectDir, config, flags) {
   console.log(`${c.bold}🔮 DocGuard Generate — ${config.projectName}${c.reset}`);
   console.log(`${c.dim}   Directory: ${projectDir}${c.reset}`);
   console.log(`${c.dim}   Scanning codebase to generate canonical documentation...${c.reset}\n`);
 
   // ── 1. Detect Framework/Stack ──
-  const stack = detectStack(projectDir);
+  const stack = await detectStack(projectDir);
   console.log(`  ${c.bold}Detected Stack:${c.reset}`);
   for (const [category, tech] of Object.entries(stack)) {
     if (tech) console.log(`    ${c.cyan}${category}:${c.reset} ${tech}`);
@@ -125,7 +126,7 @@ export function runGenerate(projectDir, config, flags) {
   console.log('');
 
   // ── 2. Detect Existing Doc Tools ──
-  const docTools = detectDocTools(projectDir);
+  const docTools = await detectDocTools(projectDir);
   if (docTools._detected.length > 0) {
     console.log(`  ${c.bold}Detected Documentation Tools:${c.reset}`);
     for (const tool of docTools._detected) {
@@ -140,16 +141,16 @@ export function runGenerate(projectDir, config, flags) {
   }
 
   // ── 3. Scan Project Structure ──
-  const scan = scanProject(projectDir);
+  const scan = await scanProject(projectDir);
 
   // ── 4. Deep Scan Routes ──
-  const deepRoutes = scanRoutesDeep(projectDir, stack, docTools);
+  const deepRoutes = await scanRoutesDeep(projectDir, stack, docTools);
   if (deepRoutes.length > 0) {
     console.log(`  ${c.bold}Route Scanning:${c.reset} ${deepRoutes.length} endpoints found (source: ${deepRoutes[0]?.source || 'code'})`);
   }
 
   // ── 5. Deep Scan Schemas ──
-  const deepSchemas = scanSchemasDeep(projectDir, stack, docTools);
+  const deepSchemas = await scanSchemasDeep(projectDir, stack, docTools);
   if (deepSchemas.entities.length > 0) {
     console.log(`  ${c.bold}Schema Scanning:${c.reset} ${deepSchemas.entities.length} entities, ${deepSchemas.relationships.length} relationships (source: ${deepSchemas.source})`);
   }
@@ -222,7 +223,7 @@ export function runGenerate(projectDir, config, flags) {
 
 // ── Stack Detection ────────────────────────────────────────────────────────
 
-function detectStack(dir) {
+async function detectStack(dir) {
   const stack = {
     language: null,
     framework: null,
@@ -311,7 +312,7 @@ function detectStack(dir) {
 
 // ── Project Scanner ────────────────────────────────────────────────────────
 
-function scanProject(dir) {
+async function scanProject(dir) {
   const scan = {
     routes: [],
     models: [],
@@ -325,53 +326,53 @@ function scanProject(dir) {
   };
 
   // Find routes
-  ['src/app/api', 'src/routes', 'routes', 'api', 'src/api'].forEach(routeDir => {
+  await Promise.all(['src/app/api', 'src/routes', 'routes', 'api', 'src/api'].map(async (routeDir) => {
     const fullDir = resolve(dir, routeDir);
     if (existsSync(fullDir)) {
-      const files = getFilesRecursive(fullDir);
+      const files = await getFilesRecursive(fullDir);
       for (const f of files) {
         scan.routes.push(relative(dir, f));
       }
     }
-  });
+  }));
 
   // Find models/entities
-  ['src/models', 'models', 'src/entities', 'entities', 'src/schema', 'schema', 'prisma'].forEach(modelDir => {
+  await Promise.all(['src/models', 'models', 'src/entities', 'entities', 'src/schema', 'schema', 'prisma'].map(async (modelDir) => {
     const fullDir = resolve(dir, modelDir);
     if (existsSync(fullDir)) {
-      const files = getFilesRecursive(fullDir);
+      const files = await getFilesRecursive(fullDir);
       for (const f of files) {
         scan.models.push(relative(dir, f));
       }
     }
-  });
+  }));
 
   // Find services
-  ['src/services', 'services', 'src/lib', 'lib'].forEach(svcDir => {
+  await Promise.all(['src/services', 'services', 'src/lib', 'lib'].map(async (svcDir) => {
     const fullDir = resolve(dir, svcDir);
     if (existsSync(fullDir)) {
-      const files = getFilesRecursive(fullDir);
+      const files = await getFilesRecursive(fullDir);
       for (const f of files) {
         scan.services.push(relative(dir, f));
       }
     }
-  });
+  }));
 
   // Find tests — top-level test dirs
-  ['tests', 'test', '__tests__', 'spec', 'e2e'].forEach(testDir => {
+  await Promise.all(['tests', 'test', '__tests__', 'spec', 'e2e'].map(async (testDir) => {
     const fullDir = resolve(dir, testDir);
     if (existsSync(fullDir)) {
-      const files = getFilesRecursive(fullDir);
+      const files = await getFilesRecursive(fullDir);
       for (const f of files) {
         scan.tests.push(relative(dir, f));
       }
     }
-  });
+  }));
 
   // Find co-located tests: src/**/__tests__/ and src/**/*.test.* / src/**/*.spec.*
   const srcDir = resolve(dir, 'src');
   if (existsSync(srcDir)) {
-    walkDir(srcDir, (filePath) => {
+    await walkDir(srcDir, (filePath) => {
       const rel = relative(dir, filePath);
       const isTestDir = rel.includes('__tests__') || rel.includes('__test__');
       const isTestFile = /\.(test|spec)\.[^.]+$/.test(rel);
@@ -387,7 +388,7 @@ function scanProject(dir) {
     const cfgPath = resolve(dir, cfgFile);
     if (existsSync(cfgPath)) {
       try {
-        const cfgContent = readFileSync(cfgPath, 'utf-8');
+        const cfgContent = await readFile(cfgPath, 'utf-8');
         // Extract include patterns like: include: ['src/**/*.test.ts']
         const includeMatch = cfgContent.match(/include\s*:\s*\[([^\]]+)\]/);
         if (includeMatch) {
@@ -401,7 +402,7 @@ function scanProject(dir) {
               if (rootDir && rootDir !== '**' && rootDir !== '*') {
                 const fullDir = resolve(dir, rootDir);
                 if (existsSync(fullDir)) {
-                  walkDir(fullDir, (filePath) => {
+                  await walkDir(fullDir, (filePath) => {
                     const rel = relative(dir, filePath);
                     if (/\.(test|spec)\.[^.]+$/.test(rel) && !scan.tests.includes(rel)) {
                       scan.tests.push(rel);
@@ -418,26 +419,26 @@ function scanProject(dir) {
   }
 
   // Find components
-  ['src/components', 'components', 'src/ui'].forEach(compDir => {
+  await Promise.all(['src/components', 'components', 'src/ui'].map(async (compDir) => {
     const fullDir = resolve(dir, compDir);
     if (existsSync(fullDir)) {
-      const files = getFilesRecursive(fullDir);
+      const files = await getFilesRecursive(fullDir);
       for (const f of files) {
         scan.components.push(relative(dir, f));
       }
     }
-  });
+  }));
 
   // Find middleware
-  ['src/middleware', 'middleware', 'src/middlewares'].forEach(mwDir => {
+  await Promise.all(['src/middleware', 'middleware', 'src/middlewares'].map(async (mwDir) => {
     const fullDir = resolve(dir, mwDir);
     if (existsSync(fullDir)) {
-      const files = getFilesRecursive(fullDir);
+      const files = await getFilesRecursive(fullDir);
       for (const f of files) {
         scan.middlewares.push(relative(dir, f));
       }
     }
-  });
+  }));
 
   // Parse .env.example for env vars
   const envExample = resolve(dir, '.env.example');
@@ -453,7 +454,7 @@ function scanProject(dir) {
   }
 
   // Count files and lines
-  countFilesAndLines(dir, scan);
+  await countFilesAndLines(dir, scan);
 
   // ── Filter test files out of source lists ──
   // Test files (*.test.*, *.spec.*, __tests__/) should NOT appear as source files
@@ -467,11 +468,16 @@ function scanProject(dir) {
   return scan;
 }
 
-function countFilesAndLines(dir, scan) {
-  walkDir(dir, (filePath) => {
+async function countFilesAndLines(dir, scan) {
+  const filePaths = [];
+  await walkDir(dir, (filePath) => {
+    filePaths.push(filePath);
+  });
+
+  await asyncPool(50, filePaths, async (filePath) => {
     scan.totalFiles++;
     try {
-      const content = readFileSync(filePath, 'utf-8');
+      const content = await readFile(filePath, 'utf-8');
       scan.totalLines += content.split('\n').length;
     } catch { /* skip binary files */ }
   });
@@ -1303,6 +1309,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 // ── Utility Functions ──────────────────────────────────────────────────────
 
+/**
+ * Simple async pool to limit concurrency without external dependencies.
+ * @param {number} limit - Max concurrent operations
+ * @param {Array} array - Array of items to process
+ * @param {Function} iteratorFn - Async function to run for each item
+ */
+async function asyncPool(limit, array, iteratorFn) {
+  const ret = [];
+  const executing = new Set();
+  for (const item of array) {
+    const p = Promise.resolve().then(() => iteratorFn(item));
+    ret.push(p);
+    executing.add(p);
+    const clean = () => executing.delete(p);
+    p.then(clean).catch(clean);
+    if (executing.size >= limit) {
+      await Promise.race(executing);
+    }
+  }
+  return Promise.all(ret);
+}
+
 function categorizeEnvVar(name) {
   if (name.includes('SECRET') || name.includes('KEY') || name.includes('TOKEN') || name.includes('PASSWORD')) return '🔐 Secret';
   if (name.includes('DATABASE') || name.includes('DB_') || name.includes('REDIS')) return '🗃️ Database';
@@ -1316,38 +1344,39 @@ function isSecretVar(name) {
   return name.includes('SECRET') || name.includes('KEY') || name.includes('TOKEN') || name.includes('PASSWORD');
 }
 
-function walkDir(dir, callback) {
+async function walkDir(dir, callback) {
   if (!existsSync(dir)) return;
-  const entries = readdirSync(dir);
-  for (const entry of entries) {
-    if (IGNORE_DIRS.has(entry) || entry.startsWith('.')) continue;
+  const entries = await readdir(dir);
+  // Using a small concurrency limit for directory traversal to avoid EMFILE
+  await asyncPool(20, entries, async (entry) => {
+    if (IGNORE_DIRS.has(entry) || entry.startsWith('.')) return;
     const fullPath = join(dir, entry);
     try {
-      const stat = statSync(fullPath);
-      if (stat.isDirectory()) {
-        walkDir(fullPath, callback);
-      } else if (stat.isFile() && CODE_EXTENSIONS.has(extname(fullPath))) {
-        callback(fullPath);
+      const s = await stat(fullPath);
+      if (s.isDirectory()) {
+        await walkDir(fullPath, callback);
+      } else if (s.isFile() && CODE_EXTENSIONS.has(extname(fullPath))) {
+        await callback(fullPath);
       }
     } catch { /* skip */ }
-  }
+  });
 }
 
-function getFilesRecursive(dir) {
-  const results = [];
-  if (!existsSync(dir)) return results;
-  const entries = readdirSync(dir);
-  for (const entry of entries) {
-    if (IGNORE_DIRS.has(entry) || entry.startsWith('.')) continue;
+async function getFilesRecursive(dir) {
+  if (!existsSync(dir)) return [];
+  const entries = await readdir(dir);
+  const subResults = await asyncPool(20, entries, async (entry) => {
+    if (IGNORE_DIRS.has(entry) || entry.startsWith('.')) return [];
     const fullPath = join(dir, entry);
     try {
-      const stat = statSync(fullPath);
-      if (stat.isDirectory()) {
-        results.push(...getFilesRecursive(fullPath));
-      } else if (stat.isFile()) {
-        results.push(fullPath);
+      const s = await stat(fullPath);
+      if (s.isDirectory()) {
+        return await getFilesRecursive(fullPath);
+      } else if (s.isFile()) {
+        return [fullPath];
       }
     } catch { /* skip */ }
-  }
-  return results;
+    return [];
+  });
+  return [].concat(...subResults);
 }

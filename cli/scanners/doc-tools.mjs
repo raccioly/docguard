@@ -14,7 +14,7 @@ import { resolve, join } from 'node:path';
  * @param {string} dir - Project root directory
  * @returns {object} Detected tools with their config and extracted data
  */
-export function detectDocTools(dir) {
+export async function detectDocTools(dir) {
   const tools = {
     openapi: detectOpenAPI(dir),
     typedoc: detectTypeDoc(dir),

@@ -419,7 +419,7 @@ async function main() {
       break;
     case 'generate':
     case 'gen':
-      runGenerate(projectDir, config, flags);
+      await runGenerate(projectDir, config, flags);
       break;
     case 'hooks':
       runHooks(projectDir, config, flags);

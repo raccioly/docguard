@@ -21,7 +21,7 @@ const IGNORE_DIRS = new Set([
  * @param {object} docTools - Detected doc tools (may include OpenAPI)
  * @returns {Array} Array of route objects { method, path, handler, file, auth, description }
  */
-export function scanRoutesDeep(dir, stack, docTools) {
+export async function scanRoutesDeep(dir, stack, docTools) {
   // Priority 1: Use OpenAPI spec if available (most accurate)
   if (docTools?.openapi?.found && docTools.openapi.endpoints?.length > 0) {
     return docTools.openapi.endpoints.map(ep => ({

@@ -21,7 +21,7 @@ const IGNORE_DIRS = new Set([
  * @param {object} docTools - Detected doc tools (may include OpenAPI)
  * @returns {object} { entities: [...], relationships: [...], source: string }
  */
-export function scanSchemasDeep(dir, stack, docTools) {
+export async function scanSchemasDeep(dir, stack, docTools) {
   // Priority 1: OpenAPI schemas
   if (docTools?.openapi?.found && docTools.openapi.schemas?.length > 0) {
     return {
