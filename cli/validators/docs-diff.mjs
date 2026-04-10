@@ -61,7 +61,7 @@ export function validateDocsDiff(projectDir, config) {
 
 // ── Diff Functions (lightweight versions for validator) ──────────────────
 
-function diffTechStack(dir) {
+export function diffTechStack(dir) {
   const archPath = resolve(dir, 'docs-canonical/ARCHITECTURE.md');
   const pkgPath = resolve(dir, 'package.json');
   if (!existsSync(archPath) || !existsSync(pkgPath)) return null;
