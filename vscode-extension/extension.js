@@ -204,7 +204,7 @@ function execSpecguard(workspaceDir, args) {
 
 // ── Score Refresh ──────────────────────────────────────────────────────────
 
-function refreshScore() {
+async function refreshScore() {
   const dir = getWorkspaceDir();
   if (!dir) return;
 
@@ -236,7 +236,7 @@ function refreshScore() {
     statusBarItem.show();
 
     // Run diagnostics
-    runDiagnostics(dir);
+    await runDiagnostics(dir);
 
     outputChannel.appendLine(`Score refreshed: ${score}/100 (${grade})`);
   } catch (e) {
@@ -248,7 +248,7 @@ function refreshScore() {
 
 // ── Diagnostics ────────────────────────────────────────────────────────────
 
-function runDiagnostics(workspaceDir) {
+async function runDiagnostics(workspaceDir) {
   diagnosticCollection.clear();
 
   const requiredFiles = [
@@ -267,8 +267,10 @@ function runDiagnostics(workspaceDir) {
 
   for (const file of requiredFiles) {
     const fullPath = path.join(workspaceDir, file);
-    if (!fs.existsSync(fullPath)) {
-      addRootDiagnostic(
+    try {
+      await fs.promises.access(fullPath);
+    } catch {
+      await addRootDiagnostic(
         workspaceDir, diagnosticsMap,
         `Missing required CDD document: ${file}. Run 'SpecGuard: Initialize CDD Docs' to create it.`,
         vscode.DiagnosticSeverity.Warning
@@ -279,9 +281,14 @@ function runDiagnostics(workspaceDir) {
   // Check existing docs for template placeholders
   for (const file of requiredFiles) {
     const fullPath = path.join(workspaceDir, file);
-    if (!fs.existsSync(fullPath)) continue;
 
-    const content = fs.readFileSync(fullPath, 'utf-8');
+    let content;
+    try {
+      content = await fs.promises.readFile(fullPath, 'utf-8');
+    } catch (e) {
+      continue;
+    }
+
     const lines = content.split('\n');
 
     const fileDiags = [];
@@ -322,10 +329,16 @@ function runDiagnostics(workspaceDir) {
   }
 }
 
-function addRootDiagnostic(workspaceDir, diagnosticsMap, message, severity) {
-  const rootFile = ['package.json', '.specguard.json', 'README.md']
-    .map(f => path.join(workspaceDir, f))
-    .find(f => fs.existsSync(f));
+async function addRootDiagnostic(workspaceDir, diagnosticsMap, message, severity) {
+  let rootFile;
+  for (const f of ['package.json', '.specguard.json', 'README.md']) {
+    const fullPath = path.join(workspaceDir, f);
+    try {
+      await fs.promises.access(fullPath);
+      rootFile = fullPath;
+      break;
+    } catch {}
+  }
 
   if (!rootFile) return;
 
@@ -355,7 +368,7 @@ function runCommand(cmd) {
   outputChannel.appendLine(output);
 }
 
-function runGuard() {
+async function runGuard() {
   const dir = getWorkspaceDir();
   if (!dir) return;
 
@@ -366,8 +379,8 @@ function runGuard() {
   const output = execSpecguard(dir, 'guard');
   outputChannel.appendLine(output);
 
-  runDiagnostics(dir);
-  refreshScore();
+  await runDiagnostics(dir);
+  await refreshScore();
 
   if (output.includes('PASS')) {
     vscode.window.showInformationMessage('SpecGuard: All checks passed ✅');
@@ -419,7 +432,7 @@ function runFixCommand() {
   }
 }
 
-function runFixAuto() {
+async function runFixAuto() {
   const dir = getWorkspaceDir();
   if (!dir) return;
 
@@ -430,7 +443,7 @@ function runFixAuto() {
   const output = execSpecguard(dir, 'fix --auto');
   outputChannel.appendLine(output);
 
-  refreshScore();
+  await refreshScore();
   vscode.window.showInformationMessage('SpecGuard: Auto-fix complete! Review the created files.');
 }
 
@@ -472,7 +485,7 @@ function runBadge() {
   }
 }
 
-function runInit() {
+async function runInit() {
   const dir = getWorkspaceDir();
   if (!dir) return;
 
@@ -483,7 +496,7 @@ function runInit() {
   const output = execSpecguard(dir, 'init');
   outputChannel.appendLine(output);
 
-  refreshScore();
+  await refreshScore();
   vscode.window.showInformationMessage(
     'SpecGuard: CDD documentation initialized! Check the docs-canonical/ folder.'
   );
