@@ -42,7 +42,7 @@ function activate(context) {
     vscode.commands.registerCommand('specguard.score', () => runCommand('score')),
     vscode.commands.registerCommand('specguard.badge', () => runBadge()),
     vscode.commands.registerCommand('specguard.init', () => runInit()),
-    vscode.commands.registerCommand('specguard.refresh', () => refreshScore()),
+    vscode.commands.registerCommand('specguard.refresh', async () => await refreshScore()),
     vscode.commands.registerCommand('specguard.fix', () => runFixCommand()),
     vscode.commands.registerCommand('specguard.fixWithAI', (issue) => fixWithAI(issue)),
     vscode.commands.registerCommand('specguard.fixAuto', () => runFixAuto()),
@@ -80,7 +80,7 @@ function activate(context) {
 
   // Initial refresh
   if (config.get('showStatusBar')) {
-    refreshScore();
+    await refreshScore();
   }
 
   outputChannel.appendLine('SpecGuard extension activated');
@@ -204,7 +204,7 @@ function execSpecguard(workspaceDir, args) {
 
 // ── Score Refresh ──────────────────────────────────────────────────────────
 
-function refreshScore() {
+async function refreshScore() {
   const dir = getWorkspaceDir();
   if (!dir) return;
 
@@ -236,7 +236,7 @@ function refreshScore() {
     statusBarItem.show();
 
     // Run diagnostics
-    runDiagnostics(dir);
+    await runDiagnosticsAsync(dir);
 
     outputChannel.appendLine(`Score refreshed: ${score}/100 (${grade})`);
   } catch (e) {
@@ -248,7 +248,8 @@ function refreshScore() {
 
 // ── Diagnostics ────────────────────────────────────────────────────────────
 
-function runDiagnostics(workspaceDir) {
+
+async function runDiagnosticsAsync(workspaceDir) {
   diagnosticCollection.clear();
 
   const requiredFiles = [
@@ -262,83 +263,91 @@ function runDiagnostics(workspaceDir) {
     'DRIFT-LOG.md',
   ];
 
-  // Check for missing required files
   const diagnosticsMap = new Map();
+  const textDecoder = new TextDecoder('utf-8');
 
-  for (const file of requiredFiles) {
-    const fullPath = path.join(workspaceDir, file);
-    if (!fs.existsSync(fullPath)) {
-      addRootDiagnostic(
-        workspaceDir, diagnosticsMap,
-        `Missing required CDD document: ${file}. Run 'SpecGuard: Initialize CDD Docs' to create it.`,
-        vscode.DiagnosticSeverity.Warning
-      );
-    }
-  }
+  await Promise.all(requiredFiles.map(async (file) => {
+    const uri = vscode.Uri.file(path.join(workspaceDir, file));
+    try {
+      await vscode.workspace.fs.stat(uri);
 
-  // Check existing docs for template placeholders
-  for (const file of requiredFiles) {
-    const fullPath = path.join(workspaceDir, file);
-    if (!fs.existsSync(fullPath)) continue;
+      const fileData = await vscode.workspace.fs.readFile(uri);
+      const content = textDecoder.decode(fileData);
+      const lines = content.split('\n');
 
-    const content = fs.readFileSync(fullPath, 'utf-8');
-    const lines = content.split('\n');
+      const fileDiags = [];
 
-    const fileDiags = [];
+      lines.forEach((line, i) => {
+        if (line.includes('<!-- TODO') || line.includes('<!-- e.g.')) {
+          const range = new vscode.Range(i, 0, i, line.length);
+          const diag = new vscode.Diagnostic(
+            range,
+            `Template placeholder — fill in with real content`,
+            vscode.DiagnosticSeverity.Information
+          );
+          diag.source = 'SpecGuard';
+          diag.code = 'unfilled-placeholder';
+          fileDiags.push(diag);
+        }
 
-    lines.forEach((line, i) => {
-      if (line.includes('<!-- TODO') || line.includes('<!-- e.g.')) {
-        const range = new vscode.Range(i, 0, i, line.length);
-        const diag = new vscode.Diagnostic(
-          range,
-          `Template placeholder — fill in with real content`,
-          vscode.DiagnosticSeverity.Information
-        );
-        diag.source = 'SpecGuard';
-        diag.code = 'unfilled-placeholder';
-        fileDiags.push(diag);
+        if (line.includes('specguard:status draft')) {
+          const range = new vscode.Range(i, 0, i, line.length);
+          const diag = new vscode.Diagnostic(
+            range,
+            `Document is in draft status — review and promote to 'active'`,
+            vscode.DiagnosticSeverity.Hint
+          );
+          diag.source = 'SpecGuard';
+          diag.code = 'draft-status';
+          fileDiags.push(diag);
+        }
+      });
+
+      if (fileDiags.length > 0) {
+        diagnosticsMap.set(uri, fileDiags);
       }
-
-      if (line.includes('specguard:status draft')) {
-        const range = new vscode.Range(i, 0, i, line.length);
-        const diag = new vscode.Diagnostic(
-          range,
-          `Document is in draft status — review and promote to 'active'`,
-          vscode.DiagnosticSeverity.Hint
+    } catch (e) {
+      if (e.code === 'FileNotFound' || e.code === 'ENOENT') {
+        await addRootDiagnosticAsync(
+          workspaceDir, diagnosticsMap,
+          `Missing required CDD document: ${file}. Run 'SpecGuard: Initialize CDD Docs' to create it.`,
+          vscode.DiagnosticSeverity.Warning
         );
-        diag.source = 'SpecGuard';
-        diag.code = 'draft-status';
-        fileDiags.push(diag);
       }
-    });
-
-    if (fileDiags.length > 0) {
-      diagnosticCollection.set(vscode.Uri.file(fullPath), fileDiags);
     }
-  }
+  }));
 
   for (const [uri, diags] of diagnosticsMap) {
     diagnosticCollection.set(uri, diags);
   }
 }
 
-function addRootDiagnostic(workspaceDir, diagnosticsMap, message, severity) {
-  const rootFile = ['package.json', '.specguard.json', 'README.md']
-    .map(f => path.join(workspaceDir, f))
-    .find(f => fs.existsSync(f));
+async function addRootDiagnosticAsync(workspaceDir, diagnosticsMap, message, severity) {
+  const rootFiles = ['package.json', '.specguard.json', 'README.md']
+    .map(f => vscode.Uri.file(path.join(workspaceDir, f)));
 
-  if (!rootFile) return;
+  let rootFileUri = null;
+  for (const uri of rootFiles) {
+    try {
+      await vscode.workspace.fs.stat(uri);
+      rootFileUri = uri;
+      break;
+    } catch (e) {
+      // File does not exist
+    }
+  }
 
-  const uri = vscode.Uri.file(rootFile);
-  if (!diagnosticsMap.has(uri)) {
-    diagnosticsMap.set(uri, []);
+  if (!rootFileUri) return;
+
+  if (!diagnosticsMap.has(rootFileUri)) {
+    diagnosticsMap.set(rootFileUri, []);
   }
 
   const range = new vscode.Range(0, 0, 0, 0);
   const diag = new vscode.Diagnostic(range, message, severity);
   diag.source = 'SpecGuard';
   diag.code = 'missing-doc';
-  diagnosticsMap.get(uri).push(diag);
+  diagnosticsMap.get(rootFileUri).push(diag);
 }
 
 // ── Commands ───────────────────────────────────────────────────────────────
@@ -355,7 +364,7 @@ function runCommand(cmd) {
   outputChannel.appendLine(output);
 }
 
-function runGuard() {
+async function runGuard() {
   const dir = getWorkspaceDir();
   if (!dir) return;
 
@@ -366,8 +375,8 @@ function runGuard() {
   const output = execSpecguard(dir, 'guard');
   outputChannel.appendLine(output);
 
-  runDiagnostics(dir);
-  refreshScore();
+  await runDiagnosticsAsync(dir);
+  await refreshScore();
 
   if (output.includes('PASS')) {
     vscode.window.showInformationMessage('SpecGuard: All checks passed ✅');
@@ -419,7 +428,7 @@ function runFixCommand() {
   }
 }
 
-function runFixAuto() {
+async function runFixAuto() {
   const dir = getWorkspaceDir();
   if (!dir) return;
 
@@ -430,7 +439,7 @@ function runFixAuto() {
   const output = execSpecguard(dir, 'fix --auto');
   outputChannel.appendLine(output);
 
-  refreshScore();
+  await refreshScore();
   vscode.window.showInformationMessage('SpecGuard: Auto-fix complete! Review the created files.');
 }
 
@@ -472,7 +481,7 @@ function runBadge() {
   }
 }
 
-function runInit() {
+async function runInit() {
   const dir = getWorkspaceDir();
   if (!dir) return;
 
@@ -483,7 +492,7 @@ function runInit() {
   const output = execSpecguard(dir, 'init');
   outputChannel.appendLine(output);
 
-  refreshScore();
+  await refreshScore();
   vscode.window.showInformationMessage(
     'SpecGuard: CDD documentation initialized! Check the docs-canonical/ folder.'
   );
