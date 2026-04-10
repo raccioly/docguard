@@ -8,6 +8,7 @@
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, relative, basename, extname, dirname } from 'node:path';
+import { c } from '../shared.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build', 'coverage',
@@ -354,7 +355,7 @@ function isJSFile(path) {
   return /\.(js|mjs|cjs|ts|tsx|jsx)$/.test(path);
 }
 
-function walkRouteDirs(dir, callback) {
+export function walkRouteDirs(dir, callback) {
   if (!existsSync(dir)) return;
   try {
     const entries = readdirSync(dir, { withFileTypes: true });
@@ -367,10 +368,12 @@ function walkRouteDirs(dir, callback) {
         callback(fullPath);
       }
     }
-  } catch { /* skip */ }
+  } catch (err) {
+    console.error(`${c.yellow}⚠️  Error scanning directory ${dir}: ${err.message}${c.reset}`);
+  }
 }
 
-function findFiles(dir, pattern, maxDepth = 5) {
+export function findFiles(dir, pattern, maxDepth = 5) {
   const results = [];
   function walk(d, depth) {
     if (depth > maxDepth || !existsSync(d)) return;
@@ -382,7 +385,9 @@ function findFiles(dir, pattern, maxDepth = 5) {
         if (entry.isDirectory()) walk(fullPath, depth + 1);
         else if (pattern.test(entry.name)) results.push(fullPath);
       }
-    } catch { /* skip */ }
+    } catch (err) {
+      console.error(`${c.yellow}⚠️  Error searching directory ${d}: ${err.message}${c.reset}`);
+    }
   }
   walk(dir, 0);
   return results;
