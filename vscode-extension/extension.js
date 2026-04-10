@@ -248,7 +248,7 @@ function refreshScore() {
 
 // ── Diagnostics ────────────────────────────────────────────────────────────
 
-function runDiagnostics(workspaceDir) {
+async function runDiagnostics(workspaceDir) {
   diagnosticCollection.clear();
 
   const requiredFiles = [
@@ -262,60 +262,61 @@ function runDiagnostics(workspaceDir) {
     'DRIFT-LOG.md',
   ];
 
-  // Check for missing required files
   const diagnosticsMap = new Map();
-
-  for (const file of requiredFiles) {
+  const filePromises = requiredFiles.map(async (file) => {
     const fullPath = path.join(workspaceDir, file);
-    if (!fs.existsSync(fullPath)) {
+    try {
+      await fs.promises.access(fullPath);
+    } catch {
       addRootDiagnostic(
         workspaceDir, diagnosticsMap,
         `Missing required CDD document: ${file}. Run 'SpecGuard: Initialize CDD Docs' to create it.`,
         vscode.DiagnosticSeverity.Warning
       );
+      return;
     }
-  }
 
-  // Check existing docs for template placeholders
-  for (const file of requiredFiles) {
-    const fullPath = path.join(workspaceDir, file);
-    if (!fs.existsSync(fullPath)) continue;
+    try {
+      const content = await fs.promises.readFile(fullPath, 'utf-8');
+      const lines = content.split('\n');
 
-    const content = fs.readFileSync(fullPath, 'utf-8');
-    const lines = content.split('\n');
+      const fileDiags = [];
 
-    const fileDiags = [];
+      lines.forEach((line, i) => {
+        if (line.includes('<!-- TODO') || line.includes('<!-- e.g.')) {
+          const range = new vscode.Range(i, 0, i, line.length);
+          const diag = new vscode.Diagnostic(
+            range,
+            `Template placeholder — fill in with real content`,
+            vscode.DiagnosticSeverity.Information
+          );
+          diag.source = 'SpecGuard';
+          diag.code = 'unfilled-placeholder';
+          fileDiags.push(diag);
+        }
 
-    lines.forEach((line, i) => {
-      if (line.includes('<!-- TODO') || line.includes('<!-- e.g.')) {
-        const range = new vscode.Range(i, 0, i, line.length);
-        const diag = new vscode.Diagnostic(
-          range,
-          `Template placeholder — fill in with real content`,
-          vscode.DiagnosticSeverity.Information
-        );
-        diag.source = 'SpecGuard';
-        diag.code = 'unfilled-placeholder';
-        fileDiags.push(diag);
+        if (line.includes('specguard:status draft')) {
+          const range = new vscode.Range(i, 0, i, line.length);
+          const diag = new vscode.Diagnostic(
+            range,
+            `Document is in draft status — review and promote to 'active'`,
+            vscode.DiagnosticSeverity.Hint
+          );
+          diag.source = 'SpecGuard';
+          diag.code = 'draft-status';
+          fileDiags.push(diag);
+        }
+      });
+
+      if (fileDiags.length > 0) {
+        diagnosticCollection.set(vscode.Uri.file(fullPath), fileDiags);
       }
-
-      if (line.includes('specguard:status draft')) {
-        const range = new vscode.Range(i, 0, i, line.length);
-        const diag = new vscode.Diagnostic(
-          range,
-          `Document is in draft status — review and promote to 'active'`,
-          vscode.DiagnosticSeverity.Hint
-        );
-        diag.source = 'SpecGuard';
-        diag.code = 'draft-status';
-        fileDiags.push(diag);
-      }
-    });
-
-    if (fileDiags.length > 0) {
-      diagnosticCollection.set(vscode.Uri.file(fullPath), fileDiags);
+    } catch (e) {
+      // Ignore read errors
     }
-  }
+  });
+
+  await Promise.all(filePromises);
 
   for (const [uri, diags] of diagnosticsMap) {
     diagnosticCollection.set(uri, diags);
