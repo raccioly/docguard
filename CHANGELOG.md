@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **VSCode Extension Performance** — Replaced blocking synchronous I/O operations (`fs.existsSync`, `fs.readFileSync`) with asynchronous equivalents (`vscode.workspace.fs.stat`, `vscode.workspace.fs.readFile`) in the UI thread. Use `Promise.all` to evaluate diagnostic checks concurrently, eliminating main thread blocking.
+
+
 ## [0.9.11] - 2026-03-18
 
 ### Added

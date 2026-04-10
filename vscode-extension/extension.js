@@ -236,7 +236,7 @@ function refreshScore() {
     statusBarItem.show();
 
     // Run diagnostics
-    runDiagnostics(dir);
+    runDiagnostics(dir).catch(e => outputChannel.appendLine(`Diagnostics error: ${e.message}`));
 
     outputChannel.appendLine(`Score refreshed: ${score}/100 (${grade})`);
   } catch (e) {
@@ -248,7 +248,7 @@ function refreshScore() {
 
 // ── Diagnostics ────────────────────────────────────────────────────────────
 
-function runDiagnostics(workspaceDir) {
+async function runDiagnostics(workspaceDir) {
   diagnosticCollection.clear();
 
   const requiredFiles = [
@@ -265,23 +265,34 @@ function runDiagnostics(workspaceDir) {
   // Check for missing required files
   const diagnosticsMap = new Map();
 
-  for (const file of requiredFiles) {
+  await Promise.all(requiredFiles.map(async (file) => {
     const fullPath = path.join(workspaceDir, file);
-    if (!fs.existsSync(fullPath)) {
-      addRootDiagnostic(
+    const uri = vscode.Uri.file(fullPath);
+    try {
+      await vscode.workspace.fs.stat(uri);
+    } catch (e) {
+      // File does not exist
+      await addRootDiagnostic(
         workspaceDir, diagnosticsMap,
         `Missing required CDD document: ${file}. Run 'SpecGuard: Initialize CDD Docs' to create it.`,
         vscode.DiagnosticSeverity.Warning
       );
     }
-  }
+  }));
 
   // Check existing docs for template placeholders
-  for (const file of requiredFiles) {
+  await Promise.all(requiredFiles.map(async (file) => {
     const fullPath = path.join(workspaceDir, file);
-    if (!fs.existsSync(fullPath)) continue;
+    const uri = vscode.Uri.file(fullPath);
 
-    const content = fs.readFileSync(fullPath, 'utf-8');
+    let contentBytes;
+    try {
+      contentBytes = await vscode.workspace.fs.readFile(uri);
+    } catch (e) {
+      return; // File does not exist
+    }
+
+    const content = new TextDecoder('utf-8').decode(contentBytes);
     const lines = content.split('\n');
 
     const fileDiags = [];
@@ -315,17 +326,27 @@ function runDiagnostics(workspaceDir) {
     if (fileDiags.length > 0) {
       diagnosticCollection.set(vscode.Uri.file(fullPath), fileDiags);
     }
-  }
+  }));
 
   for (const [uri, diags] of diagnosticsMap) {
     diagnosticCollection.set(uri, diags);
   }
 }
 
-function addRootDiagnostic(workspaceDir, diagnosticsMap, message, severity) {
-  const rootFile = ['package.json', '.specguard.json', 'README.md']
-    .map(f => path.join(workspaceDir, f))
-    .find(f => fs.existsSync(f));
+async function addRootDiagnostic(workspaceDir, diagnosticsMap, message, severity) {
+  const possibleRoots = ['package.json', '.specguard.json', 'README.md'];
+  let rootFile;
+
+  for (const f of possibleRoots) {
+    const fullPath = path.join(workspaceDir, f);
+    try {
+      await vscode.workspace.fs.stat(vscode.Uri.file(fullPath));
+      rootFile = fullPath;
+      break;
+    } catch (e) {
+      // Continue checking
+    }
+  }
 
   if (!rootFile) return;
 
@@ -366,7 +387,7 @@ function runGuard() {
   const output = execSpecguard(dir, 'guard');
   outputChannel.appendLine(output);
 
-  runDiagnostics(dir);
+  runDiagnostics(dir).catch(e => outputChannel.appendLine(`Diagnostics error: ${e.message}`));
   refreshScore();
 
   if (output.includes('PASS')) {
