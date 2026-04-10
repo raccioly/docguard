@@ -8,7 +8,7 @@
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, relative } from 'node:path';
-import { loadIgnorePatterns } from '../shared.mjs';
+import { loadIgnorePatterns, c } from '../shared.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build', 'coverage',
@@ -162,6 +162,8 @@ function walkFiles(dir, callback) {
       } else if (stat.isFile()) {
         callback(fullPath);
       }
-    } catch { /* skip */ }
+    } catch (err) {
+      console.error(`${c.red}Error reading file or directory: ${err.message}${c.reset}`);
+    }
   }
 }
