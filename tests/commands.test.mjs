@@ -71,6 +71,33 @@ describe('docguard audit', () => {
   });
 });
 
+
+describe('docguard badge', () => {
+  it('runs and shows badges', () => {
+    const output = run('badge');
+    assert.match(output, /DocGuard Badge/);
+    assert.match(output, /Score Badge:/);
+    assert.match(output, /Type Badge:/);
+    assert.match(output, /README snippet:/);
+    assert.match(output, /img\.shields\.io/);
+  });
+
+  it('outputs JSON with --format json', () => {
+    const output = run('badge --format json');
+    const jsonStart = output.indexOf('{');
+    const jsonStr = output.substring(jsonStart);
+    const parsed = JSON.parse(jsonStr);
+    assert.equal(typeof parsed.score, 'number');
+    assert.ok(parsed.grade);
+    assert.ok(parsed.color);
+    assert.ok(parsed.badges);
+    assert.ok(parsed.badges.score);
+    assert.ok(parsed.badges.type);
+    assert.ok(parsed.badges.docguard);
+    assert.ok(parsed.readmeSnippet);
+  });
+});
+
 describe('docguard score', () => {
   it('runs and shows a score', () => {
     const output = run('score');
