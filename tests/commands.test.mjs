@@ -620,3 +620,33 @@ describe('CI detection expansion', () => {
     }
   });
 });
+
+describe('docguard trace error handling', () => {
+  it('gracefully handles missing project directory in scanDir', async () => {
+    // We mock runTrace from cli/commands/trace.mjs
+    const { runTrace } = await import('../cli/commands/trace.mjs');
+    const { mkdtempSync, rmSync } = await import('node:fs');
+    const { tmpdir } = await import('node:os');
+    const { join } = await import('node:path');
+    const assert = await import('node:assert');
+
+    const tmpDir = mkdtempSync(join(tmpdir(), 'docguard-trace-err-'));
+    const missingDir = join(tmpDir, 'does-not-exist');
+
+    try {
+      // Temporarily suppress console output to keep tests clean
+      const originalLog = console.log;
+      console.log = () => {};
+
+      // Should not throw an error, should just return gracefully
+      // due to the try/catch in scanDir
+      assert.doesNotThrow(() => {
+        runTrace(missingDir, { projectName: 'Test', requiredFiles: { canonical: [] } }, {});
+      });
+
+      console.log = originalLog;
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+});
