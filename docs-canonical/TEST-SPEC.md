@@ -95,3 +95,4 @@ Test names follow the pattern: "verb + expected behavior" (e.g., "runs and shows
 | 0.5.0 | 2026-03-13 | @raccioly | Added diagnose, guard JSON, profile, tax tests (24→30) |
 | 0.3.0 | 2026-03-12 | @raccioly | Real tests, project-type-aware spec |
 | 0.1.0 | 2026-03-12 | DocGuard Generate | Auto-generated (corrected) |
+| `cli/scanners/schemas.mjs` | `tests/schemas.test.mjs` | ✅ |
