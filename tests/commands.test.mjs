@@ -6,7 +6,7 @@
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { execSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, rmSync, existsSync, writeFileSync, readFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, rmSync, existsSync, writeFileSync, readFileSync, chmodSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
@@ -590,6 +590,52 @@ describe('CI detection expansion', () => {
       }
     } finally {
       rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+});
+
+import { getTestFilesFromPatterns } from '../cli/validators/docs-diff.mjs';
+describe('getTestFilesFromPatterns', () => {
+  it('should return empty array if directory does not exist', () => {
+    const results = getTestFilesFromPatterns('/path/that/does/not/exist/for/sure/12345', ['**/*.test.js']);
+    assert.deepEqual(results, []);
+  });
+
+  it('should find test files matching patterns', () => {
+    const tempDir = mkdtempSync(join(tmpdir(), 'docguard-test-'));
+    try {
+      mkdirSync(join(tempDir, 'src'));
+      writeFileSync(join(tempDir, 'src', 'app.test.js'), 'test');
+      writeFileSync(join(tempDir, 'src', 'app.js'), 'code');
+
+      const results = getTestFilesFromPatterns(tempDir, ['**/*.test.js']);
+      assert.deepEqual(results, ['src/app.test.js']);
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it('should skip directories without read permissions in readdirSync', () => {
+    const tempDir = mkdtempSync(join(tmpdir(), 'docguard-test-'));
+    try {
+      mkdirSync(join(tempDir, 'src'));
+      writeFileSync(join(tempDir, 'src', 'app.test.js'), 'test');
+
+      const noReadDir = join(tempDir, 'no-read');
+      mkdirSync(noReadDir);
+      writeFileSync(join(noReadDir, 'hidden.test.js'), 'test');
+      // For cross-platform support without requiring root we can just mock readdirSync
+      // by relying on another method if necessary, but chmod 0 is a standard way to test EACCES
+      chmodSync(noReadDir, 0o000);
+
+      const results = getTestFilesFromPatterns(tempDir, ['**/*.test.js']);
+      assert.deepEqual(results, ['src/app.test.js']);
+
+      chmodSync(noReadDir, 0o777); // Restore permissions for cleanup
+    } finally {
+      // Need chmodSync here again if the test fails before the restore
+      try { chmodSync(join(tempDir, 'no-read'), 0o777); } catch(e) {}
+      rmSync(tempDir, { recursive: true, force: true });
     }
   });
 });
