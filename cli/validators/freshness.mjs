@@ -8,7 +8,7 @@
 
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, extname } from 'node:path';
-import { execSync } from 'node:child_process';
+import { execSync, execFileSync } from 'node:child_process';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build',
@@ -22,8 +22,8 @@ const IGNORE_DIRS = new Set([
  */
 function getLastGitDate(filePath, dir) {
   try {
-    const result = execSync(
-      `git log -1 --format="%aI" -- "${filePath}"`,
+    const result = execFileSync(
+      'git', ['log', '-1', '--format=%aI', '--', filePath],
       { cwd: dir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
     ).trim();
     return result ? new Date(result) : null;
