@@ -27,6 +27,10 @@ export function validateDrift(projectDir, config) {
     if (!CODE_EXTENSIONS.has(ext)) return;
 
     const content = readFileSync(filePath, 'utf-8');
+
+    // Performance optimization: early return if the file doesn't contain the keyword
+    if (!content.includes('DRIFT:')) return;
+
     const lines = content.split('\n');
 
     lines.forEach((line, i) => {

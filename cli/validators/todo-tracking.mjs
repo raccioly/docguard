@@ -105,6 +105,9 @@ function checkSkippedTests(projectDir, config) {
     let content;
     try { content = readFileSync(fullPath, 'utf-8'); } catch { continue; }
 
+    // Performance optimization: fast early return before splitting huge test files
+    if (!/(?:\.skip\s*\(|\bxit\s*\(|\bxdescribe\s*\(|\bxtest\s*\(|\.todo\s*\()/i.test(content)) continue;
+
     const lines = content.split('\n');
 
     for (let i = 0; i < lines.length; i++) {
@@ -305,6 +308,9 @@ function findTodos(rootDir, dir, todos, config) {
 
       let content;
       try { content = readFileSync(full, 'utf-8'); } catch { continue; }
+
+      // Performance optimization: fast early return before splitting huge files
+      if (!/\b(TODO|FIXME|HACK|XXX|TEMP(?!late|orar)|WORKAROUND)\b/i.test(content)) continue;
 
       const lines = content.split('\n');
 

@@ -1,0 +1,3 @@
+## 2024-04-11 - Optimize string split in Node.js
+**Learning:** In Node.js, `String.prototype.split('\n')` creates thousands of objects in memory. For validators that scan entire repositories (e.g. searching for a single string like `DRIFT:` or a few regex matches like `TODO:`), doing this for every file and looping line-by-line using `.match()` or `.test()` is a major bottleneck on large codebases. This caused significant lag in full-repo validation operations.
+**Action:** When searching files for specific strings or simple patterns, always use a single `String.prototype.includes()` or `RegExp.prototype.test()` on the full file string as a fast early-return *before* running `.split('\n')` and performing more complex per-line processing.
