@@ -1,0 +1,4 @@
+## 2025-02-14 - [Prevent Command Injection in CLI commands]
+**Vulnerability:** Found multiple command injection vulnerabilities in `cli/commands/diagnose.mjs` and `cli/commands/fix.mjs` caused by executing Node.js sub-processes via `execSync` with strings concatenating the user-controlled `projectDir` variable. Since `execSync` spawns a shell under the hood to execute the string, an attacker could supply a `projectDir` value containing shell operators to execute arbitrary commands.
+**Learning:** `execSync` is inherently unsafe for running commands with dynamic, user-controlled data because it triggers shell interpretation.
+**Prevention:** Always use `execFileSync` from `node:child_process` when you need to execute a binary and pass dynamic inputs. Using an array of arguments for `execFileSync` securely passes the input without engaging a shell, entirely mitigating command injection vulnerabilities.

@@ -15,7 +15,7 @@
 
 import { existsSync, readFileSync, mkdirSync } from 'node:fs';
 import { resolve, basename, dirname } from 'node:path';
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { c } from '../shared.mjs';
 
@@ -473,7 +473,7 @@ function autoFixIssues(projectDir, config, issues) {
 
   try {
     const cliPath = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'docguard.mjs');
-    execSync(`node ${cliPath} init --dir "${projectDir}"`, {
+    execFileSync(process.execPath, [cliPath, 'init', '--dir', projectDir], {
       encoding: 'utf-8',
       stdio: 'pipe',
     });

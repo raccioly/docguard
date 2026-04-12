@@ -20,7 +20,7 @@ import { detectAgentMode, isSpecKitInitialized } from '../ensure-skills.mjs';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 
 // Map validator failures to the right fix --doc target
 const VALIDATOR_TO_DOC = {
@@ -127,7 +127,7 @@ export function runDiagnose(projectDir, config, flags) {
       // Run init to create missing files
       try {
         const cliPath = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'docguard.mjs');
-        execSync(`node "${cliPath}" init --dir "${projectDir}"`, {
+        execFileSync(process.execPath, [cliPath, 'init', '--dir', projectDir], {
           encoding: 'utf-8',
           stdio: 'pipe',
         });
@@ -136,7 +136,7 @@ export function runDiagnose(projectDir, config, flags) {
       // Run generate to fill in MISSING content only (never --force, which would overwrite existing docs)
       try {
         const cliPath = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'docguard.mjs');
-        execSync(`node "${cliPath}" generate --dir "${projectDir}"`, {
+        execFileSync(process.execPath, [cliPath, 'generate', '--dir', projectDir], {
           encoding: 'utf-8',
           stdio: 'pipe',
         });
