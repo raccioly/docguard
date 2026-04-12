@@ -105,6 +105,11 @@ function checkSkippedTests(projectDir, config) {
     let content;
     try { content = readFileSync(fullPath, 'utf-8'); } catch { continue; }
 
+    // Fast early return: if content doesn't contain skip pattern keywords, don't split
+    if (!content.includes('skip') && !content.includes('todo') && !content.includes('xdescribe') && !content.includes('xit') && !content.includes('xtest')) {
+      continue;
+    }
+
     const lines = content.split('\n');
 
     for (let i = 0; i < lines.length; i++) {
@@ -305,6 +310,11 @@ function findTodos(rootDir, dir, todos, config) {
 
       let content;
       try { content = readFileSync(full, 'utf-8'); } catch { continue; }
+
+      // Fast early return: if content doesn't contain TODO_PATTERN keywords, don't split
+      if (!TODO_PATTERN.test(content)) {
+        continue;
+      }
 
       const lines = content.split('\n');
 

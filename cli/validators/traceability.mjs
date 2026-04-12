@@ -193,6 +193,12 @@ function validateRequirementTraceability(projectDir, config, projectFiles) {
     if (!existsSync(docPath)) continue;
 
     const content = readFileSync(docPath, 'utf-8');
+
+    // Fast early return: if content doesn't match any of the patterns, don't split
+    if (!patterns.some(p => { p.lastIndex = 0; return p.test(content); })) {
+      continue;
+    }
+
     const lines = content.split('\n');
     const docName = relative(projectDir, docPath);
 
@@ -231,6 +237,12 @@ function validateRequirementTraceability(projectDir, config, projectFiles) {
 
     let content;
     try { content = readFileSync(fullPath, 'utf-8'); } catch { continue; }
+
+    // Fast early return: if content doesn't match any of the patterns, don't split
+    if (!patterns.some(p => { p.lastIndex = 0; return p.test(content); })) {
+      continue;
+    }
+
     const lines = content.split('\n');
 
     for (let i = 0; i < lines.length; i++) {
