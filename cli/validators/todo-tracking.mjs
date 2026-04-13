@@ -105,6 +105,9 @@ function checkSkippedTests(projectDir, config) {
     let content;
     try { content = readFileSync(fullPath, 'utf-8'); } catch { continue; }
 
+    // Fast path: skip file if no skip keywords exist in the entire content
+    if (!content.includes('.skip') && !content.includes('.todo') && !content.includes('xit') && !content.includes('xdescribe') && !content.includes('xtest')) continue;
+
     const lines = content.split('\n');
 
     for (let i = 0; i < lines.length; i++) {
@@ -305,6 +308,9 @@ function findTodos(rootDir, dir, todos, config) {
 
       let content;
       try { content = readFileSync(full, 'utf-8'); } catch { continue; }
+
+      // Fast path: skip file if no TODO keywords exist in the entire content
+      if (!content.includes('TODO') && !content.includes('FIXME') && !content.includes('HACK') && !content.includes('XXX') && !content.includes('TEMP') && !content.includes('WORKAROUND')) continue;
 
       const lines = content.split('\n');
 

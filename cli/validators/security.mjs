@@ -74,12 +74,13 @@ export function validateSecurity(projectDir, config) {
     if (shouldIgnore(relPath, config, 'securityIgnore')) return;
 
     const content = readFileSync(filePath, 'utf-8');
-    const lines = content.split('\n');
+    let lines = null;
 
     for (const { pattern, label } of SECRET_PATTERNS) {
       pattern.lastIndex = 0;
       const match = pattern.exec(content);
       if (match) {
+        if (!lines) lines = content.split('\n');
         // Find the line containing this match for context-aware filtering
         const matchPos = match.index;
         let charCount = 0;
