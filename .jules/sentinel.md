@@ -1,0 +1,4 @@
+## 2024-05-18 - [Fix Command Injection in execSync]
+**Vulnerability:** Command injection vulnerability identified where `execSync` is used with string interpolation taking potentially user-controlled file paths (e.g., in git log commands or calling other CLI tools). Malicious file paths could execute arbitrary commands.
+**Learning:** Even internal tooling using git commands or integrating with other local CLI tools requires secure execution methods. `execSync` does shell interpretation by default.
+**Prevention:** To prevent command injection vulnerabilities in the codebase, `execFileSync` from `node:child_process` should be used instead of `execSync` when executing shell commands with user-controlled inputs or file paths. Arguments must be passed securely as an array to bypass shell interpretation.
