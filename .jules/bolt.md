@@ -1,0 +1,3 @@
+## 2024-05-24 - [Avoid `String.prototype.split` when not needed for boolean checks]
+**Learning:** `String.prototype.split` creates arrays and strings which allocate memory and garbage collect. This can be super costly when scanning through thousands of files or very large files. If you only need to check if a pattern matches, then `String.prototype.includes` or `RegExp.prototype.test` is magnitudes faster.
+**Action:** When searching for patterns or strings over large files in validators/scanners, defer calling `.split("\n")` until we have proven that the pattern matches via `RegExp.test(content)` or `String.includes()`. This acts as an early-return optimization.

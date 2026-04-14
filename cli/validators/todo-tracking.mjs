@@ -105,6 +105,9 @@ function checkSkippedTests(projectDir, config) {
     let content;
     try { content = readFileSync(fullPath, 'utf-8'); } catch { continue; }
 
+    // Fast early-return to avoid expensive split if no skips exist
+    if (!SKIP_PATTERNS.some(p => p.test(content))) continue;
+
     const lines = content.split('\n');
 
     for (let i = 0; i < lines.length; i++) {
@@ -305,6 +308,9 @@ function findTodos(rootDir, dir, todos, config) {
 
       let content;
       try { content = readFileSync(full, 'utf-8'); } catch { continue; }
+
+      // Fast early-return if no TODO exists
+      if (!TODO_PATTERN.test(content)) continue;
 
       const lines = content.split('\n');
 
