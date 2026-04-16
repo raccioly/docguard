@@ -224,12 +224,14 @@ async function refreshScore() {
 
     // Update status bar
     let icon;
-    if (score >= 90) icon = '$(verified)';
-    else if (score >= 80) icon = '$(pass)';
-    else if (score >= threshold) icon = '$(info)';
-    else icon = '$(warning)';
+    let tooltipStatus;
+    if (score >= 90) { icon = '$(verified)'; tooltipStatus = 'Excellent'; }
+    else if (score >= 80) { icon = '$(pass)'; tooltipStatus = 'Good'; }
+    else if (score >= threshold) { icon = '$(info)'; tooltipStatus = 'Passing'; }
+    else { icon = '$(warning)'; tooltipStatus = `Below minimum threshold (${threshold})`; }
 
     statusBarItem.text = `${icon} CDD: ${score}/100 (${grade})`;
+    statusBarItem.tooltip = `CDD Score: ${score}/100 - ${tooltipStatus}\nClick to see details`;
     statusBarItem.backgroundColor = score < threshold
       ? new vscode.ThemeColor('statusBarItem.warningBackground')
       : undefined;
