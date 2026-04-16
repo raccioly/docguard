@@ -193,6 +193,9 @@ function validateRequirementTraceability(projectDir, config, projectFiles) {
     if (!existsSync(docPath)) continue;
 
     const content = readFileSync(docPath, 'utf-8');
+
+    if (!patterns.some(p => p.test(content))) continue;
+
     const lines = content.split('\n');
     const docName = relative(projectDir, docPath);
 
@@ -231,6 +234,9 @@ function validateRequirementTraceability(projectDir, config, projectFiles) {
 
     let content;
     try { content = readFileSync(fullPath, 'utf-8'); } catch { continue; }
+
+    if (!patterns.some(p => p.test(content))) continue;
+
     const lines = content.split('\n');
 
     for (let i = 0; i < lines.length; i++) {

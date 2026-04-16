@@ -105,6 +105,8 @@ function checkSkippedTests(projectDir, config) {
     let content;
     try { content = readFileSync(fullPath, 'utf-8'); } catch { continue; }
 
+    if (!SKIP_PATTERNS.some(p => p.test(content))) continue;
+
     const lines = content.split('\n');
 
     for (let i = 0; i < lines.length; i++) {
@@ -305,6 +307,8 @@ function findTodos(rootDir, dir, todos, config) {
 
       let content;
       try { content = readFileSync(full, 'utf-8'); } catch { continue; }
+
+      if (!TODO_PATTERN.test(content)) continue;
 
       const lines = content.split('\n');
 

@@ -74,7 +74,7 @@ export function validateSecurity(projectDir, config) {
     if (shouldIgnore(relPath, config, 'securityIgnore')) return;
 
     const content = readFileSync(filePath, 'utf-8');
-    const lines = content.split('\n');
+    let lines = null;
 
     for (const { pattern, label } of SECRET_PATTERNS) {
       pattern.lastIndex = 0;
@@ -84,6 +84,7 @@ export function validateSecurity(projectDir, config) {
         const matchPos = match.index;
         let charCount = 0;
         let matchLine = '';
+        if (!lines) lines = content.split('\n');
         for (const line of lines) {
           charCount += line.length + 1; // +1 for newline
           if (charCount > matchPos) {
