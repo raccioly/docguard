@@ -23,7 +23,7 @@
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, extname } from 'node:path';
-import { execSync } from 'node:child_process';
+import { execSync, execFileSync } from 'node:child_process';
 
 // ──── Metric Thresholds ────
 // These define "good" vs "warning" boundaries for each metric.
@@ -464,9 +464,10 @@ function findUnderstandingCli() {
  */
 function runUnderstandingDeepScan(filePath) {
   try {
-    const result = execSync(`understanding analyze "${filePath}" --enhanced --json 2>/dev/null`, {
+    const result = execFileSync('understanding', ['analyze', filePath, '--enhanced', '--json'], {
       encoding: 'utf-8',
       timeout: 10000,
+      stdio: ['pipe', 'pipe', 'ignore']
     });
     return JSON.parse(result);
   } catch {
