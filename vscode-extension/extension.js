@@ -9,7 +9,7 @@
  */
 
 const vscode = require('vscode');
-const { execSync } = require('child_process');
+const { execSync, execFileSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
@@ -179,24 +179,79 @@ function findSpecguard(workspaceDir) {
   return null;
 }
 
-function execSpecguard(workspaceDir, args) {
-  const localBin = findSpecguard(workspaceDir);
+function parseArgs(argsStr) {
+  const args = [];
+  let currentArg = '';
+  let inQuotes = false;
+  let quoteChar = null;
 
-  let cmd;
-  if (localBin) {
-    cmd = `"${localBin}" ${args}`;
-  } else {
-    cmd = `npx -y specguard ${args}`;
+  for (let i = 0; i < argsStr.length; i++) {
+    const char = argsStr[i];
+
+    if ((char === '"' || char === "'") && (i === 0 || argsStr[i - 1] !== '\\')) {
+      if (inQuotes && char === quoteChar) {
+        inQuotes = false;
+        quoteChar = null;
+      } else if (!inQuotes) {
+        inQuotes = true;
+        quoteChar = char;
+      } else {
+        currentArg += char;
+      }
+    } else if (char === ' ' && !inQuotes) {
+      if (currentArg.length > 0) {
+        args.push(currentArg);
+        currentArg = '';
+      }
+    } else {
+      currentArg += char;
+    }
   }
 
+  if (currentArg.length > 0) {
+    args.push(currentArg);
+  }
+
+  return args;
+}
+
+function execSpecguard(workspaceDir, args) {
+  const localBin = findSpecguard(workspaceDir);
+  const argsArray = parseArgs(args);
+
   try {
-    return execSync(cmd, {
-      cwd: workspaceDir,
-      encoding: 'utf-8',
-      env: { ...process.env, NO_COLOR: '1' },
-      timeout: 30000,
-    });
+    if (localBin) {
+      const isWindows = process.platform === 'win32';
+      return execFileSync(isWindows ? `${localBin}.cmd` : localBin, argsArray, {
+        cwd: workspaceDir,
+        encoding: 'utf-8',
+        env: { ...process.env, NO_COLOR: '1' },
+        timeout: 30000,
+      });
+    } else {
+      const npxCmd = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+      return execFileSync(npxCmd, ['-y', 'specguard', ...argsArray], {
+        cwd: workspaceDir,
+        encoding: 'utf-8',
+        env: { ...process.env, NO_COLOR: '1' },
+        timeout: 30000,
+      });
+    }
   } catch (e) {
+    // Fallback if .cmd is not found on Windows
+    if (process.platform === 'win32' && e.code === 'ENOENT' && localBin) {
+        try {
+            return execFileSync(localBin, argsArray, {
+              cwd: workspaceDir,
+              encoding: 'utf-8',
+              env: { ...process.env, NO_COLOR: '1' },
+              timeout: 30000,
+            });
+        } catch(fallbackE) {
+            outputChannel.appendLine(`SpecGuard error: ${fallbackE.message}`);
+            return fallbackE.stdout || '';
+        }
+    }
     outputChannel.appendLine(`SpecGuard error: ${e.message}`);
     return e.stdout || '';
   }
