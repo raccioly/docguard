@@ -195,17 +195,16 @@ export function getTestFilesFromPatterns(dir, patterns, config) {
 
   function walk(currentDir) {
     let entries;
-    try { entries = readdirSync(currentDir); } catch { return; }
+    try { entries = readdirSync(currentDir, { withFileTypes: true }); } catch { return; }
 
     for (const entry of entries) {
       // Skip node_modules and other ignored dirs at directory level (fast path)
-      if (IGNORE_DIRS.has(entry) || entry.startsWith('.')) continue;
-      const fullPath = join(currentDir, entry);
+      if (IGNORE_DIRS.has(entry.name) || entry.name.startsWith('.')) continue;
+      const fullPath = join(currentDir, entry.name);
       try {
-        const stat = statSync(fullPath);
-        if (stat.isDirectory()) {
+        if (entry.isDirectory()) {
           walk(fullPath);
-        } else if (stat.isFile()) {
+        } else if (entry.isFile()) {
           const relPath = relative(dir, fullPath);
           // Skip files in globally ignored paths
           if (config && shouldIgnore(relPath, config)) continue;
@@ -226,16 +225,15 @@ function getFilesRecursive(dir, config) {
   const results = [];
   if (!existsSync(dir)) return results;
   let entries;
-  try { entries = readdirSync(dir); } catch { return results; }
+  try { entries = readdirSync(dir, { withFileTypes: true }); } catch { return results; }
 
   for (const entry of entries) {
-    if (IGNORE_DIRS.has(entry) || entry.startsWith('.')) continue;
-    const fullPath = join(dir, entry);
+    if (IGNORE_DIRS.has(entry.name) || entry.name.startsWith('.')) continue;
+    const fullPath = join(dir, entry.name);
     try {
-      const stat = statSync(fullPath);
-      if (stat.isDirectory()) {
+      if (entry.isDirectory()) {
         results.push(...getFilesRecursive(fullPath, config));
-      } else if (stat.isFile() && CODE_EXTENSIONS.has(extname(fullPath))) {
+      } else if (entry.isFile() && CODE_EXTENSIONS.has(extname(fullPath))) {
         results.push(fullPath);
       }
     } catch { /* skip */ }
