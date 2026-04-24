@@ -3,7 +3,7 @@
  * Compares what's documented vs what's actually in the code.
  */
 
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { access, readFile, readdir } from 'node:fs/promises';
 import { resolve, join, extname, basename } from 'node:path';
 import { c } from '../shared.mjs';
 
@@ -18,26 +18,18 @@ const CODE_EXTENSIONS = new Set([
   '.py', '.java', '.go', '.rs', '.rb', '.php',
 ]);
 
-export function runDiff(projectDir, config, flags) {
+export async function runDiff(projectDir, config, flags) {
   console.log(`${c.bold}🔍 DocGuard Diff — ${config.projectName}${c.reset}`);
   console.log(`${c.dim}   Directory: ${projectDir}${c.reset}\n`);
 
-  const results = [];
-
-  // 1. Routes documented vs routes in code
-  results.push(diffRoutes(projectDir, config));
-
-  // 2. Entities documented vs models in code
-  results.push(diffEntities(projectDir, config));
-
-  // 3. Env vars documented vs .env.example
-  results.push(diffEnvVars(projectDir, config));
-
-  // 4. Tech stack documented vs package.json
-  results.push(diffTechStack(projectDir, config));
-
-  // 5. Tests documented vs tests that exist
-  results.push(diffTests(projectDir, config));
+  // Run all diffs in parallel
+  const results = await Promise.all([
+    diffRoutes(projectDir, config),
+    diffEntities(projectDir, config),
+    diffEnvVars(projectDir, config),
+    diffTechStack(projectDir, config),
+    diffTests(projectDir, config),
+  ]);
 
   if (flags.format === 'json') {
     console.log(JSON.stringify(results.filter(r => r), null, 2));
@@ -91,11 +83,15 @@ export function runDiff(projectDir, config, flags) {
 
 // ── Diff Functions ─────────────────────────────────────────────────────────
 
-function diffRoutes(dir) {
+async function diffRoutes(dir) {
   const archPath = resolve(dir, 'docs-canonical/ARCHITECTURE.md');
-  if (!existsSync(archPath)) return null;
+  try {
+    await access(archPath);
+  } catch {
+    return null;
+  }
 
-  const content = readFileSync(archPath, 'utf-8');
+  const content = await readFile(archPath, 'utf-8');
 
   // Extract route-like patterns from ARCHITECTURE.md
   const docRoutes = new Set();
@@ -117,16 +113,22 @@ function diffRoutes(dir) {
   // Find route files in code
   const codeRoutes = new Set();
   const routeDirs = ['src/routes', 'src/app/api', 'routes', 'api'];
-  for (const rd of routeDirs) {
+  const tasks = routeDirs.map(async (rd) => {
     const routeDir = resolve(dir, rd);
-    if (!existsSync(routeDir)) continue;
+    try {
+      await access(routeDir);
+    } catch {
+      return;
+    }
 
-    const files = getFilesRecursive(routeDir);
+    const files = await getFilesRecursive(routeDir);
     for (const f of files) {
       const rel = f.replace(dir + '/', '');
       codeRoutes.add(rel);
     }
-  }
+  });
+
+  await Promise.all(tasks);
 
   return {
     title: 'API Routes',
@@ -143,11 +145,15 @@ function diffRoutes(dir) {
   };
 }
 
-function diffEntities(dir) {
+async function diffEntities(dir) {
   const dataModelPath = resolve(dir, 'docs-canonical/DATA-MODEL.md');
-  if (!existsSync(dataModelPath)) return null;
+  try {
+    await access(dataModelPath);
+  } catch {
+    return null;
+  }
 
-  const content = readFileSync(dataModelPath, 'utf-8');
+  const content = await readFile(dataModelPath, 'utf-8');
 
   // Extract entity names from DATA-MODEL.md (look for ### headers or table rows)
   const docEntities = new Set();
@@ -218,18 +224,24 @@ function diffEntities(dir) {
   // Find model/entity files in code
   const codeEntities = new Set();
   const modelDirs = ['src/models', 'models', 'src/entities', 'entities', 'src/schema', 'schema', 'prisma'];
-  for (const md of modelDirs) {
+  const tasks = modelDirs.map(async (md) => {
     const modelDir = resolve(dir, md);
-    if (!existsSync(modelDir)) continue;
+    try {
+      await access(modelDir);
+    } catch {
+      return;
+    }
 
-    const files = getFilesRecursive(modelDir);
+    const files = await getFilesRecursive(modelDir);
     for (const f of files) {
       const name = basename(f, extname(f)).toLowerCase();
       if (name !== 'index') {
         codeEntities.add(name);
       }
     }
-  }
+  });
+
+  await Promise.all(tasks);
 
   return {
     title: 'Data Entities',
@@ -240,11 +252,15 @@ function diffEntities(dir) {
   };
 }
 
-function diffEnvVars(dir) {
+async function diffEnvVars(dir) {
   const envDocPath = resolve(dir, 'docs-canonical/ENVIRONMENT.md');
-  if (!existsSync(envDocPath)) return null;
+  try {
+    await access(envDocPath);
+  } catch {
+    return null;
+  }
 
-  const content = readFileSync(envDocPath, 'utf-8');
+  const content = await readFile(envDocPath, 'utf-8');
 
   // Extract env var names from ENVIRONMENT.md
   const docVars = new Set();
@@ -257,13 +273,13 @@ function diffEnvVars(dir) {
   // Read .env.example
   const codeVars = new Set();
   const envExamplePath = resolve(dir, '.env.example');
-  if (existsSync(envExamplePath)) {
-    const envContent = readFileSync(envExamplePath, 'utf-8');
+  try {
+    const envContent = await readFile(envExamplePath, 'utf-8');
     const envRegex = /^([A-Z][A-Z0-9_]+)\s*=/gm;
     while ((match = envRegex.exec(envContent)) !== null) {
       codeVars.add(match[1]);
     }
-  }
+  } catch { /* skip if .env.example doesn't exist */ }
 
   if (docVars.size === 0 && codeVars.size === 0) return null;
 
@@ -276,13 +292,20 @@ function diffEnvVars(dir) {
   };
 }
 
-function diffTechStack(dir) {
+async function diffTechStack(dir) {
   const archPath = resolve(dir, 'docs-canonical/ARCHITECTURE.md');
   const pkgPath = resolve(dir, 'package.json');
-  if (!existsSync(archPath) || !existsSync(pkgPath)) return null;
+  try {
+    await Promise.all([access(archPath), access(pkgPath)]);
+  } catch {
+    return null;
+  }
 
-  const archContent = readFileSync(archPath, 'utf-8');
-  const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
+  const [archContent, pkgContent] = await Promise.all([
+    readFile(archPath, 'utf-8'),
+    readFile(pkgPath, 'utf-8'),
+  ]);
+  const pkg = JSON.parse(pkgContent);
 
   // Extract tech from ARCHITECTURE.md
   const docTech = new Set();
@@ -322,11 +345,15 @@ function diffTechStack(dir) {
   };
 }
 
-function diffTests(dir) {
+async function diffTests(dir) {
   const testSpecPath = resolve(dir, 'docs-canonical/TEST-SPEC.md');
-  if (!existsSync(testSpecPath)) return null;
+  try {
+    await access(testSpecPath);
+  } catch {
+    return null;
+  }
 
-  const content = readFileSync(testSpecPath, 'utf-8');
+  const content = await readFile(testSpecPath, 'utf-8');
 
   // Extract test file references from TEST-SPEC.md
   const docTests = new Set();
@@ -339,16 +366,22 @@ function diffTests(dir) {
   // Find actual test files
   const codeTests = new Set();
   const testDirs = ['tests', 'test', '__tests__', 'spec', 'e2e'];
-  for (const td of testDirs) {
+  const tasks = testDirs.map(async (td) => {
     const testDir = resolve(dir, td);
-    if (!existsSync(testDir)) continue;
+    try {
+      await access(testDir);
+    } catch {
+      return;
+    }
 
-    const files = getFilesRecursive(testDir);
+    const files = await getFilesRecursive(testDir);
     for (const f of files) {
       const rel = f.replace(dir + '/', '');
       codeTests.add(rel);
     }
-  }
+  });
+
+  await Promise.all(tasks);
 
   if (docTests.size === 0 && codeTests.size === 0) return null;
 
@@ -363,22 +396,28 @@ function diffTests(dir) {
 
 // ── Utilities ──────────────────────────────────────────────────────────────
 
-function getFilesRecursive(dir) {
+async function getFilesRecursive(dir) {
   const results = [];
-  if (!existsSync(dir)) return results;
+  try {
+    await access(dir);
+  } catch {
+    return results;
+  }
 
-  const entries = readdirSync(dir);
-  for (const entry of entries) {
-    if (IGNORE_DIRS.has(entry) || entry.startsWith('.')) continue;
-    const fullPath = join(dir, entry);
+  const entries = await readdir(dir, { withFileTypes: true });
+  const tasks = entries.map(async (entry) => {
+    if (IGNORE_DIRS.has(entry.name) || entry.name.startsWith('.')) return;
+    const fullPath = join(dir, entry.name);
     try {
-      const stat = statSync(fullPath);
-      if (stat.isDirectory()) {
-        results.push(...getFilesRecursive(fullPath));
-      } else if (stat.isFile() && CODE_EXTENSIONS.has(extname(fullPath))) {
+      if (entry.isDirectory()) {
+        const nestedFiles = await getFilesRecursive(fullPath);
+        results.push(...nestedFiles);
+      } else if (entry.isFile() && CODE_EXTENSIONS.has(extname(fullPath))) {
         results.push(fullPath);
       }
     } catch { /* skip */ }
-  }
+  });
+
+  await Promise.all(tasks);
   return results;
 }

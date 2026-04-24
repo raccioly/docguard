@@ -412,7 +412,7 @@ async function main() {
       runScore(projectDir, config, flags);
       break;
     case 'diff':
-      runDiff(projectDir, config, flags);
+      await runDiff(projectDir, config, flags);
       break;
     case 'agents':
       runAgents(projectDir, config, flags);
