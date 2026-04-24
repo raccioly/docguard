@@ -23,6 +23,47 @@ const IGNORE_DIRS = new Set([
  */
 export function scanSchemasDeep(dir, stack, docTools) {
   // Priority 1: OpenAPI schemas
+  const openapiResult = scanOpenAPISchemas(docTools);
+  if (openapiResult) return openapiResult;
+
+  // Priority 2: ORM-specific scanning
+  const entities = [];
+  const relationships = [];
+
+  // Standard ORM Scanners
+  const scanners = [
+    () => scanPrismaSchemas(dir),
+    () => scanDrizzleSchemas(dir),
+    () => scanMongooseSchemas(dir),
+  ];
+
+  for (const scanner of scanners) {
+    const result = scanner();
+    if (result.entities.length > 0) {
+      entities.push(...result.entities);
+      if (result.relationships) {
+        relationships.push(...result.relationships);
+      }
+    }
+  }
+
+  // Zod (if no ORM found, Zod schemas are the data model)
+  if (entities.length === 0) {
+    const zodResult = scanZodSchemas(dir);
+    entities.push(...zodResult.entities);
+  }
+
+  return {
+    entities,
+    relationships,
+    source: entities.length > 0 ? entities[0].source : 'none',
+  };
+}
+
+/**
+ * Extract schemas from OpenAPI spec if available.
+ */
+function scanOpenAPISchemas(docTools) {
   if (docTools?.openapi?.found && docTools.openapi.schemas?.length > 0) {
     return {
       entities: docTools.openapi.schemas.map(s => ({
@@ -36,49 +77,12 @@ export function scanSchemasDeep(dir, stack, docTools) {
       source: 'openapi',
     };
   }
-
-  // Priority 2: ORM-specific scanning
-  const orm = stack?.orm || '';
-  const entities = [];
-  const relationships = [];
-
-  // Prisma
-  const prismaResult = scanPrismaDeep(dir);
-  if (prismaResult.entities.length > 0) {
-    entities.push(...prismaResult.entities);
-    relationships.push(...prismaResult.relationships);
-  }
-
-  // Drizzle
-  const drizzleResult = scanDrizzleSchemas(dir);
-  if (drizzleResult.entities.length > 0) {
-    entities.push(...drizzleResult.entities);
-    relationships.push(...drizzleResult.relationships);
-  }
-
-  // Zod (if no ORM found, Zod schemas are the data model)
-  if (entities.length === 0) {
-    const zodResult = scanZodSchemas(dir);
-    entities.push(...zodResult.entities);
-  }
-
-  // Mongoose
-  const mongooseResult = scanMongooseSchemas(dir);
-  if (mongooseResult.entities.length > 0) {
-    entities.push(...mongooseResult.entities);
-    relationships.push(...mongooseResult.relationships);
-  }
-
-  return {
-    entities,
-    relationships,
-    source: entities.length > 0 ? entities[0].source : 'none',
-  };
+  return null;
 }
 
-// ── Prisma Deep Parser ──────────────────────────────────────────────────────
+// ── Prisma Scanner ──────────────────────────────────────────────────────────
 
-function scanPrismaDeep(dir) {
+function scanPrismaSchemas(dir) {
   const entities = [];
   const relationships = [];
 
@@ -94,54 +98,7 @@ function scanPrismaDeep(dir) {
   while ((modelMatch = modelRegex.exec(content)) !== null) {
     const modelName = modelMatch[1];
     const body = modelMatch[2];
-    const fields = [];
-
-    const lines = body.split('\n');
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed || trimmed.startsWith('//') || trimmed.startsWith('@@')) continue;
-
-      // Parse field: name Type @modifiers
-      const fieldMatch = trimmed.match(/^(\w+)\s+([\w\[\]?]+)(\s+.*)?$/);
-      if (!fieldMatch) continue;
-
-      const fieldName = fieldMatch[1];
-      const rawType = fieldMatch[2];
-      const modifiers = fieldMatch[3] || '';
-
-      // Skip relation fields for field list (but track relationships)
-      const isRelation = rawType.endsWith('[]') || modifiers.includes('@relation');
-
-      if (isRelation && rawType.endsWith('[]')) {
-        relationships.push({
-          from: modelName,
-          to: rawType.replace('[]', '').replace('?', ''),
-          type: 'one-to-many',
-          field: fieldName,
-        });
-        continue;
-      }
-
-      if (isRelation && !rawType.endsWith('[]') && modifiers.includes('@relation')) {
-        relationships.push({
-          from: modelName,
-          to: rawType.replace('?', ''),
-          type: 'many-to-one',
-          field: fieldName,
-        });
-        continue;
-      }
-
-      fields.push({
-        name: fieldName,
-        type: mapPrismaType(rawType),
-        required: !rawType.includes('?'),
-        primaryKey: modifiers.includes('@id'),
-        unique: modifiers.includes('@unique'),
-        default: extractPrismaDefault(modifiers),
-        description: extractInlineComment(line),
-      });
-    }
+    const fields = parsePrismaFields(body, modelName, relationships);
 
     entities.push({
       name: modelName,
@@ -171,6 +128,59 @@ function scanPrismaDeep(dir) {
   }
 
   return { entities, relationships };
+}
+
+function parsePrismaFields(body, modelName, relationships) {
+  const fields = [];
+  const lines = body.split('\n');
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('//') || trimmed.startsWith('@@')) continue;
+
+    // Parse field: name Type @modifiers
+    const fieldMatch = trimmed.match(/^(\w+)\s+([\w\[\]?]+)(\s+.*)?$/);
+    if (!fieldMatch) continue;
+
+    const fieldName = fieldMatch[1];
+    const rawType = fieldMatch[2];
+    const modifiers = fieldMatch[3] || '';
+
+    // Skip relation fields for field list (but track relationships)
+    const isRelation = rawType.endsWith('[]') || modifiers.includes('@relation');
+
+    if (isRelation && rawType.endsWith('[]')) {
+      relationships.push({
+        from: modelName,
+        to: rawType.replace('[]', '').replace('?', ''),
+        type: 'one-to-many',
+        field: fieldName,
+      });
+      continue;
+    }
+
+    if (isRelation && !rawType.endsWith('[]') && modifiers.includes('@relation')) {
+      relationships.push({
+        from: modelName,
+        to: rawType.replace('?', ''),
+        type: 'many-to-one',
+        field: fieldName,
+      });
+      continue;
+    }
+
+    fields.push({
+      name: fieldName,
+      type: mapPrismaType(rawType),
+      required: !rawType.includes('?'),
+      primaryKey: modifiers.includes('@id'),
+      unique: modifiers.includes('@unique'),
+      default: extractPrismaDefault(modifiers),
+      description: extractInlineComment(line),
+    });
+  }
+
+  return fields;
 }
 
 function mapPrismaType(rawType) {
