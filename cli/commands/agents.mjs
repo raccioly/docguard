@@ -47,7 +47,7 @@ export function runAgents(projectDir, config, flags) {
   // Read AGENTS.md content
   const agentsPath = resolve(projectDir, 'AGENTS.md');
   if (!existsSync(agentsPath)) {
-    console.log(`  ${c.red}❌ AGENTS.md not found. Run ${c.cyan}docguard init${c.red} first.${c.reset}\n`);
+    console.error(`  ${c.red}❌ AGENTS.md not found. Run ${c.cyan}docguard init${c.red} first.${c.reset}\n`);
     process.exit(1);
   }
 
@@ -58,7 +58,7 @@ export function runAgents(projectDir, config, flags) {
   const specificAgent = flags.agent;
   if (specificAgent) {
     if (!AGENT_TARGETS[specificAgent]) {
-      console.log(`  ${c.red}Unknown agent: ${specificAgent}${c.reset}`);
+      console.error(`  ${c.red}Unknown agent: ${specificAgent}${c.reset}`);
       console.log(`  Available: ${targets.join(', ')}\n`);
       process.exit(1);
     }

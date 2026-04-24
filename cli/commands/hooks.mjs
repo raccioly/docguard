@@ -135,7 +135,7 @@ export function runHooks(projectDir, config, flags) {
   // Check if .git exists
   const gitDir = resolve(projectDir, '.git');
   if (!existsSync(gitDir)) {
-    console.log(`  ${c.red}❌ Not a git repository. Run ${c.cyan}git init${c.red} first.${c.reset}\n`);
+    console.error(`  ${c.red}❌ Not a git repository. Run ${c.cyan}git init${c.red} first.${c.reset}\n`);
     process.exit(1);
   }
 
@@ -148,7 +148,7 @@ export function runHooks(projectDir, config, flags) {
   let hookTypes = Object.keys(HOOKS);
   if (flags.type) {
     if (!HOOKS[flags.type]) {
-      console.log(`  ${c.red}Unknown hook type: ${flags.type}${c.reset}`);
+      console.error(`  ${c.red}Unknown hook type: ${flags.type}${c.reset}`);
       console.log(`  Available: ${Object.keys(HOOKS).join(', ')}\n`);
       process.exit(1);
     }
