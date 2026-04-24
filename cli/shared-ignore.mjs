@@ -28,12 +28,17 @@ function globToRegex(pattern) {
     .replace(/\*\*/g, '§§')     // temp placeholder for **
     .replace(/\*/g, '[^/]*')
     .replace(/§§/g, '.*');
+
+  // Normalize: remove trailing slash for the "starts with" and "contains" parts
+  // to avoid matching double slashes (e.g., "src//" if pattern was "src/").
+  const base = escaped.endsWith('/') ? escaped.slice(0, -1) : escaped;
+
   // Match if the relative path:
   //   - equals the pattern exactly
   //   - ends with /pattern
   //   - starts with pattern/
   //   - contains /pattern/
-  return new RegExp(`^${escaped}$|/${escaped}$|^${escaped}/|/${escaped}/`);
+  return new RegExp(`^${escaped}$|/${escaped}$|^${base}/|/${base}/`);
 }
 
 /**

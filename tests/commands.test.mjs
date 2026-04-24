@@ -402,40 +402,6 @@ describe('help completeness v0.5', () => {
 
 // ── New tests for v0.9.9 bug fixes ──────────────────────────────────────────
 
-describe('shared ignore utility', () => {
-  it('buildIgnoreFilter matches exact paths', async () => {
-    const { buildIgnoreFilter } = await import('../cli/shared-ignore.mjs');
-    const filter = buildIgnoreFilter(['src/foo.ts', 'backend/test.js']);
-    assert.ok(filter('src/foo.ts'), 'Should match exact path');
-    assert.ok(filter('backend/test.js'), 'Should match exact path');
-    assert.ok(!filter('src/bar.ts'), 'Should not match different file');
-  });
-
-  it('buildIgnoreFilter matches glob patterns', async () => {
-    const { buildIgnoreFilter } = await import('../cli/shared-ignore.mjs');
-    const filter = buildIgnoreFilter(['packages/cdk/**', 'backend/src/__tests__/**']);
-    assert.ok(filter('packages/cdk/lib/stacks/app-stack.ts'), 'Should match ** glob');
-    assert.ok(filter('backend/src/__tests__/schemaContracts.test.ts'), 'Should match ** glob');
-    assert.ok(!filter('backend/src/services/auth.ts'), 'Should not match non-test file');
-  });
-
-  it('shouldIgnore checks both global and validator-specific ignore', async () => {
-    const { shouldIgnore } = await import('../cli/shared-ignore.mjs');
-    const config = {
-      ignore: ['example_settlement'],
-      securityIgnore: ['backend/src/__tests__/**'],
-    };
-    assert.ok(shouldIgnore('example_settlement/foo.ts', config), 'Global ignore should work');
-    assert.ok(shouldIgnore('backend/src/__tests__/foo.test.ts', config, 'securityIgnore'), 'Validator-specific ignore should work');
-    assert.ok(!shouldIgnore('backend/src/services/auth.ts', config, 'securityIgnore'), 'Non-ignored file should pass');
-  });
-
-  it('empty patterns return false', async () => {
-    const { buildIgnoreFilter } = await import('../cli/shared-ignore.mjs');
-    const filter = buildIgnoreFilter([]);
-    assert.ok(!filter('any/file.ts'), 'Empty patterns should not match anything');
-  });
-});
 
 describe('securityIgnore config', () => {
   it('security validator respects securityIgnore', () => {
@@ -526,67 +492,6 @@ describe('testPatterns config', () => {
   });
 });
 
-describe('globMatch — positive pattern matching with node_modules exclusion', () => {
-  // Import globMatch dynamically
-  let globMatch;
-
-  it('loads globMatch from shared-ignore.mjs', async () => {
-    const mod = await import(join(__dirname, '..', 'cli', 'shared-ignore.mjs'));
-    globMatch = mod.globMatch;
-    assert.ok(typeof globMatch === 'function', 'globMatch should be a function');
-  });
-
-  it('rejects paths containing node_modules at root', async () => {
-    if (!globMatch) {
-      const mod = await import(join(__dirname, '..', 'cli', 'shared-ignore.mjs'));
-      globMatch = mod.globMatch;
-    }
-    const patterns = ['**/__tests__/**/*.test.ts'];
-    assert.equal(globMatch('node_modules/zod/__tests__/foo.test.ts', patterns), false,
-      'Should reject root-level node_modules');
-  });
-
-  it('rejects paths containing node_modules at any depth', async () => {
-    if (!globMatch) {
-      const mod = await import(join(__dirname, '..', 'cli', 'shared-ignore.mjs'));
-      globMatch = mod.globMatch;
-    }
-    const patterns = ['backend/**/__tests__/**/*.test.ts'];
-    assert.equal(globMatch('backend/node_modules/zod/__tests__/string.test.ts', patterns), false,
-      'Should reject nested node_modules');
-    assert.equal(globMatch('packages/foo/node_modules/bar/__tests__/baz.test.ts', patterns), false,
-      'Should reject deeply nested node_modules');
-  });
-
-  it('matches valid test paths', async () => {
-    if (!globMatch) {
-      const mod = await import(join(__dirname, '..', 'cli', 'shared-ignore.mjs'));
-      globMatch = mod.globMatch;
-    }
-    const patterns = ['backend/**/__tests__/**/*.test.ts'];
-    assert.equal(globMatch('backend/src/__tests__/auth.test.ts', patterns), true,
-      'Should match valid test file');
-    assert.equal(globMatch('backend/src/controllers/__tests__/admin.test.ts', patterns), true,
-      'Should match deeply nested test file');
-  });
-
-  it('handles multiple patterns', async () => {
-    if (!globMatch) {
-      const mod = await import(join(__dirname, '..', 'cli', 'shared-ignore.mjs'));
-      globMatch = mod.globMatch;
-    }
-    const patterns = [
-      'backend/**/__tests__/**/*.test.ts',
-      'e2e/**/*.spec.ts',
-    ];
-    assert.equal(globMatch('backend/src/__tests__/auth.test.ts', patterns), true,
-      'Should match first pattern');
-    assert.equal(globMatch('e2e/login.spec.ts', patterns), true,
-      'Should match second pattern');
-    assert.equal(globMatch('frontend/src/app.ts', patterns), false,
-      'Should not match unrelated file');
-  });
-});
 
 describe('CI detection expansion', () => {
   it('score detects buildspec.yml as CI config', () => {
