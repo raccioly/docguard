@@ -29,6 +29,10 @@ function activate(context) {
   );
   statusBarItem.command = 'specguard.score';
   statusBarItem.tooltip = 'Click to see CDD score details';
+  statusBarItem.accessibilityInformation = {
+    label: 'Canonical Driven Development score is currently unknown',
+    role: 'button'
+  };
   context.subscriptions.push(statusBarItem);
 
   // Diagnostics
@@ -213,6 +217,10 @@ async function refreshScore() {
     const jsonStart = output.indexOf('{');
     if (jsonStart < 0) {
       statusBarItem.text = '$(shield) CDD: ?';
+      statusBarItem.accessibilityInformation = {
+        label: 'Canonical Driven Development score could not be determined',
+        role: 'button'
+      };
       statusBarItem.show();
       return;
     }
@@ -232,6 +240,10 @@ async function refreshScore() {
 
     statusBarItem.text = `${icon} CDD: ${score}/100 (${grade})`;
     statusBarItem.tooltip = `CDD Score: ${score}/100 - ${tooltipStatus}\nClick to see details`;
+    statusBarItem.accessibilityInformation = {
+      label: `Canonical Driven Development score is ${score} out of 100, grade ${grade}. Status is ${tooltipStatus}.`,
+      role: 'button'
+    };
     statusBarItem.backgroundColor = score < threshold
       ? new vscode.ThemeColor('statusBarItem.warningBackground')
       : undefined;
@@ -243,6 +255,10 @@ async function refreshScore() {
     outputChannel.appendLine(`Score refreshed: ${score}/100 (${grade})`);
   } catch (e) {
     statusBarItem.text = '$(shield) CDD: ?';
+    statusBarItem.accessibilityInformation = {
+      label: 'Canonical Driven Development score failed to load due to an error',
+      role: 'button'
+    };
     statusBarItem.show();
     outputChannel.appendLine(`Score refresh error: ${e.message}`);
   }
