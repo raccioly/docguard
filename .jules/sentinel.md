@@ -2,3 +2,8 @@
 **Vulnerability:** Found multiple instances where user-controlled inputs (`projectDir`, `filePath`) were interpolated directly into shell commands via `execSync` (e.g., `execSync(\`node "\${cliPath}" init --dir "\${projectDir}"\`)`).
 **Learning:** This is a classic command injection vulnerability. If `projectDir` contains shell metacharacters like `;`, `&&`, or `||`, it allows arbitrary command execution.
 **Prevention:** Always use `execFileSync` (or `execFile` for async) instead of `execSync` when executing commands with dynamic inputs. Pass arguments as an array to ensure they are passed directly to the executable without shell interpolation.
+
+## 2025-02-14 - [CRITICAL] Command injection vulnerability in VS Code extension
+**Vulnerability:** Command injection vulnerability identified in the `execSpecguard` function in `vscode-extension/extension.js`. The `args` variable passed from other extension commands is directly interpolated into a command string passed to `execSync`, allowing any user-supplied path strings to inject shell commands.
+**Learning:** The `child_process` methods like `execFileSync` cannot natively execute batch files (e.g. `.bat` or `.cmd`, like `npx.cmd`) on Windows without the `shell: true` option. Attempting to execute `command + '.cmd'` manually throws errors caught by try-catch blocks that can mask real failures. Furthermore, when substituting `execSync` with `execFileSync`, always pass an array of arguments from the start.
+**Prevention:** Rather than parsing string arguments into arrays inside the execution function, refactor the function to accept argument arrays natively. This prevents parsing errors (like stripping necessary quotes) and properly maintains argument separation for `execFileSync`.
