@@ -256,24 +256,26 @@ function loadTrackingDocs(projectDir, config) {
 
 function findTestFiles(rootDir, dir, files, config) {
   let entries;
-  try { entries = readdirSync(dir); } catch { return; }
+  try { entries = readdirSync(dir, { withFileTypes: true }); } catch { return; }
 
   for (const entry of entries) {
-    if (IGNORE_DIRS.has(entry)) continue;
-    if (entry.startsWith('.')) continue;
+    if (IGNORE_DIRS.has(entry.name)) continue;
+    if (entry.name.startsWith('.')) continue;
 
-    const full = join(dir, entry);
-    let stat;
-    try { stat = statSync(full); } catch { continue; }
+    const full = join(dir, entry.name);
 
-    if (stat.isDirectory()) {
+    if (entry.isDirectory()) {
+      // Early ignore check for directories to prune entire subtree scans
+      const relPath = relative(rootDir, full);
+      if (config && shouldIgnore(relPath, config, 'todoIgnore')) continue;
+
       findTestFiles(rootDir, full, files, config);
-    } else {
-      const ext = extname(entry).toLowerCase();
+    } else if (entry.isFile()) {
+      const ext = extname(entry.name).toLowerCase();
       if (!TEST_EXTENSIONS.has(ext)) continue;
 
       // Match test file patterns
-      if (/\.(test|spec)\.(mjs|cjs|[jt]sx?)$/.test(entry) ||
+      if (/\.(test|spec)\.(mjs|cjs|[jt]sx?)$/.test(entry.name) ||
           /__(tests|test)__/.test(relative(rootDir, full))) {
         const relPath = relative(rootDir, full);
         // Apply config ignore patterns (todoIgnore + global ignore)
@@ -286,20 +288,22 @@ function findTestFiles(rootDir, dir, files, config) {
 
 function findTodos(rootDir, dir, todos, config) {
   let entries;
-  try { entries = readdirSync(dir); } catch { return; }
+  try { entries = readdirSync(dir, { withFileTypes: true }); } catch { return; }
 
   for (const entry of entries) {
-    if (IGNORE_DIRS.has(entry)) continue;
-    if (entry.startsWith('.')) continue;
+    if (IGNORE_DIRS.has(entry.name)) continue;
+    if (entry.name.startsWith('.')) continue;
 
-    const full = join(dir, entry);
-    let stat;
-    try { stat = statSync(full); } catch { continue; }
+    const full = join(dir, entry.name);
 
-    if (stat.isDirectory()) {
+    if (entry.isDirectory()) {
+      // Early ignore check for directories to prune entire subtree scans
+      const relPath = relative(rootDir, full);
+      if (config && shouldIgnore(relPath, config, 'todoIgnore')) continue;
+
       findTodos(rootDir, full, todos, config);
-    } else {
-      const ext = extname(entry).toLowerCase();
+    } else if (entry.isFile()) {
+      const ext = extname(entry.name).toLowerCase();
       if (!SOURCE_EXTENSIONS.has(ext)) continue;
 
       const relPath = relative(rootDir, full);
