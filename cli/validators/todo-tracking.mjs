@@ -39,17 +39,7 @@ const TODO_PATTERN = /\b(TODO|FIXME|HACK|XXX|TEMP(?!late|orar)|WORKAROUND)\s*[(:
 const TODO_EXTRACT = /\b(TODO|FIXME|HACK|XXX|TEMP(?!late|orar)|WORKAROUND)\s*[:(]?\s*(.+)/;
 
 // Test skip patterns for common test frameworks
-const SKIP_PATTERNS = [
-  /\btest\.skip\s*\(/,
-  /\bit\.skip\s*\(/,
-  /\bdescribe\.skip\s*\(/,
-  /\bxit\s*\(/,
-  /\bxdescribe\s*\(/,
-  /\bxtest\s*\(/,
-  /\.todo\s*\(/,
-  /\btest\.todo\s*\(/,
-  /\bit\.todo\s*\(/,
-];
+const SKIP_PATTERNS = /\b(?:test\.skip|it\.skip|describe\.skip|xit|xdescribe|xtest|test\.todo|it\.todo)\s*\(|\.todo\s*\(/;
 
 // Skip explanation patterns (comments that justify the skip)
 const SKIP_REASON_PATTERN = /\/\/\s*(REASON|SKIP|TODO|FIXME|NOTE|WHY)\s*:/i;
@@ -106,31 +96,89 @@ function checkSkippedTests(projectDir, config) {
     try { content = readFileSync(fullPath, 'utf-8'); } catch { continue; }
 
     // Fast early-return: skip expensive string split if no skip patterns exist
-    const hasSkip = SKIP_PATTERNS.some(p => p.test(content));
-    if (!hasSkip) continue;
+    if (!SKIP_PATTERNS.test(content)) continue;
 
-    const lines = content.split('\n');
+    // Fast memory-efficient line parsing, replacing lines.split
+    let i = 0;
+    let lineStartIndex = 0;
+    let newlineIndex = content.indexOf('\n');
 
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
+    while (newlineIndex !== -1) {
+      const line = content.slice(lineStartIndex, newlineIndex);
 
       // Check if this line has a test skip pattern
-      const isSkipped = SKIP_PATTERNS.some(p => p.test(line));
-      if (!isSkipped) continue;
+      if (SKIP_PATTERNS.test(line)) {
+        // Find surrounding lines (3 above, 1 below, and inline) for explanation
+        // Developers commonly place block comments above the skip call
+        // We find the bounds rather than slicing an array of lines.
+        let surroundingStart = lineStartIndex;
+        for (let k = 0; k < 3; k++) {
+          const prev = content.lastIndexOf('\n', surroundingStart - 2);
+          if (prev === -1) {
+            surroundingStart = 0;
+            break;
+          }
+          surroundingStart = prev + 1;
+        }
 
-      // Check surrounding lines (3 above, 1 below, and inline) for explanation
-      // Developers commonly place block comments above the skip call
-      const surroundingLines = [];
-      for (let j = Math.max(0, i - 3); j <= Math.min(lines.length - 1, i + 1); j++) {
-        surroundingLines.push(lines[j]);
+        let surroundingEnd = newlineIndex;
+        for (let k = 0; k < 2; k++) {
+          const next = content.indexOf('\n', surroundingEnd + 1);
+          if (next === -1) {
+            surroundingEnd = content.length;
+            break;
+          }
+          surroundingEnd = next;
+        }
+
+        const surroundingLines = content.slice(surroundingStart, surroundingEnd);
+
+        // Also check for block comment pattern: /* REASON: ... */ or /** ... REASON: ... */
+        const blockCommentPattern = /\/\*[\s\S]*?(REASON|SKIP|TODO|FIXME|NOTE|WHY)\s*:/i;
+
+        const hasReason =
+          SKIP_REASON_PATTERN.test(surroundingLines) ||
+          blockCommentPattern.test(surroundingLines);
+
+        if (hasReason) {
+          skippedWithReason++;
+        } else {
+          skippedWithoutReason++;
+          warnings.push(
+            `Skipped test without explanation at ${relPath}:${i + 1}. ` +
+            `Add a // REASON: comment explaining why the test is skipped`
+          );
+        }
       }
+
+      lineStartIndex = newlineIndex + 1;
+      newlineIndex = content.indexOf('\n', lineStartIndex);
+      i++;
+    }
+
+    // Process last line
+    const line = content.slice(lineStartIndex);
+    if (SKIP_PATTERNS.test(line)) {
+      // Find surrounding lines (3 above, 1 below, and inline) for explanation
+
+      let surroundingStart = lineStartIndex;
+      for (let k = 0; k < 3; k++) {
+        const prev = content.lastIndexOf('\n', surroundingStart - 2);
+        if (prev === -1) {
+          surroundingStart = 0;
+          break;
+        }
+        surroundingStart = prev + 1;
+      }
+
+      const surroundingLines = content.slice(surroundingStart);
 
       // Also check for block comment pattern: /* REASON: ... */ or /** ... REASON: ... */
       const blockCommentPattern = /\/\*[\s\S]*?(REASON|SKIP|TODO|FIXME|NOTE|WHY)\s*:/i;
 
       const hasReason =
-        surroundingLines.some(l => SKIP_REASON_PATTERN.test(l)) ||
-        blockCommentPattern.test(surroundingLines.join('\n'));
+        SKIP_REASON_PATTERN.test(surroundingLines) ||
+        blockCommentPattern.test(surroundingLines);
 
       if (hasReason) {
         skippedWithReason++;
@@ -189,7 +237,7 @@ function checkUntrackedTodos(projectDir, config) {
     // Improved matching: check full text AND file location context
     const isTracked = trackingContent.some(doc => {
       const content = doc.content;
-      const contentLower = content.toLowerCase();
+      const contentLower = doc.contentLower;
       const todoTextLower = todo.text.toLowerCase().trim();
 
       // Match 1: Full TODO text appears in the doc (at least 20 chars or full text)
@@ -244,7 +292,12 @@ function loadTrackingDocs(projectDir, config) {
     const fullPath = resolve(projectDir, file);
     if (existsSync(fullPath)) {
       try {
-        docs.push({ file, content: readFileSync(fullPath, 'utf-8') });
+        const content = readFileSync(fullPath, 'utf-8');
+        docs.push({
+          file,
+          content,
+          contentLower: content.toLowerCase()
+        });
       } catch { /* ignore */ }
     }
   }
@@ -313,19 +366,40 @@ function findTodos(rootDir, dir, todos, config) {
       // Fast early-return: skip expensive string split if no TODO patterns exist
       if (!TODO_PATTERN.test(content)) continue;
 
-      const lines = content.split('\n');
+      // Use indexOf('\n') to avoid array allocation overhead (as per memory)
+      let lineNum = 1;
+      let lineStartIndex = 0;
+      let newlineIndex = content.indexOf('\n');
 
-      for (let i = 0; i < lines.length; i++) {
-        if (TODO_PATTERN.test(lines[i])) {
-          const match = lines[i].match(TODO_EXTRACT);
+      while (newlineIndex !== -1) {
+        const line = content.slice(lineStartIndex, newlineIndex);
+        if (TODO_PATTERN.test(line)) {
+          const match = line.match(TODO_EXTRACT);
           if (match) {
             todos.push({
               keyword: match[1].toUpperCase(),
               text: match[2].trim(),
               file: relPath,
-              line: i + 1,
+              line: lineNum,
             });
           }
+        }
+        lineStartIndex = newlineIndex + 1;
+        newlineIndex = content.indexOf('\n', lineStartIndex);
+        lineNum++;
+      }
+
+      // Process last line
+      const line = content.slice(lineStartIndex);
+      if (TODO_PATTERN.test(line)) {
+        const match = line.match(TODO_EXTRACT);
+        if (match) {
+          todos.push({
+            keyword: match[1].toUpperCase(),
+            text: match[2].trim(),
+            file: relPath,
+            line: lineNum,
+          });
         }
       }
     }
