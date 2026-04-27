@@ -1,7 +1,6 @@
-## 2024-04-16 - Web UI Components Constraint
-**Learning:** The docguard repository consists entirely of a Node.js CLI tool and a VS Code extension; it lacks web UI components (e.g., HTML, CSS, React, Vue), meaning traditional web-focused micro-UX enhancements do not apply.
-**Action:** Do not attempt traditional web-based UX enhancements here. Focus on CLI paradigms or skip UX enhancement requests if web-centric.
-
-## 2024-04-16 - Context-Aware Status Bar Tooltips
-**Learning:** VS Code extension status bar items can display multiple forms of feedback, but static tooltips fail to explain state changes. Providing context-aware tooltip text (e.g., explaining why a threshold warning icon appears) greatly improves the usability for developers monitoring CLI outputs inline.
-**Action:** Always map status bar dynamic properties (icon, text, backgroundColor) to corresponding informative tooltips that explain what the visual change means.
+## 2024-04-27 - Add accessibility context to VS Code status bar items
+**Learning:** In the VS Code extension, `StatusBarItem` elements that rely primarily on icons or shorthand text (like "$(shield) CDD: ?") are completely opaque to screen readers unless explicit accessibility metadata is provided.
+**Action:** When creating or updating a `StatusBarItem` dynamically, always set and update its `accessibilityInformation` (providing a clear `label` and `role`) to ensure screen reader users get the full, spoken context.
+## 2024-04-27 - Add accessibility context to VS Code status bar items
+**Learning:** In the VS Code extension, `StatusBarItem` elements that rely primarily on icons or shorthand text (like "$(shield) CDD: ?") are completely opaque to screen readers unless explicit accessibility metadata is provided.
+**Action:** When creating or updating a `StatusBarItem` dynamically, always set and update its `accessibilityInformation` (providing a clear `label` and `role`) to ensure screen reader users get the full, spoken context.
