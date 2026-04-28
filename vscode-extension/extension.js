@@ -9,7 +9,7 @@
  */
 
 const vscode = require('vscode');
-const { execSync } = require('child_process');
+const { execSync, execFileSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
@@ -20,7 +20,7 @@ let fileWatcher;
 
 // ── Activation ─────────────────────────────────────────────────────────────
 
-function activate(context) {
+async function activate(context) {
   outputChannel = vscode.window.createOutputChannel('SpecGuard');
 
   // Status bar
@@ -182,20 +182,40 @@ function findSpecguard(workspaceDir) {
 function execSpecguard(workspaceDir, args) {
   const localBin = findSpecguard(workspaceDir);
 
-  let cmd;
-  if (localBin) {
-    cmd = `"${localBin}" ${args}`;
-  } else {
-    cmd = `npx -y specguard ${args}`;
-  }
+  // Parse arguments array carefully considering quotes if any.
+  // Using a simple split for standard known args since we pass them predictably.
+  const matchResult = args.match(/(?:[^\s"]+|"[^"]*")+/g);
+  const argsArray = matchResult ? matchResult.map(arg => arg.replace(/^"|"$/g, '')) : [];
+
+  const options = {
+    cwd: workspaceDir,
+    encoding: 'utf-8',
+    env: { ...process.env, NO_COLOR: '1' },
+    timeout: 30000,
+    stdio: 'pipe'
+  };
 
   try {
-    return execSync(cmd, {
-      cwd: workspaceDir,
-      encoding: 'utf-8',
-      env: { ...process.env, NO_COLOR: '1' },
-      timeout: 30000,
-    });
+    if (localBin) {
+      try {
+        return execFileSync(localBin, argsArray, options);
+      } catch (err) {
+        if (err.code === 'ENOENT' && process.platform === 'win32') {
+          return execFileSync(localBin + '.cmd', argsArray, options);
+        }
+        throw err;
+      }
+    } else {
+      const npxArgs = ['-y', 'specguard', ...argsArray];
+      try {
+        return execFileSync('npx', npxArgs, options);
+      } catch (err) {
+        if (err.code === 'ENOENT' && process.platform === 'win32') {
+          return execFileSync('npx.cmd', npxArgs, options);
+        }
+        throw err;
+      }
+    }
   } catch (e) {
     outputChannel.appendLine(`SpecGuard error: ${e.message}`);
     return e.stdout || '';
