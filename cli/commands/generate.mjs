@@ -472,7 +472,14 @@ function countFilesAndLines(dir, scan) {
     scan.totalFiles++;
     try {
       const content = readFileSync(filePath, 'utf-8');
-      scan.totalLines += content.split('\n').length;
+
+      // Fast line counting without allocating an array of strings
+      let lines = 1;
+      let i = -1;
+      while ((i = content.indexOf('\n', i + 1)) !== -1) {
+        lines++;
+      }
+      scan.totalLines += lines;
     } catch { /* skip binary files */ }
   });
 }
