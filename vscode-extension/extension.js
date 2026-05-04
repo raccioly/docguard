@@ -20,7 +20,7 @@ let fileWatcher;
 
 // ── Activation ─────────────────────────────────────────────────────────────
 
-function activate(context) {
+async function activate(context) {
   outputChannel = vscode.window.createOutputChannel('SpecGuard');
 
   // Status bar
@@ -212,7 +212,9 @@ async function refreshScore() {
     const output = execSpecguard(dir, 'score --format json');
     const jsonStart = output.indexOf('{');
     if (jsonStart < 0) {
-      statusBarItem.text = '$(shield) CDD: ?';
+      statusBarItem.text = '$(warning) CDD: ?';
+      statusBarItem.tooltip = 'Score unavailable - could not parse output. Click to see details.';
+      statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
       statusBarItem.show();
       return;
     }
@@ -242,7 +244,9 @@ async function refreshScore() {
 
     outputChannel.appendLine(`Score refreshed: ${score}/100 (${grade})`);
   } catch (e) {
-    statusBarItem.text = '$(shield) CDD: ?';
+    statusBarItem.text = '$(error) CDD: Error';
+    statusBarItem.tooltip = `Error refreshing score: ${e.message}. Click to see details.`;
+    statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground');
     statusBarItem.show();
     outputChannel.appendLine(`Score refresh error: ${e.message}`);
   }
