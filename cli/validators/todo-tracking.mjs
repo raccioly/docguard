@@ -185,12 +185,17 @@ function checkUntrackedTodos(projectDir, config) {
   let untrackedCount = 0;
 
   for (const todo of todos) {
+    // ⚡ Bolt Optimization: Hoist todoTextLower computation outside of the document check
+    // loop so it is only computed once per TODO item.
+    const todoTextLower = todo.text.toLowerCase().trim();
+
     // Check if the TODO is tracked in documentation
     // Improved matching: check full text AND file location context
+    // ⚡ Bolt Optimization: Use precomputed doc.contentLower instead of calling .toLowerCase()
+    // inside the O(N*M) loop to significantly reduce redundant string allocations and processing time.
     const isTracked = trackingContent.some(doc => {
       const content = doc.content;
-      const contentLower = content.toLowerCase();
-      const todoTextLower = todo.text.toLowerCase().trim();
+      const contentLower = doc.contentLower;
 
       // Match 1: Full TODO text appears in the doc (at least 20 chars or full text)
       const searchText = todoTextLower.length > 20
@@ -244,7 +249,9 @@ function loadTrackingDocs(projectDir, config) {
     const fullPath = resolve(projectDir, file);
     if (existsSync(fullPath)) {
       try {
-        docs.push({ file, content: readFileSync(fullPath, 'utf-8') });
+        const content = readFileSync(fullPath, 'utf-8');
+        // ⚡ Bolt Optimization: Precompute .toLowerCase() once during file load to prevent N^2 performance bottlenecks
+        docs.push({ file, content, contentLower: content.toLowerCase() });
       } catch { /* ignore */ }
     }
   }
