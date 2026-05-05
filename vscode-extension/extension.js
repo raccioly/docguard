@@ -9,7 +9,7 @@
  */
 
 const vscode = require('vscode');
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
@@ -20,7 +20,7 @@ let fileWatcher;
 
 // ── Activation ─────────────────────────────────────────────────────────────
 
-function activate(context) {
+async function activate(context) {
   outputChannel = vscode.window.createOutputChannel('SpecGuard');
 
   // Status bar
@@ -181,21 +181,44 @@ function findSpecguard(workspaceDir) {
 
 function execSpecguard(workspaceDir, args) {
   const localBin = findSpecguard(workspaceDir);
+  const argsArray = args.split(' ').filter(Boolean);
 
-  let cmd;
+  let executable;
+  let finalArgs = [];
+
   if (localBin) {
-    cmd = `"${localBin}" ${args}`;
+    executable = localBin;
+    finalArgs = argsArray;
   } else {
-    cmd = `npx -y specguard ${args}`;
+    executable = 'npx';
+    finalArgs = ['-y', 'specguard', ...argsArray];
   }
 
+  const runWithFallback = (execPath, execArgs) => {
+    try {
+      return execFileSync(execPath, execArgs, {
+        cwd: workspaceDir,
+        encoding: 'utf-8',
+        env: { ...process.env, NO_COLOR: '1' },
+        timeout: 30000,
+        stdio: 'pipe'
+      });
+    } catch (e) {
+      if (process.platform === 'win32' && e.code === 'ENOENT' && !execPath.endsWith('.cmd')) {
+        return execFileSync(execPath + '.cmd', execArgs, {
+          cwd: workspaceDir,
+          encoding: 'utf-8',
+          env: { ...process.env, NO_COLOR: '1' },
+          timeout: 30000,
+          stdio: 'pipe'
+        });
+      }
+      throw e;
+    }
+  };
+
   try {
-    return execSync(cmd, {
-      cwd: workspaceDir,
-      encoding: 'utf-8',
-      env: { ...process.env, NO_COLOR: '1' },
-      timeout: 30000,
-    });
+    return runWithFallback(executable, finalArgs);
   } catch (e) {
     outputChannel.appendLine(`SpecGuard error: ${e.message}`);
     return e.stdout || '';
