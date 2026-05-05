@@ -43,11 +43,23 @@ function globToRegex(pattern) {
  * @param {string[]} patterns - Glob patterns (from config.ignore, config.securityIgnore, etc.)
  * @returns {(relPath: string) => boolean} - true if file should be ignored
  */
+// ⚡ Bolt Optimization: Cache compiled regex filters to prevent redundant regex compilation overhead
+// during recursive directory scans where shouldIgnore is called repeatedly with the same patterns.
+const filterCache = new Map();
+
 export function buildIgnoreFilter(patterns = []) {
   if (!patterns || patterns.length === 0) return () => false;
 
+  const cacheKey = JSON.stringify(patterns);
+  if (filterCache.has(cacheKey)) {
+    return filterCache.get(cacheKey);
+  }
+
   const regexes = patterns.map(p => globToRegex(p));
-  return (relPath) => regexes.some(regex => regex.test(relPath));
+  const filterFn = (relPath) => regexes.some(regex => regex.test(relPath));
+
+  filterCache.set(cacheKey, filterFn);
+  return filterFn;
 }
 
 /**
