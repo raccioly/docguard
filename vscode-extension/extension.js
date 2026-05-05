@@ -20,7 +20,7 @@ let fileWatcher;
 
 // ── Activation ─────────────────────────────────────────────────────────────
 
-function activate(context) {
+async function activate(context) {
   outputChannel = vscode.window.createOutputChannel('SpecGuard');
 
   // Status bar
@@ -213,6 +213,7 @@ async function refreshScore() {
     const jsonStart = output.indexOf('{');
     if (jsonStart < 0) {
       statusBarItem.text = '$(shield) CDD: ?';
+      statusBarItem.tooltip = 'SpecGuard is unable to parse the CDD score. Click for details.';
       statusBarItem.show();
       return;
     }
@@ -243,6 +244,7 @@ async function refreshScore() {
     outputChannel.appendLine(`Score refreshed: ${score}/100 (${grade})`);
   } catch (e) {
     statusBarItem.text = '$(shield) CDD: ?';
+    statusBarItem.tooltip = 'SpecGuard encountered an error while calculating the CDD score. Click for details.';
     statusBarItem.show();
     outputChannel.appendLine(`Score refresh error: ${e.message}`);
   }
