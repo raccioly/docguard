@@ -36,6 +36,10 @@ function globToRegex(pattern) {
   return new RegExp(`^${escaped}$|/${escaped}$|^${escaped}/|/${escaped}/`);
 }
 
+// Internal cache to prevent redundant regex compilation for identical ignore patterns
+// Maps stringified patterns array -> compiled filter function
+const filterCache = new Map();
+
 /**
  * Build a filter function from an array of glob patterns.
  * Returns a function that returns true if a relative path should be SKIPPED.
@@ -46,8 +50,17 @@ function globToRegex(pattern) {
 export function buildIgnoreFilter(patterns = []) {
   if (!patterns || patterns.length === 0) return () => false;
 
+  // ⚡ Optimization: Check cache to avoid N^2 regex compilation during recursive traversal
+  const cacheKey = JSON.stringify(patterns);
+  if (filterCache.has(cacheKey)) {
+    return filterCache.get(cacheKey);
+  }
+
   const regexes = patterns.map(p => globToRegex(p));
-  return (relPath) => regexes.some(regex => regex.test(relPath));
+  const filterFn = (relPath) => regexes.some(regex => regex.test(relPath));
+
+  filterCache.set(cacheKey, filterFn);
+  return filterFn;
 }
 
 /**
