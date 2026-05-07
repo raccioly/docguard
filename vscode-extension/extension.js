@@ -9,7 +9,7 @@
  */
 
 const vscode = require('vscode');
-const { execSync } = require('child_process');
+const { execSync, execFileSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
@@ -20,7 +20,7 @@ let fileWatcher;
 
 // ── Activation ─────────────────────────────────────────────────────────────
 
-function activate(context) {
+async function activate(context) {
   outputChannel = vscode.window.createOutputChannel('SpecGuard');
 
   // Status bar
@@ -172,29 +172,68 @@ function getNodePath() {
 
 function findSpecguard(workspaceDir) {
   // Check local node_modules first
-  const localBin = path.join(workspaceDir, 'node_modules', '.bin', 'specguard');
+  const binName = process.platform === 'win32' ? 'specguard.cmd' : 'specguard';
+  const localBin = path.join(workspaceDir, 'node_modules', '.bin', binName);
   if (fs.existsSync(localBin)) return localBin;
 
   // Try npx
   return null;
 }
 
+// Helper to parse string arguments into an array respecting quotes
+function parseArgsStringToArgv(value) {
+  const args = [];
+  let currentArg = '';
+  let inDoubleQuote = false;
+  let inSingleQuote = false;
+
+  for (let i = 0; i < value.length; i++) {
+    const char = value[i];
+
+    if (char === '"' && !inSingleQuote) {
+      inDoubleQuote = !inDoubleQuote;
+    } else if (char === "'" && !inDoubleQuote) {
+      inSingleQuote = !inSingleQuote;
+    } else if (char === ' ' && !inDoubleQuote && !inSingleQuote) {
+      if (currentArg.length > 0) {
+        args.push(currentArg);
+        currentArg = '';
+      }
+    } else {
+      currentArg += char;
+    }
+  }
+
+  if (currentArg.length > 0) {
+    args.push(currentArg);
+  }
+
+  return args;
+}
+
 function execSpecguard(workspaceDir, args) {
   const localBin = findSpecguard(workspaceDir);
+  const argsArray = typeof args === 'string' ? parseArgsStringToArgv(args) : args;
 
-  let cmd;
+  let executable;
+  let finalArgs = [];
+
   if (localBin) {
-    cmd = `"${localBin}" ${args}`;
+    executable = localBin;
+    finalArgs = argsArray;
   } else {
-    cmd = `npx -y specguard ${args}`;
+    executable = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+    finalArgs = ['-y', 'specguard', ...argsArray];
   }
 
   try {
-    return execSync(cmd, {
+    return execFileSync(executable, finalArgs, {
       cwd: workspaceDir,
       encoding: 'utf-8',
       env: { ...process.env, NO_COLOR: '1' },
       timeout: 30000,
+      stdio: 'pipe',
+      shell: process.platform === 'win32'
     });
   } catch (e) {
     outputChannel.appendLine(`SpecGuard error: ${e.message}`);
