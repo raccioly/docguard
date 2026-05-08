@@ -9,7 +9,7 @@
  */
 
 const vscode = require('vscode');
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
@@ -20,7 +20,7 @@ let fileWatcher;
 
 // ── Activation ─────────────────────────────────────────────────────────────
 
-function activate(context) {
+async function activate(context) {
   outputChannel = vscode.window.createOutputChannel('SpecGuard');
 
   // Status bar
@@ -172,33 +172,80 @@ function getNodePath() {
 
 function findSpecguard(workspaceDir) {
   // Check local node_modules first
-  const localBin = path.join(workspaceDir, 'node_modules', '.bin', 'specguard');
-  if (fs.existsSync(localBin)) return localBin;
+  // Find the actual JS file to execute directly with node
+  const localJs = path.join(workspaceDir, 'node_modules', 'specguard', 'cli', 'docguard.mjs');
+  if (fs.existsSync(localJs)) return localJs;
 
   // Try npx
   return null;
 }
 
-function execSpecguard(workspaceDir, args) {
-  const localBin = findSpecguard(workspaceDir);
+function parseArgs(argsStr) {
+  const args = [];
+  let currentArg = '';
+  let inQuotes = false;
+  let quoteChar = '';
 
-  let cmd;
-  if (localBin) {
-    cmd = `"${localBin}" ${args}`;
-  } else {
-    cmd = `npx -y specguard ${args}`;
+  for (let i = 0; i < argsStr.length; i++) {
+    const char = argsStr[i];
+
+    if ((char === '"' || char === "'") && (i === 0 || argsStr[i - 1] !== '\\')) {
+      if (!inQuotes) {
+        inQuotes = true;
+        quoteChar = char;
+      } else if (char === quoteChar) {
+        inQuotes = false;
+        quoteChar = '';
+      } else {
+        currentArg += char;
+      }
+    } else if (char === ' ' && !inQuotes) {
+      if (currentArg.length > 0) {
+        args.push(currentArg);
+        currentArg = '';
+      }
+    } else {
+      currentArg += char;
+    }
   }
 
+  if (currentArg.length > 0) {
+    args.push(currentArg);
+  }
+
+  return args;
+}
+
+function execSpecguard(workspaceDir, args) {
+  const localJs = findSpecguard(workspaceDir);
+  const parsedArgs = parseArgs(args);
+  const nodePath = getNodePath();
+
+  const options = {
+    cwd: workspaceDir,
+    encoding: 'utf-8',
+    env: { ...process.env, NO_COLOR: '1' },
+    timeout: 30000,
+    stdio: 'pipe'
+  };
+
   try {
-    return execSync(cmd, {
-      cwd: workspaceDir,
-      encoding: 'utf-8',
-      env: { ...process.env, NO_COLOR: '1' },
-      timeout: 30000,
-    });
+    if (localJs) {
+      // Execute the JS file directly with node
+      return execFileSync(nodePath, [localJs, ...parsedArgs], options);
+    } else {
+      try {
+        return execFileSync('npx', ['-y', 'specguard', ...parsedArgs], options);
+      } catch (e) {
+        if (e.code === 'ENOENT' && process.platform === 'win32') {
+           return execFileSync('npx.cmd', ['-y', 'specguard', ...parsedArgs], options);
+        }
+        throw e;
+      }
+    }
   } catch (e) {
     outputChannel.appendLine(`SpecGuard error: ${e.message}`);
-    return e.stdout || '';
+    return e.stdout || e.stderr || '';
   }
 }
 
