@@ -9,7 +9,7 @@
  */
 
 const vscode = require('vscode');
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
@@ -20,7 +20,7 @@ let fileWatcher;
 
 // ── Activation ─────────────────────────────────────────────────────────────
 
-function activate(context) {
+async function activate(context) {
   outputChannel = vscode.window.createOutputChannel('SpecGuard');
 
   // Status bar
@@ -172,30 +172,71 @@ function getNodePath() {
 
 function findSpecguard(workspaceDir) {
   // Check local node_modules first
-  const localBin = path.join(workspaceDir, 'node_modules', '.bin', 'specguard');
-  if (fs.existsSync(localBin)) return localBin;
+  const localJs = path.join(workspaceDir, 'node_modules', 'specguard', 'cli', 'docguard.mjs');
+  if (fs.existsSync(localJs)) return localJs;
 
   // Try npx
   return null;
 }
 
-function execSpecguard(workspaceDir, args) {
-  const localBin = findSpecguard(workspaceDir);
+function execSpecguard(workspaceDir, argsString) {
+  const localJs = findSpecguard(workspaceDir);
 
-  let cmd;
-  if (localBin) {
-    cmd = `"${localBin}" ${args}`;
-  } else {
-    cmd = `npx -y specguard ${args}`;
+  // Parse args string into array
+  const args = [];
+  let currentArg = '';
+  let inDoubleQuotes = false;
+  let inSingleQuotes = false;
+  for (let i = 0; i < argsString.length; i++) {
+    const char = argsString[i];
+    if (char === '"' && !inSingleQuotes) {
+      inDoubleQuotes = !inDoubleQuotes;
+    } else if (char === "'" && !inDoubleQuotes) {
+      inSingleQuotes = !inSingleQuotes;
+    } else if (char === ' ' && !inDoubleQuotes && !inSingleQuotes) {
+      if (currentArg.length > 0) {
+        args.push(currentArg);
+        currentArg = '';
+      }
+    } else {
+      currentArg += char;
+    }
+  }
+  if (currentArg.length > 0) {
+    args.push(currentArg);
   }
 
   try {
-    return execSync(cmd, {
-      cwd: workspaceDir,
-      encoding: 'utf-8',
-      env: { ...process.env, NO_COLOR: '1' },
-      timeout: 30000,
-    });
+    if (localJs) {
+      return execFileSync(process.execPath, [localJs, ...args], {
+        cwd: workspaceDir,
+        encoding: 'utf-8',
+        env: { ...process.env, NO_COLOR: '1' },
+        timeout: 30000,
+        stdio: 'pipe'
+      });
+    } else {
+      try {
+        return execFileSync('npx', ['-y', 'specguard', ...args], {
+          cwd: workspaceDir,
+          encoding: 'utf-8',
+          env: { ...process.env, NO_COLOR: '1' },
+          timeout: 30000,
+          stdio: 'pipe'
+        });
+      } catch (e) {
+        if (e.code === 'ENOENT' && process.platform === 'win32') {
+          return execFileSync('npx.cmd', ['-y', 'specguard', ...args], {
+            cwd: workspaceDir,
+            encoding: 'utf-8',
+            env: { ...process.env, NO_COLOR: '1' },
+            timeout: 30000,
+            stdio: 'pipe'
+          });
+        }
+        throw e;
+      }
+    }
   } catch (e) {
     outputChannel.appendLine(`SpecGuard error: ${e.message}`);
     return e.stdout || '';
@@ -243,6 +284,8 @@ async function refreshScore() {
     outputChannel.appendLine(`Score refreshed: ${score}/100 (${grade})`);
   } catch (e) {
     statusBarItem.text = '$(shield) CDD: ?';
+    statusBarItem.tooltip = 'Error fetching CDD score. Click for details.';
+    statusBarItem.backgroundColor = undefined;
     statusBarItem.show();
     outputChannel.appendLine(`Score refresh error: ${e.message}`);
   }
