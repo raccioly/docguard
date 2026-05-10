@@ -5,3 +5,7 @@
 ## 2024-04-16 - Context-Aware Status Bar Tooltips
 **Learning:** VS Code extension status bar items can display multiple forms of feedback, but static tooltips fail to explain state changes. Providing context-aware tooltip text (e.g., explaining why a threshold warning icon appears) greatly improves the usability for developers monitoring CLI outputs inline.
 **Action:** Always map status bar dynamic properties (icon, text, backgroundColor) to corresponding informative tooltips that explain what the visual change means.
+
+## 2024-05-10 - VS Code Status Bar State Persistence
+**Learning:** In the VS Code extension API, status bar background colors and tooltips persist across state changes. Failing to explicitly clear them when returning to an unknown state causes lingering error colors and mismatched tooltips.
+**Action:** Always explicitly reset `statusBarItem.backgroundColor = undefined` and update the tooltip when transitioning a status bar item back to a default, unknown, or error state.
