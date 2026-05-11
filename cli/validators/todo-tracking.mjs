@@ -187,10 +187,10 @@ function checkUntrackedTodos(projectDir, config) {
   for (const todo of todos) {
     // Check if the TODO is tracked in documentation
     // Improved matching: check full text AND file location context
+    const todoTextLower = todo.text.toLowerCase().trim();
     const isTracked = trackingContent.some(doc => {
       const content = doc.content;
-      const contentLower = content.toLowerCase();
-      const todoTextLower = todo.text.toLowerCase().trim();
+      const contentLower = doc.contentLower;
 
       // Match 1: Full TODO text appears in the doc (at least 20 chars or full text)
       const searchText = todoTextLower.length > 20
@@ -244,7 +244,9 @@ function loadTrackingDocs(projectDir, config) {
     const fullPath = resolve(projectDir, file);
     if (existsSync(fullPath)) {
       try {
-        docs.push({ file, content: readFileSync(fullPath, 'utf-8') });
+        const content = readFileSync(fullPath, 'utf-8');
+        // Precompute lowercased content to avoid expensive re-evaluations inside O(N*M) loop
+        docs.push({ file, content, contentLower: content.toLowerCase() });
       } catch { /* ignore */ }
     }
   }
