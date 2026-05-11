@@ -9,7 +9,7 @@
  */
 
 const vscode = require('vscode');
-const { execSync } = require('child_process');
+const { execSync, execFileSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
@@ -20,7 +20,7 @@ let fileWatcher;
 
 // ── Activation ─────────────────────────────────────────────────────────────
 
-function activate(context) {
+async function activate(context) {
   outputChannel = vscode.window.createOutputChannel('SpecGuard');
 
   // Status bar
@@ -172,30 +172,67 @@ function getNodePath() {
 
 function findSpecguard(workspaceDir) {
   // Check local node_modules first
-  const localBin = path.join(workspaceDir, 'node_modules', '.bin', 'specguard');
+  const localBin = path.join(workspaceDir, 'node_modules', 'specguard', 'cli', 'docguard.mjs');
   if (fs.existsSync(localBin)) return localBin;
 
   // Try npx
   return null;
 }
 
-function execSpecguard(workspaceDir, args) {
-  const localBin = findSpecguard(workspaceDir);
+function parseArgs(str) {
+  const args = [];
+  let current = '';
+  let inDoubleQuote = false;
+  let inSingleQuote = false;
 
-  let cmd;
-  if (localBin) {
-    cmd = `"${localBin}" ${args}`;
-  } else {
-    cmd = `npx -y specguard ${args}`;
+  for (let i = 0; i < str.length; i++) {
+    const char = str[i];
+    const prevChar = i > 0 ? str[i - 1] : '';
+
+    if (char === '"' && !inSingleQuote && prevChar !== '\\') {
+      inDoubleQuote = !inDoubleQuote;
+    } else if (char === "'" && !inDoubleQuote && prevChar !== '\\') {
+      inSingleQuote = !inSingleQuote;
+    } else if (char === ' ' && !inDoubleQuote && !inSingleQuote) {
+      if (current.length > 0) {
+        args.push(current);
+        current = '';
+      }
+    } else {
+      current += char;
+    }
   }
 
+  if (current.length > 0) {
+    args.push(current);
+  }
+
+  return args.map(arg => arg.replace(/\\"/g, '"').replace(/\\'/g, "'"));
+}
+
+function execSpecguard(workspaceDir, args) {
+  const localBin = findSpecguard(workspaceDir);
+  const parsedArgs = parseArgs(args);
+  const options = {
+    cwd: workspaceDir,
+    encoding: 'utf-8',
+    env: { ...process.env, NO_COLOR: '1' },
+    timeout: 30000,
+  };
+
   try {
-    return execSync(cmd, {
-      cwd: workspaceDir,
-      encoding: 'utf-8',
-      env: { ...process.env, NO_COLOR: '1' },
-      timeout: 30000,
-    });
+    if (localBin) {
+      return execFileSync(getNodePath(), [localBin, ...parsedArgs], options);
+    } else {
+      try {
+        return execFileSync('npx', ['-y', 'specguard', ...parsedArgs], options);
+      } catch (err) {
+        if (err.code === 'ENOENT' && process.platform === 'win32') {
+          return execFileSync('npx.cmd', ['-y', 'specguard', ...parsedArgs], options);
+        }
+        throw err;
+      }
+    }
   } catch (e) {
     outputChannel.appendLine(`SpecGuard error: ${e.message}`);
     return e.stdout || '';
