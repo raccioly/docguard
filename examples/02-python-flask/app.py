@@ -3,8 +3,10 @@ import os
 
 app = Flask(__name__)
 
-# Database connection — uses PostgreSQL via psycopg2
-DATABASE_URL = os.environ.get('DATABASE_URL', 'postgresql://localhost:5432/myapp')
+# Database connection — PostgreSQL URL must be provided in environment
+DATABASE_URL = os.environ.get('DATABASE_URL')
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL environment variable is not set")
 
 
 @app.route('/health')

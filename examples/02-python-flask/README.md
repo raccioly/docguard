@@ -18,7 +18,17 @@ A Flask-based REST API for managing products. Provides **3 endpoints** for produ
 
 ## Running
 
-```bash
-pip install -r requirements.txt
-python app.py
-```
+1. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. Set the required environment variable (see `.env.example`):
+   ```bash
+   export DATABASE_URL=postgresql://localhost:5432/myapp
+   ```
+
+3. Start the application:
+   ```bash
+   python app.py
+   ```
