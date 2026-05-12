@@ -1001,11 +1001,36 @@ function generateTestSpec(dir, config, stack, scan, flags) {
 
   // Build service-to-test map
   const serviceMap = [];
+  const svcToTest = new Map();
+  const svcBasenames = new Map();
+
   for (const svc of scan.services) {
     const svcName = basename(svc, extname(svc));
-    const matchingTest = scan.tests.find(t =>
-      t.includes(svcName) || t.includes(svcName.replace('.', '.test.'))
-    );
+    if (!svcBasenames.has(svcName)) {
+      svcBasenames.set(svcName, {
+        paths: [],
+        svcNameTest: svcName.replace('.', '.test.')
+      });
+    }
+    svcBasenames.get(svcName).paths.push(svc);
+  }
+
+  const remainingSvcNames = new Set(svcBasenames.keys());
+  for (const t of scan.tests) {
+    for (const sName of remainingSvcNames) {
+      const info = svcBasenames.get(sName);
+      if (t.includes(sName) || (sName !== info.svcNameTest && t.includes(info.svcNameTest))) {
+        for (const path of info.paths) {
+          svcToTest.set(path, t);
+        }
+        remainingSvcNames.delete(sName);
+      }
+    }
+    if (remainingSvcNames.size === 0) break;
+  }
+
+  for (const svc of scan.services) {
+    const matchingTest = svcToTest.get(svc);
     serviceMap.push({
       source: svc,
       test: matchingTest || '—',
