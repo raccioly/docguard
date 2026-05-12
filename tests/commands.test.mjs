@@ -140,6 +140,22 @@ describe('docguard score', () => {
     const output = run('score');
     assert.match(output, /Badge:.*CDD_Score/);
   });
+
+  it('outputs multi-signal breakdown with --signals and ALCOA+ compliance', () => {
+    const output = run('score --signals');
+    assert.match(output, /Multi-Signal Quality Breakdown/);
+    assert.match(output, /Composite: Σ\(signal_score × weight\)/);
+    assert.match(output, /Quality labels: HIGH/);
+    assert.match(output, /ALCOA\+ Compliance/);
+    assert.match(output, /FDA Data Integrity Framework/);
+  });
+
+  it('outputs ALCOA+ compliance by default', () => {
+    const output = run('score');
+    assert.match(output, /ALCOA\+ Compliance/);
+    assert.match(output, /FDA Data Integrity Framework/);
+  });
+
 });
 
 describe('docguard diff', () => {
