@@ -67,7 +67,7 @@ export function validateTodoTracking(projectDir, config) {
   results.passed += skipResults.passed;
   results.total += skipResults.total;
 
-  // ── Part 2: Untracked TODOs/FIXMEs ──
+  // ── Part 2: Untracked Annotations ──
   const todoResults = checkUntrackedTodos(projectDir, config);
   results.errors.push(...todoResults.errors);
   results.warnings.push(...todoResults.warnings);
@@ -155,7 +155,7 @@ function checkSkippedTests(projectDir, config) {
   return { errors, warnings, passed, total };
 }
 
-// ──── Untracked TODOs ──────────────────────────────────────────────────────
+// ──── Untracked Annotations ────────────────────────────────────────────────
 
 /**
  * Scan source files for TODO/FIXME annotations and check if they appear
