@@ -1000,12 +1000,35 @@ function generateTestSpec(dir, config, stack, scan, flags) {
   }
 
   // Build service-to-test map
+  // Optimization: Pre-calculate search keys and keep a remaining set
+  const remainingServices = scan.services.map(svc => {
+    const svcName = basename(svc, extname(svc));
+    return {
+      svc,
+      key1: svcName,
+      key2: svcName.replace('.', '.test.')
+    };
+  });
+
+  const mapped = new Map();
+
+  // Optimization: Iterate through tests once, backwards-match against remaining services
+  // This turns O(N*M) lookups into an early-exit loop, reducing constant overhead and allocations.
+  for (const t of scan.tests) {
+    for (let i = remainingServices.length - 1; i >= 0; i--) {
+      const item = remainingServices[i];
+      if (t.includes(item.key1) || t.includes(item.key2)) {
+        mapped.set(item.svc, t);
+        remainingServices.splice(i, 1);
+      }
+    }
+    // If all services have been matched, we can stop searching tests
+    if (remainingServices.length === 0) break;
+  }
+
   const serviceMap = [];
   for (const svc of scan.services) {
-    const svcName = basename(svc, extname(svc));
-    const matchingTest = scan.tests.find(t =>
-      t.includes(svcName) || t.includes(svcName.replace('.', '.test.'))
-    );
+    const matchingTest = mapped.get(svc);
     serviceMap.push({
       source: svc,
       test: matchingTest || '—',
