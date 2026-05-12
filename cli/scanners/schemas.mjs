@@ -494,11 +494,20 @@ function mapMongooseType(type) {
 
 function extractOpenAPIRelationships(schemas) {
   const relationships = [];
+  // Performance Optimization: Build a lookup map of lowercased schema names to schema objects.
+  // This converts the O(N) array search inside the nested loop to an O(1) hash lookup,
+  // resolving the N+1 find bottleneck and improving complexity from O(N*M*S) to O(N*M + S),
+  // where S is the number of schemas and M is the average number of fields per schema.
+  const schemaMap = new Map();
+  for (const s of schemas) {
+    schemaMap.set(s.name.toLowerCase(), s);
+  }
+
   for (const schema of schemas) {
     for (const field of schema.fields) {
       if (field.type !== 'string' && field.type !== 'number' && field.type !== 'boolean' && field.type !== 'integer') {
         // Likely a reference to another schema
-        const target = schemas.find(s => s.name.toLowerCase() === field.type.toLowerCase());
+        const target = schemaMap.get(field.type.toLowerCase());
         if (target) {
           relationships.push({
             from: schema.name,
