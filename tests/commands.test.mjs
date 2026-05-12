@@ -5,7 +5,7 @@
 
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { execSync } from 'node:child_process';
+import { execSync, spawn } from 'node:child_process';
 import { mkdtempSync, mkdirSync, rmSync, existsSync, writeFileSync, readFileSync, chmodSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -693,6 +693,92 @@ describe('getTestFilesFromPatterns', () => {
       // Need chmodSync here again if the test fails before the restore
       try { chmodSync(join(tempDir, 'no-read'), 0o777); } catch(e) {}
       rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('docguard watch', () => {
+  it('starts watch mode and reacts to file changes', async () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), 'sg-watch-'));
+    let child;
+    try {
+      // Init a project first so guard doesn't fail instantly
+      execSync(`node ${CLI} init --dir ${tmpDir} --force`, { encoding: 'utf-8' });
+
+      mkdirSync(join(tmpDir, 'src'));
+      writeFileSync(join(tmpDir, 'src', 'index.js'), 'console.log("hello");');
+
+      child = spawn(process.execPath, [CLI, 'watch'], {
+        cwd: tmpDir,
+        env: { ...process.env, NO_COLOR: '1' }
+      });
+
+      let output = '';
+      child.stdout.on('data', (data) => {
+        output += data.toString();
+      });
+      child.stderr.on('data', (data) => {
+        output += data.toString();
+      });
+
+      // Wait until initial output signals it's ready
+      for (let i = 0; i < 20; i++) {
+        if (output.includes('Watching 5 directories') || output.includes('Watching for changes')) break;
+        await new Promise(r => setTimeout(r, 100));
+      }
+
+      assert.match(output, /DocGuard Watch/);
+      assert.match(output, /Watching for changes/);
+
+      // Wait an extra moment to ensure the watcher is fully registered
+      await new Promise(r => setTimeout(r, 500));
+
+      // Test file change
+      writeFileSync(join(tmpDir, 'src', 'index.js'), 'console.log("world");');
+
+      for (let i = 0; i < 30; i++) {
+        if (output.includes('Changed:') && output.includes('index.js')) break;
+        await new Promise(r => setTimeout(r, 100));
+      }
+
+      // Ensure it detected our modification
+      assert.match(output, /Changed: .*index\.js/);
+
+    } finally {
+      if (child) child.kill('SIGINT');
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it('runs auto-fix prompts when enabled', async () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), 'sg-watch-autofix-'));
+    let child;
+    try {
+      // Init a project first
+      execSync(`node ${CLI} init --dir ${tmpDir} --force`, { encoding: 'utf-8' });
+
+      // We know there will be errors out of the box because the docs are empty templates
+      child = spawn(process.execPath, [CLI, 'watch', '--auto-fix'], {
+        cwd: tmpDir,
+        env: { ...process.env, NO_COLOR: '1' }
+      });
+
+      let output = '';
+      child.stdout.on('data', (data) => {
+        output += data.toString();
+      });
+
+      for (let i = 0; i < 20; i++) {
+        if (output.includes('Auto-fix prompts')) break;
+        await new Promise(r => setTimeout(r, 100));
+      }
+
+      assert.match(output, /Mode: auto-fix/);
+      assert.match(output, /Auto-fix prompts:/);
+      assert.match(output, /docguard fix --doc/);
+    } finally {
+      if (child) child.kill('SIGINT');
+      rmSync(tmpDir, { recursive: true, force: true });
     }
   });
 });

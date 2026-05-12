@@ -374,3 +374,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Zero dependencies — pure Node.js
 - GitHub CI workflow (Node 18/20/22 matrix)
 - MIT license
+
+### Fixed
+- Added missing tests for the `watch` CLI command to verify it runs and reacts properly.
