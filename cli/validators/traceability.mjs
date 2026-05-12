@@ -73,7 +73,7 @@ const TRACE_MAP = {
 // ──── Default requirement ID patterns ────
 // Users can override via config.traceability.requirementPattern
 // Includes spec-kit standard IDs: FR-xxx, SC-xxx, T-xxx
-const DEFAULT_REQ_PATTERNS = [
+export const DEFAULT_REQ_PATTERNS = [
   /\b(REQ)-(\d{2,4})\b/g,
   /\b(FR)-(\d{2,4})\b/g,
   /\b(NFR)-(\d{2,4})\b/g,
@@ -185,6 +185,9 @@ function validateRequirementTraceability(projectDir, config, projectFiles) {
     ? [new RegExp(customPattern, 'g')]
     : DEFAULT_REQ_PATTERNS;
 
+  // Combined pattern for faster scanning
+  const combinedPattern = new RegExp(patterns.map(p => `(?:${p.source})`).join('|'), 'g');
+
   // ── Step 1: Collect requirement IDs from documentation ──
   const reqIds = new Map(); // reqId → { file, line }
   const docSearchPaths = getRequirementDocPaths(projectDir, config);
@@ -194,24 +197,19 @@ function validateRequirementTraceability(projectDir, config, projectFiles) {
 
     const content = readFileSync(docPath, 'utf-8');
 
-    // Fast early-return: skip expensive string split if no requirement patterns exist
-    const hasMatch = patterns.some(p => { p.lastIndex = 0; return p.test(content); });
-    if (!hasMatch) continue;
+    // Fast early-return
+    combinedPattern.lastIndex = 0;
+    if (!combinedPattern.test(content)) continue;
 
-    const lines = content.split('\n');
     const docName = relative(projectDir, docPath);
+    const lineOffsets = getLineOffsets(content);
 
-    for (let i = 0; i < lines.length; i++) {
-      for (const pattern of patterns) {
-        // Reset regex lastIndex for each line
-        pattern.lastIndex = 0;
-        let match;
-        while ((match = pattern.exec(lines[i])) !== null) {
-          const reqId = match[0]; // e.g., "REQ-001"
-          if (!reqIds.has(reqId)) {
-            reqIds.set(reqId, { file: docName, line: i + 1 });
-          }
-        }
+    combinedPattern.lastIndex = 0;
+    let match;
+    while ((match = combinedPattern.exec(content)) !== null) {
+      const reqId = match[0]; // e.g., "REQ-001"
+      if (!reqIds.has(reqId)) {
+        reqIds.set(reqId, { file: docName, line: getLineNumber(lineOffsets, match.index) });
       }
     }
   }
@@ -237,22 +235,18 @@ function validateRequirementTraceability(projectDir, config, projectFiles) {
     let content;
     try { content = readFileSync(fullPath, 'utf-8'); } catch { continue; }
 
-    // Fast early-return: skip expensive string split if no requirement patterns exist
-    const hasMatch = patterns.some(p => { p.lastIndex = 0; return p.test(content); });
-    if (!hasMatch) continue;
+    // Fast early-return
+    combinedPattern.lastIndex = 0;
+    if (!combinedPattern.test(content)) continue;
 
-    const lines = content.split('\n');
+    const lineOffsets = getLineOffsets(content);
 
-    for (let i = 0; i < lines.length; i++) {
-      for (const pattern of patterns) {
-        pattern.lastIndex = 0;
-        let match;
-        while ((match = pattern.exec(lines[i])) !== null) {
-          const reqId = match[0];
-          if (!testRefs.has(reqId)) testRefs.set(reqId, []);
-          testRefs.get(reqId).push({ file: relPath, line: i + 1 });
-        }
-      }
+    combinedPattern.lastIndex = 0;
+    let match;
+    while ((match = combinedPattern.exec(content)) !== null) {
+      const reqId = match[0];
+      if (!testRefs.has(reqId)) testRefs.set(reqId, []);
+      testRefs.get(reqId).push({ file: relPath, line: getLineNumber(lineOffsets, match.index) });
     }
   }
 
@@ -335,6 +329,35 @@ function getRequirementDocPaths(projectDir, config) {
   }
 
   return paths;
+}
+
+/**
+ * Pre-calculate line offsets for fast line number lookup.
+ */
+function getLineOffsets(content) {
+  const lineOffsets = [0];
+  let pos = -1;
+  while ((pos = content.indexOf('\n', pos + 1)) !== -1) {
+    lineOffsets.push(pos + 1);
+  }
+  return lineOffsets;
+}
+
+/**
+ * Get line number for a given character offset.
+ */
+function getLineNumber(lineOffsets, offset) {
+  let low = 0;
+  let high = lineOffsets.length - 1;
+  while (low <= high) {
+    const mid = (low + high) >> 1;
+    if (lineOffsets[mid] <= offset) {
+      low = mid + 1;
+    } else {
+      high = mid - 1;
+    }
+  }
+  return low;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
