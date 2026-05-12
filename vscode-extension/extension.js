@@ -9,7 +9,7 @@
  */
 
 const vscode = require('vscode');
-const { execSync } = require('child_process');
+const { execSync, execFileSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
@@ -20,7 +20,7 @@ let fileWatcher;
 
 // ── Activation ─────────────────────────────────────────────────────────────
 
-function activate(context) {
+async function activate(context) {
   outputChannel = vscode.window.createOutputChannel('SpecGuard');
 
   // Status bar
@@ -172,31 +172,37 @@ function getNodePath() {
 
 function findSpecguard(workspaceDir) {
   // Check local node_modules first
-  const localBin = path.join(workspaceDir, 'node_modules', '.bin', 'specguard');
+  const localBin = path.join(workspaceDir, 'node_modules', 'specguard', 'cli', 'docguard.mjs');
   if (fs.existsSync(localBin)) return localBin;
 
   // Try npx
   return null;
 }
 
-function execSpecguard(workspaceDir, args) {
+function execSpecguard(workspaceDir, argsArray) {
   const localBin = findSpecguard(workspaceDir);
 
-  let cmd;
+  let execPath;
+  let execArgs;
+
   if (localBin) {
-    cmd = `"${localBin}" ${args}`;
+    execPath = getNodePath();
+    execArgs = [localBin, ...argsArray];
   } else {
-    cmd = `npx -y specguard ${args}`;
+    const isWindows = process.platform === 'win32';
+    execPath = isWindows ? 'npx.cmd' : 'npx';
+    execArgs = ['-y', 'specguard', ...argsArray];
   }
 
   try {
-    return execSync(cmd, {
+    return execFileSync(execPath, execArgs, {
       cwd: workspaceDir,
       encoding: 'utf-8',
-      env: { ...process.env, NO_COLOR: '1' },
+      env: { ...process.env, NO_COLOR: '1', ELECTRON_RUN_AS_NODE: '1' },
       timeout: 30000,
     });
   } catch (e) {
+    // If npx on Windows fails because npx.cmd wasn't found but npx might exist, fallback isn't needed since we use npx.cmd directly.
     outputChannel.appendLine(`SpecGuard error: ${e.message}`);
     return e.stdout || '';
   }
@@ -209,7 +215,7 @@ async function refreshScore() {
   if (!dir) return;
 
   try {
-    const output = execSpecguard(dir, 'score --format json');
+    const output = execSpecguard(dir, ['score', '--format', 'json']);
     const jsonStart = output.indexOf('{');
     if (jsonStart < 0) {
       statusBarItem.text = '$(shield) CDD: ?';
@@ -362,7 +368,7 @@ function runCommand(cmd) {
   outputChannel.show(true);
   outputChannel.appendLine(`$ specguard ${cmd}\n`);
 
-  const output = execSpecguard(dir, cmd);
+  const output = execSpecguard(dir, [cmd]);
   outputChannel.appendLine(output);
 }
 
@@ -374,7 +380,7 @@ async function runGuard() {
   outputChannel.show(true);
   outputChannel.appendLine('$ specguard guard\n');
 
-  const output = execSpecguard(dir, 'guard');
+  const output = execSpecguard(dir, ['guard']);
   outputChannel.appendLine(output);
 
   await runDiagnosticsAsync(dir);
@@ -403,11 +409,11 @@ function runFixCommand() {
   outputChannel.show(true);
   outputChannel.appendLine('$ specguard fix\n');
 
-  const output = execSpecguard(dir, 'fix');
+  const output = execSpecguard(dir, ['fix']);
   outputChannel.appendLine(output);
 
   // Also get the AI prompt version
-  const promptOutput = execSpecguard(dir, 'fix --format prompt');
+  const promptOutput = execSpecguard(dir, ['fix', '--format', 'prompt']);
 
   if (promptOutput && !promptOutput.includes('No CDD issues found')) {
     // Offer to copy AI prompt to clipboard
@@ -438,7 +444,7 @@ async function runFixAuto() {
   outputChannel.show(true);
   outputChannel.appendLine('$ specguard fix --auto\n');
 
-  const output = execSpecguard(dir, 'fix --auto');
+  const output = execSpecguard(dir, ['fix', '--auto']);
   outputChannel.appendLine(output);
 
   await refreshScore();
@@ -462,7 +468,7 @@ function runBadge() {
   const dir = getWorkspaceDir();
   if (!dir) return;
 
-  const output = execSpecguard(dir, 'badge --format json');
+  const output = execSpecguard(dir, ['badge', '--format', 'json']);
   const jsonStart = output.indexOf('{');
   if (jsonStart < 0) {
     vscode.window.showErrorMessage('SpecGuard: Could not generate badges');
@@ -491,7 +497,7 @@ async function runInit() {
   outputChannel.show(true);
   outputChannel.appendLine('$ specguard init\n');
 
-  const output = execSpecguard(dir, 'init');
+  const output = execSpecguard(dir, ['init']);
   outputChannel.appendLine(output);
 
   await refreshScore();
