@@ -15,6 +15,10 @@
  * Zero NPM dependencies — pure Node.js built-ins only.
  */
 
+// Simple cache to avoid repeated regex compilation and filter building.
+// Maps JSON.stringify(patterns) -> filter function.
+const filterCache = new Map();
+
 /**
  * Convert a glob pattern to a RegExp.
  * Supports: * (any chars except /), ** (any path segments), . (literal dot).
@@ -46,8 +50,16 @@ function globToRegex(pattern) {
 export function buildIgnoreFilter(patterns = []) {
   if (!patterns || patterns.length === 0) return () => false;
 
+  const cacheKey = JSON.stringify(patterns);
+  if (filterCache.has(cacheKey)) {
+    return filterCache.get(cacheKey);
+  }
+
   const regexes = patterns.map(p => globToRegex(p));
-  return (relPath) => regexes.some(regex => regex.test(relPath));
+  const filter = (relPath) => regexes.some(regex => regex.test(relPath));
+
+  filterCache.set(cacheKey, filter);
+  return filter;
 }
 
 /**

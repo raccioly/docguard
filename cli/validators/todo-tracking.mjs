@@ -18,6 +18,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, relative, extname } from 'node:path';
 import { shouldIgnore } from '../shared-ignore.mjs';
+import { loadIgnorePatterns } from '../shared.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build', 'coverage',
@@ -60,15 +61,18 @@ const SKIP_REASON_PATTERN = /\/\/\s*(REASON|SKIP|TODO|FIXME|NOTE|WHY)\s*:/i;
 export function validateTodoTracking(projectDir, config) {
   const results = { errors: [], warnings: [], passed: 0, total: 0 };
 
+  // Load .docguardignore patterns once
+  const isIgnoredFile = loadIgnorePatterns(projectDir);
+
   // ── Part 1: Skipped Tests ──
-  const skipResults = checkSkippedTests(projectDir, config);
+  const skipResults = checkSkippedTests(projectDir, config, isIgnoredFile);
   results.errors.push(...skipResults.errors);
   results.warnings.push(...skipResults.warnings);
   results.passed += skipResults.passed;
   results.total += skipResults.total;
 
   // ── Part 2: Untracked TODOs/FIXMEs ──
-  const todoResults = checkUntrackedTodos(projectDir, config);
+  const todoResults = checkUntrackedTodos(projectDir, config, isIgnoredFile);
   results.errors.push(...todoResults.errors);
   results.warnings.push(...todoResults.warnings);
   results.passed += todoResults.passed;
@@ -82,14 +86,14 @@ export function validateTodoTracking(projectDir, config) {
 /**
  * Scan test files for skip/todo patterns without adjacent explanation comments.
  */
-function checkSkippedTests(projectDir, config) {
+function checkSkippedTests(projectDir, config, isIgnoredFile) {
   const errors = [];
   const warnings = [];
   let passed = 0;
   let total = 0;
 
   const testFiles = [];
-  findTestFiles(projectDir, projectDir, testFiles, config);
+  findTestFiles(projectDir, projectDir, testFiles, config, isIgnoredFile);
 
   if (testFiles.length === 0) return { errors, warnings, passed, total };
 
@@ -161,7 +165,7 @@ function checkSkippedTests(projectDir, config) {
  * Scan source files for TODO/FIXME annotations and check if they appear
  * in tracking documentation.
  */
-function checkUntrackedTodos(projectDir, config) {
+function checkUntrackedTodos(projectDir, config, isIgnoredFile) {
   const errors = [];
   const warnings = [];
   let passed = 0;
@@ -169,7 +173,7 @@ function checkUntrackedTodos(projectDir, config) {
 
   // Collect all TODO/FIXME items from source
   const todos = [];
-  findTodos(projectDir, projectDir, todos, config);
+  findTodos(projectDir, projectDir, todos, config, isIgnoredFile);
 
   if (todos.length === 0) {
     // No TODOs found — that's clean code
@@ -254,58 +258,62 @@ function loadTrackingDocs(projectDir, config) {
 
 // ──── File Scanners ────────────────────────────────────────────────────────
 
-function findTestFiles(rootDir, dir, files, config) {
+function findTestFiles(rootDir, dir, files, config, isIgnoredFile) {
   let entries;
   try { entries = readdirSync(dir); } catch { return; }
 
   for (const entry of entries) {
     if (IGNORE_DIRS.has(entry)) continue;
-    if (entry.startsWith('.')) continue;
+    if (entry.startsWith('.') && entry !== '.docguardignore') continue;
 
     const full = join(dir, entry);
+    const relPath = relative(rootDir, full);
+
+    // Apply config ignore patterns (todoIgnore + global ignore + .docguardignore)
+    if (isIgnoredFile && isIgnoredFile(relPath)) continue;
+    if (config && shouldIgnore(relPath, config, 'todoIgnore')) continue;
+
     let stat;
     try { stat = statSync(full); } catch { continue; }
 
     if (stat.isDirectory()) {
-      findTestFiles(rootDir, full, files, config);
+      findTestFiles(rootDir, full, files, config, isIgnoredFile);
     } else {
       const ext = extname(entry).toLowerCase();
       if (!TEST_EXTENSIONS.has(ext)) continue;
 
       // Match test file patterns
       if (/\.(test|spec)\.(mjs|cjs|[jt]sx?)$/.test(entry) ||
-          /__(tests|test)__/.test(relative(rootDir, full))) {
-        const relPath = relative(rootDir, full);
-        // Apply config ignore patterns (todoIgnore + global ignore)
-        if (config && shouldIgnore(relPath, config, 'todoIgnore')) continue;
+          /__(tests|test)__/.test(relPath)) {
         files.push(relPath);
       }
     }
   }
 }
 
-function findTodos(rootDir, dir, todos, config) {
+function findTodos(rootDir, dir, todos, config, isIgnoredFile) {
   let entries;
   try { entries = readdirSync(dir); } catch { return; }
 
   for (const entry of entries) {
     if (IGNORE_DIRS.has(entry)) continue;
-    if (entry.startsWith('.')) continue;
+    if (entry.startsWith('.') && entry !== '.docguardignore') continue;
 
     const full = join(dir, entry);
+    const relPath = relative(rootDir, full);
+
+    // Apply config ignore patterns (todoIgnore + global ignore + .docguardignore)
+    if (isIgnoredFile && isIgnoredFile(relPath)) continue;
+    if (config && shouldIgnore(relPath, config, 'todoIgnore')) continue;
+
     let stat;
     try { stat = statSync(full); } catch { continue; }
 
     if (stat.isDirectory()) {
-      findTodos(rootDir, full, todos, config);
+      findTodos(rootDir, full, todos, config, isIgnoredFile);
     } else {
       const ext = extname(entry).toLowerCase();
       if (!SOURCE_EXTENSIONS.has(ext)) continue;
-
-      const relPath = relative(rootDir, full);
-
-      // Apply config ignore patterns (todoIgnore + global ignore)
-      if (config && shouldIgnore(relPath, config, 'todoIgnore')) continue;
 
       let content;
       try { content = readFileSync(full, 'utf-8'); } catch { continue; }
