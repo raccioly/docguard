@@ -186,6 +186,46 @@ function validateRequirementTraceability(projectDir, config, projectFiles) {
     : DEFAULT_REQ_PATTERNS;
 
   // ── Step 1: Collect requirement IDs from documentation ──
+  const reqIds = collectRequirementIds(projectDir, config, patterns);
+
+  // If no requirement IDs found, silently pass — this project doesn't use them
+  if (reqIds.size === 0) {
+    return { errors, warnings, passed, total };
+  }
+
+  // ── Step 2: Scan test files for requirement ID references ──
+  const testRefs = scanTestFilesForReferences(projectDir, projectFiles, patterns);
+
+  // ── Step 3: Report traceability results ──
+
+  // Check each documented requirement has at least one test reference
+  for (const [reqId, location] of reqIds) {
+    total++;
+    if (testRefs.has(reqId)) {
+      passed++;
+    } else {
+      warnings.push(
+        `Requirement ${reqId} (${location.file}:${location.line}) has no test coverage. ` +
+        `Add @req ${reqId} comment to the test that verifies this requirement`
+      );
+    }
+  }
+
+  // Check for orphaned test refs (tests referencing non-existent requirements)
+  for (const [reqId, refs] of testRefs) {
+    if (!reqIds.has(reqId)) {
+      total++;
+      warnings.push(
+        `Test references ${reqId} (${refs[0].file}:${refs[0].line}) but no requirement ` +
+        `with this ID exists in documentation. Remove the reference or add the requirement to docs`
+      );
+    }
+  }
+
+  return { errors, warnings, passed, total };
+}
+
+function collectRequirementIds(projectDir, config, patterns) {
   const reqIds = new Map(); // reqId → { file, line }
   const docSearchPaths = getRequirementDocPaths(projectDir, config);
 
@@ -216,12 +256,10 @@ function validateRequirementTraceability(projectDir, config, projectFiles) {
     }
   }
 
-  // If no requirement IDs found, silently pass — this project doesn't use them
-  if (reqIds.size === 0) {
-    return { errors, warnings, passed, total };
-  }
+  return reqIds;
+}
 
-  // ── Step 2: Scan test files for requirement ID references ──
+function scanTestFilesForReferences(projectDir, projectFiles, patterns) {
   const testFiles = projectFiles.filter(f =>
     /\.(test|spec)\.(mjs|cjs|[jt]sx?)$/.test(f) ||
     /__tests__\//.test(f) ||
@@ -256,33 +294,7 @@ function validateRequirementTraceability(projectDir, config, projectFiles) {
     }
   }
 
-  // ── Step 3: Report traceability results ──
-
-  // Check each documented requirement has at least one test reference
-  for (const [reqId, location] of reqIds) {
-    total++;
-    if (testRefs.has(reqId)) {
-      passed++;
-    } else {
-      warnings.push(
-        `Requirement ${reqId} (${location.file}:${location.line}) has no test coverage. ` +
-        `Add @req ${reqId} comment to the test that verifies this requirement`
-      );
-    }
-  }
-
-  // Check for orphaned test refs (tests referencing non-existent requirements)
-  for (const [reqId, refs] of testRefs) {
-    if (!reqIds.has(reqId)) {
-      total++;
-      warnings.push(
-        `Test references ${reqId} (${refs[0].file}:${refs[0].line}) but no requirement ` +
-        `with this ID exists in documentation. Remove the reference or add the requirement to docs`
-      );
-    }
-  }
-
-  return { errors, warnings, passed, total };
+  return testRefs;
 }
 
 /**
