@@ -130,13 +130,16 @@ export function validateTraceability(projectDir, config) {
     }
 
     // Count matching source files
-    let totalSources = 0;
+    // ⚡ Bolt: Fast early return using .some() instead of .filter()
+    let hasSource = false;
     for (const pattern of traceInfo.sourcePatterns) {
-      const matches = projectFiles.filter(f => pattern.glob.test(f));
-      totalSources += matches.length;
+      if (projectFiles.some(f => pattern.glob.test(f))) {
+        hasSource = true;
+        break;
+      }
     }
 
-    if (totalSources > 0) {
+    if (hasSource) {
       passed++;
     } else {
       warnings.push(`${docName} — exists but no matching source code found (unlinked doc)`);
