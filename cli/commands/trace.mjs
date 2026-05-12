@@ -107,6 +107,19 @@ export function runTrace(projectDir, config, flags) {
   const projectFiles = [];
   scanDir(projectDir, projectDir, projectFiles);
 
+
+  // ⚡ Bolt: Cache pattern matches to avoid redundant O(N) regex evaluations
+  const testFilesCache = projectFiles.filter(f => TEST_PATTERNS.some(p => p.test(f)));
+  const patternMatchesCache = new Map();
+  function getMatchesForPattern(pattern) {
+    if (patternMatchesCache.has(pattern.glob)) {
+      return patternMatchesCache.get(pattern.glob);
+    }
+    const matchArray = projectFiles.filter(f => pattern.glob.test(f));
+    patternMatchesCache.set(pattern.glob, matchArray);
+    return matchArray;
+  }
+
   // ── 4. Build traceability matrix (only required docs) ──
   const matrix = [];
   const orphanedDocs = [];
@@ -135,7 +148,8 @@ export function runTrace(projectDir, config, flags) {
     // Find matching source files for each pattern
     const traces = [];
     for (const pattern of traceInfo.sourcePatterns) {
-      const matches = projectFiles.filter(f => pattern.glob.test(f));
+      // ⚡ Bolt: Use cached pattern matches
+      const matches = getMatchesForPattern(pattern);
       traces.push({
         label: pattern.label,
         matchCount: matches.length,
@@ -145,7 +159,7 @@ export function runTrace(projectDir, config, flags) {
     }
 
     // Find test coverage (files that test code related to this doc)
-    const relatedTests = findRelatedTests(projectFiles, traceInfo.sourcePatterns);
+    const relatedTests = findRelatedTests(testFilesCache, traceInfo.sourcePatterns, getMatchesForPattern);
 
     // Calculate coverage signal
     const totalSources = traces.reduce((sum, t) => sum + t.matchCount, 0);
@@ -312,15 +326,13 @@ function scanDir(rootDir, dir, files) {
   }
 }
 
-function findRelatedTests(projectFiles, sourcePatterns) {
-  // Find test files that might cover the source patterns
-  const testFiles = projectFiles.filter(f => TEST_PATTERNS.some(p => p.test(f)));
-
+function findRelatedTests(testFiles, sourcePatterns, getMatchesForPattern) {
   // Match tests to source patterns by directory/name proximity
   const relatedTests = new Set();
 
   for (const pattern of sourcePatterns) {
-    const sourceFiles = projectFiles.filter(f => pattern.glob.test(f));
+    // ⚡ Bolt: Use cached pattern matches to avoid redundant regex evaluations
+    const sourceFiles = getMatchesForPattern(pattern);
     for (const src of sourceFiles) {
       const srcBase = basename(src).replace(/\.[^.]+$/, '');
       const srcDir = src.split('/')[0];

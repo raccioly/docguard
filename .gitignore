@@ -34,3 +34,4 @@ dist/
 *.egg-info/
 __pycache__/
 .venv
+.tmp-mock-trace-project/
