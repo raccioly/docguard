@@ -59,7 +59,7 @@ Test names follow the pattern: "verb + expected behavior" (e.g., "runs and shows
 | `cli/commands/badge.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/commands/ci.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/commands/fix.mjs` | `tests/commands.test.mjs` | ✅ |
-| `cli/commands/watch.mjs` | — | ✅ N/A |
+| `cli/commands/watch.mjs` | `tests/commands.test.mjs` | ✅ pass |
 | `cli/commands/publish.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/commands/trace.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/validators/structure.mjs` | `tests/commands.test.mjs` | ✅ |
