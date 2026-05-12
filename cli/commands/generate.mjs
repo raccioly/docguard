@@ -311,6 +311,8 @@ function detectStack(dir) {
 
 // ── Project Scanner ────────────────────────────────────────────────────────
 
+
+
 function scanProject(dir) {
   const scan = {
     routes: [],
@@ -324,6 +326,30 @@ function scanProject(dir) {
     totalLines: 0,
   };
 
+  scanRoutes(dir, scan);
+  scanModels(dir, scan);
+  scanServices(dir, scan);
+  scanTests(dir, scan);
+  scanComponents(dir, scan);
+  scanMiddlewares(dir, scan);
+  scanEnvVars(dir, scan);
+
+  // Count files and lines
+  countFilesAndLines(dir, scan);
+
+  // ── Filter test files out of source lists ──
+  // Test files (*.test.*, *.spec.*, __tests__/) should NOT appear as source files
+  const isTestFile = (f) => f.includes('__tests__') || f.includes('__test__') || /\.(test|spec)\.[^.]+$/.test(f);
+  scan.routes = scan.routes.filter(f => !isTestFile(f));
+  scan.models = scan.models.filter(f => !isTestFile(f));
+  scan.services = scan.services.filter(f => !isTestFile(f));
+  scan.components = scan.components.filter(f => !isTestFile(f));
+  scan.middlewares = scan.middlewares.filter(f => !isTestFile(f));
+
+  return scan;
+}
+
+function scanRoutes(dir, scan) {
   // Find routes
   ['src/app/api', 'src/routes', 'routes', 'api', 'src/api'].forEach(routeDir => {
     const fullDir = resolve(dir, routeDir);
@@ -334,7 +360,10 @@ function scanProject(dir) {
       }
     }
   });
+}
 
+
+function scanModels(dir, scan) {
   // Find models/entities
   ['src/models', 'models', 'src/entities', 'entities', 'src/schema', 'schema', 'prisma'].forEach(modelDir => {
     const fullDir = resolve(dir, modelDir);
@@ -345,7 +374,10 @@ function scanProject(dir) {
       }
     }
   });
+}
 
+
+function scanServices(dir, scan) {
   // Find services
   ['src/services', 'services', 'src/lib', 'lib'].forEach(svcDir => {
     const fullDir = resolve(dir, svcDir);
@@ -356,7 +388,10 @@ function scanProject(dir) {
       }
     }
   });
+}
 
+
+function scanTests(dir, scan) {
   // Find tests — top-level test dirs
   ['tests', 'test', '__tests__', 'spec', 'e2e'].forEach(testDir => {
     const fullDir = resolve(dir, testDir);
@@ -416,7 +451,10 @@ function scanProject(dir) {
       break; // Use first found config
     }
   }
+}
 
+
+function scanComponents(dir, scan) {
   // Find components
   ['src/components', 'components', 'src/ui'].forEach(compDir => {
     const fullDir = resolve(dir, compDir);
@@ -427,7 +465,10 @@ function scanProject(dir) {
       }
     }
   });
+}
 
+
+function scanMiddlewares(dir, scan) {
   // Find middleware
   ['src/middleware', 'middleware', 'src/middlewares'].forEach(mwDir => {
     const fullDir = resolve(dir, mwDir);
@@ -438,7 +479,10 @@ function scanProject(dir) {
       }
     }
   });
+}
 
+
+function scanEnvVars(dir, scan) {
   // Parse .env.example for env vars
   const envExample = resolve(dir, '.env.example');
   if (existsSync(envExample)) {
@@ -451,20 +495,6 @@ function scanProject(dir) {
       }
     }
   }
-
-  // Count files and lines
-  countFilesAndLines(dir, scan);
-
-  // ── Filter test files out of source lists ──
-  // Test files (*.test.*, *.spec.*, __tests__/) should NOT appear as source files
-  const isTestFile = (f) => f.includes('__tests__') || f.includes('__test__') || /\.(test|spec)\.[^.]+$/.test(f);
-  scan.routes = scan.routes.filter(f => !isTestFile(f));
-  scan.models = scan.models.filter(f => !isTestFile(f));
-  scan.services = scan.services.filter(f => !isTestFile(f));
-  scan.components = scan.components.filter(f => !isTestFile(f));
-  scan.middlewares = scan.middlewares.filter(f => !isTestFile(f));
-
-  return scan;
 }
 
 function countFilesAndLines(dir, scan) {
