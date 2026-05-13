@@ -449,7 +449,7 @@ function getGradeLabel(grade) {
 function findUnderstandingCli() {
   try {
     const cmd = process.platform === 'win32' ? 'where understanding' : 'which understanding';
-    const result = execSync(`${cmd} 2>/dev/null`, {
+    const result = execFileSync(process.platform === 'win32' ? 'where' : 'which', ['understanding'], {
       encoding: 'utf-8',
       timeout: 3000,
     }).trim();
