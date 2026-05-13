@@ -213,6 +213,10 @@ async function refreshScore() {
     const jsonStart = output.indexOf('{');
     if (jsonStart < 0) {
       statusBarItem.text = '$(shield) CDD: ?';
+      statusBarItem.accessibilityInformation = {
+        label: 'CDD Score: Unknown. Click to see details.',
+        role: 'button'
+      };
       statusBarItem.show();
       return;
     }
@@ -232,6 +236,10 @@ async function refreshScore() {
 
     statusBarItem.text = `${icon} CDD: ${score}/100 (${grade})`;
     statusBarItem.tooltip = `CDD Score: ${score}/100 - ${tooltipStatus}\nClick to see details`;
+    statusBarItem.accessibilityInformation = {
+      label: `CDD Score: ${score} out of 100, ${tooltipStatus}. Click to see details.`,
+      role: 'button'
+    };
     statusBarItem.backgroundColor = score < threshold
       ? new vscode.ThemeColor('statusBarItem.warningBackground')
       : undefined;
@@ -243,6 +251,10 @@ async function refreshScore() {
     outputChannel.appendLine(`Score refreshed: ${score}/100 (${grade})`);
   } catch (e) {
     statusBarItem.text = '$(shield) CDD: ?';
+    statusBarItem.accessibilityInformation = {
+      label: 'CDD Score: Error. Click to see details.',
+      role: 'button'
+    };
     statusBarItem.show();
     outputChannel.appendLine(`Score refresh error: ${e.message}`);
   }

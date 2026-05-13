@@ -5,3 +5,7 @@
 ## 2024-04-16 - Context-Aware Status Bar Tooltips
 **Learning:** VS Code extension status bar items can display multiple forms of feedback, but static tooltips fail to explain state changes. Providing context-aware tooltip text (e.g., explaining why a threshold warning icon appears) greatly improves the usability for developers monitoring CLI outputs inline.
 **Action:** Always map status bar dynamic properties (icon, text, backgroundColor) to corresponding informative tooltips that explain what the visual change means.
+
+## 2024-05-18 - Avoid Workspace Artifacts During Code Replacement
+**Learning:** Writing temporary `.patch` files to the filesystem and forgetting to remove them causes blocking issues during code review because they pollute the repository root.
+**Action:** When using the `replace_with_git_merge_diff` tool, supply the `<<<<<<< SEARCH ... ======= ... >>>>>>> REPLACE` blocks directly via the tool's `merge_diff` argument. Do not write intermediate `.patch` files to the filesystem.
