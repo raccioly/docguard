@@ -192,7 +192,8 @@ function checkSourceDirs(projectDir, allDocContent) {
 
       total++;
       const searchName = entry.toLowerCase();
-      if (lowerArchContent.includes(searchName) || lowerArchContent.includes(root + '/' + entry)) {
+      // ⚡ Bolt: check lowercase version against lowerArchContent, preserving short-circuit evaluation
+      if (lowerArchContent.includes(searchName) || lowerArchContent.includes(root + '/' + searchName)) {
         passed++;
       } else {
         warnings.push(

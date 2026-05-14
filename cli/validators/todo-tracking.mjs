@@ -202,12 +202,15 @@ function checkUntrackedTodos(projectDir, config) {
       // Match 1: Full TODO text appears in the doc (at least 20 chars or full text)
       const hasText = contentLower.includes(searchText);
 
+      // Fast early return: skip expensive file location match if not needed
+      if (hasText && todoTextLower.length > 30) return true;
+
       // Match 2: File location appears nearby in the doc
       const hasLocation = content.includes(todo.file) ||
         content.includes(`${todo.file}:${todo.line}`);
 
       // Either the full text matches, or the file location is referenced with partial text
-      return (hasText && hasLocation) || (hasText && todoTextLower.length > 30);
+      return (hasText && hasLocation);
     });
 
     if (!isTracked) {
