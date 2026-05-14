@@ -107,6 +107,9 @@ export function runTrace(projectDir, config, flags) {
   const projectFiles = [];
   scanDir(projectDir, projectDir, projectFiles);
 
+  // ⚡ Bolt: Cache globs to prevent redundant O(N) regex evaluations
+  const globCache = new Map();
+
   // ── 4. Build traceability matrix (only required docs) ──
   const matrix = [];
   const orphanedDocs = [];
@@ -135,7 +138,11 @@ export function runTrace(projectDir, config, flags) {
     // Find matching source files for each pattern
     const traces = [];
     for (const pattern of traceInfo.sourcePatterns) {
-      const matches = projectFiles.filter(f => pattern.glob.test(f));
+      let matches = globCache.get(pattern.glob);
+      if (!matches) {
+        matches = projectFiles.filter(f => pattern.glob.test(f));
+        globCache.set(pattern.glob, matches);
+      }
       traces.push({
         label: pattern.label,
         matchCount: matches.length,
@@ -145,7 +152,7 @@ export function runTrace(projectDir, config, flags) {
     }
 
     // Find test coverage (files that test code related to this doc)
-    const relatedTests = findRelatedTests(projectFiles, traceInfo.sourcePatterns);
+    const relatedTests = findRelatedTests(projectFiles, traceInfo.sourcePatterns, globCache);
 
     // Calculate coverage signal
     const totalSources = traces.reduce((sum, t) => sum + t.matchCount, 0);
@@ -312,7 +319,7 @@ function scanDir(rootDir, dir, files) {
   }
 }
 
-function findRelatedTests(projectFiles, sourcePatterns) {
+function findRelatedTests(projectFiles, sourcePatterns, globCache) {
   // Find test files that might cover the source patterns
   const testFiles = projectFiles.filter(f => TEST_PATTERNS.some(p => p.test(f)));
 
@@ -320,7 +327,12 @@ function findRelatedTests(projectFiles, sourcePatterns) {
   const relatedTests = new Set();
 
   for (const pattern of sourcePatterns) {
-    const sourceFiles = projectFiles.filter(f => pattern.glob.test(f));
+    let sourceFiles = globCache.get(pattern.glob);
+    if (!sourceFiles) {
+      sourceFiles = projectFiles.filter(f => pattern.glob.test(f));
+      globCache.set(pattern.glob, sourceFiles);
+    }
+
     for (const src of sourceFiles) {
       const srcBase = basename(src).replace(/\.[^.]+$/, '');
       const srcDir = src.split('/')[0];
