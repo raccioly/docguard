@@ -5,3 +5,6 @@
 ## 2024-04-16 - Context-Aware Status Bar Tooltips
 **Learning:** VS Code extension status bar items can display multiple forms of feedback, but static tooltips fail to explain state changes. Providing context-aware tooltip text (e.g., explaining why a threshold warning icon appears) greatly improves the usability for developers monitoring CLI outputs inline.
 **Action:** Always map status bar dynamic properties (icon, text, backgroundColor) to corresponding informative tooltips that explain what the visual change means.
+## 2026-05-14 - Node -c Context Issues in Extensions
+**Learning:** Running `node -c` on VS Code extension files (like `vscode-extension/extension.js`) may throw false-positive 'top-level await' syntax errors due to the lack of extension module wrapper context.
+**Action:** Rely on `pnpm test` to verify parsing and execution for VS Code extension scripts.
