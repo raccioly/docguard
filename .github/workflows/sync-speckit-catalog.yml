@@ -24,7 +24,7 @@ jobs:
 
     steps:
       - name: Checkout docguard repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Get version and metadata
         id: meta
@@ -71,7 +71,7 @@ jobs:
           echo "✅ Fork synced with upstream"
 
       - name: Checkout spec-kit fork (fresh after sync)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: raccioly/spec-kit
           token: ${{ secrets.SPECKIT_PR_TOKEN }}
