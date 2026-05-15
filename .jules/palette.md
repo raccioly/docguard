@@ -5,7 +5,3 @@
 ## 2024-04-16 - Context-Aware Status Bar Tooltips
 **Learning:** VS Code extension status bar items can display multiple forms of feedback, but static tooltips fail to explain state changes. Providing context-aware tooltip text (e.g., explaining why a threshold warning icon appears) greatly improves the usability for developers monitoring CLI outputs inline.
 **Action:** Always map status bar dynamic properties (icon, text, backgroundColor) to corresponding informative tooltips that explain what the visual change means.
-
-## 2024-05-15 - Dynamic VS Code Status Bar Item Accessibility
-**Learning:** Adding a static tooltip or icon to a `statusBarItem` in a VS Code extension is not sufficient for screen reader accessibility, especially when its content changes dynamically depending on application state (e.g., success, error, or fallback). The `accessibilityInformation` must be dynamically updated alongside visual changes to ensure visually impaired users are notified of the current state.
-**Action:** When updating dynamic visual feedback (like icons or colors) on a VS Code `statusBarItem`, always map and apply corresponding context-aware accessible strings to its `accessibilityInformation.label` property and set its role correctly (e.g. `role: 'button'`).

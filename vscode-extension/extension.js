@@ -29,7 +29,6 @@ function activate(context) {
   );
   statusBarItem.command = 'specguard.score';
   statusBarItem.tooltip = 'Click to see CDD score details';
-  statusBarItem.accessibilityInformation = { label: 'CDD Score unknown', role: 'button' };
   context.subscriptions.push(statusBarItem);
 
   // Diagnostics
@@ -214,7 +213,6 @@ async function refreshScore() {
     const jsonStart = output.indexOf('{');
     if (jsonStart < 0) {
       statusBarItem.text = '$(shield) CDD: ?';
-      statusBarItem.accessibilityInformation = { label: 'CDD Score unknown', role: 'button' };
       statusBarItem.show();
       return;
     }
@@ -237,7 +235,6 @@ async function refreshScore() {
     statusBarItem.backgroundColor = score < threshold
       ? new vscode.ThemeColor('statusBarItem.warningBackground')
       : undefined;
-    statusBarItem.accessibilityInformation = { label: `CDD Score: ${score} out of 100, ${tooltipStatus}`, role: 'button' };
     statusBarItem.show();
 
     // Run diagnostics
@@ -246,7 +243,6 @@ async function refreshScore() {
     outputChannel.appendLine(`Score refreshed: ${score}/100 (${grade})`);
   } catch (e) {
     statusBarItem.text = '$(shield) CDD: ?';
-    statusBarItem.accessibilityInformation = { label: 'CDD Score unknown', role: 'button' };
     statusBarItem.show();
     outputChannel.appendLine(`Score refresh error: ${e.message}`);
   }
