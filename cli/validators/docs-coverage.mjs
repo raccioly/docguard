@@ -49,14 +49,18 @@ export function validateDocsCoverage(projectDir, config) {
     return { errors: [], warnings, passed: 0, total: 0 };
   }
 
+  // OPTIMIZATION: Precompute expensive toLowerCase() on potentially large string once
+  // to prevent O(N*M) redundant string allocation overhead across all check functions
+  const lowerDocContent = allDocContent.toLowerCase();
+
   // ── Check 1: Project-specific config/dotfiles referenced in docs ──
-  const configChecks = checkConfigFiles(projectDir, allDocContent);
+  const configChecks = checkConfigFiles(projectDir, lowerDocContent);
   total += configChecks.total;
   passed += configChecks.passed;
   warnings.push(...configChecks.warnings);
 
   // ── Check 2: package.json bin entries documented ──
-  const binChecks = checkPackageBins(projectDir, allDocContent);
+  const binChecks = checkPackageBins(projectDir, lowerDocContent);
   total += binChecks.total;
   passed += binChecks.passed;
   warnings.push(...binChecks.warnings);
@@ -68,7 +72,7 @@ export function validateDocsCoverage(projectDir, config) {
   warnings.push(...dirChecks.warnings);
 
   // ── Check 4: Config filenames referenced in source code but not documented ──
-  const codeConfigChecks = checkCodeReferencedConfigs(projectDir, allDocContent);
+  const codeConfigChecks = checkCodeReferencedConfigs(projectDir, lowerDocContent);
   total += codeConfigChecks.total;
   passed += codeConfigChecks.passed;
   warnings.push(...codeConfigChecks.warnings);
@@ -88,15 +92,13 @@ export function validateDocsCoverage(projectDir, config) {
  * Check 1: Project-specific config/dotfiles are mentioned in docs.
  * Skips universally common files (.gitignore, .eslintrc, etc.).
  */
-function checkConfigFiles(projectDir, allDocContent) {
+function checkConfigFiles(projectDir, lowerDocContent) {
   const warnings = [];
   let passed = 0;
   let total = 0;
 
   let entries;
   try { entries = readdirSync(projectDir); } catch { return { warnings, passed, total }; }
-
-  const lowerDocContent = allDocContent.toLowerCase();
 
   for (const entry of entries) {
     const isDotFile = entry.startsWith('.');
@@ -126,7 +128,7 @@ function checkConfigFiles(projectDir, allDocContent) {
 /**
  * Check 2: package.json bin entries (CLI commands users run) are documented.
  */
-function checkPackageBins(projectDir, allDocContent) {
+function checkPackageBins(projectDir, lowerDocContent) {
   const warnings = [];
   let passed = 0;
   let total = 0;
@@ -140,8 +142,6 @@ function checkPackageBins(projectDir, allDocContent) {
   const bins = typeof pkg.bin === 'string'
     ? { [pkg.name]: pkg.bin }
     : (pkg.bin || {});
-
-  const lowerDocContent = allDocContent.toLowerCase();
 
   for (const [binName] of Object.entries(bins)) {
     total++;
@@ -212,12 +212,11 @@ function checkSourceDirs(projectDir, allDocContent) {
  * patterns — these are configs the project USES. Avoids matching config names
  * sitting in arrays (scan patterns for detecting other projects' configs).
  */
-function checkCodeReferencedConfigs(projectDir, allDocContent) {
+function checkCodeReferencedConfigs(projectDir, lowerDocContent) {
   const warnings = [];
   let passed = 0;
   let total = 0;
 
-  const lowerDocContent = allDocContent.toLowerCase();
   const foundConfigs = new Set();
 
   // Only match config filenames inside function calls that actually USE the file:
