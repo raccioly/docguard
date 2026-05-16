@@ -187,6 +187,12 @@ export function ensureSpecKit(projectDir, flags = {}) {
     }
     try {
       const detectedAgent = detectAIAgent(projectDir);
+      // Security: Validate AI agent identifier to prevent command injection
+      // Only allow alphanumeric characters and hyphens
+      if (detectedAgent && !/^[a-zA-Z0-9-]+$/.test(detectedAgent)) {
+        throw new Error(`Invalid AI agent identifier: ${detectedAgent}`);
+      }
+
       const aiFlag = detectedAgent
         ? `--ai ${detectedAgent}`
         : '--ai generic --ai-commands-dir .agent/commands/';
