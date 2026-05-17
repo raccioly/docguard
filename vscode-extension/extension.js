@@ -213,6 +213,8 @@ async function refreshScore() {
     const jsonStart = output.indexOf('{');
     if (jsonStart < 0) {
       statusBarItem.text = '$(shield) CDD: ?';
+      statusBarItem.tooltip = 'Could not parse score output. Click to view logs.';
+      statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground');
       statusBarItem.show();
       return;
     }
@@ -243,6 +245,8 @@ async function refreshScore() {
     outputChannel.appendLine(`Score refreshed: ${score}/100 (${grade})`);
   } catch (e) {
     statusBarItem.text = '$(shield) CDD: ?';
+    statusBarItem.tooltip = `Error refreshing score: ${e.message}`;
+    statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground');
     statusBarItem.show();
     outputChannel.appendLine(`Score refresh error: ${e.message}`);
   }
