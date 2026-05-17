@@ -8,7 +8,7 @@
 
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, extname } from 'node:path';
-import { execSync, execFileSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build',
@@ -39,11 +39,13 @@ function getLastGitDate(filePath, dir) {
 function getCodeCommitsSince(date, dir) {
   try {
     const isoDate = date.toISOString();
-    const result = execSync(
-      `git log --since="${isoDate}" --oneline --diff-filter=M -- "*.js" "*.mjs" "*.ts" "*.tsx" "*.py" "*.java" "*.go" | wc -l`,
+    const result = execFileSync(
+      'git',
+      ['log', `--since=${isoDate}`, '--oneline', '--diff-filter=M', '--', '*.js', '*.mjs', '*.ts', '*.tsx', '*.py', '*.java', '*.go'],
       { cwd: dir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
     ).trim();
-    return parseInt(result) || 0;
+    return result ? result.split('\n').length : 0;
+
   } catch {
     return 0;
   }
@@ -54,9 +56,7 @@ function getCodeCommitsSince(date, dir) {
  */
 function isGitRepo(dir) {
   try {
-    execSync('git rev-parse --is-inside-work-tree', {
-      cwd: dir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe']
-    });
+    execFileSync('git', ['rev-parse', '--is-inside-work-tree'], { cwd: dir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] });
     return true;
   } catch {
     return false;
@@ -68,9 +68,7 @@ function isGitRepo(dir) {
  */
 function getTotalCommits(dir) {
   try {
-    return parseInt(execSync('git rev-list --count HEAD', {
-      cwd: dir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe']
-    }).trim()) || 0;
+    return parseInt(execFileSync('git', ['rev-list', '--count', 'HEAD'], { cwd: dir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }).trim()) || 0;
   } catch {
     return 0;
   }
@@ -81,8 +79,9 @@ function getTotalCommits(dir) {
  */
 function getRecentCodeCommits(dir, count = 5) {
   try {
-    const result = execSync(
-      `git log -${count} --format="%h %aI %s" -- "*.js" "*.mjs" "*.ts" "*.tsx" "*.py" "*.java"`,
+    const result = execFileSync(
+      'git',
+      ['log', `-${count}`, '--format=%h %aI %s', '--', '*.js', '*.mjs', '*.ts', '*.tsx', '*.py', '*.java'],
       { cwd: dir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
     ).trim();
     return result ? result.split('\n') : [];
@@ -204,10 +203,12 @@ export function validateFreshness(dir, config) {
     const driftDate = getLastGitDate(config.requiredFiles?.driftLog || 'DRIFT-LOG.md', dir);
     // Check for recent DRIFT comments added to code
     try {
-      const recentDrifts = execSync(
-        `git log -5 --all -p -- "*.js" "*.mjs" "*.ts" "*.tsx" "*.py" | grep -c "DRIFT:" || true`,
+      const logOutput = execFileSync(
+        'git',
+        ['log', '-5', '--all', '-p', '--', '*.js', '*.mjs', '*.ts', '*.tsx', '*.py'],
         { cwd: dir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
-      ).trim();
+      );
+      const recentDrifts = (logOutput.match(/DRIFT:/g) || []).length.toString();
       const driftCount = parseInt(recentDrifts) || 0;
       if (driftCount > 0 && driftDate) {
         const codeCommitsSince = getCodeCommitsSince(driftDate, dir);

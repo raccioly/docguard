@@ -20,7 +20,7 @@ import { detectAgentMode, isSpecKitInitialized } from '../ensure-skills.mjs';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { execSync, execFileSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 
 // Map validator failures to the right fix --doc target
 const VALIDATOR_TO_DOC = {
