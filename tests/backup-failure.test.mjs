@@ -4,7 +4,7 @@
 
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { execSync } from 'node:child_process';
+import { execSync, execFileSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, rmSync, existsSync, writeFileSync, readFileSync, statSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';

@@ -23,7 +23,7 @@
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, extname } from 'node:path';
-import { execSync, execFileSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 
 // ──── Metric Thresholds ────
 // These define "good" vs "warning" boundaries for each metric.
@@ -448,9 +448,10 @@ function getGradeLabel(grade) {
  */
 function findUnderstandingCli() {
   try {
-    const cmd = process.platform === 'win32' ? 'where understanding' : 'which understanding';
-    const result = execSync(`${cmd} 2>/dev/null`, {
+    const cmd = process.platform === 'win32' ? 'where' : 'which';
+    const result = execFileSync(cmd, ['understanding'], {
       encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'ignore'],
       timeout: 3000,
     }).trim();
     return result || null;

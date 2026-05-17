@@ -13,7 +13,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync } from 
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createInterface } from 'node:readline';
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { c, PROFILES } from '../shared.mjs';
 import { ensureSkills, detectAgentMode, detectAIAgent, isSpecKitAvailable, isSpecKitInitialized, getDetectedAgent } from '../ensure-skills.mjs';
 
@@ -213,8 +213,9 @@ export async function runInit(projectDir, config, flags) {
     console.log(`  ${c.dim}Running specify init (agent: ${detectedAgent || 'generic'})...${c.reset}`);
     try {
       const scriptFlag = process.platform === 'win32' ? '--script ps' : '--script sh';
-      execSync(
-        `specify init --here --force ${aiFlag} --ai-skills --ignore-agent-tools --no-git ${scriptFlag}`,
+      execFileSync(
+        process.platform === 'win32' ? 'specify.cmd' : 'specify',
+        ['init', '--here', '--force', ...(aiFlag ? aiFlag.split(' ') : []), '--ai-skills', '--ignore-agent-tools', '--no-git', ...(scriptFlag ? scriptFlag.split(' ') : [])],
         { cwd: projectDir, encoding: 'utf-8', stdio: 'pipe', timeout: 30000 }
       );
       console.log(`  ${c.green}✅${c.reset} Spec Kit initialized ${c.dim}(.specify/, spec-kit skills, agent: ${detectedAgent || 'generic'})${c.reset}`);
