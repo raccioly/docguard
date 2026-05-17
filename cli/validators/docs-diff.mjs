@@ -97,10 +97,13 @@ export function diffTechStack(dir) {
 
   if (docTech.size === 0 && codeTech.size === 0) return null;
 
+  const docTechArr = [...docTech];
+  const codeTechArr = [...codeTech];
+
   return {
     title: 'Tech Stack',
-    onlyInDocs: [...docTech].filter(t => !codeTech.has(t)),
-    onlyInCode: [...codeTech].filter(t => !docTech.has(t)),
+    onlyInDocs: docTechArr.filter(t => !codeTech.has(t)),
+    onlyInCode: codeTechArr.filter(t => !docTech.has(t)),
   };
 }
 
@@ -128,10 +131,13 @@ function diffEnvVars(dir) {
 
   if (docVars.size === 0 && codeVars.size === 0) return null;
 
+  const docVarsArr = [...docVars];
+  const codeVarsArr = [...codeVars];
+
   return {
     title: 'Environment Variables',
-    onlyInDocs: [...docVars].filter(v => !codeVars.has(v)),
-    onlyInCode: [...codeVars].filter(v => !docVars.has(v)),
+    onlyInDocs: docVarsArr.filter(v => !codeVars.has(v)),
+    onlyInCode: codeVarsArr.filter(v => !docVars.has(v)),
   };
 }
 
@@ -178,10 +184,13 @@ function diffTests(dir, config) {
 
   if (docTests.size === 0 && codeTests.size === 0) return null;
 
+  const docTestsArr = [...docTests];
+  const codeTestsArr = [...codeTests];
+
   return {
     title: 'Test Files',
-    onlyInDocs: [...docTests].filter(t => !codeTests.has(t)),
-    onlyInCode: [...codeTests].filter(t => !docTests.has(t)),
+    onlyInDocs: docTestsArr.filter(t => !codeTests.has(t)),
+    onlyInCode: codeTestsArr.filter(t => !docTests.has(t)),
   };
 }
 
