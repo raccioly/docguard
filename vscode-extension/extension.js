@@ -206,13 +206,25 @@ function execSpecguard(workspaceDir, args) {
 
 async function refreshScore() {
   const dir = getWorkspaceDir();
-  if (!dir) return;
+  if (!dir) {
+    if (statusBarItem) {
+      statusBarItem.backgroundColor = undefined;
+      statusBarItem.tooltip = undefined;
+    }
+    return;
+  }
+
+  // Optimistically reset background color and tooltip before refresh
+  statusBarItem.backgroundColor = undefined;
+  statusBarItem.tooltip = undefined;
 
   try {
     const output = execSpecguard(dir, 'score --format json');
     const jsonStart = output.indexOf('{');
     if (jsonStart < 0) {
       statusBarItem.text = '$(shield) CDD: ?';
+      statusBarItem.tooltip = 'CDD Score: Unavailable (Failed to parse output)';
+      statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground');
       statusBarItem.show();
       return;
     }
@@ -243,6 +255,8 @@ async function refreshScore() {
     outputChannel.appendLine(`Score refreshed: ${score}/100 (${grade})`);
   } catch (e) {
     statusBarItem.text = '$(shield) CDD: ?';
+    statusBarItem.tooltip = 'CDD Score: Error (Click to retry)';
+    statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground');
     statusBarItem.show();
     outputChannel.appendLine(`Score refresh error: ${e.message}`);
   }
