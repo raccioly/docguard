@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **VS Code Extension: Error Context** — Added explicit tooltips and warning backgrounds to the VS Code status bar item when CDD scores fail to refresh or parse, making error states clearer to the user.
+
 ## [0.9.11] - 2026-03-18
 
 ### Added
