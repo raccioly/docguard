@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+- **Supply Chain Audit** — Executed read-only audit of npm/PyPI supply-chain risks. Generated report for 2026-05-18 with HIGH and MEDIUM findings related to unpinned third-party actions and missing permissions blocks.
+
 ## [0.9.11] - 2026-03-18
 
 ### Added
