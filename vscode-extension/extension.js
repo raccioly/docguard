@@ -213,6 +213,8 @@ async function refreshScore() {
     const jsonStart = output.indexOf('{');
     if (jsonStart < 0) {
       statusBarItem.text = '$(shield) CDD: ?';
+      statusBarItem.tooltip = 'CDD Score: Not available\nCheck output channel for details';
+      statusBarItem.backgroundColor = undefined;
       statusBarItem.show();
       return;
     }
@@ -243,6 +245,8 @@ async function refreshScore() {
     outputChannel.appendLine(`Score refreshed: ${score}/100 (${grade})`);
   } catch (e) {
     statusBarItem.text = '$(shield) CDD: ?';
+    statusBarItem.tooltip = 'CDD Score: Not available\nCheck output channel for details';
+    statusBarItem.backgroundColor = undefined;
     statusBarItem.show();
     outputChannel.appendLine(`Score refresh error: ${e.message}`);
   }
