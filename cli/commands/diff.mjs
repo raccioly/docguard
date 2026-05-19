@@ -128,17 +128,21 @@ function diffRoutes(dir) {
     }
   }
 
+  // ⚡ Bolt: Precompute arrays outside of loops to prevent O(N*M) array spread overhead
+  const docRoutesArr = [...docRoutes];
+  const codeRoutesArr = [...codeRoutes];
+
   return {
     title: 'API Routes',
     icon: '🛣️',
-    onlyInDocs: [...docRoutes].filter(r => ![...codeRoutes].some(cr => cr.includes(r.replace(/\//g, '/')))),
-    onlyInCode: [...codeRoutes].filter(cr => {
+    onlyInDocs: docRoutesArr.filter(r => !codeRoutesArr.some(cr => cr.includes(r.replace(/\//g, '/')))),
+    onlyInCode: codeRoutesArr.filter(cr => {
       const name = basename(cr, extname(cr));
-      return ![...docRoutes].some(dr => dr.includes(name));
+      return !docRoutesArr.some(dr => dr.includes(name));
     }),
-    matched: [...codeRoutes].filter(cr => {
+    matched: codeRoutesArr.filter(cr => {
       const name = basename(cr, extname(cr));
-      return [...docRoutes].some(dr => dr.includes(name));
+      return docRoutesArr.some(dr => dr.includes(name));
     }),
   };
 }
@@ -231,12 +235,16 @@ function diffEntities(dir) {
     }
   }
 
+  // ⚡ Bolt: Precompute arrays outside of loops to prevent O(N*M) array spread overhead
+  const docEntitiesArr = [...docEntities];
+  const codeEntitiesArr = [...codeEntities];
+
   return {
     title: 'Data Entities',
     icon: '🗃️',
-    onlyInDocs: [...docEntities].filter(d => ![...codeEntities].some(ce => ce.includes(d) || d.includes(ce))),
-    onlyInCode: [...codeEntities].filter(ce => ![...docEntities].some(d => d.includes(ce) || ce.includes(d))),
-    matched: [...codeEntities].filter(ce => [...docEntities].some(d => d.includes(ce) || ce.includes(d))),
+    onlyInDocs: docEntitiesArr.filter(d => !codeEntitiesArr.some(ce => ce.includes(d) || d.includes(ce))),
+    onlyInCode: codeEntitiesArr.filter(ce => !docEntitiesArr.some(d => d.includes(ce) || ce.includes(d))),
+    matched: codeEntitiesArr.filter(ce => docEntitiesArr.some(d => d.includes(ce) || ce.includes(d))),
   };
 }
 
@@ -267,12 +275,16 @@ function diffEnvVars(dir) {
 
   if (docVars.size === 0 && codeVars.size === 0) return null;
 
+  // ⚡ Bolt: Precompute arrays outside of loops to prevent O(N*M) array spread overhead
+  const docVarsArr = [...docVars];
+  const codeVarsArr = [...codeVars];
+
   return {
     title: 'Environment Variables',
     icon: '🔧',
-    onlyInDocs: [...docVars].filter(v => !codeVars.has(v)),
-    onlyInCode: [...codeVars].filter(v => !docVars.has(v)),
-    matched: [...docVars].filter(v => codeVars.has(v)),
+    onlyInDocs: docVarsArr.filter(v => !codeVars.has(v)),
+    onlyInCode: codeVarsArr.filter(v => !docVars.has(v)),
+    matched: docVarsArr.filter(v => codeVars.has(v)),
   };
 }
 
@@ -313,12 +325,16 @@ function diffTechStack(dir) {
 
   if (docTech.size === 0 && codeTech.size === 0) return null;
 
+  // ⚡ Bolt: Precompute arrays outside of loops to prevent O(N*M) array spread overhead
+  const docTechArr = [...docTech];
+  const codeTechArr = [...codeTech];
+
   return {
     title: 'Tech Stack',
     icon: '⚙️',
-    onlyInDocs: [...docTech].filter(t => !codeTech.has(t)),
-    onlyInCode: [...codeTech].filter(t => !docTech.has(t)),
-    matched: [...docTech].filter(t => codeTech.has(t)),
+    onlyInDocs: docTechArr.filter(t => !codeTech.has(t)),
+    onlyInCode: codeTechArr.filter(t => !docTech.has(t)),
+    matched: docTechArr.filter(t => codeTech.has(t)),
   };
 }
 
@@ -352,12 +368,16 @@ function diffTests(dir) {
 
   if (docTests.size === 0 && codeTests.size === 0) return null;
 
+  // ⚡ Bolt: Precompute arrays outside of loops to prevent O(N*M) array spread overhead
+  const docTestsArr = [...docTests];
+  const codeTestsArr = [...codeTests];
+
   return {
     title: 'Test Files',
     icon: '🧪',
-    onlyInDocs: [...docTests].filter(t => !codeTests.has(t)),
-    onlyInCode: [...codeTests].filter(t => !docTests.has(t)),
-    matched: [...docTests].filter(t => codeTests.has(t)),
+    onlyInDocs: docTestsArr.filter(t => !codeTests.has(t)),
+    onlyInCode: codeTestsArr.filter(t => !docTests.has(t)),
+    matched: docTestsArr.filter(t => codeTests.has(t)),
   };
 }
 
