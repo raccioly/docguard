@@ -20,7 +20,7 @@ let fileWatcher;
 
 // ── Activation ─────────────────────────────────────────────────────────────
 
-function activate(context) {
+async function activate(context) {
   outputChannel = vscode.window.createOutputChannel('SpecGuard');
 
   // Status bar
@@ -29,6 +29,10 @@ function activate(context) {
   );
   statusBarItem.command = 'specguard.score';
   statusBarItem.tooltip = 'Click to see CDD score details';
+  statusBarItem.accessibilityInformation = {
+    label: 'CDD Score',
+    role: 'button'
+  };
   context.subscriptions.push(statusBarItem);
 
   // Diagnostics
@@ -213,6 +217,11 @@ async function refreshScore() {
     const jsonStart = output.indexOf('{');
     if (jsonStart < 0) {
       statusBarItem.text = '$(shield) CDD: ?';
+      statusBarItem.tooltip = 'CDD Score: Unknown\nClick to see details';
+      statusBarItem.accessibilityInformation = {
+        label: 'CDD Score: Unknown',
+        role: 'button'
+      };
       statusBarItem.show();
       return;
     }
@@ -232,6 +241,10 @@ async function refreshScore() {
 
     statusBarItem.text = `${icon} CDD: ${score}/100 (${grade})`;
     statusBarItem.tooltip = `CDD Score: ${score}/100 - ${tooltipStatus}\nClick to see details`;
+    statusBarItem.accessibilityInformation = {
+      label: `CDD Score is ${score} out of 100. Status: ${tooltipStatus}`,
+      role: 'button'
+    };
     statusBarItem.backgroundColor = score < threshold
       ? new vscode.ThemeColor('statusBarItem.warningBackground')
       : undefined;
@@ -243,6 +256,11 @@ async function refreshScore() {
     outputChannel.appendLine(`Score refreshed: ${score}/100 (${grade})`);
   } catch (e) {
     statusBarItem.text = '$(shield) CDD: ?';
+    statusBarItem.tooltip = 'CDD Score: Error\nClick to see details';
+    statusBarItem.accessibilityInformation = {
+      label: 'CDD Score: Error',
+      role: 'button'
+    };
     statusBarItem.show();
     outputChannel.appendLine(`Score refresh error: ${e.message}`);
   }
