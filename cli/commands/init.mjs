@@ -13,7 +13,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync } from 
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createInterface } from 'node:readline';
-import { execSync } from 'node:child_process';
+import { execSync, execFileSync } from 'node:child_process';
 import { c, PROFILES } from '../shared.mjs';
 import { ensureSkills, detectAgentMode, detectAIAgent, isSpecKitAvailable, isSpecKitInitialized, getDetectedAgent } from '../ensure-skills.mjs';
 
@@ -206,18 +206,26 @@ export async function runInit(projectDir, config, flags) {
 
     // Detect which AI agent is in use (matches spec-kit's --ai flag)
     const detectedAgent = detectAIAgent(projectDir);
-    const aiFlag = detectedAgent
-      ? `--ai ${detectedAgent}`
-      : '--ai generic --ai-commands-dir .agent/commands/';
 
-    console.log(`  ${c.dim}Running specify init (agent: ${detectedAgent || 'generic'})...${c.reset}`);
+    // Validate detectedAgent to prevent any unexpected payload
+    const isValidAgent = detectedAgent && /^[a-zA-Z0-9-]+$/.test(detectedAgent);
+    const safeAgent = isValidAgent ? detectedAgent : null;
+
+    const aiFlag = safeAgent
+      ? ['--ai', safeAgent]
+      : ['--ai', 'generic', '--ai-commands-dir', '.agent/commands/'];
+
+    console.log(`  ${c.dim}Running specify init (agent: ${safeAgent || 'generic'})...${c.reset}`);
     try {
-      const scriptFlag = process.platform === 'win32' ? '--script ps' : '--script sh';
-      execSync(
-        `specify init --here --force ${aiFlag} --ai-skills --ignore-agent-tools --no-git ${scriptFlag}`,
-        { cwd: projectDir, encoding: 'utf-8', stdio: 'pipe', timeout: 30000 }
-      );
-      console.log(`  ${c.green}✅${c.reset} Spec Kit initialized ${c.dim}(.specify/, spec-kit skills, agent: ${detectedAgent || 'generic'})${c.reset}`);
+      const scriptFlag = process.platform === 'win32' ? ['--script', 'ps'] : ['--script', 'sh'];
+      const specifyArgs = ['init', '--here', '--force', ...aiFlag, '--ai-skills', '--ignore-agent-tools', '--no-git', ...scriptFlag];
+
+      if (process.platform === 'win32') {
+        execFileSync('cmd.exe', ['/c', 'specify.cmd', ...specifyArgs], { cwd: projectDir, encoding: 'utf-8', stdio: 'pipe', timeout: 30000 });
+      } else {
+        execFileSync('specify', specifyArgs, { cwd: projectDir, encoding: 'utf-8', stdio: 'pipe', timeout: 30000 });
+      }
+      console.log(`  ${c.green}✅${c.reset} Spec Kit initialized ${c.dim}(.specify/, spec-kit skills, agent: ${safeAgent || 'generic'})${c.reset}`);
       created.push('.specify/ (spec-kit foundation)');
     } catch (err) {
       console.log(`  ${c.yellow}⚠️${c.reset}  Spec Kit init had issues ${c.dim}(continuing with DocGuard standalone)${c.reset}`);

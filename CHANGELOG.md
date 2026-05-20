@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- **Security**: Fixed command injection vulnerabilities in `specify init` by safely using `execFileSync` and adding input validation (`cli/commands/init.mjs`, `cli/ensure-skills.mjs`).
+
 ## [0.9.11] - 2026-03-18
 
 ### Added
