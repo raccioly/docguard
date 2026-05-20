@@ -128,17 +128,20 @@ function diffRoutes(dir) {
     }
   }
 
+  const docRoutesArr = [...docRoutes];
+  const codeRoutesArr = [...codeRoutes];
+
   return {
     title: 'API Routes',
     icon: '🛣️',
-    onlyInDocs: [...docRoutes].filter(r => ![...codeRoutes].some(cr => cr.includes(r.replace(/\//g, '/')))),
-    onlyInCode: [...codeRoutes].filter(cr => {
+    onlyInDocs: docRoutesArr.filter(r => !codeRoutesArr.some(cr => cr.includes(r.replace(/\//g, '/')))),
+    onlyInCode: codeRoutesArr.filter(cr => {
       const name = basename(cr, extname(cr));
-      return ![...docRoutes].some(dr => dr.includes(name));
+      return !docRoutesArr.some(dr => dr.includes(name));
     }),
-    matched: [...codeRoutes].filter(cr => {
+    matched: codeRoutesArr.filter(cr => {
       const name = basename(cr, extname(cr));
-      return [...docRoutes].some(dr => dr.includes(name));
+      return docRoutesArr.some(dr => dr.includes(name));
     }),
   };
 }
@@ -231,12 +234,15 @@ function diffEntities(dir) {
     }
   }
 
+  const docEntitiesArr = [...docEntities];
+  const codeEntitiesArr = [...codeEntities];
+
   return {
     title: 'Data Entities',
     icon: '🗃️',
-    onlyInDocs: [...docEntities].filter(d => ![...codeEntities].some(ce => ce.includes(d) || d.includes(ce))),
-    onlyInCode: [...codeEntities].filter(ce => ![...docEntities].some(d => d.includes(ce) || ce.includes(d))),
-    matched: [...codeEntities].filter(ce => [...docEntities].some(d => d.includes(ce) || ce.includes(d))),
+    onlyInDocs: docEntitiesArr.filter(d => !codeEntitiesArr.some(ce => ce.includes(d) || d.includes(ce))),
+    onlyInCode: codeEntitiesArr.filter(ce => !docEntitiesArr.some(d => d.includes(ce) || ce.includes(d))),
+    matched: codeEntitiesArr.filter(ce => docEntitiesArr.some(d => d.includes(ce) || ce.includes(d))),
   };
 }
 
