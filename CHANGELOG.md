@@ -249,6 +249,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Trace no longer hardcodes all 6 docs — only evaluates what the user's config requires.
 
+## [Unreleased]
+
+### Changed
+- Refactored `diffRoutes` and `diffEntities` in `cli/commands/diff.mjs` to eliminate redundant O(N*M) array allocations when executing inclusion checks.
+
 ## [0.7.1] - 2026-03-13
 
 ### Added
