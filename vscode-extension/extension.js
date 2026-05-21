@@ -208,11 +208,19 @@ async function refreshScore() {
   const dir = getWorkspaceDir();
   if (!dir) return;
 
+  // Reset states from any previous errors
+  if (statusBarItem) {
+    statusBarItem.backgroundColor = undefined;
+    statusBarItem.tooltip = undefined;
+  }
+
   try {
     const output = execSpecguard(dir, 'score --format json');
     const jsonStart = output.indexOf('{');
     if (jsonStart < 0) {
-      statusBarItem.text = '$(shield) CDD: ?';
+      statusBarItem.text = '$(question) CDD: ?';
+      statusBarItem.tooltip = 'CDD score format invalid or unavailable';
+      statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
       statusBarItem.show();
       return;
     }
@@ -242,7 +250,9 @@ async function refreshScore() {
 
     outputChannel.appendLine(`Score refreshed: ${score}/100 (${grade})`);
   } catch (e) {
-    statusBarItem.text = '$(shield) CDD: ?';
+    statusBarItem.text = '$(error) CDD: Error';
+    statusBarItem.tooltip = `Error refreshing CDD score: ${e.message}`;
+    statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground');
     statusBarItem.show();
     outputChannel.appendLine(`Score refresh error: ${e.message}`);
   }
