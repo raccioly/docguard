@@ -77,7 +77,11 @@ export function getDetectedAgent(projectDir) {
   if (existsSync(initOptions)) {
     try {
       const opts = JSON.parse(readFileSync(initOptions, 'utf-8'));
-      return opts.ai || null;
+      const aiVal = opts.ai || null;
+      if (aiVal && !/^[a-zA-Z0-9-]+$/.test(aiVal)) {
+        return null; // Defense-in-depth: Reject potentially malicious payload
+      }
+      return aiVal;
     } catch { /* ignore */ }
   }
   return null;

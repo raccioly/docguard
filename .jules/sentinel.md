@@ -1,4 +1,4 @@
-## 2025-05-18 - [Command Injection via execSync]
-**Vulnerability:** Found multiple instances where user-controlled inputs (`projectDir`, `filePath`) were interpolated directly into shell commands via `execSync` (e.g., `execSync(\`node "\${cliPath}" init --dir "\${projectDir}"\`)`).
-**Learning:** This is a classic command injection vulnerability. If `projectDir` contains shell metacharacters like `;`, `&&`, or `||`, it allows arbitrary command execution.
-**Prevention:** Always use `execFileSync` (or `execFile` for async) instead of `execSync` when executing commands with dynamic inputs. Pass arguments as an array to ensure they are passed directly to the executable without shell interpolation.
+## 2025-05-21 - Fix Command Injection in spec-kit initialize configuration parsing
+**Vulnerability:** The `ai` field in `.specify/init-options.json` was parsed and injected directly into a shell string executed by `execSync` (`specify init --here --force --ai ${opts.ai}`). This allowed a malicious local configuration file to achieve arbitrary command execution when developers ran CLI commands.
+**Learning:** Even though `execSync` is often used for fast prototyping, any dynamic data (even locally stored config files) fed into its shell string constitutes a command injection vulnerability. Attempting to fix this by switching to `execFileSync('cmd.exe', ['/c', ...args])` on Windows is still vulnerable to shell injection if the arguments are not validated.
+**Prevention:** Always validate parsed dynamic data against a strict regex allowlist (e.g., `/^[a-zA-Z0-9-]+$/`) if it must be used in a shell context.
