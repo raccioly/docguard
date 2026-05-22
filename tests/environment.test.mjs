@@ -42,13 +42,15 @@ describe('validateEnvironment', () => {
     assert.ok(results.warnings[1].includes('missing "## Environment Variables"'));
   });
 
-  it('passes both section checks if ## Setup Steps is present', () => {
-    // ## Setup Steps counts for BOTH the prerequisite check AND the environment variables check based on validateEnvironment code
+  it('## Setup Steps satisfies the setup section but NOT the Environment Variables section', () => {
+    // Previously "## Setup Steps" wrongly satisfied BOTH checks; now each section
+    // must be present on its own.
     fs.writeFileSync(envDocPath, '## Setup Steps\nDo this and that.', 'utf-8');
     const results = validateEnvironment(tempDir, {});
     assert.equal(results.total, 3); // 2 section checks + 1 .env file check
-    assert.equal(results.passed, 3); // both passed + 1 .env file check passed
-    assert.equal(results.warnings.length, 0);
+    assert.equal(results.passed, 2); // setup section + .env file check; Env Vars section missing
+    assert.equal(results.warnings.length, 1);
+    assert.ok(results.warnings[0].includes('missing "## Environment Variables"'));
   });
 
   it('issues a warning if .env.example is referenced but does not exist', () => {
@@ -112,6 +114,23 @@ describe('validateEnvironment', () => {
     assert.equal(results.total, 3);
     assert.equal(results.passed, 3);
     assert.equal(results.warnings.length, 0);
+  });
+
+  it('flags an env var used in code (process.env) but not documented', () => {
+    fs.writeFileSync(envDocPath, '## Prerequisites\n## Environment Variables\n`DOCUMENTED_VAR` is set.', 'utf-8');
+    fs.mkdirSync(join(tempDir, 'backend', 'src'), { recursive: true });
+    fs.writeFileSync(join(tempDir, 'backend', 'src', 'config.ts'),
+      'const a = process.env.UNDOCUMENTED_SECRET;\nconst b = process.env.DOCUMENTED_VAR;');
+    const config = { sourceRoot: 'backend/src', projectTypeConfig: { needsEnvVars: true } };
+    const results = validateEnvironment(tempDir, config);
+    assert.ok(
+      results.warnings.some(w => w.includes('UNDOCUMENTED_SECRET')),
+      'should flag the undocumented env var used in code'
+    );
+    assert.ok(
+      !results.warnings.some(w => w.includes('DOCUMENTED_VAR')),
+      'documented var should not be flagged'
+    );
   });
 
   it('bypasses .env.example checks if needsEnvVars is false', () => {

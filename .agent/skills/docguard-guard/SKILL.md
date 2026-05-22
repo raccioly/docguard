@@ -78,7 +78,8 @@ Classify every non-passing check using this priority matrix:
 
 **HIGH (fix before commit)**:
 - Doc Sections failures (missing required sections)
-- Drift detection (undocumented code deviations)
+- Drift-Comments (a `// DRIFT:` comment without a DRIFT-LOG.md entry)
+- API-Surface (API-REFERENCE.md documents an endpoint that no longer exists in code)
 - Changelog gaps
 - Traceability breaks
 
@@ -138,7 +139,7 @@ For each finding, provide a **specific, actionable fix** — not "fix the issue"
 
 Based on the triage results:
 
-- **If all PASS**: "All 19 validators passed. Project is CDD-compliant. Ready to commit."
+- **If all PASS**: "All 20 validators passed. Project is CDD-compliant. Ready to commit."
 - **If only MEDIUM/LOW warnings**: "Non-blocking warnings found. Safe to commit, but consider running `/docguard.fix` for automated remediation."
 - **If HIGH or CRITICAL failures**: "Blocking issues found. Fix these before committing. Suggest running `/docguard.fix --doc [most impactful doc]` next."
 

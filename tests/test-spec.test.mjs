@@ -49,8 +49,10 @@ describe('validateTestSpec', () => {
     const config = { projectTypeConfig: { needsE2E: true } };
     const results = validateTestSpec(tempDir, config);
 
-    assert.equal(results.total, 17);
-    assert.equal(results.passed, 11);
+    // ✅ glyphs are no longer counted as passes — passes come from real file
+    // existence (source + test files), so a ✅ row with a missing file does not pass.
+    assert.equal(results.total, 14);
+    assert.equal(results.passed, 8);
     assert.equal(results.warnings.length, 6);
 
     assert.ok(results.warnings.some(w => w.includes('src2.js as ❌')));
@@ -77,57 +79,58 @@ describe('validateTestSpec', () => {
     const config = { projectTypeConfig: { needsE2E: false } };
     const results = validateTestSpec(tempDir, config);
 
-    assert.equal(results.total, 1); // Only checked for test dir
+    // E2E skipped + no other entries + no tests found → a real warning (not a pass).
+    assert.equal(results.total, 0);
     assert.equal(results.warnings.length, 1);
     assert.ok(results.warnings[0].includes('No test directory or co-located test files found.'));
 
     fs.rmSync(tempDir, { recursive: true, force: true });
   });
 
-  it('should use fallback check when no entries are parsed and tests dir exists', () => {
+  it('is N/A (not a fake pass) when the spec maps nothing but a tests dir exists', () => {
     const tempDir = fs.mkdtempSync(join(tmpdir(), 'docguard-test-spec-'));
     fs.mkdirSync(join(tempDir, 'docs-canonical'), { recursive: true });
     fs.mkdirSync(join(tempDir, 'tests'), { recursive: true });
     fs.writeFileSync(join(tempDir, 'docs-canonical/TEST-SPEC.md'), 'Empty doc');
 
-    const config = {};
-    const results = validateTestSpec(tempDir, config);
+    const results = validateTestSpec(tempDir, {});
 
-    assert.equal(results.total, 1);
-    assert.equal(results.passed, 1);
+    // Tests exist but TEST-SPEC.md declares no mappings → nothing to verify → N/A.
+    assert.equal(results.total, 0);
+    assert.equal(results.passed, 0);
     assert.equal(results.warnings.length, 0);
+    assert.ok(results.note, 'should explain why it is not applicable');
 
     fs.rmSync(tempDir, { recursive: true, force: true });
   });
 
-  it('should use fallback check when co-located tests exist', () => {
+  it('is N/A when the spec maps nothing but co-located tests exist', () => {
     const tempDir = fs.mkdtempSync(join(tmpdir(), 'docguard-test-spec-'));
     fs.mkdirSync(join(tempDir, 'docs-canonical'), { recursive: true });
     fs.mkdirSync(join(tempDir, 'src/components/__tests__'), { recursive: true });
+    fs.writeFileSync(join(tempDir, 'src/components/__tests__/x.test.ts'), 'test');
     fs.writeFileSync(join(tempDir, 'docs-canonical/TEST-SPEC.md'), 'Empty doc');
 
-    const config = {};
-    const results = validateTestSpec(tempDir, config);
+    const results = validateTestSpec(tempDir, {});
 
-    assert.equal(results.total, 1);
-    assert.equal(results.passed, 1);
+    assert.equal(results.total, 0);
     assert.equal(results.warnings.length, 0);
+    assert.ok(results.note);
 
     fs.rmSync(tempDir, { recursive: true, force: true });
   });
 
-  it('should use fallback check when vitest.config.ts exists', () => {
+  it('is N/A when the spec maps nothing but vitest.config.ts exists', () => {
     const tempDir = fs.mkdtempSync(join(tmpdir(), 'docguard-test-spec-'));
     fs.mkdirSync(join(tempDir, 'docs-canonical'), { recursive: true });
     fs.writeFileSync(join(tempDir, 'vitest.config.ts'), '');
     fs.writeFileSync(join(tempDir, 'docs-canonical/TEST-SPEC.md'), 'Empty doc');
 
-    const config = {};
-    const results = validateTestSpec(tempDir, config);
+    const results = validateTestSpec(tempDir, {});
 
-    assert.equal(results.total, 1);
-    assert.equal(results.passed, 1);
+    assert.equal(results.total, 0);
     assert.equal(results.warnings.length, 0);
+    assert.ok(results.note);
 
     fs.rmSync(tempDir, { recursive: true, force: true });
   });

@@ -8,6 +8,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, relative, extname } from 'node:path';
 import { loadIgnorePatterns } from '../shared.mjs';
+import { collectPackageJsons } from '../shared-source.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build', 'coverage',
@@ -26,14 +27,18 @@ export function validateMetadataSync(projectDir, config) {
   let total = 0;
 
   // ── Get source of truth: package.json version ──
+  // Prefer the root package version; in a monorepo where the root is just a
+  // workspace manifest with no version, fall back to a source-root package.
   const pkgPath = resolve(projectDir, 'package.json');
-  if (!existsSync(pkgPath)) {
-    return { errors: [], warnings, passed: 0, total: 0 };
+  let currentVersion = null;
+  if (existsSync(pkgPath)) {
+    try { currentVersion = JSON.parse(readFileSync(pkgPath, 'utf-8')).version || null; } catch { /* ignore */ }
   }
-
-  let pkg;
-  try { pkg = JSON.parse(readFileSync(pkgPath, 'utf-8')); } catch { return { errors: [], warnings, passed: 0, total: 0 }; }
-  const currentVersion = pkg.version;
+  if (!currentVersion) {
+    for (const { pkg } of collectPackageJsons(projectDir, config)) {
+      if (pkg.version) { currentVersion = pkg.version; break; }
+    }
+  }
   if (!currentVersion) return { errors: [], warnings, passed: 0, total: 0 };
 
   // Parse into components for smart comparison

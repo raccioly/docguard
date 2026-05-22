@@ -58,10 +58,11 @@ export function validateArchitecture(projectDir, config) {
     }
   }
 
-  // ── 5. Report import stats ──
+  // ── 5. No boundaries declared and no circular deps to check → not applicable.
+  // (Previously this returned a fake 1/1 pass, rendering a confident green ✅
+  // for projects that declared no layer boundaries — it validated nothing.)
   if (results.total === 0) {
-    results.total = 1;
-    results.passed = 1;
+    results.note = 'no layer boundaries declared in ARCHITECTURE.md';
   }
 
   return results;

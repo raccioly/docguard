@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-05-22
+
+### Added
+- **API-Surface validator** (`cli/validators/api-surface.mjs`) — compares endpoints documented in `docs-canonical/API-REFERENCE.md` against the project's real API surface (OpenAPI spec, monorepo-aware code route scan). Flags documented-but-deleted endpoints (HIGH/error when confirmed by a spec; warning on heuristic code-scan) and present-but-undocumented endpoints (warning). Brings the validator count to **20**.
+- **`N/A` result state** in `guard` — a validator that finds nothing to check now renders a neutral `➖ [N/A]` with a reason instead of a misleading green ✅. "Nothing to check" is no longer indistinguishable from "checked and clean". Exposed via `classifyResult()`; surfaced in text, `--format json`, `diagnose`, and `ci`.
+- **`cli/shared-source.mjs`** — monorepo-aware source resolution honoring `config.sourceRoot`, npm `workspaces`, and `pnpm-workspace.yaml`: `resolveSourceRoots()`, `collectPackageJsons()`, `detectDocker()`, `grepEnvUsage()`.
+- **`cli/scanners/api-doc.mjs`** — robust API-REFERENCE.md parser (headings + table rows) with path normalization (`:id ≡ {id}`, strips backticks/pipes/trailing slashes) and exact-match endpoint comparison.
+- **`docguard fix --doc api-reference`** — generates an AI prompt to reconcile API-REFERENCE.md with the real API surface.
+- **39 new tests** (api-doc, api-surface, shared-source, monorepo-scanning, guard-classify). Total: **214**.
+
+### Changed
+- **Monorepo awareness across validators** — `schema-sync`, `docs-coverage`, `docs-sync`, `test-spec`, `metadata-sync`, and test-file discovery now honor `config.sourceRoot`/workspaces instead of hardcoded root-relative paths. Previously these silently passed on monorepos whose code lives under e.g. `backend/src`.
+- **Environment validator now checks code truth** — compares documented env vars against actual `process.env` / `import.meta.env` usage (`.env.example` counts as documentation), replacing the prior section-heading-presence heuristic.
+- **Test-Spec verifies files, not glyphs** — a Source-to-Test/Journey row passes only if the referenced test file actually exists; the author-typed ✅ is no longer trusted as proof of coverage.
+- **Changelog validator** now implements the documented staged-change check: warns when staged code files exist but `CHANGELOG.md` is not staged (git-aware; N/A otherwise).
+- **`Drift` validator renamed to `Drift-Comments`** to clarify it checks `// DRIFT:` comment ↔ DRIFT-LOG.md bookkeeping, not doc/code drift. Config key (`drift`) is unchanged.
+- **Doc Sections** uses anchored heading matching instead of substring (no longer satisfied by a table-of-contents link or code block).
+
+### Fixed
+- **`guard` no longer reports a confident green ✅ for checks that validated nothing** — removed hand-rolled `passed=1/total=1` auto-passes in `drift`, `architecture`, `test-spec`, and `security` (empty scan).
+- **Eliminated false positives** that previously masked real drift: tech-stack/env-var "documented but not found" on monorepos, parser-garbage "data entities" (`table`, `index`, `foreign`), the greedy route regex emitting `/api/` + stray backticks, and the test-file path/basename and glob-pattern mismatches ("N documented but not found"). Documented endpoints/tests that genuinely no longer exist are now reported as real drift.
+- **Security scan** anchored to a scanned-file count — an empty scan now warns ("no source files were scanned") instead of reporting a false "no secrets" pass.
+
 ## [0.9.11] - 2026-03-18
 
 ### Added

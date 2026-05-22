@@ -58,6 +58,7 @@ export function validateSecurity(projectDir, config) {
   const results = { name: 'security', errors: [], warnings: [], passed: 0, total: 0 };
 
   const findings = [];
+  let scanned = 0;
 
   walkDir(projectDir, (filePath) => {
     const ext = extname(filePath);
@@ -73,6 +74,7 @@ export function validateSecurity(projectDir, config) {
     // Apply config ignore patterns (securityIgnore + global ignore)
     if (shouldIgnore(relPath, config, 'securityIgnore')) return;
 
+    scanned++;
     const content = readFileSync(filePath, 'utf-8');
     let lines = null;
 
@@ -103,13 +105,21 @@ export function validateSecurity(projectDir, config) {
     }
   });
 
-  results.total = 1;
-  if (findings.length === 0) {
-    results.passed = 1;
-  } else {
-    for (const f of findings) {
-      results.errors.push(`${f.file}: possible ${f.label} found`);
+  // Only count the secret scan as a passed check if we actually scanned files.
+  // An empty scan that reports "no secrets" is a dangerous false ✅ — surface it.
+  if (scanned > 0) {
+    results.total++;
+    if (findings.length === 0) {
+      results.passed++;
+    } else {
+      for (const f of findings) {
+        results.errors.push(`${f.file}: possible ${f.label} found`);
+      }
     }
+  } else {
+    results.warnings.push(
+      'No source files were scanned for secrets — check config.sourceRoot / ignore patterns'
+    );
   }
 
   // Check .gitignore includes .env

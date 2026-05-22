@@ -251,7 +251,7 @@ DocGuard runs **19 automated validators** on every `guard` check:
 | 1 | **Structure** | Required CDD files exist | ✅ On |
 | 2 | **Doc Sections** | Canonical docs have required sections | ✅ On |
 | 3 | **Docs-Sync** | Routes/services referenced in docs + OpenAPI cross-check | ✅ On |
-| 4 | **Drift** | `// DRIFT:` comments logged in DRIFT-LOG.md | ✅ On |
+| 4 | **Drift-Comments** | `// DRIFT:` comments logged in DRIFT-LOG.md | ✅ On |
 | 5 | **Changelog** | CHANGELOG.md has [Unreleased] section | ✅ On |
 | 6 | **Test-Spec** | Tests exist per TEST-SPEC.md rules | ✅ On |
 | 7 | **Environment** | Env vars documented, .env.example exists | ✅ On |
@@ -267,6 +267,7 @@ DocGuard runs **19 automated validators** on every `guard` check:
 | 17 | **TODO-Tracking** | Untracked TODOs/FIXMEs and skipped tests | ✅ On |
 | 18 | **Schema-Sync** | Database models documented in DATA-MODEL.md | ✅ On |
 | 19 | **Spec-Kit** | Spec quality validation (FR-IDs, mandatory sections, phased tasks) | ✅ On |
+| 20 | **API-Surface** | API-REFERENCE.md endpoints match the real API surface (OpenAPI spec / routes); flags documented-but-deleted endpoints | ✅ On |
 
 ---
 
@@ -320,7 +321,7 @@ DocGuard provides AI agent slash commands for integrated workflows. Installed au
 
 | Command | What It Does |
 |:--------|:-------------|
-| `/docguard.guard` | Run quality validation — check all 19 validators |
+| `/docguard.guard` | Run quality validation — check all 20 validators |
 | `/docguard.review` | Analyze doc quality and suggest improvements |
 | `/docguard.fix` | Generate targeted fix prompts for specific issues |
 | `/docguard.score` | Show CDD maturity score with category breakdown |

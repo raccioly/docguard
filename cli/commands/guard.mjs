@@ -20,6 +20,7 @@ import { validateArchitecture } from '../validators/architecture.mjs';
 import { validateFreshness } from '../validators/freshness.mjs';
 import { validateTraceability } from '../validators/traceability.mjs';
 import { validateDocsDiff } from '../validators/docs-diff.mjs';
+import { validateApiSurface } from '../validators/api-surface.mjs';
 import { validateMetadataSync } from '../validators/metadata-sync.mjs';
 import { validateMetricsConsistency } from '../validators/metrics-consistency.mjs';
 import { validateDocsCoverage } from '../validators/docs-coverage.mjs';
@@ -32,6 +33,38 @@ import { validateSpecKitIntegration } from '../scanners/speckit.mjs';
  * Internal guard — returns structured data, no console output, no process.exit.
  * Used by diagnose, ci, and guard --format json.
  */
+/**
+ * Classify a validator result into a status + quality badge.
+ *
+ * Critically, a check that found NOTHING to validate (no errors, no warnings,
+ * total === 0) — or that explicitly reports `applicable === false` — is status
+ * 'na' (not applicable), NOT 'pass'. This prevents a validator from rendering a
+ * confident green ✅ when it actually checked nothing (the root cause of the
+ * "clean bill of health on out-of-sync docs" incident).
+ */
+export function classifyResult(result) {
+  const hasErrors = result.errors.length > 0;
+  const hasWarnings = result.warnings.length > 0;
+
+  if (!hasErrors && !hasWarnings && (result.applicable === false || result.total === 0)) {
+    return { status: 'na', quality: null };
+  }
+
+  const status = hasErrors ? 'fail' : hasWarnings ? 'warn' : 'pass';
+
+  // Quality label: HIGH/MEDIUM/LOW (inspired by CJE quality stratification, Lopez et al. TRACE 2026)
+  let quality;
+  if (hasErrors) {
+    quality = 'LOW';
+  } else if (hasWarnings) {
+    quality = 'MEDIUM';
+  } else {
+    const ratio = result.total > 0 ? result.passed / result.total : 1;
+    quality = ratio >= 0.9 ? 'HIGH' : 'MEDIUM';
+  }
+  return { status, quality };
+}
+
 export function runGuardInternal(projectDir, config) {
   const validators = config.validators || {};
   const results = [];
@@ -40,7 +73,7 @@ export function runGuardInternal(projectDir, config) {
     { key: 'structure', name: 'Structure', fn: () => validateStructure(projectDir, config) },
     { key: 'structure', name: 'Doc Sections', fn: () => validateDocSections(projectDir, config) },
     { key: 'docsSync', name: 'Docs-Sync', fn: () => validateDocsSync(projectDir, config) },
-    { key: 'drift', name: 'Drift', fn: () => validateDrift(projectDir, config) },
+    { key: 'drift', name: 'Drift-Comments', fn: () => validateDrift(projectDir, config) },
     { key: 'changelog', name: 'Changelog', fn: () => validateChangelog(projectDir, config) },
     { key: 'testSpec', name: 'Test-Spec', fn: () => validateTestSpec(projectDir, config) },
     { key: 'environment', name: 'Environment', fn: () => validateEnvironment(projectDir, config) },
@@ -60,6 +93,7 @@ export function runGuardInternal(projectDir, config) {
     }},
     { key: 'traceability', name: 'Traceability', fn: () => validateTraceability(projectDir, config) },
     { key: 'docsDiff', name: 'Docs-Diff', fn: () => validateDocsDiff(projectDir, config) },
+    { key: 'apiSurface', name: 'API-Surface', fn: () => validateApiSurface(projectDir, config) },
     { key: 'metadataSync', name: 'Metadata-Sync', fn: () => validateMetadataSync(projectDir, config) },
     { key: 'docsCoverage', name: 'Docs-Coverage', fn: () => validateDocsCoverage(projectDir, config) },
     { key: 'docQuality', name: 'Doc-Quality', fn: () => validateDocQuality(projectDir, config) },
@@ -77,23 +111,7 @@ export function runGuardInternal(projectDir, config) {
 
     try {
       const result = fn();
-      const hasErrors = result.errors.length > 0;
-      const hasWarnings = result.warnings.length > 0;
-      const status = hasErrors ? 'fail' : hasWarnings ? 'warn' : 'pass';
-
-      // Quality label: HIGH/MEDIUM/LOW (inspired by CJE quality stratification, Lopez et al. TRACE 2026)
-      let quality;
-      if (hasErrors) {
-        quality = 'LOW';
-      } else if (hasWarnings) {
-        quality = 'MEDIUM';
-      } else {
-        // Pass — check coverage ratio for HIGH vs MEDIUM
-        const ratio = result.total > 0 ? result.passed / result.total : 1;
-        quality = ratio >= 0.9 ? 'HIGH' : 'MEDIUM';
-      }
-
-      results.push({ ...result, name, key, status, quality });
+      results.push({ ...result, name, key, ...classifyResult(result) });
     } catch (err) {
       results.push({ name, key, status: 'fail', quality: 'LOW', errors: [err.message], warnings: [], passed: 0, total: 1 });
     }
@@ -103,12 +121,7 @@ export function runGuardInternal(projectDir, config) {
   if (validators.metricsConsistency !== false) {
     try {
       const result = validateMetricsConsistency(projectDir, config, results);
-      const hasErrors = result.errors.length > 0;
-      const hasWarnings = result.warnings.length > 0;
-      const status = hasErrors ? 'fail' : hasWarnings ? 'warn' : 'pass';
-      const ratio = result.total > 0 ? result.passed / result.total : 1;
-      const quality = hasErrors ? 'LOW' : hasWarnings ? 'MEDIUM' : ratio >= 0.9 ? 'HIGH' : 'MEDIUM';
-      results.push({ ...result, name: 'Metrics-Consistency', key: 'metricsConsistency', status, quality });
+      results.push({ ...result, name: 'Metrics-Consistency', key: 'metricsConsistency', ...classifyResult(result) });
     } catch (err) {
       results.push({ name: 'Metrics-Consistency', key: 'metricsConsistency', status: 'fail', quality: 'LOW', errors: [err.message], warnings: [], passed: 0, total: 1 });
     }
@@ -158,6 +171,14 @@ export function runGuard(projectDir, config, flags) {
       if (flags.verbose) {
         console.log(`  ${c.dim}⏭️  ${v.name} (disabled)${c.reset}`);
       }
+      continue;
+    }
+
+    // Not applicable — nothing to validate. Render neutrally (NOT a green pass)
+    // so the reader can tell "checked and clean" apart from "nothing checked".
+    if (v.status === 'na') {
+      const reason = v.note ? ` ${c.dim}(${v.note})${c.reset}` : ` ${c.dim}(nothing to validate)${c.reset}`;
+      console.log(`  ${c.dim}➖ ${v.name}${c.reset} ${c.dim}[N/A]${c.reset}${reason}`);
       continue;
     }
 

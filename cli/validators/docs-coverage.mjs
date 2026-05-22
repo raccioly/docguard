@@ -15,6 +15,7 @@
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, relative, basename, extname } from 'node:path';
+import { resolveSourceRoots } from '../shared-source.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build', 'coverage',
@@ -62,13 +63,13 @@ export function validateDocsCoverage(projectDir, config) {
   warnings.push(...binChecks.warnings);
 
   // ── Check 3: Source directory structure matches ARCHITECTURE.md ──
-  const dirChecks = checkSourceDirs(projectDir, allDocContent);
+  const dirChecks = checkSourceDirs(projectDir, allDocContent, config);
   total += dirChecks.total;
   passed += dirChecks.passed;
   warnings.push(...dirChecks.warnings);
 
   // ── Check 4: Config filenames referenced in source code but not documented ──
-  const codeConfigChecks = checkCodeReferencedConfigs(projectDir, allDocContent);
+  const codeConfigChecks = checkCodeReferencedConfigs(projectDir, allDocContent, config);
   total += codeConfigChecks.total;
   passed += codeConfigChecks.passed;
   warnings.push(...codeConfigChecks.warnings);
@@ -160,7 +161,7 @@ function checkPackageBins(projectDir, allDocContent) {
 /**
  * Check 3: Source directories are referenced in ARCHITECTURE.md.
  */
-function checkSourceDirs(projectDir, allDocContent) {
+function checkSourceDirs(projectDir, allDocContent, config = {}) {
   const warnings = [];
   let passed = 0;
   let total = 0;
@@ -172,12 +173,10 @@ function checkSourceDirs(projectDir, allDocContent) {
   try { archContent = readFileSync(archPath, 'utf-8'); } catch { return { warnings, passed, total }; }
 
   const lowerArchContent = archContent.toLowerCase();
-  const sourceRoots = ['src', 'lib', 'app', 'cli', 'server', 'api'];
 
-  for (const root of sourceRoots) {
-    const rootDir = resolve(projectDir, root);
-    if (!existsSync(rootDir)) continue;
-
+  // Monorepo-aware: honor config.sourceRoot + workspaces instead of a hardcoded list.
+  for (const rootDir of resolveSourceRoots(projectDir, config)) {
+    const root = relative(projectDir, rootDir) || basename(rootDir);
     let entries;
     try { entries = readdirSync(rootDir); } catch { continue; }
 
@@ -212,7 +211,7 @@ function checkSourceDirs(projectDir, allDocContent) {
  * patterns — these are configs the project USES. Avoids matching config names
  * sitting in arrays (scan patterns for detecting other projects' configs).
  */
-function checkCodeReferencedConfigs(projectDir, allDocContent) {
+function checkCodeReferencedConfigs(projectDir, allDocContent, config = {}) {
   const warnings = [];
   let passed = 0;
   let total = 0;
@@ -223,8 +222,6 @@ function checkCodeReferencedConfigs(projectDir, allDocContent) {
   // Only match config filenames inside function calls that actually USE the file:
   // resolve(dir, '.docguardignore'), existsSync('.env.example'), readFileSync('vitest.config.ts')
   const usageRegex = /(?:resolve|join|existsSync|readFileSync|accessSync|writeFileSync)\s*\([^)]*['"`]([^'"`\n]{2,})['"`]/g;
-
-  const sourceRoots = ['src', 'lib', 'cli', 'bin', 'server', 'api', 'app'];
 
   const scanFile = (filePath) => {
     const ext = extname(filePath);
@@ -247,9 +244,7 @@ function checkCodeReferencedConfigs(projectDir, allDocContent) {
     }
   };
 
-  for (const root of sourceRoots) {
-    const rootDir = resolve(projectDir, root);
-    if (!existsSync(rootDir)) continue;
+  for (const rootDir of resolveSourceRoots(projectDir, config)) {
     walkFiles(rootDir, scanFile);
   }
 

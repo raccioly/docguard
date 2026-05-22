@@ -76,7 +76,14 @@ export function validateDocSections(projectDir, config) {
 
     for (const section of sections) {
       results.total++;
-      if (content.includes(section)) {
+      // Match an actual heading at line start (any level), not a substring that
+      // could appear in a table-of-contents link or a code block.
+      const headingText = section.replace(/^#+\s*/, '');
+      const headingRe = new RegExp(
+        '^#{2,6}\\s+' + headingText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b',
+        'm'
+      );
+      if (headingRe.test(content)) {
         results.passed++;
       } else {
         results.warnings.push(`${file}: missing section "${section}"`);

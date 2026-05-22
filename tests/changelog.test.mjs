@@ -1,8 +1,9 @@
-import { describe, it, before, after } from 'node:test';
+import { describe, it, before, after, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import fs from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { execFileSync } from 'node:child_process';
 import { validateChangelog } from '../cli/validators/changelog.mjs';
 
 describe('validateChangelog', () => {
@@ -101,5 +102,40 @@ describe('validateChangelog', () => {
     assert.equal(result.total, 2);
     assert.equal(result.passed, 2);
     assert.equal(result.warnings.length, 0);
+  });
+});
+
+describe('validateChangelog — staged-change check (STANDARD.md)', () => {
+  let repo;
+  const git = (args) => execFileSync('git', args, { cwd: repo, stdio: ['ignore', 'pipe', 'ignore'] });
+  const goodChangelog = '# Changelog\n## [Unreleased]\n- wip\n## [1.0.0]\n- init\n';
+
+  beforeEach(() => {
+    repo = fs.mkdtempSync(join(tmpdir(), 'docguard-changelog-git-'));
+    git(['init']);
+    fs.writeFileSync(join(repo, 'CHANGELOG.md'), goodChangelog);
+  });
+  afterEach(() => { fs.rmSync(repo, { recursive: true, force: true }); });
+
+  const config = { requiredFiles: { changelog: 'CHANGELOG.md' } };
+
+  it('warns when code is staged but CHANGELOG.md is not', () => {
+    fs.writeFileSync(join(repo, 'feature.ts'), 'export const x = 1;');
+    git(['add', 'feature.ts']);
+    const result = validateChangelog(repo, config);
+    assert.ok(result.warnings.some(w => w.includes('code file(s) staged but CHANGELOG.md is not')));
+  });
+
+  it('passes the staged check when CHANGELOG.md is staged alongside code', () => {
+    fs.writeFileSync(join(repo, 'feature.ts'), 'export const x = 1;');
+    git(['add', 'feature.ts', 'CHANGELOG.md']);
+    const result = validateChangelog(repo, config);
+    assert.ok(!result.warnings.some(w => w.includes('staged but CHANGELOG.md is not')));
+  });
+
+  it('does not run the staged check when nothing is staged (N/A)', () => {
+    const result = validateChangelog(repo, config);
+    // Only the 2 structural checks run; staged check is not applicable.
+    assert.equal(result.total, 2);
   });
 });

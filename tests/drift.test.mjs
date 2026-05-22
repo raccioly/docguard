@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { validateDrift } from '../cli/validators/drift.mjs';
 
 describe('validateDrift', () => {
-  it('returns passed when no DRIFT comments are found', () => {
+  it('is not-applicable (NOT a fake pass) when no DRIFT comments are found', () => {
     const tempDir = fs.mkdtempSync(join(tmpdir(), 'docguard-test-drift-'));
     try {
       const config = { requiredFiles: { driftLog: 'DRIFT-LOG.md' } };
@@ -14,9 +14,12 @@ describe('validateDrift', () => {
 
       const result = validateDrift(tempDir, config);
       assert.equal(result.name, 'drift');
-      assert.equal(result.passed, 1);
-      assert.equal(result.total, 1);
+      // No comments to reconcile → total 0 (guard renders this as N/A, not green)
+      assert.equal(result.total, 0);
+      assert.equal(result.passed, 0);
       assert.deepEqual(result.errors, []);
+      assert.deepEqual(result.warnings, []);
+      assert.ok(result.note, 'should explain why it is not applicable');
     } finally {
       fs.rmSync(tempDir, { recursive: true, force: true });
     }

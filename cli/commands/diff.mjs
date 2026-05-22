@@ -6,6 +6,10 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, extname, basename } from 'node:path';
 import { c } from '../shared.mjs';
+import { collectPackageJsons, detectDocker, grepEnvUsage, resolveSourceRoots } from '../shared-source.mjs';
+import { parseApiReferenceDoc, compareEndpoints } from '../scanners/api-doc.mjs';
+import { resolveApiSurface } from '../validators/api-surface.mjs';
+import { collectCodeTests } from '../validators/docs-diff.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build',
@@ -30,10 +34,10 @@ export function runDiff(projectDir, config, flags) {
   // 2. Entities documented vs models in code
   results.push(diffEntities(projectDir, config));
 
-  // 3. Env vars documented vs .env.example
+  // 3. Env vars documented vs .env.example + source usage
   results.push(diffEnvVars(projectDir, config));
 
-  // 4. Tech stack documented vs package.json
+  // 4. Tech stack documented vs package.json(s)
   results.push(diffTechStack(projectDir, config));
 
   // 5. Tests documented vs tests that exist
@@ -91,59 +95,39 @@ export function runDiff(projectDir, config, flags) {
 
 // ── Diff Functions ─────────────────────────────────────────────────────────
 
-function diffRoutes(dir) {
+function diffRoutes(dir, config = {}) {
+  // Documented surface: prefer the dedicated API reference, fall back to ARCHITECTURE.md.
+  const apiRefPath = resolve(dir, 'docs-canonical/API-REFERENCE.md');
   const archPath = resolve(dir, 'docs-canonical/ARCHITECTURE.md');
-  if (!existsSync(archPath)) return null;
+  const docPath = existsSync(apiRefPath) ? apiRefPath : (existsSync(archPath) ? archPath : null);
+  if (!docPath) return null;
 
-  const content = readFileSync(archPath, 'utf-8');
+  const documented = parseApiReferenceDoc(readFileSync(docPath, 'utf-8'));
 
-  // Extract route-like patterns from ARCHITECTURE.md
-  const docRoutes = new Set();
-  const routeRegex = /(?:\/api\/\S+|(?:GET|POST|PUT|DELETE|PATCH)\s+(\/\S+))/gi;
-  let match;
-  while ((match = routeRegex.exec(content)) !== null) {
-    const route = match[1] || match[0];
-    // Skip markdown table syntax and non-route content
-    if (route.startsWith('|') || route.startsWith('(') || route.length < 3) continue;
-    docRoutes.add(route);
-  }
+  // Actual surface: OpenAPI spec (sourceRoot-aware) → monorepo code scan.
+  const surface = resolveApiSurface(dir, config);
+  if (surface.confidence === 'none' && documented.length === 0) return null;
 
-  // Also check for paths in tables
-  const pathRegex = /`(\/api\/[^`]+)`/g;
-  while ((match = pathRegex.exec(content)) !== null) {
-    docRoutes.add(match[1]);
-  }
+  const { documentedButAbsent, presentButUndocumented, matched } =
+    compareEndpoints(documented, surface.endpoints);
 
-  // Find route files in code
-  const codeRoutes = new Set();
-  const routeDirs = ['src/routes', 'src/app/api', 'routes', 'api'];
-  for (const rd of routeDirs) {
-    const routeDir = resolve(dir, rd);
-    if (!existsSync(routeDir)) continue;
-
-    const files = getFilesRecursive(routeDir);
-    for (const f of files) {
-      const rel = f.replace(dir + '/', '');
-      codeRoutes.add(rel);
-    }
-  }
-
+  const fmt = (e) => `${e.method} ${e.path}`;
   return {
     title: 'API Routes',
     icon: '🛣️',
-    onlyInDocs: [...docRoutes].filter(r => ![...codeRoutes].some(cr => cr.includes(r.replace(/\//g, '/')))),
-    onlyInCode: [...codeRoutes].filter(cr => {
-      const name = basename(cr, extname(cr));
-      return ![...docRoutes].some(dr => dr.includes(name));
-    }),
-    matched: [...codeRoutes].filter(cr => {
-      const name = basename(cr, extname(cr));
-      return [...docRoutes].some(dr => dr.includes(name));
-    }),
+    onlyInDocs: documentedButAbsent.map(fmt),
+    onlyInCode: presentButUndocumented.map(fmt),
+    matched: matched.map(fmt),
   };
 }
 
-function diffEntities(dir) {
+// Non-entity filenames commonly found in model/schema dirs (infra, not entities).
+const CODE_ENTITY_NOISE = new Set([
+  'index', 'types', 'type', 'schema', 'schemas', 'registry', 'paths', 'openapi',
+  'models', 'model', 'utils', 'helpers', 'constants', 'config', 'common', 'base',
+]);
+
+function diffEntities(dir, config = {}) {
   const dataModelPath = resolve(dir, 'docs-canonical/DATA-MODEL.md');
   if (!existsSync(dataModelPath)) return null;
 
@@ -165,82 +149,57 @@ function diffEntities(dir) {
     'Testing', 'Deployment', 'Monitoring', 'Operations', 'Security',
   ]);
 
-  const headerRegex = /^### (\S+)/gm;
+  // Extract entity names ONLY from "### EntityName" headings. The previous
+  // table-cell extractor produced garbage tokens (table, index, foreign, string…);
+  // headings are the only reliable entity source in a DATA-MODEL doc.
+  const headerRegex = /^#{3,4}\s+(.+)$/gm;
   let match;
   while ((match = headerRegex.exec(content)) !== null) {
-    const name = match[1].replace(/[`*]/g, '');
-    // Skip template placeholders (<!-- ... -->) and noise words
-    if (name.startsWith('<!--') || name.length <= 2 || HEADER_NOISE.has(name) || HEADER_NOISE.has(name.toLowerCase())) {
-      continue;
-    }
-    // Skip hyphenated words (e.g., 'Trade-offs', 'Set-up') — these are section titles, not entities
-    if (name.includes('-')) continue;
+    const name = match[1].replace(/[`*]/g, '').trim();
+    if (name.startsWith('<!--') || name.length <= 2) continue;
+    if (HEADER_NOISE.has(name) || HEADER_NOISE.has(name.toLowerCase())) continue;
+    // Entity headings are a single PascalCase/snake_case identifier — not a phrase.
+    if (!/^[A-Za-z][A-Za-z0-9_]*$/.test(name)) continue;
     docEntities.add(name.toLowerCase());
   }
 
-  // Also check tables for entity references
-  const tableRegex = /\|\s*(?:`)?(\w+)(?:`)?\s*\|/g;
-  // Filter out common table headers, template placeholders, and markdown noise
-  const TABLE_NOISE = new Set([
-    'entity', 'field', 'type', 'from', 'to', 'table', 'index', 'storage',
-    'required', 'default', 'constraints', 'description', 'name', 'value',
-    'status', 'version', 'category', 'technology', 'license', 'purpose',
-    'cascade', 'relationship', 'notes', 'date', 'author', 'changes',
-    'metadata', 'tbd', 'fields', 'todo', 'example', 'primary', 'key',
-    'none', 'see', 'detected', 'yes', 'no', 'all', 'the', 'for', 'not',
-    'add', 'database', 'orm', 'source', 'unit', 'test', 'integration',
-    'metric', 'target', 'current', 'journey', 'file', 'score', 'weight',
-    'weighted', 'method', 'provider', 'token', 'expiry', 'role',
-    'permissions', 'secret', 'rotation', 'access', 'variable', 'tool',
-    'command', 'run', 'component', 'responsibility', 'location', 'tests',
-    // Data types — common in table schemas, not entity names
-    'string', 'boolean', 'number', 'integer', 'float', 'double', 'decimal',
-    'array', 'object', 'null', 'undefined', 'enum', 'varchar', 'text',
-    'timestamp', 'uuid', 'bigint', 'serial', 'json', 'jsonb', 'blob',
-    'char', 'date', 'time', 'datetime', 'binary', 'bit', 'money',
-    // Common table headers and template words
-    'true', 'false', 'header', 'checks', 'project', 'count', 'grade',
-    'breakdown', 'issuecount', 'autofixable', 'projectname', 'projecttype',
-    // Common doc section words (not entity names)
-    'trade', 'offs', 'tradeoffs', 'setup', 'overview', 'summary',
-    'details', 'configuration', 'reference', 'pattern', 'patterns',
-    'strategy', 'approach', 'impact', 'benefit', 'risk', 'concern',
-    'action', 'result', 'outcome', 'inverted', 'composite', 'secondary',
-  ]);
-  while ((match = tableRegex.exec(content)) !== null) {
-    const name = match[1];
-    // Skip short names (<=3 chars) and noise words
-    if (name.length > 3 && !TABLE_NOISE.has(name.toLowerCase())) {
-      docEntities.add(name.toLowerCase());
-    }
-  }
-
-  // Find model/entity files in code
+  // Find model/entity files in code — monorepo-aware (honors config.sourceRoot/workspaces).
   const codeEntities = new Set();
-  const modelDirs = ['src/models', 'models', 'src/entities', 'entities', 'src/schema', 'schema', 'prisma'];
-  for (const md of modelDirs) {
-    const modelDir = resolve(dir, md);
-    if (!existsSync(modelDir)) continue;
-
-    const files = getFilesRecursive(modelDir);
-    for (const f of files) {
-      const name = basename(f, extname(f)).toLowerCase();
-      if (name !== 'index') {
+  const modelSubdirs = ['models', 'entities', 'schema', 'schemas', 'prisma'];
+  const roots = resolveSourceRoots(dir, config);
+  for (const root of roots) {
+    for (const sub of modelSubdirs) {
+      const modelDir = join(root, sub);
+      if (!existsSync(modelDir)) continue;
+      const files = getFilesRecursive(modelDir);
+      for (const f of files) {
+        const name = basename(f, extname(f)).toLowerCase();
+        // Skip non-entity infrastructure/aggregation filenames.
+        if (CODE_ENTITY_NOISE.has(name)) continue;
         codeEntities.add(name);
       }
     }
   }
 
+  // No code-side entity source (e.g. DynamoDB single-table design with no model
+  // files) → cannot reliably diff. Skip rather than flag every documented entity.
+  if (codeEntities.size === 0) return null;
+
+  // Exact (normalized) matching — no fuzzy bidirectional substring includes().
+  const norm = (s) => s.replace(/[_-]/g, '').replace(/s$/, '');
+  const codeNorm = new Set([...codeEntities].map(norm));
+  const docNorm = new Map([...docEntities].map(d => [norm(d), d]));
+
   return {
     title: 'Data Entities',
     icon: '🗃️',
-    onlyInDocs: [...docEntities].filter(d => ![...codeEntities].some(ce => ce.includes(d) || d.includes(ce))),
-    onlyInCode: [...codeEntities].filter(ce => ![...docEntities].some(d => d.includes(ce) || ce.includes(d))),
-    matched: [...codeEntities].filter(ce => [...docEntities].some(d => d.includes(ce) || ce.includes(d))),
+    onlyInDocs: [...docEntities].filter(d => !codeNorm.has(norm(d))),
+    onlyInCode: [...codeEntities].filter(ce => !docNorm.has(norm(ce))),
+    matched: [...codeEntities].filter(ce => docNorm.has(norm(ce))),
   };
 }
 
-function diffEnvVars(dir) {
+function diffEnvVars(dir, config = {}) {
   const envDocPath = resolve(dir, 'docs-canonical/ENVIRONMENT.md');
   if (!existsSync(envDocPath)) return null;
 
@@ -254,16 +213,20 @@ function diffEnvVars(dir) {
     docVars.add(match[1]);
   }
 
-  // Read .env.example
+  // Code-side truth = .env.example/.env.template entries UNION process.env /
+  // import.meta.env usage across the (monorepo-aware) source roots.
   const codeVars = new Set();
-  const envExamplePath = resolve(dir, '.env.example');
-  if (existsSync(envExamplePath)) {
-    const envContent = readFileSync(envExamplePath, 'utf-8');
-    const envRegex = /^([A-Z][A-Z0-9_]+)\s*=/gm;
-    while ((match = envRegex.exec(envContent)) !== null) {
-      codeVars.add(match[1]);
+  for (const envFile of ['.env.example', '.env.template']) {
+    const envExamplePath = resolve(dir, envFile);
+    if (existsSync(envExamplePath)) {
+      const envContent = readFileSync(envExamplePath, 'utf-8');
+      const envRegex = /^([A-Z][A-Z0-9_]+)\s*=/gm;
+      while ((match = envRegex.exec(envContent)) !== null) {
+        codeVars.add(match[1]);
+      }
     }
   }
+  for (const name of grepEnvUsage(dir, config)) codeVars.add(name);
 
   if (docVars.size === 0 && codeVars.size === 0) return null;
 
@@ -276,13 +239,15 @@ function diffEnvVars(dir) {
   };
 }
 
-function diffTechStack(dir) {
+function diffTechStack(dir, config = {}) {
   const archPath = resolve(dir, 'docs-canonical/ARCHITECTURE.md');
-  const pkgPath = resolve(dir, 'package.json');
-  if (!existsSync(archPath) || !existsSync(pkgPath)) return null;
+  if (!existsSync(archPath)) return null;
+
+  // Monorepo-aware: merge dependencies across root + source-root + workspace packages.
+  const pkgs = collectPackageJsons(dir, config);
+  if (pkgs.length === 0) return null;
 
   const archContent = readFileSync(archPath, 'utf-8');
-  const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
 
   // Extract tech from ARCHITECTURE.md
   const docTech = new Set();
@@ -296,9 +261,12 @@ function diffTechStack(dir) {
     }
   }
 
-  // Extract from package.json
+  // Extract from merged package.json dependencies
   const codeTech = new Set();
-  const allDeps = { ...(pkg.dependencies || {}), ...(pkg.devDependencies || {}) };
+  const allDeps = {};
+  for (const { pkg } of pkgs) {
+    Object.assign(allDeps, pkg.dependencies || {}, pkg.devDependencies || {});
+  }
   const depMap = {
     'react': 'React', 'next': 'Next.js', 'vue': 'Vue', 'express': 'Express',
     'fastify': 'Fastify', 'hono': 'Hono', 'prisma': 'Prisma', '@prisma/client': 'Prisma',
@@ -311,6 +279,9 @@ function diffTechStack(dir) {
     if (allDeps[dep]) codeTech.add(tech);
   }
 
+  // Docker via Dockerfile/compose (not an npm dependency).
+  if (detectDocker(dir, config)) codeTech.add('Docker');
+
   if (docTech.size === 0 && codeTech.size === 0) return null;
 
   return {
@@ -322,42 +293,44 @@ function diffTechStack(dir) {
   };
 }
 
-function diffTests(dir) {
+function diffTests(dir, config = {}) {
   const testSpecPath = resolve(dir, 'docs-canonical/TEST-SPEC.md');
   if (!existsSync(testSpecPath)) return null;
 
-  const content = readFileSync(testSpecPath, 'utf-8');
-
-  // Extract test file references from TEST-SPEC.md
+  // Strip fenced code blocks (shell commands inside ``` ``` were mis-parsed as
+  // test files), then extract whitespace-free test tokens (literals or globs).
+  const content = readFileSync(testSpecPath, 'utf-8').replace(/```[\s\S]*?```/g, '');
   const docTests = new Set();
-  const testFileRegex = /`([^`]*\.(?:test|spec)\.[^`]+)`/g;
+  const testFileRegex = /`([^`\s]*\.(?:test|spec)\.[a-zA-Z0-9]+)`/g;
   let match;
   while ((match = testFileRegex.exec(content)) !== null) {
     docTests.add(match[1]);
   }
 
-  // Find actual test files
-  const codeTests = new Set();
-  const testDirs = ['tests', 'test', '__tests__', 'spec', 'e2e'];
-  for (const td of testDirs) {
-    const testDir = resolve(dir, td);
-    if (!existsSync(testDir)) continue;
-
-    const files = getFilesRecursive(testDir);
-    for (const f of files) {
-      const rel = f.replace(dir + '/', '');
-      codeTests.add(rel);
-    }
-  }
+  // Find actual test files (monorepo-aware: configured patterns + recursive
+  // co-located/nested scan under each source root + root-level test dirs).
+  const codeTests = collectCodeTests(dir, config);
 
   if (docTests.size === 0 && codeTests.size === 0) return null;
+
+  // Glob-aware matching (documented entries are often patterns or basenames).
+  const codeArr = [...codeTests];
+  const docArr = [...docTests];
+  const matches = (docEntry, codeRel) => {
+    const entry = String(docEntry).trim();
+    const hasSlash = entry.includes('/');
+    const target = hasSlash ? entry : basename(entry);
+    const subject = hasSlash ? codeRel : basename(codeRel);
+    const rx = new RegExp('^' + target.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*+/g, '.*') + '$');
+    return rx.test(subject);
+  };
 
   return {
     title: 'Test Files',
     icon: '🧪',
-    onlyInDocs: [...docTests].filter(t => !codeTests.has(t)),
-    onlyInCode: [...codeTests].filter(t => !docTests.has(t)),
-    matched: [...docTests].filter(t => codeTests.has(t)),
+    onlyInDocs: docArr.filter(d => !codeArr.some(c => matches(d, c))),
+    onlyInCode: codeArr.filter(c => !docArr.some(d => matches(d, c))),
+    matched: docArr.filter(d => codeArr.some(c => matches(d, c))),
   };
 }
 

@@ -47,8 +47,8 @@ export function validateDrift(projectDir, config) {
   });
 
   if (driftComments.length === 0) {
-    results.total = 1;
-    results.passed = 1;
+    // No // DRIFT: comments to reconcile — not applicable (NOT a pass).
+    results.note = 'no // DRIFT: comments in code';
     return results;
   }
 

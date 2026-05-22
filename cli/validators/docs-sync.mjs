@@ -4,22 +4,35 @@
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, extname, basename } from 'node:path';
+import { resolveSourceRoots } from '../shared-source.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build',
   'coverage', '.cache', '__pycache__', '.venv', 'vendor',
 ]);
 
+/**
+ * Expand sub-path patterns (e.g. 'routes', 'src/routes') against the project
+ * root AND every configured source root, returning de-duplicated existing dirs.
+ * Makes route/service discovery monorepo-aware (e.g. backend/src/routes).
+ */
+function expandDirs(projectDir, config, subPaths) {
+  const bases = [resolve(projectDir), ...resolveSourceRoots(projectDir, config)];
+  const out = [];
+  const seen = new Set();
+  for (const base of bases) {
+    for (const sub of subPaths) {
+      const dir = resolve(base, sub);
+      if (seen.has(dir) || !existsSync(dir)) continue;
+      seen.add(dir);
+      out.push(dir);
+    }
+  }
+  return out;
+}
+
 export function validateDocsSync(projectDir, config) {
   const results = { name: 'docs-sync', errors: [], warnings: [], passed: 0, total: 0 };
-
-  // Find route/API files and check they're mentioned in canonical docs
-  const routePatterns = [
-    { dir: 'src/routes', label: 'route' },
-    { dir: 'src/app/api', label: 'API route' },
-    { dir: 'api', label: 'API route' },
-    { dir: 'routes', label: 'route' },
-  ];
 
   // Load all canonical doc content for checking
   const canonicalDir = resolve(projectDir, 'docs-canonical');
@@ -39,10 +52,9 @@ export function validateDocsSync(projectDir, config) {
     return results; // No canonical docs to check against
   }
 
-  for (const { dir, label } of routePatterns) {
-    const routeDir = resolve(projectDir, dir);
-    if (!existsSync(routeDir)) continue;
-
+  // Find route/API files (monorepo-aware) and check they're mentioned in docs.
+  const routeDirs = expandDirs(projectDir, config, ['src/routes', 'src/app/api', 'routes', 'api']);
+  for (const routeDir of routeDirs) {
     const files = getFilesRecursive(routeDir);
     for (const file of files) {
       const ext = extname(file);
@@ -56,17 +68,14 @@ export function validateDocsSync(projectDir, config) {
       if (canonicalContent.includes(relPath) || canonicalContent.includes(name)) {
         results.passed++;
       } else {
-        results.warnings.push(`${label} ${relPath} not referenced in any canonical doc`);
+        results.warnings.push(`route ${relPath} not referenced in any canonical doc`);
       }
     }
   }
 
-  // Find service files and check they're documented
-  const serviceDirs = ['src/services', 'services', 'src/lib'];
-  for (const dir of serviceDirs) {
-    const serviceDir = resolve(projectDir, dir);
-    if (!existsSync(serviceDir)) continue;
-
+  // Find service files (monorepo-aware) and check they're documented.
+  const serviceDirs = expandDirs(projectDir, config, ['src/services', 'services', 'src/lib']);
+  for (const serviceDir of serviceDirs) {
     const files = getFilesRecursive(serviceDir);
     for (const file of files) {
       const ext = extname(file);
@@ -107,11 +116,8 @@ export function validateDocsSync(projectDir, config) {
   }
 
   if (openapiContent && openapiFile) {
-    // Check that route files have corresponding paths in OpenAPI spec
-    for (const { dir } of routePatterns) {
-      const routeDir = resolve(projectDir, dir);
-      if (!existsSync(routeDir)) continue;
-
+    // Check that route files have corresponding paths in OpenAPI spec (monorepo-aware)
+    for (const routeDir of expandDirs(projectDir, config, ['src/routes', 'src/app/api', 'routes', 'api'])) {
       const files = getFilesRecursive(routeDir);
       for (const file of files) {
         const ext = extname(file);

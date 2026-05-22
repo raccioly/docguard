@@ -8,6 +8,7 @@
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, relative, basename, extname, dirname } from 'node:path';
+import { resolveSourceRoots } from '../shared-source.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build', 'coverage',
@@ -19,9 +20,10 @@ const IGNORE_DIRS = new Set([
  * @param {string} dir - Project root
  * @param {object} stack - Detected tech stack
  * @param {object} docTools - Detected doc tools (may include OpenAPI)
+ * @param {object} [opts] - { config } — config enables monorepo-aware source roots
  * @returns {Array} Array of route objects { method, path, handler, file, auth, description }
  */
-export function scanRoutesDeep(dir, stack, docTools) {
+export function scanRoutesDeep(dir, stack, docTools, opts = {}) {
   // Priority 1: Use OpenAPI spec if available (most accurate)
   if (docTools?.openapi?.found && docTools.openapi.endpoints?.length > 0) {
     return docTools.openapi.endpoints.map(ep => ({
@@ -31,24 +33,27 @@ export function scanRoutesDeep(dir, stack, docTools) {
     }));
   }
 
-  // Priority 2: Framework-specific code scanning
+  // Priority 2: Framework-specific code scanning.
+  // Monorepo-aware: when a config is supplied, scan the resolved source roots
+  // (honors config.sourceRoot + workspaces) instead of only root-relative dirs.
   const framework = stack?.framework || '';
   const routes = [];
+  const roots = opts.config ? resolveSourceRoots(dir, opts.config) : null;
 
   if (framework.includes('Next.js') || framework.includes('Next')) {
     routes.push(...scanNextJsRoutes(dir));
   }
 
   if (framework.includes('Express') || !framework) {
-    routes.push(...scanExpressRoutes(dir));
+    routes.push(...scanExpressRoutes(dir, roots));
   }
 
   if (framework.includes('Fastify')) {
-    routes.push(...scanFastifyRoutes(dir));
+    routes.push(...scanFastifyRoutes(dir, roots));
   }
 
   if (framework.includes('Hono')) {
-    routes.push(...scanHonoRoutes(dir));
+    routes.push(...scanHonoRoutes(dir, roots));
   }
 
   if (framework.includes('Django')) {
@@ -167,13 +172,16 @@ function scanNextJsRoutes(dir) {
 
 // ── Express / Generic Node.js ───────────────────────────────────────────────
 
-function scanExpressRoutes(dir) {
+function scanExpressRoutes(dir, roots = null) {
   const routes = [];
   const routePattern = /(?:app|router|server)\s*\.\s*(get|post|put|delete|patch|head|options)\s*\(\s*['"`]([^'"`]+)['"`]/gi;
 
-  const searchDirs = ['src', 'routes', 'api', 'server', 'lib'];
-  for (const searchDir of searchDirs) {
-    const fullDir = resolve(dir, searchDir);
+  // Monorepo-aware: walk resolved absolute source roots when provided,
+  // otherwise fall back to conventional root-relative directories.
+  const searchTargets = roots && roots.length
+    ? roots
+    : ['src', 'routes', 'api', 'server', 'lib'].map(d => resolve(dir, d));
+  for (const fullDir of searchTargets) {
     if (!existsSync(fullDir)) continue;
 
     walkRouteDirs(fullDir, (filePath) => {
@@ -224,42 +232,47 @@ function scanExpressRoutes(dir) {
 
 // ── Fastify ─────────────────────────────────────────────────────────────────
 
-function scanFastifyRoutes(dir) {
+function scanFastifyRoutes(dir, roots = null) {
   const routes = [];
   const pattern = /(?:fastify|server|app)\s*\.\s*(get|post|put|delete|patch)\s*\(\s*['"`]([^'"`]+)['"`]/gi;
 
-  walkRouteDirs(resolve(dir, 'src'), (filePath) => {
-    if (!isJSFile(filePath)) return;
-    const content = readFileSafe(filePath);
-    if (!content) return;
+  const searchTargets = roots && roots.length ? roots : [resolve(dir, 'src')];
+  for (const fullDir of searchTargets) {
+    if (!existsSync(fullDir)) continue;
+    walkRouteDirs(fullDir, (filePath) => {
+      if (!isJSFile(filePath)) return;
+      const content = readFileSafe(filePath);
+      if (!content) return;
 
-    let match;
-    const regex = new RegExp(pattern.source, 'gi');
-    while ((match = regex.exec(content)) !== null) {
-      routes.push({
-        method: match[1].toUpperCase(),
-        path: match[2],
-        handler: extractHandlerName(content, match.index),
-        file: relative(dir, filePath),
-        source: 'fastify',
-        auth: hasAuthCheck(content),
-        description: extractNearbyComment(content, match.index),
-      });
-    }
-  });
+      let match;
+      const regex = new RegExp(pattern.source, 'gi');
+      while ((match = regex.exec(content)) !== null) {
+        routes.push({
+          method: match[1].toUpperCase(),
+          path: match[2],
+          handler: extractHandlerName(content, match.index),
+          file: relative(dir, filePath),
+          source: 'fastify',
+          auth: hasAuthCheck(content),
+          description: extractNearbyComment(content, match.index),
+        });
+      }
+    });
+  }
 
   return routes;
 }
 
 // ── Hono ────────────────────────────────────────────────────────────────────
 
-function scanHonoRoutes(dir) {
+function scanHonoRoutes(dir, roots = null) {
   const routes = [];
   const pattern = /(?:app|router)\s*\.\s*(get|post|put|delete|patch)\s*\(\s*['"`]([^'"`]+)['"`]/gi;
 
-  const searchDirs = ['src', '.'];
-  for (const searchDir of searchDirs) {
-    const fullDir = resolve(dir, searchDir);
+  const searchTargets = roots && roots.length
+    ? roots
+    : ['src', '.'].map(d => resolve(dir, d));
+  for (const fullDir of searchTargets) {
     if (!existsSync(fullDir)) continue;
 
     walkRouteDirs(fullDir, (filePath) => {

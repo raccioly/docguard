@@ -24,16 +24,17 @@ import { execSync, execFileSync } from 'node:child_process';
 
 // Map validator failures to the right fix --doc target
 const VALIDATOR_TO_DOC = {
-  'Structure':     null,       // structural — needs init, not doc fix
-  'Doc Sections':  null,       // section-level — maps to specific doc
-  'Docs-Sync':     null,       // cross-reference — needs manual review
-  'Drift':         null,       // drift log maintenance
-  'Changelog':     null,       // changelog maintenance
-  'Test-Spec':     'test-spec',
-  'Environment':   'environment',
-  'Security':      'security',
-  'Architecture':  'architecture',
-  'Freshness':     null,       // freshness — maps to stale doc
+  'Structure':       null,       // structural — needs init, not doc fix
+  'Doc Sections':    null,       // section-level — maps to specific doc
+  'Docs-Sync':       null,       // cross-reference — needs manual review
+  'Drift-Comments':  null,       // drift log maintenance
+  'Changelog':       null,       // changelog maintenance
+  'API-Surface':     'api-reference',
+  'Test-Spec':       'test-spec',
+  'Environment':     'environment',
+  'Security':        'security',
+  'Architecture':    'architecture',
+  'Freshness':       null,       // freshness — maps to stale doc
 };
 
 // Actionable fix instructions per validator (LLM-first: includes both skill and CLI commands)
@@ -59,9 +60,16 @@ const FIX_INSTRUCTIONS = {
     description: 'Documentation references are out of sync with code. Review and update component maps.',
     autoFixable: false,
   },
-  'Drift': {
+  'Drift-Comments': {
     action: 'Update DRIFT-LOG.md',
-    description: 'Code deviates from canonical docs without logged reasons. Add DRIFT entries or update the canonical docs.',
+    description: 'A // DRIFT: code comment has no matching DRIFT-LOG.md entry. Add the entry or remove the comment.',
+    autoFixable: false,
+  },
+  'API-Surface': {
+    action: 'Reconcile API-REFERENCE.md with the actual API surface',
+    command: 'docguard fix --doc api-reference',
+    llmCommand: '/docguard.fix --doc api-reference',
+    description: 'docs-canonical/API-REFERENCE.md documents endpoints that no longer exist in code (or omits real ones). Remove deleted endpoints and add missing ones to match the OpenAPI spec / route definitions, then log the change in CHANGELOG.md and DRIFT-LOG.md.',
     autoFixable: false,
   },
   'Changelog': {

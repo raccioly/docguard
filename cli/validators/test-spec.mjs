@@ -5,6 +5,7 @@
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { resolveSourceRoots } from '../shared-source.mjs';
 
 export function validateTestSpec(projectDir, config) {
   const results = { name: 'test-spec', errors: [], warnings: [], passed: 0, total: 0 };
@@ -43,6 +44,9 @@ export function validateTestSpec(projectDir, config) {
       // Skip template/example rows and italic placeholder rows
       if (sourceFile.startsWith('<!--') || sourceFile === 'Source File' || sourceFile.startsWith('*')) continue;
 
+      // Author-declared gaps (❌/⚠️) are surfaced as warnings. A ✅ glyph is the
+      // author's CLAIM, not proof — it is NOT counted as a pass. The real pass
+      // comes from the file-existence checks below (code truth, not the glyph).
       if (status && status.includes('❌')) {
         results.total++;
         results.warnings.push(
@@ -53,9 +57,6 @@ export function validateTestSpec(projectDir, config) {
         results.warnings.push(
           `TEST-SPEC declares ${sourceFile} as ⚠️ — partial coverage`
         );
-      } else if (status && status.includes('✅')) {
-        results.total++;
-        results.passed++;
       }
 
       // ── File existence checks ───────────────────────────────────────
@@ -122,34 +123,41 @@ export function validateTestSpec(projectDir, config) {
           results.warnings.push(
             `E2E Journey #${num} (${journey}) — missing test: ${testFile}`
           );
-        } else if (status && status.includes('✅')) {
+          continue;
+        }
+
+        // For a ✅ journey, verify the referenced test file actually exists
+        // rather than trusting the glyph.
+        const cleanTest = testFile ? testFile.replace(/`/g, '').trim() : '';
+        if (cleanTest && cleanTest !== '—' && !cleanTest.includes('N/A')) {
           results.total++;
-          results.passed++;
+          if (existsSync(resolve(projectDir, cleanTest))) {
+            results.passed++;
+          } else {
+            results.warnings.push(
+              `E2E Journey #${num} (${journey}) marked ✅ but test file not found: ${cleanTest}`
+            );
+          }
         }
       }
     }
   }
 
-  // If no test spec entries parsed, check if tests exist anywhere
+  // If TEST-SPEC.md declared no service-to-test mappings, there is nothing to
+  // verify against. Do NOT manufacture a 1/1 pass just because tests exist
+  // somewhere — that rendered a confident green ✅ for a doc that mapped nothing.
   if (results.total === 0) {
-    results.total = 1;
-
     // 1. Check top-level test dirs
     const commonTestDirs = ['tests', 'test', '__tests__', 'spec'];
     const hasTestDir = commonTestDirs.some(d =>
       existsSync(resolve(projectDir, d))
     );
 
-    // 2. Check co-located tests (src/**/__tests__/, src/**/*.test.*)
+    // 2. Check co-located tests (honors config.sourceRoot + workspaces)
     let hasColocated = false;
     if (!hasTestDir) {
-      const sourceRoots = ['src', 'app', 'lib', 'packages'];
-      for (const root of sourceRoots) {
-        const rootPath = resolve(projectDir, root);
-        if (existsSync(rootPath) && hasTestFilesRecursive(rootPath)) {
-          hasColocated = true;
-          break;
-        }
+      for (const rootPath of resolveSourceRoots(projectDir, config)) {
+        if (hasTestFilesRecursive(rootPath)) { hasColocated = true; break; }
       }
     }
 
@@ -161,7 +169,8 @@ export function validateTestSpec(projectDir, config) {
     }
 
     if (hasTestDir || hasColocated || hasConfigTests) {
-      results.passed = 1;
+      // Tests exist but the spec maps none of them → not applicable, not a pass.
+      results.note = 'TEST-SPEC.md declares no service-to-test mappings';
     } else {
       results.warnings.push(
         'No test directory or co-located test files found. ' +

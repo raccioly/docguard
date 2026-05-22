@@ -1,5 +1,5 @@
 ---
-description: Run DocGuard guard validation — check project documentation against CDD standards with 19 validators
+description: Run DocGuard guard validation — check project documentation against CDD standards with 20 validators
 handoffs:
   - label: Fix All Issues
     agent: docguard.fix
@@ -23,14 +23,14 @@ Run the DocGuard CLI to validate all documentation against Canonical-Driven Deve
 npx docguard-cli guard
 ```
 
-2. **Parse the output**. Each of the 19 validators reports ✅ (pass), ⚠️ (warning), or ❌ (fail):
+2. **Parse the output**. Each of the 20 validators reports ✅ (pass), ⚠️ (warning), ❌ (fail), or ➖ (N/A — nothing to validate). **A ➖ N/A is NOT a pass**: it means the validator found nothing to check (e.g. no API-REFERENCE.md, no DB schema, no layer boundaries declared). Don't read N/A as "healthy" — read it as "not assessed".
 
    | Validator | What It Checks |
    |-----------|---------------|
    | Structure | Required CDD files exist |
    | Doc Sections | Canonical docs have required sections |
    | Docs-Sync | External doc references are valid |
-   | Drift | Code deviations logged in DRIFT-LOG.md |
+   | Drift-Comments | `// DRIFT:` code comments logged in DRIFT-LOG.md |
    | Changelog | CHANGELOG.md is maintained |
    | Test-Spec | Tests match TEST-SPEC.md rules |
    | Environment | Environment documentation |
@@ -39,6 +39,7 @@ npx docguard-cli guard
    | Freshness | Docs updated within commit window |
    | Traceability | Requirements trace to tests |
    | Docs-Diff | Doc changes match code changes |
+   | API-Surface | API-REFERENCE.md endpoints match the real API surface (OpenAPI spec / routes) |
    | Metadata-Sync | Metadata headers are consistent |
    | Docs-Coverage | All config files documented |
    | Doc-Quality | Readability, IEEE 830 compliance |
@@ -49,7 +50,7 @@ npx docguard-cli guard
 
 3. **Triage findings by severity**:
    - **CRITICAL**: Structure, Security, Test-Spec failures
-   - **HIGH**: Doc Sections, Drift, Changelog, Traceability failures
+   - **HIGH**: Doc Sections, Drift-Comments, Changelog, Traceability, API-Surface (documented-but-absent endpoint) failures
    - **MEDIUM**: Freshness, Docs-Coverage, Doc-Quality, Metrics-Consistency warnings
    - **LOW**: TODO-Tracking, Schema-Sync, Spec-Kit, Metadata-Sync warnings
 

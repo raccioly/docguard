@@ -11,6 +11,7 @@
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, relative, extname, basename } from 'node:path';
+import { resolveSourceRoots } from '../shared-source.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build', 'coverage',
@@ -85,7 +86,7 @@ export function validateSchemaSync(projectDir, config) {
   if (!existsSync(dataModelPath)) {
     // No DATA-MODEL.md — nothing to sync against
     // Only warn if we detect schema files
-    const detectedModels = detectAllModels(projectDir);
+    const detectedModels = detectAllModels(projectDir, config);
     if (detectedModels.length > 0) {
       results.total++;
       results.warnings.push(
@@ -99,7 +100,7 @@ export function validateSchemaSync(projectDir, config) {
   const dataModelContent = readFileSync(dataModelPath, 'utf-8').toLowerCase();
 
   // Detect all models/tables across schemas
-  const detectedModels = detectAllModels(projectDir);
+  const detectedModels = detectAllModels(projectDir, config);
 
   if (detectedModels.length === 0) {
     // No schema files found — silently pass
@@ -136,11 +137,11 @@ export function validateSchemaSync(projectDir, config) {
 /**
  * Detect all database models/tables across all supported frameworks.
  */
-function detectAllModels(projectDir) {
+function detectAllModels(projectDir, config = {}) {
   const models = [];
 
   for (const detector of SCHEMA_DETECTORS) {
-    const files = findSchemaFiles(projectDir, detector);
+    const files = findSchemaFiles(projectDir, detector, config);
 
     for (const filePath of files) {
       let content;
@@ -171,14 +172,22 @@ function detectAllModels(projectDir) {
 /**
  * Find schema files for a given detector configuration.
  */
-function findSchemaFiles(projectDir, detector) {
+function findSchemaFiles(projectDir, detector, config = {}) {
   const files = [];
 
-  for (const searchDir of detector.searchDirs) {
-    const dir = resolve(projectDir, searchDir);
-    if (!existsSync(dir)) continue;
+  // Monorepo-aware: resolve each searchDir against the project root AND every
+  // configured source root (config.sourceRoot + workspaces), so schemas under
+  // e.g. backend/src/models are found — not just root-relative paths.
+  const bases = [resolve(projectDir), ...resolveSourceRoots(projectDir, config)];
+  const seenDirs = new Set();
 
-    scanSchemaDir(dir, detector.filePattern, files);
+  for (const base of bases) {
+    for (const searchDir of detector.searchDirs) {
+      const dir = resolve(base, searchDir);
+      if (seenDirs.has(dir) || !existsSync(dir)) continue;
+      seenDirs.add(dir);
+      scanSchemaDir(dir, detector.filePattern, files);
+    }
   }
 
   return files;

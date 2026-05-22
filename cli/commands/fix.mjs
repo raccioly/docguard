@@ -144,6 +144,39 @@ WRITE THE DOCUMENT:
 IMPORTANT: Reference REAL test files. If there are no tests yet, document what SHOULD be tested.`,
   },
 
+  'docs-canonical/API-REFERENCE.md': {
+    label: 'API Reference',
+    purpose: 'Document every HTTP endpoint so the docs match the real API surface (no phantom or missing routes)',
+    qualitySignals: [
+      'Every documented endpoint exists in the OpenAPI spec or route definitions',
+      'No endpoints that were removed from code are still documented',
+      'Every real endpoint in code is documented',
+      'Method + path + auth + request/response shapes are accurate',
+      'No TODO or example placeholders',
+    ],
+    aiResearchInstructions: `
+RESEARCH STEPS:
+1. Find the authoritative API surface FIRST:
+   - Look for an OpenAPI/Swagger spec (openapi.yaml/json, swagger.yaml) under the project root,
+     the source-root package (e.g. backend/), and docs/ — this is the source of truth.
+   - If no spec, scan route definitions: Express \`app.get/post/...\`, Next.js app/api route.ts,
+     Fastify/Hono \`.get/.post\`, FastAPI/Django decorators — under the configured sourceRoot.
+2. Build the real list of {METHOD, path} endpoints from that surface.
+3. Read the CURRENT docs-canonical/API-REFERENCE.md and extract its documented endpoints.
+4. Diff the two lists:
+   - DOCUMENTED-BUT-ABSENT: in the doc but NOT in code → these are stale, DELETE them.
+   - PRESENT-BUT-UNDOCUMENTED: in code but NOT in the doc → ADD them.
+
+WRITE THE DOCUMENT:
+- Remove every endpoint that no longer exists in code (e.g. a deleted integration's routes).
+- Add every real endpoint that is missing, with method, path, auth requirement, and request/response.
+- Keep the existing table/heading format the doc already uses.
+- After editing, also update CHANGELOG.md ([Unreleased]) and DRIFT-LOG.md to record the removal/addition.
+
+IMPORTANT: The OpenAPI spec / route code is the source of truth — the doc must conform to it, not vice versa.
+Do NOT invent endpoints. Use REAL method+path values.`,
+  },
+
   'docs-canonical/ENVIRONMENT.md': {
     label: 'Environment',
     purpose: 'Document setup steps, dependencies, and environment variables',
@@ -414,12 +447,15 @@ function generateDocPrompt(projectDir, config, docName) {
     'testspec': 'docs-canonical/TEST-SPEC.md',
     'environment': 'docs-canonical/ENVIRONMENT.md',
     'env': 'docs-canonical/ENVIRONMENT.md',
+    'api-reference': 'docs-canonical/API-REFERENCE.md',
+    'api': 'docs-canonical/API-REFERENCE.md',
+    'apireference': 'docs-canonical/API-REFERENCE.md',
   };
 
   const filePath = mapping[normalized];
   if (!filePath) {
     console.error(`${c.red}Unknown document: ${docName}${c.reset}`);
-    console.log(`${c.dim}Available: architecture, data-model, security, test-spec, environment${c.reset}`);
+    console.log(`${c.dim}Available: architecture, data-model, security, test-spec, environment, api-reference${c.reset}`);
     process.exit(1);
   }
 

@@ -36,7 +36,7 @@ export function detectDocTools(dir) {
 
 // ── OpenAPI / Swagger Spec ─────────────────────────────────────────────────
 
-function detectOpenAPI(dir) {
+export function detectOpenAPI(dir) {
   const candidates = [
     'openapi.yaml', 'openapi.yml', 'openapi.json',
     'swagger.yaml', 'swagger.yml', 'swagger.json',

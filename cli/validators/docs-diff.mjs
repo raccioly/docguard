@@ -12,6 +12,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, extname, basename, relative } from 'node:path';
 import { shouldIgnore, globMatch } from '../shared-ignore.mjs';
+import { collectPackageJsons, detectDocker, resolveSourceRoots } from '../shared-source.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build',
@@ -33,9 +34,11 @@ export function validateDocsDiff(projectDir, config) {
   let passed = 0;
   let total = 0;
 
+  // NOTE: env-var drift is owned by the Environment validator (which compares
+  // documented vars against real process.env / import.meta.env usage). Docs-Diff
+  // covers tech-stack and test-file drift to avoid double-reporting.
   const checks = [
-    diffTechStack(projectDir),
-    diffEnvVars(projectDir),
+    diffTechStack(projectDir, config),
     diffTests(projectDir, config),
   ];
 
@@ -61,14 +64,17 @@ export function validateDocsDiff(projectDir, config) {
 
 // ── Diff Functions (lightweight versions for validator) ──────────────────
 
-export function diffTechStack(dir) {
+export function diffTechStack(dir, config = {}) {
   const archPath = resolve(dir, 'docs-canonical/ARCHITECTURE.md');
-  const pkgPath = resolve(dir, 'package.json');
-  if (!existsSync(archPath) || !existsSync(pkgPath)) return null;
+  if (!existsSync(archPath)) return null;
+
+  // Monorepo-aware: merge dependencies across the root package + the source-root
+  // package + any workspace packages. A repo with no parseable package.json
+  // anywhere yields no code-side truth → return null (graceful, like before).
+  const pkgs = collectPackageJsons(dir, config);
+  if (pkgs.length === 0) return null;
 
   const archContent = readFileSync(archPath, 'utf-8');
-  let pkg;
-  try { pkg = JSON.parse(readFileSync(pkgPath, 'utf-8')); } catch { return null; }
 
   const docTech = new Set();
   const techPatterns = ['React', 'Next.js', 'Vue', 'Angular', 'Svelte', 'Express', 'Fastify', 'Hono',
@@ -82,7 +88,10 @@ export function diffTechStack(dir) {
   }
 
   const codeTech = new Set();
-  const allDeps = { ...(pkg.dependencies || {}), ...(pkg.devDependencies || {}) };
+  const allDeps = {};
+  for (const { pkg } of pkgs) {
+    Object.assign(allDeps, pkg.dependencies || {}, pkg.devDependencies || {});
+  }
   const depMap = {
     'react': 'React', 'next': 'Next.js', 'vue': 'Vue', 'express': 'Express',
     'fastify': 'Fastify', 'hono': 'Hono', 'prisma': 'Prisma', '@prisma/client': 'Prisma',
@@ -95,43 +104,17 @@ export function diffTechStack(dir) {
     if (allDeps[dep]) codeTech.add(tech);
   }
 
+  // Docker is not an npm dependency — detect it via a Dockerfile/compose file.
+  if (detectDocker(dir, config)) codeTech.add('Docker');
+  // Terraform: detect via .tf files anywhere in the project (non-npm artifact).
+  if (hasFileWithExt(dir, '.tf', config)) codeTech.add('Terraform');
+
   if (docTech.size === 0 && codeTech.size === 0) return null;
 
   return {
     title: 'Tech Stack',
     onlyInDocs: [...docTech].filter(t => !codeTech.has(t)),
     onlyInCode: [...codeTech].filter(t => !docTech.has(t)),
-  };
-}
-
-function diffEnvVars(dir) {
-  const envDocPath = resolve(dir, 'docs-canonical/ENVIRONMENT.md');
-  if (!existsSync(envDocPath)) return null;
-
-  const content = readFileSync(envDocPath, 'utf-8');
-  const docVars = new Set();
-  const varRegex = /`([A-Z][A-Z0-9_]{2,})`/g;
-  let match;
-  while ((match = varRegex.exec(content)) !== null) {
-    docVars.add(match[1]);
-  }
-
-  const codeVars = new Set();
-  const envExamplePath = resolve(dir, '.env.example');
-  if (existsSync(envExamplePath)) {
-    const envContent = readFileSync(envExamplePath, 'utf-8');
-    const envRegex = /^([A-Z][A-Z0-9_]+)\s*=/gm;
-    while ((match = envRegex.exec(envContent)) !== null) {
-      codeVars.add(match[1]);
-    }
-  }
-
-  if (docVars.size === 0 && codeVars.size === 0) return null;
-
-  return {
-    title: 'Environment Variables',
-    onlyInDocs: [...docVars].filter(v => !codeVars.has(v)),
-    onlyInCode: [...codeVars].filter(v => !docVars.has(v)),
   };
 }
 
@@ -145,44 +128,87 @@ function diffTests(dir, config) {
   const testSpecPath = resolve(dir, 'docs-canonical/TEST-SPEC.md');
   if (!existsSync(testSpecPath)) return null;
 
-  const content = readFileSync(testSpecPath, 'utf-8');
+  // Strip fenced code blocks first — they contain shell commands like
+  // `npx playwright test login.spec.ts` whose tokens were being mis-extracted
+  // as documented test files.
+  const content = readFileSync(testSpecPath, 'utf-8').replace(/```[\s\S]*?```/g, '');
   const docTests = new Set();
-  const testFileRegex = /`([^`]*\.(test|spec)\.[^`]+)`/g;
+  // A documented test reference: a single whitespace-free token ending in
+  // .test.<ext> or .spec.<ext>, optionally containing glob '*'.
+  const testFileRegex = /`([^`\s]*\.(?:test|spec)\.[a-zA-Z0-9]+)`/g;
   let match;
   while ((match = testFileRegex.exec(content)) !== null) {
     docTests.add(match[1]);
   }
 
-  // Collect test files from disk using globMatch (always excludes node_modules)
-  const codeTests = new Set();
-  const testPatterns = config?.testPatterns || [];
-
-  if (testPatterns.length > 0) {
-    // Use configured patterns — globMatch handles node_modules exclusion
-    const allTestFiles = getTestFilesFromPatterns(dir, testPatterns, config);
-    for (const f of allTestFiles) {
-      codeTests.add(f);
-    }
-  } else {
-    // Fall back to standard test directories
-    const testDirs = ['tests', 'test', '__tests__', 'spec', 'e2e'];
-    for (const td of testDirs) {
-      const testDir = resolve(dir, td);
-      if (!existsSync(testDir)) continue;
-      const files = getFilesRecursive(testDir, config);
-      for (const f of files) {
-        codeTests.add(f.replace(dir + '/', ''));
-      }
-    }
-  }
+  // Collect ALL test files from disk: configured patterns + every *.test.* /
+  // *.spec.* file found recursively under each source root (catches co-located
+  // and nested __tests__ dirs) + root-level conventional test dirs (e2e/, tests/).
+  const codeTests = collectCodeTests(dir, config);
 
   if (docTests.size === 0 && codeTests.size === 0) return null;
 
+  // TEST-SPEC.md frequently documents tests as GLOB PATTERNS
+  // (`backend/src/*/__tests__/*.test.ts`, `e2e/*.spec.ts`), and entries may be
+  // bare basenames or full paths. Treat each documented entry as a glob and
+  // match it against code test paths (or basenames when the entry has no slash).
+  // Exact-string comparison produced the false "N documented but not found".
+  const codeArr = [...codeTests];
+  const docArr = [...docTests];
+
+  const matches = (docEntry, codeRel) => {
+    const entry = String(docEntry).trim();
+    const hasSlash = entry.includes('/');
+    const target = hasSlash ? entry : basename(entry);
+    const subject = hasSlash ? codeRel : basename(codeRel);
+    // Glob -> regex: escape regex specials, then any run of '*' becomes '.*'.
+    const rx = new RegExp('^' + target
+      .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+      .replace(/\*+/g, '.*') + '$');
+    return rx.test(subject);
+  };
+
   return {
     title: 'Test Files',
-    onlyInDocs: [...docTests].filter(t => !codeTests.has(t)),
-    onlyInCode: [...codeTests].filter(t => !docTests.has(t)),
+    onlyInDocs: docArr.filter(d => !codeArr.some(c => matches(d, c))),
+    onlyInCode: codeArr.filter(c => !docArr.some(d => matches(d, c))),
   };
+}
+
+/**
+ * Collect every test file in the project (relative paths), monorepo-aware:
+ *   - configured config.testPatterns
+ *   - any *.test.* / *.spec.* found recursively under each source root
+ *     (catches co-located and deeply-nested __tests__ directories)
+ *   - root-level conventional test dirs (tests/, e2e/, cypress/, etc.)
+ * @returns {Set<string>} relative test file paths
+ */
+export function collectCodeTests(dir, config = {}) {
+  const codeTests = new Set();
+  const isTest = (f) => /\.(test|spec)\./.test(f);
+
+  // 1. configured patterns
+  for (const f of getTestFilesFromPatterns(dir, config?.testPatterns || [], config)) {
+    codeTests.add(f);
+  }
+
+  // 2. recursive scan of each source root (co-located + nested __tests__)
+  for (const root of resolveSourceRoots(dir, config)) {
+    for (const f of getFilesRecursive(root, config)) {
+      if (isTest(f)) codeTests.add(relative(dir, f));
+    }
+  }
+
+  // 3. root-level conventional test dirs (e2e lives outside any source root)
+  for (const td of ['tests', 'test', '__tests__', 'spec', 'e2e', 'cypress']) {
+    const testDir = join(resolve(dir), td);
+    if (!existsSync(testDir)) continue;
+    for (const f of getFilesRecursive(testDir, config)) {
+      if (isTest(f)) codeTests.add(relative(dir, f));
+    }
+  }
+
+  return codeTests;
 }
 
 /**
@@ -220,6 +246,31 @@ export function getTestFilesFromPatterns(dir, patterns, config) {
 
   walk(dir);
   return [...results];
+}
+
+/** Returns true if any file with the given extension exists under dir (ignoring vendor dirs). */
+function hasFileWithExt(dir, ext, config) {
+  let found = false;
+  const walk = (d) => {
+    if (found) return;
+    let entries;
+    try { entries = readdirSync(d); } catch { return; }
+    for (const entry of entries) {
+      if (found) return;
+      if (IGNORE_DIRS.has(entry) || entry.startsWith('.')) continue;
+      const full = join(d, entry);
+      try {
+        const stat = statSync(full);
+        if (stat.isDirectory()) walk(full);
+        else if (stat.isFile() && extname(full) === ext) {
+          const rel = relative(dir, full);
+          if (!config || !shouldIgnore(rel, config)) found = true;
+        }
+      } catch { /* skip */ }
+    }
+  };
+  walk(dir);
+  return found;
 }
 
 function getFilesRecursive(dir, config) {

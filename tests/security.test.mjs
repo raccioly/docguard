@@ -81,8 +81,12 @@ describe('validateSecurity', () => {
 
     const result = validateSecurity(projectDir, {});
 
+    // No scannable source files (only .env* which are skipped) → the secret
+    // scan is NOT counted as a pass; only the .gitignore check passes, and a
+    // warning surfaces that nothing was scanned.
     assert.equal(result.errors.length, 0);
-    assert.equal(result.passed, 2);
+    assert.equal(result.passed, 1);
+    assert.ok(result.warnings.some(w => w.includes('No source files were scanned')));
   });
 
   it('should emit a warning when .gitignore does not contain .env', () => {
@@ -114,8 +118,11 @@ describe('validateSecurity', () => {
 
     const result = validateSecurity(projectDir, { securityIgnore: ['ignored-secrets.js'] });
 
+    // The only code file is ignored → nothing scanned for secrets → that
+    // sub-check is N/A (warning), and only the .gitignore check passes.
     assert.equal(result.errors.length, 0);
-    assert.equal(result.passed, 2);
+    assert.equal(result.passed, 1);
+    assert.ok(result.warnings.some(w => w.includes('No source files were scanned')));
   });
 
   it('should recursively walk directories and respect IGNORE_DIRS', () => {

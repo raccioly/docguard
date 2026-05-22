@@ -4,7 +4,7 @@ Enterprise-grade Canonical-Driven Development (CDD) enforcement for [Spec Kit](h
 
 ## Features
 
-- **19 Validators** — Structure, Security, Doc Quality, Test-Spec, Drift, Freshness, and 13 more
+- **20 Validators** — Structure, Security, Doc Quality, Test-Spec, Drift-Comments, API-Surface, Freshness, and 13 more
 - **4 AI Skills** — Enterprise-grade AI behavior protocols (not just step-lists)
 - **3 Bash Scripts** — JSON-output orchestration for AI consumption
 - **Workflow Chaining** — YAML handoffs enable guard → fix → review → score flows

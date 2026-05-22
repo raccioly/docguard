@@ -41,7 +41,7 @@
 | Command | Purpose |
 |---------|---------|
 | `diagnose` | **Primary** — identify issues + generate AI fix prompts |
-| `guard` | Validate project (CI gate) — 19 validators |
+| `guard` | Validate project (CI gate) — 20 validators |
 | `generate` | Reverse-engineer docs from code |
 | `fix --doc <name>` | AI prompt for specific document |
 | `score` | CDD maturity score (0-100) |
@@ -102,3 +102,17 @@ extensions/spec-kit-docguard/
 - Test requirements in TEST-SPEC.md must be met
 - Run `docguard guard` before pushing — all checks must pass
 - All file writes use `safeWrite()` — backups before overwrite
+
+
+## Agent Rules
+
+### Dependencies
+- Never add a package without first verifying it exists on the official registry (npm/PyPI).
+- Always pin to exact versions in package.json/requirements.txt. No ^, ~, or >= ranges.
+- Prefer packages with >10k weekly downloads and >1 maintainer.
+- If you suggest a package, confirm its first-publish date is older than 30 days.
+- Never modify .npmrc, pnpm-workspace.yaml, or dependabot.yml without explicit user confirmation.
+
+### CI/CD
+- Never write a workflow using `pull_request_target` with checkout of PR-controlled refs.
+- Always pin third-party GitHub Actions to commit SHA, not @v1 or @main.
