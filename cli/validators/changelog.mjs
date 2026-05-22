@@ -25,7 +25,7 @@ function getStagedFiles(projectDir) {
 }
 
 export function validateChangelog(projectDir, config) {
-  const results = { name: 'changelog', errors: [], warnings: [], passed: 0, total: 0 };
+  const results = { name: 'changelog', errors: [], warnings: [], passed: 0, total: 0, fixes: [] };
 
   const changelogPath = resolve(projectDir, config.requiredFiles.changelog);
   if (!existsSync(changelogPath)) {
@@ -40,7 +40,8 @@ export function validateChangelog(projectDir, config) {
   if (content.includes('[Unreleased]') || content.includes('[unreleased]')) {
     results.passed++;
   } else {
-    results.warnings.push('CHANGELOG.md: missing [Unreleased] section');
+    results.warnings.push('CHANGELOG.md: missing [Unreleased] section — fix with `docguard fix --write`');
+    results.fixes.push({ type: 'insert-changelog-unreleased', file: config.requiredFiles.changelog });
   }
 
   // Check it follows Keep a Changelog format (at least has ## headers)

@@ -7,6 +7,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-05-22
+
+This release reshapes DocGuard from a documentation linter into an **AI-readable, always-current project memory builder** — for any language project, not just JS/web. The four-mode lifecycle (`generate → guard → sync → fix`) is now coherent end-to-end.
+
+### Added — AI-powered Generate
+- **`docguard generate --plan`** — the "killer feature" from the v2 vision, now real. Scans any project (JS/TS, Python, Rust, Go, Java/Kotlin, Ruby, PHP, C#; polyglot/monorepo-aware) and emits a **structured agent task manifest** + writes the code-truth skeleton inside `<!-- docguard:section -->` markers. The AI agent writes the prose grounded in scanned facts; human writing is preserved.
+- **`--plan --format json`** machine-readable manifest for agent consumption.
+- **`--plan --write`** scaffolds the skeleton docs (code sections filled, prose sections as agent-task placeholders).
+- Language-aware doc set: a Rust CLI gets ARCHITECTURE; a webapp gets ARCHITECTURE + API-REFERENCE + SCREENS + FEATURES + INTEGRATIONS + ENVIRONMENT + docs-implementation/{KNOWN-GOTCHAS,CURRENT-STATE,RUNBOOKS}.
+
+### Added — Always-up-to-date Sync
+- **`docguard sync`** — refreshes `source=code` doc sections in place when code changes. Mechanical, idempotent, **preserves human prose**. Flags the prose sections to review when their adjacent code changed.
+- `--since <ref>` adds git-diff context. `--write` applies; default is a dry-run preview. `--force` overrides the `docguard:generated` marker gate.
+
+### Added — Section-addressable docs
+- **`cli/writers/sections.mjs`** — marker format `<!-- docguard:section id=X source=code|human -->`. `parseSections` / `replaceSection` / `upsertSection` for surgical regen that never clobbers human prose. The keystone the rest of the program builds on.
+
+### Added — Language-agnostic project intelligence
+- **`cli/scanners/project-type.mjs`** detects every ecosystem from manifests: `package.json`, `pyproject.toml`/`requirements.txt`/`setup.py`/`Pipfile`, `Cargo.toml`, `go.mod`, `pom.xml`/`build.gradle`, `Gemfile`, `composer.json`, `*.csproj`. Polyglot-aware: returns each ecosystem's language, framework, kind, deps, entry points.
+- **Multi-language route scanners** in `routes.mjs`: Spring Boot (Java/Kotlin, class-level base + verb annotations), Rails (verb DSL + `resources` 7-action expansion), Go (Gin/Echo/Chi/Fiber/mux), Rust (Axum, Actix, Rocket).
+- **Multi-language schema/model scanners** in `schemas.mjs`: Python (SQLAlchemy + relationships + Pydantic/SQLModel), Rust Diesel `table!`, Go structs with `json`/`gorm`/`db` tags, Java/Kotlin JPA `@Entity`, Rails ActiveRecord `create_table` migrations.
+
+### Added — Deep frontend capture
+- **`cli/scanners/frontend.mjs`** captures the UI surface: screens/routes (React Router, Next App + Pages with wrapper-unwrapping), components, **state stores** (Zustand/Redux Toolkit/Jotai/MobX), **custom hooks** (incl. `export { X as useY }` aliases), **React Contexts**, **API-client→endpoint mapping** (axios/fetch/custom client), and **i18n keys** (used vs. defined in locale files, with missing-keys reported as drift).
+
+### Added — External integrations
+- **`cli/scanners/integrations.mjs`** — 30+ SDK registry covering Cloud (AWS, GCP, Azure, Cloudflare), Databases, Payments (Stripe/Braintree), Auth (Auth0/Clerk/NextAuth/Cognito), AI (OpenAI/Anthropic/LangChain), Messaging (Twilio/SendGrid/Slack/MessageBird), Observability (Sentry/Datadog/OpenTelemetry), Search, Queues, Storage. Surfaces as `INTEGRATIONS.md` in the memory plan.
+
+### Added — Mechanical fix registry
+- **`cli/writers/mechanical.mjs`** generalizes `docguard fix --write` into a deterministic, no-LLM applier covering: `remove-endpoint` (API-Surface), `replace-count` (Metrics-Consistency stale "N validators"), `replace-version` (Metadata-Sync stale refs — only in actionable contexts, never prose), `insert-changelog-unreleased`.
+- Validators emit structured `fixes[]` arrays surfaced through `guard --format json`, `diagnose --format json`, and applied by `fix --write` / `diagnose --auto`. The 9 previously detect-only validators now have real `FIX_INSTRUCTIONS` routes (no more generic "Manual review needed").
+
+### Added — Spec Kit extension parity
+- New extension commands: `extensions/spec-kit-docguard/commands/fix.md`, `commands/sync.md`. `generate.md` updated to document `--plan`.
+- New skill: `extensions/spec-kit-docguard/skills/docguard-sync/SKILL.md` — teaches the agent the refresh-and-review-prose loop. Extension README modernized to the memory-first vocabulary.
+
+### Changed
+- **PHILOSOPHY.md rewritten** from v1 governance-first ("not machine-generated") to the v2 memory-first reality (generate + guard + sync, bidirectional, language-agnostic). Honest about what the tool actually does.
+- **`docguard score`** displays **`Memory: Completeness X% · Accuracy Y%`** derived from the existing category scores; `--format json` adds `memory.{completeness, accuracy}` and per-category `axis` field. No weight changes.
+- CLI `--help` reframed around the memory lifecycle (audit/generate/guard/sync).
+
+### Fixed
+- Tightened a self-inflicted false positive (a literal `TODO` in a generate.mjs placeholder string was tripping DocGuard's own TODO-Tracking validator).
+- Fixed several scanner bugs caught by new tests: React Router wrapper-component unwrapping (`<RequireAuth><XPage/>`), Next.js base-path double-append, Go single-line struct regex, Spring Boot `@RequestMapping` class-level vs method-level disambiguation, locale-dir deduplication.
+
+### Infrastructure
+- CI: bumped `actions/checkout` and `actions/setup-node` to `@v5` across all four workflows (ahead of the June 2026 Node 24 default).
+
+### Tests
+- **Tests: 175 → 285 (+110)**. New test files: `api-doc`, `api-surface`, `shared-source`, `guard-classify`, `monorepo-scanning`, `sections`, `frontend`, `frontend-deep`, `i18n`, `project-type`, `memory-plan`, `integrations`, `routes-multilang`, `schemas-multilang`, `mechanical`, `api-write`, `multi-spec`, `sync`. All green.
+
 ## [0.10.0] - 2026-05-22
 
 ### Added

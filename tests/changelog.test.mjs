@@ -38,7 +38,8 @@ describe('validateChangelog', () => {
       errors: [],
       warnings: [],
       passed: 0,
-      total: 0
+      total: 0,
+      fixes: [],
     });
   });
 
@@ -54,7 +55,8 @@ describe('validateChangelog', () => {
     assert.equal(result.total, 2);
     assert.equal(result.passed, 1);
     assert.equal(result.warnings.length, 1);
-    assert.equal(result.warnings[0], 'CHANGELOG.md: missing [Unreleased] section');
+    assert.ok(result.warnings[0].startsWith('CHANGELOG.md: missing [Unreleased] section'));
+    assert.ok(result.fixes.some(f => f.type === 'insert-changelog-unreleased'));
   });
 
   it('registers warning when version headers are missing', () => {

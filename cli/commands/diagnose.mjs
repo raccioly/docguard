@@ -21,6 +21,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execSync, execFileSync } from 'node:child_process';
+import { applyAllMechanicalFixes } from './fix.mjs';
 
 // Map validator failures to the right fix --doc target
 const VALIDATOR_TO_DOC = {
@@ -65,13 +66,6 @@ const FIX_INSTRUCTIONS = {
     description: 'A // DRIFT: code comment has no matching DRIFT-LOG.md entry. Add the entry or remove the comment.',
     autoFixable: false,
   },
-  'API-Surface': {
-    action: 'Reconcile API-REFERENCE.md with the actual API surface',
-    command: 'docguard fix --doc api-reference',
-    llmCommand: '/docguard.fix --doc api-reference',
-    description: 'docs-canonical/API-REFERENCE.md documents endpoints that no longer exist in code (or omits real ones). Remove deleted endpoints and add missing ones to match the OpenAPI spec / route definitions, then log the change in CHANGELOG.md and DRIFT-LOG.md.',
-    autoFixable: false,
-  },
   'Changelog': {
     action: 'Update CHANGELOG.md',
     description: 'CHANGELOG.md is missing or has no [Unreleased] section. Add recent changes.',
@@ -112,6 +106,78 @@ const FIX_INSTRUCTIONS = {
     description: 'Documents haven\'t been reviewed since recent code changes. Re-run fix --doc for each stale doc.',
     autoFixable: false,
   },
+  // ── Routed (Phase F): these used to fall through to a generic "Manual review needed" ──
+  'Metrics-Consistency': {
+    action: 'Update stale number(s) in docs',
+    command: 'docguard fix --write',
+    llmCommand: 'docguard fix --write',
+    description: 'A doc claims a different count than the actual. Mechanical replace — no AI needed.',
+    autoFixable: true,
+  },
+  'Metadata-Sync': {
+    action: 'Update stale version reference(s)',
+    command: 'docguard fix --write',
+    llmCommand: 'docguard fix --write',
+    description: 'Docs reference an older version than the manifest. Mechanical replace — no AI needed.',
+    autoFixable: true,
+  },
+  'Docs-Sync': {
+    action: 'Reference the route/service in a canonical doc',
+    command: 'docguard fix --doc architecture',
+    llmCommand: '/docguard.fix --doc architecture',
+    description: 'A code file under routes/services is not referenced by any canonical doc. Add it (or its module) to ARCHITECTURE.md.',
+    autoFixable: false,
+  },
+  'Docs-Diff': {
+    action: 'Reconcile the documented vs. real surface',
+    command: 'docguard diff',
+    llmCommand: '/docguard.fix',
+    description: 'Tech stack or test files documented but not found in code (or vice versa). Inspect with `docguard diff`.',
+    autoFixable: false,
+  },
+  'Docs-Coverage': {
+    action: 'Reference the missing config/dotfile/source dir in docs',
+    command: 'docguard fix --doc architecture',
+    llmCommand: '/docguard.fix --doc architecture',
+    description: 'A project config/source dir is undocumented. Add a reference to the appropriate canonical doc.',
+    autoFixable: false,
+  },
+  'Doc-Quality': {
+    action: 'Improve readability / structure of the flagged doc',
+    command: 'docguard fix --doc',
+    llmCommand: '/docguard.fix --doc',
+    description: 'Passive voice, low atomicity, or weak structure detected. Re-run fix --doc for the affected file.',
+    autoFixable: false,
+  },
+  'TODO-Tracking': {
+    action: 'Track or remove the TODO/FIXME',
+    description: 'An untracked TODO/FIXME in source. Add it to ROADMAP.md / CURRENT-STATE.md, open an issue, or remove it.',
+    autoFixable: false,
+  },
+  'Traceability': {
+    action: 'Link the requirement ID to its test(s)',
+    description: 'A documented requirement ID has no matching reference in any test file. Add `@req FR-XXX` to the test that verifies it.',
+    autoFixable: false,
+  },
+  'Schema-Sync': {
+    action: 'Document the model in DATA-MODEL.md',
+    command: 'docguard fix --doc data-model',
+    llmCommand: '/docguard.fix --doc data-model',
+    description: 'A database model in code is not documented in DATA-MODEL.md. Add an Entity entry for it.',
+    autoFixable: false,
+  },
+  'Spec-Kit': {
+    action: 'Add the missing Spec Kit artifact / section',
+    description: 'A Spec Kit artifact (spec.md / plan.md / tasks.md) is missing a required section, FR-ID, or phased task structure. Edit the spec to match the standard.',
+    autoFixable: false,
+  },
+  'API-Surface': {
+    action: 'Reconcile API-REFERENCE.md with the real API surface',
+    command: 'docguard fix --write',
+    llmCommand: 'docguard fix --write',
+    description: 'Documented-but-absent endpoints can be deleted mechanically with `docguard fix --write`. Undocumented-in-code endpoints need an agent to write the request/response block (`/docguard.fix --doc api-reference`).',
+    autoFixable: true,
+  },
 };
 
 export function runDiagnose(projectDir, config, flags) {
@@ -127,28 +193,33 @@ export function runDiagnose(projectDir, config, flags) {
 
   // ── Step 3: Auto-fix (only with --auto flag) or suggest fixes ──
   const shouldAutoFix = flags.auto && flags.format !== 'json';
+  // Mechanical fixes = deterministic, no-LLM edits (e.g. remove a documented
+  // endpoint the spec confirms is gone). Surfaced by the API-Surface validator.
+  const mechanicalCount = countMechanicalFixes(guardData);
   if (issues.length > 0) {
     const autoFixable = issues.filter(i => i.autoFixable);
     const hasStructural = issues.some(i => i.validator === 'Structure');
 
-    if (shouldAutoFix && (hasStructural || autoFixable.length > 0)) {
-      // Run init to create missing files
+    if (shouldAutoFix && (hasStructural || autoFixable.length > 0 || mechanicalCount > 0)) {
+      // 1. init — create missing files
       try {
         const cliPath = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'docguard.mjs');
-        execFileSync(process.execPath, [cliPath, 'init', '--dir', projectDir], {
-          encoding: 'utf-8',
-          stdio: 'pipe',
-        });
+        execFileSync(process.execPath, [cliPath, 'init', '--dir', projectDir], { encoding: 'utf-8', stdio: 'pipe' });
       } catch { /* init may partially succeed */ }
 
-      // Run generate to fill in MISSING content only (never --force, which would overwrite existing docs)
+      // 2. generate — fill MISSING content only (never --force; won't overwrite existing docs)
       try {
         const cliPath = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'docguard.mjs');
-        execFileSync(process.execPath, [cliPath, 'generate', '--dir', projectDir], {
-          encoding: 'utf-8',
-          stdio: 'pipe',
-        });
+        execFileSync(process.execPath, [cliPath, 'generate', '--dir', projectDir], { encoding: 'utf-8', stdio: 'pipe' });
       } catch { /* generate may partially succeed */ }
+
+      // 3. mechanical fixes — apply ALL deterministic edits (no LLM):
+      // endpoint removal, stale counts, stale versions, changelog header.
+      let mechApplied = 0;
+      try {
+        const r = applyAllMechanicalFixes(projectDir, config, { force: flags.force });
+        mechApplied = r.applied.length;
+      } catch { /* best-effort */ }
 
       // Re-run guard to see what's still broken
       guardData = runGuardInternal(projectDir, config);
@@ -157,20 +228,30 @@ export function runDiagnose(projectDir, config, flags) {
       if (!flags.format || flags.format === 'text') {
         const fixedCount = autoFixable.length - issues.filter(i => i.autoFixable).length;
         if (fixedCount > 0) {
-          console.log(`  ${c.green}⚡ Auto-fixed ${fixedCount} issue(s)${c.reset} (created/regenerated docs)\n`);
+          console.log(`  ${c.green}⚡ Auto-fixed ${fixedCount} issue(s)${c.reset} (created/regenerated docs)`);
+        }
+        if (mechApplied > 0) {
+          console.log(`  ${c.green}⚡ Applied ${mechApplied} mechanical fix(es)${c.reset} (removed stale API endpoints)`);
+        }
+        if (fixedCount > 0 || mechApplied > 0) console.log('');
+      }
+    } else if (!shouldAutoFix && (!flags.format || flags.format === 'text')) {
+      // Suggest-only mode — be accurate about what each path does.
+      if (mechanicalCount > 0) {
+        console.log(`  ${c.green}🔧 ${mechanicalCount} issue(s) are mechanically fixable — no AI needed.${c.reset} Apply with:`);
+        console.log(`     ${c.cyan}docguard fix --write${c.reset}${c.dim}  (removes stale documented endpoints)${c.reset}`);
+      }
+      if (hasStructural || autoFixable.length > 0) {
+        console.log(`  ${c.yellow}💡 ${autoFixable.length + (hasStructural ? 1 : 0)} issue(s) can be scaffolded/regenerated.${c.reset} Run ${c.cyan}docguard diagnose --auto${c.reset} (creates missing docs + applies mechanical fixes), or:`);
+        if (agentMode === 'llm') {
+          if (hasStructural) console.log(`     ${c.dim}/docguard.init${c.reset}`);
+          if (autoFixable.length > 0) console.log(`     ${c.dim}/docguard.fix${c.reset}`);
+        } else {
+          if (hasStructural) console.log(`     ${c.dim}docguard init --dir .${c.reset}`);
+          if (autoFixable.length > 0) console.log(`     ${c.dim}docguard generate --dir . --force${c.reset}`);
         }
       }
-    } else if (!shouldAutoFix && (hasStructural || autoFixable.length > 0) && (!flags.format || flags.format === 'text')) {
-      // Suggest-only mode: tell user what they can do (LLM-first)
-      console.log(`  ${c.yellow}💡 ${autoFixable.length + (hasStructural ? 1 : 0)} issue(s) can be auto-fixed.${c.reset} Run with ${c.cyan}--auto${c.reset} to create/regenerate docs, or manually:`);
-      if (agentMode === 'llm') {
-        if (hasStructural) console.log(`     ${c.dim}/docguard.init${c.reset}`);
-        if (autoFixable.length > 0) console.log(`     ${c.dim}/docguard.fix${c.reset}`);
-      } else {
-        if (hasStructural) console.log(`     ${c.dim}docguard init --dir .${c.reset}`);
-        if (autoFixable.length > 0) console.log(`     ${c.dim}docguard generate --dir . --force${c.reset}`);
-      }
-      console.log('');
+      if (mechanicalCount > 0 || hasStructural || autoFixable.length > 0) console.log('');
     }
   }
 
@@ -201,46 +282,65 @@ export function runDiagnose(projectDir, config, flags) {
   }
 }
 
+/** Count deterministic (no-LLM) fixes available across guard results. */
+function countMechanicalFixes(guardData) {
+  let n = 0;
+  for (const v of guardData.validators) {
+    if (Array.isArray(v.fixes)) n += v.fixes.length;
+  }
+  return n;
+}
+
+/**
+ * A documented-but-absent endpoint is MECHANICALLY fixable (deterministic
+ * removal via `docguard fix --write`) — distinct from drift that needs an agent.
+ */
+function isMechanicalMessage(validator, message) {
+  return validator === 'API-Surface' && /not found in code/i.test(message);
+}
+
 /**
  * Collect issues from guard results with fix metadata.
  */
 function collectIssues(guardData) {
   const issues = [];
   for (const v of guardData.validators) {
-    if (v.status === 'skipped' || v.status === 'pass') continue;
+    if (v.status === 'skipped' || v.status === 'pass' || v.status === 'na') continue;
 
     const fixInfo = FIX_INSTRUCTIONS[v.name] || { action: `Review ${v.name}`, description: 'Manual review needed.', autoFixable: false };
     const docTarget = VALIDATOR_TO_DOC[v.name];
 
-    for (const err of v.errors) {
-      issues.push({
-        severity: 'error',
+    const mkIssue = (severity, message) => {
+      const mechanical = isMechanicalMessage(v.name, message);
+      return {
+        severity,
         validator: v.name,
-        message: err,
-        action: fixInfo.action,
-        command: fixInfo.command || null,
-        llmCommand: fixInfo.llmCommand || null,
-        docTarget,
+        message,
+        action: mechanical ? 'Remove stale endpoint from API-REFERENCE.md' : fixInfo.action,
+        // Mechanical fixes point at the deterministic CLI applier, not an LLM.
+        command: mechanical ? 'docguard fix --write' : (fixInfo.command || null),
+        llmCommand: mechanical ? null : (fixInfo.llmCommand || null),
+        mechanical,
+        docTarget: mechanical ? null : docTarget,
         autoFixable: fixInfo.autoFixable || false,
-      });
-    }
-    for (const warn of v.warnings) {
-      issues.push({
-        severity: 'warning',
-        validator: v.name,
-        message: warn,
-        action: fixInfo.action,
-        command: fixInfo.command || null,
-        llmCommand: fixInfo.llmCommand || null,
-        docTarget,
-        autoFixable: fixInfo.autoFixable || false,
-      });
-    }
+      };
+    };
+
+    for (const err of v.errors) issues.push(mkIssue('error', err));
+    for (const warn of v.warnings) issues.push(mkIssue('warning', warn));
   }
   return issues;
 }
 
 function outputJSON(guardData, scoreData, issues) {
+  // Structured, deterministic fix actions an agent or `--write` can apply directly.
+  const mechanicalFixes = [];
+  for (const v of guardData.validators) {
+    if (Array.isArray(v.fixes)) {
+      for (const f of v.fixes) mechanicalFixes.push({ validator: v.name, ...f });
+    }
+  }
+
   const result = {
     project: guardData.project,
     profile: guardData.profile,
@@ -254,8 +354,13 @@ function outputJSON(guardData, scoreData, issues) {
       message: i.message,
       action: i.action,
       command: i.command,
+      // 'mechanical' = deterministic CLI fix (docguard fix --write);
+      // 'agent' = needs an AI agent to write content.
+      fixKind: i.mechanical ? 'mechanical' : 'agent',
       docTarget: i.docTarget,
     })),
+    // Deterministic actions consumable by `docguard fix --write` or an agent.
+    mechanicalFixes,
     // Unique fix commands for automation
     fixCommands: [...new Set(issues.filter(i => i.command).map(i => i.command))],
     timestamp: new Date().toISOString(),

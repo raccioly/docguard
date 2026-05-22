@@ -11,7 +11,12 @@ handoffs:
 
 # DocGuard Generate
 
-Scans your codebase and generates canonical documentation: ARCHITECTURE.md, DATA-MODEL.md, TEST-SPEC.md, SECURITY.md, ENVIRONMENT.md, and API-REFERENCE.md.
+Scans your codebase (JS/TS, Python, Rust, Go, Java/Kotlin, Ruby, PHP, C# — polyglot/monorepo-aware) and generates the canonical documentation memory: ARCHITECTURE.md, DATA-MODEL.md, TEST-SPEC.md, SECURITY.md, ENVIRONMENT.md, API-REFERENCE.md, SCREENS.md.
+
+Two modes:
+
+- **`--plan`** (AI-powered, recommended) — emits a structured agent task manifest + writes the code-truth skeleton inside `<!-- docguard:section -->` markers. The AI agent then writes the prose grounded in scanned facts. Human prose is preserved.
+- **default** — purely deterministic generation: writes templated docs with TODO placeholders. Use when no AI agent is available.
 
 ## User Input
 
@@ -19,7 +24,25 @@ $ARGUMENTS
 
 ## Steps
 
-1. Run DocGuard generate on the current project:
+1. **Preview the plan** — what code-truth facts were captured + what the agent will write:
+
+```bash
+npx --yes docguard-cli@latest generate --plan $ARGUMENTS
+```
+
+2. **Scaffold the skeleton docs** (marked sections filled with code-truth, prose sections as agent-task placeholders):
+
+```bash
+npx --yes docguard-cli@latest generate --plan --write $ARGUMENTS
+```
+
+3. **Or get the machine-readable manifest** to drive an agent:
+
+```bash
+npx --yes docguard-cli@latest generate --plan --format json $ARGUMENTS
+```
+
+4. **Fallback** (no AI, deterministic generation):
 
 ```bash
 npx --yes docguard-cli@latest generate $ARGUMENTS

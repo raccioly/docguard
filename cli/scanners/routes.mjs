@@ -60,6 +60,22 @@ export function scanRoutesDeep(dir, stack, docTools, opts = {}) {
     routes.push(...scanDjangoRoutes(dir));
   }
 
+  if (framework.includes('Spring') || framework.includes('Java')) {
+    routes.push(...scanSpringBootRoutes(dir));
+  }
+
+  if (framework.includes('Rails') || framework.includes('Ruby')) {
+    routes.push(...scanRailsRoutes(dir));
+  }
+
+  if (framework.includes('Gin') || framework.includes('Echo') || framework.includes('Chi') || framework.includes('Fiber') || framework.includes('Go')) {
+    routes.push(...scanGoWebRoutes(dir));
+  }
+
+  if (framework.includes('Axum') || framework.includes('Actix') || framework.includes('Rocket') || framework.includes('Warp') || framework.includes('Rust')) {
+    routes.push(...scanRustWebRoutes(dir));
+  }
+
   if (framework.includes('FastAPI') || framework.includes('Flask')) {
     routes.push(...scanFastAPIRoutes(dir));
   }
@@ -354,6 +370,139 @@ function scanFastAPIRoutes(dir) {
     }
   }
 
+  return routes;
+}
+
+// ── Spring Boot (Java/Kotlin) ────────────────────────────────────────────────
+
+function scanSpringBootRoutes(dir) {
+  const routes = [];
+  // Method-level verb annotations (NOT @RequestMapping — that's class-level base).
+  // Optional path; bare `@PostMapping` means "base path only".
+  const verbMap = /@(Get|Post|Put|Delete|Patch)Mapping(?:\s*\(\s*(?:value\s*=\s*)?["']([^"']*)["'])?/g;
+  const classBase = /@RequestMapping\s*\(\s*(?:value\s*=\s*)?["']([^"']+)["'][^)]*\)\s*[\r\n][\s\S]*?(?:public\s+)?class\s+\w+/;
+
+  const javaFiles = findFiles(dir, /\.(java|kt)$/);
+  for (const filePath of javaFiles) {
+    const content = readFileSafe(filePath);
+    if (!content || !content.includes('Mapping')) continue;
+
+    // Class-level base path, if any.
+    const cb = classBase.exec(content);
+    const basePath = cb ? cb[1] : '';
+    const authPresent = /@PreAuthorize|@Secured|SecurityContext/.test(content);
+
+    let match;
+    const re = new RegExp(verbMap.source, 'g');
+    while ((match = re.exec(content)) !== null) {
+      const method = match[1].toUpperCase();
+      const sub = match[2] || '';
+      const path = (basePath + sub).replace(/\/+/g, '/') || '/';
+      routes.push({
+        method, path,
+        handler: '', file: relative(dir, filePath), source: 'spring-boot',
+        auth: authPresent, description: '',
+      });
+    }
+  }
+  return routes;
+}
+
+// ── Rails (Ruby) — config/routes.rb ──────────────────────────────────────────
+
+function scanRailsRoutes(dir) {
+  const routes = [];
+  const routesFile = resolve(dir, 'config/routes.rb');
+  if (!existsSync(routesFile)) return routes;
+  const content = readFileSafe(routesFile);
+  if (!content) return routes;
+
+  // Verb DSL: get '/x', post '/x', etc.  AND  resources :things (RESTful 7 actions)
+  const verbDsl = /^\s*(get|post|put|patch|delete)\s+['"]([^'"]+)['"]/gm;
+  let m;
+  while ((m = verbDsl.exec(content)) !== null) {
+    routes.push({
+      method: m[1].toUpperCase(),
+      path: m[2].startsWith('/') ? m[2] : '/' + m[2],
+      handler: '', file: 'config/routes.rb', source: 'rails', auth: false, description: '',
+    });
+  }
+  // resources :users → 7 standard RESTful routes.
+  const resourcesRe = /^\s*resources\s+:([a-z_]+)/gm;
+  while ((m = resourcesRe.exec(content)) !== null) {
+    const r = m[1];
+    const base = `/${r}`;
+    const seven = [
+      ['GET', base], ['GET', `${base}/new`], ['POST', base],
+      ['GET', `${base}/:id`], ['GET', `${base}/:id/edit`],
+      ['PATCH', `${base}/:id`], ['DELETE', `${base}/:id`],
+    ];
+    for (const [method, path] of seven) {
+      routes.push({ method, path, handler: '', file: 'config/routes.rb', source: 'rails', auth: false, description: '' });
+    }
+  }
+  return routes;
+}
+
+// ── Go web frameworks (Gin / Echo / Chi / Fiber / std mux) ───────────────────
+
+function scanGoWebRoutes(dir) {
+  const routes = [];
+  // Generic: <recv>.<METHOD>("/path", handler)  for Gin/Echo/Chi/Fiber/mux.Router
+  const pattern = /\.(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS|HandleFunc|Handle)\s*\(\s*["']([^"']+)["']/g;
+  const goFiles = findFiles(dir, /\.go$/);
+  for (const filePath of goFiles) {
+    const content = readFileSafe(filePath);
+    if (!content) continue;
+    let m;
+    const re = new RegExp(pattern.source, 'g');
+    while ((m = re.exec(content)) !== null) {
+      const verb = m[1];
+      // HandleFunc / Handle are method-agnostic.
+      const method = ['HandleFunc', 'Handle'].includes(verb) ? 'ANY' : verb;
+      const path = m[2];
+      if (!path.startsWith('/')) continue;
+      routes.push({
+        method, path,
+        handler: '', file: relative(dir, filePath), source: 'go-web',
+        auth: /Authorization|jwt\.|middleware\.Auth/.test(content),
+        description: '',
+      });
+    }
+  }
+  return routes;
+}
+
+// ── Rust web frameworks (Axum / Actix / Rocket / Warp) ───────────────────────
+
+function scanRustWebRoutes(dir) {
+  const routes = [];
+  const rsFiles = findFiles(dir, /\.rs$/);
+  for (const filePath of rsFiles) {
+    const content = readFileSafe(filePath);
+    if (!content) continue;
+
+    // Axum: .route("/x", get(handler)) / .route("/x", post(handler).get(handler))
+    const axum = /\.route\s*\(\s*"([^"]+)"\s*,\s*([a-z]+)\s*\(/g;
+    let m;
+    while ((m = axum.exec(content)) !== null) {
+      const method = m[2].toUpperCase();
+      if (!['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS'].includes(method)) continue;
+      routes.push({ method, path: m[1], handler: '', file: relative(dir, filePath), source: 'axum', auth: false, description: '' });
+    }
+
+    // Actix-web: .route("/x", web::get().to(handler))
+    const actix = /\.route\s*\(\s*"([^"]+)"\s*,\s*web::(get|post|put|delete|patch)\(\)/g;
+    while ((m = actix.exec(content)) !== null) {
+      routes.push({ method: m[2].toUpperCase(), path: m[1], handler: '', file: relative(dir, filePath), source: 'actix', auth: false, description: '' });
+    }
+
+    // Rocket: #[get("/x")] etc.
+    const rocket = /#\[(get|post|put|delete|patch)\(\s*"([^"]+)"/g;
+    while ((m = rocket.exec(content)) !== null) {
+      routes.push({ method: m[1].toUpperCase(), path: m[2], handler: '', file: relative(dir, filePath), source: 'rocket', auth: false, description: '' });
+    }
+  }
   return routes;
 }
 

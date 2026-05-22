@@ -26,12 +26,30 @@ export function runScore(projectDir, config, flags) {
 
   const { scores, totalScore, grade, details } = calcAllScores(projectDir, config);
 
+  // ── "Memory" framing: split signals into Completeness vs Accuracy ──
+  // Completeness = "is the memory whole?"  Accuracy = "does it match code?"
+  // No weight changes — just a derived view of the existing per-category scores.
+  const COMPLETENESS = new Set(['structure', 'docQuality']);
+  const memory = (() => {
+    let cW = 0, cP = 0, aW = 0, aP = 0;
+    for (const [cat, s] of Object.entries(scores)) {
+      const w = WEIGHTS[cat] || 0;
+      if (COMPLETENESS.has(cat)) { cW += w; cP += s * w; }
+      else { aW += w; aP += s * w; }
+    }
+    return {
+      completeness: cW ? Math.round(cP / cW) : 0,
+      accuracy: aW ? Math.round(aP / aW) : 0,
+    };
+  })();
+
   // ── Display Results ──
   if (flags.format === 'json') {
     const result = {
       project: config.projectName,
       score: totalScore,
       grade,
+      memory,
       categories: {},
     };
     for (const [cat, score] of Object.entries(scores)) {
@@ -39,6 +57,7 @@ export function runScore(projectDir, config, flags) {
         score,
         weight: WEIGHTS[cat],
         weighted: Math.round((score / 100) * WEIGHTS[cat]),
+        axis: COMPLETENESS.has(cat) ? 'completeness' : 'accuracy',
       };
     }
     console.log(JSON.stringify(result, null, 2));
@@ -60,6 +79,9 @@ export function runScore(projectDir, config, flags) {
 
   const gradeColor = totalScore >= 80 ? c.green : totalScore >= 60 ? c.yellow : c.red;
   console.log(`  ${gradeColor}${c.bold}CDD Maturity Score: ${totalScore}/100 (${grade})${c.reset}`);
+  // Memory framing: is the documentation memory COMPLETE and ACCURATE?
+  const memColor = (s) => s >= 80 ? c.green : s >= 60 ? c.yellow : c.red;
+  console.log(`  ${c.dim}Memory:${c.reset} ${memColor(memory.completeness)}Completeness ${memory.completeness}%${c.reset} ${c.dim}·${c.reset} ${memColor(memory.accuracy)}Accuracy ${memory.accuracy}%${c.reset}`);
 
   // Grade description
   const descriptions = {

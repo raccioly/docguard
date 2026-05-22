@@ -24,6 +24,7 @@ const IGNORE_DIRS = new Set([
  */
 export function validateMetricsConsistency(projectDir, config, guardResults) {
   const warnings = [];
+  const fixes = [];
   let passed = 0;
   let total = 0;
 
@@ -83,8 +84,10 @@ export function validateMetricsConsistency(projectDir, config, guardResults) {
         const found = parseInt(match[1], 10);
         if (found !== actuals[key] && found > 0) {
           warnings.push(
-            `${relPath} says "${found} ${label}" but actual count is ${actuals[key]}. Update the doc or run \`docguard generate --force\``
+            `${relPath} says "${found} ${label}" but actual count is ${actuals[key]}. Fix with \`docguard fix --write\``
           );
+          // Deterministic, surgical token replacement — safe to auto-apply.
+          fixes.push({ type: 'replace-count', file: relPath, label, found, actual: actuals[key] });
         } else {
           passed++;
         }
@@ -92,7 +95,7 @@ export function validateMetricsConsistency(projectDir, config, guardResults) {
     }
   }
 
-  return { errors: [], warnings, passed, total };
+  return { errors: [], warnings, passed, total, fixes };
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────

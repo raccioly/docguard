@@ -36,9 +36,19 @@ Research the actual codebase to generate or repair canonical documentation that 
 
 ## Execution Flow
 
+### Step 0: Apply Mechanical Fixes First (no AI needed)
+
+```bash
+npx docguard-cli fix --write 2>&1
+```
+
+Removes endpoints documented in `docs-canonical/API-REFERENCE.md` that the OpenAPI
+spec confirms no longer exist (table row + detail block). Only edits
+`docguard:generated` docs, idempotent, prints what changed. Don't hand-edit these.
+
 ### Step 1: Diagnose Current State
 
-Run the diagnostic to identify all issues:
+Run the diagnostic to identify all issues (each tagged `mechanical` or `agent`):
 
 ```bash
 npx docguard-cli diagnose 2>&1

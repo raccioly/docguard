@@ -11,6 +11,8 @@ import { c } from '../shared.mjs';
 import { detectDocTools } from '../scanners/doc-tools.mjs';
 import { scanRoutesDeep } from '../scanners/routes.mjs';
 import { scanSchemasDeep, generateERDiagram } from '../scanners/schemas.mjs';
+import { buildMemoryPlan } from '../scanners/memory-plan.mjs';
+import { upsertSection } from '../writers/sections.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build', 'coverage',
@@ -111,7 +113,96 @@ function appendStandardsCitation(content, docName) {
   return content.trimEnd() + '\n' + footer;
 }
 
+/**
+ * `docguard generate --plan` — AI-powered Generate.
+ * Builds the code-truth skeleton (marked sections) and emits the agent task
+ * manifest. `--format json` → machine manifest for an agent; text → summary.
+ * `--write` → scaffold the skeleton docs (code sections filled; prose sections
+ * inserted as agent-task placeholders), respecting human prose via markers.
+ */
+export function runGeneratePlan(projectDir, config, flags) {
+  const plan = buildMemoryPlan(projectDir, config);
+
+  if (flags.format === 'json') {
+    console.log(JSON.stringify({
+      project: config.projectName,
+      profile: {
+        languages: plan.profile.languages,
+        frameworks: plan.profile.frameworks,
+        polyglot: plan.profile.polyglot,
+        kind: plan.profile.kind,
+        ecosystems: plan.profile.ecosystems.map(e => ({ dir: e.dir, language: e.language, framework: e.framework, kind: e.kind })),
+      },
+      surface: {
+        endpoints: plan.surface.endpoints.length,
+        entities: plan.surface.entities.length,
+        screens: plan.surface.screens.length,
+        components: plan.surface.components.length,
+        envVars: plan.surface.envVars.length,
+      },
+      docs: plan.docs.map(d => ({
+        path: d.path,
+        sections: d.sections.map(s => s.source === 'code'
+          ? { id: s.id, source: 'code' }
+          : { id: s.id, source: 'human', task: s.task, grounding: s.grounding }),
+      })),
+      agentTasks: plan.agentTasks,
+      timestamp: new Date().toISOString(),
+    }, null, 2));
+    return;
+  }
+
+  // --write: scaffold the skeleton docs with code sections + agent-task placeholders.
+  if (flags.write) {
+    const docsDir = resolve(projectDir, 'docs-canonical');
+    if (!existsSync(docsDir)) mkdirSync(docsDir, { recursive: true });
+    let wrote = 0;
+    for (const doc of plan.docs) {
+      const full = resolve(projectDir, doc.path);
+      const title = basename(doc.path, '.md').replace(/-/g, ' ');
+      let content = existsSync(full)
+        ? readFileSync(full, 'utf-8')
+        : `# ${title}\n\n<!-- docguard:generated true -->\n`;
+      for (const sec of doc.sections) {
+        const body = sec.source === 'code'
+          ? sec.body
+          : `> **AI task:** ${sec.task}\n<!-- docguard:pending agent writes this section -->`;
+        content = upsertSection(content, sec.id, body, { source: sec.source }).content;
+      }
+      writeFileSync(full, content, 'utf-8');
+      wrote++;
+    }
+    console.log(`${c.bold}🔮 DocGuard Generate --plan --write — ${config.projectName}${c.reset}`);
+    console.log(`  ${c.green}✅ Scaffolded ${wrote} doc(s)${c.reset} with code-truth sections + ${plan.agentTasks.length} agent task(s).`);
+    console.log(`  ${c.dim}Now run your AI agent (/docguard.fix) to write the prose sections, then ${c.cyan}docguard guard${c.dim}.${c.reset}\n`);
+    return;
+  }
+
+  // Text summary.
+  console.log(`${c.bold}🔮 DocGuard Generate Plan — ${config.projectName}${c.reset}`);
+  console.log(`${c.dim}   ${plan.profile.polyglot ? 'Polyglot' : 'Single-language'}: ${plan.profile.languages.join(', ')} | frameworks: ${plan.profile.frameworks.join(', ') || '—'} | kind: ${plan.profile.kind}${c.reset}\n`);
+  console.log(`  ${c.bold}Code-truth surface:${c.reset} ${plan.surface.endpoints.length} endpoints · ${plan.surface.entities.length} entities · ${plan.surface.screens.length} screens · ${plan.surface.components.length} components · ${plan.surface.envVars.length} env vars\n`);
+  console.log(`  ${c.bold}Documents to build (${plan.docs.length}):${c.reset}`);
+  for (const d of plan.docs) {
+    const code = d.sections.filter(s => s.source === 'code').length;
+    const prose = d.sections.filter(s => s.source === 'human').length;
+    console.log(`    ${c.cyan}${d.path}${c.reset} ${c.dim}(${code} code section(s), ${prose} agent task(s))${c.reset}`);
+  }
+  console.log(`\n  ${c.bold}🤖 Agent tasks (${plan.agentTasks.length}):${c.reset} ${c.dim}prose the AI must write, grounded in scanned facts.${c.reset}`);
+  for (const t of plan.agentTasks) {
+    console.log(`    ${c.dim}• [${t.doc} → ${t.sectionId}] ${t.instruction}${c.reset}`);
+  }
+  console.log(`\n  ${c.dim}Scaffold the skeleton: ${c.cyan}docguard generate --plan --write${c.dim} · Machine manifest: ${c.cyan}--plan --format json${c.reset}\n`);
+}
+
 export function runGenerate(projectDir, config, flags) {
+  // --plan: emit the AI-powered "memory plan" — the agent task manifest. The CLI
+  // builds the code-truth skeleton (marked sections) + tells the agent exactly
+  // what prose to write per section. This is the language-aware Generate path.
+  if (flags.plan) {
+    return runGeneratePlan(projectDir, config, flags);
+  }
+
   console.log(`${c.bold}🔮 DocGuard Generate — ${config.projectName}${c.reset}`);
   console.log(`${c.dim}   Directory: ${projectDir}${c.reset}`);
   console.log(`${c.dim}   Scanning codebase to generate canonical documentation...${c.reset}\n`);

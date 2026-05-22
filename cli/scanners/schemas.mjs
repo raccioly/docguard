@@ -69,6 +69,15 @@ export function scanSchemasDeep(dir, stack, docTools) {
     relationships.push(...mongooseResult.relationships);
   }
 
+  // ── Multi-language model scanners (additive; supports polyglot repos) ──
+  for (const scanner of [scanPythonModels, scanRustModels, scanGoModels, scanJpaModels, scanRailsModels]) {
+    const result = scanner(dir);
+    if (result.entities.length > 0) {
+      entities.push(...result.entities);
+      relationships.push(...(result.relationships || []));
+    }
+  }
+
   return {
     entities,
     relationships,
@@ -490,6 +499,170 @@ function mapMongooseType(type) {
   return map[type] || type;
 }
 
+// ── Python: SQLAlchemy + Pydantic ────────────────────────────────────────────
+
+function scanPythonModels(dir) {
+  const entities = [];
+  const relationships = [];
+  walkDir(dir, (filePath) => {
+    if (!filePath.endsWith('.py')) return;
+    const content = readFileSafe(filePath);
+    if (!content) return;
+    if (!/class\s+\w+\s*\([^)]*(Base|BaseModel|db\.Model|Model|SQLModel)/.test(content)) return;
+
+    // SQLAlchemy ORM: class X(Base): __tablename__ = "x"; id = Column(...)
+    const ormRe = /class\s+(\w+)\s*\([^)]*(?:Base|db\.Model|SQLModel)[^)]*\):([\s\S]*?)(?=\nclass\s+\w+|\n*$)/g;
+    let m;
+    while ((m = ormRe.exec(content)) !== null) {
+      const name = m[1];
+      const body = m[2];
+      const fields = [];
+      const colRe = /^\s*(\w+)\s*=\s*(?:mapped_column|Column)\s*\(\s*([A-Za-z_]+)(?:\([^)]*\))?([^)]*)\)/gm;
+      let cm;
+      while ((cm = colRe.exec(body)) !== null) {
+        const required = !/nullable\s*=\s*True/.test(cm[3]);
+        fields.push({ name: cm[1], type: cm[2], required, description: '' });
+      }
+      const relRe = /(\w+)\s*[:=]\s*(?:Mapped\[[^\]]*?["'](\w+)["']|relationship\s*\(\s*["'](\w+)["'])/g;
+      let rm;
+      while ((rm = relRe.exec(body)) !== null) {
+        relationships.push({ from: name, to: rm[2] || rm[3], type: 'related' });
+      }
+      if (fields.length > 0) entities.push({ name, fields, file: filePath, source: 'sqlalchemy' });
+    }
+
+    // Pydantic / SQLModel: class X(BaseModel): name: str
+    const pydRe = /class\s+(\w+)\s*\([^)]*(?:BaseModel|SQLModel)[^)]*\):([\s\S]*?)(?=\nclass\s+\w+|\n*$)/g;
+    while ((m = pydRe.exec(content)) !== null) {
+      const name = m[1];
+      if (entities.some(e => e.name === name)) continue;
+      const body = m[2];
+      const fields = [];
+      const fieldRe = /^\s{2,}(\w+)\s*:\s*([\w\[\],\s|]+?)(?:\s*=\s*([^\n]+))?$/gm;
+      let fm;
+      while ((fm = fieldRe.exec(body)) !== null) {
+        const fname = fm[1];
+        if (/^[A-Z_]+$/.test(fname)) continue;
+        const type = fm[2].trim();
+        const required = !/Optional|None|None\s*$/.test(type + (fm[3] || ''));
+        fields.push({ name: fname, type, required, description: '' });
+      }
+      if (fields.length > 0) entities.push({ name, fields, file: filePath, source: 'pydantic' });
+    }
+  });
+  return { entities, relationships };
+}
+
+// ── Rust: Diesel `table! { ... }` ─────────────────────────────────────────────
+
+function scanRustModels(dir) {
+  const entities = [];
+  walkDir(dir, (filePath) => {
+    if (!filePath.endsWith('.rs')) return;
+    const content = readFileSafe(filePath);
+    if (!content || !content.includes('table!')) return;
+    const tableRe = /table!\s*\{\s*(\w+)\s*\([^)]*\)\s*\{([\s\S]*?)\}\s*\}/g;
+    let m;
+    while ((m = tableRe.exec(content)) !== null) {
+      const name = m[1];
+      const body = m[2];
+      const fields = [];
+      const colRe = /(\w+)\s*->\s*(\w+)/g;
+      let cm;
+      while ((cm = colRe.exec(body)) !== null) {
+        fields.push({ name: cm[1], type: cm[2], required: !/Nullable/.test(cm[2]), description: '' });
+      }
+      if (fields.length > 0) entities.push({ name, fields, file: filePath, source: 'diesel' });
+    }
+  });
+  return { entities, relationships: [] };
+}
+
+// ── Go: structs with json/gorm/db tags ───────────────────────────────────────
+
+function scanGoModels(dir) {
+  const entities = [];
+  walkDir(dir, (filePath) => {
+    if (!filePath.endsWith('.go')) return;
+    const content = readFileSafe(filePath);
+    if (!content || !/`[^`]*\b(json|gorm|db|bson):/.test(content)) return;
+    const structRe = /type\s+(\w+)\s+struct\s*\{([\s\S]*?)\}/g;
+    let m;
+    while ((m = structRe.exec(content)) !== null) {
+      const name = m[1];
+      const body = m[2];
+      const fields = [];
+      const fieldRe = /^\s*(\w+)\s+([\w*.\[\]]+)\s+`([^`]+)`/gm;
+      let fm;
+      while ((fm = fieldRe.exec(body)) !== null) {
+        const fname = fm[1];
+        const ftype = fm[2];
+        const tag = fm[3];
+        if (!/\b(json|gorm|db|bson):/.test(tag)) continue;
+        const required = !tag.includes('omitempty');
+        fields.push({ name: fname, type: ftype, required, description: '' });
+      }
+      if (fields.length > 0) entities.push({ name, fields, file: filePath, source: 'go-struct' });
+    }
+  });
+  return { entities, relationships: [] };
+}
+
+// ── Java/Kotlin: JPA @Entity ─────────────────────────────────────────────────
+
+function scanJpaModels(dir) {
+  const entities = [];
+  walkDir(dir, (filePath) => {
+    if (!/\.(java|kt)$/.test(filePath)) return;
+    const content = readFileSafe(filePath);
+    if (!content || !content.includes('@Entity')) return;
+    const classRe = /@Entity[\s\S]*?class\s+(\w+)\s*(?:\([^)]*\))?\s*\{([\s\S]*?)^\}/gm;
+    let m;
+    while ((m = classRe.exec(content)) !== null) {
+      const name = m[1];
+      const body = m[2];
+      const fields = [];
+      const fieldRe = /(?:private|public|protected|val|var)\s+([\w<>]+)\s+(\w+)\s*[;=]/g;
+      let fm;
+      while ((fm = fieldRe.exec(body)) !== null) {
+        const ftype = fm[1];
+        const fname = fm[2];
+        if (/^(boolean|int|long|short|byte|float|double|char)$/.test(ftype) || /^[A-Z]/.test(ftype)) {
+          fields.push({ name: fname, type: ftype, required: true, description: '' });
+        }
+      }
+      if (fields.length > 0) entities.push({ name, fields, file: filePath, source: 'jpa' });
+    }
+  });
+  return { entities, relationships: [] };
+}
+
+// ── Rails: ActiveRecord migrations + schema.rb ───────────────────────────────
+
+function scanRailsModels(dir) {
+  const entities = [];
+  walkDir(dir, (filePath) => {
+    if (!/db\/(migrate|schema\.rb)/.test(filePath) || !filePath.endsWith('.rb')) return;
+    const content = readFileSafe(filePath);
+    if (!content || !content.includes('create_table')) return;
+    const tableRe = /create_table\s+:(\w+)\s+do\s+\|t\|([\s\S]*?)end/g;
+    let m;
+    while ((m = tableRe.exec(content)) !== null) {
+      const name = m[1];
+      const body = m[2];
+      const fields = [{ name: 'id', type: 'integer', required: true, description: '' }];
+      const colRe = /t\.(string|text|integer|float|decimal|datetime|date|time|boolean|json|binary|references)\s+:(\w+)(?:\s*,\s*([^,\n]+))?/g;
+      let cm;
+      while ((cm = colRe.exec(body)) !== null) {
+        const required = !!cm[3] && /null:\s*false/.test(cm[3]);
+        fields.push({ name: cm[2], type: cm[1], required, description: '' });
+      }
+      entities.push({ name, fields, file: filePath, source: 'rails-migration' });
+    }
+  });
+  return { entities, relationships: [] };
+}
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function extractOpenAPIRelationships(schemas) {
@@ -526,7 +699,7 @@ function walkDir(dir, callback) {
       const fullPath = join(dir, entry.name);
       if (entry.isDirectory()) {
         walkDir(fullPath, callback);
-      } else if (entry.isFile() && /\.(js|mjs|cjs|ts|tsx|jsx|py)$/.test(entry.name)) {
+      } else if (entry.isFile() && /\.(js|mjs|cjs|ts|tsx|jsx|py|rs|go|java|kt|rb)$/.test(entry.name)) {
         callback(fullPath);
       }
     }

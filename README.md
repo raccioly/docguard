@@ -130,7 +130,28 @@ diagnose  →  AI reads prompts  →  AI fixes docs  →  guard verifies
    └───────────────── issues found? ←──────────────────────┘
 ```
 
-`diagnose` is the primary command. It runs all validators, maps every failure to an AI-actionable fix prompt, and outputs a remediation plan. Your AI agent runs it, fixes the docs, and runs `guard` to verify. Zero human intervention required.
+`diagnose` is the primary command. It runs all validators, maps every failure to an AI-actionable fix prompt, and outputs a remediation plan. Your AI agent runs it, fixes the docs, and runs `guard` to verify.
+
+### Mechanical vs. agent fixes
+
+DocGuard splits drift into two kinds and is explicit about which is which:
+
+| Kind | Example | How it's fixed |
+|------|---------|----------------|
+| **Mechanical** (deterministic) | An endpoint documented in `API-REFERENCE.md` that the OpenAPI spec confirms is gone | `docguard fix --write` deletes the row + detail block itself — **no AI** |
+| **Agent** (needs judgment) | Rewriting an X-Ray prose section as CloudWatch; writing a new endpoint's request/response | Routed to an AI agent via `diagnose` / `fix --doc` prompts |
+
+`docguard fix --write` only touches docs marked `<!-- docguard:generated true -->` (override with `--force`), is idempotent, and prints exactly what changed. It never rewrites prose — that stays with the agent.
+
+### Hands-off loop (set and forget)
+
+```
+guard ──▶ fix --write (mechanical, auto) ──▶ guard ──▶ diagnose (agent prompts for the rest)
+```
+
+- **CI / pre-commit:** `docguard hooks --type pre-commit --auto-fix` installs a hook that applies mechanical fixes, re-stages the docs, then runs `guard`; anything left is surfaced as agent prompts.
+- **Agent-driven:** `docguard diagnose --auto` scaffolds missing docs **and** applies mechanical fixes, then emits prompts for the content rewrites that remain.
+- **JSON for automation:** `guard`/`diagnose --format json` include a `mechanicalFixes` array and tag each issue `mechanical` vs `agent`, so an agent can apply or delegate precisely.
 
 ---
 
@@ -192,6 +213,7 @@ DocGuard ships **13 commands**:
 | `init` | Initialize CDD docs from templates (interactive) |
 | `score` | CDD maturity score (0–100) with weighted breakdown |
 | `fix --doc <name>` | Generate AI prompt for a specific document |
+| `fix --write` | Apply deterministic fixes (remove stale documented endpoints) — no AI |
 | `diff` | Compare canonical docs vs actual code artifacts |
 | `agents` | Generate agent-specific config files |
 | `trace` | Requirements traceability matrix |

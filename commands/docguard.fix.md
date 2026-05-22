@@ -11,11 +11,27 @@ handoffs:
 
 # DocGuard Fix — AI-Assisted Documentation Repair
 
-Generate or repair canonical documentation by researching the actual codebase.
+Generate or repair canonical documentation. DocGuard splits fixes into two kinds:
 
-## What to do
+- **Mechanical (deterministic, no AI):** structural edits DocGuard applies itself with
+  `docguard fix --write` — e.g. removing an endpoint from `docs-canonical/API-REFERENCE.md`
+  that the OpenAPI spec confirms no longer exists (its table row + detail block are deleted).
+- **Agent (needs an AI):** content rewrites that require judgment — e.g. replacing an
+  X-Ray prose section with CloudWatch, or writing a new endpoint's request/response block.
+  These use the research-prompt workflow below.
 
-1. **Identify what needs fixing**:
+## Apply mechanical fixes first (fast, safe)
+
+```bash
+npx docguard-cli fix --write          # removes stale documented endpoints; idempotent
+```
+- Only edits docs marked `<!-- docguard:generated true -->` (use `--force` to override).
+- Prints exactly what it removed. Re-run is a no-op if nothing changed.
+- Run `docguard guard` afterward; whatever remains is agent work (below).
+
+## What to do (agent work)
+
+1. **Identify what needs fixing** (each issue is tagged `mechanical` or `agent`):
 ```bash
 npx docguard-cli diagnose
 ```

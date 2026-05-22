@@ -13,11 +13,66 @@
  *   --auto          Create skeleton files (NOT content) via init
  */
 
-import { existsSync, readFileSync, mkdirSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { resolve, basename, dirname } from 'node:path';
 import { execSync, execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { c } from '../shared.mjs';
+import { computeApiSurfaceDrift } from '../validators/api-surface.mjs';
+import { removeEndpoints, hasGeneratedMarker } from '../writers/api-reference.mjs';
+import { applyMechanicalFixes } from '../writers/mechanical.mjs';
+import { runGuardInternal } from './guard.mjs';
+
+const API_DOC = 'docs-canonical/API-REFERENCE.md';
+
+/**
+ * Apply DETERMINISTIC, no-LLM API-surface fixes: remove endpoints documented in
+ * API-REFERENCE.md that the OpenAPI spec confirms no longer exist. Removes the
+ * summary-table row and the detail block. Never rewrites prose.
+ *
+ * Safety: only edits a doc carrying the `<!-- docguard:generated true -->`
+ * marker, unless `force` is set. Idempotent.
+ *
+ * @returns {{ applied: boolean, removed: Array<{method,path}>, skipped?: string }}
+ */
+export function applyApiSurfaceWrites(projectDir, config, { force = false } = {}) {
+  const drift = computeApiSurfaceDrift(projectDir, config);
+  // Only spec-confirmed absences are safe to delete deterministically.
+  const removable = drift.confidence === 'spec' ? drift.documentedButAbsent : [];
+  if (removable.length === 0) return { applied: false, removed: [] };
+
+  const apiDocPath = resolve(projectDir, API_DOC);
+  if (!existsSync(apiDocPath)) return { applied: false, removed: [] };
+
+  const content = readFileSync(apiDocPath, 'utf-8');
+  if (!hasGeneratedMarker(content) && !force) {
+    return {
+      applied: false,
+      removed: [],
+      skipped: `${API_DOC} is not marked '<!-- docguard:generated true -->'. ` +
+        `Re-run with --force to edit it, or fix it via an AI agent (/docguard.fix --doc api-reference).`,
+    };
+  }
+
+  const { content: newContent, removed } = removeEndpoints(content, removable);
+  if (removed.length === 0 || newContent === content) {
+    return { applied: false, removed: [] }; // idempotent no-op
+  }
+
+  writeFileSync(apiDocPath, newContent, 'utf-8');
+  // Map removed keys back to {method,path} for reporting.
+  const removedEndpoints = removable.filter(e => removed.includes(`${e.method.toUpperCase()} ${normalizeForKey(e.path)}`));
+  return { applied: true, removed: removedEndpoints.length ? removedEndpoints : removable };
+}
+
+// Local mirror of api-doc normalizePath for matching removed keys (avoids an
+// extra import cycle); only used for display reconciliation.
+function normalizeForKey(p) {
+  let s = String(p).trim().replace(/^[|`'"\s]+/, '').replace(/[|`'"\s]+$/, '').split(/[?#]/)[0];
+  s = s.replace(/\{[^}/]+\}/g, '{}').replace(/:[^/]+/g, '{}');
+  if (s.length > 1) s = s.replace(/\/+$/, '');
+  return s;
+}
 
 // ── Document Quality Definitions ───────────────────────────────────────────
 // What each doc SHOULD contain, and what to look for in the codebase
@@ -207,6 +262,57 @@ IMPORTANT: A new contributor should be able to follow this doc and have the proj
   },
 };
 
+// ── Deterministic --write mode ───────────────────────────────────────────────
+
+/**
+ * Collect every structured mechanical fix surfaced by the validators and apply
+ * them deterministically (no LLM). Covers: remove-endpoint (API-Surface),
+ * replace-count (Metrics-Consistency), replace-version (Metadata-Sync),
+ * insert-changelog-unreleased (Changelog).
+ * @returns {{ applied: object[], skipped: object[], total: number }}
+ */
+export function applyAllMechanicalFixes(projectDir, config, { force = false } = {}) {
+  const guardData = runGuardInternal(projectDir, config);
+  const fixes = [];
+  for (const v of guardData.validators) {
+    if (Array.isArray(v.fixes)) fixes.push(...v.fixes);
+  }
+  const { applied, skipped } = applyMechanicalFixes(projectDir, fixes, { force });
+  return { applied, skipped, total: fixes.length };
+}
+
+function runWriteMode(projectDir, config, flags) {
+  const isJson = flags.format === 'json';
+  const { applied, skipped, total } = applyAllMechanicalFixes(projectDir, config, { force: flags.force });
+
+  if (isJson) {
+    console.log(JSON.stringify({
+      status: applied.length ? 'applied' : (total ? 'skipped' : 'clean'),
+      applied,
+      skipped,
+    }, null, 2));
+    return;
+  }
+
+  console.log(`${c.bold}🔧 DocGuard Fix --write — ${config.projectName}${c.reset}\n`);
+  if (total === 0) {
+    console.log(`  ${c.green}✅ No mechanical fixes needed — the docs match the code.${c.reset}\n`);
+    return;
+  }
+  if (applied.length === 0) {
+    console.log(`  ${c.dim}Nothing applied (idempotent or gated).${c.reset}`);
+    for (const s of skipped) console.log(`     ${c.yellow}⚠ ${s.type}: ${s.reason}${c.reset}`);
+    console.log('');
+    return;
+  }
+  console.log(`  ${c.green}✅ Applied ${applied.length} deterministic fix(es):${c.reset}`);
+  for (const a of applied) console.log(`     ${c.green}✔ ${a.detail}${c.reset}`);
+  if (skipped.length) {
+    for (const s of skipped) console.log(`     ${c.yellow}⚠ ${s.type}: ${s.reason}${c.reset}`);
+  }
+  console.log(`\n  ${c.dim}Verify with ${c.cyan}docguard guard${c.dim}, then commit. Prose rewrites still need an AI agent (${c.cyan}/docguard.fix${c.dim}).${c.reset}\n`);
+}
+
 // ── Main Entry ─────────────────────────────────────────────────────────────
 
 export function runFix(projectDir, config, flags) {
@@ -214,6 +320,12 @@ export function runFix(projectDir, config, flags) {
   const isPrompt = flags.format === 'prompt';
   const autoFix = flags.auto || false;
   const specificDoc = flags.doc || null;
+
+  // --write: deterministically APPLY mechanical fixes (no LLM). Currently:
+  // remove API-REFERENCE.md endpoints the OpenAPI spec confirms no longer exist.
+  if (flags.write) {
+    return runWriteMode(projectDir, config, flags);
+  }
 
   // If --doc flag is provided, generate a deep prompt for that specific document
   if (specificDoc) {

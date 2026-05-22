@@ -1,13 +1,16 @@
 # DocGuard — CDD Enforcement Extension for Spec Kit
 
-Enterprise-grade Canonical-Driven Development (CDD) enforcement for [Spec Kit](https://github.com/github/spec-kit). Validates, scores, and fixes project documentation with 19 automated validators, AI-driven research workflows, and spec-kit integration hooks.
+Enterprise-grade Canonical-Driven Development (CDD) enforcement and **AI-readable project memory** for [Spec Kit](https://github.com/github/spec-kit). DocGuard builds a complete, language-aware documentation memory of any codebase (`generate --plan`), keeps it always up to date as code changes (`sync`), and verifies it (`guard`) — with deterministic mechanical fixes (`fix --write`) where it can and grounded agent prompts where prose is needed.
 
 ## Features
 
 - **20 Validators** — Structure, Security, Doc Quality, Test-Spec, Drift-Comments, API-Surface, Freshness, and 13 more
-- **4 AI Skills** — Enterprise-grade AI behavior protocols (not just step-lists)
-- **3 Bash Scripts** — JSON-output orchestration for AI consumption
-- **Workflow Chaining** — YAML handoffs enable guard → fix → review → score flows
+- **Language-agnostic** — JS/TS, Python, Rust, Go, Java/Kotlin, Ruby, PHP, C#. Polyglot/monorepo-aware.
+- **AI-powered Generate** — `generate --plan` builds the code-truth skeleton in `<!-- docguard:section -->` markers and emits a structured agent task manifest; the AI writes the prose.
+- **Always up to date** — `sync` surgically refreshes code-truth doc sections in place, **preserves human prose**, flags prose for agent review.
+- **Mechanical `fix --write`** — deterministic, no-LLM: remove stale documented endpoints, refresh stale "N validators" counts, replace stale version refs, insert missing `## [Unreleased]`.
+- **5 AI Skills** — docguard-fix, docguard-guard, docguard-sync, docguard-review, docguard-score (enterprise-grade behavior protocols, not just step-lists)
+- **Workflow Chaining** — YAML handoffs enable guard → sync → fix → review → score flows
 - **Spec Kit Hooks** — Quality gate integrations at implement, tasks, and review phases
 - **Zero Dependencies** — Pure Node.js built-ins only
 

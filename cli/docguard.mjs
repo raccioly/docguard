@@ -35,6 +35,7 @@ import { runCI } from './commands/ci.mjs';
 import { runFix } from './commands/fix.mjs';
 import { runWatch } from './commands/watch.mjs';
 import { runDiagnose } from './commands/diagnose.mjs';
+import { runSync } from './commands/sync.mjs';
 import { runPublish } from './commands/publish.mjs';
 import { runTrace } from './commands/trace.mjs';
 import { runLlms } from './commands/llms.mjs';
@@ -236,6 +237,10 @@ ${c.bold}Enforcement:${c.reset}
   ${c.green}guard${c.reset}      Validate project against canonical docs (51+ checks)
   ${c.green}diagnose${c.reset}   AI orchestrator — guard → fix in one command
 
+${c.bold}Memory (build & maintain docs):${c.reset}
+  ${c.green}generate --plan${c.reset}  AI-powered: scan any project, emit agent task manifest + skeleton
+  ${c.green}sync${c.reset}       Refresh code-truth doc sections to match current code (always up to date)
+
 ${c.bold}Analysis:${c.reset}
   ${c.green}score${c.reset}      CDD maturity score (0-100)
   ${c.green}trace${c.reset}      Requirements traceability matrix
@@ -267,6 +272,13 @@ ${c.bold}Options:${c.reset}
   --threshold <n> Minimum score for CI pass (used with ci command)
   --fail-on-warning  Fail CI on warnings (used with ci command)
   --auto          Auto-fix what's possible (used with fix command)
+  --write         Apply deterministic fixes in place (fix command): removes
+                  documented endpoints the OpenAPI spec confirms are gone.
+                  Only edits docguard:generated docs unless --force.
+  --plan          AI-powered Generate (generate command): scan any project
+                  (JS/Python/Rust/Go/Java/…), emit the agent task manifest +
+                  code-truth skeleton. Add --write to scaffold, --format json
+                  for the machine-readable manifest.
   --doc <name>    Generate AI prompt for specific doc (architecture, security, etc.)
   --profile <p>   Compliance profile: starter, standard, enterprise (init command)
   --tax           Show estimated documentation maintenance cost (with score)
@@ -346,6 +358,13 @@ async function main() {
       flags.failOnWarning = true;
     } else if (args[i] === '--auto') {
       flags.auto = true;
+    } else if (args[i] === '--write') {
+      flags.write = true;
+    } else if (args[i] === '--plan') {
+      flags.plan = true;
+    } else if (args[i] === '--since' && args[i + 1]) {
+      flags.since = args[i + 1];
+      i++;
     } else if (args[i] === '--doc' && args[i + 1]) {
       flags.doc = args[i + 1];
       i++;
@@ -442,6 +461,9 @@ async function main() {
       break;
     case 'watch':
       runWatch(projectDir, config, flags);
+      break;
+    case 'sync':
+      runSync(projectDir, config, flags);
       break;
     case 'publish':
     case 'pub':

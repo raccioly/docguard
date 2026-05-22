@@ -23,6 +23,7 @@ const IGNORE_DIRS = new Set([
  */
 export function validateMetadataSync(projectDir, config) {
   const warnings = [];
+  const fixes = [];
   let passed = 0;
   let total = 0;
 
@@ -60,6 +61,7 @@ export function validateMetadataSync(projectDir, config) {
           warnings.push(
             `${relPath} has version "${versionMatch[1]}" but package.json is "${currentVersion}"`
           );
+          fixes.push({ type: 'replace-version', file: relPath, found: versionMatch[1], actual: currentVersion });
         } else {
           passed++;
         }
@@ -120,6 +122,9 @@ export function validateMetadataSync(projectDir, config) {
           warnings.push(
             `${relPath} references "v${foundVersion}" in an actionable context (URL/install/declaration) but current version is "${currentVersion}"`
           );
+          if (!fixes.some(f => f.file === relPath && f.found === foundVersion)) {
+            fixes.push({ type: 'replace-version', file: relPath, found: foundVersion, actual: currentVersion });
+          }
         } else if (fMajor === major && fMinor === minor && foundVersion === currentVersion) {
           total++;
           passed++;
@@ -128,7 +133,7 @@ export function validateMetadataSync(projectDir, config) {
     }
   }
 
-  return { errors: [], warnings, passed, total };
+  return { errors: [], warnings, passed, total, fixes };
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────

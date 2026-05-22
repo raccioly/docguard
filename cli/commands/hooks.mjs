@@ -128,6 +128,40 @@ exit 0
   },
 };
 
+// Auto-fix variant of the pre-commit hook: apply deterministic fixes, re-stage,
+// then validate. Installed with: docguard hooks --type pre-commit --auto-fix
+const PRE_COMMIT_AUTOFIX = `#!/bin/sh
+# DocGuard pre-commit hook (auto-fix mode)
+# Applies deterministic (no-LLM) fixes, then validates.
+# Install: docguard hooks --type pre-commit --auto-fix
+# Remove: rm .git/hooks/pre-commit
+
+RUN="npx docguard-cli"
+if command -v docguard >/dev/null 2>&1; then RUN="docguard"; fi
+
+echo "🛡️  DocGuard: applying mechanical fixes…"
+# 1. Deterministically remove stale documented endpoints (safe, no AI).
+$RUN fix --write
+# 2. Re-stage anything DocGuard rewrote so the fix is part of THIS commit.
+git add docs-canonical/ 2>/dev/null
+
+# 3. Validate.
+$RUN guard
+EXIT_CODE=$?
+
+if [ $EXIT_CODE -eq 1 ]; then
+  echo ""
+  echo "❌ DocGuard guard FAILED — commit blocked."
+  echo "   Remaining issues need an AI agent (content rewrites, not mechanical):"
+  echo "   Run: $RUN diagnose   (emits ready-to-paste agent fix prompts)"
+  echo "   To skip: git commit --no-verify"
+  exit 1
+elif [ $EXIT_CODE -eq 2 ]; then
+  echo "⚠️  DocGuard guard found warnings — commit allowed"
+fi
+exit 0
+`;
+
 export function runHooks(projectDir, config, flags) {
   console.log(`${c.bold}🪝 DocGuard Hooks — ${config.projectName}${c.reset}`);
   console.log(`${c.dim}   Directory: ${projectDir}${c.reset}\n`);
@@ -208,9 +242,13 @@ export function runHooks(projectDir, config, flags) {
       continue;
     }
 
-    writeFileSync(hookPath, HOOKS[name].content, 'utf-8');
+    // pre-commit supports an auto-fix variant (applies mechanical fixes first).
+    const useAutofix = name === 'pre-commit' && flags.autoFix;
+    const content = useAutofix ? PRE_COMMIT_AUTOFIX : HOOKS[name].content;
+    writeFileSync(hookPath, content, 'utf-8');
     chmodSync(hookPath, 0o755); // Make executable
-    console.log(`  ${c.green}✅ ${name}${c.reset}: ${HOOKS[name].description}`);
+    const desc = useAutofix ? 'Apply mechanical fixes (fix --write) then guard' : HOOKS[name].description;
+    console.log(`  ${c.green}✅ ${name}${c.reset}: ${desc}`);
     installed++;
   }
 

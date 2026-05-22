@@ -15,17 +15,23 @@
  *                              downgraded to WARNING on heuristic code-scan only.
  *   - present-but-undocumented → WARNING (a real route missing from the docs).
  *
- * Returns { errors, warnings, passed, total } like the other validators.
+ * Also flags MULTIPLE OpenAPI specs in the repo that disagree on their endpoint
+ * set (e.g. a served spec and a generated spec that have diverged).
+ *
+ * Returns { errors, warnings, passed, total, fixes, authoritativeSpec } — the
+ * `fixes` array lists deterministic remove-endpoint actions that
+ * `docguard fix --write` can apply without an LLM.
  */
 
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { detectOpenAPI } from '../scanners/doc-tools.mjs';
 import { scanRoutesDeep } from '../scanners/routes.mjs';
-import { parseApiReferenceDoc, compareEndpoints } from '../scanners/api-doc.mjs';
+import { parseApiReferenceDoc, compareEndpoints, endpointKey } from '../scanners/api-doc.mjs';
 import { collectPackageJsons, getWorkspaceDirs } from '../shared-source.mjs';
 
 const MAX_REPORTED = 15;
+const API_DOC = 'docs-canonical/API-REFERENCE.md';
 
 /** Walk up from a dir to the nearest enclosing package.json directory. */
 function nearestPackageDir(projectDir, startDir) {
@@ -44,7 +50,8 @@ function nearestPackageDir(projectDir, startDir) {
  * Build an ordered list of directories to search for an OpenAPI spec.
  * The spec under the configured sourceRoot's package takes precedence over a
  * (possibly stale) copy at the repo root — monorepos frequently keep a
- * divergent root copy.
+ * divergent root copy. Only CANONICAL bases are searched (sourceRoot package,
+ * workspaces, repo root) — never worktrees / vendor / scan-tool dirs.
  */
 function orderedSpecDirs(projectDir, config) {
   const ordered = [];
@@ -65,18 +72,45 @@ function orderedSpecDirs(projectDir, config) {
 }
 
 /**
- * Locate the authoritative OpenAPI spec across the monorepo.
- * Returns the FIRST spec found in priority order (sourceRoot first).
+ * Enumerate every OpenAPI spec found in a canonical location, in priority order.
+ * @returns {Array<{ absPath: string, relPath: string, endpoints: object[] }>}
  */
-function findOpenApiEndpoints(projectDir, config) {
+export function findAllOpenApiSpecs(projectDir, config) {
+  const specs = [];
+  const seenAbs = new Set();
   for (const dir of orderedSpecDirs(projectDir, config)) {
     const oa = detectOpenAPI(dir);
-    if (oa.found && oa.endpoints?.length) {
-      const endpoints = oa.endpoints.filter(e => e && e.method && e.path);
-      if (endpoints.length) return { endpoints, path: oa.path };
-    }
+    if (!oa.found || !oa.endpoints?.length) continue;
+    const absPath = resolve(dir, oa.path);
+    if (seenAbs.has(absPath)) continue;
+    seenAbs.add(absPath);
+    specs.push({
+      absPath,
+      relPath: absPath.startsWith(resolve(projectDir))
+        ? absPath.slice(resolve(projectDir).length + 1)
+        : absPath,
+      endpoints: oa.endpoints.filter(e => e && e.method && e.path),
+    });
   }
-  return null;
+  return specs;
+}
+
+/**
+ * Detect divergence between multiple canonical OpenAPI specs.
+ * @returns {null | { specs, divergent: string[], authoritative: string }}
+ */
+export function detectSpecDivergence(projectDir, config) {
+  const specs = findAllOpenApiSpecs(projectDir, config);
+  if (specs.length < 2) return null;
+
+  const keySets = specs.map(s => new Set(s.endpoints.map(e => endpointKey(e.method, e.path))));
+  // Union and symmetric difference across all specs.
+  const union = new Set();
+  for (const ks of keySets) for (const k of ks) union.add(k);
+  const divergent = [...union].filter(k => !keySets.every(ks => ks.has(k)));
+
+  if (divergent.length === 0) return null;
+  return { specs, divergent, authoritative: specs[0].relPath };
 }
 
 function detectFramework(projectDir, config) {
@@ -96,12 +130,13 @@ function detectFramework(projectDir, config) {
  * @returns {{ endpoints: Array<{method,path}>, confidence: 'spec'|'code'|'none', source: string }}
  */
 export function resolveApiSurface(projectDir, config) {
-  const spec = findOpenApiEndpoints(projectDir, config);
-  if (spec) {
+  const specs = findAllOpenApiSpecs(projectDir, config);
+  if (specs.length > 0) {
+    const spec = specs[0]; // highest priority (sourceRoot first, root last)
     return {
       endpoints: spec.endpoints.map(e => ({ method: e.method, path: e.path })),
       confidence: 'spec',
-      source: spec.path,
+      source: spec.relPath,
     };
   }
 
@@ -119,61 +154,101 @@ export function resolveApiSurface(projectDir, config) {
   return { endpoints: [], confidence: 'none', source: null };
 }
 
-export function validateApiSurface(projectDir, config) {
-  const errors = [];
-  const warnings = [];
-
-  const apiDocPath = resolve(projectDir, 'docs-canonical/API-REFERENCE.md');
+/**
+ * Compute API-surface drift in a structured, reusable form.
+ * Used by the validator AND by `docguard fix --write`.
+ * @returns {{ applicable, confidence, source, documented, documentedButAbsent,
+ *             presentButUndocumented, matched }}
+ */
+export function computeApiSurfaceDrift(projectDir, config) {
+  const apiDocPath = resolve(projectDir, API_DOC);
   if (!existsSync(apiDocPath)) {
-    // No API reference doc → nothing to validate (not applicable).
-    return { errors, warnings, passed: 0, total: 0 };
+    return { applicable: false, confidence: 'none', source: null,
+      documented: [], documentedButAbsent: [], presentButUndocumented: [], matched: [] };
   }
 
   const documented = parseApiReferenceDoc(readFileSync(apiDocPath, 'utf-8'));
   const surface = resolveApiSurface(projectDir, config);
 
-  // If we cannot determine the actual surface, do not fabricate drift.
   if (surface.confidence === 'none' || documented.length === 0) {
-    return { errors, warnings, passed: documented.length, total: documented.length };
+    return { applicable: false, confidence: surface.confidence, source: surface.source,
+      documented, documentedButAbsent: [], presentButUndocumented: [], matched: [] };
   }
 
-  const { documentedButAbsent, presentButUndocumented, matched } =
-    compareEndpoints(documented, surface.endpoints);
+  const cmp = compareEndpoints(documented, surface.endpoints);
+  return {
+    applicable: true,
+    confidence: surface.confidence,
+    source: surface.source,
+    documented,
+    documentedButAbsent: cmp.documentedButAbsent,
+    presentButUndocumented: cmp.presentButUndocumented,
+    matched: cmp.matched,
+  };
+}
 
+export function validateApiSurface(projectDir, config) {
+  const errors = [];
+  const warnings = [];
+  const fixes = [];
+
+  const drift = computeApiSurfaceDrift(projectDir, config);
+
+  // ── Multi-spec divergence (independent of the API-REFERENCE doc) ──
+  const divergence = detectSpecDivergence(projectDir, config);
+  if (divergence) {
+    const others = divergence.specs.slice(1).map(s => s.relPath).join(', ');
+    const sample = divergence.divergent.slice(0, 8).join(', ');
+    const more = divergence.divergent.length > 8 ? ` (+${divergence.divergent.length - 8} more)` : '';
+    warnings.push(
+      `Multiple OpenAPI specs disagree on ${divergence.divergent.length} endpoint(s): ` +
+      `${divergence.authoritative} (treated as authoritative) vs ${others}. Divergent: ${sample}${more}`
+    );
+  }
+
+  if (!drift.applicable) {
+    // Nothing to validate against the API-REFERENCE doc.
+    return { errors, warnings, passed: 0, total: 0, fixes, authoritativeSpec: drift.source };
+  }
+
+  const { documentedButAbsent, presentButUndocumented, matched, confidence, source } = drift;
   const total = matched.length + documentedButAbsent.length + presentButUndocumented.length;
   const passed = matched.length;
 
   const trim = (arr) => {
     const shown = arr.slice(0, MAX_REPORTED);
-    const extra = arr.length - shown.length;
-    return { shown, extra };
+    return { shown, extra: arr.length - shown.length };
   };
 
-  // documented-but-absent
+  // documented-but-absent → deterministic remove-endpoint fixes
   if (documentedButAbsent.length) {
     const { shown, extra } = trim(documentedButAbsent);
     for (const e of shown) {
-      const msg = `Documented endpoint not found in code: ${e.method} ${e.path} (docs-canonical/API-REFERENCE.md)`;
-      if (surface.confidence === 'spec') errors.push(msg);
+      const msg = `Documented endpoint not found in code: ${e.method} ${e.path} (${API_DOC})`;
+      if (confidence === 'spec') errors.push(msg);
       else warnings.push(`${msg} [code-scan — verify]`);
     }
     if (extra > 0) {
       const tail = `…and ${extra} more documented endpoint(s) not found in code`;
-      if (surface.confidence === 'spec') errors.push(tail);
+      if (confidence === 'spec') errors.push(tail);
       else warnings.push(tail);
+    }
+    // Only spec-confirmed absences are safe to auto-remove.
+    if (confidence === 'spec') {
+      for (const e of documentedButAbsent) {
+        fixes.push({ type: 'remove-endpoint', method: e.method, path: e.path, doc: API_DOC });
+      }
     }
   }
 
-  // present-but-undocumented
+  // present-but-undocumented → warning (NOT auto-applied; needs a real block)
   if (presentButUndocumented.length) {
     const { shown, extra } = trim(presentButUndocumented);
     for (const e of shown) {
-      warnings.push(`Undocumented endpoint in code: ${e.method} ${e.path} — add it to docs-canonical/API-REFERENCE.md`);
+      warnings.push(`Undocumented endpoint in code: ${e.method} ${e.path} — add it to ${API_DOC}`);
     }
-    if (extra > 0) {
-      warnings.push(`…and ${extra} more undocumented endpoint(s) in code`);
-    }
+    if (extra > 0) warnings.push(`…and ${extra} more undocumented endpoint(s) in code`);
   }
 
-  return { errors, warnings, passed, total };
+  return { errors, warnings, passed, total, fixes, authoritativeSpec: source };
 }
