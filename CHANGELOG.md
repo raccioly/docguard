@@ -377,3 +377,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Added missing tests for the `watch` CLI command to verify it runs and reacts properly.
+
+### Changed
+- **Performance Optimization** — Resolved an O(N*M) algorithmic bottleneck in `cli/commands/diff.mjs` caused by nested Set-to-Array allocations inside `.filter()` operations. Array conversions are now pre-computed once, resulting in significantly faster diff command execution on large repositories.
