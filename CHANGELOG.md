@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+- Replaced `execSync` with `execFileSync` for dynamic shell executions in CLI components to prevent command injection vulnerabilities.
+
+
+
 ## [0.9.11] - 2026-03-18
 
 ### Added

@@ -74,8 +74,8 @@ function detectProjectType(dir) {
 
 function isCliAvailable(name) {
   try {
-    const cmd = process.platform === 'win32' ? `where ${name}` : `which ${name}`;
-    execSync(`${cmd} 2>/dev/null`, { encoding: 'utf-8', timeout: 3000 });
+    const cmd = process.platform === 'win32' ? 'where' : 'which';
+    execFileSync(cmd, [name], { encoding: 'utf-8', stdio: 'ignore', timeout: 3000 });
     return true;
   } catch {
     return false;

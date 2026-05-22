@@ -13,7 +13,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { execSync } from 'node:child_process';
+import { execSync, execFileSync } from 'node:child_process';
 import { c } from './shared.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -130,8 +130,9 @@ export function detectAIAgent(projectDir) {
  */
 export function isSpecKitAvailable() {
   try {
-    const cmd = process.platform === 'win32' ? 'where specify' : 'which specify';
-    execSync(cmd, { encoding: 'utf-8', stdio: 'pipe', timeout: 3000 });
+    const cmd = process.platform === 'win32' ? 'where' : 'which';
+    const specifyBinary = process.platform === 'win32' ? 'specify.cmd' : 'specify';
+    execFileSync(cmd, [specifyBinary], { encoding: 'utf-8', stdio: 'pipe', timeout: 3000 });
     return true;
   } catch {
     return false;
@@ -191,10 +192,20 @@ export function ensureSpecKit(projectDir, flags = {}) {
         ? `--ai ${detectedAgent}`
         : '--ai generic --ai-commands-dir .agent/commands/';
       const scriptFlag = process.platform === 'win32' ? '--script ps' : '--script sh';
-      execSync(
-        `specify init --here --force ${aiFlag} --ai-skills --ignore-agent-tools --no-git ${scriptFlag}`,
-        { cwd: projectDir, encoding: 'utf-8', stdio: 'pipe', timeout: 30000 }
-      );
+      const args = ['init', '--here', '--force'];
+      if (detectedAgent) {
+        args.push('--ai', detectedAgent);
+      } else {
+        args.push('--ai', 'generic', '--ai-commands-dir', '.agent/commands/');
+      }
+      args.push('--ai-skills', '--ignore-agent-tools', '--no-git');
+      if (process.platform === 'win32') {
+        args.push('--script', 'ps');
+      } else {
+        args.push('--script', 'sh');
+      }
+      const specifyCmd = process.platform === 'win32' ? 'specify.cmd' : 'specify';
+      execFileSync(specifyCmd, args, { cwd: projectDir, encoding: 'utf-8', stdio: 'pipe', timeout: 30000 });
       if (!silent) {
         console.log(`  ${c.green}✅ Spec Kit initialized${c.reset} ${c.dim}(agent: ${detectedAgent || 'generic'}, 9 skills installed)${c.reset}\n`);
       }
