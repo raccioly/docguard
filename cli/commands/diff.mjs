@@ -316,21 +316,27 @@ function diffTests(dir, config = {}) {
   // Glob-aware matching (documented entries are often patterns or basenames).
   const codeArr = [...codeTests];
   const docArr = [...docTests];
-  const matches = (docEntry, codeRel) => {
+
+  // Precompile matchers to avoid O(N*M) regex instantiations
+  const matchers = docArr.map(docEntry => {
     const entry = String(docEntry).trim();
     const hasSlash = entry.includes('/');
     const target = hasSlash ? entry : basename(entry);
-    const subject = hasSlash ? codeRel : basename(codeRel);
     const rx = new RegExp('^' + target.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*+/g, '.*') + '$');
-    return rx.test(subject);
+    return { docEntry, hasSlash, rx };
+  });
+
+  const matchesOpt = (matcher, codeRel) => {
+    const subject = matcher.hasSlash ? codeRel : basename(codeRel);
+    return matcher.rx.test(subject);
   };
 
   return {
     title: 'Test Files',
     icon: '🧪',
-    onlyInDocs: docArr.filter(d => !codeArr.some(c => matches(d, c))),
-    onlyInCode: codeArr.filter(c => !docArr.some(d => matches(d, c))),
-    matched: docArr.filter(d => codeArr.some(c => matches(d, c))),
+    onlyInDocs: matchers.filter(m => !codeArr.some(c => matchesOpt(m, c))).map(m => m.docEntry),
+    onlyInCode: codeArr.filter(c => !matchers.some(m => matchesOpt(m, c))),
+    matched: matchers.filter(m => codeArr.some(c => matchesOpt(m, c))).map(m => m.docEntry),
   };
 }
 
