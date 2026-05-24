@@ -208,11 +208,22 @@ async function refreshScore() {
   const dir = getWorkspaceDir();
   if (!dir) return;
 
+  // Show loading state
+  statusBarItem.text = '$(sync~spin) CDD: ...';
+  statusBarItem.tooltip = 'Refreshing CDD Score...';
+  statusBarItem.backgroundColor = undefined;
+  statusBarItem.show();
+
+  // Yield to allow UI to update before synchronous execution
+  await new Promise(r => setTimeout(r, 0));
+
   try {
     const output = execSpecguard(dir, 'score --format json');
     const jsonStart = output.indexOf('{');
     if (jsonStart < 0) {
-      statusBarItem.text = '$(shield) CDD: ?';
+      statusBarItem.text = '$(error) CDD: Error';
+      statusBarItem.tooltip = 'Failed to parse CDD score output. Click to see details.';
+      statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground');
       statusBarItem.show();
       return;
     }
@@ -242,7 +253,9 @@ async function refreshScore() {
 
     outputChannel.appendLine(`Score refreshed: ${score}/100 (${grade})`);
   } catch (e) {
-    statusBarItem.text = '$(shield) CDD: ?';
+    statusBarItem.text = '$(error) CDD: Error';
+    statusBarItem.tooltip = `CDD refresh failed: ${e.message}\nClick to see details.`;
+    statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground');
     statusBarItem.show();
     outputChannel.appendLine(`Score refresh error: ${e.message}`);
   }
