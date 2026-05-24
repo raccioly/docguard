@@ -5,7 +5,7 @@
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, extname } from 'node:path';
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { c } from '../shared.mjs';
 import { validateSecurity } from '../validators/security.mjs';
 
@@ -784,11 +784,12 @@ function estimateDocTax(projectDir, config, scores) {
   // Estimate code churn (commits in last 30 days)
   let recentCommits = 0;
   try {
-    const output = execSync('git log --oneline --since="30 days ago" 2>/dev/null | wc -l', {
+    const output = execFileSync('git', ['log', '--oneline', '--since=30 days ago'], {
       cwd: projectDir,
       encoding: 'utf-8',
+      stdio: ['ignore', 'pipe', 'ignore'],
     }).trim();
-    recentCommits = parseInt(output, 10) || 0;
+    recentCommits = output.split('\n').filter(Boolean).length;
   } catch {
     recentCommits = 10; // Default assumption
   }

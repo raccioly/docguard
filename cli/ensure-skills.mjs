@@ -13,7 +13,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { c } from './shared.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -130,8 +130,8 @@ export function detectAIAgent(projectDir) {
  */
 export function isSpecKitAvailable() {
   try {
-    const cmd = process.platform === 'win32' ? 'where specify' : 'which specify';
-    execSync(cmd, { encoding: 'utf-8', stdio: 'pipe', timeout: 3000 });
+    const cmd = process.platform === 'win32' ? 'where' : 'which';
+    execFileSync(cmd, ['specify'], { encoding: 'utf-8', stdio: 'pipe', timeout: 3000 });
     return true;
   } catch {
     return false;
@@ -190,9 +190,16 @@ export function ensureSpecKit(projectDir, flags = {}) {
       const aiFlag = detectedAgent
         ? `--ai ${detectedAgent}`
         : '--ai generic --ai-commands-dir .agent/commands/';
-      const scriptFlag = process.platform === 'win32' ? '--script ps' : '--script sh';
-      execSync(
-        `specify init --here --force ${aiFlag} --ai-skills --ignore-agent-tools --no-git ${scriptFlag}`,
+      const scriptFlagArr = process.platform === 'win32' ? ['--script', 'ps'] : ['--script', 'sh'];
+      const args = [
+        'init', '--here', '--force',
+        ...(aiFlag ? aiFlag.split(' ') : []),
+        '--ai-skills', '--ignore-agent-tools', '--no-git',
+        ...scriptFlagArr
+      ];
+      execFileSync(
+        process.platform === 'win32' ? 'specify.cmd' : 'specify',
+        args,
         { cwd: projectDir, encoding: 'utf-8', stdio: 'pipe', timeout: 30000 }
       );
       if (!silent) {
