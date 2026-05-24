@@ -153,25 +153,30 @@ function diffTests(dir, config) {
   // bare basenames or full paths. Treat each documented entry as a glob and
   // match it against code test paths (or basenames when the entry has no slash).
   // Exact-string comparison produced the false "N documented but not found".
-  const codeArr = [...codeTests];
-  const docArr = [...docTests];
 
-  const matches = (docEntry, codeRel) => {
+  // Optimization: Pre-compile regular expressions and evaluate string manipulations
+  // outside the nested array iteration loop to avoid O(N*M) algorithmic overhead.
+  const codeArr = [...codeTests];
+  const docMatchers = [...docTests].map(docEntry => {
     const entry = String(docEntry).trim();
     const hasSlash = entry.includes('/');
     const target = hasSlash ? entry : basename(entry);
-    const subject = hasSlash ? codeRel : basename(codeRel);
     // Glob -> regex: escape regex specials, then any run of '*' becomes '.*'.
     const rx = new RegExp('^' + target
       .replace(/[.+^${}()|[\]\\]/g, '\\$&')
       .replace(/\*+/g, '.*') + '$');
-    return rx.test(subject);
+    return { original: docEntry, hasSlash, rx };
+  });
+
+  const matches = (matcher, codeRel) => {
+    const subject = matcher.hasSlash ? codeRel : basename(codeRel);
+    return matcher.rx.test(subject);
   };
 
   return {
     title: 'Test Files',
-    onlyInDocs: docArr.filter(d => !codeArr.some(c => matches(d, c))),
-    onlyInCode: codeArr.filter(c => !docArr.some(d => matches(d, c))),
+    onlyInDocs: docMatchers.filter(m => !codeArr.some(c => matches(m, c))).map(m => m.original),
+    onlyInCode: codeArr.filter(c => !docMatchers.some(m => matches(m, c))),
   };
 }
 
