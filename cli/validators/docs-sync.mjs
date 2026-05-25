@@ -7,9 +7,37 @@ import { resolve, join, extname, basename } from 'node:path';
 import { resolveSourceRoots } from '../shared-source.mjs';
 
 const IGNORE_DIRS = new Set([
-  'node_modules', '.git', '.next', 'dist', 'build',
+  'node_modules', '.git', '.next', '.nuxt', 'dist', 'build', 'out',
   'coverage', '.cache', '__pycache__', '.venv', 'vendor',
+  // Co-located test dirs — these are not the source under documentation.
+  '__tests__', '__test__',
 ]);
+
+// Files that are tests, not source. Matched against the relative path AND
+// the basename. Covers Jest/Vitest/Mocha/Jasmine/pytest/Go/Java conventions.
+const TEST_PATH_RE = /(^|\/)__tests?__\//;
+const TEST_FILE_RE = /\.(test|spec)\.(ts|tsx|js|jsx|mjs|cjs|py|java|go)$/;
+
+// Next.js App Router uses a strict filename convention for route handlers.
+// Other files in the app/api/ tree (helpers, types) are NOT routes.
+const NEXTJS_ROUTE_FILE_RE = /(^|\/)route\.(ts|tsx|js|jsx|mjs)$/;
+const NEXTJS_API_DIR_RE = /(^|\/)app\/api(\/|$)/;
+
+function isTestFile(relPath) {
+  return TEST_PATH_RE.test(relPath) || TEST_FILE_RE.test(relPath);
+}
+
+/**
+ * For Next.js App Router directories (app/api/...), only `route.{ts,js}` files
+ * are actual route handlers. Helpers and types in the same tree should not be
+ * treated as routes.
+ */
+function isValidRouteFile(relPath) {
+  if (NEXTJS_API_DIR_RE.test(relPath)) {
+    return NEXTJS_ROUTE_FILE_RE.test(relPath);
+  }
+  return true;
+}
 
 /**
  * Expand sub-path patterns (e.g. 'routes', 'src/routes') against the project
@@ -53,15 +81,22 @@ export function validateDocsSync(projectDir, config) {
   }
 
   // Find route/API files (monorepo-aware) and check they're mentioned in docs.
-  const routeDirs = expandDirs(projectDir, config, ['src/routes', 'src/app/api', 'routes', 'api']);
+  // Note: bare 'api' is intentionally excluded — it collides with frontend
+  // API client conventions (src/api/client.ts). Backend routes use
+  // src/routes/ or routes/ (Express). Next.js App Router uses src/app/api/
+  // or app/api/ with strict route.{ts,js} filename matching applied below.
+  const routeDirs = expandDirs(projectDir, config, ['src/routes', 'src/app/api', 'routes', 'app/api']);
   for (const routeDir of routeDirs) {
     const files = getFilesRecursive(routeDir);
     for (const file of files) {
       const ext = extname(file);
-      if (!['.ts', '.js', '.mjs', '.py', '.java', '.go'].includes(ext)) continue;
+      if (!['.ts', '.tsx', '.js', '.jsx', '.mjs', '.py', '.java', '.go'].includes(ext)) continue;
+
+      const relPath = file.replace(projectDir + '/', '');
+      if (isTestFile(relPath)) continue;
+      if (!isValidRouteFile(relPath)) continue;
 
       results.total++;
-      const relPath = file.replace(projectDir + '/', '');
       const name = basename(file, ext);
 
       // Check if the file path or name is mentioned in any canonical doc
@@ -79,10 +114,12 @@ export function validateDocsSync(projectDir, config) {
     const files = getFilesRecursive(serviceDir);
     for (const file of files) {
       const ext = extname(file);
-      if (!['.ts', '.js', '.mjs', '.py', '.java', '.go'].includes(ext)) continue;
+      if (!['.ts', '.tsx', '.js', '.jsx', '.mjs', '.py', '.java', '.go'].includes(ext)) continue;
+
+      const relPath = file.replace(projectDir + '/', '');
+      if (isTestFile(relPath)) continue;
 
       results.total++;
-      const relPath = file.replace(projectDir + '/', '');
       const name = basename(file, ext);
 
       if (canonicalContent.includes(relPath) || canonicalContent.includes(name)) {
@@ -117,11 +154,15 @@ export function validateDocsSync(projectDir, config) {
 
   if (openapiContent && openapiFile) {
     // Check that route files have corresponding paths in OpenAPI spec (monorepo-aware)
-    for (const routeDir of expandDirs(projectDir, config, ['src/routes', 'src/app/api', 'routes', 'api'])) {
+    for (const routeDir of expandDirs(projectDir, config, ['src/routes', 'src/app/api', 'routes', 'app/api'])) {
       const files = getFilesRecursive(routeDir);
       for (const file of files) {
         const ext = extname(file);
-        if (!['.ts', '.js', '.mjs'].includes(ext)) continue;
+        if (!['.ts', '.tsx', '.js', '.jsx', '.mjs'].includes(ext)) continue;
+
+        const relPathForFilter = file.replace(projectDir + '/', '');
+        if (isTestFile(relPathForFilter)) continue;
+        if (!isValidRouteFile(relPathForFilter)) continue;
 
         // Skip index/middleware files
         const rawName = basename(file, ext).toLowerCase();

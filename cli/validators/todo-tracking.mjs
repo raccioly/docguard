@@ -38,6 +38,25 @@ const TEST_EXTENSIONS = new Set(['.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx']);
 const TODO_PATTERN = /\b(TODO|FIXME|HACK|XXX|TEMP(?!late|orar)|WORKAROUND)\s*[(:]/;
 const TODO_EXTRACT = /\b(TODO|FIXME|HACK|XXX|TEMP(?!late|orar)|WORKAROUND)\s*[:(]?\s*(.+)/;
 
+// Matches a comment-opening marker. Real TODOs live in comments — restricting
+// matches to text AFTER a comment marker prevents false positives from regex
+// literals or strings that happen to contain a TODO keyword.
+//   //  — JS/TS/C/C++/Rust/Go/Java line comment
+//   #   — Python/Ruby/shell/YAML
+//   /*  — JS/C/C++ block comment open
+//   *   — block comment continuation (when at start of line)
+//   <!-- — HTML/Markdown
+const COMMENT_MARKER = /(?:\/\/|#|\/\*|<!--|^\s*\*\s)/;
+
+/**
+ * Return the portion of a line after the first comment marker, or null if
+ * the line has no comment. Used to constrain TODO matching to comments.
+ */
+function commentPortion(line) {
+  const m = line.match(COMMENT_MARKER);
+  return m ? line.slice(m.index + m[0].length) : null;
+}
+
 // Test skip patterns for common test frameworks
 const SKIP_PATTERNS = [
   /\btest\.skip\s*\(/,
@@ -290,9 +309,30 @@ function findTestFiles(rootDir, dir, files, config) {
   }
 }
 
+// Test-file path patterns — TODO scanning skips these by default to avoid
+// false positives from test fixture strings (writeFileSync(..., '// xxxxx:')
+// inside template literals is a comment marker for the regex but not a real
+// annotation to track). Set config.todoTracking.includeTestFiles = true to override.
+const TEST_FILE_RE = /(^|\/)__tests?__\//;
+const TEST_NAME_RE = /\.(test|spec)\.(ts|tsx|js|jsx|mjs|cjs|py|java|go)$/;
+
+// The validator's own source file describes the keyword list in its docstring
+// and code. Skipping itself avoids self-referential false positives.
+const SELF_PATH = new URL(import.meta.url).pathname;
+
+function isTestFilePath(relPath) {
+  return TEST_FILE_RE.test(relPath) || TEST_NAME_RE.test(relPath);
+}
+
+function isSelfPath(fullPath) {
+  return fullPath === SELF_PATH;
+}
+
 function findTodos(rootDir, dir, todos, config) {
   let entries;
   try { entries = readdirSync(dir); } catch { return; }
+
+  const includeTests = config?.todoTracking?.includeTestFiles === true;
 
   for (const entry of entries) {
     if (IGNORE_DIRS.has(entry)) continue;
@@ -310,6 +350,15 @@ function findTodos(rootDir, dir, todos, config) {
 
       const relPath = relative(rootDir, full);
 
+      // Skip test files unless explicitly opted in — test fixture strings
+      // commonly contain comment markers inside template literals that the
+      // single-line heuristic can't distinguish from real comments.
+      if (!includeTests && isTestFilePath(relPath)) continue;
+
+      // Skip the validator's own source file — its docstring legitimately
+      // names the annotation keywords it scans for.
+      if (isSelfPath(full)) continue;
+
       // Apply config ignore patterns (todoIgnore + global ignore)
       if (config && shouldIgnore(relPath, config, 'todoIgnore')) continue;
 
@@ -322,8 +371,12 @@ function findTodos(rootDir, dir, todos, config) {
       const lines = content.split('\n');
 
       for (let i = 0; i < lines.length; i++) {
-        if (TODO_PATTERN.test(lines[i])) {
-          const match = lines[i].match(TODO_EXTRACT);
+        // Restrict scanning to text inside a comment — keeps the regex from
+        // matching its own keyword list when DocGuard reads its own source.
+        const commentText = commentPortion(lines[i]);
+        if (commentText === null) continue;
+        if (TODO_PATTERN.test(commentText)) {
+          const match = commentText.match(TODO_EXTRACT);
           if (match) {
             todos.push({
               keyword: match[1].toUpperCase(),

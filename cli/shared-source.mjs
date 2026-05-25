@@ -18,8 +18,9 @@ import { resolve, join, dirname, relative, extname } from 'node:path';
 import { shouldIgnore } from './shared-ignore.mjs';
 
 const IGNORE_DIRS = new Set([
-  'node_modules', '.git', '.next', 'dist', 'build',
+  'node_modules', '.git', '.next', '.nuxt', 'dist', 'build', 'out',
   'coverage', '.cache', '__pycache__', '.venv', 'vendor', '.turbo',
+  'cdk.out',
 ]);
 
 const CODE_EXTENSIONS = new Set([

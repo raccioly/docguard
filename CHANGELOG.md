@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.1] - 2026-05-25
+
+Patch release addressing false positives surfaced by the v0.11.0 audit of the `wu-whatsappinbox` enterprise monorepo, generalized into a multi-tool IaC detector, plus several DocGuard self-audit improvements. Spec: `specs/003-v011-false-positives/`.
+
+### Fixed
+- **Docs-Sync no longer misclassifies frontend API clients as backend routes.** Dropped the ambiguous bare `'api'` from the route-directory convention list. `src/api/client.ts` (frontend axios) and similar are no longer scanned as Express/Next.js routes (FP-1). For Next.js App Router (`src/app/api`, `app/api`), only files matching the strict `route.{ts,tsx,js,jsx,mjs}` filename convention are counted — helper files in the same tree are skipped (FR-001, FR-002).
+- **Test files are no longer flagged as undocumented services or routes.** The docs-sync route and service loops now skip paths under `__tests__/` and filenames matching `*.{test,spec}.{ts,tsx,js,jsx,mjs,py,java,go}` (FP-2, FR-003, FR-004). Eliminates ~7 spurious warnings per monorepo with co-located tests.
+- **Build outputs no longer flagged as undocumented source.** Added `cdk.out`, `out`, `.nuxt`, `.claude` to the docs-coverage `IGNORE_DIRS` set (FP-3, FR-005).
+- **`config.ignore` is now honored by Docs-Coverage's source-directory scan** (FP-3, FR-006 / IR-5). Closes a long-standing inconsistency where other validators respected the user's ignore but the source-dir scan did not. Patterns like `**/cdk.out/**` now match the directory itself as well as files inside it.
+- **Worktree copies no longer double-counted.** `globMatch` in `cli/shared-ignore.mjs` now rejects paths under `.claude/worktrees/`, `.git/worktrees/`, and `.jj/` at any depth — same treatment as `node_modules` (FP-4, FR-007). Affects every Claude-Code project using parallel-agent worktrees.
+- **Check 1 (config files) no longer flags build-cache dotdirs as undocumented configs.** Now skips directories — `.nuxt`, `.claude`, etc. are excluded by `IGNORE_DIRS` for the source-dir scan instead.
+- **Check 1 (config files) now honors `config.ignore` too.** Originally fixed only for the source-directory scan; a follow-up audit reproduced the same FP-3 class with `.local` in `ignore` still being flagged. Both Docs-Coverage scans now call `shouldIgnore(entry, config) || shouldIgnore(entry + '/', config)`. Closes FR-015 (audit-confirmed gap).
+- **Test-Spec validator parses multi-path Journey rows correctly.** Previously a Journey cell like `` `path/a.test.ts`, `path/b.test.ts` `` was stripped of all backticks then `existsSync()`d as one string — a 100% false-positive rate on multi-path rows. Now: split on commas outside backticks, strip backticks per segment, evaluate each independently. Row passes if ANY referenced file has evidence. Glob entries (`foo_*.test.ts`) are expanded; `(N suites)` / `(N tests)` annotations are accepted as the author's explicit coverage claim. Closes FP-6 and FR-016.
+- **TODO-Tracking validator no longer false-positives on its own keyword list.** Previously the regex matched `TEMP(?!late|orar)` inside its own source. Two-part fix: (1) match restricted to text following a comment marker (`//`, `#`, `/*`, `<!--`, block `*`), (2) the validator skips its own source file (`cli/validators/todo-tracking.mjs`) since the docstring legitimately names the keywords.
+- **TODO-Tracking validator no longer false-positives on test fixture strings.** Test files commonly contain `// TODO:` inside template literals (`writeFileSync(..., '// TODO:')`) that single-line heuristics can't distinguish from real comments. Test files are now skipped by default; opt back in with `config.todoTracking.includeTestFiles = true`.
+- **Traceability validator's own fixtures no longer leak as orphan refs.** `tests/traceability.test.mjs` previously contained literal `REQ-001`/`REQ-002`/`REQ-003` strings that the validator scanned and reported as orphaned test references. Fixtures now build the IDs from parts so the validator's pattern doesn't match.
+
+### Added
+- **Multi-tool IaC detector + consolidated documentation reminder.** New `cli/scanners/iac.mjs` identifies projects shipping any of: **AWS CDK** (`cdk.json`), **Terraform** (`*.tf` files), **Pulumi** (`Pulumi.yaml`), **AWS SAM** (`template.yaml` with `AWS::Serverless::`), and **Serverless Framework** (`serverless.yml`). When an IaC project's ARCHITECTURE.md has no Infrastructure heading, DocGuard emits ONE actionable warning per detected tool naming the marker file location and the expected source layout — instead of multiple generic per-directory warnings (FR-009, FR-010, FR-011). The generic per-dir warnings inside IaC packages (`bin/`, `lib/`, `modules/`, `stacks/`, `constructs/`, `handlers/`, etc.) are suppressed in favor of these consolidated messages. The legacy `cli/scanners/cdk.mjs` is preserved as a thin re-export for backward compatibility.
+- **`## Infrastructure (IaC)` section in `templates/ARCHITECTURE.md.template`.** New projects initialized via `docguard init` start with placeholder tables for AWS CDK, Terraform, and Pulumi/SAM/Serverless layouts plus a Deployment Pipeline subsection (FR-012). Explicitly skippable for non-IaC projects via a header comment.
+- **`DEFAULT_IGNORE_DIRS`** exported from `cli/shared-ignore.mjs` — canonical shared ignore set covering build outputs (`dist`, `build`, `out`, `cdk.out`, `target`, `.gradle`), VCS internals (`.git`, `.jj`, `.hg`, `.svn`), package caches (`node_modules`, `vendor`, `.venv`, `__pycache__`), and framework synth outputs (`.next`, `.nuxt`, `.turbo`, `.vercel`, `.cache`, `.svelte-kit`) (FR-008). Added `target` (Rust/Java), `.gradle`, and `.svelte-kit` per the updated wu-whatsappinbox audit. Available for any future validator to import; existing per-validator `IGNORE_DIRS` sets are left in place (deferred migration).
+
+### Changed
+- **DocGuard package version bumped to 0.11.1** across `package.json` and all `extensions/spec-kit-docguard/` files (extension.yml + 5 SKILL.md files were referencing stale `v0.9.9`/`v0.10.0`).
+- **`docs-canonical/ARCHITECTURE.md`** updated to add `cli/writers/` and `cli/shared-*.mjs` to the Component Map and Layer Boundaries — closes a real doc gap surfaced by dogfooding (the writers/ directory has shipped for several releases without being documented).
+- **`specs/003-v011-false-positives/plan.md`** restructured to match the spec-kit `plan-template.md` shape (added Summary, Technical Context, Constitution Check, Project Structure sections). `tasks.md` rewritten with the spec-kit phased T### convention.
+
+### Internal
+- New test files: `tests/cdk-detection.test.mjs` (CDK + multi-tool IaC detector tests + `globMatch` worktree rejection + `DEFAULT_IGNORE_DIRS` shape). Existing test suites extended with regression cases for FP-1..FP-5, TODO-tracking false-positive guards, and IaC-tool detection across Terraform/Pulumi/SAM/Serverless. New tests are annotated with `// @req FR-NNN` / `// @req SC-NNN` comments for traceability. **Total: 329 tests passing (was 306, +23 new).**
+- **DocGuard self-audit improvements**: ran `docguard guard` on the repo as part of this release. Warnings dropped from **57 → 15** across the session by fixing real drift (stale extension versions, missing `cli/writers/` mention, traceability gaps) and reducing self-referential false positives (TODO validator scanning its own keyword list).
+- **Round 2 fixes after a second audit report**: FP-3 part B (`checkConfigFiles` honoring `config.ignore`), FP-6 (Test-Spec multi-path Journey row parsing with glob and `(N suites)` annotation support), additional `DEFAULT_IGNORE_DIRS` entries for Rust/Java/SvelteKit. **Total tests passing: 336** (was 306).
+- No new NPM dependencies. Zero schema or config-file changes.
+
+### Out of scope (deferred to v0.12)
+- Feature requests IR-1..IR-4, IR-6..IR-8 (per-validator severity, `--diff-only`, draft-staleness warning, `sync --section`, `.docguardignore` template at init, extended Next.js detection, `routesGlob`/`servicesGlob` overrides). IR-5 (honor ignore in source-dir scan) shipped as part of this release alongside FP-3.
+- Migrating all 17 modules that define their own `IGNORE_DIRS` constant to import `DEFAULT_IGNORE_DIRS` — mechanical, large diff, tracked separately.
+- Multi-line string-literal detection in TODO-Tracking — current heuristic still false-positives on `// TODO:` inside multi-line template literals. Workaround: keep test files out of TODO scanning (now default) or use `config.todoIgnore` globs.
+
+Credit: feedback from running v0.11.0 on the `wu-whatsappinbox` enterprise monorepo (audit score 98/100, 40 warnings).
+
 ## [0.11.0] - 2026-05-22
 
 This release reshapes DocGuard from a documentation linter into an **AI-readable, always-current project memory builder** — for any language project, not just JS/web. The four-mode lifecycle (`generate → guard → sync → fix`) is now coherent end-to-end.

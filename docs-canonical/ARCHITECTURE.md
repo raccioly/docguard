@@ -25,12 +25,14 @@ It targets development teams and AI coding agents that need to maintain document
 |-----------|---------------|----------|-----------|
 | **CLI Entry Point** | Argument parsing, config loading, command routing | `cli/` | `docguard.mjs` |
 | **Commands** | 15 user-facing commands (diagnose, guard, init, score, fix, generate, diff, agents, trace, ci, watch, hooks, badge, llms, publish) | `cli/commands/` | `*.mjs` |
-| **Validators** | 19 independent validation modules that check specific aspects of CDD compliance | `cli/validators/` | `*.mjs` |
+| **Validators** | 18 independent validation modules that check specific aspects of CDD compliance | `cli/validators/` | `*.mjs` |
+| **Scanners** | 10 project file scanners for test discovery, route detection, schema mapping, CDK/IaC, doc-tools, integrations, frontend surface, memory-plan | `cli/scanners/` | `*.mjs` |
+| **Writers** | Deterministic doc-mutation modules — section-addressable edits, mechanical fix registry, API-Reference writer (no LLM) | `cli/writers/` | `mechanical.mjs`, `sections.mjs`, `api-reference.mjs` |
+| **Shared** | Cross-cutting utilities — `DEFAULT_IGNORE_DIRS`, glob match/ignore filters, monorepo source-root resolution | `cli/` | `shared-ignore.mjs`, `shared-source.mjs`, `shared.mjs` |
 | **Templates** | Document skeletons (ARCHITECTURE, SECURITY, etc.) and slash command files for AI agents | `templates/` | `*.template`, `commands/*.md` |
-| **Extension** | Spec Kit extension with 4 AI skills, 4 bash scripts, workflow hooks | `extensions/spec-kit-docguard/` | `skills/*/SKILL.md`, `scripts/bash/*.sh` |
+| **Extension** | Spec Kit extension with 5 AI skills, 4 bash scripts, workflow hooks | `extensions/spec-kit-docguard/` | `skills/*/SKILL.md`, `scripts/bash/*.sh` |
 | **VS Code Extension** | Status bar score, inline diagnostics, Code Actions, file watchers | `vscode-extension/` | `extension.js`, `package.json` |
-| **Tests** | Command-level integration tests using `node:test` | `tests/` | `commands.test.mjs` |
-| **Scanners** | Project file scanners for test discovery, route detection, service mapping | `cli/scanners/` | `*.mjs` |
+| **Tests** | Per-validator unit tests + command-level integration tests using `node:test` | `tests/` | `*.test.mjs` |
 
 ## Tech Stack
 
@@ -62,7 +64,10 @@ The architecture follows a strict 4-layer model where each layer can only import
 |-------|----------|----------------|--------------------|
 | **Extension** (`extensions/spec-kit-docguard/`) | AI skills (SKILL.md), bash scripts, hooks, commands | CLI (via npx), Node.js built-ins | Isolated — spec-kit integration layer |
 | **Commands** (`cli/commands/`) | User-facing command logic | Validators, Config (via `docguard.mjs` exports) | Isolated — each command is self-contained |
-| **Validators** (`cli/validators/`) | Independent validation modules | Node.js built-ins only (`fs`, `path`, `child_process`) | Isolated — pure functions only |
+| **Validators** (`cli/validators/`) | Independent validation modules | Scanners, Shared utilities, Node.js built-ins | Cannot import from Commands or Writers |
+| **Scanners** (`cli/scanners/`) | Project intelligence — detect routes, schemas, IaC, frontend surface | Shared utilities, Node.js built-ins | Cannot import from Validators, Commands, Writers |
+| **Writers** (`cli/writers/`) | Mutate canonical docs surgically (section-addressable, no LLM) | Node.js built-ins only | Cannot import from Validators, Scanners, Commands |
+| **Shared** (`cli/shared-*.mjs`) | Cross-cutting utilities: `DEFAULT_IGNORE_DIRS`, glob match, source-root resolution | Node.js built-ins only | Cannot import from any other layer |
 | **Entry Point** (`cli/docguard.mjs`) | Config loading, ANSI colors, argument parsing, command dispatch | Commands (imports all command modules) | Calls validators only through commands |
 
 **Key Rule**: Validators are pure functions. They receive `projectDir` and `config`, then return results. They stay isolated from commands and the CLI entry point. The Extension layer operates independently, using the CLI as an external tool.

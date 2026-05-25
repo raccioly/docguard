@@ -134,4 +134,112 @@ describe('validateTestSpec', () => {
 
     fs.rmSync(tempDir, { recursive: true, force: true });
   });
+
+  // ── v0.11.1 FP-6 regressions: multi-path Journey rows ───────────────────
+
+  // @req FR-016 — Journey row cells may list multiple test paths in backticks
+  // @req SC-010 — multi-path Journey rows recognized
+  it('FP-6: parses comma-separated multi-path Journey cells', () => {
+    const tempDir = fs.mkdtempSync(join(tmpdir(), 'docguard-test-spec-'));
+    fs.mkdirSync(join(tempDir, 'docs-canonical'), { recursive: true });
+    fs.mkdirSync(join(tempDir, 'backend/src/__tests__/integration'), { recursive: true });
+    fs.writeFileSync(join(tempDir, 'backend/src/__tests__/integration/message-a.test.ts'), '');
+    fs.writeFileSync(join(tempDir, 'backend/src/__tests__/integration/message-b.test.ts'), '');
+
+    fs.writeFileSync(join(tempDir, 'docs-canonical/TEST-SPEC.md'), `
+## Critical User Journeys
+
+| # | Journey | Test File | Status |
+|---|---------|-----------|--------|
+| 1 | Receive WhatsApp message | \`backend/src/__tests__/integration/message-a.test.ts\`, \`backend/src/__tests__/integration/message-b.test.ts\` | ✅ |
+`);
+
+    const results = validateTestSpec(tempDir, {});
+    assert.equal(results.total, 1, 'one Journey row evaluated');
+    assert.equal(results.passed, 1, 'passes because both files exist');
+    assert.equal(results.warnings.length, 0,
+      `No warnings expected, got: ${JSON.stringify(results.warnings)}`);
+
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it('FP-6: passes when ANY of the multi-path files exists', () => {
+    const tempDir = fs.mkdtempSync(join(tmpdir(), 'docguard-test-spec-'));
+    fs.mkdirSync(join(tempDir, 'docs-canonical'), { recursive: true });
+    fs.mkdirSync(join(tempDir, 'backend/src/__tests__'), { recursive: true });
+    fs.writeFileSync(join(tempDir, 'backend/src/__tests__/exists.test.ts'), '');
+
+    fs.writeFileSync(join(tempDir, 'docs-canonical/TEST-SPEC.md'), `
+## Critical User Journeys
+
+| # | Journey | Test File | Status |
+|---|---------|-----------|--------|
+| 1 | X | \`backend/src/__tests__/missing.test.ts\`, \`backend/src/__tests__/exists.test.ts\` | ✅ |
+`);
+
+    const results = validateTestSpec(tempDir, {});
+    assert.equal(results.passed, 1, 'passes because at least one file exists');
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it('FP-6: still warns when NO multi-path files exist', () => {
+    const tempDir = fs.mkdtempSync(join(tmpdir(), 'docguard-test-spec-'));
+    fs.mkdirSync(join(tempDir, 'docs-canonical'), { recursive: true });
+
+    fs.writeFileSync(join(tempDir, 'docs-canonical/TEST-SPEC.md'), `
+## Critical User Journeys
+
+| # | Journey | Test File | Status |
+|---|---------|-----------|--------|
+| 1 | X | \`missing-a.test.ts\`, \`missing-b.test.ts\` | ✅ |
+`);
+
+    const results = validateTestSpec(tempDir, {});
+    assert.equal(results.passed, 0);
+    assert.equal(results.warnings.length, 1);
+    assert.ok(results.warnings[0].includes('missing-a.test.ts'));
+    assert.ok(results.warnings[0].includes('missing-b.test.ts'));
+
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it('FP-6: expands globs in Journey path cells', () => {
+    const tempDir = fs.mkdtempSync(join(tmpdir(), 'docguard-test-spec-'));
+    fs.mkdirSync(join(tempDir, 'docs-canonical'), { recursive: true });
+    fs.mkdirSync(join(tempDir, 'backend/test-helpers/security'), { recursive: true });
+    fs.writeFileSync(join(tempDir, 'backend/test-helpers/security/idor_users.test.ts'), '');
+    fs.writeFileSync(join(tempDir, 'backend/test-helpers/security/idor_admin.test.ts'), '');
+    fs.writeFileSync(join(tempDir, 'backend/test-helpers/security/idor_messages.test.ts'), '');
+
+    fs.writeFileSync(join(tempDir, 'docs-canonical/TEST-SPEC.md'), `
+## Critical User Journeys
+
+| # | Journey | Test File | Status |
+|---|---------|-----------|--------|
+| 8 | IDOR | \`backend/test-helpers/security/idor_*.test.ts (3 suites)\` | ✅ |
+`);
+
+    const results = validateTestSpec(tempDir, {});
+    assert.equal(results.passed, 1, 'passes when glob expands to existing files');
+    assert.equal(results.warnings.length, 0);
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it('FP-6: accepts (N suites) annotation when literal path missing', () => {
+    // Author claim of coverage — trust the annotation rather than reject.
+    const tempDir = fs.mkdtempSync(join(tmpdir(), 'docguard-test-spec-'));
+    fs.mkdirSync(join(tempDir, 'docs-canonical'), { recursive: true });
+
+    fs.writeFileSync(join(tempDir, 'docs-canonical/TEST-SPEC.md'), `
+## Critical User Journeys
+
+| # | Journey | Test File | Status |
+|---|---------|-----------|--------|
+| 9 | Custom | \`backend/legacy/oldpath.test.ts (2 suites)\` | ✅ |
+`);
+
+    const results = validateTestSpec(tempDir, {});
+    assert.equal(results.passed, 1, 'annotation provides evidence even without literal file');
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
 });
