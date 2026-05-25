@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+- Executed automated npm/PyPI supply-chain security audit. Findings saved to `reports/SUPPLY-CHAIN-AUDIT-2026-05-25.md`.
+
 ## [0.11.0] - 2026-05-22
 
 This release reshapes DocGuard from a documentation linter into an **AI-readable, always-current project memory builder** — for any language project, not just JS/web. The four-mode lifecycle (`generate → guard → sync → fix`) is now coherent end-to-end.
