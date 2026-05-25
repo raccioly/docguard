@@ -96,6 +96,7 @@ extensions/spec-kit-docguard/
 
 ## Rules
 
+- **PR-first workflow — no direct-to-main commits.** Create a branch (`git checkout -b <type>/<slug>`), push, `gh pr create`, let CI run, self-review, squash-merge. Tag releases only after merge on `main`. The only acceptable direct-to-main: typo fixes in comments or README badge URLs.
 - Never commit without updating CHANGELOG.md
 - If code deviates from docs, add `// DRIFT: reason`
 - Security rules in SECURITY.md are mandatory

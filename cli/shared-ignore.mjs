@@ -16,6 +16,31 @@
  */
 
 /**
+ * Canonical set of directory names that should never be scanned, regardless
+ * of validator. Build outputs, VCS internals, package caches, framework synth
+ * outputs. Validators MAY extend this with their own additions but SHOULD
+ * start from this base so behavior is consistent across the tool.
+ */
+export const DEFAULT_IGNORE_DIRS = new Set([
+  // Package managers
+  'node_modules', 'vendor', '.venv', '__pycache__',
+  // VCS
+  '.git', '.jj', '.hg', '.svn',
+  // Build outputs — JS/TS, Rust/Java, generic
+  'dist', 'build', 'out', 'coverage', 'target', '.gradle',
+  // Framework synth/cache
+  '.next', '.nuxt', '.turbo', '.vercel', '.cache', '.svelte-kit', 'cdk.out',
+  // OS
+  '.DS_Store',
+]);
+
+// Regex for paths that must always be rejected at any depth, regardless of
+// the glob pattern matching them. These are duplicate file trees (worktrees)
+// or runtime caches that should NEVER be treated as primary source.
+const ALWAYS_REJECT_PATH_RE =
+  /(?:^|[/\\])(?:node_modules|\.claude[/\\]worktrees|\.git[/\\]worktrees|\.jj)(?:[/\\]|$)/;
+
+/**
  * Convert a glob pattern to a RegExp.
  * Supports: * (any chars except /), ** (any path segments), . (literal dot).
  *
@@ -111,8 +136,10 @@ function globToMatchRegex(pattern) {
 export function globMatch(relPath, patterns) {
   if (!relPath || !patterns || patterns.length === 0) return false;
 
-  // Always reject paths containing node_modules at any depth
-  if (/(?:^|[/\\])node_modules(?:[/\\]|$)/.test(relPath)) return false;
+  // Always reject paths inside node_modules / worktree copies / .jj at any
+  // depth. A user's testPatterns like "**/*.test.ts" would otherwise match
+  // duplicate trees under .claude/worktrees and inflate test counts.
+  if (ALWAYS_REJECT_PATH_RE.test(relPath)) return false;
 
   const regexes = patterns.map(p => globToMatchRegex(p));
   return regexes.some(r => r.test(relPath));

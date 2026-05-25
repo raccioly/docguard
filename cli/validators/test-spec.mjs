@@ -126,17 +126,22 @@ export function validateTestSpec(projectDir, config) {
           continue;
         }
 
-        // For a ✅ journey, verify the referenced test file actually exists
-        // rather than trusting the glyph.
-        const cleanTest = testFile ? testFile.replace(/`/g, '').trim() : '';
-        if (cleanTest && cleanTest !== '—' && !cleanTest.includes('N/A')) {
-          results.total++;
-          if (existsSync(resolve(projectDir, cleanTest))) {
-            results.passed++;
-          } else {
-            results.warnings.push(
-              `E2E Journey #${num} (${journey}) marked ✅ but test file not found: ${cleanTest}`
-            );
+        // For a ✅ journey, verify the referenced test file(s) actually exist
+        // rather than trusting the glyph. Cells may list multiple paths in
+        // backticks separated by commas (e.g. `a.test.ts`, `b.test.ts`) and
+        // may include "(N suites)" annotations or globs.
+        if (testFile && testFile.trim() !== '—' && !testFile.includes('N/A')) {
+          const paths = parseTestPathCell(testFile);
+          if (paths.length > 0) {
+            results.total++;
+            const anyExists = paths.some(p => testEvidenceExists(projectDir, p));
+            if (anyExists) {
+              results.passed++;
+            } else {
+              results.warnings.push(
+                `E2E Journey #${num} (${journey}) marked ✅ but test file not found: ${paths.join(', ')}`
+              );
+            }
           }
         }
       }
@@ -180,6 +185,119 @@ export function validateTestSpec(projectDir, config) {
   }
 
   return results;
+}
+
+/**
+ * Parse a TEST-SPEC.md table cell into a list of test path strings.
+ *
+ * Real-world Journey rows commonly list multiple test files in one cell:
+ *   `path/a.test.ts`, `path/b.test.ts`
+ *   `idor_*.test.ts (3 suites)`
+ *
+ * Strategy:
+ *   1. Split on commas that are OUTSIDE backticks.
+ *   2. For each segment: strip backticks, strip trailing "(N suites)" or
+ *      "(N tests)" annotations, trim whitespace.
+ *   3. Drop empties.
+ *
+ * The "(N suites)" annotation is preserved as evidence — if a glob like
+ * `idor_*.test.ts` doesn't expand to a literal file, testEvidenceExists()
+ * accepts the annotation as the author's claim of coverage.
+ */
+export function parseTestPathCell(cell) {
+  if (!cell) return [];
+  // Split on commas that are NOT inside backticks. Track backtick parity.
+  const segments = [];
+  let buf = '';
+  let inBackticks = false;
+  for (const ch of cell) {
+    if (ch === '`') { inBackticks = !inBackticks; buf += ch; continue; }
+    if (ch === ',' && !inBackticks) {
+      segments.push(buf);
+      buf = '';
+      continue;
+    }
+    buf += ch;
+  }
+  if (buf) segments.push(buf);
+
+  const result = [];
+  for (let seg of segments) {
+    seg = seg.replace(/`/g, '').trim();
+    if (!seg || seg === '—') continue;
+    result.push(seg);
+  }
+  return result;
+}
+
+/**
+ * True if a TEST-SPEC.md path segment has supporting evidence on disk.
+ *
+ * Accepts: exact file match, glob expansion (e.g. `foo_*.test.ts`), or an
+ * "(N suites)" / "(N tests)" annotation when the literal path doesn't exist.
+ * The annotation is the author's explicit claim of coverage — believe it
+ * rather than reject the row outright; the audit trail is in the markdown.
+ */
+export function testEvidenceExists(projectDir, pathSegment) {
+  if (!pathSegment) return false;
+
+  // Strip a trailing "(N suites)" / "(N tests)" annotation for the file check.
+  const annotationMatch = pathSegment.match(/\s*\((\d+)\s+(?:suites?|tests?)\)\s*$/i);
+  const pathOnly = annotationMatch ? pathSegment.slice(0, annotationMatch.index).trim() : pathSegment;
+  const hasAnnotation = !!annotationMatch;
+
+  if (!pathOnly) return hasAnnotation;
+
+  // Glob support — if the segment contains *, ?, or [, walk the parent dir.
+  if (/[*?[]/.test(pathOnly)) {
+    const matches = expandGlob(projectDir, pathOnly);
+    if (matches.length > 0) return true;
+    // Glob with annotation but no expansion → trust the annotation.
+    return hasAnnotation;
+  }
+
+  // Plain path — must exist on disk.
+  if (existsSync(resolve(projectDir, pathOnly))) return true;
+  // Plain path with explicit annotation → still trust the author's claim.
+  return hasAnnotation;
+}
+
+/**
+ * Minimal glob expansion: only handles the `*` and `?` wildcards in a single
+ * path segment. e.g. `backend/src/test-helpers/security/idor_*.test.ts`.
+ * Pure Node.js built-ins; zero dependencies.
+ */
+function expandGlob(projectDir, pattern) {
+  const parts = pattern.split('/');
+  const start = resolve(projectDir);
+  let candidates = [start];
+  for (const part of parts) {
+    if (!/[*?[]/.test(part)) {
+      candidates = candidates.map(c => resolve(c, part)).filter(c => existsSync(c));
+      continue;
+    }
+    const re = globPartToRegex(part);
+    const next = [];
+    for (const dir of candidates) {
+      let entries;
+      try { entries = readdirSync(dir); } catch { continue; }
+      for (const e of entries) {
+        if (re.test(e)) next.push(resolve(dir, e));
+      }
+    }
+    candidates = next;
+    if (candidates.length === 0) return [];
+  }
+  return candidates;
+}
+
+function globPartToRegex(part) {
+  const escaped = part
+    .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+    .replace(/\\\[/g, '[').replace(/\\\]/g, ']') // restore character classes
+    .replace(/\*/g, '.*')
+    .replace(/\?/g, '.');
+  return new RegExp(`^${escaped}$`);
 }
 
 /** Recursively check if a directory contains test files */

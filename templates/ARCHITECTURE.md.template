@@ -58,6 +58,58 @@
 |---------|---------|-----|----------|
 | <!-- e.g. Stripe --> | <!-- e.g. Payments --> | <!-- e.g. 99.99% --> | <!-- e.g. Queue + retry --> |
 
+## Infrastructure (IaC)
+
+<!--
+  Skip this section if the project does not use Infrastructure-as-Code.
+  DocGuard auto-detects AWS CDK (cdk.json), Terraform (*.tf), Pulumi
+  (Pulumi.yaml), AWS SAM (template.yaml with AWS::Serverless::), and
+  Serverless Framework (serverless.yml). When any are detected and this
+  section is missing, DocGuard emits ONE consolidated reminder per tool.
+
+  Document the layout for YOUR IaC tool below. Remove the blocks that
+  don't apply.
+-->
+
+### AWS CDK
+
+<!-- Remove this block if you don't use CDK -->
+
+| Artifact | Location | Purpose |
+|----------|----------|---------|
+| App entrypoint | <!-- e.g. packages/cdk/bin/app.ts --> | Instantiates stacks per environment |
+| Stacks | <!-- e.g. packages/cdk/lib/stacks/ --> | One file per CloudFormation stack |
+| Constructs | <!-- e.g. packages/cdk/lib/constructs/ --> | Reusable infrastructure components |
+| Synth config | <!-- e.g. packages/cdk/cdk.json --> | CDK CLI configuration |
+| Context cache | <!-- e.g. packages/cdk/cdk.context.json --> | Environment lookup results (committed) |
+| Synth output | <!-- e.g. packages/cdk/cdk.out/ --> | Generated CloudFormation (gitignored) |
+
+### Terraform
+
+<!-- Remove this block if you don't use Terraform -->
+
+| Artifact | Location | Purpose |
+|----------|----------|---------|
+| Root module | <!-- e.g. infra/*.tf --> | Top-level resources |
+| Reusable modules | <!-- e.g. infra/modules/ --> | Composable infrastructure blocks |
+| Environment configs | <!-- e.g. infra/environments/ --> | Per-env tfvars (dev, staging, prod) |
+| State backend | <!-- e.g. S3 bucket + DynamoDB lock table --> | Remote state storage |
+
+### Pulumi / SAM / Serverless Framework
+
+<!--
+  Document app program (index.ts), stack config, or manifest location.
+  Remove this block if you don't use these tools.
+-->
+
+### Deployment Pipeline
+
+<!-- How does IaC code reach the cloud? -->
+
+- <!-- e.g. PR → CI workflow → terraform plan + manual approval → terraform apply -->
+- <!-- e.g. PR → CodePipeline → cdk deploy → dev/staging/prod -->
+
+
 ## Diagrams
 
 <!-- Architecture diagrams using Mermaid, ASCII art, or linked images -->
