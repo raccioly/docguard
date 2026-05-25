@@ -153,25 +153,29 @@ function diffTests(dir, config) {
   // bare basenames or full paths. Treat each documented entry as a glob and
   // match it against code test paths (or basenames when the entry has no slash).
   // Exact-string comparison produced the false "N documented but not found".
-  const codeArr = [...codeTests];
-  const docArr = [...docTests];
 
-  const matches = (docEntry, codeRel) => {
-    const entry = String(docEntry).trim();
+  // Pre-compile regexes and basenames to avoid O(N*M) algorithmic overhead.
+  const compiledDocs = [...docTests].map(d => {
+    const entry = String(d).trim();
     const hasSlash = entry.includes('/');
     const target = hasSlash ? entry : basename(entry);
-    const subject = hasSlash ? codeRel : basename(codeRel);
-    // Glob -> regex: escape regex specials, then any run of '*' becomes '.*'.
-    const rx = new RegExp('^' + target
-      .replace(/[.+^${}()|[\]\\]/g, '\\$&')
-      .replace(/\*+/g, '.*') + '$');
-    return rx.test(subject);
+    return {
+      raw: d,
+      hasSlash,
+      rx: new RegExp('^' + target.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*+/g, '.*') + '$')
+    };
+  });
+  const compiledCode = [...codeTests].map(c => ({ raw: c, base: basename(c) }));
+
+  const matches = (docItem, codeItem) => {
+    const subject = docItem.hasSlash ? codeItem.raw : codeItem.base;
+    return docItem.rx.test(subject);
   };
 
   return {
     title: 'Test Files',
-    onlyInDocs: docArr.filter(d => !codeArr.some(c => matches(d, c))),
-    onlyInCode: codeArr.filter(c => !docArr.some(d => matches(d, c))),
+    onlyInDocs: compiledDocs.filter(d => !compiledCode.some(c => matches(d, c))).map(d => d.raw),
+    onlyInCode: compiledCode.filter(c => !compiledDocs.some(d => matches(d, c))).map(c => c.raw),
   };
 }
 

@@ -314,23 +314,30 @@ function diffTests(dir, config = {}) {
   if (docTests.size === 0 && codeTests.size === 0) return null;
 
   // Glob-aware matching (documented entries are often patterns or basenames).
-  const codeArr = [...codeTests];
-  const docArr = [...docTests];
-  const matches = (docEntry, codeRel) => {
-    const entry = String(docEntry).trim();
+  // Pre-compile regexes and basenames to avoid O(N*M) algorithmic overhead.
+  const compiledDocs = [...docTests].map(d => {
+    const entry = String(d).trim();
     const hasSlash = entry.includes('/');
     const target = hasSlash ? entry : basename(entry);
-    const subject = hasSlash ? codeRel : basename(codeRel);
-    const rx = new RegExp('^' + target.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*+/g, '.*') + '$');
-    return rx.test(subject);
+    return {
+      raw: d,
+      hasSlash,
+      rx: new RegExp('^' + target.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*+/g, '.*') + '$')
+    };
+  });
+  const compiledCode = [...codeTests].map(c => ({ raw: c, base: basename(c) }));
+
+  const matches = (docItem, codeItem) => {
+    const subject = docItem.hasSlash ? codeItem.raw : codeItem.base;
+    return docItem.rx.test(subject);
   };
 
   return {
     title: 'Test Files',
     icon: '🧪',
-    onlyInDocs: docArr.filter(d => !codeArr.some(c => matches(d, c))),
-    onlyInCode: codeArr.filter(c => !docArr.some(d => matches(d, c))),
-    matched: docArr.filter(d => codeArr.some(c => matches(d, c))),
+    onlyInDocs: compiledDocs.filter(d => !compiledCode.some(c => matches(d, c))).map(d => d.raw),
+    onlyInCode: compiledCode.filter(c => !compiledDocs.some(d => matches(d, c))).map(c => c.raw),
+    matched: compiledDocs.filter(d => compiledCode.some(c => matches(d, c))).map(d => d.raw),
   };
 }
 
