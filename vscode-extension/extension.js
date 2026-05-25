@@ -208,11 +208,24 @@ async function refreshScore() {
   const dir = getWorkspaceDir();
   if (!dir) return;
 
+  // UX Improvement: Show a loading state to indicate background work.
+  // Reset any previous background error colors so they don't incorrectly persist during load.
+  statusBarItem.text = '$(sync~spin) Refreshing CDD...';
+  statusBarItem.tooltip = 'Running SpecGuard CDD checks...';
+  statusBarItem.backgroundColor = undefined;
+  statusBarItem.show();
+
+  // Yield the event loop to allow VS Code to render the status bar updates before the
+  // synchronous child_process block kicks in.
+  await new Promise(r => setTimeout(r, 0));
+
   try {
     const output = execSpecguard(dir, 'score --format json');
     const jsonStart = output.indexOf('{');
     if (jsonStart < 0) {
       statusBarItem.text = '$(shield) CDD: ?';
+      statusBarItem.tooltip = 'SpecGuard CDD check failed. Output could not be parsed. Check Output panel.';
+      statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground');
       statusBarItem.show();
       return;
     }
@@ -242,7 +255,9 @@ async function refreshScore() {
 
     outputChannel.appendLine(`Score refreshed: ${score}/100 (${grade})`);
   } catch (e) {
-    statusBarItem.text = '$(shield) CDD: ?';
+    statusBarItem.text = '$(shield) CDD: Error';
+    statusBarItem.tooltip = `Error refreshing SpecGuard CDD score: ${e.message}`;
+    statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground');
     statusBarItem.show();
     outputChannel.appendLine(`Score refresh error: ${e.message}`);
   }
