@@ -422,9 +422,12 @@ function checkReadmeSections(projectDir) {
     }
   }
 
+  // Recommended sections are a BONUS — present = +1 to both passed and total,
+  // missing = no-op. Counting missing recommended toward `total` without a
+  // corresponding warning would be a silent fail (caught by B-4 nudge).
   for (const section of recommendedSections) {
-    total++;
     if (section.patterns.some(p => lowerContent.includes(p))) {
+      total++;
       passed++;
     }
   }

@@ -194,15 +194,25 @@ export function runGuard(projectDir, config, flags) {
       console.log(`  ${c.yellow}⚠️  ${v.name}${c.reset} ${qBadge}${c.dim}  ${v.passed}/${v.total} checks passed${c.reset}`);
     }
 
-    if (flags.verbose || v.status === 'fail') {
+    // --show-failing forces enumeration of every error/warning regardless of
+    // overall validator status — useful when a validator passes overall
+    // (passed < total) without surfacing the specific failing checks.
+    const show = flags.verbose || flags.showFailing;
+    if (show || v.status === 'fail') {
       for (const err of v.errors) {
         console.log(`     ${c.red}✗ ${err}${c.reset}`);
       }
     }
-    if (flags.verbose || v.status === 'warn') {
+    if (show || v.status === 'warn') {
       for (const warn of v.warnings) {
         console.log(`     ${c.yellow}⚠ ${warn}${c.reset}`);
       }
+    }
+    // If a validator reports passed < total but has no errors/warnings, surface
+    // the gap honestly so users aren't left wondering where the deficit went.
+    if (v.status === 'pass' && v.total > v.passed && v.errors.length === 0 && v.warnings.length === 0) {
+      const gap = v.total - v.passed;
+      console.log(`     ${c.yellow}⚠ ${gap} check(s) did not pass but emitted no message — likely a validator bug. Please file an issue.${c.reset}`);
     }
   }
 

@@ -41,13 +41,19 @@ export function validateEnvironment(projectDir, config) {
   // CLI/library projects that declare no env vars skip this.)
   if (ptc.needsEnvVars !== false) {
     const documented = new Set();
-    const varRe = /`([A-Z][A-Z0-9_]{2,})`/g;
+    // Require the matched name to end with a letter/digit — prevents prose-only
+    // tokens like `VITE_` (the convention prefix) from being treated as a real
+    // variable name.
+    const varRe = /`([A-Z][A-Z0-9_]*[A-Z0-9])`/g;
     let m;
-    while ((m = varRe.exec(content)) !== null) documented.add(m[1]);
+    while ((m = varRe.exec(content)) !== null) {
+      if (m[1].length < 3) continue; // 'OK' / 'ID' etc. are too short to be env var refs
+      documented.add(m[1]);
+    }
     for (const envFile of ['.env.example', '.env.template']) {
       const p = resolve(projectDir, envFile);
       if (!existsSync(p)) continue;
-      const re = /^([A-Z][A-Z0-9_]+)\s*=/gm;
+      const re = /^([A-Z][A-Z0-9_]*[A-Z0-9])\s*=/gm;
       const ex = readFileSync(p, 'utf-8');
       let em;
       while ((em = re.exec(ex)) !== null) documented.add(em[1]);

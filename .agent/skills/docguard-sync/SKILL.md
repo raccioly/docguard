@@ -4,7 +4,7 @@ description: Keep canonical documentation ALWAYS UP TO DATE. Refreshes code-trut
 compatibility: Requires DocGuard CLI installed (npm i -g docguard-cli or npx docguard-cli)
 metadata:
   author: docguard
-  version: 0.11.1
+  version: 0.11.2
   source: extensions/spec-kit-docguard/skills/docguard-sync
 ---
 

@@ -210,11 +210,16 @@ export function grepEnvUsage(projectDir, config = {}) {
   const roots = resolveSourceRoots(projectDir, config);
   const seen = new Set();
 
+  // Require names to start with a letter and END with a letter/digit (NOT an
+  // underscore) — fixes "VITE_" being captured as a literal env var name.
+  const NAME = '([A-Z][A-Z0-9_]*[A-Z0-9])';
   const patterns = [
-    /process\.env\.([A-Z][A-Z0-9_]+)/g,
-    /process\.env\[\s*['"]([A-Z][A-Z0-9_]+)['"]\s*\]/g,
-    /import\.meta\.env\.([A-Z][A-Z0-9_]+)/g,
+    new RegExp(`process\\.env\\.${NAME}`, 'g'),
+    new RegExp(`process\\.env\\[\\s*['"]${NAME}['"]\\s*\\]`, 'g'),
+    new RegExp(`import\\.meta\\.env\\.${NAME}`, 'g'),
   ];
+  // Vite injects these at build time; they are not user-set env vars.
+  const VITE_INTRINSICS = new Set(['DEV', 'PROD', 'MODE', 'BASE_URL', 'SSR']);
 
   const visit = (filePath) => {
     if (seen.has(filePath)) return;
@@ -225,10 +230,16 @@ export function grepEnvUsage(projectDir, config = {}) {
     let content;
     try { content = readFileSync(filePath, 'utf-8'); } catch { return; }
     if (!content.includes('env')) return;
-    for (const re of patterns) {
+    // patterns[2] is the import.meta.env one — its matches are Vite-injected
+    // when the name is an intrinsic, and must not be reported as user env vars.
+    for (let i = 0; i < patterns.length; i++) {
       let m;
-      const rx = new RegExp(re.source, 'g');
-      while ((m = rx.exec(content)) !== null) names.add(m[1]);
+      const rx = new RegExp(patterns[i].source, 'g');
+      const isViteSource = i === 2;
+      while ((m = rx.exec(content)) !== null) {
+        if (isViteSource && VITE_INTRINSICS.has(m[1])) continue;
+        names.add(m[1]);
+      }
     }
   };
 

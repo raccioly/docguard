@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.2] - 2026-05-25
+
+Patch release addressing the four bugs (B-1..B-4) reported from the v0.11.1 audit of `wu-whatsappinbox` (score 98/100, 572/575 passed, 1 warning), plus Antigravity/Kiro/Windsurf agent-routing aliases and a Docs-Coverage silent-fail fix that the new B-4 nudge itself exposed.
+
+### Fixed
+- **B-1: Vite intrinsics no longer reported as user env vars.** `grepEnvUsage` in `cli/shared-source.mjs` now skips `DEV`, `PROD`, `MODE`, `BASE_URL`, and `SSR` on `import.meta.env.*` — these are injected by Vite at build time, not user-configured. Real user vars like `VITE_API_URL` are still captured. (Reported by wu-whatsappinbox v0.11.1 audit.)
+- **B-2: `docguard diff` Data Entities now uses real exported names, not file basenames.** Previously the entity diff walked filenames and reported the stem (e.g. `models.py` → "models"), missing all the actual classes inside. Now uses `scanSchemasDeep` — the same code-side scanner the rest of DocGuard uses — which extracts real Pydantic/Dataclass/Mongoose/Prisma/Zod/Sequelize/Sqlx/SQLAlchemy/JPA entity names. (Reported by wu-whatsappinbox v0.11.1 audit.)
+- **B-3: Literal `` `VITE_` `` prefix in prose no longer captured as an env var name.** Tightened the env-var name regex across `shared-source.mjs`, `validators/environment.mjs`, and `commands/diff.mjs` from `[A-Z][A-Z0-9_]*` to `[A-Z][A-Z0-9_]*[A-Z0-9]` (must end with letter/digit, not underscore). Documentation like ``All vars start with `VITE_` (Vite convention)`` no longer triggers a "missing `VITE_`" warning. (Reported by wu-whatsappinbox v0.11.1 audit.)
+- **B-4 nudge surfaced: Docs-Coverage Check 5 (`checkReadmeSections`) silent-fail fixed.** The "recommended sections" loop bumped `total` without emitting a message when missing — exactly the anti-pattern B-4 flags. Recommended sections are now a true bonus: present = +1 to both passed/total, missing = no-op. Restores honest scoring on the README checker. (Found by the B-4 nudge running on the wu-whatsappinbox fixture.)
+
+### Added
+- **B-4: `--show-failing` flag and validator-bug nudge.** `docguard guard --show-failing` shows warnings/errors for every non-passing validator even if the overall status would have suppressed them. New nudge fires when a validator has `passed < total` but emits no warning or error messages — points at a likely silent-fail validator bug for the user to file an issue. (Reported by wu-whatsappinbox v0.11.1 audit.)
+- **Antigravity / Kiro / Windsurf / GEMINI agent signals.** `cli/ensure-skills.mjs` now detects these agent ecosystems via additional signal files (`.agents`, `.antigravity`, `ANTIGRAVITY.md`, `.kiro`, `.windsurf`, `GEMINI.md`) so the right skills are installed for each. Antigravity was already wired via `.agents → agy`; this expands the alias surface so neither side-by-side IDEs nor Spec Kit's `.agents` convention break detection.
+
+### Internal
+- New test file: `tests/patch-0.11.2.test.mjs` with regression coverage for B-1 (Vite intrinsics skip), B-2 (Pydantic class names, not file basename), and B-3 (literal `VITE_` not captured). **Total: 339 tests passing (was 336, +3 new).**
+- No new NPM dependencies. Zero schema or config-file changes. Bumped `pyproject.toml` from `0.11.0 → 0.11.2` to re-sync the PyPI publish (the previous patch released to npm but skipped PyPI version bump).
+
+### Out of scope (deferred to v0.12)
+- S-1 (`sync --since` surgical refresh), S-2 (sweep-needed nudge from freshness counters), S-3 (`trace --reverse` code→doc map), S-4 (rename detection via `git log --follow`), S-5 (`.docguardignore` template at init), S-6 (per-validator severity in `.docguard.json`), S-7 (generated-doc-in-draft staleness validator), S-8 (cross-reference validator for broken `§X` anchors), S-9 (pre-commit lite on changed files only), S-10 (`.docguard/fixed.json` memory of past fixes).
+
+Credit: feedback from running v0.11.1 on the `wu-whatsappinbox` enterprise monorepo (audit score 98/100, 572/575 passed).
+
 ## [0.11.1] - 2026-05-25
 
 Patch release addressing false positives surfaced by the v0.11.0 audit of the `wu-whatsappinbox` enterprise monorepo, generalized into a multi-tool IaC detector, plus several DocGuard self-audit improvements. Spec: `specs/003-v011-false-positives/`.

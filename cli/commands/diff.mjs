@@ -10,6 +10,8 @@ import { collectPackageJsons, detectDocker, grepEnvUsage, resolveSourceRoots } f
 import { parseApiReferenceDoc, compareEndpoints } from '../scanners/api-doc.mjs';
 import { resolveApiSurface } from '../validators/api-surface.mjs';
 import { collectCodeTests } from '../validators/docs-diff.mjs';
+import { scanSchemasDeep } from '../scanners/schemas.mjs';
+import { detectDocTools } from '../scanners/doc-tools.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build',
@@ -163,22 +165,17 @@ function diffEntities(dir, config = {}) {
     docEntities.add(name.toLowerCase());
   }
 
-  // Find model/entity files in code — monorepo-aware (honors config.sourceRoot/workspaces).
+  // Use the REAL exported entity names from scanSchemasDeep, not file basenames
+  // (a file `dynamoModels.ts` exports `User`/`Order`/etc. — its basename is not
+  // an entity). scanSchemasDeep covers JS ORMs, SQLAlchemy/Pydantic, Diesel,
+  // Go structs, JPA, Rails, and OpenAPI schemas.
+  const docTools = detectDocTools(dir);
+  const schemas = scanSchemasDeep(dir, {}, docTools);
   const codeEntities = new Set();
-  const modelSubdirs = ['models', 'entities', 'schema', 'schemas', 'prisma'];
-  const roots = resolveSourceRoots(dir, config);
-  for (const root of roots) {
-    for (const sub of modelSubdirs) {
-      const modelDir = join(root, sub);
-      if (!existsSync(modelDir)) continue;
-      const files = getFilesRecursive(modelDir);
-      for (const f of files) {
-        const name = basename(f, extname(f)).toLowerCase();
-        // Skip non-entity infrastructure/aggregation filenames.
-        if (CODE_ENTITY_NOISE.has(name)) continue;
-        codeEntities.add(name);
-      }
-    }
+  for (const e of (schemas.entities || [])) {
+    const n = String(e.name || '').toLowerCase();
+    if (!n || CODE_ENTITY_NOISE.has(n)) continue;
+    codeEntities.add(n);
   }
 
   // No code-side entity source (e.g. DynamoDB single-table design with no model
@@ -207,7 +204,8 @@ function diffEnvVars(dir, config = {}) {
 
   // Extract env var names from ENVIRONMENT.md
   const docVars = new Set();
-  const varRegex = /`([A-Z][A-Z0-9_]{2,})`/g;
+  // Reject names ending in `_` (e.g. the literal prefix `VITE_` in prose).
+  const varRegex = /`([A-Z][A-Z0-9_]*[A-Z0-9])`/g;
   let match;
   while ((match = varRegex.exec(content)) !== null) {
     docVars.add(match[1]);
@@ -220,7 +218,7 @@ function diffEnvVars(dir, config = {}) {
     const envExamplePath = resolve(dir, envFile);
     if (existsSync(envExamplePath)) {
       const envContent = readFileSync(envExamplePath, 'utf-8');
-      const envRegex = /^([A-Z][A-Z0-9_]+)\s*=/gm;
+      const envRegex = /^([A-Z][A-Z0-9_]*[A-Z0-9])\s*=/gm;
       while ((match = envRegex.exec(envContent)) !== null) {
         codeVars.add(match[1]);
       }

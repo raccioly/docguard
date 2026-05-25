@@ -365,6 +365,8 @@ async function main() {
     } else if (args[i] === '--since' && args[i + 1]) {
       flags.since = args[i + 1];
       i++;
+    } else if (args[i] === '--show-failing') {
+      flags.showFailing = true;
     } else if (args[i] === '--doc' && args[i + 1]) {
       flags.doc = args[i + 1];
       i++;

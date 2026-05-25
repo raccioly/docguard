@@ -54,8 +54,13 @@ export function detectAgentMode(projectDir) {
     '.specify',
     '.github/copilot-instructions.md',
     'CLAUDE.md',
+    'GEMINI.md',
     '.gemini',
     '.agents',
+    '.antigravity',
+    'ANTIGRAVITY.md',
+    '.kiro',
+    '.windsurf',
   ];
 
   for (const signal of llmSignals) {
@@ -105,7 +110,9 @@ export function detectAIAgent(projectDir) {
     { signal: '.claude',                        agent: 'claude' },
     { signal: 'CLAUDE.md',                      agent: 'claude' },
     { signal: '.gemini',                        agent: 'gemini' },
-    { signal: '.agents',                        agent: 'agy' },         // Antigravity
+    { signal: '.agents',                        agent: 'agy' },         // Antigravity (Spec Kit convention)
+    { signal: '.antigravity',                   agent: 'agy' },         // Antigravity (alt convention)
+    { signal: 'ANTIGRAVITY.md',                 agent: 'agy' },         // Antigravity rules file
     { signal: '.github/copilot-instructions.md', agent: 'copilot' },
     { signal: '.windsurf',                      agent: 'windsurf' },
     { signal: '.codex',                         agent: 'codex' },
