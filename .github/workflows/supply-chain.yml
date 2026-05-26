@@ -1,6 +1,7 @@
 name: Supply-Chain Security
 
 on:
+  workflow_dispatch: # Manual recovery for admin-bypass pushes that don't auto-trigger
   pull_request:
     branches: [main]
   schedule:

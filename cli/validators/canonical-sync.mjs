@@ -84,7 +84,30 @@ export function validateCanonicalSync(projectDir, config, guardResults) {
   }
 
   const commandFiles = readdirSync(commandsDir).filter(f => f.endsWith('.mjs'));
-  const actualCommandCount = commandFiles.length;
+  const actualCommandFileCount = commandFiles.length;
+
+  // v0.20: the user-facing command count is what shows up in --help's "Daily 5"
+  // and "Tools" sections — NOT the file count, since deprecation aliases dispatch
+  // through the same files. Parse cli/docguard.mjs to find names in those
+  // sections so the README claim and code-truth stay in lockstep across renames.
+  const cliEntry = resolve(cliDir, 'docguard.mjs');
+  let actualUserFacingCount = actualCommandFileCount; // fallback if parse fails
+  if (existsSync(cliEntry)) {
+    try {
+      const cliSrc = readFileSync(cliEntry, 'utf-8');
+      // Match `${c.green}<name>${c.reset}` inside the Daily 5 / Tools blocks.
+      // Anything in init --with / Deprecation aliases sections uses c.dim, so
+      // they're naturally excluded.
+      const helpBlock = cliSrc.match(/The Daily 5[\s\S]*?Deprecation aliases/);
+      if (helpBlock) {
+        const greenNames = [...helpBlock[0].matchAll(/\$\{c\.green\}(\w+)\$\{c\.reset\}/g)]
+          .map(m => m[1]);
+        // Unique names (init shows up only once)
+        actualUserFacingCount = [...new Set(greenNames)].length;
+      }
+    } catch { /* fall through to file-count fallback */ }
+  }
+  const actualCommandCount = actualUserFacingCount;
 
   // Validator count: always use the file-count truth source. It's run-order
   // independent (canonical-sync runs BEFORE metrics-consistency at guard time,
@@ -127,8 +150,11 @@ export function validateCanonicalSync(projectDir, config, guardResults) {
     if (claimed === actualCommandCount) {
       result.passed++;
     } else {
+      const detail = actualUserFacingCount !== actualCommandFileCount
+        ? `${actualCommandCount} user-facing commands in --help (${actualCommandFileCount} files including deprecation aliases)`
+        : `${actualCommandCount} command file(s)`;
       result.warnings.push(
-        `README.md claims "ships ${claimed} commands" but cli/commands/ has ${actualCommandCount} files. Update the README.`
+        `README.md claims "ships ${claimed} commands" but the real count is ${detail}. Update the README.`
       );
     }
   } else {
