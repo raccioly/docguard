@@ -1,3 +1,8 @@
+/**
+ * @req FR-012 — Architecture validator MUST respect the `ignore` array
+ *   from .docguard.json. Verified by tests below that pass config.ignore
+ *   and check that ignored layer dirs aren't flagged as missing.
+ */
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
 import fs from 'node:fs';

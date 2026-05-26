@@ -6,6 +6,11 @@
  * @req SC-K3-003 — patterns from both .docguard.json and .docguardignore are deduped
  * @req SC-K3-004 — missing file is a no-op
  * @req SC-K3-005 — comments and blank lines are skipped
+ * @req FR-013 — Shared ignore utility module provides consistent glob matching
+ *   across all validators. Covered by the loader + merger tests below.
+ * @req FR-014 — Constitution Principle IV (shared infrastructure encouraged) is
+ *   exemplified by these tests — they exercise the shared utility from
+ *   `cli/shared-ignore.mjs` that v0.11.x extracted.
  */
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';

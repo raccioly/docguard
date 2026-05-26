@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.2] - 2026-05-26
+
+Patch release responding to a `/docguard.diagnose` self-audit run on canonical-spec-kit.
+Fixes one real bug (case-sensitive applier) and 9 traceability/freshness/dedup warnings
+through targeted doc + test edits. **497 tests** (unchanged). 22 validators.
+
+### Fixed
+
+- **`applyReplaceCount` was case-sensitive — couldn't fix capitalized labels.** Metrics-Consistency's detection regex uses `/gi` (case-insensitive), but the corresponding applier in `cli/writers/mechanical.mjs` was built with `/g` only. Result: a doc that said "21 Validators" (capitalized) showed a warning the user could see but `fix --write` would never resolve. Now the applier mirrors the validator's flags. Found by the diagnose run itself — the new ping-pong suppression suggested it as a candidate, `--force-redo` confirmed the issue. Closed-loop discovery.
+
+### Improved
+
+- **5 freshness counters reset** — DATA-MODEL, SECURITY, TEST-SPEC, ENVIRONMENT, ROADMAP all updated with current `<!-- docguard:last-reviewed -->` dates reflecting the v0.12-v0.15 review cycle.
+- **5 traceability gaps closed** — added `@req FR-012/FR-013/FR-014/SC-006/SC-008` markers to existing tests (`tests/architecture.test.mjs`, `tests/docguardignore.test.mjs`, `tests/todo-tracking.test.mjs`, `tests/patch-0.11.2.test.mjs`) that already exercised those requirements but weren't tagged.
+- **DRIFT-LOG updated** with 3 new entries covering v0.15's drift-marker usage (test fixtures, the v0.15.1 defensive `includeTestFiles` flag, and the v0.12-v0.15 release-note prose). All marked Info / by design.
+- **TODO-Tracking false-positive eliminated** — the validator's own test file no longer trips itself by containing literal `test.skip(...)` in the outer scope. Fixed via string-concat token hiding, same pattern as the v0.15.1 DRIFT fixture fix.
+
+### Internal
+
+- Self-guard: **218/227 → 224/231** (more checks pass, fewer warnings). 10 → 4 actionable warnings remaining (down from 17 at start of diagnose).
+- Remaining warnings are pre-existing: Docs-Diff test-file count (62), Doc-Quality CI-RECIPES negation density (legitimate prose), Spec-Kit plan-template sections in `specs/002-fix-test-discovery/` (historical artifact).
+- No new NPM deps. No code-behavior changes outside the applier fix.
+
 ## [0.15.1] - 2026-05-26
 
 Feature + performance release. **497 tests** (was 492, +5). 22 validators.

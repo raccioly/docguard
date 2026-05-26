@@ -2,7 +2,7 @@
 
 <!-- docguard:version 0.7.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-03-13 -->
+<!-- docguard:last-reviewed 2026-05-26 -->
 
 > DocGuard is a zero-dependency CLI tool. CLI integration tests cover the full stack.
 

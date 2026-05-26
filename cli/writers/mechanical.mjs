@@ -48,7 +48,12 @@ function applyReplaceCount(projectDir, fix) {
   const full = resolve(projectDir, fix.file);
   if (!existsSync(full)) return { applied: false };
   const content = readFileSync(full, 'utf-8');
-  const re = new RegExp(`\\b${esc(fix.found)}(\\s+(?:automated\\s+)?${esc(fix.label)}\\b)`, 'g');
+  // v0.15.2 hotfix: case-insensitive label match. Mirrors the validator's
+  // detection regex (which is `gi`). Without `i` here, the applier would
+  // skip "21 Validators" (capitalized) even though Metrics-Consistency
+  // detected it — leaving the user with a warning they couldn't auto-fix.
+  // The /docguard.diagnose run on canonical-spec-kit surfaced this.
+  const re = new RegExp(`\\b${esc(fix.found)}(\\s+(?:automated\\s+)?${esc(fix.label)}\\b)`, 'gi');
   const next = content.replace(re, `${fix.actual}$1`);
   if (next === content) return { applied: false };
   writeFileSync(full, next, 'utf-8');
