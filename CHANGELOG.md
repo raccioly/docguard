@@ -451,3 +451,6 @@ This release reshapes DocGuard from a documentation linter into an **AI-readable
 
 ### Fixed
 - Added missing tests for the `watch` CLI command to verify it runs and reacts properly.
+
+### Security
+- **CRITICAL**: Fixed Command Injection vulnerability in `specify init` during Spec Kit initialization (`cli/ensure-skills.mjs`, `cli/commands/init.mjs`). Unsanitized agent IDs from `.specify/init-options.json` are no longer executed by a shell context. Input is strictly validated and passed securely via `execFileSync`.
