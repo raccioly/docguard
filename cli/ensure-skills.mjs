@@ -13,8 +13,31 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { execSync } from 'node:child_process';
+import { execSync, execFileSync } from 'node:child_process';
 import { c } from './shared.mjs';
+
+/**
+ * v0.21.1 (security): cross-platform safe spawn for the `specify` CLI.
+ *
+ * On POSIX, runs the `specify` binary directly with argv passed as an array
+ * — no shell interpolation possible. On Windows, the equivalent is via
+ * `cmd.exe /c specify.cmd ...` since `specify` is shipped as a .cmd shim by
+ * `pip install`. Args are still passed as an array so cmd.exe doesn't
+ * re-parse them.
+ *
+ * Replaces the pre-v0.21.1 pattern of `execSync(\`specify init ... \${flag} ...\`)`
+ * which was shell-interpolated and vulnerable to command injection via
+ * `.specify/init-options.json`'s `ai` field (issue #190).
+ */
+export function safeSpawnSpecify(args, opts) {
+  if (!Array.isArray(args)) {
+    throw new TypeError('safeSpawnSpecify(args, opts): args must be an array');
+  }
+  if (process.platform === 'win32') {
+    return execFileSync('cmd.exe', ['/c', 'specify.cmd', ...args], opts);
+  }
+  return execFileSync('specify', args, opts);
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -77,12 +100,27 @@ export function detectAgentMode(projectDir) {
  * @param {string} projectDir - The project root directory
  * @returns {string | null}
  */
+// v0.21.1 (security): allowlist for the spec-kit --ai flag value. Source
+// values come from `.specify/init-options.json` which is attacker-writable
+// in any compromised project. Without this filter, a value like
+// `"claude; touch /tmp/pwned;"` would shell-execute on every `docguard init`.
+//
+// Set conservatively from spec-kit's published agent list. New agents
+// require a code change to be accepted — by design.
+const VALID_AI_AGENT = /^[a-zA-Z0-9_-]{1,32}$/;
+
 export function getDetectedAgent(projectDir) {
   const initOptions = resolve(projectDir, '.specify', 'init-options.json');
   if (existsSync(initOptions)) {
     try {
       const opts = JSON.parse(readFileSync(initOptions, 'utf-8'));
-      return opts.ai || null;
+      const ai = opts.ai;
+      if (typeof ai !== 'string') return null;
+      // v0.21.1 (issue #190): reject anything outside the allowlist. Without
+      // this, a malicious `.specify/init-options.json` could inject shell
+      // metacharacters through to the `specify init` exec call.
+      if (!VALID_AI_AGENT.test(ai)) return null;
+      return ai;
     } catch { /* ignore */ }
   }
   return null;
@@ -193,13 +231,17 @@ export function ensureSpecKit(projectDir, flags = {}) {
       console.log(`  ${c.cyan}🌱 Spec Kit detected — auto-initializing SDD workflow...${c.reset}`);
     }
     try {
+      // v0.21.1 (issue #190): switched from shell-interpolated execSync to
+      // execFileSync via safeSpawnSpecify. detectAIAgent now also enforces
+      // the [a-zA-Z0-9_-]{1,32} allowlist on values read from .specify/
+      // init-options.json — defense in depth.
       const detectedAgent = detectAIAgent(projectDir);
-      const aiFlag = detectedAgent
-        ? `--ai ${detectedAgent}`
-        : '--ai generic --ai-commands-dir .agent/commands/';
-      const scriptFlag = process.platform === 'win32' ? '--script ps' : '--script sh';
-      execSync(
-        `specify init --here --force ${aiFlag} --ai-skills --ignore-agent-tools --no-git ${scriptFlag}`,
+      const aiArgs = detectedAgent
+        ? ['--ai', detectedAgent]
+        : ['--ai', 'generic', '--ai-commands-dir', '.agent/commands/'];
+      const scriptArgs = process.platform === 'win32' ? ['--script', 'ps'] : ['--script', 'sh'];
+      safeSpawnSpecify(
+        ['init', '--here', '--force', ...aiArgs, '--ai-skills', '--ignore-agent-tools', '--no-git', ...scriptArgs],
         { cwd: projectDir, encoding: 'utf-8', stdio: 'pipe', timeout: 30000 }
       );
       if (!silent) {

@@ -7,6 +7,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.1] - 2026-05-26
+
+**Security patch — closes issue #190.** Command injection vulnerability in
+`docguard init` via the `ai` field of `.specify/init-options.json` is fixed.
+
+### Security
+
+- **Issue #190: command injection in `cli/commands/init.mjs` and
+  `cli/ensure-skills.mjs`.** The `detectAIAgent()` helper returned the
+  `ai` field from `.specify/init-options.json` without validation, and
+  that value was then shell-interpolated into an `execSync` invocation:
+  ```js
+  const aiFlag = `--ai ${detectedAgent}`;
+  execSync(`specify init ... ${aiFlag} ...`);
+  ```
+  A local attacker with file-system write access to a victim's repo
+  could plant `{"ai": "claude; touch /tmp/pwned;"}` and trigger
+  arbitrary command execution on the victim's next `docguard init`.
+
+  **Severity:** Medium (requires local file-system access; pre-fix
+  `detectAIAgent` consumed configs from any project DocGuard ran in).
+
+  **Discovered:** 23 duplicate auto-generated draft PRs from the
+  "Sentinel" AI agent flagged this during the v0.19 cleanup sweep.
+  The drafts were closed as noise but the underlying finding was
+  tracked in #190 — fixed properly here.
+
+  **Fix (two layers, defense in depth):**
+  1. `getDetectedAgent()` now allowlist-validates the `ai` field against
+     `/^[a-zA-Z0-9_-]{1,32}$/`. Anything else (shell metacharacters,
+     non-strings, oversized values) returns `null`.
+  2. New `safeSpawnSpecify(args, opts)` helper uses `execFileSync` with
+     args passed as an array — no shell interpolation possible. Both
+     unsafe call sites (`init.mjs` and `ensure-skills.mjs`) now use
+     this helper. Cross-platform (POSIX direct exec / Windows
+     `cmd.exe /c specify.cmd`).
+
+### Tests
+
+- 596 → **610** (+14): `tests/security-init-injection.test.mjs` pins
+  both defense layers. Tests every shell metacharacter (`;`, backtick,
+  `$()`, `|`, `&&`, newline), oversized values, non-string types,
+  malformed JSON, missing config files. Asserts the legitimate
+  allowlist (claude, cursor-agent, gemini, agy, copilot, windsurf,
+  codex, roo, amp, kiro-cli, tabnine, underscore-bearing future names).
+
+### Audit
+
+`grep -rn execSync cli/` was re-run; remaining call sites are all
+hardcoded literals (no attacker-influenced interpolation): freshness
+git probes, score's git probe, setup/doc-quality `which`-style
+detection. Documented in commit message.
+
 ## [0.21.0] - 2026-05-26
 
 **Time-to-value.** The funnel-unblocker release. Until v0.21, a dev shopping
