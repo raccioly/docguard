@@ -82,6 +82,20 @@ See docs-implementation/MIGRATION-v0.20.md for the full list.
   warns; `--quiet` suppresses the warning; all ten dropped aliases
   error with a hint; `audit` is silent.
 
+### Fixed
+
+- **Spec-Kit extension aliases now satisfy the
+  `speckit.{extension}.{command}` schema** (issue #1, reported by
+  `c05m1x`). `extensions/spec-kit-docguard/extension.yml` previously
+  declared aliases as `docguard.guard` / `docguard.fix` /
+  `docguard.review` / `docguard.score`, which spec-kit rejects with
+  *"Validation Error: Invalid alias 'docguard.guard': must follow
+  pattern 'speckit.{extension}.{command}'"*. All four aliases now
+  match the canonical names (`speckit.docguard.guard` etc.), letting
+  `specify extension add docguard` succeed cleanly. The reporter's
+  secondary complaint about `--from` path-resolution is a separate
+  upstream spec-kit issue and tracked there.
+
 ### Workflow hygiene
 
 - **`workflow_dispatch:` added to `ci.yml` and `supply-chain.yml`** so
