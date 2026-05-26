@@ -15,7 +15,7 @@ import { fileURLToPath } from 'node:url';
 import { createInterface } from 'node:readline';
 import { execSync } from 'node:child_process';
 import { c, PROFILES } from '../shared.mjs';
-import { ensureSkills, detectAgentMode, detectAIAgent, isSpecKitAvailable, isSpecKitInitialized, getDetectedAgent } from '../ensure-skills.mjs';
+import { ensureSkills, detectAgentMode, detectAIAgent, isSpecKitAvailable, isSpecKitInitialized, getDetectedAgent, safeSpawnSpecify } from '../ensure-skills.mjs';
 
 // v0.20: scaffolder names that can be passed via `init --with <name>` and
 // dispatched to the corresponding standalone runner. Each name maps to its
@@ -378,17 +378,22 @@ poetry.lock
   } else if (specKitAvailable && !specKitInitialized) {
     console.log(`\n  ${c.bold}🌱 Spec Kit Integration${c.reset}`);
 
-    // Detect which AI agent is in use (matches spec-kit's --ai flag)
+    // Detect which AI agent is in use (matches spec-kit's --ai flag).
+    // v0.21.1 (issue #190): the returned value is allowlist-validated inside
+    // getDetectedAgent, so an attacker-controlled `.specify/init-options.json`
+    // can no longer inject shell metacharacters here.
     const detectedAgent = detectAIAgent(projectDir);
-    const aiFlag = detectedAgent
-      ? `--ai ${detectedAgent}`
-      : '--ai generic --ai-commands-dir .agent/commands/';
+    const aiArgs = detectedAgent
+      ? ['--ai', detectedAgent]
+      : ['--ai', 'generic', '--ai-commands-dir', '.agent/commands/'];
 
     console.log(`  ${c.dim}Running specify init (agent: ${detectedAgent || 'generic'})...${c.reset}`);
     try {
-      const scriptFlag = process.platform === 'win32' ? '--script ps' : '--script sh';
-      execSync(
-        `specify init --here --force ${aiFlag} --ai-skills --ignore-agent-tools --no-git ${scriptFlag}`,
+      // v0.21.1 (issue #190): execFileSync via safeSpawnSpecify — args pass
+      // through as an array, no shell interpolation.
+      const scriptArgs = process.platform === 'win32' ? ['--script', 'ps'] : ['--script', 'sh'];
+      safeSpawnSpecify(
+        ['init', '--here', '--force', ...aiArgs, '--ai-skills', '--ignore-agent-tools', '--no-git', ...scriptArgs],
         { cwd: projectDir, encoding: 'utf-8', stdio: 'pipe', timeout: 30000 }
       );
       console.log(`  ${c.green}✅${c.reset} Spec Kit initialized ${c.dim}(.specify/, spec-kit skills, agent: ${detectedAgent || 'generic'})${c.reset}`);
