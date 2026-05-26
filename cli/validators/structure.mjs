@@ -19,23 +19,33 @@ export function validateStructure(projectDir, config) {
     }
   }
 
-  // Check agent file (any one is fine)
-  results.total++;
-  const agentFileFound = config.requiredFiles.agentFile.some(f =>
-    existsSync(resolve(projectDir, f))
-  );
-  if (agentFileFound) {
-    results.passed++;
-  } else {
-    results.errors.push(`Missing agent file: ${config.requiredFiles.agentFile.join(' or ')}`);
+  // Check agent file (any one is fine) — defensive: tolerate missing config
+  // shapes (B-5 class of safety net: never let a config gap leak as a
+  // ReferenceError / TypeError into the user's guard output).
+  const agentFiles = Array.isArray(config.requiredFiles?.agentFile)
+    ? config.requiredFiles.agentFile
+    : (typeof config.requiredFiles?.agentFile === 'string' ? [config.requiredFiles.agentFile] : []);
+  if (agentFiles.length > 0) {
+    results.total++;
+    const agentFileFound = agentFiles.some(f =>
+      existsSync(resolve(projectDir, f))
+    );
+    if (agentFileFound) {
+      results.passed++;
+    } else {
+      results.errors.push(`Missing agent file: ${agentFiles.join(' or ')}`);
+    }
   }
 
-  // Check changelog
-  results.total++;
-  if (existsSync(resolve(projectDir, config.requiredFiles.changelog))) {
-    results.passed++;
-  } else {
-    results.errors.push(`Missing required file: ${config.requiredFiles.changelog}`);
+  // Check changelog — same defensive pattern.
+  const changelogPath = config.requiredFiles?.changelog;
+  if (changelogPath) {
+    results.total++;
+    if (existsSync(resolve(projectDir, changelogPath))) {
+      results.passed++;
+    } else {
+      results.errors.push(`Missing required file: ${changelogPath}`);
+    }
   }
 
   // Check drift log

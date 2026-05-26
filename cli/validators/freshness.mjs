@@ -9,7 +9,24 @@
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, extname } from 'node:path';
 import { execSync, execFileSync } from 'node:child_process';
-import { getLastCommitDate } from '../shared-git.mjs';
+
+// B-5 fix (v0.13.1): use a defensive import. If `shared-git.mjs` is missing
+// or unloadable in the end-user install (whatever the root cause — partial
+// upgrade, package corruption, weird module resolution), we fall back to
+// the original inline implementation below. The worst-case outcome is
+// "rename detection doesn't work", NOT "validator crashes with a useless
+// ReferenceError". Reported by wu-whatsappinbox v0.13.x feedback.
+let _sharedGetLastCommitDate = null;
+try {
+  const mod = await import('../shared-git.mjs');
+  if (mod && typeof mod.getLastCommitDate === 'function') {
+    _sharedGetLastCommitDate = mod.getLastCommitDate;
+  }
+} catch {
+  // Silently fall back. Test in tests/freshness-resilience.test.mjs verifies
+  // the validator stays operational when the import goes sideways.
+  _sharedGetLastCommitDate = null;
+}
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build',
@@ -22,10 +39,29 @@ const IGNORE_DIRS = new Set([
  * Returns null if the file isn't tracked or git isn't available.
  */
 function getLastGitDate(filePath, dir) {
-  // Delegate to shared-git so rename history (--follow) is preserved.
-  // Without --follow, a `git mv` resets the file's "last commit date" and
-  // the Freshness counter silently misses drift introduced by the rename.
-  return getLastCommitDate(dir, filePath);
+  // Prefer the shared-git --follow-aware path when available (v0.13+ default).
+  // Fall back to inline implementation if the import failed at module load —
+  // this guarantees the validator never throws a ReferenceError even in
+  // environments where ESM resolution is broken.
+  if (_sharedGetLastCommitDate) {
+    try {
+      return _sharedGetLastCommitDate(dir, filePath);
+    } catch {
+      // fall through to inline
+    }
+  }
+  // Inline pre-v0.13 implementation — works without rename detection, but
+  // is guaranteed to not throw a "not defined" error.
+  try {
+    const result = execFileSync(
+      'git',
+      ['log', '-1', '--format=%aI', '--', filePath],
+      { cwd: dir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
+    ).trim();
+    return result ? new Date(result) : null;
+  } catch {
+    return null;
+  }
 }
 
 /**

@@ -18,6 +18,7 @@ import {
   extractHeadings,
   extractRefs,
   validateCrossReferences,
+  suggestAnchor,
 } from '../cli/validators/cross-reference.mjs';
 
 function makeRepo(files) {
@@ -209,6 +210,63 @@ describe('validateCrossReferences — end-to-end', () => {
     dir = makeRepo({ 'package.json': '{}' });
     const r = validateCrossReferences(dir, {});
     assert.equal(r.applicable, false);
+  });
+
+  it('S-12: suggests the closest anchor when a near-miss is detected', () => {
+    // Heading renamed but the link wasn't updated — most common wu case.
+    dir = makeRepo({
+      'docs-canonical/ARCHITECTURE.md':
+        '# Architecture\n\nSee [setup](#athena-setup) for details.\n\n' +
+        '## Athena Setup (AWS Only)\nstub\n',
+    });
+    const r = validateCrossReferences(dir, {});
+    assert.ok(r.warnings.length >= 1, 'broken anchor should warn');
+    const w = r.warnings[0];
+    assert.match(w, /did you mean #athena-setup-aws-only\?/,
+      `warning should include suggested slug; got: ${w}`);
+  });
+
+  it('S-12: does NOT suggest when no candidate is close enough', () => {
+    dir = makeRepo({
+      'docs-canonical/ARCHITECTURE.md':
+        '# A\n\nSee [foo](#totally-unrelated-anchor).\n\n## Components\nstub\n',
+    });
+    const r = validateCrossReferences(dir, {});
+    assert.ok(r.warnings.length >= 1);
+    const w = r.warnings[0];
+    assert.doesNotMatch(w, /did you mean/,
+      'no suggestion when nothing is close enough');
+  });
+
+  it('B-6: resolves URL-encoded paths (e.g. %20 for spaces)', () => {
+    // Real-world case from wu-whatsappinbox: a doc directory has a space in
+    // its name ("WU Documentation"), CommonMark allows the URL-encoded form,
+    // but the filesystem stores the decoded form. The validator should try
+    // both.
+    dir = makeRepo({
+      'docs-canonical/ARCHITECTURE.md':
+        '# Architecture\nSee [external](./../WU%20Documentation/foo.md) for the WU spec.\n',
+      'WU Documentation/foo.md': '# Foo\nstub\n',
+    });
+    const r = validateCrossReferences(dir, {});
+    assert.ok(
+      r.warnings.every(w => !w.includes('not found')),
+      `URL-encoded path should resolve via decode; got warnings: ${r.warnings.join(' | ')}`
+    );
+  });
+
+  it('B-6: falls back to literal path when decode fails (% in a real path)', () => {
+    // Edge: a file literally named "100%.md". The literal lookup should
+    // succeed; the decode attempt would throw URIError and fall back.
+    dir = makeRepo({
+      'docs-canonical/ARCHITECTURE.md':
+        '# A\nSee [pct](./100%.md).\n',
+      'docs-canonical/100%.md': '# 100%\nstub\n',
+    });
+    const r = validateCrossReferences(dir, {});
+    // Either resolves correctly OR doesn't crash — both acceptable. The
+    // bug we're guarding against is "throws on malformed decode".
+    assert.ok(Array.isArray(r.warnings), 'should not crash on % in path');
   });
 
   it('skips links to non-markdown files (images, code samples, etc.)', () => {

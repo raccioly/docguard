@@ -41,6 +41,7 @@ import { runTrace } from './commands/trace.mjs';
 import { runLlms } from './commands/llms.mjs';
 import { runSetup } from './commands/setup.mjs';
 import { runUpgrade } from './commands/upgrade.mjs';
+import { runImpact } from './commands/impact.mjs';
 import { ensureSkills } from './ensure-skills.mjs';
 
 // ── Shared constants (imported to break circular dependencies) ──────────
@@ -513,6 +514,9 @@ async function main() {
     case 'upgrade':
     case 'update':
       await runUpgrade(projectDir, config, flags);
+      break;
+    case 'impact':
+      runImpact(projectDir, config, flags);
       break;
     default:
       console.error(`${c.red}Unknown command: ${command}${c.reset}`);

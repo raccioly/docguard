@@ -23,11 +23,37 @@
  * @req SC-M1-004 — N/A when no source=code sections present in any doc
  */
 
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import { resolve, basename } from 'node:path';
 
 import { buildMemoryPlan } from '../scanners/memory-plan.mjs';
 import { getSection } from '../writers/sections.mjs';
+
+/**
+ * S-7: how long a generated doc may sit in `status: draft` before we warn.
+ * 14 days is the v0.13.1 default — long enough to absorb a typical sprint,
+ * short enough to surface forgotten skeletons before they rot.
+ */
+const DRAFT_STALENESS_DAYS = 14;
+
+/**
+ * Parse the frontmatter `status:` field from a markdown doc.
+ * Returns the trimmed value or null. Tolerant of either YAML-style
+ * fences (`---`) or HTML-comment-style (`<!-- status: draft -->`) markers.
+ */
+function extractDocStatus(content) {
+  if (!content) return null;
+  // YAML frontmatter: --- ... ---
+  const fmMatch = content.match(/^---\n([\s\S]*?)\n---/);
+  if (fmMatch) {
+    const sm = fmMatch[1].match(/^\s*status:\s*(\S+)\s*$/m);
+    if (sm) return sm[1].toLowerCase();
+  }
+  // Inline `<!-- status: draft -->` marker (common in docguard:generated docs).
+  const inline = content.match(/<!--\s*status:\s*(\w+)\s*-->/i);
+  if (inline) return inline[1].toLowerCase();
+  return null;
+}
 
 export function validateGeneratedStaleness(projectDir, config = {}) {
   const result = { errors: [], warnings: [], passed: 0, total: 0 };
@@ -46,12 +72,38 @@ export function validateGeneratedStaleness(projectDir, config = {}) {
 
   // Walk each doc's source=code sections and compare against on-disk content.
   let anySourceCodeSection = false;
+  const draftThresholdDays = (config.draftStalenessDays != null)
+    ? Number(config.draftStalenessDays)
+    : DRAFT_STALENESS_DAYS;
 
   for (const doc of plan.docs) {
     const fullPath = resolve(projectDir, doc.path);
     if (!existsSync(fullPath)) continue;
     let content;
     try { content = readFileSync(fullPath, 'utf-8'); } catch { continue; }
+
+    // S-7: a docguard:generated doc with frontmatter `status: draft` that
+    // hasn't been updated in N days is probably a forgotten skeleton.
+    // Counted as a check (so total reflects it) and warned when stale.
+    const status = extractDocStatus(content);
+    if (status === 'draft') {
+      result.total++;
+      try {
+        const mtime = statSync(fullPath).mtime;
+        const ageDays = (Date.now() - mtime.getTime()) / (1000 * 60 * 60 * 24);
+        if (ageDays > draftThresholdDays) {
+          result.warnings.push(
+            `${basename(doc.path)} has been in \`status: draft\` for ${Math.floor(ageDays)} days. ` +
+            `Promote to status:current or remove. Run \`/docguard.fix --doc ${basename(doc.path)}\` to draft the prose.`
+          );
+        } else {
+          result.passed++;
+        }
+      } catch {
+        // Couldn't stat the file — skip the staleness check, don't count it.
+        result.total--;
+      }
+    }
 
     for (const sec of doc.sections) {
       if (sec.source !== 'code') continue;
@@ -89,7 +141,10 @@ export function validateGeneratedStaleness(projectDir, config = {}) {
     }
   }
 
-  if (!anySourceCodeSection) {
+  // S-7: even when no source=code sections exist, a draft-status check
+  // counts the validator as applicable. Only return N/A when we genuinely
+  // had nothing to evaluate.
+  if (!anySourceCodeSection && result.total === 0) {
     return { ...result, applicable: false };
   }
 

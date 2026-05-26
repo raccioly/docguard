@@ -155,14 +155,103 @@ export function extractRefs(content, sourcePath) {
  * Resolve a target file path relative to a source markdown file.
  * Returns the absolute path or null if the file doesn't exist.
  */
+/**
+ * S-12: Suggest the closest matching anchor when a broken-anchor warning
+ * fires. Uses a cheap two-pass match:
+ *   1. Exact substring match (anchor is contained in or contains a heading)
+ *   2. Levenshtein-like edit-distance within a budget (max 3 edits)
+ *
+ * Returns the best-matching slug string, or null when no candidate scores
+ * well enough to suggest with confidence. Suggestion threshold tuned so
+ * cosmetic typos surface but unrelated headings don't false-positive.
+ *
+ * @param {string} broken - the slug the user wrote (e.g. "athena-setup")
+ * @param {Set<string>} candidates - anchors that exist in the target doc
+ * @returns {string|null}
+ */
+export function suggestAnchor(broken, candidates) {
+  if (!broken || !candidates || candidates.size === 0) return null;
+
+  // Pass 1: substring containment — high-confidence match. Both sides must
+  // be at least 4 chars to avoid spurious matches against very short anchors
+  // (e.g. `#a` would otherwise match any broken slug containing the letter a).
+  const MIN_SUBSTRING = 4;
+  for (const c of candidates) {
+    if (c.length < MIN_SUBSTRING || broken.length < MIN_SUBSTRING) continue;
+    if (c.startsWith(broken) || broken.startsWith(c) || c.includes(broken) || broken.includes(c)) {
+      // Additionally require >= 50% overlap of the shorter into the longer.
+      // Avoids "user-id" matching "user-management-and-administration" via
+      // the bare "user" prefix.
+      const overlap = Math.min(c.length, broken.length) / Math.max(c.length, broken.length);
+      if (overlap >= 0.5) return c;
+    }
+  }
+
+  // Pass 2: edit distance — pick the closest if within budget.
+  let best = null;
+  let bestDist = Infinity;
+  for (const c of candidates) {
+    // Cheap early-out: huge length difference can't be within budget.
+    if (Math.abs(c.length - broken.length) > 8) continue;
+    const d = editDistance(broken, c);
+    if (d < bestDist) { bestDist = d; best = c; }
+  }
+  // Budget: max(3, length / 5) — proportional to slug length but cap small.
+  const budget = Math.max(3, Math.floor(broken.length / 5));
+  if (bestDist <= budget) return best;
+  return null;
+}
+
+/**
+ * Levenshtein edit distance. O(m·n) time, O(min) space. We bound input
+ * size before calling (S-12's pass 2 pre-filters), so a textbook impl is
+ * fine. Adding a dependency for one cheap routine isn't worth it.
+ */
+function editDistance(a, b) {
+  if (a === b) return 0;
+  if (!a.length) return b.length;
+  if (!b.length) return a.length;
+  let prev = new Array(b.length + 1);
+  let curr = new Array(b.length + 1);
+  for (let j = 0; j <= b.length; j++) prev[j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    curr[0] = i;
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      curr[j] = Math.min(
+        prev[j] + 1,        // deletion
+        curr[j - 1] + 1,    // insertion
+        prev[j - 1] + cost, // substitution
+      );
+    }
+    [prev, curr] = [curr, prev];
+  }
+  return prev[b.length];
+}
+
 function resolveTarget(sourcePath, targetRel, projectDir) {
   if (!targetRel) return null;
-  // Try relative to source's directory first
-  const fromSource = resolve(dirname(sourcePath), targetRel);
-  if (existsSync(fromSource)) return fromSource;
-  // Also try from project root (some authors write `docs-canonical/X.md`)
-  const fromRoot = resolve(projectDir, targetRel);
-  if (existsSync(fromRoot)) return fromRoot;
+  // B-6: try BOTH the literal path and the URL-decoded form. CommonMark
+  // accepts `[name](../WU%20Documentation/foo.md)` for paths with spaces,
+  // and the decoded form (`../WU Documentation/foo.md`) is what hits the
+  // filesystem. The angle-bracket form `<../WU Documentation/foo.md>` is
+  // already non-URL-encoded by the time it reaches us. Try literal first
+  // (handles paths that legitimately contain `%`), then decoded.
+  const candidates = [targetRel];
+  try {
+    const decoded = decodeURIComponent(targetRel);
+    if (decoded !== targetRel) candidates.push(decoded);
+  } catch {
+    // Malformed % escapes — fall back to literal-only.
+  }
+  for (const cand of candidates) {
+    // Try relative to source's directory first
+    const fromSource = resolve(dirname(sourcePath), cand);
+    if (existsSync(fromSource)) return fromSource;
+    // Also try from project root (some authors write `docs-canonical/X.md`)
+    const fromRoot = resolve(projectDir, cand);
+    if (existsSync(fromRoot)) return fromRoot;
+  }
   return null;
 }
 
@@ -274,8 +363,13 @@ export function validateCrossReferences(projectDir, _config = {}) {
         const matches = anchors && (anchors.has(ref.anchor) || anchors.has(normalizedAnchor));
         if (!matches) {
           const where = targetPath === docPath ? 'same doc' : basename(targetPath);
+          // S-12: suggest the closest matching anchor when there's a near-miss.
+          // Three of five wu user-fixes were "heading renamed, link not updated"
+          // — a suggested-slug hint makes those deterministic-fixable.
+          const suggestion = anchors ? suggestAnchor(normalizedAnchor, anchors) : null;
+          const hint = suggestion ? ` (did you mean #${suggestion}?)` : '';
           warnings.push(
-            `${docName}:${ref.line} — broken anchor: "#${ref.anchor}" in ${where} doesn't match any heading`
+            `${docName}:${ref.line} — broken anchor: "#${ref.anchor}" in ${where} doesn't match any heading${hint}`
           );
           continue;
         }

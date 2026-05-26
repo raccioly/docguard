@@ -9,7 +9,7 @@
  */
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync, utimesSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -67,6 +67,53 @@ describe('validateGeneratedStaleness', () => {
     assert.equal(typeof r.total, 'number');
     assert.equal(typeof r.passed, 'number');
     assert.ok(Array.isArray(r.warnings));
+  });
+
+  it('S-7: warns when a status:draft doc has gone stale (mtime > threshold)', () => {
+    dir = makeRepo({
+      'package.json': JSON.stringify({ name: 't', version: '0.0.0' }),
+      'docs-canonical/ARCHITECTURE.md':
+        '---\nstatus: draft\n---\n\n# Architecture\n\nTODO: fill in.\n',
+    });
+    // Backdate the file mtime to 30 days ago
+    const past = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    utimesSync(join(dir, 'docs-canonical/ARCHITECTURE.md'), past, past);
+    const r = validateGeneratedStaleness(dir, { projectName: 't' });
+    assert.ok(
+      r.warnings.some(w => /draft.*\d+ days/i.test(w)),
+      `expected a draft-stale warning, got: ${r.warnings.join(' | ')}`
+    );
+  });
+
+  it('S-7: does NOT warn when a status:draft doc is freshly modified', () => {
+    dir = makeRepo({
+      'package.json': JSON.stringify({ name: 't', version: '0.0.0' }),
+      'docs-canonical/ARCHITECTURE.md':
+        '---\nstatus: draft\n---\n\n# Architecture\nfresh draft\n',
+    });
+    // mtime is "now" — well within the 14-day window
+    const r = validateGeneratedStaleness(dir, { projectName: 't' });
+    assert.ok(
+      !r.warnings.some(w => /draft.*\d+ days/i.test(w)),
+      `should not warn on fresh draft, got: ${r.warnings.join(' | ')}`
+    );
+  });
+
+  it('S-7: respects config.draftStalenessDays override', () => {
+    dir = makeRepo({
+      'package.json': JSON.stringify({ name: 't', version: '0.0.0' }),
+      'docs-canonical/ARCHITECTURE.md':
+        '<!-- status: draft -->\n\n# Architecture\nstub\n',
+    });
+    // 7 days old; default threshold is 14 (no warn) but 5 should warn.
+    const past = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    utimesSync(join(dir, 'docs-canonical/ARCHITECTURE.md'), past, past);
+    const lenient = validateGeneratedStaleness(dir, { projectName: 't', draftStalenessDays: 14 });
+    assert.ok(!lenient.warnings.some(w => /draft.*\d+ days/i.test(w)),
+      '14-day threshold: 7-day doc should not warn');
+    const strict = validateGeneratedStaleness(dir, { projectName: 't', draftStalenessDays: 5 });
+    assert.ok(strict.warnings.some(w => /draft.*\d+ days/i.test(w)),
+      '5-day threshold: 7-day doc should warn');
   });
 
   it('flags a stale section when on-disk content differs from scanner output', () => {

@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.1] - 2026-05-26
+
+Patch + small feature release responding to the wu-whatsappinbox v0.12/v0.13
+feedback. Fixes 2 bugs (B-5, B-6), ships 3 new features (S-7, S-11, S-12),
+and adds a cross-cutting "no validator throws" safety net. **22 validators,
+448 tests (was 434, +14 new).** New `docguard impact` command.
+
+### Fixed
+
+- **B-5: Freshness validator crashed with `getLastCommitDate is not defined`.** A wu-whatsappinbox install of v0.13.0 produced this ReferenceError despite all the imports being correct in source — we couldn't reproduce locally, but the user's report was clear. Fix: defensive dynamic import in `freshness.mjs` that falls back to the pre-v0.13 inline implementation if `../shared-git.mjs` ever fails to load. Worst-case behavior is now "rename detection silently disabled" instead of "validator crashes with useless message". Also added an inline fallback for the same defensive layering. Reported by wu-whatsappinbox.
+- **B-6: Cross-Reference didn't URL-decode link target paths.** A markdown link like `[name](../WU%20Documentation/foo.md)` (where the directory has a space) was looked up with `existsSync('../WU%20Documentation/foo.md')` literally — the filesystem stores the decoded form. Now: `resolveTarget` tries BOTH the literal path (for paths that legitimately contain `%`) and the URL-decoded form. **Effect on wu-whatsappinbox: Cross-Reference went from 28/28 to 101/101 checks — 73 previously-broken refs now resolve correctly.** Reported by wu-whatsappinbox.
+- **Cross-cutting safety net**: new `tests/guard-no-throw.test.mjs` runs guard against a fixture repo and asserts no validator leaks a ReferenceError / TypeError / "is not defined" / "is not a function" / "Cannot read properties of undefined" pattern into user-facing output. Found a *second* lurking bug while writing the test: Structure validator threw `Cannot read properties of undefined (reading 'some')` when `config.requiredFiles.agentFile` was missing — fixed with defensive array-or-string coercion + skip-when-missing for `changelog` too. This safety net runs in CI, catching the entire class of developer-error-leaks before release.
+
+### Added
+
+- **S-12: Cross-Reference suggests the closest anchor on near-miss.** When the validator flags a broken anchor, it now appends `(did you mean #athena-setup-aws-only?)` when a heading in the target doc is a close match. Two-pass matcher: (1) substring containment with ≥4-char minimum and ≥50% overlap to avoid spurious matches, (2) Levenshtein edit distance within a `max(3, len/5)` budget. **Three of the five wu user-fixes in v0.12.0 were "heading renamed, link not updated" — now deterministic-fixable from the warning text.** Reported by wu-whatsappinbox.
+- **S-7: Draft-staleness check in Generated-Doc Staleness validator.** A `docguard:generated` doc with `status: draft` (either YAML frontmatter or `<!-- status: draft -->` inline marker) that hasn't been modified in `> draftStalenessDays` days (default 14) now warns. Catches forgotten skeletons that stall before the AI fills them in. Threshold configurable via `config.draftStalenessDays`. Validator returns N/A only when there's NOTHING to check (no source=code sections AND no draft docs). Reported by wu-whatsappinbox.
+- **S-11: New `docguard impact` command.** After a commit (or before a PR), runs `git diff --name-only --since=<ref>` and shows which canonical doc sections reference any of the changed code files. Three match strategies (direct path / basename / backticked module name — same as L-2 trace --reverse). Highlights orphaned files (code that changed but no doc references it) so reviewers know what's undocumented. JSON mode emits `{ since, changedFiles, ignoredFiles, affectedDocs }` for CI bots. Designed as a post-commit hook companion to K-1's auto-fix Action. Reported by wu-whatsappinbox.
+
+### Internal
+
+- **+3 new test files**: `tests/guard-no-throw.test.mjs` (2 — cross-cutting safety), `tests/impact.test.mjs` (5 — S-11), plus 5 new test cases in `cross-reference.test.mjs` (S-12 + B-6) and `generated-staleness.test.mjs` (S-7). **Total: 434 → 448 tests (+14 new).**
+- **New module**: `cli/commands/impact.mjs` (~140 lines).
+- **Hardened**: `cli/validators/freshness.mjs` (defensive shared-git import), `cli/validators/structure.mjs` (defensive config-shape handling), `cli/validators/cross-reference.mjs` (URL-decode + anchor suggestion).
+- **Dry-run on wu-whatsappinbox before push** (read-only): 670/674 PASS in 1.8s with all 22 validators. Cross-Reference jumped from 28/28 to **101/101 checks** — B-6 fix unlocked 73 previously-broken refs.
+- No new NPM deps.
+
+### Note on wu's v0.12 feedback
+
+Several "still open" suggestions from the wu-whatsappinbox v0.12 feedback were already shipped:
+
+- **S-2 (sweep-needed nudge)** → shipped in v0.12.0 as K-6.
+- **S-3 (trace --reverse)** → shipped in v0.13.0 as L-2.
+- **S-4 (`git log --follow`)** → shipped in v0.13.0 as L-3.
+- **S-5 (.docguardignore at init)** → shipped in v0.12.0 as K-3.
+- **S-6 (per-validator severity)** → shipped in v0.12.0 as K-4.
+- **S-9 (pre-commit lite)** → shipped in v0.12.0 as K-5.
+- **S-10 (`.docguard/fixed.json`)** → shipped in v0.13.0 as M-2.
+
+Upgrade with `docguard upgrade --apply` (or `npm i -g docguard-cli@latest`) to get all of these. **The wu report header said v0.12.0 but the B-5 error pattern indicates an in-flight v0.13.0 install** — either way, this patch makes both versions resilient to the regression.
+
 ## [0.13.0] - 2026-05-26
 
 Feature release — full backlog cleanup. **Phase L** (sync intelligence: 3 features), **Phase M** (bigger validators: 2 features), **Phase N** (polish: 2 fixes), and a new `shared-git.mjs` module that gives every git-touching validator rename-aware history. **22 validators total** (was 21). 434 tests, +34 from v0.12.
