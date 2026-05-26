@@ -1,11 +1,16 @@
-name: Sync DocGuard to Spec Kit Community Catalog
+name: Sync DocGuard to Spec Kit Community Catalog (Manual)
 
-# Triggers after the release workflow completes, or manually
+# Manual recovery only. The automatic post-release sync now runs inside
+# release.yml itself (see the `sync-catalog` job there). This workflow
+# is kept for one-off catalog updates outside the release flow, e.g.
+# fixing a stale entry, retrying after upstream maintenance, or pushing
+# a metadata-only refresh.
+#
+# The previous workflow_run trigger was removed because it caused
+# repeatable HTTP 401s on `gh repo sync ... --source github/spec-kit`
+# despite the PAT being valid — a known GitHub Actions auth quirk for
+# cross-workflow secret usage in workflow_run contexts.
 on:
-  workflow_run:
-    workflows: ["Auto Release — Tag, GitHub Release, npm, PyPI"]
-    types: [completed]
-    branches: [main]
   workflow_dispatch:
     inputs:
       version:
@@ -19,8 +24,6 @@ permissions:
 jobs:
   sync-catalog:
     runs-on: ubuntu-latest
-    # Only run if the release workflow succeeded (or manual trigger)
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
 
     steps:
       - name: Checkout docguard repo
