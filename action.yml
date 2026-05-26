@@ -247,7 +247,7 @@ runs:
 
     - name: Post Fix Summary to PR Comment
       if: (inputs.command == 'fix' || inputs.command == 'sync') && inputs.comment-on-pr == 'true' && github.event_name == 'pull_request'
-      uses: actions/github-script@v7
+      uses: actions/github-script@v9
       with:
         script: |
           const count = parseInt('${{ steps.fix.outputs.fixes-applied }}' || '0', 10);
@@ -288,7 +288,7 @@ runs:
 
     - name: Post Score to PR Comment
       if: inputs.command == 'score' && github.event_name == 'pull_request'
-      uses: actions/github-script@v7
+      uses: actions/github-script@v9
       with:
         script: |
           const score = '${{ steps.run.outputs.score }}' || '?';
