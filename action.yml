@@ -8,7 +8,7 @@ branding:
 
 inputs:
   command:
-    description: 'Command to run: audit, guard, score, diff'
+    description: 'Command to run: audit, guard, score, diff, fix, sync'
     required: false
     default: 'guard'
   format:
@@ -31,6 +31,27 @@ inputs:
     description: 'Node.js version to use'
     required: false
     default: '20'
+  # ---- fix / sync mode (auto-commit on PRs) ----
+  auto-commit:
+    description: 'When command=fix or sync: commit any mechanical fixes back to the PR branch. Requires permissions.contents=write on the calling workflow.'
+    required: false
+    default: 'false'
+  commit-message:
+    description: 'Commit message body when auto-commit applies fixes. Trailer co-author is appended automatically.'
+    required: false
+    default: 'docs: apply DocGuard mechanical fixes'
+  comment-on-pr:
+    description: 'When command=fix, guard, or sync: post a summary comment on the PR. Requires permissions.pull-requests=write.'
+    required: false
+    default: 'false'
+  bot-name:
+    description: 'Git author name for the auto-commit. Defaults to a clearly-marked bot identity.'
+    required: false
+    default: 'docguard-bot'
+  bot-email:
+    description: 'Git author email for the auto-commit.'
+    required: false
+    default: 'docguard-bot@users.noreply.github.com'
 
 outputs:
   score:
@@ -42,6 +63,15 @@ outputs:
   result:
     description: 'Full JSON result from DocGuard'
     value: ${{ steps.run.outputs.result }}
+  fixes-applied:
+    description: 'For command=fix: number of mechanical fixes applied (0 = none, no commit was made)'
+    value: ${{ steps.fix.outputs.fixes-applied }}
+  changed-files:
+    description: 'For command=fix or sync: newline-separated list of files modified by --write'
+    value: ${{ steps.fix.outputs.changed-files }}
+  committed:
+    description: 'For auto-commit=true: "true" if a commit was pushed, "false" otherwise'
+    value: ${{ steps.commit.outputs.committed }}
 
 runs:
   using: 'composite'
@@ -115,11 +145,146 @@ runs:
           fi
 
           exit $EXIT_CODE
+        elif [ "$CMD" = "fix" ] || [ "$CMD" = "sync" ]; then
+          # Handled by the fix step below — print marker and exit clean here so
+          # the next step takes over with its own diff detection.
+          echo "::group::DocGuard $CMD (write phase runs in the next step)"
+          echo "delegating to 'Apply fixes' step"
+          echo "::endgroup::"
+          exit 0
         else
           npx docguard-cli $CMD $FLAGS
           EXIT_CODE=$?
           exit $EXIT_CODE
         fi
+
+    - name: Apply fixes (fix/sync mode)
+      id: fix
+      if: inputs.command == 'fix' || inputs.command == 'sync'
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        set +e
+        CMD="${{ inputs.command }}"
+
+        # Snapshot working-tree state before the write.
+        BEFORE=$(git status --porcelain 2>/dev/null | sort)
+
+        if [ "$CMD" = "fix" ]; then
+          npx docguard-cli fix --write 2>&1 | tee docguard-fix-output.txt
+          RC=${PIPESTATUS[0]}
+        else
+          npx docguard-cli sync --write 2>&1 | tee docguard-fix-output.txt
+          RC=${PIPESTATUS[0]}
+        fi
+
+        AFTER=$(git status --porcelain 2>/dev/null | sort)
+
+        # Files that changed during the write (new, modified, or deleted).
+        # Filter out DocGuard's own side-effect paths — `ensureSkills` writes
+        # to .agent/ / .specify/ / commands/ on first run, and we don't want
+        # those committed as "fixes". Headless mode in the CLI already skips
+        # ensureSkills, but we belt-and-brace it here for older CLIs and
+        # for any future side-effect tree the CLI might introduce.
+        CHANGED=$(diff <(echo "$BEFORE") <(echo "$AFTER") \
+          | grep '^>' \
+          | sed 's/^> //' \
+          | awk '{print $2}' \
+          | grep -vE '^(\.agent|\.specify|commands|\.docguard|\.wolf|\.claude)/' \
+          | sort -u)
+        COUNT=$(echo "$CHANGED" | grep -c . || true)
+
+        echo "fixes-applied=${COUNT:-0}" >> $GITHUB_OUTPUT
+        {
+          echo "changed-files<<DOCGUARD_EOF"
+          echo "$CHANGED"
+          echo "DOCGUARD_EOF"
+        } >> $GITHUB_OUTPUT
+
+        echo ""
+        echo "DocGuard $CMD applied ${COUNT:-0} change(s)."
+        if [ "${COUNT:-0}" -gt 0 ]; then
+          echo "$CHANGED" | sed 's/^/  • /'
+        fi
+
+        exit $RC
+
+    - name: Commit and push fixes
+      id: commit
+      if: (inputs.command == 'fix' || inputs.command == 'sync') && inputs.auto-commit == 'true' && steps.fix.outputs.fixes-applied != '0'
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        set -e
+
+        # Refuse to run on PRs from forks — pushing back is impossible.
+        if [ "${{ github.event_name }}" = "pull_request" ] && [ "${{ github.event.pull_request.head.repo.full_name }}" != "${{ github.repository }}" ]; then
+          echo "::warning::Auto-commit skipped — PR is from a fork (head.repo != repository). The bot cannot push to fork branches."
+          echo "committed=false" >> $GITHUB_OUTPUT
+          exit 0
+        fi
+
+        git config user.name "${{ inputs.bot-name }}"
+        git config user.email "${{ inputs.bot-email }}"
+
+        # Use a clearly-bot-attributed commit so the PR author and reviewers can
+        # tell at a glance this came from automation, not a human edit.
+        git add -A
+        git commit -m "${{ inputs.commit-message }}" \
+                   -m "Files: ${{ steps.fix.outputs.fixes-applied }} touched by 'docguard ${{ inputs.command }} --write'." \
+                   -m "Automated commit from raccioly/docguard@${{ github.action_ref || 'main' }}." \
+                   -m "Co-Authored-By: ${{ inputs.bot-name }} <${{ inputs.bot-email }}>"
+
+        # Push to the PR head ref when triggered by pull_request, otherwise to the
+        # current branch.
+        if [ "${{ github.event_name }}" = "pull_request" ]; then
+          git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
+        else
+          git push origin "HEAD:${{ github.ref_name }}"
+        fi
+
+        echo "committed=true" >> $GITHUB_OUTPUT
+
+    - name: Post Fix Summary to PR Comment
+      if: (inputs.command == 'fix' || inputs.command == 'sync') && inputs.comment-on-pr == 'true' && github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const count = parseInt('${{ steps.fix.outputs.fixes-applied }}' || '0', 10);
+          const changedRaw = `${{ steps.fix.outputs.changed-files }}`.trim();
+          const committed = '${{ steps.commit.outputs.committed }}' === 'true';
+          const cmd = '${{ inputs.command }}';
+          const files = changedRaw ? changedRaw.split('\n').filter(Boolean) : [];
+
+          let body;
+          if (count === 0) {
+            body = `## ✅ DocGuard \`${cmd}\` — no mechanical fixes needed\n\n` +
+                   `Docs and code are already in sync for the deterministic fix types (version, count, endpoint removal, changelog stub).\n\n` +
+                   `Prose rewrites (if any) still need an AI agent — run \`/docguard.fix\` from your editor.\n\n` +
+                   `> *Automated by [DocGuard](https://github.com/raccioly/docguard)*`;
+          } else {
+            const list = files.slice(0, 25).map(f => `- \`${f}\``).join('\n');
+            const extra = files.length > 25 ? `\n\n…and ${files.length - 25} more.` : '';
+            const tail = committed
+              ? `Pushed to \`${context.payload.pull_request.head.ref}\` as a single bot commit.`
+              : `\`auto-commit\` was off — apply locally with \`npx docguard-cli ${cmd} --write\`.`;
+            body = `## 🔧 DocGuard \`${cmd}\` — ${count} mechanical fix(es) applied\n\n` +
+                   `${list}${extra}\n\n` +
+                   `${tail}\n\n` +
+                   `> *Automated by [DocGuard](https://github.com/raccioly/docguard)*`;
+          }
+
+          const { owner, repo } = context.repo;
+          const issue_number = context.issue.number;
+          const comments = await github.rest.issues.listComments({ owner, repo, issue_number });
+          const existing = comments.data.find(c =>
+            c.body.includes(`DocGuard \`${cmd}\``) && c.user.type === 'Bot'
+          );
+          if (existing) {
+            await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+          } else {
+            await github.rest.issues.createComment({ owner, repo, issue_number, body });
+          }
 
     - name: Post Score to PR Comment
       if: inputs.command == 'score' && github.event_name == 'pull_request'

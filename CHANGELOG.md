@@ -7,6 +7,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-05-26
+
+Feature release — Phase K (7 features). Schema bump to **0.5**. Adds the
+PR-time auto-fix GitHub Action, `docguard upgrade` command + post-guard
+nudge, `.docguardignore` support, per-validator severity overrides,
+pre-commit-lite mode, sweep-needed nudge, and the new Cross-Reference
+validator (21 validators total, up from 20). Plus 4 papercut fixes
+caught during the wu-whatsappinbox dry-run.
+
+### Added
+
+- **K-1: PR-time auto-fix GitHub Action.** Extended `action.yml` with `command: fix` and `command: sync`, plus new inputs `auto-commit`, `comment-on-pr`, `commit-message`, `bot-name`, `bot-email`, and new outputs `fixes-applied`, `changed-files`, `committed`. The action commits any mechanical fixes back to the PR branch as `docguard-bot` and posts a summary comment. Fork PRs are skipped (head.repo != repository). Two ready-to-copy workflow templates ship under `extensions/spec-kit-docguard/templates/github-workflows/`: `docguard-guard.yml` (mandatory CI gate) and `docguard-autofix.yml` (PR auto-fix). Full recipe matrix in the new `docs-canonical/CI-RECIPES.md`.
+- **K-2: `docguard upgrade` command + post-guard schema-behind nudge.** New `docguard upgrade` checks installed CLI vs latest npm version (3-second-timeout fetch, fails open if offline) and project schema vs `CURRENT_SCHEMA_VERSION`. Flags: `--check-only` (exit 1 if behind, for CI), `--apply` (runs `npm i -g docguard-cli@latest` and migrates `.docguard.json`). `docguard guard` now appends a yellow `↑` nudge when the project's schema is behind. Aliased as `docguard update`.
+- **K-3: `.docguardignore` template at init (S-5).** New gitignore-style file (`one pattern per line, # comments`) merged into `config.ignore` at config-load time so every validator honors it. `docguard init` drops a starter `.docguardignore` covering common build outputs, generated code, and lock files. Loader (`loadDocguardIgnore`) + merger (`mergeIgnoreFile`) live in `cli/shared-ignore.mjs` — missing/unreadable file is a no-op.
+- **K-4: Per-validator severity overrides in `.docguard.json` (S-6).** New `severity` map: `{ severity: { todoTracking: "high", freshness: "low" } }`. `'high'` promotes that validator's warnings to fail-CI status (exit 1). `'low'` demotes them to info (no exit-code effect). `'medium'` (default) keeps existing exit-2 behavior. Display is unchanged — severity only affects CI. New `data.effectiveErrors` and `data.effectiveWarnings` fields in the JSON output reflect the severity-aware counts. The CLI prints a one-line note when overrides shifted the exit code.
+- **K-5: Pre-commit lite mode (S-9).** `docguard guard --changed-only` runs only the 3 fastest, highest-signal validators: Docs-Sync + Environment + API-Surface. Designed to complete in under 2 seconds for husky/lefthook pre-commit hooks. Validator list exported as `CHANGED_ONLY_VALIDATORS` for tooling. Recipe 5 in CI-RECIPES documents the integration.
+- **K-6: Sweep-needed nudge from Freshness counters (S-2).** When 2+ canonical docs are stale (10+ commits since last update), the guard footer now emits a single `↻` line recommending `docguard sync --write` to refresh all code-truth sections in one pass. Aggregates individual freshness warnings into one actionable recommendation. Suppressed in `--format json` mode.
+- **K-7: Cross-Reference validator (S-8) — 21st validator.** New `Cross-Reference` validator scans canonical docs for cross-references (markdown links like `[text](./OTHER.md#section)` and intra-doc anchors `#anchor`) and warns when they don't resolve. Extracts headings and computes GFM-compatible slugs. Skips external URLs (http/https/mailto), code-fenced examples, inline backtick code, and non-markdown link targets. URL-decodes anchors before comparison so `%EF%B8%8F`-encoded variation selectors resolve. Caught **14 broken refs in our own README** during the dry-run (4 remain after slugifier fixes — those are real bugs for a future doc cleanup PR).
+- **Antigravity / Kiro / Windsurf / GEMINI signal aliases (also in v0.11.2).** `cli/ensure-skills.mjs` detects these agent ecosystems via additional signal files. Doc-only mention here for visibility — code shipped in v0.11.2.
+
+### Changed
+
+- **Schema bumped from 0.4 → 0.5.** Migration is purely additive: `severity: {}` field appears on existing configs. Run `docguard upgrade --apply` to migrate (or hand-edit). The post-guard nudge fires until you do.
+- **`docguard init` writes schema version `0.5`** with an empty `severity: {}` block and now also creates `.docguardignore`.
+- **`docguard guard` JSON output** includes new fields: `effectiveErrors`, `effectiveWarnings`, and per-validator `severity`.
+
+### Fixed
+
+- **Docs-Coverage Check 5 silent-fail** (also in v0.11.2) — recommended README sections no longer bump `total` without emitting a message. Now a true bonus: present = +1, missing = no-op.
+- **Papercut #1 — `upgrade` missed pre-0.4 schemas.** A `.docguard.json` that exists but has no `version` field (the 2024-era format used by `wu-whatsappinbox`, with `project` instead of `projectName`) was silently treated as "no config". Now: `readProjectSchemaVersion` returns the sentinel `'0.0'` for pre-0.4 schemas, and the migration registry has a `0.0 → 0.4` recipe that renames `project → projectName` while stamping the version. The user-facing label is friendlier too ("pre-0.4 (no version field)" instead of "Schema 0.0").
+- **Papercut #2 — `--format json` was unparseable.** The banner and `ensureSkills` install message wrote to stdout BEFORE the JSON body, so `JSON.parse` failed on every consumer. New `jsonMode` + `headless` detection in `main()` skips both for `--format json`, `--write`, `--check-only`, and `--changed-only`. Affects every Action recipe using `format: json` (Score-on-PR was broken).
+- **Papercut #3 — auto-fix Action counted CLI side effects as "fixes".** `ensureSkills` writes to `.agent/`, `.specify/`, `commands/` on first run; the Action's `git status --porcelain` diff was treating those as mechanical fixes and committing them. Two-part fix: (1) the new headless-mode skips `ensureSkills` so the side effects don't appear, and (2) the Action's bash filter excludes `.agent/`, `.specify/`, `commands/`, `.docguard/`, `.wolf/`, `.claude/` from the changed-files detection as belt-and-suspenders.
+- **Papercut #4 — slugifier didn't match GitHub's GFM.** The Cross-Reference validator's first iteration false-positived on every emoji-prefixed heading (`## ⚡ Quick Start` → GitHub produces `#-quick-start` with a leading dash, but my code produced `#quick-start`). Also collapsed `--` to `-` which GitHub keeps. Three bugs fixed; tests now lock in GFM compatibility for emoji-prefixed headings and stripped-punctuation cases.
+
+### Internal
+
+- 6 new test files: `tests/upgrade.test.mjs` (12 tests), `tests/docguardignore.test.mjs` (11 tests), `tests/severity.test.mjs` (9 tests), `tests/changed-only.test.mjs` (4 tests), `tests/sweep-nudge.test.mjs` (3 tests), `tests/cross-reference.test.mjs` (22 tests). **Total: 400 tests passing (was 339, +61 new).**
+- Cross-Reference validator added (21 total validators, up from 20). Metrics-Consistency picked up the new count and `fix --write` auto-bumped 8 doc references from "20 validators" → "21 validators" in one pass — eating our own dogfood.
+- Dry-run on `wu-whatsappinbox` (read-only) before push surfaced the 4 papercuts above. All fixed in this release.
+- New modules: `cli/commands/upgrade.mjs`, `loadDocguardIgnore` + `mergeIgnoreFile` exports in `cli/shared-ignore.mjs`, `CURRENT_SCHEMA_VERSION` + `SEVERITY_LEVELS` + `resolveSeverity` + `compareVersions` + `parseVersion` exports in `cli/shared.mjs`, `CHANGED_ONLY_VALIDATORS` + `liteValidatorsConfig` in `cli/commands/guard.mjs`.
+- New docs: `docs-canonical/CI-RECIPES.md` (5 recipes + permissions cheatsheet + full action inputs/outputs reference).
+- `action.yml` grew from 166 → 323 lines (+157) with the auto-commit/comment flow.
+- No new NPM runtime dependencies. Still zero deps. Node 18+ for built-in `fetch` (used by `upgrade` to check the npm registry).
+
+### Out of scope (deferred to v0.13)
+
+- **Phase L (sync intelligence)**: S-1 `sync --since` surgical refresh (currently only reports diff as context), S-2 sweep-needed nudge from freshness counters, S-3 `trace --reverse` (code → doc-section map), S-4 rename detection via `git log --follow`.
+- **Phase M (bigger validators)**: S-7 generated-doc-in-draft staleness validator, S-8 cross-reference validator (broken `§X` anchors), S-10 `.docguard/fixed.json` memory of past fixes.
+- **K-5 enhancement**: scope each lite-mode validator to changed files only (currently the 3 validators run against the whole repo — fast enough but not optimal). Tracked for v0.13.
+
 ## [0.11.2] - 2026-05-25
 
 Patch release addressing the four bugs (B-1..B-4) reported from the v0.11.1 audit of `wu-whatsappinbox` (score 98/100, 572/575 passed, 1 warning), plus Antigravity/Kiro/Windsurf agent-routing aliases and a Docs-Coverage silent-fail fix that the new B-4 nudge itself exposed.

@@ -1,0 +1,51 @@
+# DocGuard Auto-Fix — applies mechanical doc fixes on every PR.
+#
+# What this does on each PR:
+#   1. Runs `docguard fix --write` (deterministic fixes: version bumps,
+#      counts, endpoint removal from API-REFERENCE, changelog stubs).
+#   2. If anything changed, commits the diff back to the PR branch as
+#      `docguard-bot` and posts a summary comment.
+#   3. If nothing changed, posts a "no fixes needed" comment.
+#
+# Prose rewrites (entire-section regenerations) still need an AI agent —
+# run `/docguard.fix` in your editor for those.
+#
+# Setup:
+#   1. Copy this file to .github/workflows/docguard-autofix.yml
+#   2. Ensure the workflow has the permissions block below (write access).
+#   3. (Optional) Pin to a specific DocGuard version by changing `@main` to a tag.
+#
+# Security note: this workflow makes commits back to the PR branch. It refuses
+# to run on PRs from forks (where pushing back is impossible by design).
+name: DocGuard Auto-Fix
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write          # commit fixes back to the PR branch
+  pull-requests: write     # post the summary comment
+
+jobs:
+  autofix:
+    runs-on: ubuntu-latest
+    # Skip on fork PRs — the next step would error trying to push.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - name: Checkout PR branch (with write token)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          # Default GITHUB_TOKEN has the contents:write scope granted above.
+          # For org-protected branches or commit signing, swap in a PAT/App token.
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Run DocGuard fix --write + auto-commit + PR comment
+        uses: raccioly/docguard@main
+        with:
+          command: fix
+          auto-commit: 'true'
+          comment-on-pr: 'true'
+          commit-message: 'docs: apply DocGuard mechanical fixes'

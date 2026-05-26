@@ -7,10 +7,10 @@ description: Run DocGuard guard validation against Canonical-Driven Development 
 compatibility: Requires DocGuard CLI installed (npm i -g docguard-cli or npx docguard-cli)
 metadata:
   author: docguard
-  version: 0.11.2
+  version: 0.12.0
   source: extensions/spec-kit-docguard/skills/docguard-guard
 ---
-<!-- docguard:version: 0.11.2 -->
+<!-- docguard:version: 0.12.0 -->
 
 # DocGuard Guard Skill
 
@@ -139,7 +139,7 @@ For each finding, provide a **specific, actionable fix** — not "fix the issue"
 
 Based on the triage results:
 
-- **If all PASS**: "All 20 validators passed. Project is CDD-compliant. Ready to commit."
+- **If all PASS**: "All 21 validators passed. Project is CDD-compliant. Ready to commit."
 - **If only MEDIUM/LOW warnings**: "Non-blocking warnings found. Safe to commit, but consider running `/docguard.fix` for automated remediation."
 - **If HIGH or CRITICAL failures**: "Blocking issues found. Fix these before committing. Suggest running `/docguard.fix --doc [most impactful doc]` next."
 

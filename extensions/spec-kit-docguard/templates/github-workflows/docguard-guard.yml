@@ -1,0 +1,48 @@
+# DocGuard Guard — runs all 20 validators on every PR and main push.
+#
+# This is the canonical CI gate. It does NOT modify your repo — it only
+# reports. Pair with `docguard-autofix.yml` if you want mechanical fixes
+# applied automatically.
+#
+# Setup:
+#   1. Copy this file to .github/workflows/docguard-guard.yml
+#   2. (Optional) Set `fail-on-warning: 'true'` to make warnings block the PR.
+name: DocGuard Guard
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write     # only needed for the optional score comment below
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run all validators
+        uses: raccioly/docguard@main
+        with:
+          command: guard
+          # Flip to 'true' once your repo is clean — turns warnings into hard failures.
+          fail-on-warning: 'false'
+
+  # Optional: post the CDD score on every PR as a tracked metric.
+  score:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Score & comment
+        uses: raccioly/docguard@main
+        with:
+          command: score
+          format: json

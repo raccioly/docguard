@@ -1,5 +1,5 @@
 ---
-description: Run DocGuard guard validation — check project documentation against CDD standards with 20 validators
+description: Run DocGuard guard validation — check project documentation against CDD standards with 21 validators
 handoffs:
   - label: Fix All Issues
     agent: docguard.fix
@@ -23,7 +23,7 @@ Run the DocGuard CLI to validate all documentation against Canonical-Driven Deve
 npx docguard-cli guard
 ```
 
-2. **Parse the output**. Each of the 20 validators reports ✅ (pass), ⚠️ (warning), ❌ (fail), or ➖ (N/A — nothing to validate). **A ➖ N/A is NOT a pass**: it means the validator found nothing to check (e.g. no API-REFERENCE.md, no DB schema, no layer boundaries declared). Don't read N/A as "healthy" — read it as "not assessed".
+2. **Parse the output**. Each of the 21 validators reports ✅ (pass), ⚠️ (warning), ❌ (fail), or ➖ (N/A — nothing to validate). **A ➖ N/A is NOT a pass**: it means the validator found nothing to check (e.g. no API-REFERENCE.md, no DB schema, no layer boundaries declared). Don't read N/A as "healthy" — read it as "not assessed".
 
    | Validator | What It Checks |
    |-----------|---------------|

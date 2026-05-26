@@ -41,6 +41,56 @@ const ALWAYS_REJECT_PATH_RE =
   /(?:^|[/\\])(?:node_modules|\.claude[/\\]worktrees|\.git[/\\]worktrees|\.jj)(?:[/\\]|$)/;
 
 /**
+ * Read `.docguardignore` from a project directory and return its patterns.
+ *
+ * Format: gitignore-style — one pattern per line, `#` for comments, blank lines
+ * ignored. Returned patterns are normalized but not transformed (callers
+ * decide whether to expand directory globs).
+ *
+ * Returns [] if the file is missing or unreadable — never throws.
+ */
+import { readFileSync, existsSync } from 'node:fs';
+import { resolve as resolvePath } from 'node:path';
+
+export function loadDocguardIgnore(projectDir) {
+  const p = resolvePath(projectDir, '.docguardignore');
+  if (!existsSync(p)) return [];
+  try {
+    const raw = readFileSync(p, 'utf-8');
+    return raw
+      .split(/\r?\n/)
+      .map(line => line.trim())
+      .filter(line => line && !line.startsWith('#'));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Merge `.docguardignore` patterns into a config object's `ignore` array.
+ *
+ * Used at config-load time so every validator sees the combined set without
+ * having to know about the file. Mutates and returns the config for ergonomics.
+ *
+ * Idempotent — calling twice produces the same result. Skips duplicates.
+ */
+export function mergeIgnoreFile(projectDir, config) {
+  const filePatterns = loadDocguardIgnore(projectDir);
+  if (filePatterns.length === 0) return config;
+  const existing = Array.isArray(config.ignore) ? config.ignore : [];
+  const seen = new Set(existing);
+  const merged = [...existing];
+  for (const p of filePatterns) {
+    if (!seen.has(p)) {
+      merged.push(p);
+      seen.add(p);
+    }
+  }
+  config.ignore = merged;
+  return config;
+}
+
+/**
  * Convert a glob pattern to a RegExp.
  * Supports: * (any chars except /), ** (any path segments), . (literal dot).
  *

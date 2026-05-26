@@ -343,7 +343,7 @@ DocGuard provides AI agent slash commands for integrated workflows. Installed au
 
 | Command | What It Does |
 |:--------|:-------------|
-| `/docguard.guard` | Run quality validation — check all 20 validators |
+| `/docguard.guard` | Run quality validation — check all 21 validators |
 | `/docguard.review` | Analyze doc quality and suggest improvements |
 | `/docguard.fix` | Generate targeted fix prompts for specific issues |
 | `/docguard.score` | Show CDD maturity score with category breakdown |
@@ -433,20 +433,42 @@ DocGuard runs its own `guard`, `score`, `diff`, `diagnose`, and `badge` commands
 
 ## ⚙️ CI/CD Integration
 
-### GitHub Actions
+> **Full recipes:** see [`docs-canonical/CI-RECIPES.md`](./docs-canonical/CI-RECIPES.md) for guard, auto-fix (commits mechanical fixes back to PRs), nightly sync, score-on-PR, and pre-commit configs.
+
+### GitHub Actions — Guard (most common)
 
 ```yaml
-name: DocGuard CDD Check
-on: [pull_request]
+name: DocGuard Guard
+on: [pull_request, push]
 jobs:
   docguard:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: '20' }
-      - run: npx docguard-cli guard
-      - run: npx docguard-cli score --format json
+        with: { fetch-depth: 0 }
+      - uses: raccioly/docguard@v0.12.0
+        with:
+          command: guard
+```
+
+### GitHub Actions — Auto-Fix (commits mechanical fixes back)
+
+```yaml
+name: DocGuard Auto-Fix
+on: { pull_request: { types: [opened, synchronize, reopened] } }
+permissions: { contents: write, pull-requests: write }
+jobs:
+  autofix:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+      - uses: raccioly/docguard@v0.12.0
+        with: { command: fix, auto-commit: 'true', comment-on-pr: 'true' }
 ```
 
 ### Pre-commit Hook
@@ -455,14 +477,11 @@ jobs:
 npx docguard-cli hooks --type pre-commit
 ```
 
-### GitHub Marketplace
+### Workflow starters (copy directly)
 
-```yaml
-- uses: raccioly/docguard@v0.9.7
-  with:
-    command: guard
-    fail-on-warning: true
-```
+Two ready-to-use templates ship with the Spec Kit extension and as standalone files:
+- `extensions/spec-kit-docguard/templates/github-workflows/docguard-guard.yml` — mandatory CI gate
+- `extensions/spec-kit-docguard/templates/github-workflows/docguard-autofix.yml` — PR auto-fix
 
 ---
 

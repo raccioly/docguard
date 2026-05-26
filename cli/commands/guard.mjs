@@ -7,8 +7,9 @@
  *   runGuardInternal() → returns data, no side effects (for diagnose, ci)
  */
 
-import { c } from '../shared.mjs';
+import { c, resolveSeverity } from '../shared.mjs';
 import { detectAgentMode, isSpecKitInitialized } from '../ensure-skills.mjs';
+import { checkUpgradeStatus } from './upgrade.mjs';
 import { validateStructure, validateDocSections } from '../validators/structure.mjs';
 import { validateDrift } from '../validators/drift.mjs';
 import { validateChangelog } from '../validators/changelog.mjs';
@@ -25,6 +26,7 @@ import { validateMetadataSync } from '../validators/metadata-sync.mjs';
 import { validateMetricsConsistency } from '../validators/metrics-consistency.mjs';
 import { validateDocsCoverage } from '../validators/docs-coverage.mjs';
 import { validateDocQuality } from '../validators/doc-quality.mjs';
+import { validateCrossReferences } from '../validators/cross-reference.mjs';
 import { validateTodoTracking } from '../validators/todo-tracking.mjs';
 import { validateSchemaSync } from '../validators/schema-sync.mjs';
 import { validateSpecKitIntegration } from '../scanners/speckit.mjs';
@@ -100,6 +102,7 @@ export function runGuardInternal(projectDir, config) {
     { key: 'todoTracking', name: 'TODO-Tracking', fn: () => validateTodoTracking(projectDir, config) },
     { key: 'schemaSync', name: 'Schema-Sync', fn: () => validateSchemaSync(projectDir, config) },
     { key: 'specKit', name: 'Spec-Kit', fn: () => validateSpecKitIntegration(projectDir, config) },
+    { key: 'crossReference', name: 'Cross-Reference', fn: () => validateCrossReferences(projectDir, config) },
     // Metrics-Consistency runs post-loop (needs guard results)
   ];
 
@@ -133,6 +136,25 @@ export function runGuardInternal(projectDir, config) {
   const totalPassed = activeResults.reduce((sum, r) => sum + r.passed, 0);
   const totalChecks = activeResults.reduce((sum, r) => sum + r.total, 0);
 
+  // Per-validator severity overrides (v0.5 schema). Affects EXIT-CODE only,
+  // not display. Annotate each validator with its resolved severity and roll
+  // up effective error/warning counts:
+  //   - high  → validator's warnings get promoted to "effective errors"
+  //   - low   → validator's warnings are demoted (ignored for exit code)
+  //   - medium (default) → warnings stay as-is
+  for (const v of activeResults) {
+    v.severity = resolveSeverity(config, v.key);
+  }
+  let effectiveErrors = totalErrors;
+  let effectiveWarnings = 0;
+  for (const v of activeResults) {
+    const wCount = v.warnings.length;
+    if (wCount === 0) continue;
+    if (v.severity === 'high') effectiveErrors += wCount;
+    else if (v.severity === 'low') { /* ignored for exit */ }
+    else effectiveWarnings += wCount;
+  }
+
   const overallStatus = totalErrors > 0 ? 'FAIL' : totalWarnings > 0 ? 'WARN' : 'PASS';
 
   return {
@@ -143,22 +165,66 @@ export function runGuardInternal(projectDir, config) {
     total: totalChecks,
     errors: totalErrors,
     warnings: totalWarnings,
+    // v0.5: severity-aware counts for exit-code logic. The display still uses
+    // the raw counts above so users see every warning, but CI only fails on
+    // things they've marked as high-severity.
+    effectiveErrors,
+    effectiveWarnings,
     validators: results,
     timestamp: new Date().toISOString(),
   };
 }
 
 /**
+ * The "pre-commit lite" validator set — fast checks suitable for running
+ * on every commit/save. Tuned for <2s wall-clock on average repos.
+ *
+ * The list is intentionally short: validators that catch >80% of the
+ * common doc drift that developers introduce mid-feature (route added but
+ * not documented, env var renamed but not updated in ENVIRONMENT.md,
+ * endpoint deleted but still in API-REFERENCE.md). Heavy validators —
+ * Freshness (git log), Traceability (REQ scan), Doc-Quality (prose lint) —
+ * stay off for speed.
+ */
+export const CHANGED_ONLY_VALIDATORS = ['docsSync', 'environment', 'apiSurface'];
+
+/**
+ * Build a validators map that enables only the pre-commit-lite set.
+ * Used by `docguard guard --changed-only`.
+ */
+function liteValidatorsConfig() {
+  const all = [
+    'structure', 'docsSync', 'drift', 'changelog', 'testSpec', 'environment',
+    'security', 'architecture', 'freshness', 'traceability', 'docsDiff',
+    'apiSurface', 'metadataSync', 'docsCoverage', 'docQuality', 'todoTracking',
+    'schemaSync', 'specKit', 'crossReference', 'metricsConsistency',
+  ];
+  const out = {};
+  for (const k of all) out[k] = CHANGED_ONLY_VALIDATORS.includes(k);
+  return out;
+}
+
+/**
  * Public guard — prints results and exits.
  */
 export function runGuard(projectDir, config, flags) {
+  // --changed-only: pre-commit lite mode. Overrides the validator set to a
+  // fast subset (Docs-Sync, Environment, API-Surface). Designed for husky/
+  // lefthook hooks; expects to finish in under 2 seconds.
+  if (flags.changedOnly) {
+    config = { ...config, validators: liteValidatorsConfig() };
+    console.log(`${c.cyan}⚡ docguard guard --changed-only${c.reset} ${c.dim}(running ${CHANGED_ONLY_VALIDATORS.length} fast validators only — pre-commit lite mode)${c.reset}\n`);
+  }
+
   const data = runGuardInternal(projectDir, config);
 
   // ── JSON output ──
   if (flags.format === 'json') {
     console.log(JSON.stringify(data, null, 2));
-    if (data.errors > 0) process.exit(1);
-    if (data.warnings > 0) process.exit(2);
+    // Use severity-aware effective counts for exit code; raw counts stay in the JSON
+    // for display tools that want to show the full picture.
+    if (data.effectiveErrors > 0) process.exit(1);
+    if (data.effectiveWarnings > 0) process.exit(2);
     process.exit(0);
   }
 
@@ -243,14 +309,55 @@ export function runGuard(projectDir, config, flags) {
   const badgeUrl = `https://img.shields.io/badge/CDD_Guard-${data.passed}%2F${data.total}_passed-${bColor}`;
   console.log(`\n  ${c.dim}📎 Badge: ![CDD Guard](${badgeUrl})${c.reset}`);
 
+  // Schema upgrade nudge — fires when the project's .docguard.json schema is
+  // behind the CLI's CURRENT_SCHEMA_VERSION. Cheap, file-local check; no
+  // network access. Suppressed in JSON output to keep machine consumers clean.
+  if (!flags || flags.format !== 'json') {
+    const upgradeHint = checkUpgradeStatus(projectDir);
+    if (upgradeHint) {
+      console.log(`\n  ${c.yellow}↑ ${upgradeHint}${c.reset}`);
+    }
+
+    // K-6 / S-2: sweep-needed nudge. Aggregates freshness warnings — if 2+
+    // canonical docs are stale (matching the "X code commits since last doc
+    // update" pattern), suggest a single `docguard sync --write` pass that
+    // refreshes every code-truth section in one shot. Individual freshness
+    // warnings already named the docs; this nudge just turns "5 warnings"
+    // into one actionable recommendation.
+    const freshness = data.validators.find(v => v.key === 'freshness');
+    if (freshness && freshness.warnings) {
+      const staleDocs = freshness.warnings.filter(w => /\d+ code commits since/.test(w));
+      if (staleDocs.length >= 2) {
+        console.log(`\n  ${c.yellow}↻ ${staleDocs.length} docs are stale (10+ commits since last update). Run ${c.cyan}docguard sync --write${c.yellow} to refresh code-truth sections in one pass.${c.reset}`);
+      }
+    }
+  }
+
   // Spec-kit reminder — persistent nudge if not initialized
   if (!isSpecKitInitialized(projectDir)) {
     console.log(`\n  ${c.yellow}💡${c.reset} ${c.dim}Enhance DocGuard with Spec Kit: ${c.cyan}uv tool install specify-cli --from git+https://github.com/github/spec-kit.git${c.reset}`);
   }
 
+  // When severity overrides demoted warnings to "low" (or promoted them to
+  // "high"), show a one-line note so the user knows the exit code may not
+  // match what they expected from reading the warning count.
+  const severityShifted =
+    data.effectiveErrors !== data.errors || data.effectiveWarnings !== data.warnings;
+  if (severityShifted) {
+    const upgraded = data.effectiveErrors - data.errors;
+    const ignored = data.warnings - data.effectiveWarnings - upgraded;
+    const parts = [];
+    if (upgraded > 0) parts.push(`${upgraded} warning(s) escalated to fail (severity=high)`);
+    if (ignored > 0) parts.push(`${ignored} warning(s) ignored for exit code (severity=low)`);
+    if (parts.length > 0) {
+      console.log(`\n  ${c.dim}Severity override: ${parts.join('; ')}.${c.reset}`);
+    }
+  }
+
   console.log('');
 
-  if (data.errors > 0) process.exit(1);
-  if (data.warnings > 0) process.exit(2);
+  // v0.5: severity-aware exit codes (see runGuardInternal for the rollup).
+  if (data.effectiveErrors > 0) process.exit(1);
+  if (data.effectiveWarnings > 0) process.exit(2);
   process.exit(0);
 }

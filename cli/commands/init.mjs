@@ -168,7 +168,7 @@ export async function runInit(projectDir, config, flags) {
 
     const defaultConfig = {
       projectName: config.projectName,
-      version: '0.4',
+      version: '0.5',
       profile: profileName,
       projectType: detectedType,
       projectTypeConfig: ptc,
@@ -186,6 +186,13 @@ export async function runInit(projectDir, config, flags) {
         environment: true,
         freshness: true,
       },
+      // Per-validator severity overrides (v0.5+).
+      //   'high':   warnings from this validator fail CI (exit 1)
+      //   'medium': default — warnings exit 2 (informational)
+      //   'low':    warnings ignored for exit code (exit 0)
+      // Empty by default — every validator uses 'medium'. Add entries to dial
+      // strictness up (CI-critical checks) or down (experimental validators).
+      severity: {},
     };
 
     writeFileSync(configPath, JSON.stringify(defaultConfig, null, 2) + '\n', 'utf-8');
@@ -194,6 +201,50 @@ export async function runInit(projectDir, config, flags) {
   } else {
     skipped.push('.docguard.json');
     console.log(`  ${c.yellow}⏭️${c.reset}  .docguard.json ${c.dim}(already exists)${c.reset}`);
+  }
+
+  // ── Create .docguardignore ────────────────────────────────────────────
+  // Starter ignore file with gitignore-style syntax. Patterns here are merged
+  // into config.ignore at load time so every validator honors them.
+  const ignorePath = resolve(projectDir, '.docguardignore');
+  if (!existsSync(ignorePath)) {
+    const ignoreContent = `# .docguardignore — paths to exclude from DocGuard validation.
+# Gitignore-style syntax: one pattern per line, # for comments.
+# Merged into config.ignore (in .docguard.json) at runtime.
+#
+# Common examples:
+#   build/                   # exclude a directory
+#   **/__generated__/**      # exclude anything in any __generated__ dir
+#   vendor/legacy.ts         # exclude a single file
+#   **/*.snap                # exclude all files matching a glob
+#
+# Build outputs, vendored libs, generated code are good candidates here.
+
+# Vendored / generated code that's not yours to document
+**/__generated__/**
+**/generated/**
+**/*.generated.*
+
+# Migrations and lock files
+**/migrations/**
+**/*.lock
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+Cargo.lock
+poetry.lock
+
+# Common build artifacts (defaults also cover these, but listing here is clearer)
+# dist/
+# build/
+# coverage/
+`;
+    writeFileSync(ignorePath, ignoreContent, 'utf-8');
+    created.push('.docguardignore');
+    console.log(`  ${c.green}✅${c.reset} Created: ${c.cyan}.docguardignore${c.reset} ${c.dim}(gitignore-style exclusions)${c.reset}`);
+  } else {
+    skipped.push('.docguardignore');
+    console.log(`  ${c.yellow}⏭️${c.reset}  .docguardignore ${c.dim}(already exists)${c.reset}`);
   }
 
   // ── Spec-Kit Integration (Extension-First) ────────────────────────────

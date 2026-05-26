@@ -1,10 +1,8 @@
 {
   "projectName": "docguard",
-  "version": "0.4",
+  "version": "0.5",
   "profile": "enterprise",
-
   "projectType": "cli",
-
   "requiredFiles": {
     "canonical": [
       "docs-canonical/ARCHITECTURE.md",
@@ -13,11 +11,13 @@
       "docs-canonical/TEST-SPEC.md",
       "docs-canonical/ENVIRONMENT.md"
     ],
-    "agentFile": ["AGENTS.md", "CLAUDE.md"],
+    "agentFile": [
+      "AGENTS.md",
+      "CLAUDE.md"
+    ],
     "changelog": "CHANGELOG.md",
     "driftLog": "DRIFT-LOG.md"
   },
-
   "projectTypeConfig": {
     "needsEnvVars": false,
     "needsEnvExample": false,
@@ -26,11 +26,9 @@
     "testFramework": "node:test",
     "runCommand": "node cli/docguard.mjs"
   },
-
   "securityIgnore": [
     "tests/**"
   ],
-
   "validators": {
     "structure": true,
     "docsSync": true,
@@ -41,5 +39,6 @@
     "security": true,
     "environment": true,
     "freshness": true
-  }
+  },
+  "severity": {}
 }

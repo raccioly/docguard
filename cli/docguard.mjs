@@ -40,10 +40,12 @@ import { runPublish } from './commands/publish.mjs';
 import { runTrace } from './commands/trace.mjs';
 import { runLlms } from './commands/llms.mjs';
 import { runSetup } from './commands/setup.mjs';
+import { runUpgrade } from './commands/upgrade.mjs';
 import { ensureSkills } from './ensure-skills.mjs';
 
 // ── Shared constants (imported to break circular dependencies) ──────────
 import { c, PROFILES } from './shared.mjs';
+import { mergeIgnoreFile } from './shared-ignore.mjs';
 export { c, PROFILES };
 
 // ── Config Loading ─────────────────────────────────────────────────────────
@@ -138,6 +140,9 @@ export function loadConfig(projectDir) {
           merged.testPatterns.push(merged.testPattern);
         }
       }
+      // Merge .docguardignore patterns into config.ignore so every validator
+      // honors them without having to know about the file.
+      mergeIgnoreFile(projectDir, merged);
       return merged;
     } catch (e) {
       console.error(`${c.red}Error parsing .docguard.json: ${e.message}${c.reset}`);
@@ -148,6 +153,9 @@ export function loadConfig(projectDir) {
   // No config file — auto-detect everything
   defaults.projectType = autoDetectProjectType(projectDir);
   defaults.projectTypeConfig = getProjectTypeDefaults(defaults.projectType);
+  // .docguardignore is read even when no .docguard.json exists — keeps
+  // ignore-only projects (no config but want to skip paths) working.
+  mergeIgnoreFile(projectDir, defaults);
   return defaults;
 }
 
@@ -367,6 +375,12 @@ async function main() {
       i++;
     } else if (args[i] === '--show-failing') {
       flags.showFailing = true;
+    } else if (args[i] === '--check-only') {
+      flags.checkOnly = true;
+    } else if (args[i] === '--apply') {
+      flags.apply = true;
+    } else if (args[i] === '--changed-only') {
+      flags.changedOnly = true;
     } else if (args[i] === '--doc' && args[i + 1]) {
       flags.doc = args[i + 1];
       i++;
@@ -405,12 +419,21 @@ async function main() {
     process.exit(0);
   }
 
-  printBanner();
+  // In JSON mode the entire stdout MUST be parseable JSON. The banner and
+  // ensureSkills' install message would corrupt the output for any
+  // programmatic consumer (CI, dashboards, the Score-on-PR Action recipe).
+  // Headless flags (`--write`, `--check-only`, `--auto`) also suppress chrome.
+  const jsonMode = flags.format === 'json';
+  const headless = jsonMode || flags.write || flags.checkOnly || flags.changedOnly;
+
+  if (!jsonMode) printBanner();
 
   const config = loadConfig(projectDir);
 
-  // Silent auto-check: install skills/commands if missing
-  if (command !== 'setup' && command !== 'init') {
+  // Silent auto-check: install skills/commands if missing. Skip entirely in
+  // headless modes where the user wants deterministic, parseable output and
+  // doesn't expect side effects on their AI-agent skill directories.
+  if (command !== 'setup' && command !== 'init' && !headless) {
     ensureSkills(projectDir, flags);
   }
 
@@ -477,6 +500,10 @@ async function main() {
       break;
     case 'llms':
       runLlms(projectDir, config, flags);
+      break;
+    case 'upgrade':
+    case 'update':
+      await runUpgrade(projectDir, config, flags);
       break;
     default:
       console.error(`${c.red}Unknown command: ${command}${c.reset}`);
