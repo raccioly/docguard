@@ -3,7 +3,9 @@
 > **The enforcement layer for Spec-Driven Development.**
 > Validate. Score. Enforce. Ship documentation that AI agents can actually use.
 
+[![CI](https://github.com/raccioly/docguard/actions/workflows/ci.yml/badge.svg)](https://github.com/raccioly/docguard/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/docguard-cli)](https://www.npmjs.com/package/docguard-cli)
+[![npm downloads](https://img.shields.io/npm/dw/docguard-cli)](https://www.npmjs.com/package/docguard-cli)
 [![PyPI](https://img.shields.io/pypi/v/docguard-cli)](https://pypi.org/project/docguard-cli/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js](https://img.shields.io/badge/Node.js-18%2B-green)](https://nodejs.org)
@@ -17,6 +19,8 @@
 > npx docguard-cli demo
 > ```
 > Runs against a baked-in sample project with intentional drift and shows you the findings + a clear path to fixing them.
+
+![DocGuard demo](assets/demo.gif)
 
 ---
 
@@ -654,6 +658,12 @@ DocGuard's quality evaluation and documentation generation patterns are informed
 Lead researcher: **[Martin Manuel Lopez](https://github.com/martinmanuel9)** · [ORCID 0009-0002-7652-2385](https://orcid.org/0009-0002-7652-2385)
 
 See [CONTRIBUTING.md](CONTRIBUTING.md#research--academic-credits) for full citations.
+
+---
+
+## ⭐ Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=raccioly/docguard&type=Date)](https://star-history.com/#raccioly/docguard&Date)
 
 ---
 
