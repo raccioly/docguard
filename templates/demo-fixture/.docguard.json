@@ -1,0 +1,8 @@
+{
+  "projectName": "acme-payments",
+  "version": "0.5",
+  "profile": "standard",
+  "sourcePatterns": {
+    "routes": "src/**/*.mjs"
+  }
+}
