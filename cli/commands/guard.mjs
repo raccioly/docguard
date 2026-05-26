@@ -141,6 +141,7 @@ import { validateTodoTracking } from '../validators/todo-tracking.mjs';
 import { validateSchemaSync } from '../validators/schema-sync.mjs';
 import { validateSpecKitIntegration } from '../validators/spec-kit.mjs';
 import { validateCanonicalSync } from '../validators/canonical-sync.mjs';
+import { validateSurfaceSync } from '../validators/surface-sync.mjs';
 
 /**
  * Internal guard — returns structured data, no console output, no process.exit.
@@ -215,6 +216,7 @@ export function runGuardInternal(projectDir, config) {
     { key: 'specKit', name: 'Spec-Kit', fn: () => validateSpecKitIntegration(projectDir, config) },
     { key: 'crossReference', name: 'Cross-Reference', fn: () => validateCrossReferences(projectDir, config) },
     { key: 'generatedStaleness', name: 'Generated-Staleness', fn: () => validateGeneratedStaleness(projectDir, config) },
+    { key: 'surfaceSync', name: 'Surface-Sync', fn: () => validateSurfaceSync(projectDir, config) },
     // Metrics-Consistency runs post-loop (needs guard results)
   ];
 

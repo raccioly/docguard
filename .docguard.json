@@ -40,5 +40,40 @@
     "environment": true,
     "freshness": true
   },
-  "severity": {}
+  "severity": {},
+  "surfaceSync": {
+    "surfaces": [
+      {
+        "name": "commands",
+        "glob": "cli/commands/*.mjs",
+        "extract": "basename-no-ext",
+        "ignore": [
+          "agents", "hooks", "ci", "badge", "llms", "publish",
+          "setup", "impact"
+        ],
+        "docs": ["README.md"],
+        "section": "Usage"
+      },
+      {
+        "name": "validators",
+        "glob": "cli/validators/*.mjs",
+        "extract": "basename-no-ext",
+        "ignore": [
+          "drift",
+          "doc",
+          "doc-sections",
+          "drift-comments"
+        ],
+        "docs": ["README.md"],
+        "section": "Validators"
+      },
+      {
+        "name": "slash-commands",
+        "glob": "templates/commands/*.md",
+        "extract": "basename-no-ext",
+        "docs": ["README.md"],
+        "section": "Slash Commands"
+      }
+    ]
+  }
 }

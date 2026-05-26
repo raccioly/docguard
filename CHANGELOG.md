@@ -7,6 +7,63 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Surface-Sync validator (item-level enumerable drift)
+
+`canonical-sync` already checks NUMERIC count claims in the README (ships
+N commands, N validators, mermaid diagram counts). But running the docguard
+repo through itself showed `canonical-sync` passing 3/3 while the README's
+command table silently omitted `demo` — the count matched, the table was
+wrong, the user hit "command not found" anyway. Count-level checks miss
+item-level drift.
+
+**Surface-Sync** is the item-level complement. For each configured surface
+(commands, validators, slash commands, templates — anything enumerable), it
+compares code-truth (from a glob) against the names appearing in table rows
+and bullet items in target docs. Warns on items present in code but missing
+from the doc, and on items listed in the doc but missing from code.
+
+Key behaviors:
+
+- **N/A by default.** Returns "nothing to validate" unless the project's
+  `.docguard.json` declares at least one surface under `surfaceSync.surfaces`.
+  Existing docguard projects upgrade safely with zero new noise.
+- **Section-scoped scanning.** Each surface can specify a `section` heading;
+  the validator restricts scanning to that section so a README containing
+  both a Commands table and a Validators table doesn't produce cross-table
+  false positives.
+- **Format-aware extraction.** Recognises documented entries written as
+  `` `name` ``, `**Name**`, `| `name` |`, `| N | **Name** |`, and bullet
+  items. Strips leading `docguard ` / `/` prefixes and folds case so README's
+  `**API-Surface**` matches file basename `api-surface.mjs`.
+- **Code-block immune.** Fenced code blocks are stripped before scanning so
+  shell examples don't inflate the documented set.
+- **`ignore` list per surface.** Known deprecation aliases, scaffolders
+  behind `init --with`, and display-name-vs-filename mismatches can be
+  silenced without disabling the surface entirely.
+
+Config shape (in `.docguard.json`):
+
+```json
+{
+  "surfaceSync": {
+    "surfaces": [
+      {
+        "name": "commands",
+        "glob": "cli/commands/*.mjs",
+        "extract": "basename-no-ext",
+        "ignore": ["setup", "impact"],
+        "docs": ["README.md"],
+        "section": "Usage"
+      }
+    ]
+  }
+}
+```
+
+DocGuard's own `.docguard.json` now declares three surfaces (commands,
+validators, slash-commands) so the project polices its own README on every
+`guard` run. Run `docguard explain surfaceSync` for fix guidance.
+
 ### Fixed — eight field-test bugs from v0.20.0
 
 Confirmed running v0.20.0 against two real projects (a Python codebase for
