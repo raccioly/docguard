@@ -44,6 +44,7 @@ import { runUpgrade } from './commands/upgrade.mjs';
 import { runImpact } from './commands/impact.mjs';
 import { runExplain } from './commands/explain.mjs';
 import { runMemory } from './commands/memory.mjs';
+import { runDemo } from './commands/demo.mjs';
 import { ensureSkills } from './ensure-skills.mjs';
 
 // ── Shared constants (imported to break circular dependencies) ──────────
@@ -282,14 +283,18 @@ function printHelp() {
   console.log(`${c.bold}Usage:${c.reset}
   docguard <command> [options]
 
+${c.bold}First-time? Try the demo (no install, no setup):${c.reset}
+  ${c.green}npx docguard-cli demo${c.reset}    ${c.dim}— 30-second tour against a sample project${c.reset}
+
 ${c.bold}The Daily 5${c.reset} ${c.dim}— what you'll reach for 95% of the time${c.reset}
-  ${c.green}init${c.reset}       Bootstrap a project (use ${c.cyan}--wizard${c.reset} for guided / ${c.cyan}--with <name>${c.reset} for scaffolders)
+  ${c.green}init${c.reset}       Bootstrap a project — auto-detects existing code and scans (${c.cyan}--skeleton${c.reset} for blank templates, ${c.cyan}--wizard${c.reset} for guided, ${c.cyan}--with <name>${c.reset} for scaffolders)
   ${c.green}guard${c.reset}      Validate against canonical docs (23 validators)
   ${c.green}diff${c.reset}       Show gaps between docs and code (add ${c.cyan}--since <ref>${c.reset} for changed-file impact)
   ${c.green}sync${c.reset}       Refresh code-truth doc sections — keeps memory always up to date
   ${c.green}score${c.reset}      CDD maturity score (0-100; ${c.cyan}--diff${c.reset} for delta between refs)
 
 ${c.bold}Tools (situational, but day-to-day useful)${c.reset}
+  ${c.green}demo${c.reset}       Zero-install tour: see what DocGuard catches against a sample project in 30s
   ${c.green}diagnose${c.reset}   AI orchestrator — guard → emit fix prompts in one command
   ${c.green}fix${c.reset}        Generate AI fix instructions for specific docs
   ${c.green}generate${c.reset}   Reverse-engineer canonical docs from existing code (${c.cyan}--plan${c.reset} for AI scan)
@@ -471,6 +476,15 @@ async function main() {
       // onboarding flow (previously `docguard setup`). `setup` keeps
       // working as a deprecation alias.
       flags.wizard = true;
+    } else if (args[i] === '--skeleton') {
+      // v0.21: `docguard init --skeleton` opts out of smart "scan and propose"
+      // detection and forces the blank-template path. Useful for greenfield
+      // projects and CI flows that want deterministic output.
+      flags.skeleton = true;
+    } else if (args[i] === '--keep') {
+      // v0.21: `docguard demo --keep` doesn't delete the temp fixture after
+      // running (useful for poking around what DocGuard set up).
+      flags.keep = true;
     } else if (!args[i].startsWith('--') && i > 0) {
       // Positional args go into flags.args for commands that take them (e.g.
       // `docguard trace --reverse <path>`). Skip the command itself (i === 0).
@@ -656,6 +670,13 @@ async function main() {
       break;
     case 'memory':
       runMemory(projectDir, config, flags);
+      break;
+    case 'demo':
+      // v0.21: zero-install "ah-ha" moment — runs guard against a baked-in
+      // fixture (templates/demo-fixture/) and prints curated drift findings
+      // with real-world-impact annotations. No state changes outside the
+      // temp fixture dir, which is cleaned up on exit.
+      runDemo(projectDir, config, flags);
       break;
     default:
       console.error(`${c.red}Unknown command: ${command}${c.reset}`);

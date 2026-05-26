@@ -12,6 +12,14 @@
 
 ---
 
+> **✨ See what DocGuard catches in 30 seconds — no install, no setup:**
+> ```bash
+> npx docguard-cli demo
+> ```
+> Runs against a baked-in sample project with intentional drift and shows you the findings + a clear path to fixing them.
+
+---
+
 ## Table of Contents
 
 - [What is DocGuard?](#what-is-docguard)
@@ -51,7 +59,7 @@ DocGuard is an official [GitHub Spec Kit](https://github.com/github/spec-kit) co
 
 ```mermaid
 graph TD
-    CLI["CLI Entry<br/>docguard.mjs"] --> Commands["Commands (13)"]
+    CLI["CLI Entry<br/>docguard.mjs"] --> Commands["Commands (14)"]
     Commands --> guard["guard"]
     Commands --> generate["generate"]
     Commands --> score["score"]
@@ -235,7 +243,7 @@ This installs DocGuard's slash commands (`/docguard.guard`, `/docguard.review`, 
 
 ## Usage
 
-DocGuard ships **13 commands** (the "Daily 5" + 8 situational tools). Six additional one-shot scaffolders are accessed via `docguard init --with <name>`. Eight v0.19 commands continue to work as deprecation aliases through v0.20.x — see [MIGRATION-v0.20.md](docs-implementation/MIGRATION-v0.20.md).
+DocGuard ships **14 commands** (the "Daily 5" + 9 situational tools, including the zero-install `demo`). Six additional one-shot scaffolders are accessed via `docguard init --with <name>`. Eight v0.19 commands continue to work as deprecation aliases through v0.20.x — see [MIGRATION-v0.20.md](docs-implementation/MIGRATION-v0.20.md).
 
 **The Daily 5** — what you'll reach for 95% of the time:
 

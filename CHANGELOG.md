@@ -68,6 +68,140 @@ tests. Specs: `specs/004-v020-env-var-false-negative/`, `specs/005-hugocross-nex
   the score's weighted accuracy axis across all signals. JSON field name
   unchanged for backward compatibility. `cli/commands/memory.mjs`.
 
+## [0.21.1] - 2026-05-26
+
+**Security patch — closes issue #190.** Command injection vulnerability in
+`docguard init` via the `ai` field of `.specify/init-options.json` is fixed.
+
+### Security
+
+- **Issue #190: command injection in `cli/commands/init.mjs` and
+  `cli/ensure-skills.mjs`.** The `detectAIAgent()` helper returned the
+  `ai` field from `.specify/init-options.json` without validation, and
+  that value was then shell-interpolated into an `execSync` invocation:
+  ```js
+  const aiFlag = `--ai ${detectedAgent}`;
+  execSync(`specify init ... ${aiFlag} ...`);
+  ```
+  A local attacker with file-system write access to a victim's repo
+  could plant `{"ai": "claude; touch /tmp/pwned;"}` and trigger
+  arbitrary command execution on the victim's next `docguard init`.
+
+  **Severity:** Medium (requires local file-system access; pre-fix
+  `detectAIAgent` consumed configs from any project DocGuard ran in).
+
+  **Discovered:** 23 duplicate auto-generated draft PRs from the
+  "Sentinel" AI agent flagged this during the v0.19 cleanup sweep.
+  The drafts were closed as noise but the underlying finding was
+  tracked in #190 — fixed properly here.
+
+  **Fix (two layers, defense in depth):**
+  1. `getDetectedAgent()` now allowlist-validates the `ai` field against
+     `/^[a-zA-Z0-9_-]{1,32}$/`. Anything else (shell metacharacters,
+     non-strings, oversized values) returns `null`.
+  2. New `safeSpawnSpecify(args, opts)` helper uses `execFileSync` with
+     args passed as an array — no shell interpolation possible. Both
+     unsafe call sites (`init.mjs` and `ensure-skills.mjs`) now use
+     this helper. Cross-platform (POSIX direct exec / Windows
+     `cmd.exe /c specify.cmd`).
+
+### Tests
+
+- 596 → **610** (+14): `tests/security-init-injection.test.mjs` pins
+  both defense layers. Tests every shell metacharacter (`;`, backtick,
+  `$()`, `|`, `&&`, newline), oversized values, non-string types,
+  malformed JSON, missing config files. Asserts the legitimate
+  allowlist (claude, cursor-agent, gemini, agy, copilot, windsurf,
+  codex, roo, amp, kiro-cli, tabnine, underscore-bearing future names).
+
+### Audit
+
+`grep -rn execSync cli/` was re-run; remaining call sites are all
+hardcoded literals (no attacker-influenced interpolation): freshness
+git probes, score's git probe, setup/doc-quality `which`-style
+detection. Documented in commit message.
+
+## [0.21.0] - 2026-05-26
+
+**Time-to-value.** The funnel-unblocker release. Until v0.21, a dev shopping
+for documentation tools had to install DocGuard, run `init`, write some
+canonical docs, and only then could they see what the tool actually does.
+v0.21 compresses that to **30 seconds, zero install**:
+
+```bash
+npx docguard-cli demo
+```
+
+Plus: `docguard init` now auto-detects existing projects and switches to
+"scan and propose" mode (reverse-engineering canonical docs from your code)
+instead of dumping a blank skeleton. The blank-skeleton path is still one
+flag away (`--skeleton`).
+
+### Added
+
+- **`docguard demo`** — the marquee feature of this release. Copies a baked-in
+  fixture (`templates/demo-fixture/` — a 4-service payments API with
+  intentional drift) to a temp directory, git-inits it, runs guard + score
+  against it, then prints a **curated narrative**: top-5 findings spanning
+  multiple validators, each annotated with the real-world impact ("Your AI
+  agent reads the architecture doc and gives wrong answers about how the
+  system works"), the CDD maturity score, and a clear three-line CTA showing
+  both `npm install -g` and `npx` paths. Temp fixture is cleaned up on exit
+  (or kept via `--keep` for inspection). Total time: ~0.5s for the guard
+  run; total experience: ~30s from `npx` to the install CTA.
+- **`templates/demo-fixture/`** — ships with the package (already in
+  `files: ["templates/"]`). 12-file pretend "acme-payments" project with
+  drift across 7 validator categories: undocumented 4th service, missing
+  API endpoint in reference, env var drift between `.env.example` and
+  `ENVIRONMENT.md`, `CHANGELOG` missing `[Unreleased]`, README sections
+  per Standard README spec missing, etc.
+- **`docguard init --skeleton`** — explicit opt-in to the v0.20 blank-template
+  behavior. For greenfield projects where the scan would find nothing.
+- **`docguard demo --keep`** — preserves the temp fixture and reports its
+  path. Useful for poking around what a real-world DocGuard-managed project
+  looks like.
+
+### Changed
+
+- **Smart `docguard init` first-run.** When `init` runs in a directory that
+  has existing source code (`cli/`, `src/`, `lib/`, `app/`, or 10+ source
+  files at top level) AND no `docs-canonical/`, it automatically dispatches
+  to `runGenerate` with `--plan` — the "scan and propose" path. Heuristic
+  opts out for: `--skeleton`, `--wizard`, `--skip-prompts` (CI), explicit
+  `--profile`, or projects that already have canonical docs (re-init case).
+  Result: the 80% of adopters who arrive with an existing codebase get
+  immediate value from the very first command, instead of staring at a
+  blank skeleton.
+- **`--help` updates.** New top section: "First-time? Try the demo (no
+  install, no setup): `npx docguard-cli demo`". `demo` listed in Tools.
+  `init` description updated to mention the new auto-detect behavior and
+  the `--skeleton` opt-out.
+- **README.** New CTA block at the top under the H1, above the Table of
+  Contents: prominent `npx docguard-cli demo` callout drives the funnel.
+  Validator/command counts updated by `canonical-sync` to 14 commands.
+
+### Tests
+
+- 582 → **596 tests** (+14):
+  - `tests/demo-command.test.mjs` (6): demo exits 0; output contains banner
+    + findings + score + CTA; `--quiet` suppresses banner; temp fixture is
+    cleaned up by default; `--keep` preserves it; top-5 findings span 3+
+    distinct validators (variety, not noise).
+  - `tests/init-smart-detection.test.mjs` (8): empty dir → skeleton; dir
+    with `src/` → smart mode; dir with `cli/` → smart mode; `--skeleton`
+    forces skeleton even with code present; `--skip-prompts` keeps skeleton
+    (CI determinism); pre-existing canonical docs skip smart mode; 10+
+    top-level Python files trigger smart mode; <10 + no code dir → skeleton.
+
+### Strategic context
+
+This is item #2 from the v0.19 SURFACE-AUDIT's adoption-friction analysis
+("no demo path — devs have to install, init, write docs, run guard just to
+see what we do"). v0.20 closed friction #1 (surface sprawl); v0.21 closes
+#2 (time-to-value). Next up per the 5-release arc: v0.22 — AI-native fix
+loop (`docguard fix --apply` calls Claude/Codex and opens a PR with the
+fix end-to-end).
+
 ## [0.20.0] - 2026-05-26
 
 **Consolidation.** 21 user-facing commands become 13. The promise from

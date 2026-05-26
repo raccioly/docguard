@@ -15,7 +15,7 @@ import { fileURLToPath } from 'node:url';
 import { createInterface } from 'node:readline';
 import { execSync } from 'node:child_process';
 import { c, PROFILES } from '../shared.mjs';
-import { ensureSkills, detectAgentMode, detectAIAgent, isSpecKitAvailable, isSpecKitInitialized, getDetectedAgent } from '../ensure-skills.mjs';
+import { ensureSkills, detectAgentMode, detectAIAgent, isSpecKitAvailable, isSpecKitInitialized, getDetectedAgent, safeSpawnSpecify } from '../ensure-skills.mjs';
 
 // v0.20: scaffolder names that can be passed via `init --with <name>` and
 // dispatched to the corresponding standalone runner. Each name maps to its
@@ -92,6 +92,61 @@ function askQuestion(prompt) {
 
 // ── Init Command ─────────────────────────────────────────────────────────
 
+/**
+ * v0.21 — Smart first-run detection.
+ *
+ * Heuristic: if the user is running `docguard init` against a project that
+ * already has substantial source code (cli/, src/, lib/, app/, or 10+ source
+ * files at depth 1-2) AND has no docs-canonical/ yet, switch from the
+ * skeleton-first path to the "scan and propose" path — i.e. dispatch to
+ * `docguard generate --plan` which reverse-engineers canonical docs from
+ * existing code.
+ *
+ * Rationale: blank skeletons feel useless for existing projects (the dev
+ * has to write everything from scratch). The scan path delivers immediate
+ * value: "here's what your project actually does, mapped to canonical doc
+ * shape." That's a 30-second wow for the 80% of adopters who arrive with
+ * an existing codebase.
+ *
+ * Opt out: `docguard init --skeleton` forces the blank-template path
+ * (preserves the v0.20 behavior for greenfield projects and CI flows).
+ *
+ * @returns {boolean} true if smart-detection fired and dispatched
+ */
+function shouldRunGenerate(projectDir, flags) {
+  if (flags.skeleton)        return false; // explicit opt-out
+  if (flags.skipPrompts)     return false; // non-interactive (CI) keeps deterministic skeleton path
+  if (flags.wizard)          return false; // wizard has its own scan step
+  if (flags.profile)         return false; // explicit profile = user knows what they want
+
+  // If canonical docs already exist, this is a re-init, not a first-run.
+  const canonicalDir = resolve(projectDir, 'docs-canonical');
+  if (existsSync(canonicalDir)) {
+    try {
+      const entries = readdirSync(canonicalDir).filter(f => f.endsWith('.md'));
+      if (entries.length > 0) return false;
+    } catch { /* fall through */ }
+  }
+
+  // Existing-code signals: any of cli/, src/, lib/, app/ as a directory.
+  const codeDirs = ['cli', 'src', 'lib', 'app'];
+  for (const d of codeDirs) {
+    if (existsSync(resolve(projectDir, d))) return true;
+  }
+
+  // Fallback: count source files at top level (Python / Rust / Go projects
+  // often don't use src/ — files live at the root).
+  try {
+    const exts = ['.py', '.rs', '.go', '.java', '.rb', '.ts', '.tsx', '.mjs', '.js'];
+    const topLevel = readdirSync(projectDir).filter(f => {
+      return exts.some(e => f.endsWith(e));
+    });
+    if (topLevel.length >= 10) return true;
+  } catch { /* fall through */ }
+
+  return false;
+}
+
 export async function runInit(projectDir, config, flags) {
   // v0.20: `--wizard` dispatches to the full interactive onboarding (formerly
   // `docguard setup`). Done before profile validation so the wizard can ask
@@ -99,6 +154,19 @@ export async function runInit(projectDir, config, flags) {
   if (flags.wizard) {
     const { runSetup } = await import('./setup.mjs');
     return runSetup(projectDir, config, flags);
+  }
+
+  // v0.21: smart first-run — for existing projects without canonical docs,
+  // dispatch to `generate --plan` (the "scan and propose" path). Opt out
+  // with --skeleton or by setting --profile/--skip-prompts/--wizard explicitly.
+  if (shouldRunGenerate(projectDir, flags)) {
+    console.log(`${c.bold}🔍 DocGuard Init — Smart Mode${c.reset}`);
+    console.log(`${c.dim}   Detected existing project with code but no canonical docs.${c.reset}`);
+    console.log(`${c.dim}   Switching to "scan and propose" mode — DocGuard will reverse-engineer${c.reset}`);
+    console.log(`${c.dim}   canonical docs from your code instead of dumping a blank skeleton.${c.reset}`);
+    console.log(`${c.dim}   (Opt out: ${c.cyan}docguard init --skeleton${c.dim} for the blank-template path.)${c.reset}\n`);
+    const { runGenerate } = await import('./generate.mjs');
+    return runGenerate(projectDir, config, { ...flags, plan: true });
   }
 
   const profileName = flags.profile || 'standard';
@@ -310,17 +378,22 @@ poetry.lock
   } else if (specKitAvailable && !specKitInitialized) {
     console.log(`\n  ${c.bold}🌱 Spec Kit Integration${c.reset}`);
 
-    // Detect which AI agent is in use (matches spec-kit's --ai flag)
+    // Detect which AI agent is in use (matches spec-kit's --ai flag).
+    // v0.21.1 (issue #190): the returned value is allowlist-validated inside
+    // getDetectedAgent, so an attacker-controlled `.specify/init-options.json`
+    // can no longer inject shell metacharacters here.
     const detectedAgent = detectAIAgent(projectDir);
-    const aiFlag = detectedAgent
-      ? `--ai ${detectedAgent}`
-      : '--ai generic --ai-commands-dir .agent/commands/';
+    const aiArgs = detectedAgent
+      ? ['--ai', detectedAgent]
+      : ['--ai', 'generic', '--ai-commands-dir', '.agent/commands/'];
 
     console.log(`  ${c.dim}Running specify init (agent: ${detectedAgent || 'generic'})...${c.reset}`);
     try {
-      const scriptFlag = process.platform === 'win32' ? '--script ps' : '--script sh';
-      execSync(
-        `specify init --here --force ${aiFlag} --ai-skills --ignore-agent-tools --no-git ${scriptFlag}`,
+      // v0.21.1 (issue #190): execFileSync via safeSpawnSpecify — args pass
+      // through as an array, no shell interpolation.
+      const scriptArgs = process.platform === 'win32' ? ['--script', 'ps'] : ['--script', 'sh'];
+      safeSpawnSpecify(
+        ['init', '--here', '--force', ...aiArgs, '--ai-skills', '--ignore-agent-tools', '--no-git', ...scriptArgs],
         { cwd: projectDir, encoding: 'utf-8', stdio: 'pipe', timeout: 30000 }
       );
       console.log(`  ${c.green}✅${c.reset} Spec Kit initialized ${c.dim}(.specify/, spec-kit skills, agent: ${detectedAgent || 'generic'})${c.reset}`);

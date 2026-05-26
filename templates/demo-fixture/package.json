@@ -1,0 +1,10 @@
+{
+  "name": "acme-payments",
+  "version": "1.4.0",
+  "description": "Demo project for DocGuard — a 4-service payments API with intentional doc drift.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node src/api.mjs"
+  }
+}
