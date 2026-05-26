@@ -31,7 +31,7 @@ const md = {
 
 /**
  * v0.15-P1: in-process cache. buildMemoryPlan is expensive (~400ms on
- * wu-whatsappinbox, 33% of total guard validator time) because it triggers
+ * an enterprise client project, 33% of total guard validator time) because it triggers
  * routes/schemas/screens/frontend scanners — all of which walk the source
  * tree. Within a single guard run, sync, generate, and the Generated-
  * Staleness validator all ask for the SAME plan; without caching they each

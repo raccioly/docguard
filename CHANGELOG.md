@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.3] - 2026-05-26
+
+Repo hygiene release — scrubbed a client-specific project name from public artifacts.
+No code-behavior changes.
+
+### Changed
+
+- **Removed client-specific project references from public-facing artifacts**: CHANGELOG.md (29 mentions), `specs/003-v011-false-positives/*`, and source docstrings in `cli/scanners/memory-plan.mjs`, `cli/commands/upgrade.mjs`, `cli/validators/freshness.mjs`. Replaced with neutral phrasing ("an enterprise client project", "the client's stack"). The fact that v0.11.2 → v0.15 releases were driven by real-world testing on a real-world project is unchanged — the *receipts* just no longer name the specific project.
+- Test files retain references for internal traceability — `// REASON:` comments and `@req` markers stay as-is. Tests are not shipped in the npm tarball, only visible in the GitHub repo source.
+
+### Why this matters
+
+DocGuard is a public OSS tool on npm + PyPI. Embedding a specific consulting client's project name in 29 CHANGELOG entries conflated "what the tool does" with "who the tool was tested against". This release decouples them: anyone reading the release history sees the technical decisions and the real-world validation that informed them, without coupling that narrative to a specific named project.
+
+### Internal
+
+- 497 tests still pass (no test logic changed).
+- 22 validators unchanged.
+- Self-guard unchanged.
+- No new NPM deps.
+
 ## [0.15.2] - 2026-05-26
 
 Patch release responding to a `/docguard.diagnose` self-audit run on canonical-spec-kit.
@@ -34,7 +55,7 @@ through targeted doc + test edits. **497 tests** (unchanged). 22 validators.
 
 Feature + performance release. **497 tests** (was 492, +5). 22 validators.
 Headline: full `--changed-only` set now covers **5 validators in ~100ms** on
-both wu-whatsappinbox AND a synthetic 1000-file repo. New `.docguard.json`
+both an enterprise client project AND a synthetic 1000-file repo. New `.docguard.json`
 JSON Schema for IDE autocomplete.
 
 > **Note**: v0.15.0 was committed but never published — the CI self-guard
@@ -52,7 +73,7 @@ JSON Schema for IDE autocomplete.
 
 ### Added
 
-- **P3: Drift-Comments + TODO-Tracking honor `config.changedFiles`.** Extending the v0.13 N-1 + v0.14-P2 lite-mode scoping. Now 5 of 22 validators scope to changed files in `--changed-only` mode (was 3). `CHANGED_ONLY_VALIDATORS` updated to include `drift` and `todoTracking`. **Result on wu: `--changed-only --since HEAD~3` runs 5 validators in 116ms** (was 78ms with 3 validators in v0.14 — adding two more validators cost only ~40ms because each is scoped). **Result on synthetic 1000-file repo: 91ms** (verified via new stress test).
+- **P3: Drift-Comments + TODO-Tracking honor `config.changedFiles`.** Extending the v0.13 N-1 + v0.14-P2 lite-mode scoping. Now 5 of 22 validators scope to changed files in `--changed-only` mode (was 3). `CHANGED_ONLY_VALIDATORS` updated to include `drift` and `todoTracking`. **Result on the client: `--changed-only --since HEAD~3` runs 5 validators in 116ms** (was 78ms with 3 validators in v0.14 — adding two more validators cost only ~40ms because each is scoped). **Result on synthetic 1000-file repo: 91ms** (verified via new stress test).
 - **P4: JSON Schema for `.docguard.json`.** New `schemas/docguard-config.schema.json` shipped in the npm package. `docguard init` now writes `$schema` reference into newly-created configs so VS Code / IntelliJ / any JSON-Schema-aware editor gets autocomplete + inline validation for every config field. Includes types, descriptions, enums (severity = high/medium/low; profile = starter/standard/enterprise; projectType = cli/library/webapp/api/unknown), and field-level help text. Zero runtime impact — DocGuard ignores the `$schema` field itself.
 - **Q: Stress-test fixture.** New `tests/stress-test.test.mjs` builds a synthetic 1000-file monorepo (500 services + 500 routes + 1000 doc references) and asserts:
   - `--changed-only` finishes in **< 500ms** (actual: ~91ms).
@@ -62,8 +83,8 @@ JSON Schema for IDE autocomplete.
 ### Performance
 
 - **P1: `buildMemoryPlan` cache.** Memoizes the memory plan per (projectDir + scanner-relevant config) within a single process. Helps cross-command flows where `guard` then `sync` would otherwise rebuild the plan twice. New `clearMemoryPlanCache()` export for tests. Single-`guard` runs see no change (only one caller per process).
-- **P2: `walkDir` cache in `cli/scanners/schemas.mjs`.** `walkDir` was called 8× inside `scanSchemasDeep` for different entity types (Pydantic, Mongoose, Prisma, SQLAlchemy, Sequelize, GORM, Sqlx, Hibernate). Now caches the file list per directory; subsequent callers iterate an array instead of re-traversing. Net gain on wu's mixed Python+TS stack is modest (~3% of total validator time) but real, and helps on stacks where multiple scanners hit the same root dir.
-- **Combined P1+P2+P3 result on wu**: full guard 1456ms → 1431ms (~2%). `--changed-only` covers 5/22 validators in 116ms (vs 1456ms full = **12.6× faster**).
+- **P2: `walkDir` cache in `cli/scanners/schemas.mjs`.** `walkDir` was called 8× inside `scanSchemasDeep` for different entity types (Pydantic, Mongoose, Prisma, SQLAlchemy, Sequelize, GORM, Sqlx, Hibernate). Now caches the file list per directory; subsequent callers iterate an array instead of re-traversing. Net gain on the client's mixed Python+TS stack is modest (~3% of total validator time) but real, and helps on stacks where multiple scanners hit the same root dir.
+- **Combined P1+P2+P3 result on the client**: full guard 1456ms → 1431ms (~2%). `--changed-only` covers 5/22 validators in 116ms (vs 1456ms full = **12.6× faster**).
 
 ### Internal
 
@@ -71,30 +92,30 @@ JSON Schema for IDE autocomplete.
 - New helpers: `clearMemoryPlanCache()`, `clearWalkDirCache()`, `_scanTodoFile()`.
 - `schemas/docguard-config.schema.json` is the first non-code file under `schemas/` — added to `package.json#files` so it ships in the npm tarball.
 - `.docguard.json` now self-documents via `$schema` reference when created by `init`.
-- Dry-run on wu: **672/672 PASS in 1.43s**.
+- Dry-run on the client: **672/672 PASS in 1.43s**.
 - No new NPM deps.
 
 ### Out of scope (deferred to v0.16)
 
-- **Deeper Generated-Staleness optimization** — still the slowest validator at 26% of guard time on wu. The cache helps cross-command flows but not single-guard runs. Next attack vector: stream `buildMemoryPlan` so it yields partial results as scanners complete, letting the validator early-exit on the first non-stale section.
+- **Deeper Generated-Staleness optimization** — still the slowest validator at 26% of guard time on the client. The cache helps cross-command flows but not single-guard runs. Next attack vector: stream `buildMemoryPlan` so it yields partial results as scanners complete, letting the validator early-exit on the first non-stale section.
 - **`upgrade --apply --pr` battle-test** on a real GitHub repo. Logic shipped in v0.14; end-to-end PR creation hasn't been tested against a live remote with branch protections.
 - **Cross-process memoization** — if guard / sync / fix runs in CI sequentially, they each rebuild the plan. A serialized cache under `.docguard/plan.cache.json` (keyed by a tree-state hash) would share across processes.
 - **Tree-state hashing for plan cache invalidation** — currently the in-process cache assumes the tree doesn't change mid-run. A proper hash would let long-running `watch` mode keep a stable cache that only invalidates on actual file changes.
 
 ## [0.14.1] - 2026-05-26
 
-Patch + small feature release responding to the wu-whatsappinbox v0.12 feedback.
+Patch + small feature release responding to the an enterprise client project v0.12 feedback.
 **492 tests** (was 481, +11). 22 validators.
 
 ### Fixed
 
-- **N-1: Metrics-Consistency double-counted warnings.** When a doc mentioned the stale validator/check count multiple times (e.g. once in a heading, once in a body table), the validator emitted one warning per regex match — producing "4 warnings for 2 files" on wu-whatsappinbox. Now dedupes by `(file, label, found-value)` so a single file contributes ONE warning per distinct drift value. The `replace-count` mechanical fix already uses replace-all semantics, so one fix per (file, label) is sufficient. **Reported by wu-whatsappinbox.**
+- **N-1: Metrics-Consistency double-counted warnings.** When a doc mentioned the stale validator/check count multiple times (e.g. once in a heading, once in a body table), the validator emitted one warning per regex match — producing "4 warnings for 2 files" on an enterprise client project. Now dedupes by `(file, label, found-value)` so a single file contributes ONE warning per distinct drift value. The `replace-count` mechanical fix already uses replace-all semantics, so one fix per (file, label) is sufficient. **Reported by an enterprise client project.**
 
 ### Added
 
-- **S-12+: High-confidence anchor matches now auto-fix via `fix --write`.** v0.13.1 added "did you mean #X?" hints when Cross-Reference flagged a broken anchor. v0.14.1 takes the next step: when the suggested anchor is **unambiguous** (edit distance ≤ 2 AND no other candidates within the same distance), the warning is tagged `[auto-fixable]` and the validator emits a `replace-anchor` mechanical fix. New `replace-anchor` applier in `cli/writers/mechanical.mjs` rewrites only the anchor inside markdown link form `](#X)`, leaves plain-text occurrences and link text alone, is idempotent. **Three of five wu broken-anchor cases in v0.12.0 were "heading renamed, link not updated" — those are now `fix --write`-resolvable.**
+- **S-12+: High-confidence anchor matches now auto-fix via `fix --write`.** v0.13.1 added "did you mean #X?" hints when Cross-Reference flagged a broken anchor. v0.14.1 takes the next step: when the suggested anchor is **unambiguous** (edit distance ≤ 2 AND no other candidates within the same distance), the warning is tagged `[auto-fixable]` and the validator emits a `replace-anchor` mechanical fix. New `replace-anchor` applier in `cli/writers/mechanical.mjs` rewrites only the anchor inside markdown link form `](#X)`, leaves plain-text occurrences and link text alone, is idempotent. **Three of five the client broken-anchor cases in v0.12.0 were "heading renamed, link not updated" — those are now `fix --write`-resolvable.**
 
-### Note to wu — the "still open" suggestions are all already shipped
+### Note to the client — the "still open" suggestions are all already shipped
 
 The S-1, S-11, S-12 items in the v0.12 feedback letter all shipped earlier. The user just needs to upgrade:
 
@@ -124,7 +145,7 @@ Same backlog as v0.14:
 Feature release closing the v0.13 backlog (4 features) + 2 quality investments
 (multi-fixture harness, `--timings` profiler). **481 tests** (was 448, +33).
 22 validators. Headline wins: pre-commit lite went from 2s → **78ms** on
-wu-whatsappinbox, and Generated-Doc Staleness now CLOSES THE LOOP by emitting
+an enterprise client project, and Generated-Doc Staleness now CLOSES THE LOOP by emitting
 structured fixes that `fix --write` consumes.
 
 ### Added
@@ -133,11 +154,11 @@ structured fixes that `fix --write` consumes.
 - **P2: Environment + API-Surface honor `config.changedFiles`** (extends N-1). When `--changed-only` is set:
   - `grepEnvUsage` scans only the listed files instead of the whole source tree.
   - `validateApiSurface` returns N/A when no route/spec/controller files are in the changed set.
-  - **Result on wu-whatsappinbox: `--changed-only --since HEAD~3` runs in 78ms — a 25× speedup from v0.13.**
+  - **Result on an enterprise client project: `--changed-only --since HEAD~3` runs in 78ms — a 25× speedup from v0.13.**
 - **P3: Generated-Doc Staleness emits structured fixes**. M-1 (v0.13) only warned; now it ALSO produces a `fixes[]` array with new `regenerate-section` fix type that `fix --write` consumes mechanically. **Closes the loop: detect drift → fix without AI.** The applier rewrites only the named section's body, leaves surrounding prose alone, and is idempotent.
 - **P4: `docguard upgrade --apply --pr`** for team-wide schema rollouts. Creates a branch, applies the migration, commits as "chore(docguard): migrate schema X → Y", pushes, opens a PR via `gh` CLI. Pre-flight checks `gh` is installed; clear error if not. Useful when `.docguard.json` is branch-protected.
 - **Q1: Multi-fixture test harness** — `tests/fixture-projects.test.mjs`. Runs full guard against 5 real-world project shapes (Next.js webapp, Vite frontend, Express backend, Python CLI, Rust lib). Cross-cutting "no validator throws a developer error" assertion across every fixture. The harness that would have caught B-5 (v0.13.0 Freshness crash) before release.
-- **Q2: `docguard guard --timings`** — per-validator wall-time profile, sorted slowest-first, with `data.validators[].durationMs` in JSON output. Honest delivery on the "perf pass" item: instead of speculative refactoring, ship the measurement tool. Real finding on wu: Generated-Staleness is **33% of total validator time** (~400ms) — targeted v0.15 optimization candidate.
+- **Q2: `docguard guard --timings`** — per-validator wall-time profile, sorted slowest-first, with `data.validators[].durationMs` in JSON output. Honest delivery on the "perf pass" item: instead of speculative refactoring, ship the measurement tool. Real finding on the client: Generated-Staleness is **33% of total validator time** (~400ms) — targeted v0.15 optimization candidate.
 
 ### Changed
 
@@ -152,7 +173,7 @@ structured fixes that `fix --write` consumes.
 - `cli/writers/mechanical.mjs` got a top-level lazy-loaded `_shouldSuppress` and `_sectionsModule` to support the new applier without circular deps.
 - `cli/commands/upgrade.mjs` got `openUpgradePR()` — gates on `gh` CLI availability.
 - `cli/commands/guard.mjs` per-validator timing via `performance.now()`.
-- Dry-run on wu-whatsappinbox: **674/674 PASS in 1.48s** (full guard), **78ms** for `--changed-only --since HEAD~3` (P2 scoping in action), Generated-Staleness identified as biggest perf hog at 33% of validator time (v0.15 target).
+- Dry-run on an enterprise client project: **674/674 PASS in 1.48s** (full guard), **78ms** for `--changed-only --since HEAD~3` (P2 scoping in action), Generated-Staleness identified as biggest perf hog at 33% of validator time (v0.15 target).
 - No new NPM deps.
 
 ### Out of scope (deferred to v0.15)
@@ -164,34 +185,34 @@ structured fixes that `fix --write` consumes.
 
 ## [0.13.1] - 2026-05-26
 
-Patch + small feature release responding to the wu-whatsappinbox v0.12/v0.13
+Patch + small feature release responding to the an enterprise client project v0.12/v0.13
 feedback. Fixes 2 bugs (B-5, B-6), ships 3 new features (S-7, S-11, S-12),
 and adds a cross-cutting "no validator throws" safety net. **22 validators,
 448 tests (was 434, +14 new).** New `docguard impact` command.
 
 ### Fixed
 
-- **B-5: Freshness validator crashed with `getLastCommitDate is not defined`.** A wu-whatsappinbox install of v0.13.0 produced this ReferenceError despite all the imports being correct in source — we couldn't reproduce locally, but the user's report was clear. Fix: defensive dynamic import in `freshness.mjs` that falls back to the pre-v0.13 inline implementation if `../shared-git.mjs` ever fails to load. Worst-case behavior is now "rename detection silently disabled" instead of "validator crashes with useless message". Also added an inline fallback for the same defensive layering. Reported by wu-whatsappinbox.
-- **B-6: Cross-Reference didn't URL-decode link target paths.** A markdown link like `[name](../WU%20Documentation/foo.md)` (where the directory has a space) was looked up with `existsSync('../WU%20Documentation/foo.md')` literally — the filesystem stores the decoded form. Now: `resolveTarget` tries BOTH the literal path (for paths that legitimately contain `%`) and the URL-decoded form. **Effect on wu-whatsappinbox: Cross-Reference went from 28/28 to 101/101 checks — 73 previously-broken refs now resolve correctly.** Reported by wu-whatsappinbox.
+- **B-5: Freshness validator crashed with `getLastCommitDate is not defined`.** A an enterprise client project install of v0.13.0 produced this ReferenceError despite all the imports being correct in source — we couldn't reproduce locally, but the user's report was clear. Fix: defensive dynamic import in `freshness.mjs` that falls back to the pre-v0.13 inline implementation if `../shared-git.mjs` ever fails to load. Worst-case behavior is now "rename detection silently disabled" instead of "validator crashes with useless message". Also added an inline fallback for the same defensive layering. Reported by an enterprise client project.
+- **B-6: Cross-Reference didn't URL-decode link target paths.** A markdown link like `[name](../WU%20Documentation/foo.md)` (where the directory has a space) was looked up with `existsSync('../WU%20Documentation/foo.md')` literally — the filesystem stores the decoded form. Now: `resolveTarget` tries BOTH the literal path (for paths that legitimately contain `%`) and the URL-decoded form. **Effect on an enterprise client project: Cross-Reference went from 28/28 to 101/101 checks — 73 previously-broken refs now resolve correctly.** Reported by an enterprise client project.
 - **Cross-cutting safety net**: new `tests/guard-no-throw.test.mjs` runs guard against a fixture repo and asserts no validator leaks a ReferenceError / TypeError / "is not defined" / "is not a function" / "Cannot read properties of undefined" pattern into user-facing output. Found a *second* lurking bug while writing the test: Structure validator threw `Cannot read properties of undefined (reading 'some')` when `config.requiredFiles.agentFile` was missing — fixed with defensive array-or-string coercion + skip-when-missing for `changelog` too. This safety net runs in CI, catching the entire class of developer-error-leaks before release.
 
 ### Added
 
-- **S-12: Cross-Reference suggests the closest anchor on near-miss.** When the validator flags a broken anchor, it now appends `(did you mean #athena-setup-aws-only?)` when a heading in the target doc is a close match. Two-pass matcher: (1) substring containment with ≥4-char minimum and ≥50% overlap to avoid spurious matches, (2) Levenshtein edit distance within a `max(3, len/5)` budget. **Three of the five wu user-fixes in v0.12.0 were "heading renamed, link not updated" — now deterministic-fixable from the warning text.** Reported by wu-whatsappinbox.
-- **S-7: Draft-staleness check in Generated-Doc Staleness validator.** A `docguard:generated` doc with `status: draft` (either YAML frontmatter or `<!-- status: draft -->` inline marker) that hasn't been modified in `> draftStalenessDays` days (default 14) now warns. Catches forgotten skeletons that stall before the AI fills them in. Threshold configurable via `config.draftStalenessDays`. Validator returns N/A only when there's NOTHING to check (no source=code sections AND no draft docs). Reported by wu-whatsappinbox.
-- **S-11: New `docguard impact` command.** After a commit (or before a PR), runs `git diff --name-only --since=<ref>` and shows which canonical doc sections reference any of the changed code files. Three match strategies (direct path / basename / backticked module name — same as L-2 trace --reverse). Highlights orphaned files (code that changed but no doc references it) so reviewers know what's undocumented. JSON mode emits `{ since, changedFiles, ignoredFiles, affectedDocs }` for CI bots. Designed as a post-commit hook companion to K-1's auto-fix Action. Reported by wu-whatsappinbox.
+- **S-12: Cross-Reference suggests the closest anchor on near-miss.** When the validator flags a broken anchor, it now appends `(did you mean #athena-setup-aws-only?)` when a heading in the target doc is a close match. Two-pass matcher: (1) substring containment with ≥4-char minimum and ≥50% overlap to avoid spurious matches, (2) Levenshtein edit distance within a `max(3, len/5)` budget. **Three of the five the client user-fixes in v0.12.0 were "heading renamed, link not updated" — now deterministic-fixable from the warning text.** Reported by an enterprise client project.
+- **S-7: Draft-staleness check in Generated-Doc Staleness validator.** A `docguard:generated` doc with `status: draft` (either YAML frontmatter or `<!-- status: draft -->` inline marker) that hasn't been modified in `> draftStalenessDays` days (default 14) now warns. Catches forgotten skeletons that stall before the AI fills them in. Threshold configurable via `config.draftStalenessDays`. Validator returns N/A only when there's NOTHING to check (no source=code sections AND no draft docs). Reported by an enterprise client project.
+- **S-11: New `docguard impact` command.** After a commit (or before a PR), runs `git diff --name-only --since=<ref>` and shows which canonical doc sections reference any of the changed code files. Three match strategies (direct path / basename / backticked module name — same as L-2 trace --reverse). Highlights orphaned files (code that changed but no doc references it) so reviewers know what's undocumented. JSON mode emits `{ since, changedFiles, ignoredFiles, affectedDocs }` for CI bots. Designed as a post-commit hook companion to K-1's auto-fix Action. Reported by an enterprise client project.
 
 ### Internal
 
 - **+3 new test files**: `tests/guard-no-throw.test.mjs` (2 — cross-cutting safety), `tests/impact.test.mjs` (5 — S-11), plus 5 new test cases in `cross-reference.test.mjs` (S-12 + B-6) and `generated-staleness.test.mjs` (S-7). **Total: 434 → 448 tests (+14 new).**
 - **New module**: `cli/commands/impact.mjs` (~140 lines).
 - **Hardened**: `cli/validators/freshness.mjs` (defensive shared-git import), `cli/validators/structure.mjs` (defensive config-shape handling), `cli/validators/cross-reference.mjs` (URL-decode + anchor suggestion).
-- **Dry-run on wu-whatsappinbox before push** (read-only): 670/674 PASS in 1.8s with all 22 validators. Cross-Reference jumped from 28/28 to **101/101 checks** — B-6 fix unlocked 73 previously-broken refs.
+- **Dry-run on an enterprise client project before push** (read-only): 670/674 PASS in 1.8s with all 22 validators. Cross-Reference jumped from 28/28 to **101/101 checks** — B-6 fix unlocked 73 previously-broken refs.
 - No new NPM deps.
 
-### Note on wu's v0.12 feedback
+### Note on the client's v0.12 feedback
 
-Several "still open" suggestions from the wu-whatsappinbox v0.12 feedback were already shipped:
+Several "still open" suggestions from the an enterprise client project v0.12 feedback were already shipped:
 
 - **S-2 (sweep-needed nudge)** → shipped in v0.12.0 as K-6.
 - **S-3 (trace --reverse)** → shipped in v0.13.0 as L-2.
@@ -201,7 +222,7 @@ Several "still open" suggestions from the wu-whatsappinbox v0.12 feedback were a
 - **S-9 (pre-commit lite)** → shipped in v0.12.0 as K-5.
 - **S-10 (`.docguard/fixed.json`)** → shipped in v0.13.0 as M-2.
 
-Upgrade with `docguard upgrade --apply` (or `npm i -g docguard-cli@latest`) to get all of these. **The wu report header said v0.12.0 but the B-5 error pattern indicates an in-flight v0.13.0 install** — either way, this patch makes both versions resilient to the regression.
+Upgrade with `docguard upgrade --apply` (or `npm i -g docguard-cli@latest`) to get all of these. **The the client report header said v0.12.0 but the B-5 error pattern indicates an in-flight v0.13.0 install** — either way, this patch makes both versions resilient to the regression.
 
 ## [0.13.0] - 2026-05-26
 
@@ -214,7 +235,7 @@ Feature release — full backlog cleanup. **Phase L** (sync intelligence: 3 feat
 - **L-3 / S-4: Rename detection via `git log --follow`.** New `cli/shared-git.mjs` module centralises every git-log call. All file-scoped queries now pass `--follow` so a `git mv` no longer resets the file's history. Freshness, Test-Spec, Traceability — anything that asks git "when was this file last touched?" — now answers correctly across renames.
 - **M-1 / S-7: Generated-Doc Staleness validator** (22nd validator). New validator re-runs the memory-plan scanner and compares each `source=code` section's expected body against on-disk content. Flags sections where the doc and the scanner disagree — i.e. either code changed without `sync --write` running, or someone hand-edited a machine-owned section. Warning includes a "first drift at line N" hint that names the diff site.
 - **M-2 / S-10: `.docguard/fixed.json` fix-history audit log.** Every mechanical fix `fix --write` applies is appended to a small JSON log under `.docguard/`. Entries are fingerprinted by `type+file+summary` and deduped (re-applying the same fix updates the timestamp instead of growing the file). Rolls over at 500 entries. New `docguard fix --history` command pretty-prints the log grouped by day. Also recorded: `appliedBy` (so K-1's `docguard-bot` auto-commits are distinguishable from human runs).
-- **N-1: Per-file scoping of `--changed-only`.** The `--changed-only` lite mode now computes the actually-changed files (`git diff --name-only HEAD~1 HEAD`, configurable with `--since`) and passes them as `config.changedFiles` to validators that opt in. Docs-Sync is the first opt-in: routes and services outside the changed set are skipped entirely. On wu-whatsappinbox the Docs-Sync check count went from 101 → 21 in `--changed-only` mode.
+- **N-1: Per-file scoping of `--changed-only`.** The `--changed-only` lite mode now computes the actually-changed files (`git diff --name-only HEAD~1 HEAD`, configurable with `--since`) and passes them as `config.changedFiles` to validators that opt in. Docs-Sync is the first opt-in: routes and services outside the changed set are skipped entirely. On an enterprise client project the Docs-Sync check count went from 101 → 21 in `--changed-only` mode.
 - **N-2: 4 broken README anchors fixed** (caught by K-7's Cross-Reference validator). `[Commands](#-commands)` → `[Usage](#usage)`. `CONTRIBUTING.md` added to the validator's standard-docs lookup list (along with CODE_OF_CONDUCT.md, SECURITY.md, PHILOSOPHY.md, STANDARD.md, COMPARISONS.md) so cross-doc refs to those resolve.
 
 ### Changed
@@ -228,7 +249,7 @@ Feature release — full backlog cleanup. **Phase L** (sync intelligence: 3 feat
 - **6 new test files**: `tests/shared-git.test.mjs` (11), `tests/sync-since.test.mjs` (3), `tests/trace-reverse.test.mjs` (5), `tests/generated-staleness.test.mjs` (4), `tests/fix-memory.test.mjs` (11), plus updates to `tests/changed-only.test.mjs`. **Total: 434 tests passing (was 400, +34 new).**
 - **New modules**: `cli/shared-git.mjs` (centralized git plumbing with --follow), `cli/validators/generated-staleness.mjs` (M-1), `cli/writers/fix-memory.mjs` (M-2). New helpers exported from sync.mjs: section→file matcher table for surgical refresh.
 - **Action / CLI dual-fix from v0.12** is now coordinated: K-1's auto-fix Action records to `.docguard/fixed.json` via `appliedBy: 'docguard-bot'`, giving teams a permanent record of which fixes the bot applied without diving into git history.
-- **Dry-run on wu-whatsappinbox before push** (read-only): 670/674 PASS in 1.82s with all 22 validators. 4 warnings are stale "21 validators" references in wu's local docguard skill files — those auto-fix on the next `fix --write`.
+- **Dry-run on an enterprise client project before push** (read-only): 670/674 PASS in 1.82s with all 22 validators. 4 warnings are stale "21 validators" references in the client's local docguard skill files — those auto-fix on the next `fix --write`.
 - Bumped extension files via auto-fix (6 files: extension.yml + 5 SKILL.md).
 - No new NPM dependencies. Still zero deps.
 
@@ -246,7 +267,7 @@ PR-time auto-fix GitHub Action, `docguard upgrade` command + post-guard
 nudge, `.docguardignore` support, per-validator severity overrides,
 pre-commit-lite mode, sweep-needed nudge, and the new Cross-Reference
 validator (21 validators total, up from 20). Plus 4 papercut fixes
-caught during the wu-whatsappinbox dry-run.
+caught during the an enterprise client project dry-run.
 
 ### Added
 
@@ -268,7 +289,7 @@ caught during the wu-whatsappinbox dry-run.
 ### Fixed
 
 - **Docs-Coverage Check 5 silent-fail** (also in v0.11.2) — recommended README sections no longer bump `total` without emitting a message. Now a true bonus: present = +1, missing = no-op.
-- **Papercut #1 — `upgrade` missed pre-0.4 schemas.** A `.docguard.json` that exists but has no `version` field (the 2024-era format used by `wu-whatsappinbox`, with `project` instead of `projectName`) was silently treated as "no config". Now: `readProjectSchemaVersion` returns the sentinel `'0.0'` for pre-0.4 schemas, and the migration registry has a `0.0 → 0.4` recipe that renames `project → projectName` while stamping the version. The user-facing label is friendlier too ("pre-0.4 (no version field)" instead of "Schema 0.0").
+- **Papercut #1 — `upgrade` missed pre-0.4 schemas.** A `.docguard.json` that exists but has no `version` field (the 2024-era format used by `an enterprise client project`, with `project` instead of `projectName`) was silently treated as "no config". Now: `readProjectSchemaVersion` returns the sentinel `'0.0'` for pre-0.4 schemas, and the migration registry has a `0.0 → 0.4` recipe that renames `project → projectName` while stamping the version. The user-facing label is friendlier too ("pre-0.4 (no version field)" instead of "Schema 0.0").
 - **Papercut #2 — `--format json` was unparseable.** The banner and `ensureSkills` install message wrote to stdout BEFORE the JSON body, so `JSON.parse` failed on every consumer. New `jsonMode` + `headless` detection in `main()` skips both for `--format json`, `--write`, `--check-only`, and `--changed-only`. Affects every Action recipe using `format: json` (Score-on-PR was broken).
 - **Papercut #3 — auto-fix Action counted CLI side effects as "fixes".** `ensureSkills` writes to `.agent/`, `.specify/`, `commands/` on first run; the Action's `git status --porcelain` diff was treating those as mechanical fixes and committing them. Two-part fix: (1) the new headless-mode skips `ensureSkills` so the side effects don't appear, and (2) the Action's bash filter excludes `.agent/`, `.specify/`, `commands/`, `.docguard/`, `.wolf/`, `.claude/` from the changed-files detection as belt-and-suspenders.
 - **Papercut #4 — slugifier didn't match GitHub's GFM.** The Cross-Reference validator's first iteration false-positived on every emoji-prefixed heading (`## ⚡ Quick Start` → GitHub produces `#-quick-start` with a leading dash, but my code produced `#quick-start`). Also collapsed `--` to `-` which GitHub keeps. Three bugs fixed; tests now lock in GFM compatibility for emoji-prefixed headings and stripped-punctuation cases.
@@ -277,7 +298,7 @@ caught during the wu-whatsappinbox dry-run.
 
 - 6 new test files: `tests/upgrade.test.mjs` (12 tests), `tests/docguardignore.test.mjs` (11 tests), `tests/severity.test.mjs` (9 tests), `tests/changed-only.test.mjs` (4 tests), `tests/sweep-nudge.test.mjs` (3 tests), `tests/cross-reference.test.mjs` (22 tests). **Total: 400 tests passing (was 339, +61 new).**
 - Cross-Reference validator added (21 total validators, up from 20). Metrics-Consistency picked up the new count and `fix --write` auto-bumped 8 doc references from "20 validators" → "21 validators" in one pass — eating our own dogfood.
-- Dry-run on `wu-whatsappinbox` (read-only) before push surfaced the 4 papercuts above. All fixed in this release.
+- Dry-run on `an enterprise client project` (read-only) before push surfaced the 4 papercuts above. All fixed in this release.
 - New modules: `cli/commands/upgrade.mjs`, `loadDocguardIgnore` + `mergeIgnoreFile` exports in `cli/shared-ignore.mjs`, `CURRENT_SCHEMA_VERSION` + `SEVERITY_LEVELS` + `resolveSeverity` + `compareVersions` + `parseVersion` exports in `cli/shared.mjs`, `CHANGED_ONLY_VALIDATORS` + `liteValidatorsConfig` in `cli/commands/guard.mjs`.
 - New docs: `docs-canonical/CI-RECIPES.md` (5 recipes + permissions cheatsheet + full action inputs/outputs reference).
 - `action.yml` grew from 166 → 323 lines (+157) with the auto-commit/comment flow.
@@ -291,16 +312,16 @@ caught during the wu-whatsappinbox dry-run.
 
 ## [0.11.2] - 2026-05-25
 
-Patch release addressing the four bugs (B-1..B-4) reported from the v0.11.1 audit of `wu-whatsappinbox` (score 98/100, 572/575 passed, 1 warning), plus Antigravity/Kiro/Windsurf agent-routing aliases and a Docs-Coverage silent-fail fix that the new B-4 nudge itself exposed.
+Patch release addressing the four bugs (B-1..B-4) reported from the v0.11.1 audit of `an enterprise client project` (score 98/100, 572/575 passed, 1 warning), plus Antigravity/Kiro/Windsurf agent-routing aliases and a Docs-Coverage silent-fail fix that the new B-4 nudge itself exposed.
 
 ### Fixed
-- **B-1: Vite intrinsics no longer reported as user env vars.** `grepEnvUsage` in `cli/shared-source.mjs` now skips `DEV`, `PROD`, `MODE`, `BASE_URL`, and `SSR` on `import.meta.env.*` — these are injected by Vite at build time, not user-configured. Real user vars like `VITE_API_URL` are still captured. (Reported by wu-whatsappinbox v0.11.1 audit.)
-- **B-2: `docguard diff` Data Entities now uses real exported names, not file basenames.** Previously the entity diff walked filenames and reported the stem (e.g. `models.py` → "models"), missing all the actual classes inside. Now uses `scanSchemasDeep` — the same code-side scanner the rest of DocGuard uses — which extracts real Pydantic/Dataclass/Mongoose/Prisma/Zod/Sequelize/Sqlx/SQLAlchemy/JPA entity names. (Reported by wu-whatsappinbox v0.11.1 audit.)
-- **B-3: Literal `` `VITE_` `` prefix in prose no longer captured as an env var name.** Tightened the env-var name regex across `shared-source.mjs`, `validators/environment.mjs`, and `commands/diff.mjs` from `[A-Z][A-Z0-9_]*` to `[A-Z][A-Z0-9_]*[A-Z0-9]` (must end with letter/digit, not underscore). Documentation like ``All vars start with `VITE_` (Vite convention)`` no longer triggers a "missing `VITE_`" warning. (Reported by wu-whatsappinbox v0.11.1 audit.)
-- **B-4 nudge surfaced: Docs-Coverage Check 5 (`checkReadmeSections`) silent-fail fixed.** The "recommended sections" loop bumped `total` without emitting a message when missing — exactly the anti-pattern B-4 flags. Recommended sections are now a true bonus: present = +1 to both passed/total, missing = no-op. Restores honest scoring on the README checker. (Found by the B-4 nudge running on the wu-whatsappinbox fixture.)
+- **B-1: Vite intrinsics no longer reported as user env vars.** `grepEnvUsage` in `cli/shared-source.mjs` now skips `DEV`, `PROD`, `MODE`, `BASE_URL`, and `SSR` on `import.meta.env.*` — these are injected by Vite at build time, not user-configured. Real user vars like `VITE_API_URL` are still captured. (Reported by an enterprise client project v0.11.1 audit.)
+- **B-2: `docguard diff` Data Entities now uses real exported names, not file basenames.** Previously the entity diff walked filenames and reported the stem (e.g. `models.py` → "models"), missing all the actual classes inside. Now uses `scanSchemasDeep` — the same code-side scanner the rest of DocGuard uses — which extracts real Pydantic/Dataclass/Mongoose/Prisma/Zod/Sequelize/Sqlx/SQLAlchemy/JPA entity names. (Reported by an enterprise client project v0.11.1 audit.)
+- **B-3: Literal `` `VITE_` `` prefix in prose no longer captured as an env var name.** Tightened the env-var name regex across `shared-source.mjs`, `validators/environment.mjs`, and `commands/diff.mjs` from `[A-Z][A-Z0-9_]*` to `[A-Z][A-Z0-9_]*[A-Z0-9]` (must end with letter/digit, not underscore). Documentation like ``All vars start with `VITE_` (Vite convention)`` no longer triggers a "missing `VITE_`" warning. (Reported by an enterprise client project v0.11.1 audit.)
+- **B-4 nudge surfaced: Docs-Coverage Check 5 (`checkReadmeSections`) silent-fail fixed.** The "recommended sections" loop bumped `total` without emitting a message when missing — exactly the anti-pattern B-4 flags. Recommended sections are now a true bonus: present = +1 to both passed/total, missing = no-op. Restores honest scoring on the README checker. (Found by the B-4 nudge running on the an enterprise client project fixture.)
 
 ### Added
-- **B-4: `--show-failing` flag and validator-bug nudge.** `docguard guard --show-failing` shows warnings/errors for every non-passing validator even if the overall status would have suppressed them. New nudge fires when a validator has `passed < total` but emits no warning or error messages — points at a likely silent-fail validator bug for the user to file an issue. (Reported by wu-whatsappinbox v0.11.1 audit.)
+- **B-4: `--show-failing` flag and validator-bug nudge.** `docguard guard --show-failing` shows warnings/errors for every non-passing validator even if the overall status would have suppressed them. New nudge fires when a validator has `passed < total` but emits no warning or error messages — points at a likely silent-fail validator bug for the user to file an issue. (Reported by an enterprise client project v0.11.1 audit.)
 - **Antigravity / Kiro / Windsurf / GEMINI agent signals.** `cli/ensure-skills.mjs` now detects these agent ecosystems via additional signal files (`.agents`, `.antigravity`, `ANTIGRAVITY.md`, `.kiro`, `.windsurf`, `GEMINI.md`) so the right skills are installed for each. Antigravity was already wired via `.agents → agy`; this expands the alias surface so neither side-by-side IDEs nor Spec Kit's `.agents` convention break detection.
 
 ### Internal
@@ -310,11 +331,11 @@ Patch release addressing the four bugs (B-1..B-4) reported from the v0.11.1 audi
 ### Out of scope (deferred to v0.12)
 - S-1 (`sync --since` surgical refresh), S-2 (sweep-needed nudge from freshness counters), S-3 (`trace --reverse` code→doc map), S-4 (rename detection via `git log --follow`), S-5 (`.docguardignore` template at init), S-6 (per-validator severity in `.docguard.json`), S-7 (generated-doc-in-draft staleness validator), S-8 (cross-reference validator for broken `§X` anchors), S-9 (pre-commit lite on changed files only), S-10 (`.docguard/fixed.json` memory of past fixes).
 
-Credit: feedback from running v0.11.1 on the `wu-whatsappinbox` enterprise monorepo (audit score 98/100, 572/575 passed).
+Credit: feedback from running v0.11.1 on the `an enterprise client project` enterprise monorepo (audit score 98/100, 572/575 passed).
 
 ## [0.11.1] - 2026-05-25
 
-Patch release addressing false positives surfaced by the v0.11.0 audit of the `wu-whatsappinbox` enterprise monorepo, generalized into a multi-tool IaC detector, plus several DocGuard self-audit improvements. Spec: `specs/003-v011-false-positives/`.
+Patch release addressing false positives surfaced by the v0.11.0 audit of the `an enterprise client project` enterprise monorepo, generalized into a multi-tool IaC detector, plus several DocGuard self-audit improvements. Spec: `specs/003-v011-false-positives/`.
 
 ### Fixed
 - **Docs-Sync no longer misclassifies frontend API clients as backend routes.** Dropped the ambiguous bare `'api'` from the route-directory convention list. `src/api/client.ts` (frontend axios) and similar are no longer scanned as Express/Next.js routes (FP-1). For Next.js App Router (`src/app/api`, `app/api`), only files matching the strict `route.{ts,tsx,js,jsx,mjs}` filename convention are counted — helper files in the same tree are skipped (FR-001, FR-002).
@@ -332,7 +353,7 @@ Patch release addressing false positives surfaced by the v0.11.0 audit of the `w
 ### Added
 - **Multi-tool IaC detector + consolidated documentation reminder.** New `cli/scanners/iac.mjs` identifies projects shipping any of: **AWS CDK** (`cdk.json`), **Terraform** (`*.tf` files), **Pulumi** (`Pulumi.yaml`), **AWS SAM** (`template.yaml` with `AWS::Serverless::`), and **Serverless Framework** (`serverless.yml`). When an IaC project's ARCHITECTURE.md has no Infrastructure heading, DocGuard emits ONE actionable warning per detected tool naming the marker file location and the expected source layout — instead of multiple generic per-directory warnings (FR-009, FR-010, FR-011). The generic per-dir warnings inside IaC packages (`bin/`, `lib/`, `modules/`, `stacks/`, `constructs/`, `handlers/`, etc.) are suppressed in favor of these consolidated messages. The legacy `cli/scanners/cdk.mjs` is preserved as a thin re-export for backward compatibility.
 - **`## Infrastructure (IaC)` section in `templates/ARCHITECTURE.md.template`.** New projects initialized via `docguard init` start with placeholder tables for AWS CDK, Terraform, and Pulumi/SAM/Serverless layouts plus a Deployment Pipeline subsection (FR-012). Explicitly skippable for non-IaC projects via a header comment.
-- **`DEFAULT_IGNORE_DIRS`** exported from `cli/shared-ignore.mjs` — canonical shared ignore set covering build outputs (`dist`, `build`, `out`, `cdk.out`, `target`, `.gradle`), VCS internals (`.git`, `.jj`, `.hg`, `.svn`), package caches (`node_modules`, `vendor`, `.venv`, `__pycache__`), and framework synth outputs (`.next`, `.nuxt`, `.turbo`, `.vercel`, `.cache`, `.svelte-kit`) (FR-008). Added `target` (Rust/Java), `.gradle`, and `.svelte-kit` per the updated wu-whatsappinbox audit. Available for any future validator to import; existing per-validator `IGNORE_DIRS` sets are left in place (deferred migration).
+- **`DEFAULT_IGNORE_DIRS`** exported from `cli/shared-ignore.mjs` — canonical shared ignore set covering build outputs (`dist`, `build`, `out`, `cdk.out`, `target`, `.gradle`), VCS internals (`.git`, `.jj`, `.hg`, `.svn`), package caches (`node_modules`, `vendor`, `.venv`, `__pycache__`), and framework synth outputs (`.next`, `.nuxt`, `.turbo`, `.vercel`, `.cache`, `.svelte-kit`) (FR-008). Added `target` (Rust/Java), `.gradle`, and `.svelte-kit` per the updated an enterprise client project audit. Available for any future validator to import; existing per-validator `IGNORE_DIRS` sets are left in place (deferred migration).
 
 ### Changed
 - **DocGuard package version bumped to 0.11.1** across `package.json` and all `extensions/spec-kit-docguard/` files (extension.yml + 5 SKILL.md files were referencing stale `v0.9.9`/`v0.10.0`).
@@ -350,7 +371,7 @@ Patch release addressing false positives surfaced by the v0.11.0 audit of the `w
 - Migrating all 17 modules that define their own `IGNORE_DIRS` constant to import `DEFAULT_IGNORE_DIRS` — mechanical, large diff, tracked separately.
 - Multi-line string-literal detection in TODO-Tracking — current heuristic still false-positives on `// TODO:` inside multi-line template literals. Workaround: keep test files out of TODO scanning (now default) or use `config.todoIgnore` globs.
 
-Credit: feedback from running v0.11.0 on the `wu-whatsappinbox` enterprise monorepo (audit score 98/100, 40 warnings).
+Credit: feedback from running v0.11.0 on the `an enterprise client project` enterprise monorepo (audit score 98/100, 40 warnings).
 
 ## [0.11.0] - 2026-05-22
 

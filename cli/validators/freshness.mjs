@@ -15,7 +15,7 @@ import { execSync, execFileSync } from 'node:child_process';
 // upgrade, package corruption, weird module resolution), we fall back to
 // the original inline implementation below. The worst-case outcome is
 // "rename detection doesn't work", NOT "validator crashes with a useless
-// ReferenceError". Reported by wu-whatsappinbox v0.13.x feedback.
+// ReferenceError". Reported by an enterprise client project v0.13.x feedback.
 let _sharedGetLastCommitDate = null;
 try {
   const mod = await import('../shared-git.mjs');

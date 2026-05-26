@@ -122,7 +122,7 @@ Single-project layout. All paths relative to repository root. `cli/` holds produ
 
 - [x] **T016** [N/A] Fix Check 1 in `cli/validators/docs-coverage.mjs` to skip directories — uncovered during test development. `.nuxt`, `.claude` and similar dotdirs were being flagged as undocumented config FILES. Check 1 now `continue`s on `isDirectory()`. Verified by the FP-3 regression tests.
 
-- [x] **T017** [N/A] Update `CHANGELOG.md` with `[0.11.1]` entry — Fixed (FP-1..FP-4 + Check 1 dir-skip), Added (CDK detector + template section + DEFAULT_IGNORE_DIRS), Internal (test count 306→317), Out of Scope (IRs deferred to v0.12). Credit wu-whatsappinbox audit. Satisfies SC-008 documentation requirement.
+- [x] **T017** [N/A] Update `CHANGELOG.md` with `[0.11.1]` entry — Fixed (FP-1..FP-4 + Check 1 dir-skip), Added (CDK detector + template section + DEFAULT_IGNORE_DIRS), Internal (test count 306→317), Out of Scope (IRs deferred to v0.12). Credit an enterprise client project audit. Satisfies SC-008 documentation requirement.
 
 - [x] **T018** [N/A] Update `.wolf/cerebrum.md` with session learnings: 6 Key Learnings, 1 Do-Not-Repeat ("Proposed FP-5 to suppress bin/ — user pushed back: CDK structure IS real source"), 3 Decision Log entries.
 

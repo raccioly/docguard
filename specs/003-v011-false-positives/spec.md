@@ -3,11 +3,11 @@
 **Feature Branch**: `003-v011-false-positives`
 **Created**: 2026-05-25
 **Status**: Draft
-**Input**: DocGuard v0.11.0 — Field feedback from running on wu-whatsappinbox (enterprise monorepo, score 98/100, 40 warnings). Five false positives confirmed in code, one originally-suspected FP rescinded after deeper review (CDK structure IS a real doc gap, not noise).
+**Input**: DocGuard v0.11.0 — Field feedback from running on an enterprise client project (enterprise monorepo, score 98/100, 40 warnings). Five false positives confirmed in code, one originally-suspected FP rescinded after deeper review (CDK structure IS a real doc gap, not noise).
 
 ## Context
 
-DocGuard v0.11.0 ran cleanly on a real enterprise WhatsApp inbox project. The N/A state, section markers, API-Surface validator, and "only modify generated docs" behavior all worked as designed. Five false positives were surfaced. Acting on user input, a sixth originally-suspected FP (`bin/` flagged as undocumented) was reclassified as a legitimate finding: CDK projects DO need their `bin/` and `lib/` documented. Therefore this spec covers FP-1..FP-4 (real bugs) and replaces FP-5 with CDK-aware documentation support.
+DocGuard v0.11.0 ran cleanly on a real enterprise enterprise client project project. The N/A state, section markers, API-Surface validator, and "only modify generated docs" behavior all worked as designed. Five false positives were surfaced. Acting on user input, a sixth originally-suspected FP (`bin/` flagged as undocumented) was reclassified as a legitimate finding: CDK projects DO need their `bin/` and `lib/` documented. Therefore this spec covers FP-1..FP-4 (real bugs) and replaces FP-5 with CDK-aware documentation support.
 
 ## User Scenarios & Testing
 
@@ -120,7 +120,7 @@ A TEST-SPEC.md Critical User Journey row commonly lists multiple test files in o
 | 2 | Receive WhatsApp message | `path/a.test.ts`, `path/b.test.ts` | ✅ |
 ```
 
-The v0.11.0 validator stripped ALL backticks then called `existsSync()` on the resulting comma-joined string, producing a 100% false-positive rate on multi-path rows. It also failed for glob references like `idor_*.test.ts (3 suites)` (Journey #8 of wu-whatsappinbox).
+The v0.11.0 validator stripped ALL backticks then called `existsSync()` on the resulting comma-joined string, producing a 100% false-positive rate on multi-path rows. It also failed for glob references like `idor_*.test.ts (3 suites)` (Journey #8 of an enterprise client project).
 
 **Why this priority**: 100% FP rate on a common documentation pattern is high-noise. Every enterprise project with E2E Journey coverage tables hits this.
 
@@ -186,6 +186,6 @@ The v0.11.0 validator stripped ALL backticks then called `existsSync()` on the r
 - **SC-005**: Running `docguard guard` on a CDK project with no Infrastructure section in ARCHITECTURE.md produces exactly ONE CDK-specific warning, not 3-4 generic per-directory warnings.
 - **SC-006**: All existing tests in `tests/` continue to pass (`npm test` — currently 40+ test files, all green).
 - **SC-007**: New tests added: at least one regression test per FP and one per CDK acceptance scenario (1 + 1 + 1 + 1 + 5 = 9 minimum new tests).
-- **SC-008**: On the wu-whatsappinbox project (the source of this feedback), re-running `docguard guard` after these fixes drops warnings from 40 to ≤15 (the genuine drift findings the user already acknowledged: 4 missing services, 7 stale test paths, env vars, freshness).
+- **SC-008**: On the an enterprise client project project (the source of this feedback), re-running `docguard guard` after these fixes drops warnings from 40 to ≤15 (the genuine drift findings the user already acknowledged: 4 missing services, 7 stale test paths, env vars, freshness).
 - **SC-009**: `.local` (and any other user-named dotfile) added to `.docguard.json` `ignore` is suppressed by Check 1 — verified by regression test in `tests/docs-coverage.test.mjs`.
 - **SC-010**: A TEST-SPEC.md Journey row with two comma-separated backtick paths whose files exist produces 1 passed check, 0 warnings. Glob patterns with `*` and `(N suites)` annotations are recognized. Verified by regression tests in `tests/test-spec.test.mjs`.

@@ -1,7 +1,7 @@
 # Implementation Plan: Fix v0.11.0 False Positives & Add CDK-Aware Documentation
 
 **Branch**: `003-v011-false-positives` | **Date**: 2026-05-25 | **Spec**: `specs/003-v011-false-positives/spec.md`
-**Input**: Field feedback from running DocGuard v0.11.0 on the wu-whatsappinbox enterprise monorepo (98/100, 40 warnings, 5 confirmed false positives + 1 reclassified after user review).
+**Input**: Field feedback from running DocGuard v0.11.0 on the an enterprise client project enterprise monorepo (98/100, 40 warnings, 5 confirmed false positives + 1 reclassified after user review).
 
 ## Summary
 

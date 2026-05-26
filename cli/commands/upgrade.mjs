@@ -63,7 +63,7 @@ function readProjectSchemaVersion(projectDir) {
   if (!existsSync(p)) return null;
   try {
     const cfg = JSON.parse(readFileSync(p, 'utf-8'));
-    // Pre-0.4 schemas (e.g. wu-whatsappinbox's original config from 2024)
+    // Pre-0.4 schemas (e.g. an enterprise client project's original config from 2024)
     // have no `version` field. Treat as 0.0 so the migration runs end-to-end.
     return cfg.version || '0.0';
   } catch {
