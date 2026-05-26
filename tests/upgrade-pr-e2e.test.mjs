@@ -44,14 +44,23 @@ function makeProjectWithBareRemote() {
 
   // Init the project + commit
   spawnSync('git', ['init', '-q', '-b', 'main'], { cwd: dir });
+  // v0.20: persist user.email / user.name in the test repo's LOCAL git config
+  // so that subsequent `git commit` calls made by `docguard upgrade --apply --pr`
+  // (which run as separate processes without the `-c` flags) inherit a valid
+  // author identity. Without this, the upgrade-pr e2e flow fails on Linux CI
+  // runners with "Author identity unknown" — they have no global git config.
+  // The earlier `-c user.email=…` approach only configured the FIRST commit;
+  // it didn't survive into the production upgrade code path.
+  spawnSync('git', ['config', 'user.email', 't@t'], { cwd: dir });
+  spawnSync('git', ['config', 'user.name', 't'], { cwd: dir });
   // No `version` field + uses legacy `project` (pre-0.4 schema) so the
   // upgrade migration chain (0.0 → 0.4 → 0.5) actually fires end-to-end.
   writeFileSync(join(dir, '.docguard.json'), JSON.stringify({
     project: 'legacy-name', profile: 'starter',
   }, null, 2));
   writeFileSync(join(dir, 'README.md'), '# pr-test\n');
-  spawnSync('git', ['-c', 'user.email=t@t', '-c', 'user.name=t', 'add', '-A'], { cwd: dir });
-  spawnSync('git', ['-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q', '-m', 'init'], { cwd: dir });
+  spawnSync('git', ['add', '-A'], { cwd: dir });
+  spawnSync('git', ['commit', '-q', '-m', 'init'], { cwd: dir });
 
   // Wire the remote
   spawnSync('git', ['remote', 'add', 'origin', bare], { cwd: dir });
