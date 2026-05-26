@@ -213,10 +213,14 @@ export async function runInit(projectDir, config, flags) {
     console.log(`  ${c.dim}Running specify init (agent: ${detectedAgent || 'generic'})...${c.reset}`);
     try {
       const scriptFlags = process.platform === 'win32' ? ['--script', 'ps'] : ['--script', 'sh'];
-      const bin = process.platform === 'win32' ? 'specify.cmd' : 'specify';
+      const isWin = process.platform === 'win32';
+      const bin = isWin ? 'cmd.exe' : 'specify';
+      const args = isWin
+        ? ['/c', 'specify.cmd', 'init', '--here', '--force', ...aiFlags, '--ai-skills', '--ignore-agent-tools', '--no-git', ...scriptFlags]
+        : ['init', '--here', '--force', ...aiFlags, '--ai-skills', '--ignore-agent-tools', '--no-git', ...scriptFlags];
       execFileSync(
         bin,
-        ['init', '--here', '--force', ...aiFlags, '--ai-skills', '--ignore-agent-tools', '--no-git', ...scriptFlags],
+        args,
         { cwd: projectDir, encoding: 'utf-8', stdio: 'pipe', timeout: 30000 }
       );
       console.log(`  ${c.green}✅${c.reset} Spec Kit initialized ${c.dim}(.specify/, spec-kit skills, agent: ${detectedAgent || 'generic'})${c.reset}`);

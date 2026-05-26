@@ -194,10 +194,14 @@ export function ensureSpecKit(projectDir, flags = {}) {
         ? ['--ai', detectedAgent]
         : ['--ai', 'generic', '--ai-commands-dir', '.agent/commands/'];
       const scriptFlags = process.platform === 'win32' ? ['--script', 'ps'] : ['--script', 'sh'];
-      const bin = process.platform === 'win32' ? 'specify.cmd' : 'specify';
+      const isWin = process.platform === 'win32';
+      const bin = isWin ? 'cmd.exe' : 'specify';
+      const args = isWin
+        ? ['/c', 'specify.cmd', 'init', '--here', '--force', ...aiFlags, '--ai-skills', '--ignore-agent-tools', '--no-git', ...scriptFlags]
+        : ['init', '--here', '--force', ...aiFlags, '--ai-skills', '--ignore-agent-tools', '--no-git', ...scriptFlags];
       execFileSync(
         bin,
-        ['init', '--here', '--force', ...aiFlags, '--ai-skills', '--ignore-agent-tools', '--no-git', ...scriptFlags],
+        args,
         { cwd: projectDir, encoding: 'utf-8', stdio: 'pipe', timeout: 30000 }
       );
       if (!silent) {
