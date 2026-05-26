@@ -23,11 +23,54 @@
  * @req SC-M1-004 — N/A when no source=code sections present in any doc
  */
 
-import { existsSync, readFileSync, statSync } from 'node:fs';
-import { resolve, basename } from 'node:path';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { resolve, basename, join } from 'node:path';
 
 import { buildMemoryPlan } from '../scanners/memory-plan.mjs';
 import { getSection } from '../writers/sections.mjs';
+
+/**
+ * v0.18-P1 fast-path: cheap pre-flight to detect whether ANY canonical doc
+ * has a `<!-- docguard:section ... source=code -->` marker OR a `status:
+ * draft` frontmatter. If neither exists anywhere, this validator has
+ * nothing to do — skip the expensive buildMemoryPlan call (~400ms on
+ * mid-sized repos, was 26-33% of total guard validator time).
+ *
+ * Returns { hasMarkers, hasDrafts }.
+ */
+function _quickScan(projectDir) {
+  const out = { hasMarkers: false, hasDrafts: false };
+  const candidateDirs = [
+    resolve(projectDir, 'docs-canonical'),
+    projectDir, // for README.md, AGENTS.md, etc.
+  ];
+  // We only need a single match in any file to know the validator has work.
+  // Short-circuit aggressively: stop the moment we find either signal.
+  for (const dir of candidateDirs) {
+    if (!existsSync(dir)) continue;
+    let entries;
+    try { entries = readdirSync(dir); } catch { continue; }
+    for (const entry of entries) {
+      if (!entry.endsWith('.md')) continue;
+      // Skip very large files quickly — for canonical docs, > 200 KB is unusual
+      // and almost certainly not the marker-heavy file we're looking for.
+      let stat;
+      try { stat = statSync(join(dir, entry)); } catch { continue; }
+      if (!stat.isFile()) continue;
+      if (stat.size > 200_000) continue;
+      let content;
+      try { content = readFileSync(join(dir, entry), 'utf-8'); } catch { continue; }
+      if (!out.hasMarkers && /<!--\s*docguard:section\s+[^>]*source=code/i.test(content)) {
+        out.hasMarkers = true;
+      }
+      if (!out.hasDrafts && /(?:^---\s*\n[\s\S]*?\bstatus:\s*draft\b[\s\S]*?\n---|<!--\s*status:\s*draft\s*-->)/im.test(content)) {
+        out.hasDrafts = true;
+      }
+      if (out.hasMarkers && out.hasDrafts) return out;
+    }
+  }
+  return out;
+}
 
 /**
  * S-7: how long a generated doc may sit in `status: draft` before we warn.
@@ -61,6 +104,17 @@ export function validateGeneratedStaleness(projectDir, config = {}) {
   // applier. Lets `fix --write` actually CLOSE the loop on drift instead
   // of just warning. No AI needed — the scanner already knows the right body.
   const result = { errors: [], warnings: [], passed: 0, total: 0, fixes: [] };
+
+  // v0.18-P1: cheap pre-flight. If no canonical doc has a source=code marker
+  // AND no doc is in status:draft, this validator has nothing to do — skip
+  // the expensive buildMemoryPlan call. Generated-Staleness used to be
+  // 26-33% of total validator time on projects with NO markers, all
+  // wasted. The fast-path scans markdown files for the marker substring
+  // only — no parsing, no tree walk.
+  const quick = _quickScan(projectDir);
+  if (!quick.hasMarkers && !quick.hasDrafts) {
+    return { ...result, applicable: false, note: 'no docguard:section markers and no status:draft docs' };
+  }
 
   // Build the canonical memory plan (what the docs SHOULD contain). If this
   // fails or produces no docs, the validator is N/A.

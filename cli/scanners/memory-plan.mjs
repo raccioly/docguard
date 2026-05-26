@@ -30,21 +30,112 @@ const md = {
 };
 
 /**
- * v0.15-P1: in-process cache. buildMemoryPlan is expensive (~400ms on
- * an enterprise client project, 33% of total guard validator time) because it triggers
- * routes/schemas/screens/frontend scanners — all of which walk the source
- * tree. Within a single guard run, sync, generate, and the Generated-
- * Staleness validator all ask for the SAME plan; without caching they each
- * re-pay the cost.
+ * v0.15-P1: in-process cache (Map). buildMemoryPlan is expensive (~400ms on
+ * an enterprise client project) because it triggers routes/schemas/screens/
+ * frontend scanners — all of which walk the source tree.
  *
- * Cache key: projectDir + a config fingerprint that captures the fields the
- * scanners actually consume (sourceRoot, ignore, projectType). Other config
- * mutations (e.g. changedFiles per-validator) don't invalidate the plan.
+ * v0.18-P2: cross-process cache (`.docguard/plan.cache.json`). CI flows that
+ * run guard → sync → fix as separate processes each pay the build cost.
+ * The disk cache shares the plan across processes, keyed by a tree-state
+ * hash so we invalidate when the source tree changes.
  *
- * Bypass with `_skipCache: true` in opts — used by tests and any caller that
- * wants a fresh scan.
+ * Cache key: projectDir + a config fingerprint (sourceRoot, ignore,
+ * projectType, profile). Other config mutations (e.g. changedFiles
+ * per-validator) don't invalidate the plan.
+ *
+ * Bypass with `_skipCache: true` in opts — used by tests.
  */
+import { createHash } from 'node:crypto';
+import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync, statSync } from 'node:fs';
+import { resolve as resolvePath, join as joinPath } from 'node:path';
+import { execFileSync } from 'node:child_process';
+
 const _memoryPlanCache = new Map(); // key → plan
+const _DISK_CACHE_PATH = '.docguard/plan.cache.json';
+const _DISK_CACHE_VERSION = '1';  // bump if cache shape changes
+
+/**
+ * v0.18-P2: tree-state hash. Cheap signature of the source tree that
+ * changes whenever something a scanner would care about changes. We use:
+ *   - git HEAD commit SHA (when in a git repo) — captures committed state
+ *   - mtime sum of top-level config files (package.json, pyproject.toml,
+ *     Cargo.toml, etc.) — captures uncommitted bumps to deps
+ * Combined into a 12-char hex fingerprint.
+ *
+ * NOT a perfect cache key — a user editing src/foo.ts without bumping a
+ * config file won't invalidate. But guard/sync/fix all run in quick
+ * succession within a CI step, and the user's flow IS bump + commit + run.
+ * The tradeoff favors speed: the worst case is one stale plan per CI run,
+ * recoverable with `--no-plan-cache` or a tree change.
+ */
+function _treeStateHash(projectDir) {
+  let signal = '';
+  // git HEAD
+  try {
+    const sha = execFileSync('git', ['rev-parse', 'HEAD'], {
+      cwd: projectDir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
+    }).trim();
+    signal += `git:${sha};`;
+  } catch { /* not a git repo, or no commits */ }
+  // mtime of common manifest files
+  const manifests = [
+    'package.json', 'pyproject.toml', 'Cargo.toml', 'go.mod',
+    'pom.xml', 'build.gradle', 'Gemfile', 'composer.json',
+    '.docguard.json',
+  ];
+  for (const m of manifests) {
+    try {
+      const s = statSync(resolvePath(projectDir, m));
+      signal += `${m}:${s.mtimeMs};`;
+    } catch { /* not present */ }
+  }
+  return createHash('sha256').update(signal).digest('hex').slice(0, 12);
+}
+
+/**
+ * v0.18-P2: read the disk cache. Returns null when the file is missing,
+ * the schema version mismatches, the tree hash doesn't match, or anything
+ * about the load is suspicious. Never throws — cache miss is silent.
+ */
+function _readDiskCache(projectDir, configKey) {
+  try {
+    const p = resolvePath(projectDir, _DISK_CACHE_PATH);
+    if (!existsSync(p)) return null;
+    const data = JSON.parse(readFileSync(p, 'utf-8'));
+    if (data.v !== _DISK_CACHE_VERSION) return null;
+    if (data.configKey !== configKey) return null;
+    const currentHash = _treeStateHash(projectDir);
+    if (data.treeHash !== currentHash) return null;
+    return data.plan || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * v0.18-P2: write the disk cache. Best-effort — failures are silent (the
+ * in-process cache still works). `.docguard/` directory created if needed.
+ */
+function _writeDiskCache(projectDir, configKey, plan) {
+  try {
+    const fullDir = resolvePath(projectDir, '.docguard');
+    if (!existsSync(fullDir)) mkdirSync(fullDir, { recursive: true });
+    const payload = {
+      v: _DISK_CACHE_VERSION,
+      configKey,
+      treeHash: _treeStateHash(projectDir),
+      plan,
+      writtenAt: new Date().toISOString(),
+    };
+    writeFileSync(
+      resolvePath(projectDir, _DISK_CACHE_PATH),
+      JSON.stringify(payload),  // compact — this file isn't human-edited
+      'utf-8'
+    );
+  } catch {
+    // swallow — the cache is auxiliary
+  }
+}
 
 export function clearMemoryPlanCache() {
   _memoryPlanCache.clear();
@@ -67,14 +158,35 @@ function _cacheKey(projectDir, config) {
  *   agentTasks: flattened prose tasks the AI must write.
  */
 export function buildMemoryPlan(projectDir, config = {}, opts = {}) {
-  if (!opts._skipCache) {
-    const key = _cacheKey(projectDir, config);
+  const useCache = !opts._skipCache;
+  const key = useCache ? _cacheKey(projectDir, config) : null;
+
+  // L1: in-process Map (same-run guard → sync → fix).
+  if (useCache) {
     const cached = _memoryPlanCache.get(key);
     if (cached) return cached;
   }
+
+  // L2: cross-process disk cache (CI guard → CI sync → CI fix).
+  // v0.18-P2: opt-in via config.diskCache !== false (default ON).
+  // Tree-state hash invalidates when source files change.
+  const diskCacheEnabled = useCache && config.diskCache !== false;
+  if (diskCacheEnabled) {
+    const onDisk = _readDiskCache(projectDir, key);
+    if (onDisk) {
+      _memoryPlanCache.set(key, onDisk);  // promote to L1
+      return onDisk;
+    }
+  }
+
+  // Miss — build fresh.
   const result = _buildMemoryPlanUncached(projectDir, config);
-  if (!opts._skipCache) {
-    _memoryPlanCache.set(_cacheKey(projectDir, config), result);
+
+  if (useCache) {
+    _memoryPlanCache.set(key, result);
+  }
+  if (diskCacheEnabled) {
+    _writeDiskCache(projectDir, key, result);
   }
   return result;
 }

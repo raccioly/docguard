@@ -8,6 +8,63 @@ import { resolve, join, extname } from 'node:path';
 import { execSync } from 'node:child_process';
 import { c } from '../shared.mjs';
 import { validateSecurity } from '../validators/security.mjs';
+import { runGuardInternal } from './guard.mjs';
+
+/**
+ * v0.18-P3: map score categories to the validator keys that contribute.
+ * One category can roll up multiple validators (e.g. "environment" pulls
+ * from Environment validator findings). When --diff fires, we use this
+ * to surface the underlying warnings.
+ */
+const _SCORE_TO_VALIDATORS = {
+  structure:    ['structure'],
+  docQuality:   ['docQuality', 'docsCoverage', 'docsSync'],
+  testing:      ['testSpec', 'todoTracking'],
+  security:     ['security'],
+  environment:  ['environment'],
+  drift:        ['drift'],
+  changelog:    ['changelog'],
+  architecture: ['architecture'],
+};
+
+function _showScoreDiff(projectDir, config, scores) {
+  console.log(`  ${c.bold}── Drill-down (--diff) ──${c.reset}\n`);
+  // Pull live guard data; reuses the in-process plan cache so this is
+  // cheap when run right after the score calc.
+  const guard = runGuardInternal(projectDir, config);
+  const byKey = new Map(guard.validators.map(v => [v.key, v]));
+
+  let anyShown = false;
+  for (const [category, score] of Object.entries(scores)) {
+    if (score === 100) continue;
+    const validatorKeys = _SCORE_TO_VALIDATORS[category];
+    if (!validatorKeys) continue;
+    const warnings = [];
+    const errors = [];
+    for (const k of validatorKeys) {
+      const v = byKey.get(k);
+      if (!v) continue;
+      warnings.push(...(v.warnings || []));
+      errors.push(...(v.errors || []));
+    }
+    if (warnings.length === 0 && errors.length === 0) continue;
+    anyShown = true;
+    console.log(`  ${c.yellow}${category}${c.reset} ${c.dim}(${score}/100)${c.reset}`);
+    for (const e of errors.slice(0, 5)) console.log(`     ${c.red}✗${c.reset} ${e}`);
+    for (const w of warnings.slice(0, 5)) console.log(`     ${c.yellow}⚠${c.reset} ${w}`);
+    const totalIssues = errors.length + warnings.length;
+    if (totalIssues > 5) console.log(`     ${c.dim}... ${totalIssues - 5} more${c.reset}`);
+    console.log('');
+  }
+
+  if (!anyShown) {
+    console.log(`  ${c.dim}No specific findings available for the weakest categories. They may be scoring below 100 due to structural/quality heuristics rather than discrete check failures.${c.reset}\n`);
+  } else {
+    console.log(`  ${c.dim}Fix options:${c.reset}`);
+    console.log(`    ${c.dim}• Run ${c.cyan}docguard explain "<warning>"${c.dim} for the full validator help on any line above${c.reset}`);
+    console.log(`    ${c.dim}• Run ${c.cyan}docguard fix --write${c.dim} for the mechanical fixes${c.reset}`);
+  }
+}
 
 const WEIGHTS = {
   structure: 25,     // Required files exist
@@ -114,6 +171,14 @@ export function runScore(projectDir, config, flags) {
       console.log(`  ${c.yellow}→ ${cat}${c.reset}: ${suggestion}`);
     }
     console.log('');
+  }
+
+  // v0.18-P3: --diff drill-down. Symmetric to v0.17 memory --diff.
+  // Shows WHICH specific checks dragged each weak category down by joining
+  // the guard validator warnings to score categories. Cheap: we already
+  // import runGuardInternal; one extra guard run on `--diff` is acceptable.
+  if (flags.diff) {
+    _showScoreDiff(projectDir, config, scores);
   }
 
   // ── Tax Estimate (--tax flag) ──

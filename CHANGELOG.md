@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.18.0] - 2026-05-26
+
+Performance + drill-down release. Closes the four v0.18 backlog items:
+Generated-Staleness fast-path (**30% faster guard runs**), cross-process
+plan cache, `score --diff` drill-down, and an end-to-end battle-test for
+`upgrade --apply --pr`. **546 tests** (was 537, +9). 22 validators.
+
+### Performance
+
+- **P1 — Generated-Staleness fast-path.** The validator used to call `buildMemoryPlan` (~400ms) on EVERY guard run, even on projects with no `<!-- docguard:section source=code -->` markers and no `status: draft` docs (i.e. most projects today). New cheap pre-flight: scan canonical docs for either signal first; if neither is present, return N/A in <5ms. **Result on the client repo: total validator time 1431ms → 998ms — a 30% reduction.** Generated-Staleness dropped from "slowest validator at 26-33% of guard time" to "doesn't appear in the slow-list at all".
+- **P2 — Cross-process plan cache (`.docguard/plan.cache.json`).** The v0.15-P1 in-process cache only helped within a single process. CI flows that run guard → sync → fix as separate processes each rebuilt the plan. v0.18 adds a disk-backed L2 cache keyed by a tree-state hash (git HEAD + manifest mtimes). Cache invalidates automatically when source files change. Disabled with `config.diskCache: false`; survives corrupt files silently; never the only cache layer — L1 (in-process) still wins for same-run flows. Cuts the typical 3-step CI flow from 3× to 1× build time.
+
+### Added
+
+- **P3 — `docguard score --diff` per-category drill-down.** Symmetric to v0.17's `memory --diff`. The score headline ("Architecture: 80/100") used to require source-spelunking to understand. New `--diff` mode joins the score categories to live guard validator warnings and shows the underlying errors/warnings per weak category. Cap of 5 per category + "N more" pointer. Plus an inline tip: `docguard explain "<warning>"` for full per-warning help.
+
+### Internal
+
+- **P4 — End-to-end battle-test for `upgrade --apply --pr`.** The v0.14-P4 PR flow shipped without ever being exercised end-to-end. New `tests/upgrade-pr-e2e.test.mjs` wires up a local bare-repo remote + a stub `gh` binary on a fresh PATH directory and asserts: branch created, migration applied, commit landed on remote, `gh pr create` invoked with `--title` + `--body`. No real GitHub credentials needed; lives in regular CI from now on.
+- **3 new test files**: `tests/plan-disk-cache.test.mjs` (7), `tests/upgrade-pr-e2e.test.mjs` (2). Existing test suites already covered Generated-Staleness and score behavior. **Total: 537 → 546 tests (+9 new).**
+- **New helpers** in `cli/scanners/memory-plan.mjs`: `_treeStateHash`, `_readDiskCache`, `_writeDiskCache`, `_DISK_CACHE_PATH`, `_DISK_CACHE_VERSION`.
+- **New helpers** in `cli/validators/generated-staleness.mjs`: `_quickScan` (cheap marker pre-flight).
+- **New helpers** in `cli/commands/score.mjs`: `_SCORE_TO_VALIDATORS` mapping, `_showScoreDiff`.
+- **`buildMemoryPlan` cache strategy**: L1 (per-process Map) → L2 (per-tree disk file) → fresh build. Tree-state hash uses `git rev-parse HEAD` + manifest mtimes (package.json, pyproject.toml, Cargo.toml, etc.) for invalidation.
+- **Dry-run on client repo**: env accuracy still 80/82, 672/672 PASS, validator time 1431ms → 998ms.
+- No new NPM deps.
+
+### Backlog for v0.19
+
+- **F6** stale score cache (still low repro confidence)
+- Deeper Generated-Staleness optimization for projects that DO use markers (the v0.18 fast-path only helps projects without)
+- README polish — the README has aged through ~14 releases and could use a refresh
+- A pre-release smoke gate that runs against multiple synthetic fixture projects before publishing
+
 ## [0.17.1] - 2026-05-26
 
 Patch responding to a client-project feedback round: 1 real bug (B-7) and
