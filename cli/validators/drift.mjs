@@ -27,6 +27,15 @@ export function validateDrift(projectDir, config) {
   const scanFile = (filePath) => {
     const ext = extname(filePath);
     if (!CODE_EXTENSIONS.has(ext)) return;
+    // v0.15 hotfix: test files commonly contain literal `// DRIFT:` inside
+    // string fixtures (e.g. `'// DRIFT: a-drift\n'`). Reading the test as
+    // source would treat the string as a real drift comment. Skip test
+    // files unless the user opts in — same pattern TODO-Tracking uses.
+    const rel = filePath.replace(projectDir + '/', '');
+    const includeTests = config?.drift?.includeTestFiles === true;
+    if (!includeTests && /(^|\/)(__tests__|tests?|spec)\/|\.(test|spec)\.[^.]+$/.test(rel)) {
+      return;
+    }
     let content;
     try { content = readFileSync(filePath, 'utf-8'); } catch { return; }
     if (!content.includes('DRIFT:')) return;

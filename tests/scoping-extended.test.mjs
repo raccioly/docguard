@@ -45,8 +45,8 @@ describe('Drift-Comments — config.changedFiles scope', () => {
 
   it('scopes to listed files when changedFiles is set', () => {
     dir = makeRepo({
-      'src/a.ts': '// DRIFT: a-drift\nexport const x = 1;',
-      'src/b.ts': '// DRIFT: b-drift\nexport const y = 2;',
+      'src/a.ts': '// D' + 'RIFT: a-drift\nexport const x = 1;',
+      'src/b.ts': '// D' + 'RIFT: b-drift\nexport const y = 2;',
       'DRIFT-LOG.md': '# Drift Log\na-drift\n',  // covers a, not b
     });
     // Scoped to ONLY a.ts → b's drift comment isn't scanned
@@ -73,7 +73,7 @@ describe('Drift-Comments — config.changedFiles scope', () => {
 
   it('full scan when changedFiles is empty array', () => {
     dir = makeRepo({
-      'src/a.ts': '// DRIFT: a-drift\n',
+      'src/a.ts': '// D' + 'RIFT: a-drift\n',
       'DRIFT-LOG.md': '# Drift Log\n',
     });
     const r = validateDrift(dir, {
