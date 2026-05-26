@@ -26,3 +26,8 @@ __pycache__/
 # Backups created by generate --force
 *.bak
 
+# Surface audit doc — contains historical observations like "guard ran 22
+# validators" that document the pre-v0.19 state. Auto-fixing those to the
+# current count would erase the historical record the audit exists to preserve.
+docs-canonical/SURFACE-AUDIT.md
+

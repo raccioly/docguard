@@ -15,6 +15,7 @@
 ## Table of Contents
 
 - [What is DocGuard?](#what-is-docguard)
+- [What's New](#-whats-new)
 - [Quick Start](#-quick-start)
 - [Spec Kit Integration](#-spec-kit-integration)
 - [Usage](#usage)
@@ -50,15 +51,15 @@ DocGuard is an official [GitHub Spec Kit](https://github.com/github/spec-kit) co
 
 ```mermaid
 graph TD
-    CLI["CLI Entry<br/>docguard.mjs"] --> Commands["Commands (15)"]
+    CLI["CLI Entry<br/>docguard.mjs"] --> Commands["Commands (21)"]
     Commands --> guard["guard"]
     Commands --> generate["generate"]
     Commands --> score["score"]
     Commands --> diagnose["diagnose"]
     Commands --> setup["setup wizard"]
-    Commands --> other["diff · init · fix · trace<br/>agents · hooks · badge · ci · watch"]
+    Commands --> other["diff · init · fix · trace · impact · sync<br/>explain · memory · upgrade · agents · hooks · badge · ci · watch"]
 
-    guard --> Validators["Validators (19)"]
+    guard --> Validators["Validators (23)"]
     generate --> Scanners["Scanners (4)<br/>routes · schemas · doc-tools · speckit"]
     score --> Scoring["Weighted Scoring<br/>8 categories"]
     diagnose --> Validators
@@ -78,6 +79,37 @@ graph TD
 ```
 
 > **Distribution**: Node.js core (npm) · Python wrapper (PyPI) · GitHub Action (`action.yml`) · Spec Kit Extension (ZIP)
+
+---
+
+## ✨ What's New
+
+Recent highlights across the v0.16 → v0.19 line:
+
+- **`docguard explain <validator>`** — `docguard explain freshness` prints purpose, rules, common
+  failures, and fix recipes for any of the 23 validators. No need to dig into source.
+- **`docguard memory --diff`** — surface what changed in your canonical docs between two refs
+  (`HEAD~10..HEAD` by default). Great for code review and changelog drafting.
+- **`docguard score --diff`** — see exactly which validators moved the score up or down between
+  two commits. Pinpoints regressions without re-running the full suite by hand.
+- **`docguard upgrade --apply --pr`** — when the config schema bumps, DocGuard migrates
+  `.docguard.json` for you and (optionally) opens a PR with the change.
+- **Language-aware patterns** — test discovery and trace mapping now understand Python, Rust, Go,
+  Java, Ruby, and PHP layouts in addition to JS/TS. Sensible defaults, override via config.
+- **Per-validator severity overrides** — escalate `freshness` to `high` for production repos,
+  demote `doc-quality` to `low` for prototypes. Configurable per-project.
+- **JSON Schema for `.docguard.json`** — IDE autocomplete, in-line docs, and validation via
+  `$schema`. Shipped in the package at `schemas/docguard-config.schema.json`.
+- **Version pin (`docguardVersion` + `--pin`)** — pin the CLI version your project supports so
+  CI fails loudly if someone bumps DocGuard without re-running the suite.
+- **Cross-process plan cache** — repeated runs reuse the validator plan across processes when
+  the working tree hasn't changed. ~30% faster guard runs on typical repos.
+- **Headless-aware banner** — `--quiet`, `--format json`, `--write`, and `--changed-only`
+  automatically suppress the banner so JSON output stays parse-clean.
+- **npm-pack smoke gate** — every release now extracts the actual tarball and runs the CLI
+  end-to-end before publish, catching missing-file regressions.
+
+See [CHANGELOG.md](CHANGELOG.md) for the full history.
 
 ---
 
@@ -203,24 +235,29 @@ This installs DocGuard's slash commands (`/docguard.guard`, `/docguard.review`, 
 
 ## Usage
 
-DocGuard ships **13 commands**:
+DocGuard ships **21 commands**:
 
 | Command | Purpose |
 |:--------|:--------|
 | `diagnose` | **Primary** — identify every issue + generate AI fix prompts |
 | `guard` | Validate project against canonical docs (CI gate) |
+| `explain <warning>` | Paste any warning — get the validator's docstring + fix path |
 | `generate` | Reverse-engineer docs from existing codebase |
 | `init` | Initialize CDD docs from templates (interactive) |
 | `score` | CDD maturity score (0–100) with weighted breakdown |
+| `memory` | Per-domain accuracy headline (endpoints / entities / env / tech) |
+| `memory --diff` | Drill into which specific claims don't match code |
+| `score --diff` | Drill into which checks pulled each category down |
 | `fix --doc <name>` | Generate AI prompt for a specific document |
-| `fix --write` | Apply deterministic fixes (remove stale documented endpoints) — no AI |
+| `fix --write` | Apply deterministic fixes (no AI — version bumps, counts, anchors, sections) |
+| `fix --history` | Audit log of every mechanical fix applied (from `.docguard/fixed.json`) |
 | `diff` | Compare canonical docs vs actual code artifacts |
+| `impact --since <ref>` | Post-commit: "you touched X, these doc sections reference it" |
+| `sync --write [--since <ref>]` | Refresh code-truth sections in canonical docs |
+| `trace` / `trace --reverse <file>` | Requirements traceability — forward AND reverse |
 | `agents` | Generate agent-specific config files |
-| `trace` | Requirements traceability matrix |
-| `ci` | CI/CD pipeline check with threshold |
-| `watch` | Live watch mode with auto-fix |
-| `hooks` | Install git hooks (pre-commit, pre-push) |
-| `llms` | Generate `llms.txt` (AI-friendly project summary) |
+| `upgrade [--apply] [--pr]` | Check + migrate `.docguard.json` schema; `--pr` opens a PR |
+| `ci` / `watch` / `hooks` / `llms` | Pipeline check, live mode, git hooks, llms.txt |
 
 ### CLI Flags
 
@@ -228,10 +265,22 @@ DocGuard ships **13 commands**:
 |:-----|:------------|:---------|
 | `--dir <path>` | Project directory (default: `.`) | All |
 | `--verbose` | Show detailed output | All |
-| `--format json` | Machine-readable output for CI/CD | score, guard, diff |
+| `--quiet` / `-q` | Suppress banner — for hooks, CI loops, scripts | All |
+| `--format json` | Machine-readable output (clean JSON, no ANSI bleed) | guard, score, diff, trace, diagnose, memory, impact, explain |
 | `--force` | Overwrite existing files (creates `.bak` backups) | generate, agents, init |
-| `--profile <name>` | Starter, standard, or enterprise | init |
-| `--agent <name>` | Target specific AI agent | agents |
+| `--force-redo` | Bypass ping-pong suppression in `.docguard/fixed.json` | fix --write |
+| `--profile <name>` | Starter / standard / enterprise | init |
+| `--no-spec-kit` | Skip auto-init of `.specify/` / `.agent/` scaffolding | init |
+| `--changed-only [--since <ref>]` | Pre-commit lite mode (5 fast validators on changed files only) | guard |
+| `--timings` | Per-validator wall-time profile (slowest first) | guard |
+| `--show-failing` | Show warnings/errors even when status is PASS | guard |
+| `--pin` | Record running CLI version into `.docguard.json` (reproducibility) | guard |
+| `--diff` | Per-category drill-down | score, memory |
+| `--check-only` | Exit 1 if behind (for CI) | upgrade |
+| `--apply` | Actually run the migration | upgrade |
+| `--pr` | Open a PR with the migration | upgrade |
+| `--reverse <file>` | Reverse traceability (code → docs) | trace |
+| `--history` | Show fix audit log | fix |
 
 ### Example Output
 
@@ -266,30 +315,47 @@ $ npx docguard-cli generate
 
 ## 🔍 Validators
 
-DocGuard runs **19 automated validators** on every `guard` check:
+DocGuard runs **23 automated validators** on every `guard` check. Every one is **language-aware** as of v0.16 — patterns for Python (`test_*.py`), Rust (`tests/*.rs`), Go (`*_test.go`), Java (`*Test.java`), Ruby (`*_spec.rb`), PHP, and JS/TS all match.
 
 | # | Validator | What It Checks | Default |
 |:--|:----------|:--------------|:--------|
 | 1 | **Structure** | Required CDD files exist | ✅ On |
-| 2 | **Doc Sections** | Canonical docs have required sections | ✅ On |
+| 2 | **Doc Sections** | Canonical docs have required sections (or N/A markers) | ✅ On |
 | 3 | **Docs-Sync** | Routes/services referenced in docs + OpenAPI cross-check | ✅ On |
-| 4 | **Drift-Comments** | `// DRIFT:` comments logged in DRIFT-LOG.md | ✅ On |
+| 4 | **Drift-Comments** | `// DRIFT:` comments logged in DRIFT-LOG.md (skips test files by default) | ✅ On |
 | 5 | **Changelog** | CHANGELOG.md has [Unreleased] section | ✅ On |
 | 6 | **Test-Spec** | Tests exist per TEST-SPEC.md rules | ✅ On |
-| 7 | **Environment** | Env vars documented, .env.example exists | ✅ On |
+| 7 | **Environment** | Env vars documented, `.env.example` exists | ✅ On |
 | 8 | **Security** | No hardcoded secrets in source code | ✅ On |
-| 9 | **Architecture** | Imports follow layer boundaries | ✅ On |
-| 10 | **Freshness** | Docs not stale relative to code changes | ✅ On |
+| 9 | **Architecture** | Imports follow layer boundaries (honors `config.ignore`) | ✅ On |
+| 10 | **Freshness** | Docs not stale relative to code changes (rename-aware via `git log --follow`) | ✅ On |
 | 11 | **Traceability** | Requirement IDs (FR, SC, NFR, US, AC, T) trace to tests | ✅ On |
 | 12 | **Docs-Diff** | Code artifacts match documented entities | ✅ On |
-| 13 | **Metadata-Sync** | Version refs consistent across docs | ✅ On |
-| 14 | **Docs-Coverage** | Code features referenced in documentation | ✅ On |
-| 15 | **Metrics-Consistency** | Hardcoded numbers match actual counts | ✅ On |
-| 16 | **Doc-Quality** | Writing quality (readability, passive voice, atomicity) | ✅ On |
-| 17 | **TODO-Tracking** | Untracked TODOs/FIXMEs and skipped tests | ✅ On |
+| 13 | **API-Surface** | API-REFERENCE.md endpoints match real routes (OpenAPI cross-check) | ✅ On |
+| 14 | **Metadata-Sync** | Version refs consistent across docs | ✅ On |
+| 15 | **Docs-Coverage** | Code features referenced in documentation | ✅ On |
+| 16 | **Doc-Quality** | Writing quality (readability, passive voice, atomicity, IEEE 830) | ✅ On |
+| 17 | **TODO-Tracking** | Untracked TODOs/FIXMEs and skipped tests (skips test files by default) | ✅ On |
 | 18 | **Schema-Sync** | Database models documented in DATA-MODEL.md | ✅ On |
 | 19 | **Spec-Kit** | Spec quality validation (FR-IDs, mandatory sections, phased tasks) | ✅ On |
-| 20 | **API-Surface** | API-REFERENCE.md endpoints match the real API surface (OpenAPI spec / routes); flags documented-but-deleted endpoints | ✅ On |
+| 20 | **Cross-Reference** | Internal markdown links + anchors resolve (with "did you mean?" hints) | ✅ On |
+| 21 | **Generated-Staleness** | `source=code` sections match scanner output; `status: draft` doc age | ✅ On |
+| 22 | **Canonical-Sync** | DocGuard's own README count claims match code-truth (DocGuard repo only — N/A elsewhere) | ✅ On |
+| 23 | **Metrics-Consistency** | Hardcoded numbers match actual counts | ✅ On |
+
+**Per-validator controls** (in `.docguard.json`):
+```json
+{
+  "validators": {
+    "test-spec": false,                 // disable (kebab-case OR camelCase both accepted)
+    "freshness": true
+  },
+  "severity": {
+    "todoTracking": "high",             // warnings fail CI
+    "freshness": "low"                  // warnings ignored for exit code
+  }
+}
+```
 
 ---
 
@@ -343,7 +409,7 @@ DocGuard provides AI agent slash commands for integrated workflows. Installed au
 
 | Command | What It Does |
 |:--------|:-------------|
-| `/docguard.guard` | Run quality validation — check all 22 validators |
+| `/docguard.guard` | Run quality validation — check all 23 validators |
 | `/docguard.review` | Analyze doc quality and suggest improvements |
 | `/docguard.fix` | Generate targeted fix prompts for specific issues |
 | `/docguard.score` | Show CDD maturity score with category breakdown |

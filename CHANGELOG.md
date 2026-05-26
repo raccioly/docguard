@@ -7,6 +7,88 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.19.0] - 2026-05-26
+
+**Self-aware.** The headline change: until v0.19, `guard` could not see
+when the README lied about DocGuard's own surface. v0.18.1 shipped with
+"ships 19 commands" while the codebase had 21, and the architecture
+diagram had drifted across five releases without anyone noticing —
+because no validator was checking. v0.19 closes that gap.
+
+Triggered by a surface audit (see `docs-canonical/SURFACE-AUDIT.md`) that
+found three different command counts in three different places, six
+commands that exist in the router but were never surfaced in `--help`,
+and 11 undocumented alias variants. This release fixes the *self-policing*
+piece. The actual consolidation of the 21-command surface down to ~13
+verbs is staged for v0.20 with a migration guide.
+
+### Added
+
+- **A — `canonical-sync` validator.** New 23rd validator that runs on
+  every `guard` and asserts: (1) README "ships N commands" matches
+  `cli/commands/*.mjs` file count; (2) README "N validators" matches the
+  live runtime count; (3) architecture-diagram `Commands (N)` and
+  `Validators (N)` mermaid labels match reality. Gated by
+  `package.json` name === "docguard-cli" — returns N/A in every other
+  project. Counts itself per SURFACE-AUDIT §8.5 (current claim is "23
+  validators" = 22 files + 1 inlined Doc Sections, where Canonical-Sync
+  is among the 22). Severity high. 9 unit tests, all green.
+- **B — Six ghost commands surfaced in `--help`.** `explain`, `impact`,
+  `llms`, `memory`, `upgrade` now appear under their natural sections
+  (Analysis, Memory, CI/CD, Utilities). The historical `audit → guard`
+  alias is documented in a new "Aliases" footnote — kept permanently for
+  backwards-compat with older CI scripts.
+- **P1 — `tests/npm-pack-smoke.test.mjs`.** Builds the actual tarball
+  that would be published to npm, extracts it, and runs the CLI against
+  a tiny fixture. Catches the class of bugs where a needed file is
+  missing from `package.json`'s `files:` array. Opt-out via
+  `NPM_PACK_SMOKE=0` but on by default — v0.15.0 nearly shipped with a
+  missing `schemas/` directory until we added it to the files array, and
+  this gate would have caught that.
+
+### Changed
+
+- **C — README counts corrected to reality.** "ships 19 commands" → "ships
+  21 commands". Architecture diagram `Commands (19)` → `(21)`,
+  `Validators (22)` → `(23)`. "any of the 22 validators" → "23 validators"
+  in the What's-New section. Validators section now lists 23 with
+  Canonical-Sync added between Generated-Staleness and Metrics-Consistency.
+  Going forward, `canonical-sync` enforces these stay accurate.
+- **D — `Spec-Kit` validator moved to `cli/validators/`.** Was previously
+  exported from `cli/scanners/speckit.mjs` — architecturally backwards
+  (scanners read state, validators have severity/pass-fail semantics).
+  New thin file at `cli/validators/spec-kit.mjs` re-exports the function;
+  scanner logic stays where it lives. Now `ls cli/validators/*.mjs \| wc -l`
+  matches the validator surface (22 files + 1 for Doc Sections inlined).
+- **P2 — Node-based `gh` stub for upgrade-pr e2e.** v0.18.0's shell-script
+  stub passed on macOS but failed on Linux CI runners because of PATH
+  interaction with the runner's `/usr/bin/gh`. v0.18.1 gated the test
+  behind `E2E=1`. v0.19 rewrites the stub in Node (the runtime — present
+  on every platform DocGuard supports). Net result: upgrade --pr e2e now
+  runs in regular CI on every platform with no opt-in required.
+
+### Documentation
+
+- **`docs-canonical/SURFACE-AUDIT.md`** (new).** Full survey of the 21
+  commands, 23 validators, and every count claim in every canonical doc.
+  Sections cover: hard data, every drift, overlap matrix between commands,
+  proposed target surface for v0.20 (~13 verbs after consolidation),
+  migration plan with deprecation aliases, the canonical-sync spec, and
+  open questions answered. Maintainer-facing — refresh quarterly or when
+  surface changes by more than ±3 commands.
+
+### Notes / Deferred
+
+- The consolidation itself (folding `agents`/`badge`/`ci`/`hooks`/`llms`/
+  `publish` into `init --with`; renaming `setup` → `init --wizard`;
+  renaming `impact` → `diff --since`; dropping the 11 cute aliases) is
+  intentionally **deferred to v0.20.0** with a migration guide. v0.19
+  establishes the self-policing first so the v0.20 surface changes can't
+  silently break the docs.
+- P4 (Generated-Staleness depth optimization) was superseded by v0.18-P2's
+  cross-process disk cache, which covers the same scenario at the
+  plan-cache layer for all validators.
+
 ## [0.18.1] - 2026-05-26
 
 Hotfix: v0.18.0 publish failed because the new `upgrade --pr` end-to-end test (which used a shell-script stub `gh`) was platform-specific — passed on macOS, failed on Linux CI runners due to interaction with the runner's existing `/usr/bin/gh`. Gated the test behind `E2E=1` (same pattern as the stress test) so the regular CI suite stays green. The production `upgrade --pr` code path is still covered by `tests/upgrade-pr.test.mjs`. v0.19 will switch to a Node-based gh stub.

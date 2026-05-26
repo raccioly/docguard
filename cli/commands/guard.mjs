@@ -139,7 +139,8 @@ import { validateCrossReferences } from '../validators/cross-reference.mjs';
 import { validateGeneratedStaleness } from '../validators/generated-staleness.mjs';
 import { validateTodoTracking } from '../validators/todo-tracking.mjs';
 import { validateSchemaSync } from '../validators/schema-sync.mjs';
-import { validateSpecKitIntegration } from '../scanners/speckit.mjs';
+import { validateSpecKitIntegration } from '../validators/spec-kit.mjs';
+import { validateCanonicalSync } from '../validators/canonical-sync.mjs';
 
 /**
  * Internal guard — returns structured data, no console output, no process.exit.
@@ -237,6 +238,22 @@ export function runGuardInternal(projectDir, config) {
     }
   }
 
+  // ── Canonical-Sync runs AFTER main loop, BEFORE metrics-consistency.
+  //    Needs the live validator results to count "real" validators that ran.
+  //    (Pre-canonical-sync ordering — comes before metrics-consistency so the
+  //    metrics validator sees a stable surface count.)
+  if (validators.canonicalSync !== false) {
+    const start = performance.now();
+    try {
+      const result = validateCanonicalSync(projectDir, config, results);
+      const durationMs = Math.round((performance.now() - start) * 100) / 100;
+      results.push({ ...result, name: 'Canonical-Sync', key: 'canonicalSync', durationMs, ...classifyResult(result) });
+    } catch (err) {
+      const durationMs = Math.round((performance.now() - start) * 100) / 100;
+      results.push({ name: 'Canonical-Sync', key: 'canonicalSync', status: 'fail', quality: 'LOW', errors: [err.message], warnings: [], passed: 0, total: 1, durationMs });
+    }
+  }
+
   // ── Metrics-Consistency runs AFTER all other validators (needs their results) ──
   if (validators.metricsConsistency !== false) {
     const start = performance.now();
@@ -317,7 +334,8 @@ function liteValidatorsConfig() {
     'structure', 'docsSync', 'drift', 'changelog', 'testSpec', 'environment',
     'security', 'architecture', 'freshness', 'traceability', 'docsDiff',
     'apiSurface', 'metadataSync', 'docsCoverage', 'docQuality', 'todoTracking',
-    'schemaSync', 'specKit', 'crossReference', 'generatedStaleness', 'metricsConsistency',
+    'schemaSync', 'specKit', 'crossReference', 'generatedStaleness',
+    'canonicalSync', 'metricsConsistency',
   ];
   const out = {};
   for (const k of all) out[k] = CHANGED_ONLY_VALIDATORS.includes(k);

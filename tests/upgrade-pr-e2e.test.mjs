@@ -62,28 +62,41 @@ function makeProjectWithBareRemote() {
 /**
  * Install a stub `gh` binary on a fresh PATH directory. Returns the new
  * PATH and the log file the stub writes argv to.
+ *
+ * v0.19-P2: Node-based instead of shell-based. The shell version worked
+ * on macOS but failed on Linux CI runners (interaction with the runner's
+ * existing /usr/bin/gh + `which` returning the wrong path). Node is on
+ * EVERY platform DocGuard supports (it's the runtime); the shebang
+ * `#!/usr/bin/env node` resolves identically everywhere. The stub
+ * appends argv to a log file and prints a fake PR URL.
  */
 function installGhStub(base) {
   const stubDir = join(base, 'stub-bin');
   mkdirSync(stubDir, { recursive: true });
   const logFile = join(base, 'gh-invocations.log');
-  const stub = `#!/bin/sh\necho "$@" >> "${logFile}"\n# print a fake PR URL so docguard parses something\necho "https://github.com/x/y/pull/42"\nexit 0\n`;
+  const stub = [
+    '#!/usr/bin/env node',
+    '// v0.19-P2: Node-based gh stub for upgrade --pr e2e tests.',
+    'const fs = require("node:fs");',
+    `fs.appendFileSync(${JSON.stringify(logFile)}, process.argv.slice(2).join(" ") + "\\n");`,
+    'console.log("https://github.com/x/y/pull/42");',
+    'process.exit(0);',
+    '',
+  ].join('\n');
   const stubPath = join(stubDir, 'gh');
   writeFileSync(stubPath, stub);
   chmodSync(stubPath, 0o755);
-  // Prepend stub-bin to PATH so `which gh` and direct invocation both hit our stub
+  // Prepend stub-bin to PATH so `which gh` and direct invocation both hit our stub.
+  // Use cross-platform path separator (`:` on POSIX, `;` on Windows) but tests
+  // are POSIX-only in CI so this is fine.
   return { newPath: `${stubDir}:${process.env.PATH}`, logFile };
 }
 
-// v0.18-P4 hotfix: this test passes locally on macOS but fails on Linux CI
-// runners — the stub `gh` shell-script approach interacts oddly with the
-// runner's existing `/usr/bin/gh`. Opt-in via E2E=1 for now; the production
-// `upgrade --pr` code path is exercised by `tests/upgrade-pr.test.mjs`
-// (which uses pre-existing tests + a missing-gh fallback assertion). v0.19
-// will switch to a Node-based gh stub that doesn't rely on shell semantics.
-const RUN_E2E = process.env.E2E === '1';
-
-describe('upgrade --apply --pr — end-to-end with bare remote + stub gh', { skip: !RUN_E2E }, () => {
+// v0.19-P2: switched to Node-based gh stub — runs in regular CI on every
+// platform now. The previous shell-script stub interacted oddly with
+// /usr/bin/gh on Linux runners. Node is the DocGuard runtime; the shebang
+// `#!/usr/bin/env node` resolves identically across macOS / Linux / Windows.
+describe('upgrade --apply --pr — end-to-end with bare remote + stub gh', () => {
   let base;
   afterEach(() => { if (base) rmSync(base, { recursive: true, force: true }); });
 

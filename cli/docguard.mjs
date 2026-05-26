@@ -294,24 +294,32 @@ ${c.bold}Enforcement:${c.reset}
 ${c.bold}Memory (build & maintain docs):${c.reset}
   ${c.green}generate --plan${c.reset}  AI-powered: scan any project, emit agent task manifest + skeleton
   ${c.green}sync${c.reset}       Refresh code-truth doc sections to match current code (always up to date)
+  ${c.green}memory${c.reset}     Show what DocGuard remembers (use --diff to drill into drift)
 
 ${c.bold}Analysis:${c.reset}
-  ${c.green}score${c.reset}      CDD maturity score (0-100)
-  ${c.green}trace${c.reset}      Requirements traceability matrix
+  ${c.green}score${c.reset}      CDD maturity score (0-100; --diff for delta between refs)
+  ${c.green}trace${c.reset}      Requirements traceability matrix (--reverse for code→doc map)
   ${c.green}diff${c.reset}       Show gaps between docs and code (detailed view)
+  ${c.green}impact${c.reset}     Which canonical doc sections reference files changed --since <ref>
 
 ${c.bold}CI/CD & Automation:${c.reset}
   ${c.green}ci${c.reset}         Pipeline gate (guard + score, exit codes)
   ${c.green}hooks${c.reset}      Install/manage git hooks
   ${c.green}watch${c.reset}      Watch for changes, re-run guard
+  ${c.green}upgrade${c.reset}    Migrate .docguard.json schema and CLI version (--apply --pr)
 
 ${c.bold}Utilities:${c.reset}
   ${c.green}fix${c.reset}        Generate AI fix instructions for specific docs
   ${c.green}agents${c.reset}     Generate agent config files (AGENTS.md, CLAUDE.md)
   ${c.green}badge${c.reset}      Generate CDD score badges for README
+  ${c.green}explain${c.reset}    Explain a validator key or warning text (no need to read source)
+  ${c.green}llms${c.reset}       Generate llms.txt from canonical docs (AI-friendly summary)
 
 ${c.bold}Experimental:${c.reset}
   ${c.dim}publish${c.reset}    Scaffold external doc sites (Mintlify)
+
+${c.bold}Aliases (historical):${c.reset}
+  ${c.dim}audit${c.reset} → ${c.green}guard${c.reset}   (kept permanently for back-compat with older CI scripts)
 
 ${c.bold}Options:${c.reset}
   --dir <path>    Project directory (default: current directory)
