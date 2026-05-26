@@ -7,6 +7,67 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — eight field-test bugs from v0.20.0
+
+Confirmed running v0.20.0 against two real projects (a Python codebase for
+the v0.20.0 cycle and a Next.js 15 App Router codebase). All eight were
+reproduced in the source, fixed surgically, and pinned with regression
+tests. Specs: `specs/004-v020-env-var-false-negative/`, `specs/005-hugocross-next-bugs/`.
+
+- **API-Surface emits wrong path for Next.js App Router with `src/` layout**
+  — `src/app/api/health/route.ts` was reported as `GET /app/api/health`
+  instead of `GET /api/health`. Caused the validator to fire two false
+  warnings per route (documented-missing + undocumented-in-code) on every
+  `src/app/api/` file. `cli/scanners/routes.mjs`.
+
+- **Freshness validator ignored `<!-- docguard:last-reviewed YYYY-MM-DD -->`**
+  — header was generated into every template, recommended in the freshness
+  fix text itself, checked by `score` for ALCOA+, but never read by
+  `validateFreshness`. The reviewer's explicit "I reviewed this" signal
+  had zero effect. The header now overrides the git-log fallback.
+  `cli/validators/freshness.mjs`.
+
+- **Environment-vars in pipe-table rows (no backticks) were treated as
+  undocumented** — projects using `| VAR_NAME | description | required |`
+  table syntax were silently flagged for every var. The doc parser only
+  matched backtick-quoted names; it now also extracts the first column of
+  markdown pipe-table rows. `cli/validators/environment.mjs`.
+
+- **Docs-Diff warning was unactionable** — emitted `"N documented but not
+  found in code"` with no filename. Now lists up to 5 paths inline with
+  `(+N more)` for the long-tail. `cli/validators/docs-diff.mjs`.
+
+- **Traceability ignored `// @doc` annotations AND missed Next.js App
+  Router paths** — templates told users `// @doc API-REFERENCE.md` would
+  link a source file to a canonical doc; the scanner never read the
+  annotation. Compound: the `API-REFERENCE.md` TRACE_MAP only matched
+  `routes/`, `controllers/`, `handlers/`, `openapi/swagger`, and
+  `middleware/` — none of which cover `app/api/`. Added an annotation
+  scanner (top-of-file, multi-language comment syntax) and an
+  `(app|pages)/api/` glob. `cli/validators/traceability.mjs`.
+
+- **`docguard upgrade --apply` silently broke Metrics-Consistency** — when
+  a CLI upgrade added or removed validators, the project's hardcoded "N
+  validators" counts in markdown went stale and the very next
+  `docguard guard` failed Metrics-Consistency. The user did nothing wrong.
+  `upgrade --apply` now prints an explicit nudge to run `fix --write`
+  using the just-installed binary (the current process holds the OLD CLI's
+  validator list, so it cannot apply the fix itself). `cli/commands/upgrade.mjs`.
+
+- **Python env-vars were never scanned at all** — `grepEnvUsage` walked
+  `.py` files but the regex list was JS-only (`process.env.*`,
+  `import.meta.env.*`). Every documented Python env var read as "in docs,
+  not in code". Added patterns for `os.environ["X"]`, `os.environ.get("X")`,
+  and `os.getenv("X")`. The `explain` command's claim that Python was
+  supported now actually holds. `cli/shared-source.mjs`.
+
+- **`docguard memory` "Accuracy" overlapped `docguard score` "Accuracy"
+  with different denominators** — same word, same project, wildly different
+  numbers. Renamed the per-claim metric in `memory` to **"Claim match
+  rate"** (matched claims / total claims) so it no longer collides with
+  the score's weighted accuracy axis across all signals. JSON field name
+  unchanged for backward compatibility. `cli/commands/memory.mjs`.
+
 ## [0.20.0] - 2026-05-26
 
 **Consolidation.** 21 user-facing commands become 13. The promise from

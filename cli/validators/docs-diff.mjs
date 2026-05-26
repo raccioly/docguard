@@ -42,6 +42,17 @@ export function validateDocsDiff(projectDir, config) {
     diffTests(projectDir, config),
   ];
 
+  // Limit how many offending names are inlined in a single warning — keeps
+  // the line readable on terminals while still naming the specific files so
+  // the warning is actually actionable. Without these names the user gets a
+  // bare count ("1 documented but not found in code") with no path to debug.
+  const MAX_INLINE = 5;
+  const fmtList = (arr) => {
+    const shown = arr.slice(0, MAX_INLINE).map(v => `\`${v}\``).join(', ');
+    const extra = arr.length - MAX_INLINE;
+    return extra > 0 ? `${shown} (+${extra} more)` : shown;
+  };
+
   for (const result of checks) {
     if (!result) continue;
 
@@ -53,9 +64,13 @@ export function validateDocsDiff(projectDir, config) {
       passed++;
     } else {
       const parts = [];
-      if (undocumented > 0) parts.push(`${undocumented} in code but not documented`);
-      if (stale > 0) parts.push(`${stale} documented but not found in code`);
-      warnings.push(`${result.title} drift: ${parts.join(', ')}`);
+      if (undocumented > 0) {
+        parts.push(`${undocumented} in code but not documented: ${fmtList(result.onlyInCode)}`);
+      }
+      if (stale > 0) {
+        parts.push(`${stale} documented but not found in code: ${fmtList(result.onlyInDocs)}`);
+      }
+      warnings.push(`${result.title} drift: ${parts.join('; ')}`);
     }
   }
 

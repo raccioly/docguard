@@ -274,6 +274,18 @@ export async function runUpgrade(projectDir, _config, flags) {
         process.exit(1);
       }
       console.log(`  ${c.green}✓ CLI upgraded.${c.reset}`);
+      // Validator-count drift: a CLI upgrade often adds or removes validators,
+      // which changes the "N validators" / "N checks" totals that Metrics-
+      // Consistency scans for in markdown. Without a clear nudge here, a
+      // previously-green project goes red on the very next `docguard guard`
+      // for a reason the user did not cause. The fix is mechanical (replace
+      // hardcoded counts via fix --write) but the user has to know to run it.
+      // We don't auto-run fix --write from this process — the just-installed
+      // binary has the new validator list, but THIS process is still the OLD
+      // binary, so running fix here would use stale counts.
+      console.log(`  ${c.yellow}ℹ  Validator/check totals may have shifted with this upgrade.${c.reset}`);
+      console.log(`     Run ${c.cyan}docguard fix --write${c.reset} ${c.dim}to refresh hardcoded counts in your docs${c.reset}`);
+      console.log(`     ${c.dim}(picks up the new totals from the just-installed CLI).${c.reset}`);
     }
 
     if (schemaBehind && projectSchema) {

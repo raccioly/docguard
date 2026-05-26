@@ -108,8 +108,14 @@ function scanNextJsRoutes(dir) {
       const content = readFileSafe(filePath);
       if (!content) return;
 
-      // Path from directory structure
-      const relDir = relative(resolve(dir, appDir.split('/')[0]), dirname(filePath));
+      // Path from directory structure. The HTTP base in Next.js App Router is
+      // `/api/...` — Next strips everything up to and including the `app/`
+      // segment. Compute the relative path from the directory ABOVE `api/`
+      // so both `app/api` (no src layout) and `src/app/api` (src layout)
+      // produce `/api/<segments>`. Previously `appDir.split('/')[0]` stripped
+      // only `src/` for the src layout, leaking `app/` into the emitted path.
+      const apiBase = appDir.slice(0, appDir.lastIndexOf('/'));
+      const relDir = relative(resolve(dir, apiBase), dirname(filePath));
       const apiPath = '/' + relDir
         .replace(/\\/g, '/')
         .replace(/\[\.\.\.(\w+)\]/g, ':$1*')  // Catch-all [...slug]

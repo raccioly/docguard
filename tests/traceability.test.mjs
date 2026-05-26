@@ -144,4 +144,49 @@ describe('Traceability Validator', () => {
     );
     assert.strictEqual(hasOrphanedWarning, true);
   });
+
+  // Regression for hugocross Bug 5 (compound):
+  //   (a) `// @doc API-REFERENCE.md` annotations were documented in templates
+  //       but never actually scanned — they had zero effect on traceability.
+  //   (b) Next.js App Router route files (`src/app/api/...`) did not match
+  //       any TRACE_MAP pattern, so a fully-populated API tree was reported
+  //       as "API-REFERENCE.md — unlinked doc".
+  describe('@doc annotations and Next.js App Router (hugocross bug 5)', () => {
+    it('@doc annotation links a source file to a canonical doc', () => {
+      mkdirSync(join(tmpDir, 'docs-canonical'), { recursive: true });
+      writeFileSync(join(tmpDir, 'docs-canonical', 'API-REFERENCE.md'), '# API');
+      // Source file lives OUTSIDE any of the TRACE_MAP path globs
+      // (routes/, controllers/, handlers/, app/api/, middleware/, openapi.*)
+      // — only the @doc annotation can link it.
+      mkdirSync(join(tmpDir, 'src', 'weird-place'), { recursive: true });
+      writeFileSync(
+        join(tmpDir, 'src', 'weird-place', 'thing.ts'),
+        '// @doc API-REFERENCE.md\nexport const foo = 1;\n'
+      );
+
+      const config = { requiredFiles: { canonical: ['API-REFERENCE.md'] } };
+      const result = validateTraceability(tmpDir, config);
+      assert.strictEqual(result.passed, 1,
+        `annotation should count as a link; warnings: ${result.warnings.join('\n')}`);
+      assert.ok(
+        !result.warnings.some(w => w.includes('API-REFERENCE.md — exists but no matching')),
+        'no unlinked-doc warning expected when @doc annotation is present'
+      );
+    });
+
+    it('Next.js App Router src/app/api/ is recognised by TRACE_MAP', () => {
+      mkdirSync(join(tmpDir, 'docs-canonical'), { recursive: true });
+      writeFileSync(join(tmpDir, 'docs-canonical', 'API-REFERENCE.md'), '# API');
+      mkdirSync(join(tmpDir, 'src', 'app', 'api', 'health'), { recursive: true });
+      writeFileSync(
+        join(tmpDir, 'src', 'app', 'api', 'health', 'route.ts'),
+        'export async function GET() {}'
+      );
+
+      const config = { requiredFiles: { canonical: ['API-REFERENCE.md'] } };
+      const result = validateTraceability(tmpDir, config);
+      assert.strictEqual(result.passed, 1,
+        `App Router route should link to API-REFERENCE.md; warnings: ${result.warnings.join('\n')}`);
+    });
+  });
 });
