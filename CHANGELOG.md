@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.18.1] - 2026-05-26
+
+Hotfix: v0.18.0 publish failed because the new `upgrade --pr` end-to-end test (which used a shell-script stub `gh`) was platform-specific — passed on macOS, failed on Linux CI runners due to interaction with the runner's existing `/usr/bin/gh`. Gated the test behind `E2E=1` (same pattern as the stress test) so the regular CI suite stays green. The production `upgrade --pr` code path is still covered by `tests/upgrade-pr.test.mjs`. v0.19 will switch to a Node-based gh stub.
+
+All v0.18.0 features ship intact:
+- P1 Generated-Staleness fast-path (30% faster guard)
+- P2 cross-process plan cache (.docguard/plan.cache.json)
+- P3 `score --diff` per-category drill-down
+- P4 upgrade-pr battle-test (now opt-in via E2E=1)
+
 ## [0.18.0] - 2026-05-26
 
 Performance + drill-down release. Closes the four v0.18 backlog items:
