@@ -7,12 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.15.0] - 2026-05-26
+## [0.15.1] - 2026-05-26
 
 Feature + performance release. **497 tests** (was 492, +5). 22 validators.
 Headline: full `--changed-only` set now covers **5 validators in ~100ms** on
 both wu-whatsappinbox AND a synthetic 1000-file repo. New `.docguard.json`
 JSON Schema for IDE autocomplete.
+
+> **Note**: v0.15.0 was committed but never published — the CI self-guard
+> failed because the new `tests/scoping-extended.test.mjs` had literal
+> `// DRIFT:` strings inside JS fixture data that Drift-Comments treated as
+> real drift comments. v0.15.1 includes a two-part fix: the test uses string
+> concatenation so the literal marker isn't in source, AND Drift-Comments
+> now skips test files by default (matching TODO-Tracking's pattern; opt in
+> via `config.drift.includeTestFiles`). Everything else in this release was
+> ready in v0.15.0 — see the v0.15.0-planned features below.
+
+### Fixed (v0.15.1 hotfix)
+
+- **Drift-Comments false-positives from test fixtures.** Test files commonly carry literal `// DRIFT:` strings inside JS string fixtures (`'// DRIFT: example\n'`). Reading the test as source treated those as real drift comments. Drift-Comments now skips test files by default — same defensive posture TODO-Tracking adopted in v0.11.2 for the same reason. New `config.drift.includeTestFiles` opt-in for projects that genuinely use DRIFT markers in test code.
 
 ### Added
 
