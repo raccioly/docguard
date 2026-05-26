@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.1] - 2026-05-26
+
+Patch + small feature release responding to the wu-whatsappinbox v0.12 feedback.
+**492 tests** (was 481, +11). 22 validators.
+
+### Fixed
+
+- **N-1: Metrics-Consistency double-counted warnings.** When a doc mentioned the stale validator/check count multiple times (e.g. once in a heading, once in a body table), the validator emitted one warning per regex match — producing "4 warnings for 2 files" on wu-whatsappinbox. Now dedupes by `(file, label, found-value)` so a single file contributes ONE warning per distinct drift value. The `replace-count` mechanical fix already uses replace-all semantics, so one fix per (file, label) is sufficient. **Reported by wu-whatsappinbox.**
+
+### Added
+
+- **S-12+: High-confidence anchor matches now auto-fix via `fix --write`.** v0.13.1 added "did you mean #X?" hints when Cross-Reference flagged a broken anchor. v0.14.1 takes the next step: when the suggested anchor is **unambiguous** (edit distance ≤ 2 AND no other candidates within the same distance), the warning is tagged `[auto-fixable]` and the validator emits a `replace-anchor` mechanical fix. New `replace-anchor` applier in `cli/writers/mechanical.mjs` rewrites only the anchor inside markdown link form `](#X)`, leaves plain-text occurrences and link text alone, is idempotent. **Three of five wu broken-anchor cases in v0.12.0 were "heading renamed, link not updated" — those are now `fix --write`-resolvable.**
+
+### Note to wu — the "still open" suggestions are all already shipped
+
+The S-1, S-11, S-12 items in the v0.12 feedback letter all shipped earlier. The user just needs to upgrade:
+
+- **S-1** (`sync --since <ref>` surgical refresh) → shipped in **v0.13.0** as L-1. Run `docguard sync --write --since main` to refresh only sections touched by code in the diff.
+- **S-11** (changed-file → affected-doc map) → shipped in **v0.13.1** as the `docguard impact` command. Run `docguard impact --since HEAD~1` after a commit; JSON mode for CI bots.
+- **S-12** (anchor "did you mean..." hints) → shipped in **v0.13.1**. Extended in this release (v0.14.1) so high-confidence matches are auto-fixable.
+
+Run `docguard upgrade --apply` (or `npm i -g docguard-cli@latest`) to pick all of these up.
+
+### Internal
+
+- **2 new test files**: `tests/metrics-dedup.test.mjs` (4) and `tests/anchor-autofix.test.mjs` (7). **Total: 481 → 492 tests (+11).**
+- **New mechanical fix type**: `replace-anchor`. The APPLIERS registry now lists 6 types.
+- **New helper** in `cli/validators/cross-reference.mjs`: `isUnambiguousSuggestion()` — gates the auto-fix on edit distance ≤ 2 AND single close candidate.
+- No new NPM deps.
+
+### Out of scope (deferred to v0.15)
+
+Same backlog as v0.14:
+- Generated-Staleness perf optimization (33% of validator time).
+- Shared tree walk.
+- Cross-validator `config.changedFiles` opt-in.
+- `upgrade --pr` battle-test.
+
 ## [0.14.0] - 2026-05-26
 
 Feature release closing the v0.13 backlog (4 features) + 2 quality investments

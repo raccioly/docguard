@@ -143,12 +143,45 @@ function applyRegenerateSection(projectDir, fix) {
   return { applied: true, detail: `${fix.doc}: regenerated § ${fix.sectionId}` };
 }
 
+/**
+ * v0.14.1-S12+ — replace-anchor: rewrite a broken markdown anchor with a
+ * high-confidence suggested slug. Emitted by Cross-Reference when its
+ * fuzzy match is unambiguous (edit distance <= 2, no other close candidates).
+ *
+ * fix shape: { type: 'replace-anchor', doc, from, to, line?, summary? }
+ *
+ * Bounded: only rewrites occurrences of `](#${from})` and `](#X${from})`-like
+ * forms — won't touch the broken slug if it happens to appear as plain text.
+ * Idempotent: if no occurrence is found (already fixed), no-op.
+ */
+function applyReplaceAnchor(projectDir, fix) {
+  if (!fix.doc || !fix.from || !fix.to) {
+    return { applied: false, skipped: 'replace-anchor needs doc, from, to' };
+  }
+  const full = resolve(projectDir, fix.doc);
+  if (!existsSync(full)) return { applied: false, skipped: `doc not found: ${fix.doc}` };
+  const content = readFileSync(full, 'utf-8');
+
+  // Match an anchor inside a markdown link: `](#from)` OR `](path#from)`.
+  // Use a regex that captures the prefix and suffix so we only touch the
+  // anchor part — leaving the link text and path intact.
+  const fromEsc = esc(fix.from);
+  const re = new RegExp(`(\\]\\([^)]*#)${fromEsc}([)\\s])`, 'g');
+  const next = content.replace(re, `$1${fix.to}$2`);
+  if (next === content) {
+    return { applied: false, skipped: `${fix.doc}: anchor #${fix.from} not found (already fixed?)` };
+  }
+  writeFileSync(full, next, 'utf-8');
+  return { applied: true, detail: `${fix.doc}: #${fix.from} → #${fix.to}` };
+}
+
 const APPLIERS = {
   'replace-count': applyReplaceCount,
   'replace-version': applyReplaceVersion,
   'insert-changelog-unreleased': applyInsertChangelogUnreleased,
   'remove-endpoint': applyRemoveEndpoint,
   'regenerate-section': applyRegenerateSection,
+  'replace-anchor': applyReplaceAnchor,
 };
 
 export const MECHANICAL_FIX_TYPES = Object.keys(APPLIERS);

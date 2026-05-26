@@ -64,6 +64,14 @@ export function validateMetricsConsistency(projectDir, config, guardResults) {
     { key: 'validators', regex: /(?<!\d\/)\b(\d{2,})\s+validators?\b/gi, label: 'validators' },
   ];
 
+  // v0.14.1-N1: dedup by (file, label, found) — a file that mentions the
+  // stale number multiple times produces ONE warning, not one per occurrence.
+  // The replace-count applier already uses replace-all semantics, so a single
+  // fix per (file, label) is sufficient. Previously: "X.md" appearing 2× with
+  // the same drift would generate 2 warnings + 2 fixes (the second a no-op).
+  const reportedDrift = new Set();      // key: `${relPath}|${label}|${found}`
+  const reportedPass  = new Set();      // key: `${relPath}|${label}` — only count one pass per (file, label)
+
   for (const mdFile of mdFiles) {
     const relPath = relative(projectDir, mdFile);
     // Skip changelog (historical numbers are fine by definition)
@@ -79,16 +87,32 @@ export function validateMetricsConsistency(projectDir, config, guardResults) {
 
       regex.lastIndex = 0;
       let match;
+      // Collect distinct (found-value) instances within THIS file first,
+      // then emit ONE warning per distinct value. A file that says "20" on
+      // line 5 and "20" on line 50 is the same drift; "20" on line 5 and
+      // "19" on line 50 are two distinct drifts.
+      const distinctFoundInFile = new Set();
       while ((match = regex.exec(content)) !== null) {
-        total++;
-        const found = parseInt(match[1], 10);
-        if (found !== actuals[key] && found > 0) {
+        distinctFoundInFile.add(parseInt(match[1], 10));
+      }
+      if (distinctFoundInFile.size === 0) continue;
+
+      for (const found of distinctFoundInFile) {
+        if (found > 0 && found !== actuals[key]) {
+          const driftKey = `${relPath}|${label}|${found}`;
+          if (reportedDrift.has(driftKey)) continue;
+          reportedDrift.add(driftKey);
+          total++;
           warnings.push(
             `${relPath} says "${found} ${label}" but actual count is ${actuals[key]}. Fix with \`docguard fix --write\``
           );
-          // Deterministic, surgical token replacement — safe to auto-apply.
           fixes.push({ type: 'replace-count', file: relPath, label, found, actual: actuals[key] });
         } else {
+          // Matches the actual count — one pass per (file, label), not per occurrence.
+          const passKey = `${relPath}|${label}`;
+          if (reportedPass.has(passKey)) continue;
+          reportedPass.add(passKey);
+          total++;
           passed++;
         }
       }

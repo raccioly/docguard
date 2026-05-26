@@ -27,7 +27,7 @@
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { resolve, join, dirname, basename } from 'node:path';
+import { resolve, join, dirname, basename, relative } from 'node:path';
 
 /**
  * Slugify a heading the way GitHub's markdown anchors work.
@@ -294,6 +294,7 @@ function collectCanonicalDocs(projectDir) {
 export function validateCrossReferences(projectDir, _config = {}) {
   const errors = [];
   const warnings = [];
+  const fixes = [];
   let passed = 0;
   let total = 0;
 
@@ -364,13 +365,27 @@ export function validateCrossReferences(projectDir, _config = {}) {
         if (!matches) {
           const where = targetPath === docPath ? 'same doc' : basename(targetPath);
           // S-12: suggest the closest matching anchor when there's a near-miss.
-          // Three of five wu user-fixes were "heading renamed, link not updated"
-          // — a suggested-slug hint makes those deterministic-fixable.
           const suggestion = anchors ? suggestAnchor(normalizedAnchor, anchors) : null;
           const hint = suggestion ? ` (did you mean #${suggestion}?)` : '';
+          // v0.14.1-S12+: when the suggestion is HIGH-CONFIDENCE — unambiguous
+          // and very close (edit distance <= 2) — emit a mechanical fix so
+          // `docguard fix --write` resolves it without AI. Other near-misses
+          // still get the hint but no fix (the user needs to verify intent).
+          const isHighConfidence = suggestion && isUnambiguousSuggestion(normalizedAnchor, suggestion, anchors);
           warnings.push(
-            `${docName}:${ref.line} — broken anchor: "#${ref.anchor}" in ${where} doesn't match any heading${hint}`
+            `${docName}:${ref.line} — broken anchor: "#${ref.anchor}" in ${where} doesn't match any heading${hint}` +
+            (isHighConfidence ? ' [auto-fixable]' : '')
           );
+          if (isHighConfidence) {
+            fixes.push({
+              type: 'replace-anchor',
+              doc: relative(projectDir, docPath),
+              line: ref.line,
+              from: ref.anchor,
+              to: suggestion,
+              summary: `${docName}:${ref.line} #${ref.anchor} → #${suggestion}`,
+            });
+          }
           continue;
         }
       }
@@ -379,5 +394,28 @@ export function validateCrossReferences(projectDir, _config = {}) {
     }
   }
 
-  return { errors, warnings, passed, total };
+  return { errors, warnings, passed, total, fixes };
+}
+
+/**
+ * v0.14.1-S12+ — is the suggested anchor an unambiguous, high-confidence
+ * match? Two criteria, both must hold:
+ *   1. Edit distance between the broken anchor and the suggestion is <= 2
+ *      (catches typos and minor renames, refuses major slug rewrites).
+ *   2. The suggestion is the ONLY anchor that close — no other anchor
+ *      within distance <= 2. Avoids fixing to the wrong candidate when
+ *      multiple are similar.
+ */
+function isUnambiguousSuggestion(broken, suggestion, anchors) {
+  if (!broken || !suggestion || !anchors) return false;
+  const sugDist = editDistance(broken, suggestion);
+  if (sugDist > 2) return false;
+  // Count other anchors that are also within the same tight budget.
+  let closeCandidates = 0;
+  for (const a of anchors) {
+    if (a === suggestion) continue;
+    if (editDistance(broken, a) <= 2) closeCandidates++;
+    if (closeCandidates > 0) return false; // ambiguous
+  }
+  return true;
 }
