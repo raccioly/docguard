@@ -9,6 +9,7 @@
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, extname } from 'node:path';
 import { execSync, execFileSync } from 'node:child_process';
+import { getLastCommitDate } from '../shared-git.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build',
@@ -21,16 +22,10 @@ const IGNORE_DIRS = new Set([
  * Returns null if the file isn't tracked or git isn't available.
  */
 function getLastGitDate(filePath, dir) {
-  try {
-    const result = execFileSync(
-      'git',
-      ['log', '-1', '--format=%aI', '--', filePath],
-      { cwd: dir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
-    ).trim();
-    return result ? new Date(result) : null;
-  } catch {
-    return null;
-  }
+  // Delegate to shared-git so rename history (--follow) is preserved.
+  // Without --follow, a `git mv` resets the file's "last commit date" and
+  // the Freshness counter silently misses drift introduced by the rename.
+  return getLastCommitDate(dir, filePath);
 }
 
 /**

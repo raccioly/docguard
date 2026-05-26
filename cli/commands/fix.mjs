@@ -21,6 +21,7 @@ import { c } from '../shared.mjs';
 import { computeApiSurfaceDrift } from '../validators/api-surface.mjs';
 import { removeEndpoints, hasGeneratedMarker } from '../writers/api-reference.mjs';
 import { applyMechanicalFixes } from '../writers/mechanical.mjs';
+import { loadFixMemory } from '../writers/fix-memory.mjs';
 import { runGuardInternal } from './guard.mjs';
 
 const API_DOC = 'docs-canonical/API-REFERENCE.md';
@@ -281,6 +282,55 @@ export function applyAllMechanicalFixes(projectDir, config, { force = false } = 
   return { applied, skipped, total: fixes.length };
 }
 
+/**
+ * M-2 — `docguard fix --history` shows the audit log of mechanical fixes
+ * that have been applied to this project. Reads `.docguard/fixed.json`
+ * and pretty-prints (or emits JSON when --format json).
+ */
+function runHistoryMode(projectDir, flags) {
+  const mem = loadFixMemory(projectDir);
+  const isJson = flags.format === 'json';
+
+  if (isJson) {
+    console.log(JSON.stringify(mem, null, 2));
+    return;
+  }
+
+  if (mem.entries.length === 0) {
+    console.log(`${c.bold}🗂  DocGuard Fix History${c.reset}`);
+    console.log(`${c.dim}   No fixes recorded yet. Run \`docguard fix --write\` to start the audit log.${c.reset}`);
+    return;
+  }
+
+  console.log(`${c.bold}🗂  DocGuard Fix History${c.reset} ${c.dim}(${mem.entries.length} entries, newest first)${c.reset}\n`);
+
+  // Group by date for readability
+  const byDate = new Map();
+  for (const e of mem.entries) {
+    const day = (e.appliedAt || '').slice(0, 10);
+    if (!byDate.has(day)) byDate.set(day, []);
+    byDate.get(day).push(e);
+  }
+
+  // Show the most recent N days (cap output at 20 entries)
+  let printed = 0;
+  for (const [day, dayEntries] of byDate) {
+    if (printed >= 20) break;
+    console.log(`  ${c.cyan}${day}${c.reset} ${c.dim}(${dayEntries.length} fix${dayEntries.length > 1 ? 'es' : ''})${c.reset}`);
+    for (const e of dayEntries.slice(0, 5)) {
+      if (printed >= 20) break;
+      const time = (e.appliedAt || '').slice(11, 16);
+      console.log(`     ${c.dim}${time}${c.reset} ${e.type} → ${c.cyan}${e.file}${c.reset} ${c.dim}${e.summary || ''}${c.reset}`);
+      printed++;
+    }
+    if (dayEntries.length > 5) console.log(`     ${c.dim}... ${dayEntries.length - 5} more on this day${c.reset}`);
+  }
+
+  if (mem.entries.length > 20) {
+    console.log(`\n  ${c.dim}... ${mem.entries.length - 20} older entries. Use ${c.cyan}--format json${c.dim} for the full log.${c.reset}`);
+  }
+}
+
 function runWriteMode(projectDir, config, flags) {
   const isJson = flags.format === 'json';
   const { applied, skipped, total } = applyAllMechanicalFixes(projectDir, config, { force: flags.force });
@@ -320,6 +370,11 @@ export function runFix(projectDir, config, flags) {
   const isPrompt = flags.format === 'prompt';
   const autoFix = flags.auto || false;
   const specificDoc = flags.doc || null;
+
+  // M-2: --history shows the audit trail of past mechanical fixes.
+  if (flags.history) {
+    return runHistoryMode(projectDir, flags);
+  }
 
   // --write: deterministically APPLY mechanical fixes (no LLM). Currently:
   // remove API-REFERENCE.md endpoints the OpenAPI spec confirms no longer exist.

@@ -10,6 +10,7 @@
 import { c, resolveSeverity } from '../shared.mjs';
 import { detectAgentMode, isSpecKitInitialized } from '../ensure-skills.mjs';
 import { checkUpgradeStatus } from './upgrade.mjs';
+import { changedFilesSince, isGitRepo } from '../shared-git.mjs';
 import { validateStructure, validateDocSections } from '../validators/structure.mjs';
 import { validateDrift } from '../validators/drift.mjs';
 import { validateChangelog } from '../validators/changelog.mjs';
@@ -27,6 +28,7 @@ import { validateMetricsConsistency } from '../validators/metrics-consistency.mj
 import { validateDocsCoverage } from '../validators/docs-coverage.mjs';
 import { validateDocQuality } from '../validators/doc-quality.mjs';
 import { validateCrossReferences } from '../validators/cross-reference.mjs';
+import { validateGeneratedStaleness } from '../validators/generated-staleness.mjs';
 import { validateTodoTracking } from '../validators/todo-tracking.mjs';
 import { validateSchemaSync } from '../validators/schema-sync.mjs';
 import { validateSpecKitIntegration } from '../scanners/speckit.mjs';
@@ -103,6 +105,7 @@ export function runGuardInternal(projectDir, config) {
     { key: 'schemaSync', name: 'Schema-Sync', fn: () => validateSchemaSync(projectDir, config) },
     { key: 'specKit', name: 'Spec-Kit', fn: () => validateSpecKitIntegration(projectDir, config) },
     { key: 'crossReference', name: 'Cross-Reference', fn: () => validateCrossReferences(projectDir, config) },
+    { key: 'generatedStaleness', name: 'Generated-Staleness', fn: () => validateGeneratedStaleness(projectDir, config) },
     // Metrics-Consistency runs post-loop (needs guard results)
   ];
 
@@ -197,7 +200,7 @@ function liteValidatorsConfig() {
     'structure', 'docsSync', 'drift', 'changelog', 'testSpec', 'environment',
     'security', 'architecture', 'freshness', 'traceability', 'docsDiff',
     'apiSurface', 'metadataSync', 'docsCoverage', 'docQuality', 'todoTracking',
-    'schemaSync', 'specKit', 'crossReference', 'metricsConsistency',
+    'schemaSync', 'specKit', 'crossReference', 'generatedStaleness', 'metricsConsistency',
   ];
   const out = {};
   for (const k of all) out[k] = CHANGED_ONLY_VALIDATORS.includes(k);
@@ -212,8 +215,22 @@ export function runGuard(projectDir, config, flags) {
   // fast subset (Docs-Sync, Environment, API-Surface). Designed for husky/
   // lefthook hooks; expects to finish in under 2 seconds.
   if (flags.changedOnly) {
-    config = { ...config, validators: liteValidatorsConfig() };
-    console.log(`${c.cyan}⚡ docguard guard --changed-only${c.reset} ${c.dim}(running ${CHANGED_ONLY_VALIDATORS.length} fast validators only — pre-commit lite mode)${c.reset}\n`);
+    // Compute the set of changed files since the given ref (default HEAD~1 —
+    // the pre-commit common case: "files changed in this commit vs the last
+    // committed state"). Validators that opt into `config.changedFiles` can
+    // scope to this list; others run normally over the whole tree.
+    const ref = flags.since || 'HEAD~1';
+    const changed = isGitRepo(projectDir) ? changedFilesSince(projectDir, ref) : [];
+    config = {
+      ...config,
+      validators: liteValidatorsConfig(),
+      changedFiles: changed,
+      changedSinceRef: ref,
+    };
+    const label = changed.length > 0
+      ? `${changed.length} file(s) changed since ${ref}`
+      : `no changes since ${ref} — running all ${CHANGED_ONLY_VALIDATORS.length} lite validators on full tree`;
+    console.log(`${c.cyan}⚡ docguard guard --changed-only${c.reset} ${c.dim}(${label})${c.reset}\n`);
   }
 
   const data = runGuardInternal(projectDir, config);

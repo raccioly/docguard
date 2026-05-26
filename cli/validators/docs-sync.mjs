@@ -80,6 +80,17 @@ export function validateDocsSync(projectDir, config) {
     return results; // No canonical docs to check against
   }
 
+  // N-1: When the guard runs in --changed-only mode, config.changedFiles is
+  // populated with paths that changed since the given ref. We use it to scope
+  // route/service checks to ONLY the files actually changed — turning a
+  // whole-tree scan into a surgical check. If the list is empty (no changes,
+  // or git unavailable), we fall back to scanning everything.
+  const changedSet = config && Array.isArray(config.changedFiles) && config.changedFiles.length > 0
+    ? new Set(config.changedFiles)
+    : null;
+  // Closure: true if the given relative path should be considered.
+  const inScope = (relPath) => !changedSet || changedSet.has(relPath);
+
   // Find route/API files (monorepo-aware) and check they're mentioned in docs.
   // Note: bare 'api' is intentionally excluded — it collides with frontend
   // API client conventions (src/api/client.ts). Backend routes use
@@ -95,6 +106,8 @@ export function validateDocsSync(projectDir, config) {
       const relPath = file.replace(projectDir + '/', '');
       if (isTestFile(relPath)) continue;
       if (!isValidRouteFile(relPath)) continue;
+      // N-1: skip files outside the --changed-only scope.
+      if (!inScope(relPath)) continue;
 
       results.total++;
       const name = basename(file, ext);
@@ -118,6 +131,8 @@ export function validateDocsSync(projectDir, config) {
 
       const relPath = file.replace(projectDir + '/', '');
       if (isTestFile(relPath)) continue;
+      // N-1: skip files outside the --changed-only scope.
+      if (!inScope(relPath)) continue;
 
       results.total++;
       const name = basename(file, ext);

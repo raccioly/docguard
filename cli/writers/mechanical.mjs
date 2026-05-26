@@ -102,6 +102,12 @@ export function applyMechanicalFix(projectDir, fix, opts = {}) {
 
 /**
  * Apply a batch of fixes; returns a summary.
+ *
+ * M-2: When `opts.recordHistory` is true (default true when not in dry-run),
+ * each successfully applied fix is appended to `.docguard/fixed.json` so
+ * the project has a persistent audit trail. Pass `recordHistory: false` to
+ * disable (used by dry-run tests).
+ *
  * @returns {{ applied: object[], skipped: object[] }}
  */
 export function applyMechanicalFixes(projectDir, fixes, opts = {}) {
@@ -112,5 +118,21 @@ export function applyMechanicalFixes(projectDir, fixes, opts = {}) {
     if (r.applied) applied.push({ ...fix, detail: r.detail });
     else if (r.skipped) skipped.push({ ...fix, reason: r.skipped });
   }
+
+  if (applied.length > 0 && opts.recordHistory !== false) {
+    // Lazy-import to avoid the circular risk and keep mechanical.mjs's
+    // synchronous-only contract clean for callers that don't want history.
+    import('./fix-memory.mjs').then(({ appendFixes }) => {
+      const entries = applied.map(f => ({
+        type: f.type,
+        file: f.file || f.path || '',
+        summary: f.summary || f.detail || `${f.type} applied`,
+      }));
+      appendFixes(projectDir, entries, opts.appliedBy || 'fix --write');
+    }).catch(() => {
+      // Never let history-write break the fix flow — it's auxiliary.
+    });
+  }
+
   return { applied, skipped };
 }

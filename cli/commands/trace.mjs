@@ -84,7 +84,112 @@ const TRACE_MAP = {
   },
 };
 
+/**
+ * L-2 / S-3 — Reverse trace: given a code file, find which canonical doc
+ * sections mention it. Mirror of the forward trace (doc → code).
+ *
+ * Match strategies (each yields a hit):
+ *   1. Direct path match: full project-relative path appears in doc text.
+ *   2. Basename match: e.g. `users.ts` appears (covers cases where the doc
+ *      refers to the file by name without the full path).
+ *   3. Module name match: file stem (e.g. `users`) appears as a fenced
+ *      `code` reference. Tighter than 2 — avoids matching common nouns.
+ *
+ * Output: one line per (doc, match-line) pair, with the surrounding context.
+ */
+export function runTraceReverse(projectDir, config, flags) {
+  const target = flags.args && flags.args[0];
+  if (!target) {
+    console.error(`${c.red}Error: trace --reverse requires a target path${c.reset}`);
+    console.log(`Usage: ${c.cyan}docguard trace --reverse <code-path>${c.reset}`);
+    console.log(`Example: ${c.cyan}docguard trace --reverse src/routes/users.ts${c.reset}`);
+    process.exit(1);
+  }
+
+  // Suppress chrome in JSON mode so stdout stays parseable.
+  const isJson = flags.format === 'json';
+  if (!isJson) {
+    console.log(`${c.bold}🔄 DocGuard Trace (reverse) — ${target}${c.reset}`);
+    console.log(`${c.dim}   Finding canonical doc sections that reference this file...${c.reset}\n`);
+  }
+
+  const docsDir = resolve(projectDir, 'docs-canonical');
+  if (!existsSync(docsDir)) {
+    if (isJson) {
+      console.log(JSON.stringify({ target, matches: [], error: 'no docs-canonical/ directory' }, null, 2));
+    } else {
+      console.log(`  ${c.yellow}No docs-canonical/ directory found.${c.reset}`);
+    }
+    return;
+  }
+
+  // Normalize the target path: strip leading ./
+  const normalized = target.replace(/^\.\//, '');
+  const base = basename(normalized);
+  const stem = base.replace(/\.[^.]+$/, '');
+
+  const matches = []; // { doc, line, content, kind }
+  for (const f of readdirSync(docsDir)) {
+    if (!f.endsWith('.md')) continue;
+    const docPath = resolve(docsDir, f);
+    let content;
+    try { content = readFileSync(docPath, 'utf-8'); } catch { continue; }
+    const lines = content.split('\n');
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      let kind = null;
+      if (line.includes(normalized)) kind = 'path';
+      else if (line.includes(base)) kind = 'basename';
+      else if (new RegExp(`\`${escapeRegex(stem)}\``).test(line)) kind = 'module';
+      if (kind) {
+        matches.push({ doc: f, line: i + 1, content: line.trim(), kind });
+      }
+    }
+  }
+
+  if (flags.format === 'json') {
+    console.log(JSON.stringify({
+      target: normalized,
+      matches,
+      timestamp: new Date().toISOString(),
+    }, null, 2));
+    return;
+  }
+
+  if (matches.length === 0) {
+    console.log(`  ${c.yellow}⚠️  No canonical doc references "${normalized}"${c.reset}`);
+    console.log(`  ${c.dim}Consider documenting this file in docs-canonical/ARCHITECTURE.md or DATA-MODEL.md${c.reset}`);
+    return;
+  }
+
+  // Group by doc for readable output
+  const byDoc = new Map();
+  for (const m of matches) {
+    if (!byDoc.has(m.doc)) byDoc.set(m.doc, []);
+    byDoc.get(m.doc).push(m);
+  }
+
+  console.log(`  ${c.green}✅ ${matches.length} reference(s) across ${byDoc.size} doc(s):${c.reset}\n`);
+  for (const [doc, hits] of byDoc) {
+    console.log(`  ${c.cyan}${doc}${c.reset} ${c.dim}(${hits.length} hit${hits.length > 1 ? 's' : ''})${c.reset}`);
+    for (const h of hits.slice(0, 5)) {
+      const trimmed = h.content.length > 80 ? h.content.slice(0, 77) + '…' : h.content;
+      console.log(`     ${c.dim}L${h.line} [${h.kind}]${c.reset} ${trimmed}`);
+    }
+    if (hits.length > 5) console.log(`     ${c.dim}... ${hits.length - 5} more${c.reset}`);
+  }
+}
+
+function escapeRegex(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 export function runTrace(projectDir, config, flags) {
+  // L-2: dispatch to reverse mode when --reverse is set.
+  if (flags.reverse) {
+    return runTraceReverse(projectDir, config, flags);
+  }
+
   console.log(`${c.bold}🔗 DocGuard Trace — ${config.projectName}${c.reset}`);
   console.log(`${c.dim}   Directory: ${projectDir}${c.reset}`);
   console.log(`${c.dim}   Generating requirements traceability matrix...${c.reset}\n`);

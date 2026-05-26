@@ -183,7 +183,15 @@ function collectCanonicalDocs(projectDir) {
       }
     } catch {}
   }
-  for (const f of ['AGENTS.md', 'CHANGELOG.md', 'DRIFT-LOG.md', 'ROADMAP.md', 'README.md']) {
+  // Standard root-level docs that are commonly cross-referenced. We index
+  // them so links like [CONTRIBUTING.md](CONTRIBUTING.md#some-section) can
+  // resolve. The list is conservative — adding everything would pull in
+  // boilerplate (LICENSE, NOTICE) that doesn't have meaningful headings.
+  for (const f of [
+    'README.md', 'AGENTS.md', 'CHANGELOG.md', 'DRIFT-LOG.md', 'ROADMAP.md',
+    'CONTRIBUTING.md', 'CODE_OF_CONDUCT.md', 'SECURITY.md',
+    'PHILOSOPHY.md', 'STANDARD.md', 'COMPARISONS.md',
+  ]) {
     const p = resolve(projectDir, f);
     if (existsSync(p)) docs.push(p);
   }

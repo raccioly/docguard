@@ -14,7 +14,7 @@ handoffs:
 
 # DocGuard Guard
 
-Validate your project against its canonical documentation. Runs 160+ automated checks across 21 validators.
+Validate your project against its canonical documentation. Runs 160+ automated checks across 22 validators.
 
 ## User Input
 

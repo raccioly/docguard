@@ -12,7 +12,7 @@ tag (e.g. `@v0.12.0`) in production — `@main` is fine for tracking the bleedin
 
 ## Recipe 1 — Guard (mandatory CI gate)
 
-Runs all 21 validators. Read-only — never modifies your repo.
+Runs all 22 validators. Read-only — never modifies your repo.
 
 ```yaml
 name: DocGuard Guard
@@ -153,7 +153,7 @@ pre-commit:
 ```
 
 `--changed-only` ships in v0.12 and runs only Docs-Sync, Environment, and
-API-Surface against the staged files (instead of all 21 validators against
+API-Surface against the staged files (instead of all 22 validators against
 the whole repo). See Recipe 5 below.
 
 ## Recipe 5 — Pre-commit lite (changed files only)

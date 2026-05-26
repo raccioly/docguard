@@ -69,6 +69,9 @@ describe('`docguard guard --changed-only` end-to-end (subprocess)', () => {
     // depending on whether the fixture has warnings — we only assert the
     // banner appears.
     assert.match(result.stdout, /changed-only/, 'banner should announce changed-only mode');
-    assert.match(result.stdout, /pre-commit lite/, 'banner should mention pre-commit lite');
+    // v0.13 / N-1: banner now reports either the changed-file count or "no
+    // changes since <ref>" instead of the old "pre-commit lite" phrasing.
+    assert.match(result.stdout, /(no changes since|file\(s\) changed since)/,
+      'banner should describe changed-file scope');
   });
 });

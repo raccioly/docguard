@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-05-26
+
+Feature release — full backlog cleanup. **Phase L** (sync intelligence: 3 features), **Phase M** (bigger validators: 2 features), **Phase N** (polish: 2 fixes), and a new `shared-git.mjs` module that gives every git-touching validator rename-aware history. **22 validators total** (was 21). 434 tests, +34 from v0.12.
+
+### Added
+
+- **L-1 / S-1: `sync --since <ref>` surgical refresh.** `sync` now uses the git diff against the given ref to decide which code-truth doc sections actually need refreshing. Sections whose underlying source files weren't in the diff are explicitly skipped (with a `skipped` entry naming the section). When the diff contains no code files at all (e.g. PRs that touch only markdown), sync is a fast no-op. Saves wall-clock time on large monorepos.
+- **L-2 / S-3: `trace --reverse <code-path>`.** Mirror of the forward trace — given a code file path, finds every canonical doc that references it. Three match strategies (direct path, basename, backticked module name) with a per-doc summary in text mode or full match list in JSON mode. Surfaces "is this file documented anywhere?" in one command.
+- **L-3 / S-4: Rename detection via `git log --follow`.** New `cli/shared-git.mjs` module centralises every git-log call. All file-scoped queries now pass `--follow` so a `git mv` no longer resets the file's history. Freshness, Test-Spec, Traceability — anything that asks git "when was this file last touched?" — now answers correctly across renames.
+- **M-1 / S-7: Generated-Doc Staleness validator** (22nd validator). New validator re-runs the memory-plan scanner and compares each `source=code` section's expected body against on-disk content. Flags sections where the doc and the scanner disagree — i.e. either code changed without `sync --write` running, or someone hand-edited a machine-owned section. Warning includes a "first drift at line N" hint that names the diff site.
+- **M-2 / S-10: `.docguard/fixed.json` fix-history audit log.** Every mechanical fix `fix --write` applies is appended to a small JSON log under `.docguard/`. Entries are fingerprinted by `type+file+summary` and deduped (re-applying the same fix updates the timestamp instead of growing the file). Rolls over at 500 entries. New `docguard fix --history` command pretty-prints the log grouped by day. Also recorded: `appliedBy` (so K-1's `docguard-bot` auto-commits are distinguishable from human runs).
+- **N-1: Per-file scoping of `--changed-only`.** The `--changed-only` lite mode now computes the actually-changed files (`git diff --name-only HEAD~1 HEAD`, configurable with `--since`) and passes them as `config.changedFiles` to validators that opt in. Docs-Sync is the first opt-in: routes and services outside the changed set are skipped entirely. On wu-whatsappinbox the Docs-Sync check count went from 101 → 21 in `--changed-only` mode.
+- **N-2: 4 broken README anchors fixed** (caught by K-7's Cross-Reference validator). `[Commands](#-commands)` → `[Usage](#usage)`. `CONTRIBUTING.md` added to the validator's standard-docs lookup list (along with CODE_OF_CONDUCT.md, SECURITY.md, PHILOSOPHY.md, STANDARD.md, COMPARISONS.md) so cross-doc refs to those resolve.
+
+### Changed
+
+- **22 validators total** (was 21). Auto-fix bumped 6 doc references from "21 validators" → "22 validators" during the version bump.
+- **Trace command** (existing) now honors `--reverse` to switch to the new reverse mode; the forward mode is unchanged.
+- **`docguard guard` JSON output** for `--format json` no longer prints the banner or `ensureSkills` line — same headless fix as v0.12, extended to `trace --reverse --format json` and other JSON-mode commands.
+
+### Internal
+
+- **6 new test files**: `tests/shared-git.test.mjs` (11), `tests/sync-since.test.mjs` (3), `tests/trace-reverse.test.mjs` (5), `tests/generated-staleness.test.mjs` (4), `tests/fix-memory.test.mjs` (11), plus updates to `tests/changed-only.test.mjs`. **Total: 434 tests passing (was 400, +34 new).**
+- **New modules**: `cli/shared-git.mjs` (centralized git plumbing with --follow), `cli/validators/generated-staleness.mjs` (M-1), `cli/writers/fix-memory.mjs` (M-2). New helpers exported from sync.mjs: section→file matcher table for surgical refresh.
+- **Action / CLI dual-fix from v0.12** is now coordinated: K-1's auto-fix Action records to `.docguard/fixed.json` via `appliedBy: 'docguard-bot'`, giving teams a permanent record of which fixes the bot applied without diving into git history.
+- **Dry-run on wu-whatsappinbox before push** (read-only): 670/674 PASS in 1.82s with all 22 validators. 4 warnings are stale "21 validators" references in wu's local docguard skill files — those auto-fix on the next `fix --write`.
+- Bumped extension files via auto-fix (6 files: extension.yml + 5 SKILL.md).
+- No new NPM dependencies. Still zero deps.
+
+### Out of scope (deferred to v0.14)
+
+- **Fix-history suppression**: M-2 currently records but doesn't suppress. v0.14 will let `fix --write` skip fixes that were applied + reverted (avoiding ping-pong loops).
+- **More validators opt-into `config.changedFiles`**: N-1 only wires Docs-Sync. Environment and API-Surface could also benefit from path-level scoping.
+- **`generate-staleness` per-section auto-fix**: M-1 only warns; a future enhancement could emit structured fixes that `sync --write` consumes.
+- **`docguard upgrade --apply` for cross-machine teams**: currently in-place; could grow a "team-wide" mode that opens a PR.
+
 ## [0.12.0] - 2026-05-26
 
 Feature release — Phase K (7 features). Schema bump to **0.5**. Adds the

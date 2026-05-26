@@ -17,7 +17,7 @@
 - [What is DocGuard?](#what-is-docguard)
 - [Quick Start](#-quick-start)
 - [Spec Kit Integration](#-spec-kit-integration)
-- [Commands](#-commands)
+- [Usage](#usage)
 - [Validators](#-validators)
 - [Templates](#-templates)
 - [AI Agent Support](#-ai-agent-support)
@@ -343,7 +343,7 @@ DocGuard provides AI agent slash commands for integrated workflows. Installed au
 
 | Command | What It Does |
 |:--------|:-------------|
-| `/docguard.guard` | Run quality validation — check all 21 validators |
+| `/docguard.guard` | Run quality validation — check all 22 validators |
 | `/docguard.review` | Analyze doc quality and suggest improvements |
 | `/docguard.fix` | Generate targeted fix prompts for specific issues |
 | `/docguard.score` | Show CDD maturity score with category breakdown |

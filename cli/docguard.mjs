@@ -381,6 +381,15 @@ async function main() {
       flags.apply = true;
     } else if (args[i] === '--changed-only') {
       flags.changedOnly = true;
+    } else if (args[i] === '--reverse') {
+      flags.reverse = true;
+    } else if (args[i] === '--history') {
+      flags.history = true;
+    } else if (!args[i].startsWith('--') && i > 0) {
+      // Positional args go into flags.args for commands that take them (e.g.
+      // `docguard trace --reverse <path>`). Skip the command itself (i === 0).
+      flags.args = flags.args || [];
+      flags.args.push(args[i]);
     } else if (args[i] === '--doc' && args[i + 1]) {
       flags.doc = args[i + 1];
       i++;
