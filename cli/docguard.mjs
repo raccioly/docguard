@@ -42,6 +42,7 @@ import { runLlms } from './commands/llms.mjs';
 import { runSetup } from './commands/setup.mjs';
 import { runUpgrade } from './commands/upgrade.mjs';
 import { runImpact } from './commands/impact.mjs';
+import { runExplain } from './commands/explain.mjs';
 import { ensureSkills } from './ensure-skills.mjs';
 
 // ── Shared constants (imported to break circular dependencies) ──────────
@@ -395,6 +396,16 @@ async function main() {
       // avoid collision with `docguard init --profile <name>`. `--show-timings`
       // is the long form for users who prefer explicit verbs.
       flags.timings = true;
+    } else if (args[i] === '--quiet' || args[i] === '-q') {
+      // v0.16-P5: suppress the banner + ensureSkills decorative line.
+      // Useful inside git hooks (every commit prints the banner otherwise)
+      // and any CI/script that pipes docguard's output.
+      flags.quiet = true;
+    } else if (args[i] === '--no-spec-kit') {
+      // v0.16-P8: opt-out of automatic Spec Kit init during `docguard init`.
+      // Default stays on (discoverability), but lets minimalist library
+      // projects skip the .specify/.agent/commands scaffolding.
+      flags.noSpecKit = true;
     } else if (!args[i].startsWith('--') && i > 0) {
       // Positional args go into flags.args for commands that take them (e.g.
       // `docguard trace --reverse <path>`). Skip the command itself (i === 0).
@@ -442,10 +453,12 @@ async function main() {
   // ensureSkills' install message would corrupt the output for any
   // programmatic consumer (CI, dashboards, the Score-on-PR Action recipe).
   // Headless flags (`--write`, `--check-only`, `--auto`) also suppress chrome.
+  // v0.16-P5: --quiet (-q) joins the headless club for users who want
+  // banner-free output without committing to a specific machine format.
   const jsonMode = flags.format === 'json';
-  const headless = jsonMode || flags.write || flags.checkOnly || flags.changedOnly;
+  const headless = jsonMode || flags.write || flags.checkOnly || flags.changedOnly || flags.quiet;
 
-  if (!jsonMode) printBanner();
+  if (!headless) printBanner();
 
   const config = loadConfig(projectDir);
 
@@ -526,6 +539,10 @@ async function main() {
       break;
     case 'impact':
       runImpact(projectDir, config, flags);
+      break;
+    case 'explain':
+    case 'help-warning':
+      runExplain(projectDir, config, flags);
       break;
     default:
       console.error(`${c.red}Unknown command: ${command}${c.reset}`);

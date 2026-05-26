@@ -4,6 +4,56 @@
  */
 
 import { existsSync, writeFileSync, mkdirSync, chmodSync, readFileSync, unlinkSync } from 'node:fs';
+
+// v0.16-P3: managed-block markers. Letting users extend the hook with their
+// own commands (data-file guards, lint checks, etc.) without us clobbering
+// them on re-install. Format:
+//
+//   #!/bin/sh
+//   # ... user's prelude ...
+//
+//   # BEGIN DOCGUARD MANAGED — do not edit between these markers
+//   ... DocGuard's content ...
+//   # END DOCGUARD MANAGED
+//
+//   # ... user's postlude ...
+//
+// On re-install, we splice ONLY the content between the markers, preserving
+// everything else verbatim. Without markers (legacy hooks or third-party
+// pre-existing hooks), behavior falls back to the existing --force flow.
+const BEGIN_MARKER = '# BEGIN DOCGUARD MANAGED — do not edit between these markers';
+const END_MARKER   = '# END DOCGUARD MANAGED';
+
+/**
+ * Wrap a hook body in BEGIN/END markers so future re-installs can splice
+ * just the managed portion. The shebang stays at the top, outside the block.
+ */
+function wrapManaged(body) {
+  // Pull shebang off the front if present so it stays at the top.
+  const lines = body.split('\n');
+  let shebang = '';
+  if (lines[0] && lines[0].startsWith('#!')) {
+    shebang = lines.shift() + '\n';
+  }
+  return `${shebang}${BEGIN_MARKER}\n${lines.join('\n').replace(/\n+$/, '')}\n${END_MARKER}\n`;
+}
+
+/**
+ * Splice DocGuard's managed content into an existing hook file that has
+ * the BEGIN/END markers. Returns the new file content (string) or null
+ * when the markers aren't found (caller falls back to legacy behavior).
+ */
+function spliceManagedBlock(existing, newBody) {
+  const startIdx = existing.indexOf(BEGIN_MARKER);
+  const endIdx   = existing.indexOf(END_MARKER);
+  if (startIdx === -1 || endIdx === -1 || endIdx < startIdx) return null;
+  const before = existing.slice(0, startIdx);
+  const after  = existing.slice(endIdx + END_MARKER.length);
+  // newBody has its own shebang — strip it since we're splicing into the
+  // middle of an existing file (which already has one).
+  const bodyNoShebang = newBody.replace(/^#!.*\n/, '');
+  return `${before}${BEGIN_MARKER}\n${bodyNoShebang.replace(/\n+$/, '')}\n${END_MARKER}${after}`;
+}
 import { resolve } from 'node:path';
 import { c } from '../shared.mjs';
 
@@ -228,26 +278,45 @@ export function runHooks(projectDir, config, flags) {
 
   for (const name of hookTypes) {
     const hookPath = resolve(hooksDir, name);
+    const useAutofix = name === 'pre-commit' && flags.autoFix;
+    const newContent = wrapManaged(useAutofix ? PRE_COMMIT_AUTOFIX : HOOKS[name].content);
+    const desc = useAutofix ? 'Apply mechanical fixes (fix --write) then guard' : HOOKS[name].description;
 
-    if (existsSync(hookPath) && !flags.force) {
-      // Check if it's already a DocGuard hook
+    if (existsSync(hookPath)) {
       const existing = readFileSync(hookPath, 'utf-8');
-      if (existing.includes('DocGuard')) {
-        console.log(`  ${c.dim}⏭️  ${name} (DocGuard hook already installed)${c.reset}`);
+
+      // v0.16-P3: managed-block path — splice just the DocGuard portion,
+      // preserve everything outside it. The user can extend the hook with
+      // their own commands above/below the markers without losing them on
+      // re-install.
+      const spliced = spliceManagedBlock(existing, newContent);
+      if (spliced !== null) {
+        writeFileSync(hookPath, spliced, 'utf-8');
+        chmodSync(hookPath, 0o755);
+        console.log(`  ${c.green}↻ ${name}${c.reset}: updated DocGuard managed block (preserved user content around it)`);
+        installed++;
+        continue;
+      }
+
+      // No markers found. Two sub-cases:
+      //   (a) Legacy DocGuard hook (pre-v0.16, no markers, contains "DocGuard")
+      //       → upgrade in place when --force is set
+      //   (b) Third-party hook the user wrote themselves
+      //       → refuse without --force; warn about clobber risk
+      if (!flags.force) {
+        if (existing.includes('DocGuard')) {
+          console.log(`  ${c.yellow}⚠️  ${name}: legacy DocGuard hook (pre-v0.16) without managed markers. Re-run with --force to upgrade it to the managed-block format.${c.reset}`);
+        } else {
+          console.log(`  ${c.yellow}⚠️  ${name}: an existing hook is present and has no DocGuard markers. Re-run with --force to overwrite (your hook will be replaced — back it up first!).${c.reset}`);
+        }
         skipped++;
         continue;
       }
-      console.log(`  ${c.yellow}⚠️  ${name}: existing hook found (use --force to overwrite)${c.reset}`);
-      skipped++;
-      continue;
+      // --force path: write fresh managed-block version
     }
 
-    // pre-commit supports an auto-fix variant (applies mechanical fixes first).
-    const useAutofix = name === 'pre-commit' && flags.autoFix;
-    const content = useAutofix ? PRE_COMMIT_AUTOFIX : HOOKS[name].content;
-    writeFileSync(hookPath, content, 'utf-8');
-    chmodSync(hookPath, 0o755); // Make executable
-    const desc = useAutofix ? 'Apply mechanical fixes (fix --write) then guard' : HOOKS[name].description;
+    writeFileSync(hookPath, newContent, 'utf-8');
+    chmodSync(hookPath, 0o755);
     console.log(`  ${c.green}✅ ${name}${c.reset}: ${desc}`);
     installed++;
   }

@@ -21,8 +21,15 @@ const WEIGHTS = {
 };
 
 export function runScore(projectDir, config, flags) {
-  console.log(`${c.bold}📊 DocGuard Score — ${config.projectName}${c.reset}`);
-  console.log(`${c.dim}   Directory: ${projectDir}${c.reset}\n`);
+  // v0.16-P1: suppress banner in JSON mode so stdout stays parseable.
+  // Was already fixed for guard/diagnose in v0.12; score/trace/diff missed
+  // the pattern. Reported on a Python project where `score --format json`
+  // mixed ANSI escapes with JSON.
+  const isJson = flags.format === 'json';
+  if (!isJson) {
+    console.log(`${c.bold}📊 DocGuard Score — ${config.projectName}${c.reset}`);
+    console.log(`${c.dim}   Directory: ${projectDir}${c.reset}\n`);
+  }
 
   const { scores, totalScore, grade, details } = calcAllScores(projectDir, config);
 

@@ -25,8 +25,12 @@ const CODE_EXTENSIONS = new Set([
 ]);
 
 export function runDiff(projectDir, config, flags) {
-  console.log(`${c.bold}🔍 DocGuard Diff — ${config.projectName}${c.reset}`);
-  console.log(`${c.dim}   Directory: ${projectDir}${c.reset}\n`);
+  // v0.16-P1: headless mode for JSON output (matches guard/score/trace fix).
+  const isJson = flags.format === 'json';
+  if (!isJson) {
+    console.log(`${c.bold}🔍 DocGuard Diff — ${config.projectName}${c.reset}`);
+    console.log(`${c.dim}   Directory: ${projectDir}${c.reset}\n`);
+  }
 
   const results = [];
 
@@ -196,6 +200,25 @@ function diffEntities(dir, config = {}) {
   };
 }
 
+// v0.16-P4: common system environment variables that get backticked in
+// prose ("the venv `PATH`", "your `HOME` directory") but are NEVER user-set
+// application env vars. Excluding them from the docVars set kills the
+// false-positive class reported by the Python user where `PATH` was flagged
+// as "documented-but-not-implemented".
+//
+// Conservative list — only the names that are unambiguously OS/shell vars.
+// Application names like `DATABASE_URL`, `API_KEY` etc. still count.
+const SYSTEM_ENV_VARS = new Set([
+  'PATH', 'HOME', 'USER', 'USERNAME', 'SHELL', 'PWD', 'OLDPWD', 'TMPDIR', 'TEMP', 'TMP',
+  'LANG', 'LC_ALL', 'LC_CTYPE', 'LC_MESSAGES', 'TZ',
+  'EDITOR', 'VISUAL', 'PAGER', 'TERM', 'COLORTERM',
+  'DISPLAY', 'SSH_AUTH_SOCK', 'SSH_CONNECTION', 'SSH_TTY',
+  'XDG_CONFIG_HOME', 'XDG_DATA_HOME', 'XDG_CACHE_HOME', 'XDG_RUNTIME_DIR',
+  // CI/build platform vars (set by the platform, not by the app)
+  'CI', 'GITHUB_TOKEN', 'GITHUB_ACTIONS', 'GITHUB_REF', 'GITHUB_SHA',
+  'NODE_ENV', // could be app-set but more often platform-set; conservative skip
+]);
+
 function diffEnvVars(dir, config = {}) {
   const envDocPath = resolve(dir, 'docs-canonical/ENVIRONMENT.md');
   if (!existsSync(envDocPath)) return null;
@@ -208,6 +231,9 @@ function diffEnvVars(dir, config = {}) {
   const varRegex = /`([A-Z][A-Z0-9_]*[A-Z0-9])`/g;
   let match;
   while ((match = varRegex.exec(content)) !== null) {
+    // v0.16-P4: skip backticked system vars that appear in prose. They're
+    // never user-set application env vars; flagging them produces noise.
+    if (SYSTEM_ENV_VARS.has(match[1])) continue;
     docVars.add(match[1]);
   }
 

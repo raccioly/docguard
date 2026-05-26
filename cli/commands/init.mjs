@@ -253,10 +253,14 @@ poetry.lock
 
   // ── Spec-Kit Integration (Extension-First) ────────────────────────────
   // Delegate LLM/IDE detection and spec-kit skill install to `specify init`
+  // v0.16-P8: --no-spec-kit lets users skip the .specify/.agent/commands
+  // scaffolding (minimalist library projects, CI containers, etc.).
   const specKitAvailable = isSpecKitAvailable();
   const specKitInitialized = isSpecKitInitialized(projectDir);
 
-  if (specKitAvailable && !specKitInitialized) {
+  if (flags.noSpecKit) {
+    console.log(`\n  ${c.dim}⏭️  Spec Kit init skipped (--no-spec-kit).${c.reset}`);
+  } else if (specKitAvailable && !specKitInitialized) {
     console.log(`\n  ${c.bold}🌱 Spec Kit Integration${c.reset}`);
 
     // Detect which AI agent is in use (matches spec-kit's --ai flag)

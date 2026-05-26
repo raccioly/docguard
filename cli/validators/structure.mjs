@@ -89,14 +89,36 @@ export function validateDocSections(projectDir, config) {
       // Match an actual heading at line start (any level), not a substring that
       // could appear in a table-of-contents link or a code block.
       const headingText = section.replace(/^#+\s*/, '');
-      const headingRe = new RegExp(
-        '^#{2,6}\\s+' + headingText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b',
-        'm'
+      const escapedHeading = headingText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const headingRe = new RegExp('^#{2,6}\\s+' + escapedHeading + '\\b', 'm');
+      // v0.16-P7: N/A marker. A project can declare a required section as
+      // "not applicable" via an HTML comment instead of writing boilerplate
+      // "Absent by design" prose. Format:
+      //   <!-- docguard:section authentication n/a — JWT not used; we're a CLI -->
+      // The section name in the marker is matched case-insensitively against
+      // the heading slug (lowercase, hyphenated). Requires a reason after `—`
+      // or `--` so it's not a silent opt-out.
+      const slug = headingText.toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-');
+      // Reason must start with an actual letter or digit (not `>` from `-->`
+      // and not whitespace). This makes sure `<!-- ... n/a -->` (no reason)
+      // is rejected, while `<!-- ... n/a — CLI tool -->` is accepted.
+      const naRe = new RegExp(
+        '<!--\\s*docguard:section\\s+' + slug.replace(/-/g, '[-_]') + '\\s+n/a\\s*[—-]+\\s*[A-Za-z0-9]',
+        'i'
       );
       if (headingRe.test(content)) {
         results.passed++;
+      } else if (naRe.test(content)) {
+        // v0.16-P7: explicit N/A — counts as passed (the project has owned
+        // the absence) and doesn't pollute the warnings list.
+        results.passed++;
       } else {
-        results.warnings.push(`${file}: missing section "${section}"`);
+        results.warnings.push(
+          `${file}: missing section "${section}". ` +
+          `If genuinely not applicable, add: <!-- docguard:section ${slug} n/a — your reason -->`
+        );
       }
     }
   }

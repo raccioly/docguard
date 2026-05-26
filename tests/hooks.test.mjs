@@ -95,7 +95,9 @@ describe('runHooks function', () => {
         writeFileSync(join(tmpDir, '.git', 'hooks', 'pre-commit'), 'other hook');
         runHooks(tmpDir, { projectName: 'Test' }, { type: 'pre-commit' });
         assert.strictEqual(readFileSync(join(tmpDir, '.git', 'hooks', 'pre-commit'), 'utf-8'), 'other hook');
-        assert.ok(logs.some(log => log.includes('existing hook found')));
+        // v0.16-P3: new message phrasing — "an existing hook is present and has no DocGuard markers"
+        assert.ok(logs.some(log => /existing hook|no DocGuard markers|Re-run with --force/i.test(log)),
+          `expected refuse-to-overwrite warning; got logs: ${logs.join(' | ')}`);
     });
 
     it('overwrites existing hooks when installing with force', () => {
@@ -106,12 +108,47 @@ describe('runHooks function', () => {
         assert.ok(readFileSync(join(tmpDir, '.git', 'hooks', 'pre-commit'), 'utf-8').includes('DocGuard'));
     });
 
-    it('skips existing DocGuard hooks when installing without force', () => {
+    it('refuses to overwrite legacy DocGuard hooks (pre-v0.16, no markers) without --force', () => {
+        // v0.16-P3: behavior change. Legacy hooks (have "DocGuard" but no
+        // BEGIN/END markers) now ask the user to re-run with --force to
+        // upgrade them to the managed-block format. The previous behavior
+        // of silently skipping was misleading because the hook stayed
+        // out-of-sync with the current DocGuard release.
         mkdirSync(join(tmpDir, '.git'));
         mkdirSync(join(tmpDir, '.git', 'hooks'));
-        writeFileSync(join(tmpDir, '.git', 'hooks', 'pre-commit'), 'DocGuard hook');
+        writeFileSync(join(tmpDir, '.git', 'hooks', 'pre-commit'), '# legacy DocGuard hook\n');
         runHooks(tmpDir, { projectName: 'Test' }, { type: 'pre-commit' });
-        assert.strictEqual(readFileSync(join(tmpDir, '.git', 'hooks', 'pre-commit'), 'utf-8'), 'DocGuard hook');
-        assert.ok(logs.some(log => log.includes('DocGuard hook already installed')));
+        // File unchanged
+        assert.match(readFileSync(join(tmpDir, '.git', 'hooks', 'pre-commit'), 'utf-8'), /legacy DocGuard hook/);
+        // Logged a clear path forward
+        assert.ok(logs.some(log => /legacy DocGuard|managed markers|Re-run with --force/i.test(log)),
+          `expected legacy-hook warning; got logs: ${logs.join(' | ')}`);
+    });
+
+    it('splices managed-block content on re-install (preserves user content around it)', () => {
+        mkdirSync(join(tmpDir, '.git'));
+        mkdirSync(join(tmpDir, '.git', 'hooks'));
+        // First install
+        runHooks(tmpDir, { projectName: 'Test' }, { type: 'pre-commit' });
+        const afterFirst = readFileSync(join(tmpDir, '.git', 'hooks', 'pre-commit'), 'utf-8');
+        assert.match(afterFirst, /BEGIN DOCGUARD MANAGED/);
+
+        // User adds their own command BEFORE and AFTER the managed block
+        const userExtended =
+          afterFirst.replace(
+            /(# BEGIN DOCGUARD MANAGED)/,
+            'echo "user prelude: running data-file check"\n$1'
+          ) + '\necho "user postlude: cleanup"\n';
+        writeFileSync(join(tmpDir, '.git', 'hooks', 'pre-commit'), userExtended);
+
+        // Re-install — should splice ONLY the managed block, preserve user content
+        runHooks(tmpDir, { projectName: 'Test' }, { type: 'pre-commit' });
+        const afterReinstall = readFileSync(join(tmpDir, '.git', 'hooks', 'pre-commit'), 'utf-8');
+        assert.match(afterReinstall, /user prelude/, 'prelude must be preserved');
+        assert.match(afterReinstall, /user postlude/, 'postlude must be preserved');
+        assert.match(afterReinstall, /BEGIN DOCGUARD MANAGED/);
+        assert.match(afterReinstall, /END DOCGUARD MANAGED/);
+        assert.ok(logs.some(log => /updated DocGuard managed block|preserved user content/i.test(log)),
+          `expected managed-block update message; got: ${logs.join(' | ')}`);
     });
 });

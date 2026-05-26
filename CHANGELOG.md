@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-05-26
+
+Feature release driven entirely by feedback from a real Python project running
+DocGuard for the first time. **8 user-reported items shipped, 519 tests** (was
+497, +22). 22 validators. The Python user's top two asks (language-aware
+TRACE_MAP, hook-overwrite protection) are both in.
+
+### Fixed
+
+- **P1 — JSON+ANSI bleed in `score`/`trace`/`diff` `--format json`.** Critical CI bug. The v0.12 headless-mode fix only covered `guard` and (later) `diagnose`; three other commands leaked colored banners before the JSON body, breaking `jq` / `python -c "json.loads(...)"` pipelines. All five JSON-emitting commands now produce clean parseable output.
+- **P4 — `docguard diff` false positive on system env vars.** Backticked mentions of `PATH`, `HOME`, `USER`, `SHELL`, etc. inside ENVIRONMENT.md prose ("the venv `PATH`") were flagged as documented-but-not-implemented user env vars. Added a `SYSTEM_ENV_VARS` denylist to both `diff` and the `Environment` validator. The 30-name list covers OS/shell/CI vars; user-app names (`DATABASE_URL`, `API_KEY`, etc.) still count as documented.
+
+### Added
+
+- **P2 — Language-aware `TRACE_MAP`** (top user ask). The original JS/TS-only patterns false-negatived on Python (`test_*.py`), Rust (`tests/*.rs`), Go (`*_test.go`), Java (`*Test.java`), Ruby (`*_spec.rb`), and PHP test layouts. Every `TRACE_MAP` entry — Test files, Entry points, Config files, Schemas, Env files — now matches the equivalent patterns across ecosystems. New `tests/trace-multilang.test.mjs` (16 tests) locks the cross-language matching in.
+- **P3 — Hook overwrite protection** (2nd user ask). `docguard hooks --type pre-commit` previously clobbered user customizations on re-install. Now wraps DocGuard's content in `# BEGIN DOCGUARD MANAGED — do not edit between these markers` / `# END DOCGUARD MANAGED` markers and **splices only the managed block** on re-install, preserving everything around it. Legacy pre-v0.16 hooks (no markers) prompt the user to re-run with `--force` to upgrade. Third-party pre-existing hooks refuse to clobber without `--force`.
+- **P5 — `--quiet` / `-q` flag.** Suppresses the banner + ensureSkills decorative line. Useful inside git hooks and CI loops where the 5-line banner becomes 30 lines of noise. Doesn't affect validator output itself.
+- **P6 — `docguard explain <warning>` command** (user wishlist). Paste any warning text and get back: which validator emitted it, what triggered it, how to fix, a passing example, and the standard it references. Cuts source-spelunking time from 5-10 minutes to seconds. Covers all 16 validators. Also accepts a validator key directly (`docguard explain freshness`). JSON mode for tooling.
+- **P7 — N/A markers for required doc sections.** A project that legitimately has no auth (CLI, library, internal tool) can now declare it via `<!-- docguard:section authentication n/a — CLI tool, no user accounts -->` instead of writing "Absent by design" boilerplate. The marker requires a reason (non-empty after the dash) so it can't be a silent opt-out. Doc-Sections counts the marked section as passed.
+- **P8 — `--no-spec-kit` flag for `init`.** Default-on stays for discoverability, but minimalist library projects can now skip the `.specify/`, `.agent/`, `commands/` scaffolding entirely with `docguard init --no-spec-kit`.
+
+### Internal
+
+- **3 new test files**: `tests/trace-multilang.test.mjs` (16), `tests/section-na-markers.test.mjs` (5), plus expanded `tests/hooks.test.mjs` (+2 for managed-block). **Total: 497 → 519 tests (+22 new).**
+- New top-level command: `cli/commands/explain.mjs` with a 16-validator explainer table.
+- New helpers in `cli/commands/hooks.mjs`: `wrapManaged()`, `spliceManagedBlock()`, `BEGIN_MARKER`, `END_MARKER`.
+- New `SYSTEM_ENV_VARS` constant exported from `cli/commands/diff.mjs` (mirrored in `cli/validators/environment.mjs`).
+- Headless-mode flag check (`flags.quiet`) added to the main dispatcher.
+- No new NPM deps.
+
+### Out of scope (deferred to v0.17)
+
+User feedback items NOT addressed in this release:
+
+- **F6 — Score "Top improvements" cache** (low repro confidence — user cleared on the next run, may have been observer effect).
+- **F7 — Validator count drift in tool's own scaffolding** (philosophical: counts ARE accurate per-run; the issue is that DocGuard's OWN docs mention the count and naturally drift as validators are added. Could compute at runtime; defer for now.)
+- **F8 — Version pin in `.docguard.json`** (CDD reproducibility — record the DocGuard version that last passed). Medium effort, real value.
+- **F10 — Memory accuracy drill-down** (`docguard memory --diff` to show which claims don't match code). Bigger feature.
+- **N1 — Validator naming consistency** (`testSpec` JSON key / `test-spec` CLI flag / `Test-Spec` display). Breaking change; needs migration story.
+- **N3 — `--tax` fold** (philosophical: `--tax` does add information, just not enough to feel different).
+
 ## [0.15.3] - 2026-05-26
 
 Repo hygiene release — scrubbed a client-specific project name from public artifacts.

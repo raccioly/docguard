@@ -45,9 +45,21 @@ export function validateEnvironment(projectDir, config) {
     // tokens like `VITE_` (the convention prefix) from being treated as a real
     // variable name.
     const varRe = /`([A-Z][A-Z0-9_]*[A-Z0-9])`/g;
+    // v0.16-P4: skip backticked SYSTEM env vars (PATH, HOME, USER, etc.).
+    // They appear in ENVIRONMENT.md prose ("the venv `PATH`") but aren't
+    // user-set application vars. Mirrors the same skip in diff.mjs.
+    const SYSTEM = new Set([
+      'PATH','HOME','USER','USERNAME','SHELL','PWD','OLDPWD','TMPDIR','TEMP','TMP',
+      'LANG','LC_ALL','LC_CTYPE','LC_MESSAGES','TZ',
+      'EDITOR','VISUAL','PAGER','TERM','COLORTERM',
+      'DISPLAY','SSH_AUTH_SOCK','SSH_CONNECTION','SSH_TTY',
+      'XDG_CONFIG_HOME','XDG_DATA_HOME','XDG_CACHE_HOME','XDG_RUNTIME_DIR',
+      'CI','GITHUB_TOKEN','GITHUB_ACTIONS','GITHUB_REF','GITHUB_SHA','NODE_ENV',
+    ]);
     let m;
     while ((m = varRe.exec(content)) !== null) {
       if (m[1].length < 3) continue; // 'OK' / 'ID' etc. are too short to be env var refs
+      if (SYSTEM.has(m[1])) continue; // v0.16-P4: prose mentions of system vars are not docs
       documented.add(m[1]);
     }
     for (const envFile of ['.env.example', '.env.template']) {
