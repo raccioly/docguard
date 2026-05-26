@@ -329,6 +329,20 @@ function isSelfPath(fullPath) {
 }
 
 function findTodos(rootDir, dir, todos, config) {
+  // v0.15-P3: when config.changedFiles is set (--changed-only mode), only
+  // scan those paths. New TODOs in this commit get caught; pre-existing
+  // TODOs in unchanged files are still tracked by full guard runs.
+  if (dir === rootDir && Array.isArray(config?.changedFiles) && config.changedFiles.length > 0) {
+    for (const rel of config.changedFiles) {
+      const full = resolve(rootDir, rel);
+      let stat;
+      try { stat = statSync(full); } catch { continue; }
+      if (!stat.isFile()) continue;
+      _scanTodoFile(rootDir, full, todos, config);
+    }
+    return;
+  }
+
   let entries;
   try { entries = readdirSync(dir); } catch { return; }
 
@@ -345,47 +359,44 @@ function findTodos(rootDir, dir, todos, config) {
     if (stat.isDirectory()) {
       findTodos(rootDir, full, todos, config);
     } else {
-      const ext = extname(entry).toLowerCase();
-      if (!SOURCE_EXTENSIONS.has(ext)) continue;
+      _scanTodoFile(rootDir, full, todos, config);
+    }
+  }
+}
 
-      const relPath = relative(rootDir, full);
+/**
+ * v0.15-P3: per-file TODO scan extracted so both the full-tree walker and
+ * the --changed-only path can reuse it. Honors test-file filtering,
+ * self-path skip, ignore patterns, and the TODO regex.
+ */
+function _scanTodoFile(rootDir, full, todos, config) {
+  const includeTests = config?.todoTracking?.includeTestFiles === true;
+  const ext = extname(full).toLowerCase();
+  if (!SOURCE_EXTENSIONS.has(ext)) return;
 
-      // Skip test files unless explicitly opted in — test fixture strings
-      // commonly contain comment markers inside template literals that the
-      // single-line heuristic can't distinguish from real comments.
-      if (!includeTests && isTestFilePath(relPath)) continue;
+  const relPath = relative(rootDir, full);
 
-      // Skip the validator's own source file — its docstring legitimately
-      // names the annotation keywords it scans for.
-      if (isSelfPath(full)) continue;
+  if (!includeTests && isTestFilePath(relPath)) return;
+  if (isSelfPath(full)) return;
+  if (config && shouldIgnore(relPath, config, 'todoIgnore')) return;
 
-      // Apply config ignore patterns (todoIgnore + global ignore)
-      if (config && shouldIgnore(relPath, config, 'todoIgnore')) continue;
+  let content;
+  try { content = readFileSync(full, 'utf-8'); } catch { return; }
+  if (!TODO_PATTERN.test(content)) return;
 
-      let content;
-      try { content = readFileSync(full, 'utf-8'); } catch { continue; }
-
-      // Fast early-return: skip expensive string split if no TODO patterns exist
-      if (!TODO_PATTERN.test(content)) continue;
-
-      const lines = content.split('\n');
-
-      for (let i = 0; i < lines.length; i++) {
-        // Restrict scanning to text inside a comment — keeps the regex from
-        // matching its own keyword list when DocGuard reads its own source.
-        const commentText = commentPortion(lines[i]);
-        if (commentText === null) continue;
-        if (TODO_PATTERN.test(commentText)) {
-          const match = commentText.match(TODO_EXTRACT);
-          if (match) {
-            todos.push({
-              keyword: match[1].toUpperCase(),
-              text: match[2].trim(),
-              file: relPath,
-              line: i + 1,
-            });
-          }
-        }
+  const lines = content.split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    const commentText = commentPortion(lines[i]);
+    if (commentText === null) continue;
+    if (TODO_PATTERN.test(commentText)) {
+      const match = commentText.match(TODO_EXTRACT);
+      if (match) {
+        todos.push({
+          keyword: match[1].toUpperCase(),
+          text: match[2].trim(),
+          file: relPath,
+          line: i + 1,
+        });
       }
     }
   }

@@ -198,7 +198,7 @@ export function runGuardInternal(projectDir, config) {
  * Freshness (git log), Traceability (REQ scan), Doc-Quality (prose lint) —
  * stay off for speed.
  */
-export const CHANGED_ONLY_VALIDATORS = ['docsSync', 'environment', 'apiSurface'];
+export const CHANGED_ONLY_VALIDATORS = ['docsSync', 'environment', 'apiSurface', 'drift', 'todoTracking'];
 
 /**
  * Build a validators map that enables only the pre-commit-lite set.

@@ -20,21 +20,18 @@ const IGNORE_DIRS = new Set([
 export function validateDrift(projectDir, config) {
   const results = { name: 'drift', errors: [], warnings: [], passed: 0, total: 0 };
 
-  // Find all // DRIFT: comments in source code
-  const driftComments = [];
-  walkDir(projectDir, (filePath) => {
+  // v0.15-P3: when config.changedFiles is set (--changed-only mode), only
+  // visit the listed paths. Drift comments in unchanged files are still in
+  // git so they'll be caught by a full guard run; pre-commit hooks care
+  // about NEW drift comments in this commit.
+  const scanFile = (filePath) => {
     const ext = extname(filePath);
     if (!CODE_EXTENSIONS.has(ext)) return;
-
-    const content = readFileSync(filePath, 'utf-8');
-
-    // Fast early-return: skip expensive string split if no comment exists
+    let content;
+    try { content = readFileSync(filePath, 'utf-8'); } catch { return; }
     if (!content.includes('DRIFT:')) return;
-
     const lines = content.split('\n');
-
     lines.forEach((line, i) => {
-      // Match various comment styles: // DRIFT:, # DRIFT:, /* DRIFT:, -- DRIFT:
       const match = line.match(/(?:\/\/|#|\/\*|\-\-)\s*DRIFT:\s*(.+)/i);
       if (match) {
         driftComments.push({
@@ -44,7 +41,16 @@ export function validateDrift(projectDir, config) {
         });
       }
     });
-  });
+  };
+
+  const driftComments = [];
+  if (Array.isArray(config.changedFiles) && config.changedFiles.length > 0) {
+    for (const rel of config.changedFiles) {
+      scanFile(resolve(projectDir, rel));
+    }
+  } else {
+    walkDir(projectDir, scanFile);
+  }
 
   if (driftComments.length === 0) {
     // No // DRIFT: comments to reconcile — not applicable (NOT a pass).

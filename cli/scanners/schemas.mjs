@@ -690,20 +690,45 @@ function readFileSafe(path) {
   try { return readFileSync(path, 'utf-8'); } catch { return null; }
 }
 
+// v0.15-P2: walkDir is called 8 times across schemas.mjs (Pydantic, Mongoose,
+// Prisma, SQLAlchemy, Sequelize, GORM, Sqlx, Hibernate). Each call walks the
+// same tree. Cache the file list per (dir, extension-set) so subsequent
+// callers iterate an array instead of re-traversing.
+//
+// Cache key: just the dir path. The extension filter is constant across all
+// callers (the regex hard-coded below), so a single cache slot per dir works.
+// Lifetime: per-process. `clearWalkDirCache()` invalidates for tests.
+const _walkDirCache = new Map(); // dir → string[] of file paths
+
+export function clearWalkDirCache() {
+  _walkDirCache.clear();
+}
+
+const _CODE_FILE_RE = /\.(js|mjs|cjs|ts|tsx|jsx|py|rs|go|java|kt|rb)$/;
+
+function _collectFiles(dir, out) {
+  let entries;
+  try { entries = readdirSync(dir, { withFileTypes: true }); } catch { return; }
+  for (const entry of entries) {
+    if (IGNORE_DIRS.has(entry.name) || entry.name.startsWith('.')) continue;
+    const fullPath = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      _collectFiles(fullPath, out);
+    } else if (entry.isFile() && _CODE_FILE_RE.test(entry.name)) {
+      out.push(fullPath);
+    }
+  }
+}
+
 function walkDir(dir, callback) {
   if (!existsSync(dir)) return;
-  try {
-    const entries = readdirSync(dir, { withFileTypes: true });
-    for (const entry of entries) {
-      if (IGNORE_DIRS.has(entry.name) || entry.name.startsWith('.')) continue;
-      const fullPath = join(dir, entry.name);
-      if (entry.isDirectory()) {
-        walkDir(fullPath, callback);
-      } else if (entry.isFile() && /\.(js|mjs|cjs|ts|tsx|jsx|py|rs|go|java|kt|rb)$/.test(entry.name)) {
-        callback(fullPath);
-      }
-    }
-  } catch { /* skip */ }
+  let files = _walkDirCache.get(dir);
+  if (!files) {
+    files = [];
+    _collectFiles(dir, files);
+    _walkDirCache.set(dir, files);
+  }
+  for (const f of files) callback(f);
 }
 
 /**

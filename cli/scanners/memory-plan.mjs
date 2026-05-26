@@ -30,12 +30,57 @@ const md = {
 };
 
 /**
+ * v0.15-P1: in-process cache. buildMemoryPlan is expensive (~400ms on
+ * wu-whatsappinbox, 33% of total guard validator time) because it triggers
+ * routes/schemas/screens/frontend scanners — all of which walk the source
+ * tree. Within a single guard run, sync, generate, and the Generated-
+ * Staleness validator all ask for the SAME plan; without caching they each
+ * re-pay the cost.
+ *
+ * Cache key: projectDir + a config fingerprint that captures the fields the
+ * scanners actually consume (sourceRoot, ignore, projectType). Other config
+ * mutations (e.g. changedFiles per-validator) don't invalidate the plan.
+ *
+ * Bypass with `_skipCache: true` in opts — used by tests and any caller that
+ * wants a fresh scan.
+ */
+const _memoryPlanCache = new Map(); // key → plan
+
+export function clearMemoryPlanCache() {
+  _memoryPlanCache.clear();
+}
+
+function _cacheKey(projectDir, config) {
+  return JSON.stringify({
+    dir: projectDir,
+    sourceRoot: config.sourceRoot,
+    ignore: Array.isArray(config.ignore) ? [...config.ignore].sort() : null,
+    projectType: config.projectType,
+    profile: config.profile,
+  });
+}
+
+/**
  * Build the full memory plan for a project.
  * @returns {{ profile, surface, docs, agentTasks }}
  *   docs[].sections[]: { id, source:'code', body } OR { id, source:'human', task, grounding }
  *   agentTasks: flattened prose tasks the AI must write.
  */
-export function buildMemoryPlan(projectDir, config = {}) {
+export function buildMemoryPlan(projectDir, config = {}, opts = {}) {
+  if (!opts._skipCache) {
+    const key = _cacheKey(projectDir, config);
+    const cached = _memoryPlanCache.get(key);
+    if (cached) return cached;
+  }
+  const result = _buildMemoryPlanUncached(projectDir, config);
+  if (!opts._skipCache) {
+    _memoryPlanCache.set(_cacheKey(projectDir, config), result);
+  }
+  return result;
+}
+
+// Original implementation, renamed so the public buildMemoryPlan can wrap it.
+function _buildMemoryPlanUncached(projectDir, config = {}) {
   const profile = detectProjectProfile(projectDir, config);
   const primaryFramework = profile.primary?.framework || profile.frameworks[0] || '';
 

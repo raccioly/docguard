@@ -1,0 +1,155 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raccioly.github.io/docguard/schemas/docguard-config.schema.json",
+  "title": "DocGuard project config (.docguard.json)",
+  "description": "Schema for the .docguard.json file that DocGuard reads at the root of every project. Add `\"$schema\": \"https://raccioly.github.io/docguard/schemas/docguard-config.schema.json\"` to your file to get autocomplete + validation in VS Code and other JSON-Schema-aware editors.",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "JSON Schema reference for editor autocomplete. Not consumed by DocGuard itself."
+    },
+    "version": {
+      "type": "string",
+      "description": "Schema version (0.1, 0.2, ... 0.5). Bumped when fields are added or behavior changes. Migrate with `docguard upgrade --apply`.",
+      "pattern": "^\\d+\\.\\d+(\\.\\d+)?$"
+    },
+    "projectName": {
+      "type": "string",
+      "description": "Human-friendly project name used in guard output."
+    },
+    "profile": {
+      "type": "string",
+      "enum": ["starter", "standard", "enterprise"],
+      "description": "Compliance profile. starter = minimal, standard = full CDD, enterprise = adds advanced validators.",
+      "default": "standard"
+    },
+    "projectType": {
+      "type": "string",
+      "enum": ["cli", "library", "webapp", "api", "unknown"],
+      "description": "Project shape. Affects which validators run (e.g. webapp + api need env vars; cli/library can skip)."
+    },
+    "projectTypeConfig": {
+      "type": "object",
+      "description": "Per-type behavior knobs that override profile defaults.",
+      "properties": {
+        "needsEnvVars":   { "type": "boolean" },
+        "needsEnvExample":{ "type": "boolean" },
+        "needsE2E":       { "type": "boolean" },
+        "needsDatabase":  { "type": "boolean" }
+      },
+      "additionalProperties": true
+    },
+    "sourceRoot": {
+      "type": "string",
+      "description": "Subdirectory containing the project's source files (e.g. `backend/src`). Validators scope to this when set."
+    },
+    "ignore": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Glob patterns for paths every validator should skip. Merged with `.docguardignore` at runtime."
+    },
+    "securityIgnore": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Glob patterns the Security validator additionally skips (e.g. test fixtures with intentional secrets)."
+    },
+    "todoIgnore": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Glob patterns the TODO-Tracking validator additionally skips."
+    },
+    "requiredFiles": {
+      "type": "object",
+      "description": "Files DocGuard expects to exist. Missing files become Structure validator errors.",
+      "properties": {
+        "canonical": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Canonical doc paths (e.g. docs-canonical/ARCHITECTURE.md)."
+        },
+        "agentFile": {
+          "type": ["array", "string"],
+          "description": "Agent rule file(s) (e.g. AGENTS.md, CLAUDE.md). Array means any one suffices."
+        },
+        "changelog": { "type": "string" },
+        "driftLog":  { "type": "string" },
+        "root":      { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": true
+    },
+    "validators": {
+      "type": "object",
+      "description": "Enable / disable individual validators. Set to false to skip.",
+      "properties": {
+        "structure":          { "type": "boolean" },
+        "docsSync":           { "type": "boolean" },
+        "drift":              { "type": "boolean" },
+        "changelog":          { "type": "boolean" },
+        "testSpec":           { "type": "boolean" },
+        "environment":        { "type": "boolean" },
+        "security":           { "type": "boolean" },
+        "architecture":       { "type": "boolean" },
+        "freshness":          { "type": "boolean" },
+        "traceability":       { "type": "boolean" },
+        "docsDiff":           { "type": "boolean" },
+        "apiSurface":         { "type": "boolean" },
+        "metadataSync":       { "type": "boolean" },
+        "docsCoverage":       { "type": "boolean" },
+        "docQuality":         { "type": "boolean" },
+        "todoTracking":       { "type": "boolean" },
+        "schemaSync":         { "type": "boolean" },
+        "specKit":            { "type": "boolean" },
+        "crossReference":    { "type": "boolean" },
+        "generatedStaleness":{ "type": "boolean" },
+        "metricsConsistency":{ "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "severity": {
+      "type": "object",
+      "description": "Per-validator severity overrides. Affects EXIT CODE only — display is unchanged. high = warnings fail CI (exit 1). low = warnings ignored. medium (default) = exit 2.",
+      "additionalProperties": {
+        "type": "string",
+        "enum": ["high", "medium", "low"]
+      }
+    },
+    "draftStalenessDays": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "How many days a `status: draft` doc may sit unmodified before Generated-Staleness warns. Default 14."
+    },
+    "testPattern": {
+      "type": "string",
+      "description": "Single glob identifying test files (legacy single-string form)."
+    },
+    "testPatterns": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Glob patterns identifying test files. Preferred over testPattern."
+    },
+    "todoTracking": {
+      "type": "object",
+      "description": "TODO-Tracking validator overrides.",
+      "properties": {
+        "includeTestFiles": {
+          "type": "boolean",
+          "description": "If true, scan test files for TODO/FIXME annotations. Off by default to avoid false positives from comment-marker strings inside test fixtures."
+        }
+      },
+      "additionalProperties": true
+    },
+    "docQuality": {
+      "type": "object",
+      "description": "Doc-Quality validator overrides.",
+      "properties": {
+        "deepScan": {
+          "type": "boolean",
+          "description": "If true and the `understanding` CLI is on PATH, run its 31-metric deep analysis. Off by default."
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

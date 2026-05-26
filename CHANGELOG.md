@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-05-26
+
+Feature + performance release. **497 tests** (was 492, +5). 22 validators.
+Headline: full `--changed-only` set now covers **5 validators in ~100ms** on
+both wu-whatsappinbox AND a synthetic 1000-file repo. New `.docguard.json`
+JSON Schema for IDE autocomplete.
+
+### Added
+
+- **P3: Drift-Comments + TODO-Tracking honor `config.changedFiles`.** Extending the v0.13 N-1 + v0.14-P2 lite-mode scoping. Now 5 of 22 validators scope to changed files in `--changed-only` mode (was 3). `CHANGED_ONLY_VALIDATORS` updated to include `drift` and `todoTracking`. **Result on wu: `--changed-only --since HEAD~3` runs 5 validators in 116ms** (was 78ms with 3 validators in v0.14 — adding two more validators cost only ~40ms because each is scoped). **Result on synthetic 1000-file repo: 91ms** (verified via new stress test).
+- **P4: JSON Schema for `.docguard.json`.** New `schemas/docguard-config.schema.json` shipped in the npm package. `docguard init` now writes `$schema` reference into newly-created configs so VS Code / IntelliJ / any JSON-Schema-aware editor gets autocomplete + inline validation for every config field. Includes types, descriptions, enums (severity = high/medium/low; profile = starter/standard/enterprise; projectType = cli/library/webapp/api/unknown), and field-level help text. Zero runtime impact — DocGuard ignores the `$schema` field itself.
+- **Q: Stress-test fixture.** New `tests/stress-test.test.mjs` builds a synthetic 1000-file monorepo (500 services + 500 routes + 1000 doc references) and asserts:
+  - `--changed-only` finishes in **< 500ms** (actual: ~91ms).
+  - Full guard finishes in **< 5s** (actual: ~755ms).
+  Opt-in via `STRESS=1` to keep `npm test` fast. Catches regressions where any scoping path accidentally devolves to a full tree walk.
+
+### Performance
+
+- **P1: `buildMemoryPlan` cache.** Memoizes the memory plan per (projectDir + scanner-relevant config) within a single process. Helps cross-command flows where `guard` then `sync` would otherwise rebuild the plan twice. New `clearMemoryPlanCache()` export for tests. Single-`guard` runs see no change (only one caller per process).
+- **P2: `walkDir` cache in `cli/scanners/schemas.mjs`.** `walkDir` was called 8× inside `scanSchemasDeep` for different entity types (Pydantic, Mongoose, Prisma, SQLAlchemy, Sequelize, GORM, Sqlx, Hibernate). Now caches the file list per directory; subsequent callers iterate an array instead of re-traversing. Net gain on wu's mixed Python+TS stack is modest (~3% of total validator time) but real, and helps on stacks where multiple scanners hit the same root dir.
+- **Combined P1+P2+P3 result on wu**: full guard 1456ms → 1431ms (~2%). `--changed-only` covers 5/22 validators in 116ms (vs 1456ms full = **12.6× faster**).
+
+### Internal
+
+- **2 new test files**: `tests/scoping-extended.test.mjs` (4 tests covering P3) and `tests/stress-test.test.mjs` (2 stress tests + 1 always-passes smoke). **Total: 492 → 497 tests (+5 — stress tests opt-in via STRESS=1).**
+- New helpers: `clearMemoryPlanCache()`, `clearWalkDirCache()`, `_scanTodoFile()`.
+- `schemas/docguard-config.schema.json` is the first non-code file under `schemas/` — added to `package.json#files` so it ships in the npm tarball.
+- `.docguard.json` now self-documents via `$schema` reference when created by `init`.
+- Dry-run on wu: **672/672 PASS in 1.43s**.
+- No new NPM deps.
+
+### Out of scope (deferred to v0.16)
+
+- **Deeper Generated-Staleness optimization** — still the slowest validator at 26% of guard time on wu. The cache helps cross-command flows but not single-guard runs. Next attack vector: stream `buildMemoryPlan` so it yields partial results as scanners complete, letting the validator early-exit on the first non-stale section.
+- **`upgrade --apply --pr` battle-test** on a real GitHub repo. Logic shipped in v0.14; end-to-end PR creation hasn't been tested against a live remote with branch protections.
+- **Cross-process memoization** — if guard / sync / fix runs in CI sequentially, they each rebuild the plan. A serialized cache under `.docguard/plan.cache.json` (keyed by a tree-state hash) would share across processes.
+- **Tree-state hashing for plan cache invalidation** — currently the in-process cache assumes the tree doesn't change mid-run. A proper hash would let long-running `watch` mode keep a stable cache that only invalidates on actual file changes.
+
 ## [0.14.1] - 2026-05-26
 
 Patch + small feature release responding to the wu-whatsappinbox v0.12 feedback.

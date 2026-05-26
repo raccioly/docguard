@@ -167,6 +167,10 @@ export async function runInit(projectDir, config, flags) {
     const ptc = typeDefaults[detectedType] || typeDefaults.unknown;
 
     const defaultConfig = {
+      // v0.15-P4: $schema reference enables VS Code / IDE autocomplete +
+      // validation for .docguard.json fields. Picked up by any
+      // JSON-Schema-aware editor; ignored by DocGuard itself.
+      $schema: 'https://raccioly.github.io/docguard/schemas/docguard-config.schema.json',
       projectName: config.projectName,
       version: '0.5',
       profile: profileName,
