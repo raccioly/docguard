@@ -109,27 +109,36 @@ export function runGuardInternal(projectDir, config) {
     // Metrics-Consistency runs post-loop (needs guard results)
   ];
 
+  // v0.14-Q2: per-validator timing. Cheap (one `performance.now()` pair per
+  // validator) and the data is what we'd need to optimize anything later.
+  // Exposed via --profile in the public guard.
   for (const { key, name, fn } of validatorMap) {
     if (validators[key] === false) {
-      results.push({ name, key, status: 'skipped', quality: null, errors: [], warnings: [], passed: 0, total: 0 });
+      results.push({ name, key, status: 'skipped', quality: null, errors: [], warnings: [], passed: 0, total: 0, durationMs: 0 });
       continue;
     }
 
+    const start = performance.now();
     try {
       const result = fn();
-      results.push({ ...result, name, key, ...classifyResult(result) });
+      const durationMs = Math.round((performance.now() - start) * 100) / 100;
+      results.push({ ...result, name, key, durationMs, ...classifyResult(result) });
     } catch (err) {
-      results.push({ name, key, status: 'fail', quality: 'LOW', errors: [err.message], warnings: [], passed: 0, total: 1 });
+      const durationMs = Math.round((performance.now() - start) * 100) / 100;
+      results.push({ name, key, status: 'fail', quality: 'LOW', errors: [err.message], warnings: [], passed: 0, total: 1, durationMs });
     }
   }
 
   // ── Metrics-Consistency runs AFTER all other validators (needs their results) ──
   if (validators.metricsConsistency !== false) {
+    const start = performance.now();
     try {
       const result = validateMetricsConsistency(projectDir, config, results);
-      results.push({ ...result, name: 'Metrics-Consistency', key: 'metricsConsistency', ...classifyResult(result) });
+      const durationMs = Math.round((performance.now() - start) * 100) / 100;
+      results.push({ ...result, name: 'Metrics-Consistency', key: 'metricsConsistency', durationMs, ...classifyResult(result) });
     } catch (err) {
-      results.push({ name: 'Metrics-Consistency', key: 'metricsConsistency', status: 'fail', quality: 'LOW', errors: [err.message], warnings: [], passed: 0, total: 1 });
+      const durationMs = Math.round((performance.now() - start) * 100) / 100;
+      results.push({ name: 'Metrics-Consistency', key: 'metricsConsistency', status: 'fail', quality: 'LOW', errors: [err.message], warnings: [], passed: 0, total: 1, durationMs });
     }
   }
 
@@ -325,6 +334,26 @@ export function runGuard(projectDir, config, flags) {
   const bColor = pct >= 90 ? 'brightgreen' : pct >= 70 ? 'green' : pct >= 50 ? 'yellow' : 'red';
   const badgeUrl = `https://img.shields.io/badge/CDD_Guard-${data.passed}%2F${data.total}_passed-${bColor}`;
   console.log(`\n  ${c.dim}📎 Badge: ![CDD Guard](${badgeUrl})${c.reset}`);
+
+  // v0.14-Q2: --timings prints per-validator timing, sorted slowest-first.
+  // Designed for self-diagnosis on slow repos: shows exactly which validator
+  // to optimize first. Cheap to opt into; off by default to keep output clean.
+  // (Originally proposed as `--profile` but that flag is taken by `init`.)
+  if (flags.timings) {
+    console.log(`\n  ${c.bold}⏱  Profile${c.reset} ${c.dim}(per-validator wall time, slowest first)${c.reset}`);
+    const timed = data.validators
+      .filter(v => typeof v.durationMs === 'number' && v.status !== 'skipped')
+      .sort((a, b) => b.durationMs - a.durationMs);
+    const total = timed.reduce((sum, v) => sum + v.durationMs, 0);
+    for (const v of timed.slice(0, 10)) {
+      const pct = total > 0 ? Math.round((v.durationMs / total) * 100) : 0;
+      const bar = '▇'.repeat(Math.max(1, Math.round(pct / 5)));
+      console.log(`     ${v.durationMs.toFixed(1).padStart(7)}ms  ${pct.toString().padStart(2)}%  ${bar.padEnd(20)} ${v.name}`);
+    }
+    if (timed.length > 10) console.log(`     ${c.dim}... ${timed.length - 10} faster validators omitted${c.reset}`);
+    console.log(`     ${c.dim}─────────${c.reset}`);
+    console.log(`     ${c.bold}${total.toFixed(1).padStart(7)}ms${c.reset}  ${c.dim}total validator time${c.reset}`);
+  }
 
   // Schema upgrade nudge — fires when the project's .docguard.json schema is
   // behind the CLI's CURRENT_SCHEMA_VERSION. Cheap, file-local check; no

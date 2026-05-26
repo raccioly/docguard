@@ -56,7 +56,11 @@ function extractDocStatus(content) {
 }
 
 export function validateGeneratedStaleness(projectDir, config = {}) {
-  const result = { errors: [], warnings: [], passed: 0, total: 0 };
+  // v0.14-P3: also emit a `fixes` array. Each fix is structured so
+  // `applyMechanicalFixes` can consume it via the new regenerate-section
+  // applier. Lets `fix --write` actually CLOSE the loop on drift instead
+  // of just warning. No AI needed — the scanner already knows the right body.
+  const result = { errors: [], warnings: [], passed: 0, total: 0, fixes: [] };
 
   // Build the canonical memory plan (what the docs SHOULD contain). If this
   // fails or produces no docs, the validator is N/A.
@@ -138,6 +142,15 @@ export function validateGeneratedStaleness(projectDir, config = {}) {
       result.warnings.push(
         `${basename(doc.path)} → section "${sec.id}" is stale${hint}. Run \`docguard sync --write\` to refresh code-truth sections.`
       );
+      // v0.14-P3: structured fix so `docguard fix --write` can fix this
+      // mechanically (no AI needed — scanner already produced the right body).
+      result.fixes.push({
+        type: 'regenerate-section',
+        doc: doc.path,
+        sectionId: sec.id,
+        body: sec.body,
+        summary: `${basename(doc.path)} § ${sec.id} regenerated from scanner`,
+      });
     }
   }
 

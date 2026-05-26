@@ -7,6 +7,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-05-26
+
+Feature release closing the v0.13 backlog (4 features) + 2 quality investments
+(multi-fixture harness, `--timings` profiler). **481 tests** (was 448, +33).
+22 validators. Headline wins: pre-commit lite went from 2s → **78ms** on
+wu-whatsappinbox, and Generated-Doc Staleness now CLOSES THE LOOP by emitting
+structured fixes that `fix --write` consumes.
+
+### Added
+
+- **P1: Fix-history ping-pong suppression** (completes M-2). `fix --write` now skips fixes that have been applied >= N times before (default 2) — catches the "user keeps reverting, bot keeps re-applying" loop. Override with the new `--force-redo` flag. `applyCount` and `firstAppliedAt` added to each `.docguard/fixed.json` entry for an accurate audit trail.
+- **P2: Environment + API-Surface honor `config.changedFiles`** (extends N-1). When `--changed-only` is set:
+  - `grepEnvUsage` scans only the listed files instead of the whole source tree.
+  - `validateApiSurface` returns N/A when no route/spec/controller files are in the changed set.
+  - **Result on wu-whatsappinbox: `--changed-only --since HEAD~3` runs in 78ms — a 25× speedup from v0.13.**
+- **P3: Generated-Doc Staleness emits structured fixes**. M-1 (v0.13) only warned; now it ALSO produces a `fixes[]` array with new `regenerate-section` fix type that `fix --write` consumes mechanically. **Closes the loop: detect drift → fix without AI.** The applier rewrites only the named section's body, leaves surrounding prose alone, and is idempotent.
+- **P4: `docguard upgrade --apply --pr`** for team-wide schema rollouts. Creates a branch, applies the migration, commits as "chore(docguard): migrate schema X → Y", pushes, opens a PR via `gh` CLI. Pre-flight checks `gh` is installed; clear error if not. Useful when `.docguard.json` is branch-protected.
+- **Q1: Multi-fixture test harness** — `tests/fixture-projects.test.mjs`. Runs full guard against 5 real-world project shapes (Next.js webapp, Vite frontend, Express backend, Python CLI, Rust lib). Cross-cutting "no validator throws a developer error" assertion across every fixture. The harness that would have caught B-5 (v0.13.0 Freshness crash) before release.
+- **Q2: `docguard guard --timings`** — per-validator wall-time profile, sorted slowest-first, with `data.validators[].durationMs` in JSON output. Honest delivery on the "perf pass" item: instead of speculative refactoring, ship the measurement tool. Real finding on wu: Generated-Staleness is **33% of total validator time** (~400ms) — targeted v0.15 optimization candidate.
+
+### Changed
+
+- **`docguard fix --write` records `applyCount`** in `.docguard/fixed.json`. Re-applying the same fix bumps the counter; suppression engages at count >= 2.
+- **`docguard fix --history`** display unchanged but now reads richer entries (applyCount, firstAppliedAt).
+- **`docguard guard --format json`** includes `durationMs` per validator.
+
+### Internal
+
+- **5 new test files**: `tests/fix-suppression.test.mjs` (9), `tests/changed-only-scoping.test.mjs` (6), `tests/regenerate-section.test.mjs` (6), `tests/upgrade-pr.test.mjs` (3), `tests/fixture-projects.test.mjs` (6), `tests/profile-flag.test.mjs` (3). **Total: 448 → 481 tests (+33 new).**
+- New mechanical fix type: `regenerate-section`. APPLIERS registry now lists 5 types.
+- `cli/writers/mechanical.mjs` got a top-level lazy-loaded `_shouldSuppress` and `_sectionsModule` to support the new applier without circular deps.
+- `cli/commands/upgrade.mjs` got `openUpgradePR()` — gates on `gh` CLI availability.
+- `cli/commands/guard.mjs` per-validator timing via `performance.now()`.
+- Dry-run on wu-whatsappinbox: **674/674 PASS in 1.48s** (full guard), **78ms** for `--changed-only --since HEAD~3` (P2 scoping in action), Generated-Staleness identified as biggest perf hog at 33% of validator time (v0.15 target).
+- No new NPM deps.
+
+### Out of scope (deferred to v0.15)
+
+- **Generated-Staleness optimization**: 33% of validator time is the obvious target. Likely fix: memoize `buildMemoryPlan` across `--write` flows so it's not re-computed by the validator AND the writer.
+- **Shared tree walk**: the original Q2 ambition. Now that we have `--timings`, future PRs can MEASURE the gain instead of speculating.
+- **Cross-validator config.changedFiles**: only Docs-Sync, Environment, API-Surface opt in so far. Could extend to Drift-Comments, TODO-Tracking, Generated-Staleness for further `--changed-only` wins.
+- **`upgrade --pr` polish**: dry-run on a real GitHub repo with a real bot identity. The flag is wired and gated, but the actual end-to-end PR creation hasn't been battle-tested in the wild.
+
 ## [0.13.1] - 2026-05-26
 
 Patch + small feature release responding to the wu-whatsappinbox v0.12/v0.13

@@ -97,6 +97,12 @@ export function appendFixes(projectDir, fixes, appliedBy = 'fix --write') {
 
   for (const f of fixes) {
     const id = fingerprintFix(f);
+    const prior = byId.get(id);
+    // v0.14-P1: maintain applyCount across applies so ping-pong suppression
+    // can tell a fresh fix (count 1) from a recurring one (count 2+).
+    const applyCount = (prior && typeof prior.applyCount === 'number')
+      ? prior.applyCount + 1
+      : 1;
     const entry = {
       id,
       type: f.type || 'unknown',
@@ -104,8 +110,11 @@ export function appendFixes(projectDir, fixes, appliedBy = 'fix --write') {
       summary: f.summary || '',
       appliedAt: now,
       appliedBy,
+      applyCount,
+      // Keep firstAppliedAt for audit clarity — when did we first see this fix?
+      firstAppliedAt: (prior && prior.firstAppliedAt) || now,
     };
-    byId.set(id, entry); // overwrites prior with same fingerprint → updates appliedAt
+    byId.set(id, entry); // overwrites prior with same fingerprint
   }
 
   let entries = Array.from(byId.values());
@@ -130,4 +139,43 @@ export function appendFixes(projectDir, fixes, appliedBy = 'fix --write') {
 export function isFixRecorded(projectDir, candidate) {
   const id = fingerprintFix(candidate);
   return loadFixMemory(projectDir).entries.some(e => e.id === id);
+}
+
+/**
+ * v0.14-P1 — fix-history suppression.
+ *
+ * Decide whether a candidate fix should be SUPPRESSED on this run because
+ * it's a known ping-pong pattern. A "ping-pong" is when the same
+ * fingerprint has been applied + reverted N or more times — usually a sign
+ * the user disagrees with the fix and we should stop re-suggesting it.
+ *
+ * Rules:
+ *   - Default threshold: 2 (apply → revert → apply is the third attempt → suppress)
+ *   - Configurable via opts.pingPongThreshold
+ *   - Override entirely via opts.force (set when caller passes --force-redo)
+ *
+ * Returns { suppressed: boolean, reason?: string }.
+ *
+ * @req SC-P1-001 — never suppresses on first apply
+ * @req SC-P1-002 — suppresses after N applies of the same fingerprint
+ * @req SC-P1-003 — force: true overrides suppression
+ */
+export function shouldSuppressFix(projectDir, candidate, opts = {}) {
+  if (opts.force) return { suppressed: false };
+  const id = fingerprintFix(candidate);
+  const mem = loadFixMemory(projectDir);
+  // Count occurrences of this fingerprint. Each `appendFixes` for an existing
+  // ID overwrites in place, so a single entry could represent many applies;
+  // we track a separate `applyCount` field for accurate ping-pong detection.
+  const entry = mem.entries.find(e => e.id === id);
+  if (!entry) return { suppressed: false };
+  const count = entry.applyCount || 1;
+  const threshold = opts.pingPongThreshold || 2;
+  if (count >= threshold) {
+    return {
+      suppressed: true,
+      reason: `applied ${count} time(s) before — possible ping-pong. Use --force-redo to apply anyway.`,
+    };
+  }
+  return { suppressed: false };
 }

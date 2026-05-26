@@ -386,6 +386,15 @@ async function main() {
       flags.reverse = true;
     } else if (args[i] === '--history') {
       flags.history = true;
+    } else if (args[i] === '--force-redo') {
+      flags.forceRedo = true;
+    } else if (args[i] === '--pr') {
+      flags.pr = true;
+    } else if (args[i] === '--timings' || args[i] === '--show-timings') {
+      // v0.14-Q2: per-validator timing display. Renamed from `--profile` to
+      // avoid collision with `docguard init --profile <name>`. `--show-timings`
+      // is the long form for users who prefer explicit verbs.
+      flags.timings = true;
     } else if (!args[i].startsWith('--') && i > 0) {
       // Positional args go into flags.args for commands that take them (e.g.
       // `docguard trace --reverse <path>`). Skip the command itself (i === 0).

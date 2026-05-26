@@ -272,13 +272,16 @@ IMPORTANT: A new contributor should be able to follow this doc and have the proj
  * insert-changelog-unreleased (Changelog).
  * @returns {{ applied: object[], skipped: object[], total: number }}
  */
-export function applyAllMechanicalFixes(projectDir, config, { force = false } = {}) {
+export function applyAllMechanicalFixes(projectDir, config, opts = {}) {
+  const { force = false, forceRedo = false } = opts;
   const guardData = runGuardInternal(projectDir, config);
   const fixes = [];
   for (const v of guardData.validators) {
     if (Array.isArray(v.fixes)) fixes.push(...v.fixes);
   }
-  const { applied, skipped } = applyMechanicalFixes(projectDir, fixes, { force });
+  // v0.14-P1: forwarding forceRedo so users with `--force-redo` can override
+  // ping-pong suppression for a specific fix they actually want re-applied.
+  const { applied, skipped } = applyMechanicalFixes(projectDir, fixes, { force, forceRedo });
   return { applied, skipped, total: fixes.length };
 }
 
@@ -333,7 +336,10 @@ function runHistoryMode(projectDir, flags) {
 
 function runWriteMode(projectDir, config, flags) {
   const isJson = flags.format === 'json';
-  const { applied, skipped, total } = applyAllMechanicalFixes(projectDir, config, { force: flags.force });
+  const { applied, skipped, total } = applyAllMechanicalFixes(projectDir, config, {
+    force: flags.force,
+    forceRedo: flags.forceRedo,  // v0.14-P1: bypass ping-pong suppression
+  });
 
   if (isJson) {
     console.log(JSON.stringify({

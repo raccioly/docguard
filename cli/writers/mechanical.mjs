@@ -14,6 +14,29 @@
  * Pure file edits, no LLM. Zero NPM dependencies.
  */
 
+// v0.14-P1: resolve the suppression predicate at module load. Top-level
+// await is supported by ESM; if the import fails (e.g. partial install),
+// `_shouldSuppress` stays null and suppression is silently disabled —
+// fail-open, never block legit fixes.
+let _shouldSuppress = null;
+try {
+  const mod = await import('./fix-memory.mjs');
+  if (mod && typeof mod.shouldSuppressFix === 'function') {
+    _shouldSuppress = mod.shouldSuppressFix;
+  }
+} catch {
+  _shouldSuppress = null;
+}
+
+// v0.14-P3: section read/write API — loaded once at module init for the
+// regenerate-section applier. Same defensive pattern as the suppressor.
+let _sectionsModule = null;
+try {
+  _sectionsModule = await import('./sections.mjs');
+} catch {
+  _sectionsModule = null;
+}
+
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { removeEndpoints, hasGeneratedMarker } from './api-reference.mjs';
@@ -84,11 +107,48 @@ function applyRemoveEndpoint(projectDir, fix, { force = false } = {}) {
   return { applied: true, detail: `${fix.doc}: removed ${fix.method} ${fix.path}` };
 }
 
+/**
+ * v0.14-P3 — regenerate-section: rewrite a `source=code` section's body
+ * with the scanner's expected output. Emitted by the Generated-Staleness
+ * validator (M-1) when on-disk content drifts from what the memory plan
+ * would produce.
+ *
+ * Idempotent: if the section already matches `fix.body`, do nothing.
+ * Bounded: only writes inside `<!-- docguard:section id=X source=code -->`
+ * markers — never touches surrounding prose.
+ *
+ * fix shape: { type: 'regenerate-section', doc, sectionId, body }
+ */
+function applyRegenerateSection(projectDir, fix) {
+  if (!fix.doc || !fix.sectionId || fix.body == null) {
+    return { applied: false, skipped: 'regenerate-section needs doc, sectionId, body' };
+  }
+  const full = resolve(projectDir, fix.doc);
+  if (!existsSync(full)) return { applied: false, skipped: `doc not found: ${fix.doc}` };
+  const content = readFileSync(full, 'utf-8');
+  // Lazy-import the section writer to avoid a top-level circular risk.
+  // section APIs are synchronous and well-isolated; this works because
+  // mechanical.mjs already uses top-level await for fix-memory.
+  const { getSection, replaceSection } = _sectionsModule || {};
+  if (typeof getSection !== 'function' || typeof replaceSection !== 'function') {
+    return { applied: false, skipped: 'sections module unavailable' };
+  }
+  const existing = getSection(content, fix.sectionId);
+  if (!existing) return { applied: false, skipped: `section ${fix.sectionId} not present in ${fix.doc}` };
+  if (existing.body.trim() === String(fix.body).trim()) {
+    return { applied: false, skipped: `${fix.doc} § ${fix.sectionId} already current` };
+  }
+  const next = replaceSection(content, fix.sectionId, fix.body).content;
+  writeFileSync(full, next, 'utf-8');
+  return { applied: true, detail: `${fix.doc}: regenerated § ${fix.sectionId}` };
+}
+
 const APPLIERS = {
   'replace-count': applyReplaceCount,
   'replace-version': applyReplaceVersion,
   'insert-changelog-unreleased': applyInsertChangelogUnreleased,
   'remove-endpoint': applyRemoveEndpoint,
+  'regenerate-section': applyRegenerateSection,
 };
 
 export const MECHANICAL_FIX_TYPES = Object.keys(APPLIERS);
@@ -113,7 +173,22 @@ export function applyMechanicalFix(projectDir, fix, opts = {}) {
 export function applyMechanicalFixes(projectDir, fixes, opts = {}) {
   const applied = [];
   const skipped = [];
+
   for (const fix of fixes) {
+    // v0.14-P1: ping-pong suppression. If this same fingerprint has been
+    // applied >= N times before (default 2) and --force-redo isn't set,
+    // skip with a clear reason. Suppression is OFF when:
+    //   - recordHistory === false (e.g. dry-run tests don't want this state)
+    //   - forceRedo === true (user explicitly asked to re-apply)
+    if (opts.recordHistory !== false && !opts.forceRedo && _shouldSuppress) {
+      const decision = _shouldSuppress(projectDir, fix, {
+        pingPongThreshold: opts.pingPongThreshold,
+      });
+      if (decision.suppressed) {
+        skipped.push({ ...fix, reason: `suppressed: ${decision.reason}` });
+        continue;
+      }
+    }
     const r = applyMechanicalFix(projectDir, fix, opts);
     if (r.applied) applied.push({ ...fix, detail: r.detail });
     else if (r.skipped) skipped.push({ ...fix, reason: r.skipped });

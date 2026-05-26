@@ -254,6 +254,16 @@ export function grepEnvUsage(projectDir, config = {}) {
     }
   };
 
+  // v0.14-P2: when config.changedFiles is populated (by --changed-only),
+  // restrict the scan to ONLY those paths. Skips the recursive tree walk
+  // entirely — turns "scan 5000 files" into "scan 3 files" in pre-commit mode.
+  if (Array.isArray(config.changedFiles) && config.changedFiles.length > 0) {
+    for (const rel of config.changedFiles) {
+      visit(resolve(projectDir, rel));
+    }
+    return names;
+  }
+
   for (const root of roots) walk(root);
   return names;
 }
