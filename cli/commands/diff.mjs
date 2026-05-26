@@ -200,23 +200,31 @@ export function diffEntities(dir, config = {}) {
   };
 }
 
-// v0.16-P4: common system environment variables that get backticked in
-// prose ("the venv `PATH`", "your `HOME` directory") but are NEVER user-set
-// application env vars. Excluding them from the docVars set kills the
-// false-positive class reported by the Python user where `PATH` was flagged
-// as "documented-but-not-implemented".
+// v0.16-P4 (revised in v0.17.1): conservative denylist of system env vars
+// that appear in prose ("the venv `PATH`") but are never user-set app env
+// vars. v0.17.1-B7: trimmed to TRULY-system-only after wu feedback —
+// NODE_ENV / CI / GITHUB_* are legitimately app env vars when read via
+// process.env. Including them caused diff to falsely flag `NODE_ENV` as
+// "in code but not docs" even when ENVIRONMENT.md documented it.
 //
-// Conservative list — only the names that are unambiguously OS/shell vars.
-// Application names like `DATABASE_URL`, `API_KEY` etc. still count.
+// Rule of thumb for inclusion: would a sane Node/Python/Go app ever
+// `process.env.X` this name and treat it as app config? If yes → NOT a
+// system var. PATH/HOME/SHELL/TERM never satisfy that bar.
 const SYSTEM_ENV_VARS = new Set([
-  'PATH', 'HOME', 'USER', 'USERNAME', 'SHELL', 'PWD', 'OLDPWD', 'TMPDIR', 'TEMP', 'TMP',
+  // POSIX shell / OS
+  'PATH', 'HOME', 'USER', 'USERNAME', 'SHELL', 'PWD', 'OLDPWD',
+  'TMPDIR', 'TEMP', 'TMP',
+  // Locale
   'LANG', 'LC_ALL', 'LC_CTYPE', 'LC_MESSAGES', 'TZ',
+  // Terminal / interactive
   'EDITOR', 'VISUAL', 'PAGER', 'TERM', 'COLORTERM',
+  // SSH / Display
   'DISPLAY', 'SSH_AUTH_SOCK', 'SSH_CONNECTION', 'SSH_TTY',
+  // XDG base directory spec
   'XDG_CONFIG_HOME', 'XDG_DATA_HOME', 'XDG_CACHE_HOME', 'XDG_RUNTIME_DIR',
-  // CI/build platform vars (set by the platform, not by the app)
-  'CI', 'GITHUB_TOKEN', 'GITHUB_ACTIONS', 'GITHUB_REF', 'GITHUB_SHA',
-  'NODE_ENV', // could be app-set but more often platform-set; conservative skip
+  // NOTE: NODE_ENV / CI / GITHUB_* used to be here. Removed in v0.17.1
+  // because apps DO read them as app config (e.g. NODE_ENV=production
+  // gates branching in nearly every Node.js app).
 ]);
 
 export function diffEnvVars(dir, config = {}) {

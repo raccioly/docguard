@@ -67,6 +67,40 @@ function _checkVersionPin(config) {
 }
 
 /**
+ * v0.17.1: small in-code highlight reel surfaced when a project's pinned
+ * version is behind the running CLI. The biggest recurring user pattern is
+ * "I asked for feature X" → "X shipped two releases ago". This eliminates
+ * the need to grep the CHANGELOG. Keep entries short and command-oriented.
+ *
+ * Add to this table on every release. Format: [introducedIn, oneLineFeature].
+ */
+const _RELEASE_HIGHLIGHTS = [
+  ['0.13.0', '`docguard sync --since <ref>` — surgical refresh of code-truth doc sections'],
+  ['0.13.1', '`docguard impact --since <ref>` — changed files → affected canonical docs map'],
+  ['0.13.1', '`Cross-Reference` validator + "did you mean #X?" hints for broken anchors'],
+  ['0.14.1', '`docguard fix --write` auto-fixes high-confidence anchor matches'],
+  ['0.15.0', '`docguard guard --timings` — per-validator wall-time profile'],
+  ['0.15.0', '`.docguard.json` JSON Schema for VS Code autocomplete'],
+  ['0.16.0', '`docguard explain "<warning>"` — paste any warning, get the validator help'],
+  ['0.16.0', '`docguard guard --quiet` — suppress banner in hooks/CI'],
+  ['0.16.0', '`docguard init --no-spec-kit` — opt out of Spec Kit scaffolding'],
+  ['0.16.0', 'Language-aware test patterns (Python `test_*.py`, Rust `tests/*.rs`, Go `*_test.go`, ...)'],
+  ['0.17.0', '`docguard memory --diff` — drill into accuracy mismatches (which claim ≠ code)'],
+  ['0.17.0', '`docguard guard --pin` — record running CLI version into .docguard.json'],
+];
+
+function _whatsNewSince(pinnedVersion) {
+  if (!pinnedVersion) return [];
+  const out = [];
+  for (const [introducedIn, feature] of _RELEASE_HIGHLIGHTS) {
+    if (_semverCompare(introducedIn, pinnedVersion) > 0) {
+      out.push(`v${introducedIn}: ${feature}`);
+    }
+  }
+  return out;
+}
+
+/**
  * v0.17-P1: update the docguardVersion field in .docguard.json after a
  * successful guard run. Triggered by `docguard guard --pin`. Idempotent.
  */
@@ -445,6 +479,18 @@ export function runGuard(projectDir, config, flags) {
     const pinHint = _checkVersionPin(config);
     if (pinHint) {
       console.log(`\n  ${c.yellow}📌 ${pinHint}${c.reset}`);
+      // v0.17.1: surface features added since the pinned version so users
+      // who pinned at v0.12 and just upgraded actually KNOW about sync,
+      // impact, explain, memory --diff, etc. The biggest user complaint
+      // pattern is "I asked for X but X already shipped two releases ago."
+      const whatsNew = _whatsNewSince(config.docguardVersion);
+      if (whatsNew.length > 0) {
+        console.log(`  ${c.dim}New since v${config.docguardVersion}:${c.reset}`);
+        for (const item of whatsNew.slice(0, 5)) {
+          console.log(`    ${c.dim}• ${item}${c.reset}`);
+        }
+        if (whatsNew.length > 5) console.log(`    ${c.dim}... ${whatsNew.length - 5} more in CHANGELOG.md${c.reset}`);
+      }
     }
 
     // K-6 / S-2: sweep-needed nudge. Aggregates freshness warnings — if 2+

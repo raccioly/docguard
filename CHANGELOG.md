@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.1] - 2026-05-26
+
+Patch responding to a client-project feedback round: 1 real bug (B-7) and
+a discoverability improvement that helps users on older versions find the
+features they're asking for. **537 tests** (was 530, +7). 22 validators.
+
+### Fixed
+
+- **B-7: `diff` and `guard.Environment` disagreed on env-var coverage.** My v0.16-P4 `SYSTEM_ENV_VARS` denylist was over-broad: `NODE_ENV`, `CI`, `GITHUB_TOKEN`, `GITHUB_REF`, `GITHUB_SHA` are legitimately app env vars (apps read `process.env.NODE_ENV` for production/dev branching, `process.env.CI` to detect CI runs, etc.). The denylist stripped them from the doc side of `diff` only, so a project that documented `NODE_ENV` in BOTH `ENVIRONMENT.md` AND `.env.example` would correctly pass the `Environment` validator but `diff` would falsely flag it as "in code but not documented". Trimmed the denylist to truly-system-only vars (PATH, HOME, SHELL, TERM, etc. — the names no sane app would treat as runtime config). Reported by the client project running v0.16.0; their env-var accuracy went 79/82 → 80/82 with the bogus `NODE_ENV` flag gone. New `tests/b7-node-env-symmetry.test.mjs` locks in the symmetry.
+
+### Added
+
+- **What's-new highlights on the guard footer.** When `.docguard.json` carries a `docguardVersion` pin and the running CLI is newer, the guard footer now prints a short "New since v<pin>" list of headline features from intermediate releases. Top 5 inline, "N more in CHANGELOG.md" pointer when there's more. Closes the recurring pattern of users asking for features that shipped one or two releases ago — `sync --since`, `docguard impact`, `docguard explain`, `memory --diff`, `--quiet`, and Cross-Reference anchor hints all appear in the table.
+
+### Note to readers asking about S-1, S-11, S-12
+
+These three features are **already shipped** as of the listed releases. The v0.17.1 what's-new nudge surfaces them inline for any project still pinned to v0.12 or earlier. Quick recap:
+
+- **S-1: `docguard sync --since <ref>`** — shipped in **v0.13.0** as L-1. Refreshes only canonical doc sections touched by code changes in the diff range. Run `docguard sync --write --since main` on a feature branch to skip unrelated doc churn.
+- **S-11: `docguard impact --since <ref>`** — shipped in **v0.13.1**. Post-commit "changed files → affected canonical doc sections" map. Run `docguard impact --since HEAD~1` after a commit; JSON mode for CI bots.
+- **S-12: Anchor "did you mean...?" hints** — shipped in **v0.13.1** + extended in **v0.14.1** so high-confidence matches (edit distance ≤ 2, single close candidate) are now `[auto-fixable]` via `docguard fix --write`.
+
+Upgrade with `docguard upgrade --apply` or `npm i -g docguard-cli@latest` to pick them up.
+
+### Internal
+
+- **2 new test files**: `tests/b7-node-env-symmetry.test.mjs` (4 — diff/validator symmetry), `tests/whats-new.test.mjs` (3 — highlights surface). **Total: 530 → 537 tests (+7 new).**
+- **`SYSTEM_ENV_VARS`** trimmed in both `cli/commands/diff.mjs` and `cli/validators/environment.mjs` (single source of truth would be better; deferred).
+- **New highlight table** `_RELEASE_HIGHLIGHTS` in `cli/commands/guard.mjs` — add an entry per release going forward.
+- **Dry-run on the client project**: env accuracy 80/82, the 2 remaining mismatches are genuine doc-only drift (not bugs in our tool). Full guard still 672/672 PASS.
+- No new NPM deps.
+
 ## [0.17.0] - 2026-05-26
 
 Feature release picking up the 4 deferred items from v0.16 — **reproducibility

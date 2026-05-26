@@ -45,16 +45,18 @@ export function validateEnvironment(projectDir, config) {
     // tokens like `VITE_` (the convention prefix) from being treated as a real
     // variable name.
     const varRe = /`([A-Z][A-Z0-9_]*[A-Z0-9])`/g;
-    // v0.16-P4: skip backticked SYSTEM env vars (PATH, HOME, USER, etc.).
-    // They appear in ENVIRONMENT.md prose ("the venv `PATH`") but aren't
-    // user-set application vars. Mirrors the same skip in diff.mjs.
+    // v0.16-P4 (revised in v0.17.1-B7): skip backticked SYSTEM env vars
+    // (PATH, HOME, USER, etc.) that appear in ENVIRONMENT.md prose. Trimmed
+    // to TRULY-system-only after wu feedback — NODE_ENV / CI / GITHUB_* were
+    // causing asymmetric flagging between diff and this validator. Apps
+    // legitimately treat NODE_ENV as app config; keep the list to vars that
+    // no sane application would read as runtime config.
     const SYSTEM = new Set([
       'PATH','HOME','USER','USERNAME','SHELL','PWD','OLDPWD','TMPDIR','TEMP','TMP',
       'LANG','LC_ALL','LC_CTYPE','LC_MESSAGES','TZ',
       'EDITOR','VISUAL','PAGER','TERM','COLORTERM',
       'DISPLAY','SSH_AUTH_SOCK','SSH_CONNECTION','SSH_TTY',
       'XDG_CONFIG_HOME','XDG_DATA_HOME','XDG_CACHE_HOME','XDG_RUNTIME_DIR',
-      'CI','GITHUB_TOKEN','GITHUB_ACTIONS','GITHUB_REF','GITHUB_SHA','NODE_ENV',
     ]);
     let m;
     while ((m = varRe.exec(content)) !== null) {
