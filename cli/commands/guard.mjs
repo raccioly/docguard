@@ -11,6 +11,80 @@ import { c, resolveSeverity } from '../shared.mjs';
 import { detectAgentMode, isSpecKitInitialized } from '../ensure-skills.mjs';
 import { checkUpgradeStatus } from './upgrade.mjs';
 import { changedFilesSince, isGitRepo } from '../shared-git.mjs';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { resolve as resolvePath } from 'node:path';
+import { fileURLToPath as fp } from 'node:url';
+import { dirname as dn } from 'node:path';
+
+// v0.17-P1: CLI version for version-pin checks (F8). Reproducibility for CDD —
+// users can pin the docguard version their config was last validated against.
+const _PKG = JSON.parse(readFileSync(resolvePath(dn(fp(import.meta.url)), '..', '..', 'package.json'), 'utf-8'));
+const CLI_VERSION = _PKG.version;
+
+/**
+ * v0.17-P1: parse a semver-ish version string into a comparable tuple.
+ * Tolerates trailing pre-release tags (`0.16.0-rc.1`). Returns null on garbage.
+ */
+function _parseSemver(v) {
+  if (!v || typeof v !== 'string') return null;
+  const m = v.match(/^(\d+)\.(\d+)\.(\d+)/);
+  if (!m) return null;
+  return [Number(m[1]), Number(m[2]), Number(m[3])];
+}
+
+/**
+ * v0.17-P1: returns +1 if a > b, 0 if equal, -1 if a < b. Unparseable
+ * input sorts as equal (silent — never blocks a guard run).
+ */
+function _semverCompare(a, b) {
+  const pa = _parseSemver(a);
+  const pb = _parseSemver(b);
+  if (!pa || !pb) return 0;
+  for (let i = 0; i < 3; i++) {
+    if (pa[i] > pb[i]) return 1;
+    if (pa[i] < pb[i]) return -1;
+  }
+  return 0;
+}
+
+/**
+ * v0.17-P1: emit a "you're running a newer CLI than the config was pinned
+ * against" nudge. Cheap, file-local check. Returns the nudge text or null.
+ */
+function _checkVersionPin(config) {
+  const pinned = config.docguardVersion;
+  if (!pinned) return null;
+  const cmp = _semverCompare(CLI_VERSION, pinned);
+  if (cmp > 0) {
+    return `Running CLI v${CLI_VERSION} but config pins v${pinned}. ` +
+      `New validators/rules may have appeared. Run \`docguard guard --pin\` to update the pin once you've reviewed any new findings.`;
+  }
+  if (cmp < 0) {
+    return `Running CLI v${CLI_VERSION} but config pins v${pinned} (newer). ` +
+      `Older CLI may be missing checks the config expects. Upgrade with \`npm i -g docguard-cli@latest\`.`;
+  }
+  return null;
+}
+
+/**
+ * v0.17-P1: update the docguardVersion field in .docguard.json after a
+ * successful guard run. Triggered by `docguard guard --pin`. Idempotent.
+ */
+function _updateVersionPin(projectDir) {
+  const cfgPath = resolvePath(projectDir, '.docguard.json');
+  if (!existsSync(cfgPath)) return { written: false, reason: '.docguard.json not found — run `docguard init` first' };
+  let raw, cfg;
+  try { raw = readFileSync(cfgPath, 'utf-8'); cfg = JSON.parse(raw); } catch (e) {
+    return { written: false, reason: `could not parse .docguard.json: ${e.message}` };
+  }
+  if (cfg.docguardVersion === CLI_VERSION) {
+    return { written: false, reason: `already pinned at v${CLI_VERSION}` };
+  }
+  const prev = cfg.docguardVersion || '(unset)';
+  cfg.docguardVersion = CLI_VERSION;
+  writeFileSync(cfgPath, JSON.stringify(cfg, null, 2) + '\n', 'utf-8');
+  return { written: true, from: prev, to: CLI_VERSION };
+}
 import { validateStructure, validateDocSections } from '../validators/structure.mjs';
 import { validateDrift } from '../validators/drift.mjs';
 import { validateChangelog } from '../validators/changelog.mjs';
@@ -364,6 +438,15 @@ export function runGuard(projectDir, config, flags) {
       console.log(`\n  ${c.yellow}↑ ${upgradeHint}${c.reset}`);
     }
 
+    // v0.17-P1: version-pin nudge. When .docguard.json carries a
+    // docguardVersion field and the running CLI doesn't match, emit a
+    // one-line note. Keeps CDD reproducibility honest — "same project,
+    // same docs, different score across versions" no longer silent.
+    const pinHint = _checkVersionPin(config);
+    if (pinHint) {
+      console.log(`\n  ${c.yellow}📌 ${pinHint}${c.reset}`);
+    }
+
     // K-6 / S-2: sweep-needed nudge. Aggregates freshness warnings — if 2+
     // canonical docs are stale (matching the "X code commits since last doc
     // update" pattern), suggest a single `docguard sync --write` pass that
@@ -401,6 +484,24 @@ export function runGuard(projectDir, config, flags) {
   }
 
   console.log('');
+
+  // v0.17-P1: --pin updates docguardVersion in .docguard.json to the running
+  // CLI version. Only meaningful AFTER a clean (or near-clean) guard run —
+  // pinning to a version that just failed defeats the reproducibility goal.
+  // We allow pinning when status is PASS or WARN; refuse on FAIL.
+  if (flags.pin) {
+    if (data.status === 'FAIL') {
+      console.log(`  ${c.red}✗ Cannot --pin after a FAIL run.${c.reset} Fix the errors first, then retry.`);
+    } else {
+      const r = _updateVersionPin(projectDir);
+      if (r.written) {
+        console.log(`  ${c.green}📌 docguardVersion pinned: ${r.from} → ${r.to}${c.reset}`);
+      } else {
+        console.log(`  ${c.dim}📌 ${r.reason}${c.reset}`);
+      }
+    }
+    console.log('');
+  }
 
   // v0.5: severity-aware exit codes (see runGuardInternal for the rollup).
   if (data.effectiveErrors > 0) process.exit(1);

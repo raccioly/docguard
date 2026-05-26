@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-05-26
+
+Feature release picking up the 4 deferred items from v0.16 — **reproducibility
+(version pin), accuracy drill-down (memory --diff), self-scaffolding drift fix,
+and naming flexibility (kebab + camel both accepted)**. **530 tests** (was 519,
++11). 22 validators.
+
+### Added
+
+- **P1: Version pin in `.docguard.json` (F8).** CDD reproducibility. Add `docguardVersion: "0.17.0"` to your config and `docguard guard` will nudge if the running CLI differs (newer or older). New `docguard guard --pin` action records the running CLI version after a passing run — opt-in, never automatic, refuses on FAIL status so you don't pin a broken state. Closes the "same project, different score across versions" surprise reported by a Python user.
+- **P2: `docguard memory --diff` (F10).** The memory-accuracy headline (e.g. "Accuracy: 83%") no longer requires source-spelunking to explain. New `docguard memory` shows per-domain accuracy (Endpoints / Entities / Env vars / Tech stack); add `--diff` for the drill-down listing *which* claims don't match code in each domain. JSON mode for tooling. Reuses the existing diff helpers — no new scanning logic.
+- **P3: Drift-proofed validator-count language in templates (F7).** Templates in `commands/`, `extensions/spec-kit-docguard/commands/`, `extensions/spec-kit-docguard/skills/`, and CI workflow examples no longer bake in "N validators" — replaced with "all validators" or "the full validator suite". User's own docs that legitimately quote a count are still validated by Metrics-Consistency; only DocGuard's own scaffolding (which would drift on every new validator) is detached from the number.
+- **P4: Validator naming consistency (additive, N1).** `.docguard.json` now accepts both kebab-case (`"test-spec": false`) and camelCase (`testSpec: false`) for both `validators` and `severity` maps. Normalized to camelCase internally before merge. Pre-existing configs keep working unchanged; new configs can use whichever style matches their team's convention. No breaking change.
+
+### Internal
+
+- **2 new test files**: `tests/version-pin.test.mjs` (6 — nudge behavior + `--pin` action), `tests/validator-naming.test.mjs` (5 — both casings accepted). **Total: 519 → 530 tests (+11 new).**
+- **New module**: `cli/commands/memory.mjs` (~140 lines).
+- **Exported from `cli/commands/diff.mjs`**: `diffRoutes`, `diffEntities`, `diffEnvVars`, `diffTechStack` so `memory.mjs` can reuse them without duplicating logic.
+- **New helpers in `cli/docguard.mjs`**: `normalizeConfig()`, `_kebabToCamel()`, `_KNOWN_VALIDATORS`.
+- **New helpers in `cli/commands/guard.mjs`**: `_parseSemver`, `_semverCompare`, `_checkVersionPin`, `_updateVersionPin`.
+- **Templates scrubbed** of numeric validator counts (6 files).
+- Dry-run on a real client project: 99% memory accuracy, 3 specific env-var mismatches surfaced by `memory --diff`.
+- No new NPM deps.
+
+### Out of scope (deferred to v0.18)
+
+- **F6** stale score cache — still low repro confidence; deferred until we get a reliable reproducer.
+- **Bigger items**: deeper Generated-Staleness optimization (still ~26% of guard time on large repos), `upgrade --pr` battle-test against a real GitHub remote, cross-process plan cache.
+
 ## [0.16.0] - 2026-05-26
 
 Feature release driven entirely by feedback from a real Python project running

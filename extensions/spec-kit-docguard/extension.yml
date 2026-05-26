@@ -3,7 +3,7 @@ schema_version: "1.0"
 extension:
   id: "docguard"
   name: "DocGuard — CDD Enforcement"
-  version: "0.16.0"
+  version: "0.17.0"
   description: "Canonical-Driven Development enforcement as a true spec-kit extension. LLM-first design with 19 automated validators, 4 AI behavior skills, spec-kit skill chaining, and workflow hooks. Zero NPM runtime dependencies."
   author: "Ricardo Accioly"
   repository: "https://github.com/raccioly/docguard"
@@ -58,7 +58,7 @@ provides:
   workflows:
     - name: "docguard-guard"
       file: "templates/github-workflows/docguard-guard.yml"
-      description: "Mandatory CI gate — runs all 20 validators on PR + main push"
+      description: "Mandatory CI gate — runs all validators on PR + main push"
     - name: "docguard-autofix"
       file: "templates/github-workflows/docguard-autofix.yml"
       description: "PR-time auto-fix — applies mechanical doc fixes + comments summary"

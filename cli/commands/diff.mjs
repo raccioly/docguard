@@ -101,7 +101,7 @@ export function runDiff(projectDir, config, flags) {
 
 // ── Diff Functions ─────────────────────────────────────────────────────────
 
-function diffRoutes(dir, config = {}) {
+export function diffRoutes(dir, config = {}) {
   // Documented surface: prefer the dedicated API reference, fall back to ARCHITECTURE.md.
   const apiRefPath = resolve(dir, 'docs-canonical/API-REFERENCE.md');
   const archPath = resolve(dir, 'docs-canonical/ARCHITECTURE.md');
@@ -133,7 +133,7 @@ const CODE_ENTITY_NOISE = new Set([
   'models', 'model', 'utils', 'helpers', 'constants', 'config', 'common', 'base',
 ]);
 
-function diffEntities(dir, config = {}) {
+export function diffEntities(dir, config = {}) {
   const dataModelPath = resolve(dir, 'docs-canonical/DATA-MODEL.md');
   if (!existsSync(dataModelPath)) return null;
 
@@ -219,7 +219,7 @@ const SYSTEM_ENV_VARS = new Set([
   'NODE_ENV', // could be app-set but more often platform-set; conservative skip
 ]);
 
-function diffEnvVars(dir, config = {}) {
+export function diffEnvVars(dir, config = {}) {
   const envDocPath = resolve(dir, 'docs-canonical/ENVIRONMENT.md');
   if (!existsSync(envDocPath)) return null;
 
@@ -263,7 +263,7 @@ function diffEnvVars(dir, config = {}) {
   };
 }
 
-function diffTechStack(dir, config = {}) {
+export function diffTechStack(dir, config = {}) {
   const archPath = resolve(dir, 'docs-canonical/ARCHITECTURE.md');
   if (!existsSync(archPath)) return null;
 

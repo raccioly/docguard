@@ -1,5 +1,5 @@
 ---
-description: Run DocGuard guard validation — check all 22 validators and fix any issues
+description: Run DocGuard guard validation — check all validators and fix any issues
 handoffs:
   - label: Fix Issues
     agent: docguard.fix
@@ -19,7 +19,7 @@ You are an AI agent enforcing Canonical-Driven Development (CDD) compliance usin
 npx docguard-cli guard
 ```
 
-Read the output. It shows pass (✅), warn (⚠️), or fail (❌) for each of the 22 validators:
+Read the output. It shows pass (✅), warn (⚠️), or fail (❌) for each of the validators:
 
 | Priority | Validators |
 |----------|-----------|

@@ -1,4 +1,4 @@
-# DocGuard Guard — runs all 20 validators on every PR and main push.
+# DocGuard Guard — runs all validators on every PR and main push.
 #
 # This is the canonical CI gate. It does NOT modify your repo — it only
 # reports. Pair with `docguard-autofix.yml` if you want mechanical fixes

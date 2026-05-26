@@ -43,6 +43,7 @@ import { runSetup } from './commands/setup.mjs';
 import { runUpgrade } from './commands/upgrade.mjs';
 import { runImpact } from './commands/impact.mjs';
 import { runExplain } from './commands/explain.mjs';
+import { runMemory } from './commands/memory.mjs';
 import { ensureSkills } from './ensure-skills.mjs';
 
 // ── Shared constants (imported to break circular dependencies) ──────────
@@ -121,7 +122,10 @@ export function loadConfig(projectDir) {
         ? deepMerge(defaults, profilePreset)
         : defaults;
 
-      const merged = deepMerge(withProfile, userConfig);
+      // v0.17-P4: normalize validator/severity keys before merging so the
+      // user can write either kebab-case (`test-spec`) or camelCase (`testSpec`)
+      // and the internal lookups (always camelCase) still hit.
+      const merged = deepMerge(withProfile, normalizeConfig(userConfig));
       merged.profile = profileName;
 
       // Auto-detect project type if not set
@@ -208,6 +212,46 @@ function getProjectTypeDefaults(type) {
     unknown: { needsEnvVars: true,  needsEnvExample: true,  needsE2E: false, needsDatabase: true,  testFramework: null,        runCommand: null },
   };
   return defaults[type] || defaults.unknown;
+}
+
+/**
+ * v0.17-P4: normalize validator-key naming so users can write either
+ * `validators: { "test-spec": true }` (kebab-case, matches CLI display)
+ * or `validators: { testSpec: true }` (camelCase, matches JSON internals)
+ * in `.docguard.json`. We normalize the WHOLE config tree's known validator
+ * keys to camelCase before merging. Same treatment applied to `severity`.
+ *
+ * Non-validator keys are left alone. Unknown keys (forward-compat) are
+ * normalized blindly: kebab-case→camelCase always.
+ */
+const _KNOWN_VALIDATORS = [
+  'structure', 'docsSync', 'drift', 'changelog', 'testSpec', 'environment',
+  'security', 'architecture', 'freshness', 'traceability', 'docsDiff',
+  'apiSurface', 'metadataSync', 'docsCoverage', 'docQuality', 'todoTracking',
+  'schemaSync', 'specKit', 'crossReference', 'generatedStaleness',
+  'metricsConsistency',
+];
+
+function _kebabToCamel(k) {
+  return k.replace(/-([a-z])/g, (_, ch) => ch.toUpperCase());
+}
+
+function _normalizeValidatorKeys(map) {
+  if (!map || typeof map !== 'object' || Array.isArray(map)) return map;
+  const out = {};
+  for (const [k, v] of Object.entries(map)) {
+    const normalized = k.includes('-') ? _kebabToCamel(k) : k;
+    out[normalized] = v;
+  }
+  return out;
+}
+
+function normalizeConfig(cfg) {
+  if (!cfg || typeof cfg !== 'object') return cfg;
+  const out = { ...cfg };
+  if (out.validators) out.validators = _normalizeValidatorKeys(out.validators);
+  if (out.severity)   out.severity   = _normalizeValidatorKeys(out.severity);
+  return out;
 }
 
 function deepMerge(target, source) {
@@ -406,6 +450,15 @@ async function main() {
       // Default stays on (discoverability), but lets minimalist library
       // projects skip the .specify/.agent/commands scaffolding.
       flags.noSpecKit = true;
+    } else if (args[i] === '--pin') {
+      // v0.17-P1: `docguard guard --pin` records the running CLI version
+      // into .docguard.json (`docguardVersion` field) after a successful run.
+      // Different from `--pr` (used by upgrade) — this is for guard.
+      flags.pin = true;
+    } else if (args[i] === '--diff') {
+      // v0.17-P2: `docguard memory --diff` drills into accuracy mismatches.
+      // Distinct from the `diff` command itself (which is a top-level cmd).
+      flags.diff = true;
     } else if (!args[i].startsWith('--') && i > 0) {
       // Positional args go into flags.args for commands that take them (e.g.
       // `docguard trace --reverse <path>`). Skip the command itself (i === 0).
@@ -543,6 +596,9 @@ async function main() {
     case 'explain':
     case 'help-warning':
       runExplain(projectDir, config, flags);
+      break;
+    case 'memory':
+      runMemory(projectDir, config, flags);
       break;
     default:
       console.error(`${c.red}Unknown command: ${command}${c.reset}`);
