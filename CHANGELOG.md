@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- `cli/commands/diff.mjs`: Precomputed Set to Array conversions outside of nested .some() loops in `diffRoutes` and `diffEntities` to fix a severe $O(N \times M)$ performance bottleneck.
+
 ## [0.9.11] - 2026-03-18
 
 ### Added
