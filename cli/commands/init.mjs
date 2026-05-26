@@ -13,7 +13,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync } from 
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createInterface } from 'node:readline';
-import { execSync } from 'node:child_process';
+import { execSync, execFileSync } from 'node:child_process';
 import { c, PROFILES } from '../shared.mjs';
 import { ensureSkills, detectAgentMode, detectAIAgent, isSpecKitAvailable, isSpecKitInitialized, getDetectedAgent } from '../ensure-skills.mjs';
 
@@ -206,15 +206,17 @@ export async function runInit(projectDir, config, flags) {
 
     // Detect which AI agent is in use (matches spec-kit's --ai flag)
     const detectedAgent = detectAIAgent(projectDir);
-    const aiFlag = detectedAgent
-      ? `--ai ${detectedAgent}`
-      : '--ai generic --ai-commands-dir .agent/commands/';
+    const aiFlags = detectedAgent
+      ? ['--ai', detectedAgent]
+      : ['--ai', 'generic', '--ai-commands-dir', '.agent/commands/'];
 
     console.log(`  ${c.dim}Running specify init (agent: ${detectedAgent || 'generic'})...${c.reset}`);
     try {
-      const scriptFlag = process.platform === 'win32' ? '--script ps' : '--script sh';
-      execSync(
-        `specify init --here --force ${aiFlag} --ai-skills --ignore-agent-tools --no-git ${scriptFlag}`,
+      const scriptFlags = process.platform === 'win32' ? ['--script', 'ps'] : ['--script', 'sh'];
+      const bin = process.platform === 'win32' ? 'specify.cmd' : 'specify';
+      execFileSync(
+        bin,
+        ['init', '--here', '--force', ...aiFlags, '--ai-skills', '--ignore-agent-tools', '--no-git', ...scriptFlags],
         { cwd: projectDir, encoding: 'utf-8', stdio: 'pipe', timeout: 30000 }
       );
       console.log(`  ${c.green}✅${c.reset} Spec Kit initialized ${c.dim}(.specify/, spec-kit skills, agent: ${detectedAgent || 'generic'})${c.reset}`);
