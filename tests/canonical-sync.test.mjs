@@ -81,8 +81,11 @@ describe('canonical-sync validator', () => {
     const readme = 'DocGuard ships **5 commands**:\n';
     dir = makeFixture({ commandFiles: 7, readme });
     const r = validateCanonicalSync(dir, {}, []);
-    assert.ok(r.warnings.some(w => /"ships 5 commands"/.test(w) && /7 files/.test(w)),
-      `expected ships-count warning; got: ${r.warnings.join(' / ')}`);
+    // v0.20: wording changed to "7 command file(s)" (or "7 user-facing commands"
+    // when the parser finds --help sections). For the test fixture there's no
+    // cli/docguard.mjs to parse, so we get the file-count fallback.
+    assert.ok(r.warnings.some(w => /"ships 5 commands"/.test(w) && /\b7\b.*file/.test(w)),
+      `expected ships-count warning mentioning 7; got: ${r.warnings.join(' / ')}`);
   });
 
   it('warns when "N validators" claim in surface context is wrong', () => {

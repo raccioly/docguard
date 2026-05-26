@@ -7,6 +7,102 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.0] - 2026-05-26
+
+**Consolidation.** 21 user-facing commands become 13. The promise from
+v0.19's SURFACE-AUDIT delivered in full — without breaking any existing
+user. Eight v0.19 commands keep working with deprecation warnings; one
+permanent alias (`audit → guard`) stays forever; ten cute aliases nobody
+documented are removed.
+
+This is the cleanup release. **No new functionality** — every behavior
+that worked in v0.19 still works in v0.20. The win is cognitive surface:
+new users see four clear sections in `--help` instead of seven muddled
+ones, and the "Daily 5" framing tells them exactly what to learn first.
+
+### Changed — surface shape
+
+- **`docguard init --with <name>`** is the new entry point for the
+  six one-shot scaffolders. Names: `agents`, `hooks`, `ci`, `badge`,
+  `llms`, `publish`. Comma-separated for chaining
+  (`docguard init --with agents,hooks,badge,ci`). The original six
+  commands (`docguard agents`, `docguard hooks`, …) still work — they
+  emit a yellow stderr deprecation warning and dispatch through
+  `init --with` internally.
+- **`docguard init --wizard`** replaces `docguard setup`. Same 7-step
+  interactive flow; `setup` is now a deprecation alias.
+- **`docguard diff --since <ref>`** replaces `docguard impact`. The
+  underlying impact analyzer is the same code path. `impact` is now a
+  deprecation alias.
+- **`docguard --help` reorganized** into four sections: **The Daily 5**
+  (init, guard, diff, sync, score), **Tools** (8 situational verbs),
+  **`init --with <name>`** (the six scaffolders), and **Deprecation
+  aliases** (a footnote with the v1.0 timeline). Down from seven
+  alphabetically-organized sections.
+
+### Removed — cute aliases (the ten dropped)
+
+These were in the router but never in `--help`. None of them had
+documentation. v0.20 errors with a one-line hint to the canonical
+command:
+
+  `onboard` · `gen` · `badges` · `pipeline` · `repair` · `dx` ·
+  `pub` · `traceability` · `help-warning` · `update`
+
+Try `docguard onboard` in v0.20 and you'll get:
+```
+Unknown command: onboard
+Hint: this alias was removed in v0.20. Try docguard setup
+(deprecated) — try `docguard init --wizard`.
+See docs-implementation/MIGRATION-v0.20.md for the full list.
+```
+
+### Kept permanently
+
+- **`audit → guard`** — the one alias that stays forever. Older blog
+  posts, tutorials, and CI scripts reference it. No deprecation warning,
+  no removal planned.
+
+### Added
+
+- **`docs-implementation/MIGRATION-v0.20.md`** — full migration guide.
+  Before/after table for every renamed command, the deprecation
+  timeline, a grep recipe to detect old usage in your repo, common
+  questions, and concrete examples (CI workflow, pre-commit hook,
+  fresh-project bootstrap, post-commit "what docs am I responsible
+  for?").
+- **`canonical-sync` validator (v0.19) now counts user-facing commands**,
+  not just files in `cli/commands/`. It parses `cli/docguard.mjs` to
+  find names in the Daily 5 + Tools sections, so the README's
+  "ships 13 commands" claim stays accurate across renames without
+  counting deprecation aliases.
+- **`tests/v020-consolidation.test.mjs`** — 24 tests covering: every
+  `--with` target dispatches; multi-scaffolder runs in order; unknown
+  `--with` targets error; every deprecation alias still works and
+  warns; `--quiet` suppresses the warning; all ten dropped aliases
+  error with a hint; `audit` is silent.
+
+### Workflow hygiene
+
+- **`workflow_dispatch:` added to `ci.yml` and `supply-chain.yml`** so
+  admin-bypass pushes that don't auto-trigger workflows can be
+  recovered manually. (Came out of the v0.19.0 publish incident where
+  a branch-protection bypass appears to have suppressed the auto-trigger.)
+
+### Tests
+
+- 558 → **582 tests** (+24 from `tests/v020-consolidation.test.mjs`).
+- Canonical-Sync re-runs clean (`23 validators · 13 user-facing commands`).
+
+### Deprecation timeline
+
+- **v0.20.x → v0.x**: deprecated commands work with yellow warning.
+- **v1.0.0**: deprecated commands removed. At least 2-3 months out.
+- **forever**: `audit → guard` stays.
+
+See **[MIGRATION-v0.20.md](docs-implementation/MIGRATION-v0.20.md)** for
+the full guide.
+
 ## [0.19.0] - 2026-05-26
 
 **Self-aware.** The headline change: until v0.19, `guard` could not see

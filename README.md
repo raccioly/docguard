@@ -51,7 +51,7 @@ DocGuard is an official [GitHub Spec Kit](https://github.com/github/spec-kit) co
 
 ```mermaid
 graph TD
-    CLI["CLI Entry<br/>docguard.mjs"] --> Commands["Commands (21)"]
+    CLI["CLI Entry<br/>docguard.mjs"] --> Commands["Commands (13)"]
     Commands --> guard["guard"]
     Commands --> generate["generate"]
     Commands --> score["score"]
@@ -235,29 +235,49 @@ This installs DocGuard's slash commands (`/docguard.guard`, `/docguard.review`, 
 
 ## Usage
 
-DocGuard ships **21 commands**:
+DocGuard ships **13 commands** (the "Daily 5" + 8 situational tools). Six additional one-shot scaffolders are accessed via `docguard init --with <name>`. Eight v0.19 commands continue to work as deprecation aliases through v0.20.x — see [MIGRATION-v0.20.md](docs-implementation/MIGRATION-v0.20.md).
+
+**The Daily 5** — what you'll reach for 95% of the time:
+
+| Command | What It Does |
+|:--------|:-------------|
+| `init`  | Bootstrap a project (`--wizard` for interactive · `--with <name>` for scaffolders) |
+| `guard` | Validate against canonical docs — 23 validators |
+| `diff`  | Show gaps between docs and code (`--since <ref>` for impact mode) |
+| `sync`  | Refresh code-truth doc sections — keeps memory always up to date |
+| `score` | CDD maturity score (0-100; `--diff` for delta between refs) |
+
+**Tools (situational, but day-to-day useful):**
 
 | Command | Purpose |
 |:--------|:--------|
-| `diagnose` | **Primary** — identify every issue + generate AI fix prompts |
-| `guard` | Validate project against canonical docs (CI gate) |
+| `diagnose` | AI orchestrator — guard → emit fix prompts in one command |
+| `fix` | Generate AI fix instructions for specific docs (`--doc <name> --format prompt`) |
+| `fix --write` | Apply deterministic fixes (no AI — version bumps, counts, anchors, sections) |
+| `fix --history` | Audit log of every mechanical fix applied (from `.docguard/fixed.json`) |
+| `generate` | Reverse-engineer docs from existing codebase (`--plan` for AI scan) |
 | `explain <warning>` | Paste any warning — get the validator's docstring + fix path |
-| `generate` | Reverse-engineer docs from existing codebase |
-| `init` | Initialize CDD docs from templates (interactive) |
-| `score` | CDD maturity score (0–100) with weighted breakdown |
 | `memory` | Per-domain accuracy headline (endpoints / entities / env / tech) |
 | `memory --diff` | Drill into which specific claims don't match code |
 | `score --diff` | Drill into which checks pulled each category down |
-| `fix --doc <name>` | Generate AI prompt for a specific document |
-| `fix --write` | Apply deterministic fixes (no AI — version bumps, counts, anchors, sections) |
-| `fix --history` | Audit log of every mechanical fix applied (from `.docguard/fixed.json`) |
-| `diff` | Compare canonical docs vs actual code artifacts |
-| `impact --since <ref>` | Post-commit: "you touched X, these doc sections reference it" |
-| `sync --write [--since <ref>]` | Refresh code-truth sections in canonical docs |
 | `trace` / `trace --reverse <file>` | Requirements traceability — forward AND reverse |
-| `agents` | Generate agent-specific config files |
 | `upgrade [--apply] [--pr]` | Check + migrate `.docguard.json` schema; `--pr` opens a PR |
-| `ci` / `watch` / `hooks` / `llms` | Pipeline check, live mode, git hooks, llms.txt |
+| `watch` | Live mode: re-run guard on file changes |
+
+**`init --with <name>` scaffolders** — picked at init time:
+
+| Scaffolder | What It Generates |
+|:-----------|:------------------|
+| `agents` | `AGENTS.md`, `CLAUDE.md`, `.cursor/rules/`, `.github/copilot-instructions.md` |
+| `hooks` | Git pre-commit / pre-push hooks |
+| `ci` | GitHub Actions / pipeline YAML |
+| `badge` | Shields.io score badges for README |
+| `llms` | `llms.txt` (AI-friendly summary) |
+| `publish` | External doc-site config (Mintlify) — experimental |
+
+Run them solo (`docguard init --with hooks`) or stacked (`docguard init --with agents,hooks,badge,ci`).
+
+**Deprecation aliases** — `setup` · `agents` · `hooks` · `ci` · `badge` · `llms` · `publish` · `impact` keep working in v0.20.x with a yellow stderr warning. `audit → guard` is permanent (no warning). See [MIGRATION-v0.20.md](docs-implementation/MIGRATION-v0.20.md).
 
 ### CLI Flags
 

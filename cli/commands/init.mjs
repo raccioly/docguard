@@ -17,6 +17,45 @@ import { execSync } from 'node:child_process';
 import { c, PROFILES } from '../shared.mjs';
 import { ensureSkills, detectAgentMode, detectAIAgent, isSpecKitAvailable, isSpecKitInitialized, getDetectedAgent } from '../ensure-skills.mjs';
 
+// v0.20: scaffolder names that can be passed via `init --with <name>` and
+// dispatched to the corresponding standalone runner. Each name maps to its
+// canonical command module. Keep in sync with cli/docguard.mjs router.
+const SCAFFOLDER_DISPATCH = {
+  agents:  async (dir, cfg, flags) => (await import('./agents.mjs')).runAgents(dir, cfg, flags),
+  hooks:   async (dir, cfg, flags) => (await import('./hooks.mjs')).runHooks(dir, cfg, flags),
+  ci:      async (dir, cfg, flags) => (await import('./ci.mjs')).runCI(dir, cfg, flags),
+  badge:   async (dir, cfg, flags) => (await import('./badge.mjs')).runBadge(dir, cfg, flags),
+  llms:    async (dir, cfg, flags) => (await import('./llms.mjs')).runLlms(dir, cfg, flags),
+  publish: async (dir, cfg, flags) => (await import('./publish.mjs')).runPublish(dir, cfg, flags),
+};
+
+/**
+ * Run one or more scaffolders after init has completed.
+ * Called when `docguard init --with agents,hooks,ci` is invoked.
+ * Each scaffolder runs in sequence; if one throws, the rest are skipped
+ * (matches the standalone command's failure semantics).
+ */
+async function runScaffolders(projectDir, config, flags, names) {
+  const unknown = names.filter(n => !SCAFFOLDER_DISPATCH[n]);
+  if (unknown.length > 0) {
+    console.error(`${c.red}Unknown --with target(s): ${unknown.join(', ')}${c.reset}`);
+    console.log(`${c.dim}Valid: ${Object.keys(SCAFFOLDER_DISPATCH).join(', ')}${c.reset}`);
+    process.exit(1);
+  }
+
+  console.log(`\n${c.bold}🧰 Scaffolders:${c.reset} ${c.cyan}${names.join(', ')}${c.reset}\n`);
+
+  for (const name of names) {
+    console.log(`${c.dim}── ${name} ───────────────────────────────────────${c.reset}`);
+    try {
+      await SCAFFOLDER_DISPATCH[name](projectDir, config, flags);
+    } catch (err) {
+      console.error(`${c.red}✗ ${name} failed: ${err.message}${c.reset}`);
+      process.exit(1);
+    }
+  }
+}
+
 function detectProjectType(dir) {
   const pkgPath = resolve(dir, 'package.json');
   if (existsSync(pkgPath)) {
@@ -54,6 +93,14 @@ function askQuestion(prompt) {
 // ── Init Command ─────────────────────────────────────────────────────────
 
 export async function runInit(projectDir, config, flags) {
+  // v0.20: `--wizard` dispatches to the full interactive onboarding (formerly
+  // `docguard setup`). Done before profile validation so the wizard can ask
+  // for the profile itself if needed.
+  if (flags.wizard) {
+    const { runSetup } = await import('./setup.mjs');
+    return runSetup(projectDir, config, flags);
+  }
+
   const profileName = flags.profile || 'standard';
   const profile = PROFILES[profileName];
 
@@ -369,4 +416,11 @@ poetry.lock
 
   // Auto-install DocGuard skills and commands (spec-kit skills handled by specify init)
   ensureSkills(projectDir, flags);
+
+  // v0.20: `docguard init --with agents,hooks,ci,badge,llms,publish` runs
+  // the named scaffolders after init has finished. Each one runs in sequence
+  // and uses the same flags object (so --force / --skip-prompts propagate).
+  if (Array.isArray(flags.with) && flags.with.length > 0) {
+    await runScaffolders(projectDir, config, flags, flags.with);
+  }
 }

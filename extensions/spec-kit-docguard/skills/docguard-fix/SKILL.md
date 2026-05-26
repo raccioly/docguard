@@ -6,10 +6,10 @@ description: AI-driven documentation repair with structured research workflow, t
 compatibility: Requires DocGuard CLI installed (npm i -g docguard-cli or npx docguard-cli)
 metadata:
   author: docguard
-  version: 0.19.0
+  version: 0.20.0
   source: extensions/spec-kit-docguard/skills/docguard-fix
 ---
-<!-- docguard:version: 0.19.0 -->
+<!-- docguard:version: 0.20.0 -->
 
 # DocGuard Fix Skill
 

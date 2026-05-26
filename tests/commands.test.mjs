@@ -21,13 +21,18 @@ const run = (args, cwd) => execSync(`node ${CLI} ${args}`, {
 
 describe('docguard --help', () => {
   it('shows help text', () => {
+    // v0.20: --help reorganized into 4 sections: The Daily 5, Tools,
+    // init --with, Deprecation aliases. (Was: Getting Started / Enforcement /
+    // Memory / Analysis / CI-CD / Utilities / Experimental — 7 sections.)
     const output = run('--help');
-    assert.match(output, /Getting Started:/);
-    assert.match(output, /Enforcement:/);
+    assert.match(output, /The Daily 5/);
+    assert.match(output, /Tools/);
+    assert.match(output, /init --with/);
     assert.match(output, /guard/);
     assert.match(output, /score/);
     assert.match(output, /diff/);
     assert.match(output, /generate/);
+    // agents and hooks are now in `init --with`, not standalone
     assert.match(output, /agents/);
     assert.match(output, /hooks/);
   });

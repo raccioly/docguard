@@ -282,44 +282,37 @@ function printHelp() {
   console.log(`${c.bold}Usage:${c.reset}
   docguard <command> [options]
 
-${c.bold}Getting Started:${c.reset}
-  ${c.green}init${c.reset}       Initialize CDD docs (interactive setup)
-  ${c.green}setup${c.reset}      Full onboarding wizard (skills, integrations, hooks)
-  ${c.green}generate${c.reset}   Reverse-engineer canonical docs from existing code
+${c.bold}The Daily 5${c.reset} ${c.dim}— what you'll reach for 95% of the time${c.reset}
+  ${c.green}init${c.reset}       Bootstrap a project (use ${c.cyan}--wizard${c.reset} for guided / ${c.cyan}--with <name>${c.reset} for scaffolders)
+  ${c.green}guard${c.reset}      Validate against canonical docs (23 validators)
+  ${c.green}diff${c.reset}       Show gaps between docs and code (add ${c.cyan}--since <ref>${c.reset} for changed-file impact)
+  ${c.green}sync${c.reset}       Refresh code-truth doc sections — keeps memory always up to date
+  ${c.green}score${c.reset}      CDD maturity score (0-100; ${c.cyan}--diff${c.reset} for delta between refs)
 
-${c.bold}Enforcement:${c.reset}
-  ${c.green}guard${c.reset}      Validate project against canonical docs (51+ checks)
-  ${c.green}diagnose${c.reset}   AI orchestrator — guard → fix in one command
-
-${c.bold}Memory (build & maintain docs):${c.reset}
-  ${c.green}generate --plan${c.reset}  AI-powered: scan any project, emit agent task manifest + skeleton
-  ${c.green}sync${c.reset}       Refresh code-truth doc sections to match current code (always up to date)
-  ${c.green}memory${c.reset}     Show what DocGuard remembers (use --diff to drill into drift)
-
-${c.bold}Analysis:${c.reset}
-  ${c.green}score${c.reset}      CDD maturity score (0-100; --diff for delta between refs)
-  ${c.green}trace${c.reset}      Requirements traceability matrix (--reverse for code→doc map)
-  ${c.green}diff${c.reset}       Show gaps between docs and code (detailed view)
-  ${c.green}impact${c.reset}     Which canonical doc sections reference files changed --since <ref>
-
-${c.bold}CI/CD & Automation:${c.reset}
-  ${c.green}ci${c.reset}         Pipeline gate (guard + score, exit codes)
-  ${c.green}hooks${c.reset}      Install/manage git hooks
-  ${c.green}watch${c.reset}      Watch for changes, re-run guard
-  ${c.green}upgrade${c.reset}    Migrate .docguard.json schema and CLI version (--apply --pr)
-
-${c.bold}Utilities:${c.reset}
+${c.bold}Tools (situational, but day-to-day useful)${c.reset}
+  ${c.green}diagnose${c.reset}   AI orchestrator — guard → emit fix prompts in one command
   ${c.green}fix${c.reset}        Generate AI fix instructions for specific docs
-  ${c.green}agents${c.reset}     Generate agent config files (AGENTS.md, CLAUDE.md)
-  ${c.green}badge${c.reset}      Generate CDD score badges for README
-  ${c.green}explain${c.reset}    Explain a validator key or warning text (no need to read source)
-  ${c.green}llms${c.reset}       Generate llms.txt from canonical docs (AI-friendly summary)
+  ${c.green}generate${c.reset}   Reverse-engineer canonical docs from existing code (${c.cyan}--plan${c.reset} for AI scan)
+  ${c.green}explain${c.reset}    Explain a validator key or warning text
+  ${c.green}memory${c.reset}     Show what DocGuard remembers (${c.cyan}--diff${c.reset} drills into drift)
+  ${c.green}trace${c.reset}      Requirements traceability matrix (${c.cyan}--reverse${c.reset} for code→doc map)
+  ${c.green}upgrade${c.reset}    Migrate ${c.cyan}.docguard.json${c.reset} schema + CLI (${c.cyan}--apply --pr${c.reset} for team-wide PR)
+  ${c.green}watch${c.reset}      Live mode: re-run guard on file changes
 
-${c.bold}Experimental:${c.reset}
-  ${c.dim}publish${c.reset}    Scaffold external doc sites (Mintlify)
+${c.bold}init --with <name>${c.reset} ${c.dim}— optional scaffolders, picked at init time${c.reset}
+  ${c.dim}agents${c.reset}     AGENTS.md / CLAUDE.md / .cursor/rules / Copilot instructions
+  ${c.dim}hooks${c.reset}      Git pre-commit / pre-push hooks
+  ${c.dim}ci${c.reset}         GitHub Actions / pipeline config
+  ${c.dim}badge${c.reset}      Shields.io score badges for README
+  ${c.dim}llms${c.reset}       llms.txt generation
+  ${c.dim}publish${c.reset}    External doc-site scaffold (Mintlify) ${c.dim}— experimental${c.reset}
 
-${c.bold}Aliases (historical):${c.reset}
-  ${c.dim}audit${c.reset} → ${c.green}guard${c.reset}   (kept permanently for back-compat with older CI scripts)
+${c.bold}Deprecation aliases${c.reset} ${c.dim}— still work in v0.20.x with a yellow warning${c.reset}
+  ${c.dim}setup${c.reset} → ${c.cyan}init --wizard${c.reset}
+  ${c.dim}agents · hooks · ci · badge · llms · publish${c.reset} → ${c.cyan}init --with <name>${c.reset}
+  ${c.dim}impact${c.reset} → ${c.cyan}diff --since <ref>${c.reset}
+  ${c.dim}audit${c.reset} → ${c.green}guard${c.reset} ${c.dim}(permanent — no warning, no removal planned)${c.reset}
+  ${c.dim}See docs-implementation/MIGRATION-v0.20.md for the full timeline.${c.reset}
 
 ${c.bold}Options:${c.reset}
   --dir <path>    Project directory (default: current directory)
@@ -467,6 +460,17 @@ async function main() {
       // v0.17-P2: `docguard memory --diff` drills into accuracy mismatches.
       // Distinct from the `diff` command itself (which is a top-level cmd).
       flags.diff = true;
+    } else if (args[i] === '--with' && args[i + 1]) {
+      // v0.20: `docguard init --with agents,hooks,ci,badge,llms,publish`
+      // folds the six standalone scaffolders into init. Comma-separated
+      // names, each dispatched to the matching runner after init finishes.
+      flags.with = args[i + 1].split(',').map(s => s.trim()).filter(Boolean);
+      i++;
+    } else if (args[i] === '--wizard') {
+      // v0.20: `docguard init --wizard` runs the 7-step interactive
+      // onboarding flow (previously `docguard setup`). `setup` keeps
+      // working as a deprecation alias.
+      flags.wizard = true;
     } else if (!args[i].startsWith('--') && i > 0) {
       // Positional args go into flags.args for commands that take them (e.g.
       // `docguard trace --reverse <path>`). Skip the command itself (i === 0).
@@ -530,17 +534,61 @@ async function main() {
     ensureSkills(projectDir, flags);
   }
 
+  // v0.20: deprecation aliases. The legacy command keeps working through v0.20
+  // and emits a yellow stderr warning suggesting the new shape. Quiet mode
+  // (e.g. inside hooks) suppresses the warning so CI output stays clean.
+  // The full deprecation timeline is in docs-implementation/MIGRATION-v0.20.md.
+  const DEPRECATED_COMMANDS = {
+    setup:   { since: '0.20', replacement: 'docguard init --wizard' },
+    agents:  { since: '0.20', replacement: 'docguard init --with agents' },
+    hooks:   { since: '0.20', replacement: 'docguard init --with hooks' },
+    ci:      { since: '0.20', replacement: 'docguard init --with ci' },
+    badge:   { since: '0.20', replacement: 'docguard init --with badge' },
+    llms:    { since: '0.20', replacement: 'docguard init --with llms' },
+    publish: { since: '0.20', replacement: 'docguard init --with publish' },
+    impact:  { since: '0.20', replacement: 'docguard diff --since <ref>' },
+  };
+
+  // v0.20: dropped aliases — the 10 cute variants the audit identified.
+  // `audit` is intentionally NOT here; it remains a permanent silent alias
+  // for `guard` (per SURFACE-AUDIT §8.1 — older CI scripts depend on it).
+  const DROPPED_ALIASES = {
+    onboard:        'setup (deprecated) — try `docguard init --wizard`',
+    gen:            'generate',
+    badges:         'badge (deprecated) — try `docguard init --with badge`',
+    pipeline:       'ci (deprecated) — try `docguard init --with ci`',
+    repair:         'fix',
+    dx:             'diagnose',
+    pub:            'publish (deprecated) — try `docguard init --with publish`',
+    traceability:   'trace',
+    'help-warning': 'explain',
+    update:         'upgrade',
+  };
+
+  if (DROPPED_ALIASES[command]) {
+    console.error(`${c.red}Unknown command: ${command}${c.reset}`);
+    console.error(`${c.yellow}Hint: this alias was removed in v0.20. Try ${c.cyan}docguard ${DROPPED_ALIASES[command]}${c.yellow}.${c.reset}`);
+    console.error(`${c.dim}See docs-implementation/MIGRATION-v0.20.md for the full list.${c.reset}`);
+    process.exit(1);
+  }
+
+  if (DEPRECATED_COMMANDS[command] && !flags.quiet) {
+    const { since, replacement } = DEPRECATED_COMMANDS[command];
+    console.error(`${c.yellow}⚠ Deprecated since v${since}:${c.reset} ${c.cyan}docguard ${command}${c.reset} → use ${c.cyan}${replacement}${c.reset}`);
+    console.error(`${c.dim}  The old form still works in v0.20.x but will be removed in v1.0. See MIGRATION-v0.20.md.${c.reset}`);
+  }
+
   switch (command) {
     case 'audit':
-      // audit is an alias for guard — guard does everything the old audit did + 50 more checks
+      // Permanent silent alias for guard (SURFACE-AUDIT §8.1).
       runGuard(projectDir, config, flags);
       break;
     case 'init':
       await runInit(projectDir, config, flags);
       break;
     case 'setup':
-    case 'onboard':
-      await runSetup(projectDir, config, flags);
+      // v0.20: deprecated → dispatches to init --wizard
+      await runInit(projectDir, config, { ...flags, wizard: true });
       break;
     case 'guard':
       runGuard(projectDir, config, flags);
@@ -549,32 +597,35 @@ async function main() {
       runScore(projectDir, config, flags);
       break;
     case 'diff':
-      runDiff(projectDir, config, flags);
+      // v0.20: `docguard diff --since <ref>` dispatches to the impact-mode
+      // analyzer (post-commit "which docs reference files changed since X").
+      // Without --since it's the standard current-state drift report.
+      if (flags.since) {
+        runImpact(projectDir, config, flags);
+      } else {
+        runDiff(projectDir, config, flags);
+      }
       break;
     case 'agents':
-      runAgents(projectDir, config, flags);
+      // v0.20: deprecated → dispatches through init --with
+      await runInit(projectDir, config, { ...flags, with: ['agents'], skipPrompts: true });
       break;
     case 'generate':
-    case 'gen':
       runGenerate(projectDir, config, flags);
       break;
     case 'hooks':
-      runHooks(projectDir, config, flags);
+      await runInit(projectDir, config, { ...flags, with: ['hooks'], skipPrompts: true });
       break;
     case 'badge':
-    case 'badges':
-      runBadge(projectDir, config, flags);
+      await runInit(projectDir, config, { ...flags, with: ['badge'], skipPrompts: true });
       break;
     case 'ci':
-    case 'pipeline':
-      runCI(projectDir, config, flags);
+      await runInit(projectDir, config, { ...flags, with: ['ci'], skipPrompts: true });
       break;
     case 'fix':
-    case 'repair':
       runFix(projectDir, config, flags);
       break;
     case 'diagnose':
-    case 'dx':
       runDiagnose(projectDir, config, flags);
       break;
     case 'watch':
@@ -584,25 +635,23 @@ async function main() {
       runSync(projectDir, config, flags);
       break;
     case 'publish':
-    case 'pub':
-      runPublish(projectDir, config, flags);
+      await runInit(projectDir, config, { ...flags, with: ['publish'], skipPrompts: true });
       break;
     case 'trace':
-    case 'traceability':
       runTrace(projectDir, config, flags);
       break;
     case 'llms':
-      runLlms(projectDir, config, flags);
+      await runInit(projectDir, config, { ...flags, with: ['llms'], skipPrompts: true });
       break;
     case 'upgrade':
-    case 'update':
       await runUpgrade(projectDir, config, flags);
       break;
     case 'impact':
-      runImpact(projectDir, config, flags);
+      // v0.20: deprecated alias for `diff --since`. Default --since HEAD~1
+      // matches impact's historical behavior.
+      runImpact(projectDir, config, { ...flags, since: flags.since || 'HEAD~1' });
       break;
     case 'explain':
-    case 'help-warning':
       runExplain(projectDir, config, flags);
       break;
     case 'memory':
