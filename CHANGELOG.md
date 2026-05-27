@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Performance
+
+- **Precompute schema lookup in `extractOpenAPIRelationships`:** Avoid an O(N^2) algorithmic bottleneck caused by calling `Array.find()` repeatedly inside nested loops by precomputing an O(1) Map of schema names in `cli/scanners/schemas.mjs`.
+
 ## [0.21.1] - 2026-05-26
 
 **Security patch — closes issue #190.** Command injection vulnerability in
