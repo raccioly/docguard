@@ -3,18 +3,21 @@ updates:
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
-      interval: "weekly"
-    cooldown:
-      default-days: 7
-      semver-minor-days: 3
-      semver-patch-days: 3
+      interval: "monthly"
+    groups:
+      all-npm:
+        patterns: ["*"]
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
-      interval: "weekly"
-    cooldown:
-      default-days: 7
+      interval: "monthly"
+    groups:
+      all-pip:
+        patterns: ["*"]
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
+    groups:
+      all-actions:
+        patterns: ["*"]
