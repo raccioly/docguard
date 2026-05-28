@@ -4,7 +4,7 @@ Enterprise-grade Canonical-Driven Development (CDD) enforcement and **AI-readabl
 
 ## Features
 
-- **23 Validators** — Structure, Security, Doc Quality, Test-Spec, Drift-Comments, API-Surface, Freshness, Cross-Reference, and 13 more
+- **24 Validators** — Structure, Security, Doc Quality, Test-Spec, Drift-Comments, API-Surface, Freshness, Cross-Reference, and 13 more
 - **Language-agnostic** — JS/TS, Python, Rust, Go, Java/Kotlin, Ruby, PHP, C#. Polyglot/monorepo-aware.
 - **AI-powered Generate** — `generate --plan` builds the code-truth skeleton in `<!-- docguard:section -->` markers and emits a structured agent task manifest; the AI writes the prose.
 - **Always up to date** — `sync` surgically refreshes code-truth doc sections in place, **preserves human prose**, flags prose for agent review.
