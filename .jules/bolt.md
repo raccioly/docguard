@@ -5,3 +5,7 @@
 ## 2024-05-18 - [O(N*M) String Overhead]
 **Learning:** To prevent N^2 performance bottlenecks in nested loops (such as comparing a list of items against multiple documents), precomputing expensive operations like `.toLowerCase()` during the initial file load or mapping phase avoids redundant $O(N \times M)$ overhead.
 **Action:** Precompute expensive string operations and property lookups (like `.toLowerCase()` and `.substring()`) outside of inner loops and during file load mapping phases to improve scaling.
+
+## 2024-05-18 - [O(N^2) Array Search Overhead]
+**Learning:** In `extractOpenAPIRelationships`, searching an array inside a nested loop with `Array.find` creates an O(N^2) bottleneck.
+**Action:** Precompute an O(1) `Map` lookup (e.g. of lowercased schema names to schema objects) outside the loop to reduce complexity to O(N).
