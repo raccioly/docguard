@@ -7,6 +7,126 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.22.0] - 2026-05-28
+
+### Added — Surface-Sync validator (item-level enumerable drift)
+
+`canonical-sync` already checks NUMERIC count claims in the README (ships
+N commands, N validators, mermaid diagram counts). But running the docguard
+repo through itself showed `canonical-sync` passing 3/3 while the README's
+command table silently omitted `demo` — the count matched, the table was
+wrong, the user hit "command not found" anyway. Count-level checks miss
+item-level drift.
+
+**Surface-Sync** is the item-level complement. For each configured surface
+(commands, validators, slash commands, templates — anything enumerable), it
+compares code-truth (from a glob) against the names appearing in table rows
+and bullet items in target docs. Warns on items present in code but missing
+from the doc, and on items listed in the doc but missing from code.
+
+Key behaviors:
+
+- **N/A by default.** Returns "nothing to validate" unless the project's
+  `.docguard.json` declares at least one surface under `surfaceSync.surfaces`.
+  Existing docguard projects upgrade safely with zero new noise.
+- **Section-scoped scanning.** Each surface can specify a `section` heading;
+  the validator restricts scanning to that section so a README containing
+  both a Commands table and a Validators table doesn't produce cross-table
+  false positives.
+- **Format-aware extraction.** Recognises documented entries written as
+  `` `name` ``, `**Name**`, `| `name` |`, `| N | **Name** |`, and bullet
+  items. Strips leading `docguard ` / `/` prefixes and folds case so README's
+  `**API-Surface**` matches file basename `api-surface.mjs`.
+- **Code-block immune.** Fenced code blocks are stripped before scanning so
+  shell examples don't inflate the documented set.
+- **`ignore` list per surface.** Known deprecation aliases, scaffolders
+  behind `init --with`, and display-name-vs-filename mismatches can be
+  silenced without disabling the surface entirely.
+
+Config shape (in `.docguard.json`):
+
+```json
+{
+  "surfaceSync": {
+    "surfaces": [
+      {
+        "name": "commands",
+        "glob": "cli/commands/*.mjs",
+        "extract": "basename-no-ext",
+        "ignore": ["setup", "impact"],
+        "docs": ["README.md"],
+        "section": "Usage"
+      }
+    ]
+  }
+}
+```
+
+DocGuard's own `.docguard.json` now declares three surfaces (commands,
+validators, slash-commands) so the project polices its own README on every
+`guard` run. Run `docguard explain surfaceSync` for fix guidance.
+
+### Fixed — eight field-test bugs from v0.20.0
+
+Confirmed running v0.20.0 against two real projects (a Python codebase for
+the v0.20.0 cycle and a Next.js 15 App Router codebase). All eight were
+reproduced in the source, fixed surgically, and pinned with regression
+tests. Specs: `specs/004-v020-env-var-false-negative/`, `specs/005-hugocross-next-bugs/`.
+
+- **API-Surface emits wrong path for Next.js App Router with `src/` layout**
+  — `src/app/api/health/route.ts` was reported as `GET /app/api/health`
+  instead of `GET /api/health`. Caused the validator to fire two false
+  warnings per route (documented-missing + undocumented-in-code) on every
+  `src/app/api/` file. `cli/scanners/routes.mjs`.
+
+- **Freshness validator ignored `<!-- docguard:last-reviewed YYYY-MM-DD -->`**
+  — header was generated into every template, recommended in the freshness
+  fix text itself, checked by `score` for ALCOA+, but never read by
+  `validateFreshness`. The reviewer's explicit "I reviewed this" signal
+  had zero effect. The header now overrides the git-log fallback.
+  `cli/validators/freshness.mjs`.
+
+- **Environment-vars in pipe-table rows (no backticks) were treated as
+  undocumented** — projects using `| VAR_NAME | description | required |`
+  table syntax were silently flagged for every var. The doc parser only
+  matched backtick-quoted names; it now also extracts the first column of
+  markdown pipe-table rows. `cli/validators/environment.mjs`.
+
+- **Docs-Diff warning was unactionable** — emitted `"N documented but not
+  found in code"` with no filename. Now lists up to 5 paths inline with
+  `(+N more)` for the long-tail. `cli/validators/docs-diff.mjs`.
+
+- **Traceability ignored `// @doc` annotations AND missed Next.js App
+  Router paths** — templates told users `// @doc API-REFERENCE.md` would
+  link a source file to a canonical doc; the scanner never read the
+  annotation. Compound: the `API-REFERENCE.md` TRACE_MAP only matched
+  `routes/`, `controllers/`, `handlers/`, `openapi/swagger`, and
+  `middleware/` — none of which cover `app/api/`. Added an annotation
+  scanner (top-of-file, multi-language comment syntax) and an
+  `(app|pages)/api/` glob. `cli/validators/traceability.mjs`.
+
+- **`docguard upgrade --apply` silently broke Metrics-Consistency** — when
+  a CLI upgrade added or removed validators, the project's hardcoded "N
+  validators" counts in markdown went stale and the very next
+  `docguard guard` failed Metrics-Consistency. The user did nothing wrong.
+  `upgrade --apply` now prints an explicit nudge to run `fix --write`
+  using the just-installed binary (the current process holds the OLD CLI's
+  validator list, so it cannot apply the fix itself). `cli/commands/upgrade.mjs`.
+
+- **Python env-vars were never scanned at all** — `grepEnvUsage` walked
+  `.py` files but the regex list was JS-only (`process.env.*`,
+  `import.meta.env.*`). Every documented Python env var read as "in docs,
+  not in code". Added patterns for `os.environ["X"]`, `os.environ.get("X")`,
+  and `os.getenv("X")`. The `explain` command's claim that Python was
+  supported now actually holds. `cli/shared-source.mjs`.
+
+- **`docguard memory` "Accuracy" overlapped `docguard score` "Accuracy"
+  with different denominators** — same word, same project, wildly different
+  numbers. Renamed the per-claim metric in `memory` to **"Claim match
+  rate"** (matched claims / total claims) so it no longer collides with
+  the score's weighted accuracy axis across all signals. JSON field name
+  unchanged for backward compatibility. `cli/commands/memory.mjs`.
+
 ## [0.21.1] - 2026-05-26
 
 **Security patch — closes issue #190.** Command injection vulnerability in

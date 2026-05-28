@@ -84,8 +84,18 @@ export function runMemory(projectDir, config, flags) {
   // ── Text output ──
   console.log(`${c.bold}🧠 DocGuard Memory${c.reset} ${c.dim}— ${config.projectName}${c.reset}\n`);
 
+  // Label is `Claim match rate` (not `Accuracy`) to disambiguate from the
+  // score-level `Accuracy` metric in `docguard score`, which is a weighted
+  // average across the entire accuracy axis (apiSurface, environment, drift,
+  // metadata-sync, etc.) and uses a different denominator. Both numbers are
+  // legitimate, but the same word was pointing at two different calculations
+  // — users saw "Accuracy 0%" here and "Accuracy 93%" in `score` on the same
+  // project and reasonably read it as a contradiction. This metric is the
+  // strict per-claim ratio (matched claims / total checked claims, restricted
+  // to domains that actually have any claims).
   const accColor = overallAccuracy >= 90 ? c.green : overallAccuracy >= 70 ? c.yellow : c.red;
-  console.log(`  ${c.bold}Accuracy:${c.reset} ${accColor}${overallAccuracy}%${c.reset} ${c.dim}(${totalMatched}/${totalChecks} doc claims match code)${c.reset}\n`);
+  console.log(`  ${c.bold}Claim match rate:${c.reset} ${accColor}${overallAccuracy}%${c.reset} ${c.dim}(${totalMatched}/${totalChecks} doc claims match code)${c.reset}`);
+  console.log(`  ${c.dim}   ↳ See ${c.cyan}docguard score${c.dim} for the weighted accuracy axis across all domains.${c.reset}\n`);
 
   if (totalChecks === 0) {
     console.log(`  ${c.dim}No applicable domains found — add canonical docs (API-REFERENCE.md, DATA-MODEL.md, ENVIRONMENT.md) and rerun.${c.reset}`);

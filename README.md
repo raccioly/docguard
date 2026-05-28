@@ -71,7 +71,7 @@ graph TD
     Commands --> setup["setup wizard"]
     Commands --> other["diff · init · fix · trace · impact · sync<br/>explain · memory · upgrade · agents · hooks · badge · ci · watch"]
 
-    guard --> Validators["Validators (23)"]
+    guard --> Validators["Validators (24)"]
     generate --> Scanners["Scanners (4)<br/>routes · schemas · doc-tools · speckit"]
     score --> Scoring["Weighted Scoring<br/>8 categories"]
     diagnose --> Validators
@@ -99,7 +99,7 @@ graph TD
 Recent highlights across the v0.16 → v0.19 line:
 
 - **`docguard explain <validator>`** — `docguard explain freshness` prints purpose, rules, common
-  failures, and fix recipes for any of the 23 validators. No need to dig into source.
+  failures, and fix recipes for any of the 24 validators. No need to dig into source.
 - **`docguard memory --diff`** — surface what changed in your canonical docs between two refs
   (`HEAD~10..HEAD` by default). Great for code review and changelog drafting.
 - **`docguard score --diff`** — see exactly which validators moved the score up or down between
@@ -241,7 +241,7 @@ DocGuard is a [community extension](https://github.com/github/spec-kit/blob/main
 specify extension add docguard
 ```
 
-This installs DocGuard's slash commands (`/docguard.guard`, `/docguard.review`, `/docguard.fix`, `/docguard.score`) into your AI agent's command palette.
+This installs DocGuard's slash commands (`/docguard.init`, `/docguard.guard`, `/docguard.review`, `/docguard.fix`, `/docguard.update`) into your AI agent's command palette.
 
 ---
 
@@ -254,7 +254,7 @@ DocGuard ships **14 commands** (the "Daily 5" + 9 situational tools, including t
 | Command | What It Does |
 |:--------|:-------------|
 | `init`  | Bootstrap a project (`--wizard` for interactive · `--with <name>` for scaffolders) |
-| `guard` | Validate against canonical docs — 23 validators |
+| `guard` | Validate against canonical docs — 24 validators |
 | `diff`  | Show gaps between docs and code (`--since <ref>` for impact mode) |
 | `sync`  | Refresh code-truth doc sections — keeps memory always up to date |
 | `score` | CDD maturity score (0-100; `--diff` for delta between refs) |
@@ -263,6 +263,7 @@ DocGuard ships **14 commands** (the "Daily 5" + 9 situational tools, including t
 
 | Command | Purpose |
 |:--------|:--------|
+| `demo` | Zero-install showcase — runs guard against a baked-in drifting fixture (`npx docguard-cli demo`) |
 | `diagnose` | AI orchestrator — guard → emit fix prompts in one command |
 | `fix` | Generate AI fix instructions for specific docs (`--doc <name> --format prompt`) |
 | `fix --write` | Apply deterministic fixes (no AI — version bumps, counts, anchors, sections) |
@@ -347,7 +348,7 @@ $ npx docguard-cli generate
 
 ## 🔍 Validators
 
-DocGuard runs **23 automated validators** on every `guard` check. Every one is **language-aware** as of v0.16 — patterns for Python (`test_*.py`), Rust (`tests/*.rs`), Go (`*_test.go`), Java (`*Test.java`), Ruby (`*_spec.rb`), PHP, and JS/TS all match.
+DocGuard runs **24 automated validators** on every `guard` check. Every one is **language-aware** as of v0.16 — patterns for Python (`test_*.py`), Rust (`tests/*.rs`), Go (`*_test.go`), Java (`*Test.java`), Ruby (`*_spec.rb`), PHP, and JS/TS all match.
 
 | # | Validator | What It Checks | Default |
 |:--|:----------|:--------------|:--------|
@@ -374,6 +375,7 @@ DocGuard runs **23 automated validators** on every `guard` check. Every one is *
 | 21 | **Generated-Staleness** | `source=code` sections match scanner output; `status: draft` doc age | ✅ On |
 | 22 | **Canonical-Sync** | DocGuard's own README count claims match code-truth (DocGuard repo only — N/A elsewhere) | ✅ On |
 | 23 | **Metrics-Consistency** | Hardcoded numbers match actual counts | ✅ On |
+| 24 | **Surface-Sync** | Item-level enumerable drift — names in doc tables/lists (commands, validators, etc.) match code-truth (opt-in via `surfaceSync.surfaces`; N/A unless configured) | ✅ On |
 
 **Per-validator controls** (in `.docguard.json`):
 ```json
@@ -441,10 +443,11 @@ DocGuard provides AI agent slash commands for integrated workflows. Installed au
 
 | Command | What It Does |
 |:--------|:-------------|
-| `/docguard.guard` | Run quality validation — check all 23 validators |
+| `/docguard.init` | Initialize Canonical-Driven Development in a new or existing project |
+| `/docguard.guard` | Run quality validation — check all 24 validators |
 | `/docguard.review` | Analyze doc quality and suggest improvements |
 | `/docguard.fix` | Generate targeted fix prompts for specific issues |
-| `/docguard.score` | Show CDD maturity score with category breakdown |
+| `/docguard.update` | Update canonical docs after code changes — detect drift and sync documentation |
 
 These commands are installed into your AI agent's command directory:
 

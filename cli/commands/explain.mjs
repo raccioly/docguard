@@ -150,6 +150,17 @@ const EXPLAINERS = {
     example: 'AGENTS.md says "22 validators" and `docguard guard` shows 22 active validators',
     standard: 'CDD principle: documented metrics match reality',
   },
+  surfaceSync: {
+    title: 'Surface-Sync — every code-derived list entry is documented',
+    what: 'Item-level check (complementing canonical-sync\'s count-level check). For each configured surface (e.g. commands → `cli/commands/*.mjs`), compares the discovered files against the names appearing in table rows / bullet lists in target docs (README.md, AGENTS.md). Warns when a code item is missing from the doc, or a doc item is missing from code.',
+    why:  'Counts can match while lists drift — README claimed "14 commands" while the table only listed 13 (demo was missing). Count validators celebrated; users hit "command not found" anyway. This check catches that case.',
+    triggers: [
+      ['Surface "X" drift: N in code but missing from README.md', 'Add the missing items to the relevant table / bullet list in the target doc. Or, if intentional (deprecation alias, scaffolder behind --with), add the names to the surface\'s `ignore` list in .docguard.json.'],
+      ['Surface "X" drift: N listed in README.md but not found in code', 'A documented item no longer exists in code. Either remove it from the doc (it was deleted) or restore the file/command (it was deleted by mistake).'],
+    ],
+    example: '`cli/commands/demo.mjs` exists and `| `demo` | Zero-install preview |` appears in README.md\'s commands table',
+    standard: 'CDD principle: documented surfaces match implemented surfaces',
+  },
   crossReference: {
     title: 'Cross-Reference — internal markdown links resolve',
     what: 'Scans canonical docs for `[text](./OTHER.md#anchor)` and `#anchor` links. Verifies the target file exists and the anchor matches a heading.',

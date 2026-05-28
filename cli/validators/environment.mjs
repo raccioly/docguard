@@ -64,6 +64,19 @@ export function validateEnvironment(projectDir, config) {
       if (SYSTEM.has(m[1])) continue; // v0.16-P4: prose mentions of system vars are not docs
       documented.add(m[1]);
     }
+    // Also extract markdown table rows where the first column is a bare env
+    // var name (no backticks). Real-world ENVIRONMENT.md docs frequently use
+    // pipe tables with un-backticked names — the backtick-only regex above
+    // silently misses every suffixed variant (DYNAMODB_TABLE_JOBS,
+    // DYNAMODB_TABLE_SOURCES, …) and they get reported as undocumented.
+    // Match `| VAR_NAME |` anywhere on the line; require the row to also
+    // contain a second `|` (real table row), not a stray pipe in prose.
+    const tableRe = /^\s*\|\s*([A-Z][A-Z0-9_]*[A-Z0-9])\s*\|/gm;
+    while ((m = tableRe.exec(content)) !== null) {
+      if (m[1].length < 3) continue;
+      if (SYSTEM.has(m[1])) continue;
+      documented.add(m[1]);
+    }
     for (const envFile of ['.env.example', '.env.template']) {
       const p = resolve(projectDir, envFile);
       if (!existsSync(p)) continue;

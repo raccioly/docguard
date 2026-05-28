@@ -64,6 +64,10 @@ const TRACE_MAP = {
   'API-REFERENCE.md': {
     sourcePatterns: [
       { label: 'Route handlers', glob: /(routes?|controllers?|handlers?)\// },
+      // Next.js App Router (and Pages Router) — `app/api/`, `src/app/api/`,
+      // `pages/api/`, `src/pages/api/`. Without this, a perfectly-populated
+      // Next.js API tree gets reported as "API-REFERENCE.md — unlinked doc".
+      { label: 'Next.js API routes', glob: /(^|\/)(app|pages)\/api\// },
       { label: 'OpenAPI spec', glob: /(openapi|swagger)\.(json|ya?ml)/ },
       { label: 'API middleware', glob: /middleware\// },
     ],
@@ -115,6 +119,15 @@ export function validateTraceability(projectDir, config) {
   const projectFiles = [];
   scanDir(projectDir, projectDir, projectFiles);
 
+  // Scan source files for `// @doc <filename>.md` annotations. An annotation
+  // is an explicit author signal that a source file documents (or is
+  // documented by) a canonical doc. It is the user-facing escape hatch when
+  // a project's directory layout doesn't match the built-in TRACE_MAP globs
+  // (e.g. a route file outside any `routes/` / `app/api/` tree). The
+  // annotation is also shown in templates and templates/commands docs, so
+  // users have been told it works — actually honoring it is the fix here.
+  const docAnnotations = scanDocAnnotations(projectFiles, projectDir);
+
   // ── Part 1: Source Traceability (existing) ──
   for (const [docName, traceInfo] of Object.entries(TRACE_MAP)) {
     // Skip docs not in the user's required list
@@ -126,6 +139,14 @@ export function validateTraceability(projectDir, config) {
 
     if (!docExists) {
       warnings.push(`${docName} — required but missing, no traceability possible`);
+      continue;
+    }
+
+    // Explicit `// @doc <docName>` annotation counts as a link regardless of
+    // whether the file path matches any built-in pattern. Checked first so
+    // path-pattern misses don't drown out explicit author intent.
+    if (docAnnotations.has(docName) && docAnnotations.get(docName).size > 0) {
+      passed++;
       continue;
     }
 
@@ -353,6 +374,50 @@ function getRequirementDocPaths(projectDir, config) {
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
+
+/**
+ * Scan code files for `// @doc <name>.md` annotations. Returns a Map from
+ * canonical doc basename → Set of source file paths that annotate it.
+ *
+ * Annotation forms accepted:
+ *   - `// @doc API-REFERENCE.md`
+ *   - `// @doc docs-canonical/API-REFERENCE.md`  (basename is what matters)
+ *   - `/* @doc API-REFERENCE.md *​/`              (block comment, single line)
+ *   - `# @doc API-REFERENCE.md`                  (Python / Ruby comment style)
+ *
+ * Only the basename of the referenced doc is keyed; callers compare against
+ * the doc basename (e.g. `API-REFERENCE.md`). We cap how many files we open
+ * to keep this scan O(N) and stop reading the rest of a file after the
+ * first 4 KB — annotations belong at the top of a file by convention, and
+ * reading every byte of every source file just to find a header comment
+ * would balloon scan time on large monorepos.
+ */
+function scanDocAnnotations(projectFiles, projectDir) {
+  const map = new Map();
+  const annotationRe = /(?:\/\/|\/\*|#)\s*@doc\s+(\S+\.md)/g;
+  const CODE_EXT = new Set(['.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx', '.py', '.rb', '.go', '.rs', '.java']);
+  const HEAD_BYTES = 4096;
+
+  for (const relPath of projectFiles) {
+    const ext = extname(relPath);
+    if (!CODE_EXT.has(ext)) continue;
+    const full = resolve(projectDir, relPath);
+    let content;
+    try { content = readFileSync(full, 'utf-8'); } catch { continue; }
+    // Annotations live near the top of the file. Slicing avoids reading
+    // megabytes of bundled / minified output looking for a header comment.
+    const head = content.length > HEAD_BYTES ? content.slice(0, HEAD_BYTES) : content;
+    if (!head.includes('@doc')) continue;
+    annotationRe.lastIndex = 0;
+    let m;
+    while ((m = annotationRe.exec(head)) !== null) {
+      const docName = basename(m[1]);
+      if (!map.has(docName)) map.set(docName, new Set());
+      map.get(docName).add(relPath);
+    }
+  }
+  return map;
+}
 
 function scanDir(rootDir, dir, files) {
   let entries;

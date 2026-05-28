@@ -102,6 +102,8 @@
         "specKit":            { "type": "boolean" },
         "crossReference":    { "type": "boolean" },
         "generatedStaleness":{ "type": "boolean" },
+        "canonicalSync":     { "type": "boolean" },
+        "surfaceSync":       { "type": "boolean" },
         "metricsConsistency":{ "type": "boolean" }
       },
       "additionalProperties": false
@@ -146,6 +148,30 @@
         "deepScan": {
           "type": "boolean",
           "description": "If true and the `understanding` CLI is on PATH, run its 31-metric deep analysis. Off by default."
+        }
+      },
+      "additionalProperties": true
+    },
+    "surfaceSync": {
+      "type": "object",
+      "description": "Surface-Sync validator: item-level drift between code-derived enumerables (commands, validators, templates) and the lists in target docs (README.md, AGENTS.md). Default: N/A unless `surfaces` is declared.",
+      "properties": {
+        "surfaces": {
+          "type": "array",
+          "description": "Enumerable surfaces to check. Each surface compares code-truth (from a glob) against documented list entries in target markdown files.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name":    { "type": "string", "description": "Human-readable surface name used in warnings (e.g. \"commands\")." },
+              "glob":    { "type": "string", "description": "Glob discovering the code-truth files (e.g. `cli/commands/*.mjs`). Only leaf `*` supported." },
+              "extract": { "type": "string", "enum": ["basename", "basename-no-ext"], "description": "How to derive the surface name from each file path." },
+              "ignore":  { "type": "array", "items": { "type": "string" }, "description": "Surface names to skip (e.g. known deprecation aliases)." },
+              "docs":    { "type": "array", "items": { "type": "string" }, "description": "Target markdown files to scan for documented list entries." },
+              "section": { "type": "string", "description": "Optional heading text to scope the scan (substring match, case-insensitive). Without it, the entire doc is scanned and tables for OTHER surfaces produce cross-table false positives. Use when one doc lists multiple surfaces." }
+            },
+            "required": ["name", "glob"],
+            "additionalProperties": false
+          }
         }
       },
       "additionalProperties": true

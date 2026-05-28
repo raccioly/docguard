@@ -6,7 +6,7 @@
  * but the code has already been implemented and committed.
  */
 
-import { existsSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { resolve, join, extname } from 'node:path';
 import { execSync, execFileSync } from 'node:child_process';
 
@@ -33,6 +33,26 @@ const IGNORE_DIRS = new Set([
   'coverage', '.cache', '__pycache__', '.venv', 'vendor',
   'templates', 'configs', 'Research',
 ]);
+
+/**
+ * Read the `<!-- docguard:last-reviewed YYYY-MM-DD -->` header from a doc file.
+ * Returns the parsed Date when present, null otherwise (file missing, header
+ * absent, or date unparseable). The header is the authoritative review date
+ * — it represents an explicit human review action that `git log` cannot see
+ * (e.g., the reviewer read the file, confirmed it still matches reality, and
+ * stamped the header without touching content, so there is no commit to find).
+ */
+function readLastReviewedDate(absPath) {
+  try {
+    const content = readFileSync(absPath, 'utf-8');
+    const m = content.match(/<!--\s*docguard:last-reviewed\s+(\d{4}-\d{2}-\d{2})\s*-->/);
+    if (!m) return null;
+    const d = new Date(m[1] + 'T00:00:00Z');
+    return isNaN(d.getTime()) ? null : d;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Get the last git commit date for a file.
@@ -170,7 +190,15 @@ export function validateFreshness(dir, config) {
     const docPath = resolve(dir, docFile);
     if (!existsSync(docPath)) continue;
 
-    const docDate = getLastGitDate(docFile, dir);
+    // Prefer the explicit `<!-- docguard:last-reviewed YYYY-MM-DD -->` header
+    // over the git commit date. A reviewer who reads a doc and stamps the
+    // header without changing content has signaled "I confirmed this is still
+    // current" — git log cannot see that signal, so it would falsely flag the
+    // doc as stale despite the explicit review. Fall back to git log only when
+    // the header is absent. Symmetric with the ALCOA+ "review metadata present"
+    // check in score.mjs, which reads the same header.
+    const reviewedDate = readLastReviewedDate(docPath);
+    const docDate = reviewedDate || getLastGitDate(docFile, dir);
     if (!docDate) {
       // File exists but isn't tracked in git yet
       results.push({
@@ -212,7 +240,9 @@ export function validateFreshness(dir, config) {
   // ── 2. Check CHANGELOG.md was updated in the last 5 code commits ──
   const changelogPath = resolve(dir, config.requiredFiles?.changelog || 'CHANGELOG.md');
   if (existsSync(changelogPath)) {
-    const changelogDate = getLastGitDate(config.requiredFiles?.changelog || 'CHANGELOG.md', dir);
+    const changelogDate =
+      readLastReviewedDate(changelogPath) ||
+      getLastGitDate(config.requiredFiles?.changelog || 'CHANGELOG.md', dir);
     if (changelogDate && latestCodeDate) {
       const daysDiff = Math.floor((latestCodeDate - changelogDate) / (1000 * 60 * 60 * 24));
       if (daysDiff > 7) {

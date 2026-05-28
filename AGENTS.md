@@ -41,7 +41,7 @@
 | Command | Purpose |
 |---------|---------|
 | `diagnose` | **Primary** — identify issues + generate AI fix prompts |
-| `guard` | Validate project (CI gate) — 23 validators |
+| `guard` | Validate project (CI gate) — 24 validators |
 | `generate` | Reverse-engineer docs from code |
 | `fix --doc <name>` | AI prompt for specific document |
 | `score` | CDD maturity score (0-100) |

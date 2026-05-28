@@ -217,6 +217,15 @@ export function grepEnvUsage(projectDir, config = {}) {
     new RegExp(`process\\.env\\.${NAME}`, 'g'),
     new RegExp(`process\\.env\\[\\s*['"]${NAME}['"]\\s*\\]`, 'g'),
     new RegExp(`import\\.meta\\.env\\.${NAME}`, 'g'),
+    // Python: `os.environ["X"]`, `os.environ.get("X")`, `os.getenv("X")`. The
+    // `explain` command and ENVIRONMENT.md templates have always told users
+    // these forms are scanned, but the implementation only handled JS. On a
+    // Python project this caused every documented env var to be reported as
+    // "in docs, not in code" — a silent 0% accuracy. Patterns cover bracket
+    // access, .get(), and the standalone os.getenv() function.
+    new RegExp(`os\\.environ\\[\\s*['"]${NAME}['"]\\s*\\]`, 'g'),
+    new RegExp(`os\\.environ\\.get\\s*\\(\\s*['"]${NAME}['"]`, 'g'),
+    new RegExp(`os\\.getenv\\s*\\(\\s*['"]${NAME}['"]`, 'g'),
   ];
   // Vite injects these at build time; they are not user-set env vars.
   const VITE_INTRINSICS = new Set(['DEV', 'PROD', 'MODE', 'BASE_URL', 'SSR']);

@@ -230,7 +230,7 @@ const _KNOWN_VALIDATORS = [
   'security', 'architecture', 'freshness', 'traceability', 'docsDiff',
   'apiSurface', 'metadataSync', 'docsCoverage', 'docQuality', 'todoTracking',
   'schemaSync', 'specKit', 'crossReference', 'generatedStaleness',
-  'metricsConsistency',
+  'canonicalSync', 'surfaceSync', 'metricsConsistency',
 ];
 
 function _kebabToCamel(k) {

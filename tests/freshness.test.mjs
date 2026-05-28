@@ -159,4 +159,80 @@ describe('Freshness Validator', () => {
     assert.strictEqual(archResult.status, 'warn');
     assert.match(archResult.message, /last updated \d+ days before latest code change/);
   });
+
+  // Regression for the v0.20.0 field-test bug: the `<!-- docguard:last-reviewed
+  // YYYY-MM-DD -->` header was injected into every generated template and
+  // referenced in the freshness fix-suggestion text, but `validateFreshness()`
+  // never actually read it — only `git log` was consulted. So updating the
+  // header (the explicit "I reviewed this and it's still accurate" signal)
+  // had zero effect on the check. These tests pin both the override path
+  // and the git-log fallback path.
+  describe('docguard:last-reviewed header', () => {
+    function commitOldCode(dir) {
+      const oldDate = new Date();
+      oldDate.setDate(oldDate.getDate() - 100);
+      const iso = oldDate.toISOString();
+      for (let i = 1; i <= 3; i++) {
+        writeFileSync(join(dir, `code${i}.js`), `const a = ${i};`);
+        runGit(`add code${i}.js`, dir);
+        execSync(`git commit -m "code ${i}" --date="${iso}"`, {
+          cwd: dir,
+          env: { ...process.env, GIT_COMMITTER_DATE: iso },
+        });
+      }
+    }
+
+    it('a today-dated header suppresses the stale-doc warning', () => {
+      runGit('init', tmpDir);
+      runGit('config user.name "Test"', tmpDir);
+      runGit('config user.email "test@example.com"', tmpDir);
+      commitOldCode(tmpDir);
+
+      // Doc committed 100 days ago, but the header was just stamped today.
+      const oldIso = new Date();
+      oldIso.setDate(oldIso.getDate() - 100);
+      const today = new Date().toISOString().slice(0, 10);
+      const docsDir = join(tmpDir, 'docs-canonical');
+      mkdirSync(docsDir, { recursive: true });
+      writeFileSync(
+        join(docsDir, 'ARCHITECTURE.md'),
+        `<!-- docguard:last-reviewed ${today} -->\n# Arch\n`
+      );
+      runGit('add docs-canonical/ARCHITECTURE.md', tmpDir);
+      const oldIsoStr = oldIso.toISOString();
+      execSync(`git commit -m "doc" --date="${oldIsoStr}"`, {
+        cwd: tmpDir,
+        env: { ...process.env, GIT_COMMITTER_DATE: oldIsoStr },
+      });
+
+      const results = validateFreshness(tmpDir, {});
+      const arch = results.find(r => r.message.includes('ARCHITECTURE.md'));
+      assert.ok(arch, 'ARCHITECTURE.md should appear in results');
+      assert.strictEqual(arch.status, 'pass',
+        `expected pass (header is fresh) but got ${arch.status}: ${arch.message}`);
+    });
+
+    it('a stale-dated header does NOT suppress the warning', () => {
+      runGit('init', tmpDir);
+      runGit('config user.name "Test"', tmpDir);
+      runGit('config user.email "test@example.com"', tmpDir);
+      commitOldCode(tmpDir);
+
+      const docsDir = join(tmpDir, 'docs-canonical');
+      mkdirSync(docsDir, { recursive: true });
+      // Header date is 200 days old → should still trigger staleness.
+      writeFileSync(
+        join(docsDir, 'ARCHITECTURE.md'),
+        '<!-- docguard:last-reviewed 2020-01-01 -->\n# Arch\n'
+      );
+      runGit('add docs-canonical/ARCHITECTURE.md', tmpDir);
+      runGit('commit -m "doc"', tmpDir);
+
+      const results = validateFreshness(tmpDir, {});
+      const arch = results.find(r => r.message.includes('ARCHITECTURE.md'));
+      assert.ok(arch);
+      assert.strictEqual(arch.status, 'warn',
+        'stale header date must not mask a real freshness warning');
+    });
+  });
 });

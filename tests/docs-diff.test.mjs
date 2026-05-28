@@ -59,4 +59,27 @@ describe('Docs-Diff Validator', () => {
     const result = diffTechStack(tmpDir, {});
     assert.ok(!result.onlyInDocs.includes('Docker'), 'Docker should be detected via Dockerfile');
   });
+
+  // Regression for hugocross Bug 4: the docs-diff warning used to emit only
+  // the COUNT ("1 documented but not found in code") and not the file path,
+  // which made it completely unactionable — the user couldn't tell which of
+  // 52 documented tests was the offender. The warning must now name the
+  // file (capped at 5 inline + "(+N more)" for long lists).
+  describe('warning includes the offending file path (hugocross bug 4)', () => {
+    it('names a missing tech-stack entry', async () => {
+      const { validateDocsDiff } = await import('../cli/validators/docs-diff.mjs');
+      // Doc declares Redis; package.json declares NONE → "Redis documented but not found"
+      write(tmpDir, 'docs-canonical/ARCHITECTURE.md', 'Built with Redis.');
+      write(tmpDir, 'package.json', JSON.stringify({
+        name: 'x',
+        dependencies: { express: '^4' },
+      }));
+
+      const { warnings } = validateDocsDiff(tmpDir, {});
+      const drift = warnings.find(w => w.includes('Tech Stack drift'));
+      assert.ok(drift, `expected a tech-stack drift warning, got: ${warnings.join('\n')}`);
+      assert.match(drift, /documented but not found in code: `Redis`/,
+        `warning must name the file/tech; got: ${drift}`);
+    });
+  });
 });
