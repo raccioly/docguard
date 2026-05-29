@@ -1,8 +1,9 @@
 # Dependencies
 node_modules/
 
-# Build artifacts (npm pack output — never commit)
+# Build artifacts (npm pack / vsce package output — never commit)
 *.tgz
+*.vsix
 
 # Internal research (not part of the public package)
 Research/

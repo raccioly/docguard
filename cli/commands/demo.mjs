@@ -25,7 +25,7 @@ import { spawnSync } from 'node:child_process';
 import { c } from '../shared.mjs';
 import { runGuardInternal, classifyResult } from './guard.mjs';
 import { runScoreInternal } from './score.mjs';
-import { loadConfig } from '../docguard.mjs';
+import { loadConfig } from '../config.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
