@@ -9,7 +9,7 @@
  */
 
 const vscode = require('vscode');
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
@@ -180,17 +180,33 @@ function findSpecguard(workspaceDir) {
 }
 
 function execSpecguard(workspaceDir, args) {
-  const localBin = findSpecguard(workspaceDir);
+  // SECURITY (command injection): never build a shell string from the
+  // workspace path or args. `localBin` embeds `workspaceDir`, which the user
+  // controls by opening a folder — a name like `foo" && rm -rf ~ && echo "`
+  // would inject under the old `execSync(\`"${localBin}" ${args}\`)`. We pass
+  // argv directly to execFileSync (no shell), so the path is argv[0] (a literal
+  // filename) and every arg is a literal token — metacharacters are inert.
+  // Accepts an array (preferred) or a space-separated string (back-compat;
+  // safe because the split tokens are never shell-interpreted).
+  const argv = Array.isArray(args)
+    ? args
+    : String(args).trim().split(/\s+/).filter(Boolean);
 
-  let cmd;
+  const localBin = findSpecguard(workspaceDir);
+  const isWindows = process.platform === 'win32';
+
+  let bin, finalArgs;
   if (localBin) {
-    cmd = `"${localBin}" ${args}`;
+    bin = localBin;
+    finalArgs = argv;
   } else {
-    cmd = `npx -y specguard ${args}`;
+    // `npx` is `npx.cmd` on Windows; execFileSync resolves it via PATHEXT.
+    bin = isWindows ? 'npx.cmd' : 'npx';
+    finalArgs = ['-y', 'specguard', ...argv];
   }
 
   try {
-    return execSync(cmd, {
+    return execFileSync(bin, finalArgs, {
       cwd: workspaceDir,
       encoding: 'utf-8',
       env: { ...process.env, NO_COLOR: '1' },
