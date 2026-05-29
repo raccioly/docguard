@@ -1,5 +1,7 @@
 # DocGuard Surface Audit
 
+<!-- docguard:quality negation-load off — analytical audit doc: findings are inherently stated as "guard cannot catch X", "names don't telegraph Y"; these negations are the substance, not sloppy phrasing -->
+
 > **Status:** Survey only — recommendations, no code changes.
 > **Owner:** Ricardo Accioly · **Date:** 2026-05-26 · **DocGuard:** v0.18.1 (v0.19.0 staged but unpushed)
 > **Scope:** Every command, every validator, every doc claim about either. The question: did 15 releases of additive work leave us with too many similar verbs for users to learn, and where is the doc-vs-code drift that `guard` can't see today?
