@@ -1,8 +1,10 @@
 # Security
 
-<!-- docguard:version 0.4.0 -->
+<!-- docguard:quality negation-load off — security doc: prohibitive phrasing ("never a shell string", "can't inject", "no dependencies") is precise and intentional, not sloppy writing -->
+
+<!-- docguard:version 0.5.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-05-26 -->
+<!-- docguard:last-reviewed 2026-05-29 -->
 
 | Metadata | Value |
 |----------|-------|
@@ -52,8 +54,8 @@ DocGuard uses a simple permission model: it inherits filesystem permissions from
 |----------|---------|-----------|
 | **File reads** | Project files within `projectDir` | DocGuard only reads files within the project directory and its own templates |
 | **File writes** | `docguard init`, `docguard generate`, `docguard hooks` | Only writes to `docs-canonical/`, root docs, `.docguard.json`, `.git/hooks/` |
-| **Child processes** | `git log`, `git diff` (freshness validator) | Only executes `git` commands with safe, read-only flags |
-| **User input** | CLI arguments parsed by the entry point | All input is sanitized before use in child processes |
+| **Child processes** | `git log`/`git diff` (freshness), `specify init` (Spec Kit scaffolding), `specguard` (VS Code extension) | All spawned via `execFileSync` with an argv array — never a shell string. The binary is `argv[0]` (a literal filename) and each arg a literal token, so workspace paths and config values can't inject commands |
+| **User input** | CLI arguments parsed by the entry point | Agent/path inputs that reach a subprocess are allowlist-validated (`/^[a-zA-Z0-9_-]{1,32}$/`) before use |
 
 ## Command Safety Levels
 
@@ -96,7 +98,7 @@ DocGuard's own `.gitignore` excludes:
 - [x] `.env` files are excluded from version control
 - [x] All secrets are environment-variable-based
 - [x] CLI operates 100% offline
-- [x] All user input is sanitized before `exec()`
+- [x] Subprocesses use `execFileSync` (argv arrays, no shell); injection-prone inputs are allowlist-validated (closed #190 in CLI init, #205/#207 in the VS Code extension)
 - [x] File writes are opt-in only (init, generate, hooks commands)
 - [x] Git commands are read-only (`git log`, `git diff`)
 - [x] Zero npm dependencies eliminates supply chain risk

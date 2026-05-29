@@ -1,8 +1,8 @@
 # DocGuard Roadmap
 
-<!-- docguard:version 0.4.0 -->
+<!-- docguard:version 0.5.0 -->
 <!-- docguard:status living -->
-<!-- docguard:last-reviewed 2026-05-26 -->
+<!-- docguard:last-reviewed 2026-05-29 -->
 <!-- docguard:owner @raccioly -->
 
 > The planned evolution of DocGuard and Canonical-Driven Development (CDD).
@@ -10,8 +10,8 @@
 | Metadata | Value |
 |----------|-------|
 | **Status** | ![Status](https://img.shields.io/badge/status-active-brightgreen) |
-| **Version** | `0.4.0` |
-| **Last Updated** | 2026-03-12 |
+| **Version** | `0.5.0` |
+| **Last Updated** | 2026-05-29 |
 | **Owner** | [@raccioly](https://github.com/raccioly) |
 
 ---
@@ -31,7 +31,19 @@ Make **Canonical-Driven Development** the industry standard for AI-age software 
 | 2 | Polish & Adoption | ✅ Complete | Mar 2026 |
 | 3 | AI Generate Mode | ✅ Complete | Mar 2026 |
 | 4 | Integrations | ✅ Complete | Mar 2026 |
+| 4.5 | Continuous Hardening | 🔄 Ongoing | Mar–May 2026 |
 | 5 | Dashboard (SaaS) | 💭 Future | Q4 2026 |
+
+### Phase 4.5: Continuous Hardening (v0.11 → v0.23) 🔄
+
+Sustained, feedback-driven maturation since the March milestones:
+
+- **Validators grew 9 → 24** — added Canonical-Sync, Surface-Sync, Metrics-Consistency, Doc-Quality, Traceability, Cross-Reference, Generated-Staleness, and more.
+- **Language-aware** test/trace discovery (Python, Go, Rust, Java/Kotlin, Ruby, PHP) shared between `docguard trace` and the guard-time Traceability validator.
+- **Per-doc/per-rule overrides** — `docguard:section … n/a`, `docguard:quality negation-load off`, `docguard:spec-type bugfix` — so the validators fit real projects instead of forcing ceremony.
+- **Security** — closed command-injection vectors in CLI `init` (#190) and the VS Code extension (#207); subprocesses now use `execFileSync` + allowlist validation.
+- **Published the VS Code extension** (`DocGuard.docguard-vscode`) to the Marketplace.
+- **Distribution** — npm + PyPI + GitHub Action + Spec Kit community-catalog auto-sync.
 
 ---
 
