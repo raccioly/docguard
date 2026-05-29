@@ -9,7 +9,7 @@
  */
 
 const vscode = require('vscode');
-const { execSync } = require('child_process');
+const { execSync, execFileSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
@@ -180,17 +180,38 @@ function findSpecguard(workspaceDir) {
 }
 
 function execSpecguard(workspaceDir, args) {
-  const localBin = findSpecguard(workspaceDir);
-
-  let cmd;
-  if (localBin) {
-    cmd = `"${localBin}" ${args}`;
-  } else {
-    cmd = `npx -y specguard ${args}`;
-  }
+  // Use a regex that properly handles quoted arguments.
+  const argList = (args.match(/(?:[^\s"]+|"[^"]*")+/g) || []).map(arg => {
+    // Remove surrounding quotes if present
+    if (arg.startsWith('"') && arg.endsWith('"')) {
+      return arg.slice(1, -1);
+    }
+    return arg;
+  });
 
   try {
-    return execSync(cmd, {
+    let bin;
+    let finalArgs;
+
+    const localBin = findSpecguard(workspaceDir);
+
+    if (process.platform === 'win32') {
+      // On Windows, use npx and pass the arguments properly through shell: false
+      // If we use the localBin directly and it's a .cmd, we'd need a shell.
+      // Using `npx --no-install specguard` resolves local binaries safely without explicit shell evaluation of the directory string by cmd.exe.
+      bin = 'npx.cmd';
+      finalArgs = ['--no-install', 'specguard', ...argList];
+    } else {
+      if (localBin) {
+        bin = localBin;
+        finalArgs = argList;
+      } else {
+        bin = 'npx';
+        finalArgs = ['-y', 'specguard', ...argList];
+      }
+    }
+
+    return execFileSync(bin, finalArgs, {
       cwd: workspaceDir,
       encoding: 'utf-8',
       env: { ...process.env, NO_COLOR: '1' },
