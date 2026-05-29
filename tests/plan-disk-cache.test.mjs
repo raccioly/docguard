@@ -1,6 +1,8 @@
 /**
  * v0.18-P2 — Cross-process plan cache (.docguard/plan.cache.json).
  *
+ * @req NFR-003 — repeat guard runs reuse a cross-process plan cache, invalidated on tree change.
+ *
  * Verifies the disk cache (L2):
  *   - First call writes the file
  *   - Second call (in a fresh process / fresh in-memory state) reads it

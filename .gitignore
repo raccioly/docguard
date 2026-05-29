@@ -1,6 +1,9 @@
 # Dependencies
 node_modules/
 
+# Build artifacts (npm pack output — never commit)
+*.tgz
+
 # Internal research (not part of the public package)
 Research/
 

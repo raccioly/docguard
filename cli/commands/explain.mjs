@@ -150,6 +150,17 @@ const EXPLAINERS = {
     example: 'AGENTS.md says "22 validators" and `docguard guard` shows 22 active validators',
     standard: 'CDD principle: documented metrics match reality',
   },
+  canonicalSync: {
+    title: 'Canonical-Sync — README count claims match code-truth (DocGuard repo only)',
+    what: 'Count-level check (complementing surface-sync\'s item-level check). Verifies that numeric claims in the README — "ships N commands", "N validators", mermaid diagram counts — match what the code actually exposes. N/A unless the project opts in via `canonicalSync` config; primarily for DocGuard\'s own repo.',
+    why:  'Hardcoded counts in prose and diagrams drift silently every time a command or validator is added/removed. A README claiming "23 validators" when there are 24 erodes trust and misleads AI agents reading the docs.',
+    triggers: [
+      ['README.md claims "N validators" but guard reports M', 'Update the count. `docguard fix --write` handles this mechanically across all docs.'],
+      ['architecture diagram has stale counts', 'Update the count inside the mermaid block (fix --write does not edit mermaid; do it manually).'],
+    ],
+    example: 'README says "24 validators" and the architecture mermaid says "Validators (24)" — both matching the live registry',
+    standard: 'CDD principle: documented counts match implemented counts',
+  },
   surfaceSync: {
     title: 'Surface-Sync — every code-derived list entry is documented',
     what: 'Item-level check (complementing canonical-sync\'s count-level check). For each configured surface (e.g. commands → `cli/commands/*.mjs`), compares the discovered files against the names appearing in table rows / bullet lists in target docs (README.md, AGENTS.md). Warns when a code item is missing from the doc, or a doc item is missing from code.',

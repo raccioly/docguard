@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.22.1] - 2026-05-29
+
+Self-audit + field-feedback patch. Honest fixes only — no doc-gaming. The
+remaining guard warnings (Spec-Kit on bugfix specs, negation-load, docs-diff
+test files, freshness lag, the demo↔docguard import cycle) are deferred to
+v0.23.0 because the *correct* fix is improving the validators, not papering
+over the docs. `sync --write` confirmed the freshness warnings are git-age
+lag, not real code-truth drift, so they were left honest rather than date-bumped.
+
+### Fixed
+- **Stale validator counts in scaffolded files** — `extensions/spec-kit-docguard/skills/docguard-guard/SKILL.md`
+  ("19-validator") and `extensions/spec-kit-docguard/commands/guard.md` ("19-validator", "20 total")
+  hardcoded counts that drift every release and shipped into user projects. Reworded to be count-free,
+  matching the already-fixed `templates/commands/docguard.guard.md`. (Field report, Issue 1.)
+- **REQUIREMENTS.md non-functional requirements were unfilled web-service boilerplate**
+  ("200ms p95", "99.9% uptime SLA") — nonsensical for a zero-dependency CLI and untraced.
+  Rewrote NFR-001/002/003 to DocGuard's real, test-backed NFRs (injection-safe subprocess
+  spawns, zero runtime deps, cross-process plan cache) and traced each to its regression test
+  via `@req` tags. Clears the 3 Traceability warnings honestly.
+- **`specs/002-fix-test-discovery/plan.md`** — added the Spec-Kit-mandated `Summary` and
+  `Project Structure` sections (real content).
+
+### Added / Improved
+- **`docguard explain canonical-sync`** — the count-level companion validator was missing from
+  the explainer table; added it. (Field report, Issue 10.)
+- **Test-Spec validator note** now points to the expected table format and `docguard explain` when
+  it finds no service-to-test mappings, instead of a dead-end message. (Field report, Issue 4.)
+
+### Docs
+- **README "What's New" no longer over-claims language-aware trace mapping for `guard`.** The
+  multilingual patterns live in the standalone `docguard trace` command; the guard-time
+  Traceability validator is JS/TS-first today, with language parity on the v0.23 roadmap.
+  (Field report, Issue 3 — honesty fix pending the full validator port.)
+
 ## [0.22.0] - 2026-05-28
 
 ### Added — Surface-Sync validator (item-level enumerable drift)

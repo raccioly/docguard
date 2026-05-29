@@ -175,7 +175,7 @@ export function validateTestSpec(projectDir, config) {
 
     if (hasTestDir || hasColocated || hasConfigTests) {
       // Tests exist but the spec maps none of them → not applicable, not a pass.
-      results.note = 'TEST-SPEC.md declares no service-to-test mappings';
+      results.note = 'TEST-SPEC.md declares no service-to-test mappings. Add a "## Source-to-Test Map" table with `| Source | Test file | Status |` columns — run `docguard explain "no service-to-test mappings"` for the exact format.';
     } else {
       results.warnings.push(
         'No test directory or co-located test files found. ' +
