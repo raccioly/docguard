@@ -33,14 +33,16 @@ Test names follow the pattern: "verb + expected behavior" (e.g., "runs and shows
 > **CLI integration tests cover the full stack** — this is a CLI tool with zero UI surface.
 > Commands are validated end-to-end via Node.js subprocess execution, making separate E2E tests redundant.
 
+All test files live in `tests/` and match the glob `tests/*.test.mjs` — individual files are not enumerated here (the suite grows every release); see the Source-to-Test Map below for the source→test traceability that matters.
+
 ## Coverage Rules
 
 | Metric | Target | Current |
 |--------|:------:|:-------:|
-| Command Coverage | 100% | 100% (14/14 commands) |
-| Validator Coverage | 80% | 100% (12/12 validators) |
+| Command Coverage | 100% | 100% (all commands) |
+| Validator Coverage | 80% | 100% (all validators) |
 | Flag Coverage | 80% | 100% |
-| Test Count | — | 33 tests, 17 suites |
+| Test Count | — | 600+ tests (`npm test`) |
 
 ## Source-to-Test Map
 
