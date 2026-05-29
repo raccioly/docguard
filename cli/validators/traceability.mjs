@@ -15,6 +15,7 @@
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, relative, basename, extname } from 'node:path';
+import { TRACE_MAP, TEST_PATTERNS } from '../shared-trace-patterns.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build', 'coverage',
@@ -22,57 +23,6 @@ const IGNORE_DIRS = new Set([
   '.amplify-hosting', '.serverless',
 ]);
 
-/**
- * Mapping of canonical docs to source code patterns they should trace to.
- */
-const TRACE_MAP = {
-  'ARCHITECTURE.md': {
-    sourcePatterns: [
-      { label: 'Entry points', glob: /^(index|main|app|server)\.[jt]sx?$/ },
-      { label: 'Config files', glob: /^(package\.json|tsconfig.*|next\.config|vite\.config)/ },
-      { label: 'Route handlers', glob: /(routes?|api|pages|app)\// },
-    ],
-  },
-  'DATA-MODEL.md': {
-    sourcePatterns: [
-      { label: 'Schema definitions', glob: /(schema|model|entity|migration|prisma)/i },
-      { label: 'Type definitions', glob: /types?\.[jt]sx?$/ },
-      { label: 'Database configs', glob: /(drizzle|knex|sequelize|typeorm)/i },
-    ],
-  },
-  'TEST-SPEC.md': {
-    sourcePatterns: [
-      { label: 'Test files', glob: /\.(test|spec)\.(mjs|cjs|[jt]sx?)$/ },
-      { label: 'Test config', glob: /(jest|vitest|playwright|cypress)\.config/ },
-      { label: 'E2E tests', glob: /(e2e|integration)\// },
-    ],
-  },
-  'SECURITY.md': {
-    sourcePatterns: [
-      { label: 'Auth modules', glob: /(auth|login|session|jwt|oauth|middleware)/i },
-      { label: 'Secret configs', glob: /\.(env|env\.example|env\.local)$/ },
-      { label: 'Gitignore', glob: /^\.gitignore$/ },
-    ],
-  },
-  'ENVIRONMENT.md': {
-    sourcePatterns: [
-      { label: 'Env files', glob: /\.env/ },
-      { label: 'Docker configs', glob: /(Dockerfile|docker-compose|\.dockerignore)/ },
-      { label: 'CI/CD configs', glob: /\.(github|gitlab-ci|circleci)/ },
-    ],
-  },
-  'API-REFERENCE.md': {
-    sourcePatterns: [
-      { label: 'Route handlers', glob: /(routes?|controllers?|handlers?)\// },
-      // Next.js App Router (and Pages Router) — `app/api/`, `src/app/api/`,
-      // `pages/api/`, `src/pages/api/`. Without this, a perfectly-populated
-      // Next.js API tree gets reported as "API-REFERENCE.md — unlinked doc".
-      { label: 'Next.js API routes', glob: /(^|\/)(app|pages)\/api\// },
-      { label: 'OpenAPI spec', glob: /(openapi|swagger)\.(json|ya?ml)/ },
-      { label: 'API middleware', glob: /middleware\// },
-    ],
-  },
-};
 
 // ──── Default requirement ID patterns ────
 // Users can override via config.traceability.requirementPattern
@@ -285,7 +235,7 @@ function collectRequirementIds(projectDir, config, patterns) {
 
 function scanTestFilesForReferences(projectDir, projectFiles, patterns) {
   const testFiles = projectFiles.filter(f =>
-    /\.(test|spec)\.(mjs|cjs|[jt]sx?)$/.test(f) ||
+    TEST_PATTERNS.some(p => p.test(f)) ||   // multilingual: JS/TS, Python, Go, Rust, Java/Kotlin, Ruby, PHP
     /__tests__\//.test(f) ||
     /tests?\//.test(f)
   );
