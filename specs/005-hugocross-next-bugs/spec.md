@@ -1,5 +1,7 @@
 # Feature Specification: Fix 6 Confirmed Bugs from HugoCross Next.js Field Test
 
+<!-- docguard:spec-type bugfix — defect spec (symptom → root cause → fix); not held to the feature-spec template -->
+
 **Feature Branch**: `005-hugocross-next-bugs`  
 **Created**: 2026-05-26  
 **Status**: Draft  

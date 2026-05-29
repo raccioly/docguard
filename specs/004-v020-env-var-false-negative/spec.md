@@ -1,5 +1,7 @@
 # Feature Specification: Fix Env-Var Detector False Negative & Accuracy Terminology
 
+<!-- docguard:spec-type bugfix — defect spec (symptom → root cause → fix); not held to the feature-spec template -->
+
 **Feature Branch**: `004-v020-env-var-false-negative`  
 **Created**: 2026-05-26  
 **Status**: Draft  

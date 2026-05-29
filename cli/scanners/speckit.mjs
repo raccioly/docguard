@@ -221,6 +221,20 @@ function validateSpecQuality(specPath) {
   const issues = [];
   const content = readFileSync(specPath, 'utf-8');
 
+  // Bugfix / lightweight specs document a defect (symptom → root cause → fix),
+  // not a feature (User Scenarios / Requirements / Success Criteria with FR/SC
+  // IDs). The full feature template doesn't fit them — forcing it produces
+  // ceremony, not clarity. Opt in with `<!-- docguard:spec-type bugfix -->`
+  // and we validate the bugfix-appropriate shape instead: the spec must still
+  // state a Root Cause and a Fix, so it's a narrower check, not a free pass.
+  if (/<!--\s*docguard:spec-type\s+(?:bugfix|lightweight|patch)\b/i.test(content)) {
+    const { missing } = checkSections(content, ['Root Cause', 'Fix']);
+    for (const section of missing) {
+      issues.push(`Bugfix spec missing "${section}" — a defect spec must state its root cause and fix`);
+    }
+    return issues;
+  }
+
   // Check mandatory sections
   const { missing } = checkSections(content, SPEC_MANDATORY_SECTIONS);
   for (const section of missing) {
