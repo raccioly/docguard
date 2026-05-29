@@ -7,10 +7,10 @@ description: Run DocGuard guard validation against Canonical-Driven Development 
 compatibility: Requires DocGuard CLI installed (npm i -g docguard-cli or npx docguard-cli)
 metadata:
   author: docguard
-  version: 0.22.0
+  version: 0.22.1
   source: extensions/spec-kit-docguard/skills/docguard-guard
 ---
-<!-- docguard:version: 0.22.0 -->
+<!-- docguard:version: 0.22.1 -->
 
 # DocGuard Guard Skill
 
@@ -24,7 +24,7 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 ## Goal
 
-Execute DocGuard's 19-validator guard suite against the current project, parse structured results, triage findings by severity and impact, and produce an actionable remediation plan. This skill transforms raw CLI output into an AI-digestible quality assessment.
+Execute DocGuard's full guard validator suite against the current project, parse structured results, triage findings by severity and impact, and produce an actionable remediation plan. This skill transforms raw CLI output into an AI-digestible quality assessment.
 
 ## Pre-Execution Checks
 

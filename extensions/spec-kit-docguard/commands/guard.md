@@ -1,5 +1,5 @@
 ---
-description: "Run 19-validator quality gate with severity triage and actionable remediation"
+description: "Run the full quality gate with severity triage and actionable remediation"
 handoffs:
   - label: Fix All Issues
     agent: docguard.fix
@@ -43,7 +43,7 @@ npx --yes docguard-cli@latest guard $ARGUMENTS
 
 5. Re-run guard after fixes. Iterate until all checks pass (max 3 iterations).
 
-## Validators (20 total)
+## Validators
 
 | Validator | What It Checks |
 |-----------|---------------|

@@ -1,6 +1,8 @@
 /**
  * v0.21.1 — Issue #190 regression tests.
  *
+ * @req NFR-001 — CLI subprocess invocations are injection-safe (allowlist + execFileSync).
+ *
  * Pre-v0.21.1, `docguard init` was vulnerable to command injection via the
  * `ai` field in `.specify/init-options.json`:
  *

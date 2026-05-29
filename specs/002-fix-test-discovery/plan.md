@@ -4,12 +4,33 @@
 **Spec**: [spec.md](file:///Users/ricardoaccioly/.gemini/canonical-spec-kit/specs/002-fix-test-discovery/spec.md)  
 **Created**: 2026-03-18
 
+## Summary
+
+Fix three test-file-discovery bugs in the Docs-Diff validator plus the scorer's CI
+detection. `getTestFilesFromPatterns()` misuses the ignore-filter as a *match*
+function, so it pulls test files from `node_modules`; `calcTestingScore()` recognizes
+only two GitHub Actions files. This plan introduces shared glob matching, scopes
+test-file resolution to the project tree, and broadens CI detection — all on shared
+infra (no per-validator duplication), verified by regression tests.
+
 ## Technical Context
 
 - **Runtime**: Node.js 18+ (zero NPM deps)
 - **Test Framework**: `node:test`
 - **Constitution**: v1.1.0 (shared infra allowed per Principle IV)
 - **Affected Area**: Test file resolution in docs-diff validator + scoring CI detection
+
+## Project Structure
+
+```
+cli/
+  validators/docs-diff.mjs   # getTestFilesFromPatterns() — bug 1 & 2 (match vs ignore)
+  commands/score.mjs         # calcTestingScore() — bug 3 (CI detection)
+  shared-glob.mjs            # NEW: shared glob→regex matcher (anchored, node_modules-safe)
+tests/
+  docs-diff.test.mjs         # regression: no node_modules test files
+  score-ci-detection.test.mjs# regression: broader CI provider coverage
+```
 
 ## Root Cause Analysis
 

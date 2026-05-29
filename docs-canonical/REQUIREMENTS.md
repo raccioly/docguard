@@ -22,11 +22,11 @@
 
 <!-- Quality attributes: performance, security, reliability -->
 
-| ID | Category | Requirement | Metric |
-|----|----------|-------------|--------|
-| NFR-001 | Performance | Response time < 200ms p95 | Measured via [tool] |
-| NFR-002 | Security | All endpoints require authentication | Validated by guard |
-| NFR-003 | Reliability | 99.9% uptime SLA | Monitored via [tool] |
+| ID | Category | Requirement | Verified by |
+|----|----------|-------------|-------------|
+| NFR-001 | Security | CLI subprocess invocations are injection-safe — agent/config-derived values are allowlist-validated and passed via `execFileSync` (no shell interpolation of untrusted input) | `tests/security-init-injection.test.mjs` |
+| NFR-002 | Portability | The published package runs with **zero runtime dependencies** on Node.js ≥18 — the packaged tarball executes standalone | `tests/npm-pack-smoke.test.mjs` |
+| NFR-003 | Performance | Repeat `guard` runs reuse a cross-process plan cache that is invalidated on any working-tree change | `tests/plan-disk-cache.test.mjs` |
 
 ## Success Criteria
 

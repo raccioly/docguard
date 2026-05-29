@@ -1,6 +1,8 @@
 /**
  * v0.19-P1 — npm-pack smoke test.
  *
+ * @req NFR-002 — published package runs with zero runtime dependencies on Node ≥18.
+ *
  * Builds the actual tarball that would be published to npm, extracts it
  * into a temp directory, and runs the CLI against a tiny fixture. Catches
  * the class of bugs where a needed file is missing from `package.json`'s
