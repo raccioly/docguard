@@ -90,4 +90,45 @@ The manager approves the budget. The customer buys the product.
     assert.strictEqual(result.passed, result.total);
     assert.ok(result.total > 0);
   });
+
+  const NEGATION_HEAVY = `
+# Operational Notes
+
+The runner does not modify the repo and never writes to disk anywhere.
+It cannot escalate privileges and will not bypass the quality gate.
+Do not commit secrets here. The token is not stored and is not logged.
+Forks will not run the workflow, and stale branches are not refreshed.
+The cache is not shared and does not persist between separate jobs.
+`.trim();
+
+  it('honors the per-doc negation-load override marker', () => {
+    mkdirSync(join(tmpDir, 'docs-canonical'), { recursive: true });
+    const p = join(tmpDir, 'docs-canonical', 'OPS.md');
+
+    // Without the marker → a negation-load warning fires.
+    writeFileSync(p, NEGATION_HEAVY);
+    const before = validateDocQuality(tmpDir, {});
+    assert.ok(
+      before.warnings.some(w => /negation load/i.test(w)),
+      'expected a negation-load warning without the marker'
+    );
+
+    // With the marker → the negation check passes (no negation warning).
+    writeFileSync(p, '<!-- docguard:quality negation-load off — operational doc -->\n' + NEGATION_HEAVY);
+    const after = validateDocQuality(tmpDir, {});
+    assert.strictEqual(
+      after.warnings.filter(w => /negation load/i.test(w)).length, 0,
+      'the override marker should suppress the negation-load warning'
+    );
+  });
+
+  it('honors a config-level negationLoadThreshold', () => {
+    mkdirSync(join(tmpDir, 'docs-canonical'), { recursive: true });
+    writeFileSync(join(tmpDir, 'docs-canonical', 'OPS.md'), NEGATION_HEAVY);
+    const result = validateDocQuality(tmpDir, { docQuality: { negationLoadThreshold: 1.0 } });
+    assert.strictEqual(
+      result.warnings.filter(w => /negation load/i.test(w)).length, 0,
+      'a 1.0 threshold should never warn on negation'
+    );
+  });
 });

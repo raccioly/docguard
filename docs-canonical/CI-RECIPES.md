@@ -1,5 +1,7 @@
 # CI Recipes
 
+<!-- docguard:quality negation-load off — operational doc: "read-only, never modifies your repo", "fork PRs won't run", "don't commit X" are precise prohibitions; positive rephrasing would reduce clarity -->
+
 <!-- docguard:section id=overview source=human -->
 This document covers the GitHub Action and CI integration patterns DocGuard ships.
 Each recipe is a copy-pasteable workflow you can drop into `.github/workflows/`.

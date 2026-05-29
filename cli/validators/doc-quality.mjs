@@ -516,6 +516,21 @@ function getCanonicalDocs(projectDir) {
  * paragraphs are scored. Documents that are mostly tables/code/reference
  * material are skipped for readability (they'd score 0/100 unfairly).
  */
+/**
+ * Parse a per-doc quality-rule override marker, e.g.
+ *   <!-- docguard:quality negation-load off — security doc, prohibitive language is precise -->
+ *   <!-- docguard:quality negation-load 0.35 — operational doc -->
+ * Returns { off: true } | { threshold: <number> } | null. A required reason
+ * after the value is encouraged (and self-documenting) but not enforced here.
+ */
+function parseQualityOverride(content, rule) {
+  const re = new RegExp('<!--\\s*docguard:quality\\s+' + rule + '\\s+(off|\\d*\\.?\\d+)\\b', 'i');
+  const m = content.match(re);
+  if (!m) return null;
+  const v = m[1].toLowerCase();
+  return v === 'off' ? { off: true } : { threshold: parseFloat(v) };
+}
+
 function analyzeDocument(doc) {
   const content = readFileSync(doc.path, 'utf-8');
   const proseText = extractProse(content);
@@ -554,6 +569,7 @@ function analyzeDocument(doc) {
       conditionalLoad: conditional.ratio,
     },
     details: { passive, ambiguous, atomicity, negation, conditional },
+    overrides: { negationLoad: parseQualityOverride(content, 'negation-load') },
   };
 }
 
@@ -650,13 +666,20 @@ export function validateDocQuality(projectDir, config) {
     }
 
     // ── Check 7: Negation Load ──
+    // Per-doc override (security/operational docs legitimately use "never",
+    // "must not", "cannot") and a project-wide config threshold both honored.
     results.total++;
-    if (m.negationLoad <= THRESHOLDS.negationLoad.warn) {
+    const negOv = analysis.overrides?.negationLoad;
+    const negThreshold = negOv?.threshold
+      ?? config.docQuality?.negationLoadThreshold
+      ?? THRESHOLDS.negationLoad.warn;
+    if (negOv?.off || m.negationLoad <= negThreshold) {
       results.passed++;
     } else {
       results.warnings.push(
         `${doc.name}: High negation load (${(m.negationLoad * 100).toFixed(0)}% of sentences use negation). ` +
-        `Rephrase in positive terms: "must not fail" → "must succeed" (IEEE 830 §4.3)`
+        `Rephrase in positive terms: "must not fail" → "must succeed" (IEEE 830 §4.3). ` +
+        `If the negation is intentional, add: <!-- docguard:quality negation-load off — your reason -->`
       );
     }
 
