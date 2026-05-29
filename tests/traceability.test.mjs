@@ -189,4 +189,20 @@ describe('Traceability Validator', () => {
         `App Router route should link to API-REFERENCE.md; warnings: ${result.warnings.join('\n')}`);
     });
   });
+
+  it('recognizes non-JS test files (multilingual traceability — Issue 3)', () => {
+    // Pre-v0.23.0 the guard Traceability validator was JS/TS-only, so a Python
+    // project's TEST-SPEC.md was reported as an "unlinked doc". It now shares
+    // the multilingual patterns with `docguard trace` via shared-trace-patterns.
+    mkdirSync(join(tmpDir, 'docs-canonical'), { recursive: true });
+    writeFileSync(join(tmpDir, 'docs-canonical', 'TEST-SPEC.md'), '# Test Spec\n\nTests live in `tests/`.');
+    mkdirSync(join(tmpDir, 'tests'), { recursive: true });
+    writeFileSync(join(tmpDir, 'tests', 'test_payment.py'), 'def test_charge():\n    assert True\n');
+
+    const config = { requiredFiles: { canonical: ['TEST-SPEC.md'] } };
+    const result = validateTraceability(tmpDir, config);
+    assert.strictEqual(result.passed, 1,
+      `Python test should link TEST-SPEC.md; warnings: ${result.warnings.join('\n')}`);
+    assert.deepEqual(result.warnings, []);
+  });
 });

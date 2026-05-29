@@ -106,9 +106,9 @@ Recent highlights across the v0.16 → v0.19 line:
   two commits. Pinpoints regressions without re-running the full suite by hand.
 - **`docguard upgrade --apply --pr`** — when the config schema bumps, DocGuard migrates
   `.docguard.json` for you and (optionally) opens a PR with the change.
-- **Language-aware `docguard trace`** — the standalone `trace` command understands Python, Rust, Go,
-  Java, Ruby, and PHP layouts in addition to JS/TS. (The guard-time Traceability validator is JS/TS-first
-  today; broader language parity is on the v0.23 roadmap.)
+- **Language-aware traceability** — both `docguard trace` *and* the guard-time Traceability validator
+  understand Python, Rust, Go, Java, Ruby, and PHP layouts in addition to JS/TS, via a shared pattern
+  set (`cli/shared-trace-patterns.mjs`) so the two never drift apart.
 - **Per-validator severity overrides** — escalate `freshness` to `high` for production repos,
   demote `doc-quality` to `low` for prototypes. Configurable per-project.
 - **JSON Schema for `.docguard.json`** — IDE autocomplete, in-line docs, and validation via
