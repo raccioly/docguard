@@ -7,6 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.23.0] - 2026-05-29
+
+Validator-hardening minor release, driven by external field feedback and a full
+self-audit. Theme: make the validators **fit real projects** and **tell the
+truth**, rather than forcing ceremony or over-claiming. Honest fixes only — no
+doc-gaming. Self-audit guard warnings went 20 → 0-of-ours (the only remaining
+warning is a parallel session's untracked file).
+
+### Added
+- **Language-aware guard Traceability** (field Issue 3) — the guard-time
+  Traceability validator now understands Python, Go, Rust, Java/Kotlin, Ruby,
+  and PHP layouts, not just JS/TS. The multilingual `TEST_PATTERNS` + `TRACE_MAP`
+  live in one shared module (`cli/shared-trace-patterns.mjs`) consumed by both
+  `docguard trace` and the validator, so they can't drift apart. (The README
+  previously claimed this but only the standalone `trace` command delivered it.)
+- **Per-doc negation-load override** (field Issue 14) — `<!-- docguard:quality
+  negation-load off — reason -->` (or a numeric threshold), plus a project-wide
+  `docQuality.negationLoadThreshold` config. Security/operational/audit docs
+  legitimately use "never"/"must not"/"cannot"; this stops false flags without
+  weakening the check for tutorials.
+- **Bugfix/lightweight spec type** — `<!-- docguard:spec-type bugfix -->` makes
+  the Spec-Kit validator check a defect spec for Root Cause + Fix instead of the
+  full feature template (User Scenarios + FR/SC IDs). Narrower check, not a free
+  pass.
+- **`docguard explain canonical-sync`** — the count-level companion validator
+  was missing from the explainer (field Issue 10).
+
+### Changed
+- **`loadConfig` extracted to `cli/config.mjs`** — breaks the demo↔docguard
+  import cycle the Architecture validator flagged (byte-for-byte move, no logic
+  change). New modules import config from there, not the CLI entry point.
+- **Docs-Diff** test-file drift now recognises the documented glob convention
+  (`tests/*.test.mjs`) instead of demanding every test file be enumerated.
+- **Diff loops pre-compile their regexes** (community PR) — O(N·M) → O(N) on the
+  test-file comparison.
+- **Test-Spec** "no mappings" note now points to the expected table format and
+  `docguard explain` (field Issue 4).
+- **Canonical docs refreshed** — ARCHITECTURE (config.mjs, 24 validators, 11
+  scanners, shared-trace-patterns), SECURITY (real `execFileSync`+allowlist
+  subprocess posture), ROADMAP (Phase 4.5 hardening). Genuine review, not
+  date-stamping.
+
+### Related (shipped separately)
+- VS Code extension `DocGuard.docguard-vscode` published to the Marketplace
+  (v0.4.1), including a command-injection fix in `execSpecguard` (#207).
+
 ## [0.22.1] - 2026-05-29
 
 Self-audit + field-feedback patch. Honest fixes only — no doc-gaming. The
