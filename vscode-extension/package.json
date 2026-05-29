@@ -2,7 +2,7 @@
   "name": "docguard-vscode",
   "displayName": "DocGuard — CDD Compliance",
   "description": "Canonical-Driven Development (CDD) enforcement for VS Code. Inline warnings, CDD score in status bar, and guard commands.",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "publisher": "raccioly",
   "icon": "icon.png",
   "repository": {
