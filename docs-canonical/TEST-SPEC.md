@@ -2,9 +2,9 @@
 
 <!-- docguard:version 0.7.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-05-29 -->
+<!-- docguard:last-reviewed 2026-05-30 -->
 
-> DocGuard is a zero-dependency CLI tool. CLI integration tests cover the full stack.
+> DocGuard has a single optional-load runtime dependency (`@babel/parser`). CLI integration tests cover the full stack with `node:test` (zero dev dependencies).
 
 | Metadata | Value |
 |----------|-------|

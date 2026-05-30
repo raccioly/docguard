@@ -29,6 +29,7 @@ import { detectOpenAPI } from '../scanners/doc-tools.mjs';
 import { scanRoutesDeep } from '../scanners/routes.mjs';
 import { parseApiReferenceDoc, compareEndpoints, endpointKey } from '../scanners/api-doc.mjs';
 import { collectPackageJsons, getWorkspaceDirs } from '../shared-source.mjs';
+import { relPosix } from '../shared-ignore.mjs';
 
 const MAX_REPORTED = 15;
 const API_DOC = 'docs-canonical/API-REFERENCE.md';
@@ -86,9 +87,7 @@ export function findAllOpenApiSpecs(projectDir, config) {
     seenAbs.add(absPath);
     specs.push({
       absPath,
-      relPath: absPath.startsWith(resolve(projectDir))
-        ? absPath.slice(resolve(projectDir).length + 1)
-        : absPath,
+      relPath: relPosix(projectDir, absPath),
       endpoints: oa.endpoints.filter(e => e && e.method && e.path),
     });
   }

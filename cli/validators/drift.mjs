@@ -4,6 +4,7 @@
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, extname } from 'node:path';
+import { relPosix } from '../shared-ignore.mjs';
 
 const CODE_EXTENSIONS = new Set([
   '.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx',
@@ -31,7 +32,7 @@ export function validateDrift(projectDir, config) {
     // string fixtures (e.g. `'// DRIFT: a-drift\n'`). Reading the test as
     // source would treat the string as a real drift comment. Skip test
     // files unless the user opts in — same pattern TODO-Tracking uses.
-    const rel = filePath.replace(projectDir + '/', '');
+    const rel = relPosix(projectDir, filePath);
     const includeTests = config?.drift?.includeTestFiles === true;
     if (!includeTests && /(^|\/)(__tests__|tests?|spec)\/|\.(test|spec)\.[^.]+$/.test(rel)) {
       return;
@@ -44,7 +45,7 @@ export function validateDrift(projectDir, config) {
       const match = line.match(/(?:\/\/|#|\/\*|\-\-)\s*DRIFT:\s*(.+)/i);
       if (match) {
         driftComments.push({
-          file: filePath.replace(projectDir + '/', ''),
+          file: relPosix(projectDir, filePath),
           line: i + 1,
           comment: match[1].trim(),
         });

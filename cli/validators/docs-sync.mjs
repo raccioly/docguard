@@ -5,6 +5,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, extname, basename } from 'node:path';
 import { resolveSourceRoots } from '../shared-source.mjs';
+import { relPosix } from '../shared-ignore.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', '.nuxt', 'dist', 'build', 'out',
@@ -103,7 +104,7 @@ export function validateDocsSync(projectDir, config) {
       const ext = extname(file);
       if (!['.ts', '.tsx', '.js', '.jsx', '.mjs', '.py', '.java', '.go'].includes(ext)) continue;
 
-      const relPath = file.replace(projectDir + '/', '');
+      const relPath = relPosix(projectDir, file);
       if (isTestFile(relPath)) continue;
       if (!isValidRouteFile(relPath)) continue;
       // N-1: skip files outside the --changed-only scope.
@@ -129,7 +130,7 @@ export function validateDocsSync(projectDir, config) {
       const ext = extname(file);
       if (!['.ts', '.tsx', '.js', '.jsx', '.mjs', '.py', '.java', '.go'].includes(ext)) continue;
 
-      const relPath = file.replace(projectDir + '/', '');
+      const relPath = relPosix(projectDir, file);
       if (isTestFile(relPath)) continue;
       // N-1: skip files outside the --changed-only scope.
       if (!inScope(relPath)) continue;
@@ -175,7 +176,7 @@ export function validateDocsSync(projectDir, config) {
         const ext = extname(file);
         if (!['.ts', '.tsx', '.js', '.jsx', '.mjs'].includes(ext)) continue;
 
-        const relPathForFilter = file.replace(projectDir + '/', '');
+        const relPathForFilter = relPosix(projectDir, file);
         if (isTestFile(relPathForFilter)) continue;
         if (!isValidRouteFile(relPathForFilter)) continue;
 

@@ -41,8 +41,7 @@ Sustained, feedback-driven maturation since the March milestones:
 - **Validators grew 9 → 24** — added Canonical-Sync, Surface-Sync, Metrics-Consistency, Doc-Quality, Traceability, Cross-Reference, Generated-Staleness, and more.
 - **Language-aware** test/trace discovery (Python, Go, Rust, Java/Kotlin, Ruby, PHP) shared between `docguard trace` and the guard-time Traceability validator.
 - **Per-doc/per-rule overrides** — `docguard:section … n/a`, `docguard:quality negation-load off`, `docguard:spec-type bugfix` — so the validators fit real projects instead of forcing ceremony.
-- **Security** — closed command-injection vectors in CLI `init` (#190) and the VS Code extension (#207); subprocesses now use `execFileSync` + allowlist validation.
-- **Published the VS Code extension** (`DocGuard.docguard-vscode`) to the Marketplace.
+- **Security** — closed a command-injection vector in CLI `init` (#190); subprocesses now use `execFileSync` + allowlist validation, and the GitHub Action passes all inputs via the environment rather than splicing them into shell.
 - **Distribution** — npm + PyPI + GitHub Action + Spec Kit community-catalog auto-sync.
 
 ---

@@ -25,7 +25,7 @@ We will acknowledge your report within 48 hours and provide a timeline for a fix
 
 DocGuard is a **local CLI tool** with a minimal attack surface:
 
-- **Zero npm dependencies** — no supply chain risk
+- **One exact-pinned, vetted dependency** (`@babel/parser`, loaded optionally with a regex fallback) — minimal supply-chain surface
 - **No network requests** — runs entirely offline
 - **No authentication** — no credentials to compromise
 - **No data storage** — stateless, reads/writes project files only

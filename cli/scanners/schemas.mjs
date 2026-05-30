@@ -8,6 +8,7 @@
 
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { resolve, join, relative, basename, extname } from 'node:path';
+import { extractJsSchemaBodies } from './js-ast.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build', 'coverage',
@@ -220,26 +221,15 @@ function scanDrizzleSchemas(dir) {
       const content = readFileSafe(filePath);
       if (!content || !content.includes('Table(')) return;
 
-      let match;
-      const regex = new RegExp(tablePattern.source, 'g');
-      while ((match = regex.exec(content)) !== null) {
-        const varName = match[1];
-        const tableName = match[2];
-        const body = match[3];
+      // Emit one entity from a (tableName, body) pair. `body` is the balanced
+      // inner text of the table's column object.
+      const emit = (tableName, body) => {
         const fields = parseDrizzleColumns(body);
-
-        // Look for references (foreign keys)
         for (const field of fields) {
           if (field._ref) {
-            relationships.push({
-              from: tableName,
-              to: field._ref,
-              type: 'many-to-one',
-              field: field.name,
-            });
+            relationships.push({ from: tableName, to: field._ref, type: 'many-to-one', field: field.name });
           }
         }
-
         entities.push({
           name: tableName,
           fields: fields.map(f => ({ ...f, _ref: undefined })),
@@ -247,6 +237,17 @@ function scanDrizzleSchemas(dir) {
           source: 'drizzle',
           description: '',
         });
+      };
+
+      // Full-support tier: AST extraction (nested braces handled). Falls back
+      // to the legacy regex only when @babel/parser can't parse the file.
+      const ast = extractJsSchemaBodies(content, filePath);
+      if (ast) {
+        for (const s of ast) if (s.kind === 'drizzle') emit(s.table, s.body);
+      } else {
+        let match;
+        const regex = new RegExp(tablePattern.source, 'g');
+        while ((match = regex.exec(content)) !== null) emit(match[2], match[3]);
       }
     });
   }
@@ -327,20 +328,28 @@ function scanZodSchemas(dir) {
       const content = readFileSafe(filePath);
       if (!content || !content.includes('z.object')) return;
 
-      let match;
-      const regex = new RegExp(zodPattern.source, 'g');
-      while ((match = regex.exec(content)) !== null) {
-        const schemaName = match[1].replace(/Schema$|Validator$/, '');
-        const body = match[2];
-        const fields = parseZodFields(body);
-
+      const emit = (rawName, body) => {
+        const schemaName = rawName.replace(/Schema$|Validator$/, '');
         entities.push({
           name: schemaName,
-          fields,
+          fields: parseZodFields(body),
           file: relative(dir, filePath),
           source: 'zod',
           description: '',
         });
+      };
+
+      const ast = extractJsSchemaBodies(content, filePath);
+      if (ast) {
+        // Keep the legacy naming gate (only *Schema/Validator/Input/Output) so
+        // inline z.object() validations aren't treated as data-model entities.
+        for (const s of ast) {
+          if (s.kind === 'zod' && /(?:Schema|Validator|Input|Output)$/.test(s.name)) emit(s.name, s.body);
+        }
+      } else {
+        let match;
+        const regex = new RegExp(zodPattern.source, 'g');
+        while ((match = regex.exec(content)) !== null) emit(match[1], match[2]);
       }
     });
   }
@@ -407,25 +416,14 @@ function scanMongooseSchemas(dir) {
       const content = readFileSafe(filePath);
       if (!content || !content.includes('Schema(')) return;
 
-      let match;
-      const regex = new RegExp(schemaPattern.source, 'g');
-      while ((match = regex.exec(content)) !== null) {
-        const schemaName = match[1].replace(/Schema$/i, '');
-        const body = match[2];
+      const emit = (rawName, body) => {
+        const schemaName = rawName.replace(/Schema$/i, '');
         const fields = parseMongooseFields(body);
-
-        // Check for refs (relationships)
         for (const field of fields) {
           if (field._ref) {
-            relationships.push({
-              from: schemaName,
-              to: field._ref,
-              type: 'many-to-one',
-              field: field.name,
-            });
+            relationships.push({ from: schemaName, to: field._ref, type: 'many-to-one', field: field.name });
           }
         }
-
         entities.push({
           name: schemaName.charAt(0).toUpperCase() + schemaName.slice(1),
           fields: fields.map(f => ({ ...f, _ref: undefined })),
@@ -433,6 +431,15 @@ function scanMongooseSchemas(dir) {
           source: 'mongoose',
           description: '',
         });
+      };
+
+      const ast = extractJsSchemaBodies(content, filePath);
+      if (ast) {
+        for (const s of ast) if (s.kind === 'mongoose') emit(s.name, s.body);
+      } else {
+        let match;
+        const regex = new RegExp(schemaPattern.source, 'g');
+        while ((match = regex.exec(content)) !== null) emit(match[1], match[2]);
       }
     });
   }

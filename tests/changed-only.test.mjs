@@ -12,7 +12,7 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
-import { CHANGED_ONLY_VALIDATORS } from '../cli/commands/guard.mjs';
+import { CHANGED_ONLY_VALIDATORS, liteValidatorsConfig } from '../cli/commands/guard.mjs';
 
 function make(files) {
   const dir = mkdtempSync(join(tmpdir(), 'docguard-changed-only-'));
@@ -44,6 +44,38 @@ describe('CHANGED_ONLY_VALIDATORS — the pre-commit lite set', () => {
     assert.ok(!CHANGED_ONLY_VALIDATORS.includes('freshness'));
     assert.ok(!CHANGED_ONLY_VALIDATORS.includes('traceability'));
     assert.ok(!CHANGED_ONLY_VALIDATORS.includes('docQuality'));
+  });
+});
+
+describe('liteValidatorsConfig — never silently drops severity=high validators', () => {
+  it('enables only the lite set by default', () => {
+    const v = liteValidatorsConfig({});
+    for (const k of CHANGED_ONLY_VALIDATORS) assert.equal(v[k], true, `${k} should be on`);
+    assert.equal(v.security, false, 'security is not in the lite set, so off by default');
+    assert.equal(v.freshness, false, 'slow validators stay off by default');
+  });
+
+  it('force-enables a validator the team escalated to severity=high', () => {
+    // Regression: a changed-only gate used to pass on a committed secret even
+    // when `security` was marked high, because the lite set silently dropped it.
+    const v = liteValidatorsConfig({ severity: { security: 'high' } });
+    assert.equal(v.security, true,
+      'security=high must run under --changed-only — it is an explicit "always block" signal');
+  });
+
+  it('respects an explicit validator disable over a high-severity override', () => {
+    const v = liteValidatorsConfig({
+      severity: { security: 'high' },
+      validators: { security: false },
+    });
+    assert.equal(v.security, false,
+      'an explicit validators.security=false wins — you cannot escalate a disabled validator');
+  });
+
+  it('does not escalate medium/low severity validators', () => {
+    const v = liteValidatorsConfig({ severity: { freshness: 'low', traceability: 'medium' } });
+    assert.equal(v.freshness, false);
+    assert.equal(v.traceability, false);
   });
 });
 

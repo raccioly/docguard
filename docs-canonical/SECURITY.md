@@ -54,7 +54,7 @@ DocGuard uses a simple permission model: it inherits filesystem permissions from
 |----------|---------|-----------|
 | **File reads** | Project files within `projectDir` | DocGuard only reads files within the project directory and its own templates |
 | **File writes** | `docguard init`, `docguard generate`, `docguard hooks` | Only writes to `docs-canonical/`, root docs, `.docguard.json`, `.git/hooks/` |
-| **Child processes** | `git log`/`git diff` (freshness), `specify init` (Spec Kit scaffolding), `specguard` (VS Code extension) | All spawned via `execFileSync` with an argv array — never a shell string. The binary is `argv[0]` (a literal filename) and each arg a literal token, so workspace paths and config values can't inject commands |
+| **Child processes** | `git log`/`git diff` (freshness), `specify init` (Spec Kit scaffolding) | All spawned via `execFileSync` with an argv array — never a shell string. The binary is `argv[0]` (a literal filename) and each arg a literal token, so workspace paths and config values can't inject commands |
 | **User input** | CLI arguments parsed by the entry point | Agent/path inputs that reach a subprocess are allowlist-validated (`/^[a-zA-Z0-9_-]{1,32}$/`) before use |
 
 ## Command Safety Levels
@@ -76,12 +76,12 @@ DocGuard uses a simple permission model: it inherits filesystem permissions from
 
 | Category | Status |
 |----------|--------|
-| **npm dependencies** | **Zero** — DocGuard has no `node_modules` |
-| **Runtime dependencies** | Node.js ≥ 18, `git` (optional, for freshness checks) |
-| **Transitive dependencies** | None |
-| **Known vulnerabilities** | None — no dependency tree to audit |
+| **npm dependencies** | **One** — `@babel/parser` (exact-pinned), for AST-accurate JS/TS parsing |
+| **Runtime dependencies** | Node.js ≥ 18, `git` (optional, for freshness checks), `python3` (optional, for Python AST parsing) |
+| **Transitive dependencies** | `@babel/types` + 2 small `@babel/helper-*` packages — all first-party Babel |
+| **Known vulnerabilities** | None known — `npm audit` is clean; the `@babel/*` tree is the only audit surface |
 
-The zero-dependency architecture is a deliberate security decision: zero supply chain = zero supply chain attack surface.
+The dependency surface is deliberately minimal: a single exact-pinned, heavily-vetted parser (172M downloads/week, multi-maintainer) that loads **optionally** — if it's absent the CLI falls back to the regex tier rather than failing. New dependencies are governed by the constitution's exact-pin + supply-chain-vetting rule.
 
 ## .gitignore Audit
 
@@ -89,7 +89,7 @@ DocGuard's own `.gitignore` excludes:
 
 | Pattern | Purpose |
 |---------|---------|
-| `node_modules/` | npm packages (dev dependencies only — test runner) |
+| `node_modules/` | npm packages — the single runtime dep (`@babel/parser`); installed by npm, never committed |
 | `.env` | Environment files (not used, but excluded as best practice) |
 
 ## Security Rules Checklist
@@ -98,10 +98,10 @@ DocGuard's own `.gitignore` excludes:
 - [x] `.env` files are excluded from version control
 - [x] All secrets are environment-variable-based
 - [x] CLI operates 100% offline
-- [x] Subprocesses use `execFileSync` (argv arrays, no shell); injection-prone inputs are allowlist-validated (closed #190 in CLI init, #205/#207 in the VS Code extension)
+- [x] Subprocesses use `execFileSync` (argv arrays, no shell); injection-prone inputs are allowlist-validated (closed #190 in CLI init); the GitHub Action passes all inputs via `env:` rather than splicing them into shell
 - [x] File writes are opt-in only (init, generate, hooks commands)
 - [x] Git commands are read-only (`git log`, `git diff`)
-- [x] Zero npm dependencies eliminates supply chain risk
+- [x] Single exact-pinned, vetted dependency (`@babel/parser`) keeps supply-chain surface minimal; loads optionally with regex fallback
 
 ---
 

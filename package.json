@@ -45,6 +45,9 @@
   "engines": {
     "node": ">=18.0.0"
   },
+  "dependencies": {
+    "@babel/parser": "7.29.7"
+  },
   "files": [
     "cli/",
     "templates/",
@@ -56,6 +59,5 @@
     "PHILOSOPHY.md",
     "README.md",
     "LICENSE"
-  ],
-  "dependencies": {}
+  ]
 }

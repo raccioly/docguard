@@ -89,12 +89,22 @@ runs:
       id: run
       shell: bash
       working-directory: ${{ inputs.working-directory }}
+      env:
+        # SECURITY: inputs are passed through the environment, never interpolated
+        # into the script body. Splicing ${{ inputs.* }} directly into a run:
+        # block lets a caller that maps untrusted data (an issue title, a PR
+        # body, a fork-controlled value) into an input inject shell commands.
+        # An env var's value is data — the shell does not re-evaluate it.
+        INPUT_COMMAND: ${{ inputs.command }}
+        INPUT_FORMAT: ${{ inputs.format }}
+        INPUT_FAIL_ON_WARNING: ${{ inputs.fail-on-warning }}
+        INPUT_SCORE_THRESHOLD: ${{ inputs.score-threshold }}
       run: |
         set +e
 
         # Determine command and flags
-        CMD="${{ inputs.command }}"
-        FORMAT="${{ inputs.format }}"
+        CMD="$INPUT_COMMAND"
+        FORMAT="$INPUT_FORMAT"
         FLAGS=""
 
         if [ "$FORMAT" = "json" ]; then
@@ -121,7 +131,7 @@ runs:
           echo "$RESULT"
 
           # Check threshold
-          THRESHOLD="${{ inputs.score-threshold }}"
+          THRESHOLD="$INPUT_SCORE_THRESHOLD"
           if [ "$THRESHOLD" -gt 0 ] 2>/dev/null && [ "${SCORE:-0}" -lt "$THRESHOLD" ]; then
             echo ""
             echo "::error::CDD score ${SCORE:-0} is below threshold ${THRESHOLD}"
@@ -132,14 +142,14 @@ runs:
           EXIT_CODE=$?
 
           # Handle fail-on-warning
-          if [ "${{ inputs.fail-on-warning }}" = "true" ] && [ "$EXIT_CODE" = "2" ]; then
+          if [ "$INPUT_FAIL_ON_WARNING" = "true" ] && [ "$EXIT_CODE" = "2" ]; then
             echo ""
             echo "::error::DocGuard guard found warnings (fail-on-warning is enabled)"
             exit 1
           fi
 
           # Exit code 2 = warnings only (not failure by default)
-          if [ "$EXIT_CODE" = "2" ] && [ "${{ inputs.fail-on-warning }}" != "true" ]; then
+          if [ "$EXIT_CODE" = "2" ] && [ "$INPUT_FAIL_ON_WARNING" != "true" ]; then
             echo "::warning::DocGuard guard found warnings"
             exit 0
           fi
@@ -153,7 +163,9 @@ runs:
           echo "::endgroup::"
           exit 0
         else
-          npx docguard-cli $CMD $FLAGS
+          # "$CMD" is quoted so it's a single argument to the CLI, never a shell
+          # token — an unknown value just errors as an unknown command.
+          npx docguard-cli "$CMD" $FLAGS
           EXIT_CODE=$?
           exit $EXIT_CODE
         fi
@@ -163,9 +175,11 @@ runs:
       if: inputs.command == 'fix' || inputs.command == 'sync'
       shell: bash
       working-directory: ${{ inputs.working-directory }}
+      env:
+        INPUT_COMMAND: ${{ inputs.command }}
       run: |
         set +e
-        CMD="${{ inputs.command }}"
+        CMD="$INPUT_COMMAND"
 
         # Snapshot working-tree state before the write.
         BEFORE=$(git status --porcelain 2>/dev/null | sort)
@@ -214,33 +228,49 @@ runs:
       if: (inputs.command == 'fix' || inputs.command == 'sync') && inputs.auto-commit == 'true' && steps.fix.outputs.fixes-applied != '0'
       shell: bash
       working-directory: ${{ inputs.working-directory }}
+      env:
+        # SECURITY: all inputs and event context pass through the environment.
+        # Notably HEAD_REF is a PR branch name, which is attacker-controllable
+        # and a valid git branch may contain shell metacharacters ($(), `, ;) —
+        # interpolating it into the script would be a command-injection vector.
+        INPUT_COMMAND: ${{ inputs.command }}
+        INPUT_BOT_NAME: ${{ inputs.bot-name }}
+        INPUT_BOT_EMAIL: ${{ inputs.bot-email }}
+        INPUT_COMMIT_MESSAGE: ${{ inputs.commit-message }}
+        FIXES_APPLIED: ${{ steps.fix.outputs.fixes-applied }}
+        EVENT_NAME: ${{ github.event_name }}
+        HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+        REPOSITORY: ${{ github.repository }}
+        HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        REF_NAME: ${{ github.ref_name }}
+        ACTION_REF: ${{ github.action_ref || 'main' }}
       run: |
         set -e
 
         # Refuse to run on PRs from forks — pushing back is impossible.
-        if [ "${{ github.event_name }}" = "pull_request" ] && [ "${{ github.event.pull_request.head.repo.full_name }}" != "${{ github.repository }}" ]; then
+        if [ "$EVENT_NAME" = "pull_request" ] && [ "$HEAD_REPO" != "$REPOSITORY" ]; then
           echo "::warning::Auto-commit skipped — PR is from a fork (head.repo != repository). The bot cannot push to fork branches."
           echo "committed=false" >> $GITHUB_OUTPUT
           exit 0
         fi
 
-        git config user.name "${{ inputs.bot-name }}"
-        git config user.email "${{ inputs.bot-email }}"
+        git config user.name "$INPUT_BOT_NAME"
+        git config user.email "$INPUT_BOT_EMAIL"
 
         # Use a clearly-bot-attributed commit so the PR author and reviewers can
         # tell at a glance this came from automation, not a human edit.
         git add -A
-        git commit -m "${{ inputs.commit-message }}" \
-                   -m "Files: ${{ steps.fix.outputs.fixes-applied }} touched by 'docguard ${{ inputs.command }} --write'." \
-                   -m "Automated commit from raccioly/docguard@${{ github.action_ref || 'main' }}." \
-                   -m "Co-Authored-By: ${{ inputs.bot-name }} <${{ inputs.bot-email }}>"
+        git commit -m "$INPUT_COMMIT_MESSAGE" \
+                   -m "Files: ${FIXES_APPLIED} touched by 'docguard ${INPUT_COMMAND} --write'." \
+                   -m "Automated commit from raccioly/docguard@${ACTION_REF}." \
+                   -m "Co-Authored-By: ${INPUT_BOT_NAME} <${INPUT_BOT_EMAIL}>"
 
         # Push to the PR head ref when triggered by pull_request, otherwise to the
-        # current branch.
-        if [ "${{ github.event_name }}" = "pull_request" ]; then
-          git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
+        # current branch. Refs are passed as data via env vars (see note above).
+        if [ "$EVENT_NAME" = "pull_request" ]; then
+          git push origin "HEAD:${HEAD_REF}"
         else
-          git push origin "HEAD:${{ github.ref_name }}"
+          git push origin "HEAD:${REF_NAME}"
         fi
 
         echo "committed=true" >> $GITHUB_OUTPUT
@@ -248,12 +278,20 @@ runs:
     - name: Post Fix Summary to PR Comment
       if: (inputs.command == 'fix' || inputs.command == 'sync') && inputs.comment-on-pr == 'true' && github.event_name == 'pull_request'
       uses: actions/github-script@v9
+      env:
+        # SECURITY: read via process.env, not ${{ }} spliced into the JS source.
+        # A value like '; maliciousJS; ' would otherwise break out of the string
+        # literal and execute in the privileged github-script context.
+        FIXES_APPLIED: ${{ steps.fix.outputs.fixes-applied }}
+        CHANGED_FILES: ${{ steps.fix.outputs.changed-files }}
+        COMMITTED: ${{ steps.commit.outputs.committed }}
+        INPUT_COMMAND: ${{ inputs.command }}
       with:
         script: |
-          const count = parseInt('${{ steps.fix.outputs.fixes-applied }}' || '0', 10);
-          const changedRaw = `${{ steps.fix.outputs.changed-files }}`.trim();
-          const committed = '${{ steps.commit.outputs.committed }}' === 'true';
-          const cmd = '${{ inputs.command }}';
+          const count = parseInt(process.env.FIXES_APPLIED || '0', 10);
+          const changedRaw = (process.env.CHANGED_FILES || '').trim();
+          const committed = process.env.COMMITTED === 'true';
+          const cmd = process.env.INPUT_COMMAND || 'fix';
           const files = changedRaw ? changedRaw.split('\n').filter(Boolean) : [];
 
           let body;
@@ -289,10 +327,13 @@ runs:
     - name: Post Score to PR Comment
       if: inputs.command == 'score' && github.event_name == 'pull_request'
       uses: actions/github-script@v9
+      env:
+        SCORE: ${{ steps.run.outputs.score }}
+        GRADE: ${{ steps.run.outputs.grade }}
       with:
         script: |
-          const score = '${{ steps.run.outputs.score }}' || '?';
-          const grade = '${{ steps.run.outputs.grade }}' || '?';
+          const score = process.env.SCORE || '?';
+          const grade = process.env.GRADE || '?';
 
           const emoji = parseInt(score) >= 80 ? '✅' : parseInt(score) >= 60 ? '⚠️' : '❌';
           const body = `## ${emoji} DocGuard CDD Score: ${score}/100 (${grade})

@@ -114,3 +114,49 @@ describe('sections: renderSection', () => {
     assert.equal(secs[0].body, 'hello');
   });
 });
+
+describe('sections: malformed markers cannot corrupt human prose', () => {
+  // Regression: a typo'd/missing close marker used to make the first section
+  // pair with the NEXT section's close, swallowing the human prose and the
+  // following section into one body — which a later replaceSection() would
+  // then overwrite. The parser must instead ABANDON the unclosed section.
+  const BROKEN = [
+    '# Data Model',
+    '',
+    '<!-- docguard:section id=entities source=code -->',
+    '| User | id, email |',
+    '<!-- /docguard:section TYPO -->',          // ← malformed close (won't match)
+    '',
+    'Precious human rationale that must never be lost.',
+    '',
+    '<!-- docguard:section id=indexes source=code -->',
+    '- gsi1: byEmail',
+    '<!-- /docguard:section -->',
+    '',
+  ].join('\n');
+
+  it('does not let the mis-closed section absorb prose + the next section', () => {
+    const secs = parseSections(BROKEN);
+    // Only the well-formed `indexes` section should parse; `entities` is dropped.
+    assert.deepEqual(secs.map(s => s.id), ['indexes']);
+    const idx = secs[0];
+    assert.equal(idx.body, '- gsi1: byEmail',
+      'the indexes body must be exactly its own content, not swallowed prose');
+  });
+
+  it('replaceSection on the mis-closed id is a safe no-op (prose preserved)', () => {
+    const r = replaceSection(BROKEN, 'entities', '| NEW | data |');
+    assert.equal(r.replaced, false, 'cannot replace a section the parser refused to recognize');
+    assert.ok(r.content.includes('Precious human rationale that must never be lost.'),
+      'human prose must remain intact');
+    assert.ok(r.content.includes('- gsi1: byEmail'),
+      'the following well-formed section must remain intact');
+  });
+
+  it('still refreshes the well-formed section normally', () => {
+    const r = replaceSection(BROKEN, 'indexes', '- gsi1: byEmail\n- gsi2: byStatus');
+    assert.equal(r.replaced, true);
+    assert.ok(r.content.includes('- gsi2: byStatus'));
+    assert.ok(r.content.includes('Precious human rationale that must never be lost.'));
+  });
+});

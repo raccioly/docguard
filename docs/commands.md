@@ -1,6 +1,6 @@
 # Commands Reference
 
-DocGuard v0.5.0 — 13 commands, zero dependencies.
+DocGuard CLI — one pinned runtime dependency (`@babel/parser`, optional-load); Node.js 18+. See `package.json` for the current version.
 
 ## The AI Loop
 

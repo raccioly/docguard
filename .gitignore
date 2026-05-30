@@ -29,7 +29,7 @@ dist/
 build/
 coverage/
 
-# SpecGuard generated docs (for THIS project testing)
+# DocGuard generated docs (for THIS project testing)
 # Note: In real projects, docs-canonical/ SHOULD be committed.
 # These are excluded here because they're template-generated test files.
 docguard_cli/__pycache__/

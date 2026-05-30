@@ -9,7 +9,7 @@
 [![PyPI](https://img.shields.io/pypi/v/docguard-cli)](https://pypi.org/project/docguard-cli/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js](https://img.shields.io/badge/Node.js-18%2B-green)](https://nodejs.org)
-[![Zero Dependencies](https://img.shields.io/badge/Dependencies-0-brightgreen)](package.json)
+[![Runtime deps](https://img.shields.io/badge/runtime_deps-1_(pinned)-green)](package.json)
 [![Spec Kit Extension](https://img.shields.io/badge/Spec_Kit-Extension-blueviolet)](https://github.com/github/spec-kit)
 
 ---

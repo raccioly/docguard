@@ -126,6 +126,23 @@ describe('getFileHistory (follows renames)', () => {
     assert.ok(hist.length >= 3,
       `expected >= 3 commits in history (rename-aware), got ${hist.length}`);
   });
+
+  it('parses NUL-delimited fields correctly even when the subject has spaces', () => {
+    dir = tmp();
+    git(dir, 'init', '-q');
+    writeFileSync(join(dir, 'a.ts'), 'v1');
+    // A multi-word subject is the regression vehicle: a space-delimited parse
+    // would put "fix:" in isoDate and lose the rest of the subject.
+    commit(dir, 'fix: handle the multi word subject case');
+
+    const hist = getFileHistory(dir, 'a.ts');
+    assert.equal(hist.length, 1);
+    const [c] = hist;
+    assert.match(c.hash, /^[0-9a-f]{7,40}$/, `hash should be a clean SHA, got "${c.hash}"`);
+    assert.ok(!isNaN(new Date(c.isoDate).getTime()), `isoDate should parse as a date, got "${c.isoDate}"`);
+    assert.equal(c.subject, 'fix: handle the multi word subject case',
+      'the full multi-word subject must survive intact');
+  });
 });
 
 describe('getRenameHistory', () => {

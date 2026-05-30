@@ -12,7 +12,7 @@ Enterprise-grade Canonical-Driven Development (CDD) enforcement and **AI-readabl
 - **5 AI Skills** — docguard-fix, docguard-guard, docguard-sync, docguard-review, docguard-score (enterprise-grade behavior protocols, not just step-lists)
 - **Workflow Chaining** — YAML handoffs enable guard → sync → fix → review → score flows
 - **Spec Kit Hooks** — Quality gate integrations at implement, tasks, and review phases
-- **Zero Dependencies** — Pure Node.js built-ins only
+- **Minimal Dependencies** — one pinned, optional-load parser (`@babel/parser`); Node.js built-ins otherwise
 
 ## Installation
 
