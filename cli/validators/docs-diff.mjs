@@ -188,15 +188,36 @@ function diffTests(dir, config) {
     };
   });
 
-  const matches = (matcher, codeRel) => {
-    const subject = matcher.hasSlash ? codeRel : basename(codeRel);
-    return matcher.rx.test(subject);
-  };
+  // Pre-calculate basenames to avoid repeatedly re-computing basename() inside
+  // the O(N*M) loops below. We also collapse the nested .filter and .some calls
+  // into a single O(N*M) pass to further reduce overhead.
+  const codeObjects = codeArr.map(c => ({ original: c, base: basename(c), matched: false }));
+
+  const onlyInDocs = [];
+
+  for (const m of docMatchers) {
+    let mMatched = false;
+    for (const c of codeObjects) {
+      const subject = m.hasSlash ? c.original : c.base;
+      if (m.rx.test(subject)) {
+        mMatched = true;
+        c.matched = true;
+      }
+    }
+    if (!mMatched) {
+      onlyInDocs.push(m.original);
+    }
+  }
+
+  const onlyInCode = [];
+  for (const c of codeObjects) {
+    if (!c.matched) onlyInCode.push(c.original);
+  }
 
   return {
     title: 'Test Files',
-    onlyInDocs: docMatchers.filter(m => !codeArr.some(c => matches(m, c))).map(m => m.original),
-    onlyInCode: codeArr.filter(c => !docMatchers.some(m => matches(m, c))),
+    onlyInDocs,
+    onlyInCode,
   };
 }
 

@@ -8,3 +8,7 @@
 ## 2024-05-24 - Pre-compile RegExp in nested loops
 **Learning:** Instantiating `new RegExp()` inside nested array methods like `.filter` and `.some` creates a severe O(N*M) performance bottleneck, especially when matching two large lists (e.g., documented tests vs. actual test files).
 **Action:** Always pre-compile regular expressions and derived strings into an array of "matcher" objects outside of the loop before iterating, which shifts the instantiation cost from O(N*M) to O(N).
+
+## 2024-05-24 - Pre-computing and flattening O(N*M) nested array iterations
+**Learning:** In the `diffTests` functions across the codebase, test matching logic was repeatedly evaluating `basename()` and running 3 distinct passes of `.filter()` combined with nested `.some()` operations. This caused severe O(N*M) bottlenecks during file diffing because strings were processed over and over for the same files.
+**Action:** When working with nested loop comparisons (e.g., comparing N document entries to M code paths), always pre-compute derived properties (like `basename()`) into object representations before the loop. Furthermore, collapse multiple `filter()`/`some()` passes into a single iteration block where both datasets can be evaluated simultaneously via boolean flags, significantly improving performance.
