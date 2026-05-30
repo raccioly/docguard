@@ -380,7 +380,7 @@ async function addRootDiagnosticAsync(workspaceDir, diagnosticsMap, message, sev
 
 // ── Commands ───────────────────────────────────────────────────────────────
 
-function runCommand(cmd) {
+async function runCommand(cmd) {
   const dir = getWorkspaceDir();
   if (!dir) return;
 
@@ -388,8 +388,18 @@ function runCommand(cmd) {
   outputChannel.show(true);
   outputChannel.appendLine(`$ specguard ${cmd}\n`);
 
+  if (statusBarItem) {
+    statusBarItem.text = '$(sync~spin) CDD: Loading...';
+    statusBarItem.tooltip = 'Executing command...';
+    statusBarItem.backgroundColor = undefined;
+    statusBarItem.show();
+    await new Promise(r => setTimeout(r, 0));
+  }
+
   const output = execSpecguard(dir, cmd);
   outputChannel.appendLine(output);
+
+  await refreshScore();
 }
 
 async function runGuard() {
@@ -399,6 +409,14 @@ async function runGuard() {
   outputChannel.clear();
   outputChannel.show(true);
   outputChannel.appendLine('$ specguard guard\n');
+
+  if (statusBarItem) {
+    statusBarItem.text = '$(sync~spin) CDD: Loading...';
+    statusBarItem.tooltip = 'Running Guard checks...';
+    statusBarItem.backgroundColor = undefined;
+    statusBarItem.show();
+    await new Promise(r => setTimeout(r, 0));
+  }
 
   const output = execSpecguard(dir, 'guard');
   outputChannel.appendLine(output);
@@ -421,13 +439,21 @@ async function runGuard() {
   }
 }
 
-function runFixCommand() {
+async function runFixCommand() {
   const dir = getWorkspaceDir();
   if (!dir) return;
 
   outputChannel.clear();
   outputChannel.show(true);
   outputChannel.appendLine('$ specguard fix\n');
+
+  if (statusBarItem) {
+    statusBarItem.text = '$(sync~spin) CDD: Loading...';
+    statusBarItem.tooltip = 'Running Fix checks...';
+    statusBarItem.backgroundColor = undefined;
+    statusBarItem.show();
+    await new Promise(r => setTimeout(r, 0));
+  }
 
   const output = execSpecguard(dir, 'fix');
   outputChannel.appendLine(output);
@@ -454,6 +480,8 @@ function runFixCommand() {
       }
     });
   }
+
+  await refreshScore();
 }
 
 async function runFixAuto() {
@@ -463,6 +491,14 @@ async function runFixAuto() {
   outputChannel.clear();
   outputChannel.show(true);
   outputChannel.appendLine('$ specguard fix --auto\n');
+
+  if (statusBarItem) {
+    statusBarItem.text = '$(sync~spin) CDD: Loading...';
+    statusBarItem.tooltip = 'Auto-fixing issues...';
+    statusBarItem.backgroundColor = undefined;
+    statusBarItem.show();
+    await new Promise(r => setTimeout(r, 0));
+  }
 
   const output = execSpecguard(dir, 'fix --auto');
   outputChannel.appendLine(output);
@@ -484,14 +520,23 @@ function fixWithAI(issue) {
   });
 }
 
-function runBadge() {
+async function runBadge() {
   const dir = getWorkspaceDir();
   if (!dir) return;
+
+  if (statusBarItem) {
+    statusBarItem.text = '$(sync~spin) CDD: Loading...';
+    statusBarItem.tooltip = 'Generating badges...';
+    statusBarItem.backgroundColor = undefined;
+    statusBarItem.show();
+    await new Promise(r => setTimeout(r, 0));
+  }
 
   const output = execSpecguard(dir, 'badge --format json');
   const jsonStart = output.indexOf('{');
   if (jsonStart < 0) {
     vscode.window.showErrorMessage('SpecGuard: Could not generate badges');
+    await refreshScore();
     return;
   }
 
@@ -507,6 +552,8 @@ function runBadge() {
   } catch (e) {
     outputChannel.appendLine(`Badge error: ${e.message}`);
   }
+
+  await refreshScore();
 }
 
 async function runInit() {
@@ -516,6 +563,14 @@ async function runInit() {
   outputChannel.clear();
   outputChannel.show(true);
   outputChannel.appendLine('$ specguard init\n');
+
+  if (statusBarItem) {
+    statusBarItem.text = '$(sync~spin) CDD: Loading...';
+    statusBarItem.tooltip = 'Initializing docs...';
+    statusBarItem.backgroundColor = undefined;
+    statusBarItem.show();
+    await new Promise(r => setTimeout(r, 0));
+  }
 
   const output = execSpecguard(dir, 'init');
   outputChannel.appendLine(output);

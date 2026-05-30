@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **VS Code Extension: Context-Aware Loading States** — added context-aware loading spinners to the status bar (e.g. `$(sync~spin) CDD: Loading... Running Fix checks...`) prior to synchronous `execSpecguard` calls to significantly improve user feedback for long-running operations. Addressed via explicit event-loop yielding.
+
 ## [0.23.0] - 2026-05-29
 
 Validator-hardening minor release, driven by external field feedback and a full
