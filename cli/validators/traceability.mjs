@@ -15,7 +15,7 @@
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, relative, basename, extname } from 'node:path';
-import { TRACE_MAP, TEST_PATTERNS } from '../shared-trace-patterns.mjs';
+import { TRACE_MAP, TEST_PATTERNS, isTraceableSource } from '../shared-trace-patterns.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build', 'coverage',
@@ -102,9 +102,12 @@ export function validateTraceability(projectDir, config) {
 
     // Count matching source files
     // ⚡ Bolt: Fast early return using .some() instead of .filter()
+    // v0.24: skip .md files — a doc isn't "linked" just because another doc's
+    // name matches the glob (e.g. SECURITY's `guard` matching docguard.guard.md);
+    // that masked genuinely unlinked docs (field report).
     let hasSource = false;
     for (const pattern of traceInfo.sourcePatterns) {
-      if (projectFiles.some(f => pattern.glob.test(f))) {
+      if (projectFiles.some(f => isTraceableSource(f) && pattern.glob.test(f))) {
         hasSource = true;
         break;
       }

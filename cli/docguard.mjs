@@ -298,6 +298,11 @@ async function main() {
       flags.debate = true;
     } else if (args[i] === '--stdout') {
       flags.stdout = true;
+    } else if (args[i] === '--help' || args[i] === '-h') {
+      // v0.24: capture --help anywhere on the line, not just as the bare
+      // command. Previously `docguard generate --help` fell through the parser
+      // and executed generate, scaffolding files into the cwd (field report).
+      flags.help = true;
     }
   }
 
@@ -310,6 +315,14 @@ async function main() {
 
   if (command === '--version' || command === '-v') {
     console.log(`docguard v${VERSION}`);
+    process.exit(0);
+  }
+
+  // v0.24: `docguard <command> --help` shows usage instead of running the
+  // command. There is no per-command help yet, so global help is correct — and,
+  // unlike before, non-destructive (generate no longer scaffolds on --help).
+  if (flags.help) {
+    printHelp();
     process.exit(0);
   }
 

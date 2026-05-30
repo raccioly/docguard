@@ -6,7 +6,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, extname } from 'node:path';
 import { execSync } from 'node:child_process';
-import { c } from '../shared.mjs';
+import { c, docHasSection } from '../shared.mjs';
 import { validateSecurity } from '../validators/security.mjs';
 import { runGuardInternal } from './guard.mjs';
 
@@ -407,16 +407,23 @@ function calcAllScores(projectDir, config) {
   const scores = {};
   const details = {}; // Per-category failure details for actionable suggestions
 
-  scores.structure = calcStructureScore(projectDir, config);
-  const dqResult = calcDocQualityScore(projectDir, config);
-  scores.docQuality = dqResult.score;
-  details.docQuality = dqResult.failures;
-  scores.testing = calcTestingScore(projectDir, config);
-  scores.security = calcSecurityScore(projectDir, config);
-  scores.environment = calcEnvironmentScore(projectDir, config);
-  scores.drift = calcDriftScore(projectDir, config);
-  scores.changelog = calcChangelogScore(projectDir, config);
-  scores.architecture = calcArchitectureScore(projectDir, config);
+  // Every calc*Score returns { score, failures } so the "Top improvements"
+  // line can name the sub-checks that actually failed instead of printing a
+  // static per-category template (field report, Issue B).
+  for (const [cat, fn] of [
+    ['structure',    calcStructureScore],
+    ['docQuality',   calcDocQualityScore],
+    ['testing',      calcTestingScore],
+    ['security',     calcSecurityScore],
+    ['environment',  calcEnvironmentScore],
+    ['drift',        calcDriftScore],
+    ['changelog',    calcChangelogScore],
+    ['architecture', calcArchitectureScore],
+  ]) {
+    const { score, failures } = fn(projectDir, config);
+    scores[cat] = score;
+    details[cat] = failures || [];
+  }
 
   let totalScore = 0;
   for (const [category, score] of Object.entries(scores)) {
@@ -432,23 +439,29 @@ function calcAllScores(projectDir, config) {
 function calcStructureScore(dir, config) {
   let found = 0;
   let total = 0;
+  const failures = [];
 
   for (const file of config.requiredFiles.canonical) {
     total++;
     if (existsSync(resolve(dir, file))) found++;
+    else failures.push({ issue: `missing ${file}` });
   }
 
   total++;
   const hasAgent = config.requiredFiles.agentFile.some(f => existsSync(resolve(dir, f)));
   if (hasAgent) found++;
+  else failures.push({ issue: `missing agent file (${config.requiredFiles.agentFile.join(' or ')})` });
 
   total++;
   if (existsSync(resolve(dir, config.requiredFiles.changelog))) found++;
+  else failures.push({ issue: `missing ${config.requiredFiles.changelog}` });
 
   total++;
   if (existsSync(resolve(dir, config.requiredFiles.driftLog))) found++;
+  else failures.push({ issue: `missing ${config.requiredFiles.driftLog}` });
 
-  return total === 0 ? 0 : Math.round((found / total) * 100);
+  const score = total === 0 ? 0 : Math.round((found / total) * 100);
+  return { score, failures };
 }
 
 function calcDocQualityScore(dir, config) {
@@ -476,7 +489,10 @@ function calcDocQualityScore(dir, config) {
 
     for (const section of sections) {
       total++;
-      if (content.includes(section)) {
+      // v0.24: synonym/number-tolerant (docHasSection) so arc42/C4 headings
+      // count — was a literal substring check that flagged equivalent sections
+      // as missing, making structured docs score worse than the skeleton.
+      if (docHasSection(content, section)) {
         found++;
       } else {
         failures.push({ file, issue: `missing section: ${section}`, fixCmd: `docguard fix --doc ${docName}` });
@@ -499,6 +515,7 @@ function calcDocQualityScore(dir, config) {
 
 function calcTestingScore(dir, config) {
   let score = 0;
+  const failures = [];
 
   // ── Check 1: Test files exist (40 pts) ──
   // Check top-level test directories
@@ -561,31 +578,46 @@ function calcTestingScore(dir, config) {
   }
 
   if (hasTopLevelTestDir || hasColocatedTests || hasPatternTests || hasConfigTests) score += 40;
+  else failures.push({ issue: 'no test files found (looked in tests/, src/**/__tests__, and configured testPatterns)' });
 
   // ── Check 2: TEST-SPEC.md exists (30 pts) ──
   if (existsSync(resolve(dir, 'docs-canonical/TEST-SPEC.md'))) score += 30;
+  else failures.push({ issue: 'TEST-SPEC.md missing', fixCmd: 'docguard fix --doc test-spec' });
 
   // ── Check 3: Test config or built-in runner (15 pts) ──
-  const testConfigs2 = ['jest.config.js', 'jest.config.ts', 'vitest.config.ts', 'vitest.config.js', 'pytest.ini', 'setup.cfg', '.mocharc.yml'];
-  const hasTestConfig = testConfigs2.some(f => existsSync(resolve(dir, f)));
+  const testConfigFiles = ['jest.config.js', 'jest.config.ts', 'vitest.config.ts', 'vitest.config.js', 'pytest.ini', 'setup.cfg', '.mocharc.yml'];
+  let hasTestRunner = testConfigFiles.some(f => existsSync(resolve(dir, f)));
 
-  if (hasTestConfig) {
-    score += 15;
-  } else {
-    const ptc = config.projectTypeConfig || {};
-    const pkgPath = resolve(dir, 'package.json');
-    if (ptc.testFramework === 'node:test') {
-      score += 15;
-    } else if (existsSync(pkgPath)) {
-      try {
-        const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
-        const testScript = pkg.scripts?.test || '';
-        if (testScript.includes('node --test') || testScript.includes('node:test')) {
-          score += 15;
-        }
-      } catch { /* skip */ }
+  // Python: pytest config usually lives inside pyproject.toml ([tool.pytest.ini_options])
+  // or tox.ini ([pytest]) — not a standalone file. Detect those too, so a uv/pytest
+  // project isn't told to "add a test runner" it already configured (field report, Issue B).
+  if (!hasTestRunner) {
+    for (const [file, marker] of [['pyproject.toml', /\[tool\.pytest/], ['tox.ini', /\[pytest\]/]]) {
+      const p = resolve(dir, file);
+      if (!existsSync(p)) continue;
+      try { if (marker.test(readFileSync(p, 'utf-8'))) { hasTestRunner = true; break; } } catch { /* skip */ }
     }
   }
+
+  // node:test has no config file — recognize it via projectTypeConfig or package.json.
+  if (!hasTestRunner) {
+    const ptc = config.projectTypeConfig || {};
+    if (ptc.testFramework === 'node:test') {
+      hasTestRunner = true;
+    } else {
+      const pkgPath = resolve(dir, 'package.json');
+      if (existsSync(pkgPath)) {
+        try {
+          const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
+          const testScript = pkg.scripts?.test || '';
+          if (testScript.includes('node --test') || testScript.includes('node:test')) hasTestRunner = true;
+        } catch { /* skip */ }
+      }
+    }
+  }
+
+  if (hasTestRunner) score += 15;
+  else failures.push({ issue: 'no test runner config detected (jest/vitest/pytest/node:test)' });
 
   // ── Check 4: CI test step (15 pts) ──
   // Support multiple CI systems — not just GitHub Actions
@@ -613,8 +645,9 @@ function calcTestingScore(dir, config) {
   }
 
   if (hasCITest) score += 15;
+  else failures.push({ issue: 'no CI test step (.github/workflows, .gitlab-ci.yml, Jenkinsfile, etc.)' });
 
-  return Math.min(100, score);
+  return { score: Math.min(100, score), failures };
 }
 
 /**
@@ -668,9 +701,11 @@ function walkForTests(d, ignoreSet) {
 function calcSecurityScore(dir, config) {
   let score = 0;
   const ptc = config.projectTypeConfig || {};
+  const failures = [];
 
   // SECURITY.md exists (25 pts)
   if (existsSync(resolve(dir, 'docs-canonical/SECURITY.md'))) score += 25;
+  else failures.push({ issue: 'SECURITY.md missing', fixCmd: 'docguard fix --doc security' });
 
   // .gitignore exists and includes .env (15 + 15 pts)
   const gitignorePath = resolve(dir, '.gitignore');
@@ -678,16 +713,22 @@ function calcSecurityScore(dir, config) {
     score += 15;
     const content = readFileSync(gitignorePath, 'utf-8');
     if (content.includes('.env')) score += 15;
+    else failures.push({ issue: '.gitignore does not list .env' });
+  } else {
+    failures.push({ issue: '.gitignore missing' });
   }
 
   // No .env file committed (10 pts)
   if (!existsSync(resolve(dir, '.env')) || existsSync(gitignorePath)) score += 10;
+  else failures.push({ issue: '.env is committed without a .gitignore' });
 
   // .env.example exists (safe template) — only check if project needs env vars (10 pts)
   if (ptc.needsEnvExample === false) {
     score += 10; // Full marks — project doesn't need env vars
   } else if (existsSync(resolve(dir, '.env.example'))) {
     score += 10;
+  } else {
+    failures.push({ issue: '.env.example missing' });
   }
 
   // No hardcoded secrets found by security validator (25 pts)
@@ -703,26 +744,31 @@ function calcSecurityScore(dir, config) {
       if (findingCount <= 2) score += 15;
       else if (findingCount <= 5) score += 5;
       // 6+ findings = 0 pts for this check
+      failures.push({ issue: `${findingCount} possible secret(s) / unsafe pattern(s) in code — run \`docguard guard --verbose\`` });
     }
   } catch {
     // If validator fails to run, give benefit of the doubt
     score += 25;
   }
 
-  return Math.min(100, score);
+  return { score: Math.min(100, score), failures };
 }
 
 function calcEnvironmentScore(dir, config) {
   let score = 0;
   const ptc = config.projectTypeConfig || {};
+  const failures = [];
 
   if (existsSync(resolve(dir, 'docs-canonical/ENVIRONMENT.md'))) score += 40;
+  else failures.push({ issue: 'ENVIRONMENT.md missing', fixCmd: 'docguard fix --doc environment' });
 
   // .env.example — only check if project needs env vars
   if (ptc.needsEnvExample === false) {
     score += 30; // Full marks — project doesn't need env vars
   } else if (existsSync(resolve(dir, '.env.example'))) {
     score += 30;
+  } else {
+    failures.push({ issue: '.env.example missing' });
   }
 
   // Check for setup documentation
@@ -733,56 +779,79 @@ function calcEnvironmentScore(dir, config) {
       score += 30;
     } else {
       score += 15;  // README exists but no setup section
+      failures.push({ issue: 'README has no Setup / Getting Started section' });
     }
+  } else {
+    failures.push({ issue: 'README.md missing' });
   }
 
-  return Math.min(100, score);
+  return { score: Math.min(100, score), failures };
 }
 
 function calcDriftScore(dir, config) {
   // Perfect score if drift log exists and no unlogged drift comments
-  if (!existsSync(resolve(dir, config.requiredFiles.driftLog))) return 0;
+  if (!existsSync(resolve(dir, config.requiredFiles.driftLog))) {
+    return { score: 0, failures: [{ issue: `${config.requiredFiles.driftLog} missing` }] };
+  }
 
   let score = 50; // Drift log exists
+  const failures = [];
 
   const content = readFileSync(resolve(dir, config.requiredFiles.driftLog), 'utf-8');
 
   // Has structure (headers)
   if (content.includes('## ') || content.includes('| ')) score += 25;
+  else failures.push({ issue: `${config.requiredFiles.driftLog} has no headers or table structure` });
 
   // Has entries (not just template)
   const lines = content.split('\n').filter(l => l.trim() && !l.startsWith('#') && !l.startsWith('<!--'));
   if (lines.length > 3) score += 25;
+  else failures.push({ issue: `${config.requiredFiles.driftLog} has no entries yet (template only)` });
 
-  return Math.min(100, score);
+  return { score: Math.min(100, score), failures };
 }
 
 function calcChangelogScore(dir, config) {
   const path = resolve(dir, config.requiredFiles.changelog);
-  if (!existsSync(path)) return 0;
+  if (!existsSync(path)) {
+    return { score: 0, failures: [{ issue: `${config.requiredFiles.changelog} missing` }] };
+  }
 
   let score = 40; // Exists
+  const failures = [];
   const content = readFileSync(path, 'utf-8');
 
   if (content.includes('[Unreleased]') || content.includes('[unreleased]')) score += 30;
+  else failures.push({ issue: 'no [Unreleased] section' });
   if (/## \[[\d.]+\]/.test(content)) score += 30;
+  else failures.push({ issue: 'no versioned release headings (## [x.y.z])' });
 
-  return Math.min(100, score);
+  return { score: Math.min(100, score), failures };
 }
 
 function calcArchitectureScore(dir) {
   const archPath = resolve(dir, 'docs-canonical/ARCHITECTURE.md');
-  if (!existsSync(archPath)) return 0;
+  if (!existsSync(archPath)) {
+    return { score: 0, failures: [{ issue: 'ARCHITECTURE.md missing', fixCmd: 'docguard fix --doc architecture' }] };
+  }
 
   let score = 30;
+  const failures = [];
   const content = readFileSync(archPath, 'utf-8');
 
-  if (content.includes('## Layer Boundaries') || content.includes('## Component Map')) score += 25;
+  // v0.24: heading checks are synonym/number-tolerant (docHasSection) so arc42
+  // ("## 5.4 Layer boundaries") and C4 ("## Building Block View") docs score
+  // their real content instead of being told to add sections they have.
+  if (docHasSection(content, '## Layer Boundaries') || docHasSection(content, '## Component Map')) score += 25;
+  else failures.push({ issue: 'no Layer Boundaries / Component Map section' });
   if (content.includes('```mermaid') || content.includes('graph ')) score += 20;
-  if (content.includes('## External Dependencies')) score += 15;
-  if (content.includes('## Revision History')) score += 10;
+  else failures.push({ issue: 'no architecture diagram (mermaid / graph)' });
+  if (docHasSection(content, '## External Dependencies')) score += 15;
+  else failures.push({ issue: 'no External Dependencies section' });
+  if (docHasSection(content, '## Revision History')) score += 10;
+  else failures.push({ issue: 'no Revision History section' });
 
-  return Math.min(100, score);
+  return { score: Math.min(100, score), failures };
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -803,37 +872,54 @@ function getGrade(score) {
   return 'F';
 }
 
+// Default fix command per category, used when a failure doesn't carry its own.
+const CATEGORY_FIX = {
+  structure:    'docguard init',
+  docQuality:   'docguard fix',
+  testing:      'docguard fix --doc test-spec',
+  security:     'docguard fix --doc security',
+  environment:  'docguard fix --doc environment',
+  architecture: 'docguard fix --doc architecture',
+};
+
+// Static fallback — only reached if a category scores < 100 but recorded no
+// specific failure (shouldn't happen now that every deduction tracks one).
+const STATIC_SUGGESTIONS = {
+  structure: 'Run `docguard init` to create missing documentation',
+  docQuality: 'Run `docguard fix` to get AI prompts for each doc that needs content',
+  testing: 'Add test files and create TEST-SPEC.md → Run `docguard fix --doc test-spec`',
+  security: 'Create SECURITY.md and add .env to .gitignore → Run `docguard fix --doc security`',
+  environment: 'Document env variables and create .env.example → Run `docguard fix --doc environment`',
+  drift: 'Create DRIFT-LOG.md and log any code deviations',
+  changelog: 'Maintain CHANGELOG.md with [Unreleased] section',
+  architecture: 'Add layer boundaries and Mermaid diagrams → Run `docguard fix --doc architecture`',
+};
+
 function getSuggestion(category, score, details) {
-  // Dynamic, specific suggestions based on actual failures
-  if (category === 'docQuality' && details?.docQuality?.length > 0) {
-    const failures = details.docQuality;
-    // Group by doc
+  const failures = details?.[category];
+
+  // docQuality groups its failures by doc (they carry { file, issue, fixCmd }).
+  if (category === 'docQuality' && failures?.length > 0) {
     const byDoc = {};
     for (const f of failures) {
-      const doc = f.file.replace('docs-canonical/', '');
+      const doc = (f.file || '').replace('docs-canonical/', '') || 'docs';
       if (!byDoc[doc]) byDoc[doc] = [];
       byDoc[doc].push(f.issue);
     }
     const parts = Object.entries(byDoc).map(([doc, issues]) => `${doc}: ${issues.join(', ')}`);
-    const fixCmd = failures.find(f => f.fixCmd)?.fixCmd || 'docguard fix';
+    const fixCmd = failures.find(f => f.fixCmd)?.fixCmd || CATEGORY_FIX.docQuality;
     return `${parts.join(' | ')} → Run \`${fixCmd}\``;
   }
 
-  const suggestions = {
-    structure: 'Run `docguard init` to create missing documentation',
-    docQuality: 'Run `docguard fix` to get AI prompts for each doc that needs content',
-    testing: score < 40
-      ? 'Add test files (tests/, src/**/__tests__/, or configure testPatterns in .docguard.json) and create TEST-SPEC.md'
-      : 'Configure TEST-SPEC.md and add CI test step → Run `docguard fix --doc test-spec`',
-    security: score < 50
-      ? 'Create SECURITY.md and add .env to .gitignore → Run `docguard fix --doc security`'
-      : 'Review security findings with `docguard guard --verbose` — configure securityIgnore for false positives',
-    environment: 'Document env variables and create .env.example → Run `docguard fix --doc environment`',
-    drift: 'Create DRIFT-LOG.md and log any code deviations',
-    changelog: 'Maintain CHANGELOG.md with [Unreleased] section',
-    architecture: 'Add layer boundaries and Mermaid diagrams → Run `docguard fix --doc architecture`',
-  };
-  return suggestions[category] || 'Review and improve this area';
+  // Every other category: name the sub-checks that actually failed, so the line
+  // never describes work that's already done (field report, Issue B).
+  if (failures?.length > 0) {
+    const base = failures.map(f => f.issue).join('; ');
+    const fixCmd = failures.find(f => f.fixCmd)?.fixCmd || CATEGORY_FIX[category];
+    return fixCmd ? `${base} → Run \`${fixCmd}\`` : base;
+  }
+
+  return STATIC_SUGGESTIONS[category] || 'Review and improve this area';
 }
 
 /**

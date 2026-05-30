@@ -10,7 +10,7 @@
 
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve, basename } from 'node:path';
-import { c, PROFILES } from './shared.mjs';
+import { c, PROFILES, SEVERITY_LEVELS } from './shared.mjs';
 import { mergeIgnoreFile } from './shared-ignore.mjs';
 
 export function loadConfig(projectDir) {
@@ -88,6 +88,19 @@ export function loadConfig(projectDir) {
       // and the internal lookups (always camelCase) still hit.
       const merged = deepMerge(withProfile, normalizeConfig(userConfig));
       merged.profile = profileName;
+
+      // v0.24: severity accepts only high|medium|low and changes EXIT-CODE
+      // weight — it never mutes a warning from display. A value like "off"
+      // silently fell back to "medium", so users who wrote severity:{k:"off"}
+      // expecting silence still saw the warning and got no feedback (field
+      // report). Surface the misconfig and point at the real disable switch.
+      if (merged.severity && typeof merged.severity === 'object') {
+        for (const [key, val] of Object.entries(merged.severity)) {
+          if (typeof val === 'string' && !SEVERITY_LEVELS.has(val.toLowerCase())) {
+            console.error(`${c.yellow}⚠ .docguard.json: severity.${key} = "${val}" is not a valid level${c.reset} ${c.dim}(use high | medium | low). To silence a validator entirely, set ${c.reset}${c.cyan}validators.${key}: false${c.dim}.${c.reset}`);
+          }
+        }
+      }
 
       // Auto-detect project type if not set
       if (!merged.projectType) {

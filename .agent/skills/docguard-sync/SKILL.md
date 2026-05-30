@@ -7,6 +7,7 @@ metadata:
   version: 0.23.0
   source: extensions/spec-kit-docguard/skills/docguard-sync
 ---
+<!-- docguard:version: 0.23.0 -->
 
 # DocGuard Sync Skill
 

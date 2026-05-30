@@ -25,7 +25,7 @@ const CODE_EXTENSIONS = new Set([
 // false-negative warnings on Python/Rust/Go/Java projects (reported by the
 // quick-recon-tool Python user: TEST-SPEC.md was flagged unlinked even
 // though Python tests existed because `.test.mjs` didn't match `test_*.py`).
-import { TEST_PATTERNS, TRACE_MAP } from '../shared-trace-patterns.mjs';
+import { TEST_PATTERNS, TRACE_MAP, isTraceableSource } from '../shared-trace-patterns.mjs';
 
 
 /**
@@ -189,7 +189,7 @@ export function runTrace(projectDir, config, flags) {
     // Find matching source files for each pattern
     const traces = [];
     for (const pattern of traceInfo.sourcePatterns) {
-      const matches = projectFiles.filter(f => pattern.glob.test(f));
+      const matches = projectFiles.filter(f => isTraceableSource(f) && pattern.glob.test(f));
       traces.push({
         label: pattern.label,
         matchCount: matches.length,
@@ -374,7 +374,7 @@ function findRelatedTests(projectFiles, sourcePatterns) {
   const relatedTests = new Set();
 
   for (const pattern of sourcePatterns) {
-    const sourceFiles = projectFiles.filter(f => pattern.glob.test(f));
+    const sourceFiles = projectFiles.filter(f => isTraceableSource(f) && pattern.glob.test(f));
     for (const src of sourceFiles) {
       const srcBase = basename(src).replace(/\.[^.]+$/, '');
       const srcDir = src.split('/')[0];

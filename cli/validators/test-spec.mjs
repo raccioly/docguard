@@ -175,7 +175,11 @@ export function validateTestSpec(projectDir, config) {
 
     if (hasTestDir || hasColocated || hasConfigTests) {
       // Tests exist but the spec maps none of them → not applicable, not a pass.
-      results.note = 'TEST-SPEC.md declares no service-to-test mappings. Add a "## Source-to-Test Map" table with `| Source | Test file | Status |` columns — run `docguard explain "no service-to-test mappings"` for the exact format.';
+      // v0.24: the validator reads column 1 as source, column 2 as the test
+      // file, and the last as status — so both the minimal 3-column shape and
+      // the 4-column table `docguard generate` emits are accepted. Say so, since
+      // the guidance previously contradicted the generated skeleton (field report).
+      results.note = 'TEST-SPEC.md declares no service-to-test mappings. Add a "## Source-to-Test Map" table — column 1 is the source, column 2 the test file, the last column the status. Both `| Source | Test file | Status |` and the generated `| Source File | Unit Test | Integration Test | Status |` shapes work. Run `docguard explain testSpec` for details.';
     } else {
       results.warnings.push(
         'No test directory or co-located test files found. ' +

@@ -76,13 +76,13 @@ const EXPLAINERS = {
   },
   testSpec: {
     title: 'Test-Spec — declared tests exist',
-    what: 'Reads TEST-SPEC.md\'s test mapping (rows linking sources to test files) and verifies each referenced test file exists.',
+    what: 'Reads TEST-SPEC.md\'s "## Source-to-Test Map" table — column 1 = source, column 2 = test file, last column = status — and verifies each referenced test file exists. Column count is flexible: the minimal 3-column table and the 4-column table `docguard generate` emits both parse.',
     why:  'A spec that claims test coverage for X but the test file is missing is a stale promise.',
     triggers: [
-      ['no service-to-test mappings', 'TEST-SPEC.md has no recognized mapping table. Add a table with `| Source | Test file | Status |` columns.'],
+      ['no service-to-test mappings', 'TEST-SPEC.md has no recognized mapping table. Add a "## Source-to-Test Map" with column 1 = source, column 2 = test file, last = status. Both `| Source | Test file | Status |` and the generated `| Source File | Unit Test | Integration Test | Status |` are accepted.'],
       ['referenced test file does not exist', 'A path in TEST-SPEC.md\'s mapping doesn\'t exist. Update the path or remove the row.'],
     ],
-    example: '| `src/auth.ts` | `tests/auth.test.ts` | ✅ |',
+    example: '| `src/auth.ts` | `tests/auth.test.ts` | ✅ |   (or the generated 4-column shape)',
     standard: 'ISO/IEC/IEEE 29119-3 (test specification)',
   },
   environment: {
@@ -119,14 +119,15 @@ const EXPLAINERS = {
     standard: 'CDD principle: docs and code commit together',
   },
   traceability: {
-    title: 'Traceability — every FR/SC ID has test coverage',
-    what: 'Scans specs/ for FR-### and SC-### requirement IDs. Each must appear in a test file as `@req FR-###`.',
-    why:  'Untraceable requirements drift from implementation.',
+    title: 'Traceability — requirement IDs have test coverage + docs link to code',
+    what: 'Two linkages under one validator: (1) scans specs/ for FR-###/SC-### (also REQ-###, T-###) requirement IDs, each of which must appear in a test as `@req FR-###`; (2) flags a canonical doc that exists but that no source file references back to — the "unlinked doc" warning.',
+    why:  'Untraceable requirements drift from implementation, and a doc no code points to is memory nothing reads.',
     triggers: [
       ['has no test coverage', 'Add `// @req FR-012` (or similar) as a comment in the test that verifies the requirement.'],
       ['orphaned test reference', 'A `@req` comment references an ID that doesn\'t exist in any spec. Update the ID or remove the marker.'],
+      ['unlinked doc', 'A canonical doc (e.g. TEST-SPEC.md) exists but no source file references it. Link it from code/tests, or treat it as advisory if the doc is intentionally standalone. This is a doc→source check, distinct from the FR/SC→test check above — they share the Traceability bucket.'],
     ],
-    example: 'spec.md defines `**FR-012**: ...` and test file has `// @req FR-012` near the test that verifies it',
+    example: 'spec.md defines `**FR-012**: ...` and a test has `// @req FR-012`; and TEST-SPEC.md is referenced from a test/source file',
     standard: 'ISO/IEC/IEEE 29148 (requirements traceability)',
   },
   apiSurface: {
@@ -215,7 +216,154 @@ const EXPLAINERS = {
     example: 'plan.md has Summary, Technical Context, Constitution Check, Project Structure',
     standard: 'GitHub Spec Kit',
   },
+
+  // ── Backfilled in v0.24 (field report, Issue A) ─────────────────────────
+  // These validators were registered in guard but had no explain entry, so
+  // `docguard explain <key>` returned "not found" — including the very
+  // negation-load escape hatch that v0.23.0 shipped (docQuality). The new
+  // tests/explain-coverage.test.mjs asserts this table covers every key the
+  // guard registry exposes, so the gap can't silently reopen.
+  docSections: {
+    // Reported by guard under the `structure` severity key, but it's a
+    // distinct check (required headings, not file existence) with its own
+    // warning + N/A marker — so it gets its own explainer.
+    title: 'Doc Sections — each canonical doc has its required headings',
+    what: 'For each canonical doc, verifies the required `##` sections exist as real headings: ARCHITECTURE.md (System Overview, Component Map, Tech Stack), DATA-MODEL.md (Entities), SECURITY.md (Authentication, Secrets Management), TEST-SPEC.md (Test Categories, Coverage Rules), ENVIRONMENT.md (Environment Variables, Setup Steps). The DATA-MODEL and ENVIRONMENT requirements relax automatically for CLI/library projects.',
+    why:  'A canonical doc that exists but lacks its sections is an empty shell — the section structure is what makes it a reliable memory anchor for humans and agents.',
+    triggers: [
+      ['missing section', 'Add the named `## Section` heading. If the section is genuinely not applicable (e.g. a CLI with no auth), add the N/A marker — a reason is required: `<!-- docguard:section authentication n/a — CLI tool, no auth layer -->`.'],
+    ],
+    example: 'SECURITY.md contains both `## Authentication` and `## Secrets Management` as real headings — or carries `<!-- docguard:section authentication n/a — CLI, no auth -->`',
+    standard: 'CDD STANDARD (canonical doc section contract)',
+  },
+  architecture: {
+    title: 'Architecture — module imports respect layer boundaries',
+    what: 'Builds an import graph across JS/TS files (ES imports, dynamic imports, CommonJS require) and flags (a) imports that cross a forbidden layer boundary declared in `config.layers` or a "Layer Boundaries" table in ARCHITECTURE.md, and (b) circular dependency cycles (length 3–6). N/A unless layers are declared in config or ARCHITECTURE.md.',
+    why:  'Layer violations and import cycles are how a clean architecture rots silently. Catching them at doc-time keeps the documented design honest.',
+    triggers: [
+      ['Circular dependency', 'Break the cycle — extract the shared piece into a module both can import, or invert one of the dependencies.'],
+      ['forbidden by ARCHITECTURE.md', 'An import crosses a boundary your ARCHITECTURE.md "Layer Boundaries" table forbids. Remove the import or update the declared boundary.'],
+      ['layer imports from forbidden layer', 'Same violation, declared via `config.layers.<layer>.canImport`. Adjust the import or widen the allowed list.'],
+    ],
+    example: 'ARCHITECTURE.md declares the routes layer may not import from routes, every import respects it, and there are no import cycles',
+    standard: 'Layered architecture / Acyclic Dependencies Principle',
+  },
+  docsDiff: {
+    title: 'Docs-Diff — declared tech stack + tests match reality',
+    what: 'Two soft-signal diffs: (1) technologies named in ARCHITECTURE.md vs. technologies implied by your dependencies (plus Dockerfile / Terraform detection); (2) test files referenced in TEST-SPEC.md vs. the `*.test.*` / `*.spec.*` files actually on disk. Warnings only — drift is a signal, not a failure. (Env-var drift is handled separately by the Environment validator.)',
+    why:  'The tech-stack section and the test list are the doc parts that rot fastest as dependencies and tests come and go.',
+    triggers: [
+      ['drift:', 'ARCHITECTURE.md or TEST-SPEC.md disagrees with the code. The warning spells out which items are "in code but not documented" vs. "documented but not found in code".'],
+      ['in code but not documented', 'Add the technology or test file to the relevant doc.'],
+      ['documented but not found in code', 'Remove the stale reference, or restore the file if it was deleted by mistake.'],
+    ],
+    example: 'ARCHITECTURE.md names exactly the stack the dependencies imply, and every glob in TEST-SPEC.md matches a real test file',
+    standard: 'CDD principle: documented surfaces match implemented surfaces',
+  },
+  metadataSync: {
+    title: 'Metadata-Sync — version strings agree with package.json',
+    what: 'Takes package.json `version` as the source of truth and flags (a) a different `version:` in extension.yml/yaml, and (b) older same-major version references in docs — but only in actionable contexts (release/download URLs, `@x.y.z` install specs, `version:` declarations). CHANGELOG.md and DRIFT-LOG.md are skipped as historical by definition.',
+    why:  'A README install line pinned to an old version, or an extension manifest left behind on release, sends users to the wrong artifact.',
+    triggers: [
+      ['but package.json is', 'A tracked version string disagrees with package.json. Update it (`docguard fix --write` handles this when marked auto-fixable).'],
+      ['in an actionable context', 'A docs install command / URL / declaration references an older same-major version. Bump it to the current version.'],
+    ],
+    example: 'package.json is 0.23.0, extension.yml says 0.23.0, and every install command / release URL points at 0.23.0',
+    standard: 'Semantic Versioning (consistency of published version references)',
+  },
+  docsCoverage: {
+    title: 'Docs-Coverage — documentable artifacts are mentioned somewhere',
+    what: 'Collects all doc text (README, AGENTS.md, CLAUDE.md, CONTRIBUTING.md, STANDARD.md, docs-canonical/, docs/, docs-implementation/, extensions/) and checks that root config files, package.json `bin` commands, source directories, and config files the code actually reads each appear in at least one doc. Also checks the README has Installation / Usage / License sections.',
+    why:  'A feature, command, or config file that no doc mentions is invisible to new contributors and to AI agents reading the project.',
+    triggers: [
+      ['exists but is not mentioned in any documentation', 'Document the config file\'s purpose in ARCHITECTURE.md or README.md.'],
+      ['but it\'s not mentioned in any documentation', 'A package.json `bin` command is undocumented — mention it in the README.'],
+      ['is not referenced in ARCHITECTURE.md', 'A source directory has no mention in ARCHITECTURE.md — add it to the Component Map.'],
+      ['is missing a', 'README.md lacks a required section (Installation / Usage / License, per the Standard README spec).'],
+    ],
+    example: 'Every root config file, package.json bin command, and source directory is named in README.md or ARCHITECTURE.md; the README has Installation, Usage, and License',
+    standard: 'Standard README (github.com/RichardLitt/standard-readme)',
+  },
+  docQuality: {
+    title: 'Doc-Quality — prose is clear and verifiable',
+    what: 'Runs 8 deterministic prose metrics on each canonical doc + README: passive voice, ambiguous pronouns, atomicity, Flesch readability, Flesch-Kincaid grade, sentence length, negation load, conditional load. Docs under 50 prose words or 3 sentences are skipped as reference material.',
+    why:  'Vague, passive, negation-heavy docs are hard for both humans and AI agents to act on. Metrics inspired by IEEE 830 / ISO 29148.',
+    triggers: [
+      ['High negation load', 'Rephrase in positive terms ("must not fail" → "must succeed"). If the negation is intentional (security/operational docs legitimately use "never"/"must not"), add the per-doc override: `<!-- docguard:quality negation-load off — your reason -->`, or set a custom bar with `<!-- docguard:quality negation-load 0.35 — reason -->`. Project-wide default: `docQuality.negationLoadThreshold` in .docguard.json.'],
+      ['High passive voice ratio', 'Use active voice: "the config is read by the loader" → "the loader reads the config".'],
+      ['High ambiguous pronoun ratio', 'Replace "it/this/that/they" with the specific noun.'],
+      ['Low atomicity', 'Split compound sentences so each states one verifiable fact (IEEE 830 §4.1).'],
+      ['Reading level too high', 'Aim for grade 12–16 for technical docs — shorter sentences, simpler words.'],
+      ['High conditional load', 'Split tangled conditionals into separate requirements.'],
+    ],
+    example: 'SECURITY.md written in active voice with negation in ≤20% of sentences — or carrying `<!-- docguard:quality negation-load off — prohibitive language is precise here -->`',
+    standard: 'IEEE 830 / ISO/IEC/IEEE 29148 (readable, verifiable requirements)',
+  },
+  schemaSync: {
+    title: 'Schema-Sync — DB models in code are documented in DATA-MODEL.md',
+    what: 'Detects schema files for 7 ORMs/frameworks (Prisma, Drizzle, Sequelize, TypeORM, Knex, Django, Rails), extracts the model/table names, and checks each appears (case-insensitive, singular/plural aware) in docs-canonical/DATA-MODEL.md. Migration/utility tables are filtered out. No schema files → passes silently.',
+    why:  'An undocumented table is a data model only the code knows — exactly the institutional memory CDD exists to preserve.',
+    triggers: [
+      ['not documented in DATA-MODEL.md', 'Add the model to DATA-MODEL.md\'s Entity Definitions section.'],
+      ['but no DATA-MODEL.md exists', 'Models were found but DATA-MODEL.md is missing. Run `docguard init` to create it, then document the schema.'],
+    ],
+    example: 'Every `model User` / `model Order` in schema.prisma is named in docs-canonical/DATA-MODEL.md',
+    standard: 'CDD principle: the data model is documented, not implied',
+  },
 };
+
+/**
+ * Validator-key → display name, mirroring the names guard prints in its
+ * report. Users only ever see these names (e.g. "Doc-Quality", "Doc Sections"),
+ * so `docguard explain` must resolve them too — typing what you see should work.
+ *
+ * This intentionally lists every key the guard registry exposes (guard.mjs).
+ * tests/explain-coverage.test.mjs asserts it stays in lock-step with the live
+ * registry, so a new validator can't ship without an explain entry + name.
+ */
+const DISPLAY_NAMES = {
+  structure: 'Structure',
+  docSections: 'Doc Sections',
+  docsSync: 'Docs-Sync',
+  drift: 'Drift-Comments',
+  changelog: 'Changelog',
+  testSpec: 'Test-Spec',
+  environment: 'Environment',
+  security: 'Security',
+  architecture: 'Architecture',
+  freshness: 'Freshness',
+  traceability: 'Traceability',
+  docsDiff: 'Docs-Diff',
+  apiSurface: 'API-Surface',
+  metadataSync: 'Metadata-Sync',
+  docsCoverage: 'Docs-Coverage',
+  docQuality: 'Doc-Quality',
+  todoTracking: 'TODO-Tracking',
+  schemaSync: 'Schema-Sync',
+  specKit: 'Spec-Kit',
+  crossReference: 'Cross-Reference',
+  generatedStaleness: 'Generated-Staleness',
+  surfaceSync: 'Surface-Sync',
+  canonicalSync: 'Canonical-Sync',
+  metricsConsistency: 'Metrics-Consistency',
+};
+
+/** Collapse a key / display name to a comparable form: lowercase, alnum only. */
+const normalizeKey = (s) => String(s).toLowerCase().replace(/[^a-z0-9]/g, '');
+
+/**
+ * normalized(alias) → canonical key, built once from both the explainer keys
+ * and the guard display names. Lets `docQuality`, `doc-quality`, `Doc-Quality`,
+ * and `"doc quality"` all resolve to the same entry.
+ */
+const ALIAS_INDEX = (() => {
+  const idx = {};
+  for (const key of Object.keys(EXPLAINERS)) idx[normalizeKey(key)] = key;
+  for (const [key, name] of Object.entries(DISPLAY_NAMES)) {
+    if (EXPLAINERS[key]) idx[normalizeKey(name)] = key; // name → key (only if explainable)
+  }
+  return idx;
+})();
 
 /**
  * Match a warning text fragment against the explainer table. Returns the
@@ -225,11 +373,10 @@ const EXPLAINERS = {
 function matchWarning(query) {
   const q = query.toLowerCase();
 
-  // Exact validator-key lookup (e.g. `docguard explain freshness`)
-  if (EXPLAINERS[query]) return { key: query, trigger: null };
-  // Also try kebab-case (e.g. `cross-reference` → `crossReference`)
-  const camelized = query.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
-  if (EXPLAINERS[camelized]) return { key: camelized, trigger: null };
+  // Key / display-name lookup, casing- and separator-insensitive. Covers
+  // `freshness`, `cross-reference`, `Doc-Quality`, `"doc sections"`, etc.
+  const aliased = ALIAS_INDEX[normalizeKey(query)];
+  if (aliased) return { key: aliased, trigger: null };
 
   // Search trigger phrases
   let best = null;
@@ -253,16 +400,19 @@ export function runExplain(projectDir, _config, flags) {
   const isJson = flags.format === 'json';
 
   if (!query) {
+    // Exhaustive by construction: iterate the guard display-name map so the
+    // list always covers every registered validator (field report, Issue A.3).
+    const listed = Object.keys(DISPLAY_NAMES).filter(k => EXPLAINERS[k]);
     if (isJson) {
-      console.log(JSON.stringify({ validators: Object.keys(EXPLAINERS) }, null, 2));
+      console.log(JSON.stringify({ validators: listed }, null, 2));
       return;
     }
     console.log(`${c.bold}🧭 docguard explain${c.reset} ${c.dim}— usage:${c.reset}`);
-    console.log(`  ${c.cyan}docguard explain <validator-key>${c.reset}    e.g. docguard explain freshness`);
+    console.log(`  ${c.cyan}docguard explain <validator>${c.reset}        e.g. docguard explain doc-quality  ${c.dim}(key or the name shown in guard)${c.reset}`);
     console.log(`  ${c.cyan}docguard explain "<warning text>"${c.reset}   e.g. docguard explain "no service-to-test mappings"`);
-    console.log(`\n${c.dim}Known validators:${c.reset}`);
-    for (const [k, e] of Object.entries(EXPLAINERS)) {
-      console.log(`  ${c.cyan}${k.padEnd(22)}${c.reset} ${c.dim}${e.title}${c.reset}`);
+    console.log(`\n${c.dim}Known validators (${listed.length}):${c.reset}`);
+    for (const k of listed) {
+      console.log(`  ${c.cyan}${DISPLAY_NAMES[k].padEnd(22)}${c.reset} ${c.dim}${EXPLAINERS[k].title}${c.reset}`);
     }
     return;
   }
@@ -305,4 +455,13 @@ export function runExplain(projectDir, _config, flags) {
 
   console.log(`${c.bold}Passing example:${c.reset}\n  ${c.dim}${e.example}${c.reset}\n`);
   console.log(`${c.bold}Standard:${c.reset} ${c.dim}${e.standard}${c.reset}`);
+
+  // v0.24: surface how to mute/tune from config — there was no in-tool way to
+  // discover this, so users reached for severity:"off" (a no-op) instead of
+  // the real switch (field report). docSections is reported under the
+  // `structure` key in guard, so it disables via that key.
+  const cfgKey = match.key === 'docSections' ? 'structure' : match.key;
+  console.log(`\n${c.bold}Tune it${c.reset} ${c.dim}(.docguard.json):${c.reset}`);
+  console.log(`  ${c.cyan}validators.${cfgKey}: false${c.reset} ${c.dim}— disable this validator entirely${c.reset}`);
+  console.log(`  ${c.cyan}severity.${cfgKey}: "high" | "low"${c.reset} ${c.dim}— change exit-code weight (low = warn-only). Severity never hides the warning from output.${c.reset}`);
 }

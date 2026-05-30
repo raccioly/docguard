@@ -12,6 +12,19 @@
  * pattern (app/api, pages/api) preserved from the v0.22.0 #195 fix.
  */
 
+/**
+ * A markdown file is documentation, never the source that *implements* a
+ * canonical doc — so it must not count as a doc→code match. Without this,
+ * SECURITY.md's "Auth modules" glob (which includes `guard`) matched
+ * `commands/docguard.guard.md` and listed DocGuard's own command docs as the
+ * project's auth modules (field report). Real config-file matches (.env,
+ * Dockerfile, pyproject.toml, .gitignore) are unaffected — none are `.md`.
+ * Used by both `docguard trace` and the guard-time Traceability validator.
+ */
+export function isTraceableSource(relPath) {
+  return !relPath.endsWith('.md');
+}
+
 export const TEST_PATTERNS = [
   // JS/TS
   /\.test\.[jt]sx?$/, /\.spec\.[jt]sx?$/, /\.test\.(mjs|cjs)$/,

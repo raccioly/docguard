@@ -39,6 +39,65 @@ export function resolveSeverity(config, validatorKey) {
   return 'medium';
 }
 
+// ── Canonical section heading matching ─────────────────────────────────────
+/**
+ * Required canonical sections used to be matched by literal substring, so an
+ * arc42/C4 doc with "## 5.4 Layer boundaries" or "## Building Block View"
+ * scored as if the section were absent — the validator made well-structured
+ * docs look WORSE than the skeleton (field report). These synonyms + section-
+ * number tolerance let equivalent headings count. Synonyms only ever ADD
+ * matches; the literal canonical heading always still passes.
+ *
+ * Keyed by the normalized canonical heading (lowercase, alphanumerics + spaces).
+ */
+export const SECTION_SYNONYMS = {
+  'system overview':       ['system context', 'system summary', 'introduction and goals', 'context and scope', 'overview and goals'],
+  'component map':         ['components', 'component overview', 'building block view', 'building blocks', 'containers', 'module overview'],
+  'tech stack':            ['technology stack', 'technologies', 'technical stack'],
+  'entities':              ['entity definitions', 'data model', 'domain model', 'data entities'],
+  'authentication':        ['auth', 'authn', 'authentication and authorization', 'identity'],
+  'secrets management':    ['secrets', 'secret management', 'secrets handling', 'credentials', 'credential management'],
+  'test categories':       ['test types', 'categories of tests', 'test strategy', 'testing strategy', 'test approach'],
+  'coverage rules':        ['coverage', 'coverage targets', 'coverage goals', 'coverage requirements', 'coverage policy'],
+  'environment variables': ['env vars', 'environment', 'configuration', 'config variables'],
+  'setup steps':           ['setup', 'getting started', 'installation', 'setup instructions', 'local setup', 'quick start'],
+  'layer boundaries':      ['layers', 'layering', 'module boundaries', 'layer boundary', 'boundaries'],
+  'external dependencies': ['dependencies', 'external systems', 'third party dependencies', 'integrations', 'external interfaces'],
+  'revision history':      ['changelog', 'change history', 'history', 'revisions', 'document history', 'change log'],
+};
+
+/** Normalize a markdown heading: drop #, leading arc42-style numbers, punctuation. */
+function normalizeHeadingText(line) {
+  return line
+    .replace(/^#{1,6}\s*/, '')             // strip leading #s
+    .replace(/^\d+(?:\.\d+)*\.?\s+/, '')   // strip leading "5.4 " / "3. " section numbers
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')           // non-alphanumeric → single space
+    .trim();
+}
+
+/**
+ * True if `content` has an H2–H6 heading equivalent to `canonicalHeading` —
+ * the exact text, a known synonym, or the same text behind an arc42-style
+ * section number (e.g. "## 5.4 Layer boundaries" satisfies "## Layer Boundaries").
+ *
+ * @param {string} content - markdown file contents
+ * @param {string} canonicalHeading - e.g. '## Component Map' or 'Component Map'
+ */
+export function docHasSection(content, canonicalHeading) {
+  const key = normalizeHeadingText(canonicalHeading);
+  if (!key) return false;
+  const accepted = [key, ...(SECTION_SYNONYMS[key] || [])];
+  const headings = content.match(/^#{2,6}\s+.+$/gm) || [];
+  for (const line of headings) {
+    const norm = normalizeHeadingText(line);
+    for (const phrase of accepted) {
+      if (norm.includes(phrase)) return true;
+    }
+  }
+  return false;
+}
+
 /**
  * Parse a dotted-decimal version string into a tuple of integers for
  * comparison. Tolerates extra suffixes (e.g. `0.4-beta` → [0, 4]).

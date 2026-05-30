@@ -195,14 +195,6 @@ export function isSpecKitInitialized(projectDir) {
 
 // ── Spec-Kit Integration Gate ───────────────────────────────────────────
 
-// Read DocGuard package version (for skill auto-update)
-const PKG_VERSION = (() => {
-  try {
-    const pkg = JSON.parse(readFileSync(resolve(__dirname, '..', 'package.json'), 'utf-8'));
-    return pkg.version || '0.0.0';
-  } catch { return '0.0.0'; }
-})();
-
 const SPEC_KIT_INSTALL_CMD = 'uv tool install specify-cli --from git+https://github.com/github/spec-kit.git';
 
 /**
@@ -298,26 +290,22 @@ export function ensureSkills(projectDir, flags = {}) {
 
       for (const skillDir of skillDirs) {
         const destDir = resolve(projectDir, SKILLS_DEST, skillDir);
-        if (!existsSync(destDir)) {
-          mkdirSync(destDir, { recursive: true });
-        }
         const srcSkill = resolve(SKILLS_SOURCE, skillDir, 'SKILL.md');
         const destSkill = resolve(destDir, 'SKILL.md');
 
-        if (!existsSync(destSkill)) {
-          // New install
-          writeFileSync(destSkill, readFileSync(srcSkill, 'utf-8'), 'utf-8');
-          result.skillsInstalled = true;
-        } else {
-          // Auto-update: check if package version is newer than installed
-          const installedContent = readFileSync(destSkill, 'utf-8');
-          const versionMatch = installedContent.match(/docguard:version:\s*(\S+)/);
-          const installedVersion = versionMatch ? versionMatch[1] : '0.0.0';
+        const srcContent = readFileSync(srcSkill, 'utf-8');
+        const installedContent = existsSync(destSkill) ? readFileSync(destSkill, 'utf-8') : null;
 
-          if (installedVersion !== PKG_VERSION) {
-            writeFileSync(destSkill, readFileSync(srcSkill, 'utf-8'), 'utf-8');
-            result.skillsInstalled = true;
-          }
+        // Content-equality gate: write only when the bundled skill differs from
+        // what's on disk. Covers a fresh install AND a genuine update, but stops
+        // the per-command rewrite churn the old version-marker gate caused — a
+        // skill whose SKILL.md lacked a `docguard:version:` marker compared as
+        // '0.0.0', so it was rewritten (and announced) on EVERY command, even
+        // read-only ones like `explain`/`score` (field report, Issue D).
+        if (installedContent !== srcContent) {
+          if (!existsSync(destDir)) mkdirSync(destDir, { recursive: true });
+          writeFileSync(destSkill, srcContent, 'utf-8');
+          result.skillsInstalled = true;
         }
       }
 

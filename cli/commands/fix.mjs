@@ -699,10 +699,25 @@ function outputResults(issues, projectDir, config, flags) {
   const isPrompt = flags.format === 'prompt';
 
   if (issues.length === 0) {
+    // v0.24: `fix` only handles issues it can mechanically resolve / prompt for.
+    // It used to claim "documentation is complete!" even when `guard` still had
+    // advisory warnings (e.g. an unmapped Test-Spec table), so the two commands
+    // contradicted each other (field report). Surface guard's advisory count so
+    // they agree: 0 fixable ≠ 0 warnings.
+    let advisory = 0;
+    try {
+      const g = runGuardInternal(projectDir, config);
+      advisory = (g.validators || []).reduce((n, v) => n + ((v.warnings && v.warnings.length) || 0), 0);
+    } catch { /* if guard can't run, fall back to the plain clean message */ }
+
     if (isJson) {
-      console.log(JSON.stringify({ status: 'clean', issues: [], fixCount: 0 }));
+      console.log(JSON.stringify({ status: 'clean', issues: [], fixCount: 0, advisoryWarnings: advisory }));
     } else if (isPrompt) {
-      console.log('No CDD issues found. All documentation is complete.');
+      console.log(advisory > 0
+        ? `No mechanically-fixable issues. ${advisory} advisory warning(s) remain — run \`docguard guard\` to see them.`
+        : 'No CDD issues found. All documentation is complete.');
+    } else if (advisory > 0) {
+      console.log(`  ${c.green}${c.bold}✅ No fixable issues here.${c.reset} ${c.dim}guard still reports ${advisory} advisory warning(s) that need authoring, not mechanical fixes — run ${c.reset}${c.cyan}docguard guard${c.dim} to see them.${c.reset}\n`);
     } else {
       console.log(`  ${c.green}${c.bold}✅ No issues — documentation is complete!${c.reset}\n`);
     }

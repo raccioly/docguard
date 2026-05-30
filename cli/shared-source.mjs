@@ -250,6 +250,30 @@ export function grepEnvUsage(projectDir, config = {}) {
         names.add(m[1]);
       }
     }
+
+    // v0.24: env vars are increasingly declared in a validation schema
+    // (Zod / envalid / convict) and read via a typed `config` object instead of
+    // `process.env.X` — so the direct-access patterns above miss them and every
+    // documented var looked "missing from code" (field report). Only harvest
+    // when the file actually validates process.env through such a schema.
+    const validatesEnv =
+      /(?:safeParse|parse)\s*\(\s*process\.env\b/.test(content) || // zod: schema.parse(process.env)
+      /\bcleanEnv\s*\(\s*process\.env\b/.test(content) ||          // envalid
+      /\bconvict\s*\(/.test(content);                              // convict
+    if (validatesEnv) {
+      let km;
+      // Zod / envalid: the schema KEYS are the env var names. Data schemas use
+      // camelCase keys, so requiring UPPER_SNAKE keeps this env-specific.
+      const keyRe = /^\s*['"]?([A-Z][A-Z0-9_]*[A-Z0-9])['"]?\s*:/gm;
+      while ((km = keyRe.exec(content)) !== null) {
+        if (km[1].length >= 3 && !VITE_INTRINSICS.has(km[1])) names.add(km[1]);
+      }
+      // convict: the env var name is the `env:` property value, not the key.
+      const convictRe = /\benv\s*:\s*['"]([A-Z][A-Z0-9_]*[A-Z0-9])['"]/g;
+      while ((km = convictRe.exec(content)) !== null) {
+        if (km[1].length >= 3) names.add(km[1]);
+      }
+    }
   };
 
   const walk = (dir) => {

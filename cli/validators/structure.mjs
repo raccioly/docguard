@@ -4,6 +4,7 @@
 
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { docHasSection } from '../shared.mjs';
 
 export function validateStructure(projectDir, config) {
   const results = { name: 'structure', errors: [], warnings: [], passed: 0, total: 0 };
@@ -86,11 +87,11 @@ export function validateDocSections(projectDir, config) {
 
     for (const section of sections) {
       results.total++;
-      // Match an actual heading at line start (any level), not a substring that
-      // could appear in a table-of-contents link or a code block.
+      // Match a real heading (H2–H6), not a substring in a TOC link or code
+      // block. v0.24: synonym- and section-number-tolerant via docHasSection, so
+      // arc42/C4 docs ("## 5.4 Layer boundaries", "## Building Block View")
+      // count instead of being told to add a section they already have.
       const headingText = section.replace(/^#+\s*/, '');
-      const escapedHeading = headingText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const headingRe = new RegExp('^#{2,6}\\s+' + escapedHeading + '\\b', 'm');
       // v0.16-P7: N/A marker. A project can declare a required section as
       // "not applicable" via an HTML comment instead of writing boilerplate
       // "Absent by design" prose. Format:
@@ -108,7 +109,7 @@ export function validateDocSections(projectDir, config) {
         '<!--\\s*docguard:section\\s+' + slug.replace(/-/g, '[-_]') + '\\s+n/a\\s*[—-]+\\s*[A-Za-z0-9]',
         'i'
       );
-      if (headingRe.test(content)) {
+      if (docHasSection(content, section)) {
         results.passed++;
       } else if (naRe.test(content)) {
         // v0.16-P7: explicit N/A — counts as passed (the project has owned
