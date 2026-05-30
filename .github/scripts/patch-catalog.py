@@ -37,11 +37,11 @@ old_entry_updated = dg["updated_at"]
 old_desc = dg["description"]
 top_updated = data["updated_at"]
 
-# Correct description (matches our constitution: "Zero NPM runtime dependencies")
+# Correct description (matches our constitution: minimal, vetted dependencies)
 new_desc = (
     "Canonical-Driven Development enforcement. "
     "Validates, scores, and traces project documentation with automated checks, "
-    "AI-driven workflows, and spec-kit hooks. Zero NPM runtime dependencies."
+    "AI-driven workflows, and spec-kit hooks. One pinned runtime dependency; pure Node.js otherwise."
 )
 
 # Surgical string replacements — only touch specific values

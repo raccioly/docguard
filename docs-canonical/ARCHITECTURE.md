@@ -15,7 +15,7 @@
 
 ## System Overview
 
-DocGuard is a zero-dependency Node.js CLI tool. It enforces **Canonical-Driven Development (CDD)** — a methodology where documentation is the source of truth. DocGuard audits, scores, and guards project documentation. It generates AI-actionable fix prompts and integrates with CI/CD pipelines and VS Code.
+DocGuard is a near-zero-dependency Node.js CLI tool (one exact-pinned runtime dependency, `@babel/parser`, for AST-accurate JS/TS parsing — loaded optionally with a regex fallback). It enforces **Canonical-Driven Development (CDD)** — a methodology where documentation is the source of truth. DocGuard audits, scores, and guards project documentation. It generates AI-actionable fix prompts and integrates with CI/CD pipelines.
 
 It targets development teams and AI coding agents that need to maintain documentation quality across projects of any stack (JavaScript, Python, Java, etc.).
 
@@ -32,7 +32,6 @@ It targets development teams and AI coding agents that need to maintain document
 | **Shared** | Cross-cutting utilities — ignore/glob filters, source-root resolution, git helpers, and the shared doc→code trace patterns used by both `trace` and the Traceability validator | `cli/` | `shared-ignore.mjs`, `shared-source.mjs`, `shared-git.mjs`, `shared-trace-patterns.mjs`, `shared.mjs` |
 | **Templates** | Document skeletons (ARCHITECTURE, SECURITY, etc.) and slash command files for AI agents | `templates/` | `*.template`, `commands/*.md` |
 | **Extension** | Spec Kit extension with 5 AI skills, 4 bash scripts, workflow hooks | `extensions/spec-kit-docguard/` | `skills/*/SKILL.md`, `scripts/bash/*.sh` |
-| **VS Code Extension** | Status bar score, inline diagnostics, Code Actions, file watchers | `vscode-extension/` | `extension.js`, `package.json` |
 | **Tests** | Per-validator unit tests + command-level integration tests using `node:test` | `tests/` | `*.test.mjs` |
 
 ## Tech Stack
@@ -41,7 +40,7 @@ It targets development teams and AI coding agents that need to maintain document
 |----------|-----------|-----------|
 | Language | JavaScript (ES Modules) | Universal runtime, zero-friction `npx` usage |
 | Runtime | Node.js ≥ 18 | Native `node:test`, `node:fs`, `node:child_process` |
-| Dependencies | **None** (zero-dependency) | Maximizes portability, eliminates supply chain risk |
+| Dependencies | **One** — `@babel/parser` (exact-pinned, optional-load) | AST-accurate JS/TS parsing; minimal, vetted supply-chain surface |
 | Package Manager | npm | Standard for Node.js CLIs |
 | Testing | `node:test` + `node:assert` | Built-in, no test framework dependency |
 | Extension | VS Code Extension API | Dominant editor market share |
@@ -151,7 +150,7 @@ docguard guard → validates the newly written document
 
 | Decision | Rationale |
 |----------|-----------|
-| **Zero dependencies** | CLI tools should install instantly. Avoiding `node_modules` eliminates supply chain risk and version conflicts. |
+| **Minimal dependencies** | One exact-pinned, vetted runtime dep (`@babel/parser`) earns its place by fixing silent regex truncation; it loads optionally so installs stay robust. Everything else is Node.js built-ins. |
 | **Config-driven validation** | `.docguard.json` lets projects customize which validators run. A CLI project can skip database docs. |
 | **Validators are independent** | Each validator is a self-contained module. Adding a validator keeps existing ones stable. |
 | **AI as author, CLI as orchestrator** | The CLI detects problems and generates structured prompts. Documentation writing is the AI's responsibility. |

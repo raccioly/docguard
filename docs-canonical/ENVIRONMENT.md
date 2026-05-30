@@ -2,9 +2,9 @@
 
 <!-- docguard:version 0.5.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-05-29 -->
+<!-- docguard:last-reviewed 2026-05-30 -->
 
-> DocGuard is a zero-dependency CLI tool. No environment variables needed.
+> DocGuard needs no environment variables. It has a single optional-load runtime dependency (`@babel/parser`); everything else is Node.js built-ins.
 
 | Metadata | Value |
 |----------|-------|
@@ -23,8 +23,9 @@
 
 ## Environment Variables
 
-> **None required.** DocGuard is a zero-dependency CLI tool that reads project
-> files directly. No `.env` file, no API keys, no database connections.
+> **None required.** DocGuard reads project files directly. No `.env` file,
+> no API keys, no database connections. (Its one npm dependency, `@babel/parser`,
+> needs no configuration.)
 
 ## Setup Steps
 

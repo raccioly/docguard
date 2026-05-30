@@ -36,8 +36,20 @@ function parseAttrs(attrStr) {
 
 /**
  * Parse all well-formed sections in a document.
- * A section is a line matching the open marker, then content lines, then a
- * close-marker line. An open with no matching close is ignored (not corrupted).
+ * A section is an open-marker line, then content lines, then a close-marker
+ * line. Sections are FLAT — there is no nesting.
+ *
+ * Two malformed cases are handled so that a hand-edit mistake can never cause
+ * a later regenerate to overwrite human prose:
+ *   - An open with no matching close (reached EOF) is dropped, not returned.
+ *   - A NEW open encountered while a previous one is still unclosed means the
+ *     previous open was malformed (its close was deleted or typo'd). We ABANDON
+ *     the previous open and restart at the new one. The earlier, broken
+ *     approach kept the first open and paired it with the *next* section's
+ *     close — swallowing the human prose and the next section into one body,
+ *     which a subsequent replaceSection() would then silently overwrite.
+ * A dropped section simply isn't returned, so replaceSection() no-ops on it
+ * (returns content unchanged) instead of corrupting the surrounding document.
  * @returns {Array<{ id, source, attrs, openLine, closeLine, body }>}
  */
 export function parseSections(content) {
@@ -47,25 +59,26 @@ export function parseSections(content) {
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    if (open === null) {
-      const om = line.match(OPEN_RE);
-      if (om) {
-        const attrs = parseAttrs(om[1] || '');
-        open = { attrs, openLine: i };
+    if (CLOSE_RE.test(line)) {
+      if (open !== null) {
+        sections.push({
+          id: open.attrs.id || '',
+          source: open.attrs.source || 'code',
+          attrs: open.attrs,
+          openLine: open.openLine,
+          closeLine: i,
+          body: lines.slice(open.openLine + 1, i).join('\n'),
+        });
+        open = null;
       }
-    } else if (CLOSE_RE.test(line)) {
-      sections.push({
-        id: open.attrs.id || '',
-        source: open.attrs.source || 'code',
-        attrs: open.attrs,
-        openLine: open.openLine,
-        closeLine: i,
-        body: lines.slice(open.openLine + 1, i).join('\n'),
-      });
-      open = null;
+      // A close with no matching open is ignored.
+      continue;
     }
-    // Note: a second open before a close just extends the search for a close;
-    // we keep the FIRST open's start, so malformed nesting can't corrupt content.
+    const om = line.match(OPEN_RE);
+    if (om) {
+      // Abandon any still-open (malformed) section; start fresh here.
+      open = { attrs: parseAttrs(om[1] || ''), openLine: i };
+    }
   }
   return sections;
 }

@@ -43,7 +43,7 @@ jobs:
           echo "updated_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
 
           # Extract short description (avoid multiline output issues)
-          DESC="Canonical-Driven Development enforcement with automated checks, AI skills, and spec-kit hooks. Zero NPM runtime dependencies."
+          DESC="Canonical-Driven Development enforcement with automated checks, AI skills, and spec-kit hooks. One pinned runtime dependency; pure Node.js otherwise."
           echo "description=$DESC" >> "$GITHUB_OUTPUT"
 
           # Count commands

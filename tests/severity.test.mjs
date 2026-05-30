@@ -177,3 +177,63 @@ describe('runGuardInternal — severity-aware effective counts', () => {
     if (st) assert.equal(st.severity, 'high');
   });
 });
+
+describe('runGuardInternal — status word agrees with the severity-aware exit code', () => {
+  // Regression for the bug where overallStatus used RAW counts while the exit
+  // code used severity-adjusted (effective) counts, so the printed verdict
+  // could contradict what CI did (WARN printed but exit 1, or vice-versa).
+  let dir;
+  afterEach(() => { if (dir) rmSync(dir, { recursive: true, force: true }); });
+
+  const projectWithFreshnessWarn = () => ({
+    'package.json': JSON.stringify({ name: 'test', version: '0.0.0' }),
+    'docs-canonical/ARCHITECTURE.md': '# Architecture\n\nStub.',
+    'src/index.ts': 'export const x = 1;',
+  });
+
+  const onlyDocsCoverage = (severity) => ({
+    projectName: 'test',
+    profile: 'starter',
+    validators: {
+      structure: false, docsSync: false, drift: false, changelog: false,
+      testSpec: false, environment: false, security: false, freshness: false,
+      traceability: false, docsDiff: false, apiSurface: false,
+      metadataSync: false, docsCoverage: true, docQuality: false,
+      todoTracking: false, schemaSync: false, specKit: false,
+      metricsConsistency: false, architecture: false,
+    },
+    ...(severity ? { severity: { docsCoverage: severity } } : {}),
+  });
+
+  // The invariant under test: the status word is exactly the verdict the exit
+  // code encodes. effectiveErrors>0 ⇒ FAIL (exit 1); else effectiveWarnings>0
+  // ⇒ WARN (exit 2); else PASS (exit 0).
+  const assertStatusMatchesExit = (r) => {
+    const expected = r.effectiveErrors > 0 ? 'FAIL' : r.effectiveWarnings > 0 ? 'WARN' : 'PASS';
+    assert.equal(r.status, expected,
+      `status "${r.status}" must match effective-count verdict "${expected}" (effErr=${r.effectiveErrors}, effWarn=${r.effectiveWarnings})`);
+  };
+
+  it('default warnings ⇒ status WARN (matches exit 2)', () => {
+    dir = make(projectWithFreshnessWarn());
+    const r = runGuardInternal(dir, onlyDocsCoverage(null));
+    assertStatusMatchesExit(r);
+    if (r.warnings > 0) assert.equal(r.status, 'WARN');
+  });
+
+  it('severity=high warnings ⇒ status FAIL (matches exit 1, not WARN)', () => {
+    dir = make(projectWithFreshnessWarn());
+    const r = runGuardInternal(dir, onlyDocsCoverage('high'));
+    assertStatusMatchesExit(r);
+    if (r.warnings > 0 || r.effectiveErrors > 0) assert.equal(r.status, 'FAIL');
+  });
+
+  it('severity=low warnings ⇒ status PASS (matches exit 0, not WARN)', () => {
+    dir = make(projectWithFreshnessWarn());
+    const r = runGuardInternal(dir, onlyDocsCoverage('low'));
+    assertStatusMatchesExit(r);
+    // With the only active validator demoted to low and no errors, the
+    // effective counts are zero ⇒ PASS even though raw warnings may exist.
+    if (r.errors === 0) assert.equal(r.status, 'PASS');
+  });
+});

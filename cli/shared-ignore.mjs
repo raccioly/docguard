@@ -50,7 +50,22 @@ const ALWAYS_REJECT_PATH_RE =
  * Returns [] if the file is missing or unreadable — never throws.
  */
 import { readFileSync, existsSync } from 'node:fs';
-import { resolve as resolvePath } from 'node:path';
+import { resolve as resolvePath, relative as relativePath, sep } from 'node:path';
+
+/**
+ * Project-relative path with POSIX (`/`) separators — the canonical form that
+ * every validator should compare against docs, ignore globs, and changed-file
+ * sets.
+ *
+ * Replaces the old `absPath.replace(projectDir + '/', '')` idiom, which failed
+ * two ways: on Windows the `/` literal never matched the OS `\` separators, and
+ * for a sibling dir sharing a prefix (`/repo` vs `/repo-staging`) the replace
+ * was a no-op — both cases left an ABSOLUTE path, silently breaking
+ * `content.includes(relPath)`, glob matching, and `--changed-only` scoping.
+ */
+export function relPosix(projectDir, absPath) {
+  return relativePath(projectDir, absPath).split(sep).join('/');
+}
 
 export function loadDocguardIgnore(projectDir) {
   const p = resolvePath(projectDir, '.docguardignore');

@@ -1,7 +1,6 @@
 # Development
 .git/
 .github/
-.specguard.json
 Research/
 docs-canonical/
 docs-implementation/

@@ -4,7 +4,7 @@ extension:
   id: "docguard"
   name: "DocGuard — CDD Enforcement"
   version: "0.23.0"
-  description: "Canonical-Driven Development enforcement as a true spec-kit extension. LLM-first design with 19 automated validators, 4 AI behavior skills, spec-kit skill chaining, and workflow hooks. Zero NPM runtime dependencies."
+  description: "Canonical-Driven Development enforcement as a true spec-kit extension. LLM-first design with automated validators, 4 AI behavior skills, spec-kit skill chaining, and workflow hooks. One pinned runtime dependency (@babel/parser); pure Node.js otherwise."
   author: "Ricardo Accioly"
   repository: "https://github.com/raccioly/docguard"
   license: "MIT"

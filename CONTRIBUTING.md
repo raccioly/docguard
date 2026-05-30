@@ -37,14 +37,13 @@ cli/
   commands/             ← 11 user-facing commands
   validators/           ← 9 independent validation modules
 templates/              ← CDD document templates + slash commands
-vscode-extension/       ← VS Code extension
 tests/                  ← Integration tests
 docs-canonical/         ← DocGuard's own CDD documentation
 ```
 
 ## Architecture Rules
 
-- **Zero dependencies**: DocGuard has no `node_modules` runtime deps. Keep it that way.
+- **Minimal dependencies**: exactly one runtime dep (`@babel/parser`, exact-pinned, optional-load). New deps require constitution-level justification + exact pinning + supply-chain vetting. Default to Node.js built-ins.
 - **Validators are pure**: Each validator receives `(projectDir, config)` and returns results. No side effects.
 - **Commands don't cross-import**: Commands import from validators, never from other commands.
 - **AI is the author**: The CLI flags problems and generates prompts. It never writes doc content.

@@ -58,6 +58,26 @@ describe('validateSecurity', () => {
     assert.ok(result.errors.some(e => e.includes('auth.js') && e.includes('hardcoded API key')));
   });
 
+  it('detects a REAL secret that sits below a safe placeholder of the same kind', () => {
+    // Regression: the scanner used to inspect only the FIRST match per pattern.
+    // A placeholder on the first matching line caused it to skip to the next
+    // pattern, missing a real hardcoded key further down the same file.
+    writeFileSync(join(projectDir, '.gitignore'), '.env');
+    writeFileSync(join(projectDir, 'config.js'), `
+      // Example for the docs — should be ignored:
+      const exampleKey = "AKIAIOSFODNN7EXAMPLE";
+      // The real, accidentally-committed key:
+      const awsKey = "AKIAIOSFODNN7REALKEY";
+    `);
+
+    const result = validateSecurity(projectDir, {});
+
+    assert.ok(
+      result.errors.some(e => e.includes('config.js') && e.includes('AWS Access Key ID')),
+      'the real AWS key below the EXAMPLE placeholder must still be flagged'
+    );
+  });
+
   it('should skip known safe placeholder values', () => {
     writeFileSync(join(projectDir, '.gitignore'), '.env');
     writeFileSync(join(projectDir, 'examples.js'), `

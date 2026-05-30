@@ -129,7 +129,7 @@ Only if you install hooks (`docguard hooks`). Without hooks, it's advisory only.
 
 ### Does DocGuard have dependencies?
 
-**Zero.** Pure Node.js, no npm dependencies. Works with Node.js 18+.
+**One.** `@babel/parser` (exact-pinned), for AST-accurate JS/TS parsing — and it's loaded *optionally*, so DocGuard still runs (on the regex fallback tier) if it's ever missing. Everything else is pure Node.js built-ins. Works with Node.js 18+. Python parsing optionally shells out to the project's own `python3`.
 
 ### Does it work with non-JavaScript projects?
 

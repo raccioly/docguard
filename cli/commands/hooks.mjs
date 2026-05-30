@@ -56,6 +56,7 @@ function spliceManagedBlock(existing, newBody) {
 }
 import { resolve } from 'node:path';
 import { c } from '../shared.mjs';
+import { getHooksDir } from '../shared-git.mjs';
 
 const HOOKS = {
   'pre-commit': {
@@ -216,17 +217,20 @@ export function runHooks(projectDir, config, flags) {
   console.log(`${c.bold}🪝 DocGuard Hooks — ${config.projectName}${c.reset}`);
   console.log(`${c.dim}   Directory: ${projectDir}${c.reset}\n`);
 
-  // Check if .git exists
-  const gitDir = resolve(projectDir, '.git');
-  if (!existsSync(gitDir)) {
+  // Resolve the real hooks dir via git — NOT `<projectDir>/.git/hooks`, which
+  // is wrong inside a linked worktree (where `.git` is a file, not a dir) and
+  // ignores a custom core.hooksPath.
+  const hooksDir = getHooksDir(projectDir);
+  if (!hooksDir) {
     console.log(`  ${c.red}❌ Not a git repository. Run ${c.cyan}git init${c.red} first.${c.reset}\n`);
     process.exit(1);
   }
 
-  const hooksDir = resolve(gitDir, 'hooks');
-  if (!existsSync(hooksDir)) {
-    mkdirSync(hooksDir, { recursive: true });
-  }
+  // Only create the dir when we're actually going to write a hook. Read-only
+  // modes (--list, --remove) must not have a filesystem side effect.
+  const ensureHooksDir = () => {
+    if (!existsSync(hooksDir)) mkdirSync(hooksDir, { recursive: true });
+  };
 
   // Determine which hooks to install
   let hookTypes = Object.keys(HOOKS);
@@ -273,6 +277,7 @@ export function runHooks(projectDir, config, flags) {
   }
 
   // Install mode
+  ensureHooksDir();
   let installed = 0;
   let skipped = 0;
 

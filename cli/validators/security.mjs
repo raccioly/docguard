@@ -7,7 +7,7 @@
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, extname } from 'node:path';
-import { shouldIgnore } from '../shared-ignore.mjs';
+import { shouldIgnore, relPosix } from '../shared-ignore.mjs';
 
 const CODE_EXTENSIONS = new Set([
   '.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx',
@@ -69,7 +69,7 @@ export function validateSecurity(projectDir, config) {
     // Skip .env.example — it should have placeholder values
     if (filePath.endsWith('.env.example')) return;
 
-    const relPath = filePath.replace(projectDir + '/', '');
+    const relPath = relPosix(projectDir, filePath);
 
     // Apply config ignore patterns (securityIgnore + global ignore)
     if (shouldIgnore(relPath, config, 'securityIgnore')) return;
@@ -80,8 +80,12 @@ export function validateSecurity(projectDir, config) {
 
     for (const { pattern, label } of SECRET_PATTERNS) {
       pattern.lastIndex = 0;
-      const match = pattern.exec(content);
-      if (match) {
+      let match;
+      // Scan ALL matches for this pattern, not just the first. A real secret
+      // can sit BELOW a safe placeholder of the same kind (e.g. an
+      // `apiKey = "EXAMPLE..."` line above a hardcoded real key). Bailing on
+      // the first match — as this loop used to — silently missed the real one.
+      while ((match = pattern.exec(content)) !== null) {
         // Lazily initialize lines only when a match is found
         if (!lines) lines = content.split('\n');
 
@@ -97,10 +101,14 @@ export function validateSecurity(projectDir, config) {
           }
         }
 
-        // Skip known-safe placeholder/example values
+        // Skip known-safe placeholder/example values, but keep scanning for a
+        // real one further down the file.
         if (isSafePlaceholder(matchLine, match[0])) continue;
 
         findings.push({ file: relPath, label, match: match[0].substring(0, 30) + '...' });
+        // One finding per (file, label) is enough — the reported message is
+        // identical for repeats and we've already proven a real secret exists.
+        break;
       }
     }
   });

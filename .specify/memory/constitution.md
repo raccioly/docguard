@@ -15,9 +15,11 @@
 
 DocGuard is built for AI coding agents. Every feature MUST be designed for LLM consumption first, with CLI as a secondary interface. Skills (behavior protocols) take priority over CLI commands (step-lists). When DocGuard detects an AI agent environment, it MUST surface skill-based instructions. CLI output MUST be machine-parseable (JSON mode) alongside human-readable text.
 
-### II. Zero NPM Runtime Dependencies (NON-NEGOTIABLE)
+### II. Minimal, Vetted Dependencies (NON-NEGOTIABLE)
 
-DocGuard has zero `node_modules` at runtime. All Node.js functionality uses built-in modules only (`node:fs`, `node:path`, `node:child_process`, `node:test`, `node:url`, `node:readline`, `node:os`, `node:assert`). This maximizes portability, eliminates supply chain risk, and ensures instant `npx` usage. Dev dependencies are also zero — tests use `node:test`. DocGuard depends on spec-kit as a **framework convention** (`.specify/` directory structure, skill architecture, constitution pattern). This is an integration, not a code dependency. When the `specify` CLI is available, DocGuard MUST leverage it for initialization and skill management.
+DocGuard ships with exactly **one** runtime dependency: `@babel/parser` (exact-pinned), which powers AST-accurate JavaScript/TypeScript parsing for the full-support language tier. Regex-only extraction silently truncated any nested structure (`z.object({ ... })` inside another, a Mongoose field object), and a scanner that returns too little makes the doc validators falsely pass — so a real parser earns its place. Everything else uses Node.js built-ins only (`node:fs`, `node:path`, `node:child_process`, `node:test`, `node:url`, `node:readline`, `node:os`, `node:assert`, `node:module`). The parser loads **optionally**: if it's ever absent the CLI degrades to the regex (beta) tier rather than crashing, so `npx` stays robust.
+
+Any NEW dependency is governed (NON-NEGOTIABLE): it MUST be justified against built-ins, exact-pinned (no `^`/`~`/`>=`), pass supply-chain vetting (>10k weekly downloads, >1 maintainer, first-published >30 days ago), and degrade gracefully if missing. Dev dependencies remain zero — tests use `node:test`. DocGuard also depends on spec-kit as a **framework convention** (`.specify/` structure, skills, constitution pattern); that is an integration, not a code dependency. When the `specify` CLI is available, DocGuard MUST leverage it for initialization and skill management.
 
 ### III. Documentation as Source of Truth
 

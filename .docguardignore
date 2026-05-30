@@ -5,9 +5,6 @@
 Research/
 Research/**
 
-# VS Code extension build artifacts
-vscode-extension/out/
-
 # Python distribution artifacts
 dist/
 build/

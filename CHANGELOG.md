@@ -7,6 +7,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Hardening pass from a full external review. Theme: make the green check *mean*
+something — close the false-green paths, fix the security gaps, and stop the
+tool from lying about itself.
+
+### Added
+- **AST-accurate JS/TS parsing tier**, powered by `@babel/parser` — the project's
+  first runtime dependency (exact-pinned `7.29.7`). It loads **optionally** with a
+  regex fallback, so the CLI never hard-crashes if it's absent. New
+  `cli/scanners/js-ast.mjs`. This fixes silent brace-truncation in Zod/Drizzle/
+  Mongoose schema extraction, where a nested `{…}` truncated the object body and
+  dropped fields — making the data-model validators falsely pass on stale docs.
+
+### Fixed
+- **`guard` headline status now matches its exit code.** The status word was
+  computed from raw counts while the exit code used severity-adjusted counts, so a
+  `severity: high` validator with only warnings printed "WARN" yet exited 1 (FAIL),
+  and a `low` one printed "WARN" yet exited 0.
+- **`guard --changed-only` no longer silently drops a `severity: high` validator.**
+  The lite set now unions in any validator the team escalated, so the gate can't
+  pass on the very drift it was configured to block (e.g. a committed secret).
+- **Secret scan inspects every match, not just the first** — a real hardcoded key
+  below an `EXAMPLE` placeholder of the same kind is no longer missed.
+- **Section parsing can't corrupt human prose** — a malformed/missing close marker
+  now abandons the unclosed section instead of swallowing prose and the next
+  section into one body that a later regen would overwrite.
+- **Cross-platform path handling** — a shared `relPosix()` helper replaces the
+  `projectDir + '/'` strip that broke on Windows and on prefix-colliding sibling
+  dirs (which silently disabled `--changed-only` scoping).
+- **`hooks` works inside git worktrees** — resolves the hooks dir via
+  `git rev-parse --git-path hooks` rather than assuming `.git/hooks` (a file, not a
+  dir, in a linked worktree).
+
+### Security
+- **GitHub Action (`action.yml`): closed a shell-injection vector.** All inputs —
+  including the attacker-controllable PR `head.ref` — now flow through `env:`
+  instead of being spliced into `run:`/`github-script` bodies.
+- **Removed `doc-quality`'s unpinned `understanding` PATH lookup/exec** (dead,
+  unwired code that was a path-hijack surface). The prose validator now has zero
+  process-execution capability.
+
+### Removed
+- **Deleted the VS Code extension.** It had been shipping non-functional: a
+  parse-time `await`-in-non-`async` error, every command registered under the wrong
+  `specguard.*` namespace, and a shell-out to a nonexistent `specguard` npm
+  package. All references scrubbed.
+
+### Changed
+- **Dependency posture: "zero dependencies" → "one pinned, vetted, optional-load
+  dependency."** Updated ~14 docs and the constitution's Principle II to reflect
+  `@babel/parser`. New dependencies remain governed by exact-pinning and
+  supply-chain vetting (>10k downloads/wk, >1 maintainer, >30 days old).
+
 ## [0.23.0] - 2026-05-29
 
 Validator-hardening minor release, driven by external field feedback and a full

@@ -294,7 +294,13 @@ export function runGuardInternal(projectDir, config) {
     else effectiveWarnings += wCount;
   }
 
-  const overallStatus = totalErrors > 0 ? 'FAIL' : totalWarnings > 0 ? 'WARN' : 'PASS';
+  // The headline status word MUST agree with the exit code, which is
+  // severity-aware (effectiveErrors/effectiveWarnings, computed above).
+  // Deriving it from RAW counts was a bug: a validator marked severity=high
+  // with only warnings printed "WARN" yet exited 1 (FAIL), and one marked
+  // severity=low printed "WARN" yet exited 0 (PASS). Use effective counts so
+  // what the user reads is what CI does.
+  const overallStatus = effectiveErrors > 0 ? 'FAIL' : effectiveWarnings > 0 ? 'WARN' : 'PASS';
 
   return {
     project: config.projectName,
@@ -328,10 +334,18 @@ export function runGuardInternal(projectDir, config) {
 export const CHANGED_ONLY_VALIDATORS = ['docsSync', 'environment', 'apiSurface', 'drift', 'todoTracking'];
 
 /**
- * Build a validators map that enables only the pre-commit-lite set.
+ * Build a validators map that enables the pre-commit-lite set — PLUS any
+ * validator the team explicitly escalated to `severity: high`.
  * Used by `docguard guard --changed-only`.
+ *
+ * Why the union: `--changed-only` trades coverage for speed, but a
+ * `severity: high` override is an explicit "this must always block CI" signal.
+ * Silently dropping such a validator here meant a changed-only gate could pass
+ * (exit 0) on exactly the drift the team most wanted blocked — e.g. a committed
+ * secret when `security` is marked high. So high-severity validators are forced
+ * on regardless of the lite set, unless the user also explicitly disabled them.
  */
-function liteValidatorsConfig() {
+export function liteValidatorsConfig(config = {}) {
   const all = [
     'structure', 'docsSync', 'drift', 'changelog', 'testSpec', 'environment',
     'security', 'architecture', 'freshness', 'traceability', 'docsDiff',
@@ -339,8 +353,15 @@ function liteValidatorsConfig() {
     'schemaSync', 'specKit', 'crossReference', 'generatedStaleness',
     'canonicalSync', 'metricsConsistency',
   ];
+  const userValidators = (config && config.validators) || {};
   const out = {};
-  for (const k of all) out[k] = CHANGED_ONLY_VALIDATORS.includes(k);
+  for (const k of all) {
+    let enabled = CHANGED_ONLY_VALIDATORS.includes(k);
+    if (!enabled && resolveSeverity(config, k) === 'high' && userValidators[k] !== false) {
+      enabled = true;
+    }
+    out[k] = enabled;
+  }
   return out;
 }
 
@@ -358,16 +379,24 @@ export function runGuard(projectDir, config, flags) {
     // scope to this list; others run normally over the whole tree.
     const ref = flags.since || 'HEAD~1';
     const changed = isGitRepo(projectDir) ? changedFilesSince(projectDir, ref) : [];
+    const liteVals = liteValidatorsConfig(config);
+    // Validators that ran beyond the lite set because they're severity=high.
+    const escalated = Object.keys(liteVals).filter(
+      k => liteVals[k] && !CHANGED_ONLY_VALIDATORS.includes(k)
+    );
     config = {
       ...config,
-      validators: liteValidatorsConfig(),
+      validators: liteVals,
       changedFiles: changed,
       changedSinceRef: ref,
     };
     const label = changed.length > 0
       ? `${changed.length} file(s) changed since ${ref}`
       : `no changes since ${ref} — running all ${CHANGED_ONLY_VALIDATORS.length} lite validators on full tree`;
-    console.log(`${c.cyan}⚡ docguard guard --changed-only${c.reset} ${c.dim}(${label})${c.reset}\n`);
+    const escalatedNote = escalated.length > 0
+      ? ` ${c.yellow}+ ${escalated.length} high-severity validator(s): ${escalated.join(', ')}${c.reset}`
+      : '';
+    console.log(`${c.cyan}⚡ docguard guard --changed-only${c.reset} ${c.dim}(${label})${c.reset}${escalatedNote}\n`);
   }
 
   const data = runGuardInternal(projectDir, config);
@@ -440,11 +469,23 @@ export function runGuard(projectDir, config, flags) {
   console.log(`\n${c.bold}  ─────────────────────────────────────${c.reset}`);
 
   if (data.status === 'PASS') {
-    console.log(`  ${c.green}${c.bold}✅ PASS${c.reset} ${c.green}— All ${data.total} checks passed${c.reset}`);
+    // PASS can still carry raw warnings if a validator was demoted to
+    // severity=low — surface that honestly rather than claiming a clean sweep.
+    if (data.warnings > 0) {
+      console.log(`  ${c.green}${c.bold}✅ PASS${c.reset} ${c.green}— ${data.passed}/${data.total} passed (${data.warnings} non-blocking warning(s))${c.reset}`);
+    } else {
+      console.log(`  ${c.green}${c.bold}✅ PASS${c.reset} ${c.green}— All ${data.total} checks passed${c.reset}`);
+    }
   } else if (data.status === 'WARN') {
-    console.log(`  ${c.yellow}${c.bold}⚠️  WARN${c.reset} ${c.yellow}— ${data.passed}/${data.total} passed, ${data.warnings} warning(s)${c.reset}`);
+    // effective* counts are what drove the verdict; raw warnings are still
+    // enumerated per-validator above, so nothing is hidden.
+    console.log(`  ${c.yellow}${c.bold}⚠️  WARN${c.reset} ${c.yellow}— ${data.passed}/${data.total} passed, ${data.effectiveWarnings} warning(s)${c.reset}`);
   } else {
-    console.log(`  ${c.red}${c.bold}❌ FAIL${c.reset} ${c.red}— ${data.passed}/${data.total} passed, ${data.errors} error(s), ${data.warnings} warning(s)${c.reset}`);
+    // effectiveErrors may include warnings escalated by severity=high, so call
+    // them "blocking issue(s)" rather than "error(s)". The severity-override
+    // note below spells out any escalation/demotion.
+    const warnSuffix = data.effectiveWarnings > 0 ? `, ${data.effectiveWarnings} warning(s)` : '';
+    console.log(`  ${c.red}${c.bold}❌ FAIL${c.reset} ${c.red}— ${data.passed}/${data.total} passed, ${data.effectiveErrors} blocking issue(s)${warnSuffix}${c.reset}`);
   }
 
   // Next step hint — always point to diagnose when issues exist

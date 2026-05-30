@@ -16,14 +16,12 @@
  *   cells as "long sentences"), this version extracts ONLY actual prose
  *   paragraphs. Docs that are mostly tables/code skip readability scoring.
  *
- * Optional: If `understanding` CLI is installed, runs a full 31-metric deep scan.
- *
- * Zero NPM runtime dependencies — pure Node.js built-ins only.
+ * Zero NPM runtime dependencies, and zero process execution — pure Node.js
+ * built-ins reading files only.
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, extname } from 'node:path';
-import { execSync, execFileSync } from 'node:child_process';
 
 // ──── Metric Thresholds ────
 // These define "good" vs "warning" boundaries for each metric.
@@ -441,40 +439,6 @@ function getGradeLabel(grade) {
   return 'graduate+';
 }
 
-// ──── Understanding CLI Integration ────
-
-/**
- * Check if the `understanding` CLI is available on the system.
- */
-function findUnderstandingCli() {
-  try {
-    const cmd = process.platform === 'win32' ? 'where understanding' : 'which understanding';
-    const result = execSync(`${cmd} 2>/dev/null`, {
-      encoding: 'utf-8',
-      timeout: 3000,
-    }).trim();
-    return result || null;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Run the `understanding` CLI on a file and parse results.
- */
-function runUnderstandingDeepScan(filePath) {
-  try {
-    const result = execFileSync('understanding', ['analyze', filePath, '--enhanced', '--json'], {
-      encoding: 'utf-8',
-      timeout: 10000,
-      stdio: ['pipe', 'pipe', 'ignore'],
-    });
-    return JSON.parse(result);
-  } catch {
-    return null;
-  }
-}
-
 // ──── Main Validator ────
 
 /**
@@ -586,10 +550,6 @@ export function validateDocQuality(projectDir, config) {
   if (docs.length === 0) {
     return results;
   }
-
-  // Check for optional understanding CLI
-  const understandingCli = findUnderstandingCli();
-  const useDeepScan = config.docQuality?.deepScan !== false && understandingCli;
 
   for (const doc of docs) {
     if (!existsSync(doc.path)) continue;

@@ -18,10 +18,10 @@
 
 - **Language**: JavaScript (ES modules)
 - **Runtime**: Node.js 18+
-- **Dependencies**: Zero (pure Node.js built-ins)
+- **Dependencies**: One — `@babel/parser` (exact-pinned, optional-load); Node.js built-ins otherwise
 - **Testing**: `node:test` (built-in)
 - **Distribution**: npm + PyPI
-- **Version**: 0.9.6
+- **Version**: see `package.json` (single source of truth — do not hardcode here)
 
 ## Key Files
 
