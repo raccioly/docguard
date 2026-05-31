@@ -61,6 +61,25 @@ tool from lying about itself.
   `git rev-parse --git-path hooks` rather than assuming `.git/hooks` (a file, not a
   dir, in a linked worktree).
 
+#### Field-report hardening (two external field tests: a Python uv/pytest project and a Node/AWS POC)
+- **`explain`** is now exhaustive (7 missing validator entries backfilled, pinned
+  to the live registry by a test), documents Traceability's unlinked-doc check,
+  resolves guard's exact casing, and gained per-validator "tune it" guidance.
+- **`score`** "Top improvements" is derived from the actual failing sub-check
+  (not a static per-category template); detects pytest config in
+  `pyproject.toml` / `tox.ini`.
+- **Doc-section heading matching is synonym- and arc42-section-number-tolerant**
+  (`docHasSection`), so well-structured docs stop scoring *worse* than the blank
+  skeleton. (Retires the "emit exact canonical H2" idea as moot.)
+- **Trace/Traceability exclude `.md` docs from doc→code matching**, so DocGuard's
+  own command docs are no longer mis-read as the project's auth modules.
+- **Environment validator recognizes schema-defined env vars** (Zod / envalid /
+  convict), not just `process.env.X` reads.
+- **`generate --help` (and every command) shows usage** instead of executing.
+- **`ensure-skills`** content-equality gate stops per-command skill-rewrite churn;
+  config warns on invalid `severity` values.
+- **Test-Spec guidance aligned with the 4-column table** `generate` emits.
+
 ### Security
 - **GitHub Action (`action.yml`): closed a shell-injection vector.** All inputs —
   including the attacker-controllable PR `head.ref` — now flow through `env:`
