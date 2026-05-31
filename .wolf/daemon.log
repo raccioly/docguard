@@ -152,3 +152,5 @@
 [2026-05-31T06:00:00.996Z] [INFO] Task Consolidate old memory completed in 30ms
 [2026-05-31T07:00:00.960Z] [INFO] Executing task: Cerebrum reflection
 [2026-05-31T07:00:36.321Z] [INFO] Task Cerebrum reflection completed in 35360ms
+[2026-05-31T10:00:00.357Z] [INFO] Executing task: Full anatomy rescan
+[2026-05-31T10:00:03.039Z] [INFO] Task Full anatomy rescan completed in 2682ms

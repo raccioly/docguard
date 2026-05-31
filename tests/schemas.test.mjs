@@ -124,3 +124,21 @@ describe('generateERDiagram', () => {
     assert.ok(result.includes('Custom__Type__ customType'));
   });
 });
+
+describe('scanSchemasDeep — honors config.ignore (.docguardignore consolidation)', () => {
+  it('drops entities whose source file the user excluded', () => {
+    const dir = fs.mkdtempSync(join(tmpdir(), 'docguard-schema-ignore-'));
+    fs.mkdirSync(join(dir, 'src', 'schema'), { recursive: true });
+    fs.mkdirSync(join(dir, 'src', 'fixtures'), { recursive: true });
+    fs.writeFileSync(join(dir, 'src/schema/user.ts'), 'export const UserSchema = z.object({ name: z.string() });');
+    fs.writeFileSync(join(dir, 'src/fixtures/fake.ts'), 'export const FakeSchema = z.object({ x: z.string() });');
+
+    const noSpec = { openapi: { found: false } };
+    const ignored = scanSchemasDeep(dir, {}, noSpec, { ignore: ['src/fixtures/**'] });
+    const names = ignored.entities.map(e => e.name);
+    assert.ok(names.includes('User'), `real schema kept; got ${JSON.stringify(names)}`);
+    assert.ok(!names.includes('Fake'), `ignored fixtures schema dropped; got ${JSON.stringify(names)}`);
+
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+});

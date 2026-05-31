@@ -234,13 +234,13 @@ export function runGenerate(projectDir, config, flags) {
   const scan = scanProject(projectDir);
 
   // ── 4. Deep Scan Routes ──
-  const deepRoutes = scanRoutesDeep(projectDir, stack, docTools);
+  const deepRoutes = scanRoutesDeep(projectDir, stack, docTools, { config });
   if (deepRoutes.length > 0) {
     console.log(`  ${c.bold}Route Scanning:${c.reset} ${deepRoutes.length} endpoints found (source: ${deepRoutes[0]?.source || 'code'})`);
   }
 
   // ── 5. Deep Scan Schemas ──
-  const deepSchemas = scanSchemasDeep(projectDir, stack, docTools);
+  const deepSchemas = scanSchemasDeep(projectDir, stack, docTools, config);
   if (deepSchemas.entities.length > 0) {
     console.log(`  ${c.bold}Schema Scanning:${c.reset} ${deepSchemas.entities.length} entities, ${deepSchemas.relationships.length} relationships (source: ${deepSchemas.source})`);
   }

@@ -199,7 +199,7 @@ function _buildMemoryPlanUncached(projectDir, config = {}) {
   // ── Gather the code-truth surface ──
   const docTools = detectDocTools(projectDir);
   const routes = scanRoutesDeep(projectDir, { framework: profile.frameworks.join(' ') }, docTools, { config });
-  const schemas = scanSchemasDeep(projectDir, { framework: primaryFramework }, docTools);
+  const schemas = scanSchemasDeep(projectDir, { framework: primaryFramework }, docTools, config);
   const entities = schemas.entities || [];
   const isWebFrontend = profile.ecosystems.some(e => e.kind === 'webapp');
   const fe = isWebFrontend

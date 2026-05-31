@@ -1,6 +1,6 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-05-31T04:00:03.076Z
+> Auto-maintained by OpenWolf. Last scanned: 2026-05-31T10:00:03.036Z
 > Files: 549 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ./
@@ -14,7 +14,7 @@
 - `.npmrc` — Supply-Chain Security Hardening (~59 tok)
 - `action.yml` — CI: 'DocGuard — CDD Compliance' (~4322 tok)
 - `AGENTS.md` — AI Agent Instructions — DocGuard (~1275 tok)
-- `CHANGELOG.md` — Change log (~35645 tok)
+- `CHANGELOG.md` — Change log (~35885 tok)
 - `CLAUDE.md` — OpenWolf (~57 tok)
 - `CODE_OF_CONDUCT.md` — Contributor Covenant Code of Conduct (~532 tok)
 - `COMPARISONS.md` — Comparisons & Honest Limitations (~3053 tok)

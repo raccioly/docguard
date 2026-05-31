@@ -68,6 +68,12 @@ tool from lying about itself.
   `JSON.parse` calls (TypeDoc/JSDoc/Swagger detectors) are now fail-soft, so one
   bad manifest can't abort the whole scan into empty "truth" that every
   validator then passes.
+- **Scanners honor `.docguardignore` / `config.ignore`** — the route, schema,
+  and frontend scanners now filter their results by the project's ignore globs,
+  so a fixtures/sample dir with fake routes/schemas/components no longer pollutes
+  the API surface or data model (previously only the env-var grep honored
+  ignores). Their divergent local `IGNORE_DIRS` sets were also unified onto the
+  shared `DEFAULT_IGNORE_DIRS`, so build/VCS dirs are skipped consistently.
 - **CI hardening** — CI now runs `npm ci` (required since `@babel/parser` was
   added; the AST-tier tests need it), `node --check`s *every* `cli/**/*.mjs`
   (the lint gate that would have caught the VS Code extension's parse error),

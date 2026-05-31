@@ -174,7 +174,7 @@ export function diffEntities(dir, config = {}) {
   // an entity). scanSchemasDeep covers JS ORMs, SQLAlchemy/Pydantic, Diesel,
   // Go structs, JPA, Rails, and OpenAPI schemas.
   const docTools = detectDocTools(dir);
-  const schemas = scanSchemasDeep(dir, {}, docTools);
+  const schemas = scanSchemasDeep(dir, {}, docTools, config);
   const codeEntities = new Set();
   for (const e of (schemas.entities || [])) {
     const n = String(e.name || '').toLowerCase();

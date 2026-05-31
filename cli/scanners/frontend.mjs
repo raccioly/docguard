@@ -17,11 +17,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, relative, basename, extname } from 'node:path';
 import { resolveSourceRoots, collectPackageJsons, readScannable } from '../shared-source.mjs';
-
-const IGNORE_DIRS = new Set([
-  'node_modules', '.git', '.next', 'dist', 'build', 'coverage',
-  '.cache', '__pycache__', '.venv', 'vendor', '.turbo', '.vercel',
-]);
+import { DEFAULT_IGNORE_DIRS as IGNORE_DIRS, shouldIgnore, relPosix } from '../shared-ignore.mjs';
 const UI_EXT = new Set(['.tsx', '.jsx']);
 
 function walk(dir, onFile, depth = 0) {
@@ -434,5 +430,15 @@ export function scanFrontend(projectDir, config = {}) {
     a.path.localeCompare(b.path) || a.method.localeCompare(b.method));
   const i18n = scanI18n(projectDir, roots);
 
-  return { ...stack, routerType, screens, components, stores, hooks, contexts, apiCalls, i18n };
+  // Honor .docguardignore / config.ignore — drop entries whose source file the
+  // user excluded (e.g. a fixtures/storybook dir). Entries without a `file`
+  // (or in i18n) are unaffected.
+  const keep = (arr) => Array.isArray(arr)
+    ? arr.filter(x => !x || !x.file || !shouldIgnore(relPosix(projectDir, resolve(projectDir, x.file)), config))
+    : arr;
+  return {
+    ...stack, routerType,
+    screens: keep(screens), components: keep(components), stores: keep(stores),
+    hooks: keep(hooks), contexts: keep(contexts), apiCalls: keep(apiCalls), i18n,
+  };
 }

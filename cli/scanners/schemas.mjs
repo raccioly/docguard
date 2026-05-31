@@ -10,11 +10,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { resolve, join, relative, basename, extname } from 'node:path';
 import { extractJsSchemaBodies } from './js-ast.mjs';
 import { readScannable } from '../shared-source.mjs';
-
-const IGNORE_DIRS = new Set([
-  'node_modules', '.git', '.next', 'dist', 'build', 'coverage',
-  '.cache', '__pycache__', '.venv', 'vendor', '.turbo',
-]);
+import { DEFAULT_IGNORE_DIRS as IGNORE_DIRS, shouldIgnore, relPosix } from '../shared-ignore.mjs';
 
 /**
  * Deep scan schemas from ORM definitions, validation libraries, and OpenAPI specs.
@@ -23,7 +19,7 @@ const IGNORE_DIRS = new Set([
  * @param {object} docTools - Detected doc tools (may include OpenAPI)
  * @returns {object} { entities: [...], relationships: [...], source: string }
  */
-export function scanSchemasDeep(dir, stack, docTools) {
+export function scanSchemasDeep(dir, stack, docTools, config = {}) {
   // Priority 1: OpenAPI schemas
   if (docTools?.openapi?.found && docTools.openapi.schemas?.length > 0) {
     return {
@@ -80,10 +76,22 @@ export function scanSchemasDeep(dir, stack, docTools) {
     }
   }
 
+  // Honor .docguardignore / config.ignore: drop entities whose source file the
+  // user excluded (e.g. test/fixtures/**), then drop relationships that point at
+  // a dropped entity. Filtering the RESULTS (not the walk) keeps the cache and
+  // the per-ORM walkers untouched. entity.file is project-relative already.
+  const keptEntities = entities.filter(
+    e => !e.file || !shouldIgnore(relPosix(dir, resolve(dir, e.file)), config)
+  );
+  const keptNames = new Set(keptEntities.map(e => e.name));
+  const keptRelationships = keptEntities.length === entities.length
+    ? relationships
+    : relationships.filter(r => keptNames.has(r.from) && keptNames.has(r.to));
+
   return {
-    entities,
-    relationships,
-    source: entities.length > 0 ? entities[0].source : 'none',
+    entities: keptEntities,
+    relationships: keptRelationships,
+    source: keptEntities.length > 0 ? keptEntities[0].source : 'none',
   };
 }
 

@@ -9,11 +9,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, relative, basename, extname, dirname } from 'node:path';
 import { resolveSourceRoots, readScannable } from '../shared-source.mjs';
-
-const IGNORE_DIRS = new Set([
-  'node_modules', '.git', '.next', 'dist', 'build', 'coverage',
-  '.cache', '__pycache__', '.venv', 'vendor', '.turbo',
-]);
+import { DEFAULT_IGNORE_DIRS as IGNORE_DIRS, shouldIgnore, relPosix } from '../shared-ignore.mjs';
 
 /**
  * Scan routes from source code with framework-aware parsing.
@@ -80,12 +76,16 @@ export function scanRoutesDeep(dir, stack, docTools, opts = {}) {
     routes.push(...scanFastAPIRoutes(dir));
   }
 
-  // Deduplicate by method+path
+  // Deduplicate by method+path, and honor .docguardignore / config.ignore so a
+  // fixtures dir with fake routes doesn't pollute the API surface. Filtering the
+  // RESULTS (route.file → project-relative) keeps the per-framework walkers as-is.
+  const cfg = opts.config || {};
   const seen = new Set();
   return routes.filter(r => {
     const key = `${r.method}:${r.path}`;
     if (seen.has(key)) return false;
     seen.add(key);
+    if (r.file && shouldIgnore(relPosix(dir, resolve(dir, r.file)), cfg)) return false;
     return true;
   });
 }
