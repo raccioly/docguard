@@ -118,8 +118,15 @@ function scanNextJsRoutes(dir) {
       const relDir = relative(resolve(dir, apiBase), dirname(filePath));
       const apiPath = '/' + relDir
         .replace(/\\/g, '/')
-        .replace(/\[\.\.\.(\w+)\]/g, ':$1*')  // Catch-all [...slug]
-        .replace(/\[(\w+)\]/g, ':$1');          // Dynamic [id]
+        // Strip route-group segments like `(admin)` — they organize files but
+        // do NOT appear in the URL. The frontend scanner already does this; the
+        // route scanner used to leak them, e.g. `/api/(admin)/users`.
+        .split('/')
+        .filter(seg => seg && !/^\(.*\)$/.test(seg))
+        .join('/')
+        .replace(/\[\[\.\.\.(\w+)\]\]/g, ':$1*')  // Optional catch-all [[...slug]] — before [...slug]
+        .replace(/\[\.\.\.(\w+)\]/g, ':$1*')        // Catch-all [...slug]
+        .replace(/\[(\w+)\]/g, ':$1');               // Dynamic [id]
 
       // Extract exported HTTP methods
       const methods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS'];

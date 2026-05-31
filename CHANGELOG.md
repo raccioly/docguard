@@ -40,6 +40,10 @@ tool from lying about itself.
 - **Metadata-sync: the `@version` check is anchored to the package name** (a bare
   `/@\d+\.\d+\.\d+/` over-matched `node@18.2.0`, `@types/node@1.2.3`, etc.), and
   two-part versions like `1.2` no longer disable the comparison via `NaN`.
+- **Next.js route scanner strips route groups** — `app/api/(admin)/users` now
+  emits `/api/users`, not `/api/(admin)/users` (matching the frontend scanner),
+  and optional catch-all `[[...slug]]` maps to `:slug*` instead of leaking
+  brackets. Both previously caused false "undocumented endpoint" drift.
 - **Cross-platform path handling** — a shared `relPosix()` helper replaces the
   `projectDir + '/'` strip that broke on Windows and on prefix-colliding sibling
   dirs (which silently disabled `--changed-only` scoping).

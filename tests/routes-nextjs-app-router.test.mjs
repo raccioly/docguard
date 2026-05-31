@@ -69,4 +69,30 @@ describe('Next.js App Router — HTTP path emission', () => {
     assert.ok(paths.includes('GET /api/users/:id/posts'),
       `expected 'GET /api/users/:id/posts' in ${JSON.stringify(paths)}`);
   });
+
+  it('strips route-group segments — /api/users, not /api/(admin)/users', () => {
+    dir = make({
+      'package.json': JSON.stringify({ dependencies: { next: '^15' } }),
+      'app/api/(admin)/users/route.ts': 'export async function GET() {}',
+    });
+    const routes = scanRoutesDeep(dir, { framework: 'Next.js' }, NO_SPEC);
+    const paths = routes.map(r => `${r.method} ${r.path}`);
+    assert.ok(paths.includes('GET /api/users'),
+      `route groups must not appear in the URL; got ${JSON.stringify(paths)}`);
+    assert.ok(!paths.some(p => p.includes('(admin)')),
+      `no '(admin)' group segment should leak; got ${JSON.stringify(paths)}`);
+  });
+
+  it('handles optional catch-all [[...slug]] without leaving brackets', () => {
+    dir = make({
+      'package.json': JSON.stringify({ dependencies: { next: '^15' } }),
+      'app/api/shop/[[...filters]]/route.ts': 'export async function GET() {}',
+    });
+    const routes = scanRoutesDeep(dir, { framework: 'Next.js' }, NO_SPEC);
+    const paths = routes.map(r => `${r.method} ${r.path}`);
+    assert.ok(paths.includes('GET /api/shop/:filters*'),
+      `optional catch-all should map to :filters*; got ${JSON.stringify(paths)}`);
+    assert.ok(!paths.some(p => p.includes('[')),
+      `no literal brackets should leak; got ${JSON.stringify(paths)}`);
+  });
 });
