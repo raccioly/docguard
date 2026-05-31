@@ -68,6 +68,12 @@ tool from lying about itself.
   `JSON.parse` calls (TypeDoc/JSDoc/Swagger detectors) are now fail-soft, so one
   bad manifest can't abort the whole scan into empty "truth" that every
   validator then passes.
+- **Python wrapper prefers a pinned local install over `npx @latest`** — its
+  `find_local_cli()` returned `None` whenever `npx` existed (i.e. always), so a
+  project that pinned `docguard-cli` still got `npx -y docguard-cli@latest` from
+  the network. It now resolves `node_modules/docguard-cli/cli/docguard.mjs`
+  (walking up from cwd, cross-platform) first — offline-friendly and
+  reproducible. Falls back to npx only when there's no local install.
 - **Scanners skip oversized + generated files** — a new size-capped
   `readScannable()` (shared) caps reads at 1.5 MB and skips `.min.js`,
   `*.bundle/chunk.js`, `*.generated.*`, and `*.d.ts`. A checked-in bundle or

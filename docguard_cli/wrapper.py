@@ -42,18 +42,28 @@ def find_npx():
 
 
 def find_local_cli():
-    """Find locally installed DocGuard CLI (node_modules or global)."""
-    # Check if installed globally via npm
-    npx = find_npx()
-    if npx:
-        return None  # Will use npx path
+    """Resolve a locally installed DocGuard CLI entry script.
 
-    # Check node_modules in current project
-    local = os.path.join(os.getcwd(), "node_modules", ".bin", "docguard")
-    if os.path.isfile(local):
-        return local
+    Checked BEFORE npx (see main) so a project that pins `docguard-cli` runs the
+    PINNED version — offline-friendly and reproducible — instead of npx fetching
+    `@latest` from the network. The previous implementation returned None as soon
+    as npx existed (i.e. always), making the local install dead code.
 
-    return None
+    Resolves `node_modules/docguard-cli/cli/docguard.mjs` (the real entry, run as
+    `node <path>` on every platform — unlike the `.bin` shim, which is a shell/cmd
+    script). Walks up from cwd so it also works from a project subdirectory.
+    """
+    directory = os.getcwd()
+    while True:
+        entry = os.path.join(
+            directory, "node_modules", "docguard-cli", "cli", "docguard.mjs"
+        )
+        if os.path.isfile(entry):
+            return entry
+        parent = os.path.dirname(directory)
+        if parent == directory:
+            return None
+        directory = parent
 
 
 def main():
