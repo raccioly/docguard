@@ -29,7 +29,11 @@ tool from lying about itself.
   router identifier (`userRouter.get`, `v1.post`, …), survives multi-line calls,
   and reads template-literal paths — while a `/`-or-`*` path requirement keeps
   non-route `.get()` calls (`map.get('key')`, `headers.get(…)`) out. Regex
-  remains the fallback when `@babel/parser` can't parse a file.
+  remains the fallback when `@babel/parser` can't parse a file. **Fastify and
+  Hono scanners now use this AST path too**, and Fastify additionally
+  understands the **declarative object form** `fastify.route({ method, url })`
+  (including `method: ['GET','POST']` arrays and the `path:` alias) — which the
+  old regex never matched at all.
 - **AST-accurate JS/TS parsing tier**, powered by `@babel/parser` — the project's
   first runtime dependency (exact-pinned `7.29.7`). It loads **optionally** with a
   regex fallback, so the CLI never hard-crashes if it's absent. New

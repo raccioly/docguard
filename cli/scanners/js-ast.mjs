@@ -236,6 +236,60 @@ export function extractJsRouteCalls(content, filename = 'file.ts') {
   return out;
 }
 
+/** Read an object-literal property's key name, whether `key:` or `'key':`. */
+function propKeyName(prop) {
+  if (!prop || !prop.key) return null;
+  if (prop.key.type === 'Identifier') return prop.key.name;
+  if (prop.key.type === 'StringLiteral') return prop.key.value;
+  return null;
+}
+
+/**
+ * Extract OBJECT-FORM route registrations — Fastify's `fastify.route({ method,
+ * url, handler })` (and `method: ['GET','POST']` arrays). The method-shorthand
+ * form (`fastify.get('/x')`) is already covered by extractJsRouteCalls; this
+ * adds the declarative form, which the old regex never matched at all.
+ *
+ * Returns `null` on parse failure; otherwise `{ method, path, start, receiver }[]`
+ * (one entry per method when `method` is an array).
+ */
+export function extractJsRouteObjects(content, filename = 'file.ts') {
+  const { ast, ok } = parseJsTs(content, filename);
+  if (!ok || !ast) return null;
+
+  const out = [];
+  walk(ast, (node) => {
+    if (node.type !== 'CallExpression') return;
+    const callee = node.callee;
+    if (!callee || callee.type !== 'MemberExpression' || callee.computed) return;
+    if (!callee.property || callee.property.type !== 'Identifier' || callee.property.name !== 'route') return;
+    const arg = node.arguments && node.arguments[0];
+    if (!arg || arg.type !== 'ObjectExpression') return;
+
+    let methods = [];
+    let path = null;
+    for (const prop of arg.properties || []) {
+      if (prop.type !== 'ObjectProperty' && prop.type !== 'Property') continue;
+      const key = propKeyName(prop);
+      if (key === 'method') {
+        const v = prop.value;
+        if (v.type === 'StringLiteral') methods = [v.value];
+        else if (v.type === 'ArrayExpression') {
+          methods = (v.elements || []).filter(e => e && e.type === 'StringLiteral').map(e => e.value);
+        }
+      } else if (key === 'url' || key === 'path') {
+        path = pathArgValue(prop.value);
+      }
+    }
+    if (!path || !(path.startsWith('/') || path === '*') || !methods.length) return;
+    const receiver = callee.object && callee.object.type === 'Identifier' ? callee.object.name : null;
+    for (const m of methods) {
+      out.push({ method: String(m).toUpperCase(), path, start: node.start ?? 0, receiver });
+    }
+  });
+  return out;
+}
+
 /**
  * Extract Express-style router MOUNTS and module IMPORTS from a JS/TS file, so a
  * caller can resolve the full path of a route declared in a sub-router file.

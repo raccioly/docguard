@@ -10,7 +10,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, relative, basename, extname, dirname } from 'node:path';
 import { resolveSourceRoots, readScannable } from '../shared-source.mjs';
 import { DEFAULT_IGNORE_DIRS as IGNORE_DIRS, shouldIgnore, relPosix } from '../shared-ignore.mjs';
-import { extractJsRouteCalls, extractJsMountsAndImports } from './js-ast.mjs';
+import { extractJsRouteCalls, extractJsRouteObjects, extractJsMountsAndImports } from './js-ast.mjs';
 
 /**
  * Scan routes from source code with framework-aware parsing.
@@ -350,18 +350,28 @@ function scanFastifyRoutes(dir, roots = null) {
       const content = readFileSafe(filePath);
       if (!content) return;
 
-      let match;
-      const regex = new RegExp(pattern.source, 'gi');
-      while ((match = regex.exec(content)) !== null) {
-        routes.push({
-          method: match[1].toUpperCase(),
-          path: match[2],
-          handler: extractHandlerName(content, match.index),
-          file: relative(dir, filePath),
-          source: 'fastify',
-          auth: hasAuthCheck(content),
-          description: extractNearbyComment(content, match.index),
-        });
+      const emit = (method, path, index) => routes.push({
+        method: method.toUpperCase(),
+        path,
+        handler: extractHandlerName(content, index),
+        file: relative(dir, filePath),
+        source: 'fastify',
+        auth: hasAuthCheck(content),
+        description: extractNearbyComment(content, index),
+      });
+
+      // AST-first: method shorthand (fastify.get('/x')) AND the declarative
+      // object form (fastify.route({ method, url })) the regex never matched.
+      // Both return null only on parse failure → regex fallback.
+      const calls = extractJsRouteCalls(content, filePath);
+      const objs = extractJsRouteObjects(content, filePath);
+      if (calls || objs) {
+        for (const r of calls || []) emit(r.method, r.path, r.start);
+        for (const r of objs || []) emit(r.method, r.path, r.start);
+      } else {
+        let match;
+        const regex = new RegExp(pattern.source, 'gi');
+        while ((match = regex.exec(content)) !== null) emit(match[1], match[2], match.index);
       }
     });
   }
@@ -386,18 +396,25 @@ function scanHonoRoutes(dir, roots = null) {
       const content = readFileSafe(filePath);
       if (!content) return;
 
-      let match;
-      const regex = new RegExp(pattern.source, 'gi');
-      while ((match = regex.exec(content)) !== null) {
-        routes.push({
-          method: match[1].toUpperCase(),
-          path: match[2],
-          handler: '',
-          file: relative(dir, filePath),
-          source: 'hono',
-          auth: hasAuthCheck(content),
-          description: extractNearbyComment(content, match.index),
-        });
+      const emit = (method, path, index) => routes.push({
+        method: method.toUpperCase(),
+        path,
+        handler: '',
+        file: relative(dir, filePath),
+        source: 'hono',
+        auth: hasAuthCheck(content),
+        description: extractNearbyComment(content, index),
+      });
+
+      // AST-first (any receiver, multi-line, template paths — Hono/Koa method
+      // shorthand `app.get('/x')` / `router.get('/x')`); regex fallback.
+      const calls = extractJsRouteCalls(content, filePath);
+      if (calls) {
+        for (const r of calls) emit(r.method, r.path, r.start);
+      } else {
+        let match;
+        const regex = new RegExp(pattern.source, 'gi');
+        while ((match = regex.exec(content)) !== null) emit(match[1], match[2], match.index);
       }
     });
   }

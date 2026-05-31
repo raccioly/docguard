@@ -7,7 +7,7 @@
  */
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { parseJsTs, extractJsSchemaBodies, extractJsRouteCalls, extractJsMountsAndImports } from '../cli/scanners/js-ast.mjs';
+import { parseJsTs, extractJsSchemaBodies, extractJsRouteCalls, extractJsRouteObjects, extractJsMountsAndImports } from '../cli/scanners/js-ast.mjs';
 
 describe('parseJsTs', () => {
   it('parses TypeScript with types + decorators', () => {
@@ -170,5 +170,26 @@ describe('extractJsMountsAndImports — mount-prefix resolution inputs', () => {
 
   it('returns null on parse failure (caller keeps bare paths)', () => {
     assert.strictEqual(extractJsMountsAndImports('not ) ( valid', 'app.ts'), null);
+  });
+});
+
+describe('extractJsRouteObjects — Fastify declarative route form', () => {
+  it('reads method + url, including method arrays and the path: alias', () => {
+    const src = [
+      "fastify.route({ method: 'GET', url: '/users/:id', handler: getUser });",
+      "fastify.route({ method: ['POST', 'PUT'], url: '/users' });",
+      "app.route({ method: 'DELETE', path: '/items/:id' });",
+    ].join('\n');
+    const got = extractJsRouteObjects(src, 'r.ts').map(r => `${r.method} ${r.path}`).sort();
+    assert.deepEqual(got, ['DELETE /items/:id', 'GET /users/:id', 'POST /users', 'PUT /users']);
+  });
+
+  it('ignores .route() calls without a usable url/method', () => {
+    const got = extractJsRouteObjects("fastify.route({ handler: h });\nrouter.route('/x');\n", 'r.ts');
+    assert.deepEqual(got, []);
+  });
+
+  it('returns null on parse failure', () => {
+    assert.strictEqual(extractJsRouteObjects('not ) ( valid', 'r.ts'), null);
   });
 });
