@@ -12,6 +12,13 @@ something — close the false-green paths, fix the security gaps, and stop the
 tool from lying about itself.
 
 ### Added
+- **AST-based HTTP route extraction for JS/TS** (Express/Fastify/Hono/Koa-style
+  `<router>.<method>('/path', …)`). Replaces the regex that only matched
+  `app`/`router`/`server` receivers on a single line: the AST path matches ANY
+  router identifier (`userRouter.get`, `v1.post`, …), survives multi-line calls,
+  and reads template-literal paths — while a `/`-or-`*` path requirement keeps
+  non-route `.get()` calls (`map.get('key')`, `headers.get(…)`) out. Regex
+  remains the fallback when `@babel/parser` can't parse a file.
 - **AST-accurate JS/TS parsing tier**, powered by `@babel/parser` — the project's
   first runtime dependency (exact-pinned `7.29.7`). It loads **optionally** with a
   regex fallback, so the CLI never hard-crashes if it's absent. New

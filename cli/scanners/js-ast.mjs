@@ -180,3 +180,53 @@ export function extractJsSchemaBodies(content, filename = 'file.ts') {
 
   return out;
 }
+
+// HTTP route-registration methods (`app.get`, `router.post`, …). `use`/`all`
+// are middleware-ish; `all` is included (it IS a route), `use` is not.
+const HTTP_METHOD_NAMES = new Set(['get', 'post', 'put', 'delete', 'patch', 'head', 'options', 'all']);
+
+/** Extract a string path from a call's first arg: StringLiteral or TemplateLiteral. */
+function pathArgValue(node) {
+  if (!node) return null;
+  if (node.type === 'StringLiteral') return node.value;
+  if (node.type === 'TemplateLiteral') {
+    if (node.expressions.length === 0) return node.quasis[0]?.value?.cooked ?? null;
+    // `/users/${id}` → `/users/:param` so a dynamic segment still looks like a path.
+    return node.quasis
+      .map((q, i) => (q.value.cooked ?? '') + (i < node.expressions.length ? ':param' : ''))
+      .join('');
+  }
+  return null;
+}
+
+/**
+ * Extract HTTP route registrations (`<router>.<method>('/path', …)`) from JS/TS
+ * via AST. More accurate than regex: it matches ANY receiver identifier (so
+ * `userRouter.get`, `v1.post`, `r.delete` are all caught — not just app/router/
+ * server), survives multi-line calls and arbitrary whitespace, and reads
+ * template-literal paths. The `/`-or-`*` path requirement keeps non-route
+ * `.get()` calls (e.g. `map.get('key')`, `headers.get('x')`) out.
+ *
+ * Returns `null` when the file can't be parsed (caller falls back to regex);
+ * otherwise an array of `{ method, path, start }` (start = call node offset, for
+ * the caller's comment/handler/auth context lookups).
+ */
+export function extractJsRouteCalls(content, filename = 'file.ts') {
+  const { ast, ok } = parseJsTs(content, filename);
+  if (!ok || !ast) return null;
+
+  const out = [];
+  walk(ast, (node) => {
+    if (node.type !== 'CallExpression') return;
+    const callee = node.callee;
+    if (!callee || callee.type !== 'MemberExpression' || callee.computed) return;
+    const prop = callee.property;
+    if (!prop || prop.type !== 'Identifier') return;
+    const method = prop.name.toLowerCase();
+    if (!HTTP_METHOD_NAMES.has(method)) return;
+    const path = pathArgValue(node.arguments && node.arguments[0]);
+    if (!path || !(path.startsWith('/') || path === '*')) return;
+    out.push({ method: method.toUpperCase(), path, start: node.start ?? 0 });
+  });
+  return out;
+}

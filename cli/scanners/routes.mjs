@@ -10,6 +10,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, relative, basename, extname, dirname } from 'node:path';
 import { resolveSourceRoots, readScannable } from '../shared-source.mjs';
 import { DEFAULT_IGNORE_DIRS as IGNORE_DIRS, shouldIgnore, relPosix } from '../shared-ignore.mjs';
+import { extractJsRouteCalls } from './js-ast.mjs';
 
 /**
  * Scan routes from source code with framework-aware parsing.
@@ -203,7 +204,32 @@ function scanNextJsRoutes(dir) {
 
 function scanExpressRoutes(dir, roots = null) {
   const routes = [];
+  // Regex is the FALLBACK now (used only when @babel/parser can't parse a file).
+  // It hardcodes app/router/server receivers; the AST path matches any receiver.
   const routePattern = /(?:app|router|server)\s*\.\s*(get|post|put|delete|patch|head|options)\s*\(\s*['"`]([^'"`]+)['"`]/gi;
+
+  // Per-file extraction: AST-first (any router receiver, multi-line calls,
+  // template-literal paths), regex fallback on parse failure. `fileLabel` is the
+  // value stored in route.file.
+  const extractFromFile = (content, filePath, fileLabel) => {
+    const emit = (method, path, index) => routes.push({
+      method: method.toUpperCase(),
+      path,
+      handler: extractHandlerName(content, index),
+      file: fileLabel,
+      source: 'express',
+      auth: hasAuthMiddleware(content, path),
+      description: extractNearbyComment(content, index),
+    });
+    const ast = extractJsRouteCalls(content, filePath);
+    if (ast) {
+      for (const r of ast) emit(r.method, r.path, r.start);
+    } else {
+      const regex = new RegExp(routePattern.source, 'gi');
+      let match;
+      while ((match = regex.exec(content)) !== null) emit(match[1], match[2], match.index);
+    }
+  };
 
   // Monorepo-aware: walk resolved absolute source roots when provided,
   // otherwise fall back to conventional root-relative directories.
@@ -212,48 +238,21 @@ function scanExpressRoutes(dir, roots = null) {
     : ['src', 'routes', 'api', 'server', 'lib'].map(d => resolve(dir, d));
   for (const fullDir of searchTargets) {
     if (!existsSync(fullDir)) continue;
-
     walkRouteDirs(fullDir, (filePath) => {
       if (!isJSFile(filePath)) return;
       const content = readFileSafe(filePath);
       if (!content) return;
-
-      let match;
-      const regex = new RegExp(routePattern.source, 'gi');
-      while ((match = regex.exec(content)) !== null) {
-        routes.push({
-          method: match[1].toUpperCase(),
-          path: match[2],
-          handler: extractHandlerName(content, match.index),
-          file: relative(dir, filePath),
-          source: 'express',
-          auth: hasAuthMiddleware(content, match[2]),
-          description: extractNearbyComment(content, match.index),
-        });
-      }
+      extractFromFile(content, filePath, relative(dir, filePath));
     });
   }
 
-  // Also check root files
+  // Also check root files.
   for (const rootFile of ['app.js', 'app.mjs', 'app.ts', 'server.js', 'server.ts', 'index.js', 'index.ts']) {
     const filePath = resolve(dir, rootFile);
     if (!existsSync(filePath)) continue;
     const content = readFileSafe(filePath);
-    if (!content) return;
-
-    let match;
-    const regex = new RegExp(routePattern.source, 'gi');
-    while ((match = regex.exec(content)) !== null) {
-      routes.push({
-        method: match[1].toUpperCase(),
-        path: match[2],
-        handler: extractHandlerName(content, match.index),
-        file: rootFile,
-        source: 'express',
-        auth: hasAuthMiddleware(content, match[2]),
-        description: extractNearbyComment(content, match.index),
-      });
-    }
+    if (!content) continue; // was `return` — a missing root file must not abort the rest
+    extractFromFile(content, filePath, rootFile);
   }
 
   return routes;
