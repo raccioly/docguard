@@ -5,11 +5,38 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { execSync } from 'node:child_process';
 
-import { validateFreshness } from '../cli/validators/freshness.mjs';
+import { validateFreshness, readLastReviewedDate } from '../cli/validators/freshness.mjs';
 
 const runGit = (args, cwd) => {
   return execSync(`git ${args}`, { cwd, encoding: 'utf-8', stdio: 'pipe' });
 };
+
+describe('readLastReviewedDate — future dates cannot mask staleness', () => {
+  let dir;
+  beforeEach(() => { dir = mkdtempSync(join(tmpdir(), 'fresh-review-')); });
+  afterEach(() => { if (dir) rmSync(dir, { recursive: true, force: true }); });
+
+  it('reads a valid past-dated header', () => {
+    const f = join(dir, 'A.md');
+    writeFileSync(f, '<!-- docguard:last-reviewed 2024-01-15 -->\n# A');
+    const d = readLastReviewedDate(f);
+    assert.ok(d instanceof Date && !isNaN(d.getTime()));
+    assert.equal(d.toISOString().slice(0, 10), '2024-01-15');
+  });
+
+  it('ignores a future-dated header (returns null → falls back to git date)', () => {
+    const f = join(dir, 'B.md');
+    writeFileSync(f, '<!-- docguard:last-reviewed 2099-01-01 -->\n# B');
+    assert.equal(readLastReviewedDate(f), null,
+      'a future review date must be rejected so it cannot mark a stale doc fresh forever');
+  });
+
+  it('returns null when no header is present', () => {
+    const f = join(dir, 'C.md');
+    writeFileSync(f, '# C\n\nNo header here.');
+    assert.equal(readLastReviewedDate(f), null);
+  });
+});
 
 describe('Freshness Validator', () => {
   let tmpDir;

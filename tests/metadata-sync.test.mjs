@@ -74,9 +74,11 @@ describe('Metadata Sync Validator', () => {
   it('detects older version references in actionable contexts in markdown', () => {
     const tmpDir = mkdtempSync(join(tmpdir(), 'sg-meta-'));
     try {
-      writeFileSync(join(tmpDir, 'package.json'), JSON.stringify({ version: "1.1.0" }));
+      writeFileSync(join(tmpDir, 'package.json'), JSON.stringify({ name: "myapp", version: "1.1.0" }));
       writeFileSync(join(tmpDir, 'README.md'), 'Download /download/v1.0.0/');
-      writeFileSync(join(tmpDir, 'INSTALL.md'), 'npm install @1.0.0');
+      // Package-qualified install command (the realistic form). The bare
+      // `@1.0.0` the old fixture used is now intentionally NOT matched.
+      writeFileSync(join(tmpDir, 'INSTALL.md'), 'npm install myapp@1.0.0');
       writeFileSync(join(tmpDir, 'extension.md'), 'version: "1.0.0"');
 
       const result = validateMetadataSync(tmpDir, { ignore: [] });
@@ -91,14 +93,30 @@ describe('Metadata Sync Validator', () => {
   it('passes current version references in markdown', () => {
     const tmpDir = mkdtempSync(join(tmpdir(), 'sg-meta-'));
     try {
-      writeFileSync(join(tmpDir, 'package.json'), JSON.stringify({ version: "1.1.0" }));
+      writeFileSync(join(tmpDir, 'package.json'), JSON.stringify({ name: "myapp", version: "1.1.0" }));
       writeFileSync(join(tmpDir, 'README.md'), 'Download /download/v1.1.0/');
-      writeFileSync(join(tmpDir, 'INSTALL.md'), 'npm install @1.1.0');
+      writeFileSync(join(tmpDir, 'INSTALL.md'), 'npm install myapp@1.1.0');
 
       const result = validateMetadataSync(tmpDir, { ignore: [] });
       assert.equal(result.total, 2);
       assert.equal(result.passed, 2);
       assert.equal(result.warnings.length, 0);
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it('does NOT flag @version refs for OTHER packages (over-match fix)', () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), 'sg-meta-'));
+    try {
+      writeFileSync(join(tmpDir, 'package.json'), JSON.stringify({ name: "myapp", version: "2.0.0" }));
+      // All of these are unrelated `@x.y.z` — a bare /@(\d+\.\d+\.\d+)/ used to
+      // flag every one of them as a stale "myapp" reference.
+      writeFileSync(join(tmpDir, 'README.md'),
+        'Requires node@18.2.0 and @types/node@1.2.3. See release 1.0.0 of another tool.');
+      const result = validateMetadataSync(tmpDir, { ignore: [] });
+      assert.equal(result.warnings.length, 0,
+        'unrelated @-versioned packages must not be reported as stale refs to this package');
     } finally {
       rmSync(tmpDir, { recursive: true, force: true });
     }

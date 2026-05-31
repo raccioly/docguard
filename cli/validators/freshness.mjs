@@ -42,13 +42,20 @@ const IGNORE_DIRS = new Set([
  * (e.g., the reviewer read the file, confirmed it still matches reality, and
  * stamped the header without touching content, so there is no commit to find).
  */
-function readLastReviewedDate(absPath) {
+export function readLastReviewedDate(absPath) {
   try {
     const content = readFileSync(absPath, 'utf-8');
     const m = content.match(/<!--\s*docguard:last-reviewed\s+(\d{4}-\d{2}-\d{2})\s*-->/);
     if (!m) return null;
     const d = new Date(m[1] + 'T00:00:00Z');
-    return isNaN(d.getTime()) ? null : d;
+    if (isNaN(d.getTime())) return null;
+    // Reject future-dated headers. A typo'd or copy-pasted future date (e.g.
+    // 2030-01-01) would otherwise make a genuinely stale doc look "fresh"
+    // forever — its age goes negative and "commits since" rounds to zero. A
+    // review can't legitimately have happened in the future, so we ignore the
+    // header and fall back to the real git date. (1-day grace for timezones.)
+    if (d.getTime() > Date.now() + 24 * 60 * 60 * 1000) return null;
+    return d;
   } catch {
     return null;
   }
@@ -90,11 +97,15 @@ function getLastGitDate(filePath, dir) {
 function getCodeCommitsSince(date, dir) {
   try {
     const isoDate = date.toISOString();
-    const result = execSync(
-      `git log --since="${isoDate}" --oneline --diff-filter=M -- "*.js" "*.mjs" "*.ts" "*.tsx" "*.py" "*.java" "*.go" | wc -l`,
+    // execFileSync (argv array) + count in JS — no shell `| wc -l` pipe, which
+    // isn't portable (Windows) and made the count depend on an external binary.
+    const out = execFileSync(
+      'git',
+      ['log', `--since=${isoDate}`, '--oneline', '--diff-filter=M', '--',
+        '*.js', '*.mjs', '*.ts', '*.tsx', '*.py', '*.java', '*.go'],
       { cwd: dir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
     ).trim();
-    return parseInt(result) || 0;
+    return out ? out.split('\n').filter(Boolean).length : 0;
   } catch {
     return 0;
   }
@@ -132,11 +143,13 @@ function getTotalCommits(dir) {
  */
 function getRecentCodeCommits(dir, count = 5) {
   try {
-    const result = execSync(
-      `git log -${count} --format="%h %aI %s" -- "*.js" "*.mjs" "*.ts" "*.tsx" "*.py" "*.java"`,
+    const out = execFileSync(
+      'git',
+      ['log', `-${count}`, '--format=%h %aI %s', '--',
+        '*.js', '*.mjs', '*.ts', '*.tsx', '*.py', '*.java'],
       { cwd: dir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
     ).trim();
-    return result ? result.split('\n') : [];
+    return out ? out.split('\n') : [];
   } catch {
     return [];
   }
@@ -263,13 +276,22 @@ export function validateFreshness(dir, config) {
   const driftPath = resolve(dir, config.requiredFiles?.driftLog || 'DRIFT-LOG.md');
   if (existsSync(driftPath)) {
     const driftDate = getLastGitDate(config.requiredFiles?.driftLog || 'DRIFT-LOG.md', dir);
-    // Check for recent DRIFT comments added to code
+    // Check for recent DRIFT comments ADDED to code. The old approach piped
+    // `git log --all -p | grep -c DRIFT:`, which counted DRIFT: on removed
+    // lines, unchanged context, and every branch (`--all`) — wildly inflating
+    // the count and depending on `grep`. Here we read the last-5-commits diff
+    // for the current branch and count only ADDED lines (`+`, not the `+++`
+    // file header) that introduce a DRIFT comment.
     try {
-      const recentDrifts = execSync(
-        `git log -5 --all -p -- "*.js" "*.mjs" "*.ts" "*.tsx" "*.py" | grep -c "DRIFT:" || true`,
+      const diff = execFileSync(
+        'git',
+        ['log', '-5', '-p', '--', '*.js', '*.mjs', '*.ts', '*.tsx', '*.py'],
         { cwd: dir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
-      ).trim();
-      const driftCount = parseInt(recentDrifts) || 0;
+      );
+      const driftCount = diff
+        .split('\n')
+        .filter(l => /^\+(?!\+\+)/.test(l) && l.includes('DRIFT:'))
+        .length;
       if (driftCount > 0 && driftDate) {
         const codeCommitsSince = getCodeCommitsSince(driftDate, dir);
         if (codeCommitsSince > 3) {

@@ -32,21 +32,28 @@ export function validateMetadataSync(projectDir, config) {
   // workspace manifest with no version, fall back to a source-root package.
   const pkgPath = resolve(projectDir, 'package.json');
   let currentVersion = null;
+  let currentName = null;
   if (existsSync(pkgPath)) {
-    try { currentVersion = JSON.parse(readFileSync(pkgPath, 'utf-8')).version || null; } catch { /* ignore */ }
+    try {
+      const pj = JSON.parse(readFileSync(pkgPath, 'utf-8'));
+      currentVersion = pj.version || null;
+      currentName = pj.name || null;
+    } catch { /* ignore */ }
   }
   if (!currentVersion) {
     for (const { pkg } of collectPackageJsons(projectDir, config)) {
-      if (pkg.version) { currentVersion = pkg.version; break; }
+      if (pkg.version) { currentVersion = pkg.version; currentName = currentName || pkg.name || null; break; }
     }
   }
   if (!currentVersion) return { errors: [], warnings, passed: 0, total: 0 };
 
-  // Parse into components for smart comparison
+  // Parse into components for smart comparison. `|| 0` guards two-part versions
+  // (e.g. "1.2"): without it vParts[2] is undefined → parseInt → NaN, and every
+  // `fPatch < patch` comparison silently becomes false, disabling the check.
   const vParts = currentVersion.split('.');
-  const major = parseInt(vParts[0], 10);
-  const minor = parseInt(vParts[1], 10);
-  const patch = parseInt(vParts[2], 10);
+  const major = parseInt(vParts[0], 10) || 0;
+  const minor = parseInt(vParts[1], 10) || 0;
+  const patch = parseInt(vParts[2], 10) || 0;
 
   // ── Check 1: extension.yml version sync ──
   const extFiles = findExtensionYmls(projectDir);
@@ -72,8 +79,6 @@ export function validateMetadataSync(projectDir, config) {
   // ── Check 2: Version references in markdown files ──
   const isIgnored = loadIgnorePatterns(projectDir);
   const mdFiles = findMarkdownFiles(projectDir);
-  // Version patterns to find: v0.7.2, @0.7.2, /v0.7.2/, docguard-cli@0.7.2
-  const versionRegex = /(?:v|@|\/v?)(\d+\.\d+\.\d+)/g;
 
   for (const mdFile of mdFiles) {
     const relPath = relative(projectDir, mdFile);
@@ -93,13 +98,18 @@ export function validateMetadataSync(projectDir, config) {
     // - Badge URLs
     // NOT in prose text like "In v0.2.0 we added..." or roadmap discussions
     const actionablePatterns = [
-      // URLs with version: /v0.7.2/, /tags/v0.7.2, @0.7.2
+      // URLs with version: /v0.7.2/, /tags/v0.7.2, /releases/0.7.2
       /(?:archive|tags|releases|download)\/v?(\d+\.\d+\.\d+)/g,
-      // npm install/npx commands: docguard-cli@0.7.2
-      /@(\d+\.\d+\.\d+)/g,
       // YAML-style: version: "0.7.2" or version: 0.7.2
       /version:\s*["']?(\d+\.\d+\.\d+)["']?/g,
     ];
+    // npm/npx refs to THIS package only (e.g. docguard-cli@0.7.2), anchored to
+    // the package name. A bare /@(\d+\.\d+\.\d+)/ used to over-match unrelated
+    // versions — node@18.2.0, @types/node@1.2.3, or "@1.2.3" in prose.
+    if (currentName) {
+      const escaped = currentName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      actionablePatterns.push(new RegExp(`${escaped}@v?(\\d+\\.\\d+\\.\\d+)`, 'g'));
+    }
 
     for (const pattern of actionablePatterns) {
       pattern.lastIndex = 0;

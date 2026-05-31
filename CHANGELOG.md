@@ -32,6 +32,14 @@ tool from lying about itself.
 - **Section parsing can't corrupt human prose** — a malformed/missing close marker
   now abandons the unclosed section instead of swallowing prose and the next
   section into one body that a later regen would overwrite.
+- **Freshness: future-dated `last-reviewed` headers are ignored** (a typo'd
+  `2099-…` could otherwise mark a stale doc "fresh" forever). Its git plumbing
+  no longer shells out to `wc`/`grep` (not portable), and the DRIFT-comment
+  detector counts only *added* lines on the current branch, not deletions/context
+  across all branches.
+- **Metadata-sync: the `@version` check is anchored to the package name** (a bare
+  `/@\d+\.\d+\.\d+/` over-matched `node@18.2.0`, `@types/node@1.2.3`, etc.), and
+  two-part versions like `1.2` no longer disable the comparison via `NaN`.
 - **Cross-platform path handling** — a shared `relPosix()` helper replaces the
   `projectDir + '/'` strip that broke on Windows and on prefix-colliding sibling
   dirs (which silently disabled `--changed-only` scoping).
