@@ -11,6 +11,7 @@ import { resolve, join, relative, basename, extname, dirname } from 'node:path';
 import { resolveSourceRoots, readScannable } from '../shared-source.mjs';
 import { DEFAULT_IGNORE_DIRS as IGNORE_DIRS, shouldIgnore, relPosix } from '../shared-ignore.mjs';
 import { extractJsRouteCalls, extractJsRouteObjects, extractJsMountsAndImports } from './js-ast.mjs';
+import { extractPythonFiles } from './py-ast.mjs';
 
 /**
  * Scan routes from source code with framework-aware parsing.
@@ -458,9 +459,32 @@ function scanFastAPIRoutes(dir) {
   const pattern = /@(?:app|router)\s*\.\s*(get|post|put|delete|patch)\s*\(\s*['"]([^'"]+)['"]/gi;
 
   const pyFiles = findFiles(dir, /\.py$/);
+  // AST-first: ONE python3 subprocess parses every file. `null` means Python is
+  // unavailable or the subprocess failed → regex fallback for all files. A
+  // per-file `ok:false` falls back for just that file. The AST form also reads
+  // multi-line decorators and Flask `methods=[...]` arrays the regex misses.
+  const astByFile = extractPythonFiles(pyFiles);
+
   for (const filePath of pyFiles) {
     const content = readFileSafe(filePath);
     if (!content) continue;
+
+    const parsed = astByFile && astByFile[filePath];
+    const fileAuth = content.includes('Depends(') && content.includes('auth');
+    if (parsed && parsed.ok) {
+      for (const r of parsed.routes || []) {
+        routes.push({
+          method: r.method,
+          path: r.path,
+          handler: r.func || '',
+          file: relative(dir, filePath),
+          source: 'fastapi',
+          auth: fileAuth,
+          description: r.desc || '',
+        });
+      }
+      continue;
+    }
 
     let match;
     const regex = new RegExp(pattern.source, 'gi');
@@ -471,7 +495,7 @@ function scanFastAPIRoutes(dir) {
         handler: extractPythonFunctionName(content, match.index),
         file: relative(dir, filePath),
         source: 'fastapi',
-        auth: content.includes('Depends(') && content.includes('auth'),
+        auth: fileAuth,
         description: extractPythonDocstring(content, match.index),
       });
     }

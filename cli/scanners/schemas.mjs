@@ -9,6 +9,7 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { resolve, join, relative, basename, extname } from 'node:path';
 import { extractJsSchemaBodies } from './js-ast.mjs';
+import { extractPythonFiles } from './py-ast.mjs';
 import { readScannable } from '../shared-source.mjs';
 import { DEFAULT_IGNORE_DIRS as IGNORE_DIRS, shouldIgnore, relPosix } from '../shared-ignore.mjs';
 
@@ -520,8 +521,38 @@ function mapMongooseType(type) {
 function scanPythonModels(dir) {
   const entities = [];
   const relationships = [];
-  walkDir(dir, (filePath) => {
-    if (!filePath.endsWith('.py')) return;
+
+  // Collect .py files first so the AST tier parses them in ONE python3
+  // subprocess. `null` → Python unavailable / subprocess failed → regex
+  // fallback for all; a per-file `ok:false` falls back for that file only.
+  // The AST tier gets every field exactly (no body-capture truncation, no
+  // miss on multi-base classes) — undercounting fields is what makes the
+  // data-model validators falsely pass on a stale DATA-MODEL.md.
+  const pyFiles = [];
+  walkDir(dir, (filePath) => { if (filePath.endsWith('.py')) pyFiles.push(filePath); });
+  const astByFile = extractPythonFiles(pyFiles);
+
+  for (const filePath of pyFiles) {
+    const parsed = astByFile && astByFile[filePath];
+    if (parsed && parsed.ok) {
+      for (const s of parsed.schemas || []) {
+        const fields = (s.fields || []).map(f => ({
+          name: f.name, type: f.type || '', required: f.required !== false, description: '',
+        }));
+        if (fields.length > 0) entities.push({ name: s.name, fields, file: filePath, source: s.kind });
+        for (const to of s.rels || []) relationships.push({ from: s.name, to, type: 'related' });
+      }
+      continue;
+    }
+    scanPythonModelsRegex(filePath, entities, relationships);
+  }
+  return { entities, relationships };
+}
+
+// Regex (beta) fallback — used per-file when the Python AST tier is unavailable
+// or couldn't parse that file. Identical behavior to the pre-AST scanner.
+function scanPythonModelsRegex(filePath, entities, relationships) {
+  {
     const content = readFileSafe(filePath);
     if (!content) return;
     if (!/class\s+\w+\s*\([^)]*(Base|BaseModel|db\.Model|Model|SQLModel)/.test(content)) return;
@@ -565,8 +596,7 @@ function scanPythonModels(dir) {
       }
       if (fields.length > 0) entities.push({ name, fields, file: filePath, source: 'pydantic' });
     }
-  });
-  return { entities, relationships };
+  }
 }
 
 // ── Rust: Diesel `table! { ... }` ─────────────────────────────────────────────

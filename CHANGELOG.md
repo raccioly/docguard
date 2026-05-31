@@ -34,6 +34,16 @@ tool from lying about itself.
   understands the **declarative object form** `fastify.route({ method, url })`
   (including `method: ['GET','POST']` arrays and the `path:` alias) — which the
   old regex never matched at all.
+- **Python AST parsing tier** — Python is now a full-support language, parsed by
+  the developer's own `python3` (no pip/npm dependency; new
+  `cli/scanners/py-ast.mjs`). One subprocess parses every `.py` file and returns
+  FastAPI/APIRouter + Flask routes (multi-line decorators, `methods=[…]` arrays)
+  and Pydantic/SQLAlchemy models with their full field lists, types, optional
+  flags, and relationships — accuracy the line-by-line regex could not promise
+  (an undercounted model is what makes a data-model validator falsely pass on a
+  stale `DATA-MODEL.md`). Loads OPTIONALLY exactly like the JS tier: if `python3`
+  is absent or a file won't parse, the scanners fall back to the regex (beta)
+  tier per file. Never load-bearing for the CLI to run.
 - **AST-accurate JS/TS parsing tier**, powered by `@babel/parser` — the project's
   first runtime dependency (exact-pinned `7.29.7`). It loads **optionally** with a
   regex fallback, so the CLI never hard-crashes if it's absent. New
