@@ -68,6 +68,11 @@ tool from lying about itself.
   `JSON.parse` calls (TypeDoc/JSDoc/Swagger detectors) are now fail-soft, so one
   bad manifest can't abort the whole scan into empty "truth" that every
   validator then passes.
+- **CI hardening** — CI now runs `npm ci` (required since `@babel/parser` was
+  added; the AST-tier tests need it), `node --check`s *every* `cli/**/*.mjs`
+  (the lint gate that would have caught the VS Code extension's parse error),
+  and smoke-imports the Python wrapper. Previously CI only exercised the JS
+  entry point and the npm-pack tarball.
 - **Validator false-positive polish** — (a) Traceability no longer treats prose
   like `T300`/`T1000` as spec-kit task IDs: the bare `T\d{3,4}` pattern is now
   anchored to where real task IDs live (a `- [ ] T001` checklist marker, or a

@@ -23,6 +23,22 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
+      # ── Install the one runtime dependency (@babel/parser) from the lockfile.
+      #    Required: without it the AST-tier tests run with Babel absent. ──
+      - name: Install dependencies
+        run: npm ci
+
+      # ── Syntax-check EVERY CLI source, not just the files the entry point
+      #    eagerly imports (a lazily/dynamically loaded module's syntax error
+      #    would otherwise slip through). This is the lint gate that would have
+      #    caught the VS Code extension shipping with a parse error. ──
+      - name: Syntax-check all CLI sources
+        run: find cli -name '*.mjs' -print0 | xargs -0 -n1 node --check
+
+      # ── Python wrapper import smoke (PyPI distribution surface) ──
+      - name: Python wrapper imports
+        run: python3 -c "import docguard_cli.wrapper; print('docguard_cli.wrapper OK')"
+
       # ── Automated Test Suite ──
       - name: Run Tests
         run: npm test
