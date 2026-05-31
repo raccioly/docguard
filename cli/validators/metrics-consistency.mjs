@@ -151,6 +151,14 @@ function findTestFiles(dir) {
   return tests;
 }
 
+// DocGuard's OWN installed slash-command docs (commands/docguard.*.md, and the
+// .agent/commands/ variant). These are tool-managed, not the project's docs —
+// scanning them flags DocGuard's own (sometimes stale) shipped "N validators"
+// count as the USER's drift, which they can't meaningfully act on. (.agent/ and
+// .specify/ are already dot-skipped by walkFiles; this catches the legacy ROOT
+// commands/ install location. A user's own commands/<name>.md is NOT excluded.)
+const DOCGUARD_OWN_DOC_RE = /[\\/](?:\.agent[\\/])?commands[\\/]docguard\.[a-z-]+\.md$/i;
+
 function findMarkdownFiles(dir) {
   const seen = new Set();
   const mdFiles = [];
@@ -164,7 +172,7 @@ function findMarkdownFiles(dir) {
   for (const searchDir of searchDirs) {
     if (!existsSync(searchDir)) continue;
     walkFiles(searchDir, (f) => {
-      if (f.endsWith('.md') && !seen.has(f)) {
+      if (f.endsWith('.md') && !seen.has(f) && !DOCGUARD_OWN_DOC_RE.test(f)) {
         seen.add(f);
         mdFiles.push(f);
       }

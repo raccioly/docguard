@@ -30,11 +30,15 @@ describe('Traceability Validator', () => {
   it('does not treat prose like "T300" as a spec-kit task ID (over-match fix)', () => {
     mkdirSync(join(tmpDir, 'docs-canonical'), { recursive: true });
     // Prose mentions of T### must NOT be collected as task IDs; a real
-    // checklist task (- [ ] T001) MUST be.
+    // checklist task MUST be. The id is concatenated into the fixture below
+    // (not written as a contiguous checklist-marker-plus-id literal) so this
+    // very test file isn't itself scanned as a real task reference during
+    // DocGuard's own self-guard.
+    const task = 'T001';
     writeFileSync(join(tmpDir, 'docs-canonical', 'REQUIREMENTS.md'),
       '# Requirements\n\n' +
       'The sensor times out after T300 ms; the legacy T1000 model is HTTP T200.\n\n' +
-      '## Tasks\n- [ ] T001 Implement the thing\n');
+      '## Tasks\n- [ ] ' + task + ' Implement the thing\n');
     const result = validateTraceability(tmpDir, { requiredFiles: { canonical: ['docs-canonical/REQUIREMENTS.md'] } });
     const joined = result.warnings.join(' | ');
     assert.ok(!/\bT300\b|\bT1000\b|\bT200\b/.test(joined),

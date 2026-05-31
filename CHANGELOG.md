@@ -118,6 +118,12 @@ tool from lying about itself.
   literals, so bumping the constant can't leave freshly-created configs reading
   as instantly "needs upgrade." (`config.mjs`'s `'0.2'` is documented as the
   legacy missing-version fallback, intentionally distinct.)
+- **Metrics-Consistency ignores DocGuard's own installed command docs** — it no
+  longer scans `commands/docguard.*.md` (DocGuard's slash-command docs, which it
+  installs into the project) for count claims. A stale "N validators" baked into
+  those shipped docs was being reported as the *user's* drift in every project
+  that had them (field test: quick-recon-tool, hugocross). A user's own
+  `commands/<name>.md` is unaffected.
 - **Dogfooding closure** — Canonical-Sync now scans **AGENTS.md** in addition to
   README for "ships N commands"/"N validators" surface claims (it only checked
   README, which is why DocGuard's own AGENTS.md counts drifted unnoticed), and
