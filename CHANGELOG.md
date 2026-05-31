@@ -18,6 +18,16 @@ tool from lying about itself.
   `cli/scanners/js-ast.mjs`. This fixes silent brace-truncation in Zod/Drizzle/
   Mongoose schema extraction, where a nested `{…}` truncated the object body and
   dropped fields — making the data-model validators falsely pass on stale docs.
+- **Inline whole-validator N/A marker** — declare a validator intentionally
+  non-applicable, visibly and in-repo:
+  `<!-- docguard:validator testSpec n/a — POC, no automated tests yet -->`
+  (read from canonical docs / `AGENTS.md` / `README.md`). Renders as
+  `➖ [N/A] (declared N/A: …)`, not a silent skip or fake pass. Unlike the
+  `validators:{k:false}` config switch, the rationale lives next to the
+  declaration and travels with the repo. Key matching is case/separator-tolerant
+  (`test-spec` works); a mistyped key is reported, not silently ignored. A POC
+  with no tests can mark `testSpec` + `traceability` N/A in one place — so this
+  also covers the "no-tests project" need without a dedicated profile.
 
 ### Fixed
 - **`guard` headline status now matches its exit code.** The status word was

@@ -81,6 +81,7 @@ const EXPLAINERS = {
     triggers: [
       ['no service-to-test mappings', 'TEST-SPEC.md has no recognized mapping table. Add a "## Source-to-Test Map" with column 1 = source, column 2 = test file, last = status. Both `| Source | Test file | Status |` and the generated `| Source File | Unit Test | Integration Test | Status |` are accepted.'],
       ['referenced test file does not exist', 'A path in TEST-SPEC.md\'s mapping doesn\'t exist. Update the path or remove the row.'],
+      ['this project has no automated tests (POC, spike, library)', 'Declare it visibly instead of fighting the validator: add `<!-- docguard:validator testSpec n/a — POC, no automated tests yet -->` to TEST-SPEC.md or AGENTS.md. Test-Spec then renders ➖ [N/A] with your reason (git-tracked), not a warning.'],
     ],
     example: '| `src/auth.ts` | `tests/auth.test.ts` | ✅ |   (or the generated 4-column shape)',
     standard: 'ISO/IEC/IEEE 29119-3 (test specification)',
@@ -126,6 +127,7 @@ const EXPLAINERS = {
       ['has no test coverage', 'Add `// @req FR-012` (or similar) as a comment in the test that verifies the requirement.'],
       ['orphaned test reference', 'A `@req` comment references an ID that doesn\'t exist in any spec. Update the ID or remove the marker.'],
       ['unlinked doc', 'A canonical doc (e.g. TEST-SPEC.md) exists but no source file references it. Link it from code/tests, or treat it as advisory if the doc is intentionally standalone. This is a doc→source check, distinct from the FR/SC→test check above — they share the Traceability bucket.'],
+      ['this project has no formal requirements', 'Declare it visibly: add `<!-- docguard:validator traceability n/a — no formal requirements doc -->` to a canonical doc or AGENTS.md. Renders as ➖ [N/A] with the reason instead of warning on every loose ID.'],
     ],
     example: 'spec.md defines `**FR-012**: ...` and a test has `// @req FR-012`; and TEST-SPEC.md is referenced from a test/source file',
     standard: 'ISO/IEC/IEEE 29148 (requirements traceability)',

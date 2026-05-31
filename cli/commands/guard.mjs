@@ -8,6 +8,7 @@
  */
 
 import { c, resolveSeverity } from '../shared.mjs';
+import { loadValidatorSuppressions } from '../validator-markers.mjs';
 import { detectAgentMode, isSpecKitInitialized } from '../ensure-skills.mjs';
 import { checkUpgradeStatus } from './upgrade.mjs';
 import { changedFilesSince, isGitRepo } from '../shared-git.mjs';
@@ -220,10 +221,26 @@ export function runGuardInternal(projectDir, config) {
     // Metrics-Consistency runs post-loop (needs guard results)
   ];
 
+  // Inline `<!-- docguard:validator <key> n/a — reason -->` markers let a
+  // project declare a whole validator non-applicable, visibly and in-repo
+  // (e.g. a POC marking testSpec/traceability N/A). Distinct from the config
+  // `validators:{k:false}` switch: a marked validator renders as ➖ [N/A] with
+  // its reason, not a silent skip. Resolve once against the full key set.
+  const allValidatorKeys = [...new Set(validatorMap.map(v => v.key)), 'canonicalSync', 'metricsConsistency'];
+  const { suppressed: naMarkers, unknown: unknownMarkers } = loadValidatorSuppressions(projectDir, allValidatorKeys);
+  const naResult = (name, key) => ({
+    name, key, status: 'na', quality: null, errors: [], warnings: [], passed: 0, total: 0, durationMs: 0,
+    note: naMarkers.get(key) ? `declared N/A: ${naMarkers.get(key)}` : 'declared N/A',
+  });
+
   // v0.14-Q2: per-validator timing. Cheap (one `performance.now()` pair per
   // validator) and the data is what we'd need to optimize anything later.
   // Exposed via --profile in the public guard.
   for (const { key, name, fn } of validatorMap) {
+    if (naMarkers.has(key)) {
+      results.push(naResult(name, key));
+      continue;
+    }
     if (validators[key] === false) {
       results.push({ name, key, status: 'skipped', quality: null, errors: [], warnings: [], passed: 0, total: 0, durationMs: 0 });
       continue;
@@ -244,7 +261,9 @@ export function runGuardInternal(projectDir, config) {
   //    Needs the live validator results to count "real" validators that ran.
   //    (Pre-canonical-sync ordering — comes before metrics-consistency so the
   //    metrics validator sees a stable surface count.)
-  if (validators.canonicalSync !== false) {
+  if (naMarkers.has('canonicalSync')) {
+    results.push(naResult('Canonical-Sync', 'canonicalSync'));
+  } else if (validators.canonicalSync !== false) {
     const start = performance.now();
     try {
       const result = validateCanonicalSync(projectDir, config, results);
@@ -257,7 +276,9 @@ export function runGuardInternal(projectDir, config) {
   }
 
   // ── Metrics-Consistency runs AFTER all other validators (needs their results) ──
-  if (validators.metricsConsistency !== false) {
+  if (naMarkers.has('metricsConsistency')) {
+    results.push(naResult('Metrics-Consistency', 'metricsConsistency'));
+  } else if (validators.metricsConsistency !== false) {
     const start = performance.now();
     try {
       const result = validateMetricsConsistency(projectDir, config, results);
@@ -316,6 +337,11 @@ export function runGuardInternal(projectDir, config) {
     effectiveErrors,
     effectiveWarnings,
     validators: results,
+    // Unknown keys in `docguard:validator … n/a` markers — typo protection so
+    // a mistyped key doesn't silently fail to suppress. Surfaced by runGuard.
+    validatorMarkerWarnings: unknownMarkers.map(
+      u => `Unknown validator key "${u.raw}" in a docguard:validator marker — ignored. Valid keys: ${allValidatorKeys.join(', ')}`
+    ),
     timestamp: new Date().toISOString(),
   };
 }
@@ -572,6 +598,14 @@ export function runGuard(projectDir, config, flags) {
   // Spec-kit reminder — persistent nudge if not initialized
   if (!isSpecKitInitialized(projectDir)) {
     console.log(`\n  ${c.yellow}💡${c.reset} ${c.dim}Enhance DocGuard with Spec Kit: ${c.cyan}uv tool install specify-cli --from git+https://github.com/github/spec-kit.git${c.reset}`);
+  }
+
+  // Typo protection for docguard:validator markers — a mistyped key would
+  // otherwise silently fail to suppress the validator.
+  if (Array.isArray(data.validatorMarkerWarnings) && data.validatorMarkerWarnings.length > 0) {
+    for (const w of data.validatorMarkerWarnings) {
+      console.log(`\n  ${c.yellow}⚠ ${w}${c.reset}`);
+    }
   }
 
   // When severity overrides demoted warnings to "low" (or promoted them to

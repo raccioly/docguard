@@ -73,6 +73,17 @@ See [Profiles](./profiles.md) for details.
 | `environment` | `true` | Setup steps, env vars, prerequisites, .env.example |
 | `freshness` | varies | Docs updated recently relative to code changes (git-based) |
 
+## Muting a validator
+
+Two ways to turn a validator off, for two different intents:
+
+| Intent | How | Renders as |
+|--------|-----|-----------|
+| Operational toggle (CI speed, not relevant *right now*) | `.docguard.json` → `"validators": { "testSpec": false }` | silent — disabled |
+| **Intentional non-applicability** (POC with no tests, library with no auth) | inline marker in a canonical doc or `AGENTS.md`:<br>`<!-- docguard:validator testSpec n/a — POC, no automated tests yet -->` | `➖ Test-Spec [N/A] (declared N/A: …)` — visible, git-tracked |
+
+The marker is preferred when the validator genuinely does not apply: the rationale lives next to the declaration, travels with the repo, and shows up honestly as N/A rather than a hidden skip or a fake green check. The key is the validator key from the table above (case/separator tolerant — `test-spec` works too); a mistyped key is reported as a warning rather than silently ignored. A no-tests POC typically marks both `testSpec` and `traceability` N/A.
+
 ## Project Type Detection
 
 DocGuard auto-detects your project type from `package.json`:
