@@ -7,9 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.24.0] - 2026-05-31
+
 Hardening pass from a full external review. Theme: make the green check *mean*
 something — close the false-green paths, fix the security gaps, and stop the
-tool from lying about itself.
+tool from lying about itself. Relaxes the zero-dependency constraint to add an
+exact-pinned `@babel/parser` (optional-load, regex fallback) and a `python3`
+AST tier (optional, regex fallback), promoting JavaScript/TypeScript and Python
+to full-support languages. Field-tested read-only against real Next.js, Express,
+Python, and AWS/AppSync projects.
 
 ### Added
 - **Express mount-prefix resolution** — DocGuard now follows `app.use('/api/users',
@@ -68,6 +74,11 @@ tool from lying about itself.
   also covers the "no-tests project" need without a dedicated profile.
 
 ### Fixed
+- **Freshness honors a same-day review.** A `<!-- docguard:last-reviewed YYYY-MM-DD -->`
+  header was compared from midnight, so a doc reviewed *today* was still flagged
+  stale whenever >10 code commits also landed today — undermining the very
+  explicit-review signal the validator claims to honor. A header date now means
+  "reviewed on this day" and covers that day's commits (only later days count).
 - **Metrics-Consistency no longer scans the whole repo for stray numbers**
   (found by field-testing against a real backend): it previously walked the
   *entire* project root recursively, so a "N validators / N checks" mention in

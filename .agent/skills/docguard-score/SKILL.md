@@ -6,10 +6,10 @@ description: CDD maturity assessment with category-aware improvement roadmap. Ru
 compatibility: Requires DocGuard CLI installed (npm i -g docguard-cli or npx docguard-cli)
 metadata:
   author: docguard
-  version: 0.23.0
+  version: 0.24.0
   source: extensions/spec-kit-docguard/skills/docguard-score
 ---
-<!-- docguard:version: 0.23.0 -->
+<!-- docguard:version: 0.24.0 -->
 
 # DocGuard Score Skill
 

@@ -1,5 +1,7 @@
 # AI Agent Instructions — DocGuard
 
+<!-- docguard:last-reviewed 2026-05-31 -->
+
 > This project follows **Canonical-Driven Development (CDD)**.
 > Documentation is the source of truth. Read before coding.
 > DocGuard is an official [GitHub Spec Kit](https://github.com/github/spec-kit) community extension.

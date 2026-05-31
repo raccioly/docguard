@@ -2,14 +2,14 @@
 
 <!-- docguard:quality negation-load off — security doc: prohibitive phrasing ("never a shell string", "can't inject", "no dependencies") is precise and intentional, not sloppy writing -->
 
-<!-- docguard:version 0.5.0 -->
+<!-- docguard:version 0.6.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-05-29 -->
+<!-- docguard:last-reviewed 2026-05-31 -->
 
 | Metadata | Value |
 |----------|-------|
 | **Status** | ![Status](https://img.shields.io/badge/status-active-brightgreen) |
-| **Version** | `0.4.0` |
+| **Version** | `0.6.0` |
 
 ---
 
@@ -54,7 +54,7 @@ DocGuard uses a simple permission model: it inherits filesystem permissions from
 |----------|---------|-----------|
 | **File reads** | Project files within `projectDir` | DocGuard only reads files within the project directory and its own templates |
 | **File writes** | `docguard init`, `docguard generate`, `docguard hooks` | Only writes to `docs-canonical/`, root docs, `.docguard.json`, `.git/hooks/` |
-| **Child processes** | `git log`/`git diff` (freshness), `specify init` (Spec Kit scaffolding) | All spawned via `execFileSync` with an argv array — never a shell string. The binary is `argv[0]` (a literal filename) and each arg a literal token, so workspace paths and config values can't inject commands |
+| **Child processes** | `git log`/`git diff` (freshness), `specify init` (Spec Kit scaffolding), `python3` (Python AST parsing) | All spawned via `execFileSync`/`spawnSync` with an argv array — never a shell string. The binary is `argv[0]` (a literal filename) and each arg a literal token; the `python3` extractor script is a constant passed via `-c` and the file paths it parses arrive on stdin, never spliced into argv — so workspace paths and config values can't inject commands |
 | **User input** | CLI arguments parsed by the entry point | Agent/path inputs that reach a subprocess are allowlist-validated (`/^[a-zA-Z0-9_-]{1,32}$/`) before use |
 
 ## Command Safety Levels

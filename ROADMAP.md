@@ -1,8 +1,8 @@
 # DocGuard Roadmap
 
-<!-- docguard:version 0.5.0 -->
+<!-- docguard:version 0.6.0 -->
 <!-- docguard:status living -->
-<!-- docguard:last-reviewed 2026-05-29 -->
+<!-- docguard:last-reviewed 2026-05-31 -->
 <!-- docguard:owner @raccioly -->
 
 > The planned evolution of DocGuard and Canonical-Driven Development (CDD).
@@ -10,8 +10,8 @@
 | Metadata | Value |
 |----------|-------|
 | **Status** | ![Status](https://img.shields.io/badge/status-active-brightgreen) |
-| **Version** | `0.5.0` |
-| **Last Updated** | 2026-05-29 |
+| **Version** | `0.6.0` |
+| **Last Updated** | 2026-05-31 |
 | **Owner** | [@raccioly](https://github.com/raccioly) |
 
 ---
@@ -34,10 +34,11 @@ Make **Canonical-Driven Development** the industry standard for AI-age software 
 | 4.5 | Continuous Hardening | 🔄 Ongoing | Mar–May 2026 |
 | 5 | Dashboard (SaaS) | 💭 Future | Q4 2026 |
 
-### Phase 4.5: Continuous Hardening (v0.11 → v0.23) 🔄
+### Phase 4.5: Continuous Hardening (v0.11 → v0.24) 🔄
 
 Sustained, feedback-driven maturation since the March milestones:
 
+- **v0.24.0 — real parsers, full-support languages.** Relaxed the zero-dependency rule for one exact-pinned npm dep (`@babel/parser`) plus an optional `python3` AST tier, both with regex fallback. Closed false-green paths (silent brace-truncation in JS/TS schemas; undercounted Python models), added Express cross-file mount-prefix resolution, Fastify object-form routes, and a hardened `requiredFiles` migration. Field-tested read-only against real Next.js/Express/Python/AppSync projects.
 - **Validators grew 9 → 24** — added Canonical-Sync, Surface-Sync, Metrics-Consistency, Doc-Quality, Traceability, Cross-Reference, Generated-Staleness, and more.
 - **Language-aware** test/trace discovery (Python, Go, Rust, Java/Kotlin, Ruby, PHP) shared between `docguard trace` and the guard-time Traceability validator.
 - **Per-doc/per-rule overrides** — `docguard:section … n/a`, `docguard:quality negation-load off`, `docguard:spec-type bugfix` — so the validators fit real projects instead of forcing ceremony.
@@ -110,7 +111,7 @@ Deep integration with development tools and platforms.
 - [x] Badge service (shields.io CDD score, type, guarded-by badges)
 - [x] CI command (guard + score pipeline, JSON output, thresholds)
 - [x] npm publish preparation (.npmignore, prepublishOnly, CI dry-run)
-- [x] VS Code extension (status bar score, inline diagnostics, 6 commands)
+- [x] ~~VS Code extension (status bar score, inline diagnostics, 6 commands)~~ — **removed in v0.24.0** (was unmaintained and broken; the CLI + CI gate are the supported surface)
 
 ## Phase 5: Dashboard 💭
 

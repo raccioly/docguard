@@ -1,15 +1,17 @@
 # Environment
 
-<!-- docguard:version 0.5.0 -->
-<!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-05-30 -->
+<!-- docguard:quality negation-load off — an environment doc precisely describes the ABSENCE of requirements (no env vars, no install step, no API keys, no database); the prohibitive phrasing is accurate and intentional, not sloppy writing -->
 
-> DocGuard needs no environment variables. It has a single optional-load runtime dependency (`@babel/parser`); everything else is Node.js built-ins.
+<!-- docguard:version 0.6.0 -->
+<!-- docguard:status active -->
+<!-- docguard:last-reviewed 2026-05-31 -->
+
+> DocGuard needs no environment variables. It has a single optional-load npm dependency (`@babel/parser`) and optionally uses the developer's own `python3`; everything else is Node.js built-ins.
 
 | Metadata | Value |
 |----------|-------|
 | **Status** | ![Status](https://img.shields.io/badge/status-active-brightgreen) |
-| **Version** | `0.5.0` |
+| **Version** | `0.6.0` |
 
 ---
 
@@ -20,6 +22,7 @@
 | Node.js | ≥18.0.0 | [nodejs.org](https://nodejs.org) |
 | npm | ≥8 | Included with Node.js |
 | Git | Any | [git-scm.com](https://git-scm.com) |
+| Python 3 | **Optional** — ≥3.8, enables the AST-accurate Python scanning tier; the scanners use regex otherwise | [python.org](https://python.org) |
 
 ## Environment Variables
 
@@ -40,7 +43,7 @@
 # Run CLI locally
 node cli/docguard.mjs audit
 
-# Run tests (30 tests, 17 suites)
+# Run the full test suite (node:test)
 npm test
 
 # Test a command on a target project
@@ -66,6 +69,7 @@ node cli/docguard.mjs ci --threshold 70 --format json
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 0.6.0 | 2026-05-31 | DocGuard Team | v0.24.0: documented Python 3 as an optional prerequisite (enables the AST Python tier; regex fallback when absent); de-bristled the test-count example |
 | 0.5.0 | 2026-03-13 | @raccioly | Added diagnose, CI template, development examples |
 | 0.3.0 | 2026-03-12 | @raccioly | Proper CLI environment docs, no env vars |
 | 0.1.0 | 2026-03-12 | DocGuard Generate | Auto-generated (corrected) |

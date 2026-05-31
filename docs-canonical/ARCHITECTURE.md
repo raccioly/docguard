@@ -1,21 +1,21 @@
 # Architecture
 
-<!-- docguard:version 0.5.0 -->
+<!-- docguard:version 0.6.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-05-29 -->
+<!-- docguard:last-reviewed 2026-05-31 -->
 
 | Metadata | Value |
 |----------|-------|
 | **Status** | ![Status](https://img.shields.io/badge/status-active-brightgreen) |
-| **Version** | `0.5.0` |
-| **Last Updated** | 2026-05-29 |
+| **Version** | `0.6.0` |
+| **Last Updated** | 2026-05-31 |
 | **Project Size** | ~24K lines across `cli/` |
 
 ---
 
 ## System Overview
 
-DocGuard is a near-zero-dependency Node.js CLI tool (one exact-pinned runtime dependency, `@babel/parser`, for AST-accurate JS/TS parsing — loaded optionally with a regex fallback). It enforces **Canonical-Driven Development (CDD)** — a methodology where documentation is the source of truth. DocGuard audits, scores, and guards project documentation. It generates AI-actionable fix prompts and integrates with CI/CD pipelines.
+DocGuard is a near-zero-dependency Node.js CLI tool. It carries one exact-pinned npm runtime dependency, `@babel/parser`, for AST-accurate JS/TS parsing, and uses the developer's own `python3` (no pip/npm dependency) for an AST-accurate Python tier. Both AST tiers load **optionally** with a per-file regex fallback, so the CLI stays robust when a parser is absent — they make JS/TS and Python full-support languages while every other language stays on the regex (beta) tier. It enforces **Canonical-Driven Development (CDD)** — a methodology where documentation is the source of truth. DocGuard audits, scores, and guards project documentation. It generates AI-actionable fix prompts and integrates with CI/CD pipelines.
 
 It targets development teams and AI coding agents that need to maintain documentation quality across projects of any stack (JavaScript, Python, Java, etc.).
 
@@ -40,10 +40,10 @@ It targets development teams and AI coding agents that need to maintain document
 |----------|-----------|-----------|
 | Language | JavaScript (ES Modules) | Universal runtime, zero-friction `npx` usage |
 | Runtime | Node.js ≥ 18 | Native `node:test`, `node:fs`, `node:child_process` |
-| Dependencies | **One** — `@babel/parser` (exact-pinned, optional-load) | AST-accurate JS/TS parsing; minimal, vetted supply-chain surface |
+| Dependencies | **One npm dep** — `@babel/parser` (exact-pinned, optional-load) | AST-accurate JS/TS parsing; minimal, vetted supply-chain surface |
+| Optional external | `python3` (the developer's own) | AST-accurate Python parsing; not an npm/pip dependency, regex fallback when absent |
 | Package Manager | npm | Standard for Node.js CLIs |
 | Testing | `node:test` + `node:assert` | Built-in, no test framework dependency |
-| Extension | VS Code Extension API | Dominant editor market share |
 
 ### Recognized Config Files
 
@@ -181,6 +181,7 @@ DocGuard has **zero runtime dependencies**. All functionality uses Node.js built
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 0.6.0 | 2026-05-31 | DocGuard Team | Refresh for v0.24.0: Python promoted to full support via a `python3` AST tier (`cli/scanners/py-ast.mjs`); JS/TS route extraction extended with cross-file mount-prefix resolution, object-form route declarations, and AST router-screen detection (`cli/scanners/js-ast.mjs`); removed the retired editor extension from the tech stack |
 | 0.5.0 | 2026-05-29 | DocGuard Team | Refresh for v0.22–v0.23: 24 validators, 11 scanners, new `config.mjs` (config extracted to break the demo↔docguard cycle) and `shared-trace-patterns.mjs` (shared multilingual trace patterns) |
 | 0.4.0 | 2026-03-13 | DocGuard Team | Complete rewrite with real project data, AI orchestration architecture |
 | 0.1.0 | 2026-03-13 | DocGuard Generate | Auto-generated skeleton |

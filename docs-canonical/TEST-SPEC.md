@@ -1,10 +1,10 @@
 # Test Specification
 
-<!-- docguard:version 0.7.0 -->
+<!-- docguard:version 0.8.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-05-30 -->
+<!-- docguard:last-reviewed 2026-05-31 -->
 
-> DocGuard has a single optional-load runtime dependency (`@babel/parser`). CLI integration tests cover the full stack with `node:test` (zero dev dependencies).
+> DocGuard has a single optional-load npm dependency (`@babel/parser`) and an optional `python3` AST tier. CLI integration tests cover the full stack with `node:test` (zero dev dependencies) and exercise both AST extractors (`js-ast`, `py-ast`) plus their regex fallbacks. The Python AST tests skip themselves automatically on a machine that lacks `python3`.
 
 | Metadata | Value |
 |----------|-------|
