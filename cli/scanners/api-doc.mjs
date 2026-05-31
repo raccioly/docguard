@@ -22,7 +22,17 @@ const HTTP_METHODS = new Set(['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', '
 
 /**
  * Normalize an API path for comparison.
- * Strips decoration and collapses param syntax so `:id` and `{id}` match.
+ * Strips decoration and collapses ALL dynamic-segment syntaxes to a single `{}`
+ * placeholder so an endpoint documented one way matches the same endpoint
+ * emitted another way:
+ *   Express/colon   `/users/:id`            → `/users/{}`
+ *   OpenAPI/brace   `/users/{id}`           → `/users/{}`
+ *   Next.js bracket `/users/[id]`           → `/users/{}`
+ *   catch-all       `/auth/[...nextauth]`, `/auth/:nextauth*` → `/auth/{}`
+ *   optional c-all  `/shop/[[...filters]]`  → `/shop/{}`
+ * Without the bracket rule, a doc written in Next.js `[id]` syntax never matched
+ * the code-scan's `:id`, so every dynamic route double-fired as both
+ * "documented-but-absent" and "undocumented" (field test: hugocross_revamp).
  * @param {string} raw
  * @returns {string} normalized path (e.g. "/api/users/{}") or '' if not a path
  */
@@ -34,8 +44,12 @@ export function normalizePath(raw) {
   // cut query string / fragment
   p = p.split(/[?#]/)[0];
   if (!p.startsWith('/')) return '';
-  // collapse param syntax: :param and {param} → {}
-  p = p.replace(/\{[^}/]+\}/g, '{}').replace(/:[^/]+/g, '{}');
+  // collapse every param syntax to {}: Next.js [id]/[...slug]/[[...slug]],
+  // OpenAPI {param}, and colon :param (incl. catch-all :param*).
+  p = p
+    .replace(/\[{1,2}[^\]]*\]{1,2}/g, '{}')
+    .replace(/\{[^}/]+\}/g, '{}')
+    .replace(/:[^/]+/g, '{}');
   // strip trailing slash (but keep root "/")
   if (p.length > 1) p = p.replace(/\/+$/, '');
   return p;

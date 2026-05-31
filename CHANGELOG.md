@@ -37,6 +37,13 @@ tool from lying about itself.
   also covers the "no-tests project" need without a dedicated profile.
 
 ### Fixed
+- **API-Surface no longer double-flags every dynamic route** (found by field-
+  testing against a real Next.js app): `normalizePath` now collapses Next.js
+  `[id]`/`[...slug]`/`[[...slug]]` brackets to the same `{}` placeholder it
+  already used for `:id` and `{id}`. Previously a route documented as
+  `/api/jobs/[jobId]` never matched the code-scan's `/api/jobs/:jobId`, so it
+  fired as BOTH "documented-but-absent" AND "undocumented" — on one real repo,
+  16 of 20 API-Surface warnings were this pure noise (now 1, a genuine finding).
 - **`guard` headline status now matches its exit code.** The status word was
   computed from raw counts while the exit code used severity-adjusted counts, so a
   `severity: high` validator with only warnings printed "WARN" yet exited 1 (FAIL),

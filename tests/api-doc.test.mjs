@@ -101,3 +101,27 @@ describe('api-doc: compareEndpoints', () => {
     assert.equal(r.documentedButAbsent.length, 0);
   });
 });
+
+describe('normalizePath — unifies ALL dynamic-segment syntaxes (field-test fix)', () => {
+  it('collapses Next.js brackets, OpenAPI braces, and colon params to one key', () => {
+    const variants = [
+      '/api/jobs/[jobId]/action',   // Next.js bracket (doc)
+      '/api/jobs/:jobId/action',    // colon (code-scan)
+      '/api/jobs/{jobId}/action',   // OpenAPI brace
+    ];
+    const keys = variants.map(p => endpointKey('PATCH', p));
+    assert.equal(new Set(keys).size, 1, `all syntaxes must produce one key; got ${JSON.stringify(keys)}`);
+    assert.equal(normalizePath('/api/jobs/[jobId]/action'), '/api/jobs/{}/action');
+  });
+
+  it('collapses catch-all and optional catch-all (bracket + colon-star)', () => {
+    assert.equal(normalizePath('/api/auth/[...nextauth]'), '/api/auth/{}');
+    assert.equal(normalizePath('/api/auth/:nextauth*'), '/api/auth/{}');
+    assert.equal(normalizePath('/shop/[[...filters]]'), '/shop/{}');
+    // The doc-vs-code pair that double-fired on hugocross now matches:
+    assert.equal(
+      endpointKey('GET', '/api/auth/[...nextauth]'),
+      endpointKey('GET', '/api/auth/:nextauth*')
+    );
+  });
+});
