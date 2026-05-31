@@ -10,6 +10,9 @@ import {
   detectDocker,
   grepEnvUsage,
   getWorkspaceDirs,
+  readScannable,
+  isGeneratedPath,
+  MAX_SCAN_BYTES,
 } from '../cli/shared-source.mjs';
 
 function write(dir, rel, content) {
@@ -82,5 +85,34 @@ describe('shared-source: monorepo discovery', () => {
     assert.ok(names.has('ACCESS_TOKEN_TTL_SECONDS'));
     assert.ok(names.has('REDIS_URL'));
     assert.ok(names.has('VITE_API_URL'));
+  });
+});
+
+describe('readScannable — size cap + generated/minified skip', () => {
+  let dir;
+  beforeEach(() => { dir = mkdtempSync(join(tmpdir(), 'docguard-scan-')); });
+  afterEach(() => { if (dir) rmSync(dir, { recursive: true, force: true }); });
+
+  it('reads a normal source file', () => {
+    write(dir, 'src/a.ts', 'export const x = 1;');
+    assert.equal(readScannable(join(dir, 'src/a.ts')), 'export const x = 1;');
+  });
+
+  it('skips a file larger than the cap (returns null)', () => {
+    write(dir, 'src/huge.ts', 'x'.repeat(MAX_SCAN_BYTES + 1));
+    assert.equal(readScannable(join(dir, 'src/huge.ts')), null);
+  });
+
+  it('skips minified / generated / declaration files by name', () => {
+    for (const f of ['app.min.js', 'vendor.bundle.js', 'api.generated.ts', 'types.d.ts']) {
+      write(dir, f, 'whatever');
+      assert.equal(readScannable(join(dir, f)), null, `${f} should be skipped`);
+      assert.equal(isGeneratedPath(f), true, `${f} is generated`);
+    }
+    assert.equal(isGeneratedPath('src/realModule.ts'), false);
+  });
+
+  it('returns null for a missing/unreadable file (never throws)', () => {
+    assert.equal(readScannable(join(dir, 'does-not-exist.ts')), null);
   });
 });

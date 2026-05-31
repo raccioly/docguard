@@ -68,6 +68,12 @@ tool from lying about itself.
   `JSON.parse` calls (TypeDoc/JSDoc/Swagger detectors) are now fail-soft, so one
   bad manifest can't abort the whole scan into empty "truth" that every
   validator then passes.
+- **Scanners skip oversized + generated files** — a new size-capped
+  `readScannable()` (shared) caps reads at 1.5 MB and skips `.min.js`,
+  `*.bundle/chunk.js`, `*.generated.*`, and `*.d.ts`. A checked-in bundle or
+  generated client used to be read whole and run through every scanner's regex
+  set (and now Babel) — a DoS-by-accident. Wired into routes/schemas/frontend
+  scanners and the env-var grep.
 - **Schema version is single-sourced** — `init`/`setup` now write
   `CURRENT_SCHEMA_VERSION` from `shared.mjs` instead of hardcoded `'0.5'`/`'0.4'`
   literals, so bumping the constant can't leave freshly-created configs reading

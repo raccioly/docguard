@@ -40,6 +40,39 @@ function safeReadJson(path) {
 }
 
 /**
+ * Files DocGuard reads WHOLE and regex/AST-scans. A bundle, minified vendor
+ * file, or generated client checked into source is slow to read, hostile to
+ * regex, expensive to AST-parse, and is never the project's authored truth.
+ * 1.5 MB sits far above any hand-written module yet below typical bundles.
+ */
+export const MAX_SCAN_BYTES = 1_500_000;
+
+/** True for build artifacts / minified / generated / declaration files. */
+export function isGeneratedPath(p) {
+  const b = String(p);
+  return /\.min\.[cm]?js$/i.test(b)
+      || /\.(bundle|chunk)\.[cm]?jsx?$/i.test(b)
+      || /[.-]generated\.[a-z0-9]+$/i.test(b)
+      || /\.d\.ts$/i.test(b);
+}
+
+/**
+ * Read a source file for scanning, or return null when it should be skipped:
+ * unreadable, a generated/minified artifact, or larger than `maxBytes`. This is
+ * the single guard that keeps every scanner from choking on a checked-in
+ * bundle. Skipping is logged by callers that care (most just see "no match").
+ */
+export function readScannable(absPath, { maxBytes = MAX_SCAN_BYTES } = {}) {
+  try {
+    if (isGeneratedPath(absPath)) return null;
+    if (statSync(absPath).size > maxBytes) return null;
+    return readFileSync(absPath, 'utf-8');
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Expand a workspace glob (e.g. "packages/*") into concrete directories
  * that contain a package.json. Only the trailing single-level "/*" glob is
  * expanded — explicit paths are returned as-is when they exist.
@@ -236,8 +269,8 @@ export function grepEnvUsage(projectDir, config = {}) {
     if (!CODE_EXTENSIONS.has(extname(filePath))) return;
     const rel = relative(projectDir, filePath);
     if (shouldIgnore(rel, config)) return;
-    let content;
-    try { content = readFileSync(filePath, 'utf-8'); } catch { return; }
+    const content = readScannable(filePath);
+    if (content === null) return; // unreadable, generated, or too large to scan
     if (!content.includes('env')) return;
     // patterns[2] is the import.meta.env one — its matches are Vite-injected
     // when the name is an intrinsic, and must not be reported as user env vars.

@@ -16,7 +16,7 @@
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, relative, basename, extname } from 'node:path';
-import { resolveSourceRoots, collectPackageJsons } from '../shared-source.mjs';
+import { resolveSourceRoots, collectPackageJsons, readScannable } from '../shared-source.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build', 'coverage',
@@ -36,7 +36,7 @@ function walk(dir, onFile, depth = 0) {
   }
 }
 
-function readSafe(p) { try { return readFileSync(p, 'utf-8'); } catch { return ''; } }
+function readSafe(p) { return readScannable(p) ?? ''; } // size-capped; skips bundles
 
 /** Normalize a route path param syntax to {param} and strip trailing slash. */
 function normRoute(p) {

@@ -8,7 +8,7 @@
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, relative, basename, extname, dirname } from 'node:path';
-import { resolveSourceRoots } from '../shared-source.mjs';
+import { resolveSourceRoots, readScannable } from '../shared-source.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build', 'coverage',
@@ -522,7 +522,7 @@ function scanRustWebRoutes(dir) {
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function readFileSafe(path) {
-  try { return readFileSync(path, 'utf-8'); } catch { return null; }
+  return readScannable(path); // size-capped; skips minified/generated bundles
 }
 
 function isJSFile(path) {

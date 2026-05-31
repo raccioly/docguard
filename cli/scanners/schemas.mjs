@@ -9,6 +9,7 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { resolve, join, relative, basename, extname } from 'node:path';
 import { extractJsSchemaBodies } from './js-ast.mjs';
+import { readScannable } from '../shared-source.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build', 'coverage',
@@ -694,7 +695,7 @@ function extractOpenAPIRelationships(schemas) {
 }
 
 function readFileSafe(path) {
-  try { return readFileSync(path, 'utf-8'); } catch { return null; }
+  return readScannable(path); // size-capped; skips minified/generated bundles
 }
 
 // v0.15-P2: walkDir is called 8 times across schemas.mjs (Pydantic, Mongoose,
