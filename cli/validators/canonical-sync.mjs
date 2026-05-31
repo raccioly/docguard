@@ -124,37 +124,40 @@ export function validateCanonicalSync(projectDir, config, guardResults) {
     actualValidatorNames = guardResults.map(r => r.name).filter(Boolean);
   }
 
-  // ── Read README ─────────────────────────────────────────────────────
-  const readmePath = resolve(projectDir, 'README.md');
-  if (!existsSync(readmePath)) {
-    result.warnings.push('canonical-sync: README.md not found — cannot check surface claims');
-    result.total = 1;
-    return result;
+  // ── Read surface docs (README.md + AGENTS.md) ──────────────────────
+  // Both carry "N commands / N validators" surface claims. Scanning only the
+  // README is why AGENTS.md's counts ("Commands (15 total)", "24 validators")
+  // drifted unchecked for releases — close that gap by checking both.
+  const surfaceFiles = ['README.md', 'AGENTS.md'];
+  let readme = '';
+  let readAny = false;
+  for (const f of surfaceFiles) {
+    const p = resolve(projectDir, f);
+    if (!existsSync(p)) continue;
+    try { readme += readFileSync(p, 'utf-8') + '\n'; readAny = true; } catch { /* skip unreadable */ }
   }
-
-  let readme;
-  try {
-    readme = readFileSync(readmePath, 'utf-8');
-  } catch {
-    result.warnings.push('canonical-sync: README.md unreadable');
+  if (!readAny) {
+    result.warnings.push('canonical-sync: no README.md or AGENTS.md found — cannot check surface claims');
     result.total = 1;
     return result;
   }
 
   // ── Check 1: "ships N commands" ─────────────────────────────────────
+  // Check ALL claims (matchAll), not just the first: with README + AGENTS.md
+  // concatenated, a correct claim in one file must not mask a stale claim in
+  // the other (the same first-match-masking trap the secret scanner had).
   result.total++;
-  const shipsCommandsRe = /ships\s+\*{0,2}(\d+)\s+commands?\*{0,2}/i;
-  const m1 = readme.match(shipsCommandsRe);
-  if (m1) {
-    const claimed = Number(m1[1]);
-    if (claimed === actualCommandCount) {
+  const cmdMatches = [...readme.matchAll(/ships\s+\*{0,2}(\d+)\s+commands?\*{0,2}/gi)];
+  if (cmdMatches.length > 0) {
+    const wrong = [...new Set(cmdMatches.map(m => Number(m[1])).filter(n => n !== actualCommandCount))];
+    if (wrong.length === 0) {
       result.passed++;
     } else {
       const detail = actualUserFacingCount !== actualCommandFileCount
         ? `${actualCommandCount} user-facing commands in --help (${actualCommandFileCount} files including deprecation aliases)`
         : `${actualCommandCount} command file(s)`;
       result.warnings.push(
-        `README.md claims "ships ${claimed} commands" but the real count is ${detail}. Update the README.`
+        `A surface doc (README.md/AGENTS.md) claims ${wrong.map(n => `"ships ${n} commands"`).join(' / ')} but the real count is ${detail}. Update it.`
       );
     }
   } else {
@@ -177,7 +180,7 @@ export function validateCanonicalSync(projectDir, config, guardResults) {
     } else {
       const uniqueWrong = [...new Set(wrongClaims)];
       result.warnings.push(
-        `README.md claims ${uniqueWrong.map(n => `"${n} validators"`).join(' / ')} but guard reports ${actualValidatorCount}. Update the README.`
+        `A surface doc (README.md/AGENTS.md) claims ${uniqueWrong.map(n => `"${n} validators"`).join(' / ')} but guard reports ${actualValidatorCount}. Update it.`
       );
     }
   } else {

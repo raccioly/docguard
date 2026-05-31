@@ -138,11 +138,21 @@ describe('canonical-sync validator', () => {
     assert.equal(r.warnings.length, 0, `expected no warnings; got: ${r.warnings.join(' / ')}`);
   });
 
-  it('gracefully handles missing README', () => {
+  it('gracefully handles missing surface docs (no README or AGENTS.md)', () => {
     dir = makeFixture({ commandFiles: 3 });
-    // no README written
+    // no README or AGENTS.md written
     const r = validateCanonicalSync(dir, {}, []);
-    assert.ok(r.warnings.some(w => /README.md not found/.test(w)),
-      `expected missing-README warning; got: ${r.warnings.join(' / ')}`);
+    assert.ok(r.warnings.some(w => /no README\.md or AGENTS\.md found/.test(w)),
+      `expected missing-surface-docs warning; got: ${r.warnings.join(' / ')}`);
+  });
+
+  it('also scans AGENTS.md for surface-count claims (closes the AGENTS.md drift gap)', () => {
+    // README is accurate; AGENTS.md carries a STALE "ships N commands" claim.
+    // canonical-sync must catch it now that it scans both files.
+    dir = makeFixture({ commandFiles: 3, readme: 'DocGuard ships 3 commands.' });
+    writeFileSync(join(dir, 'AGENTS.md'), '# Agents\n\nDocGuard ships 99 commands.\n');
+    const r = validateCanonicalSync(dir, {}, []);
+    assert.ok(r.warnings.some(w => /ships 99 commands/.test(w)),
+      `a stale count in AGENTS.md must be caught; got: ${r.warnings.join(' / ')}`);
   });
 });

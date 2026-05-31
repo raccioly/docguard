@@ -68,6 +68,13 @@ tool from lying about itself.
   `JSON.parse` calls (TypeDoc/JSDoc/Swagger detectors) are now fail-soft, so one
   bad manifest can't abort the whole scan into empty "truth" that every
   validator then passes.
+- **Dogfooding closure** — Canonical-Sync now scans **AGENTS.md** in addition to
+  README for "ships N commands"/"N validators" surface claims (it only checked
+  README, which is why DocGuard's own AGENTS.md counts drifted unnoticed), and
+  its command-count check inspects *all* matches rather than just the first (so
+  a correct claim in one file can't mask a stale one in the other). AGENTS.md's
+  own command section was regenerated to match the real `--help` surface and no
+  longer hard-codes drift-prone totals.
 
 #### Field-report hardening (two external field tests: a Python uv/pytest project and a Node/AWS POC)
 - **`explain`** is now exhaustive (7 missing validator entries backfilled, pinned

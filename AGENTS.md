@@ -36,27 +36,28 @@
 | `CHANGELOG.md` | Change tracking |
 | `DRIFT-LOG.md` | Documented deviations |
 
-## Commands (15 total)
+## Commands
 
-| Command | Purpose |
-|---------|---------|
-| `diagnose` | **Primary** — identify issues + generate AI fix prompts |
-| `guard` | Validate project (CI gate) — 24 validators |
-| `generate` | Reverse-engineer docs from code |
-| `fix --doc <name>` | AI prompt for specific document |
-| `score` | CDD maturity score (0-100) |
-| `init` | Initialize CDD docs |
-| `diff` | Compare canonical docs vs code |
-| `agents` | Generate agent-specific configs |
-| `trace` | Requirements traceability matrix |
-| `ci` | CI/CD pipeline check |
-| `watch` | Live watch mode |
-| `hooks` | Install git hooks |
-| `llms` | Generate llms.txt |
-| `badge` | Generate CDD badge |
-| `publish` | Publish validation |
+`docguard --help` is the authoritative list (counts intentionally not hardcoded
+here — they drift). The surface, grouped as `--help` shows it:
 
-## AI Skills (4 total)
+**The Daily 5** — `init` (bootstrap + scan), `guard` (CI gate, all validators),
+`diff` (doc↔code gaps; `--since <ref>` for changed-file impact), `sync` (refresh
+code-truth sections), `score` (CDD maturity 0-100).
+
+**Tools** — `demo` (zero-install tour), `diagnose` (guard → AI fix prompts),
+`fix` (AI fix instructions; `--doc <name>`), `generate` (reverse-engineer docs;
+`--plan`), `explain` (explain a validator/warning), `memory` (what DocGuard
+remembers), `trace` (requirements traceability; `--reverse`), `upgrade` (migrate
+config/CLI), `watch` (live re-guard).
+
+**`init --with <name>`** scaffolders — `agents`, `hooks`, `ci`, `badge`, `llms`,
+`publish` (also reachable as standalone deprecation aliases).
+
+**Deprecation aliases** — `setup` → `init --wizard`; `audit` → `guard`
+(permanent); `impact` → `diff --since`.
+
+## AI Skills
 
 DocGuard provides enterprise-grade AI behavior protocols via the Spec Kit extension:
 
