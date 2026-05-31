@@ -7,7 +7,7 @@
  */
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { parseJsTs, extractJsSchemaBodies, extractJsRouteCalls, extractJsRouteObjects, extractJsMountsAndImports } from '../cli/scanners/js-ast.mjs';
+import { parseJsTs, extractJsSchemaBodies, extractJsRouteCalls, extractJsRouteObjects, extractJsMountsAndImports, extractJsxRouteScreens } from '../cli/scanners/js-ast.mjs';
 
 describe('parseJsTs', () => {
   it('parses TypeScript with types + decorators', () => {
@@ -191,5 +191,34 @@ describe('extractJsRouteObjects — Fastify declarative route form', () => {
 
   it('returns null on parse failure', () => {
     assert.strictEqual(extractJsRouteObjects('not ) ( valid', 'r.ts'), null);
+  });
+});
+
+describe('extractJsxRouteScreens — React Router screens', () => {
+  it('collects every component in a nested route element (caller picks the screen)', () => {
+    const src = [
+      '<Routes>',
+      '  <Route path="/" element={<Home/>} />',
+      '  <Route path="/dashboard" element={',
+      '    <RequireAuth><AppLayout><DashboardPage/></AppLayout></RequireAuth>',
+      '  } />',
+      '</Routes>',
+    ].join('\n');
+    const got = extractJsxRouteScreens(src, 'routes.tsx');
+    const byPath = Object.fromEntries(got.map(s => [s.path, s.components]));
+    assert.deepEqual(byPath['/'], ['Home']);
+    assert.deepEqual(byPath['/dashboard'], ['RequireAuth', 'AppLayout', 'DashboardPage']);
+  });
+
+  it('handles the route-object form: { path, element } and { path, Component }', () => {
+    const src = "const routes = [{ path: '/admin', element: <AdminPanel/> }, { path: '/p', Component: ProfilePage }];";
+    const got = extractJsxRouteScreens(src, 'routes.tsx');
+    const byPath = Object.fromEntries(got.map(s => [s.path, s.components]));
+    assert.deepEqual(byPath['/admin'], ['AdminPanel']);
+    assert.deepEqual(byPath['/p'], ['ProfilePage']);
+  });
+
+  it('returns null on parse failure (caller falls back to the window regex)', () => {
+    assert.strictEqual(extractJsxRouteScreens('not ) ( valid <', 'routes.tsx'), null);
   });
 });

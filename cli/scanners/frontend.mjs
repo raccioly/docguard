@@ -18,6 +18,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, relative, basename, extname } from 'node:path';
 import { resolveSourceRoots, collectPackageJsons, readScannable } from '../shared-source.mjs';
 import { DEFAULT_IGNORE_DIRS as IGNORE_DIRS, shouldIgnore, relPosix } from '../shared-ignore.mjs';
+import { extractJsxRouteScreens } from './js-ast.mjs';
 const UI_EXT = new Set(['.tsx', '.jsx']);
 
 function walk(dir, onFile, depth = 0) {
@@ -106,6 +107,15 @@ function scanReactRouterScreens(roots, projectDir) {
       const content = readSafe(file);
       if (!content.includes('<Route') && !content.includes('createBrowserRouter') &&
           !content.includes('useRoutes') && !content.includes('createRoutesFrom')) return;
+
+      // AST-first: scopes each route's element JSX exactly (nested auth wrappers,
+      // layouts, and multi-line elements no longer truncate or mis-pick the
+      // screen). `null` → parse failure → the window-based regex fallback below.
+      const astScreens = extractJsxRouteScreens(content, file);
+      if (astScreens) {
+        for (const s of astScreens) add(s.path, pickScreenComponent(s.components), file);
+        return;
+      }
 
       let m;
       const re = new RegExp(pathRe.source, 'g');

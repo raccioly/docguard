@@ -34,6 +34,12 @@ tool from lying about itself.
   understands the **declarative object form** `fastify.route({ method, url })`
   (including `method: ['GET','POST']` arrays and the `path:` alias) — which the
   old regex never matched at all.
+- **AST-based React Router screen extraction** (feeds `docguard generate`). The
+  `<Route path element={…}>` and route-object (`{ path, element }` /
+  `{ path, Component }`) forms are now parsed structurally, so a screen wrapped
+  in auth guards / layouts / `Suspense` across several lines is identified
+  correctly instead of by a 400-char window heuristic that could truncate or
+  mis-pick. Regex window remains the fallback on parse failure.
 - **Python AST parsing tier** — Python is now a full-support language, parsed by
   the developer's own `python3` (no pip/npm dependency; new
   `cli/scanners/py-ast.mjs`). One subprocess parses every `.py` file and returns

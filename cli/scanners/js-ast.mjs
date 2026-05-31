@@ -236,6 +236,88 @@ export function extractJsRouteCalls(content, filename = 'file.ts') {
   return out;
 }
 
+/** JSX element name as a string: `Route`, `router.Foo` → `Foo` (member tail). */
+function jsxName(nameNode) {
+  if (!nameNode) return null;
+  if (nameNode.type === 'JSXIdentifier') return nameNode.name;
+  if (nameNode.type === 'JSXMemberExpression') return jsxName(nameNode.property);
+  return null;
+}
+
+/** Read a JSX attribute's string value: `path="/x"` or `path={"/x"}`. */
+function jsxAttrString(valueNode) {
+  if (!valueNode) return null; // valueless attr (e.g. `index`)
+  if (valueNode.type === 'StringLiteral') return valueNode.value;
+  if (valueNode.type === 'JSXExpressionContainer') {
+    const e = valueNode.expression;
+    if (e && e.type === 'StringLiteral') return e.value;
+  }
+  return null;
+}
+
+/**
+ * Extract React Router screens — `<Route path="/x" element={<Wrapper><Screen/></Wrapper>} />`
+ * and the route-object form `{ path: '/x', element: <Screen/> }` / `{ path, Component }`.
+ * Returns `{ path, components }[]` where `components` is every capitalized JSX
+ * element rendered for that route (the caller picks the real screen and skips
+ * wrappers). `null` on parse failure → caller's regex fallback.
+ *
+ * Why AST: route JSX nests auth wrappers/layouts/suspense fallbacks across many
+ * lines; the window-based regex truncates or grabs the wrong component. The AST
+ * scopes "the element for THIS route" exactly.
+ */
+export function extractJsxRouteScreens(content, filename = 'file.tsx') {
+  const { ast, ok } = parseJsTs(content, filename);
+  if (!ok || !ast) return null;
+
+  const componentsIn = (node) => {
+    const names = [];
+    walk(node, (n) => {
+      if (n.type === 'JSXOpeningElement') {
+        const nm = jsxName(n.name);
+        if (nm && /^[A-Z]/.test(nm)) names.push(nm);
+      }
+    });
+    return names;
+  };
+
+  const out = [];
+  walk(ast, (node) => {
+    // JSX form: <Route path="..." element={...} />
+    if (node.type === 'JSXElement') {
+      const open = node.openingElement;
+      if (!open || jsxName(open.name) !== 'Route') return;
+      let path = null;
+      let elementNode = null;
+      for (const attr of open.attributes || []) {
+        if (attr.type !== 'JSXAttribute' || !attr.name) continue;
+        if (attr.name.name === 'path') path = jsxAttrString(attr.value);
+        else if (['element', 'component', 'Component'].includes(attr.name.name)) elementNode = attr.value;
+      }
+      if (path != null) out.push({ path, components: elementNode ? componentsIn(elementNode) : [] });
+      return;
+    }
+    // Route-object form: { path: '...', element: <X/> } | { path, Component: X }
+    if (node.type === 'ObjectExpression') {
+      let path = null;
+      let comps = [];
+      for (const prop of node.properties || []) {
+        if (prop.type !== 'ObjectProperty' && prop.type !== 'Property') continue;
+        const key = propKeyName(prop);
+        if (key === 'path' && prop.value && prop.value.type === 'StringLiteral') {
+          path = prop.value.value;
+        } else if (key === 'element') {
+          comps = componentsIn(prop.value);
+        } else if (key === 'Component' || key === 'component') {
+          if (prop.value && prop.value.type === 'Identifier') comps = [prop.value.name];
+        }
+      }
+      if (path != null) out.push({ path, components: comps });
+    }
+  });
+  return out;
+}
+
 /** Read an object-literal property's key name, whether `key:` or `'key':`. */
 function propKeyName(prop) {
   if (!prop || !prop.key) return null;
