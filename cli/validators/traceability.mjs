@@ -39,7 +39,12 @@ const DEFAULT_REQ_PATTERNS = [
   /\b(ARCH)-(\d{2,4})\b/g,
   /\b(MOD)-(\d{2,4})\b/g,
   /\b(SC)-(\d{2,4})\b/g,     // Spec Kit: Success Criteria
-  /\b(T)(\d{3,4})\b/g,       // Spec Kit: Task IDs (T001, T002)
+  // Spec Kit task IDs (T001, T002). Unlike the hyphenated IDs above, a bare
+  // `T350` over-matches prose (timeouts, model names, status codes), forcing
+  // spurious "untraced requirement" warnings. Anchor to the two contexts where
+  // a real task ID actually appears: a markdown checklist marker (`- [ ] T001`,
+  // the spec-kit tasks.md format) or a test annotation (`@req T001`/`@task`).
+  /(?<=\[[ xX]\]\s|@(?:req|task|covers)\s)(T)(\d{3,4})\b/g,
 ];
 
 /**

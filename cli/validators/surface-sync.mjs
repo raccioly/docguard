@@ -206,11 +206,13 @@ function extractDocumentedTokens(content) {
     if (t) tokens.add(t);
   }
 
-  // Pattern B: bolded token in a table row. Matches the validators-style
-  // tables that use `| N | **Name** | description |` — backticks alone
-  // miss every entry in those tables. Restricted to lines starting with
-  // `|` so prose-level **bold** is not pulled in.
-  const boldRowRe = /^\s*\|.*?\*\*([^*\n]+)\*\*/gim;
+  // Pattern B: bolded NAME token in a table row. Matches the validators-style
+  // tables that use `| N | **Name** | description |` — backticks alone miss
+  // every entry in those tables. The bold must be the FIRST cell, or the second
+  // cell after a numeric first cell — NOT any bold further right. The old
+  // `\|.*?\*\*` grabbed the first bold ANYWHERE in the row, so a bold status
+  // column like `| guard | **High** |` polluted the surface set with "High".
+  const boldRowRe = /^\s*\|\s*(?:\d+\s*\|\s*)?\*\*([^*\n]+)\*\*/gim;
   while ((m = boldRowRe.exec(stripped)) !== null) {
     const t = normalize(m[1]);
     if (t) tokens.add(t);

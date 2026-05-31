@@ -1,35 +1,36 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-05-30T22:00:02.674Z
-> Files: 546 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-05-31T04:00:03.076Z
+> Files: 549 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ./
 
 - `.docguard.json` (~522 tok)
-- `.docguardignore` — # VS Code extension build artifacts (~215 tok)
-- `.DS_Store` (~3273 tok)
+- `.docguardignore` — # Python distribution artifacts (~199 tok)
+- `.DS_Store` (~3818 tok)
 - `.gitignore` — Git ignore rules (~167 tok)
 - `.jules-setup.sh` — Google Jules Environment Startup Script (~429 tok)
-- `.npmignore` — Development (~80 tok)
+- `.npmignore` — Development (~76 tok)
 - `.npmrc` — Supply-Chain Security Hardening (~59 tok)
-- `action.yml` — CI: 'DocGuard — CDD Compliance' (~3734 tok)
-- `AGENTS.md` — AI Agent Instructions — DocGuard (~1182 tok)
-- `CHANGELOG.md` — Change log (~33281 tok)
+- `action.yml` — CI: 'DocGuard — CDD Compliance' (~4322 tok)
+- `AGENTS.md` — AI Agent Instructions — DocGuard (~1275 tok)
+- `CHANGELOG.md` — Change log (~35645 tok)
 - `CLAUDE.md` — OpenWolf (~57 tok)
 - `CODE_OF_CONDUCT.md` — Contributor Covenant Code of Conduct (~532 tok)
 - `COMPARISONS.md` — Comparisons & Honest Limitations (~3053 tok)
-- `CONTRIBUTING.md` — Contributing to DocGuard (~1445 tok)
+- `CONTRIBUTING.md` — Contributing to DocGuard (~1467 tok)
 - `docguard-cli-0.22.0.tgz` (~80828 tok)
 - `docguard-cli-0.23.0.tgz` (~81238 tok)
 - `DRIFT-LOG.md` — Drift Log (~583 tok)
 - `LICENSE` — Project license (~286 tok)
-- `package.json` — Node.js package manifest (~437 tok)
+- `package-lock.json` — npm lock file (~617 tok)
+- `package.json` — Node.js package manifest (~446 tok)
 - `PHILOSOPHY.md` — The Philosophy of Canonical-Driven Development (~1757 tok)
 - `pr_description.md` (~260 tok)
 - `pyproject.toml` — Python project configuration (~376 tok)
 - `README.md` — Project documentation (~7230 tok)
-- `ROADMAP.md` — DocGuard Roadmap (~1499 tok)
-- `SECURITY.md` — Security Policy (~337 tok)
+- `ROADMAP.md` — DocGuard Roadmap (~1494 tok)
+- `SECURITY.md` — Security Policy (~357 tok)
 - `STANDARD.md` — DocGuard Standard v0.1 (~6435 tok)
 - `SUPPLY-CHAIN-AUDIT.md` — Supply-Chain Security Audit (~726 tok)
 - `SUPPORT.md` — Support (~335 tok)
@@ -42,6 +43,10 @@
 
 ## .agent/commands/
 
+- `docguard.fix.md` — DocGuard Fix — AI-Assisted Documentation Repair (~762 tok)
+- `docguard.guard.md` — DocGuard Guard — Documentation Quality Gate (~706 tok)
+- `docguard.review.md` — DocGuard Review — Documentation Quality Analysis (~574 tok)
+- `docguard.score.md` — DocGuard Score — CDD Maturity Assessment (~560 tok)
 - `speckit.analyze.md` — User Input (~1793 tok)
 - `speckit.checklist.md` — Checklist Purpose: "Unit Tests for English" (~4232 tok)
 - `speckit.clarify.md` — User Input (~2827 tok)
@@ -70,7 +75,7 @@
 
 ## .agent/skills/docguard-sync/
 
-- `SKILL.md` — DocGuard Sync Skill (~1078 tok)
+- `SKILL.md` — DocGuard Sync Skill (~1086 tok)
 
 ## .agent/skills/speckit-analyze/
 
@@ -667,35 +672,36 @@
 - `package.json` — Node.js package manifest (~699 tok)
 - `README.md` — Project documentation (~482 tok)
 
-## .claude/worktrees/infallible-roentgen-b9b6b0/
+## .claude/worktrees/objective-robinson-841179/
 
 - `.docguard.json` (~522 tok)
-- `.docguardignore` — # VS Code extension build artifacts (~215 tok)
+- `.docguardignore` — # Python distribution artifacts (~199 tok)
 - `.gitignore` — Git ignore rules (~167 tok)
-- `.npmignore` — Development (~80 tok)
+- `.npmignore` — Development (~76 tok)
 - `.npmrc` — Supply-Chain Security Hardening (~59 tok)
-- `action.yml` — CI: 'DocGuard — CDD Compliance' (~3734 tok)
-- `AGENTS.md` — AI Agent Instructions — DocGuard (~1182 tok)
-- `CHANGELOG.md` — Change log (~33281 tok)
+- `action.yml` — CI: 'DocGuard — CDD Compliance' (~4322 tok)
+- `AGENTS.md` — AI Agent Instructions — DocGuard (~1210 tok)
+- `CHANGELOG.md` — Change log (~34038 tok)
 - `CODE_OF_CONDUCT.md` — Contributor Covenant Code of Conduct (~532 tok)
 - `COMPARISONS.md` — Comparisons & Honest Limitations (~3053 tok)
-- `CONTRIBUTING.md` — Contributing to DocGuard (~1445 tok)
+- `CONTRIBUTING.md` — Contributing to DocGuard (~1467 tok)
 - `DRIFT-LOG.md` — Drift Log (~583 tok)
 - `LICENSE` — Project license (~286 tok)
-- `package.json` — Node.js package manifest (~437 tok)
+- `package-lock.json` — npm lock file (~617 tok)
+- `package.json` — Node.js package manifest (~446 tok)
 - `PHILOSOPHY.md` — The Philosophy of Canonical-Driven Development (~1757 tok)
 - `pr_description.md` (~260 tok)
 - `pyproject.toml` — Python project configuration (~376 tok)
 - `README.md` — Project documentation (~7230 tok)
-- `ROADMAP.md` — DocGuard Roadmap (~1499 tok)
-- `SECURITY.md` — Security Policy (~337 tok)
+- `ROADMAP.md` — DocGuard Roadmap (~1494 tok)
+- `SECURITY.md` — Security Policy (~357 tok)
 - `STANDARD.md` — DocGuard Standard v0.1 (~6435 tok)
 - `SUPPLY-CHAIN-AUDIT.md` — Supply-Chain Security Audit (~726 tok)
 - `SUPPORT.md` — Support (~335 tok)
 - `test-draft.js` — Declares tmpDir (~192 tok)
 - `test-metrics.js` (~37 tok)
 
-## .claude/worktrees/infallible-roentgen-b9b6b0/.agent/commands/
+## .claude/worktrees/objective-robinson-841179/.agent/commands/
 
 - `speckit.analyze.md` — User Input (~1793 tok)
 - `speckit.checklist.md` — Checklist Purpose: "Unit Tests for English" (~4232 tok)
@@ -707,106 +713,106 @@
 - `speckit.tasks.md` — User Input (~2247 tok)
 - `speckit.taskstoissues.md` — User Input (~273 tok)
 
-## .claude/worktrees/infallible-roentgen-b9b6b0/.agent/skills/docguard-fix/
+## .claude/worktrees/objective-robinson-841179/.agent/skills/docguard-fix/
 
 - `SKILL.md` — DocGuard Fix Skill (~2352 tok)
 
-## .claude/worktrees/infallible-roentgen-b9b6b0/.agent/skills/docguard-guard/
+## .claude/worktrees/objective-robinson-841179/.agent/skills/docguard-guard/
 
 - `SKILL.md` — DocGuard Guard Skill (~1585 tok)
 
-## .claude/worktrees/infallible-roentgen-b9b6b0/.agent/skills/docguard-review/
+## .claude/worktrees/objective-robinson-841179/.agent/skills/docguard-review/
 
 - `SKILL.md` — DocGuard Review Skill (~1834 tok)
 
-## .claude/worktrees/infallible-roentgen-b9b6b0/.agent/skills/docguard-score/
+## .claude/worktrees/objective-robinson-841179/.agent/skills/docguard-score/
 
 - `SKILL.md` — DocGuard Score Skill (~1393 tok)
 
-## .claude/worktrees/infallible-roentgen-b9b6b0/.agent/skills/docguard-sync/
+## .claude/worktrees/objective-robinson-841179/.agent/skills/docguard-sync/
 
-- `SKILL.md` — DocGuard Sync Skill (~1086 tok)
+- `SKILL.md` — DocGuard Sync Skill (~1078 tok)
 
-## .claude/worktrees/infallible-roentgen-b9b6b0/.agent/skills/speckit-analyze/
+## .claude/worktrees/objective-robinson-841179/.agent/skills/speckit-analyze/
 
 - `SKILL.md` — Speckit Analyze Skill (~1856 tok)
 
-## .claude/worktrees/infallible-roentgen-b9b6b0/.agent/skills/speckit-checklist/
+## .claude/worktrees/objective-robinson-841179/.agent/skills/speckit-checklist/
 
 - `SKILL.md` — Speckit Checklist Skill (~4308 tok)
 
-## .claude/worktrees/infallible-roentgen-b9b6b0/.agent/skills/speckit-clarify/
+## .claude/worktrees/objective-robinson-841179/.agent/skills/speckit-clarify/
 
 - `SKILL.md` — Speckit Clarify Skill (~2855 tok)
 
-## .claude/worktrees/infallible-roentgen-b9b6b0/.agent/skills/speckit-constitution/
+## .claude/worktrees/objective-robinson-841179/.agent/skills/speckit-constitution/
 
 - `SKILL.md` — Speckit Constitution Skill (~1387 tok)
 
-## .claude/worktrees/infallible-roentgen-b9b6b0/.agent/skills/speckit-implement/
+## .claude/worktrees/objective-robinson-841179/.agent/skills/speckit-implement/
 
 - `SKILL.md` — Speckit Implement Skill (~2628 tok)
 
-## .claude/worktrees/infallible-roentgen-b9b6b0/.agent/skills/speckit-plan/
+## .claude/worktrees/objective-robinson-841179/.agent/skills/speckit-plan/
 
 - `SKILL.md` — Speckit Plan Skill (~863 tok)
 
-## .claude/worktrees/infallible-roentgen-b9b6b0/.agent/skills/speckit-specify/
+## .claude/worktrees/objective-robinson-841179/.agent/skills/speckit-specify/
 
 - `SKILL.md` — Speckit Specify Skill (~3049 tok)
 
-## .claude/worktrees/infallible-roentgen-b9b6b0/.agent/skills/speckit-tasks/
+## .claude/worktrees/objective-robinson-841179/.agent/skills/speckit-tasks/
 
 - `SKILL.md` — Speckit Tasks Skill (~2249 tok)
 
-## .claude/worktrees/infallible-roentgen-b9b6b0/.agent/skills/speckit-taskstoissues/
+## .claude/worktrees/objective-robinson-841179/.agent/skills/speckit-taskstoissues/
 
 - `SKILL.md` — Speckit Taskstoissues Skill (~315 tok)
 
-## .claude/worktrees/infallible-roentgen-b9b6b0/.claude/
+## .claude/worktrees/objective-robinson-841179/.claude/
 
 - `.DS_Store` (~1640 tok)
 - `settings.local.json` (~396 tok)
 
-## .claude/worktrees/infallible-roentgen-b9b6b0/.docguard/
+## .claude/worktrees/objective-robinson-841179/.docguard/
 
-- `plan.cache.json` — \",\"__pycache__/\",\"build/\",\"dist/\",\"docguard_cli/\",\"docs-canonical/SURFACE-AUDIT.md\",\"vscode-extension/out/\"],\"projectType\":\"cli\",\... (~2735 tok)
+- `plan.cache.json` — \",\"__pycache__/\",\"build/\",\"dist/\",\"docguard_cli/\",\"docs-canonical/SURFACE-AUDIT.md\"],\"projectType\":\"cli\",\"profile\":\"enterprise\"}... (~2590 tok)
 
-## .claude/worktrees/infallible-roentgen-b9b6b0/.github/
+## .claude/worktrees/objective-robinson-841179/.github/
 
 - `dependabot.yml` (~130 tok)
 
-## .claude/worktrees/infallible-roentgen-b9b6b0/.github/ISSUE_TEMPLATE/
+## .claude/worktrees/objective-robinson-841179/.github/ISSUE_TEMPLATE/
 
 - `bug_report.md` — Describe the bug (~136 tok)
 - `feature_request.md` — Is your feature request related to a problem? (~184 tok)
 
-## .claude/worktrees/infallible-roentgen-b9b6b0/.github/scripts/
+## .claude/worktrees/objective-robinson-841179/.github/scripts/
 
-- `patch-catalog.py` — Surgical catalog.community.json patcher for DocGuard. (~971 tok)
+- `patch-catalog.py` — Surgical catalog.community.json patcher for DocGuard. (~977 tok)
 
-## .claude/worktrees/infallible-roentgen-b9b6b0/.github/workflows/
+## .claude/worktrees/objective-robinson-841179/.github/workflows/
 
 - `ci.yml` — CI: DocGuard CI (~686 tok)
 - `release.yml` — CI: Auto Release — Tag, GitHub Release, npm, PyPI (~3562 tok)
 - `supply-chain.yml` — CI: Supply-Chain Security (~181 tok)
-- `sync-speckit-catalog.yml` — CI: Sync DocGuard to Spec Kit Community Catalog (Manual) (~2181 tok)
+- `sync-speckit-catalog.yml` — CI: Sync DocGuard to Spec Kit Community Catalog (Manual) (~2188 tok)
 
-## .claude/worktrees/infallible-roentgen-b9b6b0/.jules/
+## .claude/worktrees/objective-robinson-841179/.jules/
 
 - `bolt.md` — 2024-05-18 - [Optimization] (~315 tok)
 - `palette.md` — 2024-04-16 - Web UI Components Constraint (~365 tok)
 - `sentinel.md` — 2025-05-18 - [Command Injection via execSync] (~176 tok)
 
-## .claude/worktrees/infallible-roentgen-b9b6b0/.specify/
+## .claude/worktrees/objective-robinson-841179/.specify/
 
 - `init-options.json` (~42 tok)
 
-## .claude/worktrees/infallible-roentgen-b9b6b0/.specify/memory/
+## .claude/worktrees/objective-robinson-841179/.specify/memory/
 
-- `constitution.md` — DocGuard Constitution (~1371 tok)
+- `constitution.md` — DocGuard Constitution (~1536 tok)
 
-## .claude/worktrees/infallible-roentgen-b9b6b0/.specify/scripts/bash/
+## .claude/worktrees/objective-robinson-841179/.specify/scripts/bash/
 
 - `check-prerequisites.sh` — Consolidated prerequisite checking script (~1747 tok)
 - `common.sh` — Common functions and variables for all scripts (~2529 tok)
@@ -814,7 +820,7 @@
 - `setup-plan.sh` (~640 tok)
 - `update-agent-context.sh` — Update agent context files with information from plan.md (~7928 tok)
 
-## .claude/worktrees/infallible-roentgen-b9b6b0/.specify/templates/
+## .claude/worktrees/objective-robinson-841179/.specify/templates/
 
 - `agent-file-template.md` — [PROJECT NAME] Development Guidelines (~116 tok)
 - `checklist-template.md` — [CHECKLIST TYPE] Checklist: [FEATURE NAME] (~328 tok)
@@ -823,26 +829,26 @@
 - `spec-template.md` — Feature Specification: [FEATURE NAME] (~990 tok)
 - `tasks-template.md` — Tasks: [FEATURE NAME] (~2286 tok)
 
-## .claude/worktrees/infallible-roentgen-b9b6b0/assets/
+## .claude/worktrees/objective-robinson-841179/assets/
 
 - `demo.tape` — VHS tape for DocGuard demo GIF. (~215 tok)
 
-## .claude/worktrees/infallible-roentgen-b9b6b0/assets/bin/
+## .claude/worktrees/objective-robinson-841179/assets/bin/
 
 - `docguard` (~25 tok)
 
-## .claude/worktrees/infallible-roentgen-b9b6b0/cli/
+## .claude/worktrees/objective-robinson-841179/cli/
 
 - `config.mjs` — DocGuard — configuration loading. (~2838 tok)
 - `docguard.mjs` — DocGuard CLI — The enforcement tool for Canonical-Driven Development (CDD) (~5604 tok)
-- `ensure-skills.mjs` — Ensure Skills — Silent auto-check for DocGuard AI skills and commands (~3823 tok)
-- `shared-git.mjs` — Shared Git Utilities — single source of truth for `git log` plumbing (~1225 tok)
-- `shared-ignore.mjs` — Shared Ignore Utility — Unified file filtering for all validators. (~1951 tok)
+- `ensure-skills.mjs` — Ensure Skills — Silent auto-check for DocGuard AI skills and commands (~3874 tok)
+- `shared-git.mjs` — Shared Git Utilities — single source of truth for `git log` plumbing (~1722 tok)
+- `shared-ignore.mjs` — Shared Ignore Utility — Unified file filtering for all validators. (~2141 tok)
 - `shared-source.mjs` — Shared Source Resolution — Monorepo-aware source discovery. (~2695 tok)
 - `shared-trace-patterns.mjs` — Shared trace patterns — the single source of truth for doc→code traceability, (~1518 tok)
 - `shared.mjs` — Shared constants for DocGuard CLI — colors, profiles, version. (~1721 tok)
 
-## .claude/worktrees/infallible-roentgen-b9b6b0/cli/commands/
+## .claude/worktrees/objective-robinson-841179/cli/commands/
 
 - `agents.mjs` — Agents Command — Generate agent-specific config files from AGENTS.md (~1590 tok)
 - `badge.mjs` — Badge Command — Generate shields.io badge URLs and markdown for CDD score (~671 tok)
@@ -850,24 +856,24 @@
 - `demo.mjs` — Demo Command — v0.21. (~2721 tok)
 - `diagnose.mjs` — Diagnose Command — The AI Orchestrator (~7243 tok)
 - `diff.mjs` — Diff Command — Show differences between canonical docs and implementation (~4161 tok)
-- `explain.mjs` — Explain Command — v0.16-P6. (~8019 tok)
+- `explain.mjs` — Explain Command — v0.16-P6. (~4849 tok)
 - `fix.mjs` — Fix Command — The AI Orchestrator (~9158 tok)
 - `generate.mjs` — Generate Command — Reverse-engineer canonical docs from an existing codebase (~14171 tok)
-- `guard.mjs` — Guard Command — Validate project against its canonical documentation (~7470 tok)
-- `hooks.mjs` — Hooks Command — Generate pre-commit/pre-push hooks for DocGuard (~3039 tok)
+- `guard.mjs` — Guard Command — Validate project against its canonical documentation (~8121 tok)
+- `hooks.mjs` — Hooks Command — Generate pre-commit/pre-push hooks for DocGuard (~3135 tok)
 - `impact.mjs` — Impact Command — S-11 (~1762 tok)
 - `init.mjs` — Init Command — Initialize CDD documentation from templates (~6632 tok)
 - `llms.mjs` — llms Command — Generate llms.txt from canonical documentation (~1468 tok)
 - `memory.mjs` — Memory Command — v0.17-P2. (~1711 tok)
 - `publish.mjs` — DocGuard Publish Command (~2047 tok)
-- `score.mjs` — Score Command — Calculate CDD maturity score (0-100) (~10667 tok)
+- `score.mjs` — Score Command — Calculate CDD maturity score (0-100) (~9523 tok)
 - `setup.mjs` — Setup Command — Interactive onboarding wizard for DocGuard (~5358 tok)
 - `sync.mjs` — Sync Command — keep the documentation memory ALWAYS UP TO DATE. (~2184 tok)
 - `trace.mjs` — Trace Command — Generate a requirements traceability matrix (~3921 tok)
 - `upgrade.mjs` — `docguard upgrade` — check whether the installed CLI and the project's (~3968 tok)
 - `watch.mjs` — Watch Command — Live mode that watches for file changes and re-runs guard (~1286 tok)
 
-## .claude/worktrees/infallible-roentgen-b9b6b0/cli/scanners/
+## .claude/worktrees/objective-robinson-841179/cli/scanners/
 
 - `api-doc.mjs` — API Documentation Parser (~1136 tok)
 - `cdk.mjs` — CDK Detector — Re-export shim. (~108 tok)
@@ -875,31 +881,32 @@
 - `frontend.mjs` — Frontend Scanner — captures the UI surface of a project so the generated (~4844 tok)
 - `iac.mjs` — IaC Detector — Identifies Infrastructure-as-Code projects. (~2086 tok)
 - `integrations.mjs` — External Integrations Scanner — what third-party services does this project talk to? (~1698 tok)
+- `js-ast.mjs` — JS/TS AST helpers — the "full support" parsing tier for JavaScript and (~2059 tok)
 - `memory-plan.mjs` — Memory Plan — the orchestration artifact behind AI-powered Generate. (~4541 tok)
 - `project-type.mjs` — Project-Type Detection — the language-agnostic spine. (~3461 tok)
 - `routes.mjs` — Deep Route Scanner (~5934 tok)
-- `schemas.mjs` — Deep Schema Scanner (~6676 tok)
+- `schemas.mjs` — Deep Schema Scanner (~6916 tok)
 - `speckit.mjs` — Spec Kit Scanner — Detect, validate, and integrate with GitHub Spec Kit (~4016 tok)
 
-## .claude/worktrees/infallible-roentgen-b9b6b0/cli/validators/
+## .claude/worktrees/objective-robinson-841179/cli/validators/
 
-- `api-surface.mjs` — API-Surface Validator — Detects drift between the documented API surface (~2802 tok)
+- `api-surface.mjs` — API-Surface Validator — Detects drift between the documented API surface (~2792 tok)
 - `architecture.mjs` — Architecture Validator — Enhanced with automatic import analysis (~3293 tok)
 - `canonical-sync.mjs` — Canonical-Sync Validator — v0.19-A. (~2406 tok)
 - `changelog.mjs` — Changelog Validator — Checks CHANGELOG.md has an [Unreleased] section, (~758 tok)
 - `cross-reference.mjs` — Cross-Reference Validator — S-8 / K-7 (~4295 tok)
-- `doc-quality.mjs` — Doc Quality Validator — Measures documentation writing quality (~6475 tok)
+- `doc-quality.mjs` — Doc Quality Validator — Measures documentation writing quality (~6185 tok)
 - `docs-coverage.mjs` — Docs-Coverage Validator — Detects code features not referenced in docs. (~4853 tok)
 - `docs-diff.mjs` — Docs-Diff Validator — Checks alignment between canonical docs and code. (~3158 tok)
-- `docs-sync.mjs` — Docs-Sync Validator — Checks that source files have matching canonical doc entries (~2633 tok)
-- `drift.mjs` — Drift Validator — Every // DRIFT: comment must have a DRIFT-LOG.md entry (~1045 tok)
+- `docs-sync.mjs` — Docs-Sync Validator — Checks that source files have matching canonical doc entries (~2640 tok)
+- `drift.mjs` — Drift Validator — Every // DRIFT: comment must have a DRIFT-LOG.md entry (~1054 tok)
 - `environment.mjs` — Environment Validator — Checks ENVIRONMENT.md docs and .env.example (~1604 tok)
 - `freshness.mjs` — Freshness Validator — Check if documentation is stale relative to code changes. (~2599 tok)
 - `generated-staleness.mjs` — Generated-Doc Staleness Validator — M-1 / S-7 (~2416 tok)
 - `metadata-sync.mjs` — Metadata Sync Validator — Detects stale version references across docs. (~1828 tok)
 - `metrics-consistency.mjs` — Metrics Consistency Validator — Detects stale hardcoded numbers in docs. (~1800 tok)
 - `schema-sync.mjs` — Schema Sync Validator — Ensures database schemas are documented in DATA-MODEL.md (~1914 tok)
-- `security.mjs` — Security Validator — Basic checks for secrets in code (~1522 tok)
+- `security.mjs` — Security Validator — Basic checks for secrets in code (~1671 tok)
 - `spec-kit.mjs` — Spec-Kit Validator — Validates Spec Kit artifacts (specs/, plans/, tasks/, constitution). (~184 tok)
 - `structure.mjs` — Structure Validator — Checks that all required CDD files exist (~1316 tok)
 - `surface-sync.mjs` — Surface-Sync Validator — item-level drift detection for enumerable surfaces. (~3926 tok)
@@ -907,16 +914,9 @@
 - `todo-tracking.mjs` — TODO/FIXME Tracking Validator — Ensures code annotations are documented (~3527 tok)
 - `traceability.mjs` — Traceability Validator — Checks that canonical docs are linked to source code (~3681 tok)
 
-## .claude/worktrees/infallible-roentgen-b9b6b0/cli/writers/
+## .claude/worktrees/objective-robinson-841179/cli/writers/
 
 - `api-reference.mjs` — API-REFERENCE.md Writer — deterministic, structural edits only. (~934 tok)
 - `fix-memory.mjs` — Fix Memory — M-2 / S-10 (~1858 tok)
 - `mechanical.mjs` — Mechanical Fix Registry — applies deterministic, no-LLM fixes in place. (~3008 tok)
-- `sections.mjs` — Section-addressable docs — the foundation for surgical, non-destructive doc (~1473 tok)
-
-## .claude/worktrees/infallible-roentgen-b9b6b0/commands/
-
-- `docguard.fix.md` — DocGuard Fix — AI-Assisted Documentation Repair (~762 tok)
-- `docguard.guard.md` — DocGuard Guard — Documentation Quality Gate (~706 tok)
-- `docguard.review.md` — DocGuard Review — Documentation Quality Analysis (~574 tok)
-- `docguard.score.md` — DocGuard Score — CDD Maturity Assessment (~560 tok)
+- `sections.mjs` — Section-addressable docs — the foundation for surgical, non-destructive doc (~1676 tok)

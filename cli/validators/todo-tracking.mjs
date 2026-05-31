@@ -35,8 +35,10 @@ const TEST_EXTENSIONS = new Set(['.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx']);
 
 // ──── Patterns ────
 
-const TODO_PATTERN = /\b(TODO|FIXME|HACK|XXX|TEMP(?!late|orar)|WORKAROUND)\s*[(:]/;
-const TODO_EXTRACT = /\b(TODO|FIXME|HACK|XXX|TEMP(?!late|orar)|WORKAROUND)\s*[:(]?\s*(.+)/;
+// TEMP must be the standalone word — `(?![A-Za-z])` excludes TEMPLATE, TEMPORARY,
+// TEMPO, TEMPEST, etc. (the old `(?!late|orar)` only caught the first two).
+const TODO_PATTERN = /\b(TODO|FIXME|HACK|XXX|TEMP(?![A-Za-z])|WORKAROUND)\s*[(:]/;
+const TODO_EXTRACT = /\b(TODO|FIXME|HACK|XXX|TEMP(?![A-Za-z])|WORKAROUND)\s*[:(]?\s*(.+)/;
 
 // Matches a comment-opening marker. Real TODOs live in comments — restricting
 // matches to text AFTER a comment marker prevents false positives from regex

@@ -68,6 +68,14 @@ tool from lying about itself.
   `JSON.parse` calls (TypeDoc/JSDoc/Swagger detectors) are now fail-soft, so one
   bad manifest can't abort the whole scan into empty "truth" that every
   validator then passes.
+- **Validator false-positive polish** — (a) Traceability no longer treats prose
+  like `T300`/`T1000` as spec-kit task IDs: the bare `T\d{3,4}` pattern is now
+  anchored to where real task IDs live (a `- [ ] T001` checklist marker, or a
+  `@req`/`@task` annotation in tests). (b) Surface-Sync's bold-table-cell scan
+  only reads the name cell (first cell, or second after a numeric cell), so a
+  bold status column like `| guard | **High** |` no longer pollutes the surface
+  set with "High". (c) TODO-Tracking's `TEMP` keyword excludes `TEMPLATE`,
+  `TEMPORARY`, `TEMPO`, `TEMPEST` (was only the first two).
 - **Python wrapper prefers a pinned local install over `npx @latest`** — its
   `find_local_cli()` returned `None` whenever `npx` existed (i.e. always), so a
   project that pinned `docguard-cli` still got `npx -y docguard-cli@latest` from

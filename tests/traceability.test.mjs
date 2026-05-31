@@ -27,6 +27,22 @@ describe('Traceability Validator', () => {
     assert.deepEqual(result.warnings, []);
   });
 
+  it('does not treat prose like "T300" as a spec-kit task ID (over-match fix)', () => {
+    mkdirSync(join(tmpDir, 'docs-canonical'), { recursive: true });
+    // Prose mentions of T### must NOT be collected as task IDs; a real
+    // checklist task (- [ ] T001) MUST be.
+    writeFileSync(join(tmpDir, 'docs-canonical', 'REQUIREMENTS.md'),
+      '# Requirements\n\n' +
+      'The sensor times out after T300 ms; the legacy T1000 model is HTTP T200.\n\n' +
+      '## Tasks\n- [ ] T001 Implement the thing\n');
+    const result = validateTraceability(tmpDir, { requiredFiles: { canonical: ['docs-canonical/REQUIREMENTS.md'] } });
+    const joined = result.warnings.join(' | ');
+    assert.ok(!/\bT300\b|\bT1000\b|\bT200\b/.test(joined),
+      `prose T### must not be flagged as untraced requirements; got: ${joined}`);
+    assert.ok(/Requirement T001 .* no test coverage/.test(joined),
+      `the real checklist task T001 must be collected + traced; got: ${joined}`);
+  });
+
   it('validates successful source traceability', () => {
     mkdirSync(join(tmpDir, 'docs-canonical'), { recursive: true });
     writeFileSync(join(tmpDir, 'docs-canonical', 'ARCHITECTURE.md'), '# Arch');
