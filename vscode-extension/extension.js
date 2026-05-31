@@ -37,15 +37,15 @@ function activate(context) {
 
   // Register commands
   context.subscriptions.push(
-    vscode.commands.registerCommand('specguard.audit', () => runCommand('audit')),
-    vscode.commands.registerCommand('specguard.guard', () => runGuard()),
-    vscode.commands.registerCommand('specguard.score', () => runCommand('score')),
-    vscode.commands.registerCommand('specguard.badge', () => runBadge()),
-    vscode.commands.registerCommand('specguard.init', () => runInit()),
+    vscode.commands.registerCommand('specguard.audit', async () => await runCommand('audit')),
+    vscode.commands.registerCommand('specguard.guard', async () => await runGuard()),
+    vscode.commands.registerCommand('specguard.score', async () => await runCommand('score')),
+    vscode.commands.registerCommand('specguard.badge', async () => await runBadge()),
+    vscode.commands.registerCommand('specguard.init', async () => await runInit()),
     vscode.commands.registerCommand('specguard.refresh', async () => await refreshScore()),
-    vscode.commands.registerCommand('specguard.fix', () => runFixCommand()),
+    vscode.commands.registerCommand('specguard.fix', async () => await runFixCommand()),
     vscode.commands.registerCommand('specguard.fixWithAI', (issue) => fixWithAI(issue)),
-    vscode.commands.registerCommand('specguard.fixAuto', () => runFixAuto()),
+    vscode.commands.registerCommand('specguard.fixAuto', async () => await runFixAuto()),
   );
 
   // Register Code Action provider for markdown files
@@ -380,7 +380,7 @@ async function addRootDiagnosticAsync(workspaceDir, diagnosticsMap, message, sev
 
 // ── Commands ───────────────────────────────────────────────────────────────
 
-function runCommand(cmd) {
+async function runCommand(cmd) {
   const dir = getWorkspaceDir();
   if (!dir) return;
 
@@ -388,8 +388,18 @@ function runCommand(cmd) {
   outputChannel.show(true);
   outputChannel.appendLine(`$ specguard ${cmd}\n`);
 
-  const output = execSpecguard(dir, cmd);
-  outputChannel.appendLine(output);
+  statusBarItem.text = `$(sync~spin) CDD: Running ${cmd}...`;
+  statusBarItem.tooltip = `Executing docguard ${cmd}`;
+  statusBarItem.backgroundColor = undefined;
+  statusBarItem.show();
+  await new Promise(r => setTimeout(r, 0));
+
+  try {
+    const output = execSpecguard(dir, cmd);
+    outputChannel.appendLine(output);
+  } finally {
+    await refreshScore();
+  }
 }
 
 async function runGuard() {
@@ -400,11 +410,20 @@ async function runGuard() {
   outputChannel.show(true);
   outputChannel.appendLine('$ specguard guard\n');
 
-  const output = execSpecguard(dir, 'guard');
-  outputChannel.appendLine(output);
+  statusBarItem.text = '$(sync~spin) CDD: Guarding...';
+  statusBarItem.tooltip = 'Executing docguard guard';
+  statusBarItem.backgroundColor = undefined;
+  statusBarItem.show();
+  await new Promise(r => setTimeout(r, 0));
 
-  await runDiagnosticsAsync(dir);
-  await refreshScore();
+  let output = '';
+  try {
+    output = execSpecguard(dir, 'guard');
+    outputChannel.appendLine(output);
+  } finally {
+    await runDiagnosticsAsync(dir);
+    await refreshScore();
+  }
 
   if (output.includes('PASS')) {
     vscode.window.showInformationMessage('SpecGuard: All checks passed ✅');
@@ -421,7 +440,7 @@ async function runGuard() {
   }
 }
 
-function runFixCommand() {
+async function runFixCommand() {
   const dir = getWorkspaceDir();
   if (!dir) return;
 
@@ -429,11 +448,23 @@ function runFixCommand() {
   outputChannel.show(true);
   outputChannel.appendLine('$ specguard fix\n');
 
-  const output = execSpecguard(dir, 'fix');
-  outputChannel.appendLine(output);
+  statusBarItem.text = '$(sync~spin) CDD: Fixing...';
+  statusBarItem.tooltip = 'Executing docguard fix';
+  statusBarItem.backgroundColor = undefined;
+  statusBarItem.show();
+  await new Promise(r => setTimeout(r, 0));
 
-  // Also get the AI prompt version
-  const promptOutput = execSpecguard(dir, 'fix --format prompt');
+  let output = '';
+  let promptOutput = '';
+  try {
+    output = execSpecguard(dir, 'fix');
+    outputChannel.appendLine(output);
+
+    // Also get the AI prompt version
+    promptOutput = execSpecguard(dir, 'fix --format prompt');
+  } finally {
+    await refreshScore();
+  }
 
   if (promptOutput && !promptOutput.includes('No CDD issues found')) {
     // Offer to copy AI prompt to clipboard
@@ -464,10 +495,19 @@ async function runFixAuto() {
   outputChannel.show(true);
   outputChannel.appendLine('$ specguard fix --auto\n');
 
-  const output = execSpecguard(dir, 'fix --auto');
-  outputChannel.appendLine(output);
+  statusBarItem.text = '$(sync~spin) CDD: Auto-fixing...';
+  statusBarItem.tooltip = 'Executing docguard fix --auto';
+  statusBarItem.backgroundColor = undefined;
+  statusBarItem.show();
+  await new Promise(r => setTimeout(r, 0));
 
-  await refreshScore();
+  try {
+    const output = execSpecguard(dir, 'fix --auto');
+    outputChannel.appendLine(output);
+  } finally {
+    await refreshScore();
+  }
+
   vscode.window.showInformationMessage('SpecGuard: Auto-fix complete! Review the created files.');
 }
 
@@ -484,11 +524,23 @@ function fixWithAI(issue) {
   });
 }
 
-function runBadge() {
+async function runBadge() {
   const dir = getWorkspaceDir();
   if (!dir) return;
 
-  const output = execSpecguard(dir, 'badge --format json');
+  statusBarItem.text = '$(sync~spin) CDD: Badging...';
+  statusBarItem.tooltip = 'Executing docguard badge';
+  statusBarItem.backgroundColor = undefined;
+  statusBarItem.show();
+  await new Promise(r => setTimeout(r, 0));
+
+  let output = '';
+  try {
+    output = execSpecguard(dir, 'badge --format json');
+  } finally {
+    await refreshScore();
+  }
+
   const jsonStart = output.indexOf('{');
   if (jsonStart < 0) {
     vscode.window.showErrorMessage('SpecGuard: Could not generate badges');
@@ -517,10 +569,19 @@ async function runInit() {
   outputChannel.show(true);
   outputChannel.appendLine('$ specguard init\n');
 
-  const output = execSpecguard(dir, 'init');
-  outputChannel.appendLine(output);
+  statusBarItem.text = '$(sync~spin) CDD: Initializing...';
+  statusBarItem.tooltip = 'Executing docguard init';
+  statusBarItem.backgroundColor = undefined;
+  statusBarItem.show();
+  await new Promise(r => setTimeout(r, 0));
 
-  await refreshScore();
+  try {
+    const output = execSpecguard(dir, 'init');
+    outputChannel.appendLine(output);
+  } finally {
+    await refreshScore();
+  }
+
   vscode.window.showInformationMessage(
     'SpecGuard: CDD documentation initialized! Check the docs-canonical/ folder.'
   );
