@@ -95,6 +95,28 @@ export function findAllOpenApiSpecs(projectDir, config) {
 }
 
 /**
+ * OpenAPI specs that exist and declare a `paths:` section but parsed to ZERO
+ * endpoints — i.e. DocGuard's minimal YAML/JSON parser couldn't extract them
+ * (an unsupported feature: `$ref`, anchors, folded scalars). These are silently
+ * skipped by findAllOpenApiSpecs (good — code scanning takes over), but the
+ * parse failure must be SURFACED so a broken spec doesn't masquerade as a
+ * clean "no API surface" pass. Returns relative spec paths.
+ */
+export function findUnparseableSpecs(projectDir, config) {
+  const out = [];
+  const seen = new Set();
+  for (const dir of orderedSpecDirs(projectDir, config)) {
+    const oa = detectOpenAPI(dir);
+    if (!oa.found || !oa.parseIncomplete) continue;
+    const abs = resolve(dir, oa.path);
+    if (seen.has(abs)) continue;
+    seen.add(abs);
+    out.push(relPosix(projectDir, abs));
+  }
+  return out;
+}
+
+/**
  * Detect divergence between multiple canonical OpenAPI specs.
  * @returns {null | { specs, divergent: string[], authoritative: string }}
  */
@@ -205,6 +227,19 @@ export function validateApiSurface(projectDir, config) {
         note: 'no route/spec files in changed set',
       };
     }
+  }
+
+  // ── Honest-failure: an OpenAPI spec we couldn't parse ──
+  // A spec that declares paths but yielded zero endpoints means our parser
+  // choked on it. We fall back to code scanning (below), but the parse failure
+  // is surfaced here rather than silently producing a clean "no surface" pass.
+  for (const specPath of findUnparseableSpecs(projectDir, config)) {
+    warnings.push(
+      `OpenAPI spec ${specPath} declares paths but DocGuard parsed 0 endpoints from it ` +
+      `(likely an unsupported YAML feature — $ref, anchors, or folded scalars). ` +
+      `Falling back to code scanning; the spec's own endpoint list is unavailable. ` +
+      `Validate it with a full OpenAPI linter.`
+    );
   }
 
   const drift = computeApiSurfaceDrift(projectDir, config);

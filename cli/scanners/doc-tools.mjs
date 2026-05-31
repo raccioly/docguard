@@ -10,6 +10,21 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 
 /**
+ * Read + parse a JSON file, returning null on any error (missing, unreadable,
+ * malformed). A bare `JSON.parse(readFileSync(...))` on a malformed
+ * `package.json` used to THROW out of a detector and abort the entire
+ * `detectDocTools` scan — which then made the memory plan (and every validator
+ * that compares against it) see empty "truth" and falsely pass. Fail soft.
+ */
+function readJsonSafe(path) {
+  try {
+    return JSON.parse(readFileSync(path, 'utf-8'));
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Detect all documentation tools present in the project.
  * @param {string} dir - Project root directory
  * @returns {object} Detected tools with their config and extracted data
@@ -57,6 +72,7 @@ export function detectOpenAPI(dir) {
         endpoints: spec.endpoints,
         schemas: spec.schemas,
         info: spec.info,
+        parseIncomplete: spec.parseIncomplete === true,
       };
     }
   }
@@ -121,6 +137,14 @@ function parseOpenAPISpec(content, filename) {
       result.schemas.push({ name, fields, description: schema.description || '' });
     }
   } catch { /* spec parsing failed, return empty */ }
+
+  // Honest-failure signal: a spec that clearly declares a `paths:` section but
+  // yielded ZERO endpoints means our parser couldn't extract them (anchors,
+  // unresolved $ref, folded scalars, or a YAML feature the minimal parser
+  // doesn't cover). Flag it so the caller can WARN and fall back to code
+  // scanning, instead of silently reporting "no API surface" — a false green.
+  const hasPathsKey = /(^|\n)[ \t]*["']?paths["']?[ \t]*:/.test(content);
+  result.parseIncomplete = hasPathsKey && result.endpoints.length === 0;
 
   return result;
 }
@@ -215,12 +239,9 @@ function detectTypeDoc(dir) {
   }
 
   // Check package.json devDeps
-  const pkgPath = resolve(dir, 'package.json');
-  if (existsSync(pkgPath)) {
-    const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
-    if (pkg.devDependencies?.typedoc) {
-      return { found: true, config: 'package.json (devDependency)' };
-    }
+  const pkg = readJsonSafe(resolve(dir, 'package.json'));
+  if (pkg?.devDependencies?.typedoc) {
+    return { found: true, config: 'package.json (devDependency)' };
   }
 
   return { found: false };
@@ -236,12 +257,9 @@ function detectJSDoc(dir) {
     }
   }
 
-  const pkgPath = resolve(dir, 'package.json');
-  if (existsSync(pkgPath)) {
-    const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
-    if (pkg.devDependencies?.jsdoc) {
-      return { found: true, config: 'package.json (devDependency)' };
-    }
+  const pkg = readJsonSafe(resolve(dir, 'package.json'));
+  if (pkg?.devDependencies?.jsdoc) {
+    return { found: true, config: 'package.json (devDependency)' };
   }
 
   return { found: false };
@@ -316,9 +334,8 @@ function detectRedocly(dir) {
 // ── Swagger UI ─────────────────────────────────────────────────────────────
 
 function detectSwagger(dir) {
-  const pkgPath = resolve(dir, 'package.json');
-  if (existsSync(pkgPath)) {
-    const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
+  const pkg = readJsonSafe(resolve(dir, 'package.json'));
+  if (pkg) {
     const allDeps = { ...(pkg.dependencies || {}), ...(pkg.devDependencies || {}) };
     if (allDeps['swagger-ui-express'] || allDeps['@fastify/swagger'] || allDeps['swagger-jsdoc']) {
       return {

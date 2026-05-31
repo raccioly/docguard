@@ -60,6 +60,14 @@ tool from lying about itself.
 - **`hooks` works inside git worktrees** — resolves the hooks dir via
   `git rev-parse --git-path hooks` rather than assuming `.git/hooks` (a file, not a
   dir, in a linked worktree).
+- **Honest failure on unparseable input** (the second half of the false-green
+  fix): an OpenAPI spec that declares `paths:` but parses to **0 endpoints** is
+  now flagged and surfaced as an API-Surface warning (it falls back to code
+  scanning) instead of silently reporting "no API surface." And a malformed
+  `package.json` no longer throws out of `detectDocTools` — the unguarded
+  `JSON.parse` calls (TypeDoc/JSDoc/Swagger detectors) are now fail-soft, so one
+  bad manifest can't abort the whole scan into empty "truth" that every
+  validator then passes.
 
 #### Field-report hardening (two external field tests: a Python uv/pytest project and a Node/AWS POC)
 - **`explain`** is now exhaustive (7 missing validator entries backfilled, pinned
