@@ -280,3 +280,32 @@ describe('validateTestSpec', () => {
     fs.rmSync(tempDir, { recursive: true, force: true });
   });
 });
+
+describe('Source-to-Test Map — a description cell is not checked as a test file (FP fix)', () => {
+  it('skips prose "what it covers" cells in an integration-test sub-table', () => {
+    const dir = fs.mkdtempSync(join(tmpdir(), 'docguard-ts-desc-'));
+    fs.mkdirSync(join(dir, 'docs-canonical'), { recursive: true });
+    fs.mkdirSync(join(dir, 'tests'), { recursive: true });
+    fs.writeFileSync(join(dir, 'tests/health.integration.test.ts'), '// test');
+    // A `## Service-to-Test Map` H2 with two differently-shaped sub-tables: the
+    // 2nd is a `| test-file | what it covers |` inventory (prose 2nd column).
+    fs.writeFileSync(join(dir, 'docs-canonical/TEST-SPEC.md'), `# Test Spec
+
+## Service-to-Test Map
+
+### Controllers
+| Source File | Unit Test | Status |
+|-------------|-----------|--------|
+| src/a.ts | tests/a.test.ts | ✅ |
+
+### Integration Tests
+| Test Suite | What it covers |
+|------------|----------------|
+| \`tests/health.integration.test.ts\` | Health endpoint with real dependencies |
+`);
+    const r = validateTestSpec(dir, {});
+    assert.ok(!r.warnings.some(w => w.includes('real dependencies')),
+      `a prose description must not be flagged as a missing test file; got ${JSON.stringify(r.warnings)}`);
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+});

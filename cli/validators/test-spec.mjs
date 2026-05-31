@@ -59,6 +59,15 @@ export function validateTestSpec(projectDir, config) {
       !v || v === '—' || v.includes('N/A') ||
       ['source file', 'test file', 'unit test', 'integration test', 'e2e test'].includes(v.toLowerCase());
 
+    // Only existence-check a cell that actually LOOKS like a file path: no
+    // internal spaces, and either a directory separator or a file extension.
+    // A `## Service-to-Test Map` section often holds several sub-tables of
+    // different shapes (Controllers, Services, an "Integration Tests" inventory
+    // like `| test-file | what it covers |`). Without this guard a prose
+    // "what it covers" cell — "Health endpoint with real dependencies" — gets
+    // checked as a missing test file (false positive; field test: wu-whatsappinbox).
+    const isPathLike = (v) => !!v && !/\s/.test(v) && (/[\\/]/.test(v) || /\.[A-Za-z0-9]{1,6}$/.test(v));
+
     for (const row of pipeRows.slice(1)) { // skip the header row
       const cells = splitRow(row);
       const sourceFile = cells[sourceIdx] || '';
@@ -81,7 +90,7 @@ export function validateTestSpec(projectDir, config) {
       // ── File existence checks ───────────────────────────────────────
       // Verify source file still exists (catch stale map entries).
       const cleanSource = sourceFile.replace(/`/g, '').trim();
-      if (cleanSource && cleanSource !== '—' && cleanSource !== 'Source File') {
+      if (cleanSource && cleanSource !== '—' && cleanSource !== 'Source File' && isPathLike(cleanSource)) {
         results.total++;
         if (existsSync(resolve(projectDir, cleanSource))) {
           results.passed++;
@@ -94,7 +103,7 @@ export function validateTestSpec(projectDir, config) {
       // (the old parser only checked one column).
       for (const ti of testIdxs) {
         const cleanTest = (cells[ti] || '').replace(/`/g, '').trim();
-        if (isPlaceholder(cleanTest)) continue;
+        if (isPlaceholder(cleanTest) || !isPathLike(cleanTest)) continue;
         results.total++;
         if (existsSync(resolve(projectDir, cleanTest))) {
           results.passed++;
