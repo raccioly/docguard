@@ -22,7 +22,7 @@ import { resolve, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createInterface } from 'node:readline';
 import { execSync } from 'node:child_process';
-import { c } from '../shared.mjs';
+import { c, CURRENT_SCHEMA_VERSION } from '../shared.mjs';
 import { ensureSkills, detectAgentMode, isSpecKitInitialized, getDetectedAgent } from '../ensure-skills.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -133,7 +133,7 @@ export async function runSetup(projectDir, config, flags) {
 
       const defaultConfig = {
         projectName: config.projectName,
-        version: '0.4',
+        version: CURRENT_SCHEMA_VERSION, // single source of truth (shared.mjs)
         profile: 'standard',
         projectType: detectedType,
         projectTypeConfig: typeDefaults[detectedType] || typeDefaults.unknown,

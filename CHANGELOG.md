@@ -68,6 +68,11 @@ tool from lying about itself.
   `JSON.parse` calls (TypeDoc/JSDoc/Swagger detectors) are now fail-soft, so one
   bad manifest can't abort the whole scan into empty "truth" that every
   validator then passes.
+- **Schema version is single-sourced** — `init`/`setup` now write
+  `CURRENT_SCHEMA_VERSION` from `shared.mjs` instead of hardcoded `'0.5'`/`'0.4'`
+  literals, so bumping the constant can't leave freshly-created configs reading
+  as instantly "needs upgrade." (`config.mjs`'s `'0.2'` is documented as the
+  legacy missing-version fallback, intentionally distinct.)
 - **Dogfooding closure** — Canonical-Sync now scans **AGENTS.md** in addition to
   README for "ships N commands"/"N validators" surface claims (it only checked
   README, which is why DocGuard's own AGENTS.md counts drifted unnoticed), and

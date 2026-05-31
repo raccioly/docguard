@@ -17,6 +17,10 @@ export function loadConfig(projectDir) {
   const configPath = resolve(projectDir, '.docguard.json');
   const defaults = {
     projectName: basename(projectDir),
+    // Legacy/unversioned fallback ONLY — the value a config is ASSUMED to be
+    // when its file has no `version` field. NOT the current schema version
+    // (that's CURRENT_SCHEMA_VERSION in shared.mjs, written by `init`). Kept low
+    // on purpose so a versionless (pre-0.4) config still trips the upgrade nudge.
     version: '0.2',
     profile: 'standard',
     requiredFiles: {

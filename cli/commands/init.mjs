@@ -14,7 +14,7 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createInterface } from 'node:readline';
 import { execSync } from 'node:child_process';
-import { c, PROFILES } from '../shared.mjs';
+import { c, PROFILES, CURRENT_SCHEMA_VERSION } from '../shared.mjs';
 import { ensureSkills, detectAgentMode, detectAIAgent, isSpecKitAvailable, isSpecKitInitialized, getDetectedAgent, safeSpawnSpecify } from '../ensure-skills.mjs';
 
 // v0.20: scaffolder names that can be passed via `init --with <name>` and
@@ -287,7 +287,7 @@ export async function runInit(projectDir, config, flags) {
       // JSON-Schema-aware editor; ignored by DocGuard itself.
       $schema: 'https://raccioly.github.io/docguard/schemas/docguard-config.schema.json',
       projectName: config.projectName,
-      version: '0.5',
+      version: CURRENT_SCHEMA_VERSION, // single source of truth (shared.mjs) — never hardcode
       profile: profileName,
       projectType: detectedType,
       projectTypeConfig: ptc,
