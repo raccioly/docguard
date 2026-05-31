@@ -7,7 +7,7 @@
  */
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { parseJsTs, extractJsSchemaBodies, extractJsRouteCalls } from '../cli/scanners/js-ast.mjs';
+import { parseJsTs, extractJsSchemaBodies, extractJsRouteCalls, extractJsMountsAndImports } from '../cli/scanners/js-ast.mjs';
 
 describe('parseJsTs', () => {
   it('parses TypeScript with types + decorators', () => {
@@ -133,5 +133,42 @@ describe('extractJsRouteCalls — AST route registration (the routes migration)'
   it('returns null when the file is unparseable (caller falls back to regex)', () => {
     const got = extractJsRouteCalls('this is not ) ( valid', 'r.ts');
     assert.ok(got === null || Array.isArray(got));
+  });
+
+  it('reports the receiver identifier (for mount-prefix resolution)', () => {
+    const got = extractJsRouteCalls(
+      "router.get('/a', h);\n" +
+      "app.get('/health', h);\n",
+      'r.ts'
+    );
+    const byPath = Object.fromEntries(got.map(r => [r.path, r.receiver]));
+    assert.strictEqual(byPath['/a'], 'router');
+    assert.strictEqual(byPath['/health'], 'app');
+  });
+});
+
+describe('extractJsMountsAndImports — mount-prefix resolution inputs', () => {
+  it('captures import bindings (import + require) and mount calls', () => {
+    const src = [
+      "import userRoutes from './routes/users';",
+      "const tagRoutes = require('./routes/tags');",
+      "app.use('/api/users', userRoutes);",
+      "app.use('/api/tags', authMiddleware, tagRoutes);", // router is the LAST ident arg
+      "app.use(express.json());",                          // not a path mount — ignored
+    ].join('\n');
+    const got = extractJsMountsAndImports(src, 'app.ts');
+    assert.strictEqual(got.imports.userRoutes, './routes/users');
+    assert.strictEqual(got.imports.tagRoutes, './routes/tags');
+    const mounts = got.mounts.map(m => `${m.prefix}=${m.ident}`).sort();
+    assert.deepEqual(mounts, ['/api/tags=tagRoutes', '/api/users=userRoutes']);
+  });
+
+  it('ignores non-string-literal (dynamic) mount prefixes', () => {
+    const got = extractJsMountsAndImports("app.use(prefixVar, router);\n", 'app.ts');
+    assert.deepEqual(got.mounts, []);
+  });
+
+  it('returns null on parse failure (caller keeps bare paths)', () => {
+    assert.strictEqual(extractJsMountsAndImports('not ) ( valid', 'app.ts'), null);
   });
 });

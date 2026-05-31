@@ -226,7 +226,71 @@ export function extractJsRouteCalls(content, filename = 'file.ts') {
     if (!HTTP_METHOD_NAMES.has(method)) return;
     const path = pathArgValue(node.arguments && node.arguments[0]);
     if (!path || !(path.startsWith('/') || path === '*')) return;
-    out.push({ method: method.toUpperCase(), path, start: node.start ?? 0 });
+    // `receiver` is the object the method was called on (`router` in
+    // `router.get(...)`, `app` in `app.get(...)`). Mount-prefix resolution uses
+    // it to apply a same-file `app.use('/api', router)` prefix ONLY to that
+    // router's routes — never to sibling `app.get(...)` calls in the same file.
+    const receiver = callee.object && callee.object.type === 'Identifier' ? callee.object.name : null;
+    out.push({ method: method.toUpperCase(), path, start: node.start ?? 0, receiver });
   });
   return out;
+}
+
+/**
+ * Extract Express-style router MOUNTS and module IMPORTS from a JS/TS file, so a
+ * caller can resolve the full path of a route declared in a sub-router file.
+ *
+ * The problem: `userRoutes.ts` declares `router.get('/:id')`, but the real URL
+ * is `/api/users/:id` because `app.js` did `app.use('/api/users', userRoutes)`.
+ * A per-file scan only sees `/:id` and the documented `/api/users/:id` never
+ * matches — every mounted route then double-fires (documented-but-absent AND
+ * undocumented). Resolving the mount prefix fixes that.
+ *
+ * Returns `null` when the file can't be parsed (caller keeps the bare path);
+ * otherwise `{ imports, mounts }`:
+ *   - imports: { localName -> module specifier string } from `import` / `require`
+ *   - mounts:  [{ prefix, ident }] from `<x>.use('/prefix', …, <ident>)`
+ * Resolving `ident` (local router vs imported specifier) is the caller's job —
+ * it needs filesystem context this pure-AST module deliberately avoids.
+ */
+export function extractJsMountsAndImports(content, filename = 'file.ts') {
+  const { ast, ok } = parseJsTs(content, filename);
+  if (!ok || !ast) return null;
+
+  const imports = {};
+  const mounts = [];
+
+  walk(ast, (node) => {
+    // import X from 'spec' | import { X } from 'spec' | import * as X from 'spec'
+    if (node.type === 'ImportDeclaration' && node.source && node.source.type === 'StringLiteral') {
+      for (const spec of node.specifiers || []) {
+        if (spec.local && spec.local.name) imports[spec.local.name] = node.source.value;
+      }
+      return;
+    }
+    // const X = require('spec')
+    if (node.type === 'VariableDeclarator' && node.id && node.id.type === 'Identifier'
+        && node.init && node.init.type === 'CallExpression'
+        && calleeName(node.init.callee) === 'require'
+        && node.init.arguments[0] && node.init.arguments[0].type === 'StringLiteral') {
+      imports[node.id.name] = node.init.arguments[0].value;
+      return;
+    }
+    // <x>.use('/prefix', …, <routerIdent>) — the prefix is the first string-literal
+    // arg; the mounted router is the LAST identifier arg (skips middleware).
+    if (node.type === 'CallExpression' && node.callee && node.callee.type === 'MemberExpression'
+        && !node.callee.computed && node.callee.property && node.callee.property.name === 'use') {
+      const args = node.arguments || [];
+      const first = args[0];
+      const prefix = first && first.type === 'StringLiteral' ? first.value : null;
+      if (!prefix || !prefix.startsWith('/')) return;
+      let ident = null;
+      for (let i = args.length - 1; i >= 1; i--) {
+        if (args[i] && args[i].type === 'Identifier') { ident = args[i].name; break; }
+      }
+      if (ident) mounts.push({ prefix, ident });
+    }
+  });
+
+  return { imports, mounts };
 }

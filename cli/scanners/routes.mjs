@@ -10,7 +10,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, relative, basename, extname, dirname } from 'node:path';
 import { resolveSourceRoots, readScannable } from '../shared-source.mjs';
 import { DEFAULT_IGNORE_DIRS as IGNORE_DIRS, shouldIgnore, relPosix } from '../shared-ignore.mjs';
-import { extractJsRouteCalls } from './js-ast.mjs';
+import { extractJsRouteCalls, extractJsMountsAndImports } from './js-ast.mjs';
 
 /**
  * Scan routes from source code with framework-aware parsing.
@@ -203,34 +203,22 @@ function scanNextJsRoutes(dir) {
 // ── Express / Generic Node.js ───────────────────────────────────────────────
 
 function scanExpressRoutes(dir, roots = null) {
-  const routes = [];
-  // Regex is the FALLBACK now (used only when @babel/parser can't parse a file).
+  // Regex is the FALLBACK (used only when @babel/parser can't parse a file).
   // It hardcodes app/router/server receivers; the AST path matches any receiver.
   const routePattern = /(?:app|router|server)\s*\.\s*(get|post|put|delete|patch|head|options)\s*\(\s*['"`]([^'"`]+)['"`]/gi;
 
-  // Per-file extraction: AST-first (any router receiver, multi-line calls,
-  // template-literal paths), regex fallback on parse failure. `fileLabel` is the
-  // value stored in route.file.
-  const extractFromFile = (content, filePath, fileLabel) => {
-    const emit = (method, path, index) => routes.push({
-      method: method.toUpperCase(),
-      path,
-      handler: extractHandlerName(content, index),
-      file: fileLabel,
-      source: 'express',
-      auth: hasAuthMiddleware(content, path),
-      description: extractNearbyComment(content, index),
-    });
-    const ast = extractJsRouteCalls(content, filePath);
-    if (ast) {
-      for (const r of ast) emit(r.method, r.path, r.start);
-    } else {
-      const regex = new RegExp(routePattern.source, 'gi');
-      let match;
-      while ((match = regex.exec(content)) !== null) emit(match[1], match[2], match.index);
-    }
+  // ── Phase 0: collect every candidate file ONCE ──────────────────────────────
+  // The mount map (phase 1) and the route emit (phase 2) must see the same set,
+  // and we don't want to walk the tree twice.
+  const files = [];                 // { content, filePath, fileLabel }
+  const seenPaths = new Set();
+  const addFile = (filePath, fileLabel) => {
+    if (seenPaths.has(filePath)) return;
+    const content = readFileSafe(filePath);
+    if (!content) return;
+    seenPaths.add(filePath);
+    files.push({ content, filePath, fileLabel });
   };
-
   // Monorepo-aware: walk resolved absolute source roots when provided,
   // otherwise fall back to conventional root-relative directories.
   const searchTargets = roots && roots.length
@@ -239,23 +227,113 @@ function scanExpressRoutes(dir, roots = null) {
   for (const fullDir of searchTargets) {
     if (!existsSync(fullDir)) continue;
     walkRouteDirs(fullDir, (filePath) => {
-      if (!isJSFile(filePath)) return;
-      const content = readFileSafe(filePath);
-      if (!content) return;
-      extractFromFile(content, filePath, relative(dir, filePath));
+      if (isJSFile(filePath)) addFile(filePath, relative(dir, filePath));
     });
   }
-
-  // Also check root files.
   for (const rootFile of ['app.js', 'app.mjs', 'app.ts', 'server.js', 'server.ts', 'index.js', 'index.ts']) {
     const filePath = resolve(dir, rootFile);
-    if (!existsSync(filePath)) continue;
-    const content = readFileSafe(filePath);
-    if (!content) continue; // was `return` — a missing root file must not abort the rest
-    extractFromFile(content, filePath, rootFile);
+    if (existsSync(filePath)) addFile(filePath, rootFile);
+  }
+
+  // ── Phase 1: build the mount map ────────────────────────────────────────────
+  // absFilePath -> [{ receiver|null, prefix }].  `receiver === null` means the
+  // prefix applies to EVERY route in that file (an imported sub-router); a
+  // non-null receiver means it applies only to routes whose receiver matches
+  // (a same-file `const r = Router(); app.use('/api', r)` — so a sibling
+  // `app.get('/health')` in the same file is NOT wrongly prefixed).
+  const mountMap = buildExpressMountMap(files);
+
+  // ── Phase 2: emit routes, prefixing by mount where known ────────────────────
+  const routes = [];
+  for (const { content, filePath, fileLabel } of files) {
+    const mounts = mountMap.get(filePath) || [];
+    const emit = (method, path, index, receiver) => {
+      const prefixes = mounts
+        .filter(m => m.receiver === null || m.receiver === receiver)
+        .map(m => m.prefix);
+      const finalPaths = prefixes.length ? prefixes.map(p => joinRoutePath(p, path)) : [path];
+      for (const fullPath of finalPaths) {
+        routes.push({
+          method: method.toUpperCase(),
+          path: fullPath,
+          handler: extractHandlerName(content, index),
+          file: fileLabel,
+          source: 'express',
+          auth: hasAuthMiddleware(content, path),
+          description: extractNearbyComment(content, index),
+        });
+      }
+    };
+    const ast = extractJsRouteCalls(content, filePath);
+    if (ast) {
+      for (const r of ast) emit(r.method, r.path, r.start, r.receiver ?? null);
+    } else {
+      const regex = new RegExp(routePattern.source, 'gi');
+      let match;
+      while ((match = regex.exec(content)) !== null) emit(match[1], match[2], match.index, null);
+    }
   }
 
   return routes;
+}
+
+/**
+ * Build the Express mount map from the collected files (phase 1 above).
+ * For each `<x>.use('/prefix', router)`:
+ *   - router is an IMPORTED binding  → the prefix applies to ALL routes in the
+ *     resolved target file (receiver: null). One router per file is the norm.
+ *   - router is a LOCAL identifier    → the prefix applies only to that file's
+ *     routes whose receiver matches (receiver: ident).
+ *
+ * Known limitations (documented, not silently wrong): transitive composition
+ * (`app.use('/api', api)` then `api.use('/x', x)` does NOT yield `/api/x`), and
+ * dynamic mount paths (non-string-literal prefixes) are skipped. Unmounted
+ * files keep their bare paths — exactly the pre-mount-map behavior.
+ */
+function buildExpressMountMap(files) {
+  const map = new Map();
+  const add = (absFile, receiver, prefix) => {
+    if (!map.has(absFile)) map.set(absFile, []);
+    map.get(absFile).push({ receiver, prefix });
+  };
+  for (const { content, filePath } of files) {
+    const mi = extractJsMountsAndImports(content, filePath);
+    if (!mi) continue;
+    for (const { prefix, ident } of mi.mounts) {
+      const spec = mi.imports[ident];
+      if (spec) {
+        const target = resolveLocalImport(filePath, spec);
+        if (target) add(target, null, prefix);
+      } else {
+        add(filePath, ident, prefix);
+      }
+    }
+  }
+  return map;
+}
+
+/** Resolve a RELATIVE import specifier to an absolute file path (best effort). */
+function resolveLocalImport(fromFile, spec) {
+  if (!spec.startsWith('.')) return null; // bare/node_modules specifiers aren't our routers
+  const base = resolve(dirname(fromFile), spec);
+  for (const ext of ['', '.ts', '.js', '.mjs', '.cjs', '.tsx', '.jsx']) {
+    const cand = base + ext;
+    try { if (existsSync(cand) && statSync(cand).isFile()) return cand; } catch { /* skip */ }
+  }
+  for (const idx of ['index.ts', 'index.js', 'index.mjs']) {
+    const cand = join(base, idx);
+    try { if (existsSync(cand) && statSync(cand).isFile()) return cand; } catch { /* skip */ }
+  }
+  return null;
+}
+
+/** Join a mount prefix and a route path into one normalized `/a/b` path. */
+function joinRoutePath(prefix, p) {
+  if (!prefix) return p;
+  const left = prefix.replace(/\/+$/, '');        // drop trailing slash(es)
+  const right = (p === '/' || p === '') ? '' : ('/' + p.replace(/^\/+/, '')); // single leading slash
+  const joined = left + right;
+  return joined || '/';
 }
 
 // ── Fastify ─────────────────────────────────────────────────────────────────

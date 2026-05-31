@@ -12,6 +12,17 @@ something — close the false-green paths, fix the security gaps, and stop the
 tool from lying about itself.
 
 ### Added
+- **Express mount-prefix resolution** — DocGuard now follows `app.use('/api/users',
+  userRoutes)` across files, so a route declared as `router.get('/:id')` in the
+  mounted file is reported at its REAL URL `/api/users/:id`. Previously the
+  per-file scan emitted the bare `/:id`, the documented full path never matched,
+  and every mounted route double-fired (documented-but-absent AND undocumented).
+  Resolution is receiver-aware: a same-file `app.use('/api', router)` prefixes
+  only that router's routes, never a sibling `app.get('/health')`. A router
+  mounted at several prefixes yields one path per prefix; an unmounted file keeps
+  its bare path. Known limits (documented, not silently wrong): transitive
+  composition (`app.use('/api', api)` → `api.use('/x', x)`) and dynamic
+  (non-string-literal) prefixes are not resolved.
 - **AST-based HTTP route extraction for JS/TS** (Express/Fastify/Hono/Koa-style
   `<router>.<method>('/path', …)`). Replaces the regex that only matched
   `app`/`router`/`server` receivers on a single line: the AST path matches ANY
