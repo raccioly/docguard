@@ -76,7 +76,7 @@ const EXPLAINERS = {
   },
   testSpec: {
     title: 'Test-Spec — declared tests exist',
-    what: 'Reads TEST-SPEC.md\'s "## Source-to-Test Map" table — column 1 = source, column 2 = test file, last column = status — and verifies each referenced test file exists. Column count is flexible: the minimal 3-column table and the 4-column table `docguard generate` emits both parse.',
+    what: 'Reads TEST-SPEC.md\'s "## Source-to-Test Map" table and verifies every referenced file exists. Parsing is column-HEADER-aware: it locates the source column, the status column, and EVERY test-file column (Unit Test, Integration Test, …) by name, so both the minimal 3-column table and the 4-column table `docguard generate` emits are checked in full — a missing Integration Test is no longer skipped, and a blank cell no longer shifts the columns.',
     why:  'A spec that claims test coverage for X but the test file is missing is a stale promise.',
     triggers: [
       ['no service-to-test mappings', 'TEST-SPEC.md has no recognized mapping table. Add a "## Source-to-Test Map" with column 1 = source, column 2 = test file, last = status. Both `| Source | Test file | Status |` and the generated `| Source File | Unit Test | Integration Test | Status |` are accepted.'],

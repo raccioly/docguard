@@ -242,4 +242,41 @@ describe('validateTestSpec', () => {
     assert.equal(results.passed, 1, 'annotation provides evidence even without literal file');
     fs.rmSync(tempDir, { recursive: true, force: true });
   });
+
+  it('#9: header-aware parser verifies BOTH Unit Test and Integration Test columns', () => {
+    const tempDir = fs.mkdtempSync(join(tmpdir(), 'docguard-test-spec-'));
+    fs.mkdirSync(join(tempDir, 'docs-canonical'), { recursive: true });
+    // Files on disk: unit + integration for `a`, only unit for `b`.
+    fs.writeFileSync(join(tempDir, 'a.js'), '');
+    fs.writeFileSync(join(tempDir, 'a.unit.js'), '');
+    fs.writeFileSync(join(tempDir, 'a.int.js'), '');
+    fs.writeFileSync(join(tempDir, 'b.js'), '');
+    fs.writeFileSync(join(tempDir, 'b.unit.js'), '');
+    // The generated 4-column shape, plus a row with a BLANK Integration cell
+    // (must not shift Status into the integration slot).
+    fs.writeFileSync(join(tempDir, 'docs-canonical/TEST-SPEC.md'), `# Test Spec
+
+## Source-to-Test Map
+| Source File | Unit Test | Integration Test | Status |
+|-------------|-----------|------------------|--------|
+| a.js | a.unit.js | a.int.js | ✅ |
+| b.js | b.unit.js | b.int.MISSING.js | ✅ |
+| c.js | c.unit.MISSING.js |  | ✅ |
+`);
+    const r = validateTestSpec(tempDir, { projectTypeConfig: { needsE2E: false } });
+    // The Integration Test column is now checked: b's missing integration test
+    // is caught (the old parser never looked at column 3).
+    assert.ok(r.warnings.some(w => w.includes('b.int.MISSING.js') && w.includes('not found')),
+      `missing Integration Test must be flagged; got ${JSON.stringify(r.warnings)}`);
+    // c's unit test is missing AND its Integration cell is blank — the blank must
+    // NOT be mis-read (no spurious warning for an empty integration cell), but
+    // the missing unit test IS flagged (proves columns didn't shift).
+    assert.ok(r.warnings.some(w => w.includes('c.unit.MISSING.js') && w.includes('not found')),
+      `missing Unit Test must be flagged even with a blank Integration cell; got ${JSON.stringify(r.warnings)}`);
+    assert.ok(!r.warnings.some(w => w.includes('✅')),
+      'a blank Integration cell must not be parsed as a path (no Status leakage)');
+    // a.js: source + unit + integration all exist → 3 passes.
+    assert.ok(r.passed >= 3, `a.js's source+unit+integration should all pass; passed=${r.passed}`);
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
 });

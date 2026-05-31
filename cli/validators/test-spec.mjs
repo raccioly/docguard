@@ -18,76 +18,88 @@ export function validateTestSpec(projectDir, config) {
   const content = readFileSync(testSpecPath, 'utf-8');
   const ptc = config.projectTypeConfig || {};
 
-  // Parse the Source-to-Test Map table (new header) or Service-to-Test Map (old header)
-  const serviceMapMatch = content.match(
-    /## (?:Service-to-Test Map|Source-to-Test Map)[\s\S]*?\n\|.*\|.*\|.*\|([\s\S]*?)(?=\n##|\n$|$)/
-  );
-
-  if (serviceMapMatch) {
-    const tableContent = serviceMapMatch[1];
-    const rows = tableContent
+  // Parse the Source-to-Test Map (new header) / Service-to-Test Map (old).
+  //
+  // Column-HEADER-aware: read the header row to locate the source column, the
+  // status column, and EVERY test-file column (Unit Test, Integration Test, …),
+  // then map each data row by index WITHOUT discarding empty cells. The old
+  // parser filtered empty cells — which shifted every column rightward whenever
+  // a cell was blank (e.g. an empty Integration Test) — and only ever checked
+  // the 2nd column, so the generated 4-column table's Integration Test was
+  // never verified (#9). Splitting on the outer pipes and trimming preserves
+  // column alignment so a blank cell stays an empty string in its own slot.
+  const mapSection = content.match(/## (?:Service-to-Test Map|Source-to-Test Map)[\s\S]*?(?=\n## |$)/);
+  if (mapSection) {
+    const splitRow = (line) => {
+      const parts = line.split('|');
+      parts.shift();   // text before the first pipe
+      parts.pop();     // text after the last pipe
+      return parts.map(s => s.trim());
+    };
+    const pipeRows = mapSection[0]
       .split('\n')
-      .filter(line => line.startsWith('|') && !line.includes('---'));
+      .filter(l => l.trim().startsWith('|') && !/^\s*\|[\s|:-]+\|\s*$/.test(l)); // drop the `---` separator
+    const headerCells = pipeRows.length ? splitRow(pipeRows[0]) : [];
+    const header = headerCells.map(h => h.toLowerCase());
 
-    for (const row of rows) {
-      const cells = row
-        .split('|')
-        .map(s => s.trim())
-        .filter(s => s.length > 0);
+    // Classify columns by header name, with positional fallbacks.
+    let sourceIdx = header.findIndex(h => /\bsource\b/.test(h));
+    if (sourceIdx < 0) sourceIdx = 0;
+    let statusIdx = header.findIndex(h => /\bstatus\b/.test(h));
+    if (statusIdx < 0) statusIdx = header.length - 1;
+    let testIdxs = header
+      .map((h, i) => (/\btest\b|\be2e\b/.test(h) ? i : -1))
+      .filter(i => i >= 0 && i !== sourceIdx && i !== statusIdx);
+    if (testIdxs.length === 0) {
+      const fallback = sourceIdx === 1 ? 0 : 1; // the non-source early column
+      if (fallback !== statusIdx && fallback < header.length) testIdxs = [fallback];
+    }
 
-      if (cells.length < 3) continue;
+    const isPlaceholder = (v) =>
+      !v || v === '—' || v.includes('N/A') ||
+      ['source file', 'test file', 'unit test', 'integration test', 'e2e test'].includes(v.toLowerCase());
 
-      const sourceFile = cells[0];
-      const testFile = cells[1];
-      const status = cells[cells.length - 1]; // Last column is always status
+    for (const row of pipeRows.slice(1)) { // skip the header row
+      const cells = splitRow(row);
+      const sourceFile = cells[sourceIdx] || '';
+      const status = cells[statusIdx] || '';
 
-      // Skip template/example rows and italic placeholder rows
-      if (sourceFile.startsWith('<!--') || sourceFile === 'Source File' || sourceFile.startsWith('*')) continue;
+      // Skip template/example rows and italic placeholder rows.
+      if (!sourceFile || sourceFile.startsWith('<!--') || sourceFile === 'Source File' || sourceFile.startsWith('*')) continue;
 
       // Author-declared gaps (❌/⚠️) are surfaced as warnings. A ✅ glyph is the
       // author's CLAIM, not proof — it is NOT counted as a pass. The real pass
       // comes from the file-existence checks below (code truth, not the glyph).
-      if (status && status.includes('❌')) {
+      if (status.includes('❌')) {
         results.total++;
-        results.warnings.push(
-          `TEST-SPEC declares ${sourceFile} as ❌ — missing tests`
-        );
-      } else if (status && status.includes('⚠️')) {
+        results.warnings.push(`TEST-SPEC declares ${sourceFile} as ❌ — missing tests`);
+      } else if (status.includes('⚠️')) {
         results.total++;
-        results.warnings.push(
-          `TEST-SPEC declares ${sourceFile} as ⚠️ — partial coverage`
-        );
+        results.warnings.push(`TEST-SPEC declares ${sourceFile} as ⚠️ — partial coverage`);
       }
 
       // ── File existence checks ───────────────────────────────────────
-      // Verify source file still exists (catch stale map entries)
+      // Verify source file still exists (catch stale map entries).
       const cleanSource = sourceFile.replace(/`/g, '').trim();
       if (cleanSource && cleanSource !== '—' && cleanSource !== 'Source File') {
-        const sourcePath = resolve(projectDir, cleanSource);
-        if (!existsSync(sourcePath)) {
-          results.total++;
-          results.warnings.push(
-            `Source-to-Test Map: source file \`${cleanSource}\` not found on disk — stale entry?`
-          );
-        } else {
-          results.total++;
+        results.total++;
+        if (existsSync(resolve(projectDir, cleanSource))) {
           results.passed++;
+        } else {
+          results.warnings.push(`Source-to-Test Map: source file \`${cleanSource}\` not found on disk — stale entry?`);
         }
       }
 
-      // Verify test file exists (catch wrong/stale test references)
-      const cleanTest = testFile ? testFile.replace(/`/g, '').trim() : '';
-      if (cleanTest && cleanTest !== '—' && cleanTest !== 'Test File' &&
-          cleanTest !== 'Unit Test' && !cleanTest.includes('N/A')) {
-        const testPath = resolve(projectDir, cleanTest);
-        if (!existsSync(testPath)) {
-          results.total++;
-          results.warnings.push(
-            `Source-to-Test Map: test file \`${cleanTest}\` not found — referenced by ${cleanSource}`
-          );
-        } else {
-          results.total++;
+      // Verify EVERY declared test file exists — Unit Test AND Integration Test
+      // (the old parser only checked one column).
+      for (const ti of testIdxs) {
+        const cleanTest = (cells[ti] || '').replace(/`/g, '').trim();
+        if (isPlaceholder(cleanTest)) continue;
+        results.total++;
+        if (existsSync(resolve(projectDir, cleanTest))) {
           results.passed++;
+        } else {
+          results.warnings.push(`Source-to-Test Map: test file \`${cleanTest}\` not found — referenced by ${cleanSource}`);
         }
       }
     }

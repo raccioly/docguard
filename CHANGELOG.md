@@ -79,6 +79,11 @@ tool from lying about itself.
 - **`ensure-skills`** content-equality gate stops per-command skill-rewrite churn;
   config warns on invalid `severity` values.
 - **Test-Spec guidance aligned with the 4-column table** `generate` emits.
+- **Test-Spec Source-to-Test Map parsing is now column-header-aware** (#9): it
+  locates the source/status/test columns by header name and verifies *every*
+  test-file column — so the generated table's **Integration Test** column is
+  checked too (previously only one column was), and a blank cell no longer
+  shifts the column alignment (the old empty-cell filtering did).
 
 ### Security
 - **GitHub Action (`action.yml`): closed a shell-injection vector.** All inputs —
