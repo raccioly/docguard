@@ -373,8 +373,18 @@ poetry.lock
   const specKitAvailable = isSpecKitAvailable();
   const specKitInitialized = isSpecKitInitialized(projectDir);
 
-  if (flags.noSpecKit) {
-    console.log(`\n  ${c.dim}⏭️  Spec Kit init skipped (--no-spec-kit).${c.reset}`);
+  // v0.24 (field report #1): the `starter` profile is "minimal, for side
+  // projects" — it skips the heavy Spec Kit framework scaffold (.specify/
+  // templates/scripts/memory, ~30 files) by default. DocGuard's own canonical
+  // docs and its lightweight agent skills/commands still install (ensureSkills
+  // below). Opt back in with --spec-kit. Other profiles are unaffected.
+  const starterSkipsSpecKit = profileName === 'starter' && !flags.specKit;
+
+  if (flags.noSpecKit || starterSkipsSpecKit) {
+    const why = flags.noSpecKit
+      ? '--no-spec-kit'
+      : 'starter profile is minimal — pass --spec-kit to include the framework scaffold';
+    console.log(`\n  ${c.dim}⏭️  Spec Kit framework scaffold skipped (${why}).${c.reset}`);
   } else if (specKitAvailable && !specKitInitialized) {
     console.log(`\n  ${c.bold}🌱 Spec Kit Integration${c.reset}`);
 
@@ -487,8 +497,10 @@ poetry.lock
     }
   }
 
-  // Auto-install DocGuard skills and commands (spec-kit skills handled by specify init)
-  ensureSkills(projectDir, flags);
+  // Auto-install DocGuard's own skills and commands. Thread the spec-kit skip
+  // decision through so ensureSkills doesn't re-trigger the framework scaffold
+  // we just declined for the starter profile (or --no-spec-kit).
+  ensureSkills(projectDir, { ...flags, noSpecKit: flags.noSpecKit || starterSkipsSpecKit });
 
   // v0.20: `docguard init --with agents,hooks,ci,badge,llms,publish` runs
   // the named scaffolders after init has finished. Each one runs in sequence

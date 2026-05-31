@@ -99,6 +99,17 @@ tool from lying about itself.
   dependency."** Updated ~14 docs and the constitution's Principle II to reflect
   `@babel/parser`. New dependencies remain governed by exact-pinning and
   supply-chain vetting (>10k downloads/wk, >1 maintainer, >30 days old).
+- **`init --profile starter` is now genuinely minimal** (field report #1): it
+  skips the heavy Spec Kit framework scaffold (`.specify/` templates/scripts/
+  memory, ~30 files) that contradicted its "for side projects" description. It
+  still installs the canonical docs and DocGuard's own lightweight agent skills
+  and commands. Opt the framework back in with `docguard init --profile starter
+  --spec-kit`. Other profiles are unchanged (spec-kit on by default).
+- **DocGuard slash-command docs install to `.agent/commands/`, not root
+  `commands/`** (field report #2, #11) — consistent with `.agent/skills/`, the
+  generic spec-kit path agents already discover, and no longer polluting the
+  project namespace or being mis-scanned as source. Existing root `commands/`
+  is left untouched (already excluded from scans); new installs use `.agent/`.
 
 ## [0.23.0] - 2026-05-29
 

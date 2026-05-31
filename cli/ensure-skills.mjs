@@ -46,9 +46,12 @@ const __dirname = dirname(__filename);
 const SKILLS_SOURCE = resolve(__dirname, '..', 'extensions', 'spec-kit-docguard', 'skills');
 const COMMANDS_SOURCE = resolve(__dirname, '..', 'commands');
 
-// Destination in the user's project
+// Destination in the user's project. Commands live UNDER `.agent/` alongside
+// skills (was root `commands/`, which polluted the project namespace and got
+// mis-scanned as source). `.agent/commands/` is the generic spec-kit convention
+// agents already discover, and keeps DocGuard's footprint in one place.
 const SKILLS_DEST = '.agent/skills';
-const COMMANDS_DEST = 'commands';
+const COMMANDS_DEST = '.agent/commands';
 
 // ── Agent Mode Detection ────────────────────────────────────────────────
 
@@ -215,6 +218,13 @@ export function ensureSpecKit(projectDir, flags = {}) {
   // Already initialized — nothing to do
   if (isSpecKitInitialized(projectDir)) {
     return { specKitReady: true };
+  }
+
+  // Caller opted out of the Spec Kit framework scaffold (--no-spec-kit, or the
+  // minimal `starter` profile which passes noSpecKit through). Don't auto-init
+  // and don't nag — DocGuard's own skills/commands still install below.
+  if (flags.noSpecKit) {
+    return { specKitReady: false, skipped: true };
   }
 
   // Spec-kit CLI available — auto-initialize

@@ -144,7 +144,7 @@ export const c = {
 // ── Compliance Profiles ───────────────────────────────────────────────────
 export const PROFILES = {
   starter: {
-    description: 'Minimal CDD — just architecture + changelog. For side projects and prototypes.',
+    description: 'Minimal CDD — architecture + changelog, no Spec Kit framework scaffold (pass --spec-kit to add it). For side projects and prototypes.',
     requiredFiles: {
       canonical: [
         'docs-canonical/ARCHITECTURE.md',

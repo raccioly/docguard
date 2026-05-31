@@ -241,6 +241,12 @@ async function main() {
       // Default stays on (discoverability), but lets minimalist library
       // projects skip the .specify/.agent/commands scaffolding.
       flags.noSpecKit = true;
+    } else if (args[i] === '--spec-kit') {
+      // v0.24: explicit opt-IN to the Spec Kit framework scaffold. The
+      // `starter` profile skips that scaffold by default (minimal, for side
+      // projects — it would otherwise drop ~30 files); pass --spec-kit to
+      // include it anyway. No effect on other profiles (already on by default).
+      flags.specKit = true;
     } else if (args[i] === '--pin') {
       // v0.17-P1: `docguard guard --pin` records the running CLI version
       // into .docguard.json (`docguardVersion` field) after a successful run.
