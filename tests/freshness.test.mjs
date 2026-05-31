@@ -148,6 +148,39 @@ describe('Freshness Validator', () => {
     assert.match(archResult.message, /code commits since last doc update/);
   });
 
+  it('a same-day last-reviewed header covers code commits made that same day', () => {
+    // Regression: counting commits from the header date at MIDNIGHT flagged a
+    // doc as stale on the very day it was reviewed whenever >10 code commits
+    // also landed that day. A header date means "reviewed ON this day" → it
+    // covers that day's commits. Same setup as the >10-commits test above, but
+    // with a today-dated header, so it must PASS instead of warn.
+    runGit('init', tmpDir);
+    runGit('config user.name "Test"', tmpDir);
+    runGit('config user.email "test@example.com"', tmpDir);
+
+    const today = new Date().toISOString().split('T')[0];
+    mkdirSync(join(tmpDir, 'docs-canonical'), { recursive: true });
+    writeFileSync(join(tmpDir, 'docs-canonical', 'ARCHITECTURE.md'),
+      `<!-- docguard:last-reviewed ${today} -->\n# Arch`);
+    runGit('add docs-canonical/ARCHITECTURE.md', tmpDir);
+    runGit('commit -m "add arch"', tmpDir);
+
+    writeFileSync(join(tmpDir, 'test-mod.js'), 'const a = 0;');
+    runGit('add test-mod.js', tmpDir);
+    runGit('commit -m "initial file"', tmpDir);
+    for (let i = 1; i <= 11; i++) {
+      writeFileSync(join(tmpDir, 'test-mod.js'), `const a = ${i};`);
+      runGit('add test-mod.js', tmpDir);
+      runGit(`commit -m "commit ${i}"`, tmpDir);
+    }
+
+    const results = validateFreshness(tmpDir, {});
+    const archResult = results.find(r => r.message.includes('ARCHITECTURE.md'));
+    assert.ok(archResult);
+    assert.strictEqual(archResult.status, 'pass',
+      `same-day review must cover same-day commits; got ${archResult.status}: ${archResult.message}`);
+  });
+
   it('warns when a doc file is stale (>30 days since latest code commit)', () => {
     runGit('init', tmpDir);
     runGit('config user.name "Test"', tmpDir);

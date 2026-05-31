@@ -221,8 +221,18 @@ export function validateFreshness(dir, config) {
       continue;
     }
 
-    // Check how many code commits happened since this doc was last updated
-    const codeCommitsSince = getCodeCommitsSince(docDate, dir);
+    // Check how many code commits happened since this doc was last updated.
+    // A `last-reviewed` HEADER is day-granular and signals "I reviewed this ON
+    // this day" — so it covers commits made that same day. Counting from
+    // midnight would flag a doc as stale on the very day it was genuinely
+    // reviewed whenever >10 code commits also landed that day (a heavy-dev day),
+    // undermining the explicit-review signal this validator otherwise honors.
+    // Advance a header date to end-of-day so only commits on LATER days count.
+    // Git fallback dates are real timestamps and are used as-is.
+    const sinceDate = reviewedDate
+      ? new Date(reviewedDate.getTime() + 24 * 60 * 60 * 1000 - 1000)
+      : docDate;
+    const codeCommitsSince = getCodeCommitsSince(sinceDate, dir);
 
     if (codeCommitsSince >= WARNING_THRESHOLD_COMMITS) {
       results.push({
