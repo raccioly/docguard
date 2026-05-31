@@ -72,13 +72,47 @@ function readProjectSchemaVersion(projectDir) {
 }
 
 /**
- * Idempotent migration: walk the project config and add any fields introduced
- * since the stored schema version. Returns { changed, newConfig }.
+ * Normalize the `requiredFiles` block to the canonical object shape
+ * (`{ canonical: [...], agentFile, changelog, driftLog }`). Validators read
+ * `config.requiredFiles?.canonical || []`, so a config whose `requiredFiles` is
+ * a bare array (a legacy/hand-edited shape) or an object that lost its
+ * `canonical` key makes Traceability/Structure/Freshness silently see an empty
+ * list and PASS — the exact false-green this tool exists to prevent.
  *
- * Each migration is keyed by the version it migrates TO. Adding a new schema
- * version means adding one entry here.
+ * Returns `{ cfg, changed, notes }`. We only TRANSFORM the unambiguous case (a
+ * bare array can only ever have been the canonical doc list); any other broken
+ * shape is SURFACED as a note rather than guessed at.
  */
-function migrateSchema(cfg, fromVersion) {
+function normalizeRequiredFiles(cfg) {
+  const rf = cfg.requiredFiles;
+  const notes = [];
+  if (rf === undefined || rf === null) {
+    // No requiredFiles at all — validators default to empty and check nothing.
+    // Don't fabricate a list (we can't know the project's docs); surface it.
+    notes.push('⚠ requiredFiles is missing — Traceability/Structure/Freshness have nothing to verify (silent-pass risk). Run `docguard init` to generate it.');
+    return { cfg, changed: false, notes };
+  }
+  if (Array.isArray(rf)) {
+    notes.push('Normalized legacy requiredFiles array → { canonical: [...] } so canonical-doc checks see your docs again.');
+    return { cfg: { ...cfg, requiredFiles: { canonical: rf } }, changed: true, notes };
+  }
+  if (typeof rf === 'object' && !Array.isArray(rf.canonical)) {
+    notes.push('⚠ requiredFiles.canonical is missing or not an array — canonical-doc checks will silently pass. Restore it or run `docguard init`.');
+  }
+  return { cfg, changed: false, notes };
+}
+
+/**
+ * Idempotent migration: walk the project config and add any fields introduced
+ * since the stored schema version, then normalize the requiredFiles shape.
+ * Returns { changed, newConfig, notes }.
+ *
+ * Each version migration is keyed by the version it migrates TO. Adding a new
+ * schema version means adding one entry here. The requiredFiles normalization
+ * runs regardless of the version delta — a config can sit at the current
+ * version yet still carry a hand-edited shape that breaks validators silently.
+ */
+export function migrateSchema(cfg, fromVersion) {
   const migrations = {
     // v0.4 — pre-0.4 schemas (no `version` field, often `project` instead
     // of `projectName`) normalize here. Rename `project` → `projectName`
@@ -99,16 +133,24 @@ function migrateSchema(cfg, fromVersion) {
   let current = { ...cfg };
   let changed = false;
   const target = CURRENT_SCHEMA_VERSION;
-  // No migrations yet — current schema matches the constant.
-  if (compareVersions(fromVersion, target) >= 0) return { changed: false, newConfig: current };
-  for (const [ver, fn] of Object.entries(migrations)) {
-    if (compareVersions(fromVersion, ver) < 0 && compareVersions(ver, target) <= 0) {
-      current = fn(current);
-      changed = true;
+
+  // Version-keyed field migrations (additive). Skipped when already current.
+  if (compareVersions(fromVersion, target) < 0) {
+    for (const [ver, fn] of Object.entries(migrations)) {
+      if (compareVersions(fromVersion, ver) < 0 && compareVersions(ver, target) <= 0) {
+        current = fn(current);
+        changed = true;
+      }
     }
+    if (changed) current.version = target;
   }
-  if (changed) current.version = target;
-  return { changed, newConfig: current };
+
+  // requiredFiles shape normalization — independent of the version delta.
+  const norm = normalizeRequiredFiles(current);
+  current = norm.cfg;
+  if (norm.changed) changed = true;
+
+  return { changed, newConfig: current, notes: norm.notes };
 }
 
 /**
@@ -291,7 +333,13 @@ export async function runUpgrade(projectDir, _config, flags) {
     if (schemaBehind && projectSchema) {
       const cfgPath = resolve(projectDir, '.docguard.json');
       const cfg = JSON.parse(readFileSync(cfgPath, 'utf-8'));
-      const { changed, newConfig } = migrateSchema(cfg, projectSchema);
+      const { changed, newConfig, notes } = migrateSchema(cfg, projectSchema);
+      // Surface requiredFiles findings (a normalization that happened, or a
+      // broken shape we refuse to guess at) before reporting the version bump.
+      for (const n of notes || []) {
+        const warn = n.startsWith('⚠');
+        console.log(`  ${warn ? c.yellow : c.dim}${warn ? '' : '• '}${n}${c.reset}`);
+      }
       if (changed) {
         // v0.14-P4: --pr opens a PR for review instead of in-place editing.
         // Useful when the team wants a reviewable diff or has branch-protected

@@ -19,7 +19,7 @@ import {
   compareVersions,
   parseVersion,
 } from '../cli/shared.mjs';
-import { checkUpgradeStatus } from '../cli/commands/upgrade.mjs';
+import { checkUpgradeStatus, migrateSchema } from '../cli/commands/upgrade.mjs';
 
 function make(files) {
   const dir = mkdtempSync(join(tmpdir(), 'docguard-upgrade-'));
@@ -127,5 +127,51 @@ describe('checkUpgradeStatus — the post-guard nudge driver', () => {
     const msg = checkUpgradeStatus(dir);
     assert.ok(msg, 'pre-0.4 schemas should get a migration nudge');
     assert.match(msg, /upgrade --apply/, 'nudge should point at the upgrade command');
+  });
+});
+
+// #13 / Field Report #2 — the migration must not lose or break `requiredFiles`.
+// Previously these paths had ZERO coverage: the existing tests only migrated
+// configs WITHOUT a requiredFiles key, so a regression there would ship silent.
+describe('migrateSchema — requiredFiles is preserved and shape-normalized', () => {
+  it('preserves a well-formed requiredFiles object across a version migration', () => {
+    const rf = {
+      canonical: ['docs-canonical/ARCHITECTURE.md', 'docs-canonical/SECURITY.md'],
+      agentFile: ['AGENTS.md'],
+      changelog: 'CHANGELOG.md',
+      driftLog: 'DRIFT-LOG.md',
+    };
+    const { newConfig } = migrateSchema({ projectName: 't', requiredFiles: rf }, '0.0');
+    assert.deepEqual(newConfig.requiredFiles, rf, 'requiredFiles must survive the migration byte-for-byte');
+    assert.strictEqual(newConfig.version, CURRENT_SCHEMA_VERSION);
+    assert.deepEqual(newConfig.severity, {}, 'v0.5 additive field still applied');
+  });
+
+  it('normalizes a legacy ARRAY requiredFiles to { canonical: [...] }', () => {
+    // A bare array could only ever have been the canonical doc list. Left as an
+    // array, every validator reading requiredFiles.canonical sees undefined and
+    // silently passes — the false-green this normalization closes.
+    const legacy = ['docs-canonical/ARCHITECTURE.md', 'docs-canonical/DATA-MODEL.md'];
+    const { newConfig, changed, notes } = migrateSchema({ project: 't', requiredFiles: legacy }, '0.0');
+    assert.deepEqual(newConfig.requiredFiles, { canonical: legacy });
+    assert.ok(changed, 'normalization counts as a change');
+    assert.ok(notes.some(n => /array .* canonical/i.test(n)), `expected a normalization note; got: ${notes.join(' | ')}`);
+  });
+
+  it('SURFACES (does not silently accept) a requiredFiles object missing canonical', () => {
+    const { notes } = migrateSchema(
+      { projectName: 't', version: CURRENT_SCHEMA_VERSION, requiredFiles: { agentFile: ['AGENTS.md'] } },
+      CURRENT_SCHEMA_VERSION
+    );
+    assert.ok(
+      notes.some(n => n.startsWith('⚠') && /canonical/.test(n)),
+      `a missing canonical key must produce a visible warning; got: ${notes.join(' | ')}`
+    );
+  });
+
+  it('warns when requiredFiles is absent entirely (no fabrication)', () => {
+    const { newConfig, notes } = migrateSchema({ project: 't' }, '0.0');
+    assert.strictEqual(newConfig.requiredFiles, undefined, 'must NOT fabricate a doc list');
+    assert.ok(notes.some(n => n.startsWith('⚠') && /requiredFiles is missing/.test(n)));
   });
 });
