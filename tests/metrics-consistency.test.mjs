@@ -100,4 +100,42 @@ describe('Metrics-Consistency Validator', () => {
     assert.strictEqual(result.passed, 0);
     assert.strictEqual(result.total, 0);
   });
+
+  // Field test (wu-whatsappinbox): the recursive root walk swept in OpenWolf
+  // session archives and vendored toolkit READMEs deep under security/, then
+  // reported their unrelated "N validators / N checks" prose as the user's
+  // drift (~39 false warnings). Markdown buried in arbitrary subdirectories is
+  // NOT a doc DocGuard governs, so it must not be scanned.
+  it('does NOT scan markdown buried in arbitrary subdirectories (over-reach fix)', () => {
+    mkdirSync(join(tmpDir, 'security', 'wolf-archive', 'old-session'), { recursive: true });
+    writeFileSync(
+      join(tmpDir, 'security', 'wolf-archive', 'old-session', 'memory.md'),
+      'Session note: the guard ran 99 validators back then.'
+    );
+    const guardResults = [{ status: 'passed', total: 15 }];
+    const result = validateMetricsConsistency(tmpDir, {}, guardResults);
+
+    assert.deepEqual(result.errors, []);
+    assert.deepEqual(result.warnings, [],
+      `deep-subdir markdown must not be flagged; got: ${result.warnings.join(' | ')}`);
+  });
+
+  // Conversely, a canonical doc the user actually configures — even outside the
+  // conventional docs-canonical/ tree — MUST still be scanned, so the scoping
+  // fix narrows noise without losing real detection.
+  it('still scans a configured canonical doc located outside docs-canonical/', () => {
+    mkdirSync(join(tmpDir, 'documentation'), { recursive: true });
+    writeFileSync(join(tmpDir, 'documentation', 'OVERVIEW.md'), 'DocGuard runs 99 validators.');
+    const guardResults = [];
+    for (let i = 0; i < 11; i++) guardResults.push({ status: 'passed', total: i === 0 ? 5 : 1 });
+
+    const result = validateMetricsConsistency(
+      tmpDir,
+      { requiredFiles: { canonical: ['documentation/OVERVIEW.md'] } },
+      guardResults
+    );
+
+    assert.strictEqual(result.warnings.length, 1, `expected the configured doc to be scanned; got: ${result.warnings.join(' | ')}`);
+    assert.ok(result.warnings[0].includes('99 validators'));
+  });
 });

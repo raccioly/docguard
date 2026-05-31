@@ -57,7 +57,7 @@ export function validateMetricsConsistency(projectDir, config, guardResults) {
 
   // ── Scan markdown files for hardcoded numbers ──
   const isIgnored = loadIgnorePatterns(projectDir);
-  const mdFiles = findMarkdownFiles(projectDir);
+  const mdFiles = findMarkdownFiles(projectDir, config);
   // Patterns must match standalone number references, not ratio-style "8/8 checks"
   const patterns = [
     { key: 'checks', regex: /(?<!\d\/)\b(\d{2,})\s+(?:automated\s+)?checks?\b/gi, label: 'checks' },
@@ -159,24 +159,44 @@ function findTestFiles(dir) {
 // commands/ install location. A user's own commands/<name>.md is NOT excluded.)
 const DOCGUARD_OWN_DOC_RE = /[\\/](?:\.agent[\\/])?commands[\\/]docguard\.[a-z-]+\.md$/i;
 
-function findMarkdownFiles(dir) {
+function findMarkdownFiles(dir, config = {}) {
   const seen = new Set();
   const mdFiles = [];
-  // Check root, docs-canonical, and extensions
-  const searchDirs = [
-    dir,
-    resolve(dir, 'docs-canonical'),
-    resolve(dir, 'extensions'),
-  ];
+  const add = (f) => {
+    if (f.endsWith('.md') && !seen.has(f) && !DOCGUARD_OWN_DOC_RE.test(f)) {
+      seen.add(f);
+      mdFiles.push(f);
+    }
+  };
 
-  for (const searchDir of searchDirs) {
-    if (!existsSync(searchDir)) continue;
-    walkFiles(searchDir, (f) => {
-      if (f.endsWith('.md') && !seen.has(f) && !DOCGUARD_OWN_DOC_RE.test(f)) {
-        seen.add(f);
-        mdFiles.push(f);
-      }
-    });
+  // Root LEVEL ONLY (non-recursive): README and other top-level docs. A
+  // "N validators / N checks" claim that refers to DocGuard lives in the README
+  // or the canonical docs — not five levels deep under security/ or backend/.
+  // The old code recursively walked the WHOLE repo from the root, so it swept in
+  // OpenWolf session archives (security/wolf-archive/**/memory.md) and vendored
+  // toolkit READMEs whose unrelated "N checks" prose was then reported as the
+  // USER's drift (field test: wu-whatsappinbox, ~39 false warnings the author
+  // could not act on). Scoping to the docs DocGuard actually governs fixes it.
+  try {
+    for (const entry of readdirSync(dir)) {
+      const full = join(dir, entry);
+      try { if (statSync(full).isFile()) add(full); } catch { /* unreadable entry */ }
+    }
+  } catch { /* unreadable root */ }
+
+  // Configured canonical docs (wherever they live), plus the conventional
+  // doc homes (docs/, docs-canonical/, extensions/) — scanned in full
+  // (recursive). Code/tooling dirs (security/, backend/, src/, …) are NOT doc
+  // homes and are deliberately excluded.
+  const canonical = config && config.requiredFiles && Array.isArray(config.requiredFiles.canonical)
+    ? config.requiredFiles.canonical : [];
+  for (const rel of canonical) {
+    const full = resolve(dir, rel);
+    if (existsSync(full)) { try { if (statSync(full).isFile()) add(full); } catch { /* skip */ } }
+  }
+  for (const sub of ['docs', 'docs-canonical', 'extensions']) {
+    const searchDir = resolve(dir, sub);
+    if (existsSync(searchDir)) walkFiles(searchDir, add);
   }
 
   return mdFiles;

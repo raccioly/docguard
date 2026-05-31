@@ -37,6 +37,22 @@ tool from lying about itself.
   also covers the "no-tests project" need without a dedicated profile.
 
 ### Fixed
+- **Metrics-Consistency no longer scans the whole repo for stray numbers**
+  (found by field-testing against a real backend): it previously walked the
+  *entire* project root recursively, so a "N validators / N checks" mention in
+  any markdown anywhere — OpenWolf session archives under `security/wolf-archive/`,
+  a vendored toolkit's `README.md` — was reported as the user's documentation
+  drift. On one real repo that was **~39 false warnings** the author could not
+  act on. It now scans only the docs DocGuard governs: root-level markdown, the
+  configured `requiredFiles.canonical` (wherever they live), and the `docs/`,
+  `docs-canonical/`, `extensions/` trees. Code/tooling directories are excluded.
+- **Docs-Coverage no longer demands documentation for generated tool artifacts**
+  (found by field-testing against a real Python project): pytest's `.coverage`
+  SQLite data file (and its parallel-mode `.coverage.<host>.<pid>` siblings,
+  `.eslintcache`, `.stylelintcache`, `.tsbuildinfo`) are generated, not config a
+  human authors, so flagging them as "undocumented config files" was a false
+  positive. Also skips `.dockerignore`, `.python-version`, `.tool-versions`,
+  `.ruby-version`, `.gitkeep`/`.keep`.
 - **API-Surface no longer double-flags every dynamic route** (found by field-
   testing against a real Next.js app): `normalizePath` now collapses Next.js
   `[id]`/`[...slug]`/`[[...slug]]` brackets to the same `{}` placeholder it

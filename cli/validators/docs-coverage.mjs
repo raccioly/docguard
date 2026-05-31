@@ -35,7 +35,19 @@ const COMMON_DOTFILES = new Set([
   '.env', '.env.local', '.env.development', '.env.production',
   '.vscode', '.idea', '.github', '.husky',
   '.babelrc', '.browserslistrc', '.stylelintrc',
+  '.dockerignore', '.python-version', '.tool-versions', '.ruby-version',
+  '.gitkeep', '.keep',
 ]);
+
+// Generated tool artifacts (caches, coverage data, lock-data) that land at the
+// repo root but are NOT configuration a human authors or documents. Treating
+// them as "undocumented config files" is a false positive (field test:
+// quick-recon-tool flagged pytest's `.coverage` SQLite data file). Matched by
+// exact name OR prefix (`.coverage.<host>.<pid>` is coverage.py's parallel form).
+const GENERATED_DOTFILE_PREFIXES = ['.coverage', '.eslintcache', '.stylelintcache', '.tsbuildinfo'];
+function isGeneratedArtifact(name) {
+  return GENERATED_DOTFILE_PREFIXES.some(p => name === p || name.startsWith(p + '.'));
+}
 
 /**
  * Validate that code artifacts are referenced in documentation.
@@ -125,6 +137,7 @@ function checkConfigFiles(projectDir, allDocContent, config = {}) {
 
     if (!isDotFile && !isProjectConfig) continue;
     if (COMMON_DOTFILES.has(entry)) continue;
+    if (isGeneratedArtifact(entry)) continue;
     if (entry === 'tsconfig.json' || entry === 'package-lock.json') continue;
 
     // Skip directories — this check is for configuration FILES, not dirs.
