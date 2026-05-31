@@ -21,23 +21,28 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          fetch-depth: 2 # Need previous commit to compare
+          fetch-depth: 1 # only need HEAD's package.json; the tag check hits the remote
 
-      - name: Check if version changed
+      - name: Check if this version needs releasing
         id: check
         run: |
           CURRENT=$(node -p "require('./package.json').version")
-          # Get version from previous commit
-          PREVIOUS=$(git show HEAD~1:package.json 2>/dev/null | node -p "JSON.parse(require('fs').readFileSync('/dev/stdin','utf-8')).version" 2>/dev/null || echo "0.0.0")
+          TAG="v${CURRENT}"
           echo "current=$CURRENT"
-          echo "previous=$PREVIOUS"
-          if [ "$CURRENT" != "$PREVIOUS" ]; then
+          # TAG-DRIVEN gate (not HEAD~1): a version needs releasing iff no tag
+          # v$CURRENT exists yet. The old HEAD~1 comparison skipped the release
+          # whenever a push carried commits AFTER the version-bump commit (the
+          # bump wasn't the tip) — e.g. a batched push of several commits. It saw
+          # HEAD and HEAD~1 both already carrying the new version and wrongly
+          # concluded "unchanged", silently skipping npm/PyPI/GitHub-Release.
+          # Checking the tag is also idempotent: a re-run won't double-publish.
+          if git ls-remote --tags origin "refs/tags/$TAG" | grep -q "refs/tags/$TAG$"; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "⏭️ $TAG already released — nothing to do"
+          else
             echo "version=$CURRENT" >> "$GITHUB_OUTPUT"
             echo "changed=true" >> "$GITHUB_OUTPUT"
-            echo "✅ Version changed: $PREVIOUS → $CURRENT"
-          else
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "⏭️ Version unchanged ($CURRENT), skipping release"
+            echo "✅ $TAG is not yet released — releasing"
           fi
 
   # ── Step 2: Run full test suite ────────────────────────────────────────
