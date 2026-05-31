@@ -13,7 +13,8 @@
 # Setup:
 #   1. Copy this file to .github/workflows/docguard-autofix.yml
 #   2. Ensure the workflow has the permissions block below (write access).
-#   3. (Optional) Pin to a specific DocGuard version by changing `@main` to a tag.
+#   3. Pinned to the `@v0.24.0` release tag for reproducible CI. Change it to a
+#      newer tag to upgrade, or to `@main` to always track the latest (unpinned).
 #
 # Security note: this workflow makes commits back to the PR branch. It refuses
 # to run on PRs from forks (where pushing back is impossible by design).
@@ -43,7 +44,7 @@ jobs:
           fetch-depth: 0
 
       - name: Run DocGuard fix --write + auto-commit + PR comment
-        uses: raccioly/docguard@main
+        uses: raccioly/docguard@v0.24.0
         with:
           command: fix
           auto-commit: 'true'
