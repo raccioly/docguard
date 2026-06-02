@@ -1564,7 +1564,10 @@ This release reshapes DocGuard from a documentation linter into an **AI-readable
 - **Guard checks** — increased from 86 to 114 with 5 new validators (docs-coverage, metadata-sync, metrics-consistency, docs-diff, freshness).
 - **Validators** — increased from 9 to 14.
 
-## [0.8.0] - 2026-03-13
+## [0.8.0] - 2026-06-02
+
+### Added
+- **Performance Optimization** — Replaced `Array.find` within nested loops with an O(1) Map lookup in `cli/scanners/schemas.mjs`, reducing time complexity from O(N*M) to O(N+M) during OpenAPI schema relationship extraction.
 
 ### Added
 - **Docs-Diff Validator** — New validator checks for entity/route/field drift between code and canonical docs. Integrated into `guard` and `diagnose` runs.
