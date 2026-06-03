@@ -15,7 +15,7 @@
 
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { resolve, basename, dirname } from 'node:path';
-import { execSync, execFileSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { c } from '../shared.mjs';
 import { computeApiSurfaceDrift } from '../validators/api-surface.mjs';
