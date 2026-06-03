@@ -8,3 +8,6 @@
 ## 2024-05-24 - Pre-compile RegExp in nested loops
 **Learning:** Instantiating `new RegExp()` inside nested array methods like `.filter` and `.some` creates a severe O(N*M) performance bottleneck, especially when matching two large lists (e.g., documented tests vs. actual test files).
 **Action:** Always pre-compile regular expressions and derived strings into an array of "matcher" objects outside of the loop before iterating, which shifts the instantiation cost from O(N*M) to O(N).
+## 2024-05-24 - Pre-compute Map for Array.find in loops
+**Learning:** Using `Array.find` inside a nested loop results in an O(N^2) bottleneck. Precomputing an O(1) Map lookup outside the loop significantly improves performance for larger datasets.
+**Action:** When finding matching objects inside nested loops, always precompute a lookup Map or Set to eliminate the O(N^2) algorithmic overhead.
