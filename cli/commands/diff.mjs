@@ -359,21 +359,36 @@ function diffTests(dir, config = {}) {
     return {
       original: docEntry,
       hasSlash,
-      rx
+      rx,
+      matched: false
     };
   });
 
-  const matches = (matcher, codeRel) => {
-    const subject = matcher.hasSlash ? codeRel : basename(codeRel);
-    return matcher.rx.test(subject);
-  };
+  // PERFORMANCE OPTIMIZATION: Pre-compute expensive operations like basename() into object representations
+  // before the loops, and collapse multiple nested .filter()/.some() passes into a single iteration block
+  // to avoid severe O(N*M) string processing overhead.
+  const codeObjects = codeArr.map(c => ({
+    original: c,
+    basename: basename(c),
+    matched: false
+  }));
+
+  for (const doc of docMatchers) {
+    for (const code of codeObjects) {
+      const subject = doc.hasSlash ? code.original : code.basename;
+      if (doc.rx.test(subject)) {
+        doc.matched = true;
+        code.matched = true;
+      }
+    }
+  }
 
   return {
     title: 'Test Files',
     icon: '🧪',
-    onlyInDocs: docMatchers.filter(m => !codeArr.some(c => matches(m, c))).map(m => m.original),
-    onlyInCode: codeArr.filter(c => !docMatchers.some(m => matches(m, c))),
-    matched: docMatchers.filter(m => codeArr.some(c => matches(m, c))).map(m => m.original),
+    onlyInDocs: docMatchers.filter(m => !m.matched).map(m => m.original),
+    onlyInCode: codeObjects.filter(c => !c.matched).map(c => c.original),
+    matched: docMatchers.filter(m => m.matched).map(m => m.original),
   };
 }
 

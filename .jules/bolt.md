@@ -8,3 +8,6 @@
 ## 2024-05-24 - Pre-compile RegExp in nested loops
 **Learning:** Instantiating `new RegExp()` inside nested array methods like `.filter` and `.some` creates a severe O(N*M) performance bottleneck, especially when matching two large lists (e.g., documented tests vs. actual test files).
 **Action:** Always pre-compile regular expressions and derived strings into an array of "matcher" objects outside of the loop before iterating, which shifts the instantiation cost from O(N*M) to O(N).
+## 2024-05-24 - Pre-compute properties and collapse loops for O(N*M)
+**Learning:** Even if `new RegExp()` is pre-compiled outside a loop, calling dynamically computed properties like `basename()` inside nested array methods like `.filter()` and `.some()` still incurs a severe O(N*M) performance penalty due to redundant string processing and loop iteration.
+**Action:** Pre-compute expensive operations like `basename()` into object representations (e.g. `{original: string, basename: string, matched: boolean}`) before the loops, and collapse multiple nested `.filter()`/`.some()` passes into a single iteration block to avoid repeated processing and traversal.
