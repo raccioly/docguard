@@ -17,6 +17,7 @@
 
 - **2026-06-02** — Don't trust a bug report's stated root cause. The websec B1 report blamed "scanners/validators skip the ignore file"; the real defect was the trailing-slash glob (above). Fixing per the report ("centralize ignore handling") would have changed nothing AND left a false-green — the exact failure mode this tool exists to prevent.
 - **2026-06-02** — Don't assume a documented CLI flag is wired. `--fix` is documented (`docguard.mjs:111` "Auto-create missing files from templates") and set (`:186`) but read **nowhere** — `init.mjs` never consumes `flags.fix`. `grep` the flag's *consumption*, not just its declaration.
+- **2026-06-05** — Release CI gotchas (cost a failed v0.25.0 publish, then fixed): (1) `.github/workflows/release.yml`'s `test` job was MISSING `npm ci`, so `@babel/parser` (a regular dep) was absent and all 20 AST tests failed. It stayed latent because `detect-version` skips the job unless a release is due — so the job had literally never run. (2) `release.yml` is `paths`-filtered to `package.json`, so a workflow-only fix commit does NOT re-trigger it — use `gh workflow run release.yml --ref main` (the `workflow_dispatch` recovery trigger). (3) The `docguard watch` and `auto-fix prompts` CLI-spawn tests are CI-FLAKY (failed once on a2684e4, passed on identical-code re-run + locally) — a re-run, not a real failure.
 
 ## Decision Log
 

@@ -460,6 +460,18 @@
       "related_bugs": ["bug-023", "bug-028"],
       "occurrences": 1,
       "last_seen": "2026-06-03T03:44:15Z"
+    },
+    {
+      "id": "bug-032",
+      "timestamp": "2026-06-05T03:02:00Z",
+      "error_message": "Auto Release workflow failed: 20 AST tests (parseJsTs, extractJsRouteCalls, Fastify/Express/JSX route extraction) failed in the release 'test' job, blocking the v0.25.0 publish",
+      "file": ".github/workflows/release.yml",
+      "root_cause": "The release.yml 'test' job ran `npm test` with NO `npm ci` step, so node_modules was empty and @babel/parser (a regular dependency, not optional) couldn't load — every AST-dependent test failed. Latent since the job was written; only surfaced at v0.25.0 because prior releases' detect-version step skipped this job (batched-push / non-tip version bump), so the test job never actually executed.",
+      "fix": "Added an `npm ci` 'Install dependencies' step before 'Run Tests', matching ci.yml. Re-triggered via workflow_dispatch (release.yml is paths-filtered to package.json, so the workflow-only fix commit didn't auto-trigger it). All jobs then green; v0.25.0 published to npm + PyPI + GitHub Release.",
+      "tags": ["ci", "release", "npm-ci", "babel-parser", "github-actions"],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-05T03:02:00Z"
     }
   ]
 }
