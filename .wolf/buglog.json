@@ -352,6 +352,114 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-05-29T19:59:24.106Z"
+    },
+    {
+      "id": "bug-023",
+      "timestamp": "2026-06-02T15:41:53Z",
+      "error_message": ".docguardignore trailing-slash dir patterns (e.g. 'tests/', 'base-research/') silently match nothing — ignored dirs were still scanned/flagged by every shouldIgnore + buildIgnoreFilter consumer",
+      "file": "cli/shared-ignore.mjs",
+      "root_cause": "globToRegex did not strip a gitignore-style trailing slash, so 'dir/' built an alternation that could only match a literal 'dir//' (double slash) — never a real path. routes.mjs and todo-tracking.mjs WERE correctly wired to shouldIgnore (fcc7264); the glob translator itself was broken. The test suite used 'dir/' forms only in loader/merge assertions and never asserted they MATCH a file, so it stayed green — a false-green coverage gap.",
+      "fix": "Strip a trailing slash in globToRegex (const normalized = pattern.replace trailing-slash || pattern) so 'dir', 'dir/' and 'dir/**' behave identically. Added 4 end-to-end regression tests in tests/docguardignore.test.mjs that assert trailing-slash patterns actually match and do not over-match a sibling sharing the prefix.",
+      "tags": ["ignore", "glob", "false-green", "security-relevant", "field-report", "websec-validator", "B1a"],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-02T15:41:53Z"
+    },
+    {
+      "id": "bug-024",
+      "timestamp": "2026-06-02T15:41:53Z",
+      "error_message": "generate --plan --write crashes with ENOENT creating docs-implementation/KNOWN-GOTCHAS.md",
+      "file": "cli/commands/generate.mjs",
+      "root_cause": "The --plan --write loop mkdir'd only docs-canonical/, then wrote each doc with a raw writeFileSync. buildMemoryPlan unconditionally plans docs-implementation/ docs (KNOWN-GOTCHAS.md, CURRENT-STATE.md), so the first write into that not-yet-created dir threw ENOENT — docs-canonical docs written, first docs-implementation write crashed.",
+      "fix": "Folded mkdirSync(dirname(filePath),{recursive:true}) into the safeWrite helper and routed the --plan --write loop through safeWrite instead of raw writeFileSync (also gains the .bak backup that path previously lacked). Added a regression test in tests/commands.test.mjs running generate --plan --write in a temp project with no docs-implementation/.",
+      "tags": ["generate", "enoent", "mkdir", "field-report", "websec-validator", "B2"],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-02T15:41:53Z"
+    },
+    {
+      "id": "bug-025",
+      "timestamp": "2026-06-02T19:16:48Z",
+      "error_message": "docguard init --fix drops into the interactive doc-picker (\"Which canonical docs does your project need?\") and hangs/fails with no TTY — contradicts its documented \"Auto-create missing files from templates\"",
+      "file": "cli/commands/init.mjs",
+      "root_cause": "--fix was a dead flag: documented (docguard.mjs:111) and set (docguard.mjs:186) but consumed nowhere. init.mjs never read flags.fix, so init ran its normal path; with no skeleton/skipPrompts/wizard/profile set it fell into the interactive askQuestion loop, which blocks/fails without a TTY (CI/agent use).",
+      "fix": "Wired flags.fix into init.mjs: shouldRunGenerate() returns false on --fix (skip the interactive scan-and-propose preview) and the non-interactive branch fires on flags.fix (use profile defaults). The create-loop already skips existing files, so --fix only fills gaps. Added a regression test asserting init --fix creates docs without entering the picker.",
+      "tags": ["init", "cli-flag", "dead-flag", "headless", "field-report", "websec-validator", "B3"],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-02T19:16:48Z"
+    },
+    {
+      "id": "bug-026",
+      "timestamp": "2026-06-02T19:16:48Z",
+      "error_message": "docguard generate --plan (a read-only preview) has side effects — scaffolds .agent/skills, .agent/commands, .specify/ and runs an npm/pip step",
+      "file": "cli/docguard.mjs",
+      "root_cause": "The dispatcher runs ensureSkills() on any command that is not setup/init and not headless. headless = jsonMode||write||checkOnly||changedOnly||quiet, which excluded a bare --plan — so generate --plan triggered ensureSkills' writes. Inconsistent: generate --plan --write was already headless (flags.write) and did NOT scaffold.",
+      "fix": "Added flags.plan to the headless set in docguard.mjs so generate --plan suppresses the banner AND ensureSkills, matching --plan --write. Verified by a before/after probe: a non-headless generate creates .agent (YES), generate --plan does not (no). Added a regression test asserting --plan leaves .agent/ and .specify/ untouched.",
+      "tags": ["generate", "plan", "side-effects", "ensure-skills", "least-surprise", "field-report", "websec-validator", "B4"],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-02T19:16:48Z"
+    },
+    {
+      "id": "bug-027",
+      "timestamp": "2026-06-02T19:30:13Z",
+      "error_message": "project-type detection (generate --plan) misclassifies a Click CLI as 'Express, Flask' — it ingests tests/fixtures/*/package.json + requirements.txt because ignored dirs are not honored",
+      "file": "cli/scanners/project-type.mjs",
+      "root_cause": "findManifests pruned only a hardcoded IGNORE_DIRS set + dot-dirs and never honored config.ignore/.docguardignore. detectEcosystems received config but marked it _config and never passed it to findManifests, so fixture/vendored manifests in user-ignored dirs polluted the detected frameworks/profile. This is the buildMemoryPlan/--plan path (generate's full path uses its own detectStack).",
+      "fix": "Threaded the already-arriving config into findManifests and pruned dirs + skipped manifest files via shouldIgnore(relPosix(root, child), config); detectEcosystems now passes config through (was _config). Depends on bug-023's trailing-slash glob fix so a 'tests/' pattern matches. Regression test in tests/project-type.test.mjs uses a control (fixtures pollute without ignore) + the fix (tests/ ignore drops Express/Flask, keeps the real Click).",
+      "tags": ["project-type", "ignore", "classification", "field-report", "websec-validator", "B1b"],
+      "related_bugs": ["bug-023"],
+      "occurrences": 1,
+      "last_seen": "2026-06-02T19:30:13Z"
+    },
+    {
+      "id": "bug-028",
+      "timestamp": "2026-06-03T01:32:47Z",
+      "error_message": "A hand-corrected source=code section (scanner mislabeled it) is flagged stale forever, and the suggested remedy `sync --write` reverts the correction — no override existed",
+      "file": "cli/validators/generated-staleness.mjs",
+      "root_cause": "Generated-Staleness compared every source=code section against scanner output with no per-section opt-out (quality checks had one; code sections didn't), and sync --write unconditionally replaced source=code sections. So a legitimately hand-maintained section had no escape from the stale-forever / auto-revert trap.",
+      "fix": "Honor a `pinned` attribute on the section marker (<!-- docguard:section id=… source=code pinned=\"reason\" -->), already parsed by parseSections. generated-staleness exempts pinned sections (counted as a pass, mirroring the docguard:quality opt-out) and appends a discoverability hint to the stale warning; sync.mjs skips pinned sections. Tests in generated-staleness.test.mjs (control+fix) and sync.test.mjs (don't-revert).",
+      "tags": ["generated-staleness", "sync", "marker", "false-positive", "field-report", "websec-validator", "B5"],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-03T01:32:47Z"
+    },
+    {
+      "id": "bug-029",
+      "timestamp": "2026-06-03T01:32:47Z",
+      "error_message": "docguard <command> --help printed the global help, not the command's own flags — flag discovery (generate --plan --write, init --skeleton/--wizard/--with) was impossible from --help",
+      "file": "cli/docguard.mjs",
+      "root_cause": "v0.24 made <command> --help non-destructive but routed it to printHelp() (global) because there was no per-command help; the global help lists commands but not each command's full flag set + examples.",
+      "fix": "Added a COMMAND_HELP map (init/generate/guard/score/diff/sync/fix/trace/upgrade/ci/memory) + printCommandHelp(command); the --help dispatch now calls it. Unmapped commands fall back to global help. Flags derived from the vetted global help to avoid documenting non-existent flags. Tests assert generate/init --help show their flags and watch --help falls back without starting the watcher.",
+      "tags": ["cli", "help", "ux", "field-report", "websec-validator", "B6"],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-03T01:32:47Z"
+    },
+    {
+      "id": "bug-030",
+      "timestamp": "2026-06-03T01:32:47Z",
+      "error_message": "generate emits docs-canonical/API-REFERENCE.md, then guard warns it 'exists but is not in your requiredFiles config' — the generator's own output is flagged orphaned",
+      "file": "cli/commands/generate.mjs",
+      "root_cause": "generate's standard doc set is a superset of the profile's requiredFiles.canonical, and generate never updated requiredFiles, so the traceability orphan-check (traceability.mjs:133) flagged docs the generator just created.",
+      "fix": "Added registerGeneratedCanonicalDocs(): after writing, generate merges the canonical docs it emitted into .docguard.json requiredFiles.canonical (additive only, only docs-canonical/*.md that exist on disk, only when a config exists, idempotent). Wired into both the full generate path and the --plan --write path. Test asserts requiredFiles.canonical gains ARCHITECTURE after generate --plan --write.",
+      "tags": ["generate", "traceability", "requiredFiles", "consistency", "field-report", "websec-validator", "B7"],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-03T01:32:47Z"
+    },
+    {
+      "id": "bug-031",
+      "timestamp": "2026-06-03T03:44:15Z",
+      "error_message": "generate --plan mislabels a security/scanner tool's own pattern-strings as real surface (websec-validator flagged as using express/boto3/jwt because its recon code mentions them)",
+      "file": "cli/commands/generate.mjs",
+      "root_cause": "The route/SDK/auth source scanners match pattern-strings; for a cli/library/tool whose source CONTAINS those strings as detection patterns, the auto-extracted surface is the tool's own code, not real usage. No confidence signal existed to warn the user.",
+      "fix": "F1 (chosen scope: flag, don't suppress — suppression would risk a false-green). Added surfaceConfidence(kind): web kinds (webapp/api/service) = 'normal', everything else = 'low'. generate --plan --format json now emits surface.confidence; the text output prints a 'Low-confidence surface — verify, pin with pinned=...' advisory when a non-web kind has web surface. Guard detection unchanged. Test asserts cli→low, api→normal.",
+      "tags": ["generate", "scanner-tool", "false-positive", "confidence", "field-report", "websec-validator", "F1"],
+      "related_bugs": ["bug-023", "bug-028"],
+      "occurrences": 1,
+      "last_seen": "2026-06-03T03:44:15Z"
     }
   ]
 }
