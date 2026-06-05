@@ -173,6 +173,19 @@ export function validateGeneratedStaleness(projectDir, config = {}) {
       if (!onDisk) continue;
 
       result.total++;
+
+      // B5 (field report): a `pinned` attribute on the section's open marker
+      //   <!-- docguard:section id=… source=code pinned="reason" -->
+      // marks the section as intentionally hand-maintained — the scanner
+      // mislabeled this surface (e.g. a scanner/tool repo whose source contains
+      // framework-like strings; see F1). Exempt it from staleness and count it
+      // as a pass, mirroring the docguard:quality opt-out marker. This is the
+      // escape hatch from the "stale forever / sync --write reverts it" trap.
+      if (onDisk.attrs?.pinned !== undefined) {
+        result.passed++;
+        continue;
+      }
+
       const expected = String(sec.body || '').trim();
       const actual = String(onDisk.body || '').trim();
 
@@ -194,7 +207,9 @@ export function validateGeneratedStaleness(projectDir, config = {}) {
         : '';
 
       result.warnings.push(
-        `${basename(doc.path)} → section "${sec.id}" is stale${hint}. Run \`docguard sync --write\` to refresh code-truth sections.`
+        `${basename(doc.path)} → section "${sec.id}" is stale${hint}. Run \`docguard sync --write\` to refresh code-truth sections. ` +
+        `If this section is intentionally hand-maintained (the scanner mislabeled it), pin it: ` +
+        `add \`pinned="reason"\` to its \`<!-- docguard:section id=${sec.id} … -->\` marker.`
       );
       // v0.14-P3: structured fix so `docguard fix --write` can fix this
       // mechanically (no AI needed — scanner already produced the right body).

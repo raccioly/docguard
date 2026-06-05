@@ -104,6 +104,12 @@ export function runSync(projectDir, config, flags) {
       if (sec.source !== 'code') continue;
       const existing = getSection(content, sec.id);
       if (!existing) continue; // sync refreshes sections that already exist
+      // B5: a pinned section is intentionally hand-maintained — never revert it.
+      // (Pairs with the Generated-Staleness exemption for the same marker.)
+      if (existing.attrs?.pinned !== undefined) {
+        skipped.push({ doc: doc.path, reason: `section ${sec.id} is pinned (hand-maintained) — not synced` });
+        continue;
+      }
       if (existing.body.trim() === String(sec.body).trim()) continue; // already current
       // L-1: when --since is provided, only update sections whose underlying
       // source files appear in the changed set. Avoids spurious updates when

@@ -66,6 +66,22 @@ describe('docguard sync', () => {
     assert.ok(doc.includes('Hand-written overview — must survive.'), 'human prose preserved');
   });
 
+  it('B5: --write does not revert a pinned section', () => {
+    // The control test above proves --write would inject /api/orders into the
+    // endpoints section. Pinning it must stop that — the section is intentionally
+    // hand-curated, so sync leaves it (and the whole doc) byte-for-byte unchanged.
+    const f = 'docs-canonical/API-REFERENCE.md';
+    write(f, read(f).replace(
+      '<!-- docguard:section id=endpoints source=code -->',
+      '<!-- docguard:section id=endpoints source=code pinned="hand-curated" -->'
+    ));
+    const before = read(f);
+    quiet(() => runSync(dir, config, { write: true }));
+    const after = read(f);
+    assert.equal(after, before, 'pinned section left unchanged');
+    assert.ok(!after.includes('/api/orders'), 'sync must not inject into a pinned section');
+  });
+
   it('is idempotent — a second sync makes no changes', () => {
     quiet(() => runSync(dir, config, { write: true }));
     const after1 = read('docs-canonical/API-REFERENCE.md');

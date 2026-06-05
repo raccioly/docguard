@@ -40,8 +40,38 @@ function backupFile(filePath) {
  * Call this instead of raw writeFileSync when generating docs.
  */
 function safeWrite(filePath, content) {
+  mkdirSync(dirname(filePath), { recursive: true });
   backupFile(filePath);
   writeFileSync(filePath, content, 'utf-8');
+}
+
+/**
+ * B7 (field report): after generate emits canonical docs, register them in
+ * `.docguard.json` requiredFiles.canonical so `guard` doesn't immediately flag
+ * the generator's OWN output as an "orphaned" doc ("exists but not in your
+ * requiredFiles"). Only ADDS (never removes/deletes), only docs-canonical/*.md
+ * that actually exist on disk, and only when a config file already exists (init
+ * owns config creation). Idempotent — a second run with nothing new is a no-op.
+ * @returns {number} count of paths newly registered.
+ */
+function registerGeneratedCanonicalDocs(projectDir, candidatePaths) {
+  const cfgPath = resolve(projectDir, '.docguard.json');
+  if (!existsSync(cfgPath)) return 0;
+  let cfg;
+  try { cfg = JSON.parse(readFileSync(cfgPath, 'utf-8')); } catch { return 0; }
+  const canon = [...new Set(candidatePaths)].filter(p =>
+    p.startsWith('docs-canonical/') && p.endsWith('.md') && existsSync(resolve(projectDir, p))
+  );
+  if (canon.length === 0) return 0;
+  if (!cfg.requiredFiles || typeof cfg.requiredFiles !== 'object') cfg.requiredFiles = {};
+  const existing = Array.isArray(cfg.requiredFiles.canonical) ? cfg.requiredFiles.canonical : [];
+  const seen = new Set(existing);
+  let added = 0;
+  for (const p of canon) if (!seen.has(p)) { existing.push(p); seen.add(p); added++; }
+  if (added === 0) return 0;
+  cfg.requiredFiles.canonical = existing;
+  try { writeFileSync(cfgPath, JSON.stringify(cfg, null, 2) + '\n', 'utf-8'); } catch { return 0; }
+  return added;
 }
 
 const CODE_EXTENSIONS = new Set([
@@ -114,6 +144,19 @@ function appendStandardsCitation(content, docName) {
 }
 
 /**
+ * F1 (field report): web-shaped surface (HTTP endpoints, SDK deps, routes)
+ * auto-extracted from a cli/library/unknown-kind project is often pattern-
+ * matches in the project's OWN source (e.g. a scanner/linter whose code mentions
+ * express, boto3, jwt as detection strings), not real usage. We do NOT suppress
+ * it — that could hide a real surface (a false-green) — we flag it 'low'
+ * confidence so the surface is verified before being documented. Web kinds
+ * (webapp/api/service) stay 'normal'.
+ */
+function surfaceConfidence(kind) {
+  return ['webapp', 'api', 'service'].includes(kind) ? 'normal' : 'low';
+}
+
+/**
  * `docguard generate --plan` — AI-powered Generate.
  * Builds the code-truth skeleton (marked sections) and emits the agent task
  * manifest. `--format json` → machine manifest for an agent; text → summary.
@@ -139,6 +182,7 @@ export function runGeneratePlan(projectDir, config, flags) {
         screens: plan.surface.screens.length,
         components: plan.surface.components.length,
         envVars: plan.surface.envVars.length,
+        confidence: surfaceConfidence(plan.profile.kind),
       },
       docs: plan.docs.map(d => ({
         path: d.path,
@@ -169,11 +213,18 @@ export function runGeneratePlan(projectDir, config, flags) {
           : `> **AI task:** ${sec.task}\n<!-- docguard:pending agent writes this section -->`;
         content = upsertSection(content, sec.id, body, { source: sec.source }).content;
       }
-      writeFileSync(full, content, 'utf-8');
+      // Route through safeWrite: creates the parent dir (docs-implementation/ may
+      // not exist yet — was an ENOENT crash) and snapshots a .bak before writing.
+      safeWrite(full, content);
       wrote++;
     }
+    // B7: register the scaffolded canonical docs so guard doesn't flag them.
+    const registered = registerGeneratedCanonicalDocs(projectDir, plan.docs.map(d => d.path));
     console.log(`${c.bold}🔮 DocGuard Generate --plan --write — ${config.projectName}${c.reset}`);
     console.log(`  ${c.green}✅ Scaffolded ${wrote} doc(s)${c.reset} with code-truth sections + ${plan.agentTasks.length} agent task(s).`);
+    if (registered > 0) {
+      console.log(`  ${c.dim}Registered ${registered} canonical doc(s) in .docguard.json requiredFiles.${c.reset}`);
+    }
     console.log(`  ${c.dim}Now run your AI agent (/docguard.fix) to write the prose sections, then ${c.cyan}docguard guard${c.dim}.${c.reset}\n`);
     return;
   }
@@ -182,6 +233,10 @@ export function runGeneratePlan(projectDir, config, flags) {
   console.log(`${c.bold}🔮 DocGuard Generate Plan — ${config.projectName}${c.reset}`);
   console.log(`${c.dim}   ${plan.profile.polyglot ? 'Polyglot' : 'Single-language'}: ${plan.profile.languages.join(', ')} | frameworks: ${plan.profile.frameworks.join(', ') || '—'} | kind: ${plan.profile.kind}${c.reset}\n`);
   console.log(`  ${c.bold}Code-truth surface:${c.reset} ${plan.surface.endpoints.length} endpoints · ${plan.surface.entities.length} entities · ${plan.surface.screens.length} screens · ${plan.surface.components.length} components · ${plan.surface.envVars.length} env vars\n`);
+  const webSurface = plan.surface.endpoints.length + plan.surface.entities.length + plan.surface.screens.length + plan.surface.components.length;
+  if (surfaceConfidence(plan.profile.kind) === 'low' && webSurface > 0) {
+    console.log(`  ${c.yellow}⚠️  Low-confidence surface:${c.reset} ${c.dim}this looks like a ${plan.profile.kind} (not a web app), so the HTTP/SDK/route surface above may be pattern-matches in your OWN source — not real usage. Verify before documenting; pin any corrected code section with ${c.cyan}pinned="reason"${c.dim}.${c.reset}\n`);
+  }
   console.log(`  ${c.bold}Documents to build (${plan.docs.length}):${c.reset}`);
   for (const d of plan.docs) {
     const code = d.sections.filter(s => s.source === 'code').length;
@@ -301,8 +356,19 @@ export function runGenerate(projectDir, config, flags) {
   created += rootResults.created;
   skipped += rootResults.skipped;
 
+  // B7: keep guard coherent — register the canonical docs we emitted so the
+  // traceability validator doesn't flag the generator's own output.
+  const registered = registerGeneratedCanonicalDocs(projectDir, [
+    'docs-canonical/ARCHITECTURE.md', 'docs-canonical/API-REFERENCE.md',
+    'docs-canonical/DATA-MODEL.md', 'docs-canonical/ENVIRONMENT.md',
+    'docs-canonical/TEST-SPEC.md', 'docs-canonical/SECURITY.md',
+  ]);
+
   console.log(`\n${c.bold}  ─────────────────────────────────────${c.reset}`);
   console.log(`  ${c.green}Generated: ${created}${c.reset}  Skipped: ${skipped} (already exist)`);
+  if (registered > 0) {
+    console.log(`  ${c.dim}Registered ${registered} canonical doc(s) in .docguard.json requiredFiles.${c.reset}`);
+  }
   if (docTools._detected.length > 0) {
     console.log(`  ${c.dim}Leveraged: ${docTools._detected.join(', ')} (existing tools detected)${c.reset}`);
   }

@@ -22,6 +22,7 @@ import {
   loadDocguardIgnore,
   mergeIgnoreFile,
   shouldIgnore,
+  buildIgnoreFilter,
 } from '../cli/shared-ignore.mjs';
 
 function make(files) {
@@ -139,5 +140,46 @@ describe('.docguardignore — end-to-end: shouldIgnore honors merged patterns', 
     assert.equal(shouldIgnore('vendor/legacy.ts', config), true);
     assert.equal(shouldIgnore('src/__generated__/x.ts', config), true);
     assert.equal(shouldIgnore('src/main.ts', config), false);
+  });
+});
+
+describe('.docguardignore — trailing-slash directory patterns (B1a regression)', () => {
+  // Regression for the websec-validator field report: globToRegex turned a
+  // gitignore-style "dir/" into a regex that only matched a literal "dir//",
+  // so a trailing-slash pattern silently matched NOTHING. Every loader/merge
+  // test above used "build/" etc. but only asserted it LOADS — none asserted
+  // a trailing-slash pattern actually MATCHES a file, which is why the suite
+  // stayed green while the feature was broken. "dir", "dir/" and "dir/**"
+  // must all ignore the directory's contents.
+  let dir;
+  afterEach(() => { if (dir) rmSync(dir, { recursive: true, force: true }); });
+
+  it('buildIgnoreFilter: dir, dir/, and dir/** all ignore the directory contents', () => {
+    const target = 'tests/fixtures/node_app/server.js';
+    for (const pat of ['tests', 'tests/', 'tests/**']) {
+      assert.equal(
+        buildIgnoreFilter([pat])(target), true,
+        `pattern ${JSON.stringify(pat)} should ignore ${target}`
+      );
+    }
+  });
+
+  it('shouldIgnore honors a trailing-slash pattern (global + validator-specific)', () => {
+    assert.equal(shouldIgnore('base-research/notes.md', { ignore: ['base-research/'] }), true);
+    assert.equal(shouldIgnore('tests/fixtures/x.js', { ignore: ['tests/'] }, 'todoIgnore'), true);
+  });
+
+  it('a trailing slash does not over-match a sibling sharing the prefix', () => {
+    // "tests/" must exclude tests/ but NOT a sibling dir like tests-helpers/.
+    assert.equal(buildIgnoreFilter(['tests/'])('tests-helpers/util.js'), false);
+    assert.equal(buildIgnoreFilter(['tests/'])('tests/fixtures/x.js'), true);
+  });
+
+  it('end-to-end: a trailing-slash .docguardignore entry excludes the dir', () => {
+    dir = make({ '.docguardignore': 'build/\n' });
+    const config = {};
+    mergeIgnoreFile(dir, config);
+    assert.equal(shouldIgnore('build/output.js', config), true);
+    assert.equal(shouldIgnore('src/main.js', config), false);
   });
 });

@@ -183,6 +183,38 @@ export const PROFILES = {
       freshness: true,
     },
   },
+  // F3 (field report): non-web-centric profiles. The default doc set assumes an
+  // HTTP API + database; for a CLI or library that structure fights the project.
+  // These drop the HTTP/DB-shaped requirements. (A bespoke CLI-REFERENCE doc type
+  // is a separate, larger follow-up; until then API-REFERENCE doubles as the
+  // library's module-API reference.)
+  cli: {
+    description: 'CLI / command-line tool — no HTTP API or database assumed.',
+    requiredFiles: {
+      canonical: [
+        'docs-canonical/ARCHITECTURE.md',
+        'docs-canonical/TEST-SPEC.md',
+        'docs-canonical/SECURITY.md',
+        'docs-canonical/ENVIRONMENT.md',
+      ],
+      agentFile: ['AGENTS.md', 'CLAUDE.md'],
+      changelog: 'CHANGELOG.md',
+      driftLog: 'DRIFT-LOG.md',
+    },
+  },
+  library: {
+    description: 'Library / package — public API matters; no HTTP server or DB assumed.',
+    requiredFiles: {
+      canonical: [
+        'docs-canonical/ARCHITECTURE.md',
+        'docs-canonical/API-REFERENCE.md',
+        'docs-canonical/TEST-SPEC.md',
+      ],
+      agentFile: ['AGENTS.md', 'CLAUDE.md'],
+      changelog: 'CHANGELOG.md',
+      driftLog: 'DRIFT-LOG.md',
+    },
+  },
   'enterprise-ai': {
     description: 'EU AI Act compliance — Annex IV documentation requirements, ALCOA+ alignment, strict freshness. For AI/ML projects under regulatory scrutiny.',
     requiredFiles: {

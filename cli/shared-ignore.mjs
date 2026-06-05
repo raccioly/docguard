@@ -113,7 +113,13 @@ export function mergeIgnoreFile(projectDir, config) {
  * @returns {RegExp}
  */
 function globToRegex(pattern) {
-  const escaped = pattern
+  // gitignore-style trailing slash ("dir/") means "this directory and everything
+  // under it". Strip it so "dir/" matches identically to "dir" — otherwise the
+  // escaped pattern keeps the slash and the alternation below can only match a
+  // literal "dir//" (double slash), so the pattern silently matches nothing.
+  // `|| pattern` guards the degenerate all-slashes case (e.g. "/") from emptying.
+  const normalized = pattern.replace(/\/+$/, '') || pattern;
+  const escaped = normalized
     .replace(/\./g, '\\.')
     .replace(/\*\*/g, '§§')     // temp placeholder for **
     .replace(/\*/g, '[^/]*')

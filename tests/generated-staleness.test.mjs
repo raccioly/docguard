@@ -141,4 +141,34 @@ describe('validateGeneratedStaleness', () => {
         'if checks ran, either all pass or warnings list the drift');
     }
   });
+
+  it('B5: a `pinned` source=code section is exempt from staleness', () => {
+    // The `tech-stack` section is always emitted by the planner, so a divergent
+    // body is deterministically stale — unless pinned.
+    const WRONG = 'HAND-MAINTAINED STACK TABLE THE SCANNER WOULD NEVER PRODUCE';
+    const mk = (attrs) => ({
+      'package.json': JSON.stringify({ name: 't', version: '0.0.0', dependencies: { react: '^18' } }),
+      'src/index.ts': 'export const x = 1;',
+      'docs-canonical/ARCHITECTURE.md':
+        '# Architecture\n\n' +
+        `<!-- docguard:section id=tech-stack source=code ${attrs}-->\n` +
+        WRONG + '\n<!-- /docguard:section -->\n',
+    });
+
+    // Control: an unpinned divergent section IS flagged stale (keeps this honest).
+    const ctrl = makeRepo(mk(''));
+    try {
+      const unpinned = validateGeneratedStaleness(ctrl, { projectName: 't' });
+      assert.ok(unpinned.warnings.some(w => /tech-stack.*stale/i.test(w)),
+        `control: unpinned divergent section should be stale, got: ${unpinned.warnings.join(' | ')}`);
+    } finally {
+      rmSync(ctrl, { recursive: true, force: true });
+    }
+
+    // Fix: the same section, pinned, is exempt — no stale warning for it.
+    dir = makeRepo(mk('pinned="scanner mislabels this tool" '));
+    const pinned = validateGeneratedStaleness(dir, { projectName: 't' });
+    assert.ok(!pinned.warnings.some(w => /tech-stack.*stale/i.test(w)),
+      `pinned section must not be flagged stale, got: ${pinned.warnings.join(' | ')}`);
+  });
 });

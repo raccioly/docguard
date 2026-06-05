@@ -15,6 +15,7 @@
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, relative, dirname, basename } from 'node:path';
+import { shouldIgnore, relPosix } from '../shared-ignore.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build', 'coverage', 'target',
@@ -42,7 +43,8 @@ function readSafe(p) { try { return readFileSync(p, 'utf-8'); } catch { return '
 function readJson(p) { try { return JSON.parse(readFileSync(p, 'utf-8')); } catch { return null; } }
 
 /** Recursively find manifest files (bounded depth, ignoring vendor dirs). */
-function findManifests(projectDir, maxDepth = 4) {
+function findManifests(projectDir, maxDepth = 4, config = {}) {
+  const root = resolve(projectDir);
   const found = []; // { absDir, file, lang }
   const walk = (dir, depth) => {
     if (depth > maxDepth) return;
@@ -51,15 +53,20 @@ function findManifests(projectDir, maxDepth = 4) {
     for (const e of entries) {
       if (e.isDirectory()) {
         if (IGNORE_DIRS.has(e.name) || e.name.startsWith('.')) continue;
+        // Honor config.ignore / .docguardignore: a user who excludes tests/ or
+        // base-research/ must not have those dirs' manifests (e.g. a fixture
+        // package.json declaring express) misclassify the project's stack.
+        if (shouldIgnore(relPosix(root, join(dir, e.name)), config)) continue;
         walk(join(dir, e.name), depth + 1);
       } else if (e.isFile()) {
+        if (shouldIgnore(relPosix(root, join(dir, e.name)), config)) continue;
         const m = MANIFESTS.find(x => x.file === e.name);
         if (m) found.push({ absDir: dir, file: e.name, lang: m.lang });
         else if (e.name.endsWith('.csproj')) found.push({ absDir: dir, file: e.name, lang: 'C#' });
       }
     }
   };
-  walk(resolve(projectDir), 0);
+  walk(root, 0);
   return found;
 }
 
@@ -255,8 +262,8 @@ function buildEcosystem(projectDir, m) {
  * Multiple manifests in the same dir+language merge into one ecosystem.
  * @returns {Array<{ language, manifest, dir, framework, kind, deps, entryPoints }>}
  */
-export function detectEcosystems(projectDir, _config = {}) {
-  const manifests = findManifests(projectDir);
+export function detectEcosystems(projectDir, config = {}) {
+  const manifests = findManifests(projectDir, 4, config);
   const byKey = new Map(); // `${dir}::${lang-family}` → ecosystem
 
   // Group Python manifests (pyproject/requirements/setup/Pipfile) in same dir.

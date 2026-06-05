@@ -125,7 +125,7 @@ ${c.bold}Options:${c.reset}
                   code-truth skeleton. Add --write to scaffold, --format json
                   for the machine-readable manifest.
   --doc <name>    Generate AI prompt for specific doc (architecture, security, etc.)
-  --profile <p>   Compliance profile: starter, standard, enterprise (init command)
+  --profile <p>   Profile: starter, standard, cli, library, enterprise (init command)
   --tax           Show estimated documentation maintenance cost (with score)
   --help          Show this help message
   --version       Show version
@@ -133,6 +133,8 @@ ${c.bold}Options:${c.reset}
 ${c.bold}Profiles:${c.reset}
   ${c.green}starter${c.reset}      Minimal CDD — just ARCHITECTURE.md + CHANGELOG (side projects)
   ${c.green}standard${c.reset}     Full CDD — all 5 canonical docs (default, team projects)
+  ${c.green}cli${c.reset}          CLI tool — no HTTP API / DB (ARCHITECTURE, TEST-SPEC, SECURITY, ENVIRONMENT)
+  ${c.green}library${c.reset}      Library — public API, no HTTP/DB (ARCHITECTURE, API-REFERENCE, TEST-SPEC)
   ${c.green}enterprise${c.reset}   Strict CDD — all docs + all validators + freshness enforced
 
 ${c.bold}Examples:${c.reset}
@@ -156,6 +158,135 @@ ${c.bold}Learn more:${c.reset}
   Canonical-Driven Development: ${c.cyan}PHILOSOPHY.md${c.reset}
   Full standard: ${c.cyan}STANDARD.md${c.reset}
 `);
+}
+
+// ── Per-command help (v0.24, field report B6) ───────────────────────────────
+// `docguard <command> --help` now prints the flags + examples for THAT command,
+// so a flag like `generate --plan --write` or `init --skeleton` is discoverable.
+// Only flags that genuinely apply to each command are listed (derived from the
+// vetted global help above). Commands without a focused entry fall back to the
+// global help, which still lists them.
+const COMMAND_HELP = {
+  init: {
+    summary: 'Bootstrap CDD docs — smart-scans existing code, or writes blank templates.',
+    usage: 'docguard init [--skeleton|--wizard] [--profile <p>] [--with <name>] [--fix]',
+    flags: [
+      ['--skeleton', 'Blank templates instead of the smart scan-and-propose'],
+      ['--wizard', 'Guided interactive onboarding'],
+      ['--with <name>', 'Add a scaffolder: agents, hooks, ci, badge, llms, publish'],
+      ['--profile <p>', 'starter | standard | cli | library | enterprise (default: standard)'],
+      ['--skip-prompts', 'Non-interactive; create the profile defaults (CI)'],
+      ['--fix', 'Headless: create any missing required docs from templates'],
+      ['--force', 'Overwrite existing files (.bak backup kept)'],
+    ],
+    examples: ['docguard init', 'docguard init --skeleton', 'docguard init --profile starter --skip-prompts', 'docguard init --with ci'],
+  },
+  generate: {
+    summary: 'Reverse-engineer canonical docs from existing code.',
+    usage: 'docguard generate [--plan [--write] [--format json]] [--force]',
+    flags: [
+      ['--plan', 'AI scan: emit the agent task manifest + code-truth skeleton'],
+      ['--write', 'With --plan: scaffold the skeleton docs to disk'],
+      ['--format json', 'With --plan: machine-readable manifest'],
+      ['--force', 'Overwrite existing docs (.bak backup kept)'],
+    ],
+    examples: ['docguard generate', 'docguard generate --plan', 'docguard generate --plan --write', 'docguard generate --plan --format json'],
+  },
+  guard: {
+    summary: 'Validate code against canonical docs (all validators).',
+    usage: 'docguard guard [--format json] [--changed-only] [--fail-on-warning]',
+    flags: [
+      ['--format json', 'Machine-readable results for CI'],
+      ['--changed-only', 'Only validate docs/code touched in the working tree'],
+      ['--fail-on-warning', 'Exit non-zero on warnings (strict CI)'],
+    ],
+    examples: ['docguard guard', 'docguard guard --format json'],
+  },
+  score: {
+    summary: 'CDD maturity score (0–100).',
+    usage: 'docguard score [--diff] [--tax] [--format json]',
+    flags: [
+      ['--diff', 'Delta between two refs'],
+      ['--tax', 'Estimated documentation maintenance cost'],
+      ['--format json', 'Machine-readable score'],
+    ],
+    examples: ['docguard score', 'docguard score --tax'],
+  },
+  diff: {
+    summary: 'Show gaps between docs and code.',
+    usage: 'docguard diff [--since <ref>]',
+    flags: [['--since <ref>', 'Restrict to files changed since <ref> (impact mode)']],
+    examples: ['docguard diff', 'docguard diff --since HEAD~5'],
+  },
+  sync: {
+    summary: 'Refresh code-truth doc sections (preview by default).',
+    usage: 'docguard sync [--write] [--since <ref>]',
+    flags: [
+      ['--write', 'Apply the refresh (default is a dry-run preview)'],
+      ['--since <ref>', 'Only sync sections whose source files changed since <ref>'],
+    ],
+    examples: ['docguard sync', 'docguard sync --write'],
+  },
+  fix: {
+    summary: 'Generate AI fix instructions for docs (or apply deterministic fixes).',
+    usage: 'docguard fix [--doc <name>] [--auto] [--write] [--force]',
+    flags: [
+      ['--doc <name>', 'Target a specific doc (architecture, security, …)'],
+      ['--auto', 'Auto-fix what is mechanically possible'],
+      ['--write', 'Apply deterministic fixes in place (docguard:generated docs)'],
+      ['--force', 'Allow edits outside docguard:generated docs'],
+    ],
+    examples: ['docguard fix --doc architecture', 'docguard diagnose'],
+  },
+  trace: {
+    summary: 'Requirements traceability matrix.',
+    usage: 'docguard trace [--reverse]',
+    flags: [['--reverse', 'Code→doc map instead of doc→code']],
+    examples: ['docguard trace', 'docguard trace --reverse'],
+  },
+  upgrade: {
+    summary: 'Migrate .docguard.json schema + CLI.',
+    usage: 'docguard upgrade [--apply] [--pr]',
+    flags: [
+      ['--apply', 'Write the migration (default is a preview)'],
+      ['--pr', 'Open a team-wide PR with the migration'],
+    ],
+    examples: ['docguard upgrade', 'docguard upgrade --apply'],
+  },
+  ci: {
+    summary: 'Generate CI / pipeline config.',
+    usage: 'docguard ci [--threshold <n>] [--fail-on-warning]',
+    flags: [
+      ['--threshold <n>', 'Minimum score for CI pass'],
+      ['--fail-on-warning', 'Fail CI on warnings'],
+    ],
+    examples: ['docguard ci'],
+  },
+  memory: {
+    summary: 'Show what DocGuard remembers about the project.',
+    usage: 'docguard memory [--diff]',
+    flags: [['--diff', 'Drill into drift between memory and code']],
+    examples: ['docguard memory', 'docguard memory --diff'],
+  },
+};
+
+function printCommandHelp(command) {
+  const h = COMMAND_HELP[command];
+  if (!h) { printHelp(); return; } // no focused entry — global help still lists it
+  printBanner();
+  console.log(`${c.bold}docguard ${command}${c.reset} — ${h.summary}\n`);
+  console.log(`${c.bold}Usage:${c.reset}\n  ${h.usage}\n`);
+  if (h.flags?.length) {
+    console.log(`${c.bold}Options:${c.reset}`);
+    for (const [flag, desc] of h.flags) console.log(`  ${c.cyan}${flag.padEnd(18)}${c.reset} ${desc}`);
+    console.log('');
+  }
+  if (h.examples?.length) {
+    console.log(`${c.bold}Examples:${c.reset}`);
+    for (const ex of h.examples) console.log(`  ${c.dim}${ex}${c.reset}`);
+    console.log('');
+  }
+  console.log(`${c.dim}All commands: ${c.cyan}docguard --help${c.reset}`);
 }
 
 // ── Main ───────────────────────────────────────────────────────────────────
@@ -324,11 +455,11 @@ async function main() {
     process.exit(0);
   }
 
-  // v0.24: `docguard <command> --help` shows usage instead of running the
-  // command. There is no per-command help yet, so global help is correct — and,
-  // unlike before, non-destructive (generate no longer scaffolds on --help).
+  // v0.24: `docguard <command> --help` shows that command's own flags +
+  // examples (field report B6); commands without a focused entry fall back to
+  // the global help. Non-destructive (generate no longer scaffolds on --help).
   if (flags.help) {
-    printHelp();
+    printCommandHelp(command);
     process.exit(0);
   }
 
@@ -338,8 +469,12 @@ async function main() {
   // Headless flags (`--write`, `--check-only`, `--auto`) also suppress chrome.
   // v0.16-P5: --quiet (-q) joins the headless club for users who want
   // banner-free output without committing to a specific machine format.
+  // v0.24 (field report): `--plan` is a read-only preview — "show me, don't
+  // touch" — so it joins the club to suppress the banner AND ensureSkills'
+  // .agent/.specify writes, which were a surprising side effect of a bare
+  // `generate --plan` (and were already suppressed for `--plan --write`).
   const jsonMode = flags.format === 'json';
-  const headless = jsonMode || flags.write || flags.checkOnly || flags.changedOnly || flags.quiet;
+  const headless = jsonMode || flags.write || flags.checkOnly || flags.changedOnly || flags.quiet || flags.plan;
 
   if (!headless) printBanner();
 

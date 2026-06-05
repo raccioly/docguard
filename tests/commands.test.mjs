@@ -217,6 +217,143 @@ describe('docguard generate', () => {
       rmSync(tmpDir, { recursive: true, force: true });
     }
   });
+
+  it('--plan --write creates docs-implementation/ when absent (B2 regression)', () => {
+    // Regression: the --plan --write loop mkdir'd only docs-canonical/, then
+    // wrote every doc with a raw writeFileSync. The plan ALWAYS includes
+    // docs-implementation/KNOWN-GOTCHAS.md, so the first write into that
+    // not-yet-created dir ENOENT-crashed. safeWrite now creates each parent dir.
+    const tmpDir = mkdtempSync(join(tmpdir(), 'sg-gen-b2-'));
+    try {
+      writeFileSync(join(tmpDir, 'package.json'), '{"name":"b2","version":"1.0.0"}');
+      writeFileSync(join(tmpDir, 'index.js'), 'export const x = 1;\n');
+      // execSync throws on non-zero exit — so reaching the asserts means no crash.
+      run(`generate --plan --write --dir ${tmpDir}`);
+      assert.ok(
+        existsSync(join(tmpDir, 'docs-implementation', 'KNOWN-GOTCHAS.md')),
+        'docs-implementation/KNOWN-GOTCHAS.md should be created, not ENOENT'
+      );
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it('--plan --write registers emitted canonical docs in .docguard.json (B7)', () => {
+    // generate used to emit canonical docs that guard then flagged as "not in
+    // your requiredFiles". generate now registers what it emits so guard stays
+    // coherent with the generator's own output.
+    const tmpDir = mkdtempSync(join(tmpdir(), 'sg-gen-b7-'));
+    try {
+      writeFileSync(join(tmpDir, 'package.json'), '{"name":"b7","version":"1.0.0","dependencies":{"react":"^18"}}');
+      writeFileSync(join(tmpDir, 'index.js'), 'export const x = 1;\n');
+      // Config whose requiredFiles.canonical does NOT yet list the docs.
+      writeFileSync(join(tmpDir, '.docguard.json'),
+        JSON.stringify({ projectName: 'b7', requiredFiles: { canonical: [] } }, null, 2));
+      run(`generate --plan --write --dir ${tmpDir}`);
+      const cfg = JSON.parse(readFileSync(join(tmpDir, '.docguard.json'), 'utf-8'));
+      assert.ok(Array.isArray(cfg.requiredFiles.canonical));
+      assert.ok(cfg.requiredFiles.canonical.includes('docs-canonical/ARCHITECTURE.md'),
+        `expected ARCHITECTURE registered, got: ${JSON.stringify(cfg.requiredFiles.canonical)}`);
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('field report fixes — init --fix headless + generate --plan no side-effects', () => {
+  it('init --fix creates missing docs non-interactively (B3)', () => {
+    // --fix is documented "auto-create missing files from templates" but was a
+    // dead flag (set, never read) — init fell into the interactive doc-picker
+    // and hung/failed with no TTY. It must now run headless and create docs.
+    const tmpDir = mkdtempSync(join(tmpdir(), 'sg-init-fix-'));
+    try {
+      const output = run(`init --fix --dir ${tmpDir}`);
+      assert.doesNotMatch(output, /Which canonical docs/, 'must not enter the interactive picker');
+      assert.ok(existsSync(join(tmpDir, 'docs-canonical', 'ARCHITECTURE.md')));
+      assert.ok(existsSync(join(tmpDir, '.docguard.json')));
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it('generate --plan leaves .agent/ and .specify/ untouched (B4)', () => {
+    // `--plan` is a preview; the dispatcher used to run ensureSkills on it,
+    // scaffolding .agent/ (+ .specify/) into the user's tree. --plan is now
+    // headless, so a preview must not write to the AI-agent skill directories.
+    const tmpDir = mkdtempSync(join(tmpdir(), 'sg-gen-plan-'));
+    try {
+      writeFileSync(join(tmpDir, 'package.json'), '{"name":"b4","version":"1.0.0"}');
+      writeFileSync(join(tmpDir, 'index.js'), 'export const x = 1;\n');
+      run(`generate --plan --dir ${tmpDir}`);
+      assert.equal(existsSync(join(tmpDir, '.agent')), false, '.agent/ must not be scaffolded by a preview');
+      assert.equal(existsSync(join(tmpDir, '.specify')), false, '.specify/ must not be scaffolded by a preview');
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('per-command --help (B6)', () => {
+  it('generate --help shows generate-specific flags + examples', () => {
+    const out = run('generate --help');
+    assert.match(out, /docguard generate/);
+    assert.match(out, /--plan/);
+    assert.match(out, /--plan --write/); // the example makes the combo discoverable
+  });
+
+  it('init --help shows init-specific flags', () => {
+    const out = run('init --help');
+    assert.match(out, /--skeleton/);
+    assert.match(out, /--wizard/);
+    assert.match(out, /--with <name>/);
+  });
+
+  it('a command without a focused entry falls back to global help', () => {
+    // `watch` has no focused entry (and is long-running) — --help must still
+    // render the global help and exit, never start watching.
+    const out = run('watch --help');
+    assert.match(out, /Usage:/);
+  });
+});
+
+describe('field report F1/F3 — kind-aware generate + cli/library profiles', () => {
+  it('F1: generate --plan flags low-confidence surface for non-web kinds', () => {
+    const cli = mkdtempSync(join(tmpdir(), 'sg-f1-cli-'));
+    const web = mkdtempSync(join(tmpdir(), 'sg-f1-web-'));
+    try {
+      // A CLI (bin, no web framework) → kind cli → surface.confidence 'low'.
+      writeFileSync(join(cli, 'package.json'), JSON.stringify({ name: 'tool', bin: { tool: './cli.js' }, devDependencies: { typescript: '^5' } }));
+      writeFileSync(join(cli, 'cli.js'), 'export const x = 1;\n');
+      const cliJson = JSON.parse(run(`generate --plan --format json --dir ${cli}`));
+      assert.equal(cliJson.profile.kind, 'cli');
+      assert.equal(cliJson.surface.confidence, 'low');
+
+      // Control: a web app (express) → kind api → 'normal'. Keeps this honest.
+      writeFileSync(join(web, 'package.json'), JSON.stringify({ name: 'svc', dependencies: { express: '^4' } }));
+      writeFileSync(join(web, 'index.js'), 'export const x = 1;\n');
+      const webJson = JSON.parse(run(`generate --plan --format json --dir ${web}`));
+      assert.equal(webJson.surface.confidence, 'normal');
+    } finally {
+      rmSync(cli, { recursive: true, force: true });
+      rmSync(web, { recursive: true, force: true });
+    }
+  });
+
+  it('F3: init --profile cli creates a non-web doc set', () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), 'sg-f3-'));
+    try {
+      run(`init --profile cli --skip-prompts --dir ${tmpDir}`);
+      assert.ok(existsSync(join(tmpDir, 'docs-canonical', 'ARCHITECTURE.md')));
+      assert.ok(existsSync(join(tmpDir, 'docs-canonical', 'TEST-SPEC.md')));
+      assert.ok(existsSync(join(tmpDir, 'docs-canonical', 'SECURITY.md')));
+      assert.ok(existsSync(join(tmpDir, 'docs-canonical', 'ENVIRONMENT.md')));
+      // No HTTP/DB-shaped docs for a CLI.
+      assert.ok(!existsSync(join(tmpDir, 'docs-canonical', 'DATA-MODEL.md')), 'CLI profile must not require DATA-MODEL');
+      assert.ok(!existsSync(join(tmpDir, 'docs-canonical', 'API-REFERENCE.md')), 'CLI profile must not require API-REFERENCE');
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
 });
 
 describe('docguard hooks', () => {

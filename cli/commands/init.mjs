@@ -118,6 +118,7 @@ function shouldRunGenerate(projectDir, flags) {
   if (flags.skipPrompts)     return false; // non-interactive (CI) keeps deterministic skeleton path
   if (flags.wizard)          return false; // wizard has its own scan step
   if (flags.profile)         return false; // explicit profile = user knows what they want
+  if (flags.fix)             return false; // --fix = deterministic create-missing-from-templates (headless)
 
   // If canonical docs already exist, this is a re-init, not a first-run.
   const canonicalDir = resolve(projectDir, 'docs-canonical');
@@ -198,8 +199,11 @@ export async function runInit(projectDir, config, flags) {
 
   let selectedDocs;
 
-  if (flags.skipPrompts || flags.force) {
-    // Non-interactive — use profile defaults
+  if (flags.skipPrompts || flags.force || flags.fix) {
+    // Non-interactive — use profile defaults. `--fix` lands here too: its
+    // documented contract is "auto-create missing files from templates", so it
+    // must never block on prompts (CI / headless / agent use). The create-loop
+    // below already skips existing files, so --fix only fills gaps.
     const profileCanonical = profile.requiredFiles?.canonical || allDocs.map(d => d.file);
     selectedDocs = allDocs.filter(d => profileCanonical.includes(d.file));
     console.log(`  ${c.dim}Non-interactive mode — using ${profileName} profile defaults${c.reset}\n`);

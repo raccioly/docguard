@@ -101,4 +101,25 @@ describe('project-type detection', () => {
     assert.equal(py.framework, 'FastAPI');
     assert.equal(py.dir, 'backend');
   });
+
+  it('honors config.ignore so fixture manifests do not misclassify the stack (B1b)', () => {
+    // Field report: a Click CLI was reported as "Express, Flask" because the
+    // manifest walk ingested tests/fixtures/*/package.json + requirements.txt.
+    dir = make({
+      'pyproject.toml': '[project]\nname="tool"\ndependencies = ["click>=8"]\n', // root = a CLI
+      'tests/fixtures/node_app/package.json': JSON.stringify({ dependencies: { express: '^4' } }),
+      'tests/fixtures/py_app/requirements.txt': 'flask==3.0\n',
+    });
+
+    // Control: with no ignore, the fixture manifests leak into the profile —
+    // this is the bug, and it keeps the assertion below honest.
+    const leaky = detectProjectProfile(dir).frameworks;
+    assert.ok(leaky.includes('Express'), 'control: fixtures pollute the stack when not ignored');
+
+    // Fix: a trailing-slash dir ignore (also exercises the B1a glob fix) drops them.
+    const clean = detectProjectProfile(dir, { ignore: ['tests/'] }).frameworks;
+    assert.ok(!clean.includes('Express'), 'tests/ ignore must drop the fixture Express');
+    assert.ok(!clean.includes('Flask'), 'tests/ ignore must drop the fixture Flask');
+    assert.ok(clean.includes('Click'), 'the real root framework must survive');
+  });
 });
