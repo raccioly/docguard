@@ -7,6 +7,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.25.0] - 2026-06-03
+
+Field-report follow-up from dogfooding v0.24.0 on a real stdlib-only Python CLI
+(websec-validator). Fixes the bugs that bit a first run and adds CLI/library
+ergonomics. The headline is a silent `.docguardignore` failure: a gitignore-style
+`dir/` pattern matched nothing, so "ignored" directories were still scanned.
+
+### Fixed
+- **`.docguardignore` honors `dir/` patterns** — a trailing-slash directory
+  pattern (`tests/`, `base-research/`) silently matched nothing, so every
+  `shouldIgnore`/`buildIgnoreFilter` consumer kept scanning the directory.
+  `globToRegex` now normalizes the trailing slash so `dir`, `dir/`, and `dir/**`
+  behave identically. Security-relevant: an excluded secret-bearing directory is
+  now actually excluded. (B1a)
+- **`project-type` framework detection honors ignore** — the manifest walk now
+  skips ignored dirs, so a fixture `package.json`/`requirements.txt` under
+  `tests/` no longer misclassifies the stack (e.g. a CLI reported as "Express,
+  Flask"). (B1b)
+- **`generate --write` no longer crashes (ENOENT)** — the `--plan --write` loop
+  created only `docs-canonical/`, then crashed writing the first
+  `docs-implementation/` doc. It now creates each parent directory and snapshots
+  a `.bak`. (B2)
+- **`init --fix` works headless** — `--fix` was documented ("auto-create missing
+  files from templates") but read nowhere, so it dropped into an interactive
+  prompt and failed with no TTY. It now creates missing required docs
+  non-interactively. (B3)
+- **`generate --plan` has no side effects** — a bare `--plan` preview triggered
+  `ensureSkills`, scaffolding `.agent/` and `.specify/` into the tree. `--plan`
+  is now treated as a read-only preview. (B4)
+- **Generator/validator agreement** — `generate` registers the canonical docs it
+  emits in `.docguard.json` `requiredFiles`, so `guard` no longer flags the
+  generator's own output as an unlinked doc. (B7)
+
+### Added
+- **`pinned` section marker** — add `pinned="reason"` to a
+  `<!-- docguard:section … -->` marker to exempt an intentionally hand-maintained
+  `source=code` section from Generated-Staleness, and stop `sync --write` from
+  reverting it. (B5)
+- **Per-command help** — `docguard <command> --help` lists that command's own
+  flags and examples (e.g. `generate --plan --write`, `init --skeleton`). (B6)
+- **Low-confidence surface flag** — for `cli`/`library`/unknown-kind projects,
+  `generate --plan` flags auto-extracted HTTP/SDK/route surface as low-confidence
+  (it may be pattern-strings in a scanner/tool's own source, not real usage). It
+  is flagged, never suppressed; `--plan --format json` gains `surface.confidence`. (F1)
+- **`cli` and `library` profiles** — non-web-centric required-doc sets, so a CLI
+  or library isn't forced into HTTP-API/database doc shape. (F3)
+
 ## [0.24.0] - 2026-05-31
 
 Hardening pass from a full external review. Theme: make the green check *mean*

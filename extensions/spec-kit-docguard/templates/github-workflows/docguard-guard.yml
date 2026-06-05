@@ -28,7 +28,7 @@ jobs:
           fetch-depth: 0
 
       - name: Run all validators
-        uses: raccioly/docguard@v0.24.0
+        uses: raccioly/docguard@v0.25.0
         with:
           command: guard
           # Flip to 'true' once your repo is clean — turns warnings into hard failures.
@@ -42,7 +42,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Score & comment
-        uses: raccioly/docguard@v0.24.0
+        uses: raccioly/docguard@v0.25.0
         with:
           command: score
           format: json
