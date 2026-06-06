@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Performance**: Prevent redundant path basename processing inside O(N*M) test file diffing loops in `diff` and `docs-diff` commands.
+
 ## [0.25.0] - 2026-06-03
 
 Field-report follow-up from dogfooding v0.24.0 on a real stdlib-only Python CLI
