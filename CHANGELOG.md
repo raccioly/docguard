@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+- **Command Injection Prevention** — replaced shell execution (`execSync`) with native `execFileSync` in `cli/commands/score.mjs` for calculating recent commits to prevent potential shell metacharacter exploitation.
+
 ## [0.25.0] - 2026-06-03
 
 Field-report follow-up from dogfooding v0.24.0 on a real stdlib-only Python CLI
