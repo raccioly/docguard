@@ -2,14 +2,14 @@
   "version": 1,
   "created_at": "2026-05-26T15:31:59.491Z",
   "lifetime": {
-    "total_tokens_estimated": 666281,
-    "total_reads": 180,
-    "total_writes": 239,
-    "total_sessions": 13,
-    "anatomy_hits": 133,
-    "anatomy_misses": 45,
+    "total_tokens_estimated": 715680,
+    "total_reads": 193,
+    "total_writes": 267,
+    "total_sessions": 16,
+    "anatomy_hits": 138,
+    "anatomy_misses": 53,
     "repeated_reads_blocked": 93,
-    "estimated_savings_vs_bare_cli": 519177
+    "estimated_savings_vs_bare_cli": 520177
   },
   "sessions": [
     {
@@ -2642,6 +2642,343 @@
         "writes_count": 35,
         "repeated_reads_blocked": 13,
         "anatomy_lookups": 19
+      }
+    },
+    {
+      "id": "session-2026-06-09-1453",
+      "started": "2026-06-09T14:53:26.349Z",
+      "ended": "2026-06-09T15:02:56.057Z",
+      "reads": [
+        {
+          "file": "/home/user/docguard/extensions/spec-kit-docguard/extension.yml",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/home/user/docguard/.github/workflows/sync-speckit-catalog.yml",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/home/user/docguard/.github/scripts/patch-catalog.py",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/home/user/docguard/.github/workflows/release.yml",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "/home/user/docguard/extensions/spec-kit-docguard/extension.yml",
+          "tokens_estimated": 179,
+          "action": "edit"
+        },
+        {
+          "file": "/home/user/docguard/.github/workflows/release.yml",
+          "tokens_estimated": 950,
+          "action": "edit"
+        },
+        {
+          "file": "/home/user/docguard/.github/scripts/speckit-submission-body.sh",
+          "tokens_estimated": 1536,
+          "action": "create"
+        },
+        {
+          "file": "/home/user/docguard/.github/workflows/sync-speckit-catalog.yml",
+          "tokens_estimated": 1027,
+          "action": "create"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 0,
+        "output_tokens_estimated": 3692,
+        "reads_count": 4,
+        "writes_count": 4,
+        "repeated_reads_blocked": 0,
+        "anatomy_lookups": 0
+      }
+    },
+    {
+      "id": "session-2026-06-09-1453",
+      "started": "2026-06-09T14:53:26.349Z",
+      "ended": "2026-06-09T15:03:09.916Z",
+      "reads": [
+        {
+          "file": "/home/user/docguard/extensions/spec-kit-docguard/extension.yml",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/home/user/docguard/.github/workflows/sync-speckit-catalog.yml",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/home/user/docguard/.github/scripts/patch-catalog.py",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/home/user/docguard/.github/workflows/release.yml",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "/home/user/docguard/extensions/spec-kit-docguard/extension.yml",
+          "tokens_estimated": 179,
+          "action": "edit"
+        },
+        {
+          "file": "/home/user/docguard/.github/workflows/release.yml",
+          "tokens_estimated": 950,
+          "action": "edit"
+        },
+        {
+          "file": "/home/user/docguard/.github/scripts/speckit-submission-body.sh",
+          "tokens_estimated": 1536,
+          "action": "create"
+        },
+        {
+          "file": "/home/user/docguard/.github/workflows/sync-speckit-catalog.yml",
+          "tokens_estimated": 1027,
+          "action": "create"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 0,
+        "output_tokens_estimated": 3692,
+        "reads_count": 4,
+        "writes_count": 4,
+        "repeated_reads_blocked": 0,
+        "anatomy_lookups": 0
+      }
+    },
+    {
+      "id": "session-2026-06-09-1518",
+      "started": "2026-06-09T15:18:22.930Z",
+      "ended": "2026-06-09T15:27:00.541Z",
+      "reads": [
+        {
+          "file": "/home/user/docguard/.github/workflows/release.yml",
+          "tokens_estimated": 2975,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "/home/user/docguard/.github/scripts/speckit-submission-body.sh",
+          "tokens_estimated": 92,
+          "action": "edit"
+        },
+        {
+          "file": "/home/user/docguard/.github/scripts/speckit-submission.py",
+          "tokens_estimated": 2590,
+          "action": "create"
+        },
+        {
+          "file": "/home/user/docguard/.github/workflows/release.yml",
+          "tokens_estimated": 1361,
+          "action": "edit"
+        },
+        {
+          "file": "/home/user/docguard/.github/workflows/sync-speckit-catalog.yml",
+          "tokens_estimated": 1385,
+          "action": "create"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 2975,
+        "output_tokens_estimated": 5428,
+        "reads_count": 1,
+        "writes_count": 4,
+        "repeated_reads_blocked": 0,
+        "anatomy_lookups": 1
+      }
+    },
+    {
+      "id": "session-2026-06-09-1518",
+      "started": "2026-06-09T15:18:22.930Z",
+      "ended": "2026-06-09T15:27:11.174Z",
+      "reads": [
+        {
+          "file": "/home/user/docguard/.github/workflows/release.yml",
+          "tokens_estimated": 2975,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "/home/user/docguard/.github/scripts/speckit-submission-body.sh",
+          "tokens_estimated": 92,
+          "action": "edit"
+        },
+        {
+          "file": "/home/user/docguard/.github/scripts/speckit-submission.py",
+          "tokens_estimated": 2590,
+          "action": "create"
+        },
+        {
+          "file": "/home/user/docguard/.github/workflows/release.yml",
+          "tokens_estimated": 1361,
+          "action": "edit"
+        },
+        {
+          "file": "/home/user/docguard/.github/workflows/sync-speckit-catalog.yml",
+          "tokens_estimated": 1385,
+          "action": "create"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 2975,
+        "output_tokens_estimated": 5428,
+        "reads_count": 1,
+        "writes_count": 4,
+        "repeated_reads_blocked": 0,
+        "anatomy_lookups": 1
+      }
+    },
+    {
+      "id": "session-2026-06-09-1518",
+      "started": "2026-06-09T15:18:22.930Z",
+      "ended": "2026-06-09T15:31:57.746Z",
+      "reads": [
+        {
+          "file": "/home/user/docguard/.github/workflows/release.yml",
+          "tokens_estimated": 2975,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "/home/user/docguard/.github/scripts/speckit-submission-body.sh",
+          "tokens_estimated": 92,
+          "action": "edit"
+        },
+        {
+          "file": "/home/user/docguard/.github/scripts/speckit-submission.py",
+          "tokens_estimated": 2590,
+          "action": "create"
+        },
+        {
+          "file": "/home/user/docguard/.github/workflows/release.yml",
+          "tokens_estimated": 1361,
+          "action": "edit"
+        },
+        {
+          "file": "/home/user/docguard/.github/workflows/sync-speckit-catalog.yml",
+          "tokens_estimated": 1385,
+          "action": "create"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 2975,
+        "output_tokens_estimated": 5428,
+        "reads_count": 1,
+        "writes_count": 4,
+        "repeated_reads_blocked": 0,
+        "anatomy_lookups": 1
+      }
+    },
+    {
+      "id": "session-2026-06-09-1518",
+      "started": "2026-06-09T15:18:22.930Z",
+      "ended": "2026-06-09T15:36:23.429Z",
+      "reads": [
+        {
+          "file": "/home/user/docguard/.github/workflows/release.yml",
+          "tokens_estimated": 2975,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "/home/user/docguard/.github/scripts/speckit-submission-body.sh",
+          "tokens_estimated": 92,
+          "action": "edit"
+        },
+        {
+          "file": "/home/user/docguard/.github/scripts/speckit-submission.py",
+          "tokens_estimated": 2590,
+          "action": "create"
+        },
+        {
+          "file": "/home/user/docguard/.github/workflows/release.yml",
+          "tokens_estimated": 1361,
+          "action": "edit"
+        },
+        {
+          "file": "/home/user/docguard/.github/workflows/sync-speckit-catalog.yml",
+          "tokens_estimated": 1385,
+          "action": "create"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 2975,
+        "output_tokens_estimated": 5428,
+        "reads_count": 1,
+        "writes_count": 4,
+        "repeated_reads_blocked": 0,
+        "anatomy_lookups": 1
+      }
+    },
+    {
+      "id": "session-2026-06-09-1518",
+      "started": "2026-06-09T15:18:22.930Z",
+      "ended": "2026-06-09T15:36:44.406Z",
+      "reads": [
+        {
+          "file": "/home/user/docguard/.github/workflows/release.yml",
+          "tokens_estimated": 2975,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "/home/user/docguard/.github/scripts/speckit-submission-body.sh",
+          "tokens_estimated": 92,
+          "action": "edit"
+        },
+        {
+          "file": "/home/user/docguard/.github/scripts/speckit-submission.py",
+          "tokens_estimated": 2590,
+          "action": "create"
+        },
+        {
+          "file": "/home/user/docguard/.github/workflows/release.yml",
+          "tokens_estimated": 1361,
+          "action": "edit"
+        },
+        {
+          "file": "/home/user/docguard/.github/workflows/sync-speckit-catalog.yml",
+          "tokens_estimated": 1385,
+          "action": "create"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 2975,
+        "output_tokens_estimated": 5428,
+        "reads_count": 1,
+        "writes_count": 4,
+        "repeated_reads_blocked": 0,
+        "anatomy_lookups": 1
       }
     }
   ],

@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-05-31T10:00:03.036Z
-> Files: 549 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-06-09T15:38:05.147Z
+> Files: 554 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ./
 
@@ -14,7 +14,7 @@
 - `.npmrc` — Supply-Chain Security Hardening (~59 tok)
 - `action.yml` — CI: 'DocGuard — CDD Compliance' (~4322 tok)
 - `AGENTS.md` — AI Agent Instructions — DocGuard (~1275 tok)
-- `CHANGELOG.md` — Change log (~35885 tok)
+- `CHANGELOG.md` — Changelog (~38458 tok)
 - `CLAUDE.md` — OpenWolf (~57 tok)
 - `CODE_OF_CONDUCT.md` — Contributor Covenant Code of Conduct (~532 tok)
 - `COMPARISONS.md` — Comparisons & Honest Limitations (~3053 tok)
@@ -27,7 +27,7 @@
 - `package.json` — Node.js package manifest (~446 tok)
 - `PHILOSOPHY.md` — The Philosophy of Canonical-Driven Development (~1757 tok)
 - `pr_description.md` (~260 tok)
-- `pyproject.toml` — Python project configuration (~376 tok)
+- `pyproject.toml` — The enforcement tool for Canonical-Driven Development (CDD). Audit, generate, and guard your project (~351 tok)
 - `README.md` — Project documentation (~7230 tok)
 - `ROADMAP.md` — DocGuard Roadmap (~1494 tok)
 - `SECURITY.md` — Security Policy (~357 tok)
@@ -920,3 +920,17 @@
 - `fix-memory.mjs` — Fix Memory — M-2 / S-10 (~1858 tok)
 - `mechanical.mjs` — Mechanical Fix Registry — applies deterministic, no-LLM fixes in place. (~3008 tok)
 - `sections.mjs` — Section-addressable docs — the foundation for surgical, non-destructive doc (~1676 tok)
+
+## .github/scripts/
+
+- `speckit-submission-body.sh` — Build the body for a spec-kit "Extension Submission" issue. (~1482 tok)
+- `speckit-submission.py` — Build a spec-kit "Extension Submission" for DocGuard. (~2590 tok)
+
+## .github/workflows/
+
+- `release.yml` — CI: Auto Release — Tag, GitHub Release, npm, PyPI (~3386 tok)
+- `sync-speckit-catalog.yml` — CI: Prepare Spec Kit Catalog Submission (Manual) (~1385 tok)
+
+## extensions/spec-kit-docguard/
+
+- `extension.yml` (~1026 tok)

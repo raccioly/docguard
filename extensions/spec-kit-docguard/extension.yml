@@ -3,7 +3,7 @@ schema_version: "1.0"
 extension:
   id: "docguard"
   name: "DocGuard — CDD Enforcement"
-  version: "0.25.0"
+  version: "0.25.1"
   description: "Canonical-Driven Development enforcement as a true spec-kit extension. LLM-first design with automated validators, 4 AI behavior skills, spec-kit skill chaining, and workflow hooks. One pinned runtime dependency (@babel/parser); pure Node.js otherwise."
   author: "Ricardo Accioly"
   repository: "https://github.com/raccioly/docguard"
@@ -28,22 +28,18 @@ provides:
     - name: "speckit.docguard.guard"
       file: "commands/guard.md"
       description: "Run 19-validator quality gate with severity triage and remediation plan"
-      aliases: ["speckit.docguard.guard"]
 
     - name: "speckit.docguard.fix"
       file: "commands/generate.md"
       description: "AI-driven documentation repair with codebase research and validation loops"
-      aliases: ["speckit.docguard.fix"]
 
     - name: "speckit.docguard.review"
       file: "commands/diagnose.md"
       description: "Cross-document semantic consistency analysis (read-only)"
-      aliases: ["speckit.docguard.review"]
 
     - name: "speckit.docguard.score"
       file: "commands/score.md"
       description: "CDD maturity score with ROI-based improvement roadmap"
-      aliases: ["speckit.docguard.score"]
 
     - name: "speckit.docguard.diagnose"
       file: "commands/diagnose.md"

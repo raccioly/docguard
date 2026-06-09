@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.25.1] - 2026-06-09
+
+Patch release fixing a spec-kit extension install/update failure reported in
+[#229](https://github.com/raccioly/docguard/issues/229).
+
+### Fixed
+- **spec-kit extension installs again** — the `extension.yml` manifest declared
+  `aliases` identical to their own command names (`guard`, `fix`, `review`,
+  `score`). spec-kit registers the command name and each alias in one namespace,
+  so a name-equal alias self-collided and was rejected as a duplicate command,
+  breaking `specify extension add/update docguard` on v0.23.0–v0.25.0. Removed
+  the four self-referential aliases. (#229)
+
+### Changed
+- **Spec Kit catalog publishing goes through the Extension Submission issue
+  template** — per maintainer guidance ([github/spec-kit#2707](https://github.com/github/spec-kit/pull/2707))
+  and the Extension Publishing Guide. The release pipeline no longer opens a
+  direct PR against `catalog.community.json`; it builds a prefilled
+  `issues/new` form link (`.github/scripts/speckit-submission.py`) and opens a
+  one-click reminder issue in this repo so the submission is made through the
+  form (which auto-applies labels and assigns a maintainer). Removed the
+  orphaned `patch-catalog.py`.
+
 ## [0.25.0] - 2026-06-03
 
 Field-report follow-up from dogfooding v0.24.0 on a real stdlib-only Python CLI
