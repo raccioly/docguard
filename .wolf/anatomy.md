@@ -1,6 +1,6 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-06-09T15:26:08.187Z
+> Auto-maintained by OpenWolf. Last scanned: 2026-06-09T15:38:05.147Z
 > Files: 554 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ./
@@ -14,7 +14,7 @@
 - `.npmrc` — Supply-Chain Security Hardening (~59 tok)
 - `action.yml` — CI: 'DocGuard — CDD Compliance' (~4322 tok)
 - `AGENTS.md` — AI Agent Instructions — DocGuard (~1275 tok)
-- `CHANGELOG.md` — Change log (~35885 tok)
+- `CHANGELOG.md` — Changelog (~38458 tok)
 - `CLAUDE.md` — OpenWolf (~57 tok)
 - `CODE_OF_CONDUCT.md` — Contributor Covenant Code of Conduct (~532 tok)
 - `COMPARISONS.md` — Comparisons & Honest Limitations (~3053 tok)
@@ -27,7 +27,7 @@
 - `package.json` — Node.js package manifest (~446 tok)
 - `PHILOSOPHY.md` — The Philosophy of Canonical-Driven Development (~1757 tok)
 - `pr_description.md` (~260 tok)
-- `pyproject.toml` — Python project configuration (~376 tok)
+- `pyproject.toml` — The enforcement tool for Canonical-Driven Development (CDD). Audit, generate, and guard your project (~351 tok)
 - `README.md` — Project documentation (~7230 tok)
 - `ROADMAP.md` — DocGuard Roadmap (~1494 tok)
 - `SECURITY.md` — Security Policy (~357 tok)

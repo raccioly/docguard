@@ -201,3 +201,8 @@
 | 15:27 | Session end: 4 writes across 4 files (speckit-submission-body.sh, speckit-submission.py, release.yml, sync-speckit-catalog.yml) | 1 reads | ~8403 tok |
 | 15:31 | Session end: 4 writes across 4 files (speckit-submission-body.sh, speckit-submission.py, release.yml, sync-speckit-catalog.yml) | 1 reads | ~8403 tok |
 | 15:36 | Session end: 4 writes across 4 files (speckit-submission-body.sh, speckit-submission.py, release.yml, sync-speckit-catalog.yml) | 1 reads | ~8403 tok |
+| 15:36 | Session end: 4 writes across 4 files (speckit-submission-body.sh, speckit-submission.py, release.yml, sync-speckit-catalog.yml) | 1 reads | ~8403 tok |
+| 15:37 | Edited package.json | inline fix | ~7 |
+| 15:37 | Edited CHANGELOG.md | expanded (+23 lines) | ~336 |
+| 15:38 | Edited pyproject.toml | "0.25.0" → "0.25.1" | ~5 |
+| 15:38 | Edited extensions/spec-kit-docguard/extension.yml | "0.25.0" → "0.25.1" | ~6 |

@@ -625,6 +625,54 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-06-09T15:25:44.945Z"
+    },
+    {
+      "id": "bug-037",
+      "timestamp": "2026-06-09T15:37:43.540Z",
+      "error_message": "Incorrect value in code",
+      "file": "package.json",
+      "root_cause": "Had \"0.25.0\"",
+      "fix": "Changed to \"0.25.1\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "json"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-09T15:37:43.540Z"
+    },
+    {
+      "id": "bug-038",
+      "timestamp": "2026-06-09T15:38:04.578Z",
+      "error_message": "Incorrect value in code",
+      "file": "pyproject.toml",
+      "root_cause": "Had \"0.25.0\"",
+      "fix": "Changed to \"0.25.1\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "toml"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-09T15:38:04.578Z"
+    },
+    {
+      "id": "bug-039",
+      "timestamp": "2026-06-09T15:38:05.160Z",
+      "error_message": "Incorrect value in code",
+      "file": "extensions/spec-kit-docguard/extension.yml",
+      "root_cause": "Had \"0.25.0\"",
+      "fix": "Changed to \"0.25.1\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "yml"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-09T15:38:05.160Z"
     }
   ]
 }
