@@ -360,7 +360,15 @@
       "file": "cli/shared-ignore.mjs",
       "root_cause": "globToRegex did not strip a gitignore-style trailing slash, so 'dir/' built an alternation that could only match a literal 'dir//' (double slash) — never a real path. routes.mjs and todo-tracking.mjs WERE correctly wired to shouldIgnore (fcc7264); the glob translator itself was broken. The test suite used 'dir/' forms only in loader/merge assertions and never asserted they MATCH a file, so it stayed green — a false-green coverage gap.",
       "fix": "Strip a trailing slash in globToRegex (const normalized = pattern.replace trailing-slash || pattern) so 'dir', 'dir/' and 'dir/**' behave identically. Added 4 end-to-end regression tests in tests/docguardignore.test.mjs that assert trailing-slash patterns actually match and do not over-match a sibling sharing the prefix.",
-      "tags": ["ignore", "glob", "false-green", "security-relevant", "field-report", "websec-validator", "B1a"],
+      "tags": [
+        "ignore",
+        "glob",
+        "false-green",
+        "security-relevant",
+        "field-report",
+        "websec-validator",
+        "B1a"
+      ],
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-06-02T15:41:53Z"
@@ -372,7 +380,14 @@
       "file": "cli/commands/generate.mjs",
       "root_cause": "The --plan --write loop mkdir'd only docs-canonical/, then wrote each doc with a raw writeFileSync. buildMemoryPlan unconditionally plans docs-implementation/ docs (KNOWN-GOTCHAS.md, CURRENT-STATE.md), so the first write into that not-yet-created dir threw ENOENT — docs-canonical docs written, first docs-implementation write crashed.",
       "fix": "Folded mkdirSync(dirname(filePath),{recursive:true}) into the safeWrite helper and routed the --plan --write loop through safeWrite instead of raw writeFileSync (also gains the .bak backup that path previously lacked). Added a regression test in tests/commands.test.mjs running generate --plan --write in a temp project with no docs-implementation/.",
-      "tags": ["generate", "enoent", "mkdir", "field-report", "websec-validator", "B2"],
+      "tags": [
+        "generate",
+        "enoent",
+        "mkdir",
+        "field-report",
+        "websec-validator",
+        "B2"
+      ],
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-06-02T15:41:53Z"
@@ -384,7 +399,15 @@
       "file": "cli/commands/init.mjs",
       "root_cause": "--fix was a dead flag: documented (docguard.mjs:111) and set (docguard.mjs:186) but consumed nowhere. init.mjs never read flags.fix, so init ran its normal path; with no skeleton/skipPrompts/wizard/profile set it fell into the interactive askQuestion loop, which blocks/fails without a TTY (CI/agent use).",
       "fix": "Wired flags.fix into init.mjs: shouldRunGenerate() returns false on --fix (skip the interactive scan-and-propose preview) and the non-interactive branch fires on flags.fix (use profile defaults). The create-loop already skips existing files, so --fix only fills gaps. Added a regression test asserting init --fix creates docs without entering the picker.",
-      "tags": ["init", "cli-flag", "dead-flag", "headless", "field-report", "websec-validator", "B3"],
+      "tags": [
+        "init",
+        "cli-flag",
+        "dead-flag",
+        "headless",
+        "field-report",
+        "websec-validator",
+        "B3"
+      ],
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-06-02T19:16:48Z"
@@ -396,7 +419,16 @@
       "file": "cli/docguard.mjs",
       "root_cause": "The dispatcher runs ensureSkills() on any command that is not setup/init and not headless. headless = jsonMode||write||checkOnly||changedOnly||quiet, which excluded a bare --plan — so generate --plan triggered ensureSkills' writes. Inconsistent: generate --plan --write was already headless (flags.write) and did NOT scaffold.",
       "fix": "Added flags.plan to the headless set in docguard.mjs so generate --plan suppresses the banner AND ensureSkills, matching --plan --write. Verified by a before/after probe: a non-headless generate creates .agent (YES), generate --plan does not (no). Added a regression test asserting --plan leaves .agent/ and .specify/ untouched.",
-      "tags": ["generate", "plan", "side-effects", "ensure-skills", "least-surprise", "field-report", "websec-validator", "B4"],
+      "tags": [
+        "generate",
+        "plan",
+        "side-effects",
+        "ensure-skills",
+        "least-surprise",
+        "field-report",
+        "websec-validator",
+        "B4"
+      ],
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-06-02T19:16:48Z"
@@ -408,8 +440,17 @@
       "file": "cli/scanners/project-type.mjs",
       "root_cause": "findManifests pruned only a hardcoded IGNORE_DIRS set + dot-dirs and never honored config.ignore/.docguardignore. detectEcosystems received config but marked it _config and never passed it to findManifests, so fixture/vendored manifests in user-ignored dirs polluted the detected frameworks/profile. This is the buildMemoryPlan/--plan path (generate's full path uses its own detectStack).",
       "fix": "Threaded the already-arriving config into findManifests and pruned dirs + skipped manifest files via shouldIgnore(relPosix(root, child), config); detectEcosystems now passes config through (was _config). Depends on bug-023's trailing-slash glob fix so a 'tests/' pattern matches. Regression test in tests/project-type.test.mjs uses a control (fixtures pollute without ignore) + the fix (tests/ ignore drops Express/Flask, keeps the real Click).",
-      "tags": ["project-type", "ignore", "classification", "field-report", "websec-validator", "B1b"],
-      "related_bugs": ["bug-023"],
+      "tags": [
+        "project-type",
+        "ignore",
+        "classification",
+        "field-report",
+        "websec-validator",
+        "B1b"
+      ],
+      "related_bugs": [
+        "bug-023"
+      ],
       "occurrences": 1,
       "last_seen": "2026-06-02T19:30:13Z"
     },
@@ -420,7 +461,15 @@
       "file": "cli/validators/generated-staleness.mjs",
       "root_cause": "Generated-Staleness compared every source=code section against scanner output with no per-section opt-out (quality checks had one; code sections didn't), and sync --write unconditionally replaced source=code sections. So a legitimately hand-maintained section had no escape from the stale-forever / auto-revert trap.",
       "fix": "Honor a `pinned` attribute on the section marker (<!-- docguard:section id=… source=code pinned=\"reason\" -->), already parsed by parseSections. generated-staleness exempts pinned sections (counted as a pass, mirroring the docguard:quality opt-out) and appends a discoverability hint to the stale warning; sync.mjs skips pinned sections. Tests in generated-staleness.test.mjs (control+fix) and sync.test.mjs (don't-revert).",
-      "tags": ["generated-staleness", "sync", "marker", "false-positive", "field-report", "websec-validator", "B5"],
+      "tags": [
+        "generated-staleness",
+        "sync",
+        "marker",
+        "false-positive",
+        "field-report",
+        "websec-validator",
+        "B5"
+      ],
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-06-03T01:32:47Z"
@@ -432,7 +481,14 @@
       "file": "cli/docguard.mjs",
       "root_cause": "v0.24 made <command> --help non-destructive but routed it to printHelp() (global) because there was no per-command help; the global help lists commands but not each command's full flag set + examples.",
       "fix": "Added a COMMAND_HELP map (init/generate/guard/score/diff/sync/fix/trace/upgrade/ci/memory) + printCommandHelp(command); the --help dispatch now calls it. Unmapped commands fall back to global help. Flags derived from the vetted global help to avoid documenting non-existent flags. Tests assert generate/init --help show their flags and watch --help falls back without starting the watcher.",
-      "tags": ["cli", "help", "ux", "field-report", "websec-validator", "B6"],
+      "tags": [
+        "cli",
+        "help",
+        "ux",
+        "field-report",
+        "websec-validator",
+        "B6"
+      ],
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-06-03T01:32:47Z"
@@ -444,7 +500,15 @@
       "file": "cli/commands/generate.mjs",
       "root_cause": "generate's standard doc set is a superset of the profile's requiredFiles.canonical, and generate never updated requiredFiles, so the traceability orphan-check (traceability.mjs:133) flagged docs the generator just created.",
       "fix": "Added registerGeneratedCanonicalDocs(): after writing, generate merges the canonical docs it emitted into .docguard.json requiredFiles.canonical (additive only, only docs-canonical/*.md that exist on disk, only when a config exists, idempotent). Wired into both the full generate path and the --plan --write path. Test asserts requiredFiles.canonical gains ARCHITECTURE after generate --plan --write.",
-      "tags": ["generate", "traceability", "requiredFiles", "consistency", "field-report", "websec-validator", "B7"],
+      "tags": [
+        "generate",
+        "traceability",
+        "requiredFiles",
+        "consistency",
+        "field-report",
+        "websec-validator",
+        "B7"
+      ],
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-06-03T01:32:47Z"
@@ -456,8 +520,19 @@
       "file": "cli/commands/generate.mjs",
       "root_cause": "The route/SDK/auth source scanners match pattern-strings; for a cli/library/tool whose source CONTAINS those strings as detection patterns, the auto-extracted surface is the tool's own code, not real usage. No confidence signal existed to warn the user.",
       "fix": "F1 (chosen scope: flag, don't suppress — suppression would risk a false-green). Added surfaceConfidence(kind): web kinds (webapp/api/service) = 'normal', everything else = 'low'. generate --plan --format json now emits surface.confidence; the text output prints a 'Low-confidence surface — verify, pin with pinned=...' advisory when a non-web kind has web surface. Guard detection unchanged. Test asserts cli→low, api→normal.",
-      "tags": ["generate", "scanner-tool", "false-positive", "confidence", "field-report", "websec-validator", "F1"],
-      "related_bugs": ["bug-023", "bug-028"],
+      "tags": [
+        "generate",
+        "scanner-tool",
+        "false-positive",
+        "confidence",
+        "field-report",
+        "websec-validator",
+        "F1"
+      ],
+      "related_bugs": [
+        "bug-023",
+        "bug-028"
+      ],
       "occurrences": 1,
       "last_seen": "2026-06-03T03:44:15Z"
     },
@@ -468,10 +543,88 @@
       "file": ".github/workflows/release.yml",
       "root_cause": "The release.yml 'test' job ran `npm test` with NO `npm ci` step, so node_modules was empty and @babel/parser (a regular dependency, not optional) couldn't load — every AST-dependent test failed. Latent since the job was written; only surfaced at v0.25.0 because prior releases' detect-version step skipped this job (batched-push / non-tip version bump), so the test job never actually executed.",
       "fix": "Added an `npm ci` 'Install dependencies' step before 'Run Tests', matching ci.yml. Re-triggered via workflow_dispatch (release.yml is paths-filtered to package.json, so the workflow-only fix commit didn't auto-trigger it). All jobs then green; v0.25.0 published to npm + PyPI + GitHub Release.",
-      "tags": ["ci", "release", "npm-ci", "babel-parser", "github-actions"],
+      "tags": [
+        "ci",
+        "release",
+        "npm-ci",
+        "babel-parser",
+        "github-actions"
+      ],
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-06-05T03:02:00Z"
+    },
+    {
+      "id": "bug-033",
+      "timestamp": "2026-06-09T14:59:50.054Z",
+      "error_message": "Significant refactor of ",
+      "file": ".github/workflows/release.yml",
+      "root_cause": "84 lines replaced/restructured",
+      "fix": "Rewrote 135→68 lines (84 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "yml"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-09T14:59:50.054Z"
+    },
+    {
+      "id": "bug-034",
+      "timestamp": "2026-06-09T15:00:00.000Z",
+      "error_message": "Validation Error: Duplicate command or alias 'speckit.docguard.guard' in extension manifest (issue #229, reproduces v0.23.0-v0.25.0 on `specify extension add/update docguard`)",
+      "file": "extensions/spec-kit-docguard/extension.yml",
+      "root_cause": "Four commands (guard, fix, review, score) declared an `aliases` entry identical to their own `name`. spec-kit's manifest validator registers the command name AND each alias in one namespace, so an alias equal to the name collides with the name and is rejected as a duplicate command. Install/update aborts and rolls back.",
+      "fix": "Removed the self-referential `aliases: [...]` lines from all four commands. An alias must differ from the command name (and from every other command/alias) or spec-kit treats it as a duplicate. diagnose/generate already had no aliases and were unaffected.",
+      "tags": [
+        "spec-kit",
+        "extension",
+        "manifest",
+        "aliases",
+        "duplicate-command",
+        "issue-229"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-09T15:00:00.000Z"
+    },
+    {
+      "id": "bug-035",
+      "timestamp": "2026-06-09T15:00:30.000Z",
+      "error_message": "spec-kit PR github/spec-kit#2707 not approved - maintainer (mnriem): 'going forward please use the extension submission issue template for adding/updating an extension.'",
+      "file": ".github/workflows/release.yml",
+      "root_cause": "Our publish triggers (release.yml `sync-catalog` job + manual sync-speckit-catalog.yml) updated the spec-kit community catalog by opening a DIRECT PR against github/spec-kit (fork-sync + patch-catalog.py edit of catalog.community.json + gh pr create). spec-kit maintainers require catalog changes to come through the Extension Submission issue template, not direct PRs.",
+      "fix": "Replaced the fork-sync/patch/PR steps in BOTH workflows with a single step that files (or refreshes, idempotent per-version) a spec-kit Extension Submission issue mirroring .github/ISSUE_TEMPLATE/extension_submission.yml. Added .github/scripts/speckit-submission-body.sh to build the issue body; removed the now-orphaned patch-catalog.py. Labels applied best-effort (template auto-labels via UI; API needs triage rights we may lack).",
+      "tags": [
+        "spec-kit",
+        "publishing",
+        "release",
+        "github-actions",
+        "issue-template",
+        "pr-2707"
+      ],
+      "related_bugs": [
+        "bug-034"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-06-09T15:00:30.000Z"
+    },
+    {
+      "id": "bug-036",
+      "timestamp": "2026-06-09T15:25:44.945Z",
+      "error_message": "Significant refactor of ",
+      "file": ".github/workflows/release.yml",
+      "root_cause": "35 lines replaced/restructured",
+      "fix": "Rewrote 68→95 lines (35 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "yml"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-09T15:25:44.945Z"
     }
   ]
 }

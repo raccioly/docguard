@@ -173,3 +173,29 @@
 
 | Time | Action | File(s) | Outcome | ~Tokens |
 |------|--------|---------|---------|--------|
+
+## Session: 2026-06-09 14:53
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 14:59 | Edited extensions/spec-kit-docguard/extension.yml | 19→15 lines | ~179 |
+| 14:59 | Edited .github/workflows/release.yml | reduced (-67 lines) | ~950 |
+| 15:00 | Created .github/scripts/speckit-submission-body.sh | — | ~1433 |
+| 15:00 | Created .github/workflows/sync-speckit-catalog.yml | — | ~1027 |
+| 15:01 | Fixed issue #229: removed self-referential aliases (guard/fix/review/score) | extension.yml | spec-kit duplicate-command error resolved | ~120 |
+| 15:01 | Switched spec-kit publish triggers PR→Extension-Submission-issue (per github/spec-kit#2707) | release.yml, sync-speckit-catalog.yml, speckit-submission-body.sh | removed orphaned patch-catalog.py | ~300 |
+| 15:01 | Logged bug-034 (alias dup) + bug-035 (publish path) | buglog.json | — | ~80 |
+| 15:01 | NOT committed — awaiting user review of trigger changes before deploy | — | per user instruction | ~10 |
+| 15:02 | Session end: 4 writes across 4 files (extension.yml, release.yml, speckit-submission-body.sh, sync-speckit-catalog.yml) | 4 reads | ~3692 tok |
+| 15:03 | Session end: 4 writes across 4 files (extension.yml, release.yml, speckit-submission-body.sh, sync-speckit-catalog.yml) | 4 reads | ~3692 tok |
+
+## Session: 2026-06-09 15:18
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 15:20 | Edited .github/scripts/speckit-submission-body.sh | modified notes() | ~86 |
+| 15:24 | Created .github/scripts/speckit-submission.py | — | ~2590 |
+| 15:25 | Edited .github/workflows/release.yml | expanded (+27 lines) | ~1361 |
+| 15:26 | Created .github/workflows/sync-speckit-catalog.yml | — | ~1385 |
+| 15:27 | Session end: 4 writes across 4 files (speckit-submission-body.sh, speckit-submission.py, release.yml, sync-speckit-catalog.yml) | 1 reads | ~8403 tok |
+| 15:27 | Session end: 4 writes across 4 files (speckit-submission-body.sh, speckit-submission.py, release.yml, sync-speckit-catalog.yml) | 1 reads | ~8403 tok |

@@ -1,15 +1,17 @@
-name: Sync DocGuard to Spec Kit Community Catalog (Manual)
+name: Prepare Spec Kit Catalog Submission (Manual)
 
-# Manual recovery only. The automatic post-release sync now runs inside
-# release.yml itself (see the `sync-catalog` job there). This workflow
-# is kept for one-off catalog updates outside the release flow, e.g.
-# fixing a stale entry, retrying after upstream maintenance, or pushing
-# a metadata-only refresh.
+# Manual recovery only. The automatic version of this runs inside
+# release.yml (the `sync-catalog` job). Use this for one-off catalog
+# submissions outside the release flow, e.g. re-preparing after the
+# upstream issue was closed without action, or a metadata-only refresh.
 #
-# The previous workflow_run trigger was removed because it caused
-# repeatable HTTP 401s on `gh repo sync ... --source github/spec-kit`
-# despite the PAT being valid — a known GitHub Actions auth quirk for
-# cross-workflow secret usage in workflow_run contexts.
+# Per spec-kit maintainer guidance (github/spec-kit#2707) and spec-kit's
+# Extension Publishing Guide, a catalog add/update MUST go through the
+# Extension Submission ISSUE TEMPLATE so GitHub auto-applies the template
+# labels + auto-assigns a maintainer — NOT a direct PR editing
+# catalog.community.json. This workflow does NOT touch github/spec-kit: it
+# builds a prefilled issue-form link and a one-click reminder issue in THIS
+# repo. A human submits the real form so labels/assignment fire.
 on:
   workflow_dispatch:
     inputs:
@@ -20,9 +22,10 @@ on:
 
 permissions:
   contents: read
+  issues: write # reminder issue in THIS repo only — never github/spec-kit
 
 jobs:
-  sync-catalog:
+  prepare-catalog-submission:
     runs-on: ubuntu-latest
 
     steps:
@@ -38,145 +41,70 @@ jobs:
             VERSION=$(node -p "require('./package.json').version")
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
           echo "download_url=https://github.com/raccioly/docguard/releases/download/v${VERSION}/spec-kit-docguard-v${VERSION}.zip" >> "$GITHUB_OUTPUT"
-          echo "updated_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
-
-          # Extract short description (avoid multiline output issues)
-          DESC="Canonical-Driven Development enforcement with automated checks, AI skills, and spec-kit hooks. One pinned runtime dependency; pure Node.js otherwise."
-          echo "description=$DESC" >> "$GITHUB_OUTPUT"
-
-          # Count commands
-          COMMANDS=$(ls extensions/spec-kit-docguard/commands/*.md 2>/dev/null | wc -l | tr -d ' ')
-          echo "commands=${COMMANDS:-6}" >> "$GITHUB_OUTPUT"
-
           echo "✅ Version: $VERSION"
-          echo "   Download: https://github.com/raccioly/docguard/releases/download/v${VERSION}/spec-kit-docguard-v${VERSION}.zip"
 
-      - name: Extract release notes from CHANGELOG
-        id: notes
-        run: |
-          VERSION="${{ steps.meta.outputs.version }}"
-          NOTES=$(awk "/^## \\[${VERSION}\\]/{found=1; next} /^## \\[/{if(found) exit} found{print}" CHANGELOG.md)
-          if [ -z "$NOTES" ]; then
-            NOTES="Updated to v${VERSION}. See [CHANGELOG](https://github.com/raccioly/docguard/blob/main/CHANGELOG.md) for details."
-          fi
-          # Write to file (avoids multiline env var issues)
-          echo "$NOTES" > /tmp/changelog-section.md
-          echo "✅ Release notes extracted ($(wc -l < /tmp/changelog-section.md) lines)"
-
-      - name: Sync fork with upstream
-        env:
-          GH_TOKEN: ${{ secrets.SPECKIT_PR_TOKEN }}
-        run: |
-          # Use GitHub API to sync fork — avoids needing workflow scope on PAT
-          gh repo sync raccioly/spec-kit --source github/spec-kit --branch main --force
-          echo "✅ Fork synced with upstream"
-
-      - name: Checkout spec-kit fork (fresh after sync)
-        uses: actions/checkout@v6
-        with:
-          repository: raccioly/spec-kit
-          token: ${{ secrets.SPECKIT_PR_TOKEN }}
-          path: spec-kit-fork
-          ref: main
-
-      - name: Update catalog.community.json
-        working-directory: spec-kit-fork
+      - name: Build prefilled submission link + body
         run: |
           VERSION="${{ steps.meta.outputs.version }}"
           DOWNLOAD_URL="${{ steps.meta.outputs.download_url }}"
-          UPDATED_AT="${{ steps.meta.outputs.updated_at }}"
+          python3 .github/scripts/speckit-submission.py --url "$VERSION" "$DOWNLOAD_URL" > /tmp/submit-url.txt
+          python3 .github/scripts/speckit-submission.py --body "$VERSION" "$DOWNLOAD_URL" > /tmp/submit-body.md
+          echo "✅ Built prefilled form URL ($(wc -c < /tmp/submit-url.txt) bytes) + body"
 
-          # Surgical updates using external script — no full-file re-serialization
-          # Prevents noisy diffs on unrelated extensions (unicode escapes, formatting)
-          # Also bumps top-level updated_at and fixes description wording
-          cp ${{ github.workspace }}/.github/scripts/patch-catalog.py /tmp/patch-catalog.py
-          python3 /tmp/patch-catalog.py "$VERSION" "$DOWNLOAD_URL" "$UPDATED_AT"
-
-      - name: Create or update branch
-        working-directory: spec-kit-fork
-        run: |
-          BRANCH="update-docguard"
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          # Always use the same branch name (so PRs get updated, not duplicated)
-          git checkout -B "$BRANCH"
-          git add extensions/catalog.community.json extensions/README.md
-          git commit -m "chore: update DocGuard extension to v${{ steps.meta.outputs.version }}" || echo "No changes to commit"
-          git push --force origin "$BRANCH"
-          echo "✅ Branch $BRANCH pushed"
-
-      - name: Create or update PR
-        working-directory: spec-kit-fork
+      - name: Open or refresh catalog-submission reminder (this repo)
         env:
-          GH_TOKEN: ${{ secrets.SPECKIT_PR_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION="${{ steps.meta.outputs.version }}"
-          BRANCH="update-docguard"
-          PR_TITLE="chore: update DocGuard extension to v${VERSION}"
+          SUBMIT_URL=$(cat /tmp/submit-url.txt)
+          TITLE="📦 Submit DocGuard v${VERSION} to the spec-kit community catalog"
 
-          # Build PR body
-          cat > /tmp/pr-body.md << 'HEADER'
-          ## DocGuard Community Extension Update
+          {
+            echo "Update the spec-kit community catalog for **v${VERSION}**"
+            echo "**via the Extension Submission issue template** (NOT a PR —"
+            echo "see github/spec-kit#2707)."
+            echo
+            echo "## 👉 One-click: open the prefilled submission form"
+            echo
+            echo "[**Open the Extension Submission form, prefilled for v${VERSION}**](${SUBMIT_URL})"
+            echo
+            echo "Then: review the fields, tick the two checkbox groups (Testing /"
+            echo "Requirements), and click **Submit new issue**. Submitting through"
+            echo "the form is what makes GitHub auto-apply labels and assign a"
+            echo "maintainer. If any long field came through truncated, paste it"
+            echo "from the copy below."
+            echo
+            echo "<details><summary>📋 Full submission body (copy/paste fallback)</summary>"
+            echo
+            cat /tmp/submit-body.md
+            echo
+            echo "</details>"
+          } > /tmp/reminder.md
 
-          Updates the DocGuard community extension catalog entry.
-
-          ### Changes
-          HEADER
-
-          echo "- Version: **v${VERSION}**" >> /tmp/pr-body.md
-          echo "- Download: \`spec-kit-docguard-v${VERSION}.zip\`" >> /tmp/pr-body.md
-          echo "- Repository: https://github.com/raccioly/docguard" >> /tmp/pr-body.md
-          echo "" >> /tmp/pr-body.md
-          echo "### Release Notes" >> /tmp/pr-body.md
-          echo "" >> /tmp/pr-body.md
-          cat /tmp/changelog-section.md >> /tmp/pr-body.md
-          echo "" >> /tmp/pr-body.md
-          echo "---" >> /tmp/pr-body.md
-          echo "*This PR was automatically generated by the DocGuard release pipeline.*" >> /tmp/pr-body.md
-
-          # Check if PR already exists using multiple detection methods
-          EXISTING_PR=""
-
-          # Method 1: gh pr list with --head filter
-          EXISTING_PR=$(gh pr list \
-            --repo github/spec-kit \
-            --head "raccioly:${BRANCH}" \
+          EXISTING=$(gh issue list \
+            --repo "$GITHUB_REPOSITORY" \
             --state open \
-            --json number \
-            --jq '.[0].number' 2>/dev/null || echo "")
+            --search "in:title \"DocGuard v${VERSION}\" spec-kit catalog" \
+            --json number,title \
+            --jq "[.[] | select(.title | contains(\"v${VERSION}\"))][0].number" 2>/dev/null || echo "")
 
-          # Method 2: search by branch name if method 1 failed
-          if [ -z "$EXISTING_PR" ] || [ "$EXISTING_PR" = "null" ]; then
-            EXISTING_PR=$(gh pr list \
-              --repo github/spec-kit \
-              --state open \
-              --search "head:raccioly:${BRANCH}" \
-              --json number \
-              --jq '.[0].number' 2>/dev/null || echo "")
-          fi
-
-          if [ -n "$EXISTING_PR" ] && [ "$EXISTING_PR" != "null" ]; then
-            # PR exists — update title and body to match new version
-            echo "Found existing PR #${EXISTING_PR} — updating title and body..."
-            gh pr edit "$EXISTING_PR" \
-              --repo github/spec-kit \
-              --title "$PR_TITLE" \
-              --body-file /tmp/pr-body.md
-            echo "✅ Updated existing PR #${EXISTING_PR} to v${VERSION}"
+          if [ -n "$EXISTING" ] && [ "$EXISTING" != "null" ]; then
+            gh issue edit "$EXISTING" --repo "$GITHUB_REPOSITORY" --body-file /tmp/reminder.md
+            echo "✅ Refreshed reminder issue #${EXISTING}"
           else
-            # Try to create new PR
-            PR_URL=$(gh pr create \
-              --repo github/spec-kit \
-              --head "raccioly:${BRANCH}" \
-              --base main \
-              --title "$PR_TITLE" \
-              --body-file /tmp/pr-body.md 2>&1) && {
-              echo "✅ Created new PR: $PR_URL"
-            } || {
-              echo "⚠️ Could not create or find PR — branch was force-pushed with v${VERSION} content"
-            }
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$TITLE" --body-file /tmp/reminder.md
+            echo "✅ Opened catalog-submission reminder issue"
           fi
 
+      - name: Write run summary
+        run: |
+          VERSION="${{ steps.meta.outputs.version }}"
+          SUBMIT_URL=$(cat /tmp/submit-url.txt)
+          {
+            echo "### Spec Kit catalog submission — v${VERSION}"
+            echo
+            echo "[Open the prefilled Extension Submission form](${SUBMIT_URL})"
+            echo
+            echo "Submit it through the form (do **not** open a PR against the catalog)."
+          } >> "$GITHUB_STEP_SUMMARY"

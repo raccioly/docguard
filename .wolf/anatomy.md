@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-05-31T10:00:03.036Z
-> Files: 549 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-06-09T15:26:08.187Z
+> Files: 554 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ./
 
@@ -920,3 +920,17 @@
 - `fix-memory.mjs` — Fix Memory — M-2 / S-10 (~1858 tok)
 - `mechanical.mjs` — Mechanical Fix Registry — applies deterministic, no-LLM fixes in place. (~3008 tok)
 - `sections.mjs` — Section-addressable docs — the foundation for surgical, non-destructive doc (~1676 tok)
+
+## .github/scripts/
+
+- `speckit-submission-body.sh` — Build the body for a spec-kit "Extension Submission" issue. (~1482 tok)
+- `speckit-submission.py` — Build a spec-kit "Extension Submission" for DocGuard. (~2590 tok)
+
+## .github/workflows/
+
+- `release.yml` — CI: Auto Release — Tag, GitHub Release, npm, PyPI (~3386 tok)
+- `sync-speckit-catalog.yml` — CI: Prepare Spec Kit Catalog Submission (Manual) (~1385 tok)
+
+## extensions/spec-kit-docguard/
+
+- `extension.yml` (~1026 tok)
