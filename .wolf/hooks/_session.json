@@ -1,91 +1,12 @@
 {
-  "session_id": "session-2026-06-09-1518",
-  "started": "2026-06-09T15:18:22.930Z",
-  "files_read": {
-    "/home/user/docguard/.github/workflows/release.yml": {
-      "count": 1,
-      "tokens": 2975,
-      "first_read": "2026-06-09T15:25:09.378Z"
-    },
-    "/home/user/docguard/package.json": {
-      "count": 1,
-      "tokens": 446,
-      "first_read": "2026-06-09T15:37:36.497Z"
-    },
-    "/home/user/docguard/CHANGELOG.md": {
-      "count": 1,
-      "tokens": 35885,
-      "first_read": "2026-06-09T15:37:37.020Z"
-    },
-    "/home/user/docguard/pyproject.toml": {
-      "count": 1,
-      "tokens": 376,
-      "first_read": "2026-06-09T15:38:01.310Z"
-    }
-  },
-  "files_written": [
-    {
-      "file": "/home/user/docguard/.github/scripts/speckit-submission-body.sh",
-      "action": "edit",
-      "tokens": 92,
-      "at": "2026-06-09T15:20:48.411Z"
-    },
-    {
-      "file": "/home/user/docguard/.github/scripts/speckit-submission.py",
-      "action": "create",
-      "tokens": 2590,
-      "at": "2026-06-09T15:24:52.779Z"
-    },
-    {
-      "file": "/home/user/docguard/.github/workflows/release.yml",
-      "action": "edit",
-      "tokens": 1361,
-      "at": "2026-06-09T15:25:44.938Z"
-    },
-    {
-      "file": "/home/user/docguard/.github/workflows/sync-speckit-catalog.yml",
-      "action": "create",
-      "tokens": 1385,
-      "at": "2026-06-09T15:26:08.197Z"
-    },
-    {
-      "file": "/home/user/docguard/package.json",
-      "action": "edit",
-      "tokens": 7,
-      "at": "2026-06-09T15:37:43.539Z"
-    },
-    {
-      "file": "/home/user/docguard/CHANGELOG.md",
-      "action": "edit",
-      "tokens": 360,
-      "at": "2026-06-09T15:37:45.272Z"
-    },
-    {
-      "file": "/home/user/docguard/pyproject.toml",
-      "action": "edit",
-      "tokens": 6,
-      "at": "2026-06-09T15:38:04.577Z"
-    },
-    {
-      "file": "/home/user/docguard/extensions/spec-kit-docguard/extension.yml",
-      "action": "edit",
-      "tokens": 6,
-      "at": "2026-06-09T15:38:05.158Z"
-    }
-  ],
-  "edit_counts": {
-    ".github/scripts/speckit-submission-body.sh": 1,
-    ".github/scripts/speckit-submission.py": 1,
-    ".github/workflows/release.yml": 1,
-    ".github/workflows/sync-speckit-catalog.yml": 1,
-    "package.json": 1,
-    "CHANGELOG.md": 1,
-    "pyproject.toml": 1,
-    "extensions/spec-kit-docguard/extension.yml": 1
-  },
-  "anatomy_hits": 4,
+  "session_id": "session-2026-06-09-1622",
+  "started": "2026-06-09T16:22:07.688Z",
+  "files_read": {},
+  "files_written": [],
+  "edit_counts": {},
+  "anatomy_hits": 0,
   "anatomy_misses": 0,
   "repeated_reads_warned": 0,
   "cerebrum_warnings": 0,
-  "stop_count": 5
+  "stop_count": 1
 }
