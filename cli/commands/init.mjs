@@ -13,7 +13,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync } from 
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createInterface } from 'node:readline';
-import { execSync } from 'node:child_process';
+
 import { c, PROFILES, CURRENT_SCHEMA_VERSION } from '../shared.mjs';
 import { ensureSkills, detectAgentMode, detectAIAgent, isSpecKitAvailable, isSpecKitInitialized, getDetectedAgent, safeSpawnSpecify } from '../ensure-skills.mjs';
 
