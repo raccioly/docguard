@@ -1,7 +1,11 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-06-10T19:25:51.859Z
-> Files: 554 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-06-10T21:09:50.636Z
+> Files: 579 tracked | Anatomy hits: 0 | Misses: 0
+
+## ../../../../../../../tmp/
+
+- `append-buglog.mjs` — Declares path (~1335 tok)
 
 ## ./
 
@@ -14,7 +18,7 @@
 - `.npmrc` — Supply-Chain Security Hardening (~59 tok)
 - `action.yml` — CI: 'DocGuard — CDD Compliance' (~4322 tok)
 - `AGENTS.md` — AI Agent Instructions — DocGuard (~1275 tok)
-- `CHANGELOG.md` — Changelog (~38458 tok)
+- `CHANGELOG.md` — Changelog (~39309 tok)
 - `CLAUDE.md` — OpenWolf (~57 tok)
 - `CODE_OF_CONDUCT.md` — Contributor Covenant Code of Conduct (~532 tok)
 - `COMPARISONS.md` — Comparisons & Honest Limitations (~3053 tok)
@@ -28,7 +32,7 @@
 - `PHILOSOPHY.md` — The Philosophy of Canonical-Driven Development (~1757 tok)
 - `pr_description.md` (~260 tok)
 - `pyproject.toml` — The enforcement tool for Canonical-Driven Development (CDD). Audit, generate, and guard your project (~351 tok)
-- `README.md` — Project documentation (~7332 tok)
+- `README.md` — Project documentation (~7359 tok)
 - `ROADMAP.md` — DocGuard Roadmap (~1494 tok)
 - `SECURITY.md` — Security Policy (~357 tok)
 - `STANDARD.md` — DocGuard Standard v0.1 (~6435 tok)
@@ -931,6 +935,48 @@
 - `release.yml` — CI: Auto Release — Tag, GitHub Release, npm, PyPI (~3386 tok)
 - `sync-speckit-catalog.yml` — CI: Prepare Spec Kit Catalog Submission (Manual) (~1385 tok)
 
+## cli/
+
+- `config.mjs` — DocGuard — configuration loading. (~3265 tok)
+- `docguard.mjs` — DocGuard CLI — The enforcement tool for Canonical-Driven Development (CDD) (~8124 tok)
+- `shared-ignore.mjs` — Shared Ignore Utility — Unified file filtering for all validators. (~2780 tok)
+- `shared-source.mjs` — Shared Source Resolution — Monorepo-aware source discovery. (~4357 tok)
+
+## cli/commands/
+
+- `agent.mjs` — `docguard agent` — the one-shot agent task graph. (~1644 tok)
+- `generate.mjs` — Generate Command — Reverse-engineer canonical docs from an existing codebase (~15364 tok)
+
+## cli/scanners/
+
+- `inventory.mjs` — Inventory scanners — code-truth the generator PRE-FILLS instead of leaving (~1699 tok)
+- `memory-plan.mjs` — Memory Plan — the orchestration artifact behind AI-powered Generate. (~5744 tok)
+- `project-type.mjs` — Project-Type Detection — the language-agnostic spine. (~4190 tok)
+- `routes.mjs` — Deep Route Scanner (~7712 tok)
+
+## cli/validators/
+
+- `freshness.mjs` — Freshness Validator — Check if documentation is stale relative to code changes. (~3462 tok)
+- `metrics-consistency.mjs` — Metrics Consistency Validator — Detects stale hardcoded numbers in docs. (~2714 tok)
+
+## cli/writers/
+
+- `mechanical.mjs` — Mechanical Fix Registry — applies deterministic, no-LLM fixes in place. (~3290 tok)
+
 ## extensions/spec-kit-docguard/
 
 - `extension.yml` (~1026 tok)
+
+## tests/
+
+- `agent.test.mjs` — Exports x (~1138 tok)
+- `commands.test.mjs` — DocGuard CLI Tests — Tests all commands and flags (~10304 tok)
+- `ensure-skills-idempotent.test.mjs` — v0.24 — Skill install is idempotent (field report, Issue D). (~1133 tok)
+- `freshness.test.mjs` — runGit: commitOldCode (~3536 tok)
+- `inventory.test.mjs` — Declares make (~1048 tok)
+- `mechanical.test.mjs` — Declares write (~1161 tok)
+- `memory-plan.test.mjs` — Exports u, Button (~1834 tok)
+- `metrics-consistency.test.mjs` — Declares guardResults (~1986 tok)
+- `metrics-dedup.test.mjs` — v0.14.1-N1 — Metrics-Consistency dedup. (~1450 tok)
+- `project-type.test.mjs` — Declares make (~2140 tok)
+- `shared-source.test.mjs` — API routes: GET (4 endpoints) (~1714 tok)

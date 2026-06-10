@@ -2,14 +2,14 @@
   "version": 1,
   "created_at": "2026-05-26T15:31:59.491Z",
   "lifetime": {
-    "total_tokens_estimated": 723037,
-    "total_reads": 194,
-    "total_writes": 268,
+    "total_tokens_estimated": 737751,
+    "total_reads": 196,
+    "total_writes": 270,
     "total_sessions": 17,
-    "anatomy_hits": 139,
+    "anatomy_hits": 141,
     "anatomy_misses": 53,
-    "repeated_reads_blocked": 94,
-    "estimated_savings_vs_bare_cli": 527607
+    "repeated_reads_blocked": 96,
+    "estimated_savings_vs_bare_cli": 542467
   },
   "sessions": [
     {
@@ -2985,6 +2985,62 @@
       "id": "session-2026-06-10-1519",
       "started": "2026-06-10T19:19:59.923Z",
       "ended": "2026-06-10T19:26:44.836Z",
+      "reads": [
+        {
+          "file": "/Users/ricardoaccioly/.gemini/canonical-spec-kit/.claude/worktrees/dazzling-newton-afbedb/README.md",
+          "tokens_estimated": 7230,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "/Users/ricardoaccioly/.gemini/canonical-spec-kit/.claude/worktrees/dazzling-newton-afbedb/README.md",
+          "tokens_estimated": 127,
+          "action": "edit"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 7230,
+        "output_tokens_estimated": 127,
+        "reads_count": 1,
+        "writes_count": 1,
+        "repeated_reads_blocked": 1,
+        "anatomy_lookups": 1
+      }
+    },
+    {
+      "id": "session-2026-06-10-1519",
+      "started": "2026-06-10T19:19:59.923Z",
+      "ended": "2026-06-10T19:30:53.047Z",
+      "reads": [
+        {
+          "file": "/Users/ricardoaccioly/.gemini/canonical-spec-kit/.claude/worktrees/dazzling-newton-afbedb/README.md",
+          "tokens_estimated": 7230,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "/Users/ricardoaccioly/.gemini/canonical-spec-kit/.claude/worktrees/dazzling-newton-afbedb/README.md",
+          "tokens_estimated": 127,
+          "action": "edit"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 7230,
+        "output_tokens_estimated": 127,
+        "reads_count": 1,
+        "writes_count": 1,
+        "repeated_reads_blocked": 1,
+        "anatomy_lookups": 1
+      }
+    },
+    {
+      "id": "session-2026-06-10-1519",
+      "started": "2026-06-10T19:19:59.923Z",
+      "ended": "2026-06-10T19:49:04.764Z",
       "reads": [
         {
           "file": "/Users/ricardoaccioly/.gemini/canonical-spec-kit/.claude/worktrees/dazzling-newton-afbedb/README.md",

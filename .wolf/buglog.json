@@ -673,6 +673,530 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-06-09T15:38:05.160Z"
+    },
+    {
+      "id": "bug-040",
+      "timestamp": "2026-06-10T20:12:59.147Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/docguard.mjs",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 8→29 lines (3 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-10T20:12:59.147Z"
+    },
+    {
+      "id": "bug-041",
+      "timestamp": "2026-06-10T20:13:36.017Z",
+      "error_message": "Missing error handling in unknown",
+      "file": "tests/commands.test.mjs",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-10T20:13:36.017Z"
+    },
+    {
+      "id": "bug-042",
+      "timestamp": "2026-06-10T20:17:07.836Z",
+      "error_message": "Null/undefined access in ",
+      "file": "cli/shared-ignore.mjs",
+      "root_cause": "Property access on potentially null/undefined value",
+      "fix": "Added null safety (optional chaining or null check)",
+      "tags": [
+        "auto-detected",
+        "null-safety",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-10T20:17:07.836Z"
+    },
+    {
+      "id": "bug-043",
+      "timestamp": "2026-06-10T20:17:45.779Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/scanners/project-type.mjs",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 7→10 lines (3 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-10T20:17:45.779Z"
+    },
+    {
+      "id": "bug-044",
+      "timestamp": "2026-06-10T20:18:02.621Z",
+      "error_message": "Missing guard clause",
+      "file": "cli/scanners/project-type.mjs",
+      "root_cause": "No early return/throw for edge case: !content",
+      "fix": "Added guard clause: if (!content)",
+      "tags": [
+        "auto-detected",
+        "guard-clause",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-10T20:18:02.621Z"
+    },
+    {
+      "id": "bug-045",
+      "timestamp": "2026-06-10T20:18:48.686Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/scanners/routes.mjs",
+      "root_cause": "4 lines replaced/restructured",
+      "fix": "Rewrote 12→18 lines (4 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-10T20:18:48.686Z"
+    },
+    {
+      "id": "bug-046",
+      "timestamp": "2026-06-10T20:19:58.491Z",
+      "error_message": "Missing guard clause",
+      "file": "cli/shared-source.mjs",
+      "root_cause": "No early return/throw for edge case: hashC && ch === '#'",
+      "fix": "Added guard clause: if (hashC && ch === '#')",
+      "tags": [
+        "auto-detected",
+        "guard-clause",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-10T20:19:58.491Z"
+    },
+    {
+      "id": "bug-047",
+      "timestamp": "2026-06-10T20:24:10.717Z",
+      "error_message": "Significant refactor of ",
+      "file": "tests/ensure-skills-idempotent.test.mjs",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 13→17 lines (3 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-10T20:24:10.717Z"
+    },
+    {
+      "id": "bug-048",
+      "timestamp": "2026-06-10T20:24:16.092Z",
+      "error_message": "Wrong return value",
+      "file": "tests/ensure-skills-idempotent.test.mjs",
+      "root_cause": "Was returning: spawnSync('node', [CLI, 'explain', 'freshness', '-",
+      "fix": "Now returns: spawnSync('node', [CLI, 'generate', '--dir', dir],",
+      "tags": [
+        "auto-detected",
+        "return-value",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-10T20:24:16.092Z"
+    },
+    {
+      "id": "bug-049",
+      "timestamp": "2026-06-10T20:24:20.798Z",
+      "error_message": "Incorrect value in code",
+      "file": "tests/ensure-skills-idempotent.test.mjs",
+      "root_cause": "Had 'SKILL.md mtimes must be unchanged across repeated",
+      "fix": "Changed to 'SKILL.md mtimes must be unchanged across repeated",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-10T20:24:20.798Z"
+    },
+    {
+      "id": "bug-050",
+      "timestamp": "2026-06-10T20:24:54.147Z",
+      "error_message": "Significant refactor of ",
+      "file": "tests/project-type.test.mjs",
+      "root_cause": "9 lines replaced/restructured",
+      "fix": "Rewrote 21→28 lines (9 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-10T20:24:54.147Z"
+    },
+    {
+      "id": "bug-051",
+      "timestamp": "2026-06-10T20:30:05.176Z",
+      "error_message": "Null/undefined access in ",
+      "file": "cli/scanners/memory-plan.mjs",
+      "root_cause": "Property access on potentially null/undefined value",
+      "fix": "Added null safety (optional chaining or null check)",
+      "tags": [
+        "auto-detected",
+        "null-safety",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-10T20:30:05.176Z"
+    },
+    {
+      "id": "bug-052",
+      "timestamp": "2026-06-10T20:30:09.623Z",
+      "error_message": "Wrong condition in logic",
+      "file": "cli/scanners/memory-plan.mjs",
+      "root_cause": "Condition was: if (surface.endpoints.length > 0)",
+      "fix": "Changed to: if (surface.endpoints.length > 0 && profileAllows('doc)",
+      "tags": [
+        "auto-detected",
+        "logic-fix",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 5,
+      "last_seen": "2026-06-10T20:30:27.124Z"
+    },
+    {
+      "id": "bug-053",
+      "timestamp": "2026-06-10T20:30:31.498Z",
+      "error_message": "Wrong return value",
+      "file": "cli/scanners/memory-plan.mjs",
+      "root_cause": "Was returning: { profile, surface, docs, agentTasks };",
+      "fix": "Now returns: { profile, surface, docs, agentTasks, notes };",
+      "tags": [
+        "auto-detected",
+        "return-value",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-10T20:30:31.498Z"
+    },
+    {
+      "id": "bug-054",
+      "timestamp": "2026-06-10T20:34:18.552Z",
+      "error_message": "Wrong condition in logic",
+      "file": "cli/validators/metrics-consistency.mjs",
+      "root_cause": "Condition was: if (distinctFoundInFile.size === 0)",
+      "fix": "Changed to: if (!isDocguardBound(content, match.index)",
+      "tags": [
+        "auto-detected",
+        "logic-fix",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-10T20:34:18.552Z"
+    },
+    {
+      "id": "bug-055",
+      "timestamp": "2026-06-10T20:34:25.902Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/validators/metrics-consistency.mjs",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 5→8 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-10T20:34:25.902Z"
+    },
+    {
+      "id": "bug-056",
+      "timestamp": "2026-06-10T20:34:49.649Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/writers/mechanical.mjs",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 16→34 lines (3 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-10T20:34:49.649Z"
+    },
+    {
+      "id": "bug-057",
+      "timestamp": "2026-06-10T20:37:04.053Z",
+      "error_message": "Incorrect value in code",
+      "file": "tests/metrics-dedup.test.mjs",
+      "root_cause": "Had '## Reference\\n\\nSee the [21 validators table](#ta",
+      "fix": "Changed to '## Reference\\n\\nSee the DocGuard [21 validators t",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 4,
+      "last_seen": "2026-06-10T20:37:17.491Z"
+    },
+    {
+      "id": "bug-058",
+      "timestamp": "2026-06-10T20:39:20.505Z",
+      "error_message": "Missing error handling in readDocStatus",
+      "file": "cli/validators/freshness.mjs",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-10T20:39:20.505Z"
+    },
+    {
+      "id": "bug-059",
+      "timestamp": "2026-06-10T20:39:29.494Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/validators/freshness.mjs",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 10→23 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-10T20:39:29.494Z"
+    },
+    {
+      "id": "bug-060",
+      "timestamp": "2026-06-10T20:56:11.176Z",
+      "error_message": "Incorrect value in code",
+      "file": "cli/commands/generate.mjs",
+      "root_cause": "Had `  ${c.bold}Code-truth surface:${c.reset} ${plan.s",
+      "fix": "Changed to `  ${c.bold}Code-truth surface:${c.reset} ${plan.s",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-10T20:56:11.176Z"
+    },
+    {
+      "id": "bug-061",
+      "timestamp": "2026-06-10T21:02:20.532Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/commands/agent.mjs",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 3→5 lines (2 removed) | Also: console.log(`\\n  ${c.dim}Run without --format text; return; | Also: const plan = buildMemoryPlan(projectDir, config);; const graph = buildAgentTaskGraph(projectDir, conf",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 3,
+      "last_seen": "2026-06-10T21:05:16.597Z"
+    },
+    {
+      "id": "bug-062",
+      "timestamp": "2026-06-10T21:02:26.215Z",
+      "error_message": "Wrong condition in logic",
+      "file": "cli/commands/agent.mjs",
+      "root_cause": "Condition was: if (flags.format === 'text')",
+      "fix": "Changed to: if (flags.format === 'json')",
+      "tags": [
+        "auto-detected",
+        "logic-fix",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-10T21:02:26.215Z"
+    },
+    {
+      "id": "bug-063",
+      "timestamp": "2026-06-10T21:02:59.818Z",
+      "error_message": "Incorrect value in code",
+      "file": "tests/agent.test.mjs",
+      "root_cause": "Had `node ${CLI} agent`",
+      "fix": "Changed to `node ${CLI} agent --format json`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-10T21:02:59.818Z"
+    },
+    {
+      "id": "bug-064",
+      "timestamp": "2026-06-10T21:09:03.096Z",
+      "error_message": "Incorrect value in code",
+      "file": "README.md",
+      "root_cause": "Had `explain <warning>`",
+      "fix": "Changed to `agent`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-10T21:09:03.096Z"
+    },
+    {
+      "id": "bug-065",
+      "timestamp": "2026-06-10",
+      "error_message": "Field report #2 Bug #3: `docguard guard` mutated the working tree (auto-init Spec Kit, spawn `specify`, write .agent/.specify) before printing results.",
+      "file": "cli/docguard.mjs",
+      "root_cause": "ensureSkills ran for every non-headless command; the v0.25.0 fix only added --plan to the headless set, not the read-only commands. guard/score/diff are not headless.",
+      "fix": "Added READ_ONLY_COMMANDS set (guard/audit/score/diff/impact/diagnose/trace/explain/memory/demo/agent); ensureSkills is gated to skip them. + test.",
+      "tags": [
+        "side-effects",
+        "guard",
+        "ensure-skills",
+        "field-report-2",
+        "read-only"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-10"
+    },
+    {
+      "id": "bug-066",
+      "timestamp": "2026-06-10",
+      "error_message": "Field report #2 Bug #1: a stdlib Python CLI was detected as Express/Flask/AWS because surface scanners ingested tests/fixtures/ on the FIRST run (no .docguardignore).",
+      "file": "cli/shared-ignore.mjs, cli/scanners/project-type.mjs, cli/scanners/routes.mjs, cli/shared-source.mjs",
+      "root_cause": "v0.25.0 made scanners honor config.ignore but added NO default exclusion; the realistic first run has no .docguardignore. A test even codified the leak as expected.",
+      "fix": "Added DEFAULT_DETECTION_IGNORE_DIRS + isNonProductDir/isNonProductPath, applied in manifest/route/env detection by default (overridable via detection.includeNonProduct; not applied to guard structural checks). Rewrote the codifying test.",
+      "tags": [
+        "detection",
+        "fixtures",
+        "contamination",
+        "false-positive",
+        "field-report-2"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-10"
+    },
+    {
+      "id": "bug-067",
+      "timestamp": "2026-06-10",
+      "error_message": "Field report #2 Bug #2: Metrics-Consistency flagged \"10 checks\" (a proof harness) vs DocGuard's own 86, and `fix --write` would overwrite the correct 10 with 86 (data corruption).",
+      "file": "cli/validators/metrics-consistency.mjs, cli/writers/mechanical.mjs",
+      "root_cause": "The validator matched any \"N checks/validators\" with no subject binding; \"actual\" was DocGuard's own count; the applier did a blind global replace with no provenance.",
+      "fix": "Subject-binding (number must be on a DocGuard-referencing line) + actualSource provenance in fixes[] + fail-closed applier (refuses without provenance; only rewrites bound lines). Updated codifying tests.",
+      "tags": [
+        "metrics",
+        "data-corruption",
+        "auto-fix",
+        "provenance",
+        "fail-closed",
+        "field-report-2"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-10"
+    },
+    {
+      "id": "bug-068",
+      "timestamp": "2026-06-10",
+      "error_message": "Field report #2 Bug #4: project named after the git-worktree dir slug (compassionate-chaplygin-c91f47) instead of the manifest name.",
+      "file": "cli/scanners/project-type.mjs, cli/config.mjs",
+      "root_cause": "config.projectName was hardcoded to basename(projectDir); the manifest name was never read.",
+      "fix": "Added detectProjectName() (package.json/pyproject [project|tool.poetry]/Cargo/composer/go.mod → basename fallback), wired as the config default. + tests.",
+      "tags": [
+        "project-name",
+        "manifest",
+        "worktree",
+        "field-report-2"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-10"
+    },
+    {
+      "id": "bug-069",
+      "timestamp": "2026-06-10",
+      "error_message": "Field report #2 Bug #5: init --profile cli required 4 docs but generate proposed API-REFERENCE/INTEGRATIONS; the two disagreed on the doc set.",
+      "file": "cli/scanners/memory-plan.mjs, cli/commands/generate.mjs",
+      "root_cause": "generate keyed doc emission purely off surface counts, never the active compliance profile; the B7 fix widened requiredFiles to match generate (symptom fix, wrong direction).",
+      "fix": "gate optional web/DB/UI docs on the active profile (cli/library) + emit a recoverable note when a surface is suppressed. + test.",
+      "tags": [
+        "generate",
+        "profile",
+        "consistency",
+        "field-report-2"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-10"
+    },
+    {
+      "id": "bug-070",
+      "timestamp": "2026-06-10",
+      "error_message": "Field report #2 Bug #6: a fresh, uncommitted AGENTS.md warned \"not yet committed to git\" but mentioned only committing, not the last-reviewed marker; no same-session suppression.",
+      "file": "cli/validators/freshness.mjs",
+      "root_cause": "The warning text listed only one of the two satisfiers; there was no status:approved suppression for the generate-then-fill flow.",
+      "fix": "Warning now states both remedies (commit OR last-reviewed marker); suppressed for docs carrying <!-- docguard:status approved -->. + tests.",
+      "tags": [
+        "freshness",
+        "warning",
+        "noise",
+        "field-report-2"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-10"
+    },
+    {
+      "id": "bug-071",
+      "timestamp": "2026-06-10",
+      "error_message": "Field report #2 Bug #7: `diff` reported JWT_SECRET \"in code, not documented\" though it appears only as a detection signature in a string literal (the tool never reads it).",
+      "file": "cli/shared-source.mjs",
+      "root_cause": "grepEnvUsage matched raw content with no comment/string-literal stripping and no test-dir exclusion, counting mentions as reads.",
+      "fix": "Added a single-pass char classifier (code/string/comment); env access counts only when the keyword is in code position; skip non-product dirs. + tests.",
+      "tags": [
+        "env-vars",
+        "detection",
+        "mentions-vs-reads",
+        "lexer",
+        "field-report-2"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-10"
     }
   ]
 }

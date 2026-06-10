@@ -219,3 +219,85 @@
 | 15:25 | Edited README.md | 3→5 lines | ~119 |
 | 15:26 | README: clarify docguard-cli↔repo↔command naming (defuses auto-mode typosquat denial) + cerebrum learning | README.md, .wolf/cerebrum.md | done | ~3k |
 | 15:26 | Session end: 1 writes across 1 files (README.md) | 1 reads | ~7357 tok |
+| 15:30 | Session end: 1 writes across 1 files (README.md) | 1 reads | ~7357 tok |
+| 15:48 | repo cleanup: deleted 15 stale local + 19 remote bot branches, removed 5 merged worktrees | (git) | done, 4 open PRs preserved | ~6k |
+| 15:49 | Session end: 1 writes across 1 files (README.md) | 1 reads | ~7357 tok |
+| 15:55 | Verified field-report Bug#1 (fixture contamination) on v0.25.1 — STILL BROKEN for no-.docguardignore first run | cli/scanners/{memory-plan,project-type,routes,integrations}.mjs, cli/shared-source.mjs, cli/shared-ignore.mjs | partial-fix confirmed; default fixture exclusion absent | ~12k |
+| 16:12 | Edited cli/docguard.mjs | modified 26() | ~352 |
+| 16:13 | Edited tests/commands.test.mjs | added error handling | ~375 |
+| 16:17 | Edited cli/shared-ignore.mjs | added optional chaining | ~607 |
+| 16:17 | Edited cli/scanners/project-type.mjs | inline fix | ~22 |
+| 16:17 | Edited cli/scanners/project-type.mjs | added 1 condition(s) | ~176 |
+| 16:18 | Edited cli/scanners/project-type.mjs | added 9 condition(s) | ~579 |
+| 16:18 | Edited cli/config.mjs | basename() → detectProjectName() | ~202 |
+| 16:18 | Edited cli/scanners/routes.mjs | inline fix | ~31 |
+| 16:18 | Edited cli/scanners/routes.mjs | added 2 condition(s) | ~211 |
+| 16:19 | Edited cli/shared-source.mjs | inline fix | ~23 |
+| 16:19 | Edited cli/shared-source.mjs | added 17 condition(s) | ~792 |
+| 16:20 | Edited cli/shared-source.mjs | added 2 condition(s) | ~419 |
+| 16:20 | Edited cli/shared-source.mjs | added 1 condition(s) | ~93 |
+| 16:24 | Edited tests/ensure-skills-idempotent.test.mjs | modified 26() | ~220 |
+| 16:24 | Edited tests/ensure-skills-idempotent.test.mjs | modified runCmd() | ~74 |
+| 16:24 | Edited tests/ensure-skills-idempotent.test.mjs | 2→2 lines | ~38 |
+| 16:24 | Edited tests/project-type.test.mjs | modified run() | ~459 |
+| 16:26 | Edited tests/project-type.test.mjs | 5→5 lines | ~70 |
+| 16:26 | Edited tests/project-type.test.mjs | added 1 condition(s) | ~576 |
+| 16:27 | Edited tests/shared-source.test.mjs | expanded (+25 lines) | ~495 |
+| 16:29 | Edited cli/scanners/memory-plan.mjs | added 1 import(s) | ~41 |
+| 16:30 | Edited cli/scanners/memory-plan.mjs | added optional chaining | ~461 |
+| 16:30 | Edited cli/scanners/memory-plan.mjs | 2→2 lines | ~45 |
+| 16:30 | Edited cli/scanners/memory-plan.mjs | 2→2 lines | ~42 |
+| 16:30 | Edited cli/scanners/memory-plan.mjs | 2→2 lines | ~44 |
+| 16:30 | Edited cli/scanners/memory-plan.mjs | 2→2 lines | ~46 |
+| 16:30 | Edited cli/scanners/memory-plan.mjs | 2→2 lines | ~47 |
+| 16:30 | Edited cli/scanners/memory-plan.mjs | 2→2 lines | ~16 |
+| 16:30 | Edited cli/commands/generate.mjs | 4→5 lines | ~37 |
+| 16:30 | Edited cli/commands/generate.mjs | modified if() | ~111 |
+| 16:30 | Edited cli/commands/generate.mjs | modified for() | ~98 |
+| 16:31 | Edited tests/memory-plan.test.mjs | expanded (+20 lines) | ~315 |
+| 16:34 | Edited cli/validators/metrics-consistency.mjs | added 1 condition(s) | ~160 |
+| 16:34 | Edited cli/validators/metrics-consistency.mjs | 5→8 lines | ~155 |
+| 16:34 | Edited cli/validators/metrics-consistency.mjs | added 1 condition(s) | ~239 |
+| 16:34 | Edited cli/writers/mechanical.mjs | added 3 condition(s) | ~545 |
+| 16:35 | Edited tests/metrics-consistency.test.mjs | modified bound() | ~73 |
+| 16:35 | Edited tests/metrics-consistency.test.mjs | modified for() | ~154 |
+| 16:35 | Edited tests/metrics-consistency.test.mjs | modified 2() | ~472 |
+| 16:36 | Edited tests/mechanical.test.mjs | inline fix | ~34 |
+| 16:36 | Edited tests/mechanical.test.mjs | expanded (+18 lines) | ~375 |
+| 16:37 | Edited tests/metrics-dedup.test.mjs | 2→2 lines | ~43 |
+| 16:37 | Edited tests/metrics-dedup.test.mjs | 2→2 lines | ~31 |
+| 16:37 | Edited tests/metrics-dedup.test.mjs | 2→2 lines | ~28 |
+| 16:37 | Edited tests/metrics-dedup.test.mjs | 3→3 lines | ~51 |
+| 16:39 | Edited cli/validators/freshness.mjs | added error handling | ~191 |
+| 16:39 | Edited cli/validators/freshness.mjs | added 1 condition(s) | ~316 |
+| 16:39 | Edited tests/freshness.test.mjs | modified for() | ~405 |
+| 16:41 | Edited tests/freshness.test.mjs | doesNotMatch() → match() | ~43 |
+| 16:54 | Created cli/scanners/inventory.mjs | — | ~1699 |
+| 16:55 | Edited cli/scanners/memory-plan.mjs | added 1 import(s) | ~45 |
+| 16:55 | Edited cli/scanners/memory-plan.mjs | modified truth() | ~86 |
+| 16:55 | Edited cli/scanners/memory-plan.mjs | 7→9 lines | ~102 |
+| 16:55 | Edited cli/scanners/memory-plan.mjs | added 1 condition(s) | ~363 |
+| 16:55 | Edited cli/scanners/memory-plan.mjs | added 1 condition(s) | ~369 |
+| 16:56 | Edited cli/commands/generate.mjs | 8→10 lines | ~125 |
+| 16:56 | Edited cli/commands/generate.mjs | "  ${c.bold}Code-truth sur" → "  ${c.bold}Code-truth sur" | ~96 |
+| 16:58 | Created tests/inventory.test.mjs | — | ~1048 |
+| 16:58 | Edited tests/memory-plan.test.mjs | modified main() | ~388 |
+| 17:00 | Created cli/commands/agent.mjs | — | ~1549 |
+| 17:00 | Edited cli/docguard.mjs | added 1 import(s) | ~26 |
+| 17:00 | Edited cli/docguard.mjs | 2→4 lines | ~87 |
+| 17:00 | Edited cli/docguard.mjs | 4→4 lines | ~42 |
+| 17:00 | Edited cli/docguard.mjs | modified 26() | ~83 |
+| 17:01 | Created tests/agent.test.mjs | — | ~932 |
+| 17:02 | Edited cli/commands/agent.mjs | default() → graph() | ~66 |
+| 17:02 | Edited cli/commands/agent.mjs | modified if() | ~88 |
+| 17:02 | Edited cli/commands/agent.mjs | 8→4 lines | ~54 |
+| 17:02 | Edited tests/agent.test.mjs | 2→2 lines | ~56 |
+| 17:05 | Edited cli/commands/agent.mjs | modified runAgent() | ~107 |
+| 17:05 | Edited cli/commands/generate.mjs | added 1 condition(s) | ~71 |
+| 17:05 | Edited cli/docguard.mjs | expanded (+9 lines) | ~160 |
+| 17:05 | Edited cli/docguard.mjs | 2→3 lines | ~93 |
+| 17:06 | Edited tests/agent.test.mjs | expanded (+12 lines) | ~246 |
+| 17:06 | Edited tests/commands.test.mjs | expanded (+8 lines) | ~126 |
+| 17:08 | Edited CHANGELOG.md | expanded (+53 lines) | ~920 |
+| 17:09 | Edited README.md | 2→3 lines | ~75 |
+| 17:09 | Created ../../../../../../../tmp/append-buglog.mjs | — | ~1335 |
