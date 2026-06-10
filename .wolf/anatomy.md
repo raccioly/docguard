@@ -1,6 +1,6 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-06-09T15:38:05.147Z
+> Auto-maintained by OpenWolf. Last scanned: 2026-06-10T19:25:51.859Z
 > Files: 554 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ./
@@ -28,7 +28,7 @@
 - `PHILOSOPHY.md` — The Philosophy of Canonical-Driven Development (~1757 tok)
 - `pr_description.md` (~260 tok)
 - `pyproject.toml` — The enforcement tool for Canonical-Driven Development (CDD). Audit, generate, and guard your project (~351 tok)
-- `README.md` — Project documentation (~7230 tok)
+- `README.md` — Project documentation (~7332 tok)
 - `ROADMAP.md` — DocGuard Roadmap (~1494 tok)
 - `SECURITY.md` — Security Policy (~357 tok)
 - `STANDARD.md` — DocGuard Standard v0.1 (~6435 tok)

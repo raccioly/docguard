@@ -211,3 +211,11 @@
 
 | Time | Action | File(s) | Outcome | ~Tokens |
 |------|--------|---------|---------|--------|
+
+## Session: 2026-06-10 15:19
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 15:25 | Edited README.md | 3→5 lines | ~119 |
+| 15:26 | README: clarify docguard-cli↔repo↔command naming (defuses auto-mode typosquat denial) + cerebrum learning | README.md, .wolf/cerebrum.md | done | ~3k |
+| 15:26 | Session end: 1 writes across 1 files (README.md) | 1 reads | ~7357 tok |
