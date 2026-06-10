@@ -45,6 +45,7 @@ import { runImpact } from './commands/impact.mjs';
 import { runExplain } from './commands/explain.mjs';
 import { runMemory } from './commands/memory.mjs';
 import { runDemo } from './commands/demo.mjs';
+import { runAgent } from './commands/agent.mjs';
 import { ensureSkills } from './ensure-skills.mjs';
 
 // ── Shared constants (imported to break circular dependencies) ──────────
@@ -83,6 +84,7 @@ ${c.bold}Tools (situational, but day-to-day useful)${c.reset}
   ${c.green}diagnose${c.reset}   AI orchestrator — guard → emit fix prompts in one command
   ${c.green}fix${c.reset}        Generate AI fix instructions for specific docs
   ${c.green}generate${c.reset}   Reverse-engineer canonical docs from existing code (${c.cyan}--plan${c.reset} for AI scan)
+  ${c.green}agent${c.reset}      One-shot agent task graph — ordered tasks, pre-filled code-truth, per-task verify (${c.cyan}--format json${c.reset})
   ${c.green}explain${c.reset}    Explain a validator key or warning text
   ${c.green}memory${c.reset}     Show what DocGuard remembers (${c.cyan}--diff${c.reset} drills into drift)
   ${c.green}trace${c.reset}      Requirements traceability matrix (${c.cyan}--reverse${c.reset} for code→doc map)
@@ -191,6 +193,15 @@ const COMMAND_HELP = {
       ['--force', 'Overwrite existing docs (.bak backup kept)'],
     ],
     examples: ['docguard generate', 'docguard generate --plan', 'docguard generate --plan --write', 'docguard generate --plan --format json'],
+  },
+  agent: {
+    summary: 'One-shot agent task graph: ordered, dependency-aware, with pre-filled code-truth + per-task verify.',
+    usage: 'docguard agent [--profile <name>] [--format json]',
+    flags: [
+      ['--format json', 'Machine-readable task graph (the agent-executable artifact)'],
+      ['--profile <name>', 'Preview a profile (cli/library/standard/…) without running init first'],
+    ],
+    examples: ['docguard agent', 'docguard agent --format json', 'docguard agent --profile cli --format json'],
   },
   guard: {
     summary: 'Validate code against canonical docs (all validators).',
@@ -474,16 +485,39 @@ async function main() {
   // .agent/.specify writes, which were a surprising side effect of a bare
   // `generate --plan` (and were already suppressed for `--plan --write`).
   const jsonMode = flags.format === 'json';
-  const headless = jsonMode || flags.write || flags.checkOnly || flags.changedOnly || flags.quiet || flags.plan;
+  // `agent` emits a machine task graph (JSON by default) — it must be banner-
+  // free and side-effect-free like the other read-only commands.
+  const headless = jsonMode || flags.write || flags.checkOnly || flags.changedOnly || flags.quiet || flags.plan || command === 'agent';
 
   if (!headless) printBanner();
 
   const config = loadConfig(projectDir);
 
+  // Commands that only READ and REPORT — they must never mutate the working
+  // tree. Scaffolding (ensureSkills → .agent/.specify, spawning `specify`)
+  // belongs to setup/init/generate and the `init --with` family, where the
+  // user is establishing or expanding their setup, not auditing it.
+  //
+  // v0.26 (field report Bug #3): a bare `docguard guard` used to run
+  // ensureSkills → auto-init Spec Kit → spawn `specify` and write ~9 files into
+  // the tree BEFORE printing results. Surprising for a *validate* command, and
+  // fatal for a read-only CI audit or a clean-tree precondition check. These
+  // commands are now exempt regardless of flags. (`audit` is the guard alias;
+  // `diff`/`impact` only read; `demo` runs against a throwaway fixture.)
+  const READ_ONLY_COMMANDS = new Set([
+    'guard', 'audit', 'score', 'diff', 'impact',
+    'diagnose', 'trace', 'explain', 'memory', 'demo', 'agent',
+  ]);
+
   // Silent auto-check: install skills/commands if missing. Skip entirely in
-  // headless modes where the user wants deterministic, parseable output and
-  // doesn't expect side effects on their AI-agent skill directories.
-  if (command !== 'setup' && command !== 'init' && !headless) {
+  // headless modes (deterministic, parseable output; no side effects expected)
+  // and for read-only commands (see above).
+  if (
+    command !== 'setup' &&
+    command !== 'init' &&
+    !READ_ONLY_COMMANDS.has(command) &&
+    !headless
+  ) {
     ensureSkills(projectDir, flags);
   }
 
@@ -565,6 +599,11 @@ async function main() {
       break;
     case 'generate':
       runGenerate(projectDir, config, flags);
+      break;
+    case 'agent':
+      // v0.26 (field report §2): one-shot, dependency-ordered task graph with
+      // pre-filled code-truth + per-task verify. Read-only; JSON by default.
+      runAgent(projectDir, config, flags);
       break;
     case 'hooks':
       await runInit(projectDir, config, { ...flags, with: ['hooks'], skipPrompts: true });

@@ -50,7 +50,7 @@ describe('Metrics-Consistency — dedup per (file, label, found)', () => {
       'README.md':
         '# Project\n\n' +
         '## What\n\nDocGuard ships **21 validators** out of the box.\n\n' +
-        '## Reference\n\nSee the [21 validators table](#table) below.\n',
+        '## Reference\n\nSee the DocGuard [21 validators table](#table) below.\n',
     });
     // Actual count is 22 (one more than the doc claims)
     const r = validateMetricsConsistency(dir, { projectName: 't' }, fakeGuardResults(22, 100));
@@ -67,7 +67,7 @@ describe('Metrics-Consistency — dedup per (file, label, found)', () => {
       'README.md':
         '# Project\n\n' +
         'DocGuard says **20 validators** here.\n' +
-        'But over here it says **19 validators**.\n',
+        'But DocGuard also says **19 validators** over here.\n',
     });
     const r = validateMetricsConsistency(dir, { projectName: 't' }, fakeGuardResults(22, 100));
     const driftWarnings = r.warnings.filter(w => /README\.md/.test(w) && /validators/.test(w));
@@ -83,8 +83,8 @@ describe('Metrics-Consistency — dedup per (file, label, found)', () => {
     dir = makeRepo({
       'README.md':
         '# Project\n\n' +
-        '22 validators in total.\n' +
-        'See the 22 validators table.\n',
+        'DocGuard ships 22 validators in total.\n' +
+        'See the DocGuard 22 validators table.\n',
     });
     const r = validateMetricsConsistency(dir, { projectName: 't' }, fakeGuardResults(21, 100));
     // README has TWO "22 validators" occurrences but only one pass should be credited.
@@ -100,9 +100,9 @@ describe('Metrics-Consistency — dedup per (file, label, found)', () => {
 
   it('distinct files with the same stale value each get their own warning', () => {
     dir = makeRepo({
-      'README.md':       '# A\n\n21 validators.\n',
-      'AGENTS.md':       '# B\n\n21 validators.\n',
-      'docs/quickstart.md': '# C\n\n21 validators.\n',
+      'README.md':       '# A\n\nDocGuard: 21 validators.\n',
+      'AGENTS.md':       '# B\n\nDocGuard: 21 validators.\n',
+      'docs/quickstart.md': '# C\n\nDocGuard: 21 validators.\n',
     });
     const r = validateMetricsConsistency(dir, { projectName: 't' }, fakeGuardResults(22, 100));
     const driftWarnings = r.warnings.filter(w => /21 validators/.test(w));

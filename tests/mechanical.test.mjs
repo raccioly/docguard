@@ -15,12 +15,30 @@ describe('mechanical writers', () => {
 
   it('replace-count: rewrites the stale number and is idempotent', () => {
     write('R.md', 'DocGuard ships 19 validators. (also: 9/10 checks passed)\n');
-    const r1 = applyMechanicalFix(dir, { type: 'replace-count', file: 'R.md', label: 'validators', found: 19, actual: 20 });
+    const r1 = applyMechanicalFix(dir, { type: 'replace-count', file: 'R.md', label: 'validators', found: 19, actual: 20, actualSource: 'docguard.guard.validators' });
     assert.equal(r1.applied, true);
     assert.ok(read('R.md').includes('20 validators'));
     assert.ok(read('R.md').includes('9/10 checks'), 'ratio-style "9/10" not touched');
-    const r2 = applyMechanicalFix(dir, { type: 'replace-count', file: 'R.md', label: 'validators', found: 19, actual: 20 });
+    const r2 = applyMechanicalFix(dir, { type: 'replace-count', file: 'R.md', label: 'validators', found: 19, actual: 20, actualSource: 'docguard.guard.validators' });
     assert.equal(r2.applied, false, 'idempotent re-run');
+  });
+
+  it('replace-count: refuses to write without provenance (Bug #2 fail-closed)', () => {
+    write('R.md', 'The proof harness contributes 10 checks.\n'); // unbound, no DocGuard
+    const r = applyMechanicalFix(dir, { type: 'replace-count', file: 'R.md', label: 'checks', found: 10, actual: 86 });
+    assert.equal(r.applied, false, 'no actualSource → must not overwrite');
+    assert.ok(read('R.md').includes('10 checks'), 'the correct number must be left intact');
+  });
+
+  it('replace-count: with provenance, only rewrites DocGuard-bound lines (Bug #2)', () => {
+    // Same "N checks" appears twice — once bound to DocGuard, once not. Only the
+    // bound occurrence may be rewritten.
+    write('R.md', 'DocGuard ships 19 checks.\nOur proof harness has 19 checks.\n');
+    const r = applyMechanicalFix(dir, { type: 'replace-count', file: 'R.md', label: 'checks', found: 19, actual: 20, actualSource: 'docguard.guard.checks' });
+    assert.equal(r.applied, true);
+    const out = read('R.md');
+    assert.ok(out.includes('DocGuard ships 20 checks'), 'bound line rewritten');
+    assert.ok(out.includes('proof harness has 19 checks'), 'unbound line left intact');
   });
 
   it('replace-version: only edits actionable contexts, never prose', () => {

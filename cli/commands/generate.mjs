@@ -164,6 +164,8 @@ function surfaceConfidence(kind) {
  * inserted as agent-task placeholders), respecting human prose via markers.
  */
 export function runGeneratePlan(projectDir, config, flags) {
+  // `--profile <name>` previews a profile's doc set without needing `init` first.
+  if (flags.profile) config = { ...config, profile: flags.profile };
   const plan = buildMemoryPlan(projectDir, config);
 
   if (flags.format === 'json') {
@@ -181,6 +183,8 @@ export function runGeneratePlan(projectDir, config, flags) {
         entities: plan.surface.entities.length,
         screens: plan.surface.screens.length,
         components: plan.surface.components.length,
+        modules: plan.surface.modules.length,
+        tests: { files: plan.surface.tests.totalFiles, cases: plan.surface.tests.totalCases },
         envVars: plan.surface.envVars.length,
         confidence: surfaceConfidence(plan.profile.kind),
       },
@@ -191,6 +195,7 @@ export function runGeneratePlan(projectDir, config, flags) {
           : { id: s.id, source: 'human', task: s.task, grounding: s.grounding }),
       })),
       agentTasks: plan.agentTasks,
+      notes: plan.notes || [],
       timestamp: new Date().toISOString(),
     }, null, 2));
     return;
@@ -225,6 +230,9 @@ export function runGeneratePlan(projectDir, config, flags) {
     if (registered > 0) {
       console.log(`  ${c.dim}Registered ${registered} canonical doc(s) in .docguard.json requiredFiles.${c.reset}`);
     }
+    for (const note of plan.notes || []) {
+      console.log(`  ${c.yellow}ℹ️  ${note}${c.reset}`);
+    }
     console.log(`  ${c.dim}Now run your AI agent (/docguard.fix) to write the prose sections, then ${c.cyan}docguard guard${c.dim}.${c.reset}\n`);
     return;
   }
@@ -232,7 +240,7 @@ export function runGeneratePlan(projectDir, config, flags) {
   // Text summary.
   console.log(`${c.bold}🔮 DocGuard Generate Plan — ${config.projectName}${c.reset}`);
   console.log(`${c.dim}   ${plan.profile.polyglot ? 'Polyglot' : 'Single-language'}: ${plan.profile.languages.join(', ')} | frameworks: ${plan.profile.frameworks.join(', ') || '—'} | kind: ${plan.profile.kind}${c.reset}\n`);
-  console.log(`  ${c.bold}Code-truth surface:${c.reset} ${plan.surface.endpoints.length} endpoints · ${plan.surface.entities.length} entities · ${plan.surface.screens.length} screens · ${plan.surface.components.length} components · ${plan.surface.envVars.length} env vars\n`);
+  console.log(`  ${c.bold}Code-truth surface:${c.reset} ${plan.surface.modules.length} modules · ${plan.surface.tests.totalFiles} test files (${plan.surface.tests.totalCases} cases) · ${plan.surface.endpoints.length} endpoints · ${plan.surface.entities.length} entities · ${plan.surface.screens.length} screens · ${plan.surface.envVars.length} env vars\n`);
   const webSurface = plan.surface.endpoints.length + plan.surface.entities.length + plan.surface.screens.length + plan.surface.components.length;
   if (surfaceConfidence(plan.profile.kind) === 'low' && webSurface > 0) {
     console.log(`  ${c.yellow}⚠️  Low-confidence surface:${c.reset} ${c.dim}this looks like a ${plan.profile.kind} (not a web app), so the HTTP/SDK/route surface above may be pattern-matches in your OWN source — not real usage. Verify before documenting; pin any corrected code section with ${c.cyan}pinned="reason"${c.dim}.${c.reset}\n`);
@@ -242,6 +250,9 @@ export function runGeneratePlan(projectDir, config, flags) {
     const code = d.sections.filter(s => s.source === 'code').length;
     const prose = d.sections.filter(s => s.source === 'human').length;
     console.log(`    ${c.cyan}${d.path}${c.reset} ${c.dim}(${code} code section(s), ${prose} agent task(s))${c.reset}`);
+  }
+  for (const note of plan.notes || []) {
+    console.log(`  ${c.yellow}ℹ️  ${note}${c.reset}`);
   }
   console.log(`\n  ${c.bold}🤖 Agent tasks (${plan.agentTasks.length}):${c.reset} ${c.dim}prose the AI must write, grounded in scanned facts.${c.reset}`);
   for (const t of plan.agentTasks) {

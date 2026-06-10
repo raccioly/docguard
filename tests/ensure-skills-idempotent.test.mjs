@@ -4,12 +4,16 @@
  * The bug: ensureSkills gated rewrites on a `docguard:version:` marker. One
  * bundled skill (docguard-sync) lacked the marker, so its installed copy
  * always compared as version '0.0.0' ≠ package version and got rewritten —
- * and re-announced — on EVERY command, including read-only ones. Running
- * `explain` in a loop rewrote .agent/skills/ on every iteration, churning
- * mtimes the Freshness validator reads.
+ * and re-announced — on EVERY scaffolding run, churning the mtimes the
+ * Freshness validator reads.
  *
  * Fix: a content-equality gate. These tests assert that a second identical
  * run writes nothing and prints no install message.
+ *
+ * v0.26 (Bug #3): ensureSkills now ONLY runs for scaffolding commands
+ * (generate / init / init --with) — read-only commands like `explain` are
+ * exempt and never touch .agent/skills. So this exercises idempotency via
+ * `generate` (a scaffolding command) rather than a read command.
  */
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
@@ -37,9 +41,10 @@ function makeRepo() {
   return dir;
 }
 
-// A non-headless command (no --quiet/--format json) so ensureSkills runs.
+// A non-headless SCAFFOLDING command (not read-only, no --quiet/--format json)
+// so ensureSkills runs. `generate` is non-interactive and triggers the install.
 function runCmd(dir) {
-  return spawnSync('node', [CLI, 'explain', 'freshness', '--dir', dir], { encoding: 'utf-8' }).stdout;
+  return spawnSync('node', [CLI, 'generate', '--dir', dir], { encoding: 'utf-8' }).stdout;
 }
 
 function skillMtimes(dir) {
@@ -75,7 +80,7 @@ describe('ensureSkills — idempotent, no per-command rewrite churn', () => {
     runCmd(dir);
     runCmd(dir);
     const after = skillMtimes(dir);
-    assert.deepEqual(after, before, 'SKILL.md mtimes must be unchanged across repeated read-only runs');
+    assert.deepEqual(after, before, 'SKILL.md mtimes must be unchanged across repeated scaffolding runs');
   });
 
   it('every bundled skill carries the docguard:version marker (so the file is self-consistent)', () => {

@@ -272,6 +272,7 @@ DocGuard ships **14 commands** (the "Daily 5" + 9 situational tools, including t
 | `fix --write` | Apply deterministic fixes (no AI — version bumps, counts, anchors, sections) |
 | `fix --history` | Audit log of every mechanical fix applied (from `.docguard/fixed.json`) |
 | `generate` | Reverse-engineer docs from existing codebase (`--plan` for AI scan) |
+| `agent` | One-shot agent task graph — ordered, pre-filled code-truth, per-task verify (`--format json`) |
 | `explain <warning>` | Paste any warning — get the validator's docstring + fix path |
 | `memory` | Per-domain accuracy headline (endpoints / entities / env / tech) |
 | `memory --diff` | Drill into which specific claims don't match code |

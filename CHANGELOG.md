@@ -7,6 +7,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Acting on a second end-to-end LLM field report (a coding agent ran DocGuard on a
+stdlib-only Python security CLI). The report verified that the v0.25.0 "all
+fixed" claim was real but narrow — it patched the specific repros, not the
+general class — so several issues recurred. This round fixes the *class* and
+adds regression tests that assert the agent's actual scenario.
+
+### Fixed
+- **Read-only commands are strictly side-effect-free** — `guard`/`score`/`diff`/
+  `impact`/`diagnose`/`trace`/`explain`/`memory`/`demo` no longer run
+  `ensureSkills` (auto-init Spec Kit, spawn `specify`, write `.agent/.specify`).
+  A validate command must never mutate the tree. Scaffolding stays on
+  `init`/`generate`/`init --with`. (Bug #3)
+- **Surface detection ignores test fixtures by default** — a stdlib CLI was
+  documented as an Express/Flask/AWS web app because the manifest/route/env
+  scanners ingested the tool's own `tests/fixtures/`. Non-product dirs
+  (fixtures/tests/examples/testdata/samples) are now excluded from detection by
+  default (no `.docguardignore` required), overridable via
+  `detection.includeNonProduct`, and never applied to guard's structural checks. (Bug #1)
+- **Metrics-Consistency no longer corrupts correct numbers** — it only validates
+  a "N checks/validators" claim bound to DocGuard, stamps `actualSource`
+  provenance on every fix, and the auto-fix applier is fail-closed: it refuses to
+  overwrite a number without provenance and only rewrites DocGuard-bound lines.
+  (Previously "10 checks" describing a proof harness would be "fixed" to
+  DocGuard's own count.) (Bug #2)
+- **Project name comes from the manifest, not the directory** — reads
+  `pyproject [project].name` / `package.json` / `Cargo.toml` / `composer.json` /
+  `go.mod` before falling back to the dir basename (which is an auto-generated
+  slug inside a git worktree). (Bug #4)
+- **`generate` respects the active profile's doc set** — a `cli`/`library`
+  profile no longer proposes API-REFERENCE/INTEGRATIONS/SCREENS from an
+  incidental surface; suppressed docs surface a recoverable note. (Bug #5)
+- **Freshness warning states both remedies** (commit *or* a `last-reviewed`
+  marker) and is suppressed for docs marked `<!-- docguard:status approved -->`
+  in the same session. (Bug #6)
+- **Env-var detection counts reads, not mentions** — a single-pass lexer skips
+  env tokens inside comments and string literals (e.g. a detection signature
+  like `r"os.environ.get('JWT_SECRET')"`) and inside test dirs, so only genuine
+  runtime reads are reported. (Bug #7)
+
+### Added
+- **Pre-filled code-truth in `generate`** — the `source:"code"` sections now ship
+  real extracted content instead of empty templates: an ARCHITECTURE **Component
+  Map** (real source modules) and a **TEST-SPEC** doc with a pre-filled test
+  inventory (files + per-file case counts). The agent annotates responsibilities
+  instead of hand-grepping the structure.
+- **`docguard agent`** — a one-shot, dependency-ordered agent task graph
+  (`--format json` for the machine artifact). Phases `config → canonical-docs →
+  verify`; each task is `code-truth` (ships pre-filled content) or
+  `human-judgment` (instruction + grounding, never a committed guess), carries an
+  acceptance/verify command, and propagates confidence. Collapses ~10 manual
+  round-trips into one. `--profile <name>` previews a profile without running
+  `init` first.
+
 ## [0.25.1] - 2026-06-09
 
 Patch release fixing a spec-kit extension install/update failure reported in

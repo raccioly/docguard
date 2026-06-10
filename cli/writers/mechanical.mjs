@@ -47,15 +47,33 @@ const esc = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 function applyReplaceCount(projectDir, fix) {
   const full = resolve(projectDir, fix.file);
   if (!existsSync(full)) return { applied: false };
+  // Bug #2 (fail-closed): NEVER overwrite a number without provenance proving
+  // the "actual" describes the SAME subject. The Metrics-Consistency validator
+  // stamps `actualSource` (e.g. "docguard.guard.checks") only for claims it
+  // verified are bound to DocGuard. A fix lacking it is refused rather than risk
+  // corrupting a correct, unrelated number.
+  if (!fix.actualSource) {
+    return { applied: false, detail: `${fix.file}: skipped "${fix.found} ${fix.label}" → "${fix.actual}" — no provenance (actualSource) to prove same subject` };
+  }
   const content = readFileSync(full, 'utf-8');
   // v0.15.2 hotfix: case-insensitive label match. Mirrors the validator's
   // detection regex (which is `gi`). Without `i` here, the applier would
   // skip "21 Validators" (capitalized) even though Metrics-Consistency
   // detected it — leaving the user with a warning they couldn't auto-fix.
-  // The /docguard.diagnose run on canonical-spec-kit surfaced this.
   const re = new RegExp(`\\b${esc(fix.found)}(\\s+(?:automated\\s+)?${esc(fix.label)}\\b)`, 'gi');
-  const next = content.replace(re, `${fix.actual}$1`);
-  if (next === content) return { applied: false };
+  // Only rewrite occurrences on a DocGuard-bound line (same predicate as the
+  // validator's subject-binding) so a stray "<found> <label>" elsewhere in the
+  // file is never collateral-damaged by the global replace.
+  let changed = false;
+  const next = content.replace(re, (m, tail, offset, str) => {
+    const lineStart = str.lastIndexOf('\n', offset) + 1;
+    let lineEnd = str.indexOf('\n', offset);
+    if (lineEnd === -1) lineEnd = str.length;
+    if (!/docguard/i.test(str.slice(lineStart, lineEnd))) return m; // not bound → leave untouched
+    changed = true;
+    return `${fix.actual}${tail}`;
+  });
+  if (!changed || next === content) return { applied: false };
   writeFileSync(full, next, 'utf-8');
   return { applied: true, detail: `${fix.file}: "${fix.found} ${fix.label}" → "${fix.actual} ${fix.label}"` };
 }

@@ -80,6 +80,51 @@ describe('buildMemoryPlan', () => {
     assert.ok(techSec.body.includes('Rust'));
   });
 
+  it('pre-fills a Component Map and a TEST-SPEC inventory from code (Phase 2a)', () => {
+    dir = make({
+      'pyproject.toml': '[project]\nname="tool"\ndependencies=["click"]\n',
+      'src/tool/__init__.py': '',
+      'src/tool/cli.py': 'def main(): pass\n',
+      'src/tool/recon.py': 'x=1\n',
+      'tests/test_cli.py': 'def test_run():\n  pass\ndef test_help():\n  pass\n',
+    });
+    const plan = buildMemoryPlan(dir, {});
+    const paths = plan.docs.map(d => d.path);
+    assert.ok(paths.includes('docs-canonical/TEST-SPEC.md'), 'TEST-SPEC is emitted');
+
+    const arch = plan.docs.find(d => d.path.endsWith('ARCHITECTURE.md'));
+    const compMap = arch.sections.find(s => s.id === 'component-map');
+    assert.ok(compMap && compMap.source === 'code', 'component-map is a code-truth section');
+    assert.ok(compMap.body.includes('cli.py') && compMap.body.includes('recon.py'),
+      'real modules are pre-filled into the component map');
+
+    const testSpec = plan.docs.find(d => d.path.endsWith('TEST-SPEC.md'));
+    const inv = testSpec.sections.find(s => s.id === 'test-inventory');
+    assert.ok(inv && inv.source === 'code', 'test-inventory is a code-truth section');
+    assert.ok(inv.body.includes('test_cli.py'), 'the real test file is listed');
+    assert.match(inv.body, /2 test case/, 'case count is pre-filled');
+  });
+
+  it('respects the active profile: cli suppresses API-REFERENCE despite an endpoint surface (Bug #5)', () => {
+    dir = make({
+      'package.json': JSON.stringify({ dependencies: { express: '^4' } }),
+      'docs/openapi.yaml': OPENAPI, // a genuine endpoint surface
+    });
+
+    // cli profile: the endpoint surface must NOT produce API-REFERENCE.
+    const cliPlan = buildMemoryPlan(dir, { profile: 'cli' });
+    assert.ok(cliPlan.surface.endpoints.length >= 2, 'surface still detects the endpoints');
+    const cliPaths = cliPlan.docs.map(d => d.path);
+    assert.ok(!cliPaths.includes('docs-canonical/API-REFERENCE.md'), 'cli profile must not propose API-REFERENCE');
+    assert.ok((cliPlan.notes || []).some(n => /API-REFERENCE/.test(n)),
+      'a suppression note must explain why (anti-false-green)');
+
+    // standard profile (permissive) still emits it from the same surface.
+    const stdPlan = buildMemoryPlan(dir, { profile: 'standard' });
+    assert.ok(stdPlan.docs.map(d => d.path).includes('docs-canonical/API-REFERENCE.md'),
+      'standard profile is surface-driven');
+  });
+
   it('code sections are marked and human sections carry a task + grounding', () => {
     dir = make({
       'package.json': JSON.stringify({ dependencies: { express: '^4' } }),

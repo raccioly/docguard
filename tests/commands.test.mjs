@@ -293,6 +293,33 @@ describe('field report fixes — init --fix headless + generate --plan no side-e
   });
 });
 
+describe('read-only commands are side-effect-free (v0.26 field report Bug #3)', () => {
+  // A bare `docguard guard`/`score`/`diff` used to run ensureSkills →
+  // auto-init Spec Kit and write .agent/.specify into the tree before printing
+  // results. A validate/report command must never mutate the working tree —
+  // this holds even when the `specify` CLI is absent, because ensureSkills
+  // writes .agent/skills unconditionally regardless of the spawn.
+  for (const cmd of ['guard', 'score', 'diff']) {
+    it(`docguard ${cmd} does not scaffold .agent/ or .specify/`, () => {
+      const tmpDir = mkdtempSync(join(tmpdir(), `sg-readonly-${cmd}-`));
+      try {
+        writeFileSync(join(tmpDir, 'package.json'), '{"name":"ro","version":"1.0.0"}');
+        writeFileSync(join(tmpDir, 'index.js'), 'export const x = 1;\n');
+        try {
+          run(cmd, tmpDir); // cwd = tmpDir
+        } catch {
+          // guard/score/diff exit non-zero on warnings/errors — irrelevant here;
+          // we only assert the absence of side effects.
+        }
+        assert.equal(existsSync(join(tmpDir, '.agent')), false, `${cmd} must not scaffold .agent/`);
+        assert.equal(existsSync(join(tmpDir, '.specify')), false, `${cmd} must not scaffold .specify/`);
+      } finally {
+        rmSync(tmpDir, { recursive: true, force: true });
+      }
+    });
+  }
+});
+
 describe('per-command --help (B6)', () => {
   it('generate --help shows generate-specific flags + examples', () => {
     const out = run('generate --help');
@@ -306,6 +333,14 @@ describe('per-command --help (B6)', () => {
     assert.match(out, /--skeleton/);
     assert.match(out, /--wizard/);
     assert.match(out, /--with <name>/);
+  });
+
+  it('agent --help shows the task-graph command + flags', () => {
+    const out = run('agent --help');
+    assert.match(out, /docguard agent/);
+    assert.match(out, /task graph/i);
+    assert.match(out, /--format json/);
+    assert.match(out, /--profile/);
   });
 
   it('a command without a focused entry falls back to global help', () => {

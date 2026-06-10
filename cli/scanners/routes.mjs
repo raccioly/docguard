@@ -9,7 +9,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, relative, basename, extname, dirname } from 'node:path';
 import { resolveSourceRoots, readScannable } from '../shared-source.mjs';
-import { DEFAULT_IGNORE_DIRS as IGNORE_DIRS, shouldIgnore, relPosix } from '../shared-ignore.mjs';
+import { DEFAULT_IGNORE_DIRS as IGNORE_DIRS, shouldIgnore, relPosix, isNonProductPath } from '../shared-ignore.mjs';
 import { extractJsRouteCalls, extractJsRouteObjects, extractJsMountsAndImports } from './js-ast.mjs';
 import { extractPythonFiles } from './py-ast.mjs';
 
@@ -78,16 +78,22 @@ export function scanRoutesDeep(dir, stack, docTools, opts = {}) {
     routes.push(...scanFastAPIRoutes(dir));
   }
 
-  // Deduplicate by method+path, and honor .docguardignore / config.ignore so a
-  // fixtures dir with fake routes doesn't pollute the API surface. Filtering the
-  // RESULTS (route.file → project-relative) keeps the per-framework walkers as-is.
+  // Deduplicate by method+path, and drop routes that live in non-product dirs
+  // (tests/fixtures/examples) so a fixtures dir with fake routes doesn't pollute
+  // the API surface. Filtering the RESULTS (route.file → project-relative) keeps
+  // the per-framework walkers as-is. v0.26 (Bug #1): isNonProductPath applies by
+  // DEFAULT (no .docguardignore needed); shouldIgnore honors explicit config.
   const cfg = opts.config || {};
   const seen = new Set();
   return routes.filter(r => {
     const key = `${r.method}:${r.path}`;
     if (seen.has(key)) return false;
     seen.add(key);
-    if (r.file && shouldIgnore(relPosix(dir, resolve(dir, r.file)), cfg)) return false;
+    if (r.file) {
+      const rel = relPosix(dir, resolve(dir, r.file));
+      if (isNonProductPath(rel, cfg)) return false;
+      if (shouldIgnore(rel, cfg)) return false;
+    }
     return true;
   });
 }

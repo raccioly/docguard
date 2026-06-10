@@ -93,6 +93,11 @@ export function validateMetricsConsistency(projectDir, config, guardResults) {
       // "19" on line 50 are two distinct drifts.
       const distinctFoundInFile = new Set();
       while ((match = regex.exec(content)) !== null) {
+        // Bug #2 (subject-binding): only validate a number BOUND to DocGuard.
+        // An unbound "N checks" (a proof harness, a CI job, a third-party tool)
+        // describes a DIFFERENT subject — comparing it to DocGuard's own count
+        // is a false positive, and auto-fixing it overwrites a correct number.
+        if (!isDocguardBound(content, match.index)) continue;
         distinctFoundInFile.add(parseInt(match[1], 10));
       }
       if (distinctFoundInFile.size === 0) continue;
@@ -104,9 +109,12 @@ export function validateMetricsConsistency(projectDir, config, guardResults) {
           reportedDrift.add(driftKey);
           total++;
           warnings.push(
-            `${relPath} says "${found} ${label}" but actual count is ${actuals[key]}. Fix with \`docguard fix --write\``
+            `${relPath} says "${found} ${label}" but DocGuard's own ${label} count is ${actuals[key]}. Fix with \`docguard fix --write\``
           );
-          fixes.push({ type: 'replace-count', file: relPath, label, found, actual: actuals[key] });
+          // actualSource records WHAT the actual count describes, so the applier
+          // (and a human) can confirm both sides are the same subject before any
+          // overwrite. Without it the fix is refused (fail-closed). See Bug #2.
+          fixes.push({ type: 'replace-count', file: relPath, label, found, actual: actuals[key], actualSource: `docguard.guard.${key}` });
         } else {
           // Matches the actual count — one pass per (file, label), not per occurrence.
           const passKey = `${relPath}|${label}`;
@@ -123,6 +131,22 @@ export function validateMetricsConsistency(projectDir, config, guardResults) {
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
+
+/**
+ * Bug #2 — subject binding. A "N checks/validators" claim is DocGuard's to
+ * govern ONLY if it's bound to DocGuard: the line containing the number must
+ * reference "docguard" (case-insensitive), which also covers an explicit
+ * `<!-- docguard:metric ... -->` marker on that line. Numbers describing
+ * anything else (a proof harness, a CI pipeline, a competitor's tool) are out
+ * of scope — validating them is a false positive and auto-fixing them corrupts
+ * a correct number with DocGuard's unrelated count.
+ */
+function isDocguardBound(content, index) {
+  const lineStart = content.lastIndexOf('\n', index) + 1;
+  let lineEnd = content.indexOf('\n', index);
+  if (lineEnd === -1) lineEnd = content.length;
+  return /docguard/i.test(content.slice(lineStart, lineEnd));
+}
 
 function findTestFiles(dir) {
   const tests = [];

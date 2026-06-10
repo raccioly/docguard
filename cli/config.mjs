@@ -12,11 +12,16 @@ import { existsSync, readFileSync } from 'node:fs';
 import { resolve, basename } from 'node:path';
 import { c, PROFILES, SEVERITY_LEVELS } from './shared.mjs';
 import { mergeIgnoreFile } from './shared-ignore.mjs';
+import { detectProjectName } from './scanners/project-type.mjs';
 
 export function loadConfig(projectDir) {
   const configPath = resolve(projectDir, '.docguard.json');
   const defaults = {
-    projectName: basename(projectDir),
+    // v0.26 (Bug #4): read the declared name from the root manifest
+    // (pyproject/package.json/Cargo/composer/go.mod) before falling back to the
+    // dir basename — otherwise a git-worktree slug becomes the project name.
+    // An explicit `projectName` in .docguard.json still wins via deepMerge.
+    projectName: detectProjectName(projectDir),
     // Legacy/unversioned fallback ONLY — the value a config is ASSUMED to be
     // when its file has no `version` field. NOT the current schema version
     // (that's CURRENT_SCHEMA_VERSION in shared.mjs, written by `init`). Kept low

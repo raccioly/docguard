@@ -41,6 +41,46 @@ const ALWAYS_REJECT_PATH_RE =
   /(?:^|[/\\])(?:node_modules|\.claude[/\\]worktrees|\.git[/\\]worktrees|\.jj)(?:[/\\]|$)/;
 
 /**
+ * Directory names that hold NON-PRODUCT code — test fixtures, sample apps,
+ * example projects, mocks. Excluded from SURFACE DETECTION (framework / route /
+ * integration / env-var inference) BY DEFAULT, with no `.docguardignore`
+ * required.
+ *
+ * Why this exists (v0.26, field report Bug #1): a tool's own test fixtures —
+ * e.g. a deliberately-vulnerable Express sample under `tests/fixtures/` — were
+ * being read as the PRODUCT's architecture, so a pure-Python CLI got documented
+ * as an Express/Flask web app. Honoring `config.ignore` (added v0.25) wasn't
+ * enough: the realistic first run has no `.docguardignore` yet.
+ *
+ * SCOPE: detection/generate scanners ONLY — deliberately NOT guard's structural
+ * validators. A user's real `examples/` dir still counts toward docs coverage.
+ * Anti-false-green: when a surface signal appears ONLY under these dirs, callers
+ * SHOULD surface a low-confidence "confirm these are fixtures" note rather than
+ * silently drop it. Override via `config.detection.includeNonProduct = true`.
+ */
+export const DEFAULT_DETECTION_IGNORE_DIRS = new Set([
+  'fixtures', '__fixtures__', 'test-fixtures', 'testfixtures', 'testdata',
+  'test', 'tests', '__tests__', 'spec', 'specs', '__mocks__', 'mocks',
+  'examples', 'example', 'sample', 'samples',
+]);
+
+/** True if `dirName` is a non-product dir detection should skip by default. */
+export function isNonProductDir(dirName, config = {}) {
+  if (config?.detection?.includeNonProduct) return false;
+  return DEFAULT_DETECTION_IGNORE_DIRS.has(dirName);
+}
+
+/**
+ * True if ANY path segment of `relPath` (POSIX, project-relative) is a
+ * non-product detection dir — for filtering file-level detection results.
+ */
+export function isNonProductPath(relPath, config = {}) {
+  if (config?.detection?.includeNonProduct) return false;
+  if (!relPath) return false;
+  return relPath.split('/').some(seg => DEFAULT_DETECTION_IGNORE_DIRS.has(seg));
+}
+
+/**
  * Read `.docguardignore` from a project directory and return its patterns.
  *
  * Format: gitignore-style — one pattern per line, `#` for comments, blank lines
