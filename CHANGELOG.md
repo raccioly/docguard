@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.26.0] - 2026-06-10
+
 Acting on a second end-to-end LLM field report (a coding agent ran DocGuard on a
 stdlib-only Python security CLI). The report verified that the v0.25.0 "all
 fixed" claim was real but narrow — it patched the specific repros, not the
