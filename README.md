@@ -128,6 +128,8 @@ See [CHANGELOG.md](CHANGELOG.md) for the full history.
 
 ## ⚡ Quick Start
 
+> **Package naming:** this repo is `raccioly/docguard`; the published package is **`docguard-cli`** on both [npm](https://www.npmjs.com/package/docguard-cli) and [PyPI](https://pypi.org/project/docguard-cli/); the installed command is `docguard`. Same project — the `-cli` suffix is just the registry name. The package runs **no install scripts**, so `npm i -g docguard-cli --ignore-scripts` is equivalent.
+
 ### Node.js (npm)
 
 ```bash
