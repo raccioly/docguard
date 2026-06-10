@@ -161,6 +161,11 @@ export function runTrace(projectDir, config, flags) {
   const projectFiles = [];
   scanDir(projectDir, projectDir, projectFiles);
 
+  // PERFORMANCE OPTIMIZATION: Precompute filtered file lists to avoid O(N*M)
+  // filtering bottlenecks inside the TRACE_MAP nested loops.
+  const traceableFiles = projectFiles.filter(isTraceableSource);
+  const testFiles = projectFiles.filter(f => TEST_PATTERNS.some(p => p.test(f)));
+
   // ── 4. Build traceability matrix (only required docs) ──
   const matrix = [];
   const orphanedDocs = [];
@@ -189,7 +194,7 @@ export function runTrace(projectDir, config, flags) {
     // Find matching source files for each pattern
     const traces = [];
     for (const pattern of traceInfo.sourcePatterns) {
-      const matches = projectFiles.filter(f => isTraceableSource(f) && pattern.glob.test(f));
+      const matches = traceableFiles.filter(f => pattern.glob.test(f));
       traces.push({
         label: pattern.label,
         matchCount: matches.length,
@@ -199,7 +204,7 @@ export function runTrace(projectDir, config, flags) {
     }
 
     // Find test coverage (files that test code related to this doc)
-    const relatedTests = findRelatedTests(projectFiles, traceInfo.sourcePatterns);
+    const relatedTests = findRelatedTests(traceableFiles, testFiles, traceInfo.sourcePatterns);
 
     // Calculate coverage signal
     const totalSources = traces.reduce((sum, t) => sum + t.matchCount, 0);
@@ -245,10 +250,11 @@ function outputJSON(projectName, matrix, orphanedDocs) {
     orphanedDocs,
     summary: {
       total: matrix.length,
-      traced: matrix.filter(m => m.coverageSignal === 'TRACED').length,
-      partial: matrix.filter(m => m.coverageSignal === 'PARTIAL').length,
-      unlinked: matrix.filter(m => m.coverageSignal === 'UNLINKED').length,
-      missing: matrix.filter(m => m.coverageSignal === 'MISSING').length,
+      ...matrix.reduce((acc, m) => {
+        const key = m.coverageSignal.toLowerCase();
+        acc[key] = (acc[key] || 0) + 1;
+        return acc;
+      }, { traced: 0, partial: 0, unlinked: 0, missing: 0 }),
       orphaned: orphanedDocs.length,
     },
     timestamp: new Date().toISOString(),
@@ -314,16 +320,17 @@ function outputText(projectName, matrix, canonicalDocs, orphanedDocs) {
   }
 
   // Summary
-  const traced = matrix.filter(m => m.coverageSignal === 'TRACED').length;
-  const partial = matrix.filter(m => m.coverageSignal === 'PARTIAL').length;
-  const unlinked = matrix.filter(m => m.coverageSignal === 'UNLINKED').length;
-  const missing = matrix.filter(m => m.coverageSignal === 'MISSING').length;
+  const stats = matrix.reduce((acc, m) => {
+    const key = m.coverageSignal.toLowerCase();
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, { traced: 0, partial: 0, unlinked: 0, missing: 0 });
 
   console.log(`  ${c.bold}─────────────────────────────────────${c.reset}`);
-  console.log(`  ${c.green}Traced: ${traced}${c.reset}  ${c.yellow}Partial: ${partial}${c.reset}  ${c.yellow}Unlinked: ${unlinked}${c.reset}  ${c.red}Missing: ${missing}${c.reset}`);
+  console.log(`  ${c.green}Traced: ${stats.traced}${c.reset}  ${c.yellow}Partial: ${stats.partial}${c.reset}  ${c.yellow}Unlinked: ${stats.unlinked}${c.reset}  ${c.red}Missing: ${stats.missing}${c.reset}`);
   console.log(`  ${c.dim}Total: ${matrix.length} canonical documents evaluated${c.reset}`);
 
-  if (missing > 0 || unlinked > 0) {
+  if (stats.missing > 0 || stats.unlinked > 0) {
     console.log(`\n  ${c.dim}Run ${c.cyan}docguard generate${c.dim} to create missing docs.${c.reset}`);
     console.log(`  ${c.dim}Run ${c.cyan}docguard diagnose${c.dim} to fix coverage gaps.${c.reset}`);
   }
@@ -366,15 +373,12 @@ function scanDir(rootDir, dir, files) {
   }
 }
 
-function findRelatedTests(projectFiles, sourcePatterns) {
-  // Find test files that might cover the source patterns
-  const testFiles = projectFiles.filter(f => TEST_PATTERNS.some(p => p.test(f)));
-
+function findRelatedTests(traceableFiles, testFiles, sourcePatterns) {
   // Match tests to source patterns by directory/name proximity
   const relatedTests = new Set();
 
   for (const pattern of sourcePatterns) {
-    const sourceFiles = projectFiles.filter(f => isTraceableSource(f) && pattern.glob.test(f));
+    const sourceFiles = traceableFiles.filter(f => pattern.glob.test(f));
     for (const src of sourceFiles) {
       const srcBase = basename(src).replace(/\.[^.]+$/, '');
       const srcDir = src.split('/')[0];
