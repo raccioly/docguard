@@ -34,10 +34,11 @@ Make **Canonical-Driven Development** the industry standard for AI-age software 
 | 4.5 | Continuous Hardening | 🔄 Ongoing | Mar–May 2026 |
 | 5 | Dashboard (SaaS) | 💭 Future | Q4 2026 |
 
-### Phase 4.5: Continuous Hardening (v0.11 → v0.25) 🔄
+### Phase 4.5: Continuous Hardening (v0.11 → v0.26) 🔄
 
 Sustained, feedback-driven maturation since the March milestones:
 
+- **v0.26.0 — LLM field report #2: trust + agent-mode.** Fixed the general *class* behind 7 issues a coding agent hit end-to-end (the v0.25.0 fixes were real but narrow; two tests even codified the bugs): read-only commands now never mutate the tree, surface detection excludes test fixtures by default (the first-run fix), Metrics-Consistency is subject-bound + fail-closed (no more data-corrupting auto-fix), project name comes from the manifest, `generate` respects the active profile, freshness states both remedies, and env detection counts reads not mentions. Added pre-filled code-truth (ARCHITECTURE Component Map + a TEST-SPEC inventory) and a first-class **`docguard agent`** task-graph command (ordered, pre-filled, per-task verify) that collapses ~10 agent round-trips into one. Tests 765 → 794.
 - **v0.25.0 — field-report fixes + CLI/library ergonomics.** Closed a silent `.docguardignore` failure (trailing-slash `dir/` patterns matched nothing across every scanner/validator), a `generate --write` ENOENT crash, a dead `init --fix` flag, and `generate --plan` write side-effects. Added a `pinned` section marker (hand-maintained code sections survive staleness + `sync`), per-command `--help`, kind-gated low-confidence surface flagging for scanner/tool projects, and `cli`/`library` doc profiles. Tests 749 → 765.
 - **v0.24.0 — real parsers, full-support languages.** Relaxed the zero-dependency rule for one exact-pinned npm dep (`@babel/parser`) plus an optional `python3` AST tier, both with regex fallback. Closed false-green paths (silent brace-truncation in JS/TS schemas; undercounted Python models), added Express cross-file mount-prefix resolution, Fastify object-form routes, and a hardened `requiredFiles` migration. Field-tested read-only against real Next.js/Express/Python/AppSync projects.
 - **Validators grew 9 → 24** — added Canonical-Sync, Surface-Sync, Metrics-Consistency, Doc-Quality, Traceability, Cross-Reference, Generated-Staleness, and more.
