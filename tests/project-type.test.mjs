@@ -1,10 +1,10 @@
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, basename } from 'node:path';
 import { tmpdir } from 'node:os';
 
-import { detectEcosystems, detectProjectProfile } from '../cli/scanners/project-type.mjs';
+import { detectEcosystems, detectProjectProfile, detectProjectName } from '../cli/scanners/project-type.mjs';
 
 function make(files) {
   const dir = mkdtempSync(join(tmpdir(), 'docguard-pt-'));
@@ -102,24 +102,77 @@ describe('project-type detection', () => {
     assert.equal(py.dir, 'backend');
   });
 
-  it('honors config.ignore so fixture manifests do not misclassify the stack (B1b)', () => {
+  it('excludes non-product fixture manifests from the stack BY DEFAULT (Bug #1)', () => {
     // Field report: a Click CLI was reported as "Express, Flask" because the
     // manifest walk ingested tests/fixtures/*/package.json + requirements.txt.
+    // v0.26: non-product dirs are excluded from detection by DEFAULT — the
+    // realistic first run has no .docguardignore, so honoring config.ignore
+    // alone (v0.25) wasn't enough.
     dir = make({
       'pyproject.toml': '[project]\nname="tool"\ndependencies = ["click>=8"]\n', // root = a CLI
       'tests/fixtures/node_app/package.json': JSON.stringify({ dependencies: { express: '^4' } }),
       'tests/fixtures/py_app/requirements.txt': 'flask==3.0\n',
     });
 
-    // Control: with no ignore, the fixture manifests leak into the profile —
-    // this is the bug, and it keeps the assertion below honest.
-    const leaky = detectProjectProfile(dir).frameworks;
-    assert.ok(leaky.includes('Express'), 'control: fixtures pollute the stack when not ignored');
-
-    // Fix: a trailing-slash dir ignore (also exercises the B1a glob fix) drops them.
-    const clean = detectProjectProfile(dir, { ignore: ['tests/'] }).frameworks;
-    assert.ok(!clean.includes('Express'), 'tests/ ignore must drop the fixture Express');
-    assert.ok(!clean.includes('Flask'), 'tests/ ignore must drop the fixture Flask');
+    // Default first run (NO config at all): fixtures must NOT leak into the stack.
+    const clean = detectProjectProfile(dir).frameworks;
+    assert.ok(!clean.includes('Express'), 'fixture Express must be excluded by default');
+    assert.ok(!clean.includes('Flask'), 'fixture Flask must be excluded by default');
     assert.ok(clean.includes('Click'), 'the real root framework must survive');
+
+    // Opt-out escape hatch (anti-false-green): a user whose `fixtures` dir is
+    // actually product can re-include everything.
+    const leaky = detectProjectProfile(dir, { detection: { includeNonProduct: true } }).frameworks;
+    assert.ok(leaky.includes('Express'), 'detection.includeNonProduct must re-include fixture manifests');
+
+    // Explicit config.ignore / .docguardignore still works (backward compat).
+    const ignored = detectProjectProfile(dir, { ignore: ['tests/'] }).frameworks;
+    assert.ok(!ignored.includes('Express'), 'tests/ ignore must drop the fixture Express');
+  });
+});
+
+describe('detectProjectName — manifest name over dir slug (Bug #4)', () => {
+  let dir;
+  afterEach(() => { if (dir) rmSync(dir, { recursive: true, force: true }); });
+
+  it('reads [project].name from pyproject.toml', () => {
+    dir = make({ 'pyproject.toml': '[project]\nname = "websec-validator"\ndependencies = ["click"]\n' });
+    assert.equal(detectProjectName(dir), 'websec-validator');
+  });
+
+  it('reads name from package.json', () => {
+    dir = make({ 'package.json': JSON.stringify({ name: 'my-pkg', version: '1.0.0' }) });
+    assert.equal(detectProjectName(dir), 'my-pkg');
+  });
+
+  it('reads [tool.poetry].name when [project] is absent', () => {
+    dir = make({ 'pyproject.toml': '[tool.poetry]\nname = "poetry-pkg"\n' });
+    assert.equal(detectProjectName(dir), 'poetry-pkg');
+  });
+
+  it('reads [package].name from Cargo.toml', () => {
+    dir = make({ 'Cargo.toml': '[package]\nname = "rust-crate"\nversion = "0.1.0"\n' });
+    assert.equal(detectProjectName(dir), 'rust-crate');
+  });
+
+  it('derives the name from the go.mod module path basename', () => {
+    dir = make({ 'go.mod': 'module github.com/acme/widget\n\ngo 1.22\n' });
+    assert.equal(detectProjectName(dir), 'widget');
+  });
+
+  it('takes the segment after the slash for a composer vendor/name', () => {
+    dir = make({ 'composer.json': JSON.stringify({ name: 'acme/blog' }) });
+    assert.equal(detectProjectName(dir), 'blog');
+  });
+
+  it('falls back to the directory basename when no manifest declares a name', () => {
+    dir = make({ 'README.md': '# hi\n' });
+    assert.equal(detectProjectName(dir), basename(dir));
+  });
+
+  it('the manifest name beats the dir slug (the git-worktree scenario)', () => {
+    dir = make({ 'package.json': JSON.stringify({ name: 'real-name' }) });
+    assert.notEqual(detectProjectName(dir), basename(dir));
+    assert.equal(detectProjectName(dir), 'real-name');
   });
 });

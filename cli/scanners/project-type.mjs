@@ -15,7 +15,7 @@
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, relative, dirname, basename } from 'node:path';
-import { shouldIgnore, relPosix } from '../shared-ignore.mjs';
+import { shouldIgnore, relPosix, isNonProductDir } from '../shared-ignore.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build', 'coverage', 'target',
@@ -53,9 +53,12 @@ function findManifests(projectDir, maxDepth = 4, config = {}) {
     for (const e of entries) {
       if (e.isDirectory()) {
         if (IGNORE_DIRS.has(e.name) || e.name.startsWith('.')) continue;
-        // Honor config.ignore / .docguardignore: a user who excludes tests/ or
-        // base-research/ must not have those dirs' manifests (e.g. a fixture
-        // package.json declaring express) misclassify the project's stack.
+        // v0.26 (Bug #1): skip non-product dirs (tests/fixtures/examples/…) by
+        // DEFAULT. A fixture `package.json` declaring express or a `py_app`
+        // requirements.txt with flask must never set the PROJECT's stack/kind.
+        // This is the first-run fix — it needs no `.docguardignore`.
+        if (isNonProductDir(e.name, config)) continue;
+        // Also honor explicit config.ignore / .docguardignore patterns.
         if (shouldIgnore(relPosix(root, join(dir, e.name)), config)) continue;
         walk(join(dir, e.name), depth + 1);
       } else if (e.isFile()) {
@@ -314,4 +317,57 @@ export function detectProjectProfile(projectDir, config = {}) {
     frameworks,
     kind: primary?.kind || 'unknown',
   };
+}
+
+/**
+ * Find a `name = "..."` entry inside a TOML `[section]` (e.g. `[project]`,
+ * `[package]`, `[tool.poetry]`). Header match is exact on the bracket content.
+ */
+function tomlSectionName(content, section) {
+  if (!content) return null;
+  let inSection = false;
+  for (const line of content.split(/\r?\n/)) {
+    const header = line.match(/^\s*\[([^\]]+)\]/);
+    if (header) { inSection = header[1].trim() === section; continue; }
+    if (inSection) {
+      const m = line.match(/^\s*name\s*=\s*['"]([^'"]+)['"]/);
+      if (m) return m[1].trim();
+    }
+  }
+  return null;
+}
+
+/**
+ * Resolve the project's declared NAME from its ROOT manifest, falling back to
+ * the directory basename.
+ *
+ * Fixes Bug #4: inside a git worktree the directory is an auto-generated slug
+ * (e.g. `compassionate-chaplygin-c91f47`), but the real name lives in
+ * `pyproject.toml [project].name` / `package.json` name / `Cargo.toml [package]
+ * name` / `composer.json` name / `go.mod` module. Reads only root manifests —
+ * cheap, no tree walk — so it's safe to call at config-load time.
+ */
+export function detectProjectName(projectDir) {
+  const root = resolve(projectDir);
+
+  const pkg = readJson(join(root, 'package.json'));
+  if (pkg && typeof pkg.name === 'string' && pkg.name.trim()) return pkg.name.trim();
+
+  const py = tomlSectionName(readSafe(join(root, 'pyproject.toml')), 'project')
+    || tomlSectionName(readSafe(join(root, 'pyproject.toml')), 'tool.poetry');
+  if (py) return py;
+
+  const cargo = tomlSectionName(readSafe(join(root, 'Cargo.toml')), 'package');
+  if (cargo) return cargo;
+
+  const composer = readJson(join(root, 'composer.json'));
+  if (composer && typeof composer.name === 'string' && composer.name.trim()) {
+    const n = composer.name.trim();
+    return n.includes('/') ? n.slice(n.lastIndexOf('/') + 1) : n; // vendor/name → name
+  }
+
+  const goMod = readSafe(join(root, 'go.mod')).match(/^\s*module\s+(\S+)/m);
+  if (goMod) return basename(goMod[1].replace(/\/+$/, ''));
+
+  return basename(root);
 }

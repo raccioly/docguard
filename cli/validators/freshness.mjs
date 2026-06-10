@@ -62,6 +62,22 @@ export function readLastReviewedDate(absPath) {
 }
 
 /**
+ * Read the `<!-- docguard:status <value> -->` marker (draft | review | approved
+ * | living). Returns the lowercased value, or null. Used by the uncommitted-doc
+ * check (Bug #6): a doc the agent generated this session and marked `approved`
+ * has an explicit currency signal even before it's committed.
+ */
+function readDocStatus(absPath) {
+  try {
+    const content = readFileSync(absPath, 'utf-8');
+    const m = content.match(/<!--\s*docguard:status\s+([a-z]+)\s*-->/i);
+    return m ? m[1].toLowerCase() : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Get the last git commit date for a file.
  * Returns null if the file isn't tracked or git isn't available.
  */
@@ -213,10 +229,23 @@ export function validateFreshness(dir, config) {
     const reviewedDate = readLastReviewedDate(docPath);
     const docDate = reviewedDate || getLastGitDate(docFile, dir);
     if (!docDate) {
-      // File exists but isn't tracked in git yet
+      // File exists but has no freshness signal (not in git, no last-reviewed).
+      // Bug #6: an agent that generated the doc THIS session and stamped it
+      // `<!-- docguard:status approved -->` has signaled it's intentionally
+      // current. In the generate-then-fill flow the human hasn't committed yet,
+      // so the "uncommitted" warning is noise — suppress it for approved docs.
+      if (readDocStatus(docPath) === 'approved') {
+        results.push({
+          status: 'pass',
+          message: `${docFile} is marked approved (not yet committed — fine mid-session)`,
+        });
+        continue;
+      }
+      // State BOTH satisfiers — the warning used to mention only committing, so
+      // an agent that can stamp a marker but not commit was left guessing.
       results.push({
         status: 'warn',
-        message: `${docFile} exists but is not yet committed to git`,
+        message: `${docFile} exists but is not yet committed to git — commit it, or add a <!-- docguard:last-reviewed YYYY-MM-DD --> marker (or <!-- docguard:status approved -->).`,
       });
       continue;
     }

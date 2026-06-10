@@ -86,6 +86,31 @@ describe('shared-source: monorepo discovery', () => {
     assert.ok(names.has('REDIS_URL'));
     assert.ok(names.has('VITE_API_URL'));
   });
+
+  it('counts env READS, not MENTIONS, and skips test dirs (Bug #7)', () => {
+    // Field report: a security tool's detection SIGNATURE (a string describing
+    // what it looks for in OTHER apps) was counted as the tool's own env read,
+    // so `diff` reported JWT_SECRET as "in code, not documented" when the tool
+    // never reads it. Only genuine runtime reads should count.
+    write(tmp, 'app.py', [
+      'import os',
+      "calib = os.environ.get('WEBSEC_CALIBRATION_HOME')",            // genuine read
+      "pattern = r\"os.environ.get('JWT_SECRET', 'dev-secret')\"",     // detection signature in a string — a mention
+      "# legacy: os.environ.get('OLD_TOKEN') was removed",             // commented-out read — a mention
+      '"""',                                                            // docstring mention
+      "Scans target apps for os.getenv('DOCSTRING_SECRET').",
+      '"""',
+    ].join('\n'));
+    // A token that lives ONLY in a fixture/test file is not a product read.
+    write(tmp, 'tests/fixtures/sample_app.py', "x = os.environ.get('FIXTURE_ONLY')\n");
+
+    const names = grepEnvUsage(tmp, {}); // no sourceRoot → falls back to whole-tree walk
+    assert.ok(names.has('WEBSEC_CALIBRATION_HOME'), 'a genuine read must be found');
+    assert.ok(!names.has('JWT_SECRET'), 'a string-literal detection signature is a mention, not a read');
+    assert.ok(!names.has('OLD_TOKEN'), 'a commented-out read is not a read');
+    assert.ok(!names.has('DOCSTRING_SECRET'), 'a docstring mention is not a read');
+    assert.ok(!names.has('FIXTURE_ONLY'), 'a token only under tests/fixtures is not a product read');
+  });
 });
 
 describe('readScannable — size cap + generated/minified skip', () => {

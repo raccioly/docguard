@@ -92,6 +92,30 @@ describe('Freshness Validator', () => {
     assert.ok(archResult);
     assert.strictEqual(archResult.status, 'warn');
     assert.match(archResult.message, /exists but is not yet committed to git/);
+    // Bug #6: the warning must state BOTH satisfiers, not just committing.
+    assert.match(archResult.message, /commit it/);
+    assert.match(archResult.message, /last-reviewed/);
+  });
+
+  it('suppresses the uncommitted warning for an approved doc (Bug #6)', () => {
+    runGit('init', tmpDir);
+    runGit('config user.name "Test"', tmpDir);
+    runGit('config user.email "test@example.com"', tmpDir);
+    for (let i = 1; i <= 3; i++) {
+      writeFileSync(join(tmpDir, `test${i}.js`), `const a = ${i};`);
+      runGit(`add test${i}.js`, tmpDir);
+      runGit(`commit -m "commit ${i}"`, tmpDir);
+    }
+    mkdirSync(join(tmpDir, 'docs-canonical'), { recursive: true });
+    // Generated this session, marked approved, not yet committed, no last-reviewed.
+    writeFileSync(join(tmpDir, 'docs-canonical', 'ARCHITECTURE.md'),
+      '# Arch\n\n<!-- docguard:status approved -->\n');
+
+    const results = validateFreshness(tmpDir, {});
+    const archResult = results.find(r => r.message.includes('ARCHITECTURE.md'));
+    assert.ok(archResult);
+    assert.strictEqual(archResult.status, 'pass', 'approved doc must not warn about being uncommitted');
+    assert.match(archResult.message, /approved/);
   });
 
   it('passes when a doc file is tracked and fresh', () => {

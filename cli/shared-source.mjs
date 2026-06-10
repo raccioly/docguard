@@ -15,7 +15,7 @@
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, dirname, relative, extname } from 'node:path';
-import { shouldIgnore } from './shared-ignore.mjs';
+import { shouldIgnore, isNonProductDir, isNonProductPath } from './shared-ignore.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', '.nuxt', 'dist', 'build', 'out',
@@ -232,6 +232,63 @@ export function detectDocker(projectDir, config = {}) {
   return false;
 }
 
+const HASH_COMMENT_EXTS = new Set(['.py', '.rb', '.php', '.sh']);
+const SLASH_COMMENT_EXTS = new Set(['.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx', '.go', '.rs', '.java', '.php', '.kt', '.scala']);
+
+/**
+ * Classify every character of `content` as code (0), string-literal (1), or
+ * comment (2) with a single-pass, dependency-free lexer. Used by env detection
+ * (Bug #7) so a variable is counted only when actually READ in code — not when
+ * merely mentioned inside a string literal (e.g. a detection signature like
+ * `r"os.environ.get('JWT_SECRET')"`) or a comment. Handles ' " ` quotes,
+ * Python triple-quotes, `#` and `//` line comments, and `/_ _/` block comments.
+ * Best-effort: on an unterminated single-line string it bails at the newline so
+ * it never swallows the rest of the file (errs toward marking code, so a real
+ * read is never dropped).
+ */
+function classifyChars(content, ext) {
+  const n = content.length;
+  const kind = new Uint8Array(n); // 0 = code, 1 = string, 2 = comment
+  const hashC = HASH_COMMENT_EXTS.has(ext);
+  const slashC = SLASH_COMMENT_EXTS.has(ext);
+  const triple = ext === '.py';
+  let i = 0;
+  while (i < n) {
+    const ch = content[i];
+    if (hashC && ch === '#') { while (i < n && content[i] !== '\n') kind[i++] = 2; continue; }
+    if (slashC && ch === '/' && content[i + 1] === '/') { while (i < n && content[i] !== '\n') kind[i++] = 2; continue; }
+    if (slashC && ch === '/' && content[i + 1] === '*') {
+      kind[i++] = 2; if (i < n) kind[i++] = 2;
+      while (i < n && !(content[i] === '*' && content[i + 1] === '/')) kind[i++] = 2;
+      if (i < n) { kind[i++] = 2; if (i < n) kind[i++] = 2; }
+      continue;
+    }
+    if (triple && (ch === '"' || ch === "'") && content[i + 1] === ch && content[i + 2] === ch) {
+      const q = ch;
+      kind[i++] = 1; kind[i++] = 1; kind[i++] = 1;
+      while (i < n && !(content[i] === q && content[i + 1] === q && content[i + 2] === q)) {
+        if (content[i] === '\\') { kind[i++] = 1; if (i < n) kind[i++] = 1; continue; }
+        kind[i++] = 1;
+      }
+      if (i < n) { kind[i++] = 1; if (i < n) kind[i++] = 1; if (i < n) kind[i++] = 1; }
+      continue;
+    }
+    if (ch === '"' || ch === "'" || ch === '`') {
+      const q = ch;
+      kind[i++] = 1; // opening quote
+      while (i < n && content[i] !== q) {
+        if (content[i] === '\\') { kind[i++] = 1; if (i < n) kind[i++] = 1; continue; }
+        if (content[i] === '\n' && q !== '`') break; // unterminated single-line string — bail
+        kind[i++] = 1;
+      }
+      if (i < n && content[i] === q) kind[i++] = 1; // closing quote
+      continue;
+    }
+    kind[i++] = 0;
+  }
+  return kind;
+}
+
 /**
  * Grep source files under the resolved source roots for environment variable
  * usage in both the Node (process dot env) and Vite (import meta env) styles,
@@ -269,9 +326,18 @@ export function grepEnvUsage(projectDir, config = {}) {
     if (!CODE_EXTENSIONS.has(extname(filePath))) return;
     const rel = relative(projectDir, filePath);
     if (shouldIgnore(rel, config)) return;
+    // v0.26 (Bug #7): a token that appears only in a test/fixture file is not a
+    // product env read. Skip non-product paths by default (no .docguardignore).
+    if (isNonProductPath(rel.replace(/\\/g, '/'), config)) return;
     const content = readScannable(filePath);
     if (content === null) return; // unreadable, generated, or too large to scan
     if (!content.includes('env')) return;
+    // v0.26 (Bug #7): classify chars so we count env vars actually READ in code,
+    // not ones MENTIONED inside a string literal (a detection signature like
+    // `r"os.environ.get('JWT_SECRET')"`) or a comment. We test the position of
+    // the access KEYWORD (process/os/import) — for a real read the keyword is
+    // code while only the argument 'X' is a string, so the name is still caught.
+    const kind = classifyChars(content, extname(filePath));
     // patterns[2] is the import.meta.env one — its matches are Vite-injected
     // when the name is an intrinsic, and must not be reported as user env vars.
     for (let i = 0; i < patterns.length; i++) {
@@ -279,6 +345,7 @@ export function grepEnvUsage(projectDir, config = {}) {
       const rx = new RegExp(patterns[i].source, 'g');
       const isViteSource = i === 2;
       while ((m = rx.exec(content)) !== null) {
+        if (kind[m.index] !== 0) continue; // keyword inside a string/comment → a mention, not a read
         if (isViteSource && VITE_INTRINSICS.has(m[1])) continue;
         names.add(m[1]);
       }
@@ -314,6 +381,7 @@ export function grepEnvUsage(projectDir, config = {}) {
     try { entries = readdirSync(dir, { withFileTypes: true }); } catch { return; }
     for (const e of entries) {
       if (IGNORE_DIRS.has(e.name) || e.name.startsWith('.')) continue;
+      if (e.isDirectory() && isNonProductDir(e.name, config)) continue; // v0.26: skip test/fixture dirs in env detection
       const full = join(dir, e.name);
       if (e.isDirectory()) walk(full);
       else if (e.isFile()) visit(full);

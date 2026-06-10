@@ -19,6 +19,8 @@ import { scanSchemasDeep } from './schemas.mjs';
 import { scanFrontend } from './frontend.mjs';
 import { grepEnvUsage } from '../shared-source.mjs';
 import { detectIntegrations } from './integrations.mjs';
+import { PROFILES } from '../shared.mjs';
+import { scanComponents, scanTestInventory } from './inventory.mjs';
 
 const md = {
   table(headers, rows) {
@@ -209,6 +211,9 @@ function _buildMemoryPlanUncached(projectDir, config = {}) {
         framework: null, stateLib: null, dataLib: null };
   const envVars = [...grepEnvUsage(projectDir, config)].sort();
   const integrations = detectIntegrations(projectDir, config);
+  // Pre-filled code-truth (field report §5): real source modules + test inventory.
+  const modules = scanComponents(projectDir, config);
+  const tests = scanTestInventory(projectDir, config);
 
   const surface = {
     profile,
@@ -224,7 +229,34 @@ function _buildMemoryPlanUncached(projectDir, config = {}) {
     apiCalls: fe.apiCalls,
     i18n: fe.i18n,
     frontend: { framework: fe.framework, stateLib: fe.stateLib, dataLib: fe.dataLib },
+    modules,   // top-level source modules → ARCHITECTURE Component Map (pre-filled)
+    tests,     // { files:[{file,cases}], totalCases, totalFiles } → TEST-SPEC inventory
   };
+
+  // ── Profile gate (Bug #5) ──
+  // generate must respect the active COMPLIANCE profile, not just surface
+  // counts. For non-web profiles (cli/library) we only emit an optional
+  // web/UI/DB-shaped canonical doc when the profile explicitly requires it — so
+  // a CLI never gets API-REFERENCE/INTEGRATIONS just because the surface scan
+  // tripped on a stray HTTP call or SDK string. Other profiles
+  // (standard/enterprise/…) stay surface-driven.
+  const profileName = config.profile || 'standard';
+  const allowedCanonical = new Set(PROFILES[profileName]?.requiredFiles?.canonical || []);
+  const constrainedProfile = profileName === 'cli' || profileName === 'library';
+  const profileAllows = (docPath) => !constrainedProfile || allowedCanonical.has(docPath);
+
+  // Anti-false-green: when the profile suppresses a doc the surface WOULD have
+  // produced, say so — a web app mislabeled with the wrong --profile is still
+  // recoverable instead of silently under-documented.
+  const notes = [];
+  if (constrainedProfile) {
+    if (surface.endpoints.length > 0 && !allowedCanonical.has('docs-canonical/API-REFERENCE.md')) {
+      notes.push(`Detected ${surface.endpoints.length} endpoint(s) but the '${profileName}' profile omits API-REFERENCE.md — not generated. If this project genuinely exposes an HTTP API, re-run with --profile standard.`);
+    }
+    if (surface.integrations.length > 0 && !allowedCanonical.has('docs-canonical/INTEGRATIONS.md')) {
+      notes.push(`Detected ${surface.integrations.length} integration(s) but the '${profileName}' profile omits INTEGRATIONS.md — not generated.`);
+    }
+  }
 
   // ── Compose documents + sections (language/kind-aware) ──
   const docs = [];
@@ -248,9 +280,24 @@ function _buildMemoryPlanUncached(projectDir, config = {}) {
     sections.push(addTask('docs-canonical/ARCHITECTURE.md', 'overview',
       'Write a 2-3 sentence System Overview: what this project does and who uses it.',
       { languages: profile.languages, frameworks: profile.frameworks, kind: profile.kind }));
-    sections.push(addTask('docs-canonical/ARCHITECTURE.md', 'components',
-      'Describe the major components/modules and their responsibilities, using the real directories below.',
-      { ecosystems: profile.ecosystems.map(e => ({ dir: e.dir, language: e.language, framework: e.framework })) }));
+
+    // Component Map — PRE-FILLED from the real source layout (field report §5):
+    // the agent gets the module list for free and only annotates responsibilities.
+    if (surface.modules.length > 0) {
+      sections.push({
+        id: 'component-map',
+        source: 'code',
+        body: md.table(['Module', 'Kind', 'Responsibility'],
+          surface.modules.map(m => [`\`${m.path}\``, m.kind, '<!-- one-line responsibility -->'])),
+      });
+      sections.push(addTask('docs-canonical/ARCHITECTURE.md', 'components',
+        'Fill in a one-line responsibility for each module in the Component Map above (replace each `<!-- one-line responsibility -->`). Group related modules into layers if it aids understanding.',
+        { modules: surface.modules.map(m => m.path) }));
+    } else {
+      sections.push(addTask('docs-canonical/ARCHITECTURE.md', 'components',
+        'Describe the major components/modules and their responsibilities, using the real directories below.',
+        { ecosystems: profile.ecosystems.map(e => ({ dir: e.dir, language: e.language, framework: e.framework })) }));
+    }
 
     // Frontend modules (stores/hooks/contexts) — code-truth section when present.
     const feCounts = surface.stores.length + surface.hooks.length + surface.contexts.length;
@@ -269,8 +316,31 @@ function _buildMemoryPlanUncached(projectDir, config = {}) {
     docs.push({ path: 'docs-canonical/ARCHITECTURE.md', sections });
   }
 
-  // API-REFERENCE — only if there's an API surface.
-  if (surface.endpoints.length > 0) {
+  // TEST-SPEC — always (a required canonical doc in every profile). The test
+  // INVENTORY is pre-filled from the real test files (field report §5); the
+  // agent writes only the coverage rules + the service→test mapping.
+  {
+    const ti = surface.tests;
+    const sections = [];
+    if (ti.totalFiles > 0) {
+      const header = `**${ti.totalFiles} test file(s)${ti.totalCases > 0 ? `, ${ti.totalCases} test case(s)` : ''}**`;
+      const rows = ti.files.map(t => [`\`${t.file}\``, t.cases > 0 ? String(t.cases) : '—']);
+      sections.push({
+        id: 'test-inventory',
+        source: 'code',
+        body: `${header}\n\n${md.table(['Test file', 'Cases'], rows)}`,
+      });
+    }
+    sections.push(addTask('docs-canonical/TEST-SPEC.md', 'coverage',
+      ti.totalFiles > 0
+        ? 'Document the test categories (unit / integration / e2e), the coverage rules, and the service→test mapping. The detected test files + case counts are listed above.'
+        : 'No test files were detected. Document the intended test strategy: categories, coverage targets, and where tests will live.',
+      { totalFiles: ti.totalFiles, totalCases: ti.totalCases }));
+    docs.push({ path: 'docs-canonical/TEST-SPEC.md', sections });
+  }
+
+  // API-REFERENCE — only if there's an API surface AND the profile allows it.
+  if (surface.endpoints.length > 0 && profileAllows('docs-canonical/API-REFERENCE.md')) {
     const rows = surface.endpoints.map(e => [`\`${e.method}\``, `\`${e.path}\``, e.auth ? '🔒' : '🔓']);
     const sections = [{
       id: 'endpoints',
@@ -283,8 +353,8 @@ function _buildMemoryPlanUncached(projectDir, config = {}) {
     docs.push({ path: 'docs-canonical/API-REFERENCE.md', sections });
   }
 
-  // DATA-MODEL — only if entities detected.
-  if (surface.entities.length > 0) {
+  // DATA-MODEL — only if entities detected AND the profile allows it.
+  if (surface.entities.length > 0 && profileAllows('docs-canonical/DATA-MODEL.md')) {
     const rows = surface.entities.map(e => [`\`${e.name}\``, String((e.fields || []).length)]);
     const sections = [{
       id: 'entities',
@@ -297,8 +367,8 @@ function _buildMemoryPlanUncached(projectDir, config = {}) {
     docs.push({ path: 'docs-canonical/DATA-MODEL.md', sections });
   }
 
-  // SCREENS — only for web frontends with screens.
-  if (surface.screens.length > 0) {
+  // SCREENS — only for web frontends with screens AND if the profile allows it.
+  if (surface.screens.length > 0 && profileAllows('docs-canonical/SCREENS.md')) {
     const rows = surface.screens.map(s => [`\`${s.path}\``, s.component || '—']);
     const sections = [{
       id: 'screens',
@@ -311,8 +381,8 @@ function _buildMemoryPlanUncached(projectDir, config = {}) {
     docs.push({ path: 'docs-canonical/SCREENS.md', sections });
   }
 
-  // INTEGRATIONS — external services / SDKs detected from deps.
-  if (surface.integrations.length > 0) {
+  // INTEGRATIONS — external services / SDKs detected from deps (profile-gated).
+  if (surface.integrations.length > 0 && profileAllows('docs-canonical/INTEGRATIONS.md')) {
     const rows = surface.integrations.map(i => [i.category, `**${i.name}**`, i.evidence.slice(0, 3).join(', ')]);
     const sections = [{
       id: 'integrations',
@@ -325,8 +395,8 @@ function _buildMemoryPlanUncached(projectDir, config = {}) {
     docs.push({ path: 'docs-canonical/INTEGRATIONS.md', sections });
   }
 
-  // FEATURES — derived from screens + endpoints when there's a UI surface.
-  if (surface.screens.length > 0) {
+  // FEATURES — derived from screens + endpoints when there's a UI surface (profile-gated).
+  if (surface.screens.length > 0 && profileAllows('docs-canonical/FEATURES.md')) {
     const groups = {};
     for (const s of surface.screens) {
       const seg = (s.path.split('/').filter(Boolean)[0] || 'root');
@@ -395,5 +465,5 @@ function _buildMemoryPlanUncached(projectDir, config = {}) {
     ],
   });
 
-  return { profile, surface, docs, agentTasks };
+  return { profile, surface, docs, agentTasks, notes };
 }
