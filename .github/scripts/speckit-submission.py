@@ -183,14 +183,34 @@ def render_body(fields, checkbox_items) -> str:
     return "\n\n".join(blocks) + "\n"
 
 
+# Large free-text fields overflow GitHub's URL length limit (~8 KB) — the form
+# then returns "Whoa there! Your request URL is too long." and prefills NOTHING.
+# Keep these OUT of the prefilled URL; they live in the --body paste-fallback,
+# which the issue surfaces in a copy/paste <details> block. The URL prefills the
+# short, high-value identity fields; the human pastes the rest.
+URL_OMIT = {"features", "testing-details", "example-usage",
+            "catalog-entry", "additional-context"}
+
+# Conservative cap (well under GitHub's limit) so the one-click link always loads.
+URL_MAX = 6000
+
+
 def render_url(fields, version) -> str:
     params = {"template": TEMPLATE,
               "title": f"[Extension]: Update DocGuard — CDD Enforcement (v{version})"}
     for fid, _label, value in fields:
-        if value is None:
-            continue  # checkbox groups can't be prefilled via URL
+        if value is None or fid in URL_OMIT:
+            continue  # checkbox groups + oversized fields are paste-only
         params[fid] = value
-    return FORM_URL + "?" + urlencode(params, quote_via=quote)
+    url = FORM_URL + "?" + urlencode(params, quote_via=quote)
+    # Safety net: if still too long, shed the longest optional fields until it
+    # fits. (Identity fields — id/name/version/urls — are always kept.)
+    for fid in ("required-tools", "tags", "description", "documentation", "changelog"):
+        if len(url) <= URL_MAX:
+            break
+        params.pop(fid, None)
+        url = FORM_URL + "?" + urlencode(params, quote_via=quote)
+    return url
 
 
 def main():
