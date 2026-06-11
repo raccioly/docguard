@@ -1,4 +1,4 @@
-## 2025-05-18 - [Command Injection via execSync]
-**Vulnerability:** Found multiple instances where user-controlled inputs (`projectDir`, `filePath`) were interpolated directly into shell commands via `execSync` (e.g., `execSync(\`node "\${cliPath}" init --dir "\${projectDir}"\`)`).
-**Learning:** This is a classic command injection vulnerability. If `projectDir` contains shell metacharacters like `;`, `&&`, or `||`, it allows arbitrary command execution.
-**Prevention:** Always use `execFileSync` (or `execFile` for async) instead of `execSync` when executing commands with dynamic inputs. Pass arguments as an array to ensure they are passed directly to the executable without shell interpolation.
+## 2024-06-11 - Migrate execSync to execFileSync for command injection prevention
+**Vulnerability:** Use of `execSync` with string concatenation for system commands allows command injection if input is unsanitized (e.g. `which ${name}`).
+**Learning:** `execFileSync` without shell execution is immune to shell meta-character injection since it passes arguments directly to the executable. Also, shell piping (`| wc -l`) or redirection (`2>/dev/null`) requires native equivalent implementations like `stdio` arrays and array splitting.
+**Prevention:** Strictly forbid `execSync` strings for system commands; always use `execFileSync(executable, [args], { stdio })` array-based execution.
