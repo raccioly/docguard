@@ -178,8 +178,11 @@ export function detectAIAgent(projectDir) {
  */
 export function isSpecKitAvailable() {
   try {
-    const cmd = process.platform === 'win32' ? 'where specify' : 'which specify';
-    execSync(cmd, { encoding: 'utf-8', stdio: 'pipe', timeout: 3000 });
+    if (process.platform === 'win32') {
+      execFileSync('cmd.exe', ['/c', 'where', 'specify'], { encoding: 'utf-8', stdio: 'pipe', timeout: 3000 });
+    } else {
+      execFileSync('which', ['specify'], { encoding: 'utf-8', stdio: 'pipe', timeout: 3000 });
+    }
     return true;
   } catch {
     return false;
