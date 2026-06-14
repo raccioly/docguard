@@ -8,7 +8,7 @@
 
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { resolve, join, extname } from 'node:path';
-import { execSync, execFileSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 
 // B-5 fix (v0.13.1): use a defensive import. If `shared-git.mjs` is missing
 // or unloadable in the end-user install (whatever the root cause — partial
@@ -132,8 +132,8 @@ function getCodeCommitsSince(date, dir) {
  */
 function isGitRepo(dir) {
   try {
-    execSync('git rev-parse --is-inside-work-tree', {
-      cwd: dir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe']
+    execFileSync('git', ['rev-parse', '--is-inside-work-tree'], {
+      cwd: dir, encoding: 'utf-8', stdio: ['ignore', 'ignore', 'ignore']
     });
     return true;
   } catch {
@@ -146,8 +146,8 @@ function isGitRepo(dir) {
  */
 function getTotalCommits(dir) {
   try {
-    return parseInt(execSync('git rev-list --count HEAD', {
-      cwd: dir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe']
+    return parseInt(execFileSync('git', ['rev-list', '--count', 'HEAD'], {
+      cwd: dir, encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore']
     }).trim()) || 0;
   } catch {
     return 0;

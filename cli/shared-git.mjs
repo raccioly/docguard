@@ -10,7 +10,7 @@
  * Zero NPM dependencies. Pure Node.js built-ins.
  */
 
-import { execFileSync, execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { existsSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 
@@ -19,8 +19,8 @@ import { resolve } from 'node:path';
  */
 export function isGitRepo(dir) {
   try {
-    execSync('git rev-parse --is-inside-work-tree', {
-      cwd: dir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
+    execFileSync('git', ['rev-parse', '--is-inside-work-tree'], {
+      cwd: dir, encoding: 'utf-8', stdio: ['ignore', 'ignore', 'ignore'],
     });
     return true;
   } catch {
