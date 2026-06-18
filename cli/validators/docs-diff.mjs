@@ -96,8 +96,12 @@ export function diffTechStack(dir, config = {}) {
     'PostgreSQL', 'MySQL', 'MongoDB', 'DynamoDB', 'Redis', 'Prisma', 'Drizzle',
     'TypeScript', 'Tailwind', 'Docker', 'Terraform'];
 
+  // PERFORMANCE OPTIMIZATION: Pre-compute lowercase architecture content outside the loop
+  // to prevent O(N*M) redundant string allocation bottleneck.
+  const lowerArchContent = archContent.toLowerCase();
+
   for (const tech of techPatterns) {
-    if (archContent.toLowerCase().includes(tech.toLowerCase())) {
+    if (lowerArchContent.includes(tech.toLowerCase())) {
       docTech.add(tech);
     }
   }
