@@ -66,30 +66,33 @@ export function validateDocsCoverage(projectDir, config) {
     return { errors: [], warnings, passed: 0, total: 0 };
   }
 
+  // ⚡ Bolt: Precompute lowercased concatenated doc string once
+  const lowerDocContent = allDocContent.toLowerCase();
+
   // IaC detection runs once and informs both Check 3 (suppression) and
   // Check 6 (consolidated warning). One scan, two consumers.
   const iac = detectIaC(projectDir);
 
   // ── Check 1: Project-specific config/dotfiles referenced in docs ──
-  const configChecks = checkConfigFiles(projectDir, allDocContent, config);
+  const configChecks = checkConfigFiles(projectDir, lowerDocContent, config);
   total += configChecks.total;
   passed += configChecks.passed;
   warnings.push(...configChecks.warnings);
 
   // ── Check 2: package.json bin entries documented ──
-  const binChecks = checkPackageBins(projectDir, allDocContent);
+  const binChecks = checkPackageBins(projectDir, lowerDocContent);
   total += binChecks.total;
   passed += binChecks.passed;
   warnings.push(...binChecks.warnings);
 
   // ── Check 3: Source directory structure matches ARCHITECTURE.md ──
-  const dirChecks = checkSourceDirs(projectDir, allDocContent, config, iac);
+  const dirChecks = checkSourceDirs(projectDir, config, iac);
   total += dirChecks.total;
   passed += dirChecks.passed;
   warnings.push(...dirChecks.warnings);
 
   // ── Check 4: Config filenames referenced in source code but not documented ──
-  const codeConfigChecks = checkCodeReferencedConfigs(projectDir, allDocContent, config);
+  const codeConfigChecks = checkCodeReferencedConfigs(projectDir, lowerDocContent, config);
   total += codeConfigChecks.total;
   passed += codeConfigChecks.passed;
   warnings.push(...codeConfigChecks.warnings);
@@ -117,15 +120,13 @@ export function validateDocsCoverage(projectDir, config) {
  * Honors config.ignore (FR-015 — applies user-configured ignore patterns
  * consistently across all docs-coverage checks).
  */
-function checkConfigFiles(projectDir, allDocContent, config = {}) {
+function checkConfigFiles(projectDir, lowerDocContent, config = {}) {
   const warnings = [];
   let passed = 0;
   let total = 0;
 
   let entries;
   try { entries = readdirSync(projectDir); } catch { return { warnings, passed, total }; }
-
-  const lowerDocContent = allDocContent.toLowerCase();
 
   for (const entry of entries) {
     const isDotFile = entry.startsWith('.');
@@ -167,7 +168,7 @@ function checkConfigFiles(projectDir, allDocContent, config = {}) {
 /**
  * Check 2: package.json bin entries (CLI commands users run) are documented.
  */
-function checkPackageBins(projectDir, allDocContent) {
+function checkPackageBins(projectDir, lowerDocContent) {
   const warnings = [];
   let passed = 0;
   let total = 0;
@@ -181,8 +182,6 @@ function checkPackageBins(projectDir, allDocContent) {
   const bins = typeof pkg.bin === 'string'
     ? { [pkg.name]: pkg.bin }
     : (pkg.bin || {});
-
-  const lowerDocContent = allDocContent.toLowerCase();
 
   for (const [binName] of Object.entries(bins)) {
     total++;
@@ -206,7 +205,7 @@ function checkPackageBins(projectDir, allDocContent) {
  * are suppressed — Check 6 emits one consolidated warning per IaC tool
  * instead (FR-011).
  */
-function checkSourceDirs(projectDir, allDocContent, config = {}, iac = { isIaC: false, tools: [] }) {
+function checkSourceDirs(projectDir, config = {}, iac = { isIaC: false, tools: [] }) {
   const warnings = [];
   let passed = 0;
   let total = 0;
@@ -231,6 +230,7 @@ function checkSourceDirs(projectDir, allDocContent, config = {}, iac = { isIaC: 
   // Monorepo-aware: honor config.sourceRoot + workspaces instead of a hardcoded list.
   for (const rootDir of resolveSourceRoots(projectDir, config)) {
     const root = relative(projectDir, rootDir) || basename(rootDir);
+    const lowerRoot = root.toLowerCase(); // ⚡ Bolt: pre-lowercase root
     let entries;
     try { entries = readdirSync(rootDir); } catch { continue; }
 
@@ -261,7 +261,7 @@ function checkSourceDirs(projectDir, allDocContent, config = {}, iac = { isIaC: 
 
       total++;
       const searchName = entry.toLowerCase();
-      if (lowerArchContent.includes(searchName) || lowerArchContent.includes(root + '/' + entry)) {
+      if (lowerArchContent.includes(searchName) || lowerArchContent.includes(lowerRoot + '/' + searchName)) {
         passed++;
       } else {
         warnings.push(
@@ -343,12 +343,11 @@ function checkIaCDocumentation(projectDir, iac) {
  * patterns — these are configs the project USES. Avoids matching config names
  * sitting in arrays (scan patterns for detecting other projects' configs).
  */
-function checkCodeReferencedConfigs(projectDir, allDocContent, config = {}) {
+function checkCodeReferencedConfigs(projectDir, lowerDocContent, config = {}) {
   const warnings = [];
   let passed = 0;
   let total = 0;
 
-  const lowerDocContent = allDocContent.toLowerCase();
   const foundConfigs = new Set();
 
   // Only match config filenames inside function calls that actually USE the file:
