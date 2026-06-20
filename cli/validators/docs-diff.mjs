@@ -188,15 +188,27 @@ function diffTests(dir, config) {
     };
   });
 
-  const matches = (matcher, codeRel) => {
-    const subject = matcher.hasSlash ? codeRel : basename(codeRel);
-    return matcher.rx.test(subject);
-  };
+  // PERFORMANCE OPTIMIZATION: Avoid redundant string processing overhead by
+  // pre-computing basenames outside the loop, and replace multiple nested
+  // .filter().some() passes with a single-pass cross-comparison using Sets.
+  const codeObjects = codeArr.map(c => ({ rel: c, base: basename(c) }));
+  const matchedDocs = new Set();
+  const matchedCode = new Set();
+
+  for (const doc of docMatchers) {
+    for (const code of codeObjects) {
+      const subject = doc.hasSlash ? code.rel : code.base;
+      if (doc.rx.test(subject)) {
+        matchedDocs.add(doc.original);
+        matchedCode.add(code.rel);
+      }
+    }
+  }
 
   return {
     title: 'Test Files',
-    onlyInDocs: docMatchers.filter(m => !codeArr.some(c => matches(m, c))).map(m => m.original),
-    onlyInCode: codeArr.filter(c => !docMatchers.some(m => matches(m, c))),
+    onlyInDocs: docMatchers.filter(m => !matchedDocs.has(m.original)).map(m => m.original),
+    onlyInCode: codeObjects.filter(c => !matchedCode.has(c.rel)).map(c => c.rel),
   };
 }
 
