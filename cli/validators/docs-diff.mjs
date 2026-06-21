@@ -168,10 +168,12 @@ function diffTests(dir, config) {
   // bare basenames or full paths. Treat each documented entry as a glob and
   // match it against code test paths (or basenames when the entry has no slash).
   // Exact-string comparison produced the false "N documented but not found".
-  const codeArr = [...codeTests];
+  // PERFORMANCE OPTIMIZATION: Pre-compute expensive basenames outside loops and
+  // use a single-pass iteration with Sets to eliminate O(N*M) array comparisons.
+  const codeObjects = [...codeTests].map(c => ({ original: c, base: basename(c) }));
 
   // PERFORMANCE OPTIMIZATION: Pre-compile regular expressions to avoid O(N*M)
-  // instantiation bottlenecks inside the nested .filter and .some loops below.
+  // instantiation bottlenecks inside loops below.
   const docMatchers = [...docTests].map(docEntry => {
     const entry = String(docEntry).trim();
     const hasSlash = entry.includes('/');
@@ -188,15 +190,22 @@ function diffTests(dir, config) {
     };
   });
 
-  const matches = (matcher, codeRel) => {
-    const subject = matcher.hasSlash ? codeRel : basename(codeRel);
-    return matcher.rx.test(subject);
-  };
+  const matchedDocs = new Set();
+  const matchedCode = new Set();
+
+  for (const m of docMatchers) {
+    for (const c of codeObjects) {
+      if (m.rx.test(m.hasSlash ? c.original : c.base)) {
+        matchedDocs.add(m.original);
+        matchedCode.add(c.original);
+      }
+    }
+  }
 
   return {
     title: 'Test Files',
-    onlyInDocs: docMatchers.filter(m => !codeArr.some(c => matches(m, c))).map(m => m.original),
-    onlyInCode: codeArr.filter(c => !docMatchers.some(m => matches(m, c))),
+    onlyInDocs: docMatchers.filter(m => !matchedDocs.has(m.original)).map(m => m.original),
+    onlyInCode: codeObjects.filter(c => !matchedCode.has(c.original)).map(c => c.original),
   };
 }
 
