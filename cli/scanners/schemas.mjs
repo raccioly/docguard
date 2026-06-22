@@ -713,11 +713,16 @@ function scanRailsModels(dir) {
 
 function extractOpenAPIRelationships(schemas) {
   const relationships = [];
+
+  // PERFORMANCE OPTIMIZATION: Precompute an O(1) Map lookup of lowercased schema names
+  // to avoid O(N*M) array find lookups during the nested schema/field loops.
+  const schemaMap = new Map(schemas.map(s => [s.name.toLowerCase(), s]));
+
   for (const schema of schemas) {
     for (const field of schema.fields) {
       if (field.type !== 'string' && field.type !== 'number' && field.type !== 'boolean' && field.type !== 'integer') {
         // Likely a reference to another schema
-        const target = schemas.find(s => s.name.toLowerCase() === field.type.toLowerCase());
+        const target = schemaMap.get(field.type.toLowerCase());
         if (target) {
           relationships.push({
             from: schema.name,
