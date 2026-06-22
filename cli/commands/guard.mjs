@@ -462,12 +462,17 @@ export function runGuard(projectDir, config, flags) {
 
   // ── JSON output ──
   if (flags.format === 'json') {
-    console.log(JSON.stringify(data, null, 2));
     // Use severity-aware effective counts for exit code; raw counts stay in the JSON
     // for display tools that want to show the full picture.
-    if (data.effectiveErrors > 0) process.exit(1);
-    if (data.effectiveWarnings > 0) process.exit(2);
-    process.exit(0);
+    const code = data.effectiveErrors > 0 ? 1 : data.effectiveWarnings > 0 ? 2 : 0;
+    // v0.28: set exitCode + return instead of process.exit(). A large JSON
+    // payload (>~8 KB) written to a PIPE flushes asynchronously; an immediate
+    // process.exit() truncates it mid-string, so a CI consumer parsing stdout
+    // gets "Unterminated string in JSON" on exactly the big reports that matter.
+    // Returning lets Node drain stdout and exit naturally with process.exitCode.
+    process.exitCode = code;
+    process.stdout.write(JSON.stringify(data, null, 2) + '\n');
+    return;
   }
 
   // ── Text output ──
@@ -707,7 +712,8 @@ export function runGuard(projectDir, config, flags) {
   }
 
   // v0.5: severity-aware exit codes (see runGuardInternal for the rollup).
-  if (data.effectiveErrors > 0) process.exit(1);
-  if (data.effectiveWarnings > 0) process.exit(2);
-  process.exit(0);
+  // v0.28: exitCode + return (not process.exit) so the buffered text output
+  // flushes to a pipe before the process exits — same truncation fix as the
+  // JSON path above.
+  process.exitCode = data.effectiveErrors > 0 ? 1 : data.effectiveWarnings > 0 ? 2 : 0;
 }

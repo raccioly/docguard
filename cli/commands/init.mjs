@@ -78,6 +78,20 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const TEMPLATES_DIR = resolve(__dirname, '../../templates');
 
+/**
+ * v0.28 (field report #11): inject a `<!-- docguard:last-reviewed DATE -->`
+ * marker right after the first H1, so a canonical doc has a freshness signal the
+ * Freshness validator reads directly (not git mtime). No-op if one is present.
+ */
+function stampLastReviewed(content, date) {
+  const marker = `<!-- docguard:last-reviewed ${date} -->`;
+  const lines = content.split('\n');
+  const h1 = lines.findIndex(l => /^#\s/.test(l));
+  if (h1 === -1) return `${marker}\n\n${content}`;
+  lines.splice(h1 + 1, 0, '', marker);
+  return lines.join('\n');
+}
+
 // ── Readline helper ──────────────────────────────────────────────────────
 
 function askQuestion(prompt) {
@@ -263,7 +277,15 @@ export async function runInit(projectDir, config, flags) {
     if (existsSync(templatePath)) {
       const content = readFileSync(templatePath, 'utf-8');
       const today = new Date().toISOString().split('T')[0];
-      const processed = content.replace(/YYYY-MM-DD/g, today);
+      let processed = content.replace(/YYYY-MM-DD/g, today);
+      // v0.28 (field report #11): every canonical doc must ship with a freshness
+      // marker so the Freshness validator is marker-based (consistent across docs,
+      // and satisfiable in a pre-commit review loop) rather than silently falling
+      // back to git mtime. Templates now all carry one; this is the belt-and-
+      // suspenders guarantee for any future template that forgets.
+      if (mapping.dest.startsWith('docs-canonical/') && !/docguard:last-reviewed/.test(processed)) {
+        processed = stampLastReviewed(processed, today);
+      }
       writeFileSync(destPath, processed, 'utf-8');
       created.push(mapping.dest);
       console.log(`  ${c.green}✅${c.reset} Created: ${c.cyan}${mapping.dest}${c.reset}`);

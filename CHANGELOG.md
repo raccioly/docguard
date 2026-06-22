@@ -7,6 +7,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.28.0] - 2026-06-22
+
+Closes the detection-gap items deferred from LLM field report #3 — the checks
+regex/AST couldn't make before — plus a latent CI-correctness bug surfaced by
+dogfooding.
+
+### Added
+- **`docguard verify --semantic`** (field report #5) — extracts the semantic
+  claims in the canonical docs (documented numbers, limits, and enums: retention
+  days, rate limits, GSI/role counts, status enums) as a structured verification
+  task list with each claim's doc:line, section, and nearest cited code path. The
+  highest-value bug class (a doc value drifted from code) and the one regex/AST
+  can't judge — so DocGuard does the deterministic discovery and the agent does
+  the comparison (the `docguard agent` division of labour). Precision-first:
+  numbers count only with a recognized unit, enums only as 2+ UPPER_SNAKE values
+  in a status/state context; version strings, dates, and code-fenced numbers are
+  ignored.
+- **`docguard sync --tests`** (field report #10) — reconciles the hand-maintained
+  TEST-SPEC Source-to-Test Map from disk: drops ghost-source rows (source file
+  deleted), appends newly-covered co-located source↔test pairs, and reports ghost
+  test references for the human (never auto-edits a curated status/notes cell).
+  Preview by default; `--write` applies.
+
+### Fixed
+- **Dynamic `import()` no longer counted as an import cycle** (field report #2) —
+  the Architecture validator excludes runtime `await import()` edges from cycle
+  detection (a dynamic import is the canonical way to BREAK a load-time cycle).
+  Static `import`/`require` edges still count, and dynamic edges still count for
+  layer-boundary checks.
+- **API-Surface diffs the OpenAPI spec against the registered routes** (field
+  report #4) — when a spec is the authoritative surface, the API-REFERENCE doc
+  reconciles against the spec, so a spec that declares a phantom endpoint (no
+  Express/Fastify route registers it) passed clean. It's now flagged. Conservative:
+  only runs when code routes are actually scannable.
+- **Freshness markers stamped on `init`** (field report #11) — the SECURITY,
+  ENVIRONMENT, TEST-SPEC, and REQUIREMENTS templates gained the standard
+  `docguard:last-reviewed` header, and `init` stamps every canonical doc with a
+  today-dated marker (belt-and-suspenders for future templates). Freshness is now
+  marker-based and consistent from day one — and satisfiable in a pre-commit
+  review loop. `explain freshness` now documents the marker > git-mtime precedence.
+- **`guard --format json` no longer truncates large reports** — replaced
+  `console.log(...) + process.exit()` with `process.exitCode` + a drained write.
+  A JSON payload over ~8 KB written to a pipe flushes asynchronously, so the
+  immediate `process.exit()` cut it off mid-string — a CI consumer parsing stdout
+  got "Unterminated string in JSON" on exactly the big reports that matter.
+  (Surfaced by dogfooding this release.)
+
+### Notes
+- Tests 813 → 825 (new `tests/field-report-3-deferred.test.mjs`, each fix with a
+  non-vacuous control). All field-report-3 items are now addressed.
+
 ## [0.27.0] - 2026-06-19
 
 Acting on a third end-to-end LLM field report (a coding agent ran DocGuard on a

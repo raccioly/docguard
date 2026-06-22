@@ -111,13 +111,14 @@ const EXPLAINERS = {
   },
   freshness: {
     title: 'Freshness — docs updated alongside code',
-    what: 'For each canonical doc, counts code commits since the doc\'s last commit. >10 commits = stale.',
+    what: 'For each canonical doc it picks a "last updated" date by PRECEDENCE, then counts code commits since (>10 = stale): (1) an explicit `<!-- docguard:last-reviewed YYYY-MM-DD -->` marker — a human review signal git cannot see, so it WINS; (2) `<!-- docguard:status approved -->`; (3) the git commit date; (4) for an uncommitted file with no marker, it asks you to commit OR add a marker. CHANGELOG.md follows the SAME precedence — a marker satisfies it before any commit, which matters in a pre-commit edit/review loop. `docguard init` now stamps a `last-reviewed` marker into every canonical doc so freshness is marker-based and consistent from day one.',
     why:  'Docs drift silently. This validator surfaces the drift before it becomes invisible.',
     triggers: [
-      ['code commits since last doc update', 'Run `docguard sync --write` to refresh code-truth sections, then review the prose for accuracy.'],
+      ['code commits since last doc update', 'Run `docguard sync --write` to refresh code-truth sections, then review the prose and update (or add) the `<!-- docguard:last-reviewed YYYY-MM-DD -->` marker.'],
+      ['not yet committed to git', 'A canonical doc has no git history and no marker. Commit it, or add `<!-- docguard:last-reviewed YYYY-MM-DD -->` (or `<!-- docguard:status approved -->`) so freshness is satisfiable before the commit.'],
       ['DRIFT-LOG.md may be stale', 'DRIFT comments in code outpaced log entries. Add the entries.'],
     ],
-    example: 'ARCHITECTURE.md last committed within 10 code commits',
+    example: 'ARCHITECTURE.md carries `<!-- docguard:last-reviewed 2026-06-19 -->` (or was committed within 10 code commits)',
     standard: 'CDD principle: docs and code commit together',
   },
   traceability: {
@@ -134,12 +135,13 @@ const EXPLAINERS = {
     standard: 'ISO/IEC/IEEE 29148 (requirements traceability)',
   },
   apiSurface: {
-    title: 'API-Surface — endpoints in code match API-REFERENCE.md',
-    what: 'Compares routes scanned from code (Express, Next, FastAPI, Spring, etc.) against endpoints listed in API-REFERENCE.md and OpenAPI specs.',
-    why:  'Documented but missing endpoints are dead links. Endpoints in code that aren\'t documented are invisible.',
+    title: 'API-Surface — endpoints in code match API-REFERENCE.md (and the spec matches the routes)',
+    what: 'Compares routes scanned from code (Express, Next, FastAPI, Spring, etc.) against endpoints listed in API-REFERENCE.md and OpenAPI specs. When an OpenAPI spec exists it is the authoritative surface — so it ALSO diffs the spec against the actually-registered code routes, catching a spec that declares a phantom endpoint (the doc reconciles clean against a wrong spec otherwise). That spec-vs-route check is conservative: it only runs when code routes are actually scannable.',
+    why:  'Documented but missing endpoints are dead links. Endpoints in code that aren\'t documented are invisible. And a spec nobody implements is a lie the doc check can\'t see.',
     triggers: [
       ['documented but absent', 'API-REFERENCE.md lists an endpoint that scanRoutes() can\'t find. Remove or fix the doc; `fix --write` removes when marked.'],
       ['present but undocumented', 'A route exists in code but API-REFERENCE.md doesn\'t list it. Add it.'],
+      ['declares', 'The OpenAPI spec declares an endpoint that no Express/Fastify/etc. route registers in code — i.e. "declares METHOD /path but no route registers it". Either implement the route or remove the phantom endpoint from the spec (the API-REFERENCE doc reconciles clean against the spec, so this is the only check that catches it).'],
     ],
     example: 'GET /api/users in src/routes/users.ts AND in API-REFERENCE.md\'s Endpoints table',
     standard: 'OpenAPI 3.1',

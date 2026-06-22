@@ -20,6 +20,7 @@ import { c } from '../shared.mjs';
 import { buildMemoryPlan } from '../scanners/memory-plan.mjs';
 import { getSection, replaceSection } from '../writers/sections.mjs';
 import { hasGeneratedMarker } from '../writers/api-reference.mjs';
+import { runSyncTests } from './sync-tests.mjs';
 
 function gitChangedFiles(projectDir, since) {
   const run = (args) => {
@@ -77,6 +78,11 @@ function sectionTouchedByChanges(sectionId, changedFiles) {
 }
 
 export function runSync(projectDir, config, flags) {
+  // v0.28 (field report #10): `--tests` reconciles the hand-maintained TEST-SPEC
+  // Source-to-Test Map from disk (ghost-source removal + new co-located pairs) —
+  // a distinct path from the generated code-truth section refresh below.
+  if (flags.tests) return runSyncTests(projectDir, config, flags);
+
   const plan = buildMemoryPlan(projectDir, config);
   const apply = !!flags.write;
   const isJson = flags.format === 'json';

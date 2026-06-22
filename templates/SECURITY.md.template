@@ -1,6 +1,11 @@
 # Security
 
-> **Canonical document** — Design intent. This file defines the security model.  
+<!-- docguard:version 0.1.0 -->
+<!-- docguard:status draft -->
+<!-- docguard:last-reviewed YYYY-MM-DD -->
+<!-- docguard:owner @your-github-username -->
+
+> **Canonical document** — Design intent. This file defines the security model.
 > Last updated: YYYY-MM-DD
 
 ---

@@ -208,10 +208,56 @@ export function computeApiSurfaceDrift(projectDir, config) {
   };
 }
 
+/**
+ * v0.28 (field report #4): diff the OpenAPI spec against the routes actually
+ * REGISTERED in code. When a spec exists, resolveApiSurface treats it as ground
+ * truth and the API-REFERENCE doc reconciles against it — so a spec that declares
+ * a phantom endpoint (no Express/Fastify route registers it) passes doc-vs-spec
+ * clean while the spec itself is wrong. This catches that.
+ *
+ * Conservative on purpose: only runs when code routes are actually scannable.
+ * If the scanner finds zero routes (unsupported framework, dynamically-registered
+ * routes), we can't tell "no route" from "scanner blind", so we skip rather than
+ * flag every spec endpoint as phantom. Reuses compareEndpoints so path-param /
+ * mount-prefix normalization matches the rest of the validator.
+ *
+ * @returns {{ applicable:boolean, specPath:string|null, routeCount:number,
+ *             matched:object[], specDeclaredNoRoute:object[], reason?:string }}
+ */
+export function computeSpecVsRouteDrift(projectDir, config) {
+  const specs = findAllOpenApiSpecs(projectDir, config);
+  if (specs.length === 0) {
+    return { applicable: false, specPath: null, routeCount: 0, matched: [], specDeclaredNoRoute: [], reason: 'no openapi spec' };
+  }
+  const spec = specs[0]; // authoritative (sourceRoot first, root last)
+  const framework = detectFramework(projectDir, config);
+  const routes = scanRoutesDeep(projectDir, { framework }, { openapi: { found: false } }, { config });
+  if (routes.length === 0) {
+    return { applicable: false, specPath: spec.relPath, routeCount: 0, matched: [], specDeclaredNoRoute: [], reason: 'no routes scannable' };
+  }
+  // documentedButAbsent = in the SPEC (first arg) but absent from the ROUTES
+  // (second arg) = spec-declares-but-no-route.
+  const cmp = compareEndpoints(
+    spec.endpoints.map(e => ({ method: e.method, path: e.path })),
+    routes.map(r => ({ method: r.method, path: r.path }))
+  );
+  return {
+    applicable: true,
+    specPath: spec.relPath,
+    routeCount: routes.length,
+    matched: cmp.matched,
+    specDeclaredNoRoute: cmp.documentedButAbsent,
+  };
+}
+
 export function validateApiSurface(projectDir, config) {
   const errors = [];
   const warnings = [];
   const fixes = [];
+  const trim = (arr) => {
+    const shown = arr.slice(0, MAX_REPORTED);
+    return { shown, extra: arr.length - shown.length };
+  };
 
   // v0.14-P2: when --changed-only scoping is active and NONE of the changed
   // files look like route/spec/controller files, this validator has nothing
@@ -256,19 +302,39 @@ export function validateApiSurface(projectDir, config) {
     );
   }
 
+  // ── #4: spec declares an endpoint with no registered route ──
+  // Independent of the API-REFERENCE doc — it checks the spec against code, so it
+  // runs even when no doc exists. Conservative (only when routes are scannable).
+  const specRoute = computeSpecVsRouteDrift(projectDir, config);
+  let specRouteTotal = 0;
+  let specRoutePassed = 0;
+  if (specRoute.applicable) {
+    specRouteTotal = specRoute.matched.length + specRoute.specDeclaredNoRoute.length;
+    specRoutePassed = specRoute.matched.length;
+    if (specRoute.specDeclaredNoRoute.length) {
+      const { shown, extra } = trim(specRoute.specDeclaredNoRoute);
+      for (const e of shown) {
+        warnings.push(
+          `OpenAPI spec (${specRoute.specPath}) declares ${e.method} ${e.path} but no route registers it in code — ` +
+          `the spec may be wrong, and the API-REFERENCE doc reconciles clean against it, hiding the gap.`
+        );
+      }
+      if (extra > 0) warnings.push(`…and ${extra} more spec-declared endpoint(s) with no registered route`);
+    }
+  }
+
   if (!drift.applicable) {
-    // Nothing to validate against the API-REFERENCE doc.
-    return { errors, warnings, passed: 0, total: 0, fixes, authoritativeSpec: drift.source };
+    // Nothing to validate against the API-REFERENCE doc — but the spec-vs-route
+    // check above may still have produced findings.
+    return {
+      errors, warnings, passed: specRoutePassed, total: specRouteTotal, fixes,
+      authoritativeSpec: drift.source || specRoute.specPath,
+    };
   }
 
   const { documentedButAbsent, presentButUndocumented, matched, confidence, source } = drift;
-  const total = matched.length + documentedButAbsent.length + presentButUndocumented.length;
-  const passed = matched.length;
-
-  const trim = (arr) => {
-    const shown = arr.slice(0, MAX_REPORTED);
-    return { shown, extra: arr.length - shown.length };
-  };
+  const total = matched.length + documentedButAbsent.length + presentButUndocumented.length + specRouteTotal;
+  const passed = matched.length + specRoutePassed;
 
   // documented-but-absent → deterministic remove-endpoint fixes
   if (documentedButAbsent.length) {

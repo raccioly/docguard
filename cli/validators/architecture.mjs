@@ -97,11 +97,11 @@ function validateConfigLayers(projectDir, config, layers, results) {
       const relPath = relative(projectDir, file);
       const imports = extractImports(content);
 
-      for (const imp of imports) {
-        if (!imp.startsWith('.') && !imp.startsWith('/')) continue;
+      for (const { spec } of imports) {
+        if (!spec.startsWith('.') && !spec.startsWith('/')) continue;
 
         for (const forbiddenDir of layer.forbidden) {
-          if (imp.includes(forbiddenDir) || imp.includes(`/${forbiddenDir}/`)) {
+          if (spec.includes(forbiddenDir) || spec.includes(`/${forbiddenDir}/`)) {
             results.total++;
             results.errors.push(
               `${relPath}: ${layer.name} layer imports from forbidden layer (${forbiddenDir})`
@@ -135,14 +135,19 @@ function buildImportGraph(projectDir, config) {
 
       const resolvedImports = [];
       for (const imp of imports) {
-        if (!imp.startsWith('.') && !imp.startsWith('/')) continue;
+        if (!imp.spec.startsWith('.') && !imp.spec.startsWith('/')) continue;
 
         // Resolve relative imports
         const fromDir = dirname(file);
-        const resolved = resolveImport(fromDir, imp, projectDir);
+        const resolved = resolveImport(fromDir, imp.spec, projectDir);
         if (resolved) {
-          resolvedImports.push(resolved);
-          graph.edges.push({ from: relPath, to: resolved });
+          graph.edges.push({ from: relPath, to: resolved, dynamic: imp.dynamic });
+          // v0.28 (field report #2): a dynamic `await import()` does NOT create a
+          // load-time edge — it's the canonical way to BREAK an import cycle. So
+          // it's excluded from the cycle-detection adjacency (fileMap) while still
+          // recorded in graph.edges for layer-boundary checks (an import is still
+          // an import for layering).
+          if (!imp.dynamic) resolvedImports.push(resolved);
         }
       }
 
@@ -153,26 +158,33 @@ function buildImportGraph(projectDir, config) {
   return graph;
 }
 
+/**
+ * Extract a file's imports as `{ spec, dynamic }`. `dynamic:true` marks a
+ * runtime `import('…')` — which does NOT create a load-time dependency edge and
+ * is the canonical way to break an import cycle (field report #2). ES `import …
+ * from` and CommonJS `require()` are load-time (static).
+ */
 function extractImports(content) {
   const imports = [];
 
-  // ES module imports
+  // ES module imports (static, load-time). `import\s+` requires whitespace after
+  // `import`, so it never matches a dynamic `import(` call.
   const esImportRegex = /import\s+(?:.*?\s+from\s+)?['"]([^'"]+)['"]/g;
   let match;
   while ((match = esImportRegex.exec(content)) !== null) {
-    imports.push(match[1]);
+    imports.push({ spec: match[1], dynamic: false });
   }
 
-  // Dynamic imports
+  // Dynamic imports (runtime — NOT a load-time cycle edge)
   const dynamicRegex = /import\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
   while ((match = dynamicRegex.exec(content)) !== null) {
-    imports.push(match[1]);
+    imports.push({ spec: match[1], dynamic: true });
   }
 
-  // CommonJS require
+  // CommonJS require (static, load-time)
   const requireRegex = /require\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
   while ((match = requireRegex.exec(content)) !== null) {
-    imports.push(match[1]);
+    imports.push({ spec: match[1], dynamic: false });
   }
 
   return imports;

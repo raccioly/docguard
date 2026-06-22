@@ -49,7 +49,7 @@
         "extract": "basename-no-ext",
         "ignore": [
           "agents", "hooks", "ci", "badge", "llms", "publish",
-          "setup", "impact"
+          "setup", "impact", "sync-tests"
         ],
         "docs": ["README.md"],
         "section": "Usage"

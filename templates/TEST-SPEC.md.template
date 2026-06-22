@@ -1,5 +1,10 @@
 # Test Specification
 
+<!-- docguard:version 0.1.0 -->
+<!-- docguard:status draft -->
+<!-- docguard:last-reviewed YYYY-MM-DD -->
+<!-- docguard:owner @your-github-username -->
+
 > **Canonical document** — Design intent. This file declares what tests MUST exist.  
 > Last updated: YYYY-MM-DD
 

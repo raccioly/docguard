@@ -44,6 +44,7 @@ import { runUpgrade } from './commands/upgrade.mjs';
 import { runImpact } from './commands/impact.mjs';
 import { runExplain } from './commands/explain.mjs';
 import { runFeedback } from './commands/feedback.mjs';
+import { runVerify } from './commands/verify.mjs';
 import { runMemory } from './commands/memory.mjs';
 import { runDemo } from './commands/demo.mjs';
 import { runAgent } from './commands/agent.mjs';
@@ -87,6 +88,7 @@ ${c.bold}Tools (situational, but day-to-day useful)${c.reset}
   ${c.green}generate${c.reset}   Reverse-engineer canonical docs from existing code (${c.cyan}--plan${c.reset} for AI scan)
   ${c.green}agent${c.reset}      One-shot agent task graph — ordered tasks, pre-filled code-truth, per-task verify (${c.cyan}--format json${c.reset})
   ${c.green}explain${c.reset}    Explain a validator key, warning text, or finding code (${c.cyan}docguard explain SEC001${c.reset})
+  ${c.green}verify${c.reset}     Extract documented numbers/limits/enums for an agent to check vs code (${c.cyan}--semantic${c.reset})
   ${c.green}feedback${c.reset}   Report likely false positives back to DocGuard (local-first + 1-click prefilled issue)
   ${c.green}memory${c.reset}     Show what DocGuard remembers (${c.cyan}--diff${c.reset} drills into drift)
   ${c.green}trace${c.reset}      Requirements traceability matrix (${c.cyan}--reverse${c.reset} for code→doc map)
@@ -232,13 +234,14 @@ const COMMAND_HELP = {
     examples: ['docguard diff', 'docguard diff --since HEAD~5'],
   },
   sync: {
-    summary: 'Refresh code-truth doc sections (preview by default).',
-    usage: 'docguard sync [--write] [--since <ref>]',
+    summary: 'Refresh code-truth doc sections (preview by default). `--tests` reconciles the TEST-SPEC Source-to-Test Map from disk.',
+    usage: 'docguard sync [--write] [--since <ref>] [--tests]',
     flags: [
       ['--write', 'Apply the refresh (default is a dry-run preview)'],
       ['--since <ref>', 'Only sync sections whose source files changed since <ref>'],
+      ['--tests', 'Reconcile the TEST-SPEC Source-to-Test Map: drop ghost-source rows, append newly-covered source↔test pairs (report ghost tests). Pair with --write to apply.'],
     ],
-    examples: ['docguard sync', 'docguard sync --write'],
+    examples: ['docguard sync', 'docguard sync --write', 'docguard sync --tests', 'docguard sync --tests --write'],
   },
   fix: {
     summary: 'Generate AI fix instructions for docs (or apply deterministic fixes).',
@@ -286,6 +289,15 @@ const COMMAND_HELP = {
     usage: 'docguard feedback [--format json]',
     flags: [['--format json', 'Machine-readable list of reportable findings + URLs']],
     examples: ['docguard feedback'],
+  },
+  verify: {
+    summary: 'Extract the semantic claims in your canonical docs — documented numbers, limits, and enums (retention days, rate limits, GSI/role counts, status enums) — as a verification task list the agent checks against the code. This is the highest-value bug class (a doc value that drifted from code) and the one regex/AST cannot judge. DocGuard finds the claims; the LLM confirms them.',
+    usage: 'docguard verify [--semantic] [--format json]',
+    flags: [
+      ['--semantic', 'Extract documented numbers/limits/enums to verify against code (the current — and default — mode)'],
+      ['--format json', 'Machine-readable task list (the agent-executable artifact)'],
+    ],
+    examples: ['docguard verify --semantic', 'docguard verify --semantic --format json'],
   },
 };
 
@@ -355,6 +367,14 @@ async function main() {
       flags.auto = true;
     } else if (args[i] === '--write') {
       flags.write = true;
+    } else if (args[i] === '--tests') {
+      // v0.28 (field report #10): `docguard sync --tests` reconciles the
+      // TEST-SPEC Source-to-Test Map from disk.
+      flags.tests = true;
+    } else if (args[i] === '--semantic') {
+      // v0.28 (field report #5): `docguard verify --semantic` extracts
+      // documented numbers/enums/limits for the agent to check against code.
+      flags.semantic = true;
     } else if (args[i] === '--plan') {
       flags.plan = true;
     } else if (args[i] === '--since' && args[i + 1]) {
@@ -518,6 +538,8 @@ async function main() {
     // feedback only writes its own .docguard/feedback/ — it must NOT scaffold
     // skills or touch source, so it's gated out of ensureSkills like the rest.
     'feedback',
+    // verify only reads docs and emits a task list — pure report.
+    'verify',
   ]);
 
   // Silent auto-check: install skills/commands if missing. Skip entirely in
@@ -662,6 +684,12 @@ async function main() {
       // findings (likely false positives) → local record + 1-click prefilled,
       // redacted, capped GitHub issue URL. Opt-in; nothing filed automatically.
       runFeedback(projectDir, config, flags);
+      break;
+    case 'verify':
+      // v0.28 (field report #5): extract documented numbers/limits/enums as a
+      // verification task list for the agent to check against code (semantic
+      // drift — the class regex/AST can't see). Read-only.
+      runVerify(projectDir, config, flags);
       break;
     case 'memory':
       runMemory(projectDir, config, flags);
