@@ -11,6 +11,70 @@ import { validateSecurity } from '../validators/security.mjs';
 import { runGuardInternal } from './guard.mjs';
 
 /**
+ * Detect whether the project configures a test runner (the "Check 3" of the
+ * testing score). Extracted as an exported seam so it's unit-testable without
+ * the full score pipeline.
+ *
+ * Recognises, in order: standalone config files; pytest config inside
+ * pyproject.toml / tox.ini; node:test via projectTypeConfig or scripts.test;
+ * a `scripts.test` that invokes a known runner; Vitest configured INSIDE
+ * vite.config.* (field report #3 — `vitest/config` import or a `test:` block);
+ * and runner configs in common workspace subdirs.
+ *
+ * @param {string} dir
+ * @param {object} config
+ * @returns {boolean}
+ */
+export function detectTestRunner(dir, config = {}) {
+  const testConfigFiles = ['jest.config.js', 'jest.config.ts', 'vitest.config.ts', 'vitest.config.js', 'pytest.ini', 'setup.cfg', '.mocharc.yml'];
+  if (testConfigFiles.some((f) => existsSync(resolve(dir, f)))) return true;
+
+  // Python: pytest config usually lives inside pyproject.toml ([tool.pytest.ini_options])
+  // or tox.ini ([pytest]) — not a standalone file.
+  for (const [file, marker] of [['pyproject.toml', /\[tool\.pytest/], ['tox.ini', /\[pytest\]/]]) {
+    const p = resolve(dir, file);
+    if (!existsSync(p)) continue;
+    try { if (marker.test(readFileSync(p, 'utf-8'))) return true; } catch { /* skip */ }
+  }
+
+  // node:test has no config file — recognize it via projectTypeConfig or package.json.
+  const ptc = config.projectTypeConfig || {};
+  if (ptc.testFramework === 'node:test') return true;
+  const pkgPath = resolve(dir, 'package.json');
+  if (existsSync(pkgPath)) {
+    try {
+      const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
+      const testScript = pkg.scripts?.test || '';
+      if (testScript.includes('node --test') || testScript.includes('node:test')) return true;
+      // v0.27 (field report #3): a `scripts.test` that runs a known runner IS a
+      // configured test runner, even without a standalone config file.
+      if (/\b(vitest|jest|mocha|ava|playwright|cypress|pytest)\b/.test(testScript)) return true;
+    } catch { /* skip */ }
+  }
+
+  // v0.27 (field report #3): Vitest configured INSIDE vite.config.* rather than a
+  // standalone vitest.config (`vitest/config` import + a `test:` block).
+  for (const f of ['vite.config.ts', 'vite.config.js', 'vite.config.mts', 'vite.config.mjs']) {
+    const p = resolve(dir, f);
+    if (!existsSync(p)) continue;
+    try {
+      const src = readFileSync(p, 'utf-8');
+      if (/vitest\/config/.test(src) || /^\s*test\s*:/m.test(src)) return true;
+    } catch { /* skip */ }
+  }
+
+  // Workspace subdirs: a runner config one level down still configures the project.
+  const subConfigs = ['vitest.config.ts', 'vitest.config.js', 'jest.config.ts', 'jest.config.js', 'vite.config.ts'];
+  for (const sub of ['backend', 'frontend', 'server', 'client', 'app', 'web', 'api']) {
+    for (const f of subConfigs) {
+      if (existsSync(resolve(dir, sub, f))) return true;
+    }
+  }
+
+  return false;
+}
+
+/**
  * v0.18-P3: map score categories to the validator keys that contribute.
  * One category can roll up multiple validators (e.g. "environment" pulls
  * from Environment validator findings). When --diff fires, we use this
@@ -585,38 +649,7 @@ function calcTestingScore(dir, config) {
   else failures.push({ issue: 'TEST-SPEC.md missing', fixCmd: 'docguard fix --doc test-spec' });
 
   // ── Check 3: Test config or built-in runner (15 pts) ──
-  const testConfigFiles = ['jest.config.js', 'jest.config.ts', 'vitest.config.ts', 'vitest.config.js', 'pytest.ini', 'setup.cfg', '.mocharc.yml'];
-  let hasTestRunner = testConfigFiles.some(f => existsSync(resolve(dir, f)));
-
-  // Python: pytest config usually lives inside pyproject.toml ([tool.pytest.ini_options])
-  // or tox.ini ([pytest]) — not a standalone file. Detect those too, so a uv/pytest
-  // project isn't told to "add a test runner" it already configured (field report, Issue B).
-  if (!hasTestRunner) {
-    for (const [file, marker] of [['pyproject.toml', /\[tool\.pytest/], ['tox.ini', /\[pytest\]/]]) {
-      const p = resolve(dir, file);
-      if (!existsSync(p)) continue;
-      try { if (marker.test(readFileSync(p, 'utf-8'))) { hasTestRunner = true; break; } } catch { /* skip */ }
-    }
-  }
-
-  // node:test has no config file — recognize it via projectTypeConfig or package.json.
-  if (!hasTestRunner) {
-    const ptc = config.projectTypeConfig || {};
-    if (ptc.testFramework === 'node:test') {
-      hasTestRunner = true;
-    } else {
-      const pkgPath = resolve(dir, 'package.json');
-      if (existsSync(pkgPath)) {
-        try {
-          const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
-          const testScript = pkg.scripts?.test || '';
-          if (testScript.includes('node --test') || testScript.includes('node:test')) hasTestRunner = true;
-        } catch { /* skip */ }
-      }
-    }
-  }
-
-  if (hasTestRunner) score += 15;
+  if (detectTestRunner(dir, config)) score += 15;
   else failures.push({ issue: 'no test runner config detected (jest/vitest/pytest/node:test)' });
 
   // ── Check 4: CI test step (15 pts) ──

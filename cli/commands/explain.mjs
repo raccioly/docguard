@@ -17,6 +17,7 @@
  */
 
 import { c } from '../shared.mjs';
+import { CODES } from '../findings.mjs';
 
 /**
  * Validator-key → human-readable explainer. Keyed by the same key DocGuard
@@ -292,7 +293,7 @@ const EXPLAINERS = {
     why:  'Vague, passive, negation-heavy docs are hard for both humans and AI agents to act on. Metrics inspired by IEEE 830 / ISO 29148.',
     triggers: [
       ['High negation load', 'Rephrase in positive terms ("must not fail" → "must succeed"). If the negation is intentional (security/operational docs legitimately use "never"/"must not"), add the per-doc override: `<!-- docguard:quality negation-load off — your reason -->`, or set a custom bar with `<!-- docguard:quality negation-load 0.35 — reason -->`. Project-wide default: `docQuality.negationLoadThreshold` in .docguard.json.'],
-      ['High passive voice ratio', 'Use active voice: "the config is read by the loader" → "the loader reads the config".'],
+      ['High passive voice ratio', 'Use active voice: "the config is read by the loader" → "the loader reads the config". If the doc is legitimately passive (a sequence/flow doc), add the per-doc override: `<!-- docguard:quality passive-voice off — your reason -->`, or set a custom bar with `<!-- docguard:quality passive-voice 0.4 — reason -->`. Project-wide default: `docQuality.passiveVoiceThreshold` in .docguard.json.'],
       ['High ambiguous pronoun ratio', 'Replace "it/this/that/they" with the specific noun.'],
       ['Low atomicity', 'Split compound sentences so each states one verifiable fact (IEEE 830 §4.1).'],
       ['Reading level too high', 'Aim for grade 12–16 for technical docs — shorter sentences, simpler words.'],
@@ -416,6 +417,27 @@ export function runExplain(projectDir, _config, flags) {
     for (const k of listed) {
       console.log(`  ${c.cyan}${DISPLAY_NAMES[k].padEnd(22)}${c.reset} ${c.dim}${EXPLAINERS[k].title}${c.reset}`);
     }
+    return;
+  }
+
+  // v0.27: finding-code lookup — `docguard explain SEC001`. Codes are the stable,
+  // LLM-addressable handles that guard prints next to each finding and that
+  // inline `// docguard:ignore <CODE>` keys off.
+  const codeKey = query.toUpperCase();
+  if (CODES[codeKey]) {
+    const cd = CODES[codeKey];
+    if (isJson) {
+      console.log(JSON.stringify({ query, code: codeKey, ...cd }, null, 2));
+      return;
+    }
+    console.log(`${c.bold}🧭 ${codeKey} — ${cd.title}${c.reset}`);
+    console.log(`${c.dim}   validator: ${cd.validator}${c.reset}\n`);
+    console.log(`${c.bold}What it means:${c.reset}\n  ${cd.help}\n`);
+    if (cd.suppress) {
+      console.log(`${c.bold}Suppress inline${c.reset} ${c.dim}(only if it's a confirmed false positive):${c.reset}`);
+      console.log(`  ${c.cyan}${cd.suppress}${c.reset}\n`);
+    }
+    console.log(`${c.bold}Got it wrong?${c.reset} ${c.dim}Send a redacted report so a future release stops flagging it: ${c.cyan}docguard feedback${c.reset}`);
     return;
   }
 

@@ -295,6 +295,27 @@ function classifyChars(content, ext) {
  * including bracket access.
  * @returns {Set<string>} variable names referenced in code
  */
+/**
+ * v0.27 (field report #7): env vars injected by the test runner / CI / cloud
+ * SDK are READ in code (e.g. `if (process.env.VITEST)` as a test guard) but no
+ * application documents them as config — flagging them "undocumented" is a
+ * false positive. This is the env equivalent of the SYSTEM allowlist already
+ * applied on the docs side in environment.mjs.
+ *
+ * Deliberately conservative — NODE_ENV is intentionally NOT here: this project
+ * already decided NODE_ENV is legitimate app config (see environment.mjs).
+ */
+const RUNNER_ENV_VARS = new Set([
+  'VITEST', 'CI', 'JEST_WORKER_ID', 'AWS_SESSION_TOKEN', 'AWS_EXECUTION_ENV',
+]);
+const RUNNER_ENV_PREFIXES = ['GITHUB_', 'RUNNER_', 'VITEST_', 'JEST_', 'CIRCLE_', 'GITLAB_CI'];
+
+/** True when `name` is a runner/CI/SDK-injected var, not product config. */
+export function isRunnerEnvVar(name) {
+  if (RUNNER_ENV_VARS.has(name)) return true;
+  return RUNNER_ENV_PREFIXES.some((p) => name.startsWith(p));
+}
+
 export function grepEnvUsage(projectDir, config = {}) {
   const names = new Set();
   const roots = resolveSourceRoots(projectDir, config);
@@ -347,6 +368,7 @@ export function grepEnvUsage(projectDir, config = {}) {
       while ((m = rx.exec(content)) !== null) {
         if (kind[m.index] !== 0) continue; // keyword inside a string/comment → a mention, not a read
         if (isViteSource && VITE_INTRINSICS.has(m[1])) continue;
+        if (isRunnerEnvVar(m[1])) continue; // v0.27 (#7): runner/CI/SDK var, not product config
         names.add(m[1]);
       }
     }
@@ -366,12 +388,12 @@ export function grepEnvUsage(projectDir, config = {}) {
       // camelCase keys, so requiring UPPER_SNAKE keeps this env-specific.
       const keyRe = /^\s*['"]?([A-Z][A-Z0-9_]*[A-Z0-9])['"]?\s*:/gm;
       while ((km = keyRe.exec(content)) !== null) {
-        if (km[1].length >= 3 && !VITE_INTRINSICS.has(km[1])) names.add(km[1]);
+        if (km[1].length >= 3 && !VITE_INTRINSICS.has(km[1]) && !isRunnerEnvVar(km[1])) names.add(km[1]);
       }
       // convict: the env var name is the `env:` property value, not the key.
       const convictRe = /\benv\s*:\s*['"]([A-Z][A-Z0-9_]*[A-Z0-9])['"]/g;
       while ((km = convictRe.exec(content)) !== null) {
-        if (km[1].length >= 3) names.add(km[1]);
+        if (km[1].length >= 3 && !isRunnerEnvVar(km[1])) names.add(km[1]);
       }
     }
   };

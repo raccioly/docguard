@@ -7,6 +7,77 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.27.0] - 2026-06-19
+
+Acting on a third end-to-end LLM field report (a coding agent ran DocGuard on a
+Vite+Vitest WhatsApp-inbox repo). The headline is architectural: DocGuard is a
+tool *for LLMs*, so every run should end with a suggested next action and every
+finding it surfaces should be addressable, suppressible, and — when uncertain —
+reportable. This release introduces structured **findings** (stable codes +
+confidence + a built-in suggestion), wires them through `guard`/`explain`, adds a
+local-first **feedback** loop, and fixes the group-A false positives the report
+flagged.
+
+### Added
+- **Structured findings with stable codes** (`cli/findings.mjs`) — a validator
+  can now emit `Finding[]` (code like `SEC001`, `high`/`low` confidence, and a
+  machine-readable `suggestion`) via `resultFromFindings(...)`. Fully
+  backward-compatible: the legacy `{errors,warnings,passed,total}` shape is
+  derived from the same array, so non-migrated validators are unchanged. Security
+  is the first fully-migrated validator.
+- **Every guard run ends with a suggested next step** — issues render with an
+  inline `→ suggestion` (fix command or suppression pragma); a clean run points
+  at the next workflow step. `guard --format json` now carries a stable
+  `findings` / `reportable` / `nextStep` contract for agents in hooks/CI.
+- **`docguard feedback`** — collects the low-confidence findings of a guard run
+  (likely false positives, and anything DocGuard flagged uncertainly), writes a
+  full local record under `.docguard/feedback/`, and prints a **1-click,
+  prefilled, redacted, length-capped** GitHub issue URL (zero typing; no source
+  code or secret values; capped well under GitHub's ~8 KB URL limit — the failure
+  mode of commit `3b600fd`).
+- **`docguard explain <CODE>`** — `explain` now resolves a finding code
+  (`docguard explain SEC001`) to its meaning, inline-suppression snippet, and the
+  feedback path, alongside the existing validator/warning lookup.
+- **Inline secret suppression** — `// docguard:ignore SEC001 — reason` (or
+  `// docguard:ignore-secret`, or `docguard:ignore SEC*`) on the flagged line or
+  the line above silences a single finding, instead of blinding the whole file
+  via `securityIgnore`. (field report #8)
+- **Read-only skills nudge** — when an agent has no `/docguard.*` commands
+  installed, `guard` *suggests* `docguard init` (it never writes — scaffolding
+  stays on `init`).
+
+### Fixed
+- **Natural-language values no longer flagged as hardcoded passwords** — a
+  `password`-style key whose value reads like prose (a validation message / UI
+  copy) is downgraded from a blocking error to a low-confidence, suppressible,
+  reportable warning. Still surfaced (no false-green); a genuine single-token
+  secret like `"SuperSecretPassword!"` stays a blocking error. (field report #1)
+- **`score` recognises modern test-runner config** — Vitest configured inside
+  `vite.config.*` (`vitest/config` import or a `test:` block), a `scripts.test`
+  that runs a known runner (`vitest`/`jest`/`mocha`/`ava`/…), and runner configs
+  in workspace subdirs (`backend/`, `frontend/`, …). A fully-tested Vite+Vitest
+  repo is no longer docked 15 points and told to "add a test runner". (field
+  report #3)
+- **TODO-Tracking scans `docs-canonical/{ROADMAP,CURRENT-STATE,BACKLOG,TODO}.md`**
+  — a TODO tracked in the canonical roadmap is no longer reported as untracked.
+  (field report #6)
+- **Env validator ignores runner/CI/SDK vars** — `VITEST`, `CI`, `GITHUB_*`,
+  `RUNNER_*`, `JEST_*`, `AWS_SESSION_TOKEN`, etc. are no longer reported as
+  undocumented (they're injected by the runner, not product config). `NODE_ENV`
+  is deliberately still treated as app config. (field report #7)
+- **Doc-Quality passive-voice has a per-doc override** — parity with
+  negation-load: `<!-- docguard:quality passive-voice off — reason -->` (or a
+  numeric threshold) silences the warning on legitimately passive sequence/flow
+  docs. (field report #9)
+
+### Notes
+- Tests 794 → 813 (new `tests/field-report-3.test.mjs`, each fix paired with a
+  non-vacuous control).
+- The detection-gap items from the report (semantic number/enum drift `verify
+  --semantic`, dynamic-import cycle breaks, spec-declares-but-no-route, `sync
+  --tests`, freshness precedence) are deliberately deferred — each is its own
+  design and would bloat this release.
+
 ## [0.26.0] - 2026-06-10
 
 Acting on a second end-to-end LLM field report (a coding agent ran DocGuard on a

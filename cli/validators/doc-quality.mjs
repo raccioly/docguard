@@ -533,7 +533,13 @@ function analyzeDocument(doc) {
       conditionalLoad: conditional.ratio,
     },
     details: { passive, ambiguous, atomicity, negation, conditional },
-    overrides: { negationLoad: parseQualityOverride(content, 'negation-load') },
+    overrides: {
+      negationLoad: parseQualityOverride(content, 'negation-load'),
+      // v0.27 (#9): parity with negation-load. Sequence/flow docs (MESSAGE-FLOWS,
+      // INTEGRATIONS) are legitimately passive; let them opt out per-doc instead
+      // of warning unconditionally.
+      passiveVoice: parseQualityOverride(content, 'passive-voice'),
+    },
   };
 }
 
@@ -561,12 +567,17 @@ export function validateDocQuality(projectDir, config) {
 
     // ── Check 1: Passive Voice ──
     results.total++;
-    if (m.passiveVoiceRatio <= THRESHOLDS.passiveVoiceRatio.warn) {
+    const passiveOv = analysis.overrides?.passiveVoice;
+    const passiveThreshold = passiveOv?.threshold
+      ?? config.docQuality?.passiveVoiceThreshold
+      ?? THRESHOLDS.passiveVoiceRatio.warn;
+    if (passiveOv?.off || m.passiveVoiceRatio <= passiveThreshold) {
       results.passed++;
     } else {
       results.warnings.push(
         `${doc.name}: High passive voice ratio (${(m.passiveVoiceRatio * 100).toFixed(0)}% of sentences). ` +
-        `Use active voice for clarity. Found ${analysis.details.passive.count}/${analysis.details.passive.total} passive sentences`
+        `Use active voice for clarity. Found ${analysis.details.passive.count}/${analysis.details.passive.total} passive sentences. ` +
+        `If the passive voice is intentional (sequence/flow doc), add: <!-- docguard:quality passive-voice off — your reason -->`
       );
     }
 

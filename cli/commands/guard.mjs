@@ -180,6 +180,27 @@ export function classifyResult(result) {
   return { status, quality };
 }
 
+/**
+ * v0.27: the list of issues to render for a validator. Prefers structured
+ * findings (code + confidence + suggestion) when present; otherwise maps the
+ * legacy error/warning strings into the same shape so the renderer is uniform.
+ */
+function renderableItems(v) {
+  if (Array.isArray(v.findings) && v.findings.length > 0) {
+    return v.findings.map((f) => ({
+      severity: f.severity,
+      message: f.message,
+      code: f.code,
+      confidence: f.confidence,
+      suggestion: f.suggestion,
+    }));
+  }
+  return [
+    ...(v.errors || []).map((m) => ({ severity: 'error', message: m })),
+    ...(v.warnings || []).map((m) => ({ severity: 'warn', message: m })),
+  ];
+}
+
 export function runGuardInternal(projectDir, config) {
   const validators = config.validators || {};
   const results = [];
@@ -323,6 +344,15 @@ export function runGuardInternal(projectDir, config) {
   // what the user reads is what CI does.
   const overallStatus = effectiveErrors > 0 ? 'FAIL' : effectiveWarnings > 0 ? 'WARN' : 'PASS';
 
+  // v0.27: stable, LLM-addressable contract. `findings` is the flattened,
+  // structured view (those validators that emit it); `reportable` are the
+  // low-confidence ones the feedback loop offers to report; `nextStep` is the
+  // single machine hint so an agent in a hook never has to parse prose.
+  const allFindings = activeResults.flatMap((r) => (Array.isArray(r.findings) ? r.findings : []));
+  const reportable = allFindings.filter((f) => f.reportable);
+  const nextStep =
+    overallStatus === 'PASS' ? null : 'docguard diagnose';
+
   return {
     project: config.projectName,
     profile: config.profile || 'standard',
@@ -331,6 +361,9 @@ export function runGuardInternal(projectDir, config) {
     total: totalChecks,
     errors: totalErrors,
     warnings: totalWarnings,
+    findings: allFindings,
+    reportable,
+    nextStep,
     // v0.5: severity-aware counts for exit-code logic. The display still uses
     // the raw counts above so users see every warning, but CI only fails on
     // things they've marked as high-severity.
@@ -473,14 +506,26 @@ export function runGuard(projectDir, config, flags) {
     // overall validator status — useful when a validator passes overall
     // (passed < total) without surfacing the specific failing checks.
     const show = flags.verbose || flags.showFailing;
-    if (show || v.status === 'fail') {
-      for (const err of v.errors) {
-        console.log(`     ${c.red}✗ ${err}${c.reset}`);
-      }
-    }
-    if (show || v.status === 'warn') {
-      for (const warn of v.warnings) {
-        console.log(`     ${c.yellow}⚠ ${warn}${c.reset}`);
+    const showErr = show || v.status === 'fail';
+    const showWarn = show || v.status === 'warn';
+    // v0.27: render from structured findings when the validator emits them
+    // (each issue carries a code, confidence, and a `→ suggestion`); otherwise
+    // fall back to the legacy error/warning strings. Identical gating.
+    for (const item of renderableItems(v)) {
+      if (item.severity === 'error' && !showErr) continue;
+      if (item.severity === 'warn' && !showWarn) continue;
+      const mark = item.severity === 'error' ? `${c.red}✗` : `${c.yellow}⚠`;
+      const codeTag = item.code ? `${c.dim}[${item.code}]${c.reset} ` : '';
+      const conf = item.confidence === 'low'
+        ? ` ${c.dim}(low confidence — possible false positive)${c.reset}` : '';
+      console.log(`     ${mark} ${codeTag}${item.message}${c.reset}${conf}`);
+      if (item.suggestion) {
+        console.log(`       ${c.cyan}→${c.reset} ${c.dim}${item.suggestion.text}${c.reset}`);
+        if (item.suggestion.command) {
+          console.log(`         ${c.cyan}${item.suggestion.command}${c.reset}`);
+        } else if (item.suggestion.pragma) {
+          console.log(`         ${c.dim}${item.suggestion.pragma}${c.reset}`);
+        }
       }
     }
     // If a validator reports passed < total but has no errors/warnings, surface
@@ -514,14 +559,31 @@ export function runGuard(projectDir, config, flags) {
     console.log(`  ${c.red}${c.bold}❌ FAIL${c.reset} ${c.red}— ${data.passed}/${data.total} passed, ${data.effectiveErrors} blocking issue(s)${warnSuffix}${c.reset}`);
   }
 
-  // Next step hint — always point to diagnose when issues exist
+  // ── Next steps — every run ends with a suggested action (v0.27) ──
+  // The field-report principle: whenever DocGuard calls out an issue it must
+  // suggest what to do next; on a clean run it points at the next workflow step
+  // rather than nagging. JSON consumers read this off the `nextStep`/`reportable`
+  // contract fields instead of this prose.
+  const agentMode = detectAgentMode(projectDir);
+  const skill = (name) => (agentMode === 'llm' ? `/docguard.${name}` : `docguard ${name}`);
+
   if (data.status !== 'PASS') {
-    const agentMode = detectAgentMode(projectDir);
-    if (agentMode === 'llm') {
-      console.log(`  ${c.dim}Use ${c.cyan}/docguard.diagnose${c.dim} to get AI fix prompts.${c.reset}`);
-    } else {
-      console.log(`  ${c.dim}Run ${c.cyan}docguard diagnose${c.dim} to get AI fix prompts.${c.reset}`);
-    }
+    console.log(`  ${c.dim}Next: run ${c.cyan}${skill('diagnose')}${c.dim} to get AI fix prompts that resolve the issues above.${c.reset}`);
+  } else {
+    console.log(`  ${c.dim}Next: ${c.cyan}${skill('score')}${c.dim} for your CDD maturity score, or commit with confidence.${c.reset}`);
+  }
+
+  // Low-confidence findings (possible false positives) → offer the local-first
+  // feedback path. Broader than secrets: anything DocGuard flagged uncertainly.
+  if (Array.isArray(data.reportable) && data.reportable.length > 0) {
+    const n = data.reportable.length;
+    console.log(`  ${c.dim}↪ ${n} finding(s) look uncertain (possible false positives). Review or report: ${c.cyan}${skill('feedback')}${c.reset}`);
+  }
+
+  // Read-only skills nudge (never writes — that's `init`'s job). If the agent
+  // has no /docguard.* commands installed yet, say how to get them.
+  if (agentMode === 'llm' && !existsSync(resolvePath(projectDir, '.agent', 'skills', 'docguard-guard'))) {
+    console.log(`  ${c.dim}💡 Install ${c.cyan}/docguard.*${c.dim} commands for your agent: ${c.cyan}docguard init${c.reset}`);
   }
 
   // Badge snippet

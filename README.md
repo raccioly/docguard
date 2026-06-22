@@ -63,7 +63,7 @@ DocGuard is an official [GitHub Spec Kit](https://github.com/github/spec-kit) co
 
 ```mermaid
 graph TD
-    CLI["CLI Entry<br/>docguard.mjs"] --> Commands["Commands (14)"]
+    CLI["CLI Entry<br/>docguard.mjs"] --> Commands["Commands (16)"]
     Commands --> guard["guard"]
     Commands --> generate["generate"]
     Commands --> score["score"]
@@ -250,7 +250,7 @@ This installs DocGuard's slash commands (`/docguard.init`, `/docguard.guard`, `/
 
 ## Usage
 
-DocGuard ships **14 commands** (the "Daily 5" + 9 situational tools, including the zero-install `demo`). Six additional one-shot scaffolders are accessed via `docguard init --with <name>`. Eight v0.19 commands continue to work as deprecation aliases through v0.20.x — see [MIGRATION-v0.20.md](docs-implementation/MIGRATION-v0.20.md).
+DocGuard ships **16 commands** (the "Daily 5" + 11 situational tools, including the zero-install `demo`). Six additional one-shot scaffolders are accessed via `docguard init --with <name>`. Eight v0.19 commands continue to work as deprecation aliases through v0.20.x — see [MIGRATION-v0.20.md](docs-implementation/MIGRATION-v0.20.md).
 
 **The Daily 5** — what you'll reach for 95% of the time:
 
@@ -273,7 +273,8 @@ DocGuard ships **14 commands** (the "Daily 5" + 9 situational tools, including t
 | `fix --history` | Audit log of every mechanical fix applied (from `.docguard/fixed.json`) |
 | `generate` | Reverse-engineer docs from existing codebase (`--plan` for AI scan) |
 | `agent` | One-shot agent task graph — ordered, pre-filled code-truth, per-task verify (`--format json`) |
-| `explain <warning>` | Paste any warning — get the validator's docstring + fix path |
+| `explain <warning\|CODE>` | Paste any warning — or a finding code like `SEC001` — to get the validator's docstring, fix path, and how to suppress |
+| `feedback` | Report likely false positives back to DocGuard — local-first record + a 1-click prefilled, redacted GitHub issue (zero typing) |
 | `memory` | Per-domain accuracy headline (endpoints / entities / env / tech) |
 | `memory --diff` | Drill into which specific claims don't match code |
 | `score --diff` | Drill into which checks pulled each category down |

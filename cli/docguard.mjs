@@ -43,6 +43,7 @@ import { runSetup } from './commands/setup.mjs';
 import { runUpgrade } from './commands/upgrade.mjs';
 import { runImpact } from './commands/impact.mjs';
 import { runExplain } from './commands/explain.mjs';
+import { runFeedback } from './commands/feedback.mjs';
 import { runMemory } from './commands/memory.mjs';
 import { runDemo } from './commands/demo.mjs';
 import { runAgent } from './commands/agent.mjs';
@@ -85,7 +86,8 @@ ${c.bold}Tools (situational, but day-to-day useful)${c.reset}
   ${c.green}fix${c.reset}        Generate AI fix instructions for specific docs
   ${c.green}generate${c.reset}   Reverse-engineer canonical docs from existing code (${c.cyan}--plan${c.reset} for AI scan)
   ${c.green}agent${c.reset}      One-shot agent task graph — ordered tasks, pre-filled code-truth, per-task verify (${c.cyan}--format json${c.reset})
-  ${c.green}explain${c.reset}    Explain a validator key or warning text
+  ${c.green}explain${c.reset}    Explain a validator key, warning text, or finding code (${c.cyan}docguard explain SEC001${c.reset})
+  ${c.green}feedback${c.reset}   Report likely false positives back to DocGuard (local-first + 1-click prefilled issue)
   ${c.green}memory${c.reset}     Show what DocGuard remembers (${c.cyan}--diff${c.reset} drills into drift)
   ${c.green}trace${c.reset}      Requirements traceability matrix (${c.cyan}--reverse${c.reset} for code→doc map)
   ${c.green}upgrade${c.reset}    Migrate ${c.cyan}.docguard.json${c.reset} schema + CLI (${c.cyan}--apply --pr${c.reset} for team-wide PR)
@@ -278,6 +280,12 @@ const COMMAND_HELP = {
     usage: 'docguard memory [--diff]',
     flags: [['--diff', 'Drill into drift between memory and code']],
     examples: ['docguard memory', 'docguard memory --diff'],
+  },
+  feedback: {
+    summary: 'Report likely false positives back to DocGuard. Collects the low-confidence findings of a guard run, saves a full local record under .docguard/feedback/, and prints a one-click, prefilled, redacted GitHub issue URL (zero typing, no source code or secret values).',
+    usage: 'docguard feedback [--format json]',
+    flags: [['--format json', 'Machine-readable list of reportable findings + URLs']],
+    examples: ['docguard feedback'],
   },
 };
 
@@ -507,6 +515,9 @@ async function main() {
   const READ_ONLY_COMMANDS = new Set([
     'guard', 'audit', 'score', 'diff', 'impact',
     'diagnose', 'trace', 'explain', 'memory', 'demo', 'agent',
+    // feedback only writes its own .docguard/feedback/ — it must NOT scaffold
+    // skills or touch source, so it's gated out of ensureSkills like the rest.
+    'feedback',
   ]);
 
   // Silent auto-check: install skills/commands if missing. Skip entirely in
@@ -645,6 +656,12 @@ async function main() {
       break;
     case 'explain':
       runExplain(projectDir, config, flags);
+      break;
+    case 'feedback':
+      // v0.27 (field report #3 / LLM feedback loop): collect low-confidence
+      // findings (likely false positives) → local record + 1-click prefilled,
+      // redacted, capped GitHub issue URL. Opt-in; nothing filed automatically.
+      runFeedback(projectDir, config, flags);
       break;
     case 'memory':
       runMemory(projectDir, config, flags);

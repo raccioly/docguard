@@ -262,6 +262,10 @@ function loadTrackingDocs(projectDir, config) {
   const trackingFiles = [
     'ROADMAP.md', 'CURRENT-STATE.md', 'TODO.md', 'BACKLOG.md',
     'docs-canonical/ARCHITECTURE.md', 'CHANGELOG.md',
+    // v0.27 (field report #6): many projects keep the roadmap/backlog under
+    // docs-canonical/ — a TODO tracked there was wrongly read as "untracked".
+    'docs-canonical/ROADMAP.md', 'docs-canonical/CURRENT-STATE.md',
+    'docs-canonical/BACKLOG.md', 'docs-canonical/TODO.md',
     ...(config.todoTracking?.trackingFiles || []),
   ];
 
