@@ -301,3 +301,54 @@
 | 17:08 | Edited CHANGELOG.md | expanded (+53 lines) | ~920 |
 | 17:09 | Edited README.md | 2→3 lines | ~75 |
 | 17:09 | Created ../../../../../../../tmp/append-buglog.mjs | — | ~1335 |
+
+## Session: 2026-06-19 13:28
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 14:58 | Created cli/findings.mjs | — | ~2174 |
+| 14:58 | Edited cli/validators/security.mjs | expanded (+12 lines) | ~184 |
+| 14:58 | Edited cli/validators/security.mjs | added 4 condition(s) | ~372 |
+| 14:59 | Edited cli/validators/security.mjs | added 1 condition(s) | ~1575 |
+| 14:59 | Edited cli/shared-source.mjs | added 2 condition(s) | ~302 |
+| 14:59 | Edited cli/shared-source.mjs | added 1 condition(s) | ~92 |
+| 15:00 | Edited cli/shared-source.mjs | 9→9 lines | ~140 |
+| 15:00 | Edited cli/validators/todo-tracking.mjs | modified 27() | ~129 |
+| 15:00 | Edited cli/validators/doc-quality.mjs | modified 27() | ~117 |
+| 15:00 | Edited cli/validators/doc-quality.mjs | added optional chaining | ~209 |
+| 15:00 | Edited cli/commands/explain.mjs | inline fix | ~114 |
+| 15:00 | Edited cli/commands/score.mjs | added 6 condition(s) | ~630 |
+| 15:01 | Edited cli/commands/guard.mjs | expanded (+12 lines) | ~244 |
+| 15:01 | Edited cli/commands/guard.mjs | added 3 condition(s) | ~403 |
+| 15:01 | Edited cli/commands/guard.mjs | added 1 condition(s) | ~206 |
+| 15:01 | Edited cli/commands/guard.mjs | added 1 condition(s) | ~436 |
+| 15:01 | Edited cli/commands/explain.mjs | added 1 import(s) | ~20 |
+| 15:02 | Edited cli/commands/explain.mjs | added 3 condition(s) | ~284 |
+| 15:03 | Created cli/commands/feedback.mjs | — | ~1920 |
+| 15:03 | Edited cli/docguard.mjs | 2→3 lines | ~96 |
+| 15:03 | Edited cli/docguard.mjs | added 1 import(s) | ~29 |
+| 15:03 | Edited cli/docguard.mjs | 4→7 lines | ~89 |
+| 15:03 | Edited cli/docguard.mjs | modified 27() | ~106 |
+| 15:03 | Edited cli/docguard.mjs | expanded (+6 lines) | ~193 |
+| 15:04 | Created .github/ISSUE_TEMPLATE/docguard-feedback.md | — | ~229 |
+| 15:05 | Edited cli/validators/security.mjs | match() → language() | ~148 |
+| 15:11 | Created tests/field-report-3.test.mjs | — | ~3315 |
+| 15:12 | Edited cli/commands/score.mjs | removed 65 lines | ~56 |
+| 15:13 | Edited cli/commands/score.mjs | added error handling | ~880 |
+| 15:13 | Edited tests/field-report-3.test.mjs | 2→2 lines | ~33 |
+| 15:13 | Edited tests/field-report-3.test.mjs | 27→28 lines | ~333 |
+| 15:15 | Edited cli/validators/security.mjs | modified 27() | ~72 |
+| 15:16 | Edited README.md | inline fix | ~90 |
+| 15:16 | Edited README.md | 2→3 lines | ~100 |
+| 15:16 | Edited README.md | 14 → 16 | ~18 |
+| 15:16 | Edited package.json | 0.26 → 0.27 | ~7 |
+| 15:16 | Edited pyproject.toml | "0.25.1" → "0.27.0" | ~5 |
+| 15:16 | Edited extensions/spec-kit-docguard/extension.yml | "0.25.1" → "0.27.0" | ~6 |
+| 15:17 | Edited CHANGELOG.md | expanded (+71 lines) | ~1175 |
+| 15:17 | Edited ROADMAP.md | 3→4 lines | ~266 |
+| 15:22 | Session end: 40 writes across 18 files (findings.mjs, security.mjs, shared-source.mjs, todo-tracking.mjs, doc-quality.mjs) | 20 reads | ~95007 tok |
+
+## Session: 2026-06-22 11:53
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|

@@ -1197,6 +1197,254 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-06-10"
+    },
+    {
+      "id": "bug-072",
+      "timestamp": "2026-06-19T18:58:53.419Z",
+      "error_message": "Missing guard clause",
+      "file": "cli/validators/security.mjs",
+      "root_cause": "No early return/throw for edge case: /EXAMPLE/i.test(matchStr",
+      "fix": "Added guard clause: if (/EXAMPLE/i.test(matchStr)",
+      "tags": [
+        "auto-detected",
+        "guard-clause",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-19T18:58:53.419Z"
+    },
+    {
+      "id": "bug-073",
+      "timestamp": "2026-06-19T18:59:27.854Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/validators/security.mjs",
+      "root_cause": "24 lines replaced/restructured",
+      "fix": "Rewrote 92→133 lines (24 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-19T18:59:27.854Z"
+    },
+    {
+      "id": "bug-074",
+      "timestamp": "2026-06-19T19:00:26.895Z",
+      "error_message": "Null/undefined access in ",
+      "file": "cli/validators/doc-quality.mjs",
+      "root_cause": "Property access on potentially null/undefined value",
+      "fix": "Added null safety (optional chaining or null check)",
+      "tags": [
+        "auto-detected",
+        "null-safety",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-19T19:00:26.895Z"
+    },
+    {
+      "id": "bug-075",
+      "timestamp": "2026-06-19T19:01:14.391Z",
+      "error_message": "Missing guard clause",
+      "file": "cli/commands/guard.mjs",
+      "root_cause": "No early return/throw for edge case: item.severity === 'error' && !showErr",
+      "fix": "Added guard clause: if (item.severity === 'error' && !showErr)",
+      "tags": [
+        "auto-detected",
+        "guard-clause",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-19T19:01:14.391Z"
+    },
+    {
+      "id": "bug-076",
+      "timestamp": "2026-06-19T19:01:51.613Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/commands/guard.mjs",
+      "root_cause": "4 lines replaced/restructured",
+      "fix": "Rewrote 9→26 lines (4 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-19T19:01:51.613Z"
+    },
+    {
+      "id": "bug-077",
+      "timestamp": "2026-06-19T19:02:04.155Z",
+      "error_message": "Wrong condition in logic",
+      "file": "cli/commands/explain.mjs",
+      "root_cause": "Condition was: if (!match)",
+      "fix": "Changed to: if (CODES[codeKey])",
+      "tags": [
+        "auto-detected",
+        "logic-fix",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-19T19:02:04.155Z"
+    },
+    {
+      "id": "bug-078",
+      "timestamp": "2026-06-19T19:05:57.706Z",
+      "error_message": "Wrong operator: || should be &&",
+      "file": "cli/validators/security.mjs",
+      "root_cause": "Used \"||\" instead of \"&&\"",
+      "fix": "Changed operator || → &&",
+      "tags": [
+        "auto-detected",
+        "operator-fix",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-19T19:05:57.706Z"
+    },
+    {
+      "id": "bug-079",
+      "timestamp": "2026-06-19T19:12:59.245Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/commands/score.mjs",
+      "root_cause": "59 lines replaced/restructured",
+      "fix": "Rewrote 65→3 lines (59 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-19T19:12:59.245Z"
+    },
+    {
+      "id": "bug-080",
+      "timestamp": "2026-06-19T19:13:23.491Z",
+      "error_message": "Missing error handling in detectTestRunner",
+      "file": "cli/commands/score.mjs",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-19T19:13:23.491Z"
+    },
+    {
+      "id": "bug-081",
+      "timestamp": "2026-06-19T19:13:28.639Z",
+      "error_message": "Wrong reference: runScoreInternal should be detectTestRunner",
+      "file": "tests/field-report-3.test.mjs",
+      "root_cause": "Used \"runScoreInternal\" instead of \"detectTestRunner\"",
+      "fix": "Changed runScoreInternal → detectTestRunner",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-19T19:13:28.639Z"
+    },
+    {
+      "id": "bug-082",
+      "timestamp": "2026-06-19T19:16:17.809Z",
+      "error_message": "Incorrect value in code",
+      "file": "README.md",
+      "root_cause": "Had `explain <warning>`",
+      "fix": "Changed to `explain <warning\\|CODE>`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-06-19T19:16:22.195Z"
+    },
+    {
+      "id": "bug-083",
+      "timestamp": "2026-06-19T19:16:35.517Z",
+      "error_message": "Incorrect value in code",
+      "file": "package.json",
+      "root_cause": "Had \"0.26.0\"",
+      "fix": "Changed to \"0.27.0\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "json"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-19T19:16:35.517Z"
+    },
+    {
+      "id": "bug-084",
+      "timestamp": "2026-06-19T19:16:39.073Z",
+      "error_message": "Incorrect value in code",
+      "file": "pyproject.toml",
+      "root_cause": "Had \"0.25.1\"",
+      "fix": "Changed to \"0.27.0\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "toml"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-19T19:16:39.073Z"
+    },
+    {
+      "id": "bug-085",
+      "timestamp": "2026-06-19T19:16:52.578Z",
+      "error_message": "Incorrect value in code",
+      "file": "extensions/spec-kit-docguard/extension.yml",
+      "root_cause": "Had \"0.25.1\"",
+      "fix": "Changed to \"0.27.0\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "yml"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-19T19:16:52.578Z"
+    },
+    {
+      "id": "bug-086",
+      "timestamp": "2026-06-19T20:05:00.000Z",
+      "error_message": "Security validator flags a validation-message string (e.g. password: \"New password must differ from recent passwords\") as a hardcoded password — a blocking false positive (LLM field report #3, item #1).",
+      "file": "cli/validators/security.mjs",
+      "root_cause": "The SEC password regex matches any quoted value 8+ chars after a password/passwd/pwd key, regardless of whether the value is natural-language copy vs an actual credential.",
+      "fix": "Added looksLikeProse(value): a multi-word natural-language value downgrades the finding to a LOW-confidence, suppressible, reportable warning (not a blocking error). Still surfaced — no false-green. Implemented on the new findings architecture (cli/findings.mjs) with stable code SEC001.",
+      "tags": ["security", "false-positive", "findings", "field-report-3"],
+      "related_bugs": ["bug-087"],
+      "occurrences": 1,
+      "last_seen": "2026-06-19T20:05:00.000Z"
+    },
+    {
+      "id": "bug-087",
+      "timestamp": "2026-06-19T20:06:00.000Z",
+      "error_message": "tests/security.test.mjs: 'should flag common hardcoded passwords and API keys' expected 2 errors, got 1 — a real single-token password \"SuperSecretPassword!\" was wrongly downgraded to a low-confidence warning.",
+      "file": "cli/validators/security.mjs",
+      "root_cause": "First cut of looksLikeProse treated ANY value ending in .!? as prose. Strong passwords commonly end in '!' — so a one-word secret was misclassified as natural language.",
+      "fix": "Terminal punctuation alone no longer reclassifies a value: prose now requires >=3 words, OR a 2-word fragment ending in .!?. A single token like 'SuperSecretPassword!' stays a blocking error. The existing security test caught it.",
+      "tags": ["security", "heuristic", "regression", "self-caught"],
+      "related_bugs": ["bug-086"],
+      "occurrences": 1,
+      "last_seen": "2026-06-19T20:06:00.000Z"
     }
   ]
 }

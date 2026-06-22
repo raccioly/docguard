@@ -2,14 +2,14 @@
   "version": 1,
   "created_at": "2026-05-26T15:31:59.491Z",
   "lifetime": {
-    "total_tokens_estimated": 737751,
-    "total_reads": 196,
-    "total_writes": 270,
-    "total_sessions": 17,
-    "anatomy_hits": 141,
-    "anatomy_misses": 53,
-    "repeated_reads_blocked": 96,
-    "estimated_savings_vs_bare_cli": 542467
+    "total_tokens_estimated": 834252,
+    "total_reads": 220,
+    "total_writes": 310,
+    "total_sessions": 19,
+    "anatomy_hits": 150,
+    "anatomy_misses": 66,
+    "repeated_reads_blocked": 103,
+    "estimated_savings_vs_bare_cli": 590034
   },
   "sessions": [
     {
@@ -3063,6 +3063,383 @@
         "writes_count": 1,
         "repeated_reads_blocked": 1,
         "anatomy_lookups": 1
+      }
+    },
+    {
+      "id": "session-2026-06-19-1328",
+      "started": "2026-06-19T17:28:04.465Z",
+      "ended": "2026-06-19T18:25:55.452Z",
+      "reads": [
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/cli/ensure-skills.mjs",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/ROADMAP.md",
+          "tokens_estimated": 1494,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/cli/commands/llms.mjs",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/cli/commands/guard.mjs",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [],
+      "totals": {
+        "input_tokens_estimated": 1494,
+        "output_tokens_estimated": 0,
+        "reads_count": 4,
+        "writes_count": 0,
+        "repeated_reads_blocked": 0,
+        "anatomy_lookups": 1
+      }
+    },
+    {
+      "id": "session-2026-06-19-1328",
+      "started": "2026-06-19T17:28:04.465Z",
+      "ended": "2026-06-19T19:22:06.373Z",
+      "reads": [
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/cli/ensure-skills.mjs",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/ROADMAP.md",
+          "tokens_estimated": 1494,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/cli/commands/llms.mjs",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/cli/commands/guard.mjs",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/cli/validators/security.mjs",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/cli/validator-markers.mjs",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/cli/validators/environment.mjs",
+          "tokens_estimated": 0,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/cli/validators/todo-tracking.mjs",
+          "tokens_estimated": 3644,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/cli/docguard.mjs",
+          "tokens_estimated": 8318,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/cli/commands/score.mjs",
+          "tokens_estimated": 10423,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/cli/validators/doc-quality.mjs",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/cli/commands/explain.mjs",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/cli/shared-source.mjs",
+          "tokens_estimated": 4641,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/cli/shared.mjs",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/tests/security.test.mjs",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/README.md",
+          "tokens_estimated": 7359,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/package.json",
+          "tokens_estimated": 446,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/pyproject.toml",
+          "tokens_estimated": 351,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/extensions/spec-kit-docguard/extension.yml",
+          "tokens_estimated": 1026,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/CHANGELOG.md",
+          "tokens_estimated": 39309,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/cli/findings.mjs",
+          "tokens_estimated": 2329,
+          "action": "create"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/cli/validators/security.mjs",
+          "tokens_estimated": 198,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/cli/validators/security.mjs",
+          "tokens_estimated": 399,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/cli/validators/security.mjs",
+          "tokens_estimated": 1687,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/cli/shared-source.mjs",
+          "tokens_estimated": 324,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/cli/shared-source.mjs",
+          "tokens_estimated": 99,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/cli/shared-source.mjs",
+          "tokens_estimated": 150,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/cli/validators/todo-tracking.mjs",
+          "tokens_estimated": 138,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/cli/validators/doc-quality.mjs",
+          "tokens_estimated": 125,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/cli/validators/doc-quality.mjs",
+          "tokens_estimated": 224,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/cli/commands/explain.mjs",
+          "tokens_estimated": 122,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/cli/commands/score.mjs",
+          "tokens_estimated": 674,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/cli/commands/guard.mjs",
+          "tokens_estimated": 261,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/cli/commands/guard.mjs",
+          "tokens_estimated": 432,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/cli/commands/guard.mjs",
+          "tokens_estimated": 221,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/cli/commands/guard.mjs",
+          "tokens_estimated": 467,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/cli/commands/explain.mjs",
+          "tokens_estimated": 22,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/cli/commands/explain.mjs",
+          "tokens_estimated": 304,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/cli/commands/feedback.mjs",
+          "tokens_estimated": 2057,
+          "action": "create"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/cli/docguard.mjs",
+          "tokens_estimated": 103,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/cli/docguard.mjs",
+          "tokens_estimated": 31,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/cli/docguard.mjs",
+          "tokens_estimated": 95,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/cli/docguard.mjs",
+          "tokens_estimated": 113,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/cli/docguard.mjs",
+          "tokens_estimated": 207,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/.github/ISSUE_TEMPLATE/docguard-feedback.md",
+          "tokens_estimated": 245,
+          "action": "create"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/cli/validators/security.mjs",
+          "tokens_estimated": 159,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/tests/field-report-3.test.mjs",
+          "tokens_estimated": 3552,
+          "action": "create"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/cli/commands/score.mjs",
+          "tokens_estimated": 60,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/cli/commands/score.mjs",
+          "tokens_estimated": 943,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/tests/field-report-3.test.mjs",
+          "tokens_estimated": 36,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/tests/field-report-3.test.mjs",
+          "tokens_estimated": 356,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/cli/validators/security.mjs",
+          "tokens_estimated": 78,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/README.md",
+          "tokens_estimated": 96,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/README.md",
+          "tokens_estimated": 107,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/README.md",
+          "tokens_estimated": 20,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/package.json",
+          "tokens_estimated": 7,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/pyproject.toml",
+          "tokens_estimated": 6,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/extensions/spec-kit-docguard/extension.yml",
+          "tokens_estimated": 6,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/CHANGELOG.md",
+          "tokens_estimated": 1259,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/crazy-hofstadter-94c5a8/ROADMAP.md",
+          "tokens_estimated": 284,
+          "action": "edit"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 77011,
+        "output_tokens_estimated": 17996,
+        "reads_count": 20,
+        "writes_count": 40,
+        "repeated_reads_blocked": 7,
+        "anatomy_lookups": 8
       }
     }
   ],
