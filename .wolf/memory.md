@@ -352,3 +352,67 @@
 
 | Time | Action | File(s) | Outcome | ~Tokens |
 |------|--------|---------|---------|--------|
+
+## Session: 2026-06-22 17:25
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 17:27 | Edited cli/validators/architecture.mjs | added 1 condition(s) | ~240 |
+| 17:27 | Edited cli/validators/architecture.mjs | modified extractImports() | ~317 |
+| 17:28 | Edited cli/validators/architecture.mjs | modified for() | ~66 |
+| 17:29 | Created tests/field-report-3-deferred.test.mjs | — | ~632 |
+| 17:31 | Edited templates/SECURITY.md.template | 3→8 lines | ~66 |
+| 17:32 | Edited templates/ENVIRONMENT.md.template | 3→8 lines | ~76 |
+| 17:32 | Edited templates/TEST-SPEC.md.template | 3→8 lines | ~69 |
+| 17:32 | Edited templates/REQUIREMENTS.md.template | 3→5 lines | ~41 |
+| 17:32 | Edited cli/commands/init.mjs | added 1 condition(s) | ~258 |
+| 17:32 | Edited cli/commands/init.mjs | added 1 condition(s) | ~186 |
+| 17:33 | Edited cli/commands/explain.mjs | modified since() | ~426 |
+| 17:34 | Edited tests/field-report-3-deferred.test.mjs | 7→10 lines | ~120 |
+| 17:34 | Edited tests/field-report-3-deferred.test.mjs | modified for() | ~467 |
+| 17:36 | Edited cli/validators/api-surface.mjs | added 2 condition(s) | ~627 |
+| 17:36 | Edited cli/validators/api-surface.mjs | added 3 condition(s) | ~434 |
+| 17:37 | Edited tests/field-report-3-deferred.test.mjs | modified openapi() | ~157 |
+| 17:37 | Edited tests/field-report-3-deferred.test.mjs | expanded (+41 lines) | ~566 |
+| 17:38 | Edited cli/commands/explain.mjs | 7→8 lines | ~376 |
+| 17:41 | Created cli/commands/sync-tests.mjs | — | ~3191 |
+| 17:42 | Edited cli/commands/sync.mjs | added 1 import(s) | ~67 |
+| 17:42 | Edited cli/commands/sync.mjs | added 1 condition(s) | ~110 |
+| 17:42 | Edited cli/docguard.mjs | added 1 condition(s) | ~85 |
+| 17:43 | Edited cli/docguard.mjs | 8→9 lines | ~182 |
+| 17:44 | Edited tests/field-report-3-deferred.test.mjs | added 1 import(s) | ~57 |
+| 17:44 | Edited tests/field-report-3-deferred.test.mjs | expanded (+55 lines) | ~745 |
+| 17:46 | Created cli/scanners/semantic-claims.mjs | — | ~1752 |
+| 17:47 | Created cli/commands/verify.mjs | — | ~833 |
+| 17:47 | Edited cli/docguard.mjs | added 1 import(s) | ~43 |
+| 17:47 | Edited cli/docguard.mjs | added 1 condition(s) | ~110 |
+| 17:47 | Edited cli/docguard.mjs | 7→9 lines | ~110 |
+| 17:47 | Edited cli/docguard.mjs | modified 27() | ~163 |
+| 17:47 | Edited cli/docguard.mjs | 2→3 lines | ~104 |
+| 17:48 | Edited cli/docguard.mjs | expanded (+9 lines) | ~336 |
+| 17:48 | Edited cli/scanners/semantic-claims.mjs | modified findCitedCode() | ~82 |
+| 17:49 | Edited tests/field-report-3-deferred.test.mjs | added 1 import(s) | ~46 |
+| 17:49 | Edited tests/field-report-3-deferred.test.mjs | expanded (+46 lines) | ~708 |
+
+## Session: 2026-06-22 17:52
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 17:57 | Edited cli/commands/guard.mjs | modified if() | ~212 |
+| 17:57 | Edited cli/commands/guard.mjs | 5→6 lines | ~91 |
+
+## Session: 2026-06-22 19:10
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 19:12 | Edited .docguard.json | 6→6 lines | ~56 |
+| 19:12 | Edited README.md | inline fix | ~90 |
+| 19:12 | Edited README.md | 16 → 17 | ~18 |
+| 19:12 | Edited README.md | 2→3 lines | ~138 |
+| 19:12 | Edited package.json | 0.27 → 0.28 | ~7 |
+| 19:12 | Edited pyproject.toml | "0.27.0" → "0.28.0" | ~5 |
+| 19:12 | Edited extensions/spec-kit-docguard/extension.yml | "0.27.0" → "0.28.0" | ~6 |
+| 19:13 | Edited CHANGELOG.md | expanded (+51 lines) | ~837 |
+| 19:13 | Edited ROADMAP.md | 3→4 lines | ~203 |
+| 19:16 | Session end: 9 writes across 7 files (.docguard.json, README.md, package.json, pyproject.toml, extension.yml) | 1 reads | ~1974 tok |
+| 19:19 | Session end: 9 writes across 7 files (.docguard.json, README.md, package.json, pyproject.toml, extension.yml) | 1 reads | ~1974 tok |

@@ -1429,8 +1429,15 @@
       "file": "cli/validators/security.mjs",
       "root_cause": "The SEC password regex matches any quoted value 8+ chars after a password/passwd/pwd key, regardless of whether the value is natural-language copy vs an actual credential.",
       "fix": "Added looksLikeProse(value): a multi-word natural-language value downgrades the finding to a LOW-confidence, suppressible, reportable warning (not a blocking error). Still surfaced — no false-green. Implemented on the new findings architecture (cli/findings.mjs) with stable code SEC001.",
-      "tags": ["security", "false-positive", "findings", "field-report-3"],
-      "related_bugs": ["bug-087"],
+      "tags": [
+        "security",
+        "false-positive",
+        "findings",
+        "field-report-3"
+      ],
+      "related_bugs": [
+        "bug-087"
+      ],
       "occurrences": 1,
       "last_seen": "2026-06-19T20:05:00.000Z"
     },
@@ -1441,10 +1448,313 @@
       "file": "cli/validators/security.mjs",
       "root_cause": "First cut of looksLikeProse treated ANY value ending in .!? as prose. Strong passwords commonly end in '!' — so a one-word secret was misclassified as natural language.",
       "fix": "Terminal punctuation alone no longer reclassifies a value: prose now requires >=3 words, OR a 2-word fragment ending in .!?. A single token like 'SuperSecretPassword!' stays a blocking error. The existing security test caught it.",
-      "tags": ["security", "heuristic", "regression", "self-caught"],
-      "related_bugs": ["bug-086"],
+      "tags": [
+        "security",
+        "heuristic",
+        "regression",
+        "self-caught"
+      ],
+      "related_bugs": [
+        "bug-086"
+      ],
       "occurrences": 1,
       "last_seen": "2026-06-19T20:06:00.000Z"
+    },
+    {
+      "id": "bug-088",
+      "timestamp": "2026-06-22T21:27:36.030Z",
+      "error_message": "Missing await",
+      "file": "cli/validators/architecture.mjs",
+      "root_cause": "Async call without await — returned Promise instead of value",
+      "fix": "Added await to async call",
+      "tags": [
+        "auto-detected",
+        "async-fix",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-22T21:27:36.030Z"
+    },
+    {
+      "id": "bug-089",
+      "timestamp": "2026-06-22T21:27:51.814Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/validators/architecture.mjs",
+      "root_cause": "6 lines replaced/restructured",
+      "fix": "Rewrote 24→31 lines (6 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-22T21:27:51.814Z"
+    },
+    {
+      "id": "bug-090",
+      "timestamp": "2026-06-22T21:28:15.213Z",
+      "error_message": "Wrong condition in logic",
+      "file": "cli/validators/architecture.mjs",
+      "root_cause": "Condition was: if (!imp.startsWith('.')",
+      "fix": "Changed to: if (!spec.startsWith('.')",
+      "tags": [
+        "auto-detected",
+        "logic-fix",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-22T21:28:15.213Z"
+    },
+    {
+      "id": "bug-091",
+      "timestamp": "2026-06-22T21:32:49.288Z",
+      "error_message": "Missing guard clause",
+      "file": "cli/commands/init.mjs",
+      "root_cause": "No early return/throw for edge case: h1 === -1",
+      "fix": "Added guard clause: if (h1 === -1)",
+      "tags": [
+        "auto-detected",
+        "guard-clause",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-22T21:32:49.288Z"
+    },
+    {
+      "id": "bug-092",
+      "timestamp": "2026-06-22T21:33:09.031Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/commands/explain.mjs",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 11→12 lines (3 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-22T21:33:09.031Z"
+    },
+    {
+      "id": "bug-093",
+      "timestamp": "2026-06-22T21:36:02.265Z",
+      "error_message": "Missing error handling in computeSpecVsRouteDrift",
+      "file": "cli/validators/api-surface.mjs",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-22T21:36:02.265Z"
+    },
+    {
+      "id": "bug-094",
+      "timestamp": "2026-06-22T21:36:20.504Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/validators/api-surface.mjs",
+      "root_cause": "7 lines replaced/restructured",
+      "fix": "Rewrote 13→33 lines (7 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-22T21:36:20.504Z"
+    },
+    {
+      "id": "bug-095",
+      "timestamp": "2026-06-22T21:38:26.085Z",
+      "error_message": "Missing error handling in unknown",
+      "file": "cli/commands/explain.mjs",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-22T21:38:26.085Z"
+    },
+    {
+      "id": "bug-096",
+      "timestamp": "2026-06-22T21:42:14.555Z",
+      "error_message": "Missing guard clause",
+      "file": "cli/commands/sync.mjs",
+      "root_cause": "No early return/throw for edge case: flags.tests",
+      "fix": "Added guard clause: if (flags.tests)",
+      "tags": [
+        "auto-detected",
+        "guard-clause",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-22T21:42:14.555Z"
+    },
+    {
+      "id": "bug-097",
+      "timestamp": "2026-06-22T21:43:13.482Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/docguard.mjs",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 8→9 lines (3 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-22T21:43:13.482Z"
+    },
+    {
+      "id": "bug-098",
+      "timestamp": "2026-06-22T21:48:51.090Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/scanners/semantic-claims.mjs",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 3→5 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-22T21:48:51.090Z"
+    },
+    {
+      "id": "bug-099",
+      "timestamp": "2026-06-22T21:57:40.130Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/commands/guard.mjs",
+      "root_cause": "4 lines replaced/restructured",
+      "fix": "Rewrote 9→14 lines (4 removed) | Also: if (data.effectiveErrors > 0) process.exit(1);; if (data.effectiveWarnings > 0) process.exit(2);",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-06-22T21:57:52.074Z"
+    },
+    {
+      "id": "bug-100",
+      "timestamp": "2026-06-22T23:12:27.938Z",
+      "error_message": "Incorrect value in code",
+      "file": "README.md",
+      "root_cause": "Had \"Commands (16)\"",
+      "fix": "Changed to \"Commands (17)\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-22T23:12:27.938Z"
+    },
+    {
+      "id": "bug-101",
+      "timestamp": "2026-06-22T23:12:41.080Z",
+      "error_message": "Incorrect value in code",
+      "file": "package.json",
+      "root_cause": "Had \"0.27.0\"",
+      "fix": "Changed to \"0.28.0\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "json"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-22T23:12:41.080Z"
+    },
+    {
+      "id": "bug-102",
+      "timestamp": "2026-06-22T23:12:44.341Z",
+      "error_message": "Incorrect value in code",
+      "file": "pyproject.toml",
+      "root_cause": "Had \"0.27.0\"",
+      "fix": "Changed to \"0.28.0\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "toml"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-22T23:12:44.341Z"
+    },
+    {
+      "id": "bug-103",
+      "timestamp": "2026-06-22T23:12:47.998Z",
+      "error_message": "Incorrect value in code",
+      "file": "extensions/spec-kit-docguard/extension.yml",
+      "root_cause": "Had \"0.27.0\"",
+      "fix": "Changed to \"0.28.0\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "yml"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-22T23:12:47.998Z"
+    },
+    {
+      "id": "bug-104",
+      "timestamp": "2026-06-22T23:13:08.031Z",
+      "error_message": "Missing await",
+      "file": "CHANGELOG.md",
+      "root_cause": "Async call without await — returned Promise instead of value",
+      "fix": "Added await to async call",
+      "tags": [
+        "auto-detected",
+        "async-fix",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-22T23:13:08.031Z"
+    },
+    {
+      "id": "bug-105",
+      "timestamp": "2026-06-22T23:40:00.000Z",
+      "error_message": "Tests field-report-2-cli #1 and explain-coverage hook failed with 'Unterminated string in JSON at position 8178' when JSON.parse-ing `docguard guard --format json` stdout.",
+      "file": "cli/commands/guard.mjs",
+      "root_cause": "runGuard's JSON path did `console.log(JSON.stringify(data)) ; process.exit(code)`. A payload over ~8 KB written to a PIPE flushes asynchronously, so the immediate process.exit() truncated it mid-string. The repo's own report (7.3 KB) stayed under the boundary; a fixture's report (8.2 KB) crossed it. v0.28 additions to the guard JSON tipped this fixture over the edge, exposing the latent race. Writing to a FILE (synchronous) never reproduced it.",
+      "fix": "Set `process.exitCode = code` and `process.stdout.write(json + '\\n')` then RETURN, instead of process.exit(). Node drains stdout and exits naturally with the code. Applied to both the JSON branch and the final text-path exit. Real CI-correctness bug: a >8 KB --format json report would be silently truncated for any pipe consumer.",
+      "tags": ["guard", "json", "process-exit", "flush-race", "ci-correctness", "field-report-3"],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-22T23:40:00.000Z"
+    },
+    {
+      "id": "bug-106",
+      "timestamp": "2026-06-22T23:41:00.000Z",
+      "error_message": "Architecture validator flagged a circular dependency that is broken at runtime by `await import()` (field report #2).",
+      "file": "cli/validators/architecture.mjs",
+      "root_cause": "extractImports lumped ES import, dynamic import(), and require() into one list feeding both graph.edges (layer checks) and graph.fileMap (cycle DFS). A dynamic import is NOT a load-time edge — it's the canonical cycle break — but was counted as one.",
+      "fix": "extractImports now returns { spec, dynamic }. buildImportGraph records the dynamic flag on graph.edges but only pushes STATIC edges into fileMap (cycle adjacency). Cycle detection no longer sees dynamic edges; layer-boundary checks still do.",
+      "tags": ["architecture", "import-cycle", "dynamic-import", "false-positive", "field-report-3"],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-22T23:41:00.000Z"
     }
   ]
 }
