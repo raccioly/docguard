@@ -132,8 +132,8 @@ function getCodeCommitsSince(date, dir) {
  */
 function isGitRepo(dir) {
   try {
-    execSync('git rev-parse --is-inside-work-tree', {
-      cwd: dir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe']
+    execFileSync('git', ['rev-parse', '--is-inside-work-tree'], {
+      cwd: dir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore']
     });
     return true;
   } catch {
@@ -146,8 +146,8 @@ function isGitRepo(dir) {
  */
 function getTotalCommits(dir) {
   try {
-    return parseInt(execSync('git rev-list --count HEAD', {
-      cwd: dir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe']
+    return parseInt(execFileSync('git', ['rev-list', '--count', 'HEAD'], {
+      cwd: dir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore']
     }).trim()) || 0;
   } catch {
     return 0;
