@@ -188,15 +188,33 @@ function diffTests(dir, config) {
     };
   });
 
-  const matches = (matcher, codeRel) => {
-    const subject = matcher.hasSlash ? codeRel : basename(codeRel);
-    return matcher.rx.test(subject);
-  };
+  // Precompute basenames to avoid O(N*M) redundant string operations
+  const codeObjs = codeArr.map(c => ({
+    path: c,
+    base: basename(c),
+    matchedByDoc: false
+  }));
+
+  const matchedDocs = new Set();
+
+  for (const m of docMatchers) {
+    let docMatched = false;
+    for (const c of codeObjs) {
+      const subject = m.hasSlash ? c.path : c.base;
+      if (m.rx.test(subject)) {
+        docMatched = true;
+        c.matchedByDoc = true;
+      }
+    }
+    if (docMatched) {
+      matchedDocs.add(m.original);
+    }
+  }
 
   return {
     title: 'Test Files',
-    onlyInDocs: docMatchers.filter(m => !codeArr.some(c => matches(m, c))).map(m => m.original),
-    onlyInCode: codeArr.filter(c => !docMatchers.some(m => matches(m, c))),
+    onlyInDocs: docMatchers.filter(m => !matchedDocs.has(m.original)).map(m => m.original),
+    onlyInCode: codeObjs.filter(c => !c.matchedByDoc).map(c => c.path),
   };
 }
 
