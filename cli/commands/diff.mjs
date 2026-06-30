@@ -348,8 +348,9 @@ function diffTests(dir, config = {}) {
   // Glob-aware matching (documented entries are often patterns or basenames).
   const codeArr = [...codeTests];
 
-  // PERFORMANCE OPTIMIZATION: Pre-compile regular expressions to avoid O(N*M)
-  // instantiation bottlenecks inside the nested .filter and .some loops below.
+  // PERFORMANCE OPTIMIZATION: Pre-compile regular expressions and pre-compute basenames
+  // outside of the loop to prevent O(N*M) overhead from redundant regex compilation
+  // and string manipulation during cross-comparison.
   const docMatchers = [...docTests].map(docEntry => {
     const entry = String(docEntry).trim();
     const hasSlash = entry.includes('/');
@@ -363,17 +364,30 @@ function diffTests(dir, config = {}) {
     };
   });
 
-  const matches = (matcher, codeRel) => {
-    const subject = matcher.hasSlash ? codeRel : basename(codeRel);
-    return matcher.rx.test(subject);
-  };
+  const codeObjects = codeArr.map(c => ({
+    original: c,
+    basename: basename(c)
+  }));
+
+  const matchedDocs = new Set();
+  const matchedCode = new Set();
+
+  for (const m of docMatchers) {
+    for (const c of codeObjects) {
+      const subject = m.hasSlash ? c.original : c.basename;
+      if (m.rx.test(subject)) {
+        matchedDocs.add(m);
+        matchedCode.add(c);
+      }
+    }
+  }
 
   return {
     title: 'Test Files',
     icon: '🧪',
-    onlyInDocs: docMatchers.filter(m => !codeArr.some(c => matches(m, c))).map(m => m.original),
-    onlyInCode: codeArr.filter(c => !docMatchers.some(m => matches(m, c))),
-    matched: docMatchers.filter(m => codeArr.some(c => matches(m, c))).map(m => m.original),
+    onlyInDocs: docMatchers.filter(m => !matchedDocs.has(m)).map(m => m.original),
+    onlyInCode: codeObjects.filter(c => !matchedCode.has(c)).map(c => c.original),
+    matched: docMatchers.filter(m => matchedDocs.has(m)).map(m => m.original),
   };
 }
 
