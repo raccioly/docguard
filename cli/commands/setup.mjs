@@ -21,7 +21,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync } from 
 import { resolve, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createInterface } from 'node:readline';
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { c, CURRENT_SCHEMA_VERSION } from '../shared.mjs';
 import { ensureSkills, detectAgentMode, isSpecKitInitialized, getDetectedAgent } from '../ensure-skills.mjs';
 
@@ -74,8 +74,11 @@ function detectProjectType(dir) {
 
 function isCliAvailable(name) {
   try {
-    const cmd = process.platform === 'win32' ? `where ${name}` : `which ${name}`;
-    execSync(`${cmd} 2>/dev/null`, { encoding: 'utf-8', timeout: 3000 });
+    if (process.platform === 'win32') {
+      execFileSync('cmd.exe', ['/c', 'where', name], { encoding: 'utf-8', timeout: 3000, stdio: ['pipe', 'pipe', 'ignore'] });
+    } else {
+      execFileSync('which', [name], { encoding: 'utf-8', timeout: 3000, stdio: ['pipe', 'pipe', 'ignore'] });
+    }
     return true;
   } catch {
     return false;
