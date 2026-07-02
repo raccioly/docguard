@@ -363,17 +363,32 @@ function diffTests(dir, config = {}) {
     };
   });
 
-  const matches = (matcher, codeRel) => {
-    const subject = matcher.hasSlash ? codeRel : basename(codeRel);
-    return matcher.rx.test(subject);
-  };
+  // PERFORMANCE OPTIMIZATION: Use a single-pass cross-comparison with Sets
+  // to avoid redundant O(N*M) evaluations across multiple .filter() chains.
+  const codeItems = codeArr.map(c => ({
+    original: c,
+    base: basename(c)
+  }));
+
+  const matchedDocs = new Set();
+  const matchedCode = new Set();
+
+  for (const doc of docMatchers) {
+    for (const code of codeItems) {
+      const subject = doc.hasSlash ? code.original : code.base;
+      if (doc.rx.test(subject)) {
+        matchedDocs.add(doc.original);
+        matchedCode.add(code.original);
+      }
+    }
+  }
 
   return {
     title: 'Test Files',
     icon: '🧪',
-    onlyInDocs: docMatchers.filter(m => !codeArr.some(c => matches(m, c))).map(m => m.original),
-    onlyInCode: codeArr.filter(c => !docMatchers.some(m => matches(m, c))),
-    matched: docMatchers.filter(m => codeArr.some(c => matches(m, c))).map(m => m.original),
+    onlyInDocs: docMatchers.filter(m => !matchedDocs.has(m.original)).map(m => m.original),
+    onlyInCode: codeItems.filter(c => !matchedCode.has(c.original)).map(c => c.original),
+    matched: docMatchers.filter(m => matchedDocs.has(m.original)).map(m => m.original),
   };
 }
 
