@@ -76,6 +76,16 @@
       "count": 1,
       "tokens": 0,
       "first_read": "2026-07-03T16:21:34.216Z"
+    },
+    "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/docs/ai-integration.md": {
+      "count": 1,
+      "tokens": 0,
+      "first_read": "2026-07-03T16:29:19.298Z"
+    },
+    "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/DRIFT-LOG.md": {
+      "count": 1,
+      "tokens": 583,
+      "first_read": "2026-07-03T20:20:37.493Z"
     }
   },
   "files_written": [
@@ -222,12 +232,36 @@
       "action": "edit",
       "tokens": 390,
       "at": "2026-07-03T16:22:28.110Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/docs/ai-integration.md",
+      "action": "create",
+      "tokens": 2313,
+      "at": "2026-07-03T20:18:06.530Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/docs-canonical/ARCHITECTURE.md",
+      "action": "edit",
+      "tokens": 307,
+      "at": "2026-07-03T20:19:52.357Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/docs-canonical/DATA-MODEL.md",
+      "action": "edit",
+      "tokens": 192,
+      "at": "2026-07-03T20:20:13.746Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/DRIFT-LOG.md",
+      "action": "edit",
+      "tokens": 236,
+      "at": "2026-07-03T20:20:48.105Z"
     }
   ],
   "edit_counts": {
     "cli/commands/agents.mjs": 1,
     "tests/agents-sync.test.mjs": 1,
-    "docs-canonical/DATA-MODEL.md": 2,
+    "docs-canonical/DATA-MODEL.md": 3,
     "docs-canonical/REQUIREMENTS.md": 1,
     "CHANGELOG.md": 2,
     "cli/commands/mcp.mjs": 1,
@@ -235,10 +269,12 @@
     "action.yml": 4,
     "tests/mcp.test.mjs": 1,
     "README.md": 5,
-    "docs-canonical/ARCHITECTURE.md": 1
+    "docs-canonical/ARCHITECTURE.md": 2,
+    "docs/ai-integration.md": 1,
+    "DRIFT-LOG.md": 1
   },
-  "anatomy_hits": 11,
-  "anatomy_misses": 4,
+  "anatomy_hits": 12,
+  "anatomy_misses": 5,
   "repeated_reads_warned": 6,
   "cerebrum_warnings": 0,
   "stop_count": 3

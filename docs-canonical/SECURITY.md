@@ -4,7 +4,7 @@
 
 <!-- docguard:version 0.6.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-05-31 -->
+<!-- docguard:last-reviewed 2026-07-03 -->
 
 | Metadata | Value |
 |----------|-------|

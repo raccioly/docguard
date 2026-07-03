@@ -744,3 +744,7 @@
 | 12:22 | Edited README.md | modified feedback() | ~315 |
 | 12:22 | Edited CHANGELOG.md | expanded (+18 lines) | ~364 |
 | 12:23 | Session end: 24 writes across 11 files (agents.mjs, agents-sync.test.mjs, DATA-MODEL.md, REQUIREMENTS.md, CHANGELOG.md) | 15 reads | ~88230 tok |
+| 16:18 | Created docs/ai-integration.md | — | ~2159 |
+| 16:19 | Edited docs-canonical/ARCHITECTURE.md | 4→4 lines | ~286 |
+| 16:20 | Edited docs-canonical/DATA-MODEL.md | 1→4 lines | ~179 |
+| 16:20 | Edited DRIFT-LOG.md | 1→2 lines | ~220 |

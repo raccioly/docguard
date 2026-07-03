@@ -2,7 +2,7 @@
 
 <!-- docguard:version 0.6.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-05-31 -->
+<!-- docguard:last-reviewed 2026-07-03 -->
 
 | Metadata | Value |
 |----------|-------|
@@ -24,10 +24,10 @@ It targets development teams and AI coding agents that need to maintain document
 | Component | Responsibility | Location | Key Files |
 |-----------|---------------|----------|-----------|
 | **CLI Entry Point** | Argument parsing, config loading, command routing | `cli/` | `docguard.mjs` |
-| **Commands** | User-facing commands (the Daily 5 — init/guard/diff/sync/score — plus situational tools: diagnose, fix, generate, trace, explain, memory, upgrade, watch, demo, and `init --with` scaffolders) | `cli/commands/` | `*.mjs` |
-| **Validators** | 24 independent validation modules that check specific aspects of CDD compliance | `cli/validators/` | `*.mjs` |
-| **Scanners** | 11 project file scanners for test discovery, route detection, schema mapping, CDK/IaC, doc-tools, integrations, frontend surface, spec-kit, memory-plan | `cli/scanners/` | `*.mjs` |
-| **Writers** | Deterministic doc-mutation modules — section-addressable edits, mechanical fix registry, API-Reference writer (no LLM) | `cli/writers/` | `mechanical.mjs`, `sections.mjs`, `api-reference.mjs` |
+| **Commands** | User-facing commands (the Daily 5 — init/guard/diff/sync/score — plus situational tools: diagnose, fix, generate, trace, explain, verify, feedback, memory, agent, mcp, upgrade, watch, demo, and `init --with` scaffolders) | `cli/commands/` | `*.mjs` |
+| **Validators** | 24 independent validation modules that check specific aspects of CDD compliance — all emitting structured findings with stable codes (the `CODES` registry in `findings.mjs`) | `cli/validators/` | `*.mjs` |
+| **Scanners** | 16 project file scanners for test discovery, route detection, schema mapping, CDK/IaC, doc-tools, integrations, frontend surface, spec-kit, memory-plan, semantic claims, agent readability | `cli/scanners/` | `*.mjs` |
+| **Writers** | Deterministic doc-mutation and output modules — section-addressable edits, mechanical fix registry, API-Reference writer, generate I/O + doc builders (split from generate.mjs), SARIF emitter (no LLM) | `cli/writers/` | `mechanical.mjs`, `sections.mjs`, `api-reference.mjs`, `generate-io.mjs`, `doc-generators.mjs`, `sarif.mjs` |
 | **Config** | Configuration loading — defaults, `.docguard.json` merge, profile presets, project-type detection (extracted from the entry point to keep the import graph acyclic) | `cli/` | `config.mjs` |
 | **Shared** | Cross-cutting utilities — ignore/glob filters, source-root resolution, git helpers, and the shared doc→code trace patterns used by both `trace` and the Traceability validator | `cli/` | `shared-ignore.mjs`, `shared-source.mjs`, `shared-git.mjs`, `shared-trace-patterns.mjs`, `shared.mjs` |
 | **Templates** | Document skeletons (ARCHITECTURE, SECURITY, etc.) and slash command files for AI agents | `templates/` | `*.template`, `commands/*.md` |
