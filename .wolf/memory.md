@@ -416,3 +416,331 @@
 | 19:13 | Edited ROADMAP.md | 3→4 lines | ~203 |
 | 19:16 | Session end: 9 writes across 7 files (.docguard.json, README.md, package.json, pyproject.toml, extension.yml) | 1 reads | ~1974 tok |
 | 19:19 | Session end: 9 writes across 7 files (.docguard.json, README.md, package.json, pyproject.toml, extension.yml) | 1 reads | ~1974 tok |
+
+## Session: 2026-06-23 23:14
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-06-23 23:33
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 23:40 | Edited cli/scanners/semantic-claims.mjs | expanded (+6 lines) | ~272 |
+| 23:40 | Edited cli/validators/metrics-consistency.mjs | added 2 condition(s) | ~673 |
+| 23:40 | Edited cli/validators/metrics-consistency.mjs | modified for() | ~48 |
+| 23:41 | Edited cli/validators/metrics-consistency.mjs | modified 2() | ~168 |
+| 23:41 | Edited cli/validators/metrics-consistency.mjs | 8→8 lines | ~147 |
+| 23:41 | Edited cli/validators/metrics-consistency.mjs | added error handling | ~642 |
+| 23:41 | Edited cli/commands/score.mjs | added 1 import(s) | ~63 |
+| 23:42 | Edited cli/commands/score.mjs | added error handling | ~637 |
+| 23:42 | Edited cli/commands/score.mjs | modified for() | ~207 |
+| 23:42 | Edited cli/commands/guard.mjs | added 1 import(s) | ~159 |
+| 23:43 | Edited cli/commands/guard.mjs | added error handling | ~766 |
+| 23:43 | Edited cli/commands/guard.mjs | added error handling | ~230 |
+| 23:43 | Edited cli/commands/guard.mjs | 3→5 lines | ~28 |
+| 23:43 | Edited cli/commands/guard.mjs | added 4 condition(s) | ~507 |
+| 23:45 | Edited cli/commands/guard.mjs | 3→7 lines | ~150 |
+| 23:45 | Edited cli/commands/guard.mjs | modified computeDocCoverage() | ~298 |
+| 23:45 | Edited cli/commands/guard.mjs | added 1 condition(s) | ~325 |
+| 23:47 | Edited cli/validators/metrics-consistency.mjs | 8→9 lines | ~67 |
+| 23:47 | Edited cli/validators/metrics-consistency.mjs | inline fix | ~29 |
+| 23:47 | Edited cli/validators/metrics-consistency.mjs | 4→7 lines | ~83 |
+| 23:50 | Edited tests/metrics-consistency.test.mjs | modified for() | ~1144 |
+| 23:50 | Edited schemas/docguard-config.schema.json | modified collections() | ~279 |
+| 23:51 | Edited CHANGELOG.md | expanded (+46 lines) | ~848 |
+| 23:55 | Session end: 23 writes across 7 files (semantic-claims.mjs, metrics-consistency.mjs, score.mjs, guard.mjs, metrics-consistency.test.mjs) | 7 reads | ~75654 tok |
+
+## Session: 2026-06-23 00:28
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-06-23 10:31
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-06-23 15:44
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 15:48 | Edited cli/shared.mjs | added error handling | ~542 |
+| 15:48 | Edited cli/validators/metrics-consistency.mjs | inline fix | ~19 |
+| 15:48 | Edited cli/validators/metrics-consistency.mjs | modified 29() | ~268 |
+| 15:48 | Edited cli/commands/guard.mjs | inline fix | ~24 |
+| 15:48 | Edited cli/commands/guard.mjs | 7→3 lines | ~62 |
+| 15:48 | Edited cli/commands/guard.mjs | modified for() | ~282 |
+| 15:49 | Edited cli/shared.mjs | modified resolveDocDirs() | ~326 |
+| 15:50 | Edited tests/metrics-consistency.test.mjs | added error handling | ~1191 |
+| 15:51 | Edited schemas/docguard-config.schema.json | modified collections() | ~505 |
+| 15:51 | Edited CHANGELOG.md | expanded (+13 lines) | ~288 |
+| 15:51 | Edited CHANGELOG.md | expanded (+15 lines) | ~352 |
+| 15:53 | Session end: 11 writes across 6 files (shared.mjs, metrics-consistency.mjs, guard.mjs, metrics-consistency.test.mjs, docguard-config.schema.json) | 5 reads | ~55898 tok |
+
+## Session: 2026-07-03 21:50
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 22:13 | Edited docs-canonical/SURFACE-AUDIT.md | expanded (+9 lines) | ~266 |
+| 22:13 | Edited pyproject.toml | "The enforcement tool for " → "The enforcement tool for " | ~48 |
+| 22:13 | Edited STANDARD.md | expanded (+10 lines) | ~313 |
+| 22:14 | Edited README.md | reduced (-21 lines) | ~128 |
+| 22:15 | Edited README.md | expanded (+32 lines) | ~649 |
+| 22:15 | Edited README.md | 15→16 lines | ~148 |
+| 22:15 | Edited ROADMAP.md | 6→10 lines | ~143 |
+| 22:15 | Edited ROADMAP.md | "npx docguard" → "npx docguard-cli" | ~19 |
+| 22:15 | Edited ROADMAP.md | inline fix | ~12 |
+| 22:15 | Edited ROADMAP.md | inline fix | ~9 |
+| 22:16 | Edited CONTRIBUTING.md | 9→13 lines | ~165 |
+| 22:16 | Edited CONTRIBUTING.md | modified 2() | ~419 |
+| 22:18 | Edited cli/shared-ignore.mjs | 2→2 lines | ~47 |
+| 22:18 | Edited cli/shared-ignore.mjs | added 6 condition(s) | ~552 |
+| 22:18 | Edited cli/shared-ignore.mjs | added error handling | ~1071 |
+| 22:19 | Edited cli/validators/metrics-consistency.mjs | added 1 import(s) | ~111 |
+| 22:19 | Edited cli/validators/metrics-consistency.mjs | countGlob() → countGlobFiles() | ~95 |
+| 22:19 | Edited cli/validators/metrics-consistency.mjs | removed 88 lines | ~52 |
+| 22:19 | Edited cli/validators/metrics-consistency.mjs | 2→3 lines | ~78 |
+| 22:20 | Edited cli/commands/guard.mjs | modified collectMarkdown() | ~336 |
+| 22:20 | Edited cli/commands/guard.mjs | 3→2 lines | ~37 |
+| 22:20 | Edited cli/commands/guard.mjs | added 1 import(s) | ~166 |
+| 22:24 | Edited cli/shared-ignore.mjs | modified walkFiles() | ~278 |
+| 22:25 | Edited cli/validators/drift.mjs | inline fix | ~21 |
+| 22:25 | Edited cli/validators/drift.mjs | modified walkDir() | ~93 |
+| 22:25 | Edited cli/validators/security.mjs | inline fix | ~25 |
+| 22:25 | Edited cli/validators/security.mjs | modified walkDir() | ~82 |
+| 22:26 | Edited cli/validators/schema-sync.mjs | added 1 import(s) | ~74 |
+| 22:26 | Edited cli/validators/schema-sync.mjs | modified scanSchemaDir() | ~69 |
+| 22:26 | Edited cli/validators/metadata-sync.mjs | added 1 import(s) | ~85 |
+| 22:26 | Edited cli/validators/metadata-sync.mjs | modified walkFiles() | ~47 |
+| 22:26 | Edited cli/validators/docs-coverage.mjs | inline fix | ~22 |
+| 22:26 | Edited cli/validators/docs-coverage.mjs | modified walkFiles() | ~47 |
+| 22:26 | Edited cli/validators/docs-sync.mjs | inline fix | ~21 |
+| 22:26 | Edited cli/validators/docs-sync.mjs | modified getFilesRecursive() | ~103 |
+| 22:26 | Edited cli/validators/traceability.mjs | added 1 import(s) | ~82 |
+| 22:26 | Edited cli/validators/traceability.mjs | modified scanDir() | ~134 |
+| 22:26 | Edited cli/validators/docs-diff.mjs | inline fix | ~25 |
+| 22:26 | Edited cli/validators/docs-diff.mjs | reduced (-15 lines) | ~148 |
+| 22:26 | Edited cli/validators/docs-diff.mjs | modified hasFileWithExt() | ~144 |
+| 22:27 | Edited cli/validators/docs-diff.mjs | modified getFilesRecursive() | ~82 |
+| 22:27 | Edited cli/validators/todo-tracking.mjs | inline fix | ~22 |
+| 22:27 | Edited cli/validators/todo-tracking.mjs | modified findTestFiles() | ~213 |
+| 22:27 | Edited cli/validators/todo-tracking.mjs | reduced (-15 lines) | ~52 |
+| 22:28 | Edited cli/validators/architecture.mjs | inline fix | ~22 |
+| 22:28 | Edited cli/validators/architecture.mjs | modified getFilesRecursive() | ~202 |
+| 22:28 | Edited cli/commands/generate.mjs | added 1 import(s) | ~28 |
+| 22:28 | Edited cli/commands/generate.mjs | modified walkDir() | ~113 |
+| 22:29 | Edited cli/shared-ignore.mjs | modified Supports() | ~101 |
+| 22:30 | Edited cli/validators/freshness.mjs | 7→4 lines | ~41 |
+| 22:31 | Edited cli/commands/diff.mjs | added 1 import(s) | ~28 |
+| 22:31 | Edited cli/commands/diff.mjs | modified getFilesRecursive() | ~100 |
+| 22:32 | Edited cli/findings.mjs | expanded (+49 lines) | ~790 |
+| 22:32 | Created cli/validators/structure.mjs | — | ~1647 |
+| 22:33 | Edited cli/validators/changelog.mjs | added 1 import(s) | ~58 |
+| 22:33 | Edited cli/validators/changelog.mjs | modified validateChangelog() | ~795 |
+| 22:33 | Edited cli/validators/metrics-consistency.mjs | added 1 import(s) | ~35 |
+| 22:33 | Edited cli/validators/metrics-consistency.mjs | modified validateMetricsConsistency() | ~98 |
+| 22:33 | Edited cli/validators/metrics-consistency.mjs | 4→4 lines | ~38 |
+| 22:33 | Edited cli/validators/metrics-consistency.mjs | expanded (+11 lines) | ~319 |
+| 22:33 | Edited cli/validators/metrics-consistency.mjs | 2→2 lines | ~20 |
+| 22:34 | Edited tests/changelog.test.mjs | 13→16 lines | ~140 |
+| 22:35 | Edited CHANGELOG.md | expanded (+35 lines) | ~669 |
+| 22:38 | Session end: 63 writes across 27 files (SURFACE-AUDIT.md, pyproject.toml, STANDARD.md, README.md, ROADMAP.md) | 53 reads | ~166594 tok |
+| 22:47 | Edited tests/commands.test.mjs | expanded (+7 lines) | ~887 |
+| 22:49 | Edited cli/validators/freshness.mjs | 5→7 lines | ~80 |
+| 22:50 | Edited cli/validators/freshness.mjs | 5→7 lines | ~66 |
+| 22:50 | Edited cli/validators/freshness.mjs | modified if() | ~73 |
+| 22:50 | Edited cli/validators/freshness.mjs | added optional chaining | ~71 |
+| 22:50 | Edited cli/validators/freshness.mjs | added optional chaining | ~84 |
+| 22:50 | Edited cli/commands/guard.mjs | modified for() | ~338 |
+| 22:50 | Edited cli/commands/guard.mjs | added 1 import(s) | ~54 |
+| 22:51 | Created cli/validators/environment.mjs | — | ~2060 |
+| 22:51 | Created cli/validators/drift.mjs | — | ~1290 |
+| 22:51 | Edited cli/findings.mjs | expanded (+30 lines) | ~547 |
+| 22:51 | Edited cli/validators/test-spec.mjs | modified validateTestSpec() | ~288 |
+| 22:51 | Session end: 75 writes across 30 files (SURFACE-AUDIT.md, pyproject.toml, STANDARD.md, README.md, ROADMAP.md) | 68 reads | ~207889 tok |
+| 22:51 | Edited cli/validators/test-spec.mjs | modified for() | ~681 |
+| 22:52 | Edited cli/validators/test-spec.mjs | modified if() | ~419 |
+| 22:52 | Edited cli/validators/test-spec.mjs | modified if() | ~69 |
+| 22:52 | Edited cli/validators/test-spec.mjs | added 1 condition(s) | ~374 |
+| 22:52 | Edited cli/validators/docs-sync.mjs | expanded (+6 lines) | ~194 |
+| 22:52 | Edited cli/validators/docs-sync.mjs | modified validateDocsSync() | ~30 |
+| 22:52 | Edited cli/validators/docs-sync.mjs | modified if() | ~43 |
+| 22:53 | Edited cli/validators/docs-sync.mjs | expanded (+7 lines) | ~166 |
+| 22:53 | Edited cli/validators/docs-sync.mjs | expanded (+7 lines) | ~147 |
+| 22:53 | Edited cli/validators/docs-sync.mjs | 3→3 lines | ~23 |
+| 22:53 | Edited cli/validators/docs-sync.mjs | modified if() | ~157 |
+| 22:53 | Edited cli/validators/docs-sync.mjs | 7→7 lines | ~47 |
+| 22:53 | Edited cli/validators/environment.mjs | resultFromFindings() → here() | ~72 |
+| 22:53 | Edited cli/validators/test-spec.mjs | 4→5 lines | ~69 |
+| 22:53 | Edited cli/validators/docs-diff.mjs | expanded (+6 lines) | ~227 |
+| 22:53 | Edited cli/validators/traceability.mjs | added 1 import(s) | ~60 |
+| 22:53 | Edited cli/validators/docs-diff.mjs | expanded (+23 lines) | ~260 |
+| 22:53 | Edited cli/validators/docs-diff.mjs | modified validateDocsDiff() | ~30 |
+| 22:53 | Edited cli/validators/docs-diff.mjs | modified if() | ~136 |
+| 22:53 | Edited cli/validators/traceability.mjs | modified validateTraceability() | ~191 |
+| 22:53 | Edited cli/validators/traceability.mjs | modified if() | ~114 |
+| 22:53 | Edited cli/validators/docs-coverage.mjs | expanded (+6 lines) | ~247 |
+| 22:53 | Edited cli/validators/traceability.mjs | modified if() | ~144 |
+| 22:54 | Edited cli/validators/docs-coverage.mjs | modified validateDocsCoverage() | ~558 |
+| 22:54 | Edited cli/validators/traceability.mjs | expanded (+7 lines) | ~156 |
+| 22:54 | Edited cli/validators/docs-coverage.mjs | modified checkConfigFiles() | ~62 |
+| 22:54 | Edited cli/validators/traceability.mjs | 8→7 lines | ~66 |
+| 22:54 | Edited cli/validators/docs-coverage.mjs | 12→17 lines | ~150 |
+| 22:54 | Edited cli/validators/docs-coverage.mjs | modified checkPackageBins() | ~94 |
+| 22:54 | Edited cli/validators/traceability.mjs | modified validateRequirementTraceability() | ~36 |
+| 22:54 | Edited cli/validators/docs-coverage.mjs | 13→18 lines | ~156 |
+| 22:54 | Edited cli/validators/traceability.mjs | modified if() | ~40 |
+| 22:54 | Edited cli/validators/docs-coverage.mjs | modified checkSourceDirs() | ~113 |
+| 22:54 | Edited cli/validators/traceability.mjs | 9→14 lines | ~148 |
+| 22:54 | Edited cli/validators/docs-coverage.mjs | 14→19 lines | ~170 |
+| 22:54 | Edited cli/validators/traceability.mjs | 11→16 lines | ~160 |
+| 22:54 | Edited cli/validators/docs-coverage.mjs | modified checkIaCDocumentation() | ~347 |
+| 22:54 | Edited cli/validators/todo-tracking.mjs | added 1 import(s) | ~40 |
+| 22:54 | Edited cli/validators/docs-coverage.mjs | modified checkCodeReferencedConfigs() | ~36 |
+| 22:54 | Edited cli/validators/docs-coverage.mjs | modified for() | ~179 |
+| 22:55 | Edited cli/validators/docs-coverage.mjs | modified checkReadmeSections() | ~91 |
+| 22:55 | Edited cli/validators/todo-tracking.mjs | added 1 condition(s) | ~314 |
+| 22:55 | Edited cli/validators/docs-coverage.mjs | modified for() | ~134 |
+| 22:55 | Edited cli/validators/docs-coverage.mjs | modified for() | ~52 |
+| 22:55 | Edited cli/validators/todo-tracking.mjs | modified checkSkippedTests() | ~69 |
+| 22:55 | Edited cli/validators/metadata-sync.mjs | 9→14 lines | ~195 |
+| 22:55 | Edited cli/validators/metadata-sync.mjs | modified validateMetadataSync() | ~37 |
+| 22:55 | Edited cli/validators/todo-tracking.mjs | expanded (+9 lines) | ~163 |
+| 22:55 | Edited cli/validators/metadata-sync.mjs | 1→2 lines | ~44 |
+| 22:55 | Edited cli/validators/metadata-sync.mjs | modified if() | ~162 |
+| 22:55 | Edited cli/validators/todo-tracking.mjs | modified if() | ~61 |
+| 22:55 | Edited cli/validators/metadata-sync.mjs | modified if() | ~173 |
+| 22:55 | Edited cli/validators/metadata-sync.mjs | 2→2 lines | ~20 |
+| 22:55 | Edited cli/validators/todo-tracking.mjs | modified checkUntrackedTodos() | ~99 |
+| 22:55 | Edited cli/validators/todo-tracking.mjs | modified if() | ~331 |
+| 22:55 | Edited cli/validators/schema-sync.mjs | added 1 import(s) | ~52 |
+| 22:56 | Edited cli/validators/schema-sync.mjs | modified validateSchemaSync() | ~736 |
+| 22:56 | Edited cli/validators/architecture.mjs | added 1 import(s) | ~40 |
+| 22:56 | Edited cli/validators/architecture.mjs | modified validateArchitecture() | ~582 |
+| 22:56 | Edited cli/validators/architecture.mjs | inline fix | ~18 |
+| 22:56 | Edited cli/validators/architecture.mjs | modified for() | ~182 |
+| 22:56 | Edited cli/validators/architecture.mjs | inline fix | ~20 |
+| 22:57 | Edited cli/validators/architecture.mjs | expanded (+8 lines) | ~177 |
+| 22:57 | Edited cli/validators/canonical-sync.mjs | added 1 import(s) | ~46 |
+| 22:57 | Edited cli/validators/canonical-sync.mjs | modified validateCanonicalSync() | ~368 |
+| 22:57 | Edited cli/validators/canonical-sync.mjs | 3→3 lines | ~42 |
+| 22:57 | Edited cli/validators/canonical-sync.mjs | modified if() | ~114 |
+| 22:57 | Edited cli/validators/canonical-sync.mjs | modified if() | ~288 |
+| 22:57 | Edited cli/validators/canonical-sync.mjs | modified if() | ~238 |
+| 22:58 | Edited cli/validators/canonical-sync.mjs | modified for() | ~245 |
+| 22:58 | Edited cli/findings.mjs | expanded (+78 lines) | ~1208 |
+| 22:58 | Session end: 146 writes across 31 files (SURFACE-AUDIT.md, pyproject.toml, STANDARD.md, README.md, ROADMAP.md) | 76 reads | ~231945 tok |
+| 22:59 | Edited cli/findings.mjs | expanded (+84 lines) | ~1248 |
+| 22:59 | Session end: 147 writes across 31 files (SURFACE-AUDIT.md, pyproject.toml, STANDARD.md, README.md, ROADMAP.md) | 76 reads | ~233283 tok |
+| 23:00 | Edited cli/findings.mjs | expanded (+102 lines) | ~1650 |
+| 23:00 | Edited cli/scanners/speckit.mjs | added 1 import(s) | ~59 |
+| 23:01 | Edited cli/scanners/speckit.mjs | modified validateSpecKitIntegration() | ~1487 |
+| 23:01 | Edited cli/validators/cross-reference.mjs | added 1 import(s) | ~57 |
+| 23:01 | Edited cli/validators/cross-reference.mjs | modified validateCrossReferences() | ~189 |
+| 23:01 | Edited cli/validators/cross-reference.mjs | modified if() | ~145 |
+| 23:01 | Edited cli/validators/cross-reference.mjs | modified if() | ~307 |
+| 23:01 | Edited cli/validators/cross-reference.mjs | 6→6 lines | ~27 |
+| 23:01 | Edited cli/validators/generated-staleness.mjs | added 1 import(s) | ~49 |
+| 23:01 | Edited cli/validators/generated-staleness.mjs | modified validateGeneratedStaleness() | ~183 |
+| 23:02 | Edited cli/validators/generated-staleness.mjs | modified if() | ~179 |
+| 23:02 | Edited cli/validators/generated-staleness.mjs | 5→10 lines | ~178 |
+| 23:02 | Edited cli/validators/generated-staleness.mjs | modified if() | ~59 |
+| 23:02 | Session end: 160 writes across 34 files (SURFACE-AUDIT.md, pyproject.toml, STANDARD.md, README.md, ROADMAP.md) | 78 reads | ~238031 tok |
+| 23:02 | Edited cli/validators/surface-sync.mjs | added 1 import(s) | ~59 |
+| 23:02 | Edited cli/validators/surface-sync.mjs | modified checkSurface() | ~306 |
+| 23:02 | Edited cli/validators/surface-sync.mjs | expanded (+7 lines) | ~144 |
+| 23:02 | Edited cli/validators/surface-sync.mjs | modified validateSurfaceSync() | ~218 |
+| 23:02 | Edited cli/validators/api-surface.mjs | added 1 import(s) | ~135 |
+| 23:02 | Edited cli/validators/api-surface.mjs | modified validateApiSurface() | ~128 |
+| 23:02 | Edited cli/validators/api-surface.mjs | modified if() | ~73 |
+| 23:02 | Edited cli/validators/api-surface.mjs | 8→13 lines | ~184 |
+| 23:03 | Edited cli/validators/api-surface.mjs | modified push() | ~178 |
+| 23:03 | Edited cli/validators/api-surface.mjs | modified if() | ~366 |
+| 23:03 | Edited cli/validators/api-surface.mjs | modified if() | ~94 |
+| 23:03 | Edited cli/validators/api-surface.mjs | modified if() | ~866 |
+| 23:03 | Edited cli/validators/doc-quality.mjs | added 1 import(s) | ~54 |
+| 23:04 | Edited cli/validators/doc-quality.mjs | added 1 condition(s) | ~1666 |
+| 23:04 | Edited cli/validators/spec-kit.mjs | 3→6 lines | ~78 |
+| 23:06 | Edited cli/commands/generate.mjs | 9→14 lines | ~229 |
+| 23:11 | Edited cli/findings.mjs | expanded (+156 lines) | ~2298 |
+| 23:13 | Edited cli/commands/generate.mjs | 2→2 lines | ~35 |
+| 23:14 | Edited CHANGELOG.md | expanded (+9 lines) | ~296 |
+| 23:14 | Edited CHANGELOG.md | expanded (+12 lines) | ~267 |
+| 23:16 | Session end: 180 writes across 38 files (SURFACE-AUDIT.md, pyproject.toml, STANDARD.md, README.md, ROADMAP.md) | 79 reads | ~252003 tok |
+
+## Session: 2026-07-03 09:21
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-07-03 11:32
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 11:36 | Created templates/commands/docguard.guard.md | — | ~785 |
+| 11:36 | Created templates/commands/docguard.fix.md | — | ~823 |
+| 11:37 | Edited AGENTS.md | 3→3 lines | ~21 |
+| 11:37 | Edited AGENTS.md | expanded (+20 lines) | ~349 |
+| 11:38 | Session end: 4 writes across 3 files (docguard.guard.md, docguard.fix.md, AGENTS.md) | 5 reads | ~9928 tok |
+| 11:52 | Edited templates/commands/docguard.review.md | expanded (+13 lines) | ~210 |
+| 11:52 | Edited templates/commands/docguard.review.md | 10→14 lines | ~178 |
+| 11:52 | Edited templates/commands/docguard.update.md | 8→9 lines | ~65 |
+| 11:53 | Edited templates/commands/docguard.update.md | expanded (+9 lines) | ~148 |
+| 11:53 | Edited templates/commands/docguard.init.md | modified required() | ~307 |
+| 11:55 | Created cli/writers/sarif.mjs | — | ~1315 |
+| 11:55 | Edited cli/commands/guard.mjs | added 2 condition(s) | ~163 |
+| 11:56 | Edited cli/commands/guard.mjs | modified below() | ~71 |
+| 11:56 | Edited cli/commands/guard.mjs | added 1 import(s) | ~32 |
+| 11:56 | Created tests/sarif.test.mjs | — | ~1455 |
+| 11:57 | Edited cli/docguard.mjs | 1→3 lines | ~56 |
+| 12:00 | Created cli/scanners/agent-readability.mjs | — | ~2228 |
+| 12:00 | Edited cli/scanners/agent-readability.mjs | modified if() | ~114 |
+| 12:00 | Edited cli/commands/score.mjs | added 1 import(s) | ~40 |
+| 12:00 | Edited cli/commands/score.mjs | added 1 condition(s) | ~366 |
+| 12:01 | Created tests/agent-readability.test.mjs | — | ~1049 |
+| 12:02 | Edited cli/docguard.mjs | added 4 condition(s) | ~317 |
+| 12:02 | Edited cli/commands/llms.mjs | added error handling | ~847 |
+| 12:03 | Edited cli/commands/memory.mjs | added 4 import(s) | ~95 |
+| 12:03 | Edited cli/commands/memory.mjs | added 1 condition(s) | ~103 |
+| 12:03 | Edited cli/commands/memory.mjs | added error handling | ~1140 |
+| 12:04 | Created tests/llms-full-pack.test.mjs | — | ~1304 |
+| 12:06 | Edited cli/commands/agents.mjs | expanded (+9 lines) | ~240 |
+| 12:06 | Edited cli/commands/agents.mjs | added error handling | ~649 |
+
+## Session: 2026-07-03 12:09
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-07-03 12:09
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 12:10 | Edited cli/commands/agents.mjs | added error handling | ~1109 |
+| 12:11 | Created tests/agents-sync.test.mjs | — | ~1367 |
+| 12:13 | Edited docs-canonical/DATA-MODEL.md | 3→3 lines | ~30 |
+| 12:13 | Edited docs-canonical/DATA-MODEL.md | 3→3 lines | ~30 |
+| 12:13 | Edited docs-canonical/REQUIREMENTS.md | 4→5 lines | ~33 |
+| 12:15 | Edited CHANGELOG.md | modified repo() | ~664 |
+| 12:15 | Session end: 6 writes across 5 files (agents.mjs, agents-sync.test.mjs, DATA-MODEL.md, REQUIREMENTS.md, CHANGELOG.md) | 13 reads | ~69795 tok |
+| 12:16 | Session end: 6 writes across 5 files (agents.mjs, agents-sync.test.mjs, DATA-MODEL.md, REQUIREMENTS.md, CHANGELOG.md) | 13 reads | ~69795 tok |
+| 12:16 | Created cli/commands/mcp.mjs | — | ~2902 |
+| 12:16 | Edited cli/docguard.mjs | added 1 import(s) | ~39 |
+| 12:16 | Edited cli/docguard.mjs | 3→4 lines | ~103 |
+| 12:17 | Edited cli/docguard.mjs | 3→5 lines | ~48 |
+| 12:17 | Edited cli/docguard.mjs | 3→8 lines | ~80 |
+| 12:17 | Edited cli/docguard.mjs | 1→2 lines | ~58 |
+| 12:17 | Edited action.yml | expanded (+9 lines) | ~200 |
+| 12:17 | Created tests/mcp.test.mjs | — | ~2138 |
+| 12:18 | Edited action.yml | added error handling | ~3153 |
+| 12:18 | Edited action.yml | 3→3 lines | ~65 |
+| 12:18 | Edited action.yml | 3→3 lines | ~64 |
+| 12:20 | Edited README.md | inline fix | ~95 |
+| 12:20 | Edited README.md | 17 → 18 | ~18 |
+| 12:20 | Edited README.md | 3→5 lines | ~163 |
+| 12:21 | Edited README.md | 2→7 lines | ~218 |
+| 12:21 | Edited docs-canonical/ARCHITECTURE.md | 4→5 lines | ~113 |
+| 12:22 | Edited README.md | modified feedback() | ~315 |
+| 12:22 | Edited CHANGELOG.md | expanded (+18 lines) | ~364 |
+| 12:23 | Session end: 24 writes across 11 files (agents.mjs, agents-sync.test.mjs, DATA-MODEL.md, REQUIREMENTS.md, CHANGELOG.md) | 15 reads | ~88230 tok |
