@@ -3123,6 +3123,22 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-07-03T20:19:52.359Z"
+    },
+    {
+      "id": "bug-191",
+      "timestamp": "2026-07-03T20:29:38.508Z",
+      "error_message": "Significant refactor of ",
+      "file": "docs/commands.md",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 12→47 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T20:29:38.508Z"
     }
   ]
 }

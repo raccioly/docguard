@@ -153,3 +153,18 @@ Yes. In `.docguard.json`:
 ```
 
 Or use a profile that has them disabled by default (like `starter`).
+
+### Can my AI agent use DocGuard without parsing CLI output?
+
+Yes — run the MCP server: `claude mcp add docguard -- npx docguard-cli mcp`
+exposes guard, score, explain, verify-claims, and diagnose as native tools for
+Claude, Cursor, and any MCP client. For CLI-driven agents, `guard --format json`
+is the stable contract (findings with stable codes) and `guard --format sarif`
+feeds GitHub Code Scanning. See [AI Integration](./ai-integration.md).
+
+### Guard flagged something that isn't wrong. What do I do?
+
+Suppress it **at the finding site** with its code — `// docguard:ignore SEC001`
+on (or above) the flagged line — and report it with `docguard feedback` (a
+local-first record plus a one-click prefilled GitHub issue). Don't disable the
+whole validator for one false positive.

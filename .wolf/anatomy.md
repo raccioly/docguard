@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-07-03T20:24:31.155Z
-> Files: 646 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-07-03T20:31:12.426Z
+> Files: 649 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../../../tmp/
 
@@ -1023,6 +1023,9 @@
 ## docs/
 
 - `ai-integration.md` — AI Integration Guide (~2024 tok)
+- `commands.md` — Commands Reference (~2157 tok)
+- `configuration.md` — Configuration (~1375 tok)
+- `faq.md` — Frequently Asked Questions (~1519 tok)
 
 ## extensions/spec-kit-docguard/
 

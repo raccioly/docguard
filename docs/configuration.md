@@ -43,6 +43,20 @@ DocGuard is configured via `.docguard.json` in the project root. If no config fi
     "security": true,
     "environment": true,
     "freshness": true
+  },
+
+  "severity": {
+    "security": "high",
+    "todoTracking": "low"
+  },
+
+  "collections": {
+    "extractors": "src/extractors/*.py",
+    "commands": "cli/commands/*.mjs"
+  },
+
+  "docs": {
+    "dirs": ["reference", "website/docs"]
   }
 }
 ```
@@ -72,6 +86,30 @@ See [Profiles](./profiles.md) for details.
 | `security` | varies | Auth, secrets, RBAC documentation |
 | `environment` | `true` | Setup steps, env vars, prerequisites, .env.example |
 | `freshness` | varies | Docs updated recently relative to code changes (git-based) |
+
+## Severity overrides
+
+`severity.<validator>` changes a validator's **exit-code weight** without hiding
+anything from display: `"high"` promotes its warnings to blocking (CI fails),
+`"low"` demotes them (shown, but never fail the build). Valid values:
+`high | medium | low`. To silence a validator entirely, use `validators.<key>: false`.
+
+## Collections — verify documented counts against code
+
+`collections` binds a documentation noun to a glob whose **file count is the
+source of truth**. With `"extractors": "src/extractors/*.py"`, a doc claiming
+"16 extractors" while the glob matches 19 files becomes a guard warning (and a
+`fix --write`-able correction). Declaring the noun *is* the opt-in — no other
+marker needed. Reserved nouns (`checks`, `validators`, `tests`) keep their
+built-in DocGuard meaning. An unresolvable glob is skipped, never treated as 0.
+
+## Documentation homes — `docs.dirs`
+
+Conventional doc folders (`docs/`, `doc/`, `documentation/`, `guides/`,
+`handbook/`, `manual/`, `wiki/`, Docusaurus `website/docs/`, …) are
+**auto-detected** and claim-scanned without enrollment. `docs.dirs` EXTENDS
+that set with non-standard homes — it never replaces auto-detection. To exclude
+a conventional dir, list it in `.docguardignore`.
 
 ## Muting a validator
 
