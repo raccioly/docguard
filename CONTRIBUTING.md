@@ -34,12 +34,16 @@ node cli/docguard.mjs guard
 ```
 cli/
   docguard.mjs         ← Entry point, config loading, command routing
-  commands/             ← 11 user-facing commands
-  validators/           ← 9 independent validation modules
+  commands/             ← user-facing commands (see README for the governed list)
+  validators/           ← independent validation modules (one file each)
+  scanners/             ← code-truth extraction (routes, schemas, claims, …)
 templates/              ← CDD document templates + slash commands
 tests/                  ← Integration tests
 docs-canonical/         ← DocGuard's own CDD documentation
 ```
+
+(Counts are deliberately not stated here — they drift. The README's counts are
+machine-governed by the `canonical-sync` validator.)
 
 ## Architecture Rules
 
@@ -50,13 +54,29 @@ docs-canonical/         ← DocGuard's own CDD documentation
 
 ## Adding a New Command
 
+> **Surface rule:** the v0.20 consolidation cut 21 commands to 13 because the
+> surface had outgrown its users; it has been creeping back since. A PR adding a
+> new *user-facing* command must either retire/absorb an existing one or include
+> an explicit justification for why the surface must grow. Internal helper
+> modules under `cli/commands/` (not registered in the dispatcher) are exempt —
+> but add them to `surfaceSync.commands.ignore` in `.docguard.json` or guard
+> will flag them.
+
 1. Create `cli/commands/your-command.mjs` with an exported `runYourCommand(projectDir, config, flags)` function
 2. Import it in `cli/docguard.mjs`
 3. Add it to the help text, command routing switch, and argument parsing
-4. Add tests in `tests/commands.test.mjs`
-5. Update `CHANGELOG.md`
+4. Update the README commands table + count (Canonical-Sync/Surface-Sync enforce these)
+5. Add tests in `tests/commands.test.mjs`
+6. Update `CHANGELOG.md`
 
 ## Adding a New Validator
+
+> **Findings rule:** new validators MUST emit structured findings
+> (`cli/findings.mjs`: stable code, severity, confidence, location,
+> `→ suggestion`) and return via `resultFromFindings()` — not hand-built
+> error/warning strings. The legacy string shape is being migrated out
+> (a few validators per release); don't add to the backlog. Codes are
+> append-only public surface: register them in the `CODES` registry.
 
 1. Create `cli/validators/your-validator.mjs`
 2. Import it in `cli/commands/guard.mjs`

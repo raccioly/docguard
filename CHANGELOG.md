@@ -7,6 +7,190 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Closes both gaps from LLM field report #6 (a downstream adopter reported guard
+**A+ / "Accurate: 100%" while a watched doc stated a wrong count** — the one
+false-negative a documentation-integrity tool must not have). Diagnosis held up:
+the literal cause was a domain noun missing from a hardcoded vocabulary, and an
+ALCOA pillar named "Accurate" that was computed from structure/markers, not facts.
+The fix is precision-first (the tool's existing philosophy), not the report's
+recall-maximizing "validate every claim in every doc" — which prior field reports
+already showed floods false positives.
+
+### Added — AI integration surface
+The detection core is the moat; this batch makes the output consumable by
+everything that isn't a human reading a terminal (the gap vs. Swimm/Mintlify/
+Context7 identified in the platform review).
+
+- **`docguard mcp` — Model Context Protocol server** over stdio (JSON-RPC 2.0,
+  zero dependencies, `node:readline`). Five tools: `docguard_guard`,
+  `docguard_score`, `docguard_explain`, `docguard_verify_claims`,
+  `docguard_diagnose` — DocGuard's read-only core as native agent tools for
+  Claude, Cursor, and any MCP client (`claude mcp add docguard -- npx
+  docguard-cli mcp`). Config loads per call; a malformed `.docguard.json`
+  becomes an `isError` tool result instead of killing the session (loadConfig's
+  process.exit is defused by pre-parsing); stdout is the pure transport
+  (registered in both the headless gate and READ_ONLY_COMMANDS, so no banner
+  and no scaffolding side effects).
+- **Action: inline PR annotations + sticky doc-impact comment** — `guard` runs
+  now annotate each finding on the PR diff (`annotations` input, default on,
+  capped at 50) and maintain a single sticky PR comment (`pr-comment`, default
+  on) with the guard verdict, top findings, and the canonical docs impacted by
+  the PR's changed files (`diff --since origin/<base>`). Purely additive steps
+  gated on `always()` (feedback must appear exactly when guard fails); degrade
+  gracefully on fork tokens, shallow clones, and missing permissions; existing
+  outputs and exit codes untouched.
+- **SARIF 2.1.0 output** — `docguard guard --format sarif` maps the structured
+  findings 1:1 onto SARIF (codes → rules with title/help from the registry,
+  locations → physicalLocation/region, low-confidence → property bags,
+  validator crashes → synthesized `DOCGUARD-<KEY>` results, exit codes
+  unchanged). Drops straight into GitHub Code Scanning and enterprise SARIF
+  dashboards. `sarif` joins `json` in the machine-format gate, so stdout is the
+  pure artifact — no banner.
+- **`docguard llms --full`** — generates `llms-full.txt` (the Mintlify-style
+  full-content companion to the `llms.txt` index): every canonical + optional
+  doc inlined under one fetch, per-doc 400-line cap with truncation notes.
+- **`docguard memory --pack`** — writes `.docguard/context-pack.md`, a compact
+  (<200 lines) code-truth-stamped session-start context for AI agents: guard
+  status, scanner-derived surface counts (modules/endpoints/entities/env
+  vars/tests), canonical-doc index with last-reviewed dates, the Rules/Workflow
+  sections of AGENTS.md verbatim, and known-drift summary. Everything derived
+  from scanners — regenerable, hallucination-free.
+- **`docguard agents --sync` / `--check`** — AGENTS.md becomes the CANONICAL
+  source for the whole agent-file family (CLAUDE.md, GEMINI settings,
+  `.github/copilot-instructions.md`, `.cursor/rules/`, `.clinerules`,
+  `.windsurfrules`). Generated variants carry a source-hash marker; `--sync`
+  regenerates marked/missing variants (never touches unmarked hand-written
+  files without `--force`); `--check` is the CI gate (exit 2 on stale). Kills
+  the hand-duplicated-agent-file drift class entirely.
+- **Agent Readability score axis** — `docguard score` now measures how well AI
+  consumers can read the repo (display-only, like ALCOA+ — the gating grade is
+  untouched): agent entry file presence, entry-file token budget, section
+  addressability (quotable-alone + unique headings), structured-content
+  density, machine-marker presence, llms.txt, and entry-file link integrity.
+  Deterministic, zero-LLM. Dogfooded: found real defects in DocGuard's own
+  docs (duplicate headings, an unmarked doc) on first run.
+
+### Added
+- **Auto-detected documentation homes** — clearly-named doc folders (`docs/`,
+  `doc/`, `documentation/`, `guides/`, `guide/`, `handbook/`, `manual/`, `wiki/`,
+  plus `docs-canonical/`, `docs-implementation/`, `extensions/`, and Docusaurus
+  `website/docs/`) are now claim-scanned and counted as "tracked" **without being
+  enrolled** in `requiredFiles.canonical`. A folder literally named `documentation/`
+  is unambiguously a doc home DocGuard governs; this stays distinct from the
+  arbitrary-subdir walk the wu-whatsappinbox scoping fix removed (a number buried
+  in `security/wolf-archive/` is still never scanned). `config.docs.dirs` EXTENDS
+  the set with non-standard homes (it never replaces auto-detection); use
+  `.docguardignore` to exclude a conventional dir. The doc-home set is now a single
+  source of truth (`resolveDocDirs`) shared by the claim scanner and the coverage
+  map, so "tracked" provably means "actually scanned." New optional `docs.dirs` key
+  in the schema.
+- **Project collections** — `config.collections` maps a documentation noun (e.g.
+  `extractors`) to a glob whose matching-file count is the source of truth.
+  Metrics-Consistency now flags a documented count that disagrees ("16 extractors"
+  in prose vs 19 files on disk) **deterministically, in `guard`, with no LLM** —
+  catching the exact class that bit the adopter. A declared collection is the
+  opt-in binding, so it does not need the `docguard`-on-the-line subject bind the
+  built-in checks/validators counts use; reserved nouns (checks/validators/tests)
+  keep their built-in meaning; an unresolved glob (0 matches) is skipped, never
+  asserting a false "0". Complements `surfaceSync` (WHICH members drift) with a
+  count check (HOW MANY). New optional key in `docguard-config.schema.json`.
+- **Coverage line in `guard`** — every run now reports how many Markdown files are
+  canonical / tracked / ignored / outside any tier, turning silent non-coverage
+  (the "I forgot to enroll this doc" trap) into a visible count. Calm by default:
+  the count shows every run; the file list is one `--verbose` away (loud-by-default
+  would just train users to ignore it). Also exposed on the `guard --format json`
+  contract as `coverage`.
+- **Unverified-claims notice in `guard`** — the deterministic semantic-claim
+  extractor (previously only reachable via `verify --semantic`) now runs in `guard`
+  and reports how many documented counts/limits/enums remain unverified against
+  code, so a green run states plainly that structure is sound, *not* that the
+  numbers still match. Exposed as `semanticClaims` on the JSON contract.
+
+### Changed
+- **ALCOA+ "Accurate" no longer overclaims.** It gains a third, honest state —
+  `unverified` (cyan 🔍) — shown when structure passes but documented factual
+  claims haven't been checked against code. Previously it read ✅ "100%" purely
+  from drift markers + prose quality, which is how an adopter saw "Accurate: 100%"
+  over a doc that stated the wrong number. `unverified` counts as not-met for the
+  ALCOA compliance percentage (so it stops overclaiming) but renders neutrally, not
+  as a failure. **Display-only: the gating CDD maturity grade (`score` / `ci`
+  threshold) is unchanged.**
+- Extended the semantic claim-extractor vocabulary with the common
+  pluggable-architecture nouns (`extractors`, `plugins`, `detectors`, `scanners`,
+  `commands`, `rules`, `hooks`, `handlers`, `agents`, `skills`, …). The missing
+  `extractors` was the literal root cause of the field report.
+
+### Internal hardening (project-review batch)
+- **ONE walker, ONE anchored glob compiler.** Sixteen private recursive
+  directory walkers (13 validators + guard coverage + diff + generate) and three
+  divergent glob→regex implementations are consolidated into
+  `shared-ignore.mjs`: `walkFiles(dir, cb, {ignoreDirs, keepDot, onError})` and
+  `compileGlob()` (superset: `**/`, `**`, `*`, `?`, `{a,b}`). Per-validator
+  IGNORE_DIRS sets stay local **by design** — they carry intentional variance
+  (drift excludes `cli/` because DocGuard's own regexes contain `DRIFT:`;
+  docs-sync excludes `__tests__`), and the load-bearing dot-entry exceptions are
+  preserved via `keepDot` (security must scan `.env`; traceability keeps
+  `.env*`, `.gitignore`, `.github/`). The ignore-side `globToRegex` keeps its
+  documented unanchored semantics — different contract, own bug history.
+- **Partial-walk counts are now fail-safe.** `countGlobFiles` returns −1 when
+  the walk was incomplete (permission-denied subtree), so a collection count
+  can never silently under-count and "correct" a right doc number to a wrong
+  one. Callers treat ≤0 as "don't assert".
+- **Findings migration COMPLETE — all 24 validators.** Every validator now
+  emits structured findings with stable, `explain`-able, inline-suppressible
+  codes; the legacy hand-built errors/warnings strings are gone from the
+  validator layer (`resultFromFindings` derives them from the same array, so
+  messages are byte-identical and counts/exit codes are unchanged). The CODES
+  registry grew from 8 (SEC only) to **91** across 21 prefixes: STR, CHG, MET,
+  FRS (freshness, via a new guard adapter — its array contract is preserved),
+  ENV, TSP, DRF, DSY, DDF, DCV, MDS, TRC, TDO, SCH, ARC, CSY, SPK (implemented
+  in scanners/speckit.mjs behind the validator shim), XRF, GST, SSY, plus full
+  first-time migrations of API (api-surface) and DQ (doc-quality), which turned
+  out to be fully legacy rather than partial. `confidence: 'low'` is set only
+  where the pre-existing message already hedged (TSP003, API003, API004's
+  code-scan variant). Guard's rich rendering (`[CODE]` tags, `→ suggestion`
+  lines, low-confidence markers, `docguard feedback` reporting) now covers the
+  entire validator surface.
+- **Docs truth pass**: SURFACE-AUDIT.md gets a "historical snapshot — findings
+  resolved" banner (its v0.18.1 counts were being read as current); STANDARD.md
+  §8 no longer embeds a validator table (it had drifted 16 validators behind —
+  points at the machine-governed README list instead); README leads with a
+  compact "Why DocGuard?" and moves "What's New" below CI/CD; ROADMAP Phase 4.5
+  updated through v0.28; CONTRIBUTING gains the **surface rule** (a new
+  user-facing command must retire one or justify growth) and the **findings
+  rule** (new validators must emit findings); pyproject.toml no longer claims
+  "zero dependencies" (now: "no Python dependencies, requires Node 18+").
+- **Hygiene**: removed tracked scratch files (`test-draft.js`,
+  `test-metrics.js`, `pr_description.md`) and a dead `IGNORE_DIRS` set in
+  freshness.mjs.
+- **`generate.mjs` split (1530 → 559 lines).** The generate command now has
+  three coherent modules: `cli/writers/generate-io.mjs` (backup/safe-write/
+  doc-registration/citation helpers, 142 lines) and
+  `cli/writers/doc-generators.mjs` (the 7 document builders, 853 lines), with
+  command flow + stack detection + project scanning staying in
+  `cli/commands/generate.mjs`. Pure code motion — bodies byte-identical,
+  verified by the full suite plus `generate`/`generate --plan` smoke runs.
+- **CI flake fix (watch spawn tests).** The two `docguard watch` tests polled
+  with a fixed 2-second cap — a hair-trigger race against CLI startup that
+  intermittently failed on slow runners and passed on re-run. Replaced with a
+  15-second `waitFor` deadline; assertions unchanged (a genuinely broken watch
+  still fails, just not a slow-booting one).
+
+### Remediation policy (suggest vs. auto-update)
+DocGuard detects **divergence**, not which side is right — a doc claim that no
+longer matches code can mean the doc is stale OR the code regressed and the doc is
+the correct intent (the CDD premise: canonical docs are the spec). So:
+- **Auto-fix only the provably-mechanical class** — a number bound to a code
+  collection (`collections`), where the true value is known and the code is
+  definitionally the source. These emit a `fix` object applied **only** via an
+  explicit `docguard fix --write`, with `actualSource` provenance, fail-closed,
+  and reversible via git. **Never silent.**
+- **Everything semantic/prose is SUGGEST-only** — surfaced as a finding (and via
+  `verify --semantic` for agent judgment), never auto-rewritten. DocGuard's
+  deterministic core can't author correct prose and must not assume code is always
+  the source of truth. Enrichment/rewriting is an agent task the human approves —
+  not a validator silently editing docs.
+
 ## [0.28.0] - 2026-06-22
 
 Closes the detection-gap items deferred from LLM field report #3 — the checks

@@ -55,6 +55,7 @@ DocGuard recognizes and validates these project config files:
 | `.docguardignore` | Per-project file exclusions (like `.gitignore`) |
 | `vitest.config.ts` / `jest.config.ts` | Test runner config (scanned for custom test patterns) |
 | `.storybook/` | Component documentation tool (detected for docs-coverage) |
+| `.jules-setup.sh` | This repo's own Google Jules environment bootstrap script (internal tooling, not shipped) |
 
 ## Layer Boundaries
 
