@@ -44,6 +44,7 @@ It targets development teams and AI coding agents that need to maintain document
 | Optional external | `python3` (the developer's own) | AST-accurate Python parsing; not an npm/pip dependency, regex fallback when absent |
 | Package Manager | npm | Standard for Node.js CLIs |
 | Testing | `node:test` + `node:assert` | Built-in, no test framework dependency |
+| Docker | `Dockerfile` (MCP server image) | Lets MCP directory inspectors (Glama et al.) boot `docguard mcp` for introspection checks; not part of the npm distribution |
 
 ### Recognized Config Files
 

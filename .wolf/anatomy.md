@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-07-03T22:01:17.808Z
-> Files: 661 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-07-03T22:03:21.981Z
+> Files: 662 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../../../tmp/
 
@@ -30,6 +30,7 @@
 - `CONTRIBUTING.md` — Contributing to DocGuard (~1780 tok)
 - `docguard-cli-0.22.0.tgz` (~80828 tok)
 - `docguard-cli-0.23.0.tgz` (~81238 tok)
+- `Dockerfile` — Docker container definition (~204 tok)
 - `DRIFT-LOG.md` — Drift Log (~711 tok)
 - `LICENSE` — Project license (~286 tok)
 - `package-lock.json` — npm lock file (~617 tok)
@@ -1024,7 +1025,7 @@
 
 ## docs-canonical/
 
-- `ARCHITECTURE.md` — Architecture (~2925 tok)
+- `ARCHITECTURE.md` — Architecture (~2967 tok)
 - `DATA-MODEL.md` — Data Model (~1668 tok)
 - `REQUIREMENTS.md` — Requirements (~673 tok)
 - `SURFACE-AUDIT.md` — DocGuard Surface Audit (~5703 tok)
