@@ -1,61 +1,67 @@
 ---
-description: Run DocGuard guard validation — check project documentation against CDD standards with all validators
+description: Run DocGuard guard validation — check all validators and fix any issues
 handoffs:
-  - label: Fix All Issues
+  - label: Fix Issues
     agent: docguard.fix
     prompt: Fix all documentation issues found by guard
-  - label: Deep Review
-    agent: docguard.review
-    prompt: Perform semantic cross-document consistency analysis
   - label: Check Score
     agent: docguard.score
-    prompt: Show CDD maturity score and improvement roadmap
+    prompt: Show CDD maturity score after fixes
 ---
 
-# DocGuard Guard — Documentation Quality Gate
+# /docguard.guard — Validate CDD Compliance
 
-Run the DocGuard CLI to validate all documentation against Canonical-Driven Development standards.
+You are an AI agent enforcing Canonical-Driven Development (CDD) compliance using DocGuard.
 
-## What to do
+## Step 1: Run Guard (machine-readable)
 
-1. **Run the guard command**:
 ```bash
-npx docguard-cli guard
+npx docguard-cli guard --format json
 ```
 
-2. **Parse the output**. Each of the validators reports ✅ (pass), ⚠️ (warning), ❌ (fail), or ➖ (N/A — nothing to validate). **A ➖ N/A is NOT a pass**: it means the validator found nothing to check (e.g. no API-REFERENCE.md, no DB schema, no layer boundaries declared). Don't read N/A as "healthy" — read it as "not assessed".
+Read the JSON contract — do not parse prose:
 
-   | Validator | What It Checks |
-   |-----------|---------------|
-   | Structure | Required CDD files exist |
-   | Doc Sections | Canonical docs have required sections |
-   | Docs-Sync | External doc references are valid |
-   | Drift-Comments | `// DRIFT:` code comments logged in DRIFT-LOG.md |
-   | Changelog | CHANGELOG.md is maintained |
-   | Test-Spec | Tests match TEST-SPEC.md rules |
-   | Environment | Environment documentation |
-   | Security | No hardcoded secrets, SECURITY.md quality |
-   | Architecture | Architecture documentation |
-   | Freshness | Docs updated within commit window |
-   | Traceability | Requirements trace to tests |
-   | Docs-Diff | Doc changes match code changes |
-   | API-Surface | API-REFERENCE.md endpoints match the real API surface (OpenAPI spec / routes) |
-   | Metadata-Sync | Metadata headers are consistent |
-   | Docs-Coverage | All config files documented |
-   | Doc-Quality | Readability, IEEE 830 compliance |
-   | TODO-Tracking | TODOs are tracked |
-   | Schema-Sync | Schema documentation matches code |
-   | Spec-Kit | Spec quality (FR-IDs, sections) |
-   | Metrics-Consistency | Internal counts are accurate |
+| Field | Meaning |
+|-------|---------|
+| `status` | `PASS` / `WARN` / `FAIL` (severity-aware; matches the exit code: 0/2/1) |
+| `findings[]` | Structured issues: `{code, severity, confidence, message, location, suggestion}` |
+| `nextStep` | The single suggested follow-up command (`null` on PASS) |
+| `reportable[]` | Low-confidence findings (possible false positives) — verify before acting |
+| `coverage` | Markdown tier map: `canonical / tracked / ignored / unclassified[]` |
+| `semanticClaims.count` | Documented counts/limits/enums NOT yet verified against code |
+| `validators[]` | Per-validator results, including `na` (nothing to validate ≠ pass) |
 
-3. **Triage findings by severity**:
-   - **CRITICAL**: Structure, Security, Test-Spec failures
-   - **HIGH**: Doc Sections, Drift-Comments, Changelog, Traceability, API-Surface (documented-but-absent endpoint) failures
-   - **MEDIUM**: Freshness, Docs-Coverage, Doc-Quality, Metrics-Consistency warnings
-   - **LOW**: TODO-Tracking, Schema-Sync, Spec-Kit, Metadata-Sync warnings
+## Step 2: Understand each finding before fixing
 
-4. For each failing check, provide an **exact fix** — specific file, section, and content to change.
+- Every finding carries a stable code (e.g. `STR001`, `ENV003`, `XRF002`). Run
+  `npx docguard-cli explain <CODE>` for its contract, cause, and remediation.
+- `confidence: "low"` means the scanner itself is unsure — verify against the
+  code before changing anything, and report real false positives with
+  `npx docguard-cli feedback`.
+- A finding's `suggestion` may include a ready-to-run `command` or an inline
+  `pragma`. Prefer those over inventing your own fix.
 
-5. After fixing, re-run `npx docguard-cli guard` to verify. Iterate until all checks pass.
+## Step 3: Fix, suppress, or escalate
 
-6. Exit codes: 0 = all pass, 1 = failures, 2 = warnings only.
+1. **Mechanical issues first**: `npx docguard-cli fix --write` applies safe,
+   provenance-checked fixes (broken anchors, stale counts/versions). Never
+   hand-edit what the tool can fix deterministically.
+2. **Prose/content issues**: follow the `/docguard.fix` workflow (research →
+   write real content).
+3. **Genuine false positives**: suppress at the finding site with the code —
+   `// docguard:ignore <CODE>` on (or above) the flagged line — or mark a whole
+   validator not-applicable in a doc:
+   `<!-- docguard:validator <key> n/a — reason -->`. Always include the reason.
+   Never suppress to silence a real issue.
+4. If `semanticClaims.count > 0`, offer to run `npx docguard-cli verify --semantic`
+   and check each extracted claim against the code — a green guard asserts
+   structure, not the truth of documented numbers.
+
+## Step 4: Report
+
+Show the user:
+1. `status` and pass/total, plus anything in `coverage.unclassified` (docs no
+   validator watches — suggest enrolling or ignoring them)
+2. Each finding fixed (by code), each suppressed (with reason), each reported
+   as a false positive
+3. Final score: `npx docguard-cli score`

@@ -22,8 +22,21 @@ npx docguard-cli score
 ```
 
 Read all output. Identify where documentation no longer matches the codebase.
+Findings carry stable codes — `npx docguard-cli explain <CODE>` when unclear.
 
-## Step 2: Semantic Analysis (Beyond CLI)
+## Step 2: Verify Documented Claims Against Code
+
+```bash
+npx docguard-cli verify --semantic
+```
+
+This extracts every checkable claim in the canonical docs — counts, limits,
+rate numbers, retention windows, status enums — as a task list with the nearest
+cited code path. **You perform each verification**: read the cited code, compare
+the value, and report every mismatch with both values. This is the highest-value
+review step; deterministic validators cannot judge these.
+
+## Step 3: Semantic Analysis (Beyond CLI)
 
 For each canonical doc, verify alignment with actual code:
 
@@ -35,16 +48,20 @@ For each canonical doc, verify alignment with actual code:
 | Test Coverage | Critical flows in TEST-SPEC.md have actual test files |
 | Terminology | Same concepts named consistently across all docs |
 
-## Step 3: Update Stale Docs
+## Step 4: Update Stale Docs
 
 For each stale or drifted document:
-1. Read the relevant source code files
-2. Update the specific section that changed
-3. Update the `docguard:last-reviewed` date to today
-4. If the change is intentional drift, add an entry to DRIFT-LOG.md
-5. Add entry to CHANGELOG.md under [Unreleased]
+1. **Decide which side is wrong first.** Canonical docs are the spec — if the
+   code regressed from a documented decision, flag the code (or record a
+   `// DRIFT: reason` + DRIFT-LOG.md entry); don't rewrite the doc to match a
+   regression.
+2. Sections inside `<!-- docguard:section ... source=code -->` markers are
+   regenerated — run `npx docguard-cli sync --write` instead of editing by hand.
+3. For hand-maintained sections: read the relevant source, update the specific
+   section, refresh `docguard:last-reviewed` to today.
+4. Add entry to CHANGELOG.md under [Unreleased].
 
-## Step 4: Verify
+## Step 5: Verify
 
 ```bash
 npx docguard-cli guard

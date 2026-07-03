@@ -1,53 +1,71 @@
 ---
-description: Cross-document consistency analysis — semantic review of documentation health, accuracy, and alignment with codebase
+description: Review documentation quality — identify drift, coverage gaps, and improvements
 handoffs:
-  - label: Fix Issues Found
+  - label: Fix Issues
     agent: docguard.fix
     prompt: Fix the documentation issues identified in the review
   - label: Run Guard
     agent: docguard.guard
-    prompt: Validate all documentation passes CDD standards
+    prompt: Validate all checks pass after review
 ---
 
-# DocGuard Review — Documentation Quality Analysis
+# /docguard.review — Review Documentation vs Code
 
-Perform comprehensive, read-only analysis of documentation health with semantic cross-document consistency checking.
+You are an AI agent reviewing documentation quality and detecting drift between docs and code.
 
-## What to do
+## Step 1: Run Diagnostics
 
-1. **Run the full diagnostic**:
 ```bash
 npx docguard-cli diagnose
+npx docguard-cli diff
 npx docguard-cli score
 ```
 
-2. **Perform semantic analysis** (beyond what CLI can check):
+Read all output. Identify where documentation no longer matches the codebase.
+Findings carry stable codes — `npx docguard-cli explain <CODE>` when unclear.
 
-   | Analysis Pass | What to Check |
-   |--------------|--------------|
-   | Terminology | Same concepts named consistently across docs |
-   | Architecture ↔ Code | Components listed in ARCHITECTURE.md exist in codebase |
-   | Data Model ↔ Code | Schemas in DATA-MODEL.md match actual implementations |
-   | Test Coverage | Critical flows in TEST-SPEC.md have actual test files |
-   | Security Claims | Auth mechanisms in SECURITY.md match actual code |
-   | Cross-References | Internal doc links resolve to valid targets |
+## Step 2: Verify Documented Claims Against Code
 
-3. **Score each document** on 5 dimensions:
+```bash
+npx docguard-cli verify --semantic
+```
 
-   | Criterion | Weight | What to Evaluate |
-   |-----------|:------:|-----------------|
-   | Completeness | 30% | All mandatory sections present |
-   | Accuracy | 30% | Content matches actual codebase |
-   | Clarity | 20% | Readable, specific, no unexplained jargon |
-   | Currency | 10% | Up-to-date with latest code changes |
-   | Cross-refs | 10% | References are valid and bidirectional |
+This extracts every checkable claim in the canonical docs — counts, limits,
+rate numbers, retention windows, status enums — as a task list with the nearest
+cited code path. **You perform each verification**: read the cited code, compare
+the value, and report every mismatch with both values. This is the highest-value
+review step; deterministic validators cannot judge these.
 
-4. **Classify findings by severity**:
-   - 🔴 **CRITICAL**: Security claim mismatch, missing mandatory doc, broken architecture reference
-   - 🟠 **HIGH**: Undocumented component, stale content (>5 commits behind), terminology conflict
-   - 🟡 **MEDIUM**: Missing cross-reference, minor coverage gap, readability issue
-   - 🟢 **LOW**: Minor formatting, optional section missing, style inconsistency
+## Step 3: Semantic Analysis (Beyond CLI)
 
-5. **Output a structured report** with findings table, per-document health scores, and priority-ordered recommendations.
+For each canonical doc, verify alignment with actual code:
 
-6. **Do NOT modify files** — this is read-only analysis. Suggest fixes for user approval.
+| Analysis | What to Check |
+|----------|--------------|
+| Architecture ↔ Code | Components in ARCHITECTURE.md exist as real modules |
+| Data Model ↔ Code | Schemas in DATA-MODEL.md match actual implementations |
+| Security Claims | Auth mechanisms in SECURITY.md match actual code |
+| Test Coverage | Critical flows in TEST-SPEC.md have actual test files |
+| Terminology | Same concepts named consistently across all docs |
+
+## Step 4: Update Stale Docs
+
+For each stale or drifted document:
+1. **Decide which side is wrong first.** Canonical docs are the spec — if the
+   code regressed from a documented decision, flag the code (or record a
+   `// DRIFT: reason` + DRIFT-LOG.md entry); don't rewrite the doc to match a
+   regression.
+2. Sections inside `<!-- docguard:section ... source=code -->` markers are
+   regenerated — run `npx docguard-cli sync --write` instead of editing by hand.
+3. For hand-maintained sections: read the relevant source, update the specific
+   section, refresh `docguard:last-reviewed` to today.
+4. Add entry to CHANGELOG.md under [Unreleased].
+
+## Step 5: Verify
+
+```bash
+npx docguard-cli guard
+npx docguard-cli score
+```
+
+Report findings, changes made, and the final score.

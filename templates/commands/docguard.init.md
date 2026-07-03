@@ -21,21 +21,33 @@ npx docguard-cli init
 
 This creates the folder structure and template files. The templates are skeletons — they need real content.
 
-## Step 2: Detect and Configure Project Type
+## Step 2: Pick the Right Profile
+
+`init` auto-detects the project type, but verify the profile fits — it sets
+which docs are required (a CLI shouldn't be forced to document an HTTP API):
+
+| Signal | Profile in `.docguard.json` |
+|--------|------------------------------|
+| Has `bin` field / CLI tool | `"profile": "cli"` |
+| Publishable package | `"profile": "library"` |
+| Side project / prototype | `"profile": "starter"` |
+| Team web app / API | `"profile": "standard"` (default) |
+| Regulated / strict | `"profile": "enterprise"` |
+
+Only schema-valid keys belong in `.docguard.json` — check
+`schemas/docguard-config.schema.json` (shipped in the package) before adding
+anything. If the project has domain collections (extractors, plugins, rules…),
+declare them so documented counts are verified against code:
+`"collections": { "extractors": "src/extractors/*.py" }`.
+
+For an EXISTING codebase, prefer reverse-engineering over blank skeletons:
 
 ```bash
-cat package.json
+npx docguard-cli generate --plan --write
 ```
 
-Create `.docguard.json` based on what you find:
-
-| Signal | Setting |
-|--------|---------|
-| Has `bin` field | `projectType: "cli"` |
-| Has react/next/vue | `projectType: "webapp"`, `needsE2E: true` |
-| Has express/fastify | `projectType: "api"`, `needsEnvVars: true` |
-| Has database deps | `needsDatabase: true` |
-| Default | `projectType: "library"` |
+This pre-fills code-truth sections (routes, schemas, env vars) and leaves you
+an agent-task list for the prose.
 
 ## Step 3: Write Real Documentation
 
