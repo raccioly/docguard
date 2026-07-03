@@ -1,22 +1,38 @@
 /**
- * Verify Command — `docguard verify --semantic` (LLM field report #5).
+ * Verify Command — `docguard verify` (LLM field reports #5, #11).
  *
- * Surfaces the semantic claims in the canonical docs (documented numbers, limits,
- * and enums) as a structured verification task list for the agent to check
- * against the code. DocGuard does the deterministic discovery; the LLM does the
- * judgment — the same division of labour as `docguard agent`.
+ * Two modes, same division of labour (DocGuard does the deterministic
+ * discovery; the LLM does the judgment — like `docguard agent`):
+ *
+ *   --semantic (default)  Surface the semantic claims in the canonical docs
+ *                         (documented numbers, limits, enums) as a verification
+ *                         task list for the agent to check against the code.
+ *
+ *   --instructions        Audit the agent instruction files themselves
+ *                         (AGENTS.md, CLAUDE.md) for drift: duplicate rules,
+ *                         direct never/always contradictions, stale file
+ *                         pointers, and unknown docguard commands are found
+ *                         deterministically; topically-clustered rule pairs
+ *                         become agent tasks ("do these contradict in
+ *                         practice?"). Inspired by spec-kit's MemoryLint.
  *
  * Read-only. JSON is the machine artifact (the agent-executable task list);
  * text is the human summary.
  *
- *   docguard verify [--semantic] [--format json]
+ *   docguard verify [--semantic | --instructions] [--format json]
  */
 
 import { c } from '../shared.mjs';
 import { detectAgentMode } from '../ensure-skills.mjs';
 import { extractSemanticClaims, buildSemanticVerifyTasks } from '../scanners/semantic-claims.mjs';
+import { auditInstructions } from '../scanners/instruction-audit.mjs';
 
 export function runVerify(projectDir, config, flags) {
+  if (flags.instructions) {
+    runInstructionAudit(projectDir, config, flags);
+    return;
+  }
+
   const isJson = flags.format === 'json';
   const claims = extractSemanticClaims(projectDir, config);
   const tasks = buildSemanticVerifyTasks(claims);
@@ -64,4 +80,75 @@ export function runVerify(projectDir, config, flags) {
   const cmd = mode === 'llm' ? '/docguard.verify' : 'docguard verify --semantic --format json';
   console.log(`  ${c.dim}This is the highest-value bug class and DocGuard can't judge it — an agent must.${c.reset}`);
   console.log(`  ${c.dim}Get the machine task list: ${c.cyan}${cmd}${c.dim}, then read each cited file and confirm the value.${c.reset}\n`);
+}
+
+// ── verify --instructions: agent-instruction drift/conflict audit ───────────
+
+function runInstructionAudit(projectDir, config, flags) {
+  const isJson = flags.format === 'json';
+  const { rules, deterministic, tasks } = auditInstructions(projectDir, config);
+  const { duplicates, negations, stalePointers, staleCommands } = deterministic;
+  const findingCount = duplicates.length + negations.length + stalePointers.length + staleCommands.length;
+
+  if (isJson) {
+    console.log(JSON.stringify({
+      command: 'verify --instructions',
+      project: config.projectName,
+      ruleCount: rules.length,
+      findingCount,
+      findings: deterministic,
+      taskCount: tasks.length,
+      // How to act on this: findings are proven; tasks need judgment.
+      howToVerify: 'The findings are deterministic — fix them directly (delete the duplicate copy, resolve the negation in favour of one rule, repoint or remove stale paths/commands). For each task, read both rules in context and judge whether they contradict in practice; if so, report which should win, why, and which file to edit. DocGuard cannot judge the tasks — they require understanding intent.',
+      tasks,
+    }, null, 2));
+    return;
+  }
+
+  console.log(`${c.bold}🔬 DocGuard Verify — instruction audit${c.reset}`);
+  console.log(`${c.dim}   ${config.projectName} · duplicate / contradictory / stale rules in AGENTS.md + CLAUDE.md${c.reset}\n`);
+
+  if (rules.length === 0) {
+    console.log(`  ${c.green}✅ No instruction rules found (no AGENTS.md/CLAUDE.md, or nothing imperative in them).${c.reset}\n`);
+    return;
+  }
+
+  console.log(`  ${c.dim}${rules.length} rule(s) extracted from ${[...new Set(rules.map(r => r.file))].join(' + ')}${c.reset}\n`);
+
+  if (findingCount === 0) {
+    console.log(`  ${c.green}✅ No duplicate, directly-contradictory, or stale rules found.${c.reset}\n`);
+  } else {
+    console.log(`  ${c.yellow}${findingCount} deterministic finding(s):${c.reset}\n`);
+    for (const d of duplicates) {
+      const where = d.rules.map(r => `${r.file}:${r.line}`).join(` ${c.dim}≡${c.reset} `);
+      console.log(`    ${c.yellow}⚠${c.reset} duplicate rule — ${where}: ${c.dim}"${d.rules[0].text}"${c.reset}`);
+    }
+    for (const n of negations) {
+      console.log(`    ${c.yellow}⚠${c.reset} negation conflict — ${n.a.file}:${n.a.line} ${c.dim}⇄${c.reset} ${n.b.file}:${n.b.line}: ${c.dim}"${n.a.text}" vs "${n.b.text}"${c.reset}`);
+    }
+    for (const s of stalePointers) {
+      console.log(`    ${c.yellow}⚠${c.reset} stale pointer — ${s.file}:${s.line}: ${c.cyan}${s.path}${c.reset} does not exist`);
+    }
+    for (const s of staleCommands) {
+      console.log(`    ${c.yellow}⚠${c.reset} stale command — ${s.file}:${s.line}: ${c.cyan}docguard ${s.command}${c.reset} is not a docguard command`);
+    }
+    console.log('');
+  }
+
+  if (tasks.length > 0) {
+    console.log(`  ${c.yellow}${tasks.length} rule pair(s) for the agent to judge:${c.reset}\n`);
+    for (const t of tasks) {
+      console.log(`  ${c.bold}${t.a.file}:${t.a.line} ↔ ${t.b.file}:${t.b.line}${c.reset} ${c.dim}(shared: ${t.sharedTerms.join(', ')})${c.reset}`);
+      console.log(`    ${c.yellow}A${c.reset} ${c.dim}${t.a.section ? `[${t.a.section}] ` : ''}${c.reset}"${t.a.text}"`);
+      console.log(`    ${c.yellow}B${c.reset} ${c.dim}${t.b.section ? `[${t.b.section}] ` : ''}${c.reset}"${t.b.text}"`);
+      console.log('');
+    }
+
+    const mode = detectAgentMode(projectDir);
+    const cmd = mode === 'llm' ? '/docguard.verify' : 'docguard verify --instructions --format json';
+    console.log(`  ${c.dim}Whether clustered rules contradict in practice is judgment DocGuard can't make — an agent must.${c.reset}`);
+    console.log(`  ${c.dim}Get the machine task list: ${c.cyan}${cmd}${c.dim}, then judge each pair and report which rule should win.${c.reset}\n`);
+  } else if (findingCount === 0) {
+    console.log(`  ${c.dim}(Looks for duplicate/negated rules, dead file pointers, unknown docguard commands, and topically-clustered rule pairs.)${c.reset}\n`);
+  }
 }

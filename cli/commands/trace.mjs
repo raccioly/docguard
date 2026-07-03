@@ -7,8 +7,9 @@
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { resolve, join, extname, basename, relative } from 'node:path';
+import { resolve, join, extname, basename, relative, dirname } from 'node:path';
 import { c } from '../shared.mjs';
+import { detectSpecKit } from '../scanners/speckit.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build', 'coverage',
@@ -132,6 +133,11 @@ export function runTrace(projectDir, config, flags) {
   // L-2: dispatch to reverse mode when --reverse is set.
   if (flags.reverse) {
     return runTraceReverse(projectDir, config, flags);
+  }
+
+  // Per-feature spec-kit adherence scoring when --features is set.
+  if (flags.features) {
+    return runTraceFeatures(projectDir, config, flags);
   }
 
   // v0.16-P1: same headless-mode pattern as guard/score. Reported by Python
@@ -364,6 +370,363 @@ function scanDir(rootDir, dir, files) {
       files.push(relative(rootDir, full));
     }
   }
+}
+
+// ── Per-feature spec adherence (trace --features) ───────────────────────────
+//
+// Scores each detected spec-kit feature's implementation adherence
+// individually (inspired by spec-kit-retrospective), instead of only the
+// repo-wide scores that `docguard score` produces. Deterministic signals only —
+// no LLM judgment:
+//
+//   reqCoverage          40%  FR-/SC- IDs in spec.md referenced by any test file
+//   taskCompletion       25%  checked/total `- [x]` tasks in tasks.md
+//   taskEvidence         20%  checked tasks whose line names an existing file
+//   artifactCompleteness 15%  spec.md (40%) + plan.md (30%) + tasks.md (30%)
+//
+// A signal that cannot be measured (no tasks.md, no requirement IDs, no
+// checked task names a parseable path) is NEUTRAL: excluded from the weighted
+// sum and its weight redistributed across the measurable signals. This mirrors
+// the traceability validator's "no requirement IDs → silently pass" stance —
+// absence of a convention is not evidence of low adherence (missing artifacts
+// are already priced in by artifactCompleteness).
+
+const FEATURE_SIGNAL_WEIGHTS = {
+  reqCoverage: 0.40,
+  taskCompletion: 0.25,
+  taskEvidence: 0.20,
+  artifactCompleteness: 0.15,
+};
+
+// Grade bands mirrored from cli/scanners/agent-readability.mjs GRADES.
+// Display-only — never feeds the gating CDD grade that CI thresholds read.
+const FEATURE_GRADES = [[90, 'A'], [75, 'B'], [60, 'C'], [40, 'D']];
+
+function featureGrade(score) {
+  for (const [min, g] of FEATURE_GRADES) if (score >= min) return g;
+  return 'F';
+}
+
+// Spec-kit requirement IDs scored per feature. Subset of the traceability
+// validator's DEFAULT_REQ_PATTERNS (cli/validators/traceability.mjs) — the two
+// ID families spec-kit's spec-template.md mandates.
+const FEATURE_REQ_RE = /\b(?:FR|SC)-\d{2,4}\b/g;
+
+// Path-token heuristic mirrored from cli/scanners/semantic-claims.mjs
+// CITED_CODE_RE: a backticked or bare path-like token with a code extension.
+const TASK_PATH_RE = /`?([\w./-]+\.(?:ts|tsx|js|mjs|cjs|jsx|py|go|rs|java|kt|rb|php|sql|yaml|yml|json))`?/g;
+
+// 20-char bar mirrored from cli/commands/score.mjs renderBar (not exported
+// there; score.mjs is display-conventions-only for this feature).
+function featureBar(score) {
+  const filled = Math.round(score / 5);
+  const empty = 20 - filled;
+  const color = score >= 80 ? c.green : score >= 60 ? c.yellow : c.red;
+  return `${color}${'█'.repeat(filled)}${c.dim}${'░'.repeat(empty)}${c.reset}`;
+}
+
+/**
+ * Collect every FR-/SC- ID referenced anywhere in a test file, once for the
+ * whole project. Test-file discovery mirrors the traceability validator's
+ * scanTestFilesForReferences(): TEST_PATTERNS ∪ __tests__/ ∪ tests?/ dirs, and
+ * any occurrence of the ID in file content counts (not just @req lines).
+ */
+function collectTestReferencedIds(projectDir) {
+  const projectFiles = [];
+  scanDir(projectDir, projectDir, projectFiles);
+  const testFiles = projectFiles.filter(f =>
+    TEST_PATTERNS.some(p => p.test(f)) || /__tests__\//.test(f) || /tests?\//.test(f)
+  );
+
+  const ids = new Set();
+  for (const rel of testFiles) {
+    let content;
+    try { content = readFileSync(resolve(projectDir, rel), 'utf-8'); } catch { continue; }
+    FEATURE_REQ_RE.lastIndex = 0;
+    let m;
+    while ((m = FEATURE_REQ_RE.exec(content)) !== null) ids.add(m[0]);
+  }
+  return ids;
+}
+
+/**
+ * Compute the four adherence signals for one detected spec-kit feature.
+ * Each signal: { applicable, value (0..1 | null), ...n/m detail fields }.
+ */
+function computeFeatureSignals(projectDir, feature, testRefIds) {
+  // ── artifactCompleteness — always measurable ──
+  const artifactValue = (feature.hasSpec ? 0.4 : 0)
+    + (feature.hasPlan ? 0.3 : 0)
+    + (feature.hasTasks ? 0.3 : 0);
+
+  // ── taskCompletion + taskEvidence — parse tasks.md checklist lines ──
+  let totalTasks = 0, checkedTasks = 0, evidenced = 0, considered = 0;
+  if (feature.hasTasks && feature.tasksPath) {
+    let content = null;
+    try { content = readFileSync(feature.tasksPath, 'utf-8'); } catch { /* unreadable → no tasks */ }
+    if (content !== null) {
+      for (const line of content.split('\n')) {
+        const box = /^\s*[-*]\s*\[([ xX])\]/.exec(line);
+        if (!box) continue;
+        totalTasks++;
+        if (box[1] === ' ') continue;
+        checkedTasks++;
+        // Evidence: any named path on the line that exists in the project.
+        // Checked tasks with no parseable path are neutral (skip denominator).
+        TASK_PATH_RE.lastIndex = 0;
+        let tok, sawToken = false, exists = false;
+        while ((tok = TASK_PATH_RE.exec(line)) !== null) {
+          sawToken = true;
+          if (existsSync(resolve(projectDir, tok[1].replace(/^\.\//, '')))) { exists = true; break; }
+        }
+        if (sawToken) { considered++; if (exists) evidenced++; }
+      }
+    }
+  }
+
+  // ── reqCoverage — spec.md IDs that appear in ANY test file ──
+  const specIds = [];
+  if (feature.hasSpec && feature.specPath) {
+    try {
+      const spec = readFileSync(feature.specPath, 'utf-8');
+      const seen = new Set();
+      FEATURE_REQ_RE.lastIndex = 0;
+      let m;
+      while ((m = FEATURE_REQ_RE.exec(spec)) !== null) {
+        if (!seen.has(m[0])) { seen.add(m[0]); specIds.push(m[0]); }
+      }
+    } catch { /* unreadable spec → no IDs */ }
+  }
+  const covered = specIds.filter(id => testRefIds.has(id));
+  const uncovered = specIds.filter(id => !testRefIds.has(id));
+
+  return {
+    reqCoverage: {
+      applicable: specIds.length > 0,
+      value: specIds.length > 0 ? covered.length / specIds.length : null,
+      covered: covered.length,
+      total: specIds.length,
+      uncovered,
+    },
+    taskCompletion: {
+      applicable: totalTasks > 0,
+      value: totalTasks > 0 ? checkedTasks / totalTasks : null,
+      checked: checkedTasks,
+      total: totalTasks,
+    },
+    taskEvidence: {
+      applicable: considered > 0,
+      value: considered > 0 ? evidenced / considered : null,
+      evidenced,
+      considered,
+    },
+    artifactCompleteness: {
+      applicable: true,
+      value: artifactValue,
+      spec: feature.hasSpec,
+      plan: feature.hasPlan,
+      tasks: feature.hasTasks,
+    },
+  };
+}
+
+/** Weighted 0–100 score over the applicable signals (weights renormalized). */
+function scoreFromSignals(signals) {
+  let weighted = 0, weightTotal = 0;
+  for (const [key, weight] of Object.entries(FEATURE_SIGNAL_WEIGHTS)) {
+    const s = signals[key];
+    if (!s.applicable) continue;
+    weighted += weight * s.value;
+    weightTotal += weight;
+  }
+  return weightTotal > 0 ? Math.round((weighted / weightTotal) * 100) : 0;
+}
+
+/**
+ * The lowest-valued applicable signal. Iteration order is descending weight,
+ * and replacement is strict-less-than, so ties resolve to the highest-impact
+ * signal — the one worth fixing first.
+ */
+function weakestSignal(signals) {
+  let worstKey = null;
+  for (const key of Object.keys(FEATURE_SIGNAL_WEIGHTS)) {
+    const s = signals[key];
+    if (!s.applicable) continue;
+    if (worstKey === null || s.value < signals[worstKey].value) worstKey = key;
+  }
+  return worstKey;
+}
+
+function fixHintFor(key, s, feature) {
+  switch (key) {
+    case 'reqCoverage':
+      return `Cover the untested spec IDs (e.g. ${s.uncovered[0]}) — reference them from tests via @req annotations`;
+    case 'taskCompletion':
+      return `Complete (or prune) the ${s.total - s.checked} unchecked task(s) in tasks.md`;
+    case 'taskEvidence':
+      return `${s.considered - s.evidenced} checked task(s) name files that don't exist — fix stale paths or uncheck them`;
+    case 'artifactCompleteness': {
+      const missing = [
+        feature.hasSpec ? null : 'spec.md',
+        feature.hasPlan ? null : 'plan.md',
+        feature.hasTasks ? null : 'tasks.md',
+      ].filter(Boolean);
+      return `Add ${missing.join(', ')} to complete the artifact set`;
+    }
+    default:
+      return null;
+  }
+}
+
+/**
+ * `docguard trace --features` — per-feature spec-kit adherence report.
+ * Reuses detectSpecKit() for feature discovery (no re-implementation).
+ */
+export function runTraceFeatures(projectDir, config, flags) {
+  const isJson = flags.format === 'json';
+  if (!isJson) {
+    console.log(`${c.bold}🎯 DocGuard Trace (features) — ${config.projectName}${c.reset}`);
+    console.log(`${c.dim}   Scoring per-feature spec adherence (spec-kit)...${c.reset}\n`);
+  }
+
+  const speckit = detectSpecKit(projectDir);
+  if (!speckit.detected || speckit.specs.length === 0) {
+    // Same empty-state contract as trace --reverse: JSON stays parseable with
+    // an `error` field; text gets an actionable pointer.
+    if (isJson) {
+      console.log(JSON.stringify({
+        features: [],
+        summary: { features: 0, avgScore: null, worst: null },
+        error: 'no spec-kit features detected',
+        timestamp: new Date().toISOString(),
+      }, null, 2));
+    } else {
+      console.log(`  ${c.yellow}No spec-kit features detected.${c.reset}`);
+      console.log(`  ${c.dim}Feature scoring needs .specify/specs/** or specs/** (spec.md/plan.md/tasks.md). Run \`specify init\` to start.${c.reset}`);
+    }
+    return;
+  }
+
+  const testRefIds = collectTestReferencedIds(projectDir);
+
+  const features = speckit.specs.map(f => {
+    const signals = computeFeatureSignals(projectDir, f, testRefIds);
+    const score = scoreFromSignals(signals);
+    const weakest = weakestSignal(signals);
+    const needsFix = weakest !== null && signals[weakest].value < 1;
+    return {
+      name: f.name,
+      dir: relative(projectDir, dirname(f.specPath || f.planPath || f.tasksPath)),
+      score,
+      grade: featureGrade(score),
+      signals,
+      weakest,
+      fixHint: needsFix ? fixHintFor(weakest, signals[weakest], f) : null,
+    };
+  });
+
+  // Worst-first — act on the weakest feature. Name tie-break for determinism.
+  features.sort((a, b) => a.score - b.score || a.name.localeCompare(b.name));
+
+  const avgScore = Math.round(features.reduce((sum, f) => sum + f.score, 0) / features.length);
+  const summary = {
+    features: features.length,
+    avgScore,
+    worst: { name: features[0].name, score: features[0].score },
+  };
+
+  if (isJson) {
+    outputFeaturesJSON(features, summary);
+  } else {
+    outputFeaturesText(features, summary);
+  }
+}
+
+function pctOrNull(signal) {
+  return signal.applicable ? Math.round(signal.value * 100) : null;
+}
+
+function outputFeaturesJSON(features, summary) {
+  console.log(JSON.stringify({
+    features: features.map(f => ({
+      name: f.name,
+      dir: f.dir,
+      score: f.score,
+      grade: f.grade,
+      signals: {
+        reqCoverage: {
+          pct: pctOrNull(f.signals.reqCoverage),
+          covered: f.signals.reqCoverage.covered,
+          total: f.signals.reqCoverage.total,
+          uncovered: f.signals.reqCoverage.uncovered,
+        },
+        taskCompletion: {
+          pct: pctOrNull(f.signals.taskCompletion),
+          checked: f.signals.taskCompletion.checked,
+          total: f.signals.taskCompletion.total,
+        },
+        taskEvidence: {
+          pct: pctOrNull(f.signals.taskEvidence),
+          evidenced: f.signals.taskEvidence.evidenced,
+          considered: f.signals.taskEvidence.considered,
+        },
+        artifactCompleteness: {
+          pct: pctOrNull(f.signals.artifactCompleteness),
+          spec: f.signals.artifactCompleteness.spec,
+          plan: f.signals.artifactCompleteness.plan,
+          tasks: f.signals.artifactCompleteness.tasks,
+        },
+      },
+      weakest: f.weakest,
+      fixHint: f.fixHint,
+    })),
+    summary,
+    timestamp: new Date().toISOString(),
+  }, null, 2));
+}
+
+function outputFeaturesText(features, summary) {
+  console.log(`  ${c.bold}Feature Adherence${c.reset} ${c.dim}(worst first)${c.reset}\n`);
+
+  for (const f of features) {
+    const gradeColor = f.score >= 80 ? c.green : f.score >= 60 ? c.yellow : c.red;
+    console.log(`  📦 ${c.bold}${f.name}${c.reset} — ${gradeColor}${f.score}/100 (${f.grade})${c.reset} ${featureBar(f.score)}`);
+    console.log(`     ${c.dim}${f.dir}${c.reset}`);
+
+    const sig = f.signals;
+    const line = (label, weightPct, s, detail) => {
+      const pct = s.applicable ? `${Math.round(s.value * 100)}%`.padEnd(4) : 'n/a ';
+      const color = !s.applicable ? c.dim : s.value >= 0.8 ? c.green : s.value >= 0.5 ? c.yellow : c.red;
+      console.log(`     ${color}${pct}${c.reset} ${label.padEnd(22)} ${c.dim}${detail} · weight ${weightPct}%${c.reset}`);
+    };
+
+    line('Requirement coverage', 40, sig.reqCoverage,
+      sig.reqCoverage.applicable
+        ? `${sig.reqCoverage.covered}/${sig.reqCoverage.total} spec IDs referenced by tests`
+        : 'no FR-/SC- IDs in spec.md');
+    line('Task completion', 25, sig.taskCompletion,
+      sig.taskCompletion.applicable
+        ? `${sig.taskCompletion.checked}/${sig.taskCompletion.total} tasks checked`
+        : 'no tasks.md checklist');
+    line('Task evidence', 20, sig.taskEvidence,
+      sig.taskEvidence.applicable
+        ? `${sig.taskEvidence.evidenced}/${sig.taskEvidence.considered} checked tasks name existing files`
+        : 'no checked task names a file path');
+    line('Artifacts', 15, sig.artifactCompleteness,
+      `${[sig.artifactCompleteness.spec, sig.artifactCompleteness.plan, sig.artifactCompleteness.tasks].filter(Boolean).length}/3 ` +
+      `(spec ${sig.artifactCompleteness.spec ? '✓' : '✗'} · plan ${sig.artifactCompleteness.plan ? '✓' : '✗'} · tasks ${sig.artifactCompleteness.tasks ? '✓' : '✗'})`);
+
+    if (f.fixHint) {
+      console.log(`     ${c.yellow}⚠ Fix first:${c.reset} ${f.fixHint}`);
+    } else {
+      console.log(`     ${c.green}✓ No weak signal — all applicable signals at 100%${c.reset}`);
+    }
+    console.log('');
+  }
+
+  console.log(`  ${c.bold}─────────────────────────────────────${c.reset}`);
+  console.log(`  ${summary.features} feature(s) · avg ${summary.avgScore}/100 · worst: ${c.red}${summary.worst.name} (${summary.worst.score}/100)${c.reset}`);
+  console.log(`\n  ${c.dim}Signals are deterministic (checklist, ID-to-test references, file existence) — adherence of intent, not correctness.${c.reset}\n`);
 }
 
 function findRelatedTests(projectFiles, sourcePatterns) {

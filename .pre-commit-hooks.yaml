@@ -1,0 +1,49 @@
+# DocGuard hooks for the pre-commit framework (https://pre-commit.com).
+#
+# How this works: `language: node` tells pre-commit to install THIS repo with
+# npm into an isolated nodeenv. package.json's `"bin": { "docguard": ... }`
+# is what makes the `docguard` executable in `entry` resolvable — no global
+# install needed on the consumer's machine.
+#
+# ### pre-commit
+# Consumers add this to their project's .pre-commit-config.yaml:
+#
+#     repos:
+#       - repo: https://github.com/raccioly/docguard
+#         rev: v0.29.0
+#         hooks:
+#           - id: docguard-guard
+#
+# For the full (slower) validator run on push instead of commit:
+#
+#     repos:
+#       - repo: https://github.com/raccioly/docguard
+#         rev: v0.29.0
+#         hooks:
+#           - id: docguard-guard-full
+#
+#     # and install the push-stage hook once per clone:
+#     #   pre-commit install --hook-type pre-push
+#
+# Both hooks validate the project as a whole (docs vs code), so filenames are
+# never passed and the hooks always run (`pass_filenames: false` +
+# `always_run: true`).
+
+- id: docguard-guard
+  name: DocGuard guard (changed-only)
+  description: Fast doc-drift gate — validates only the docs/code touched in the working tree.
+  entry: docguard guard --changed-only --quiet
+  language: node
+  pass_filenames: false
+  always_run: true
+
+- id: docguard-guard-full
+  name: DocGuard guard (full)
+  description: Full DocGuard validator run — every enabled validator, intended for the pre-push stage.
+  entry: docguard guard --quiet
+  language: node
+  pass_filenames: false
+  always_run: true
+  stages: [pre-push]
+  # `pre-push` (vs the legacy `push`) stage name requires pre-commit >= 3.2.
+  minimum_pre_commit_version: '3.2.0'

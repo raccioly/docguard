@@ -1,0 +1,30 @@
+# Smithery configuration for the DocGuard MCP server.
+# Reference: https://smithery.ai/docs/build/project-config/smithery.yaml
+#
+# DocGuard serves 5 read-only tools over stdio (docguard_guard, docguard_score,
+# docguard_explain, docguard_verify_claims, docguard_diagnose). No credentials
+# or required configuration — every project-scoped tool also accepts a
+# per-call `projectDir` argument, so the startup config below is optional.
+
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    properties:
+      projectDir:
+        type: string
+        description: >-
+          Optional default project directory the server inspects. Tools can
+          still override it per call with their own projectDir argument.
+    additionalProperties: false
+  commandFunction: |-
+    (config) => ({
+      command: 'npx',
+      args: [
+        '-y',
+        'docguard-cli',
+        'mcp',
+        ...(config.projectDir ? ['--dir', config.projectDir] : [])
+      ]
+    })
+  exampleConfig: {}

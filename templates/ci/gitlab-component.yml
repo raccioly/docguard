@@ -1,0 +1,90 @@
+# DocGuard — GitLab CI/CD component (CI/CD Catalog style, spec:inputs syntax).
+# Docs: https://docs.gitlab.com/ci/components/ and https://docs.gitlab.com/ci/inputs/
+#
+# This file STAGES the component. Actual catalog publishing requires a GitLab
+# account and a dedicated component project (see packaging/submissions.md):
+#   1. Create a GitLab project (e.g. gitlab.com/raccioly/docguard-component).
+#   2. Copy this file to `templates/docguard.yml` at that project's root
+#      (components must live in a top-level templates/ directory).
+#   3. Set the project as a CI/CD Catalog project (Settings > General > Visibility,
+#      "CI/CD Catalog project" toggle) and add a release job that tags a version.
+#
+# Consumers then include it as:
+#
+#     include:
+#       - component: gitlab.com/raccioly/docguard-component/docguard@0.29.0
+#         inputs:
+#           command: guard
+#           fail_on_warning: true
+#
+# Or, without the catalog, this works today from any repo via a plain include:
+#
+#     include:
+#       - remote: https://raw.githubusercontent.com/raccioly/docguard/v0.29.0/templates/ci/gitlab-component.yml
+
+spec:
+  inputs:
+    command:
+      description: DocGuard command to run.
+      type: string
+      default: guard
+      options: [guard, score, ci]
+    threshold:
+      description: Minimum CDD score (0-100) to pass. Only enforced by the `ci` command; 0 disables.
+      type: number
+      default: 0
+    fail_on_warning:
+      description: Fail the job on warnings, not just errors.
+      type: boolean
+      default: false
+    version:
+      description: docguard-cli version to run (npm dist-tag or exact version).
+      type: string
+      default: '0.29.0'
+    node_image:
+      description: Node.js image for the job (needs git available, so prefer the non-alpine tags).
+      type: string
+      default: 'node:20'
+---
+docguard:
+  image: '$[[ inputs.node_image ]]'
+  stage: test
+  variables:
+    # Several validators diff against git history — avoid a shallow clone.
+    GIT_DEPTH: '0'
+  script:
+    - |
+      set +e
+      CMD="$[[ inputs.command ]]"
+      FAIL_ON_WARNING="$[[ inputs.fail_on_warning ]]"
+      THRESHOLD="$[[ inputs.threshold ]]"
+      FLAGS=""
+      if [ "$CMD" = "ci" ] && [ "$THRESHOLD" -gt 0 ]; then
+        FLAGS="$FLAGS --threshold $THRESHOLD"
+      fi
+      if [ "$CMD" = "ci" ] && [ "$FAIL_ON_WARNING" = "true" ]; then
+        FLAGS="$FLAGS --fail-on-warning"
+      fi
+
+      npx "docguard-cli@$[[ inputs.version ]]" "$CMD" $FLAGS
+      RC=$?
+
+      # guard exit code 2 = warnings only. Not a failure unless asked for.
+      if [ "$CMD" = "guard" ] && [ "$RC" = "2" ]; then
+        if [ "$FAIL_ON_WARNING" = "true" ]; then
+          echo "DocGuard guard found warnings (fail_on_warning is enabled)."
+          RC=1
+        else
+          echo "DocGuard guard found warnings — passing (set fail_on_warning: true to fail)."
+          RC=0
+        fi
+      fi
+
+      # SARIF report as a browsable artifact — best-effort, never changes the verdict.
+      npx "docguard-cli@$[[ inputs.version ]]" guard --format sarif > docguard.sarif || true
+
+      exit $RC
+  artifacts:
+    when: always
+    paths:
+      - docguard.sarif

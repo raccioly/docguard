@@ -1,11 +1,15 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-07-03T20:32:09.442Z
-> Files: 649 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-07-03T21:55:57.532Z
+> Files: 661 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../../../tmp/
 
 - `append-buglog.mjs` — Declares path (~1335 tok)
+
+## ../../../../../.claude/projects/-Users-ricardoaccioly-Repo-claude-canonical-spec-kit/memory/
+
+- `keep-local-main-synced.md` (~276 tok)
 
 ## ./
 
@@ -16,6 +20,7 @@
 - `.jules-setup.sh` — Google Jules Environment Startup Script (~429 tok)
 - `.npmignore` — Development (~76 tok)
 - `.npmrc` — Supply-Chain Security Hardening (~59 tok)
+- `.pre-commit-hooks.yaml` — DocGuard hooks for the pre-commit framework (https://pre-commit.com). (~490 tok)
 - `action.yml` — Declares fs (~7591 tok)
 - `AGENTS.md` — AI Agent Instructions — DocGuard (~1582 tok)
 - `CHANGELOG.md` — Changelog (~44379 tok)
@@ -28,15 +33,17 @@
 - `DRIFT-LOG.md` — Drift Log (~711 tok)
 - `LICENSE` — Project license (~286 tok)
 - `package-lock.json` — npm lock file (~617 tok)
-- `package.json` — Node.js package manifest (~446 tok)
+- `package.json` — Node.js package manifest (~459 tok)
 - `PHILOSOPHY.md` — The Philosophy of Canonical-Driven Development (~1757 tok)
 - `pr_description.md` (~260 tok)
 - `pyproject.toml` — The enforcement tool for Canonical-Driven Development (CDD). Audit, generate, and guard your project (~358 tok)
 - `README.es.md` — 🛡️ DocGuard (~1098 tok)
-- `README.md` — Project documentation (~8061 tok)
+- `README.md` — Project documentation (~8283 tok)
 - `README.pt-BR.md` — 🛡️ DocGuard (~1075 tok)
 - `ROADMAP.md` — DocGuard Roadmap (~2432 tok)
 - `SECURITY.md` — Security Policy (~357 tok)
+- `server.json` (~272 tok)
+- `smithery.yaml` — Smithery configuration for the DocGuard MCP server. (~283 tok)
 - `STANDARD.md` — DocGuard Standard v0.1 (~6533 tok)
 - `SUPPLY-CHAIN-AUDIT.md` — Supply-Chain Security Audit (~726 tok)
 - `SUPPORT.md` — Support (~335 tok)
@@ -938,7 +945,7 @@
 ## .github/scripts/
 
 - `speckit-submission-body.sh` — Build the body for a spec-kit "Extension Submission" issue. (~1482 tok)
-- `speckit-submission.py` — Build a spec-kit "Extension Submission" for DocGuard. (~2590 tok)
+- `speckit-submission.py` — Build a spec-kit "Extension Submission" for DocGuard. (~2905 tok)
 
 ## .github/workflows/
 
@@ -948,7 +955,7 @@
 ## cli/
 
 - `config.mjs` — DocGuard — configuration loading. (~3265 tok)
-- `docguard.mjs` — DocGuard CLI — The enforcement tool for Canonical-Driven Development (CDD) (~9439 tok)
+- `docguard.mjs` — DocGuard CLI — The enforcement tool for Canonical-Driven Development (CDD) (~9606 tok)
 - `findings.mjs` — Findings — the structured, LLM-addressable result unit (v0.27). (~9378 tok)
 - `shared-ignore.mjs` — Shared Ignore Utility — Unified file filtering for all validators. (~4132 tok)
 - `shared-source.mjs` — Shared Source Resolution — Monorepo-aware source discovery. (~4655 tok)
@@ -970,17 +977,19 @@
 - `score.mjs` — Score Command — Calculate CDD maturity score (0-100) (~12136 tok)
 - `sync-tests.mjs` — `docguard sync --tests` — reconcile the TEST-SPEC Source-to-Test Map from disk. (~3191 tok)
 - `sync.mjs` — Sync Command — keep the documentation memory ALWAYS UP TO DATE. (~2371 tok)
-- `verify.mjs` — Verify Command — `docguard verify --semantic` (LLM field report #5). (~833 tok)
+- `trace.mjs` — Trace Command — Generate a requirements traceability matrix (~7746 tok)
+- `verify.mjs` — Verify Command — `docguard verify` (LLM field reports #5, #11). (~2118 tok)
 
 ## cli/scanners/
 
 - `agent-readability.mjs` — Agent Readability scanner — how well do this repo's docs serve an AI agent? (~2228 tok)
+- `instruction-audit.mjs` — Instruction Audit scanner — drift/conflict audit WITHIN agent instruction (~3668 tok)
 - `inventory.mjs` — Inventory scanners — code-truth the generator PRE-FILLS instead of leaving (~1699 tok)
 - `memory-plan.mjs` — Memory Plan — the orchestration artifact behind AI-powered Generate. (~5744 tok)
 - `project-type.mjs` — Project-Type Detection — the language-agnostic spine. (~4190 tok)
 - `routes.mjs` — Deep Route Scanner (~7712 tok)
 - `semantic-claims.mjs` — Semantic claim extractor (LLM field report #5). (~1998 tok)
-- `speckit.mjs` — Spec Kit Scanner — Detect, validate, and integrate with GitHub Spec Kit (~4785 tok)
+- `speckit.mjs` — Spec Kit Scanner — Detect, validate, and integrate with GitHub Spec Kit (~8882 tok)
 
 ## cli/validators/
 
@@ -1031,6 +1040,14 @@
 
 - `extension.yml` (~1026 tok)
 
+## packaging/
+
+- `submissions.md` — DocGuard — Distribution-Channel Submissions (v0.29.0) (~1728 tok)
+
+## packaging/homebrew/
+
+- `docguard.rb` — typed: false (~373 tok)
+
 ## schemas/
 
 - `docguard-config.schema.json` — behavior: docs (~2889 tok)
@@ -1041,6 +1058,10 @@
 - `REQUIREMENTS.md.template` — Requirements (~632 tok)
 - `SECURITY.md.template` — Security (~342 tok)
 - `TEST-SPEC.md.template` — /*.ts --> | <!-- e.g. tests/unit/**/*.test.ts --> | Unit | (~771 tok)
+
+## templates/ci/
+
+- `gitlab-component.yml` — DocGuard — GitLab CI/CD component (CI/CD Catalog style, spec:inputs syntax). (~906 tok)
 
 ## templates/commands/
 
@@ -1061,6 +1082,7 @@
 - `field-report-3-deferred.test.mjs` — v0.28 — the detection-gap items deferred from LLM field report #3. (~3122 tok)
 - `field-report-3.test.mjs` — v0.27 — LLM field report #3. (~3315 tok)
 - `freshness.test.mjs` — runGit: commitOldCode (~3536 tok)
+- `instruction-audit.test.mjs` — Instruction Audit scanner tests (field report #11 — MemoryLint-inspired). (~2387 tok)
 - `inventory.test.mjs` — Declares make (~1048 tok)
 - `llms-full-pack.test.mjs` — CLI: run (~1304 tok)
 - `mcp.test.mjs` — MCP Server Tests — `docguard mcp` over stdio. (~2138 tok)
@@ -1071,3 +1093,5 @@
 - `project-type.test.mjs` — Declares make (~2140 tok)
 - `sarif.test.mjs` — Declares CLI (~1455 tok)
 - `shared-source.test.mjs` — API routes: GET (4 endpoints) (~1714 tok)
+- `speckit-phantom.test.mjs` — Exports users, fetchUserRecords, retry, adapter + 2 more (~2500 tok)
+- `trace-features.test.mjs` — `trace --features` — per-feature spec-kit adherence scoring. (~2423 tok)

@@ -1,0 +1,32 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.raccioly/docguard",
+  "title": "DocGuard",
+  "description": "Deterministic doc-drift detection: guard, score, explain, verify-claims and diagnose MCP tools.",
+  "version": "0.29.0",
+  "websiteUrl": "https://github.com/raccioly/docguard#readme",
+  "repository": {
+    "url": "https://github.com/raccioly/docguard",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "docguard-cli",
+      "version": "0.29.0",
+      "runtimeHint": "npx",
+      "transport": {
+        "type": "stdio"
+      },
+      "packageArguments": [
+        {
+          "type": "positional",
+          "value": "mcp",
+          "valueHint": "mcp",
+          "description": "DocGuard subcommand that serves the MCP tools over stdio"
+        }
+      ]
+    }
+  ]
+}
