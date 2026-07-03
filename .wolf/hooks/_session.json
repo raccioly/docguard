@@ -325,6 +325,12 @@
       "action": "edit",
       "tokens": 289,
       "at": "2026-07-03T20:31:12.438Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/CHANGELOG.md",
+      "action": "edit",
+      "tokens": 35,
+      "at": "2026-07-03T20:32:09.451Z"
     }
   ],
   "edit_counts": {
@@ -332,7 +338,7 @@
     "tests/agents-sync.test.mjs": 1,
     "docs-canonical/DATA-MODEL.md": 3,
     "docs-canonical/REQUIREMENTS.md": 1,
-    "CHANGELOG.md": 2,
+    "CHANGELOG.md": 3,
     "cli/commands/mcp.mjs": 1,
     "cli/docguard.mjs": 5,
     "action.yml": 4,
