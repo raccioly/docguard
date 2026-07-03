@@ -1,6 +1,6 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-07-03T22:03:21.981Z
+> Auto-maintained by OpenWolf. Last scanned: 2026-07-03T22:18:43.533Z
 > Files: 662 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../../../tmp/
@@ -31,7 +31,7 @@
 - `docguard-cli-0.22.0.tgz` (~80828 tok)
 - `docguard-cli-0.23.0.tgz` (~81238 tok)
 - `Dockerfile` — Docker container definition (~204 tok)
-- `DRIFT-LOG.md` — Drift Log (~711 tok)
+- `DRIFT-LOG.md` — Drift Log (~802 tok)
 - `LICENSE` — Project license (~286 tok)
 - `package-lock.json` — npm lock file (~617 tok)
 - `package.json` — Node.js package manifest (~459 tok)
