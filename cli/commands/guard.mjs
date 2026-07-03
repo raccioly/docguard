@@ -7,13 +7,17 @@
  *   runGuardInternal() → returns data, no side effects (for diagnose, ci)
  */
 
-import { c, resolveSeverity } from '../shared.mjs';
+import { c, resolveSeverity, loadIgnorePatterns, resolveDocDirs } from '../shared.mjs';
+import { walkFiles } from '../shared-ignore.mjs';
+import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { loadValidatorSuppressions } from '../validator-markers.mjs';
 import { detectAgentMode, isSpecKitInitialized } from '../ensure-skills.mjs';
 import { checkUpgradeStatus } from './upgrade.mjs';
 import { changedFilesSince, isGitRepo } from '../shared-git.mjs';
+import { extractSemanticClaims } from '../scanners/semantic-claims.mjs';
+import { toSarif } from '../writers/sarif.mjs';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
-import { resolve as resolvePath } from 'node:path';
+import { resolve as resolvePath, relative as relativePath } from 'node:path';
 import { fileURLToPath as fp } from 'node:url';
 import { dirname as dn } from 'node:path';
 
@@ -201,6 +205,64 @@ function renderableItems(v) {
   ];
 }
 
+// ── Doc coverage map (v0.29) ──────────────────────────────────────────────────
+// Field report #6, Gap 1: only allow-listed docs were ever validated, so a new
+// .md could drift forever while guard stayed green — the human had to REMEMBER to
+// enroll each doc, which is exactly the step that fails silently. We deliberately
+// do NOT deep-scan every doc for claims (that floods false positives — see the
+// wu-whatsappinbox scar in metrics-consistency). Instead we cheaply report what's
+// under a validation tier and what isn't, turning silent non-coverage into a
+// visible nudge. Pure visibility — never gates the build.
+//
+// DocGuard's OWN installed slash-command docs are tool-managed, not the project's
+// docs — counting them as "untracked drift" is noise the user can't act on.
+const DOCGUARD_OWN_DOC_RE = /(^|\/)commands\/docguard\.[a-z-]+\.md$/i;
+
+function collectMarkdown(projectDir) {
+  const out = [];
+  // Shared canonical walker (v0.29 consolidation) — same ignore set and dot-entry
+  // skipping as every other validator, instead of a private IGNORE_DIRS copy.
+  walkFiles(projectDir, (full) => {
+    if (full.toLowerCase().endsWith('.md')) {
+      out.push(relativePath(projectDir, full).replace(/\\/g, '/'));
+    }
+  });
+  return out;
+}
+
+/**
+ * Classify every discoverable Markdown file into a validation tier:
+ *   canonical    — in requiredFiles.canonical (structure + review-gated)
+ *   tracked      — under a doc home or root-level (claim/freshness checks reach it)
+ *   ignored      — matched by .docguardignore
+ *   unclassified — under NO tier; drift here is invisible (the Gap-1 trap)
+ */
+function computeDocCoverage(projectDir, config) {
+  const isIgnored = loadIgnorePatterns(projectDir);
+  const canonical = new Set(
+    ((config.requiredFiles && config.requiredFiles.canonical) || []).map(p => p.replace(/\\/g, '/'))
+  );
+  // Any path declared in documentTypes is a KNOWN doc (even if optional) — not
+  // "untracked." This keeps the warning specific to genuinely-unenrolled files.
+  const known = new Set(Object.keys(config.documentTypes || {}).map(p => p.replace(/\\/g, '/')));
+  // Same doc-home set the claim scanner uses — so "tracked" provably means
+  // "actually scanned," never a label the scanner ignores. With trailing slash
+  // for prefix matching.
+  const docHomePrefixes = resolveDocDirs(projectDir, config).map(d => d.replace(/\/?$/, '/'));
+  const all = collectMarkdown(projectDir);
+  let canonicalCount = 0, tracked = 0, ignored = 0;
+  const unclassified = [];
+  for (const rel of all) {
+    if (canonical.has(rel)) { canonicalCount++; continue; }
+    if (isIgnored(rel) || DOCGUARD_OWN_DOC_RE.test(rel)) { ignored++; continue; }
+    const inHome = docHomePrefixes.some(h => rel.startsWith(h));
+    const atRoot = !rel.includes('/');
+    if (inHome || atRoot || known.has(rel)) { tracked++; continue; }
+    unclassified.push(rel);
+  }
+  return { discovered: all.length, canonical: canonicalCount, tracked, ignored, unclassified };
+}
+
 export function runGuardInternal(projectDir, config) {
   const validators = config.validators || {};
   const results = [];
@@ -216,16 +278,28 @@ export function runGuardInternal(projectDir, config) {
     { key: 'security', name: 'Security', fn: () => validateSecurity(projectDir, config) },
     { key: 'architecture', name: 'Architecture', fn: () => validateArchitecture(projectDir, config) },
     { key: 'freshness', name: 'Freshness', fn: () => {
+      // v0.29: adapter now emits structured findings (FRS001–FRS005). The
+      // validator keeps its array-of-{status, code, doc, message} contract;
+      // messages are byte-identical (the sweep-needed nudge below regex-matches
+      // them), so counts/exit codes are unchanged.
       const freshnessResults = validateFreshness(projectDir, config);
-      const errors = [];
-      const warnings = [];
+      const findings = [];
       let passed = 0;
       for (const r of freshnessResults) {
-        if (r.status === 'pass') passed++;
-        else if (r.status === 'warn') warnings.push(r.message);
-        else if (r.status === 'fail') errors.push(r.message);
+        if (r.status === 'pass') { passed++; continue; }
+        if (r.status !== 'warn' && r.status !== 'fail') continue; // skip entries
+        findings.push(mkFinding({
+          code: r.code || null,
+          validator: 'freshness',
+          severity: r.status === 'fail' ? 'error' : 'warn',
+          message: r.message,
+          location: r.doc || null,
+          suggestion: r.code === 'FRS001'
+            ? { kind: 'fix', text: 'Commit the doc, or stamp it reviewed', pragma: '<!-- docguard:last-reviewed YYYY-MM-DD -->' }
+            : { kind: 'fix', text: 'Refresh the stale code-truth sections', command: 'docguard sync --write' },
+        }));
       }
-      return { errors, warnings, passed, total: passed + warnings.length + errors.length };
+      return resultFromFindings(findings, { passed, total: passed + findings.length });
     }},
     { key: 'traceability', name: 'Traceability', fn: () => validateTraceability(projectDir, config) },
     { key: 'docsDiff', name: 'Docs-Diff', fn: () => validateDocsDiff(projectDir, config) },
@@ -353,6 +427,19 @@ export function runGuardInternal(projectDir, config) {
   const nextStep =
     overallStatus === 'PASS' ? null : 'docguard diagnose';
 
+  // v0.29: coverage map + semantic-claim surfacing. Both are pure visibility —
+  // they never change errors/warnings/exit code. Skipped on the --changed-only
+  // lite path, which trades coverage for sub-2s speed and shouldn't pay for a
+  // repo-wide Markdown walk.
+  const lite = Array.isArray(config.changedFiles);
+  let coverage = null;
+  let semanticClaims = null;
+  if (!lite) {
+    try { coverage = computeDocCoverage(projectDir, config); } catch { coverage = null; }
+    try { semanticClaims = { count: extractSemanticClaims(projectDir, config).length }; }
+    catch { semanticClaims = null; }
+  }
+
   return {
     project: config.projectName,
     profile: config.profile || 'standard',
@@ -369,6 +456,8 @@ export function runGuardInternal(projectDir, config) {
     // things they've marked as high-severity.
     effectiveErrors,
     effectiveWarnings,
+    coverage,
+    semanticClaims,
     validators: results,
     // Unknown keys in `docguard:validator … n/a` markers — typo protection so
     // a mistyped key doesn't silently fail to suppress. Surfaced by runGuard.
@@ -459,6 +548,16 @@ export function runGuard(projectDir, config, flags) {
   }
 
   const data = runGuardInternal(projectDir, config);
+
+  // ── SARIF output (2.1.0) ──
+  // Same flush discipline as the JSON branch below (bug-105): set exitCode and
+  // write+return so a piped consumer never gets a truncated payload.
+  if (flags.format === 'sarif') {
+    const sarif = toSarif(data, { projectDir });
+    process.exitCode = data.effectiveErrors > 0 ? 1 : data.effectiveWarnings > 0 ? 2 : 0;
+    process.stdout.write(JSON.stringify(sarif, null, 2) + '\n');
+    return;
+  }
 
   // ── JSON output ──
   if (flags.format === 'json') {
@@ -589,6 +688,35 @@ export function runGuard(projectDir, config, flags) {
   // has no /docguard.* commands installed yet, say how to get them.
   if (agentMode === 'llm' && !existsSync(resolvePath(projectDir, '.agent', 'skills', 'docguard-guard'))) {
     console.log(`  ${c.dim}💡 Install ${c.cyan}/docguard.*${c.dim} commands for your agent: ${c.cyan}docguard init${c.reset}`);
+  }
+
+  // ── Coverage + claim visibility (v0.29, field report #6) ──
+  // "Green" must mean "I checked these and they're clean," not "I checked the few
+  // files I was told about." Show what's under no tier (Gap 1) and that documented
+  // factual claims remain unverified vs code (Gap 2). Neither gates the build — but
+  // both must SHOW, or a green run misleads.
+  if (data.coverage) {
+    const cov = data.coverage;
+    const unclassN = cov.unclassified.length;
+    const tierLine = `${cov.canonical} canonical · ${cov.tracked} tracked · ${cov.ignored} ignored`
+      + (unclassN ? ` · ${c.yellow}${unclassN} outside any tier${c.reset}${c.dim}` : '');
+    console.log(`\n  ${c.dim}📑 Docs: ${tierLine} ${c.reset}${c.dim}(${cov.discovered} Markdown files)${c.reset}`);
+    if (unclassN > 0) {
+      // Calm by default — surface the COUNT every run (so non-coverage is never
+      // silent), but don't enumerate or cry "invisible drift": much of this is
+      // legitimately untracked (fixtures, templates, specs). The file list is one
+      // `--verbose` away. Loud-by-default here would just train users to ignore it.
+      console.log(`  ${c.dim}↪ ${unclassN} file(s) in no validation tier — add to requiredFiles.canonical, a docs/ home, or .docguardignore${flags.verbose ? ':' : ` (${skill('guard')} --verbose to list)`}${c.reset}`);
+      if (flags.verbose) {
+        for (const f of cov.unclassified.slice(0, 10)) console.log(`     ${c.dim}• ${f}${c.reset}`);
+        if (unclassN > 10) console.log(`     ${c.dim}... and ${unclassN - 10} more${c.reset}`);
+      }
+    }
+  }
+  if (data.semanticClaims && data.semanticClaims.count > 0) {
+    console.log(`\n  ${c.cyan}🔍 ${data.semanticClaims.count} documented claim(s) (counts/limits/enums) are unverified against code.${c.reset}`);
+    console.log(`     ${c.dim}A green guard means the structure is sound — NOT that these values still match the code.${c.reset}`);
+    console.log(`     ${c.dim}Confirm them: ${c.cyan}${skill('verify')} --semantic${c.reset}`);
   }
 
   // Badge snippet

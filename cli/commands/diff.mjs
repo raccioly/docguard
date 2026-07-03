@@ -6,6 +6,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, extname, basename } from 'node:path';
 import { c } from '../shared.mjs';
+import { walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
 import { collectPackageJsons, detectDocker, grepEnvUsage, resolveSourceRoots } from '../shared-source.mjs';
 import { parseApiReferenceDoc, compareEndpoints } from '../scanners/api-doc.mjs';
 import { resolveApiSurface } from '../validators/api-surface.mjs';
@@ -379,22 +380,12 @@ function diffTests(dir, config = {}) {
 
 // ── Utilities ──────────────────────────────────────────────────────────────
 
+// v0.29 consolidation: traversal delegates to the shared canonical walker
+// (this copy was hiding in commands/, missed by the first validator sweep).
 function getFilesRecursive(dir) {
   const results = [];
-  if (!existsSync(dir)) return results;
-
-  const entries = readdirSync(dir);
-  for (const entry of entries) {
-    if (IGNORE_DIRS.has(entry) || entry.startsWith('.')) continue;
-    const fullPath = join(dir, entry);
-    try {
-      const stat = statSync(fullPath);
-      if (stat.isDirectory()) {
-        results.push(...getFilesRecursive(fullPath));
-      } else if (stat.isFile() && CODE_EXTENSIONS.has(extname(fullPath))) {
-        results.push(fullPath);
-      }
-    } catch { /* skip */ }
-  }
+  sharedWalkFiles(dir, (fullPath) => {
+    if (CODE_EXTENSIONS.has(extname(fullPath))) results.push(fullPath);
+  }, { ignoreDirs: IGNORE_DIRS });
   return results;
 }

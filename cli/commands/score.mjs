@@ -9,6 +9,8 @@ import { execSync } from 'node:child_process';
 import { c, docHasSection } from '../shared.mjs';
 import { validateSecurity } from '../validators/security.mjs';
 import { runGuardInternal } from './guard.mjs';
+import { extractSemanticClaims } from '../scanners/semantic-claims.mjs';
+import { assessAgentReadability } from '../scanners/agent-readability.mjs';
 
 /**
  * Detect whether the project configures a test runner (the "Check 3" of the
@@ -299,11 +301,17 @@ export function runScore(projectDir, config, flags) {
   console.log(`  ${c.dim}─────────────────────────────────${c.reset}`);
 
   for (const attr of alcoa.attributes) {
-    const icon = attr.met ? `${c.green}✅` : `${c.yellow}⚠️`;
-    const status = attr.met ? `${c.green}${attr.evidence}` : `${c.yellow}${attr.gap}`;
-    console.log(`  ${icon} ${attr.name.padEnd(16)}${c.reset} — ${status}${c.reset}`);
+    // `unverified` is a third state: not a green pass, but not a red gap either —
+    // "checked the structure, can't confirm the facts." Render it neutrally (🔍,
+    // cyan) so it reads as a to-do, not a failure.
+    const unverified = attr.status === 'unverified';
+    const icon = attr.met ? `${c.green}✅` : unverified ? `${c.cyan}🔍` : `${c.yellow}⚠️`;
+    const tone = attr.met ? c.green : unverified ? c.cyan : c.yellow;
+    const body = attr.met ? attr.evidence : attr.gap;
+    console.log(`  ${icon} ${attr.name.padEnd(16)}${c.reset} — ${tone}${body}${c.reset}`);
     if (!attr.met && attr.fix) {
-      console.log(`  ${c.dim}     Fix: ${attr.fix}${c.reset}`);
+      const verb = unverified ? 'Verify' : 'Fix';
+      console.log(`  ${c.dim}     ${verb}: ${attr.fix}${c.reset}`);
     }
   }
 
@@ -312,6 +320,22 @@ export function runScore(projectDir, config, flags) {
   if (alcoa.met < alcoa.total) {
     console.log(`  ${c.dim}${alcoa.total - alcoa.met} action(s) needed for full compliance${c.reset}`);
   }
+  console.log('');
+
+  // ── Agent Readability (v0.29) ──
+  // Display-only, like ALCOA+ — never feeds the gating CDD grade. Answers the
+  // 2026 question: can an AI consumer FIND, QUOTE, and TRUST these docs?
+  const agentRead = assessAgentReadability(projectDir, config);
+  console.log(`  ${c.bold}🤖 Agent Readability${c.reset} ${c.dim}(how well AI consumers can read this repo)${c.reset}`);
+  console.log(`  ${c.dim}─────────────────────────────────${c.reset}`);
+  for (const m of agentRead.metrics) {
+    const icon = m.score >= 60 ? `${c.green}✅` : `${c.yellow}⚠️`;
+    const tone = m.score >= 60 ? c.green : c.yellow;
+    console.log(`  ${icon} ${m.label.padEnd(28)}${c.reset} — ${tone}${m.detail}${c.reset}`);
+    if (m.fix) console.log(`  ${c.dim}     Fix: ${m.fix}${c.reset}`);
+  }
+  const arColor = agentRead.score >= 75 ? c.green : agentRead.score >= 40 ? c.yellow : c.red;
+  console.log(`\n  ${arColor}${c.bold}Agent Readability: ${agentRead.score}% (${agentRead.grade})${c.reset}`);
   console.log('');
 
   // Badge snippet
@@ -411,14 +435,54 @@ function computeAlcoaCompliance(projectDir, config, scores) {
   });
 
   // 5. Accurate — Do docs match the code?
-  const accurate = scores.drift >= 80 && scores.docQuality >= 50;
-  attributes.push({
-    name: 'Accurate',
-    met: accurate,
-    evidence: accurate ? `Drift: ${scores.drift}%, doc quality: ${scores.docQuality}%` : null,
-    gap: !accurate ? `Drift: ${scores.drift}%, doc quality: ${scores.docQuality}% — docs may be inaccurate` : null,
-    fix: !accurate ? 'Run docguard diagnose to find doc/code mismatches' : null,
-  });
+  //
+  // Field report #6: this attribute used to read `met` purely from structural
+  // signals (drift markers + prose quality). That let it show ✅ "100%" while a
+  // watched doc stated a factually wrong number — the confidence-inverting false
+  // negative the field report is about. Structure passing is necessary but NOT
+  // sufficient for "accurate"; the factual claims (counts/limits/enums) have to be
+  // verified against code, and DocGuard's deterministic core can't do that — only
+  // an agent via `verify --semantic` can. So we add a third, honest state:
+  //   met        — structure sound AND no unverified factual claims exist
+  //   unverified — structure sound BUT documented claims remain unchecked vs code
+  //   unmet      — structural drift/quality below bar
+  // `unverified` counts as not-met for the ALCOA percentage (so the score stops
+  // overclaiming), but renders as a neutral 🔍 (not a ⚠️ failure) — "I haven't
+  // confirmed this," not "this is wrong." This is display-only: it never touches
+  // the gating CDD grade (totalScore), which CI thresholds read.
+  const structurallyAccurate = scores.drift >= 80 && scores.docQuality >= 50;
+  let unverifiedClaims = 0;
+  if (structurallyAccurate) {
+    try { unverifiedClaims = extractSemanticClaims(projectDir, config).length; } catch { /* extractor best-effort */ }
+  }
+  if (!structurallyAccurate) {
+    attributes.push({
+      name: 'Accurate',
+      met: false,
+      status: 'unmet',
+      evidence: null,
+      gap: `Drift: ${scores.drift}%, doc quality: ${scores.docQuality}% — docs may be inaccurate`,
+      fix: 'Run docguard diagnose to find doc/code mismatches',
+    });
+  } else if (unverifiedClaims > 0) {
+    attributes.push({
+      name: 'Accurate',
+      met: false,
+      status: 'unverified',
+      evidence: null,
+      gap: `Structure sound (drift ${scores.drift}%, quality ${scores.docQuality}%), but ${unverifiedClaims} documented claim(s) (counts/limits/enums) are unverified against code`,
+      fix: 'Run docguard verify --semantic to check the documented values against the code',
+    });
+  } else {
+    attributes.push({
+      name: 'Accurate',
+      met: true,
+      status: 'met',
+      evidence: `Drift: ${scores.drift}%, doc quality: ${scores.docQuality}%, no unverified factual claims`,
+      gap: null,
+      fix: null,
+    });
+  }
 
   // 6. Complete — Are all required docs present?
   const complete = scores.structure >= 80;

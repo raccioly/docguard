@@ -1,10 +1,19 @@
 /**
  * Agents Command — Generate agent-specific config files from AGENTS.md
  * Creates .cursor/rules/, .clinerules, .github/copilot-instructions.md, etc.
+ *
+ * v0.29 sync mode: AGENTS.md is the CANONICAL source; the generated family
+ * (CLAUDE.md, .clinerules, copilot-instructions, …) carries a source-hash
+ * marker. `--sync` regenerates every marked (or missing) variant; `--check`
+ * is the CI staleness gate (exit 2 when a marked variant's hash no longer
+ * matches AGENTS.md). Files that exist WITHOUT our marker are user content —
+ * never overwritten without --force. This kills the hand-duplication drift
+ * between agent files, which is exactly the failure class DocGuard exists for.
  */
 
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
+import { createHash } from 'node:crypto';
 import { c } from '../shared.mjs';
 
 const AGENT_TARGETS = {
@@ -40,6 +49,44 @@ const AGENT_TARGETS = {
   },
 };
 
+// ── Sync markers (v0.29) ─────────────────────────────────────────────────────
+
+const sourceHash = (content) => createHash('sha256').update(content).digest('hex').slice(0, 16);
+
+/**
+ * Stamp generated content with the sync marker. Text formats get HTML-comment
+ * lines; JSON gets a `_docguardSync` field (comments would break parsing).
+ * For frontmatter files (.mdc) the marker goes AFTER the closing `---` so the
+ * frontmatter stays the first bytes, as Cursor requires.
+ */
+function stampMarker(content, hash, targetPath) {
+  const marker = `<!-- docguard:agents-sync source=AGENTS.md hash=${hash} -->\n<!-- Do not edit — regenerate with: docguard agents --sync -->\n`;
+  if (targetPath.endsWith('.json')) {
+    try {
+      const obj = JSON.parse(content);
+      obj._docguardSync = { source: 'AGENTS.md', hash, note: 'Do not edit — regenerate with: docguard agents --sync' };
+      return JSON.stringify(obj, null, 2);
+    } catch { return content; }
+  }
+  if (content.startsWith('---\n')) {
+    const end = content.indexOf('\n---', 4);
+    if (end !== -1) {
+      const cut = end + 4;
+      return content.slice(0, cut) + '\n' + marker + content.slice(cut);
+    }
+  }
+  return marker + '\n' + content;
+}
+
+/** Extract the recorded source hash from a generated file, or null if unmarked. */
+function extractMarkerHash(content, targetPath) {
+  if (targetPath.endsWith('.json')) {
+    try { return JSON.parse(content)._docguardSync?.hash ?? null; } catch { return null; }
+  }
+  const m = content.match(/docguard:agents-sync source=AGENTS\.md hash=([0-9a-f]{16})/);
+  return m ? m[1] : null;
+}
+
 export function runAgents(projectDir, config, flags) {
   console.log(`${c.bold}🤖 DocGuard Agents — ${config.projectName}${c.reset}`);
   console.log(`${c.dim}   Directory: ${projectDir}${c.reset}\n`);
@@ -52,6 +99,15 @@ export function runAgents(projectDir, config, flags) {
   }
 
   const agentsContent = readFileSync(agentsPath, 'utf-8');
+
+  // ── v0.29: --check — CI staleness gate for the synced family ──
+  if (flags.check) {
+    return runAgentsCheck(projectDir, agentsContent, flags);
+  }
+  // ── v0.29: --sync — regenerate marked/missing variants from AGENTS.md ──
+  if (flags.sync) {
+    return runAgentsSync(projectDir, config, agentsContent, flags);
+  }
 
   // Parse which agents to generate for
   let targets = Object.keys(AGENT_TARGETS);
@@ -93,6 +149,99 @@ export function runAgents(projectDir, config, flags) {
 
   console.log(`\n${c.bold}  ─────────────────────────────────────${c.reset}`);
   console.log(`  Created: ${created}  Skipped: ${skipped}\n`);
+}
+
+// ── Sync + Check modes (v0.29) ───────────────────────────────────────────────
+
+/**
+ * `docguard agents --sync` — regenerate the agent-file family from AGENTS.md.
+ *
+ * Semantics per target:
+ *   - missing            → generate (stamped with the current source hash)
+ *   - exists, our marker → regenerate (marked files are OURS to update)
+ *   - exists, unmarked   → SKIP with a warning (hand-written user content;
+ *                          --force overrides, which is the only destructive
+ *                          path and is explicit)
+ */
+function runAgentsSync(projectDir, config, agentsContent, flags) {
+  const hash = sourceHash(agentsContent);
+  let synced = 0, fresh = 0, skipped = 0;
+
+  let targets = Object.keys(AGENT_TARGETS);
+  if (flags.agent) {
+    if (!AGENT_TARGETS[flags.agent]) {
+      console.log(`  ${c.red}Unknown agent: ${flags.agent}${c.reset}`);
+      console.log(`  Available: ${targets.join(', ')}\n`);
+      process.exit(1);
+    }
+    targets = [flags.agent];
+  }
+
+  for (const key of targets) {
+    const target = AGENT_TARGETS[key];
+    const targetPath = resolve(projectDir, target.path);
+    const exists = existsSync(targetPath);
+
+    if (exists) {
+      const current = readFileSync(targetPath, 'utf-8');
+      const recorded = extractMarkerHash(current, target.path);
+      if (recorded === null && !flags.force) {
+        console.log(`  ${c.yellow}⚠️  ${target.name}: ${target.path} exists without a sync marker (hand-written?) — skipped. Use --force to adopt it.${c.reset}`);
+        skipped++;
+        continue;
+      }
+      if (recorded === hash) {
+        console.log(`  ${c.dim}✓  ${target.name}: ${target.path} already in sync${c.reset}`);
+        fresh++;
+        continue;
+      }
+    }
+
+    const content = stampMarker(target.generate(agentsContent, config), hash, target.path);
+    const dir = dirname(targetPath);
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+    writeFileSync(targetPath, content, 'utf-8');
+    console.log(`  ${c.green}✅ ${target.name}${c.reset}: ${target.path} ${c.dim}(${exists ? 'resynced' : 'created'}, hash ${hash})${c.reset}`);
+    synced++;
+  }
+
+  console.log(`\n${c.bold}  ─────────────────────────────────────${c.reset}`);
+  console.log(`  Synced: ${synced}  In sync: ${fresh}  Skipped (unmarked): ${skipped}`);
+  console.log(`  ${c.dim}CI gate: ${c.cyan}docguard agents --check${c.dim} exits 2 when a variant goes stale.${c.reset}\n`);
+}
+
+/**
+ * `docguard agents --check` — CI staleness gate. Only files that CARRY our
+ * marker are judged (an unmarked or absent variant is the user's choice, not
+ * drift). Stale marked file → warning + exit code 2 (matches guard's
+ * warnings-exit contract). Uses process.exitCode, never process.exit, so
+ * stdout always drains (bug-105 discipline).
+ */
+function runAgentsCheck(projectDir, agentsContent, flags) {
+  const hash = sourceHash(agentsContent);
+  const stale = [];
+  let inSync = 0, unmanaged = 0;
+
+  for (const [, target] of Object.entries(AGENT_TARGETS)) {
+    const targetPath = resolve(projectDir, target.path);
+    if (!existsSync(targetPath)) { unmanaged++; continue; }
+    let recorded = null;
+    try { recorded = extractMarkerHash(readFileSync(targetPath, 'utf-8'), target.path); } catch { /* unreadable → unmanaged */ }
+    if (recorded === null) { unmanaged++; continue; }
+    if (recorded === hash) inSync++;
+    else stale.push(target.path);
+  }
+
+  if (stale.length > 0) {
+    for (const p of stale) {
+      console.log(`  ${c.yellow}⚠ ${p} is stale — AGENTS.md changed since it was generated.${c.reset}`);
+    }
+    console.log(`\n  ${c.yellow}${stale.length} agent file(s) out of sync.${c.reset} Fix: ${c.cyan}docguard agents --sync${c.reset}\n`);
+    process.exitCode = 2;
+    return;
+  }
+
+  console.log(`  ${c.green}✅ Agent-file family in sync${c.reset} ${c.dim}(${inSync} synced, ${unmanaged} unmanaged/absent — unmarked files are yours, not checked)${c.reset}\n`);
 }
 
 // ── Generator Functions ────────────────────────────────────────────────────
