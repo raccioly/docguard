@@ -1739,7 +1739,14 @@
       "file": "cli/commands/guard.mjs",
       "root_cause": "runGuard's JSON path did `console.log(JSON.stringify(data)) ; process.exit(code)`. A payload over ~8 KB written to a PIPE flushes asynchronously, so the immediate process.exit() truncated it mid-string. The repo's own report (7.3 KB) stayed under the boundary; a fixture's report (8.2 KB) crossed it. v0.28 additions to the guard JSON tipped this fixture over the edge, exposing the latent race. Writing to a FILE (synchronous) never reproduced it.",
       "fix": "Set `process.exitCode = code` and `process.stdout.write(json + '\\n')` then RETURN, instead of process.exit(). Node drains stdout and exits naturally with the code. Applied to both the JSON branch and the final text-path exit. Real CI-correctness bug: a >8 KB --format json report would be silently truncated for any pipe consumer.",
-      "tags": ["guard", "json", "process-exit", "flush-race", "ci-correctness", "field-report-3"],
+      "tags": [
+        "guard",
+        "json",
+        "process-exit",
+        "flush-race",
+        "ci-correctness",
+        "field-report-3"
+      ],
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-06-22T23:40:00.000Z"
@@ -1751,10 +1758,1355 @@
       "file": "cli/validators/architecture.mjs",
       "root_cause": "extractImports lumped ES import, dynamic import(), and require() into one list feeding both graph.edges (layer checks) and graph.fileMap (cycle DFS). A dynamic import is NOT a load-time edge — it's the canonical cycle break — but was counted as one.",
       "fix": "extractImports now returns { spec, dynamic }. buildImportGraph records the dynamic flag on graph.edges but only pushes STATIC edges into fileMap (cycle adjacency). Cycle detection no longer sees dynamic edges; layer-boundary checks still do.",
-      "tags": ["architecture", "import-cycle", "dynamic-import", "false-positive", "field-report-3"],
+      "tags": [
+        "architecture",
+        "import-cycle",
+        "dynamic-import",
+        "false-positive",
+        "field-report-3"
+      ],
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-06-22T23:41:00.000Z"
+    },
+    {
+      "id": "bug-107",
+      "timestamp": "2026-06-23T03:40:34.868Z",
+      "error_message": "Missing error handling in unknown",
+      "file": "cli/validators/metrics-consistency.mjs",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block | Also: // ── Collection glob counting (v0.29) ─────────────────────; // Minimal, dependency-free glob→count for `config.collectio",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-06-23T03:41:37.690Z"
+    },
+    {
+      "id": "bug-108",
+      "timestamp": "2026-06-23T03:41:03.266Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/validators/metrics-consistency.mjs",
+      "root_cause": "5 lines replaced/restructured",
+      "fix": "Rewrote 6→8 lines (5 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-23T03:41:03.266Z"
+    },
+    {
+      "id": "bug-109",
+      "timestamp": "2026-06-23T03:42:06.279Z",
+      "error_message": "Missing error handling in unknown",
+      "file": "cli/commands/score.mjs",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-23T03:42:06.279Z"
+    },
+    {
+      "id": "bug-110",
+      "timestamp": "2026-06-23T03:42:15.316Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/commands/score.mjs",
+      "root_cause": "4 lines replaced/restructured",
+      "fix": "Rewrote 8→14 lines (4 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-23T03:42:15.316Z"
+    },
+    {
+      "id": "bug-111",
+      "timestamp": "2026-06-23T03:42:25.547Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/commands/guard.mjs",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 7→8 lines (3 removed) | Also: if (isIgnored(rel)) { ignored++; continue; }; if (inHome || atRoot) { tracked++; continue; } | Also: + (unclassN ? ` · ${c.yellow}${unclassN} unclassif; console.log(`  ${c.yellow}⚠ ${unclassN} Markdown f",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 3,
+      "last_seen": "2026-06-23T03:45:52.275Z"
+    },
+    {
+      "id": "bug-112",
+      "timestamp": "2026-06-23T03:43:06.477Z",
+      "error_message": "Missing error handling in collectMarkdown",
+      "file": "cli/commands/guard.mjs",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block | Also: // v0.29: coverage map + semantic-claim surfacing. Both are ; // they never change errors/warnings/exit code. Skipped on t",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-06-23T03:43:15.465Z"
+    },
+    {
+      "id": "bug-113",
+      "timestamp": "2026-06-23T03:50:21.581Z",
+      "error_message": "Missing error handling in unknown",
+      "file": "tests/metrics-consistency.test.mjs",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-23T03:50:21.581Z"
+    },
+    {
+      "id": "bug-114",
+      "timestamp": "2026-06-23T03:51:49.283Z",
+      "error_message": "Missing error handling in unknown",
+      "file": "CHANGELOG.md",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-23T03:51:49.283Z"
+    },
+    {
+      "id": "bug-115",
+      "timestamp": "2026-06-23T04:35:00.000Z",
+      "error_message": "guard PASS + ALCOA 'Accurate: 100%' / A+ while a watched canonical doc stated a wrong count ('16 extractors' vs 19 in code) — a confidence-inverting false negative (LLM field report #6, websec-validator)",
+      "file": "cli/commands/score.mjs",
+      "root_cause": "Two gaps. (1) The ALCOA 'Accurate' pillar was computed purely from structural signals (drift markers + prose quality: `scores.drift >= 80 && scores.docQuality >= 50`), never comparing a documented fact to code — so it reported 100% over a wrong number. (2) The deterministic claim checkers had the right architecture but the literal noun 'extractors' was missing from the hardcoded vocabulary in semantic-claims.mjs and metrics-consistency only knew DocGuard's own meta-counts (checks/validators/tests), so a project's domain count was never bound to a code collection.",
+      "fix": "Made 'Accurate' a 3-state attribute (met / unverified / unmet): 'unverified' (neutral cyan) when structure passes but documented claims are unchecked vs code — counts as not-met for the ALCOA % (stops overclaiming) but display-only, gating CDD grade untouched. Added config.collections (noun→glob) so Metrics-Consistency deterministically flags a documented count vs the real file count, in guard, no LLM. Surfaced the semantic-claim extractor + a doc-coverage map as non-gating notices in guard. Extended the claim noun vocabulary (added extractors/plugins/detectors/…). 5 new tests; 805/805 prior tests still pass.",
+      "tags": [
+        "field-report-6",
+        "false-negative",
+        "alcoa",
+        "accuracy",
+        "metrics-consistency",
+        "collections",
+        "coverage",
+        "semantic-claims"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-23T04:35:00.000Z"
+    },
+    {
+      "id": "bug-116",
+      "timestamp": "2026-06-23T19:48:11.990Z",
+      "error_message": "Missing error handling in resolveDocDirs",
+      "file": "cli/shared.mjs",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-23T19:48:11.990Z"
+    },
+    {
+      "id": "bug-117",
+      "timestamp": "2026-06-23T19:48:32.930Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/validators/metrics-consistency.mjs",
+      "root_cause": "5 lines replaced/restructured",
+      "fix": "Rewrote 14→17 lines (5 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-23T19:48:32.930Z"
+    },
+    {
+      "id": "bug-118",
+      "timestamp": "2026-06-23T19:48:44.421Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/commands/guard.mjs",
+      "root_cause": "4 lines replaced/restructured",
+      "fix": "Rewrote 7→3 lines (4 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-23T19:48:44.421Z"
+    },
+    {
+      "id": "bug-119",
+      "timestamp": "2026-06-23T19:50:00.709Z",
+      "error_message": "Missing error handling in unknown",
+      "file": "tests/metrics-consistency.test.mjs",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-23T19:50:00.709Z"
+    },
+    {
+      "id": "bug-120",
+      "timestamp": "2026-07-03T02:13:49.215Z",
+      "error_message": "Incorrect value in code",
+      "file": "pyproject.toml",
+      "root_cause": "Had \"The enforcement tool for Canonical-Driven Develop",
+      "fix": "Changed to \"The enforcement tool for Canonical-Driven Develop",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "toml"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T02:13:49.215Z"
+    },
+    {
+      "id": "bug-121",
+      "timestamp": "2026-07-03T02:13:59.455Z",
+      "error_message": "Significant refactor of ",
+      "file": "STANDARD.md",
+      "root_cause": "10 lines replaced/restructured",
+      "fix": "Rewrote 14→24 lines (10 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T02:13:59.455Z"
+    },
+    {
+      "id": "bug-122",
+      "timestamp": "2026-07-03T02:14:48.140Z",
+      "error_message": "Significant refactor of ",
+      "file": "README.md",
+      "root_cause": "26 lines replaced/restructured",
+      "fix": "Rewrote 33→12 lines (26 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T02:14:48.140Z"
+    },
+    {
+      "id": "bug-123",
+      "timestamp": "2026-07-03T02:15:04.666Z",
+      "error_message": "Missing error handling in unknown",
+      "file": "README.md",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T02:15:04.666Z"
+    },
+    {
+      "id": "bug-124",
+      "timestamp": "2026-07-03T02:15:48.242Z",
+      "error_message": "Significant refactor of ",
+      "file": "ROADMAP.md",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 6→10 lines (3 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T02:15:48.242Z"
+    },
+    {
+      "id": "bug-125",
+      "timestamp": "2026-07-03T02:15:49.855Z",
+      "error_message": "Incorrect value in code",
+      "file": "ROADMAP.md",
+      "root_cause": "Had `npx docguard`",
+      "fix": "Changed to `npx docguard-cli`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T02:15:49.855Z"
+    },
+    {
+      "id": "bug-126",
+      "timestamp": "2026-07-03T02:16:18.077Z",
+      "error_message": "Significant refactor of ",
+      "file": "CONTRIBUTING.md",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 9→13 lines (2 removed) | Also: 4. Add tests in `tests/commands.test.mjs`; 5. Update `CHANGELOG.md`",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-07-03T02:16:27.855Z"
+    },
+    {
+      "id": "bug-127",
+      "timestamp": "2026-07-03T02:18:26.841Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/shared-ignore.mjs",
+      "root_cause": "14 lines replaced/restructured",
+      "fix": "Rewrote 20→56 lines (14 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T02:18:26.841Z"
+    },
+    {
+      "id": "bug-128",
+      "timestamp": "2026-07-03T02:18:54.020Z",
+      "error_message": "Missing error handling in globMatch",
+      "file": "cli/shared-ignore.mjs",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T02:18:54.020Z"
+    },
+    {
+      "id": "bug-129",
+      "timestamp": "2026-07-03T02:19:38.605Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/validators/metrics-consistency.mjs",
+      "root_cause": "83 lines replaced/restructured",
+      "fix": "Rewrote 88→3 lines (83 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T02:19:38.605Z"
+    },
+    {
+      "id": "bug-130",
+      "timestamp": "2026-07-03T02:19:53.672Z",
+      "error_message": "Incorrect value in code",
+      "file": "cli/validators/metrics-consistency.mjs",
+      "root_cause": "Had 'object'",
+      "fix": "Changed to '\\\\$&'",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T02:19:53.672Z"
+    },
+    {
+      "id": "bug-131",
+      "timestamp": "2026-07-03T02:24:20.818Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/shared-ignore.mjs",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 20→24 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T02:24:20.818Z"
+    },
+    {
+      "id": "bug-132",
+      "timestamp": "2026-07-03T02:25:48.122Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/validators/drift.mjs",
+      "root_cause": "14 lines replaced/restructured",
+      "fix": "Rewrote 21→7 lines (14 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T02:25:48.122Z"
+    },
+    {
+      "id": "bug-133",
+      "timestamp": "2026-07-03T02:25:53.955Z",
+      "error_message": "Wrong operator: !== should be ===",
+      "file": "cli/validators/security.mjs",
+      "root_cause": "Used \"!==\" instead of \"===\"",
+      "fix": "Changed operator !== → ===",
+      "tags": [
+        "auto-detected",
+        "operator-fix",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T02:25:53.955Z"
+    },
+    {
+      "id": "bug-134",
+      "timestamp": "2026-07-03T02:26:07.888Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/validators/schema-sync.mjs",
+      "root_cause": "12 lines replaced/restructured",
+      "fix": "Rewrote 19→6 lines (12 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T02:26:07.888Z"
+    },
+    {
+      "id": "bug-135",
+      "timestamp": "2026-07-03T02:26:14.565Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/validators/metadata-sync.mjs",
+      "root_cause": "13 lines replaced/restructured",
+      "fix": "Rewrote 18→4 lines (13 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T02:26:14.565Z"
+    },
+    {
+      "id": "bug-136",
+      "timestamp": "2026-07-03T02:26:25.770Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/validators/docs-coverage.mjs",
+      "root_cause": "13 lines replaced/restructured",
+      "fix": "Rewrote 18→4 lines (13 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T02:26:25.770Z"
+    },
+    {
+      "id": "bug-137",
+      "timestamp": "2026-07-03T02:26:39.878Z",
+      "error_message": "Wrong operator: !== should be ===",
+      "file": "cli/validators/traceability.mjs",
+      "root_cause": "Used \"!==\" instead of \"===\"",
+      "fix": "Changed operator !== → ===",
+      "tags": [
+        "auto-detected",
+        "operator-fix",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T02:26:39.878Z"
+    },
+    {
+      "id": "bug-138",
+      "timestamp": "2026-07-03T02:26:53.132Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/validators/docs-diff.mjs",
+      "root_cause": "15 lines replaced/restructured",
+      "fix": "Rewrote 27→12 lines (15 removed) | Also: if (!existsSync(dir)) return results;; let entries;",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-07-03T02:27:02.599Z"
+    },
+    {
+      "id": "bug-139",
+      "timestamp": "2026-07-03T02:26:58.306Z",
+      "error_message": "Wrong operator: === should be !==",
+      "file": "cli/validators/docs-diff.mjs",
+      "root_cause": "Used \"===\" instead of \"!==\"",
+      "fix": "Changed operator === → !==",
+      "tags": [
+        "auto-detected",
+        "operator-fix",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T02:26:58.306Z"
+    },
+    {
+      "id": "bug-140",
+      "timestamp": "2026-07-03T02:27:59.914Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/validators/todo-tracking.mjs",
+      "root_cause": "13 lines replaced/restructured",
+      "fix": "Rewrote 20→5 lines (13 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T02:27:59.914Z"
+    },
+    {
+      "id": "bug-141",
+      "timestamp": "2026-07-03T02:28:16.270Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/commands/generate.mjs",
+      "root_cause": "24 lines replaced/restructured",
+      "fix": "Rewrote 35→12 lines (24 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T02:28:16.270Z"
+    },
+    {
+      "id": "bug-142",
+      "timestamp": "2026-07-03T02:31:15.981Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/commands/diff.mjs",
+      "root_cause": "12 lines replaced/restructured",
+      "fix": "Rewrote 19→9 lines (12 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T02:31:15.981Z"
+    },
+    {
+      "id": "bug-143",
+      "timestamp": "2026-07-03T02:33:16.616Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/validators/changelog.mjs",
+      "root_cause": "17 lines replaced/restructured",
+      "fix": "Rewrote 54→77 lines (17 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T02:33:16.616Z"
+    },
+    {
+      "id": "bug-144",
+      "timestamp": "2026-07-03T02:33:38.992Z",
+      "error_message": "Wrong return value",
+      "file": "cli/validators/metrics-consistency.mjs",
+      "root_cause": "Was returning: { errors: [], warnings, passed: 0, total: 0 };",
+      "fix": "Now returns: resultFromFindings([], { passed: 0, total: 0 });",
+      "tags": [
+        "auto-detected",
+        "return-value",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-07-03T02:33:46.947Z"
+    },
+    {
+      "id": "bug-145",
+      "timestamp": "2026-07-03T02:33:45.603Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/validators/metrics-consistency.mjs",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 11→22 lines (3 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T02:33:45.603Z"
+    },
+    {
+      "id": "bug-146",
+      "timestamp": "2026-07-03T02:35:00.000Z",
+      "error_message": "Entire test suite failed to load (~60 test files 'not ok') — SyntaxError: Invalid or unexpected token in shared-ignore.mjs",
+      "file": "cli/shared-ignore.mjs",
+      "root_cause": "A JSDoc block documenting glob syntax contained a literal `**/` — the `*/` inside it TERMINATES the block comment, leaving the rest of the doc text as bare source. Mass 'not ok' across every test file is the tell: a module-level parse error in a shared import, not test logic. node --check pinpointed the line instantly.",
+      "fix": "Escaped the sequence as `**\\/` inside the comment — the file's own pre-existing convention (the old globToMatchRegex JSDoc used it). Verified: node --check, import probe, full suite 835/835.",
+      "tags": [
+        "syntax-error",
+        "jsdoc",
+        "block-comment",
+        "glob",
+        "mass-test-failure"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T02:35:00.000Z"
+    },
+    {
+      "id": "bug-147",
+      "timestamp": "2026-07-03T02:36:00.000Z",
+      "error_message": "countGlob could silently under-count a collection when a subtree was unreadable (permission denied), producing a confidently wrong 'code has N' and a data-corrupting fix suggestion",
+      "file": "cli/shared-ignore.mjs",
+      "root_cause": "The walker swallowed per-entry errors and kept walking; the caller had no completeness signal, so a partial walk read as a smaller-but-authoritative count — a fail-open in the collections feature (still unreleased; caught by the project review, not in the field).",
+      "fix": "Shared walkFiles returns a completeness boolean; countGlobFiles returns -1 when the walk was incomplete; callers treat <=0 as 'don't assert'. Covered by the fail-safe collection test.",
+      "tags": [
+        "fail-safe",
+        "collections",
+        "walker",
+        "false-positive-prevention",
+        "pre-release"
+      ],
+      "related_bugs": [
+        "bug-115"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T02:36:00.000Z"
+    },
+    {
+      "id": "bug-148",
+      "timestamp": "2026-07-03T02:50:07.981Z",
+      "error_message": "Null/undefined access in ",
+      "file": "cli/validators/freshness.mjs",
+      "root_cause": "Property access on potentially null/undefined value",
+      "fix": "Added null safety (optional chaining or null check) | Also: code: 'FRS005',; doc: config.requiredFiles?.driftLog || 'DRIFT-LOG.md',",
+      "tags": [
+        "auto-detected",
+        "null-safety",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-07-03T02:50:10.820Z"
+    },
+    {
+      "id": "bug-149",
+      "timestamp": "2026-07-03T02:50:25.181Z",
+      "error_message": "Missing guard clause",
+      "file": "cli/commands/guard.mjs",
+      "root_cause": "No early return/throw for edge case: r.status === 'pass'",
+      "fix": "Added guard clause: if (r.status === 'pass')",
+      "tags": [
+        "auto-detected",
+        "guard-clause",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T02:50:25.181Z"
+    },
+    {
+      "id": "bug-150",
+      "timestamp": "2026-07-03T02:51:39.966Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/validators/test-spec.mjs",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 16→27 lines (3 removed) | Also: results.total++;; results.warnings.push(`TEST-SPEC declares ${source | Also: results.note = 'TEST-SPEC.md declares no service-t; results.warnings.push(",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 4,
+      "last_seen": "2026-07-03T02:52:33.557Z"
+    },
+    {
+      "id": "bug-151",
+      "timestamp": "2026-07-03T02:52:20.490Z",
+      "error_message": "Wrong condition in logic",
+      "file": "cli/validators/test-spec.mjs",
+      "root_cause": "Condition was: if (results.total === 0)",
+      "fix": "Changed to: if (total === 0)",
+      "tags": [
+        "auto-detected",
+        "logic-fix",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T02:52:20.490Z"
+    },
+    {
+      "id": "bug-152",
+      "timestamp": "2026-07-03T02:52:55.685Z",
+      "error_message": "Wrong return value",
+      "file": "cli/validators/docs-sync.mjs",
+      "root_cause": "Was returning: results; // No canonical docs to check against",
+      "fix": "Now returns: { name: 'docs-sync', ...resultFromFindings([], { p",
+      "tags": [
+        "auto-detected",
+        "return-value",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T02:52:55.685Z"
+    },
+    {
+      "id": "bug-153",
+      "timestamp": "2026-07-03T02:53:03.920Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/validators/docs-sync.mjs",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 9→16 lines (3 removed) | Also: results.total++;; results.passed++; | Also: results.passed++;; results.warnings.push(",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 3,
+      "last_seen": "2026-07-03T02:53:13.306Z"
+    },
+    {
+      "id": "bug-154",
+      "timestamp": "2026-07-03T02:53:20.128Z",
+      "error_message": "Wrong return value",
+      "file": "cli/validators/environment.mjs",
+      "root_cause": "Was returning: { name: 'environment', ...resultFromFindings([], {",
+      "fix": "Now returns: { name: 'environment', errors: [], warnings: [], p",
+      "tags": [
+        "auto-detected",
+        "return-value",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T02:53:20.128Z"
+    },
+    {
+      "id": "bug-155",
+      "timestamp": "2026-07-03T02:53:22.465Z",
+      "error_message": "Wrong return value",
+      "file": "cli/validators/test-spec.mjs",
+      "root_cause": "Was returning: { name: 'test-spec', ...resultFromFindings([], { p",
+      "fix": "Now returns: { name: 'test-spec', errors: [], warnings: [], pas",
+      "tags": [
+        "auto-detected",
+        "return-value",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T02:53:22.465Z"
+    },
+    {
+      "id": "bug-156",
+      "timestamp": "2026-07-03T02:53:36.827Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/validators/docs-diff.mjs",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 9→17 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T02:53:36.827Z"
+    },
+    {
+      "id": "bug-157",
+      "timestamp": "2026-07-03T02:53:41.444Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/validators/traceability.mjs",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 14→17 lines (3 removed) | Also: warnings.push(; `Requirement ${reqId} (${location.file}:${location | Also: warnings.push(; `Test references ${reqId} (${refs[0].file}:${refs[",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 3,
+      "last_seen": "2026-07-03T02:54:46.270Z"
+    },
+    {
+      "id": "bug-158",
+      "timestamp": "2026-07-03T02:54:17.438Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/validators/docs-coverage.mjs",
+      "root_cause": "4 lines replaced/restructured",
+      "fix": "Rewrote 12→17 lines (4 removed) | Also: warnings.push(; `package.json defines CLI command \"${binName}\" but | Also: warnings.push(; `Source directory \"${root}/${entry}/\" is not refer | Also: warnings.push(; `Code references config file \"${configName}\" but n",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 4,
+      "last_seen": "2026-07-03T02:54:57.994Z"
+    },
+    {
+      "id": "bug-159",
+      "timestamp": "2026-07-03T02:54:29.102Z",
+      "error_message": "Wrong return value",
+      "file": "cli/validators/traceability.mjs",
+      "root_cause": "Was returning: { errors, warnings, passed, total };",
+      "fix": "Now returns: { findings, passed, total };",
+      "tags": [
+        "auto-detected",
+        "return-value",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T02:54:29.102Z"
+    },
+    {
+      "id": "bug-160",
+      "timestamp": "2026-07-03T02:55:03.838Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/validators/todo-tracking.mjs",
+      "root_cause": "10 lines replaced/restructured",
+      "fix": "Rewrote 22→31 lines (10 removed) | Also: warnings.push(; `Skipped test without explanation at ${relPath}:${ | Also: warnings.push(; `Untracked ${todo.keyword} at ${todo.file}:${todo.",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 3,
+      "last_seen": "2026-07-03T02:55:42.836Z"
+    },
+    {
+      "id": "bug-161",
+      "timestamp": "2026-07-03T02:55:21.046Z",
+      "error_message": "Wrong return value",
+      "file": "cli/validators/metadata-sync.mjs",
+      "root_cause": "Was returning: { errors: [], warnings, passed: 0, total: 0 };",
+      "fix": "Now returns: { errors: [], warnings: [], passed: 0, total: 0 };",
+      "tags": [
+        "auto-detected",
+        "return-value",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-07-03T02:55:30.616Z"
+    },
+    {
+      "id": "bug-162",
+      "timestamp": "2026-07-03T02:55:24.777Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/validators/metadata-sync.mjs",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 6→11 lines (3 removed) | Also: warnings.push(; `${relPath} references \"v${foundVersion}\" in an ac",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-07-03T02:55:29.014Z"
+    },
+    {
+      "id": "bug-163",
+      "timestamp": "2026-07-03T02:56:08.432Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/validators/schema-sync.mjs",
+      "root_cause": "15 lines replaced/restructured",
+      "fix": "Rewrote 56→72 lines (15 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T02:56:08.432Z"
+    },
+    {
+      "id": "bug-164",
+      "timestamp": "2026-07-03T02:56:32.586Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/validators/architecture.mjs",
+      "root_cause": "6 lines replaced/restructured",
+      "fix": "Rewrote 40→59 lines (6 removed) | Also: results.total++;; results.errors.push(",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 3,
+      "last_seen": "2026-07-03T02:57:00.597Z"
+    },
+    {
+      "id": "bug-165",
+      "timestamp": "2026-07-03T02:56:37.828Z",
+      "error_message": "Wrong reference: results should be acc",
+      "file": "cli/validators/architecture.mjs",
+      "root_cause": "Used \"results\" instead of \"acc\"",
+      "fix": "Changed results → acc",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-07-03T02:56:52.176Z"
+    },
+    {
+      "id": "bug-166",
+      "timestamp": "2026-07-03T02:57:19.697Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/validators/canonical-sync.mjs",
+      "root_cause": "6 lines replaced/restructured",
+      "fix": "Rewrote 26→34 lines (6 removed) | Also: result.total++;; result.passed++;",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 3,
+      "last_seen": "2026-07-03T02:58:04.616Z"
+    },
+    {
+      "id": "bug-167",
+      "timestamp": "2026-07-03T02:57:26.233Z",
+      "error_message": "Wrong reference: result should be compose",
+      "file": "cli/validators/canonical-sync.mjs",
+      "root_cause": "Used \"result\" instead of \"compose\"",
+      "fix": "Changed result → compose",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T02:57:26.233Z"
+    },
+    {
+      "id": "bug-168",
+      "timestamp": "2026-07-03T02:57:33.089Z",
+      "error_message": "Wrong return value",
+      "file": "cli/validators/canonical-sync.mjs",
+      "root_cause": "Was returning: result;",
+      "fix": "Now returns: compose();",
+      "tags": [
+        "auto-detected",
+        "return-value",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T02:57:33.089Z"
+    },
+    {
+      "id": "bug-169",
+      "timestamp": "2026-07-03T03:01:18.611Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/scanners/speckit.mjs",
+      "root_cause": "27 lines replaced/restructured",
+      "fix": "Rewrote 93→162 lines (27 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T03:01:18.611Z"
+    },
+    {
+      "id": "bug-170",
+      "timestamp": "2026-07-03T03:01:30.471Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/validators/cross-reference.mjs",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 15→19 lines (3 removed) | Also: warnings.push(; `${docName}:${ref.line} — broken link: target file | Also: warnings.push(; `${docName}:${ref.line} — broken anchor: \"#${ref.a",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 3,
+      "last_seen": "2026-07-03T03:01:40.989Z"
+    },
+    {
+      "id": "bug-171",
+      "timestamp": "2026-07-03T03:02:00.201Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/validators/generated-staleness.mjs",
+      "root_cause": "4 lines replaced/restructured",
+      "fix": "Rewrote 6→11 lines (4 removed) | Also: result.warnings.push(; `${basename(doc.path)} → section \"${sec.id}\" is st",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-07-03T03:02:05.306Z"
+    },
+    {
+      "id": "bug-172",
+      "timestamp": "2026-07-03T03:02:22.107Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/validators/surface-sync.mjs",
+      "root_cause": "5 lines replaced/restructured",
+      "fix": "Rewrote 20→28 lines (5 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T03:02:22.108Z"
+    },
+    {
+      "id": "bug-173",
+      "timestamp": "2026-07-03T03:02:51.679Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/validators/api-surface.mjs",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 8→11 lines (2 removed) | Also: warnings.push(; `OpenAPI spec ${specPath} declares paths but DocGu | Also: warnings.push(; `Multiple OpenAPI specs disagree on ${divergence.d | Also: warnings.push(; `OpenAPI spec (${specRoute.specPath}) declares ${e | Also: if (confidence === 'spec') errors.push(msg);; else warnings.push(`${msg} [code-scan — verify]`);",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 5,
+      "last_seen": "2026-07-03T03:03:37.705Z"
+    },
+    {
+      "id": "bug-174",
+      "timestamp": "2026-07-03T03:04:25.847Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/validators/doc-quality.mjs",
+      "root_cause": "43 lines replaced/restructured",
+      "fix": "Rewrote 125→158 lines (43 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T03:04:25.847Z"
+    },
+    {
+      "id": "bug-175",
+      "timestamp": "2026-07-03T03:06:45.162Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/commands/generate.mjs",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 9→14 lines (3 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T03:06:45.162Z"
+    },
+    {
+      "id": "bug-176",
+      "timestamp": "2026-07-03T03:14:14.172Z",
+      "error_message": "Significant refactor of ",
+      "file": "CHANGELOG.md",
+      "root_cause": "6 lines replaced/restructured",
+      "fix": "Rewrote 6→15 lines (6 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T03:14:14.172Z"
+    },
+    {
+      "id": "bug-177",
+      "timestamp": "2026-07-03T15:52:55.537Z",
+      "error_message": "Significant refactor of ",
+      "file": "templates/commands/docguard.review.md",
+      "root_cause": "7 lines replaced/restructured",
+      "fix": "Rewrote 10→14 lines (7 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T15:52:55.537Z"
+    },
+    {
+      "id": "bug-178",
+      "timestamp": "2026-07-03T15:52:58.462Z",
+      "error_message": "Significant refactor of ",
+      "file": "templates/commands/docguard.update.md",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 8→9 lines (2 removed) | Also: For each affected document:; 3. Update the specific section that changed",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-07-03T15:53:02.380Z"
+    },
+    {
+      "id": "bug-179",
+      "timestamp": "2026-07-03T15:53:32.431Z",
+      "error_message": "Significant refactor of ",
+      "file": "templates/commands/docguard.init.md",
+      "root_cause": "10 lines replaced/restructured",
+      "fix": "Rewrote 17→29 lines (10 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T15:53:32.431Z"
+    },
+    {
+      "id": "bug-180",
+      "timestamp": "2026-07-03T15:55:58.343Z",
+      "error_message": "Wrong condition in logic",
+      "file": "cli/commands/guard.mjs",
+      "root_cause": "Condition was: if (flags.format === 'json')",
+      "fix": "Changed to: if (flags.format === 'sarif')",
+      "tags": [
+        "auto-detected",
+        "logic-fix",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T15:55:58.343Z"
+    },
+    {
+      "id": "bug-181",
+      "timestamp": "2026-07-03T15:57:42.439Z",
+      "error_message": "Incorrect value in code",
+      "file": "cli/docguard.mjs",
+      "root_cause": "Had 'json'",
+      "fix": "Changed to 'sarif'",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T15:57:42.439Z"
+    },
+    {
+      "id": "bug-182",
+      "timestamp": "2026-07-03T16:02:44.054Z",
+      "error_message": "Missing error handling in generateLlmsFullTxt",
+      "file": "cli/commands/llms.mjs",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T16:02:44.054Z"
+    },
+    {
+      "id": "bug-183",
+      "timestamp": "2026-07-03T16:03:20.007Z",
+      "error_message": "Missing guard clause",
+      "file": "cli/commands/memory.mjs",
+      "root_cause": "No early return/throw for edge case: flags.pack",
+      "fix": "Added guard clause: if (flags.pack)",
+      "tags": [
+        "auto-detected",
+        "guard-clause",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T16:03:20.007Z"
+    },
+    {
+      "id": "bug-184",
+      "timestamp": "2026-07-03T16:03:49.461Z",
+      "error_message": "Missing error handling in extractConventions",
+      "file": "cli/commands/memory.mjs",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T16:03:49.461Z"
+    },
+    {
+      "id": "bug-185",
+      "timestamp": "2026-07-03T16:06:27.493Z",
+      "error_message": "Missing error handling in stampMarker",
+      "file": "cli/commands/agents.mjs",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block | Also: // ── Sync + Check modes (v0.29) ───────────────────────────; /**",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-07-03T16:10:57.641Z"
+    },
+    {
+      "id": "bug-186",
+      "timestamp": "2026-07-03T16:16:57.064Z",
+      "error_message": "Incorrect value in code",
+      "file": "cli/docguard.mjs",
+      "root_cause": "Had './ensure-skills.mjs'",
+      "fix": "Changed to './commands/mcp.mjs'",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T16:16:57.064Z"
+    },
+    {
+      "id": "bug-187",
+      "timestamp": "2026-07-03T16:17:04.491Z",
+      "error_message": "Missing await",
+      "file": "cli/docguard.mjs",
+      "root_cause": "Async call without await — returned Promise instead of value",
+      "fix": "Added await to async call",
+      "tags": [
+        "auto-detected",
+        "async-fix",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T16:17:04.491Z"
+    },
+    {
+      "id": "bug-188",
+      "timestamp": "2026-07-03T16:18:05.057Z",
+      "error_message": "Missing error handling in unknown",
+      "file": "action.yml",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "yml"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T16:18:05.057Z"
+    },
+    {
+      "id": "bug-189",
+      "timestamp": "2026-07-03T16:20:41.386Z",
+      "error_message": "Incorrect value in code",
+      "file": "README.md",
+      "root_cause": "Had `docguard init --with <name>`",
+      "fix": "Changed to `mcp`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-07-03T16:20:43.445Z"
     }
   ]
 }

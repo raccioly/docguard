@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-06-22T23:13:16.336Z
-> Files: 601 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-07-03T16:22:28.102Z
+> Files: 642 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../../../tmp/
 
@@ -16,13 +16,13 @@
 - `.jules-setup.sh` — Google Jules Environment Startup Script (~429 tok)
 - `.npmignore` — Development (~76 tok)
 - `.npmrc` — Supply-Chain Security Hardening (~59 tok)
-- `action.yml` — CI: 'DocGuard — CDD Compliance' (~4322 tok)
-- `AGENTS.md` — AI Agent Instructions — DocGuard (~1275 tok)
-- `CHANGELOG.md` — Changelog (~41180 tok)
+- `action.yml` — Declares fs (~7591 tok)
+- `AGENTS.md` — AI Agent Instructions — DocGuard (~1582 tok)
+- `CHANGELOG.md` — Changelog (~44373 tok)
 - `CLAUDE.md` — OpenWolf (~57 tok)
 - `CODE_OF_CONDUCT.md` — Contributor Covenant Code of Conduct (~532 tok)
 - `COMPARISONS.md` — Comparisons & Honest Limitations (~3053 tok)
-- `CONTRIBUTING.md` — Contributing to DocGuard (~1467 tok)
+- `CONTRIBUTING.md` — Contributing to DocGuard (~1780 tok)
 - `docguard-cli-0.22.0.tgz` (~80828 tok)
 - `docguard-cli-0.23.0.tgz` (~81238 tok)
 - `DRIFT-LOG.md` — Drift Log (~583 tok)
@@ -31,11 +31,11 @@
 - `package.json` — Node.js package manifest (~446 tok)
 - `PHILOSOPHY.md` — The Philosophy of Canonical-Driven Development (~1757 tok)
 - `pr_description.md` (~260 tok)
-- `pyproject.toml` — The enforcement tool for Canonical-Driven Development (CDD). Audit, generate, and guard your project (~351 tok)
-- `README.md` — Project documentation (~7467 tok)
-- `ROADMAP.md` — DocGuard Roadmap (~2349 tok)
+- `pyproject.toml` — The enforcement tool for Canonical-Driven Development (CDD). Audit, generate, and guard your project (~358 tok)
+- `README.md` — Project documentation (~8042 tok)
+- `ROADMAP.md` — DocGuard Roadmap (~2432 tok)
 - `SECURITY.md` — Security Policy (~357 tok)
-- `STANDARD.md` — DocGuard Standard v0.1 (~6435 tok)
+- `STANDARD.md` — DocGuard Standard v0.1 (~6533 tok)
 - `SUPPLY-CHAIN-AUDIT.md` — Supply-Chain Security Audit (~726 tok)
 - `SUPPORT.md` — Support (~335 tok)
 - `test-draft.js` — Declares tmpDir (~192 tok)
@@ -942,49 +942,85 @@
 ## cli/
 
 - `config.mjs` — DocGuard — configuration loading. (~3265 tok)
-- `docguard.mjs` — DocGuard CLI — The enforcement tool for Canonical-Driven Development (CDD) (~8995 tok)
-- `findings.mjs` — Findings — the structured, LLM-addressable result unit (v0.27). (~2174 tok)
-- `shared-ignore.mjs` — Shared Ignore Utility — Unified file filtering for all validators. (~2780 tok)
+- `docguard.mjs` — DocGuard CLI — The enforcement tool for Canonical-Driven Development (CDD) (~9439 tok)
+- `findings.mjs` — Findings — the structured, LLM-addressable result unit (v0.27). (~9378 tok)
+- `shared-ignore.mjs` — Shared Ignore Utility — Unified file filtering for all validators. (~4132 tok)
 - `shared-source.mjs` — Shared Source Resolution — Monorepo-aware source discovery. (~4655 tok)
+- `shared.mjs` — Shared constants for DocGuard CLI — colors, profiles, version. (~3496 tok)
 
 ## cli/commands/
 
 - `agent.mjs` — `docguard agent` — the one-shot agent task graph. (~1644 tok)
+- `agents.mjs` — Agents Command — Generate agent-specific config files from AGENTS.md (~3307 tok)
+- `diff.mjs` — Diff Command — Show differences between canonical docs and implementation (~4128 tok)
 - `explain.mjs` — Explain Command — v0.16-P6. (~9474 tok)
 - `feedback.mjs` — Feedback Command — close the loop with the tool's maintainers (v0.27). (~1920 tok)
-- `generate.mjs` — Generate Command — Reverse-engineer canonical docs from an existing codebase (~15364 tok)
-- `guard.mjs` — Guard Command — Validate project against its canonical documentation (~9705 tok)
+- `generate.mjs` — Generate Command — Reverse-engineer canonical docs from an existing codebase (~6250 tok)
+- `guard.mjs` — Guard Command — Validate project against its canonical documentation (~11608 tok)
 - `init.mjs` — Init Command — Initialize CDD documentation from templates (~7278 tok)
-- `score.mjs` — Score Command — Calculate CDD maturity score (0-100) (~11214 tok)
+- `llms.mjs` — llms Command — Generate llms.txt from canonical documentation (~2137 tok)
+- `mcp.mjs` — MCP Command — DocGuard as a Model Context Protocol server (stdio). (~2902 tok)
+- `memory.mjs` — Memory Command — v0.17-P2. (~2957 tok)
+- `score.mjs` — Score Command — Calculate CDD maturity score (0-100) (~12136 tok)
 - `sync-tests.mjs` — `docguard sync --tests` — reconcile the TEST-SPEC Source-to-Test Map from disk. (~3191 tok)
 - `sync.mjs` — Sync Command — keep the documentation memory ALWAYS UP TO DATE. (~2371 tok)
 - `verify.mjs` — Verify Command — `docguard verify --semantic` (LLM field report #5). (~833 tok)
 
 ## cli/scanners/
 
+- `agent-readability.mjs` — Agent Readability scanner — how well do this repo's docs serve an AI agent? (~2228 tok)
 - `inventory.mjs` — Inventory scanners — code-truth the generator PRE-FILLS instead of leaving (~1699 tok)
 - `memory-plan.mjs` — Memory Plan — the orchestration artifact behind AI-powered Generate. (~5744 tok)
 - `project-type.mjs` — Project-Type Detection — the language-agnostic spine. (~4190 tok)
 - `routes.mjs` — Deep Route Scanner (~7712 tok)
-- `semantic-claims.mjs` — Semantic claim extractor (LLM field report #5). (~1794 tok)
+- `semantic-claims.mjs` — Semantic claim extractor (LLM field report #5). (~1998 tok)
+- `speckit.mjs` — Spec Kit Scanner — Detect, validate, and integrate with GitHub Spec Kit (~4785 tok)
 
 ## cli/validators/
 
-- `api-surface.mjs` — API-Surface Validator — Detects drift between the documented API surface (~4095 tok)
-- `architecture.mjs` — Architecture Validator — Enhanced with automatic import analysis (~3558 tok)
-- `doc-quality.mjs` — Doc Quality Validator — Measures documentation writing quality (~6349 tok)
-- `freshness.mjs` — Freshness Validator — Check if documentation is stale relative to code changes. (~3462 tok)
-- `metrics-consistency.mjs` — Metrics Consistency Validator — Detects stale hardcoded numbers in docs. (~2714 tok)
-- `security.mjs` — Security Validator — Basic checks for secrets in code (~2882 tok)
-- `todo-tracking.mjs` — TODO/FIXME Tracking Validator — Ensures code annotations are documented (~3644 tok)
+- `api-surface.mjs` — API-Surface Validator — Detects drift between the documented API surface (~5063 tok)
+- `architecture.mjs` — Architecture Validator — Enhanced with automatic import analysis (~3926 tok)
+- `canonical-sync.mjs` — Canonical-Sync Validator — v0.19-A. (~2947 tok)
+- `changelog.mjs` — Changelog Validator — Checks CHANGELOG.md has an [Unreleased] section, (~1050 tok)
+- `cross-reference.mjs` — Cross-Reference Validator — S-8 / K-7 (~4592 tok)
+- `doc-quality.mjs` — Doc Quality Validator — Measures documentation writing quality (~6826 tok)
+- `docs-coverage.mjs` — Docs-Coverage Validator — Detects code features not referenced in docs. (~5516 tok)
+- `docs-diff.mjs` — Docs-Diff Validator — Checks alignment between canonical docs and code. (~3326 tok)
+- `docs-sync.mjs` — Docs-Sync Validator — Checks that source files have matching canonical doc entries (~2949 tok)
+- `drift.mjs` — Drift Validator — Every // DRIFT: comment must have a DRIFT-LOG.md entry (~1290 tok)
+- `environment.mjs` — Environment Validator — Checks ENVIRONMENT.md docs and .env.example (~2085 tok)
+- `freshness.mjs` — Freshness Validator — Check if documentation is stale relative to code changes. (~3540 tok)
+- `generated-staleness.mjs` — Generated-Doc Staleness Validator — M-1 / S-7 (~2919 tok)
+- `metadata-sync.mjs` — Metadata Sync Validator — Detects stale version references across docs. (~2155 tok)
+- `metrics-consistency.mjs` — Metrics Consistency Validator — Detects stale hardcoded numbers in docs. (~3635 tok)
+- `schema-sync.mjs` — Schema Sync Validator — Ensures database schemas are documented in DATA-MODEL.md (~2108 tok)
+- `security.mjs` — Security Validator — Basic checks for secrets in code (~2831 tok)
+- `spec-kit.mjs` — Spec-Kit Validator — Validates Spec Kit artifacts (specs/, plans/, tasks/, constitution). (~224 tok)
+- `structure.mjs` — Structure Validator — Checks that all required CDD files exist (~1647 tok)
+- `surface-sync.mjs` — Surface-Sync Validator — item-level drift detection for enumerable surfaces. (~4219 tok)
+- `test-spec.mjs` — Test Spec Validator — Checks that tests exist per TEST-SPEC.md coverage rules (~4463 tok)
+- `todo-tracking.mjs` — TODO/FIXME Tracking Validator — Ensures code annotations are documented (~3916 tok)
+- `traceability.mjs` — Traceability Validator — Checks that canonical docs are linked to source code (~4324 tok)
 
 ## cli/writers/
 
 - `mechanical.mjs` — Mechanical Fix Registry — applies deterministic, no-LLM fixes in place. (~3290 tok)
+- `sarif.mjs` — SARIF 2.1.0 writer — `docguard guard --format sarif`. (~1315 tok)
+
+## docs-canonical/
+
+- `ARCHITECTURE.md` — Architecture (~2809 tok)
+- `DATA-MODEL.md` — Data Model (~1521 tok)
+- `REQUIREMENTS.md` — Requirements (~673 tok)
+- `SURFACE-AUDIT.md` — DocGuard Surface Audit (~5703 tok)
 
 ## extensions/spec-kit-docguard/
 
 - `extension.yml` (~1026 tok)
+
+## schemas/
+
+- `docguard-config.schema.json` — behavior: docs (~2889 tok)
 
 ## templates/
 
@@ -993,18 +1029,32 @@
 - `SECURITY.md.template` — Security (~342 tok)
 - `TEST-SPEC.md.template` — /*.ts --> | <!-- e.g. tests/unit/**/*.test.ts --> | Unit | (~771 tok)
 
+## templates/commands/
+
+- `docguard.fix.md` — /docguard.fix — Find and Fix CDD Documentation Issues (~771 tok)
+- `docguard.guard.md` — /docguard.guard — Validate CDD Compliance (~736 tok)
+- `docguard.init.md` — /docguard.init — Set Up CDD Documentation (~621 tok)
+- `docguard.review.md` — /docguard.review — Review Documentation vs Code (~630 tok)
+- `docguard.update.md` — /docguard.update — Update Docs After Code Changes (~499 tok)
+
 ## tests/
 
+- `agent-readability.test.mjs` — Declares metric (~1049 tok)
 - `agent.test.mjs` — Exports x (~1138 tok)
-- `commands.test.mjs` — DocGuard CLI Tests — Tests all commands and flags (~10304 tok)
+- `agents-sync.test.mjs` — CLI: run (~1367 tok)
+- `changelog.test.mjs` — Exports x, x (~1315 tok)
+- `commands.test.mjs` — DocGuard CLI Tests — Tests all commands and flags (~10442 tok)
 - `ensure-skills-idempotent.test.mjs` — v0.24 — Skill install is idempotent (field report, Issue D). (~1133 tok)
 - `field-report-3-deferred.test.mjs` — v0.28 — the detection-gap items deferred from LLM field report #3. (~3122 tok)
 - `field-report-3.test.mjs` — v0.27 — LLM field report #3. (~3315 tok)
 - `freshness.test.mjs` — runGit: commitOldCode (~3536 tok)
 - `inventory.test.mjs` — Declares make (~1048 tok)
+- `llms-full-pack.test.mjs` — CLI: run (~1304 tok)
+- `mcp.test.mjs` — MCP Server Tests — `docguard mcp` over stdio. (~2138 tok)
 - `mechanical.test.mjs` — Declares write (~1161 tok)
 - `memory-plan.test.mjs` — Exports u, Button (~1834 tok)
-- `metrics-consistency.test.mjs` — Declares guardResults (~1986 tok)
+- `metrics-consistency.test.mjs` — Declares guardResults (~3942 tok)
 - `metrics-dedup.test.mjs` — v0.14.1-N1 — Metrics-Consistency dedup. (~1450 tok)
 - `project-type.test.mjs` — Declares make (~2140 tok)
+- `sarif.test.mjs` — Declares CLI (~1455 tok)
 - `shared-source.test.mjs` — API routes: GET (4 endpoints) (~1714 tok)
