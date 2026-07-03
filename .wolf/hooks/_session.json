@@ -86,6 +86,21 @@
       "count": 1,
       "tokens": 583,
       "first_read": "2026-07-03T20:20:37.493Z"
+    },
+    "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/docs/commands.md": {
+      "count": 2,
+      "tokens": 1990,
+      "first_read": "2026-07-03T20:29:22.196Z"
+    },
+    "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/docs/configuration.md": {
+      "count": 1,
+      "tokens": 0,
+      "first_read": "2026-07-03T20:30:06.021Z"
+    },
+    "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/docs/faq.md": {
+      "count": 1,
+      "tokens": 0,
+      "first_read": "2026-07-03T20:31:01.286Z"
     }
   },
   "files_written": [
@@ -280,6 +295,36 @@
       "action": "create",
       "tokens": 255,
       "at": "2026-07-03T20:24:31.165Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/docs/commands.md",
+      "action": "edit",
+      "tokens": 436,
+      "at": "2026-07-03T20:29:38.505Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/docs/commands.md",
+      "action": "edit",
+      "tokens": 363,
+      "at": "2026-07-03T20:29:58.422Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/docs/configuration.md",
+      "action": "edit",
+      "tokens": 134,
+      "at": "2026-07-03T20:30:23.640Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/docs/configuration.md",
+      "action": "edit",
+      "tokens": 363,
+      "at": "2026-07-03T20:30:30.945Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/docs/faq.md",
+      "action": "edit",
+      "tokens": 289,
+      "at": "2026-07-03T20:31:12.438Z"
     }
   ],
   "edit_counts": {
@@ -298,11 +343,14 @@
     "DRIFT-LOG.md": 1,
     "README.pt-BR.md": 1,
     "README.es.md": 1,
-    ".github/PULL_REQUEST_TEMPLATE.md": 1
+    ".github/PULL_REQUEST_TEMPLATE.md": 1,
+    "docs/commands.md": 2,
+    "docs/configuration.md": 2,
+    "docs/faq.md": 1
   },
   "anatomy_hits": 12,
-  "anatomy_misses": 5,
-  "repeated_reads_warned": 7,
+  "anatomy_misses": 8,
+  "repeated_reads_warned": 8,
   "cerebrum_warnings": 0,
-  "stop_count": 4
+  "stop_count": 5
 }

@@ -36,8 +36,10 @@ npx docguard-cli diagnose --format prompt # Raw AI prompt (all issues combined)
 
 ```bash
 npx docguard-cli guard                   # Text output
-npx docguard-cli guard --format json     # Structured JSON
+npx docguard-cli guard --format json     # Structured JSON (the stable agent contract)
+npx docguard-cli guard --format sarif    # SARIF 2.1.0 for GitHub Code Scanning
 npx docguard-cli guard --verbose         # Show all check details
+npx docguard-cli guard --changed-only    # Pre-commit lite mode (fast subset)
 ```
 
 **Exit codes:** `0` (pass), `1` (errors), `2` (warnings)
@@ -52,11 +54,20 @@ When issues are found, guard outputs: `Run docguard diagnose to get AI fix promp
   "status": "WARN",
   "passed": 37,
   "total": 40,
+  "findings": [
+    { "code": "ENV003", "severity": "warn", "message": "…", "location": "docs-canonical/ENVIRONMENT.md", "suggestion": { "kind": "fix", "text": "…" } }
+  ],
+  "nextStep": "docguard diagnose",
+  "coverage": { "canonical": 5, "tracked": 40, "ignored": 10, "unclassified": [] },
+  "semanticClaims": { "count": 12 },
   "validators": [
     { "name": "Structure", "status": "pass", "passed": 8, "total": 8, "errors": [], "warnings": [] }
   ]
 }
 ```
+
+Every finding carries a stable code — `docguard explain <CODE>` for its
+contract, `// docguard:ignore <CODE>` to suppress a false positive at the site.
 
 ### `docguard score`
 
@@ -157,8 +168,43 @@ npx docguard-cli fix --doc environment
 **Generate agent-specific config files** from AGENTS.md.
 
 ```bash
-npx docguard-cli agents
-npx docguard-cli agents --list
+npx docguard-cli agents            # one-shot scaffold (skips existing files)
+npx docguard-cli agents --sync     # AGENTS.md → CLAUDE.md/Copilot/Cursor/… (hash-marked, repeatable)
+npx docguard-cli agents --check    # CI gate: exit 2 if any synced variant is stale
+```
+
+`--sync` treats AGENTS.md as the canonical source: generated variants carry a
+source-hash marker and are regenerated on change; files you wrote by hand are
+never touched without `--force`.
+
+### `docguard mcp`
+
+**MCP server over stdio** — DocGuard's read-only core as native agent tools
+(`docguard_guard`, `docguard_score`, `docguard_explain`,
+`docguard_verify_claims`, `docguard_diagnose`).
+
+```bash
+claude mcp add docguard -- npx docguard-cli mcp
+```
+
+### `docguard verify --semantic`
+
+**Extract documented claims** (counts, limits, enums) as a verification task
+list with cited code paths — the agent checks each value against the code.
+
+### `docguard explain <CODE>`
+
+**Explain any finding code** (`STR001`, `ENV003`, …): what it means, how to fix
+it, how to suppress a false positive at the finding site.
+
+### `docguard llms` / `docguard memory --pack`
+
+**Context surfaces for LLMs reading the repo:**
+
+```bash
+npx docguard-cli llms              # llms.txt (link index)
+npx docguard-cli llms --full       # llms-full.txt (full doc bodies inlined)
+npx docguard-cli memory --pack     # .docguard/context-pack.md (session-start context)
 ```
 
 ---
