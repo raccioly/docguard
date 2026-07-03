@@ -5,6 +5,8 @@
 
 ## User Preferences
 
+- **2026-07-03** — Keep the LOCAL main tree (`/Users/ricardoaccioly/Repo_claude/canonical-spec-kit`) always up to date with origin/main. After any merge/push to main (releases especially), sync it in the same session: `git -C <main> status --short` first (never clobber unrecognized work — stash leftovers with a message, surface real WIP), then `git -C <main> pull --ff-only`. Sessions run in auto-worktrees, so the main tree silently falls behind otherwise (it sat at v0.25 while origin hit v0.29).
+
 - On field/bug reports, Ricardo prefers **"triage & verify first"** over jumping to fixes — confirm each item against current code (reproduce where possible) and explicitly challenge the report's own stated root-cause before writing any fix. (Chosen on the websec-validator field report, 2026-06-02.)
 
 ## Key Learnings
