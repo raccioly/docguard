@@ -1,11 +1,17 @@
 /**
  * Docs-Sync Validator — Checks that source files have matching canonical doc entries
+ *
+ * v0.29: migrated to structured findings (DSY001–DSY003). Messages are
+ * byte-identical to the legacy strings — resultFromFindings derives the
+ * errors/warnings arrays from the same findings, so counts, exit codes, and
+ * existing tests are unaffected; guard just renders richer output.
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, extname, basename } from 'node:path';
 import { resolveSourceRoots } from '../shared-source.mjs';
-import { relPosix } from '../shared-ignore.mjs';
+import { relPosix, walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
+import { mkFinding, resultFromFindings } from '../findings.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', '.nuxt', 'dist', 'build', 'out',
@@ -61,7 +67,9 @@ function expandDirs(projectDir, config, subPaths) {
 }
 
 export function validateDocsSync(projectDir, config) {
-  const results = { name: 'docs-sync', errors: [], warnings: [], passed: 0, total: 0 };
+  const findings = [];
+  let passed = 0;
+  let total = 0;
 
   // Load all canonical doc content for checking
   const canonicalDir = resolve(projectDir, 'docs-canonical');
@@ -78,7 +86,8 @@ export function validateDocsSync(projectDir, config) {
   }
 
   if (!canonicalContent) {
-    return results; // No canonical docs to check against
+    // No canonical docs to check against
+    return { name: 'docs-sync', ...resultFromFindings([], { passed: 0, total: 0 }) };
   }
 
   // N-1: When the guard runs in --changed-only mode, config.changedFiles is
@@ -110,14 +119,21 @@ export function validateDocsSync(projectDir, config) {
       // N-1: skip files outside the --changed-only scope.
       if (!inScope(relPath)) continue;
 
-      results.total++;
+      total++;
       const name = basename(file, ext);
 
       // Check if the file path or name is mentioned in any canonical doc
       if (canonicalContent.includes(relPath) || canonicalContent.includes(name)) {
-        results.passed++;
+        passed++;
       } else {
-        results.warnings.push(`route ${relPath} not referenced in any canonical doc`);
+        findings.push(mkFinding({
+          code: 'DSY001',
+          validator: 'docsSync',
+          severity: 'warn',
+          message: `route ${relPath} not referenced in any canonical doc`,
+          location: relPath,
+          suggestion: { kind: 'fix', text: 'Reference this route (by path or name) in a canonical doc, e.g. ARCHITECTURE.md' },
+        }));
       }
     }
   }
@@ -135,13 +151,20 @@ export function validateDocsSync(projectDir, config) {
       // N-1: skip files outside the --changed-only scope.
       if (!inScope(relPath)) continue;
 
-      results.total++;
+      total++;
       const name = basename(file, ext);
 
       if (canonicalContent.includes(relPath) || canonicalContent.includes(name)) {
-        results.passed++;
+        passed++;
       } else {
-        results.warnings.push(`Service ${relPath} not referenced in any canonical doc`);
+        findings.push(mkFinding({
+          code: 'DSY002',
+          validator: 'docsSync',
+          severity: 'warn',
+          message: `Service ${relPath} not referenced in any canonical doc`,
+          location: relPath,
+          suggestion: { kind: 'fix', text: 'Reference this service (by path or name) in a canonical doc, e.g. ARCHITECTURE.md' },
+        }));
       }
     }
   }
@@ -184,7 +207,7 @@ export function validateDocsSync(projectDir, config) {
         const rawName = basename(file, ext).toLowerCase();
         if (rawName === 'index' || rawName === 'middleware' || rawName.startsWith('_')) continue;
 
-        results.total++;
+        total++;
 
         // Strategy 1: Parse the route file for actual route paths
         // Look for router.get('/path'), app.post('/path'), etc.
@@ -224,38 +247,30 @@ export function validateDocsSync(projectDir, config) {
         }
 
         if (matched) {
-          results.passed++;
+          passed++;
         } else {
-          results.warnings.push(
-            `Route file ${basename(file)} exists but no matching paths found in ${openapiFile}. ` +
-            `Run your spec generator (e.g., zod-to-openapi) to update the API spec`
-          );
+          findings.push(mkFinding({
+            code: 'DSY003',
+            validator: 'docsSync',
+            severity: 'warn',
+            message: `Route file ${basename(file)} exists but no matching paths found in ${openapiFile}. ` +
+              `Run your spec generator (e.g., zod-to-openapi) to update the API spec`,
+            location: relPathForFilter,
+            suggestion: { kind: 'fix', text: `Regenerate ${openapiFile} (e.g. via zod-to-openapi) so it covers this route file's paths` },
+          }));
         }
       }
     }
   }
 
-  return results;
+  return { name: 'docs-sync', ...resultFromFindings(findings, { passed, total }) };
 }
 
+// v0.29 consolidation: traversal delegates to the shared canonical walker;
+// IGNORE_DIRS stays local (its __tests__/__test__ entries are intentional —
+// co-located test dirs are not the source under documentation).
 function getFilesRecursive(dir) {
   const results = [];
-  if (!existsSync(dir)) return results;
-
-  const entries = readdirSync(dir);
-  for (const entry of entries) {
-    if (IGNORE_DIRS.has(entry) || entry.startsWith('.')) continue;
-    const fullPath = join(dir, entry);
-    try {
-      const stat = statSync(fullPath);
-      if (stat.isDirectory()) {
-        results.push(...getFilesRecursive(fullPath));
-      } else {
-        results.push(fullPath);
-      }
-    } catch {
-      // Skip
-    }
-  }
+  sharedWalkFiles(dir, (fullPath) => results.push(fullPath), { ignoreDirs: IGNORE_DIRS });
   return results;
 }

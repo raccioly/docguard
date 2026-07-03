@@ -12,6 +12,8 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, relative, extname, basename } from 'node:path';
 import { resolveSourceRoots } from '../shared-source.mjs';
+import { walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
+import { mkFinding, resultFromFindings } from '../findings.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build', 'coverage',
@@ -77,9 +79,15 @@ const SCHEMA_DETECTORS = [
 
 /**
  * Main validator entry point.
+ *
+ * v0.29: migrated to structured findings (SCH001–SCH002). Messages are
+ * byte-identical to the legacy strings — resultFromFindings derives the
+ * errors/warnings arrays from the same findings array.
  */
 export function validateSchemaSync(projectDir, config) {
-  const results = { errors: [], warnings: [], passed: 0, total: 0 };
+  const findings = [];
+  let passed = 0;
+  let total = 0;
 
   // Check if DATA-MODEL.md exists
   const dataModelPath = resolve(projectDir, 'docs-canonical', 'DATA-MODEL.md');
@@ -88,13 +96,18 @@ export function validateSchemaSync(projectDir, config) {
     // Only warn if we detect schema files
     const detectedModels = detectAllModels(projectDir, config);
     if (detectedModels.length > 0) {
-      results.total++;
-      results.warnings.push(
-        `Found ${detectedModels.length} database model(s) (${detectedModels.map(m => m.name).slice(0, 5).join(', ')}${detectedModels.length > 5 ? '...' : ''}) ` +
-        `but no DATA-MODEL.md exists. Run \`docguard init\` to create one, then document your schema`
-      );
+      total++;
+      findings.push(mkFinding({
+        code: 'SCH001',
+        validator: 'schemaSync',
+        severity: 'warn',
+        message: `Found ${detectedModels.length} database model(s) (${detectedModels.map(m => m.name).slice(0, 5).join(', ')}${detectedModels.length > 5 ? '...' : ''}) ` +
+          `but no DATA-MODEL.md exists. Run \`docguard init\` to create one, then document your schema`,
+        location: 'docs-canonical/DATA-MODEL.md',
+        suggestion: { kind: 'fix', text: 'Create DATA-MODEL.md, then document the detected models in it', command: 'docguard init' },
+      }));
     }
-    return results;
+    return resultFromFindings(findings, { passed, total });
   }
 
   const dataModelContent = readFileSync(dataModelPath, 'utf-8').toLowerCase();
@@ -104,12 +117,12 @@ export function validateSchemaSync(projectDir, config) {
 
   if (detectedModels.length === 0) {
     // No schema files found — silently pass
-    return results;
+    return resultFromFindings(findings, { passed, total });
   }
 
   // Check each model appears in DATA-MODEL.md
   for (const model of detectedModels) {
-    results.total++;
+    total++;
 
     // Check if model name appears in DATA-MODEL.md (case-insensitive)
     const modelLower = model.name.toLowerCase();
@@ -120,16 +133,21 @@ export function validateSchemaSync(projectDir, config) {
       (modelLower.endsWith('s') && dataModelContent.includes(modelLower.slice(0, -1)));
 
     if (found) {
-      results.passed++;
+      passed++;
     } else {
-      results.warnings.push(
-        `${model.framework} model "${model.name}" (${model.file}) not documented in DATA-MODEL.md. ` +
-        `Add it to the Entity Definitions section`
-      );
+      findings.push(mkFinding({
+        code: 'SCH002',
+        validator: 'schemaSync',
+        severity: 'warn',
+        message: `${model.framework} model "${model.name}" (${model.file}) not documented in DATA-MODEL.md. ` +
+          `Add it to the Entity Definitions section`,
+        location: model.file,
+        suggestion: { kind: 'fix', text: 'Document the model in the Entity Definitions section of docs-canonical/DATA-MODEL.md' },
+      }));
     }
   }
 
-  return results;
+  return resultFromFindings(findings, { passed, total });
 }
 
 // ──── Model Detection ──────────────────────────────────────────────────────
@@ -193,24 +211,11 @@ function findSchemaFiles(projectDir, detector, config = {}) {
   return files;
 }
 
+// v0.29 consolidation: traversal delegates to the shared canonical walker.
 function scanSchemaDir(dir, filePattern, files) {
-  let entries;
-  try { entries = readdirSync(dir); } catch { return; }
-
-  for (const entry of entries) {
-    if (IGNORE_DIRS.has(entry)) continue;
-    if (entry.startsWith('.')) continue;
-
-    const full = join(dir, entry);
-    let stat;
-    try { stat = statSync(full); } catch { continue; }
-
-    if (stat.isDirectory()) {
-      scanSchemaDir(full, filePattern, files);
-    } else if (filePattern.test(entry)) {
-      files.push(full);
-    }
-  }
+  sharedWalkFiles(dir, (full) => {
+    if (filePattern.test(basename(full))) files.push(full);
+  }, { ignoreDirs: IGNORE_DIRS });
 }
 
 /**

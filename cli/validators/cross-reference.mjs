@@ -28,6 +28,7 @@
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, dirname, basename, relative } from 'node:path';
+import { mkFinding, resultFromFindings } from '../findings.mjs';
 
 /**
  * Slugify a heading the way GitHub's markdown anchors work.
@@ -290,17 +291,21 @@ function collectCanonicalDocs(projectDir) {
 /**
  * Validator entrypoint — matches the standard signature returning
  * { errors, warnings, passed, total }.
+ *
+ * v0.29: migrated to structured findings (XRF001–XRF002). Messages are
+ * byte-identical to the legacy strings — resultFromFindings derives the
+ * errors/warnings arrays from the same findings, so counts, exit codes, and
+ * existing tests are unaffected; guard just renders richer output.
  */
 export function validateCrossReferences(projectDir, _config = {}) {
-  const errors = [];
-  const warnings = [];
+  const findings = [];
   const fixes = [];
   let passed = 0;
   let total = 0;
 
   const docs = collectCanonicalDocs(projectDir);
   if (docs.length === 0) {
-    return { errors, warnings, passed, total, applicable: false };
+    return resultFromFindings([], { passed, total, applicable: false });
   }
 
   // Build a map of doc path → anchor set for fast lookups during ref resolution.
@@ -336,9 +341,14 @@ export function validateCrossReferences(projectDir, _config = {}) {
         }
         targetPath = resolveTarget(docPath, ref.file, projectDir);
         if (!targetPath) {
-          warnings.push(
-            `${docName}:${ref.line} — broken link: target file "${ref.file}" not found`
-          );
+          findings.push(mkFinding({
+            code: 'XRF001',
+            validator: 'crossReference',
+            severity: 'warn',
+            message: `${docName}:${ref.line} — broken link: target file "${ref.file}" not found`,
+            location: `${relative(projectDir, docPath)}:${ref.line}`,
+            suggestion: { kind: 'fix', text: 'Fix the link target path (or remove the dead link)' },
+          }));
           continue;
         }
       } else {
@@ -372,10 +382,17 @@ export function validateCrossReferences(projectDir, _config = {}) {
           // `docguard fix --write` resolves it without AI. Other near-misses
           // still get the hint but no fix (the user needs to verify intent).
           const isHighConfidence = suggestion && isUnambiguousSuggestion(normalizedAnchor, suggestion, anchors);
-          warnings.push(
-            `${docName}:${ref.line} — broken anchor: "#${ref.anchor}" in ${where} doesn't match any heading${hint}` +
-            (isHighConfidence ? ' [auto-fixable]' : '')
-          );
+          findings.push(mkFinding({
+            code: 'XRF002',
+            validator: 'crossReference',
+            severity: 'warn',
+            message: `${docName}:${ref.line} — broken anchor: "#${ref.anchor}" in ${where} doesn't match any heading${hint}` +
+              (isHighConfidence ? ' [auto-fixable]' : ''),
+            location: `${relative(projectDir, docPath)}:${ref.line}`,
+            suggestion: isHighConfidence
+              ? { kind: 'fix', text: `Replace #${ref.anchor} with #${suggestion}`, command: 'docguard fix --write' }
+              : { kind: 'review', text: 'Update the anchor to match a real heading in the target doc' },
+          }));
           if (isHighConfidence) {
             fixes.push({
               type: 'replace-anchor',
@@ -394,7 +411,7 @@ export function validateCrossReferences(projectDir, _config = {}) {
     }
   }
 
-  return { errors, warnings, passed, total, fixes };
+  return { ...resultFromFindings(findings, { passed, total }), fixes };
 }
 
 /**

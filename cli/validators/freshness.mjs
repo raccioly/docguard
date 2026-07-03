@@ -28,11 +28,8 @@ try {
   _sharedGetLastCommitDate = null;
 }
 
-const IGNORE_DIRS = new Set([
-  'node_modules', '.git', '.next', 'dist', 'build',
-  'coverage', '.cache', '__pycache__', '.venv', 'vendor',
-  'templates', 'configs', 'Research',
-]);
+// (v0.29 cleanup: a dead IGNORE_DIRS set lived here — defined but never
+// referenced. Freshness reads specific configured docs; it never walks.)
 
 /**
  * Read the `<!-- docguard:last-reviewed YYYY-MM-DD -->` header from a doc file.
@@ -245,6 +242,8 @@ export function validateFreshness(dir, config) {
       // an agent that can stamp a marker but not commit was left guessing.
       results.push({
         status: 'warn',
+        code: 'FRS001',
+        doc: docFile,
         message: `${docFile} exists but is not yet committed to git — commit it, or add a <!-- docguard:last-reviewed YYYY-MM-DD --> marker (or <!-- docguard:status approved -->).`,
       });
       continue;
@@ -266,6 +265,8 @@ export function validateFreshness(dir, config) {
     if (codeCommitsSince >= WARNING_THRESHOLD_COMMITS) {
       results.push({
         status: 'warn',
+        code: 'FRS002',
+        doc: docFile,
         message: `${docFile} — ${codeCommitsSince} code commits since last doc update (${docDate.toISOString().split('T')[0]})`,
       });
       continue;
@@ -277,6 +278,8 @@ export function validateFreshness(dir, config) {
       if (daysDiff > STALE_THRESHOLD_DAYS) {
         results.push({
           status: 'warn',
+          code: 'FRS003',
+          doc: docFile,
           message: `${docFile} — last updated ${daysDiff} days before latest code change`,
         });
         continue;
@@ -300,6 +303,8 @@ export function validateFreshness(dir, config) {
       if (daysDiff > 7) {
         results.push({
           status: 'warn',
+          code: 'FRS004',
+          doc: config.requiredFiles?.changelog || 'CHANGELOG.md',
           message: `CHANGELOG.md not updated in ${daysDiff} days despite code changes`,
         });
       } else {
@@ -336,6 +341,8 @@ export function validateFreshness(dir, config) {
         if (codeCommitsSince > 3) {
           results.push({
             status: 'warn',
+            code: 'FRS005',
+            doc: config.requiredFiles?.driftLog || 'DRIFT-LOG.md',
             message: `DRIFT-LOG.md may be stale — ${driftCount} DRIFT comments found in recent commits`,
           });
         }

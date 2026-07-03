@@ -17,7 +17,8 @@
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, relative, extname } from 'node:path';
-import { shouldIgnore } from '../shared-ignore.mjs';
+import { shouldIgnore, walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
+import { mkFinding, resultFromFindings } from '../findings.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build', 'coverage',
@@ -77,25 +78,34 @@ const SKIP_REASON_PATTERN = /\/\/\s*(REASON|SKIP|TODO|FIXME|NOTE|WHY)\s*:/i;
 
 /**
  * Main validator — checks for untracked TODOs and unexplained test skips.
+ *
+ * v0.29: migrated to structured findings (TDO001–TDO003). Messages are
+ * byte-identical to the legacy strings — resultFromFindings derives the
+ * errors/warnings arrays from the same findings array.
  */
 export function validateTodoTracking(projectDir, config) {
-  const results = { errors: [], warnings: [], passed: 0, total: 0 };
+  const findings = [];
+  let passed = 0;
+  let total = 0;
 
   // ── Part 1: Skipped Tests ──
   const skipResults = checkSkippedTests(projectDir, config);
-  results.errors.push(...skipResults.errors);
-  results.warnings.push(...skipResults.warnings);
-  results.passed += skipResults.passed;
-  results.total += skipResults.total;
+  findings.push(...skipResults.findings);
+  passed += skipResults.passed;
+  total += skipResults.total;
 
   // ── Part 2: Untracked Annotations ──
   const todoResults = checkUntrackedTodos(projectDir, config);
-  results.errors.push(...todoResults.errors);
-  results.warnings.push(...todoResults.warnings);
-  results.passed += todoResults.passed;
-  results.total += todoResults.total;
+  findings.push(...todoResults.findings);
+  passed += todoResults.passed;
+  total += todoResults.total;
 
-  return results;
+  const res = resultFromFindings(findings, { passed, total });
+  // Back-compat: on a clean run the legacy result carried no extra keys (the
+  // empty-project test deep-equals the whole object), and an empty findings
+  // array has nothing to render — so omit the key when there are no findings.
+  if (findings.length === 0) delete res.findings;
+  return res;
 }
 
 // ──── Skipped Tests ────────────────────────────────────────────────────────
@@ -104,15 +114,14 @@ export function validateTodoTracking(projectDir, config) {
  * Scan test files for skip/todo patterns without adjacent explanation comments.
  */
 function checkSkippedTests(projectDir, config) {
-  const errors = [];
-  const warnings = [];
+  const findings = [];
   let passed = 0;
   let total = 0;
 
   const testFiles = [];
   findTestFiles(projectDir, projectDir, testFiles, config);
 
-  if (testFiles.length === 0) return { errors, warnings, passed, total };
+  if (testFiles.length === 0) return { findings, passed, total };
 
   // Check: "Project has test files" → pass
   total++;
@@ -157,10 +166,19 @@ function checkSkippedTests(projectDir, config) {
         skippedWithReason++;
       } else {
         skippedWithoutReason++;
-        warnings.push(
-          `Skipped test without explanation at ${relPath}:${i + 1}. ` +
-          `Add a // REASON: comment explaining why the test is skipped`
-        );
+        findings.push(mkFinding({
+          code: 'TDO001',
+          validator: 'todoTracking',
+          severity: 'warn',
+          message: `Skipped test without explanation at ${relPath}:${i + 1}. ` +
+            `Add a // REASON: comment explaining why the test is skipped`,
+          location: `${relPath}:${i + 1}`,
+          suggestion: {
+            kind: 'fix',
+            text: 'Add a // REASON: comment on or up to 3 lines above the skip explaining why',
+            pragma: '// REASON: <why this test is skipped>',
+          },
+        }));
       }
     }
   }
@@ -173,7 +191,7 @@ function checkSkippedTests(projectDir, config) {
     }
   }
 
-  return { errors, warnings, passed, total };
+  return { findings, passed, total };
 }
 
 // ──── Untracked Annotations ────────────────────────────────────────────────
@@ -183,8 +201,7 @@ function checkSkippedTests(projectDir, config) {
  * in tracking documentation.
  */
 function checkUntrackedTodos(projectDir, config) {
-  const errors = [];
-  const warnings = [];
+  const findings = [];
   let passed = 0;
   let total = 0;
 
@@ -196,7 +213,7 @@ function checkUntrackedTodos(projectDir, config) {
     // No TODOs found — that's clean code
     total++;
     passed++;
-    return { errors, warnings, passed, total };
+    return { findings, passed, total };
   }
 
   // Check if TODOs are tracked in documentation
@@ -235,23 +252,41 @@ function checkUntrackedTodos(projectDir, config) {
       untrackedCount++;
       // Only report first 5 to avoid noise
       if (untrackedCount <= 5) {
-        warnings.push(
-          `Untracked ${todo.keyword} at ${todo.file}:${todo.line}: "${todo.text.substring(0, 60)}". ` +
-          `Add to ROADMAP.md, CURRENT-STATE.md, or a GitHub issue`
-        );
+        findings.push(mkFinding({
+          code: 'TDO002',
+          validator: 'todoTracking',
+          severity: 'warn',
+          message: `Untracked ${todo.keyword} at ${todo.file}:${todo.line}: "${todo.text.substring(0, 60)}". ` +
+            `Add to ROADMAP.md, CURRENT-STATE.md, or a GitHub issue`,
+          location: `${todo.file}:${todo.line}`,
+          suggestion: {
+            kind: 'fix',
+            text: 'Track it in ROADMAP.md or CURRENT-STATE.md (or resolve it) — or exclude the path via todoIgnore in .docguard.json',
+          },
+        }));
       }
     }
   }
 
   if (untrackedCount > 5) {
-    warnings.push(`...and ${untrackedCount - 5} more untracked TODO/FIXME items`);
+    findings.push(mkFinding({
+      code: 'TDO003',
+      validator: 'todoTracking',
+      severity: 'warn',
+      message: `...and ${untrackedCount - 5} more untracked TODO/FIXME items`,
+      location: null,
+      suggestion: {
+        kind: 'suppress',
+        text: 'Address the items above and re-run guard to surface the rest — or exclude noisy paths via todoIgnore in .docguard.json',
+      },
+    }));
   }
 
   if (untrackedCount === 0) {
     passed++;
   }
 
-  return { errors, warnings, passed, total };
+  return { findings, passed, total };
 }
 
 /**
@@ -285,34 +320,23 @@ function loadTrackingDocs(projectDir, config) {
 
 // ──── File Scanners ────────────────────────────────────────────────────────
 
+// v0.29 consolidation: traversal delegates to the shared canonical walker;
+// test-file pattern matching and config-ignore filtering stay per-file here.
 function findTestFiles(rootDir, dir, files, config) {
-  let entries;
-  try { entries = readdirSync(dir); } catch { return; }
+  sharedWalkFiles(dir, (full) => {
+    const entry = full.slice(full.lastIndexOf('/') + 1);
+    const ext = extname(entry).toLowerCase();
+    if (!TEST_EXTENSIONS.has(ext)) return;
 
-  for (const entry of entries) {
-    if (IGNORE_DIRS.has(entry)) continue;
-    if (entry.startsWith('.')) continue;
-
-    const full = join(dir, entry);
-    let stat;
-    try { stat = statSync(full); } catch { continue; }
-
-    if (stat.isDirectory()) {
-      findTestFiles(rootDir, full, files, config);
-    } else {
-      const ext = extname(entry).toLowerCase();
-      if (!TEST_EXTENSIONS.has(ext)) continue;
-
-      // Match test file patterns
-      if (/\.(test|spec)\.(mjs|cjs|[jt]sx?)$/.test(entry) ||
-          /__(tests|test)__/.test(relative(rootDir, full))) {
-        const relPath = relative(rootDir, full);
-        // Apply config ignore patterns (todoIgnore + global ignore)
-        if (config && shouldIgnore(relPath, config, 'todoIgnore')) continue;
-        files.push(relPath);
-      }
+    // Match test file patterns
+    if (/\.(test|spec)\.(mjs|cjs|[jt]sx?)$/.test(entry) ||
+        /__(tests|test)__/.test(relative(rootDir, full))) {
+      const relPath = relative(rootDir, full);
+      // Apply config ignore patterns (todoIgnore + global ignore)
+      if (config && shouldIgnore(relPath, config, 'todoIgnore')) return;
+      files.push(relPath);
     }
-  }
+  }, { ignoreDirs: IGNORE_DIRS });
 }
 
 // Test-file path patterns — TODO scanning skips these by default to avoid
@@ -349,25 +373,10 @@ function findTodos(rootDir, dir, todos, config) {
     return;
   }
 
-  let entries;
-  try { entries = readdirSync(dir); } catch { return; }
-
-  const includeTests = config?.todoTracking?.includeTestFiles === true;
-
-  for (const entry of entries) {
-    if (IGNORE_DIRS.has(entry)) continue;
-    if (entry.startsWith('.')) continue;
-
-    const full = join(dir, entry);
-    let stat;
-    try { stat = statSync(full); } catch { continue; }
-
-    if (stat.isDirectory()) {
-      findTodos(rootDir, full, todos, config);
-    } else {
-      _scanTodoFile(rootDir, full, todos, config);
-    }
-  }
+  // v0.29 consolidation: traversal delegates to the shared canonical walker.
+  sharedWalkFiles(dir, (full) => _scanTodoFile(rootDir, full, todos, config), {
+    ignoreDirs: IGNORE_DIRS,
+  });
 }
 
 /**

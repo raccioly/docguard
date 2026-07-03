@@ -1,19 +1,30 @@
 /**
  * Environment Validator — Checks ENVIRONMENT.md docs and .env.example
  * Now respects projectTypeConfig (e.g., skip env checks for CLI tools)
+ *
+ * v0.29: migrated to structured findings (ENV001–ENV005). Messages are
+ * byte-identical to the legacy strings — resultFromFindings derives the
+ * errors/warnings arrays from the same findings, so counts, exit codes, and
+ * existing tests are unaffected; guard just renders richer output.
  */
 
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { grepEnvUsage } from '../shared-source.mjs';
+import { mkFinding, resultFromFindings } from '../findings.mjs';
 
 export function validateEnvironment(projectDir, config) {
-  const results = { name: 'environment', errors: [], warnings: [], passed: 0, total: 0 };
+  const findings = [];
+  let passed = 0;
+  let total = 0;
   const ptc = config.projectTypeConfig || {};
 
-  const envDocPath = resolve(projectDir, 'docs-canonical/ENVIRONMENT.md');
+  const envDoc = 'docs-canonical/ENVIRONMENT.md';
+  const envDocPath = resolve(projectDir, envDoc);
   if (!existsSync(envDocPath)) {
-    return results; // Structure validator catches missing files
+    // Structure validator catches missing files. Keep the exact legacy shape
+    // here (no `findings` key) — tests deep-equal this early return.
+    return { name: 'environment', errors: [], warnings: [], passed: 0, total: 0 };
   }
 
   const content = readFileSync(envDocPath, 'utf-8');
@@ -21,18 +32,32 @@ export function validateEnvironment(projectDir, config) {
   // Check for required sections (anchored headings — not substring matches that
   // could hit a TOC entry or code block).
   const hasHeading = (re) => re.test(content);
-  results.total++;
+  total++;
   if (hasHeading(/^#{2,3}\s+(Prerequisites|Setup Steps)\b/m)) {
-    results.passed++;
+    passed++;
   } else {
-    results.warnings.push('ENVIRONMENT.md: missing "## Prerequisites" or "## Setup Steps" section');
+    findings.push(mkFinding({
+      code: 'ENV001',
+      validator: 'environment',
+      severity: 'warn',
+      message: 'ENVIRONMENT.md: missing "## Prerequisites" or "## Setup Steps" section',
+      location: envDoc,
+      suggestion: { kind: 'fix', text: 'Add a "## Setup Steps" (or "## Prerequisites") section describing how to get the project running' },
+    }));
   }
 
-  results.total++;
+  total++;
   if (hasHeading(/^#{2,3}\s+Environment Variables\b/m)) {
-    results.passed++;
+    passed++;
   } else {
-    results.warnings.push('ENVIRONMENT.md: missing "## Environment Variables" section');
+    findings.push(mkFinding({
+      code: 'ENV002',
+      validator: 'environment',
+      severity: 'warn',
+      message: 'ENVIRONMENT.md: missing "## Environment Variables" section',
+      location: envDoc,
+      suggestion: { kind: 'fix', text: 'Add a "## Environment Variables" section documenting each variable the app reads' },
+    }));
   }
 
   // ── Real code-truth check: env vars USED in code but documented nowhere ──
@@ -92,15 +117,20 @@ export function validateEnvironment(projectDir, config) {
     // vacuous (always passes) and would just inflate the count.
     if (codeUsed.size > 0) {
       const usedButUndocumented = [...codeUsed].filter(v => !documented.has(v));
-      results.total++;
+      total++;
       if (usedButUndocumented.length === 0) {
-        results.passed++;
+        passed++;
       } else {
         const shown = usedButUndocumented.slice(0, 10).join(', ');
         const more = usedButUndocumented.length > 10 ? ` (+${usedButUndocumented.length - 10} more)` : '';
-        results.warnings.push(
-          `${usedButUndocumented.length} env var(s) used in code but not documented in ENVIRONMENT.md / .env.example: ${shown}${more}`
-        );
+        findings.push(mkFinding({
+          code: 'ENV003',
+          validator: 'environment',
+          severity: 'warn',
+          message: `${usedButUndocumented.length} env var(s) used in code but not documented in ENVIRONMENT.md / .env.example: ${shown}${more}`,
+          location: envDoc,
+          suggestion: { kind: 'fix', text: 'Document each listed variable in ENVIRONMENT.md, or add it to .env.example' },
+        }));
       }
     }
   }
@@ -109,35 +139,45 @@ export function validateEnvironment(projectDir, config) {
   if (ptc.needsEnvExample !== false && ptc.needsEnvVars !== false) {
     // Check if .env.example is referenced and exists
     if (content.includes('.env.example')) {
-      results.total++;
+      total++;
       if (existsSync(resolve(projectDir, '.env.example'))) {
-        results.passed++;
+        passed++;
       } else {
-        results.warnings.push(
-          'ENVIRONMENT.md references .env.example but the file does not exist'
-        );
+        findings.push(mkFinding({
+          code: 'ENV004',
+          validator: 'environment',
+          severity: 'warn',
+          message: 'ENVIRONMENT.md references .env.example but the file does not exist',
+          location: envDoc,
+          suggestion: { kind: 'fix', text: 'Create .env.example with placeholder values, or remove the stale reference from ENVIRONMENT.md' },
+        }));
       }
     }
 
     // Check if any .env file exists but no .env.example is provided
-    results.total++;
+    total++;
     const hasEnvFile = ['.env', '.env.local', '.env.development'].some(f =>
       existsSync(resolve(projectDir, f))
     );
     const hasEnvExample = existsSync(resolve(projectDir, '.env.example'));
 
     if (hasEnvFile && !hasEnvExample) {
-      results.warnings.push(
-        '.env file exists but no .env.example template — new contributors won\'t know what vars to set'
-      );
+      findings.push(mkFinding({
+        code: 'ENV005',
+        validator: 'environment',
+        severity: 'warn',
+        message: '.env file exists but no .env.example template — new contributors won\'t know what vars to set',
+        location: '.env.example',
+        suggestion: { kind: 'fix', text: 'Create a .env.example template listing every variable with a placeholder value' },
+      }));
     } else {
-      results.passed++;
+      passed++;
     }
   } else {
     // CLI/library project — just verify doc exists and has basic content
-    results.total++;
-    results.passed++;
+    total++;
+    passed++;
   }
 
-  return results;
+  return { name: 'environment', ...resultFromFindings(findings, { passed, total }) };
 }

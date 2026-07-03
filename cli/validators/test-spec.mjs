@@ -1,18 +1,30 @@
 /**
  * Test Spec Validator — Checks that tests exist per TEST-SPEC.md coverage rules
  * Now respects projectTypeConfig (e.g., skip E2E for CLI tools)
+ *
+ * v0.29: migrated to structured findings (TSP001–TSP007). Messages are
+ * byte-identical to the legacy strings — resultFromFindings derives the
+ * errors/warnings arrays from the same findings, so counts, exit codes, and
+ * existing tests are unaffected; guard just renders richer output.
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { resolveSourceRoots } from '../shared-source.mjs';
+import { mkFinding, resultFromFindings } from '../findings.mjs';
 
 export function validateTestSpec(projectDir, config) {
-  const results = { name: 'test-spec', errors: [], warnings: [], passed: 0, total: 0 };
+  const findings = [];
+  let passed = 0;
+  let total = 0;
+  let note;
 
-  const testSpecPath = resolve(projectDir, 'docs-canonical/TEST-SPEC.md');
+  const specDoc = 'docs-canonical/TEST-SPEC.md';
+  const testSpecPath = resolve(projectDir, specDoc);
   if (!existsSync(testSpecPath)) {
-    return results; // Structure validator catches this
+    // Structure validator catches this. Keep the exact legacy shape here
+    // (no `findings` key) — tests deep-equal this early return.
+    return { name: 'test-spec', errors: [], warnings: [], passed: 0, total: 0 };
   }
 
   const content = readFileSync(testSpecPath, 'utf-8');
@@ -80,22 +92,44 @@ export function validateTestSpec(projectDir, config) {
       // author's CLAIM, not proof — it is NOT counted as a pass. The real pass
       // comes from the file-existence checks below (code truth, not the glyph).
       if (status.includes('❌')) {
-        results.total++;
-        results.warnings.push(`TEST-SPEC declares ${sourceFile} as ❌ — missing tests`);
+        total++;
+        findings.push(mkFinding({
+          code: 'TSP001',
+          validator: 'testSpec',
+          severity: 'warn',
+          message: `TEST-SPEC declares ${sourceFile} as ❌ — missing tests`,
+          location: specDoc,
+          suggestion: { kind: 'fix', text: 'Write the missing tests, then update the row status to ✅' },
+        }));
       } else if (status.includes('⚠️')) {
-        results.total++;
-        results.warnings.push(`TEST-SPEC declares ${sourceFile} as ⚠️ — partial coverage`);
+        total++;
+        findings.push(mkFinding({
+          code: 'TSP002',
+          validator: 'testSpec',
+          severity: 'warn',
+          message: `TEST-SPEC declares ${sourceFile} as ⚠️ — partial coverage`,
+          location: specDoc,
+          suggestion: { kind: 'fix', text: 'Extend coverage for this source, then update the row status to ✅' },
+        }));
       }
 
       // ── File existence checks ───────────────────────────────────────
       // Verify source file still exists (catch stale map entries).
       const cleanSource = sourceFile.replace(/`/g, '').trim();
       if (cleanSource && cleanSource !== '—' && cleanSource !== 'Source File' && isPathLike(cleanSource)) {
-        results.total++;
+        total++;
         if (existsSync(resolve(projectDir, cleanSource))) {
-          results.passed++;
+          passed++;
         } else {
-          results.warnings.push(`Source-to-Test Map: source file \`${cleanSource}\` not found on disk — stale entry?`);
+          findings.push(mkFinding({
+            code: 'TSP003',
+            validator: 'testSpec',
+            severity: 'warn',
+            confidence: 'low',
+            message: `Source-to-Test Map: source file \`${cleanSource}\` not found on disk — stale entry?`,
+            location: specDoc,
+            suggestion: { kind: 'review', text: 'Update or remove the stale row if the source file moved or was deleted' },
+          }));
         }
       }
 
@@ -104,11 +138,18 @@ export function validateTestSpec(projectDir, config) {
       for (const ti of testIdxs) {
         const cleanTest = (cells[ti] || '').replace(/`/g, '').trim();
         if (isPlaceholder(cleanTest) || !isPathLike(cleanTest)) continue;
-        results.total++;
+        total++;
         if (existsSync(resolve(projectDir, cleanTest))) {
-          results.passed++;
+          passed++;
         } else {
-          results.warnings.push(`Source-to-Test Map: test file \`${cleanTest}\` not found — referenced by ${cleanSource}`);
+          findings.push(mkFinding({
+            code: 'TSP004',
+            validator: 'testSpec',
+            severity: 'warn',
+            message: `Source-to-Test Map: test file \`${cleanTest}\` not found — referenced by ${cleanSource}`,
+            location: specDoc,
+            suggestion: { kind: 'fix', text: 'Create the test file, or point the row at the actual test path' },
+          }));
         }
       }
     }
@@ -140,10 +181,15 @@ export function validateTestSpec(projectDir, config) {
         if (num.startsWith('<!--') || num === '#' || journey.startsWith('<!--')) continue;
 
         if (status && status.includes('❌')) {
-          results.total++;
-          results.warnings.push(
-            `E2E Journey #${num} (${journey}) — missing test: ${testFile}`
-          );
+          total++;
+          findings.push(mkFinding({
+            code: 'TSP005',
+            validator: 'testSpec',
+            severity: 'warn',
+            message: `E2E Journey #${num} (${journey}) — missing test: ${testFile}`,
+            location: specDoc,
+            suggestion: { kind: 'fix', text: 'Implement the journey test, then update the row status to ✅' },
+          }));
           continue;
         }
 
@@ -154,14 +200,19 @@ export function validateTestSpec(projectDir, config) {
         if (testFile && testFile.trim() !== '—' && !testFile.includes('N/A')) {
           const paths = parseTestPathCell(testFile);
           if (paths.length > 0) {
-            results.total++;
+            total++;
             const anyExists = paths.some(p => testEvidenceExists(projectDir, p));
             if (anyExists) {
-              results.passed++;
+              passed++;
             } else {
-              results.warnings.push(
-                `E2E Journey #${num} (${journey}) marked ✅ but test file not found: ${paths.join(', ')}`
-              );
+              findings.push(mkFinding({
+                code: 'TSP006',
+                validator: 'testSpec',
+                severity: 'warn',
+                message: `E2E Journey #${num} (${journey}) marked ✅ but test file not found: ${paths.join(', ')}`,
+                location: specDoc,
+                suggestion: { kind: 'review', text: 'Fix the test path in the row, or restore the missing test file' },
+              }));
             }
           }
         }
@@ -172,7 +223,7 @@ export function validateTestSpec(projectDir, config) {
   // If TEST-SPEC.md declared no service-to-test mappings, there is nothing to
   // verify against. Do NOT manufacture a 1/1 pass just because tests exist
   // somewhere — that rendered a confident green ✅ for a doc that mapped nothing.
-  if (results.total === 0) {
+  if (total === 0) {
     // 1. Check top-level test dirs
     const commonTestDirs = ['tests', 'test', '__tests__', 'spec'];
     const hasTestDir = commonTestDirs.some(d =>
@@ -200,16 +251,23 @@ export function validateTestSpec(projectDir, config) {
       // file, and the last as status — so both the minimal 3-column shape and
       // the 4-column table `docguard generate` emits are accepted. Say so, since
       // the guidance previously contradicted the generated skeleton (field report).
-      results.note = 'TEST-SPEC.md declares no service-to-test mappings. Add a "## Source-to-Test Map" table — column 1 is the source, column 2 the test file, the last column the status. Both `| Source | Test file | Status |` and the generated `| Source File | Unit Test | Integration Test | Status |` shapes work. Run `docguard explain testSpec` for details.';
+      note = 'TEST-SPEC.md declares no service-to-test mappings. Add a "## Source-to-Test Map" table — column 1 is the source, column 2 the test file, the last column the status. Both `| Source | Test file | Status |` and the generated `| Source File | Unit Test | Integration Test | Status |` shapes work. Run `docguard explain testSpec` for details.';
     } else {
-      results.warnings.push(
-        'No test directory or co-located test files found. ' +
-        'Expected: tests/, src/**/__tests__/, or src/**/*.test.* files'
-      );
+      findings.push(mkFinding({
+        code: 'TSP007',
+        validator: 'testSpec',
+        severity: 'warn',
+        message: 'No test directory or co-located test files found. ' +
+          'Expected: tests/, src/**/__tests__/, or src/**/*.test.* files',
+        location: null,
+        suggestion: { kind: 'fix', text: 'Create a tests/ directory or co-located *.test.* files, then map them in TEST-SPEC.md' },
+      }));
     }
   }
 
-  return results;
+  const res = { name: 'test-spec', ...resultFromFindings(findings, { passed, total }) };
+  if (note) res.note = note;
+  return res;
 }
 
 /**

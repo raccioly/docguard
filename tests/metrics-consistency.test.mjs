@@ -170,3 +170,132 @@ describe('Metrics-Consistency Validator', () => {
     assert.equal(fix.actualSource, 'docguard.guard.checks', 'fix must carry provenance for the applier');
   });
 });
+
+// ── Project collections (field report #6) ─────────────────────────────────────
+// `config.collections` binds a documentation noun to a glob whose file-count is
+// the source of truth, so a wrong "16 extractors" in prose is caught
+// deterministically — the exact false-negative the field report filed.
+describe('Metrics-Consistency — project collections (field report #6)', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = mkdtempSync(join(tmpdir(), 'docguard-test-collections-'));
+    mkdirSync(join(tmpDir, 'src', 'extractors'), { recursive: true });
+    mkdirSync(join(tmpDir, 'docs-canonical'), { recursive: true });
+    for (let i = 0; i < 19; i++) {
+      writeFileSync(join(tmpDir, 'src', 'extractors', `e${i}.py`), 'x');
+    }
+  });
+
+  afterEach(() => {
+    rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  const cfg = { collections: { extractors: 'src/extractors/*.py' } };
+
+  it('flags a documented count that disagrees with the collection glob (16 vs 19)', () => {
+    writeFileSync(join(tmpDir, 'docs-canonical', 'ARCHITECTURE.md'), 'The pipeline runs 16 extractors over each target.');
+    const result = validateMetricsConsistency(tmpDir, cfg, []);
+    assert.strictEqual(result.warnings.length, 1, result.warnings.join(' | '));
+    assert.ok(result.warnings[0].includes('says "16 extractors" but the code has 19'),
+      `unexpected message: ${result.warnings[0]}`);
+    const fix = (result.fixes || []).find(f => f.type === 'replace-count');
+    assert.ok(fix && fix.actual === 19 && fix.found === 16);
+    assert.equal(fix.actualSource, 'docguard.collections.extractors');
+  });
+
+  it('passes when the documented count matches the glob (19 vs 19)', () => {
+    writeFileSync(join(tmpDir, 'docs-canonical', 'ARCHITECTURE.md'), 'The pipeline runs 19 extractors over each target.');
+    const result = validateMetricsConsistency(tmpDir, cfg, []);
+    assert.deepEqual(result.warnings, []);
+  });
+
+  it('does NOT require docguard-binding — a declared noun IS the opt-in', () => {
+    // No "docguard" on the line; the built-in checks/validators rules would skip
+    // this, but a declared collection must still catch it.
+    writeFileSync(join(tmpDir, 'docs-canonical', 'METHODOLOGY.md'), 'We ship 16 extractors.');
+    const result = validateMetricsConsistency(tmpDir, cfg, []);
+    assert.strictEqual(result.warnings.length, 1, result.warnings.join(' | '));
+    assert.ok(result.warnings[0].includes('METHODOLOGY.md'));
+  });
+
+  it('fail-safe: an unresolved glob (0 matches) never asserts "0" drift', () => {
+    writeFileSync(join(tmpDir, 'docs-canonical', 'ARCHITECTURE.md'), 'We have 5 plugins.');
+    const result = validateMetricsConsistency(tmpDir, { collections: { plugins: 'does/not/exist/*.py' } }, []);
+    assert.deepEqual(result.warnings, [], 'a bad glob must not manufacture a false "doc says 5 but code has 0"');
+  });
+
+  it('reserved nouns (checks/validators/tests) keep the built-in count, ignoring a collection override', () => {
+    // Declaring `validators` as a collection must NOT double-bind or override the
+    // built-in DocGuard meta-count.
+    writeFileSync(join(tmpDir, 'README.md'), 'DocGuard has 12 validators.');
+    const result = validateMetricsConsistency(
+      tmpDir,
+      { collections: { validators: 'src/extractors/*.py' } }, // 19 files — must be ignored for the reserved noun
+      [{ status: 'passed', total: 5 }],
+    );
+    // The built-in validators count is 2 (1 guard validator + the +1 self-count),
+    // not 19; "12 validators" is bound to docguard so it's compared to the built-in.
+    assert.ok(!result.warnings.some(w => w.includes('the code has 19')),
+      `reserved noun must not use the collection glob: ${result.warnings.join(' | ')}`);
+  });
+});
+
+// ── Auto-detected documentation homes (field report #6 follow-up) ─────────────
+// A folder literally named docs/, documentation/, guides/, … is unambiguously a
+// doc home DocGuard governs and is now scanned WITHOUT being enrolled — while an
+// arbitrary non-doc subdir (security/wolf-archive/) is still never walked.
+describe('Metrics-Consistency — auto-detected doc homes', () => {
+  let tmpDir;
+  beforeEach(() => { tmpDir = mkdtempSync(join(tmpdir(), 'docguard-test-dochomes-')); });
+  afterEach(() => { rmSync(tmpDir, { recursive: true, force: true }); });
+
+  const guardResultsTwoValidators = () => {
+    const g = [];
+    for (let i = 0; i < 11; i++) g.push({ status: 'passed', total: i === 0 ? 5 : 1 });
+    return g;
+  };
+
+  it('auto-scans an UNCONFIGURED documentation/ dir (no requiredFiles entry)', () => {
+    mkdirSync(join(tmpDir, 'documentation'), { recursive: true });
+    writeFileSync(join(tmpDir, 'documentation', 'OVERVIEW.md'), 'DocGuard runs 99 validators.');
+    // No requiredFiles config at all — relies purely on auto-detection.
+    const result = validateMetricsConsistency(tmpDir, {}, guardResultsTwoValidators());
+    assert.strictEqual(result.warnings.length, 1, result.warnings.join(' | '));
+    assert.ok(result.warnings[0].includes('99 validators'));
+  });
+
+  it('catches a collection drift inside an auto-detected guides/ dir', () => {
+    mkdirSync(join(tmpDir, 'src', 'extractors'), { recursive: true });
+    mkdirSync(join(tmpDir, 'guides'), { recursive: true });
+    for (let i = 0; i < 19; i++) writeFileSync(join(tmpDir, 'src', 'extractors', `e${i}.py`), 'x');
+    writeFileSync(join(tmpDir, 'guides', 'PIPELINE.md'), 'It runs 16 extractors.');
+    const result = validateMetricsConsistency(tmpDir, { collections: { extractors: 'src/extractors/*.py' } }, []);
+    assert.strictEqual(result.warnings.length, 1, result.warnings.join(' | '));
+    assert.ok(result.warnings[0].includes('guides/PIPELINE.md') && result.warnings[0].includes('the code has 19'));
+  });
+
+  it('still does NOT scan an arbitrary non-doc subdir (FP guard preserved)', () => {
+    mkdirSync(join(tmpDir, 'security', 'wolf-archive'), { recursive: true });
+    writeFileSync(join(tmpDir, 'security', 'wolf-archive', 'memory.md'), 'DocGuard ran 99 validators back then.');
+    const result = validateMetricsConsistency(tmpDir, {}, guardResultsTwoValidators());
+    assert.deepEqual(result.warnings, [], `arbitrary subdir must stay unscanned; got: ${result.warnings.join(' | ')}`);
+  });
+
+  it('config.docs.dirs EXTENDS the auto-detected set (adds a non-standard home)', () => {
+    mkdirSync(join(tmpDir, 'reference'), { recursive: true });
+    writeFileSync(join(tmpDir, 'reference', 'API.md'), 'DocGuard runs 99 validators.');
+    // `reference/` is not a conventional name; it's only scanned because declared.
+    const result = validateMetricsConsistency(tmpDir, { docs: { dirs: ['reference'] } }, guardResultsTwoValidators());
+    assert.strictEqual(result.warnings.length, 1, result.warnings.join(' | '));
+    assert.ok(result.warnings[0].includes('reference/API.md'));
+  });
+
+  it('honors .docguardignore to EXCLUDE a conventional doc dir', () => {
+    mkdirSync(join(tmpDir, 'docs'), { recursive: true });
+    writeFileSync(join(tmpDir, 'docs', 'NOTES.md'), 'DocGuard runs 99 validators.');
+    writeFileSync(join(tmpDir, '.docguardignore'), 'docs/**');
+    const result = validateMetricsConsistency(tmpDir, {}, guardResultsTwoValidators());
+    assert.deepEqual(result.warnings, [], `ignored doc dir must not be flagged; got: ${result.warnings.join(' | ')}`);
+  });
+});

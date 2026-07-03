@@ -11,13 +11,19 @@
  *  - package.json bin entries not documented
  *  - Source directories not referenced in ARCHITECTURE.md
  *  - README.md missing standard sections (inspired by Standard README spec)
+ *
+ * v0.29: migrated to structured findings (DCV001–DCV006). Messages are
+ * byte-identical to the legacy strings — resultFromFindings derives the
+ * errors/warnings arrays from the same findings, so counts, exit codes, and
+ * existing tests are unaffected; guard just renders richer output.
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, relative, basename, extname } from 'node:path';
 import { resolveSourceRoots } from '../shared-source.mjs';
-import { shouldIgnore } from '../shared-ignore.mjs';
+import { shouldIgnore, walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
 import { detectIaC, hasInfrastructureHeading, buildIaCWarning } from '../scanners/iac.mjs';
+import { mkFinding, resultFromFindings } from '../findings.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', '.nuxt', 'dist', 'build', 'out',
@@ -56,14 +62,15 @@ function isGeneratedArtifact(name) {
  * @returns {{ errors: string[], warnings: string[], passed: number, total: number }}
  */
 export function validateDocsCoverage(projectDir, config) {
-  const warnings = [];
+  const findings = [];
   let passed = 0;
   let total = 0;
 
   // Collect all doc content for searching
   const allDocContent = collectDocContent(projectDir);
   if (!allDocContent) {
-    return { errors: [], warnings, passed: 0, total: 0 };
+    // Literal legacy shape (no findings key) — tests deepEqual this exact object.
+    return { errors: [], warnings: [], passed: 0, total: 0 };
   }
 
   // IaC detection runs once and informs both Check 3 (suppression) and
@@ -74,39 +81,39 @@ export function validateDocsCoverage(projectDir, config) {
   const configChecks = checkConfigFiles(projectDir, allDocContent, config);
   total += configChecks.total;
   passed += configChecks.passed;
-  warnings.push(...configChecks.warnings);
+  findings.push(...configChecks.findings);
 
   // ── Check 2: package.json bin entries documented ──
   const binChecks = checkPackageBins(projectDir, allDocContent);
   total += binChecks.total;
   passed += binChecks.passed;
-  warnings.push(...binChecks.warnings);
+  findings.push(...binChecks.findings);
 
   // ── Check 3: Source directory structure matches ARCHITECTURE.md ──
   const dirChecks = checkSourceDirs(projectDir, allDocContent, config, iac);
   total += dirChecks.total;
   passed += dirChecks.passed;
-  warnings.push(...dirChecks.warnings);
+  findings.push(...dirChecks.findings);
 
   // ── Check 4: Config filenames referenced in source code but not documented ──
   const codeConfigChecks = checkCodeReferencedConfigs(projectDir, allDocContent, config);
   total += codeConfigChecks.total;
   passed += codeConfigChecks.passed;
-  warnings.push(...codeConfigChecks.warnings);
+  findings.push(...codeConfigChecks.findings);
 
   // ── Check 5: README section completeness (Standard README spec) ──
   const readmeChecks = checkReadmeSections(projectDir);
   total += readmeChecks.total;
   passed += readmeChecks.passed;
-  warnings.push(...readmeChecks.warnings);
+  findings.push(...readmeChecks.findings);
 
   // ── Check 6: IaC-aware Infrastructure documentation ──
   const iacChecks = checkIaCDocumentation(projectDir, iac);
   total += iacChecks.total;
   passed += iacChecks.passed;
-  warnings.push(...iacChecks.warnings);
+  findings.push(...iacChecks.findings);
 
-  return { errors: [], warnings, passed, total };
+  return resultFromFindings(findings, { passed, total });
 }
 
 // ── Check Functions ─────────────────────────────────────────────────────────
@@ -118,12 +125,12 @@ export function validateDocsCoverage(projectDir, config) {
  * consistently across all docs-coverage checks).
  */
 function checkConfigFiles(projectDir, allDocContent, config = {}) {
-  const warnings = [];
+  const findings = [];
   let passed = 0;
   let total = 0;
 
   let entries;
-  try { entries = readdirSync(projectDir); } catch { return { warnings, passed, total }; }
+  try { entries = readdirSync(projectDir); } catch { return { findings, passed, total }; }
 
   const lowerDocContent = allDocContent.toLowerCase();
 
@@ -155,28 +162,33 @@ function checkConfigFiles(projectDir, allDocContent, config = {}) {
     if (lowerDocContent.includes(entry.toLowerCase())) {
       passed++;
     } else {
-      warnings.push(
-        `Config file "${entry}" exists but is not mentioned in any documentation. Document its purpose in ARCHITECTURE.md or README.md`
-      );
+      findings.push(mkFinding({
+        code: 'DCV001',
+        validator: 'docsCoverage',
+        severity: 'warn',
+        message: `Config file "${entry}" exists but is not mentioned in any documentation. Document its purpose in ARCHITECTURE.md or README.md`,
+        location: entry,
+        suggestion: { kind: 'fix', text: 'Explain what this config file does in ARCHITECTURE.md or README.md' },
+      }));
     }
   }
 
-  return { warnings, passed, total };
+  return { findings, passed, total };
 }
 
 /**
  * Check 2: package.json bin entries (CLI commands users run) are documented.
  */
 function checkPackageBins(projectDir, allDocContent) {
-  const warnings = [];
+  const findings = [];
   let passed = 0;
   let total = 0;
 
   const pkgPath = resolve(projectDir, 'package.json');
-  if (!existsSync(pkgPath)) return { warnings, passed, total };
+  if (!existsSync(pkgPath)) return { findings, passed, total };
 
   let pkg;
-  try { pkg = JSON.parse(readFileSync(pkgPath, 'utf-8')); } catch { return { warnings, passed, total }; }
+  try { pkg = JSON.parse(readFileSync(pkgPath, 'utf-8')); } catch { return { findings, passed, total }; }
 
   const bins = typeof pkg.bin === 'string'
     ? { [pkg.name]: pkg.bin }
@@ -189,13 +201,18 @@ function checkPackageBins(projectDir, allDocContent) {
     if (lowerDocContent.includes(binName.toLowerCase())) {
       passed++;
     } else {
-      warnings.push(
-        `package.json defines CLI command "${binName}" but it's not mentioned in any documentation`
-      );
+      findings.push(mkFinding({
+        code: 'DCV002',
+        validator: 'docsCoverage',
+        severity: 'warn',
+        message: `package.json defines CLI command "${binName}" but it's not mentioned in any documentation`,
+        location: 'package.json',
+        suggestion: { kind: 'fix', text: `Document the "${binName}" command in README.md (e.g. under Usage)` },
+      }));
     }
   }
 
-  return { warnings, passed, total };
+  return { findings, passed, total };
 }
 
 /**
@@ -207,15 +224,15 @@ function checkPackageBins(projectDir, allDocContent) {
  * instead (FR-011).
  */
 function checkSourceDirs(projectDir, allDocContent, config = {}, iac = { isIaC: false, tools: [] }) {
-  const warnings = [];
+  const findings = [];
   let passed = 0;
   let total = 0;
 
   const archPath = resolve(projectDir, 'docs-canonical/ARCHITECTURE.md');
-  if (!existsSync(archPath)) return { warnings, passed, total };
+  if (!existsSync(archPath)) return { findings, passed, total };
 
   let archContent;
-  try { archContent = readFileSync(archPath, 'utf-8'); } catch { return { warnings, passed, total }; }
+  try { archContent = readFileSync(archPath, 'utf-8'); } catch { return { findings, passed, total }; }
 
   const lowerArchContent = archContent.toLowerCase();
   const infraDocumented = hasInfrastructureHeading(archContent);
@@ -264,14 +281,19 @@ function checkSourceDirs(projectDir, allDocContent, config = {}, iac = { isIaC: 
       if (lowerArchContent.includes(searchName) || lowerArchContent.includes(root + '/' + entry)) {
         passed++;
       } else {
-        warnings.push(
-          `Source directory "${root}/${entry}/" is not referenced in ARCHITECTURE.md`
-        );
+        findings.push(mkFinding({
+          code: 'DCV003',
+          validator: 'docsCoverage',
+          severity: 'warn',
+          message: `Source directory "${root}/${entry}/" is not referenced in ARCHITECTURE.md`,
+          location: relPath,
+          suggestion: { kind: 'fix', text: 'Add this directory to the Component Map in docs-canonical/ARCHITECTURE.md' },
+        }));
       }
     }
   }
 
-  return { warnings, passed, total };
+  return { findings, passed, total };
 }
 
 /**
@@ -310,30 +332,37 @@ function isInsideIaCPackage(relPath, packageDirs) {
  * warnings that would otherwise fire for bin/, lib/, modules/, handlers/, etc.
  */
 function checkIaCDocumentation(projectDir, iac) {
-  const warnings = [];
-  if (!iac || !iac.isIaC) return { warnings, passed: 0, total: 0 };
+  const findings = [];
+  if (!iac || !iac.isIaC) return { findings, passed: 0, total: 0 };
 
   const archPath = resolve(projectDir, 'docs-canonical/ARCHITECTURE.md');
   if (!existsSync(archPath)) {
     // No ARCHITECTURE.md at all — structure validator will catch that.
     // Don't double-warn here.
-    return { warnings, passed: 0, total: 0 };
+    return { findings, passed: 0, total: 0 };
   }
 
   let archContent;
-  try { archContent = readFileSync(archPath, 'utf-8'); } catch { return { warnings, passed: 0, total: 0 }; }
+  try { archContent = readFileSync(archPath, 'utf-8'); } catch { return { findings, passed: 0, total: 0 }; }
 
   if (hasInfrastructureHeading(archContent)) {
     // One pass per tool — counted as total per IaC tool present.
-    return { warnings, passed: iac.tools.length, total: iac.tools.length };
+    return { findings, passed: iac.tools.length, total: iac.tools.length };
   }
 
   // One actionable warning per detected IaC tool. Most projects use one tool,
   // but a multi-tool monorepo gets one targeted message each.
   for (const tool of iac.tools) {
-    warnings.push(buildIaCWarning(tool));
+    findings.push(mkFinding({
+      code: 'DCV006',
+      validator: 'docsCoverage',
+      severity: 'warn',
+      message: buildIaCWarning(tool),
+      location: 'docs-canonical/ARCHITECTURE.md',
+      suggestion: { kind: 'fix', text: `Add an "Infrastructure" section to ARCHITECTURE.md covering the ${tool.label} layout` },
+    }));
   }
-  return { warnings, passed: 0, total: iac.tools.length };
+  return { findings, passed: 0, total: iac.tools.length };
 }
 
 /**
@@ -344,7 +373,7 @@ function checkIaCDocumentation(projectDir, iac) {
  * sitting in arrays (scan patterns for detecting other projects' configs).
  */
 function checkCodeReferencedConfigs(projectDir, allDocContent, config = {}) {
-  const warnings = [];
+  const findings = [];
   let passed = 0;
   let total = 0;
 
@@ -386,13 +415,18 @@ function checkCodeReferencedConfigs(projectDir, allDocContent, config = {}) {
     if (lowerDocContent.includes(configName.toLowerCase())) {
       passed++;
     } else {
-      warnings.push(
-        `Code references config file "${configName}" but no documentation mentions it. Add it to README.md or ARCHITECTURE.md`
-      );
+      findings.push(mkFinding({
+        code: 'DCV004',
+        validator: 'docsCoverage',
+        severity: 'warn',
+        message: `Code references config file "${configName}" but no documentation mentions it. Add it to README.md or ARCHITECTURE.md`,
+        location: configName,
+        suggestion: { kind: 'fix', text: 'Describe this config file (purpose and format) in README.md or ARCHITECTURE.md' },
+      }));
     }
   }
 
-  return { warnings, passed, total };
+  return { findings, passed, total };
 }
 
 /**
@@ -401,15 +435,15 @@ function checkCodeReferencedConfigs(projectDir, allDocContent, config = {}) {
  * and Make a README (https://www.makeareadme.com/).
  */
 function checkReadmeSections(projectDir) {
-  const warnings = [];
+  const findings = [];
   let passed = 0;
   let total = 0;
 
   const readmePath = resolve(projectDir, 'README.md');
-  if (!existsSync(readmePath)) return { warnings, passed, total };
+  if (!existsSync(readmePath)) return { findings, passed, total };
 
   let content;
-  try { content = readFileSync(readmePath, 'utf-8'); } catch { return { warnings, passed, total }; }
+  try { content = readFileSync(readmePath, 'utf-8'); } catch { return { findings, passed, total }; }
 
   const lowerContent = content.toLowerCase();
 
@@ -431,7 +465,14 @@ function checkReadmeSections(projectDir) {
     if (section.patterns.some(p => lowerContent.includes(p))) {
       passed++;
     } else {
-      warnings.push(`README.md is missing a "${section.name}" section (Standard README spec)`);
+      findings.push(mkFinding({
+        code: 'DCV005',
+        validator: 'docsCoverage',
+        severity: 'warn',
+        message: `README.md is missing a "${section.name}" section (Standard README spec)`,
+        location: 'README.md',
+        suggestion: { kind: 'fix', text: `Add a "${section.name}" section to README.md` },
+      }));
     }
   }
 
@@ -445,7 +486,7 @@ function checkReadmeSections(projectDir) {
     }
   }
 
-  return { warnings, passed, total };
+  return { findings, passed, total };
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -497,21 +538,7 @@ function collectDocContent(projectDir) {
   return parts.join('\n');
 }
 
+// v0.29 consolidation: traversal delegates to the shared canonical walker.
 function walkFiles(dir, callback) {
-  if (!existsSync(dir)) return;
-  let entries;
-  try { entries = readdirSync(dir); } catch { return; }
-
-  for (const entry of entries) {
-    if (IGNORE_DIRS.has(entry) || entry.startsWith('.')) continue;
-    const fullPath = join(dir, entry);
-    try {
-      const stat = statSync(fullPath);
-      if (stat.isDirectory()) {
-        walkFiles(fullPath, callback);
-      } else if (stat.isFile()) {
-        callback(fullPath);
-      }
-    } catch { /* skip */ }
-  }
+  sharedWalkFiles(dir, callback, { ignoreDirs: IGNORE_DIRS });
 }

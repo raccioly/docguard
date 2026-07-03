@@ -8,12 +8,11 @@
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, relative } from 'node:path';
-import { loadIgnorePatterns, c } from '../shared.mjs';
-
-const IGNORE_DIRS = new Set([
-  'node_modules', '.git', '.next', 'dist', 'build', 'coverage',
-  '.cache', '__pycache__', '.venv', 'vendor', '.turbo', '.vercel',
-]);
+import { loadIgnorePatterns, resolveDocDirs } from '../shared.mjs';
+// v0.29 consolidation: walker + glob counting live in shared-ignore.mjs (the
+// single implementations) — this file previously carried private copies.
+import { walkFiles, countGlobFiles } from '../shared-ignore.mjs';
+import { mkFinding, resultFromFindings } from '../findings.mjs';
 
 /**
  * Validate metrics consistency across documentation.
@@ -22,8 +21,11 @@ const IGNORE_DIRS = new Set([
  * @param {object} [guardResults] - Results from runGuardInternal (optional)
  * @returns {{ errors: string[], warnings: string[], passed: number, total: number }}
  */
+// v0.29: migrated to structured findings (MET001 built-in meta-counts, MET002
+// declared collections). Messages are byte-identical to the legacy strings;
+// the `fixes` array is preserved for the fix applier.
 export function validateMetricsConsistency(projectDir, config, guardResults) {
-  const warnings = [];
+  const findings = [];
   const fixes = [];
   let passed = 0;
   let total = 0;
@@ -52,17 +54,55 @@ export function validateMetricsConsistency(projectDir, config, guardResults) {
 
   // If no actuals to compare, skip
   if (Object.keys(actuals).length === 0) {
-    return { errors: [], warnings, passed: 0, total: 0 };
+    return resultFromFindings([], { passed: 0, total: 0 });
   }
 
   // ── Scan markdown files for hardcoded numbers ──
   const isIgnored = loadIgnorePatterns(projectDir);
   const mdFiles = findMarkdownFiles(projectDir, config);
-  // Patterns must match standalone number references, not ratio-style "8/8 checks"
+  // Patterns must match standalone number references, not ratio-style "8/8 checks".
+  // `requireBind`: built-in DocGuard meta-counts (checks/validators) describe a
+  // generic noun, so they only fire when the line is bound to "docguard" (Bug #2).
+  // `subject`: human phrasing for the warning. `actualSource`: records WHAT the
+  // actual count describes so the fix applier can confirm both sides are the same
+  // subject before overwriting.
   const patterns = [
-    { key: 'checks', regex: /(?<!\d\/)\b(\d{2,})\s+(?:automated\s+)?checks?\b/gi, label: 'checks' },
-    { key: 'validators', regex: /(?<!\d\/)\b(\d{2,})\s+validators?\b/gi, label: 'validators' },
+    { key: 'checks', regex: /(?<!\d\/)\b(\d{2,})\s+(?:automated\s+)?checks?\b/gi, label: 'checks', requireBind: true, subject: "DocGuard's own", actualSource: 'docguard.guard.checks' },
+    { key: 'validators', regex: /(?<!\d\/)\b(\d{2,})\s+validators?\b/gi, label: 'validators', requireBind: true, subject: "DocGuard's own", actualSource: 'docguard.guard.validators' },
   ];
+
+  // v0.29 (field report #6): project-declared collections. `config.collections`
+  // maps a documentation noun (e.g. "extractors") to a glob whose matching-file
+  // count is the source of truth. This catches the exact class that shipped a
+  // wrong "16 extractors" past a green guard — deterministically, in `guard`, with
+  // no LLM. A declared collection IS the opt-in binding (the user named this noun),
+  // so unlike the built-ins it does NOT require "docguard" on the line. Fail-safe:
+  // an unresolved glob (0 matches) never asserts "0", so a misconfigured pattern
+  // can't manufacture a false drift. Reserved nouns keep the built-in count.
+  const RESERVED = new Set(['checks', 'validators', 'tests']);
+  const escapeRegExp = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // noun stems, not globs
+  const collections = (config && config.collections && typeof config.collections === 'object') ? config.collections : {};
+  for (const [noun, glob] of Object.entries(collections)) {
+    const key = String(noun).toLowerCase();
+    if (RESERVED.has(key) || typeof glob !== 'string' || !glob.trim()) continue;
+    const count = countGlobFiles(projectDir, glob);
+    // <= 0 covers BOTH "unresolved/empty glob" (0) and "walk incomplete" (-1,
+    // e.g. permission-denied subtree). Either way: never assert a count we
+    // can't stand behind — a partial count auto-"fixing" a correct doc number
+    // is the tool's worst failure mode.
+    if (count <= 0) continue;
+    actuals[key] = count;
+    const stem = escapeRegExp(String(noun).replace(/s$/i, ''));
+    patterns.push({
+      key,
+      regex: new RegExp(`(?<!\\d\\/)\\b(\\d+)\\s+${stem}s?\\b`, 'gi'),
+      label: String(noun),
+      requireBind: false,
+      isCollection: true,
+      glob,
+      actualSource: `docguard.collections.${key}`,
+    });
+  }
 
   // v0.14.1-N1: dedup by (file, label, found) — a file that mentions the
   // stale number multiple times produces ONE warning, not one per occurrence.
@@ -82,7 +122,7 @@ export function validateMetricsConsistency(projectDir, config, guardResults) {
     let content;
     try { content = readFileSync(mdFile, 'utf-8'); } catch { continue; }
 
-    for (const { key, regex, label } of patterns) {
+    for (const { key, regex, label, requireBind, subject, actualSource, isCollection, glob } of patterns) {
       if (actuals[key] === undefined) continue;
 
       regex.lastIndex = 0;
@@ -93,11 +133,13 @@ export function validateMetricsConsistency(projectDir, config, guardResults) {
       // "19" on line 50 are two distinct drifts.
       const distinctFoundInFile = new Set();
       while ((match = regex.exec(content)) !== null) {
-        // Bug #2 (subject-binding): only validate a number BOUND to DocGuard.
-        // An unbound "N checks" (a proof harness, a CI job, a third-party tool)
-        // describes a DIFFERENT subject — comparing it to DocGuard's own count
-        // is a false positive, and auto-fixing it overwrites a correct number.
-        if (!isDocguardBound(content, match.index)) continue;
+        // Bug #2 (subject-binding): for the built-in meta-counts, only validate a
+        // number BOUND to DocGuard. An unbound "N checks" (a proof harness, a CI
+        // job, a third-party tool) describes a DIFFERENT subject — comparing it to
+        // DocGuard's own count is a false positive, and auto-fixing it overwrites a
+        // correct number. Project-declared collections (requireBind:false) skip
+        // this: naming the noun in `config.collections` IS the explicit binding.
+        if (requireBind && !isDocguardBound(content, match.index)) continue;
         distinctFoundInFile.add(parseInt(match[1], 10));
       }
       if (distinctFoundInFile.size === 0) continue;
@@ -108,13 +150,27 @@ export function validateMetricsConsistency(projectDir, config, guardResults) {
           if (reportedDrift.has(driftKey)) continue;
           reportedDrift.add(driftKey);
           total++;
-          warnings.push(
-            `${relPath} says "${found} ${label}" but DocGuard's own ${label} count is ${actuals[key]}. Fix with \`docguard fix --write\``
-          );
+          const phrase = isCollection
+            ? `the code has ${actuals[key]} (${glob})`
+            : `${subject} ${label} count is ${actuals[key]}`;
+          findings.push(mkFinding({
+            code: isCollection ? 'MET002' : 'MET001',
+            validator: 'metricsConsistency',
+            severity: 'warn',
+            message: `${relPath} says "${found} ${label}" but ${phrase}. Fix with \`docguard fix --write\``,
+            location: relPath,
+            suggestion: {
+              kind: 'fix',
+              text: isCollection
+                ? `Confirm which side is right, then rewrite the stale count (${found} → ${actuals[key]})`
+                : `Rewrite the stale docguard-bound count (${found} → ${actuals[key]})`,
+              command: 'docguard fix --write',
+            },
+          }));
           // actualSource records WHAT the actual count describes, so the applier
           // (and a human) can confirm both sides are the same subject before any
           // overwrite. Without it the fix is refused (fail-closed). See Bug #2.
-          fixes.push({ type: 'replace-count', file: relPath, label, found, actual: actuals[key], actualSource: `docguard.guard.${key}` });
+          fixes.push({ type: 'replace-count', file: relPath, label, found, actual: actuals[key], actualSource });
         } else {
           // Matches the actual count — one pass per (file, label), not per occurrence.
           const passKey = `${relPath}|${label}`;
@@ -127,7 +183,7 @@ export function validateMetricsConsistency(projectDir, config, guardResults) {
     }
   }
 
-  return { errors: [], warnings, passed, total, fixes };
+  return { ...resultFromFindings(findings, { passed, total }), fixes };
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -208,17 +264,20 @@ function findMarkdownFiles(dir, config = {}) {
     }
   } catch { /* unreadable root */ }
 
-  // Configured canonical docs (wherever they live), plus the conventional
-  // doc homes (docs/, docs-canonical/, extensions/) — scanned in full
-  // (recursive). Code/tooling dirs (security/, backend/, src/, …) are NOT doc
-  // homes and are deliberately excluded.
+  // Configured canonical docs (wherever they live), plus every resolved doc
+  // home — scanned in full (recursive). v0.29 (field report #6, follow-up): the
+  // doc-home set is no longer the hardcoded trio; resolveDocDirs auto-detects
+  // conventional doc dirs (docs/, documentation/, guides/, …) or honors an
+  // explicit config.docs.dirs. NAMED dirs only — code/tooling dirs (security/,
+  // backend/, src/, …) and arbitrary subdirs are still NEVER walked (the
+  // wu-whatsappinbox false-positive flood the scoping fix removed).
   const canonical = config && config.requiredFiles && Array.isArray(config.requiredFiles.canonical)
     ? config.requiredFiles.canonical : [];
   for (const rel of canonical) {
     const full = resolve(dir, rel);
     if (existsSync(full)) { try { if (statSync(full).isFile()) add(full); } catch { /* skip */ } }
   }
-  for (const sub of ['docs', 'docs-canonical', 'extensions']) {
+  for (const sub of resolveDocDirs(dir, config)) {
     const searchDir = resolve(dir, sub);
     if (existsSync(searchDir)) walkFiles(searchDir, add);
   }
@@ -226,23 +285,6 @@ function findMarkdownFiles(dir, config = {}) {
   return mdFiles;
 }
 
-function walkFiles(dir, callback) {
-  if (!existsSync(dir)) return;
-  let entries;
-  try { entries = readdirSync(dir); } catch { return; }
-
-  for (const entry of entries) {
-    if (IGNORE_DIRS.has(entry) || entry.startsWith('.')) continue;
-    const fullPath = join(dir, entry);
-    try {
-      const stat = statSync(fullPath);
-      if (stat.isDirectory()) {
-        walkFiles(fullPath, callback);
-      } else if (stat.isFile()) {
-        callback(fullPath);
-      }
-    } catch (err) {
-      console.error(`${c.red}Error reading file or directory: ${err.message}${c.reset}`);
-    }
-  }
-}
+// Local walker + glob→count helpers were removed in the v0.29 consolidation —
+// `walkFiles` / `countGlobFiles` are imported from ../shared-ignore.mjs, the
+// single canonical implementations.

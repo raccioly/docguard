@@ -16,6 +16,8 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, relative, basename, extname } from 'node:path';
 import { TRACE_MAP, TEST_PATTERNS, isTraceableSource } from '../shared-trace-patterns.mjs';
+import { walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
+import { mkFinding, resultFromFindings } from '../findings.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build', 'coverage',
@@ -51,18 +53,21 @@ const DEFAULT_REQ_PATTERNS = [
  * Validate traceability — ensures canonical docs have corresponding source artifacts,
  * and requirement IDs trace through to test files.
  * Respects config.requiredFiles.canonical — only checks docs the user requires.
+ *
+ * v0.29: migrated to structured findings (TRC001–TRC005). Messages are
+ * byte-identical to the legacy strings — resultFromFindings derives the
+ * errors/warnings arrays from the same findings array.
  * @returns {{ errors: string[], warnings: string[], passed: number, total: number }}
  */
 export function validateTraceability(projectDir, config) {
-  const errors = [];
-  const warnings = [];
+  const findings = [];
   let passed = 0;
   let total = 0;
 
   const docsDir = resolve(projectDir, 'docs-canonical');
   if (!existsSync(docsDir)) {
     // No docs-canonical dir at all — structure validator handles this
-    return { errors, warnings, passed: 0, total: 0 };
+    return resultFromFindings([], { passed: 0, total: 0 });
   }
 
   // Build set of required doc basenames from config
@@ -93,7 +98,14 @@ export function validateTraceability(projectDir, config) {
     const docExists = existsSync(docPath);
 
     if (!docExists) {
-      warnings.push(`${docName} — required but missing, no traceability possible`);
+      findings.push(mkFinding({
+        code: 'TRC001',
+        validator: 'traceability',
+        severity: 'warn',
+        message: `${docName} — required but missing, no traceability possible`,
+        location: `docs-canonical/${docName}`,
+        suggestion: { kind: 'fix', text: 'Create the required doc from the professional template', command: 'docguard init' },
+      }));
       continue;
     }
 
@@ -121,7 +133,18 @@ export function validateTraceability(projectDir, config) {
     if (hasSource) {
       passed++;
     } else {
-      warnings.push(`${docName} — exists but no matching source code found (unlinked doc)`);
+      findings.push(mkFinding({
+        code: 'TRC002',
+        validator: 'traceability',
+        severity: 'warn',
+        message: `${docName} — exists but no matching source code found (unlinked doc)`,
+        location: `docs-canonical/${docName}`,
+        suggestion: {
+          kind: 'fix',
+          text: 'Link a source file explicitly with a header annotation if the code lives in a non-standard location',
+          pragma: `// @doc ${docName}`,
+        },
+      }));
     }
   }
 
@@ -130,19 +153,25 @@ export function validateTraceability(projectDir, config) {
     const existingDocs = readdirSync(docsDir).filter(f => f.endsWith('.md'));
     for (const docFile of existingDocs) {
       if (!requiredDocs.has(docFile) && TRACE_MAP[docFile]) {
-        warnings.push(`${docFile} — file exists in docs-canonical/ but is not in your requiredFiles config. Consider deleting it or adding it to .docguard.json requiredFiles.canonical`);
+        findings.push(mkFinding({
+          code: 'TRC003',
+          validator: 'traceability',
+          severity: 'warn',
+          message: `${docFile} — file exists in docs-canonical/ but is not in your requiredFiles config. Consider deleting it or adding it to .docguard.json requiredFiles.canonical`,
+          location: `docs-canonical/${docFile}`,
+          suggestion: { kind: 'review', text: 'Delete the doc, or add it to requiredFiles.canonical in .docguard.json so it gets validated' },
+        }));
       }
     }
   } catch { /* ignore */ }
 
   // ── Part 2: Requirement ID Traceability (V-Model) ──
   const reqResult = validateRequirementTraceability(projectDir, config, projectFiles);
-  errors.push(...reqResult.errors);
-  warnings.push(...reqResult.warnings);
+  findings.push(...reqResult.findings);
   passed += reqResult.passed;
   total += reqResult.total;
 
-  return { errors, warnings, passed, total };
+  return resultFromFindings(findings, { passed, total });
 }
 
 // ──── Requirement ID Traceability ────────────────────────────────────────────
@@ -156,8 +185,7 @@ export function validateTraceability(projectDir, config) {
  *   - Reports untraced requirements and orphaned test refs
  */
 function validateRequirementTraceability(projectDir, config, projectFiles) {
-  const errors = [];
-  const warnings = [];
+  const findings = [];
   let passed = 0;
   let total = 0;
 
@@ -172,7 +200,7 @@ function validateRequirementTraceability(projectDir, config, projectFiles) {
 
   // If no requirement IDs found, silently pass — this project doesn't use them
   if (reqIds.size === 0) {
-    return { errors, warnings, passed, total };
+    return { findings, passed, total };
   }
 
   // ── Step 2: Scan test files for requirement ID references ──
@@ -186,10 +214,15 @@ function validateRequirementTraceability(projectDir, config, projectFiles) {
     if (testRefs.has(reqId)) {
       passed++;
     } else {
-      warnings.push(
-        `Requirement ${reqId} (${location.file}:${location.line}) has no test coverage. ` +
-        `Add @req ${reqId} comment to the test that verifies this requirement`
-      );
+      findings.push(mkFinding({
+        code: 'TRC004',
+        validator: 'traceability',
+        severity: 'warn',
+        message: `Requirement ${reqId} (${location.file}:${location.line}) has no test coverage. ` +
+          `Add @req ${reqId} comment to the test that verifies this requirement`,
+        location: `${location.file}:${location.line}`,
+        suggestion: { kind: 'fix', text: `Add an @req ${reqId} comment to the test that verifies this requirement` },
+      }));
     }
   }
 
@@ -197,14 +230,19 @@ function validateRequirementTraceability(projectDir, config, projectFiles) {
   for (const [reqId, refs] of testRefs) {
     if (!reqIds.has(reqId)) {
       total++;
-      warnings.push(
-        `Test references ${reqId} (${refs[0].file}:${refs[0].line}) but no requirement ` +
-        `with this ID exists in documentation. Remove the reference or add the requirement to docs`
-      );
+      findings.push(mkFinding({
+        code: 'TRC005',
+        validator: 'traceability',
+        severity: 'warn',
+        message: `Test references ${reqId} (${refs[0].file}:${refs[0].line}) but no requirement ` +
+          `with this ID exists in documentation. Remove the reference or add the requirement to docs`,
+        location: `${refs[0].file}:${refs[0].line}`,
+        suggestion: { kind: 'review', text: 'Remove the stale reference, or add the requirement to the documentation' },
+      }));
     }
   }
 
-  return { errors, warnings, passed, total };
+  return { findings, passed, total };
 }
 
 function collectRequirementIds(projectDir, config, patterns) {
@@ -377,23 +415,13 @@ function scanDocAnnotations(projectFiles, projectDir) {
   return map;
 }
 
+// v0.29 consolidation: traversal delegates to the shared canonical walker.
+// keepDot preserves the traceability-relevant dot entries (.env, .env.example,
+// .gitignore, .github/) that a doc may legitimately reference.
 function scanDir(rootDir, dir, files) {
-  let entries;
-  try { entries = readdirSync(dir); } catch { return; }
-
-  for (const entry of entries) {
-    if (IGNORE_DIRS.has(entry)) continue;
-    if (entry.startsWith('.') && entry !== '.env' && entry !== '.env.example'
-        && entry !== '.gitignore' && !entry.startsWith('.github')) continue;
-
-    const full = join(dir, entry);
-    let stat;
-    try { stat = statSync(full); } catch { continue; }
-
-    if (stat.isDirectory()) {
-      scanDir(rootDir, full, files);
-    } else {
-      files.push(relative(rootDir, full));
-    }
-  }
+  sharedWalkFiles(dir, (full) => files.push(relative(rootDir, full)), {
+    ignoreDirs: IGNORE_DIRS,
+    keepDot: (entry) => entry === '.env' || entry === '.env.example'
+      || entry === '.gitignore' || entry.startsWith('.github'),
+  });
 }

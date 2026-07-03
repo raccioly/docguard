@@ -30,6 +30,7 @@ import { scanRoutesDeep } from '../scanners/routes.mjs';
 import { parseApiReferenceDoc, compareEndpoints, endpointKey } from '../scanners/api-doc.mjs';
 import { collectPackageJsons, getWorkspaceDirs } from '../shared-source.mjs';
 import { relPosix } from '../shared-ignore.mjs';
+import { mkFinding, resultFromFindings } from '../findings.mjs';
 
 const MAX_REPORTED = 15;
 const API_DOC = 'docs-canonical/API-REFERENCE.md';
@@ -250,9 +251,12 @@ export function computeSpecVsRouteDrift(projectDir, config) {
   };
 }
 
+// v0.29: migrated to structured findings (API001–API005). Messages are
+// byte-identical to the legacy strings — resultFromFindings derives the
+// errors/warnings arrays from the same findings; `fixes` and
+// `authoritativeSpec` are preserved.
 export function validateApiSurface(projectDir, config) {
-  const errors = [];
-  const warnings = [];
+  const findings = [];
   const fixes = [];
   const trim = (arr) => {
     const shown = arr.slice(0, MAX_REPORTED);
@@ -268,7 +272,7 @@ export function validateApiSurface(projectDir, config) {
     const anyRouteFile = config.changedFiles.some(f => ROUTE_RE.test(f));
     if (!anyRouteFile) {
       return {
-        errors, warnings, passed: 0, total: 0, fixes,
+        errors: [], warnings: [], passed: 0, total: 0, fixes,
         applicable: false,
         note: 'no route/spec files in changed set',
       };
@@ -280,12 +284,17 @@ export function validateApiSurface(projectDir, config) {
   // choked on it. We fall back to code scanning (below), but the parse failure
   // is surfaced here rather than silently producing a clean "no surface" pass.
   for (const specPath of findUnparseableSpecs(projectDir, config)) {
-    warnings.push(
-      `OpenAPI spec ${specPath} declares paths but DocGuard parsed 0 endpoints from it ` +
-      `(likely an unsupported YAML feature — $ref, anchors, or folded scalars). ` +
-      `Falling back to code scanning; the spec's own endpoint list is unavailable. ` +
-      `Validate it with a full OpenAPI linter.`
-    );
+    findings.push(mkFinding({
+      code: 'API001',
+      validator: 'apiSurface',
+      severity: 'warn',
+      message: `OpenAPI spec ${specPath} declares paths but DocGuard parsed 0 endpoints from it ` +
+        `(likely an unsupported YAML feature — $ref, anchors, or folded scalars). ` +
+        `Falling back to code scanning; the spec's own endpoint list is unavailable. ` +
+        `Validate it with a full OpenAPI linter.`,
+      location: specPath,
+      suggestion: { kind: 'review', text: 'Validate the spec with a full OpenAPI linter (e.g. spectral) and simplify unsupported YAML features' },
+    }));
   }
 
   const drift = computeApiSurfaceDrift(projectDir, config);
@@ -296,10 +305,15 @@ export function validateApiSurface(projectDir, config) {
     const others = divergence.specs.slice(1).map(s => s.relPath).join(', ');
     const sample = divergence.divergent.slice(0, 8).join(', ');
     const more = divergence.divergent.length > 8 ? ` (+${divergence.divergent.length - 8} more)` : '';
-    warnings.push(
-      `Multiple OpenAPI specs disagree on ${divergence.divergent.length} endpoint(s): ` +
-      `${divergence.authoritative} (treated as authoritative) vs ${others}. Divergent: ${sample}${more}`
-    );
+    findings.push(mkFinding({
+      code: 'API002',
+      validator: 'apiSurface',
+      severity: 'warn',
+      message: `Multiple OpenAPI specs disagree on ${divergence.divergent.length} endpoint(s): ` +
+        `${divergence.authoritative} (treated as authoritative) vs ${others}. Divergent: ${sample}${more}`,
+      location: divergence.authoritative,
+      suggestion: { kind: 'review', text: 'Regenerate or delete the stale spec copy so every spec agrees on the endpoint set' },
+    }));
   }
 
   // ── #4: spec declares an endpoint with no registered route ──
@@ -314,12 +328,30 @@ export function validateApiSurface(projectDir, config) {
     if (specRoute.specDeclaredNoRoute.length) {
       const { shown, extra } = trim(specRoute.specDeclaredNoRoute);
       for (const e of shown) {
-        warnings.push(
-          `OpenAPI spec (${specRoute.specPath}) declares ${e.method} ${e.path} but no route registers it in code — ` +
-          `the spec may be wrong, and the API-REFERENCE doc reconciles clean against it, hiding the gap.`
-        );
+        findings.push(mkFinding({
+          code: 'API003',
+          validator: 'apiSurface',
+          severity: 'warn',
+          // "may be wrong" — the route scanner can be blind to dynamic
+          // registration, so this is a candidate false positive by design.
+          confidence: 'low',
+          message: `OpenAPI spec (${specRoute.specPath}) declares ${e.method} ${e.path} but no route registers it in code — ` +
+            `the spec may be wrong, and the API-REFERENCE doc reconciles clean against it, hiding the gap.`,
+          location: specRoute.specPath,
+          suggestion: { kind: 'review', text: 'Verify the endpoint: remove it from the spec if it no longer exists, or check whether the route is registered dynamically' },
+        }));
       }
-      if (extra > 0) warnings.push(`…and ${extra} more spec-declared endpoint(s) with no registered route`);
+      if (extra > 0) {
+        findings.push(mkFinding({
+          code: 'API003',
+          validator: 'apiSurface',
+          severity: 'warn',
+          confidence: 'low',
+          message: `…and ${extra} more spec-declared endpoint(s) with no registered route`,
+          location: specRoute.specPath,
+          suggestion: { kind: 'review', text: 'Verify each spec-declared endpoint against the registered routes' },
+        }));
+      }
     }
   }
 
@@ -327,7 +359,8 @@ export function validateApiSurface(projectDir, config) {
     // Nothing to validate against the API-REFERENCE doc — but the spec-vs-route
     // check above may still have produced findings.
     return {
-      errors, warnings, passed: specRoutePassed, total: specRouteTotal, fixes,
+      ...resultFromFindings(findings, { passed: specRoutePassed, total: specRouteTotal }),
+      fixes,
       authoritativeSpec: drift.source || specRoute.specPath,
     };
   }
@@ -341,13 +374,51 @@ export function validateApiSurface(projectDir, config) {
     const { shown, extra } = trim(documentedButAbsent);
     for (const e of shown) {
       const msg = `Documented endpoint not found in code: ${e.method} ${e.path} (${API_DOC})`;
-      if (confidence === 'spec') errors.push(msg);
-      else warnings.push(`${msg} [code-scan — verify]`);
+      if (confidence === 'spec') {
+        findings.push(mkFinding({
+          code: 'API004',
+          validator: 'apiSurface',
+          severity: 'error',
+          message: msg,
+          location: API_DOC,
+          suggestion: { kind: 'fix', text: 'Remove the dead endpoint from the doc', command: 'docguard fix --write' },
+        }));
+      } else {
+        findings.push(mkFinding({
+          code: 'API004',
+          validator: 'apiSurface',
+          severity: 'warn',
+          // The "[code-scan — verify]" suffix marks this as heuristic-only:
+          // the route scanner may simply not see the endpoint's registration.
+          confidence: 'low',
+          message: `${msg} [code-scan — verify]`,
+          location: API_DOC,
+          suggestion: { kind: 'review', text: 'Verify the endpoint really is gone from the code, then remove it from the doc' },
+        }));
+      }
     }
     if (extra > 0) {
       const tail = `…and ${extra} more documented endpoint(s) not found in code`;
-      if (confidence === 'spec') errors.push(tail);
-      else warnings.push(tail);
+      if (confidence === 'spec') {
+        findings.push(mkFinding({
+          code: 'API004',
+          validator: 'apiSurface',
+          severity: 'error',
+          message: tail,
+          location: API_DOC,
+          suggestion: { kind: 'fix', text: 'Remove the dead endpoints from the doc', command: 'docguard fix --write' },
+        }));
+      } else {
+        findings.push(mkFinding({
+          code: 'API004',
+          validator: 'apiSurface',
+          severity: 'warn',
+          confidence: 'low',
+          message: tail,
+          location: API_DOC,
+          suggestion: { kind: 'review', text: 'Verify each documented endpoint against the code, then prune the doc' },
+        }));
+      }
     }
     // Only spec-confirmed absences are safe to auto-remove.
     if (confidence === 'spec') {
@@ -361,10 +432,26 @@ export function validateApiSurface(projectDir, config) {
   if (presentButUndocumented.length) {
     const { shown, extra } = trim(presentButUndocumented);
     for (const e of shown) {
-      warnings.push(`Undocumented endpoint in code: ${e.method} ${e.path} — add it to ${API_DOC}`);
+      findings.push(mkFinding({
+        code: 'API005',
+        validator: 'apiSurface',
+        severity: 'warn',
+        message: `Undocumented endpoint in code: ${e.method} ${e.path} — add it to ${API_DOC}`,
+        location: API_DOC,
+        suggestion: { kind: 'fix', text: `Document the endpoint in ${API_DOC}` },
+      }));
     }
-    if (extra > 0) warnings.push(`…and ${extra} more undocumented endpoint(s) in code`);
+    if (extra > 0) {
+      findings.push(mkFinding({
+        code: 'API005',
+        validator: 'apiSurface',
+        severity: 'warn',
+        message: `…and ${extra} more undocumented endpoint(s) in code`,
+        location: API_DOC,
+        suggestion: { kind: 'fix', text: `Document the remaining endpoints in ${API_DOC}` },
+      }));
+    }
   }
 
-  return { errors, warnings, passed, total, fixes, authoritativeSpec: source };
+  return { ...resultFromFindings(findings, { passed, total }), fixes, authoritativeSpec: source };
 }
