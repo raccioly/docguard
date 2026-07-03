@@ -270,6 +270,7 @@ DocGuard ships **18 commands** (the "Daily 5" + 13 situational tools, including 
 | `agent` | One-shot agent task graph — ordered, pre-filled code-truth, per-task verify (`--format json`) |
 | `explain <warning\|CODE>` | Paste any warning — or a finding code like `SEC001` — to get the validator's docstring, fix path, and how to suppress |
 | `verify --semantic` | Extract documented numbers/limits/enums (retention days, rate limits, GSI/role counts, status enums) as a task list for an agent to check against code — the semantic-drift class regex/AST can't see |
+| `verify --instructions` | Audit AGENTS.md/CLAUDE.md themselves for drift: duplicate rules, never-vs-always contradictions, stale file pointers, unknown commands — plus clustered rule pairs as agent judgment tasks |
 | `feedback` | Report likely false positives back to DocGuard — local-first record + a 1-click prefilled, redacted GitHub issue (zero typing) |
 | `mcp` | MCP server over stdio — exposes guard/score/explain/verify/diagnose as native tools for Claude, Cursor, and any MCP client. Setup: `claude mcp add docguard -- npx docguard-cli mcp` |
 | `memory` | Per-domain accuracy headline (endpoints / entities / env / tech) |
@@ -277,6 +278,7 @@ DocGuard ships **18 commands** (the "Daily 5" + 13 situational tools, including 
 | `memory --pack` | Write `.docguard/context-pack.md` — compact, code-truth-stamped session-start context for AI agents |
 | `score --diff` | Drill into which checks pulled each category down |
 | `trace` / `trace --reverse <file>` | Requirements traceability — forward AND reverse |
+| `trace --features` | Per-feature spec-adherence scores (requirement coverage, task completion, task evidence, artifacts) — worst-first with fix hints |
 | `upgrade [--apply] [--pr]` | Check + migrate `.docguard.json` schema; `--pr` opens a PR |
 | `watch` | Live mode: re-run guard on file changes |
 

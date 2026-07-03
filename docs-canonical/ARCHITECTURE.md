@@ -56,6 +56,7 @@ DocGuard recognizes and validates these project config files:
 | `vitest.config.ts` / `jest.config.ts` | Test runner config (scanned for custom test patterns) |
 | `.storybook/` | Component documentation tool (detected for docs-coverage) |
 | `.jules-setup.sh` | This repo's own Google Jules environment bootstrap script (internal tooling, not shipped) |
+| `.pre-commit-hooks.yaml` | This repo as a pre-commit hook source — consumers reference `repo: raccioly/docguard` to run `docguard-guard` (changed-only) per commit |
 
 ## Layer Boundaries
 
