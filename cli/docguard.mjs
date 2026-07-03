@@ -93,7 +93,7 @@ ${c.bold}Tools (situational, but day-to-day useful)${c.reset}
   ${c.green}feedback${c.reset}   Report likely false positives back to DocGuard (local-first + 1-click prefilled issue)
   ${c.green}mcp${c.reset}        MCP server over stdio — guard/score/explain/verify/diagnose as agent tools
   ${c.green}memory${c.reset}     Show what DocGuard remembers (${c.cyan}--diff${c.reset} drills into drift)
-  ${c.green}trace${c.reset}      Requirements traceability matrix (${c.cyan}--reverse${c.reset} for code→doc map)
+  ${c.green}trace${c.reset}      Requirements traceability matrix (${c.cyan}--reverse${c.reset} for code→doc map, ${c.cyan}--features${c.reset} for per-feature adherence)
   ${c.green}upgrade${c.reset}    Migrate ${c.cyan}.docguard.json${c.reset} schema + CLI (${c.cyan}--apply --pr${c.reset} for team-wide PR)
   ${c.green}watch${c.reset}      Live mode: re-run guard on file changes
 
@@ -258,7 +258,7 @@ const COMMAND_HELP = {
   },
   trace: {
     summary: 'Requirements traceability matrix.',
-    usage: 'docguard trace [--reverse]',
+    usage: 'docguard trace [--reverse] [--features]',
     flags: [['--reverse', 'Code→doc map instead of doc→code']],
     examples: ['docguard trace', 'docguard trace --reverse'],
   },
@@ -294,9 +294,10 @@ const COMMAND_HELP = {
   },
   verify: {
     summary: 'Extract the semantic claims in your canonical docs — documented numbers, limits, and enums (retention days, rate limits, GSI/role counts, status enums) — as a verification task list the agent checks against the code. This is the highest-value bug class (a doc value that drifted from code) and the one regex/AST cannot judge. DocGuard finds the claims; the LLM confirms them.',
-    usage: 'docguard verify [--semantic] [--format json]',
+    usage: 'docguard verify [--semantic|--instructions] [--format json]',
     flags: [
       ['--semantic', 'Extract documented numbers/limits/enums to verify against code (the current — and default — mode)'],
+      ['--instructions', 'Audit AGENTS.md/CLAUDE.md for duplicate, contradictory, and stale-pointer rules (deterministic findings + agent conflict tasks)'],
       ['--format json', 'Machine-readable task list (the agent-executable artifact)'],
     ],
     examples: ['docguard verify --semantic', 'docguard verify --semantic --format json'],
@@ -377,6 +378,10 @@ async function main() {
       // v0.28 (field report #5): `docguard verify --semantic` extracts
       // documented numbers/enums/limits for the agent to check against code.
       flags.semantic = true;
+    } else if (args[i] === '--instructions') {
+      // v0.30: `docguard verify --instructions` audits AGENTS.md/CLAUDE.md for
+      // duplicate/contradictory/stale rules (MemoryLint-inspired).
+      flags.instructions = true;
     } else if (args[i] === '--full') {
       // v0.29: `docguard llms --full` emits llms-full.txt (inline doc bodies,
       // the Mintlify-popularized companion to the llms.txt index).
@@ -409,6 +414,9 @@ async function main() {
       flags.changedOnly = true;
     } else if (args[i] === '--reverse') {
       flags.reverse = true;
+    } else if (args[i] === '--features') {
+      // v0.30: `docguard trace --features` — per-feature spec-adherence report.
+      flags.features = true;
     } else if (args[i] === '--history') {
       flags.history = true;
     } else if (args[i] === '--force-redo') {

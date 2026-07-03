@@ -39,6 +39,7 @@
     "url": "https://github.com/raccioly/docguard"
   },
   "homepage": "https://github.com/raccioly/docguard#readme",
+  "mcpName": "io.github.raccioly/docguard",
   "bugs": {
     "url": "https://github.com/raccioly/docguard/issues"
   },

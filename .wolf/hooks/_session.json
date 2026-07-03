@@ -3,8 +3,8 @@
   "started": "2026-07-03T16:09:04.648Z",
   "files_read": {
     "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/docguard.mjs": {
-      "count": 1,
-      "tokens": 9287,
+      "count": 4,
+      "tokens": 9439,
       "first_read": "2026-07-03T16:12:14.711Z"
     },
     "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/commands/explain.mjs": {
@@ -23,8 +23,8 @@
       "first_read": "2026-07-03T16:12:24.719Z"
     },
     "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/action.yml": {
-      "count": 1,
-      "tokens": 4322,
+      "count": 2,
+      "tokens": 7591,
       "first_read": "2026-07-03T16:12:26.674Z"
     },
     "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/commands/diff.mjs": {
@@ -33,7 +33,7 @@
       "first_read": "2026-07-03T16:12:27.520Z"
     },
     "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/scanners/semantic-claims.mjs": {
-      "count": 1,
+      "count": 2,
       "tokens": 1998,
       "first_read": "2026-07-03T16:12:58.130Z"
     },
@@ -48,7 +48,7 @@
       "first_read": "2026-07-03T16:13:29.383Z"
     },
     "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/findings.mjs": {
-      "count": 1,
+      "count": 2,
       "tokens": 9378,
       "first_read": "2026-07-03T16:13:34.335Z"
     },
@@ -68,8 +68,8 @@
       "first_read": "2026-07-03T16:14:21.008Z"
     },
     "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/README.md": {
-      "count": 4,
-      "tokens": 8042,
+      "count": 6,
+      "tokens": 8095,
       "first_read": "2026-07-03T16:20:30.188Z"
     },
     "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/docs-canonical/ARCHITECTURE.md": {
@@ -101,6 +101,126 @@
       "count": 1,
       "tokens": 0,
       "first_read": "2026-07-03T20:31:01.286Z"
+    },
+    "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/scanners/speckit.mjs": {
+      "count": 2,
+      "tokens": 4785,
+      "first_read": "2026-07-03T21:42:46.181Z"
+    },
+    "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/shared-git.mjs": {
+      "count": 1,
+      "tokens": 0,
+      "first_read": "2026-07-03T21:42:54.097Z"
+    },
+    "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/tests/speckit-bugfix.test.mjs": {
+      "count": 1,
+      "tokens": 0,
+      "first_read": "2026-07-03T21:42:55.042Z"
+    },
+    "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/validators/spec-kit.mjs": {
+      "count": 1,
+      "tokens": 224,
+      "first_read": "2026-07-03T21:42:55.573Z"
+    },
+    "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/commands/verify.mjs": {
+      "count": 1,
+      "tokens": 833,
+      "first_read": "2026-07-03T21:43:06.422Z"
+    },
+    "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/scanners/agent-readability.mjs": {
+      "count": 1,
+      "tokens": 2228,
+      "first_read": "2026-07-03T21:43:07.294Z"
+    },
+    "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/tests/multi-spec.test.mjs": {
+      "count": 1,
+      "tokens": 0,
+      "first_read": "2026-07-03T21:43:07.849Z"
+    },
+    "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/commands/trace.mjs": {
+      "count": 1,
+      "tokens": 0,
+      "first_read": "2026-07-03T21:43:22.824Z"
+    },
+    "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/validators/todo-tracking.mjs": {
+      "count": 1,
+      "tokens": 3916,
+      "first_read": "2026-07-03T21:43:24.041Z"
+    },
+    "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/shared-trace-patterns.mjs": {
+      "count": 1,
+      "tokens": 0,
+      "first_read": "2026-07-03T21:43:24.231Z"
+    },
+    "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/validators/traceability.mjs": {
+      "count": 1,
+      "tokens": 4324,
+      "first_read": "2026-07-03T21:43:33.879Z"
+    },
+    "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/tests/agent-readability.test.mjs": {
+      "count": 1,
+      "tokens": 1049,
+      "first_read": "2026-07-03T21:43:35.472Z"
+    },
+    "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/package.json": {
+      "count": 2,
+      "tokens": 446,
+      "first_read": "2026-07-03T21:43:47.014Z"
+    },
+    "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/commands/mcp.mjs": {
+      "count": 1,
+      "tokens": 2902,
+      "first_read": "2026-07-03T21:43:48.584Z"
+    },
+    "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/.github/scripts/speckit-submission.py": {
+      "count": 1,
+      "tokens": 2590,
+      "first_read": "2026-07-03T21:44:03.729Z"
+    },
+    "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/tests/trace-reverse.test.mjs": {
+      "count": 1,
+      "tokens": 0,
+      "first_read": "2026-07-03T21:44:17.377Z"
+    },
+    "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/tests/trace-multilang.test.mjs": {
+      "count": 1,
+      "tokens": 0,
+      "first_read": "2026-07-03T21:44:18.171Z"
+    },
+    "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/shared-ignore.mjs": {
+      "count": 1,
+      "tokens": 4132,
+      "first_read": "2026-07-03T21:45:25.074Z"
+    },
+    "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/shared-source.mjs": {
+      "count": 1,
+      "tokens": 4655,
+      "first_read": "2026-07-03T21:45:25.960Z"
+    },
+    "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/schemas/docguard-config.schema.json": {
+      "count": 1,
+      "tokens": 2889,
+      "first_read": "2026-07-03T21:47:31.146Z"
+    },
+    "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/packaging/submissions.md": {
+      "count": 1,
+      "tokens": 1728,
+      "first_read": "2026-07-03T21:51:31.626Z"
+    },
+    "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/tests/explain-coverage.test.mjs": {
+      "count": 1,
+      "tokens": 0,
+      "first_read": "2026-07-03T21:54:44.758Z"
+    },
+    "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/tests/field-report-3.test.mjs": {
+      "count": 1,
+      "tokens": 3315,
+      "first_read": "2026-07-03T21:55:08.044Z"
+    },
+    "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/writers/sarif.mjs": {
+      "count": 1,
+      "tokens": 1315,
+      "first_read": "2026-07-03T21:56:03.884Z"
     }
   },
   "files_written": [
@@ -331,6 +451,180 @@
       "action": "edit",
       "tokens": 35,
       "at": "2026-07-03T20:32:09.451Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/.claude/projects/-Users-ricardoaccioly-Repo-claude-canonical-spec-kit/memory/keep-local-main-synced.md",
+      "action": "create",
+      "tokens": 294,
+      "at": "2026-07-03T21:28:02.540Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/.github/scripts/speckit-submission.py",
+      "action": "edit",
+      "tokens": 118,
+      "at": "2026-07-03T21:44:13.343Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/README.md",
+      "action": "edit",
+      "tokens": 64,
+      "at": "2026-07-03T21:44:25.735Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/.pre-commit-hooks.yaml",
+      "action": "create",
+      "tokens": 490,
+      "at": "2026-07-03T21:48:09.337Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/server.json",
+      "action": "create",
+      "tokens": 272,
+      "at": "2026-07-03T21:48:20.344Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/smithery.yaml",
+      "action": "create",
+      "tokens": 283,
+      "at": "2026-07-03T21:48:24.511Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/templates/ci/gitlab-component.yml",
+      "action": "create",
+      "tokens": 906,
+      "at": "2026-07-03T21:48:56.664Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/packaging/homebrew/docguard.rb",
+      "action": "create",
+      "tokens": 400,
+      "at": "2026-07-03T21:49:04.398Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/scanners/instruction-audit.mjs",
+      "action": "create",
+      "tokens": 3930,
+      "at": "2026-07-03T21:49:19.890Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/packaging/submissions.md",
+      "action": "create",
+      "tokens": 1975,
+      "at": "2026-07-03T21:49:43.490Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/commands/verify.mjs",
+      "action": "create",
+      "tokens": 2269,
+      "at": "2026-07-03T21:49:59.701Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/commands/trace.mjs",
+      "action": "edit",
+      "tokens": 71,
+      "at": "2026-07-03T21:50:22.619Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/commands/trace.mjs",
+      "action": "edit",
+      "tokens": 99,
+      "at": "2026-07-03T21:50:28.486Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/tests/instruction-audit.test.mjs",
+      "action": "create",
+      "tokens": 2558,
+      "at": "2026-07-03T21:50:37.534Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/commands/trace.mjs",
+      "action": "edit",
+      "tokens": 4034,
+      "at": "2026-07-03T21:51:26.994Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/scanners/speckit.mjs",
+      "action": "edit",
+      "tokens": 129,
+      "at": "2026-07-03T21:51:36.969Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/package.json",
+      "action": "edit",
+      "tokens": 51,
+      "at": "2026-07-03T21:52:01.548Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/README.md",
+      "action": "edit",
+      "tokens": 269,
+      "at": "2026-07-03T21:52:30.784Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/scanners/speckit.mjs",
+      "action": "edit",
+      "tokens": 3705,
+      "at": "2026-07-03T21:52:39.303Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/tests/trace-features.test.mjs",
+      "action": "create",
+      "tokens": 2596,
+      "at": "2026-07-03T21:52:55.460Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/scanners/speckit.mjs",
+      "action": "edit",
+      "tokens": 544,
+      "at": "2026-07-03T21:52:56.070Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/scanners/speckit.mjs",
+      "action": "edit",
+      "tokens": 181,
+      "at": "2026-07-03T21:53:08.499Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/docguard.mjs",
+      "action": "edit",
+      "tokens": 129,
+      "at": "2026-07-03T21:53:25.632Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/docguard.mjs",
+      "action": "edit",
+      "tokens": 21,
+      "at": "2026-07-03T21:53:38.083Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/docguard.mjs",
+      "action": "edit",
+      "tokens": 80,
+      "at": "2026-07-03T21:53:40.671Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/tests/speckit-phantom.test.mjs",
+      "action": "create",
+      "tokens": 2679,
+      "at": "2026-07-03T21:54:29.001Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/docguard.mjs",
+      "action": "edit",
+      "tokens": 64,
+      "at": "2026-07-03T21:55:41.926Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/docguard.mjs",
+      "action": "edit",
+      "tokens": 49,
+      "at": "2026-07-03T21:55:56.086Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/docguard.mjs",
+      "action": "edit",
+      "tokens": 16,
+      "at": "2026-07-03T21:55:57.550Z"
     }
   ],
   "edit_counts": {
@@ -340,10 +634,10 @@
     "docs-canonical/REQUIREMENTS.md": 1,
     "CHANGELOG.md": 3,
     "cli/commands/mcp.mjs": 1,
-    "cli/docguard.mjs": 5,
+    "cli/docguard.mjs": 11,
     "action.yml": 4,
     "tests/mcp.test.mjs": 1,
-    "README.md": 6,
+    "README.md": 8,
     "docs-canonical/ARCHITECTURE.md": 2,
     "docs/ai-integration.md": 1,
     "DRIFT-LOG.md": 1,
@@ -352,11 +646,27 @@
     ".github/PULL_REQUEST_TEMPLATE.md": 1,
     "docs/commands.md": 2,
     "docs/configuration.md": 2,
-    "docs/faq.md": 1
+    "docs/faq.md": 1,
+    "../../../../../.claude/projects/-Users-ricardoaccioly-Repo-claude-canonical-spec-kit/memory/keep-local-main-synced.md": 1,
+    ".github/scripts/speckit-submission.py": 1,
+    ".pre-commit-hooks.yaml": 1,
+    "server.json": 1,
+    "smithery.yaml": 1,
+    "templates/ci/gitlab-component.yml": 1,
+    "packaging/homebrew/docguard.rb": 1,
+    "cli/scanners/instruction-audit.mjs": 1,
+    "packaging/submissions.md": 1,
+    "cli/commands/verify.mjs": 1,
+    "cli/commands/trace.mjs": 3,
+    "tests/instruction-audit.test.mjs": 1,
+    "cli/scanners/speckit.mjs": 4,
+    "package.json": 1,
+    "tests/trace-features.test.mjs": 1,
+    "tests/speckit-phantom.test.mjs": 1
   },
-  "anatomy_hits": 12,
-  "anatomy_misses": 8,
-  "repeated_reads_warned": 8,
+  "anatomy_hits": 28,
+  "anatomy_misses": 16,
+  "repeated_reads_warned": 18,
   "cerebrum_warnings": 0,
-  "stop_count": 8
+  "stop_count": 15
 }

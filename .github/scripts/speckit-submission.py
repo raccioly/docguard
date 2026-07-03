@@ -61,10 +61,11 @@ def build(version: str, download_url: str):
             "name": "DocGuard — CDD Enforcement",
             "id": "docguard",
             "description": (
-                "Canonical-Driven Development enforcement. Validates, scores, "
-                "and traces project documentation with automated checks, "
-                "AI-driven workflows, and spec-kit hooks. One pinned runtime "
-                "dependency; pure Node.js otherwise."
+                "The only doc-integrity engine with an MCP server, SARIF "
+                "output, and a deterministic zero-LLM core. Validates, "
+                "scores, and traces documentation against code — 24 "
+                "validators, stable finding codes, GitHub Action with PR "
+                "annotations, spec-kit hooks. Pure Node.js, one pinned dep."
             ),
             "author": "raccioly",
             "version": version,

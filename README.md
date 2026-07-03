@@ -132,6 +132,19 @@ docguard diagnose
 
 > **Note:** The Python package is a thin wrapper that delegates to `npx`. Node.js 18+ is required on the system.
 
+### More ways to integrate
+
+- **pre-commit** — changed-only guard on every commit:
+  ```yaml
+  repos:
+    - repo: https://github.com/raccioly/docguard
+      rev: v0.29.0
+      hooks: [{ id: docguard-guard }]   # docguard-guard-full for pre-push
+  ```
+- **MCP** (Claude, Cursor, any MCP client) — `claude mcp add docguard -- npx -y docguard-cli mcp`; 5 read-only tools (guard, score, explain, verify-claims, diagnose). Registry manifest ships in-repo (`server.json`, Smithery-ready).
+- **GitLab CI** — component staged at [`templates/ci/gitlab-component.yml`](templates/ci/gitlab-component.yml) (guard/score/ci job with a SARIF artifact).
+- **Homebrew** — `brew install raccioly/tap/docguard` (formula in [`packaging/homebrew/`](packaging/homebrew/)).
+
 ### Core Workflow
 
 ```bash
@@ -253,7 +266,7 @@ DocGuard ships **18 commands** (the "Daily 5" + 13 situational tools, including 
 | `fix` | Generate AI fix instructions for specific docs (`--doc <name> --format prompt`) |
 | `fix --write` | Apply deterministic fixes (no AI — version bumps, counts, anchors, sections) |
 | `fix --history` | Audit log of every mechanical fix applied (from `.docguard/fixed.json`) |
-| `generate` | Reverse-engineer docs from existing codebase (`--plan` for AI scan) |
+| `generate` | Reverse-engineer docs from existing codebase (`--plan` for AI scan) — includes auto-generated Mermaid ER diagrams from your detected schemas (Prisma/Drizzle/TypeORM/Sequelize/Django/Rails) in DATA-MODEL.md |
 | `agent` | One-shot agent task graph — ordered, pre-filled code-truth, per-task verify (`--format json`) |
 | `explain <warning\|CODE>` | Paste any warning — or a finding code like `SEC001` — to get the validator's docstring, fix path, and how to suppress |
 | `verify --semantic` | Extract documented numbers/limits/enums (retention days, rate limits, GSI/role counts, status enums) as a task list for an agent to check against code — the semantic-drift class regex/AST can't see |

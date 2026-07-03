@@ -3139,6 +3139,70 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-07-03T20:29:38.508Z"
+    },
+    {
+      "id": "bug-192",
+      "timestamp": "2026-07-03T21:51:26.996Z",
+      "error_message": "Missing error handling in featureGrade",
+      "file": "cli/commands/trace.mjs",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T21:51:26.996Z"
+    },
+    {
+      "id": "bug-193",
+      "timestamp": "2026-07-03T21:52:39.304Z",
+      "error_message": "Missing error handling in parseCheckedTasks",
+      "file": "cli/scanners/speckit.mjs",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T21:52:39.304Z"
+    },
+    {
+      "id": "bug-194",
+      "timestamp": "2026-07-03T21:52:56.072Z",
+      "error_message": "Null/undefined access in ",
+      "file": "cli/scanners/speckit.mjs",
+      "root_cause": "Property access on potentially null/undefined value",
+      "fix": "Added null safety (optional chaining or null check)",
+      "tags": [
+        "auto-detected",
+        "null-safety",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T21:52:56.072Z"
+    },
+    {
+      "id": "bug-195",
+      "timestamp": "2026-07-03T21:53:38.085Z",
+      "error_message": "Incorrect value in code",
+      "file": "cli/docguard.mjs",
+      "root_cause": "Had 'docguard verify [--semantic] [--format json]'",
+      "fix": "Changed to 'docguard verify [--semantic|--instructions] [--fo",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-07-03T21:55:57.551Z"
     }
   ]
 }
