@@ -27,7 +27,7 @@
 ## Table of Contents
 
 - [What is DocGuard?](#what-is-docguard)
-- [What's New](#-whats-new)
+- [Why DocGuard?](#why-docguard)
 - [Quick Start](#-quick-start)
 - [Spec Kit Integration](#-spec-kit-integration)
 - [Usage](#usage)
@@ -38,6 +38,7 @@
 - [Examples](#-examples)
 - [Testing](#-testing)
 - [CI/CD Integration](#%EF%B8%8F-cicd-integration)
+- [What's New](#-whats-new)
 - [File Structure](#-file-structure)
 - [Configuration](#%EF%B8%8F-configuration)
 - [Research Credits](#-research-credits)
@@ -63,7 +64,7 @@ DocGuard is an official [GitHub Spec Kit](https://github.com/github/spec-kit) co
 
 ```mermaid
 graph TD
-    CLI["CLI Entry<br/>docguard.mjs"] --> Commands["Commands (17)"]
+    CLI["CLI Entry<br/>docguard.mjs"] --> Commands["Commands (18)"]
     Commands --> guard["guard"]
     Commands --> generate["generate"]
     Commands --> score["score"]
@@ -94,35 +95,14 @@ graph TD
 
 ---
 
-## ✨ What's New
+## Why DocGuard?
 
-Recent highlights across the v0.16 → v0.19 line:
-
-- **`docguard explain <validator>`** — `docguard explain freshness` prints purpose, rules, common
-  failures, and fix recipes for any of the 24 validators. No need to dig into source.
-- **`docguard memory --diff`** — surface what changed in your canonical docs between two refs
-  (`HEAD~10..HEAD` by default). Great for code review and changelog drafting.
-- **`docguard score --diff`** — see exactly which validators moved the score up or down between
-  two commits. Pinpoints regressions without re-running the full suite by hand.
-- **`docguard upgrade --apply --pr`** — when the config schema bumps, DocGuard migrates
-  `.docguard.json` for you and (optionally) opens a PR with the change.
-- **Language-aware traceability** — both `docguard trace` *and* the guard-time Traceability validator
-  understand Python, Rust, Go, Java, Ruby, and PHP layouts in addition to JS/TS, via a shared pattern
-  set (`cli/shared-trace-patterns.mjs`) so the two never drift apart.
-- **Per-validator severity overrides** — escalate `freshness` to `high` for production repos,
-  demote `doc-quality` to `low` for prototypes. Configurable per-project.
-- **JSON Schema for `.docguard.json`** — IDE autocomplete, in-line docs, and validation via
-  `$schema`. Shipped in the package at `schemas/docguard-config.schema.json`.
-- **Version pin (`docguardVersion` + `--pin`)** — pin the CLI version your project supports so
-  CI fails loudly if someone bumps DocGuard without re-running the suite.
-- **Cross-process plan cache** — repeated runs reuse the validator plan across processes when
-  the working tree hasn't changed. ~30% faster guard runs on typical repos.
-- **Headless-aware banner** — `--quiet`, `--format json`, `--write`, and `--changed-only`
-  automatically suppress the banner so JSON output stays parse-clean.
-- **npm-pack smoke gate** — every release now extracts the actual tarball and runs the CLI
-  end-to-end before publish, catching missing-file regressions.
-
-See [CHANGELOG.md](CHANGELOG.md) for the full history.
+Documentation that drifts from code is worse than no documentation — it
+confidently misleads humans and AI agents alike. DocGuard treats your canonical
+docs as an enforced contract: deterministic validators diff what the docs claim
+against what the code does, on every commit, with no LLM required. The full
+thesis (and the research behind it) lives in [PHILOSOPHY.md](PHILOSOPHY.md);
+recent feature highlights moved [below](#-whats-new).
 
 ---
 
@@ -250,7 +230,7 @@ This installs DocGuard's slash commands (`/docguard.init`, `/docguard.guard`, `/
 
 ## Usage
 
-DocGuard ships **17 commands** (the "Daily 5" + 12 situational tools, including the zero-install `demo`). Six additional one-shot scaffolders are accessed via `docguard init --with <name>`. Eight v0.19 commands continue to work as deprecation aliases through v0.20.x — see [MIGRATION-v0.20.md](docs-implementation/MIGRATION-v0.20.md).
+DocGuard ships **18 commands** (the "Daily 5" + 13 situational tools, including the zero-install `demo` and the `mcp` server). Six additional one-shot scaffolders are accessed via `docguard init --with <name>`. Eight v0.19 commands continue to work as deprecation aliases through v0.20.x — see [MIGRATION-v0.20.md](docs-implementation/MIGRATION-v0.20.md).
 
 **The Daily 5** — what you'll reach for 95% of the time:
 
@@ -276,8 +256,10 @@ DocGuard ships **17 commands** (the "Daily 5" + 12 situational tools, including 
 | `explain <warning\|CODE>` | Paste any warning — or a finding code like `SEC001` — to get the validator's docstring, fix path, and how to suppress |
 | `verify --semantic` | Extract documented numbers/limits/enums (retention days, rate limits, GSI/role counts, status enums) as a task list for an agent to check against code — the semantic-drift class regex/AST can't see |
 | `feedback` | Report likely false positives back to DocGuard — local-first record + a 1-click prefilled, redacted GitHub issue (zero typing) |
+| `mcp` | MCP server over stdio — exposes guard/score/explain/verify/diagnose as native tools for Claude, Cursor, and any MCP client. Setup: `claude mcp add docguard -- npx docguard-cli mcp` |
 | `memory` | Per-domain accuracy headline (endpoints / entities / env / tech) |
 | `memory --diff` | Drill into which specific claims don't match code |
+| `memory --pack` | Write `.docguard/context-pack.md` — compact, code-truth-stamped session-start context for AI agents |
 | `score --diff` | Drill into which checks pulled each category down |
 | `trace` / `trace --reverse <file>` | Requirements traceability — forward AND reverse |
 | `upgrade [--apply] [--pr]` | Check + migrate `.docguard.json` schema; `--pr` opens a PR |
@@ -306,6 +288,11 @@ Run them solo (`docguard init --with hooks`) or stacked (`docguard init --with a
 | `--verbose` | Show detailed output | All |
 | `--quiet` / `-q` | Suppress banner — for hooks, CI loops, scripts | All |
 | `--format json` | Machine-readable output (clean JSON, no ANSI bleed) | guard, score, diff, trace, diagnose, memory, impact, explain |
+| `--format sarif` | SARIF 2.1.0 output — findings as rules/results for GitHub Code Scanning and SARIF dashboards | guard |
+| `--full` | Generate `llms-full.txt` (full doc bodies inlined) instead of the `llms.txt` link index | llms |
+| `--pack` | Write `.docguard/context-pack.md` — agent session-start context | memory |
+| `--sync` | Regenerate the agent-file family (CLAUDE.md, Copilot, Cursor, …) from AGENTS.md; hash-marked, never touches hand-written files without `--force` | agents |
+| `--check` | CI gate for the synced agent-file family — exit 2 when a variant is stale | agents |
 | `--force` | Overwrite existing files (creates `.bak` backups) | generate, agents, init |
 | `--force-redo` | Bypass ping-pong suppression in `.docguard/fixed.json` | fix --write |
 | `--profile <name>` | Starter / standard / enterprise | init |
@@ -547,6 +534,7 @@ DocGuard runs its own `guard`, `score`, `diff`, `diagnose`, and `badge` commands
 ```yaml
 name: DocGuard Guard
 on: [pull_request, push]
+permissions: { pull-requests: write }   # for the sticky PR comment (optional)
 jobs:
   docguard:
     runs-on: ubuntu-latest
@@ -557,6 +545,17 @@ jobs:
         with:
           command: guard
 ```
+
+On pull requests, guard mode also gives inline PR feedback (both default on):
+
+| Input | Default | Description |
+|-------|---------|-------------|
+| `annotations` | `true` | Inline `::error`/`::warning` annotations on the PR diff, one per guard finding (capped at 50; a final notice reports how many were elided) |
+| `pr-comment` | `true` | Sticky PR comment with the guard verdict, top findings (by code), and which canonical docs the PR's changed files impact (`diff --since origin/<base>`). Needs `permissions: pull-requests: write`; degrades to a log warning without it |
+
+Both run even when guard fails — that's when the feedback matters. Prefer native
+code-scanning integration? `docguard guard --format sarif` uploads straight to
+GitHub Code Scanning via `github/codeql-action/upload-sarif`.
 
 ### GitHub Actions — Auto-Fix (commits mechanical fixes back)
 
@@ -589,6 +588,38 @@ npx docguard-cli hooks --type pre-commit
 Two ready-to-use templates ship with the Spec Kit extension and as standalone files:
 - `extensions/spec-kit-docguard/templates/github-workflows/docguard-guard.yml` — mandatory CI gate
 - `extensions/spec-kit-docguard/templates/github-workflows/docguard-autofix.yml` — PR auto-fix
+
+---
+
+## ✨ What's New
+
+Recent highlights across the v0.16 → v0.19 line:
+
+- **`docguard explain <validator>`** — `docguard explain freshness` prints purpose, rules, common
+  failures, and fix recipes for any of the 24 validators. No need to dig into source.
+- **`docguard memory --diff`** — surface what changed in your canonical docs between two refs
+  (`HEAD~10..HEAD` by default). Great for code review and changelog drafting.
+- **`docguard score --diff`** — see exactly which validators moved the score up or down between
+  two commits. Pinpoints regressions without re-running the full suite by hand.
+- **`docguard upgrade --apply --pr`** — when the config schema bumps, DocGuard migrates
+  `.docguard.json` for you and (optionally) opens a PR with the change.
+- **Language-aware traceability** — both `docguard trace` *and* the guard-time Traceability validator
+  understand Python, Rust, Go, Java, Ruby, and PHP layouts in addition to JS/TS, via a shared pattern
+  set (`cli/shared-trace-patterns.mjs`) so the two never drift apart.
+- **Per-validator severity overrides** — escalate `freshness` to `high` for production repos,
+  demote `doc-quality` to `low` for prototypes. Configurable per-project.
+- **JSON Schema for `.docguard.json`** — IDE autocomplete, in-line docs, and validation via
+  `$schema`. Shipped in the package at `schemas/docguard-config.schema.json`.
+- **Version pin (`docguardVersion` + `--pin`)** — pin the CLI version your project supports so
+  CI fails loudly if someone bumps DocGuard without re-running the suite.
+- **Cross-process plan cache** — repeated runs reuse the validator plan across processes when
+  the working tree hasn't changed. ~30% faster guard runs on typical repos.
+- **Headless-aware banner** — `--quiet`, `--format json`, `--write`, and `--changed-only`
+  automatically suppress the banner so JSON output stays parse-clean.
+- **npm-pack smoke gate** — every release now extracts the actual tarball and runs the CLI
+  end-to-end before publish, catching missing-file regressions.
+
+See [CHANGELOG.md](CHANGELOG.md) for the full history.
 
 ---
 

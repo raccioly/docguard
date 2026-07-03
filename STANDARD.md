@@ -610,16 +610,26 @@ Project-level configuration file that customizes validation for the specific pro
 
 ## 8. Validator Reference
 
-| # | Validator | Checks | Default | Severity |
-|---|-----------|--------|---------|----------|
-| 1 | **structure** | All required files exist | ✅ On | Error |
-| 2 | **docs-sync** | Source files have matching canonical doc entries | ✅ On | Warning |
-| 3 | **drift** | `// DRIFT:` comments have DRIFT-LOG entries | ✅ On | Error |
-| 4 | **changelog** | Staged changes have CHANGELOG entries | ✅ On | Warning |
-| 5 | **architecture** | Imports follow declared layer boundaries | ❌ Off | Error |
-| 6 | **test-spec** | Required tests exist per TEST-SPEC.md | ✅ On | Warning |
-| 7 | **security** | No secrets in code, security patterns followed | ❌ Off | Error |
-| 8 | **environment** | Env vars documented, .env.example exists | ✅ On | Warning |
+This specification defines the **CDD structure** — the files, sections, and
+markers of §4–§7. Validators are an **implementation detail of the DocGuard
+CLI** and are additive across releases, so this document deliberately does not
+enumerate them (an embedded table drifted two major versions behind the CLI —
+the exact failure mode CDD exists to prevent).
+
+The founding eight (structure, docs-sync, drift, changelog, architecture,
+test-spec, security, environment) map directly to the file formats in §5; the
+CLI has since grown well past twenty. For the authoritative, machine-governed
+list:
+
+- run `docguard guard` — every validator prints its name and result;
+- run `docguard explain <validator>` for any validator's contract;
+- see the [README Validators section](README.md#-validators), whose counts are
+  enforced against code by the `canonical-sync` validator on every guard run.
+
+A conforming third-party CDD implementation MUST validate the structural rules
+of §4–§6 (required files, section presence, DRIFT markers ↔ DRIFT-LOG) and MAY
+implement any further checks; the exit-code contract below is the stable
+interface.
 
 ### Exit Codes
 

@@ -2,7 +2,7 @@
 
 <!-- docguard:version 0.6.0 -->
 <!-- docguard:status living -->
-<!-- docguard:last-reviewed 2026-05-31 -->
+<!-- docguard:last-reviewed 2026-07-02 -->
 <!-- docguard:owner @raccioly -->
 
 > The planned evolution of DocGuard and Canonical-Driven Development (CDD).
@@ -11,7 +11,7 @@
 |----------|-------|
 | **Status** | ![Status](https://img.shields.io/badge/status-active-brightgreen) |
 | **Version** | `0.6.0` |
-| **Last Updated** | 2026-05-31 |
+| **Last Updated** | 2026-07-02 |
 | **Owner** | [@raccioly](https://github.com/raccioly) |
 
 ---
@@ -31,12 +31,16 @@ Make **Canonical-Driven Development** the industry standard for AI-age software 
 | 2 | Polish & Adoption | ✅ Complete | Mar 2026 |
 | 3 | AI Generate Mode | ✅ Complete | Mar 2026 |
 | 4 | Integrations | ✅ Complete | Mar 2026 |
-| 4.5 | Continuous Hardening | 🔄 Ongoing | Mar–May 2026 |
+| 4.5 | Continuous Hardening | 🔄 Ongoing | Mar 2026 – present |
 | 5 | Dashboard (SaaS) | 💭 Future | Q4 2026 |
 
-### Phase 4.5: Continuous Hardening (v0.11 → v0.26) 🔄
+### Phase 4.5: Continuous Hardening (v0.11 → v0.28, ongoing) 🔄
 
-Sustained, feedback-driven maturation since the March milestones:
+Sustained, feedback-driven maturation since the March milestones. The cadence is
+deliberately field-report-driven (real adopter reports → class-level fixes);
+the counterweight is that each accumulated batch must also land internal
+hardening (consolidation, findings migration), not just surface fixes — see
+CHANGELOG `[Unreleased]` for the batch in progress:
 
 - **v0.28.0 — field report #3 detection gaps + a CI-correctness fix.** Closed the five deferred items: `verify --semantic` (extract documented numbers/limits/enums for an agent to check against code — the semantic-drift class), `sync --tests` (reconcile the TEST-SPEC source→test map from disk), dynamic `import()` no longer counted as a cycle edge, API-Surface diffs the OpenAPI spec against registered routes (phantom-endpoint detection), and freshness markers stamped on `init`. Also fixed a latent bug where `guard --format json` truncated >8 KB reports piped in CI (process.exit before stdout drained). Tests 813 → 825.
 - **v0.27.0 — LLM field report #3: findings + the feedback loop.** Reframed DocGuard around its real audience — LLMs. Introduced structured **findings** (stable codes like `SEC001`, confidence, and a built-in `→ suggestion`), so every guard run ends with a suggested next action and `--format json` carries a stable `findings`/`reportable`/`nextStep` contract. Added inline secret suppression (`// docguard:ignore SEC001`), `explain <CODE>`, a read-only skills nudge, and a local-first **`docguard feedback`** command (1-click, prefilled, redacted, length-capped issue URL — no auto-filing, no leaked secrets). Fixed the group-A false positives: prose values mis-flagged as passwords (now low-confidence), Vitest-in-`vite.config`/`scripts.test` detection, `docs-canonical/ROADMAP.md` TODO tracking, runner/CI env vars, and passive-voice override parity. Tests 794 → 813.
@@ -86,7 +90,7 @@ Expanded the CLI with scoring, diffing, and agent integration.
 - [x] `--force` flag for overwriting existing files
 - [x] `--agent <name>` flag for targeting specific agents
 - [x] 8 additional templates: KNOWN-GOTCHAS, TROUBLESHOOTING, RUNBOOKS, VENDOR-BUGS, CURRENT-STATE, ADR, DEPLOYMENT, ROADMAP
-- [ ] npm publish (`npx docguard` works globally)
+- [x] npm publish (`npx docguard-cli` works globally; PyPI wrapper too)
 
 ## Phase 3: AI Generate Mode ✅
 

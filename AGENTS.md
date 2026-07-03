@@ -1,6 +1,6 @@
 # AI Agent Instructions — DocGuard
 
-<!-- docguard:last-reviewed 2026-05-31 -->
+<!-- docguard:last-reviewed 2026-07-03 -->
 
 > This project follows **Canonical-Driven Development (CDD)**.
 > Documentation is the source of truth. Read before coding.
@@ -58,6 +58,26 @@ config/CLI), `watch` (live re-guard).
 
 **Deprecation aliases** — `setup` → `init --wizard`; `audit` → `guard`
 (permanent); `impact` → `diff --since`.
+
+## Consuming Guard Output (agents)
+
+Prefer the machine contract over parsing prose: `docguard guard --format json`
+returns `status` (PASS/WARN/FAIL, matches exit code 0/2/1), `findings[]`
+(`{code, severity, confidence, message, location, suggestion}`), `nextStep`,
+`reportable[]` (low-confidence findings — verify before acting), `coverage`
+(Markdown tier map incl. `unclassified[]`), and `semanticClaims.count`
+(documented numbers not yet verified against code).
+
+- Every finding has a stable code (`STR001`, `ENV003`, `XRF002`, …) — all 24
+  validators emit them. `docguard explain <CODE>` gives the contract and fix.
+- Mechanical fixes go through `docguard fix --write` (provenance-checked,
+  fail-closed) — never hand-apply what the tool fixes deterministically.
+- Genuine false positives: suppress at the site with `// docguard:ignore <CODE>`
+  (reason required) or `<!-- docguard:validator <key> n/a — reason -->`, and
+  report them via `docguard feedback`.
+- Doc≠code does not mean the doc is wrong — canonical docs are the spec. If the
+  code regressed from a documented decision, fix the code or log a
+  `// DRIFT: reason` + DRIFT-LOG.md entry instead of rewriting the doc.
 
 ## AI Skills
 

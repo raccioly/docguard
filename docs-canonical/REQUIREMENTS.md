@@ -2,6 +2,7 @@
 
 <!-- docguard:version 0.1.0 -->
 <!-- docguard:status draft -->
+<!-- docguard:last-reviewed 2026-07-03 -->
 
 > Tracks functional requirements, non-functional requirements, and success criteria.
 > Use requirement IDs (FR-001, NFR-001, SC-001) for traceability back to code and tests.
