@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-07-03T20:20:48.091Z
-> Files: 643 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-07-03T20:24:31.155Z
+> Files: 646 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../../../tmp/
 
@@ -32,7 +32,9 @@
 - `PHILOSOPHY.md` — The Philosophy of Canonical-Driven Development (~1757 tok)
 - `pr_description.md` (~260 tok)
 - `pyproject.toml` — The enforcement tool for Canonical-Driven Development (CDD). Audit, generate, and guard your project (~358 tok)
-- `README.md` — Project documentation (~8042 tok)
+- `README.es.md` — 🛡️ DocGuard (~1098 tok)
+- `README.md` — Project documentation (~8061 tok)
+- `README.pt-BR.md` — 🛡️ DocGuard (~1075 tok)
 - `ROADMAP.md` — DocGuard Roadmap (~2432 tok)
 - `SECURITY.md` — Security Policy (~357 tok)
 - `STANDARD.md` — DocGuard Standard v0.1 (~6533 tok)
@@ -924,6 +926,10 @@
 - `fix-memory.mjs` — Fix Memory — M-2 / S-10 (~1858 tok)
 - `mechanical.mjs` — Mechanical Fix Registry — applies deterministic, no-LLM fixes in place. (~3008 tok)
 - `sections.mjs` — Section-addressable docs — the foundation for surgical, non-destructive doc (~1676 tok)
+
+## .github/
+
+- `PULL_REQUEST_TEMPLATE.md` — Pull Request (~223 tok)
 
 ## .github/ISSUE_TEMPLATE/
 
