@@ -19,7 +19,7 @@ import { resolve } from 'node:path';
  */
 export function isGitRepo(dir) {
   try {
-    execSync('git rev-parse --is-inside-work-tree', {
+    execFileSync('git', ['rev-parse', '--is-inside-work-tree'], {
       cwd: dir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
     });
     return true;
