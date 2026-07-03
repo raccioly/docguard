@@ -1,6 +1,6 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-07-03T21:55:57.532Z
+> Auto-maintained by OpenWolf. Last scanned: 2026-07-03T22:01:17.808Z
 > Files: 661 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../../../tmp/
@@ -22,8 +22,8 @@
 - `.npmrc` — Supply-Chain Security Hardening (~59 tok)
 - `.pre-commit-hooks.yaml` — DocGuard hooks for the pre-commit framework (https://pre-commit.com). (~490 tok)
 - `action.yml` — Declares fs (~7591 tok)
-- `AGENTS.md` — AI Agent Instructions — DocGuard (~1582 tok)
-- `CHANGELOG.md` — Changelog (~44379 tok)
+- `AGENTS.md` — AI Agent Instructions — DocGuard (~1584 tok)
+- `CHANGELOG.md` — Changelog (~45074 tok)
 - `CLAUDE.md` — OpenWolf (~57 tok)
 - `CODE_OF_CONDUCT.md` — Contributor Covenant Code of Conduct (~532 tok)
 - `COMPARISONS.md` — Comparisons & Honest Limitations (~3053 tok)
@@ -38,7 +38,7 @@
 - `pr_description.md` (~260 tok)
 - `pyproject.toml` — The enforcement tool for Canonical-Driven Development (CDD). Audit, generate, and guard your project (~358 tok)
 - `README.es.md` — 🛡️ DocGuard (~1098 tok)
-- `README.md` — Project documentation (~8283 tok)
+- `README.md` — Project documentation (~8376 tok)
 - `README.pt-BR.md` — 🛡️ DocGuard (~1075 tok)
 - `ROADMAP.md` — DocGuard Roadmap (~2432 tok)
 - `SECURITY.md` — Security Policy (~357 tok)
@@ -956,7 +956,7 @@
 
 - `config.mjs` — DocGuard — configuration loading. (~3265 tok)
 - `docguard.mjs` — DocGuard CLI — The enforcement tool for Canonical-Driven Development (CDD) (~9606 tok)
-- `findings.mjs` — Findings — the structured, LLM-addressable result unit (v0.27). (~9378 tok)
+- `findings.mjs` — Findings — the structured, LLM-addressable result unit (v0.27). (~9698 tok)
 - `shared-ignore.mjs` — Shared Ignore Utility — Unified file filtering for all validators. (~4132 tok)
 - `shared-source.mjs` — Shared Source Resolution — Monorepo-aware source discovery. (~4655 tok)
 - `shared.mjs` — Shared constants for DocGuard CLI — colors, profiles, version. (~3496 tok)
@@ -1024,7 +1024,7 @@
 
 ## docs-canonical/
 
-- `ARCHITECTURE.md` — Architecture (~2883 tok)
+- `ARCHITECTURE.md` — Architecture (~2925 tok)
 - `DATA-MODEL.md` — Data Model (~1668 tok)
 - `REQUIREMENTS.md` — Requirements (~673 tok)
 - `SURFACE-AUDIT.md` — DocGuard Surface Audit (~5703 tok)
@@ -1050,7 +1050,7 @@
 
 ## schemas/
 
-- `docguard-config.schema.json` — behavior: docs (~2889 tok)
+- `docguard-config.schema.json` — behavior: docs (~3015 tok)
 
 ## templates/
 

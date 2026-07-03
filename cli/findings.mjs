@@ -474,6 +474,18 @@ export const CODES = {
     help: 'constitution.md exists but there is no AGENTS.md. AI agents look to AGENTS.md for project rules — create one (e.g. via `docguard init`) and reference the constitution from it.',
     suppress: null,
   },
+  SPK008: {
+    validator: 'specKit',
+    title: 'Phantom completion — checked task with no implementation evidence',
+    help: 'A tasks.md task marked [x] names a deliverable path that does not exist, and no evidence tier confirms the work landed: no matching basename anywhere in the repo (moved file), no named code symbol in source, no plan.md/spec.md tie to an existing artifact, no task-ID annotation in source, and no task-ID in the git log. A checked task with no artifact corrupts agent memory — later sessions trust the checkbox and skip the work. Uncheck the task or land the implementation. Flagged low-confidence — report a false positive if the deliverable was renamed beyond recognition. Opt out with `"specKit": { "phantomCheck": false }` in .docguard.json.',
+    suppress: null,
+  },
+  SPK009: {
+    validator: 'specKit',
+    title: 'Additional phantom completions elided',
+    help: 'Guard reports at most 10 phantom-completion findings (SPK008) per run to avoid noise; this line counts the remainder. Fix or uncheck the reported tasks and re-run guard to surface more, or set `"specKit": { "phantomCheck": false }` in .docguard.json to disable the check.',
+    suppress: null,
+  },
   XRF001: {
     validator: 'crossReference',
     title: 'Broken doc link',

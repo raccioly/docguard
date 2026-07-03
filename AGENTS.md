@@ -132,7 +132,7 @@ extensions/spec-kit-docguard/
 
 ### Dependencies
 - Never add a package without first verifying it exists on the official registry (npm/PyPI).
-- Always pin to exact versions in package.json/requirements.txt. No ^, ~, or >= ranges.
+- Always pin to exact versions in `package.json` and `requirements.txt`. No ^, ~, or >= ranges.
 - Prefer packages with >10k weekly downloads and >1 maintainer.
 - If you suggest a package, confirm its first-publish date is older than 30 days.
 - Never modify .npmrc, pnpm-workspace.yaml, or dependabot.yml without explicit user confirmation.
