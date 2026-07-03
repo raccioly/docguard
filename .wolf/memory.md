@@ -759,3 +759,4 @@
 | 16:30 | Edited docs/configuration.md | expanded (+14 lines) | ~125 |
 | 16:30 | Edited docs/configuration.md | expanded (+24 lines) | ~339 |
 | 16:31 | Edited docs/faq.md | expanded (+15 lines) | ~270 |
+| 16:32 | Edited CHANGELOG.md | 3→5 lines | ~33 |

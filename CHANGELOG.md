@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.29.0] - 2026-07-03
+
 Closes both gaps from LLM field report #6 (a downstream adopter reported guard
 **A+ / "Accurate: 100%" while a watched doc stated a wrong count** — the one
 false-negative a documentation-integrity tool must not have). Diagnosis held up:
