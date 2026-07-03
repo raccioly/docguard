@@ -48,6 +48,7 @@ import { runVerify } from './commands/verify.mjs';
 import { runMemory } from './commands/memory.mjs';
 import { runDemo } from './commands/demo.mjs';
 import { runAgent } from './commands/agent.mjs';
+import { runMcp } from './commands/mcp.mjs';
 import { ensureSkills } from './ensure-skills.mjs';
 
 // ── Shared constants (imported to break circular dependencies) ──────────
@@ -90,6 +91,7 @@ ${c.bold}Tools (situational, but day-to-day useful)${c.reset}
   ${c.green}explain${c.reset}    Explain a validator key, warning text, or finding code (${c.cyan}docguard explain SEC001${c.reset})
   ${c.green}verify${c.reset}     Extract documented numbers/limits/enums for an agent to check vs code (${c.cyan}--semantic${c.reset})
   ${c.green}feedback${c.reset}   Report likely false positives back to DocGuard (local-first + 1-click prefilled issue)
+  ${c.green}mcp${c.reset}        MCP server over stdio — guard/score/explain/verify/diagnose as agent tools
   ${c.green}memory${c.reset}     Show what DocGuard remembers (${c.cyan}--diff${c.reset} drills into drift)
   ${c.green}trace${c.reset}      Requirements traceability matrix (${c.cyan}--reverse${c.reset} for code→doc map)
   ${c.green}upgrade${c.reset}    Migrate ${c.cyan}.docguard.json${c.reset} schema + CLI (${c.cyan}--apply --pr${c.reset} for team-wide PR)
@@ -375,6 +377,23 @@ async function main() {
       // v0.28 (field report #5): `docguard verify --semantic` extracts
       // documented numbers/enums/limits for the agent to check against code.
       flags.semantic = true;
+    } else if (args[i] === '--full') {
+      // v0.29: `docguard llms --full` emits llms-full.txt (inline doc bodies,
+      // the Mintlify-popularized companion to the llms.txt index).
+      flags.full = true;
+    } else if (args[i] === '--pack') {
+      // v0.29: `docguard memory --pack` writes .docguard/context-pack.md — a
+      // compact code-truth-stamped session-start context for AI agents.
+      flags.pack = true;
+    } else if (args[i] === '--sync') {
+      // v0.29: `docguard agents --sync` regenerates the agent-file family
+      // (CLAUDE.md, GEMINI.md, copilot-instructions, .cursor rules) from
+      // AGENTS.md — the canonical source. Kills hand-duplication drift.
+      flags.sync = true;
+    } else if (args[i] === '--check') {
+      // v0.29: `docguard agents --check` — CI staleness gate for the synced
+      // agent-file family (exit 2 when a variant is missing or stale).
+      flags.check = true;
     } else if (args[i] === '--plan') {
       flags.plan = true;
     } else if (args[i] === '--since' && args[i + 1]) {
@@ -512,10 +531,13 @@ async function main() {
   // touch" — so it joins the club to suppress the banner AND ensureSkills'
   // .agent/.specify writes, which were a surprising side effect of a bare
   // `generate --plan` (and were already suppressed for `--plan --write`).
-  const jsonMode = flags.format === 'json';
+  // v0.29: 'sarif' joins 'json' — any machine format where stdout IS the
+  // artifact belongs here, or the banner corrupts the payload.
+  const jsonMode = flags.format === 'json' || flags.format === 'sarif';
   // `agent` emits a machine task graph (JSON by default) — it must be banner-
   // free and side-effect-free like the other read-only commands.
-  const headless = jsonMode || flags.write || flags.checkOnly || flags.changedOnly || flags.quiet || flags.plan || command === 'agent';
+  // `mcp`: stdout IS the JSON-RPC transport — any banner byte corrupts the stream.
+  const headless = jsonMode || flags.write || flags.checkOnly || flags.changedOnly || flags.quiet || flags.plan || command === 'agent' || command === 'mcp';
 
   if (!headless) printBanner();
 
@@ -540,6 +562,8 @@ async function main() {
     'feedback',
     // verify only reads docs and emits a task list — pure report.
     'verify',
+    // mcp serves read-only tools over stdio — scaffolding writes are off-limits.
+    'mcp',
   ]);
 
   // Silent auto-check: install skills/commands if missing. Skip entirely in
@@ -690,6 +714,11 @@ async function main() {
       // verification task list for the agent to check against code (semantic
       // drift — the class regex/AST can't see). Read-only.
       runVerify(projectDir, config, flags);
+      break;
+    case 'mcp':
+      // MCP stdio server — guard/score/explain/verify-claims/diagnose as tools
+      // for MCP clients. Long-lived; resolves when stdin closes.
+      await runMcp(projectDir, config, flags);
       break;
     case 'memory':
       runMemory(projectDir, config, flags);

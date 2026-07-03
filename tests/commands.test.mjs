@@ -891,6 +891,22 @@ describe('getTestFilesFromPatterns', () => {
 });
 
 describe('docguard watch', () => {
+  // v0.29 flake fix: these two spawn tests polled with a FIXED 2s cap
+  // (20×100ms) — a hair-trigger race against CLI startup (init + spawn +
+  // first guard run) that intermittently lost on slow CI runners, then passed
+  // on identical-code re-run (see cerebrum 2026-06-05). The remedy is a
+  // generous DEADLINE, not a retry: assertions stay exactly as strict; only
+  // the "how long may startup take" assumption is realistic now. A genuinely
+  // broken watch still fails — after 15s instead of 2s.
+  const waitFor = async (predicate, timeoutMs = 15000, stepMs = 100) => {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      if (predicate()) return true;
+      await new Promise(r => setTimeout(r, stepMs));
+    }
+    return false;
+  };
+
   it('starts watch mode and reacts to file changes', async () => {
     const tmpDir = mkdtempSync(join(tmpdir(), 'sg-watch-'));
     let child;
@@ -915,10 +931,7 @@ describe('docguard watch', () => {
       });
 
       // Wait until initial output signals it's ready
-      for (let i = 0; i < 20; i++) {
-        if (output.includes('Watching 5 directories') || output.includes('Watching for changes')) break;
-        await new Promise(r => setTimeout(r, 100));
-      }
+      await waitFor(() => output.includes('Watching 5 directories') || output.includes('Watching for changes'));
 
       assert.match(output, /DocGuard Watch/);
       assert.match(output, /Watching for changes/);
@@ -929,10 +942,7 @@ describe('docguard watch', () => {
       // Test file change
       writeFileSync(join(tmpDir, 'src', 'index.js'), 'console.log("world");');
 
-      for (let i = 0; i < 30; i++) {
-        if (output.includes('Changed:') && output.includes('index.js')) break;
-        await new Promise(r => setTimeout(r, 100));
-      }
+      await waitFor(() => output.includes('Changed:') && output.includes('index.js'));
 
       // Ensure it detected our modification
       assert.match(output, /Changed: .*index\.js/);
@@ -961,10 +971,7 @@ describe('docguard watch', () => {
         output += data.toString();
       });
 
-      for (let i = 0; i < 20; i++) {
-        if (output.includes('Auto-fix prompts')) break;
-        await new Promise(r => setTimeout(r, 100));
-      }
+      await waitFor(() => output.includes('Auto-fix prompts'));
 
       assert.match(output, /Mode: auto-fix/);
       assert.match(output, /Auto-fix prompts:/);
