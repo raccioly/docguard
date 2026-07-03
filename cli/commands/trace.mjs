@@ -72,6 +72,9 @@ export function runTraceReverse(projectDir, config, flags) {
   const base = basename(normalized);
   const stem = base.replace(/\.[^.]+$/, '');
 
+  // PERFORMANCE OPTIMIZATION: Pre-compile regular expression to avoid O(N*M*L)
+  // instantiation bottlenecks inside the nested .test(line) loop below.
+  const stemRe = new RegExp(`\`${escapeRegex(stem)}\``);
   const matches = []; // { doc, line, content, kind }
   for (const f of readdirSync(docsDir)) {
     if (!f.endsWith('.md')) continue;
@@ -84,7 +87,7 @@ export function runTraceReverse(projectDir, config, flags) {
       let kind = null;
       if (line.includes(normalized)) kind = 'path';
       else if (line.includes(base)) kind = 'basename';
-      else if (new RegExp(`\`${escapeRegex(stem)}\``).test(line)) kind = 'module';
+      else if (stemRe.test(line)) kind = 'module';
       if (kind) {
         matches.push({ doc: f, line: i + 1, content: line.trim(), kind });
       }
