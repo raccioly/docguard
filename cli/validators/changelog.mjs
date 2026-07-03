@@ -7,6 +7,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve, basename } from 'node:path';
 import { execFileSync } from 'node:child_process';
+import { mkFinding, resultFromFindings } from '../findings.mjs';
 
 const CODE_EXT_RE = /\.(ts|tsx|js|jsx|mjs|cjs|py|go|rs|java|rb|php|cs|kt|swift)$/;
 
@@ -24,35 +25,53 @@ function getStagedFiles(projectDir) {
   }
 }
 
+// v0.29: migrated to structured findings (CHG001–CHG003). Messages are
+// byte-identical to the legacy strings; the `fixes` array is preserved for
+// the fix applier.
 export function validateChangelog(projectDir, config) {
-  const results = { name: 'changelog', errors: [], warnings: [], passed: 0, total: 0, fixes: [] };
+  const findings = [];
+  const fixes = [];
+  let passed = 0;
+  let total = 0;
 
   const changelogPath = resolve(projectDir, config.requiredFiles.changelog);
   if (!existsSync(changelogPath)) {
     // Structure validator catches missing files
-    return results;
+    return { name: 'changelog', ...resultFromFindings([], { passed: 0, total: 0 }), fixes };
   }
 
   const content = readFileSync(changelogPath, 'utf-8');
 
   // Check for [Unreleased] section
-  results.total++;
+  total++;
   if (content.includes('[Unreleased]') || content.includes('[unreleased]')) {
-    results.passed++;
+    passed++;
   } else {
-    results.warnings.push('CHANGELOG.md: missing [Unreleased] section — fix with `docguard fix --write`');
-    results.fixes.push({ type: 'insert-changelog-unreleased', file: config.requiredFiles.changelog });
+    findings.push(mkFinding({
+      code: 'CHG001',
+      validator: 'changelog',
+      severity: 'warn',
+      message: 'CHANGELOG.md: missing [Unreleased] section — fix with `docguard fix --write`',
+      location: config.requiredFiles.changelog,
+      suggestion: { kind: 'fix', text: 'Insert an [Unreleased] section', command: 'docguard fix --write' },
+    }));
+    fixes.push({ type: 'insert-changelog-unreleased', file: config.requiredFiles.changelog });
   }
 
   // Check it follows Keep a Changelog format (at least has ## headers)
-  results.total++;
+  total++;
   const hasVersionHeaders = /^## \[/m.test(content);
   if (hasVersionHeaders) {
-    results.passed++;
+    passed++;
   } else {
-    results.warnings.push(
-      'CHANGELOG.md: no version sections found (expected ## [version] format)'
-    );
+    findings.push(mkFinding({
+      code: 'CHG002',
+      validator: 'changelog',
+      severity: 'warn',
+      message: 'CHANGELOG.md: no version sections found (expected ## [version] format)',
+      location: config.requiredFiles.changelog,
+      suggestion: { kind: 'review', text: 'Adopt Keep a Changelog format: ## [version] - YYYY-MM-DD headers' },
+    }));
   }
 
   // Per STANDARD.md: if there are staged CODE changes, CHANGELOG.md should be
@@ -65,16 +84,21 @@ export function validateChangelog(projectDir, config) {
     const changelogStaged = staged.some(f => basename(f) === changelogName);
 
     if (stagedCode.length > 0) {
-      results.total++;
+      total++;
       if (changelogStaged) {
-        results.passed++;
+        passed++;
       } else {
-        results.warnings.push(
-          `${stagedCode.length} code file(s) staged but ${changelogName} is not — add a CHANGELOG entry for this change`
-        );
+        findings.push(mkFinding({
+          code: 'CHG003',
+          validator: 'changelog',
+          severity: 'warn',
+          message: `${stagedCode.length} code file(s) staged but ${changelogName} is not — add a CHANGELOG entry for this change`,
+          location: config.requiredFiles.changelog,
+          suggestion: { kind: 'fix', text: `Describe the staged change under [Unreleased] in ${changelogName}, then stage it` },
+        }));
       }
     }
   }
 
-  return results;
+  return { name: 'changelog', ...resultFromFindings(findings, { passed, total }), fixes };
 }

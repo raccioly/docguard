@@ -1,10 +1,16 @@
 /**
  * Drift Validator — Every // DRIFT: comment must have a DRIFT-LOG.md entry
+ *
+ * v0.29: migrated to structured findings (DRF001–DRF002). Messages are
+ * byte-identical to the legacy strings — resultFromFindings derives the
+ * errors/warnings arrays from the same findings, so counts, exit codes, and
+ * existing tests are unaffected; guard just renders richer output.
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, extname } from 'node:path';
-import { relPosix } from '../shared-ignore.mjs';
+import { relPosix, walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
+import { mkFinding, resultFromFindings } from '../findings.mjs';
 
 const CODE_EXTENSIONS = new Set([
   '.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx',
@@ -19,7 +25,9 @@ const IGNORE_DIRS = new Set([
 ]);
 
 export function validateDrift(projectDir, config) {
-  const results = { name: 'drift', errors: [], warnings: [], passed: 0, total: 0 };
+  const findings = [];
+  let passed = 0;
+  let total = 0;
 
   // v0.15-P3: when config.changedFiles is set (--changed-only mode), only
   // visit the listed paths. Drift comments in unchanged files are still in
@@ -64,58 +72,56 @@ export function validateDrift(projectDir, config) {
 
   if (driftComments.length === 0) {
     // No // DRIFT: comments to reconcile — not applicable (NOT a pass).
-    results.note = 'no // DRIFT: comments in code';
-    return results;
+    return {
+      name: 'drift',
+      ...resultFromFindings([], { passed: 0, total: 0 }),
+      note: 'no // DRIFT: comments in code',
+    };
   }
 
   // Read DRIFT-LOG.md
   const driftLogPath = resolve(projectDir, config.requiredFiles.driftLog);
   if (!existsSync(driftLogPath)) {
-    results.total = driftComments.length;
     for (const dc of driftComments) {
-      results.errors.push(
-        `${dc.file}:${dc.line} has DRIFT comment but DRIFT-LOG.md doesn't exist`
-      );
+      findings.push(mkFinding({
+        code: 'DRF001',
+        validator: 'drift',
+        severity: 'error',
+        message: `${dc.file}:${dc.line} has DRIFT comment but DRIFT-LOG.md doesn't exist`,
+        location: `${dc.file}:${dc.line}`,
+        suggestion: { kind: 'fix', text: 'Create the drift log, then record this deviation in it', command: 'docguard init' },
+      }));
     }
-    return results;
+    return { name: 'drift', ...resultFromFindings(findings, { passed: 0, total: driftComments.length }) };
   }
 
   const driftLogContent = readFileSync(driftLogPath, 'utf-8');
 
   // Check each drift comment has a matching entry in DRIFT-LOG.md
   for (const dc of driftComments) {
-    results.total++;
+    total++;
     // Check if the file is mentioned in DRIFT-LOG.md
     if (driftLogContent.includes(dc.file)) {
-      results.passed++;
+      passed++;
     } else {
-      results.errors.push(
-        `${dc.file}:${dc.line} — DRIFT comment not logged in DRIFT-LOG.md`
-      );
+      findings.push(mkFinding({
+        code: 'DRF002',
+        validator: 'drift',
+        severity: 'error',
+        message: `${dc.file}:${dc.line} — DRIFT comment not logged in DRIFT-LOG.md`,
+        location: `${dc.file}:${dc.line}`,
+        suggestion: { kind: 'fix', text: 'Add an entry for this file to DRIFT-LOG.md explaining the deviation' },
+      }));
     }
   }
 
-  return results;
+  return { name: 'drift', ...resultFromFindings(findings, { passed, total }) };
 }
 
+// v0.29 consolidation: traversal delegates to the shared canonical walker;
+// the IGNORE_DIRS set above stays local because its entries are intentional
+// per-validator variance (e.g. 'cli' — DocGuard's own source has DRIFT: in
+// regex patterns).
 function walkDir(dir, callback) {
-  if (!existsSync(dir)) return;
-
-  const entries = readdirSync(dir);
-  for (const entry of entries) {
-    if (IGNORE_DIRS.has(entry)) continue;
-    if (entry.startsWith('.')) continue;
-
-    const fullPath = join(dir, entry);
-    try {
-      const stat = statSync(fullPath);
-      if (stat.isDirectory()) {
-        walkDir(fullPath, callback);
-      } else if (stat.isFile()) {
-        callback(fullPath);
-      }
-    } catch {
-      // Skip files we can't read
-    }
-  }
+  sharedWalkFiles(dir, callback, { ignoreDirs: IGNORE_DIRS });
 }

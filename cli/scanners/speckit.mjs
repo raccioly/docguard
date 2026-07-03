@@ -23,7 +23,8 @@
  */
 
 import { existsSync, readFileSync, readdirSync, statSync, copyFileSync, writeFileSync } from 'node:fs';
-import { resolve, join } from 'node:path';
+import { resolve, join, relative } from 'node:path';
+import { mkFinding, resultFromFindings } from '../findings.mjs';
 
 // ──── Spec Kit Mandatory Sections ────
 // Based on spec-kit's spec-template.md, plan-template.md, tasks-template.md
@@ -385,95 +386,164 @@ export function generateFromSpecKit(projectDir, config, flags) {
  *   - Checks constitution → AGENTS.md mapping
  *
  * @returns {{ errors: string[], warnings: string[], passed: number, total: number }}
+ *
+ * v0.29: migrated to structured findings (SPK001–SPK007). Messages are
+ * byte-identical to the legacy strings — resultFromFindings derives the
+ * errors/warnings arrays from the same findings, so counts, exit codes, and
+ * existing tests are unaffected; guard just renders richer output.
  */
 export function validateSpecKitIntegration(projectDir, config) {
-  const results = { errors: [], warnings: [], passed: 0, total: 0 };
+  const findings = [];
+  let passed = 0;
+  let total = 0;
 
   const speckit = detectSpecKit(projectDir);
 
   // If no Spec Kit detected, suggest it
   if (!speckit.detected) {
-    results.total++;
-    results.warnings.push(
-      'No Spec Kit artifacts detected. Consider `specify init` for spec-driven development (github.com/github/spec-kit)'
-    );
-    return results;
+    total++;
+    findings.push(mkFinding({
+      code: 'SPK001',
+      validator: 'specKit',
+      severity: 'warn',
+      message: 'No Spec Kit artifacts detected. Consider `specify init` for spec-driven development (github.com/github/spec-kit)',
+      location: null,
+      suggestion: { kind: 'review', text: 'Adopt spec-driven development by initializing Spec Kit', command: 'specify init' },
+    }));
+    return resultFromFindings(findings, { passed, total });
   }
 
   // ── Check 1: .specify/ directory exists ──
-  results.total++;
+  total++;
   if (speckit.specifyDir) {
-    results.passed++;
+    passed++;
   } else {
-    results.warnings.push(
-      'Spec Kit artifacts found but .specify/ directory missing. Run `specify init` to create standard structure'
-    );
+    findings.push(mkFinding({
+      code: 'SPK002',
+      validator: 'specKit',
+      severity: 'warn',
+      message: 'Spec Kit artifacts found but .specify/ directory missing. Run `specify init` to create standard structure',
+      location: '.specify',
+      suggestion: { kind: 'fix', text: 'Create the standard Spec Kit structure', command: 'specify init' },
+    }));
   }
 
   // ── Check 2: Validate each spec's quality ──
   for (const spec of speckit.specs) {
     // 2a: spec.md quality
     if (spec.hasSpec && spec.specPath) {
-      results.total++;
+      total++;
+      const loc = relative(projectDir, spec.specPath);
       try {
         const issues = validateSpecQuality(spec.specPath);
         if (issues.length === 0) {
-          results.passed++;
+          passed++;
         } else {
           for (const issue of issues) {
-            results.warnings.push(`specs/${spec.name}/spec.md: ${issue}`);
+            findings.push(mkFinding({
+              code: 'SPK003',
+              validator: 'specKit',
+              severity: 'warn',
+              message: `specs/${spec.name}/spec.md: ${issue}`,
+              location: loc,
+              suggestion: { kind: 'fix', text: 'Bring the spec up to the spec-kit spec-template.md shape (sections, FR-/SC- IDs)' },
+            }));
           }
         }
       } catch {
-        results.warnings.push(`specs/${spec.name}/spec.md: Could not read file`);
+        findings.push(mkFinding({
+          code: 'SPK006',
+          validator: 'specKit',
+          severity: 'warn',
+          message: `specs/${spec.name}/spec.md: Could not read file`,
+          location: loc,
+          suggestion: { kind: 'review', text: 'Check the file exists and is readable (permissions/encoding)' },
+        }));
       }
     }
 
     // 2b: plan.md quality
     if (spec.hasPlan && spec.planPath) {
-      results.total++;
+      total++;
+      const loc = relative(projectDir, spec.planPath);
       try {
         const issues = validatePlanQuality(spec.planPath);
         if (issues.length === 0) {
-          results.passed++;
+          passed++;
         } else {
           for (const issue of issues) {
-            results.warnings.push(`specs/${spec.name}/plan.md: ${issue}`);
+            findings.push(mkFinding({
+              code: 'SPK004',
+              validator: 'specKit',
+              severity: 'warn',
+              message: `specs/${spec.name}/plan.md: ${issue}`,
+              location: loc,
+              suggestion: { kind: 'fix', text: 'Add the missing section per spec-kit plan-template.md' },
+            }));
           }
         }
       } catch {
-        results.warnings.push(`specs/${spec.name}/plan.md: Could not read file`);
+        findings.push(mkFinding({
+          code: 'SPK006',
+          validator: 'specKit',
+          severity: 'warn',
+          message: `specs/${spec.name}/plan.md: Could not read file`,
+          location: loc,
+          suggestion: { kind: 'review', text: 'Check the file exists and is readable (permissions/encoding)' },
+        }));
       }
     }
 
     // 2c: tasks.md quality
     if (spec.hasTasks && spec.tasksPath) {
-      results.total++;
+      total++;
+      const loc = relative(projectDir, spec.tasksPath);
       try {
         const issues = validateTasksQuality(spec.tasksPath);
         if (issues.length === 0) {
-          results.passed++;
+          passed++;
         } else {
           for (const issue of issues) {
-            results.warnings.push(`specs/${spec.name}/tasks.md: ${issue}`);
+            findings.push(mkFinding({
+              code: 'SPK005',
+              validator: 'specKit',
+              severity: 'warn',
+              message: `specs/${spec.name}/tasks.md: ${issue}`,
+              location: loc,
+              suggestion: { kind: 'fix', text: 'Add a phased breakdown with T-IDs per spec-kit tasks-template.md' },
+            }));
           }
         }
       } catch {
-        results.warnings.push(`specs/${spec.name}/tasks.md: Could not read file`);
+        findings.push(mkFinding({
+          code: 'SPK006',
+          validator: 'specKit',
+          severity: 'warn',
+          message: `specs/${spec.name}/tasks.md: Could not read file`,
+          location: loc,
+          suggestion: { kind: 'review', text: 'Check the file exists and is readable (permissions/encoding)' },
+        }));
       }
     }
   }
 
   // ── Check 3: Constitution → AGENTS.md mapping ──
   if (speckit.constitution) {
-    results.total++;
+    total++;
     const agentsPath = resolve(projectDir, 'AGENTS.md');
     if (existsSync(agentsPath)) {
-      results.passed++;
+      passed++;
     } else {
-      results.warnings.push('constitution.md exists but no AGENTS.md found. Create one for AI agent rules');
+      findings.push(mkFinding({
+        code: 'SPK007',
+        validator: 'specKit',
+        severity: 'warn',
+        message: 'constitution.md exists but no AGENTS.md found. Create one for AI agent rules',
+        location: 'AGENTS.md',
+        suggestion: { kind: 'fix', text: 'Create an AGENTS.md that references the constitution', command: 'docguard init' },
+      }));
     }
   }
 
-  return results;
+  return resultFromFindings(findings, { passed, total });
 }

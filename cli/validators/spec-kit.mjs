@@ -9,6 +9,9 @@
  *
  * Re-exports `validateSpecKitIntegration` from the scanner. Importers should
  * use this path (`validators/spec-kit.mjs`) going forward.
+ *
+ * v0.29: the validator emits structured findings (SPK001–SPK007); the
+ * migration lives in `scanners/speckit.mjs` alongside the validation logic.
  */
 
 export { validateSpecKitIntegration } from '../scanners/speckit.mjs';

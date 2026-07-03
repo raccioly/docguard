@@ -28,7 +28,13 @@ import { resolve, join } from 'node:path';
 const NUMBER_PATTERNS = [
   { kind: 'duration', re: /\b(\d+(?:\.\d+)?)\s*(milliseconds?|ms|seconds?|secs?|minutes?|mins?|hours?|hrs?|days?|weeks?|months?|years?)\b/gi },
   { kind: 'rate',     re: /\b(\d+)\s*(?:\/|\bper\b|\breq(?:uests?)?\s*\/?)\s*(s|sec|seconds?|min|minutes?|hours?|h)\b/gi },
-  { kind: 'count',    re: /\b(\d+)\s*\+?\s*(GSIs?|LSIs?|indexes|indices|roles?|permissions?|scopes?|tables?|queues?|topics?|buckets?|endpoints?|routes?|validators?|columns?|fields?|shards?|partitions?|replicas?|retries|workers?|threads?|connections?)\b/gi },
+  // Field report #6: the noun list IS the precision mechanism — a number is only
+  // a claim when it sits next to a recognized "registered-unit" noun. The gap that
+  // shipped a wrong "16 extractors" past every check was simply that "extractors"
+  // (and its domain-collection siblings) weren't in this list. Added the common
+  // pluggable-architecture nouns. Deliberately NOT added: generic prose nouns that
+  // collide with running-text numbers (steps, items, checks, modules, services).
+  { kind: 'count',    re: /\b(\d+)\s*\+?\s*(GSIs?|LSIs?|indexes|indices|roles?|permissions?|scopes?|tables?|queues?|topics?|buckets?|endpoints?|routes?|validators?|columns?|fields?|shards?|partitions?|replicas?|retries|workers?|threads?|connections?|extractors?|plugins?|detectors?|scanners?|analyzers?|collectors?|commands?|subcommands?|rules?|hooks?|providers?|adapters?|handlers?|middlewares?|transformers?|processors?|generators?|parsers?|exporters?|importers?|integrations?|formatters?|linters?|agents?|skills?)\b/gi },
 ];
 
 // A list of 2+ UPPER_SNAKE tokens separated by / , | or "or" — an enum claim,

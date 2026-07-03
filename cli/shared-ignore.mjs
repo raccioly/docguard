@@ -89,8 +89,8 @@ export function isNonProductPath(relPath, config = {}) {
  *
  * Returns [] if the file is missing or unreadable — never throws.
  */
-import { readFileSync, existsSync } from 'node:fs';
-import { resolve as resolvePath, relative as relativePath, sep } from 'node:path';
+import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
+import { resolve as resolvePath, relative as relativePath, join as joinPath, sep } from 'node:path';
 
 /**
  * Project-relative path with POSIX (`/`) separators — the canonical form that
@@ -212,25 +212,61 @@ export function shouldIgnore(relPath, config, validatorKey) {
 }
 
 /**
- * Convert a glob pattern to a RegExp for POSITIVE matching.
- * Unlike globToRegex (used for ignore filtering), this anchors the match
- * to the full relative path from the project root.
+ * THE canonical anchored glob compiler (v0.29 consolidation).
  *
- * Supports: * (any chars except /), ** (any path segments), . (literal dot).
+ * The repo previously carried THREE glob→regex implementations (ignore-side
+ * `globToRegex` above, the old `globToMatchRegex` here, and a third private
+ * copy in metrics-consistency for collection counting) with subtly different
+ * feature sets — a maintenance hazard for exactly the drift class this tool
+ * detects in others. This is now the single anchored compiler; the ignore-side
+ * `globToRegex` deliberately stays separate because its UNanchored,
+ * boundary-substring semantics ("dir" matches at any depth) are a different
+ * contract, documented above, with its own bug history.
  *
- * @param {string} pattern - Glob pattern (e.g., "backend/**\/__tests__/**\/*.test.ts")
+ * Supports (superset of all prior anchored variants):
+ *   `**\/`  → zero or more path segments   → (?:.*\/)?
+ *   `**`    → any chars (incl. /)          → .*
+ *   `*`     → any chars except /           → [^/]*
+ *   `?`     → one char except /            → [^/]
+ *   `{a,b}` → alternation (non-nested)     → (?:a|b)
+ * Everything else is regex-escaped. Fully anchored: ^...$.
+ *
+ * @param {string} pattern - Glob pattern (e.g., "backend/**\/__tests__/**\/*.test.{ts,js}")
  * @returns {RegExp}
  */
-function globToMatchRegex(pattern) {
-  // Normalize: replace **/ with a placeholder that means "zero or more path segments"
-  let escaped = pattern
-    .replace(/\./g, '\\.')
-    .replace(/\*\*\//g, '§STARSTAR§')   // **/ → zero-or-more segments
-    .replace(/\*\*/g, '.*')             // standalone ** → any chars
-    .replace(/\*/g, '[^/]*')            // single * → any chars except /
-    .replace(/§STARSTAR§/g, '(.*/)?');  // **/ → optional path prefix
-  return new RegExp(`^${escaped}$`);
+export function compileGlob(pattern) {
+  const glob = String(pattern);
+  let re = '';
+  for (let i = 0; i < glob.length; i++) {
+    const ch = glob[i];
+    if (ch === '*') {
+      if (glob[i + 1] === '*') {
+        i++;
+        if (glob[i + 1] === '/') { re += '(?:.*/)?'; i++; }
+        else re += '.*';
+      } else {
+        re += '[^/]*';
+      }
+    } else if (ch === '?') {
+      re += '[^/]';
+    } else if (ch === '{') {
+      const end = glob.indexOf('}', i);
+      if (end > i) {
+        re += '(?:' + glob.slice(i + 1, end).split(',')
+          .map(s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')';
+        i = end;
+      } else {
+        re += '\\{';
+      }
+    } else {
+      re += ch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+  }
+  return new RegExp(`^${re}$`);
 }
+
+// Back-compat internal alias — globMatch below always used the anchored form.
+const globToMatchRegex = compileGlob;
 
 /**
  * Check if a relative path matches ANY of the given glob patterns.
@@ -254,4 +290,100 @@ export function globMatch(relPath, patterns) {
 
   const regexes = patterns.map(p => globToMatchRegex(p));
   return regexes.some(r => r.test(relPath));
+}
+
+/**
+ * THE canonical recursive file walker (v0.29 consolidation).
+ *
+ * ~13 validators each carried a private recursive walker with its own copied
+ * IGNORE_DIRS set and its own error handling — thirteen chances for skip logic
+ * to disagree. This is the single shared implementation.
+ *
+ * Contract:
+ *   - Skips directory names in `ignoreDirs` (default: DEFAULT_IGNORE_DIRS) and,
+ *     by default, every dot-prefixed entry (files AND dirs — matches the
+ *     dominant prior behavior).
+ *   - Calls `callback(absPath)` for every regular file reached.
+ *   - NEVER throws. Unreadable entries invoke `onError(err, path)` if given.
+ *   - Returns `true` iff the walk was COMPLETE (no unreadable entries). Callers
+ *     computing counts MUST check this: a partial walk that silently under-
+ *     counts is how a "code has N" assertion becomes confidently wrong — the
+ *     tool's own worst failure mode.
+ *
+ * @param {string} dir - Absolute directory to walk
+ * @param {(absPath: string) => void} callback
+ * @param {{ignoreDirs?: Set<string>, skipDotEntries?: boolean, keepDot?: (entry: string) => boolean, onError?: (err: Error, path: string) => void}} [opts]
+ *   `keepDot` — exception predicate for dot entries that MUST be walked even
+ *   with skipDotEntries on. Load-bearing for e.g. the security validator
+ *   (must scan `.env`) and traceability (`.env*`, `.gitignore`, `.github/`).
+ * @returns {boolean} - true if every entry was readable
+ */
+export function walkFiles(dir, callback, opts = {}) {
+  const {
+    ignoreDirs = DEFAULT_IGNORE_DIRS,
+    skipDotEntries = true,
+    keepDot = null,
+    onError = null,
+  } = opts;
+  let entries;
+  try { entries = readdirSync(dir); } catch (err) {
+    if (onError) onError(err, dir);
+    return false;
+  }
+  let complete = true;
+  for (const entry of entries) {
+    if (ignoreDirs.has(entry)) continue;
+    if (skipDotEntries && entry.startsWith('.') && !(keepDot && keepDot(entry))) continue;
+    const full = joinPath(dir, entry);
+    let stat;
+    try { stat = statSync(full); } catch (err) {
+      if (onError) onError(err, full);
+      complete = false;
+      continue;
+    }
+    if (stat.isDirectory()) {
+      if (!walkFiles(full, callback, opts)) complete = false;
+    } else if (stat.isFile()) {
+      callback(full);
+    }
+  }
+  return complete;
+}
+
+/**
+ * Count files under `projectDir` matching an anchored glob (project-relative).
+ * The code-truth side of `config.collections` (metrics-consistency).
+ *
+ * Walks only from the glob's literal prefix — never the whole repo for a deep
+ * pattern. FAIL-SAFE BY CONTRACT:
+ *   - returns 0 when the base path doesn't exist (unresolved glob — caller skips);
+ *   - returns -1 when the walk was INCOMPLETE (permission-denied subtree, bad
+ *     pattern). Previously a partial walk silently under-counted, so a doc
+ *     saying "19 extractors" could be "corrected" to a wrong lower number.
+ * Callers must treat any value <= 0 as "don't assert".
+ *
+ * @param {string} projectDir
+ * @param {string} pattern - e.g. "src/extractors/*.py"
+ * @returns {number} match count, 0 = unresolved, -1 = unreliable
+ */
+export function countGlobFiles(projectDir, pattern) {
+  const norm = String(pattern).replace(/\\/g, '/').replace(/^\.\//, '');
+  if (!norm) return -1;
+  const baseSegs = [];
+  for (const seg of norm.split('/')) {
+    if (/[*?{]/.test(seg)) break;
+    baseSegs.push(seg);
+  }
+  const baseDir = resolvePath(projectDir, baseSegs.join('/') || '.');
+  if (!existsSync(baseDir)) return 0;
+  let re;
+  try { re = compileGlob(norm); } catch { return -1; }
+  try {
+    if (statSync(baseDir).isFile()) return re.test(norm) ? 1 : 0; // literal file pattern
+  } catch { return -1; }
+  let n = 0;
+  const complete = walkFiles(baseDir, (full) => {
+    if (re.test(relPosix(projectDir, full))) n++;
+  });
+  return complete ? n : -1;
 }

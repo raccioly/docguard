@@ -28,6 +28,7 @@ import { resolve, basename, join } from 'node:path';
 
 import { buildMemoryPlan } from '../scanners/memory-plan.mjs';
 import { getSection } from '../writers/sections.mjs';
+import { mkFinding, resultFromFindings } from '../findings.mjs';
 
 /**
  * v0.18-P1 fast-path: cheap pre-flight to detect whether ANY canonical doc
@@ -103,7 +104,12 @@ export function validateGeneratedStaleness(projectDir, config = {}) {
   // `applyMechanicalFixes` can consume it via the new regenerate-section
   // applier. Lets `fix --write` actually CLOSE the loop on drift instead
   // of just warning. No AI needed — the scanner already knows the right body.
+  //
+  // v0.29: migrated to structured findings (GST001–GST002). Messages are
+  // byte-identical to the legacy strings; the N/A early returns keep the
+  // legacy shape, and `fixes` is preserved for the fix applier.
   const result = { errors: [], warnings: [], passed: 0, total: 0, fixes: [] };
+  const findings = [];
 
   // v0.18-P1: cheap pre-flight. If no canonical doc has a source=code marker
   // AND no doc is in status:draft, this validator has nothing to do — skip
@@ -150,10 +156,15 @@ export function validateGeneratedStaleness(projectDir, config = {}) {
         const mtime = statSync(fullPath).mtime;
         const ageDays = (Date.now() - mtime.getTime()) / (1000 * 60 * 60 * 24);
         if (ageDays > draftThresholdDays) {
-          result.warnings.push(
-            `${basename(doc.path)} has been in \`status: draft\` for ${Math.floor(ageDays)} days. ` +
-            `Promote to status:current or remove. Run \`/docguard.fix --doc ${basename(doc.path)}\` to draft the prose.`
-          );
+          findings.push(mkFinding({
+            code: 'GST001',
+            validator: 'generatedStaleness',
+            severity: 'warn',
+            message: `${basename(doc.path)} has been in \`status: draft\` for ${Math.floor(ageDays)} days. ` +
+              `Promote to status:current or remove. Run \`/docguard.fix --doc ${basename(doc.path)}\` to draft the prose.`,
+            location: doc.path,
+            suggestion: { kind: 'review', text: 'Draft the prose and promote to status:current, or delete the forgotten skeleton', command: `/docguard.fix --doc ${basename(doc.path)}` },
+          }));
         } else {
           result.passed++;
         }
@@ -206,11 +217,16 @@ export function validateGeneratedStaleness(projectDir, config = {}) {
         ? ` (first drift at line ${firstDiff + 1} of section: "${(act[firstDiff] || '').slice(0, 60)}…" vs scanner: "${(exp[firstDiff] || '').slice(0, 60)}…")`
         : '';
 
-      result.warnings.push(
-        `${basename(doc.path)} → section "${sec.id}" is stale${hint}. Run \`docguard sync --write\` to refresh code-truth sections. ` +
-        `If this section is intentionally hand-maintained (the scanner mislabeled it), pin it: ` +
-        `add \`pinned="reason"\` to its \`<!-- docguard:section id=${sec.id} … -->\` marker.`
-      );
+      findings.push(mkFinding({
+        code: 'GST002',
+        validator: 'generatedStaleness',
+        severity: 'warn',
+        message: `${basename(doc.path)} → section "${sec.id}" is stale${hint}. Run \`docguard sync --write\` to refresh code-truth sections. ` +
+          `If this section is intentionally hand-maintained (the scanner mislabeled it), pin it: ` +
+          `add \`pinned="reason"\` to its \`<!-- docguard:section id=${sec.id} … -->\` marker.`,
+        location: doc.path,
+        suggestion: { kind: 'fix', text: 'Refresh the code-truth section (or pin it if it is intentionally hand-maintained)', command: 'docguard sync --write' },
+      }));
       // v0.14-P3: structured fix so `docguard fix --write` can fix this
       // mechanically (no AI needed — scanner already produced the right body).
       result.fixes.push({
@@ -230,5 +246,5 @@ export function validateGeneratedStaleness(projectDir, config = {}) {
     return { ...result, applicable: false };
   }
 
-  return result;
+  return { ...resultFromFindings(findings, { passed: result.passed, total: result.total }), fixes: result.fixes };
 }

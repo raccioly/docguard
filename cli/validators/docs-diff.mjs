@@ -7,12 +7,18 @@
  *
  * Respects config.ignore and config.testPatterns for test file discovery.
  * Uses shared-ignore.mjs for consistent filtering (Constitution IV, v1.1.0).
+ *
+ * v0.29: migrated to structured findings (DDF001–DDF002). Messages are
+ * byte-identical to the legacy strings — resultFromFindings derives the
+ * errors/warnings arrays from the same findings, so counts, exit codes, and
+ * existing tests are unaffected; guard just renders richer output.
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, extname, basename, relative } from 'node:path';
-import { shouldIgnore, globMatch } from '../shared-ignore.mjs';
+import { shouldIgnore, globMatch, walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
 import { collectPackageJsons, detectDocker, resolveSourceRoots } from '../shared-source.mjs';
+import { mkFinding, resultFromFindings } from '../findings.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build',
@@ -25,12 +31,35 @@ const CODE_EXTENSIONS = new Set([
   '.py', '.java', '.go', '.rs', '.rb', '.php',
 ]);
 
+// v0.29: one stable finding code per drift domain (not per occurrence).
+// Location = the canonical doc that owns the domain, so an agent knows which
+// file to reconcile. Drift is two-sided (doc stale OR code changed), hence
+// suggestion kind 'review' — a human decides which side is wrong.
+const DRIFT_FINDINGS = {
+  'Tech Stack': {
+    code: 'DDF001',
+    location: 'docs-canonical/ARCHITECTURE.md',
+    suggestion: {
+      kind: 'review',
+      text: 'Reconcile the Tech Stack in ARCHITECTURE.md with the actual dependencies — document the new tech or remove stale entries',
+    },
+  },
+  'Test Files': {
+    code: 'DDF002',
+    location: 'docs-canonical/TEST-SPEC.md',
+    suggestion: {
+      kind: 'review',
+      text: 'Reconcile TEST-SPEC.md with the test files on disk — document new tests or remove stale entries',
+    },
+  },
+};
+
 /**
  * Validate doc-code alignment — compares canonical docs vs source code.
  * @returns {{ errors: string[], warnings: string[], passed: number, total: number }}
  */
 export function validateDocsDiff(projectDir, config) {
-  const warnings = [];
+  const findings = [];
   let passed = 0;
   let total = 0;
 
@@ -70,11 +99,19 @@ export function validateDocsDiff(projectDir, config) {
       if (stale > 0) {
         parts.push(`${stale} documented but not found in code: ${fmtList(result.onlyInDocs)}`);
       }
-      warnings.push(`${result.title} drift: ${parts.join('; ')}`);
+      const meta = DRIFT_FINDINGS[result.title] || {};
+      findings.push(mkFinding({
+        code: meta.code,
+        validator: 'docsDiff',
+        severity: 'warn',
+        message: `${result.title} drift: ${parts.join('; ')}`,
+        location: meta.location,
+        suggestion: meta.suggestion,
+      }));
     }
   }
 
-  return { errors: [], warnings, passed, total };
+  return resultFromFindings(findings, { passed, total });
 }
 
 // ── Diff Functions (lightweight versions for validator) ──────────────────
@@ -244,77 +281,39 @@ export function collectCodeTests(dir, config = {}) {
 export function getTestFilesFromPatterns(dir, patterns, config) {
   const results = new Set();
 
-  function walk(currentDir) {
-    let entries;
-    try { entries = readdirSync(currentDir); } catch { return; }
-
-    for (const entry of entries) {
-      // Skip node_modules and other ignored dirs at directory level (fast path)
-      if (IGNORE_DIRS.has(entry) || entry.startsWith('.')) continue;
-      const fullPath = join(currentDir, entry);
-      try {
-        const stat = statSync(fullPath);
-        if (stat.isDirectory()) {
-          walk(fullPath);
-        } else if (stat.isFile()) {
-          const relPath = relative(dir, fullPath);
-          // Skip files in globally ignored paths
-          if (config && shouldIgnore(relPath, config)) continue;
-          // Use globMatch for positive pattern matching (rejects node_modules internally)
-          if (globMatch(relPath, patterns)) {
-            results.add(relPath);
-          }
-        }
-      } catch { /* skip */ }
+  // v0.29 consolidation: traversal delegates to the shared canonical walker;
+  // per-file filtering (config ignore + positive globMatch) stays here.
+  sharedWalkFiles(dir, (fullPath) => {
+    const relPath = relative(dir, fullPath);
+    // Skip files in globally ignored paths
+    if (config && shouldIgnore(relPath, config)) return;
+    // Use globMatch for positive pattern matching (rejects node_modules internally)
+    if (globMatch(relPath, patterns)) {
+      results.add(relPath);
     }
-  }
-
-  walk(dir);
+  }, { ignoreDirs: IGNORE_DIRS });
   return [...results];
 }
 
 /** Returns true if any file with the given extension exists under dir (ignoring vendor dirs). */
 function hasFileWithExt(dir, ext, config) {
+  // v0.29 consolidation: shared walker. The old hand-rolled version early-exited
+  // on first match; the shared walker completes the traversal — acceptable here
+  // (one-shot existence probe on source trees already pruned by IGNORE_DIRS).
   let found = false;
-  const walk = (d) => {
-    if (found) return;
-    let entries;
-    try { entries = readdirSync(d); } catch { return; }
-    for (const entry of entries) {
-      if (found) return;
-      if (IGNORE_DIRS.has(entry) || entry.startsWith('.')) continue;
-      const full = join(d, entry);
-      try {
-        const stat = statSync(full);
-        if (stat.isDirectory()) walk(full);
-        else if (stat.isFile() && extname(full) === ext) {
-          const rel = relative(dir, full);
-          if (!config || !shouldIgnore(rel, config)) found = true;
-        }
-      } catch { /* skip */ }
-    }
-  };
-  walk(dir);
+  sharedWalkFiles(dir, (full) => {
+    if (found || extname(full) !== ext) return;
+    const rel = relative(dir, full);
+    if (!config || !shouldIgnore(rel, config)) found = true;
+  }, { ignoreDirs: IGNORE_DIRS });
   return found;
 }
 
+// v0.29 consolidation: traversal delegates to the shared canonical walker.
 function getFilesRecursive(dir, config) {
   const results = [];
-  if (!existsSync(dir)) return results;
-  let entries;
-  try { entries = readdirSync(dir); } catch { return results; }
-
-  for (const entry of entries) {
-    if (IGNORE_DIRS.has(entry) || entry.startsWith('.')) continue;
-    const fullPath = join(dir, entry);
-    try {
-      const stat = statSync(fullPath);
-      if (stat.isDirectory()) {
-        results.push(...getFilesRecursive(fullPath, config));
-      } else if (stat.isFile() && CODE_EXTENSIONS.has(extname(fullPath))) {
-        results.push(fullPath);
-      }
-    } catch { /* skip */ }
-  }
+  sharedWalkFiles(dir, (fullPath) => {
+    if (CODE_EXTENSIONS.has(extname(fullPath))) results.push(fullPath);
+  }, { ignoreDirs: IGNORE_DIRS });
   return results;
 }

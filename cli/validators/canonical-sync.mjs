@@ -40,6 +40,7 @@
 
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { resolve, join } from 'node:path';
+import { mkFinding, resultFromFindings } from '../findings.mjs';
 
 /**
  * Validate that README count claims about DocGuard's surface match code-truth.
@@ -48,30 +49,38 @@ import { resolve, join } from 'node:path';
  * @param {string} projectDir - Project root directory
  * @param {object} config - DocGuard config (unused but required by validator interface)
  * @param {Array} [guardResults] - Results array from runGuardInternal (optional but recommended)
+ *
+ * v0.29: migrated to structured findings (CSY001–CSY004). Messages are
+ * byte-identical to the legacy strings — resultFromFindings derives the
+ * errors/warnings arrays from the same findings array at every return point.
  * @returns {{ errors: string[], warnings: string[], fixes: object[], passed: number, total: number, na?: boolean, naReason?: string }}
  */
 export function validateCanonicalSync(projectDir, config, guardResults) {
-  const result = { errors: [], warnings: [], fixes: [], passed: 0, total: 0 };
+  const findings = [];
+  const fixes = [];
+  let passed = 0;
+  let total = 0;
+  // Compose the legacy result shape (plus findings) at every return point.
+  const compose = (extra) => ({ ...resultFromFindings(findings, { passed, total }), fixes, ...extra });
 
   // ── Gate: only run in DocGuard's own repo ─────────────────────────────
   const pkgPath = resolve(projectDir, 'package.json');
   if (!existsSync(pkgPath)) {
-    return { ...result, na: true, naReason: 'no package.json' };
+    return compose({ na: true, naReason: 'no package.json' });
   }
 
   let pkg;
   try {
     pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
   } catch {
-    return { ...result, na: true, naReason: 'unreadable package.json' };
+    return compose({ na: true, naReason: 'unreadable package.json' });
   }
 
   if (pkg.name !== 'docguard-cli') {
-    return {
-      ...result,
+    return compose({
       na: true,
       naReason: 'canonical-sync only runs in the docguard-cli repo (it polices DocGuard\'s own surface)',
-    };
+    });
   }
 
   // ── Gather code-truth ────────────────────────────────────────────────
@@ -80,7 +89,7 @@ export function validateCanonicalSync(projectDir, config, guardResults) {
   const validatorsDir = resolve(cliDir, 'validators');
 
   if (!existsSync(commandsDir) || !existsSync(validatorsDir)) {
-    return { ...result, na: true, naReason: 'cli/commands or cli/validators not found' };
+    return compose({ na: true, naReason: 'cli/commands or cli/validators not found' });
   }
 
   const commandFiles = readdirSync(commandsDir).filter(f => f.endsWith('.mjs'));
@@ -137,60 +146,77 @@ export function validateCanonicalSync(projectDir, config, guardResults) {
     try { readme += readFileSync(p, 'utf-8') + '\n'; readAny = true; } catch { /* skip unreadable */ }
   }
   if (!readAny) {
-    result.warnings.push('canonical-sync: no README.md or AGENTS.md found — cannot check surface claims');
-    result.total = 1;
-    return result;
+    findings.push(mkFinding({
+      code: 'CSY001',
+      validator: 'canonicalSync',
+      severity: 'warn',
+      message: 'canonical-sync: no README.md or AGENTS.md found — cannot check surface claims',
+      location: 'README.md',
+      suggestion: { kind: 'review', text: 'Add a README.md (or AGENTS.md) so DocGuard can police its own surface claims' },
+    }));
+    total = 1;
+    return compose();
   }
 
   // ── Check 1: "ships N commands" ─────────────────────────────────────
   // Check ALL claims (matchAll), not just the first: with README + AGENTS.md
   // concatenated, a correct claim in one file must not mask a stale claim in
   // the other (the same first-match-masking trap the secret scanner had).
-  result.total++;
+  total++;
   const cmdMatches = [...readme.matchAll(/ships\s+\*{0,2}(\d+)\s+commands?\*{0,2}/gi)];
   if (cmdMatches.length > 0) {
     const wrong = [...new Set(cmdMatches.map(m => Number(m[1])).filter(n => n !== actualCommandCount))];
     if (wrong.length === 0) {
-      result.passed++;
+      passed++;
     } else {
       const detail = actualUserFacingCount !== actualCommandFileCount
         ? `${actualCommandCount} user-facing commands in --help (${actualCommandFileCount} files including deprecation aliases)`
         : `${actualCommandCount} command file(s)`;
-      result.warnings.push(
-        `A surface doc (README.md/AGENTS.md) claims ${wrong.map(n => `"ships ${n} commands"`).join(' / ')} but the real count is ${detail}. Update it.`
-      );
+      findings.push(mkFinding({
+        code: 'CSY002',
+        validator: 'canonicalSync',
+        severity: 'warn',
+        message: `A surface doc (README.md/AGENTS.md) claims ${wrong.map(n => `"ships ${n} commands"`).join(' / ')} but the real count is ${detail}. Update it.`,
+        location: null,
+        suggestion: { kind: 'fix', text: 'Update the "ships N commands" claim in README.md/AGENTS.md to the real count' },
+      }));
     }
   } else {
     // No claim found — that's OK, just don't check this one
-    result.passed++;
+    passed++;
   }
 
   // ── Check 2: "N validators" in surface context ──────────────────────
   // Match phrases like "22 validators", "all 22 validators", "the 22 validators"
   // but NOT phase-log entries like "Built with 9 validators" (those are
   // historical, and ROADMAP.md/CHANGELOG.md are skipped at the file level).
-  result.total++;
+  total++;
   const validatorMatches = [...readme.matchAll(/(?:all|the|with|across|ships?)\s+\*{0,2}(\d+)\s+validators?\*{0,2}/gi)];
   if (validatorMatches.length > 0) {
     const wrongClaims = validatorMatches
       .map(m => Number(m[1]))
       .filter(n => n !== actualValidatorCount);
     if (wrongClaims.length === 0) {
-      result.passed++;
+      passed++;
     } else {
       const uniqueWrong = [...new Set(wrongClaims)];
-      result.warnings.push(
-        `A surface doc (README.md/AGENTS.md) claims ${uniqueWrong.map(n => `"${n} validators"`).join(' / ')} but guard reports ${actualValidatorCount}. Update it.`
-      );
+      findings.push(mkFinding({
+        code: 'CSY003',
+        validator: 'canonicalSync',
+        severity: 'warn',
+        message: `A surface doc (README.md/AGENTS.md) claims ${uniqueWrong.map(n => `"${n} validators"`).join(' / ')} but guard reports ${actualValidatorCount}. Update it.`,
+        location: null,
+        suggestion: { kind: 'fix', text: 'Update the "N validators" claim in README.md/AGENTS.md to match guard\'s count' },
+      }));
     }
   } else {
-    result.passed++;
+    passed++;
   }
 
   // ── Check 3: architecture-diagram counts ────────────────────────────
   // Catches the specific "Commands (N)" and "Validators (N)" patterns in
   // the mermaid block that drifted across 5 releases.
-  result.total++;
+  total++;
   const archMatches = [
     { re: /Commands\s*\((\d+)\)/, label: 'Commands', expected: actualCommandCount },
     { re: /Validators\s*\((\d+)\)/, label: 'Validators', expected: actualValidatorCount },
@@ -203,12 +229,17 @@ export function validateCanonicalSync(projectDir, config, guardResults) {
     }
   }
   if (archWrong.length === 0) {
-    result.passed++;
+    passed++;
   } else {
-    result.warnings.push(
-      `README.md architecture diagram has stale counts: ${archWrong.join('; ')}. Update the mermaid block.`
-    );
+    findings.push(mkFinding({
+      code: 'CSY004',
+      validator: 'canonicalSync',
+      severity: 'warn',
+      message: `README.md architecture diagram has stale counts: ${archWrong.join('; ')}. Update the mermaid block.`,
+      location: 'README.md',
+      suggestion: { kind: 'fix', text: 'Update the Commands (N) / Validators (N) labels in the README mermaid block' },
+    }));
   }
 
-  return result;
+  return compose();
 }

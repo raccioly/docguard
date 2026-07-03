@@ -3,12 +3,18 @@
  *
  * Cross-checks package.json version against extension.yml and all .md files.
  * Flags outdated version strings (e.g., README references v0.7.2 but package.json is 0.8.0).
+ *
+ * v0.29: migrated to structured findings (MDS001–MDS002). Messages are
+ * byte-identical to the legacy strings; the `fixes` array is preserved for
+ * the fix applier.
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, relative, extname } from 'node:path';
 import { loadIgnorePatterns } from '../shared.mjs';
 import { collectPackageJsons } from '../shared-source.mjs';
+import { walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
+import { mkFinding, resultFromFindings } from '../findings.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build', 'coverage',
@@ -22,7 +28,7 @@ const IGNORE_DIRS = new Set([
  * @returns {{ errors: string[], warnings: string[], passed: number, total: number }}
  */
 export function validateMetadataSync(projectDir, config) {
-  const warnings = [];
+  const findings = [];
   const fixes = [];
   let passed = 0;
   let total = 0;
@@ -45,7 +51,8 @@ export function validateMetadataSync(projectDir, config) {
       if (pkg.version) { currentVersion = pkg.version; currentName = currentName || pkg.name || null; break; }
     }
   }
-  if (!currentVersion) return { errors: [], warnings, passed: 0, total: 0 };
+  // Literal legacy shape (no findings/fixes keys) — tests deepEqual this object.
+  if (!currentVersion) return { errors: [], warnings: [], passed: 0, total: 0 };
 
   // Parse into components for smart comparison. `|| 0` guards two-part versions
   // (e.g. "1.2"): without it vParts[2] is undefined → parseInt → NaN, and every
@@ -65,9 +72,14 @@ export function validateMetadataSync(projectDir, config) {
       const versionMatch = content.match(/version:\s*["']?(\d+\.\d+\.\d+)["']?/);
       if (versionMatch) {
         if (versionMatch[1] !== currentVersion) {
-          warnings.push(
-            `${relPath} has version "${versionMatch[1]}" but package.json is "${currentVersion}"`
-          );
+          findings.push(mkFinding({
+            code: 'MDS001',
+            validator: 'metadataSync',
+            severity: 'warn',
+            message: `${relPath} has version "${versionMatch[1]}" but package.json is "${currentVersion}"`,
+            location: relPath,
+            suggestion: { kind: 'fix', text: `Update the version field to ${currentVersion}`, command: 'docguard fix --write' },
+          }));
           fixes.push({ type: 'replace-version', file: relPath, found: versionMatch[1], actual: currentVersion });
         } else {
           passed++;
@@ -129,9 +141,14 @@ export function validateMetadataSync(projectDir, config) {
 
         if (isOlder && foundVersion !== currentVersion) {
           total++;
-          warnings.push(
-            `${relPath} references "v${foundVersion}" in an actionable context (URL/install/declaration) but current version is "${currentVersion}"`
-          );
+          findings.push(mkFinding({
+            code: 'MDS002',
+            validator: 'metadataSync',
+            severity: 'warn',
+            message: `${relPath} references "v${foundVersion}" in an actionable context (URL/install/declaration) but current version is "${currentVersion}"`,
+            location: relPath,
+            suggestion: { kind: 'fix', text: `Replace the stale ${foundVersion} reference with ${currentVersion}`, command: 'docguard fix --write' },
+          }));
           if (!fixes.some(f => f.file === relPath && f.found === foundVersion)) {
             fixes.push({ type: 'replace-version', file: relPath, found: foundVersion, actual: currentVersion });
           }
@@ -143,7 +160,7 @@ export function validateMetadataSync(projectDir, config) {
     }
   }
 
-  return { errors: [], warnings, passed, total, fixes };
+  return { ...resultFromFindings(findings, { passed, total }), fixes };
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -186,21 +203,7 @@ function findMarkdownFiles(dir) {
   return mdFiles;
 }
 
+// v0.29 consolidation: traversal delegates to the shared canonical walker.
 function walkFiles(dir, callback) {
-  if (!existsSync(dir)) return;
-  let entries;
-  try { entries = readdirSync(dir); } catch { return; }
-
-  for (const entry of entries) {
-    if (IGNORE_DIRS.has(entry) || entry.startsWith('.')) continue;
-    const fullPath = join(dir, entry);
-    try {
-      const stat = statSync(fullPath);
-      if (stat.isDirectory()) {
-        walkFiles(fullPath, callback);
-      } else if (stat.isFile()) {
-        callback(fullPath);
-      }
-    } catch { /* skip */ }
-  }
+  sharedWalkFiles(dir, callback, { ignoreDirs: IGNORE_DIRS });
 }

@@ -33,12 +33,15 @@ describe('validateChangelog', () => {
     const config = { requiredFiles: { changelog: 'MISSING.md' } };
     const result = runTest('MISSING.md', null, config);
 
+    // v0.29: the validator emits structured findings; the legacy fields are
+    // derived from the same array (resultFromFindings), so both stay in sync.
     assert.deepEqual(result, {
       name: 'changelog',
       errors: [],
       warnings: [],
       passed: 0,
       total: 0,
+      findings: [],
       fixes: [],
     });
   });

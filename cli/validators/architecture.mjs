@@ -17,7 +17,8 @@
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, extname, relative, dirname, basename } from 'node:path';
-import { shouldIgnore } from '../shared-ignore.mjs';
+import { shouldIgnore, walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
+import { mkFinding, resultFromFindings } from '../findings.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build',
@@ -27,24 +28,42 @@ const IGNORE_DIRS = new Set([
 
 const CODE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.mjs', '.cjs', '.jsx']);
 
+// v0.29: migrated to structured findings (ARC001–ARC003). Messages are
+// byte-identical to the legacy strings — resultFromFindings derives the
+// errors/warnings arrays from the same findings array (acc), which the
+// helpers below mutate in place.
 export function validateArchitecture(projectDir, config) {
-  const results = { name: 'architecture', errors: [], warnings: [], passed: 0, total: 0 };
+  const acc = { findings: [], passed: 0, total: 0 };
+  const compose = () => ({
+    name: 'architecture',
+    ...resultFromFindings(acc.findings, { passed: acc.passed, total: acc.total }),
+  });
 
   // ── 1. Config-driven layer validation ──
   const layers = config.layers;
   if (layers && Object.keys(layers).length > 0) {
-    validateConfigLayers(projectDir, config, layers, results);
+    validateConfigLayers(projectDir, config, layers, acc);
   }
 
   // ── 2. Auto-detect import graph ──
   const importGraph = buildImportGraph(projectDir, config);
-  if (importGraph.files.length === 0) return results;
+  if (importGraph.files.length === 0) return compose();
 
   // ── 3. Detect circular dependencies ──
   const circles = detectCircularDeps(importGraph);
   for (const circle of circles) {
-    results.total++;
-    results.warnings.push(`Circular dependency: ${circle.join(' → ')}`);
+    acc.total++;
+    acc.findings.push(mkFinding({
+      code: 'ARC002',
+      validator: 'architecture',
+      severity: 'warn',
+      message: `Circular dependency: ${circle.join(' → ')}`,
+      location: circle[0],
+      suggestion: {
+        kind: 'fix',
+        text: 'Break the cycle — convert one edge to a dynamic import() or extract the shared code into a third module',
+      },
+    }));
   }
 
   // ── 4. Check layer boundaries from ARCHITECTURE.md ──
@@ -54,13 +73,14 @@ export function validateArchitecture(projectDir, config) {
     const declaredLayers = parseLayerBoundaries(archContent);
 
     if (declaredLayers.length > 0) {
-      validateLayerBoundaries(projectDir, importGraph, declaredLayers, results);
+      validateLayerBoundaries(projectDir, importGraph, declaredLayers, acc);
     }
   }
 
   // ── 5. No boundaries declared and no circular deps to check → not applicable.
   // (Previously this returned a fake 1/1 pass, rendering a confident green ✅
   // for projects that declared no layer boundaries — it validated nothing.)
+  const results = compose();
   if (results.total === 0) {
     results.note = 'no layer boundaries declared in ARCHITECTURE.md';
   }
@@ -70,7 +90,7 @@ export function validateArchitecture(projectDir, config) {
 
 // ── Config-driven validation (existing behavior) ────────────────────────────
 
-function validateConfigLayers(projectDir, config, layers, results) {
+function validateConfigLayers(projectDir, config, layers, acc) {
   const layerMap = {};
   for (const [layerName, layerConfig] of Object.entries(layers)) {
     if (layerConfig.dir && layerConfig.canImport) {
@@ -102,10 +122,18 @@ function validateConfigLayers(projectDir, config, layers, results) {
 
         for (const forbiddenDir of layer.forbidden) {
           if (spec.includes(forbiddenDir) || spec.includes(`/${forbiddenDir}/`)) {
-            results.total++;
-            results.errors.push(
-              `${relPath}: ${layer.name} layer imports from forbidden layer (${forbiddenDir})`
-            );
+            acc.total++;
+            acc.findings.push(mkFinding({
+              code: 'ARC001',
+              validator: 'architecture',
+              severity: 'error',
+              message: `${relPath}: ${layer.name} layer imports from forbidden layer (${forbiddenDir})`,
+              location: relPath,
+              suggestion: {
+                kind: 'fix',
+                text: 'Remove the import or route it through an allowed layer (see the layers config in .docguard.json)',
+              },
+            }));
           }
         }
       }
@@ -307,7 +335,7 @@ function parseLayerBoundaries(archContent) {
   return layers;
 }
 
-function validateLayerBoundaries(projectDir, graph, declaredLayers, results) {
+function validateLayerBoundaries(projectDir, graph, declaredLayers, acc) {
   // Map directory patterns to layer names
   const layerDirMap = new Map();
   for (const layer of declaredLayers) {
@@ -327,13 +355,21 @@ function validateLayerBoundaries(projectDir, graph, declaredLayers, results) {
 
     // Check if this import is forbidden
     if (fromLayer.cannotImport.some(l => l.includes(toLayer.name) || toLayer.name.includes(l))) {
-      results.total++;
-      results.errors.push(
-        `${edge.from}: ${fromLayer.name} → ${toLayer.name} (forbidden by ARCHITECTURE.md)`
-      );
+      acc.total++;
+      acc.findings.push(mkFinding({
+        code: 'ARC003',
+        validator: 'architecture',
+        severity: 'error',
+        message: `${edge.from}: ${fromLayer.name} → ${toLayer.name} (forbidden by ARCHITECTURE.md)`,
+        location: edge.from,
+        suggestion: {
+          kind: 'review',
+          text: 'Remove or invert the import — or update the Layer Boundaries table in ARCHITECTURE.md if the rule changed',
+        },
+      }));
     } else {
-      results.total++;
-      results.passed++;
+      acc.total++;
+      acc.passed++;
     }
   }
 }
@@ -376,33 +412,20 @@ function getFileLayer(filePath, layerDirMap) {
 
 // ── Utilities ───────────────────────────────────────────────────────────────
 
+// v0.29 consolidation: traversal delegates to the shared canonical walker.
+// The old version pruned config-ignored DIRECTORIES before descending; the
+// per-file check below yields the same result set (ignore-glob semantics match
+// any path under the dir — see globToRegex's `^pattern/` alternation), at the
+// cost of descending then filtering. Correctness-equivalent, verified by the
+// ignore-validator specs.
 function getFilesRecursive(dir, config, projectDir) {
   const results = [];
-  if (!existsSync(dir)) return results;
-
-  let entries;
-  try {
-    entries = readdirSync(dir);
-  } catch { return results; }
-
-  for (const entry of entries) {
-    if (IGNORE_DIRS.has(entry) || entry.startsWith('.')) continue;
-
-    // Check config.ignore for this directory
+  sharedWalkFiles(dir, (fullPath) => {
     if (config && projectDir) {
-      const relPath = relative(projectDir, join(dir, entry));
-      if (shouldIgnore(relPath, config)) continue;
+      const relPath = relative(projectDir, fullPath);
+      if (shouldIgnore(relPath, config)) return;
     }
-
-    const fullPath = join(dir, entry);
-    try {
-      const stat = statSync(fullPath);
-      if (stat.isDirectory()) {
-        results.push(...getFilesRecursive(fullPath, config, projectDir));
-      } else {
-        results.push(fullPath);
-      }
-    } catch { /* skip */ }
-  }
+    results.push(fullPath);
+  }, { ignoreDirs: IGNORE_DIRS });
   return results;
 }

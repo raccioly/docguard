@@ -253,8 +253,52 @@ export const PROFILES = {
 };
 
 // ── .docguardignore Support ───────────────────────────────────────────────
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import { resolve, relative } from 'node:path';
+
+/**
+ * Conventional documentation-home directory names. A folder named one of these
+ * is unambiguously "docs DocGuard governs" — distinct from arbitrary markdown
+ * buried in a non-doc subdir (security/wolf-archive/, vendored toolkits), which
+ * the wu-whatsappinbox scoping fix deliberately excludes. We auto-track the
+ * former and never blanket-walk the latter.
+ */
+export const DEFAULT_DOC_DIRS = [
+  'docs', 'doc', 'documentation', 'docs-canonical', 'docs-implementation',
+  'guides', 'guide', 'handbook', 'manual', 'wiki', 'extensions',
+];
+
+/**
+ * Resolve the documentation-home directories for a project (relative dir paths,
+ * no trailing slash). Single source of truth so the claim scanner and the
+ * coverage map agree — "tracked" must mean "actually scanned," never a label
+ * the scanner ignores.
+ *
+ * Auto-detects the conventional doc-home names that actually exist at the root,
+ * plus the Docusaurus-style `website/docs`. `config.docs.dirs` EXTENDS that set
+ * (adds non-standard homes like a project's `wiki/`) rather than replacing it —
+ * the least-surprising model, since the whole point is to track MORE clearly-doc
+ * folders automatically. To EXCLUDE a conventional dir, use `.docguardignore`.
+ * NAMED dirs only — this never walks arbitrary subdirectories (that was the
+ * false-positive flood the scoping fix removed).
+ *
+ * @param {string} projectDir
+ * @param {object} [config]
+ * @returns {string[]} relative directory paths (e.g. ['docs', 'documentation'])
+ */
+export function resolveDocDirs(projectDir, config = {}) {
+  const isDir = (rel) => {
+    try { return statSync(resolve(projectDir, rel)).isDirectory(); } catch { return false; }
+  };
+  const out = new Set(DEFAULT_DOC_DIRS.filter(isDir));
+  if (isDir('website/docs')) out.add('website/docs');
+  const declared = config && config.docs && Array.isArray(config.docs.dirs) ? config.docs.dirs : [];
+  for (const d of declared) {
+    const norm = String(d).replace(/\\/g, '/').replace(/\/+$/, '');
+    if (norm) out.add(norm);
+  }
+  return [...out];
+}
 
 /**
  * Load ignore patterns from .docguardignore (like .gitignore).

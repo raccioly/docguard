@@ -21,7 +21,8 @@
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { resolve, join, extname } from 'node:path';
+import { resolve, join, extname, relative } from 'node:path';
+import { mkFinding, resultFromFindings } from '../findings.mjs';
 
 // ──── Metric Thresholds ────
 // These define "good" vs "warning" boundaries for each metric.
@@ -548,13 +549,21 @@ function analyzeDocument(doc) {
  *
  * Scans all canonical docs, runs 8 metrics on each, and reports
  * per-doc findings as warnings when thresholds are exceeded.
+ *
+ * v0.29: migrated to structured findings (DQ001–DQ008, one code per metric).
+ * Messages are byte-identical to the legacy strings — resultFromFindings
+ * derives the errors/warnings arrays from the same findings, so counts, exit
+ * codes, and existing tests are unaffected; guard just renders richer output.
  */
 export function validateDocQuality(projectDir, config) {
-  const results = { errors: [], warnings: [], passed: 0, total: 0 };
+  const findings = [];
+  let passed = 0;
+  let total = 0;
 
   const docs = getCanonicalDocs(projectDir);
   if (docs.length === 0) {
-    return results;
+    // Literal legacy shape (no findings key) — tests deepEqual this object.
+    return { errors: [], warnings: [], passed: 0, total: 0 };
   }
 
   for (const doc of docs) {
@@ -564,107 +573,132 @@ export function validateDocQuality(projectDir, config) {
     if (analysis.skipped) continue;
 
     const m = analysis.metrics;
+    const loc = relative(projectDir, doc.path);
+    const warn = (code, message, suggestion) => {
+      findings.push(mkFinding({
+        code,
+        validator: 'docQuality',
+        severity: 'warn',
+        message,
+        location: loc,
+        suggestion,
+      }));
+    };
 
     // ── Check 1: Passive Voice ──
-    results.total++;
+    total++;
     const passiveOv = analysis.overrides?.passiveVoice;
     const passiveThreshold = passiveOv?.threshold
       ?? config.docQuality?.passiveVoiceThreshold
       ?? THRESHOLDS.passiveVoiceRatio.warn;
     if (passiveOv?.off || m.passiveVoiceRatio <= passiveThreshold) {
-      results.passed++;
+      passed++;
     } else {
-      results.warnings.push(
+      warn('DQ001',
         `${doc.name}: High passive voice ratio (${(m.passiveVoiceRatio * 100).toFixed(0)}% of sentences). ` +
         `Use active voice for clarity. Found ${analysis.details.passive.count}/${analysis.details.passive.total} passive sentences. ` +
-        `If the passive voice is intentional (sequence/flow doc), add: <!-- docguard:quality passive-voice off — your reason -->`
-      );
+        `If the passive voice is intentional (sequence/flow doc), add: <!-- docguard:quality passive-voice off — your reason -->`,
+        {
+          kind: 'suppress',
+          text: 'Rewrite in active voice, or opt this doc out if passive is intentional',
+          pragma: '<!-- docguard:quality passive-voice off — your reason -->',
+        });
     }
 
     // ── Check 2: Ambiguous Pronouns ──
-    results.total++;
+    total++;
     if (m.ambiguousPronounRatio <= THRESHOLDS.ambiguousPronounRatio.warn) {
-      results.passed++;
+      passed++;
     } else {
-      results.warnings.push(
+      warn('DQ002',
         `${doc.name}: High ambiguous pronoun ratio (${(m.ambiguousPronounRatio * 100).toFixed(1)}%). ` +
-        `Replace "it/this/that/they" with specific nouns for clarity`
-      );
+        `Replace "it/this/that/they" with specific nouns for clarity`,
+        { kind: 'fix', text: 'Replace vague pronouns with the specific noun they refer to' });
     }
 
     // ── Check 3: Atomicity ──
-    results.total++;
+    total++;
     if (m.atomicityScore <= THRESHOLDS.atomicityScore.warn) {
-      results.passed++;
+      passed++;
     } else {
-      results.warnings.push(
+      warn('DQ003',
         `${doc.name}: Low atomicity (${(m.atomicityScore * 100).toFixed(0)}% compound sentences). ` +
-        `Split compound sentences for easier verification (IEEE 830 §4.1)`
-      );
+        `Split compound sentences for easier verification (IEEE 830 §4.1)`,
+        { kind: 'fix', text: 'Split compound sentences into one statement per sentence' });
     }
 
     // ── Check 4: Flesch Reading Ease ──
-    results.total++;
+    total++;
     if (m.fleschReadingEase >= THRESHOLDS.fleschReadingEase.warn) {
-      results.passed++;
+      passed++;
     } else {
-      results.warnings.push(
+      warn('DQ004',
         `${doc.name}: Very low readability (Flesch score: ${m.fleschReadingEase}/100 — ${getReadabilityLabel(m.fleschReadingEase)}). ` +
-        `Shorten sentences and use simpler words`
-      );
+        `Shorten sentences and use simpler words`,
+        { kind: 'fix', text: 'Shorten sentences and prefer simpler words' });
     }
 
     // ── Check 5: Flesch-Kincaid Grade ──
-    results.total++;
+    total++;
     if (m.fleschKincaidGrade <= THRESHOLDS.fleschKincaidGrade.warn) {
-      results.passed++;
+      passed++;
     } else {
-      results.warnings.push(
+      warn('DQ005',
         `${doc.name}: Reading level too high (grade ${m.fleschKincaidGrade} — ${getGradeLabel(m.fleschKincaidGrade)}). ` +
-        `Aim for grade 12-16 for technical docs`
-      );
+        `Aim for grade 12-16 for technical docs`,
+        { kind: 'fix', text: 'Simplify the prose toward a grade 12-16 reading level' });
     }
 
     // ── Check 6: Sentence Length ──
-    results.total++;
+    total++;
     if (m.avgSentenceLength <= THRESHOLDS.avgSentenceLength.warn) {
-      results.passed++;
+      passed++;
     } else {
-      results.warnings.push(
+      warn('DQ006',
         `${doc.name}: Average sentence too long (${m.avgSentenceLength} words). ` +
-        `Target ≤30 words per sentence for readability`
-      );
+        `Target ≤30 words per sentence for readability`,
+        { kind: 'fix', text: 'Break long sentences up — target 30 words or fewer' });
     }
 
     // ── Check 7: Negation Load ──
     // Per-doc override (security/operational docs legitimately use "never",
     // "must not", "cannot") and a project-wide config threshold both honored.
-    results.total++;
+    total++;
     const negOv = analysis.overrides?.negationLoad;
     const negThreshold = negOv?.threshold
       ?? config.docQuality?.negationLoadThreshold
       ?? THRESHOLDS.negationLoad.warn;
     if (negOv?.off || m.negationLoad <= negThreshold) {
-      results.passed++;
+      passed++;
     } else {
-      results.warnings.push(
+      warn('DQ007',
         `${doc.name}: High negation load (${(m.negationLoad * 100).toFixed(0)}% of sentences use negation). ` +
         `Rephrase in positive terms: "must not fail" → "must succeed" (IEEE 830 §4.3). ` +
-        `If the negation is intentional, add: <!-- docguard:quality negation-load off — your reason -->`
-      );
+        `If the negation is intentional, add: <!-- docguard:quality negation-load off — your reason -->`,
+        {
+          kind: 'suppress',
+          text: 'Rephrase in positive terms, or opt this doc out if the negation is intentional',
+          pragma: '<!-- docguard:quality negation-load off — your reason -->',
+        });
     }
 
     // ── Check 8: Conditional Load ──
-    results.total++;
+    total++;
     if (m.conditionalLoad <= THRESHOLDS.conditionalLoad.warn) {
-      results.passed++;
+      passed++;
     } else {
-      results.warnings.push(
+      warn('DQ008',
         `${doc.name}: High conditional load (${(m.conditionalLoad * 100).toFixed(0)}% of sentences are conditional). ` +
-        `Simplify by splitting conditionals into separate requirements`
-      );
+        `Simplify by splitting conditionals into separate requirements`,
+        { kind: 'fix', text: 'Split conditional sentences into separate, unconditional requirements' });
     }
   }
 
-  return results;
+  if (total === 0) {
+    // Every doc was skipped (insufficient prose) — same literal legacy shape,
+    // because tests deepEqual this exact object for the all-skipped case too.
+    return { errors: [], warnings: [], passed: 0, total: 0 };
+  }
+
+  return resultFromFindings(findings, { passed, total });
 }

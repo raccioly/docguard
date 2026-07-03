@@ -59,6 +59,7 @@
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, basename, extname, relative, dirname } from 'node:path';
+import { mkFinding, resultFromFindings } from '../findings.mjs';
 
 /**
  * Expand a simple glob (only supports `*` at the leaf segment level —
@@ -223,10 +224,13 @@ function extractDocumentedTokens(content) {
 
 /**
  * Validate surface drift for a single surface against its target docs.
- * Returns warnings, fixes, passed count, and total count.
+ * Returns findings, fixes, passed count, and total count.
+ *
+ * v0.29: migrated to structured findings (SSY001–SSY002). Messages are
+ * byte-identical to the legacy strings.
  */
 function checkSurface(projectDir, surface) {
-  const out = { warnings: [], fixes: [], passed: 0, total: 0 };
+  const out = { findings: [], fixes: [], passed: 0, total: 0 };
   const name = surface.name || 'unnamed';
   const extractor = surface.extract || 'basename-no-ext';
   const ignore = new Set(surface.ignore || []);
@@ -236,9 +240,14 @@ function checkSurface(projectDir, surface) {
 
   // Discover code-truth set from glob.
   if (!surface.glob || typeof surface.glob !== 'string') {
-    out.warnings.push(
-      `surfaceSync: surface "${name}" has no \`glob\` — skipping. Add a glob like "cli/commands/*.mjs".`
-    );
+    out.findings.push(mkFinding({
+      code: 'SSY001',
+      validator: 'surfaceSync',
+      severity: 'warn',
+      message: `surfaceSync: surface "${name}" has no \`glob\` — skipping. Add a glob like "cli/commands/*.mjs".`,
+      location: '.docguard.json',
+      suggestion: { kind: 'fix', text: `Add a \`glob\` to the "${name}" surface entry under surfaceSync.surfaces in .docguard.json` },
+    }));
     return out;
   }
   const files = expandGlob(projectDir, surface.glob);
@@ -319,7 +328,14 @@ function checkSurface(projectDir, surface) {
       const tail = extra > 0 ? ` (+${extra} more)` : '';
       parts.push(`${missingFromCode.length} listed in ${docRel} but not found in code: ${shown}${tail}`);
     }
-    out.warnings.push(`Surface "${name}" drift: ${parts.join('; ')}`);
+    out.findings.push(mkFinding({
+      code: 'SSY002',
+      validator: 'surfaceSync',
+      severity: 'warn',
+      message: `Surface "${name}" drift: ${parts.join('; ')}`,
+      location: docRel,
+      suggestion: { kind: 'review', text: `Update the "${name}" list/table in ${docRel} to match the code-truth set — add missing items, remove ghosts, or put aliases in the surface's ignore list` },
+    }));
   }
 
   return out;
@@ -347,21 +363,24 @@ export function validateSurfaceSync(projectDir, config) {
     ? config.surfaceSync.surfaces
     : [];
 
-  const result = { errors: [], warnings: [], fixes: [], passed: 0, total: 0 };
-
   if (surfaceCfg.length === 0) {
     // No surfaces configured → N/A. The validator infrastructure surfaces
-    // this as "nothing to validate" rather than a fail.
-    return result;
+    // this as "nothing to validate" rather than a fail. Legacy shape kept.
+    return { errors: [], warnings: [], fixes: [], passed: 0, total: 0 };
   }
+
+  const findings = [];
+  const fixes = [];
+  let passed = 0;
+  let total = 0;
 
   for (const surface of surfaceCfg) {
     const r = checkSurface(projectDir, surface);
-    result.warnings.push(...r.warnings);
-    result.fixes.push(...r.fixes);
-    result.passed += r.passed;
-    result.total += r.total;
+    findings.push(...r.findings);
+    fixes.push(...r.fixes);
+    passed += r.passed;
+    total += r.total;
   }
 
-  return result;
+  return { ...resultFromFindings(findings, { passed, total }), fixes };
 }

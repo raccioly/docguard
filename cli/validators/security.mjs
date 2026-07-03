@@ -7,7 +7,7 @@
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, extname } from 'node:path';
-import { shouldIgnore, relPosix } from '../shared-ignore.mjs';
+import { shouldIgnore, relPosix, walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
 import { mkFinding, resultFromFindings, lineSuppresses } from '../findings.mjs';
 
 // Each secret pattern maps to a stable finding code (see cli/findings.mjs CODES)
@@ -233,24 +233,11 @@ export function validateSecurity(projectDir, config) {
   return resultFromFindings(findings, { passed, total });
 }
 
+// v0.29 consolidation: traversal delegates to the shared canonical walker.
+// keepDot('.env') is LOAD-BEARING — a secrets validator must scan dotenv files.
 function walkDir(dir, callback) {
-  if (!existsSync(dir)) return;
-
-  const entries = readdirSync(dir);
-  for (const entry of entries) {
-    if (IGNORE_DIRS.has(entry)) continue;
-    if (entry.startsWith('.') && entry !== '.env') continue;
-
-    const fullPath = join(dir, entry);
-    try {
-      const stat = statSync(fullPath);
-      if (stat.isDirectory()) {
-        walkDir(fullPath, callback);
-      } else if (stat.isFile()) {
-        callback(fullPath);
-      }
-    } catch {
-      // Skip unreadable files
-    }
-  }
+  sharedWalkFiles(dir, callback, {
+    ignoreDirs: IGNORE_DIRS,
+    keepDot: (entry) => entry === '.env',
+  });
 }
