@@ -4,7 +4,7 @@
 
 <!-- docguard:version 0.6.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-05-31 -->
+<!-- docguard:last-reviewed 2026-07-03 -->
 
 > DocGuard needs no environment variables. It has a single optional-load npm dependency (`@babel/parser`) and optionally uses the developer's own `python3`; everything else is Node.js built-ins.
 

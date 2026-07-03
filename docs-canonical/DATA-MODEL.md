@@ -2,7 +2,7 @@
 
 <!-- docguard:version 0.5.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-05-31 -->
+<!-- docguard:last-reviewed 2026-07-03 -->
 
 | Metadata | Value |
 |----------|-------|
@@ -37,6 +37,9 @@ The primary data structure. Controls all CLI behavior.
 | `projectTypeConfig.testFramework` | `string` | No | Auto-detected | Test framework name (e.g., `"node:test"`, `"jest"`) |
 | `projectTypeConfig.runCommand` | `string` | No | Auto-detected | Command to run the project |
 | `validators.*` | `boolean` | No | `true` | Enable/disable individual validators |
+| `collections.*` | `string` (glob) | No | — | Binds a documentation noun to a code collection: `"extractors": "src/extractors/*.py"` lets Metrics-Consistency flag a documented count that disagrees with the file count |
+| `docs.dirs` | `string[]` | No | Auto-detected | EXTENDS the auto-detected documentation homes (docs/, documentation/, guides/, …) with non-standard dirs; exclude via `.docguardignore` |
+| `severity.*` | `"high" \| "medium" \| "low"` | No | `"medium"` | Per-validator exit-code weight — `high` promotes warnings to blocking, `low` demotes them (display unchanged) |
 
 ### Example Configuration
 
