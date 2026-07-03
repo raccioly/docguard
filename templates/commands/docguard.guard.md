@@ -13,41 +13,55 @@ handoffs:
 
 You are an AI agent enforcing Canonical-Driven Development (CDD) compliance using DocGuard.
 
-## Step 1: Run Guard
+## Step 1: Run Guard (machine-readable)
 
 ```bash
-npx docguard-cli guard
+npx docguard-cli guard --format json
 ```
 
-Read the output. It shows pass (✅), warn (⚠️), or fail (❌) for each of the validators:
+Read the JSON contract — do not parse prose:
 
-| Priority | Validators |
-|----------|-----------|
-| CRITICAL | Structure, Security, Test-Spec |
-| HIGH | Doc Sections, Drift-Comments, Changelog, Traceability, API-Surface |
-| MEDIUM | Freshness, Docs-Coverage, Doc-Quality, Metrics-Consistency |
-| LOW | TODO-Tracking, Schema-Sync, Spec-Kit, Metadata-Sync |
+| Field | Meaning |
+|-------|---------|
+| `status` | `PASS` / `WARN` / `FAIL` (severity-aware; matches the exit code: 0/2/1) |
+| `findings[]` | Structured issues: `{code, severity, confidence, message, location, suggestion}` |
+| `nextStep` | The single suggested follow-up command (`null` on PASS) |
+| `reportable[]` | Low-confidence findings (possible false positives) — verify before acting |
+| `coverage` | Markdown tier map: `canonical / tracked / ignored / unclassified[]` |
+| `semanticClaims.count` | Documented counts/limits/enums NOT yet verified against code |
+| `validators[]` | Per-validator results, including `na` (nothing to validate ≠ pass) |
 
-## Step 2: Handle Results
+## Step 2: Understand each finding before fixing
 
-### If all checks pass:
-Report success and the score:
-```bash
-npx docguard-cli score
-```
+- Every finding carries a stable code (e.g. `STR001`, `ENV003`, `XRF002`). Run
+  `npx docguard-cli explain <CODE>` for its contract, cause, and remediation.
+- `confidence: "low"` means the scanner itself is unsure — verify against the
+  code before changing anything, and report real false positives with
+  `npx docguard-cli feedback`.
+- A finding's `suggestion` may include a ready-to-run `command` or an inline
+  `pragma`. Prefer those over inventing your own fix.
 
-### If checks fail:
-For each failing check, provide an **exact fix** — specific file, section, and content.
-Then run the fix workflow:
-```bash
-npx docguard-cli fix --doc <name>
-```
+## Step 3: Fix, suppress, or escalate
 
-Execute the research steps in the output, write real content, then re-run guard to verify.
+1. **Mechanical issues first**: `npx docguard-cli fix --write` applies safe,
+   provenance-checked fixes (broken anchors, stale counts/versions). Never
+   hand-edit what the tool can fix deterministically.
+2. **Prose/content issues**: follow the `/docguard.fix` workflow (research →
+   write real content).
+3. **Genuine false positives**: suppress at the finding site with the code —
+   `// docguard:ignore <CODE>` on (or above) the flagged line — or mark a whole
+   validator not-applicable in a doc:
+   `<!-- docguard:validator <key> n/a — reason -->`. Always include the reason.
+   Never suppress to silence a real issue.
+4. If `semanticClaims.count > 0`, offer to run `npx docguard-cli verify --semantic`
+   and check each extracted claim against the code — a green guard asserts
+   structure, not the truth of documented numbers.
 
-## Step 3: Report
+## Step 4: Report
 
 Show the user:
-1. Which checks passed/failed (with severity)
-2. What was fixed
-3. Final CDD score
+1. `status` and pass/total, plus anything in `coverage.unclassified` (docs no
+   validator watches — suggest enrolling or ignoring them)
+2. Each finding fixed (by code), each suppressed (with reason), each reported
+   as a false positive
+3. Final score: `npx docguard-cli score`

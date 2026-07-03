@@ -175,6 +175,23 @@
         }
       },
       "additionalProperties": true
+    },
+    "docs": {
+      "type": "object",
+      "description": "Documentation discovery (field report #6 follow-up).",
+      "properties": {
+        "dirs": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Additional documentation-home directories to claim-scan and count as 'tracked' (relative paths, e.g. [\"reference\", \"website/docs\"]). This EXTENDS the auto-detected conventional homes (docs/, doc/, documentation/, guides/, guide/, handbook/, manual/, wiki/, docs-canonical/, docs-implementation/, extensions/) — it never replaces them, since the goal is to track MORE clearly-documentation folders automatically. Only NAMED dirs are scanned; arbitrary subdirectories are never walked. To EXCLUDE a conventional dir, list it in .docguardignore."
+        }
+      },
+      "additionalProperties": true
+    },
+    "collections": {
+      "type": "object",
+      "description": "Project-declared collections (field report #6): maps a documentation noun (e.g. \"extractors\") to a glob whose matching-file count is the source of truth. Metrics-Consistency then flags a documented count that disagrees (\"16 extractors\" in prose vs 19 files on disk), deterministically and with no LLM. A declared collection IS the opt-in binding, so — unlike the built-in checks/validators counts — it does not require the noun's line to mention \"docguard\". An unresolved glob (0 matches) is skipped, never asserting \"0\". Reserved nouns (checks, validators, tests) keep their built-in meaning. Complements surfaceSync (WHICH members drift) with a count check (HOW MANY). Example: { \"extractors\": \"src/extractors/*.py\", \"commands\": \"cli/commands/*.mjs\" }.",
+      "additionalProperties": { "type": "string" }
     }
   },
   "additionalProperties": true

@@ -31,6 +31,15 @@ inputs:
     description: 'Node.js version to use'
     required: false
     default: '20'
+  # ---- PR feedback (guard mode) ----
+  annotations:
+    description: 'When command=guard: emit inline annotations (::error/::warning) on the PR diff, one per finding, capped at 50.'
+    required: false
+    default: 'true'
+  pr-comment:
+    description: 'When command=guard: post a sticky guard-status + doc-impact comment on the PR. Only acts on pull_request events; requires permissions.pull-requests=write (degrades to a log warning without it). Distinct from comment-on-pr, which covers fix/sync summaries.'
+    required: false
+    default: 'true'
   # ---- fix / sync mode (auto-commit on PRs) ----
   auto-commit:
     description: 'When command=fix or sync: commit any mechanical fixes back to the PR branch. Requires permissions.contents=write on the calling workflow.'
@@ -169,6 +178,208 @@ runs:
           EXIT_CODE=$?
           exit $EXIT_CODE
         fi
+
+    - name: Capture guard findings (annotations/comment data)
+      # always(): guard exits 1 on errors, failing the step above — which is
+      # exactly when annotations and the PR comment matter most. The capture
+      # (and the two consumers below) must still run; the action's own exit
+      # code is untouched because the failed 'Run DocGuard' step already
+      # determines it.
+      if: always() && inputs.command == 'guard' && (inputs.annotations == 'true' || (inputs.pr-comment == 'true' && github.event_name == 'pull_request'))
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        # SECURITY: same rule as every step in this file — event context is
+        # data, never script text. BASE_REF is a branch name, which a fork PR
+        # controls and may contain shell metacharacters; it is only ever
+        # expanded quoted.
+        INPUT_PR_COMMENT: ${{ inputs.pr-comment }}
+        EVENT_NAME: ${{ github.event_name }}
+        BASE_REF: ${{ github.base_ref }}
+      run: |
+        set +e
+
+        # Re-run guard in JSON mode into a temp file for the two steps below.
+        # The 'Run DocGuard' step stays the sole source of the score/grade/
+        # result outputs and the pass/fail signal — this capture never alters
+        # it. guard exits 1 (errors) / 2 (warnings) precisely when there ARE
+        # findings to report, so the non-zero exit must not fail this step.
+        npx docguard-cli guard --format json > "$RUNNER_TEMP/docguard.json" || true
+
+        # Doc impact vs the PR base, for the sticky comment. actions/checkout
+        # defaults to a shallow single-commit clone where the base ref does not
+        # exist locally — fetch it best-effort (a depth-1 fetch is enough: the
+        # CLI runs a two-dot 'git diff <ref> HEAD', no merge-base needed) and
+        # degrade to an empty file, which makes the comment step omit the
+        # impact section instead of failing the whole action.
+        : > "$RUNNER_TEMP/docguard-impact.json"
+        if [ "$EVENT_NAME" = "pull_request" ] && [ "$INPUT_PR_COMMENT" = "true" ] && [ -n "$BASE_REF" ]; then
+          git fetch --no-tags --depth=1 origin "$BASE_REF" >/dev/null 2>&1 || true
+          npx docguard-cli diff --since "origin/$BASE_REF" --format json \
+            > "$RUNNER_TEMP/docguard-impact.json" 2>/dev/null || true
+        fi
+
+        exit 0
+
+    - name: Annotate findings on the PR diff
+      if: always() && inputs.command == 'guard' && inputs.annotations == 'true'
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        # Transform the captured findings into GitHub workflow commands, which
+        # the runner renders as inline annotations on the diff. jq is not
+        # guaranteed on every runner but Node is (DocGuard itself needs it),
+        # so the JSON→commands transform is an inline node script. It only
+        # reads the temp file — guard is never re-run here.
+        if [ ! -s "$RUNNER_TEMP/docguard.json" ]; then
+          echo "No captured guard JSON — skipping annotations."
+          exit 0
+        fi
+
+        # The script deliberately contains no single quotes so it can live
+        # inside this single-quoted bash argument; all dynamic values come
+        # from the temp file and process.env — no expression interpolation.
+        node -e '
+          const fs = require("fs");
+          const path = require("path");
+          let data = null;
+          try { data = JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP + "/docguard.json", "utf8")); } catch {}
+          const findings = data && Array.isArray(data.findings) ? data.findings : [];
+          // Workflow-command escaping: % first (it is the escape character
+          // itself), then CR/LF — a multi-line message must never smuggle in
+          // a second ::command. Property values additionally escape the
+          // delimiter characters , and : per the annotation rules.
+          const esc = (s) => String(s).replace(/%/g, "%25").replace(/\r/g, "%0D").replace(/\n/g, "%0A");
+          const escProp = (s) => esc(s).replace(/:/g, "%3A").replace(/,/g, "%2C");
+          // file= paths must be workspace-relative, but finding locations are
+          // relative to working-directory (possibly a subdir) — rebase them.
+          const ws = process.env.GITHUB_WORKSPACE || process.cwd();
+          const CAP = 50;
+          let emitted = 0;
+          for (const f of findings) {
+            if (emitted === CAP) break;
+            const level = f.severity === "error" ? "error" : "warning";
+            let props = "title=" + escProp("DocGuard " + (f.code || "finding"));
+            if (f.location) {
+              const m = String(f.location).match(/^(.+?):(\d+)$/);
+              let file = m ? m[1] : String(f.location);
+              const rel = path.relative(ws, path.resolve(file)).split(path.sep).join("/");
+              if (rel && !rel.startsWith("..")) file = rel;
+              props = "file=" + escProp(file) + (m ? ",line=" + m[2] : "") + "," + props;
+            }
+            console.log("::" + level + " " + props + "::" + esc(f.message || ""));
+            emitted++;
+          }
+          if (findings.length > CAP) {
+            console.log("::notice title=DocGuard::" + (findings.length - CAP) + " finding(s) not annotated (cap is " + CAP + "). Run npx docguard-cli guard locally for the full list.");
+          }
+        '
+
+    - name: Post Guard Summary to PR Comment
+      if: always() && inputs.command == 'guard' && inputs.pr-comment == 'true' && github.event_name == 'pull_request'
+      uses: actions/github-script@v9
+      with:
+        script: |
+          // SECURITY: nothing dynamic is expression-interpolated into this
+          // script body. All variable content is read from the RUNNER_TEMP
+          // capture files and process.env, matching the steps above.
+          const fs = require('fs');
+          const path = require('path');
+
+          const readJson = (p) => {
+            try {
+              const raw = fs.readFileSync(p, 'utf8');
+              return raw.trim() ? JSON.parse(raw) : null;
+            } catch { return null; }
+          };
+
+          const tmp = process.env.RUNNER_TEMP;
+          const guard = readJson(path.join(tmp, 'docguard.json'));
+          const impact = readJson(path.join(tmp, 'docguard-impact.json'));
+
+          // Markdown-table cell sanitizer — findings text is repo content and
+          // may contain pipes/newlines that would break the table layout.
+          const cell = (s) => String(s ?? '').replace(/\|/g, '\\|').replace(/\r?\n/g, ' ').slice(0, 200);
+
+          // Hidden marker = the sticky-comment identity. Re-runs find and
+          // update this comment in place instead of stacking new ones.
+          const marker = '<!-- docguard-action-comment -->';
+          const lines = [marker, ''];
+
+          if (guard) {
+            const emoji = guard.status === 'PASS' ? '✅' : guard.status === 'WARN' ? '⚠️' : '❌';
+            lines.push(`## ${emoji} DocGuard Guard — ${cell(guard.status)}`);
+            lines.push('');
+            lines.push(`**${guard.passed}/${guard.total} checks passed** · ${guard.errors} error(s), ${guard.warnings} warning(s)`);
+            const findings = Array.isArray(guard.findings) ? guard.findings : [];
+            if (findings.length > 0) {
+              const top = findings.slice(0, 10);
+              lines.push('');
+              lines.push(`### Findings (top ${top.length} of ${findings.length})`);
+              lines.push('');
+              lines.push('| Code | Severity | Location | Message |');
+              lines.push('|------|----------|----------|---------|');
+              for (const f of top) {
+                lines.push(`| \`${cell(f.code || '—')}\` | ${cell(f.severity)} | ${f.location ? '`' + cell(f.location) + '`' : '—'} | ${cell(f.message)} |`);
+              }
+              if (findings.length > top.length) {
+                lines.push('');
+                lines.push(`…and ${findings.length - top.length} more — run \`npx docguard-cli guard\` locally for the full list.`);
+              }
+            }
+          } else {
+            lines.push('## 🛡️ DocGuard Guard');
+            lines.push('');
+            lines.push('_Guard results were not captured for this run._');
+          }
+
+          // Doc-impact section — omitted entirely when the diff could not run
+          // (shallow clone, missing base ref) or when no code files changed.
+          if (impact && Array.isArray(impact.affectedDocs)) {
+            const changed = Array.isArray(impact.changedFiles) ? impact.changedFiles : [];
+            if (changed.length > 0) {
+              lines.push('');
+              lines.push(`### 📄 Doc impact (vs \`${cell(impact.since || 'base')}\`)`);
+              lines.push('');
+              if (impact.affectedDocs.length > 0) {
+                lines.push(`${changed.length} changed code file(s) are referenced by:`);
+                for (const d of impact.affectedDocs.slice(0, 10)) {
+                  lines.push(`- **${cell(d.doc)}** — ${(d.files || []).length} changed file(s)`);
+                }
+                if (impact.affectedDocs.length > 10) {
+                  lines.push(`- …and ${impact.affectedDocs.length - 10} more doc(s)`);
+                }
+                lines.push('');
+                lines.push('Review these canonical docs — they reference code this PR touches.');
+              } else {
+                lines.push(`${changed.length} changed code file(s), none referenced by any canonical doc — the change may be undocumented.`);
+              }
+            }
+          }
+
+          const runUrl = `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`;
+          lines.push('');
+          lines.push('---');
+          lines.push(`[View run](${runUrl}) · *Automated by [DocGuard](https://github.com/raccioly/docguard)*`);
+
+          const body = lines.join('\n');
+          const { owner, repo } = context.repo;
+          const issue_number = context.issue.number;
+
+          try {
+            const comments = await github.rest.issues.listComments({ owner, repo, issue_number });
+            const existing = comments.data.find(c => c.body && c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+            }
+          } catch (e) {
+            // Fork PRs get a read-only GITHUB_TOKEN, and callers may not grant
+            // pull-requests: write — degrade to a log warning rather than
+            // failing a run whose guard verdict is already decided.
+            core.warning(`DocGuard could not post the PR comment: ${e.message}`);
+          }
 
     - name: Apply fixes (fix/sync mode)
       id: fix
