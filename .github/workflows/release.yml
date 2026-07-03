@@ -19,7 +19,7 @@ jobs:
       version: ${{ steps.check.outputs.version }}
       changed: ${{ steps.check.outputs.changed }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 1 # only need HEAD's package.json; the tag check hits the remote
 
@@ -54,7 +54,7 @@ jobs:
       matrix:
         node-version: [18, 20, 22]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - uses: actions/setup-node@v6
@@ -75,7 +75,7 @@ jobs:
     outputs:
       tag: v${{ needs.detect-version.outputs.version }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0 # Fetch all history + tags for reliable tag detection
 
@@ -132,7 +132,7 @@ jobs:
     needs: [detect-version, create-release]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Build extension ZIP
         run: |
@@ -157,7 +157,7 @@ jobs:
     needs: [detect-version, test, create-release]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v6
         with:
           node-version: 20
@@ -173,7 +173,7 @@ jobs:
     needs: [detect-version, test, create-release]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -215,7 +215,7 @@ jobs:
       issues: write # reminder issue in THIS repo only — never github/spec-kit
     steps:
       - name: Checkout docguard repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Get version and metadata
         id: meta
