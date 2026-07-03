@@ -1,5 +1,7 @@
 # 🛡️ DocGuard
 
+**English** · [Português (BR)](README.pt-BR.md) · [Español](README.es.md)
+
 > **The enforcement layer for Spec-Driven Development.**
 > Validate. Score. Enforce. Ship documentation that AI agents can actually use.
 

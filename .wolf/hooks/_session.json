@@ -68,8 +68,8 @@
       "first_read": "2026-07-03T16:14:21.008Z"
     },
     "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/README.md": {
-      "count": 3,
-      "tokens": 7822,
+      "count": 4,
+      "tokens": 8042,
       "first_read": "2026-07-03T16:20:30.188Z"
     },
     "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/docs-canonical/ARCHITECTURE.md": {
@@ -256,6 +256,30 @@
       "action": "edit",
       "tokens": 236,
       "at": "2026-07-03T20:20:48.105Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/README.md",
+      "action": "edit",
+      "tokens": 65,
+      "at": "2026-07-03T20:23:19.568Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/README.pt-BR.md",
+      "action": "create",
+      "tokens": 1228,
+      "at": "2026-07-03T20:23:55.819Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/README.es.md",
+      "action": "create",
+      "tokens": 1255,
+      "at": "2026-07-03T20:24:18.994Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/.github/PULL_REQUEST_TEMPLATE.md",
+      "action": "create",
+      "tokens": 255,
+      "at": "2026-07-03T20:24:31.165Z"
     }
   ],
   "edit_counts": {
@@ -268,14 +292,17 @@
     "cli/docguard.mjs": 5,
     "action.yml": 4,
     "tests/mcp.test.mjs": 1,
-    "README.md": 5,
+    "README.md": 6,
     "docs-canonical/ARCHITECTURE.md": 2,
     "docs/ai-integration.md": 1,
-    "DRIFT-LOG.md": 1
+    "DRIFT-LOG.md": 1,
+    "README.pt-BR.md": 1,
+    "README.es.md": 1,
+    ".github/PULL_REQUEST_TEMPLATE.md": 1
   },
   "anatomy_hits": 12,
   "anatomy_misses": 5,
-  "repeated_reads_warned": 6,
+  "repeated_reads_warned": 7,
   "cerebrum_warnings": 0,
-  "stop_count": 3
+  "stop_count": 4
 }
