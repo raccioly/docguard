@@ -101,6 +101,11 @@ function scanReactRouterScreens(roots, projectDir) {
   const pathRe = /\bpath\s*[=:]\s*["'`]([^"'`]+)["'`]/g;
   const compRe = /<\s*([A-Z][A-Za-z0-9_]*)/g;
 
+  // PERFORMANCE OPTIMIZATION: pre-compile regular expressions outside loops to avoid O(N*M) algorithmic overhead.
+  const routePathReCompiled = new RegExp(pathRe.source, 'g');
+  const routeNextPathReCompiled = new RegExp(pathRe.source, 'g');
+  const routeCompReCompiled = new RegExp(compRe.source, 'g');
+
   for (const root of roots) {
     walk(root, (file) => {
       if (!UI_EXT.has(extname(file)) && !/\.(ts|js|mjs)$/.test(file)) return;
@@ -118,21 +123,20 @@ function scanReactRouterScreens(roots, projectDir) {
       }
 
       let m;
-      const re = new RegExp(pathRe.source, 'g');
-      while ((m = re.exec(content)) !== null) {
+      routePathReCompiled.lastIndex = 0;
+      while ((m = routePathReCompiled.exec(content)) !== null) {
         // Window = from this path up to the START of the next route entry
         // (next `path=`/`path:`), capped — so nested `<Spinner/>` fallbacks don't
         // truncate the window before the real screen component.
         const start = m.index + m[0].length;
-        const nextPath = new RegExp(pathRe.source, 'g');
-        nextPath.lastIndex = start;
-        const nm = nextPath.exec(content);
+        routeNextPathReCompiled.lastIndex = start;
+        const nm = routeNextPathReCompiled.exec(content);
         const end = Math.min(nm ? nm.index : content.length, start + 400);
         const windowStr = content.slice(start, end);
         const comps = [];
         let cm;
-        const cre = new RegExp(compRe.source, 'g');
-        while ((cm = cre.exec(windowStr)) !== null) comps.push(cm[1]);
+        routeCompReCompiled.lastIndex = 0;
+        while ((cm = routeCompReCompiled.exec(windowStr)) !== null) comps.push(cm[1]);
         add(m[1], pickScreenComponent(comps), file);
       }
     });
@@ -226,6 +230,12 @@ function scanStores(roots, projectDir) {
   // MobX: class XStore { makeObservable / makeAutoObservable }
   const mobx = /\bclass\s+(\w+Store)\b[\s\S]{0,400}?(?:makeObservable|makeAutoObservable)\b/g;
 
+  // PERFORMANCE OPTIMIZATION: pre-compile regular expressions outside loops to avoid O(N*M) algorithmic overhead.
+  const zustandRe = new RegExp(zustand.source, 'g');
+  const rtkSliceRe = new RegExp(rtkSlice.source, 'g');
+  const jotaiRe = new RegExp(jotai.source, 'g');
+  const mobxRe = new RegExp(mobx.source, 'g');
+
   for (const root of roots) {
     walk(root, (file) => {
       if (!/\.(ts|tsx|js|jsx|mjs)$/.test(file)) return;
@@ -233,20 +243,20 @@ function scanStores(roots, projectDir) {
       if (!content) return;
       let m;
       if (content.includes('create(') || content.includes('create<')) {
-        const re = new RegExp(zustand.source, 'g');
-        while ((m = re.exec(content)) !== null) add(m[1], 'Zustand', file);
+        zustandRe.lastIndex = 0;
+        while ((m = zustandRe.exec(content)) !== null) add(m[1], 'Zustand', file);
       }
       if (content.includes('createSlice')) {
-        const re = new RegExp(rtkSlice.source, 'g');
-        while ((m = re.exec(content)) !== null) add(m[1], 'Redux Toolkit', file);
+        rtkSliceRe.lastIndex = 0;
+        while ((m = rtkSliceRe.exec(content)) !== null) add(m[1], 'Redux Toolkit', file);
       }
       if (content.includes('atom(') || content.includes('atomWithStorage')) {
-        const re = new RegExp(jotai.source, 'g');
-        while ((m = re.exec(content)) !== null) add(m[1], 'Jotai', file);
+        jotaiRe.lastIndex = 0;
+        while ((m = jotaiRe.exec(content)) !== null) add(m[1], 'Jotai', file);
       }
       if (content.includes('makeObservable') || content.includes('makeAutoObservable')) {
-        const re = new RegExp(mobx.source, 'g');
-        while ((m = re.exec(content)) !== null) add(m[1], 'MobX', file);
+        mobxRe.lastIndex = 0;
+        while ((m = mobxRe.exec(content)) !== null) add(m[1], 'MobX', file);
       }
     });
   }
@@ -260,6 +270,11 @@ function scanHooks(roots, projectDir) {
   // export function useThing / export const useThing = / export { useThing }
   const decl = /\bexport\s+(?:function|const|let)\s+(use[A-Z]\w*)\b/g;
   const reexport = /\bexport\s*\{\s*([^}]+)\}/g;
+
+  // PERFORMANCE OPTIMIZATION: pre-compile regular expressions outside loops to avoid O(N*M) algorithmic overhead.
+  const declRe = new RegExp(decl.source, 'g');
+  const reexportRe = new RegExp(reexport.source, 'g');
+
   for (const root of roots) {
     walk(root, (file) => {
       if (!/\.(ts|tsx|js|jsx|mjs)$/.test(file)) return;
@@ -268,14 +283,14 @@ function scanHooks(roots, projectDir) {
       if (!content || !content.includes('use')) return;
       const rel = relative(projectDir, file);
       let m;
-      const re1 = new RegExp(decl.source, 'g');
-      while ((m = re1.exec(content)) !== null) {
+      declRe.lastIndex = 0;
+      while ((m = declRe.exec(content)) !== null) {
         if (seen.has(m[1])) continue;
         seen.add(m[1]);
         out.push({ name: m[1], file: rel });
       }
-      const re2 = new RegExp(reexport.source, 'g');
-      while ((m = re2.exec(content)) !== null) {
+      reexportRe.lastIndex = 0;
+      while ((m = reexportRe.exec(content)) !== null) {
         // For `X as Y`, the EXPORTED name is the alias (Y) — that's what consumers see.
         for (const id of m[1].split(',').map(s => s.trim().split(/\s+as\s+/).pop()).filter(Boolean)) {
           if (/^use[A-Z]/.test(id) && !seen.has(id)) {
@@ -294,14 +309,18 @@ function scanContexts(roots, projectDir) {
   const out = [];
   const seen = new Set();
   const re = /\b(?:export\s+)?const\s+(\w+Context)\s*=\s*(?:React\.)?createContext\b/g;
+
+  // PERFORMANCE OPTIMIZATION: pre-compile regular expressions outside loops to avoid O(N*M) algorithmic overhead.
+  const contextRe = new RegExp(re.source, 'g');
+
   for (const root of roots) {
     walk(root, (file) => {
       if (!/\.(ts|tsx|js|jsx|mjs)$/.test(file)) return;
       const content = readSafe(file);
       if (!content || !content.includes('createContext')) return;
       let m;
-      const r = new RegExp(re.source, 'g');
-      while ((m = r.exec(content)) !== null) {
+      contextRe.lastIndex = 0;
+      while ((m = contextRe.exec(content)) !== null) {
         if (seen.has(m[1])) continue;
         seen.add(m[1]);
         out.push({ name: m[1], file: relative(projectDir, file) });
@@ -322,16 +341,20 @@ function scanI18n(projectDir, roots) {
   const codeRe = /\b(?:i18n\.)?t\(\s*[`'"]([a-zA-Z][\w.-]*\.[\w.-]+)[`'"]/g;
   const propRe = /\bi18nKey\s*=\s*[`'"]([a-zA-Z][\w.-]*\.[\w.-]+)[`'"]/g;
 
+  // PERFORMANCE OPTIMIZATION: pre-compile regular expressions outside loops to avoid O(N*M) algorithmic overhead.
+  const codeReCompiled = new RegExp(codeRe.source, 'g');
+  const propReCompiled = new RegExp(propRe.source, 'g');
+
   for (const root of roots) {
     walk(root, (file) => {
       if (!/\.(ts|tsx|js|jsx|mjs)$/.test(file)) return;
       const content = readSafe(file);
       if (!content || (!content.includes('t(') && !content.includes('i18nKey'))) return;
       let m;
-      const r1 = new RegExp(codeRe.source, 'g');
-      while ((m = r1.exec(content)) !== null) usedKeys.add(m[1]);
-      const r2 = new RegExp(propRe.source, 'g');
-      while ((m = r2.exec(content)) !== null) usedKeys.add(m[1]);
+      codeReCompiled.lastIndex = 0;
+      while ((m = codeReCompiled.exec(content)) !== null) usedKeys.add(m[1]);
+      propReCompiled.lastIndex = 0;
+      while ((m = propReCompiled.exec(content)) !== null) usedKeys.add(m[1]);
     });
   }
 
@@ -390,16 +413,20 @@ function scanApiCalls(roots, projectDir) {
   // bare fetch
   const fetchCall = /\bfetch\s*\(\s*[`'"](\/[^`'")\s]+)[`'"]\s*(?:,\s*\{[^}]*?method\s*:\s*[`'"](GET|POST|PUT|DELETE|PATCH))?/gi;
 
+  // PERFORMANCE OPTIMIZATION: pre-compile regular expressions outside loops to avoid O(N*M) algorithmic overhead.
+  const methodCallRe = new RegExp(methodCall.source, 'gi');
+  const fetchCallRe = new RegExp(fetchCall.source, 'gi');
+
   for (const root of roots) {
     walk(root, (file) => {
       if (!/\.(ts|tsx|js|jsx|mjs)$/.test(file)) return;
       const content = readSafe(file);
       if (!content) return;
       let m;
-      const a = new RegExp(methodCall.source, 'gi');
-      while ((m = a.exec(content)) !== null) add(m[1].toUpperCase(), m[2], file);
-      const f = new RegExp(fetchCall.source, 'gi');
-      while ((m = f.exec(content)) !== null) add((m[2] || 'GET').toUpperCase(), m[1], file);
+      methodCallRe.lastIndex = 0;
+      while ((m = methodCallRe.exec(content)) !== null) add(m[1].toUpperCase(), m[2], file);
+      fetchCallRe.lastIndex = 0;
+      while ((m = fetchCallRe.exec(content)) !== null) add((m[2] || 'GET').toUpperCase(), m[1], file);
     });
   }
   return out;
