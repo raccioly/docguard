@@ -13,6 +13,8 @@
 [![Node.js](https://img.shields.io/badge/Node.js-18%2B-green)](https://nodejs.org)
 [![Runtime deps](https://img.shields.io/badge/runtime_deps-1_(pinned)-green)](package.json)
 [![Spec Kit Extension](https://img.shields.io/badge/Spec_Kit-Extension-blueviolet)](https://github.com/github/spec-kit)
+[![Glama](https://glama.ai/mcp/servers/raccioly/docguard/badges/score.svg)](https://glama.ai/mcp/servers/raccioly/docguard)
+[![MCP Registry](https://img.shields.io/badge/MCP_Registry-listed-0a7ea4)](https://registry.modelcontextprotocol.io/)
 
 ---
 
