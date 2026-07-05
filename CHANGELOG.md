@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.30.0] - 2026-07-04
+
 Competitive-adoption batch (from the spec-kit catalog scan — the best ideas of
 45 doc/validation extensions, rebuilt on DocGuard's deterministic engine) plus
 the distribution-channel expansion.
