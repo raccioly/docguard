@@ -58,6 +58,8 @@ DocGuard recognizes and validates these project config files:
 | `.storybook/` | Component documentation tool (detected for docs-coverage) |
 | `.jules-setup.sh` | This repo's own Google Jules environment bootstrap script (internal tooling, not shipped) |
 | `.pre-commit-hooks.yaml` | This repo as a pre-commit hook source — consumers reference `repo: raccioly/docguard` to run `docguard-guard` (changed-only) per commit |
+| `glama.json` | Glama MCP directory metadata — declares repo maintainers so the Glama listing can be claimed/managed |
+| `server.json` | Official MCP Registry manifest (`io.github.raccioly/docguard`) — server name, npm package, stdio transport |
 
 ## Layer Boundaries
 

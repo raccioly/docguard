@@ -53,25 +53,40 @@ const PROJECT_DIR_PROP = {
   },
 };
 
+// Every DocGuard MCP tool is READ-ONLY: it inspects local project files and
+// never writes, mutates, or reaches the network. These MCP tool hints let
+// clients (and directory scanners like Glama) surface that safety to users.
+const READONLY_ANNOTATIONS = {
+  readOnlyHint: true,
+  destructiveHint: false,
+  idempotentHint: true,
+  openWorldHint: false,
+};
+
 const TOOLS = [
   {
     name: 'docguard_guard',
+    title: 'Guard docs against code',
     description: 'Run every enabled DocGuard validator against the project\'s canonical docs. Returns the full guard JSON contract: status (PASS/WARN/FAIL), structured findings with stable codes and suggestions, nextStep, doc coverage map, semantic-claim count, and per-validator results.',
     inputSchema: {
       type: 'object',
       properties: { ...PROJECT_DIR_PROP },
     },
+    annotations: READONLY_ANNOTATIONS,
   },
   {
     name: 'docguard_score',
+    title: 'CDD maturity score',
     description: 'Compute the project\'s CDD maturity score (0-100) with letter grade and per-category breakdown.',
     inputSchema: {
       type: 'object',
       properties: { ...PROJECT_DIR_PROP },
     },
+    annotations: READONLY_ANNOTATIONS,
   },
   {
     name: 'docguard_explain',
+    title: 'Explain a finding code',
     description: 'Explain a stable DocGuard finding code (e.g. STR001, ENV003): what it means, which validator emits it, and the inline suppression to use if it\'s a confirmed false positive.',
     inputSchema: {
       type: 'object',
@@ -83,22 +98,27 @@ const TOOLS = [
       },
       required: ['code'],
     },
+    annotations: READONLY_ANNOTATIONS,
   },
   {
     name: 'docguard_verify_claims',
+    title: 'Extract claims to verify',
     description: 'Extract the semantic claims in the project\'s canonical docs — documented numbers, limits, and enums — as a verification task list. Deterministic discovery, LLM judgment — the caller verifies each claim against the code.',
     inputSchema: {
       type: 'object',
       properties: { ...PROJECT_DIR_PROP },
     },
+    annotations: READONLY_ANNOTATIONS,
   },
   {
     name: 'docguard_diagnose',
+    title: 'Diagnose what to fix',
     description: 'Run guard and return only what needs fixing: failing/warning validators with their messages, structured findings, and suggested next actions — shaped for an agent to act on.',
     inputSchema: {
       type: 'object',
       properties: { ...PROJECT_DIR_PROP },
     },
+    annotations: READONLY_ANNOTATIONS,
   },
 ];
 
