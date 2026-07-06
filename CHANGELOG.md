@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.30.1] - 2026-07-06
+
+Patch release: a hooks crash fix that unblocks sandboxed CI/agent environments,
+plus two portability/robustness hardenings.
+
+### Fixed
+- **`hooks` and `init --with hooks` crashed under `core.hooksPath=/dev/null`**
+  (bug-200). `getHooksDir` resolved the literal `/dev/null` that
+  `git rev-parse --git-path hooks` returns when hooks are disabled that way, so
+  callers wrote `/dev/null/pre-commit` → `ENOTDIR: not a directory`. It now
+  guards the pseudo-path and falls back to `.git/hooks`. This unblocks the
+  Google Jules sandbox VM (which sets that config) and anyone who disables hooks
+  via `core.hooksPath=/dev/null`. Regression test added.
+
+### Changed
+- **`score`: dropped the shell `| wc -l` pipe** in the commit-churn estimate
+  (`estimateDocTax`) in favor of `execFileSync` + counting in JS — no shell,
+  portable to Windows (no `wc`), matching the pattern `freshness.mjs` already
+  uses.
+- **`.jules-setup.sh` hardened** so Google Jules stops aborting with "Working
+  tree is dirty" after setup: `npm install` → `npm ci` (never rewrites
+  `package-lock.json`), and `git clean -fd` → `git reset --hard HEAD &&
+  git clean -fd` (discards the tracked `.agent/skills` regeneration that
+  `--version` triggers; `-fd` respects `.gitignore`, so `node_modules` survives).
+
 ## [0.30.0] - 2026-07-04
 
 Competitive-adoption batch (from the spec-kit catalog scan — the best ideas of
