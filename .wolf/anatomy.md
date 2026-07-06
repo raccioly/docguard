@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-07-06T00:34:30.826Z
-> Files: 663 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-07-06T00:51:03.699Z
+> Files: 664 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../../../tmp/
 
@@ -977,6 +977,7 @@
 - `mcp.mjs` — MCP Command — DocGuard as a Model Context Protocol server (stdio). (~3098 tok)
 - `memory.mjs` — Memory Command — v0.17-P2. (~2957 tok)
 - `score.mjs` — Score Command — Calculate CDD maturity score (0-100) (~12136 tok)
+- `setup.mjs` — Setup Command — Interactive onboarding wizard for DocGuard (~5280 tok)
 - `sync-tests.mjs` — `docguard sync --tests` — reconcile the TEST-SPEC Source-to-Test Map from disk. (~3191 tok)
 - `sync.mjs` — Sync Command — keep the documentation memory ALWAYS UP TO DATE. (~2371 tok)
 - `trace.mjs` — Trace Command — Generate a requirements traceability matrix (~7746 tok)
