@@ -130,6 +130,20 @@ extensions/spec-kit-docguard/
 
 ## Agent Rules
 
+### Automated agents / bots (Jules "Sentinel", "Bolt", "Palette", and any auto-PR agent)
+- **Never open a duplicate PR.** Before opening ANY PR, search existing **open
+  AND closed** PRs and issues for the same topic/title. If it exists, STOP — do
+  not open another. (Dozens of duplicate command-injection and diff-optimization
+  PRs were closed as noise.)
+- **Do not re-open resolved work.** See `.jules/sentinel.md` (execSync/command
+  injection — RESOLVED in v0.21.1 + #296) and `.jules/bolt.md` (diff/scan
+  micro-optimizations — already applied; code refactored since). These are
+  historical learnings, **not** standing mandates to re-scan every run.
+- **Bar for a new PR:** a genuinely new, unaddressed finding, with evidence — a
+  concrete exploit path / failing test (security) or a benchmark showing >20%
+  real-workload improvement (performance). A Big-O note alone is insufficient.
+- This repo has **no web UI and no VS Code extension** — skip all UX tasks.
+
 ### Dependencies
 - Never add a package without first verifying it exists on the official registry (npm/PyPI).
 - Always pin to exact versions in `package.json` and `requirements.txt`. No ^, ~, or >= ranges.

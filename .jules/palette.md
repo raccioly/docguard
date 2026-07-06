@@ -1,11 +1,11 @@
-## 2024-04-16 - Web UI Components Constraint
-**Learning:** The docguard repository consists entirely of a Node.js CLI tool and a VS Code extension; it lacks web UI components (e.g., HTML, CSS, React, Vue), meaning traditional web-focused micro-UX enhancements do not apply.
-**Action:** Do not attempt traditional web-based UX enhancements here. Focus on CLI paradigms or skip UX enhancement requests if web-centric.
+# Palette — UX learnings
 
-## 2024-04-16 - Context-Aware Status Bar Tooltips
-**Learning:** VS Code extension status bar items can display multiple forms of feedback, but static tooltips fail to explain state changes. Providing context-aware tooltip text (e.g., explaining why a threshold warning icon appears) greatly improves the usability for developers monitoring CLI outputs inline.
-**Action:** Always map status bar dynamic properties (icon, text, backgroundColor) to corresponding informative tooltips that explain what the visual change means.
+> ⛔ **STOP.** This repository has **no user-facing UI**: it is a Node.js CLI
+> plus config/docs. There is **no web frontend** (no HTML/CSS/React/Vue) and
+> **no VS Code extension** (it was removed). Palette therefore has nothing to
+> act on here. **Do NOT open UX PRs** — the past "No web UI components" /
+> "No changes required" no-op PRs were closed as noise. Skip this repo.
 
-## 2024-05-18 - Yielding Event Loop for Loading States
-**Learning:** When updating UI elements like VS Code extension `statusBarItem` to show a loading state (e.g., adding a spinner and changing tooltip) immediately prior to a synchronous, blocking operation (like `execSync`), the changes won't render unless you explicitly yield the event loop.
-**Action:** Use `await new Promise(r => setTimeout(r, 0))` right after the UI update to allow the editor time to render the visual changes before the main thread blocks.
+Historical note: earlier learnings referenced a VS Code extension (status-bar
+tooltips, loading spinners). That extension no longer exists in this repo, so
+those notes are obsolete and must not be acted on.

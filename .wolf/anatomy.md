@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-07-06T00:51:03.699Z
-> Files: 664 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-07-06T01:05:07.108Z
+> Files: 667 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../../../tmp/
 
@@ -22,7 +22,7 @@
 - `.npmrc` — Supply-Chain Security Hardening (~59 tok)
 - `.pre-commit-hooks.yaml` — DocGuard hooks for the pre-commit framework (https://pre-commit.com). (~490 tok)
 - `action.yml` — Declares fs (~7591 tok)
-- `AGENTS.md` — AI Agent Instructions — DocGuard (~1584 tok)
+- `AGENTS.md` — AI Agent Instructions — DocGuard (~1827 tok)
 - `CHANGELOG.md` — Changelog (~45081 tok)
 - `CLAUDE.md` — OpenWolf (~57 tok)
 - `CODE_OF_CONDUCT.md` — Contributor Covenant Code of Conduct (~532 tok)
@@ -953,6 +953,12 @@
 
 - `release.yml` — CI: Auto Release — Tag, GitHub Release, npm, PyPI (~3386 tok)
 - `sync-speckit-catalog.yml` — CI: Prepare Spec Kit Catalog Submission (Manual) (~1385 tok)
+
+## .jules/
+
+- `bolt.md` — Bolt — performance learnings (~333 tok)
+- `palette.md` — Palette — UX learnings (~153 tok)
+- `sentinel.md` — Sentinel — security learnings (~329 tok)
 
 ## cli/
 
