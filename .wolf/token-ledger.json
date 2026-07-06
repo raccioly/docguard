@@ -2,14 +2,14 @@
   "version": 1,
   "created_at": "2026-05-26T15:31:59.491Z",
   "lifetime": {
-    "total_tokens_estimated": 5894418,
-    "total_reads": 1501,
-    "total_writes": 2300,
+    "total_tokens_estimated": 5909858,
+    "total_reads": 1505,
+    "total_writes": 2332,
     "total_sessions": 38,
-    "anatomy_hits": 917,
+    "anatomy_hits": 921,
     "anatomy_misses": 580,
     "repeated_reads_blocked": 918,
-    "estimated_savings_vs_bare_cli": 5185633
+    "estimated_savings_vs_bare_cli": 5186433
   },
   "sessions": [
     {
@@ -21815,6 +21815,258 @@
         "output_tokens_estimated": 104,
         "reads_count": 1,
         "writes_count": 1,
+        "repeated_reads_blocked": 0,
+        "anatomy_lookups": 1
+      }
+    },
+    {
+      "id": "session-2026-07-06-2028",
+      "started": "2026-07-06T00:28:14.541Z",
+      "ended": "2026-07-06T00:36:12.725Z",
+      "reads": [
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/commands/mcp.mjs",
+          "tokens_estimated": 2902,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/glama.json",
+          "tokens_estimated": 29,
+          "action": "create"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/commands/mcp.mjs",
+          "tokens_estimated": 172,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/commands/mcp.mjs",
+          "tokens_estimated": 141,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/commands/mcp.mjs",
+          "tokens_estimated": 89,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/commands/mcp.mjs",
+          "tokens_estimated": 166,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/commands/mcp.mjs",
+          "tokens_estimated": 129,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/commands/mcp.mjs",
+          "tokens_estimated": 114,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/docs-canonical/ARCHITECTURE.md",
+          "tokens_estimated": 118,
+          "action": "edit"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 2902,
+        "output_tokens_estimated": 958,
+        "reads_count": 1,
+        "writes_count": 8,
+        "repeated_reads_blocked": 0,
+        "anatomy_lookups": 1
+      }
+    },
+    {
+      "id": "session-2026-07-06-2028",
+      "started": "2026-07-06T00:28:14.541Z",
+      "ended": "2026-07-06T00:38:05.805Z",
+      "reads": [
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/commands/mcp.mjs",
+          "tokens_estimated": 2902,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/glama.json",
+          "tokens_estimated": 29,
+          "action": "create"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/commands/mcp.mjs",
+          "tokens_estimated": 172,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/commands/mcp.mjs",
+          "tokens_estimated": 141,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/commands/mcp.mjs",
+          "tokens_estimated": 89,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/commands/mcp.mjs",
+          "tokens_estimated": 166,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/commands/mcp.mjs",
+          "tokens_estimated": 129,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/commands/mcp.mjs",
+          "tokens_estimated": 114,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/docs-canonical/ARCHITECTURE.md",
+          "tokens_estimated": 118,
+          "action": "edit"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 2902,
+        "output_tokens_estimated": 958,
+        "reads_count": 1,
+        "writes_count": 8,
+        "repeated_reads_blocked": 0,
+        "anatomy_lookups": 1
+      }
+    },
+    {
+      "id": "session-2026-07-06-2028",
+      "started": "2026-07-06T00:28:14.541Z",
+      "ended": "2026-07-06T00:39:56.856Z",
+      "reads": [
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/commands/mcp.mjs",
+          "tokens_estimated": 2902,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/glama.json",
+          "tokens_estimated": 29,
+          "action": "create"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/commands/mcp.mjs",
+          "tokens_estimated": 172,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/commands/mcp.mjs",
+          "tokens_estimated": 141,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/commands/mcp.mjs",
+          "tokens_estimated": 89,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/commands/mcp.mjs",
+          "tokens_estimated": 166,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/commands/mcp.mjs",
+          "tokens_estimated": 129,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/commands/mcp.mjs",
+          "tokens_estimated": 114,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/docs-canonical/ARCHITECTURE.md",
+          "tokens_estimated": 118,
+          "action": "edit"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 2902,
+        "output_tokens_estimated": 958,
+        "reads_count": 1,
+        "writes_count": 8,
+        "repeated_reads_blocked": 0,
+        "anatomy_lookups": 1
+      }
+    },
+    {
+      "id": "session-2026-07-06-2028",
+      "started": "2026-07-06T00:28:14.541Z",
+      "ended": "2026-07-06T00:45:54.815Z",
+      "reads": [
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/commands/mcp.mjs",
+          "tokens_estimated": 2902,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/glama.json",
+          "tokens_estimated": 29,
+          "action": "create"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/commands/mcp.mjs",
+          "tokens_estimated": 172,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/commands/mcp.mjs",
+          "tokens_estimated": 141,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/commands/mcp.mjs",
+          "tokens_estimated": 89,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/commands/mcp.mjs",
+          "tokens_estimated": 166,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/commands/mcp.mjs",
+          "tokens_estimated": 129,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/cli/commands/mcp.mjs",
+          "tokens_estimated": 114,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/docs-canonical/ARCHITECTURE.md",
+          "tokens_estimated": 118,
+          "action": "edit"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 2902,
+        "output_tokens_estimated": 958,
+        "reads_count": 1,
+        "writes_count": 8,
         "repeated_reads_blocked": 0,
         "anatomy_lookups": 1
       }

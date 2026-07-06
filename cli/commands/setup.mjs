@@ -21,7 +21,6 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync } from 
 import { resolve, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createInterface } from 'node:readline';
-import { execSync } from 'node:child_process';
 import { c, CURRENT_SCHEMA_VERSION } from '../shared.mjs';
 import { ensureSkills, detectAgentMode, isSpecKitInitialized, getDetectedAgent } from '../ensure-skills.mjs';
 
@@ -68,18 +67,6 @@ function detectProjectType(dir) {
   if (existsSync(resolve(dir, 'manage.py'))) return 'webapp';
   if (existsSync(resolve(dir, 'setup.py')) || existsSync(resolve(dir, 'pyproject.toml'))) return 'library';
   return 'unknown';
-}
-
-// ── CLI Detection ───────────────────────────────────────────────────────
-
-function isCliAvailable(name) {
-  try {
-    const cmd = process.platform === 'win32' ? `where ${name}` : `which ${name}`;
-    execSync(`${cmd} 2>/dev/null`, { encoding: 'utf-8', timeout: 3000 });
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 function detectAgentDirs(projectDir) {
