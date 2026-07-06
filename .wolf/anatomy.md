@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-07-06T01:05:07.108Z
-> Files: 667 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-07-06T14:46:58.012Z
+> Files: 670 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../../../tmp/
 
@@ -17,7 +17,7 @@
 - `.docguardignore` — # Python distribution artifacts (~199 tok)
 - `.DS_Store` (~3818 tok)
 - `.gitignore` — Git ignore rules (~167 tok)
-- `.jules-setup.sh` — Google Jules Environment Startup Script (~429 tok)
+- `.jules-setup.sh` — ========================================== (~631 tok)
 - `.npmignore` — Development (~76 tok)
 - `.npmrc` — Supply-Chain Security Hardening (~59 tok)
 - `.pre-commit-hooks.yaml` — DocGuard hooks for the pre-commit framework (https://pre-commit.com). (~490 tok)
@@ -951,7 +951,8 @@
 
 ## .github/workflows/
 
-- `release.yml` — CI: Auto Release — Tag, GitHub Release, npm, PyPI (~3386 tok)
+- `ci.yml` — CI: DocGuard CI (~1041 tok)
+- `release.yml` — CI: Auto Release — Tag, GitHub Release, npm, PyPI (~3434 tok)
 - `sync-speckit-catalog.yml` — CI: Prepare Spec Kit Catalog Submission (Manual) (~1385 tok)
 
 ## .jules/
@@ -965,6 +966,7 @@
 - `config.mjs` — DocGuard — configuration loading. (~3265 tok)
 - `docguard.mjs` — DocGuard CLI — The enforcement tool for Canonical-Driven Development (CDD) (~9606 tok)
 - `findings.mjs` — Findings — the structured, LLM-addressable result unit (v0.27). (~9698 tok)
+- `shared-git.mjs` — Shared Git Utilities — single source of truth for `git log` plumbing (~1851 tok)
 - `shared-ignore.mjs` — Shared Ignore Utility — Unified file filtering for all validators. (~4132 tok)
 - `shared-source.mjs` — Shared Source Resolution — Monorepo-aware source discovery. (~4655 tok)
 - `shared.mjs` — Shared constants for DocGuard CLI — colors, profiles, version. (~3496 tok)
@@ -982,7 +984,7 @@
 - `llms.mjs` — llms Command — Generate llms.txt from canonical documentation (~2137 tok)
 - `mcp.mjs` — MCP Command — DocGuard as a Model Context Protocol server (stdio). (~3098 tok)
 - `memory.mjs` — Memory Command — v0.17-P2. (~2957 tok)
-- `score.mjs` — Score Command — Calculate CDD maturity score (0-100) (~12136 tok)
+- `score.mjs` — Score Command — Calculate CDD maturity score (0-100) (~12221 tok)
 - `setup.mjs` — Setup Command — Interactive onboarding wizard for DocGuard (~5280 tok)
 - `sync-tests.mjs` — `docguard sync --tests` — reconcile the TEST-SPEC Source-to-Test Map from disk. (~3191 tok)
 - `sync.mjs` — Sync Command — keep the documentation memory ALWAYS UP TO DATE. (~2371 tok)
@@ -1091,6 +1093,7 @@
 - `field-report-3-deferred.test.mjs` — v0.28 — the detection-gap items deferred from LLM field report #3. (~3122 tok)
 - `field-report-3.test.mjs` — v0.27 — LLM field report #3. (~3315 tok)
 - `freshness.test.mjs` — runGit: commitOldCode (~3536 tok)
+- `hooks.test.mjs` — Declares afterFirst (~2420 tok)
 - `instruction-audit.test.mjs` — Instruction Audit scanner tests (field report #11 — MemoryLint-inspired). (~2387 tok)
 - `inventory.test.mjs` — Declares make (~1048 tok)
 - `llms-full-pack.test.mjs` — CLI: run (~1304 tok)
