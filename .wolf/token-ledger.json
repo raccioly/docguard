@@ -2,14 +2,14 @@
   "version": 1,
   "created_at": "2026-05-26T15:31:59.491Z",
   "lifetime": {
-    "total_tokens_estimated": 5840829,
-    "total_reads": 1499,
-    "total_writes": 2298,
-    "total_sessions": 33,
-    "anatomy_hits": 915,
+    "total_tokens_estimated": 5894418,
+    "total_reads": 1501,
+    "total_writes": 2300,
+    "total_sessions": 38,
+    "anatomy_hits": 917,
     "anatomy_misses": 580,
     "repeated_reads_blocked": 918,
-    "estimated_savings_vs_bare_cli": 5185233
+    "estimated_savings_vs_bare_cli": 5185633
   },
   "sessions": [
     {
@@ -21761,6 +21761,62 @@
         "writes_count": 77,
         "repeated_reads_blocked": 18,
         "anatomy_lookups": 28
+      }
+    },
+    {
+      "id": "session-2026-07-05-1205",
+      "started": "2026-07-05T16:05:31.122Z",
+      "ended": "2026-07-05T16:15:20.418Z",
+      "reads": [
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/CHANGELOG.md",
+          "tokens_estimated": 45074,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/CHANGELOG.md",
+          "tokens_estimated": 35,
+          "action": "edit"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 45074,
+        "output_tokens_estimated": 35,
+        "reads_count": 1,
+        "writes_count": 1,
+        "repeated_reads_blocked": 0,
+        "anatomy_lookups": 1
+      }
+    },
+    {
+      "id": "session-2026-07-05-1423",
+      "started": "2026-07-05T18:23:53.856Z",
+      "ended": "2026-07-05T18:35:41.948Z",
+      "reads": [
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/README.md",
+          "tokens_estimated": 8376,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/intelligent-lehmann-6f6e95/README.md",
+          "tokens_estimated": 104,
+          "action": "edit"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 8376,
+        "output_tokens_estimated": 104,
+        "reads_count": 1,
+        "writes_count": 1,
+        "repeated_reads_blocked": 0,
+        "anatomy_lookups": 1
       }
     }
   ],

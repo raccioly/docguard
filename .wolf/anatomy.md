@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-07-05T16:10:27.214Z
-> Files: 662 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-07-06T00:34:30.826Z
+> Files: 663 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../../../tmp/
 
@@ -32,6 +32,7 @@
 - `docguard-cli-0.23.0.tgz` (~81238 tok)
 - `Dockerfile` — Docker container definition (~204 tok)
 - `DRIFT-LOG.md` — Drift Log (~802 tok)
+- `glama.json` (~29 tok)
 - `LICENSE` — Project license (~286 tok)
 - `package-lock.json` — npm lock file (~617 tok)
 - `package.json` — Node.js package manifest (~459 tok)
@@ -39,7 +40,7 @@
 - `pr_description.md` (~260 tok)
 - `pyproject.toml` — The enforcement tool for Canonical-Driven Development (CDD). Audit, generate, and guard your project (~358 tok)
 - `README.es.md` — 🛡️ DocGuard (~1098 tok)
-- `README.md` — Project documentation (~8376 tok)
+- `README.md` — Project documentation (~8436 tok)
 - `README.pt-BR.md` — 🛡️ DocGuard (~1075 tok)
 - `ROADMAP.md` — DocGuard Roadmap (~2432 tok)
 - `SECURITY.md` — Security Policy (~357 tok)
@@ -973,7 +974,7 @@
 - `guard.mjs` — Guard Command — Validate project against its canonical documentation (~11608 tok)
 - `init.mjs` — Init Command — Initialize CDD documentation from templates (~7278 tok)
 - `llms.mjs` — llms Command — Generate llms.txt from canonical documentation (~2137 tok)
-- `mcp.mjs` — MCP Command — DocGuard as a Model Context Protocol server (stdio). (~2902 tok)
+- `mcp.mjs` — MCP Command — DocGuard as a Model Context Protocol server (stdio). (~3098 tok)
 - `memory.mjs` — Memory Command — v0.17-P2. (~2957 tok)
 - `score.mjs` — Score Command — Calculate CDD maturity score (0-100) (~12136 tok)
 - `sync-tests.mjs` — `docguard sync --tests` — reconcile the TEST-SPEC Source-to-Test Map from disk. (~3191 tok)
@@ -1025,7 +1026,7 @@
 
 ## docs-canonical/
 
-- `ARCHITECTURE.md` — Architecture (~2967 tok)
+- `ARCHITECTURE.md` — Architecture (~3029 tok)
 - `DATA-MODEL.md` — Data Model (~1668 tok)
 - `REQUIREMENTS.md` — Requirements (~673 tok)
 - `SURFACE-AUDIT.md` — DocGuard Surface Audit (~5703 tok)
