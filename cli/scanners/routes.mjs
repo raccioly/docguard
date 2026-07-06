@@ -252,6 +252,8 @@ function scanExpressRoutes(dir, roots = null) {
 
   // ── Phase 2: emit routes, prefixing by mount where known ────────────────────
   const routes = [];
+  // PERFORMANCE OPTIMIZATION: Hoist regex instantiation out of the file loop
+  const routeRegex = new RegExp(routePattern.source, 'gi');
   for (const { content, filePath, fileLabel } of files) {
     const mounts = mountMap.get(filePath) || [];
     const emit = (method, path, index, receiver) => {
@@ -275,9 +277,9 @@ function scanExpressRoutes(dir, roots = null) {
     if (ast) {
       for (const r of ast) emit(r.method, r.path, r.start, r.receiver ?? null);
     } else {
-      const regex = new RegExp(routePattern.source, 'gi');
+      routeRegex.lastIndex = 0;
       let match;
-      while ((match = regex.exec(content)) !== null) emit(match[1], match[2], match.index, null);
+      while ((match = routeRegex.exec(content)) !== null) emit(match[1], match[2], match.index, null);
     }
   }
 
@@ -348,6 +350,8 @@ function joinRoutePath(prefix, p) {
 function scanFastifyRoutes(dir, roots = null) {
   const routes = [];
   const pattern = /(?:fastify|server|app)\s*\.\s*(get|post|put|delete|patch)\s*\(\s*['"`]([^'"`]+)['"`]/gi;
+  // PERFORMANCE OPTIMIZATION: Hoist regex instantiation out of the file loop
+  const patternRegex = new RegExp(pattern.source, 'gi');
 
   const searchTargets = roots && roots.length ? roots : [resolve(dir, 'src')];
   for (const fullDir of searchTargets) {
@@ -377,8 +381,8 @@ function scanFastifyRoutes(dir, roots = null) {
         for (const r of objs || []) emit(r.method, r.path, r.start);
       } else {
         let match;
-        const regex = new RegExp(pattern.source, 'gi');
-        while ((match = regex.exec(content)) !== null) emit(match[1], match[2], match.index);
+        patternRegex.lastIndex = 0;
+        while ((match = patternRegex.exec(content)) !== null) emit(match[1], match[2], match.index);
       }
     });
   }
@@ -391,6 +395,8 @@ function scanFastifyRoutes(dir, roots = null) {
 function scanHonoRoutes(dir, roots = null) {
   const routes = [];
   const pattern = /(?:app|router)\s*\.\s*(get|post|put|delete|patch)\s*\(\s*['"`]([^'"`]+)['"`]/gi;
+  // PERFORMANCE OPTIMIZATION: Hoist regex instantiation out of the file loop
+  const patternRegex = new RegExp(pattern.source, 'gi');
 
   const searchTargets = roots && roots.length
     ? roots
@@ -420,8 +426,8 @@ function scanHonoRoutes(dir, roots = null) {
         for (const r of calls) emit(r.method, r.path, r.start);
       } else {
         let match;
-        const regex = new RegExp(pattern.source, 'gi');
-        while ((match = regex.exec(content)) !== null) emit(match[1], match[2], match.index);
+        patternRegex.lastIndex = 0;
+        while ((match = patternRegex.exec(content)) !== null) emit(match[1], match[2], match.index);
       }
     });
   }
@@ -463,6 +469,8 @@ function scanDjangoRoutes(dir) {
 function scanFastAPIRoutes(dir) {
   const routes = [];
   const pattern = /@(?:app|router)\s*\.\s*(get|post|put|delete|patch)\s*\(\s*['"]([^'"]+)['"]/gi;
+  // PERFORMANCE OPTIMIZATION: Hoist regex instantiation out of the file loop
+  const patternRegex = new RegExp(pattern.source, 'gi');
 
   const pyFiles = findFiles(dir, /\.py$/);
   // AST-first: ONE python3 subprocess parses every file. `null` means Python is
@@ -493,8 +501,8 @@ function scanFastAPIRoutes(dir) {
     }
 
     let match;
-    const regex = new RegExp(pattern.source, 'gi');
-    while ((match = regex.exec(content)) !== null) {
+    patternRegex.lastIndex = 0;
+    while ((match = patternRegex.exec(content)) !== null) {
       routes.push({
         method: match[1].toUpperCase(),
         path: match[2],
@@ -518,6 +526,8 @@ function scanSpringBootRoutes(dir) {
   // Optional path; bare `@PostMapping` means "base path only".
   const verbMap = /@(Get|Post|Put|Delete|Patch)Mapping(?:\s*\(\s*(?:value\s*=\s*)?["']([^"']*)["'])?/g;
   const classBase = /@RequestMapping\s*\(\s*(?:value\s*=\s*)?["']([^"']+)["'][^)]*\)\s*[\r\n][\s\S]*?(?:public\s+)?class\s+\w+/;
+  // PERFORMANCE OPTIMIZATION: Hoist regex instantiation out of the file loop
+  const verbMapRegex = new RegExp(verbMap.source, 'g');
 
   const javaFiles = findFiles(dir, /\.(java|kt)$/);
   for (const filePath of javaFiles) {
@@ -530,8 +540,8 @@ function scanSpringBootRoutes(dir) {
     const authPresent = /@PreAuthorize|@Secured|SecurityContext/.test(content);
 
     let match;
-    const re = new RegExp(verbMap.source, 'g');
-    while ((match = re.exec(content)) !== null) {
+    verbMapRegex.lastIndex = 0;
+    while ((match = verbMapRegex.exec(content)) !== null) {
       const method = match[1].toUpperCase();
       const sub = match[2] || '';
       const path = (basePath + sub).replace(/\/+/g, '/') || '/';
@@ -587,13 +597,15 @@ function scanGoWebRoutes(dir) {
   const routes = [];
   // Generic: <recv>.<METHOD>("/path", handler)  for Gin/Echo/Chi/Fiber/mux.Router
   const pattern = /\.(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS|HandleFunc|Handle)\s*\(\s*["']([^"']+)["']/g;
+  // PERFORMANCE OPTIMIZATION: Hoist regex instantiation out of the file loop
+  const patternRegex = new RegExp(pattern.source, 'g');
   const goFiles = findFiles(dir, /\.go$/);
   for (const filePath of goFiles) {
     const content = readFileSafe(filePath);
     if (!content) continue;
     let m;
-    const re = new RegExp(pattern.source, 'g');
-    while ((m = re.exec(content)) !== null) {
+    patternRegex.lastIndex = 0;
+    while ((m = patternRegex.exec(content)) !== null) {
       const verb = m[1];
       // HandleFunc / Handle are method-agnostic.
       const method = ['HandleFunc', 'Handle'].includes(verb) ? 'ANY' : verb;

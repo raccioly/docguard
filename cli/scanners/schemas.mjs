@@ -222,6 +222,8 @@ function scanDrizzleSchemas(dir) {
 
   const schemaDirs = ['src/db', 'src/schema', 'db', 'schema', 'drizzle', 'src/drizzle', 'src'];
   const tablePattern = /(?:export\s+(?:const|let)\s+)?(\w+)\s*=\s*(?:pg|mysql|sqlite)Table\s*\(\s*['"`](\w+)['"`]\s*,\s*\{([^}]+)\}/g;
+  // PERFORMANCE OPTIMIZATION: Hoist regex instantiation out of the file loop
+  const tableRegex = new RegExp(tablePattern.source, 'g');
 
   for (const schemaDir of schemaDirs) {
     const fullDir = resolve(dir, schemaDir);
@@ -256,8 +258,8 @@ function scanDrizzleSchemas(dir) {
         for (const s of ast) if (s.kind === 'drizzle') emit(s.table, s.body);
       } else {
         let match;
-        const regex = new RegExp(tablePattern.source, 'g');
-        while ((match = regex.exec(content)) !== null) emit(match[2], match[3]);
+        tableRegex.lastIndex = 0;
+        while ((match = tableRegex.exec(content)) !== null) emit(match[2], match[3]);
       }
     });
   }
@@ -329,6 +331,8 @@ function scanZodSchemas(dir) {
 
   const schemaDirs = ['src/schema', 'src/schemas', 'schema', 'schemas', 'src/types', 'src/validation', 'src'];
   const zodPattern = /(?:export\s+(?:const|let)\s+)(\w+(?:Schema|Validator|Input|Output))\s*=\s*z\.object\s*\(\s*\{([^}]+)\}\s*\)/g;
+  // PERFORMANCE OPTIMIZATION: Hoist regex instantiation out of the file loop
+  const zodRegex = new RegExp(zodPattern.source, 'g');
 
   for (const schemaDir of schemaDirs) {
     const fullDir = resolve(dir, schemaDir);
@@ -358,8 +362,8 @@ function scanZodSchemas(dir) {
         }
       } else {
         let match;
-        const regex = new RegExp(zodPattern.source, 'g');
-        while ((match = regex.exec(content)) !== null) emit(match[1], match[2]);
+        zodRegex.lastIndex = 0;
+        while ((match = zodRegex.exec(content)) !== null) emit(match[1], match[2]);
       }
     });
   }
@@ -417,6 +421,8 @@ function scanMongooseSchemas(dir) {
 
   const schemaDirs = ['src/models', 'models', 'src/schema', 'schema'];
   const schemaPattern = /(?:const|let|var)\s+(\w+)(?:Schema)?\s*=\s*new\s+(?:mongoose\.)?Schema\s*\(\s*\{([^}]+)\}/g;
+  // PERFORMANCE OPTIMIZATION: Hoist regex instantiation out of the file loop
+  const schemaRegex = new RegExp(schemaPattern.source, 'g');
 
   for (const schemaDir of schemaDirs) {
     const fullDir = resolve(dir, schemaDir);
@@ -448,8 +454,8 @@ function scanMongooseSchemas(dir) {
         for (const s of ast) if (s.kind === 'mongoose') emit(s.name, s.body);
       } else {
         let match;
-        const regex = new RegExp(schemaPattern.source, 'g');
-        while ((match = regex.exec(content)) !== null) emit(match[1], match[2]);
+        schemaRegex.lastIndex = 0;
+        while ((match = schemaRegex.exec(content)) !== null) emit(match[1], match[2]);
       }
     });
   }
