@@ -3203,6 +3203,18 @@
       "related_bugs": [],
       "occurrences": 2,
       "last_seen": "2026-07-03T21:55:57.551Z"
+    },
+    {
+      "id": "bug-196",
+      "timestamp": "2026-07-05T00:00:00.000Z",
+      "error_message": "awesome-mcp-servers PR #9185 added a line containing the literal word 'undefined' to README instead of the DocGuard entry; bot flagged missing-glama, gh pr diff showed '+undefined', grep found no 'docguard'",
+      "file": "(scratchpad node -e insertion script; result pushed to raccioly/awesome-mcp-servers add-docguard)",
+      "root_cause": "Shell env-var vs argv error: `node -e \"...process.env.LINE...\" LINE=\"$LINE\"` passes LINE as a positional ARGV to node, NOT as an environment variable (env assignments must precede the command: `LINE=\"$LINE\" node -e`). So process.env.LINE was undefined and the script inserted the literal string 'undefined'. The invocation exited 0, so the `|| fallback` never ran, and it was committed+pushed unverified.",
+      "fix": "Rebuilt the branch: gh repo sync the fork to upstream, fresh clone, wrote the entry to a FILE (/tmp/dg-entry.txt) and inserted via a python heredoc (no shell-var interpolation), VERIFIED with grep for both the entry and the badge before committing, then force-pushed to the same PR branch (repairs the PR in place — keeps #9185, its thread, history). Lesson: for env→node, put the assignment before the command; and ALWAYS grep-verify a generated file insertion before commit+push.",
+      "tags": ["shell", "env-var", "node", "awesome-mcp-servers", "distribution", "verify-before-push"],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-05T00:00:00.000Z"
     }
   ]
 }
