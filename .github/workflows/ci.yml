@@ -12,7 +12,12 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [18, 20, 22]
+        # 24 ships npm 11 — keep it in the matrix so `npm ci` exercises the newer
+        # npm that older Nodes (18/20/22 → npm 10) do NOT. This is what catches
+        # config/install incompatibilities that npm 10 silently accepts but npm 11
+        # treats as fatal (e.g. bug-198: `.npmrc` min-release-age broke the Glama
+        # build on npm 11 while all local/CI installs passed). Do not drop 24.
+        node-version: [18, 20, 22, 24]
 
     steps:
       - uses: actions/checkout@v7

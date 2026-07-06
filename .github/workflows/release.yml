@@ -52,7 +52,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [18, 20, 22]
+        # 24 = npm 11 coverage (18/20/22 ship npm 10). Gates releases on the
+        # newer npm so a version-incompatible .npmrc / install can't ship (bug-198).
+        node-version: [18, 20, 22, 24]
     steps:
       - uses: actions/checkout@v7
         with:
