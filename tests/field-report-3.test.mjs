@@ -28,7 +28,7 @@ import { validateDocQuality } from '../cli/validators/doc-quality.mjs';
 import { grepEnvUsage } from '../cli/shared-source.mjs';
 import { runGuardInternal } from '../cli/commands/guard.mjs';
 import { detectTestRunner } from '../cli/commands/score.mjs';
-import { suppressesCode, mkFinding, resultFromFindings, CODES } from '../cli/findings.mjs';
+import { suppressesCode, lineSuppresses, mkFinding, resultFromFindings, CODES } from '../cli/findings.mjs';
 
 const CLI = join(process.cwd(), 'cli/docguard.mjs');
 const docguard = (args, opts = {}) => spawnSync('node', [CLI, ...args], { encoding: 'utf-8', ...opts });
@@ -52,6 +52,31 @@ describe('field report #3 — findings infrastructure', () => {
     assert.equal(suppressesCode('// docguard:ignore-secret', 'SEC003'), true);
     assert.equal(suppressesCode('// docguard:ignore-secret', 'DQ001'), false);
     assert.equal(suppressesCode('a plain code line', 'SEC001'), false);
+  });
+
+  it('suppressesCode — additional edge cases (all keyword, case, empty inputs)', () => {
+    assert.equal(suppressesCode('// docguard:ignore all', 'ENV003'), true, '"all" keyword suppresses any code');
+    assert.equal(suppressesCode('<!-- DOCGUARD:IGNORE sec001 -->', 'SEC001'), true, 'pragma + code are case-insensitive');
+    assert.equal(suppressesCode('// docguard:ignore STR*', 'ENV003'), false, 'wildcard only matches its prefix');
+    // Empty / missing inputs must never suppress (guarding against blanket suppression on undefined).
+    assert.equal(suppressesCode('', 'SEC001'), false);
+    assert.equal(suppressesCode('// docguard:ignore', ''), false);
+    assert.equal(suppressesCode(undefined, 'SEC001'), false);
+  });
+
+  it('lineSuppresses — pragma on the flagged line OR the line directly above', () => {
+    // On the same (flagged) line — trailing-comment style.
+    assert.equal(lineSuppresses('SEC001', 'const token = "x"; // docguard:ignore SEC001'), true);
+    // On the line ABOVE — the common style for languages without trailing comments.
+    assert.equal(lineSuppresses('SEC001', 'const token = "x"', '// docguard:ignore SEC001'), true);
+    // A pragma two lines up (not passed as prevLine) does NOT reach — only line + prevLine count.
+    assert.equal(lineSuppresses('SEC001', 'const token = "x"', 'unrelated code'), false);
+    // Wrong code on either line → not suppressed.
+    assert.equal(lineSuppresses('SEC001', '// docguard:ignore ENV003', '// docguard:ignore DQ002'), false);
+    // prevLine defaults to '' — a clean line with no pragma anywhere is never suppressed.
+    assert.equal(lineSuppresses('SEC001', 'const token = "x"'), false);
+    // A bare ignore on the line above suppresses any code.
+    assert.equal(lineSuppresses('ENV003', 'process.env.FOO', '// docguard:ignore'), true);
   });
 
   it('resultFromFindings derives errors/warnings and keeps findings in sync', () => {
