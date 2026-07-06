@@ -5,7 +5,7 @@
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, extname } from 'node:path';
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { c, docHasSection } from '../shared.mjs';
 import { validateSecurity } from '../validators/security.mjs';
 import { runGuardInternal } from './guard.mjs';
@@ -1039,11 +1039,16 @@ function estimateDocTax(projectDir, config, scores) {
   // Estimate code churn (commits in last 30 days)
   let recentCommits = 0;
   try {
-    const output = execSync('git log --oneline --since="30 days ago" 2>/dev/null | wc -l', {
+    // execFileSync (argv array) + count in JS — avoids the shell `| wc -l` pipe,
+    // which isn't portable to Windows (no `wc`) and needs a shell at all. Same
+    // pattern freshness.mjs already uses for commit counting.
+    const output = execFileSync('git', ['log', '--oneline', '--since=30 days ago'], {
       cwd: projectDir,
       encoding: 'utf-8',
-    }).trim();
-    recentCommits = parseInt(output, 10) || 0;
+      stdio: ['pipe', 'pipe', 'ignore'],
+      maxBuffer: 1024 * 1024 * 5,
+    });
+    recentCommits = output.trim() ? output.trim().split('\n').length : 0;
   } catch {
     recentCommits = 10; // Default assumption
   }
