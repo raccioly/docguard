@@ -167,7 +167,14 @@ export function getHooksDir(dir) {
     ).trim();
     // --git-path returns a path relative to `dir` (cwd) or an absolute path;
     // resolve() handles both.
-    if (out) return resolve(dir, out);
+    //
+    // Guard `/dev/null`: when `core.hooksPath` is set to /dev/null (a common
+    // "disable all hooks" convention — and what Jules's sandbox VM does),
+    // git returns the literal `/dev/null`. resolve()-ing it and then writing
+    // `<hooksDir>/pre-commit` gives `ENOTDIR: /dev/null/pre-commit`. Treat it
+    // as "no usable hooks dir" and fall through to the `.git/hooks` check so
+    // hook install/list still works in that environment. (bug-200)
+    if (out && out !== '/dev/null') return resolve(dir, out);
   } catch {
     // git unavailable or not a repo — fall through to the literal-path check.
   }

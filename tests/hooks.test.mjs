@@ -1,9 +1,11 @@
 import { describe, it, afterEach, beforeEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { mkdtempSync, mkdirSync, rmSync, existsSync, writeFileSync, readFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { runHooks } from '../cli/commands/hooks.mjs';
+import { getHooksDir } from '../cli/shared-git.mjs';
 
 describe('runHooks function', () => {
     let tmpDir;
@@ -150,5 +152,43 @@ describe('runHooks function', () => {
         assert.match(afterReinstall, /END DOCGUARD MANAGED/);
         assert.ok(logs.some(log => /updated DocGuard managed block|preserved user content/i.test(log)),
           `expected managed-block update message; got: ${logs.join(' | ')}`);
+    });
+});
+
+// Regression: core.hooksPath=/dev/null (bug-200). Jules's sandbox VM — and any
+// user who disables hooks with `git config core.hooksPath /dev/null` — made
+// `git rev-parse --git-path hooks` return the literal `/dev/null`. The old code
+// resolved that verbatim, then callers wrote `<hooksDir>/pre-commit`, crashing
+// with `ENOTDIR: /dev/null/pre-commit`. getHooksDir must fall back to .git/hooks.
+describe('getHooksDir with core.hooksPath=/dev/null', () => {
+    let tmpDir;
+    let oldLog;
+    let logs;
+
+    beforeEach(() => {
+        tmpDir = mkdtempSync(join(tmpdir(), 'sg-hooks-devnull-'));
+        spawnSync('git', ['init', '-q', '-b', 'main'], { cwd: tmpDir });
+        spawnSync('git', ['config', 'core.hooksPath', '/dev/null'], { cwd: tmpDir });
+        oldLog = console.log;
+        logs = [];
+        console.log = (...args) => { logs.push(args.join(' ')); };
+    });
+
+    afterEach(() => {
+        console.log = oldLog;
+        if (tmpDir && existsSync(tmpDir)) rmSync(tmpDir, { recursive: true, force: true });
+        tmpDir = null;
+    });
+
+    it('falls back to .git/hooks instead of returning /dev/null', () => {
+        const hooksDir = getHooksDir(tmpDir);
+        assert.notEqual(hooksDir, '/dev/null', 'must not return the /dev/null pseudo-path');
+        assert.match(hooksDir, /\.git[\\/]hooks$/, 'must resolve to the real .git/hooks dir');
+    });
+
+    it('runHooks installs a hook without ENOTDIR when core.hooksPath=/dev/null', () => {
+        assert.doesNotThrow(() => runHooks(tmpDir, { projectName: 'Test' }, { type: 'pre-commit' }));
+        assert.ok(existsSync(join(tmpDir, '.git', 'hooks', 'pre-commit')),
+          'pre-commit hook should be written to .git/hooks despite core.hooksPath=/dev/null');
     });
 });
