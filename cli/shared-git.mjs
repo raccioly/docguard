@@ -167,7 +167,7 @@ export function getHooksDir(dir) {
     ).trim();
     // --git-path returns a path relative to `dir` (cwd) or an absolute path;
     // resolve() handles both.
-    if (out) return resolve(dir, out);
+    if (out && out !== '/dev/null') return resolve(dir, out);
   } catch {
     // git unavailable or not a repo — fall through to the literal-path check.
   }
