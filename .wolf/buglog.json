@@ -23,7 +23,7 @@
       "error_message": "Significant refactor of ",
       "file": ".github/workflows/sync-speckit-catalog.yml",
       "root_cause": "8 lines replaced/restructured",
-      "fix": "Rewrote 25\u219228 lines (8 removed)",
+      "fix": "Rewrote 25→28 lines (8 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -103,7 +103,7 @@
       "error_message": "Significant refactor of ",
       "file": "../../../docs-canonical/REQUIREMENTS.md",
       "root_cause": "5 lines replaced/restructured",
-      "fix": "Rewrote 5\u21925 lines (5 removed)",
+      "fix": "Rewrote 5→5 lines (5 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -135,7 +135,7 @@
       "error_message": "Wrong reference: execSync should be execFileSync",
       "file": "../../../vscode-extension/extension.js",
       "root_cause": "Used \"execSync\" instead of \"execFileSync\"",
-      "fix": "Changed execSync \u2192 execFileSync",
+      "fix": "Changed execSync → execFileSync",
       "tags": [
         "auto-detected",
         "wrong-reference",
@@ -151,7 +151,7 @@
       "error_message": "Significant refactor of ",
       "file": "../../../vscode-extension/extension.js",
       "root_cause": "4 lines replaced/restructured",
-      "fix": "Rewrote 21\u219237 lines (4 removed)",
+      "fix": "Rewrote 21→37 lines (4 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -246,7 +246,7 @@
       "timestamp": "2026-05-29T17:47:26.119Z",
       "error_message": "Missing error handling in unknown",
       "file": "../../../docs-canonical/SURFACE-AUDIT.md",
-      "root_cause": "Code path had no error handling \u2014 exceptions would propagate uncaught",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
       "fix": "Added try/catch block",
       "tags": [
         "auto-detected",
@@ -279,7 +279,7 @@
       "error_message": "Significant refactor of ",
       "file": "../../../docs-canonical/ARCHITECTURE.md",
       "root_cause": "4 lines replaced/restructured",
-      "fix": "Rewrote 5\u21926 lines (4 removed)",
+      "fix": "Rewrote 5→6 lines (4 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -356,9 +356,9 @@
     {
       "id": "bug-023",
       "timestamp": "2026-06-02T15:41:53Z",
-      "error_message": ".docguardignore trailing-slash dir patterns (e.g. 'tests/', 'base-research/') silently match nothing \u2014 ignored dirs were still scanned/flagged by every shouldIgnore + buildIgnoreFilter consumer",
+      "error_message": ".docguardignore trailing-slash dir patterns (e.g. 'tests/', 'base-research/') silently match nothing — ignored dirs were still scanned/flagged by every shouldIgnore + buildIgnoreFilter consumer",
       "file": "cli/shared-ignore.mjs",
-      "root_cause": "globToRegex did not strip a gitignore-style trailing slash, so 'dir/' built an alternation that could only match a literal 'dir//' (double slash) \u2014 never a real path. routes.mjs and todo-tracking.mjs WERE correctly wired to shouldIgnore (fcc7264); the glob translator itself was broken. The test suite used 'dir/' forms only in loader/merge assertions and never asserted they MATCH a file, so it stayed green \u2014 a false-green coverage gap.",
+      "root_cause": "globToRegex did not strip a gitignore-style trailing slash, so 'dir/' built an alternation that could only match a literal 'dir//' (double slash) — never a real path. routes.mjs and todo-tracking.mjs WERE correctly wired to shouldIgnore (fcc7264); the glob translator itself was broken. The test suite used 'dir/' forms only in loader/merge assertions and never asserted they MATCH a file, so it stayed green — a false-green coverage gap.",
       "fix": "Strip a trailing slash in globToRegex (const normalized = pattern.replace trailing-slash || pattern) so 'dir', 'dir/' and 'dir/**' behave identically. Added 4 end-to-end regression tests in tests/docguardignore.test.mjs that assert trailing-slash patterns actually match and do not over-match a sibling sharing the prefix.",
       "tags": [
         "ignore",
@@ -378,7 +378,7 @@
       "timestamp": "2026-06-02T15:41:53Z",
       "error_message": "generate --plan --write crashes with ENOENT creating docs-implementation/KNOWN-GOTCHAS.md",
       "file": "cli/commands/generate.mjs",
-      "root_cause": "The --plan --write loop mkdir'd only docs-canonical/, then wrote each doc with a raw writeFileSync. buildMemoryPlan unconditionally plans docs-implementation/ docs (KNOWN-GOTCHAS.md, CURRENT-STATE.md), so the first write into that not-yet-created dir threw ENOENT \u2014 docs-canonical docs written, first docs-implementation write crashed.",
+      "root_cause": "The --plan --write loop mkdir'd only docs-canonical/, then wrote each doc with a raw writeFileSync. buildMemoryPlan unconditionally plans docs-implementation/ docs (KNOWN-GOTCHAS.md, CURRENT-STATE.md), so the first write into that not-yet-created dir threw ENOENT — docs-canonical docs written, first docs-implementation write crashed.",
       "fix": "Folded mkdirSync(dirname(filePath),{recursive:true}) into the safeWrite helper and routed the --plan --write loop through safeWrite instead of raw writeFileSync (also gains the .bak backup that path previously lacked). Added a regression test in tests/commands.test.mjs running generate --plan --write in a temp project with no docs-implementation/.",
       "tags": [
         "generate",
@@ -395,7 +395,7 @@
     {
       "id": "bug-025",
       "timestamp": "2026-06-02T19:16:48Z",
-      "error_message": "docguard init --fix drops into the interactive doc-picker (\"Which canonical docs does your project need?\") and hangs/fails with no TTY \u2014 contradicts its documented \"Auto-create missing files from templates\"",
+      "error_message": "docguard init --fix drops into the interactive doc-picker (\"Which canonical docs does your project need?\") and hangs/fails with no TTY — contradicts its documented \"Auto-create missing files from templates\"",
       "file": "cli/commands/init.mjs",
       "root_cause": "--fix was a dead flag: documented (docguard.mjs:111) and set (docguard.mjs:186) but consumed nowhere. init.mjs never read flags.fix, so init ran its normal path; with no skeleton/skipPrompts/wizard/profile set it fell into the interactive askQuestion loop, which blocks/fails without a TTY (CI/agent use).",
       "fix": "Wired flags.fix into init.mjs: shouldRunGenerate() returns false on --fix (skip the interactive scan-and-propose preview) and the non-interactive branch fires on flags.fix (use profile defaults). The create-loop already skips existing files, so --fix only fills gaps. Added a regression test asserting init --fix creates docs without entering the picker.",
@@ -415,9 +415,9 @@
     {
       "id": "bug-026",
       "timestamp": "2026-06-02T19:16:48Z",
-      "error_message": "docguard generate --plan (a read-only preview) has side effects \u2014 scaffolds .agent/skills, .agent/commands, .specify/ and runs an npm/pip step",
+      "error_message": "docguard generate --plan (a read-only preview) has side effects — scaffolds .agent/skills, .agent/commands, .specify/ and runs an npm/pip step",
       "file": "cli/docguard.mjs",
-      "root_cause": "The dispatcher runs ensureSkills() on any command that is not setup/init and not headless. headless = jsonMode||write||checkOnly||changedOnly||quiet, which excluded a bare --plan \u2014 so generate --plan triggered ensureSkills' writes. Inconsistent: generate --plan --write was already headless (flags.write) and did NOT scaffold.",
+      "root_cause": "The dispatcher runs ensureSkills() on any command that is not setup/init and not headless. headless = jsonMode||write||checkOnly||changedOnly||quiet, which excluded a bare --plan — so generate --plan triggered ensureSkills' writes. Inconsistent: generate --plan --write was already headless (flags.write) and did NOT scaffold.",
       "fix": "Added flags.plan to the headless set in docguard.mjs so generate --plan suppresses the banner AND ensureSkills, matching --plan --write. Verified by a before/after probe: a non-headless generate creates .agent (YES), generate --plan does not (no). Added a regression test asserting --plan leaves .agent/ and .specify/ untouched.",
       "tags": [
         "generate",
@@ -436,7 +436,7 @@
     {
       "id": "bug-027",
       "timestamp": "2026-06-02T19:30:13Z",
-      "error_message": "project-type detection (generate --plan) misclassifies a Click CLI as 'Express, Flask' \u2014 it ingests tests/fixtures/*/package.json + requirements.txt because ignored dirs are not honored",
+      "error_message": "project-type detection (generate --plan) misclassifies a Click CLI as 'Express, Flask' — it ingests tests/fixtures/*/package.json + requirements.txt because ignored dirs are not honored",
       "file": "cli/scanners/project-type.mjs",
       "root_cause": "findManifests pruned only a hardcoded IGNORE_DIRS set + dot-dirs and never honored config.ignore/.docguardignore. detectEcosystems received config but marked it _config and never passed it to findManifests, so fixture/vendored manifests in user-ignored dirs polluted the detected frameworks/profile. This is the buildMemoryPlan/--plan path (generate's full path uses its own detectStack).",
       "fix": "Threaded the already-arriving config into findManifests and pruned dirs + skipped manifest files via shouldIgnore(relPosix(root, child), config); detectEcosystems now passes config through (was _config). Depends on bug-023's trailing-slash glob fix so a 'tests/' pattern matches. Regression test in tests/project-type.test.mjs uses a control (fixtures pollute without ignore) + the fix (tests/ ignore drops Express/Flask, keeps the real Click).",
@@ -457,10 +457,10 @@
     {
       "id": "bug-028",
       "timestamp": "2026-06-03T01:32:47Z",
-      "error_message": "A hand-corrected source=code section (scanner mislabeled it) is flagged stale forever, and the suggested remedy `sync --write` reverts the correction \u2014 no override existed",
+      "error_message": "A hand-corrected source=code section (scanner mislabeled it) is flagged stale forever, and the suggested remedy `sync --write` reverts the correction — no override existed",
       "file": "cli/validators/generated-staleness.mjs",
       "root_cause": "Generated-Staleness compared every source=code section against scanner output with no per-section opt-out (quality checks had one; code sections didn't), and sync --write unconditionally replaced source=code sections. So a legitimately hand-maintained section had no escape from the stale-forever / auto-revert trap.",
-      "fix": "Honor a `pinned` attribute on the section marker (<!-- docguard:section id=\u2026 source=code pinned=\"reason\" -->), already parsed by parseSections. generated-staleness exempts pinned sections (counted as a pass, mirroring the docguard:quality opt-out) and appends a discoverability hint to the stale warning; sync.mjs skips pinned sections. Tests in generated-staleness.test.mjs (control+fix) and sync.test.mjs (don't-revert).",
+      "fix": "Honor a `pinned` attribute on the section marker (<!-- docguard:section id=… source=code pinned=\"reason\" -->), already parsed by parseSections. generated-staleness exempts pinned sections (counted as a pass, mirroring the docguard:quality opt-out) and appends a discoverability hint to the stale warning; sync.mjs skips pinned sections. Tests in generated-staleness.test.mjs (control+fix) and sync.test.mjs (don't-revert).",
       "tags": [
         "generated-staleness",
         "sync",
@@ -477,7 +477,7 @@
     {
       "id": "bug-029",
       "timestamp": "2026-06-03T01:32:47Z",
-      "error_message": "docguard <command> --help printed the global help, not the command's own flags \u2014 flag discovery (generate --plan --write, init --skeleton/--wizard/--with) was impossible from --help",
+      "error_message": "docguard <command> --help printed the global help, not the command's own flags — flag discovery (generate --plan --write, init --skeleton/--wizard/--with) was impossible from --help",
       "file": "cli/docguard.mjs",
       "root_cause": "v0.24 made <command> --help non-destructive but routed it to printHelp() (global) because there was no per-command help; the global help lists commands but not each command's full flag set + examples.",
       "fix": "Added a COMMAND_HELP map (init/generate/guard/score/diff/sync/fix/trace/upgrade/ci/memory) + printCommandHelp(command); the --help dispatch now calls it. Unmapped commands fall back to global help. Flags derived from the vetted global help to avoid documenting non-existent flags. Tests assert generate/init --help show their flags and watch --help falls back without starting the watcher.",
@@ -496,7 +496,7 @@
     {
       "id": "bug-030",
       "timestamp": "2026-06-03T01:32:47Z",
-      "error_message": "generate emits docs-canonical/API-REFERENCE.md, then guard warns it 'exists but is not in your requiredFiles config' \u2014 the generator's own output is flagged orphaned",
+      "error_message": "generate emits docs-canonical/API-REFERENCE.md, then guard warns it 'exists but is not in your requiredFiles config' — the generator's own output is flagged orphaned",
       "file": "cli/commands/generate.mjs",
       "root_cause": "generate's standard doc set is a superset of the profile's requiredFiles.canonical, and generate never updated requiredFiles, so the traceability orphan-check (traceability.mjs:133) flagged docs the generator just created.",
       "fix": "Added registerGeneratedCanonicalDocs(): after writing, generate merges the canonical docs it emitted into .docguard.json requiredFiles.canonical (additive only, only docs-canonical/*.md that exist on disk, only when a config exists, idempotent). Wired into both the full generate path and the --plan --write path. Test asserts requiredFiles.canonical gains ARCHITECTURE after generate --plan --write.",
@@ -519,7 +519,7 @@
       "error_message": "generate --plan mislabels a security/scanner tool's own pattern-strings as real surface (websec-validator flagged as using express/boto3/jwt because its recon code mentions them)",
       "file": "cli/commands/generate.mjs",
       "root_cause": "The route/SDK/auth source scanners match pattern-strings; for a cli/library/tool whose source CONTAINS those strings as detection patterns, the auto-extracted surface is the tool's own code, not real usage. No confidence signal existed to warn the user.",
-      "fix": "F1 (chosen scope: flag, don't suppress \u2014 suppression would risk a false-green). Added surfaceConfidence(kind): web kinds (webapp/api/service) = 'normal', everything else = 'low'. generate --plan --format json now emits surface.confidence; the text output prints a 'Low-confidence surface \u2014 verify, pin with pinned=...' advisory when a non-web kind has web surface. Guard detection unchanged. Test asserts cli\u2192low, api\u2192normal.",
+      "fix": "F1 (chosen scope: flag, don't suppress — suppression would risk a false-green). Added surfaceConfidence(kind): web kinds (webapp/api/service) = 'normal', everything else = 'low'. generate --plan --format json now emits surface.confidence; the text output prints a 'Low-confidence surface — verify, pin with pinned=...' advisory when a non-web kind has web surface. Guard detection unchanged. Test asserts cli→low, api→normal.",
       "tags": [
         "generate",
         "scanner-tool",
@@ -541,7 +541,7 @@
       "timestamp": "2026-06-05T03:02:00Z",
       "error_message": "Auto Release workflow failed: 20 AST tests (parseJsTs, extractJsRouteCalls, Fastify/Express/JSX route extraction) failed in the release 'test' job, blocking the v0.25.0 publish",
       "file": ".github/workflows/release.yml",
-      "root_cause": "The release.yml 'test' job ran `npm test` with NO `npm ci` step, so node_modules was empty and @babel/parser (a regular dependency, not optional) couldn't load \u2014 every AST-dependent test failed. Latent since the job was written; only surfaced at v0.25.0 because prior releases' detect-version step skipped this job (batched-push / non-tip version bump), so the test job never actually executed.",
+      "root_cause": "The release.yml 'test' job ran `npm test` with NO `npm ci` step, so node_modules was empty and @babel/parser (a regular dependency, not optional) couldn't load — every AST-dependent test failed. Latent since the job was written; only surfaced at v0.25.0 because prior releases' detect-version step skipped this job (batched-push / non-tip version bump), so the test job never actually executed.",
       "fix": "Added an `npm ci` 'Install dependencies' step before 'Run Tests', matching ci.yml. Re-triggered via workflow_dispatch (release.yml is paths-filtered to package.json, so the workflow-only fix commit didn't auto-trigger it). All jobs then green; v0.25.0 published to npm + PyPI + GitHub Release.",
       "tags": [
         "ci",
@@ -560,7 +560,7 @@
       "error_message": "Significant refactor of ",
       "file": ".github/workflows/release.yml",
       "root_cause": "84 lines replaced/restructured",
-      "fix": "Rewrote 135\u219268 lines (84 removed)",
+      "fix": "Rewrote 135→68 lines (84 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -616,7 +616,7 @@
       "error_message": "Significant refactor of ",
       "file": ".github/workflows/release.yml",
       "root_cause": "35 lines replaced/restructured",
-      "fix": "Rewrote 68\u219295 lines (35 removed)",
+      "fix": "Rewrote 68→95 lines (35 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -680,7 +680,7 @@
       "error_message": "Significant refactor of ",
       "file": "cli/docguard.mjs",
       "root_cause": "3 lines replaced/restructured",
-      "fix": "Rewrote 8\u219229 lines (3 removed)",
+      "fix": "Rewrote 8→29 lines (3 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -695,7 +695,7 @@
       "timestamp": "2026-06-10T20:13:36.017Z",
       "error_message": "Missing error handling in unknown",
       "file": "tests/commands.test.mjs",
-      "root_cause": "Code path had no error handling \u2014 exceptions would propagate uncaught",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
       "fix": "Added try/catch block",
       "tags": [
         "auto-detected",
@@ -728,7 +728,7 @@
       "error_message": "Significant refactor of ",
       "file": "cli/scanners/project-type.mjs",
       "root_cause": "3 lines replaced/restructured",
-      "fix": "Rewrote 7\u219210 lines (3 removed)",
+      "fix": "Rewrote 7→10 lines (3 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -760,7 +760,7 @@
       "error_message": "Significant refactor of ",
       "file": "cli/scanners/routes.mjs",
       "root_cause": "4 lines replaced/restructured",
-      "fix": "Rewrote 12\u219218 lines (4 removed)",
+      "fix": "Rewrote 12→18 lines (4 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -792,7 +792,7 @@
       "error_message": "Significant refactor of ",
       "file": "tests/ensure-skills-idempotent.test.mjs",
       "root_cause": "3 lines replaced/restructured",
-      "fix": "Rewrote 13\u219217 lines (3 removed)",
+      "fix": "Rewrote 13→17 lines (3 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -840,7 +840,7 @@
       "error_message": "Significant refactor of ",
       "file": "tests/project-type.test.mjs",
       "root_cause": "9 lines replaced/restructured",
-      "fix": "Rewrote 21\u219228 lines (9 removed)",
+      "fix": "Rewrote 21→28 lines (9 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -920,7 +920,7 @@
       "error_message": "Significant refactor of ",
       "file": "cli/validators/metrics-consistency.mjs",
       "root_cause": "2 lines replaced/restructured",
-      "fix": "Rewrote 5\u21928 lines (2 removed)",
+      "fix": "Rewrote 5→8 lines (2 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -936,7 +936,7 @@
       "error_message": "Significant refactor of ",
       "file": "cli/writers/mechanical.mjs",
       "root_cause": "3 lines replaced/restructured",
-      "fix": "Rewrote 16\u219234 lines (3 removed)",
+      "fix": "Rewrote 16→34 lines (3 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -967,7 +967,7 @@
       "timestamp": "2026-06-10T20:39:20.505Z",
       "error_message": "Missing error handling in readDocStatus",
       "file": "cli/validators/freshness.mjs",
-      "root_cause": "Code path had no error handling \u2014 exceptions would propagate uncaught",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
       "fix": "Added try/catch block",
       "tags": [
         "auto-detected",
@@ -984,7 +984,7 @@
       "error_message": "Significant refactor of ",
       "file": "cli/validators/freshness.mjs",
       "root_cause": "2 lines replaced/restructured",
-      "fix": "Rewrote 10\u219223 lines (2 removed)",
+      "fix": "Rewrote 10→23 lines (2 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -1016,7 +1016,7 @@
       "error_message": "Significant refactor of ",
       "file": "cli/commands/agent.mjs",
       "root_cause": "2 lines replaced/restructured",
-      "fix": "Rewrote 3\u21925 lines (2 removed) | Also: console.log(`\\n  ${c.dim}Run without --format text; return; | Also: const plan = buildMemoryPlan(projectDir, config);; const graph = buildAgentTaskGraph(projectDir, conf",
+      "fix": "Rewrote 3→5 lines (2 removed) | Also: console.log(`\\n  ${c.dim}Run without --format text; return; | Also: const plan = buildMemoryPlan(projectDir, config);; const graph = buildAgentTaskGraph(projectDir, conf",
       "tags": [
         "auto-detected",
         "refactor",
@@ -1135,7 +1135,7 @@
       "error_message": "Field report #2 Bug #4: project named after the git-worktree dir slug (compassionate-chaplygin-c91f47) instead of the manifest name.",
       "file": "cli/scanners/project-type.mjs, cli/config.mjs",
       "root_cause": "config.projectName was hardcoded to basename(projectDir); the manifest name was never read.",
-      "fix": "Added detectProjectName() (package.json/pyproject [project|tool.poetry]/Cargo/composer/go.mod \u2192 basename fallback), wired as the config default. + tests.",
+      "fix": "Added detectProjectName() (package.json/pyproject [project|tool.poetry]/Cargo/composer/go.mod → basename fallback), wired as the config default. + tests.",
       "tags": [
         "project-name",
         "manifest",
@@ -1220,7 +1220,7 @@
       "error_message": "Significant refactor of ",
       "file": "cli/validators/security.mjs",
       "root_cause": "24 lines replaced/restructured",
-      "fix": "Rewrote 92\u2192133 lines (24 removed)",
+      "fix": "Rewrote 92→133 lines (24 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -1268,7 +1268,7 @@
       "error_message": "Significant refactor of ",
       "file": "cli/commands/guard.mjs",
       "root_cause": "4 lines replaced/restructured",
-      "fix": "Rewrote 9\u219226 lines (4 removed)",
+      "fix": "Rewrote 9→26 lines (4 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -1300,7 +1300,7 @@
       "error_message": "Wrong operator: || should be &&",
       "file": "cli/validators/security.mjs",
       "root_cause": "Used \"||\" instead of \"&&\"",
-      "fix": "Changed operator || \u2192 &&",
+      "fix": "Changed operator || → &&",
       "tags": [
         "auto-detected",
         "operator-fix",
@@ -1316,7 +1316,7 @@
       "error_message": "Significant refactor of ",
       "file": "cli/commands/score.mjs",
       "root_cause": "59 lines replaced/restructured",
-      "fix": "Rewrote 65\u21923 lines (59 removed)",
+      "fix": "Rewrote 65→3 lines (59 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -1331,7 +1331,7 @@
       "timestamp": "2026-06-19T19:13:23.491Z",
       "error_message": "Missing error handling in detectTestRunner",
       "file": "cli/commands/score.mjs",
-      "root_cause": "Code path had no error handling \u2014 exceptions would propagate uncaught",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
       "fix": "Added try/catch block",
       "tags": [
         "auto-detected",
@@ -1348,7 +1348,7 @@
       "error_message": "Wrong reference: runScoreInternal should be detectTestRunner",
       "file": "tests/field-report-3.test.mjs",
       "root_cause": "Used \"runScoreInternal\" instead of \"detectTestRunner\"",
-      "fix": "Changed runScoreInternal \u2192 detectTestRunner",
+      "fix": "Changed runScoreInternal → detectTestRunner",
       "tags": [
         "auto-detected",
         "wrong-reference",
@@ -1425,10 +1425,10 @@
     {
       "id": "bug-086",
       "timestamp": "2026-06-19T20:05:00.000Z",
-      "error_message": "Security validator flags a validation-message string (e.g. password: \"New password must differ from recent passwords\") as a hardcoded password \u2014 a blocking false positive (LLM field report #3, item #1).",
+      "error_message": "Security validator flags a validation-message string (e.g. password: \"New password must differ from recent passwords\") as a hardcoded password — a blocking false positive (LLM field report #3, item #1).",
       "file": "cli/validators/security.mjs",
       "root_cause": "The SEC password regex matches any quoted value 8+ chars after a password/passwd/pwd key, regardless of whether the value is natural-language copy vs an actual credential.",
-      "fix": "Added looksLikeProse(value): a multi-word natural-language value downgrades the finding to a LOW-confidence, suppressible, reportable warning (not a blocking error). Still surfaced \u2014 no false-green. Implemented on the new findings architecture (cli/findings.mjs) with stable code SEC001.",
+      "fix": "Added looksLikeProse(value): a multi-word natural-language value downgrades the finding to a LOW-confidence, suppressible, reportable warning (not a blocking error). Still surfaced — no false-green. Implemented on the new findings architecture (cli/findings.mjs) with stable code SEC001.",
       "tags": [
         "security",
         "false-positive",
@@ -1444,9 +1444,9 @@
     {
       "id": "bug-087",
       "timestamp": "2026-06-19T20:06:00.000Z",
-      "error_message": "tests/security.test.mjs: 'should flag common hardcoded passwords and API keys' expected 2 errors, got 1 \u2014 a real single-token password \"SuperSecretPassword!\" was wrongly downgraded to a low-confidence warning.",
+      "error_message": "tests/security.test.mjs: 'should flag common hardcoded passwords and API keys' expected 2 errors, got 1 — a real single-token password \"SuperSecretPassword!\" was wrongly downgraded to a low-confidence warning.",
       "file": "cli/validators/security.mjs",
-      "root_cause": "First cut of looksLikeProse treated ANY value ending in .!? as prose. Strong passwords commonly end in '!' \u2014 so a one-word secret was misclassified as natural language.",
+      "root_cause": "First cut of looksLikeProse treated ANY value ending in .!? as prose. Strong passwords commonly end in '!' — so a one-word secret was misclassified as natural language.",
       "fix": "Terminal punctuation alone no longer reclassifies a value: prose now requires >=3 words, OR a 2-word fragment ending in .!?. A single token like 'SuperSecretPassword!' stays a blocking error. The existing security test caught it.",
       "tags": [
         "security",
@@ -1465,7 +1465,7 @@
       "timestamp": "2026-06-22T21:27:36.030Z",
       "error_message": "Missing await",
       "file": "cli/validators/architecture.mjs",
-      "root_cause": "Async call without await \u2014 returned Promise instead of value",
+      "root_cause": "Async call without await — returned Promise instead of value",
       "fix": "Added await to async call",
       "tags": [
         "auto-detected",
@@ -1482,7 +1482,7 @@
       "error_message": "Significant refactor of ",
       "file": "cli/validators/architecture.mjs",
       "root_cause": "6 lines replaced/restructured",
-      "fix": "Rewrote 24\u219231 lines (6 removed)",
+      "fix": "Rewrote 24→31 lines (6 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -1530,7 +1530,7 @@
       "error_message": "Significant refactor of ",
       "file": "cli/commands/explain.mjs",
       "root_cause": "3 lines replaced/restructured",
-      "fix": "Rewrote 11\u219212 lines (3 removed)",
+      "fix": "Rewrote 11→12 lines (3 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -1545,7 +1545,7 @@
       "timestamp": "2026-06-22T21:36:02.265Z",
       "error_message": "Missing error handling in computeSpecVsRouteDrift",
       "file": "cli/validators/api-surface.mjs",
-      "root_cause": "Code path had no error handling \u2014 exceptions would propagate uncaught",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
       "fix": "Added try/catch block",
       "tags": [
         "auto-detected",
@@ -1562,7 +1562,7 @@
       "error_message": "Significant refactor of ",
       "file": "cli/validators/api-surface.mjs",
       "root_cause": "7 lines replaced/restructured",
-      "fix": "Rewrote 13\u219233 lines (7 removed)",
+      "fix": "Rewrote 13→33 lines (7 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -1577,7 +1577,7 @@
       "timestamp": "2026-06-22T21:38:26.085Z",
       "error_message": "Missing error handling in unknown",
       "file": "cli/commands/explain.mjs",
-      "root_cause": "Code path had no error handling \u2014 exceptions would propagate uncaught",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
       "fix": "Added try/catch block",
       "tags": [
         "auto-detected",
@@ -1610,7 +1610,7 @@
       "error_message": "Significant refactor of ",
       "file": "cli/docguard.mjs",
       "root_cause": "3 lines replaced/restructured",
-      "fix": "Rewrote 8\u21929 lines (3 removed)",
+      "fix": "Rewrote 8→9 lines (3 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -1626,7 +1626,7 @@
       "error_message": "Significant refactor of ",
       "file": "cli/scanners/semantic-claims.mjs",
       "root_cause": "2 lines replaced/restructured",
-      "fix": "Rewrote 3\u21925 lines (2 removed)",
+      "fix": "Rewrote 3→5 lines (2 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -1642,7 +1642,7 @@
       "error_message": "Significant refactor of ",
       "file": "cli/commands/guard.mjs",
       "root_cause": "4 lines replaced/restructured",
-      "fix": "Rewrote 9\u219214 lines (4 removed) | Also: if (data.effectiveErrors > 0) process.exit(1);; if (data.effectiveWarnings > 0) process.exit(2);",
+      "fix": "Rewrote 9→14 lines (4 removed) | Also: if (data.effectiveErrors > 0) process.exit(1);; if (data.effectiveWarnings > 0) process.exit(2);",
       "tags": [
         "auto-detected",
         "refactor",
@@ -1721,7 +1721,7 @@
       "timestamp": "2026-06-22T23:13:08.031Z",
       "error_message": "Missing await",
       "file": "CHANGELOG.md",
-      "root_cause": "Async call without await \u2014 returned Promise instead of value",
+      "root_cause": "Async call without await — returned Promise instead of value",
       "fix": "Added await to async call",
       "tags": [
         "auto-detected",
@@ -1756,7 +1756,7 @@
       "timestamp": "2026-06-22T23:41:00.000Z",
       "error_message": "Architecture validator flagged a circular dependency that is broken at runtime by `await import()` (field report #2).",
       "file": "cli/validators/architecture.mjs",
-      "root_cause": "extractImports lumped ES import, dynamic import(), and require() into one list feeding both graph.edges (layer checks) and graph.fileMap (cycle DFS). A dynamic import is NOT a load-time edge \u2014 it's the canonical cycle break \u2014 but was counted as one.",
+      "root_cause": "extractImports lumped ES import, dynamic import(), and require() into one list feeding both graph.edges (layer checks) and graph.fileMap (cycle DFS). A dynamic import is NOT a load-time edge — it's the canonical cycle break — but was counted as one.",
       "fix": "extractImports now returns { spec, dynamic }. buildImportGraph records the dynamic flag on graph.edges but only pushes STATIC edges into fileMap (cycle adjacency). Cycle detection no longer sees dynamic edges; layer-boundary checks still do.",
       "tags": [
         "architecture",
@@ -1774,8 +1774,8 @@
       "timestamp": "2026-06-23T03:40:34.868Z",
       "error_message": "Missing error handling in unknown",
       "file": "cli/validators/metrics-consistency.mjs",
-      "root_cause": "Code path had no error handling \u2014 exceptions would propagate uncaught",
-      "fix": "Added try/catch block | Also: // \u2500\u2500 Collection glob counting (v0.29) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500; // Minimal, dependency-free glob\u2192count for `config.collectio",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block | Also: // ── Collection glob counting (v0.29) ─────────────────────; // Minimal, dependency-free glob→count for `config.collectio",
       "tags": [
         "auto-detected",
         "error-handling",
@@ -1791,7 +1791,7 @@
       "error_message": "Significant refactor of ",
       "file": "cli/validators/metrics-consistency.mjs",
       "root_cause": "5 lines replaced/restructured",
-      "fix": "Rewrote 6\u21928 lines (5 removed)",
+      "fix": "Rewrote 6→8 lines (5 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -1806,7 +1806,7 @@
       "timestamp": "2026-06-23T03:42:06.279Z",
       "error_message": "Missing error handling in unknown",
       "file": "cli/commands/score.mjs",
-      "root_cause": "Code path had no error handling \u2014 exceptions would propagate uncaught",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
       "fix": "Added try/catch block",
       "tags": [
         "auto-detected",
@@ -1823,7 +1823,7 @@
       "error_message": "Significant refactor of ",
       "file": "cli/commands/score.mjs",
       "root_cause": "4 lines replaced/restructured",
-      "fix": "Rewrote 8\u219214 lines (4 removed)",
+      "fix": "Rewrote 8→14 lines (4 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -1839,7 +1839,7 @@
       "error_message": "Significant refactor of ",
       "file": "cli/commands/guard.mjs",
       "root_cause": "3 lines replaced/restructured",
-      "fix": "Rewrote 7\u21928 lines (3 removed) | Also: if (isIgnored(rel)) { ignored++; continue; }; if (inHome || atRoot) { tracked++; continue; } | Also: + (unclassN ? ` \u00b7 ${c.yellow}${unclassN} unclassif; console.log(`  ${c.yellow}\u26a0 ${unclassN} Markdown f",
+      "fix": "Rewrote 7→8 lines (3 removed) | Also: if (isIgnored(rel)) { ignored++; continue; }; if (inHome || atRoot) { tracked++; continue; } | Also: + (unclassN ? ` · ${c.yellow}${unclassN} unclassif; console.log(`  ${c.yellow}⚠ ${unclassN} Markdown f",
       "tags": [
         "auto-detected",
         "refactor",
@@ -1854,7 +1854,7 @@
       "timestamp": "2026-06-23T03:43:06.477Z",
       "error_message": "Missing error handling in collectMarkdown",
       "file": "cli/commands/guard.mjs",
-      "root_cause": "Code path had no error handling \u2014 exceptions would propagate uncaught",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
       "fix": "Added try/catch block | Also: // v0.29: coverage map + semantic-claim surfacing. Both are ; // they never change errors/warnings/exit code. Skipped on t",
       "tags": [
         "auto-detected",
@@ -1870,7 +1870,7 @@
       "timestamp": "2026-06-23T03:50:21.581Z",
       "error_message": "Missing error handling in unknown",
       "file": "tests/metrics-consistency.test.mjs",
-      "root_cause": "Code path had no error handling \u2014 exceptions would propagate uncaught",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
       "fix": "Added try/catch block",
       "tags": [
         "auto-detected",
@@ -1886,7 +1886,7 @@
       "timestamp": "2026-06-23T03:51:49.283Z",
       "error_message": "Missing error handling in unknown",
       "file": "CHANGELOG.md",
-      "root_cause": "Code path had no error handling \u2014 exceptions would propagate uncaught",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
       "fix": "Added try/catch block",
       "tags": [
         "auto-detected",
@@ -1900,10 +1900,10 @@
     {
       "id": "bug-115",
       "timestamp": "2026-06-23T04:35:00.000Z",
-      "error_message": "guard PASS + ALCOA 'Accurate: 100%' / A+ while a watched canonical doc stated a wrong count ('16 extractors' vs 19 in code) \u2014 a confidence-inverting false negative (LLM field report #6, websec-validator)",
+      "error_message": "guard PASS + ALCOA 'Accurate: 100%' / A+ while a watched canonical doc stated a wrong count ('16 extractors' vs 19 in code) — a confidence-inverting false negative (LLM field report #6, websec-validator)",
       "file": "cli/commands/score.mjs",
-      "root_cause": "Two gaps. (1) The ALCOA 'Accurate' pillar was computed purely from structural signals (drift markers + prose quality: `scores.drift >= 80 && scores.docQuality >= 50`), never comparing a documented fact to code \u2014 so it reported 100% over a wrong number. (2) The deterministic claim checkers had the right architecture but the literal noun 'extractors' was missing from the hardcoded vocabulary in semantic-claims.mjs and metrics-consistency only knew DocGuard's own meta-counts (checks/validators/tests), so a project's domain count was never bound to a code collection.",
-      "fix": "Made 'Accurate' a 3-state attribute (met / unverified / unmet): 'unverified' (neutral cyan) when structure passes but documented claims are unchecked vs code \u2014 counts as not-met for the ALCOA % (stops overclaiming) but display-only, gating CDD grade untouched. Added config.collections (noun\u2192glob) so Metrics-Consistency deterministically flags a documented count vs the real file count, in guard, no LLM. Surfaced the semantic-claim extractor + a doc-coverage map as non-gating notices in guard. Extended the claim noun vocabulary (added extractors/plugins/detectors/\u2026). 5 new tests; 805/805 prior tests still pass.",
+      "root_cause": "Two gaps. (1) The ALCOA 'Accurate' pillar was computed purely from structural signals (drift markers + prose quality: `scores.drift >= 80 && scores.docQuality >= 50`), never comparing a documented fact to code — so it reported 100% over a wrong number. (2) The deterministic claim checkers had the right architecture but the literal noun 'extractors' was missing from the hardcoded vocabulary in semantic-claims.mjs and metrics-consistency only knew DocGuard's own meta-counts (checks/validators/tests), so a project's domain count was never bound to a code collection.",
+      "fix": "Made 'Accurate' a 3-state attribute (met / unverified / unmet): 'unverified' (neutral cyan) when structure passes but documented claims are unchecked vs code — counts as not-met for the ALCOA % (stops overclaiming) but display-only, gating CDD grade untouched. Added config.collections (noun→glob) so Metrics-Consistency deterministically flags a documented count vs the real file count, in guard, no LLM. Surfaced the semantic-claim extractor + a doc-coverage map as non-gating notices in guard. Extended the claim noun vocabulary (added extractors/plugins/detectors/…). 5 new tests; 805/805 prior tests still pass.",
       "tags": [
         "field-report-6",
         "false-negative",
@@ -1923,7 +1923,7 @@
       "timestamp": "2026-06-23T19:48:11.990Z",
       "error_message": "Missing error handling in resolveDocDirs",
       "file": "cli/shared.mjs",
-      "root_cause": "Code path had no error handling \u2014 exceptions would propagate uncaught",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
       "fix": "Added try/catch block",
       "tags": [
         "auto-detected",
@@ -1940,7 +1940,7 @@
       "error_message": "Significant refactor of ",
       "file": "cli/validators/metrics-consistency.mjs",
       "root_cause": "5 lines replaced/restructured",
-      "fix": "Rewrote 14\u219217 lines (5 removed)",
+      "fix": "Rewrote 14→17 lines (5 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -1956,7 +1956,7 @@
       "error_message": "Significant refactor of ",
       "file": "cli/commands/guard.mjs",
       "root_cause": "4 lines replaced/restructured",
-      "fix": "Rewrote 7\u21923 lines (4 removed)",
+      "fix": "Rewrote 7→3 lines (4 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -1971,7 +1971,7 @@
       "timestamp": "2026-06-23T19:50:00.709Z",
       "error_message": "Missing error handling in unknown",
       "file": "tests/metrics-consistency.test.mjs",
-      "root_cause": "Code path had no error handling \u2014 exceptions would propagate uncaught",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
       "fix": "Added try/catch block",
       "tags": [
         "auto-detected",
@@ -2004,7 +2004,7 @@
       "error_message": "Significant refactor of ",
       "file": "STANDARD.md",
       "root_cause": "10 lines replaced/restructured",
-      "fix": "Rewrote 14\u219224 lines (10 removed)",
+      "fix": "Rewrote 14→24 lines (10 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -2020,7 +2020,7 @@
       "error_message": "Significant refactor of ",
       "file": "README.md",
       "root_cause": "26 lines replaced/restructured",
-      "fix": "Rewrote 33\u219212 lines (26 removed)",
+      "fix": "Rewrote 33→12 lines (26 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -2035,7 +2035,7 @@
       "timestamp": "2026-07-03T02:15:04.666Z",
       "error_message": "Missing error handling in unknown",
       "file": "README.md",
-      "root_cause": "Code path had no error handling \u2014 exceptions would propagate uncaught",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
       "fix": "Added try/catch block",
       "tags": [
         "auto-detected",
@@ -2052,7 +2052,7 @@
       "error_message": "Significant refactor of ",
       "file": "ROADMAP.md",
       "root_cause": "3 lines replaced/restructured",
-      "fix": "Rewrote 6\u219210 lines (3 removed)",
+      "fix": "Rewrote 6→10 lines (3 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -2084,7 +2084,7 @@
       "error_message": "Significant refactor of ",
       "file": "CONTRIBUTING.md",
       "root_cause": "2 lines replaced/restructured",
-      "fix": "Rewrote 9\u219213 lines (2 removed) | Also: 4. Add tests in `tests/commands.test.mjs`; 5. Update `CHANGELOG.md`",
+      "fix": "Rewrote 9→13 lines (2 removed) | Also: 4. Add tests in `tests/commands.test.mjs`; 5. Update `CHANGELOG.md`",
       "tags": [
         "auto-detected",
         "refactor",
@@ -2100,7 +2100,7 @@
       "error_message": "Significant refactor of ",
       "file": "cli/shared-ignore.mjs",
       "root_cause": "14 lines replaced/restructured",
-      "fix": "Rewrote 20\u219256 lines (14 removed)",
+      "fix": "Rewrote 20→56 lines (14 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -2115,7 +2115,7 @@
       "timestamp": "2026-07-03T02:18:54.020Z",
       "error_message": "Missing error handling in globMatch",
       "file": "cli/shared-ignore.mjs",
-      "root_cause": "Code path had no error handling \u2014 exceptions would propagate uncaught",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
       "fix": "Added try/catch block",
       "tags": [
         "auto-detected",
@@ -2132,7 +2132,7 @@
       "error_message": "Significant refactor of ",
       "file": "cli/validators/metrics-consistency.mjs",
       "root_cause": "83 lines replaced/restructured",
-      "fix": "Rewrote 88\u21923 lines (83 removed)",
+      "fix": "Rewrote 88→3 lines (83 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -2164,7 +2164,7 @@
       "error_message": "Significant refactor of ",
       "file": "cli/shared-ignore.mjs",
       "root_cause": "2 lines replaced/restructured",
-      "fix": "Rewrote 20\u219224 lines (2 removed)",
+      "fix": "Rewrote 20→24 lines (2 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -2180,7 +2180,7 @@
       "error_message": "Significant refactor of ",
       "file": "cli/validators/drift.mjs",
       "root_cause": "14 lines replaced/restructured",
-      "fix": "Rewrote 21\u21927 lines (14 removed)",
+      "fix": "Rewrote 21→7 lines (14 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -2196,7 +2196,7 @@
       "error_message": "Wrong operator: !== should be ===",
       "file": "cli/validators/security.mjs",
       "root_cause": "Used \"!==\" instead of \"===\"",
-      "fix": "Changed operator !== \u2192 ===",
+      "fix": "Changed operator !== → ===",
       "tags": [
         "auto-detected",
         "operator-fix",
@@ -2212,7 +2212,7 @@
       "error_message": "Significant refactor of ",
       "file": "cli/validators/schema-sync.mjs",
       "root_cause": "12 lines replaced/restructured",
-      "fix": "Rewrote 19\u21926 lines (12 removed)",
+      "fix": "Rewrote 19→6 lines (12 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -2228,7 +2228,7 @@
       "error_message": "Significant refactor of ",
       "file": "cli/validators/metadata-sync.mjs",
       "root_cause": "13 lines replaced/restructured",
-      "fix": "Rewrote 18\u21924 lines (13 removed)",
+      "fix": "Rewrote 18→4 lines (13 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -2244,7 +2244,7 @@
       "error_message": "Significant refactor of ",
       "file": "cli/validators/docs-coverage.mjs",
       "root_cause": "13 lines replaced/restructured",
-      "fix": "Rewrote 18\u21924 lines (13 removed)",
+      "fix": "Rewrote 18→4 lines (13 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -2260,7 +2260,7 @@
       "error_message": "Wrong operator: !== should be ===",
       "file": "cli/validators/traceability.mjs",
       "root_cause": "Used \"!==\" instead of \"===\"",
-      "fix": "Changed operator !== \u2192 ===",
+      "fix": "Changed operator !== → ===",
       "tags": [
         "auto-detected",
         "operator-fix",
@@ -2276,7 +2276,7 @@
       "error_message": "Significant refactor of ",
       "file": "cli/validators/docs-diff.mjs",
       "root_cause": "15 lines replaced/restructured",
-      "fix": "Rewrote 27\u219212 lines (15 removed) | Also: if (!existsSync(dir)) return results;; let entries;",
+      "fix": "Rewrote 27→12 lines (15 removed) | Also: if (!existsSync(dir)) return results;; let entries;",
       "tags": [
         "auto-detected",
         "refactor",
@@ -2292,7 +2292,7 @@
       "error_message": "Wrong operator: === should be !==",
       "file": "cli/validators/docs-diff.mjs",
       "root_cause": "Used \"===\" instead of \"!==\"",
-      "fix": "Changed operator === \u2192 !==",
+      "fix": "Changed operator === → !==",
       "tags": [
         "auto-detected",
         "operator-fix",
@@ -2308,7 +2308,7 @@
       "error_message": "Significant refactor of ",
       "file": "cli/validators/todo-tracking.mjs",
       "root_cause": "13 lines replaced/restructured",
-      "fix": "Rewrote 20\u21925 lines (13 removed)",
+      "fix": "Rewrote 20→5 lines (13 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -2324,7 +2324,7 @@
       "error_message": "Significant refactor of ",
       "file": "cli/commands/generate.mjs",
       "root_cause": "24 lines replaced/restructured",
-      "fix": "Rewrote 35\u219212 lines (24 removed)",
+      "fix": "Rewrote 35→12 lines (24 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -2340,7 +2340,7 @@
       "error_message": "Significant refactor of ",
       "file": "cli/commands/diff.mjs",
       "root_cause": "12 lines replaced/restructured",
-      "fix": "Rewrote 19\u21929 lines (12 removed)",
+      "fix": "Rewrote 19→9 lines (12 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -2356,7 +2356,7 @@
       "error_message": "Significant refactor of ",
       "file": "cli/validators/changelog.mjs",
       "root_cause": "17 lines replaced/restructured",
-      "fix": "Rewrote 54\u219277 lines (17 removed)",
+      "fix": "Rewrote 54→77 lines (17 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -2388,7 +2388,7 @@
       "error_message": "Significant refactor of ",
       "file": "cli/validators/metrics-consistency.mjs",
       "root_cause": "3 lines replaced/restructured",
-      "fix": "Rewrote 11\u219222 lines (3 removed)",
+      "fix": "Rewrote 11→22 lines (3 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -2401,10 +2401,10 @@
     {
       "id": "bug-146",
       "timestamp": "2026-07-03T02:35:00.000Z",
-      "error_message": "Entire test suite failed to load (~60 test files 'not ok') \u2014 SyntaxError: Invalid or unexpected token in shared-ignore.mjs",
+      "error_message": "Entire test suite failed to load (~60 test files 'not ok') — SyntaxError: Invalid or unexpected token in shared-ignore.mjs",
       "file": "cli/shared-ignore.mjs",
-      "root_cause": "A JSDoc block documenting glob syntax contained a literal `**/` \u2014 the `*/` inside it TERMINATES the block comment, leaving the rest of the doc text as bare source. Mass 'not ok' across every test file is the tell: a module-level parse error in a shared import, not test logic. node --check pinpointed the line instantly.",
-      "fix": "Escaped the sequence as `**\\/` inside the comment \u2014 the file's own pre-existing convention (the old globToMatchRegex JSDoc used it). Verified: node --check, import probe, full suite 835/835.",
+      "root_cause": "A JSDoc block documenting glob syntax contained a literal `**/` — the `*/` inside it TERMINATES the block comment, leaving the rest of the doc text as bare source. Mass 'not ok' across every test file is the tell: a module-level parse error in a shared import, not test logic. node --check pinpointed the line instantly.",
+      "fix": "Escaped the sequence as `**\\/` inside the comment — the file's own pre-existing convention (the old globToMatchRegex JSDoc used it). Verified: node --check, import probe, full suite 835/835.",
       "tags": [
         "syntax-error",
         "jsdoc",
@@ -2421,7 +2421,7 @@
       "timestamp": "2026-07-03T02:36:00.000Z",
       "error_message": "countGlob could silently under-count a collection when a subtree was unreadable (permission denied), producing a confidently wrong 'code has N' and a data-corrupting fix suggestion",
       "file": "cli/shared-ignore.mjs",
-      "root_cause": "The walker swallowed per-entry errors and kept walking; the caller had no completeness signal, so a partial walk read as a smaller-but-authoritative count \u2014 a fail-open in the collections feature (still unreleased; caught by the project review, not in the field).",
+      "root_cause": "The walker swallowed per-entry errors and kept walking; the caller had no completeness signal, so a partial walk read as a smaller-but-authoritative count — a fail-open in the collections feature (still unreleased; caught by the project review, not in the field).",
       "fix": "Shared walkFiles returns a completeness boolean; countGlobFiles returns -1 when the walk was incomplete; callers treat <=0 as 'don't assert'. Covered by the fail-safe collection test.",
       "tags": [
         "fail-safe",
@@ -2474,7 +2474,7 @@
       "error_message": "Significant refactor of ",
       "file": "cli/validators/test-spec.mjs",
       "root_cause": "3 lines replaced/restructured",
-      "fix": "Rewrote 16\u219227 lines (3 removed) | Also: results.total++;; results.warnings.push(`TEST-SPEC declares ${source | Also: results.note = 'TEST-SPEC.md declares no service-t; results.warnings.push(",
+      "fix": "Rewrote 16→27 lines (3 removed) | Also: results.total++;; results.warnings.push(`TEST-SPEC declares ${source | Also: results.note = 'TEST-SPEC.md declares no service-t; results.warnings.push(",
       "tags": [
         "auto-detected",
         "refactor",
@@ -2522,7 +2522,7 @@
       "error_message": "Significant refactor of ",
       "file": "cli/validators/docs-sync.mjs",
       "root_cause": "3 lines replaced/restructured",
-      "fix": "Rewrote 9\u219216 lines (3 removed) | Also: results.total++;; results.passed++; | Also: results.passed++;; results.warnings.push(",
+      "fix": "Rewrote 9→16 lines (3 removed) | Also: results.total++;; results.passed++; | Also: results.passed++;; results.warnings.push(",
       "tags": [
         "auto-detected",
         "refactor",
@@ -2570,7 +2570,7 @@
       "error_message": "Significant refactor of ",
       "file": "cli/validators/docs-diff.mjs",
       "root_cause": "2 lines replaced/restructured",
-      "fix": "Rewrote 9\u219217 lines (2 removed)",
+      "fix": "Rewrote 9→17 lines (2 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -2586,7 +2586,7 @@
       "error_message": "Significant refactor of ",
       "file": "cli/validators/traceability.mjs",
       "root_cause": "3 lines replaced/restructured",
-      "fix": "Rewrote 14\u219217 lines (3 removed) | Also: warnings.push(; `Requirement ${reqId} (${location.file}:${location | Also: warnings.push(; `Test references ${reqId} (${refs[0].file}:${refs[",
+      "fix": "Rewrote 14→17 lines (3 removed) | Also: warnings.push(; `Requirement ${reqId} (${location.file}:${location | Also: warnings.push(; `Test references ${reqId} (${refs[0].file}:${refs[",
       "tags": [
         "auto-detected",
         "refactor",
@@ -2602,7 +2602,7 @@
       "error_message": "Significant refactor of ",
       "file": "cli/validators/docs-coverage.mjs",
       "root_cause": "4 lines replaced/restructured",
-      "fix": "Rewrote 12\u219217 lines (4 removed) | Also: warnings.push(; `package.json defines CLI command \"${binName}\" but | Also: warnings.push(; `Source directory \"${root}/${entry}/\" is not refer | Also: warnings.push(; `Code references config file \"${configName}\" but n",
+      "fix": "Rewrote 12→17 lines (4 removed) | Also: warnings.push(; `package.json defines CLI command \"${binName}\" but | Also: warnings.push(; `Source directory \"${root}/${entry}/\" is not refer | Also: warnings.push(; `Code references config file \"${configName}\" but n",
       "tags": [
         "auto-detected",
         "refactor",
@@ -2634,7 +2634,7 @@
       "error_message": "Significant refactor of ",
       "file": "cli/validators/todo-tracking.mjs",
       "root_cause": "10 lines replaced/restructured",
-      "fix": "Rewrote 22\u219231 lines (10 removed) | Also: warnings.push(; `Skipped test without explanation at ${relPath}:${ | Also: warnings.push(; `Untracked ${todo.keyword} at ${todo.file}:${todo.",
+      "fix": "Rewrote 22→31 lines (10 removed) | Also: warnings.push(; `Skipped test without explanation at ${relPath}:${ | Also: warnings.push(; `Untracked ${todo.keyword} at ${todo.file}:${todo.",
       "tags": [
         "auto-detected",
         "refactor",
@@ -2666,7 +2666,7 @@
       "error_message": "Significant refactor of ",
       "file": "cli/validators/metadata-sync.mjs",
       "root_cause": "3 lines replaced/restructured",
-      "fix": "Rewrote 6\u219211 lines (3 removed) | Also: warnings.push(; `${relPath} references \"v${foundVersion}\" in an ac",
+      "fix": "Rewrote 6→11 lines (3 removed) | Also: warnings.push(; `${relPath} references \"v${foundVersion}\" in an ac",
       "tags": [
         "auto-detected",
         "refactor",
@@ -2682,7 +2682,7 @@
       "error_message": "Significant refactor of ",
       "file": "cli/validators/schema-sync.mjs",
       "root_cause": "15 lines replaced/restructured",
-      "fix": "Rewrote 56\u219272 lines (15 removed)",
+      "fix": "Rewrote 56→72 lines (15 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -2698,7 +2698,7 @@
       "error_message": "Significant refactor of ",
       "file": "cli/validators/architecture.mjs",
       "root_cause": "6 lines replaced/restructured",
-      "fix": "Rewrote 40\u219259 lines (6 removed) | Also: results.total++;; results.errors.push(",
+      "fix": "Rewrote 40→59 lines (6 removed) | Also: results.total++;; results.errors.push(",
       "tags": [
         "auto-detected",
         "refactor",
@@ -2714,7 +2714,7 @@
       "error_message": "Wrong reference: results should be acc",
       "file": "cli/validators/architecture.mjs",
       "root_cause": "Used \"results\" instead of \"acc\"",
-      "fix": "Changed results \u2192 acc",
+      "fix": "Changed results → acc",
       "tags": [
         "auto-detected",
         "wrong-reference",
@@ -2730,7 +2730,7 @@
       "error_message": "Significant refactor of ",
       "file": "cli/validators/canonical-sync.mjs",
       "root_cause": "6 lines replaced/restructured",
-      "fix": "Rewrote 26\u219234 lines (6 removed) | Also: result.total++;; result.passed++;",
+      "fix": "Rewrote 26→34 lines (6 removed) | Also: result.total++;; result.passed++;",
       "tags": [
         "auto-detected",
         "refactor",
@@ -2746,7 +2746,7 @@
       "error_message": "Wrong reference: result should be compose",
       "file": "cli/validators/canonical-sync.mjs",
       "root_cause": "Used \"result\" instead of \"compose\"",
-      "fix": "Changed result \u2192 compose",
+      "fix": "Changed result → compose",
       "tags": [
         "auto-detected",
         "wrong-reference",
@@ -2778,7 +2778,7 @@
       "error_message": "Significant refactor of ",
       "file": "cli/scanners/speckit.mjs",
       "root_cause": "27 lines replaced/restructured",
-      "fix": "Rewrote 93\u2192162 lines (27 removed)",
+      "fix": "Rewrote 93→162 lines (27 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -2794,7 +2794,7 @@
       "error_message": "Significant refactor of ",
       "file": "cli/validators/cross-reference.mjs",
       "root_cause": "3 lines replaced/restructured",
-      "fix": "Rewrote 15\u219219 lines (3 removed) | Also: warnings.push(; `${docName}:${ref.line} \u2014 broken link: target file | Also: warnings.push(; `${docName}:${ref.line} \u2014 broken anchor: \"#${ref.a",
+      "fix": "Rewrote 15→19 lines (3 removed) | Also: warnings.push(; `${docName}:${ref.line} — broken link: target file | Also: warnings.push(; `${docName}:${ref.line} — broken anchor: \"#${ref.a",
       "tags": [
         "auto-detected",
         "refactor",
@@ -2810,7 +2810,7 @@
       "error_message": "Significant refactor of ",
       "file": "cli/validators/generated-staleness.mjs",
       "root_cause": "4 lines replaced/restructured",
-      "fix": "Rewrote 6\u219211 lines (4 removed) | Also: result.warnings.push(; `${basename(doc.path)} \u2192 section \"${sec.id}\" is st",
+      "fix": "Rewrote 6→11 lines (4 removed) | Also: result.warnings.push(; `${basename(doc.path)} → section \"${sec.id}\" is st",
       "tags": [
         "auto-detected",
         "refactor",
@@ -2826,7 +2826,7 @@
       "error_message": "Significant refactor of ",
       "file": "cli/validators/surface-sync.mjs",
       "root_cause": "5 lines replaced/restructured",
-      "fix": "Rewrote 20\u219228 lines (5 removed)",
+      "fix": "Rewrote 20→28 lines (5 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -2842,7 +2842,7 @@
       "error_message": "Significant refactor of ",
       "file": "cli/validators/api-surface.mjs",
       "root_cause": "2 lines replaced/restructured",
-      "fix": "Rewrote 8\u219211 lines (2 removed) | Also: warnings.push(; `OpenAPI spec ${specPath} declares paths but DocGu | Also: warnings.push(; `Multiple OpenAPI specs disagree on ${divergence.d | Also: warnings.push(; `OpenAPI spec (${specRoute.specPath}) declares ${e | Also: if (confidence === 'spec') errors.push(msg);; else warnings.push(`${msg} [code-scan \u2014 verify]`);",
+      "fix": "Rewrote 8→11 lines (2 removed) | Also: warnings.push(; `OpenAPI spec ${specPath} declares paths but DocGu | Also: warnings.push(; `Multiple OpenAPI specs disagree on ${divergence.d | Also: warnings.push(; `OpenAPI spec (${specRoute.specPath}) declares ${e | Also: if (confidence === 'spec') errors.push(msg);; else warnings.push(`${msg} [code-scan — verify]`);",
       "tags": [
         "auto-detected",
         "refactor",
@@ -2858,7 +2858,7 @@
       "error_message": "Significant refactor of ",
       "file": "cli/validators/doc-quality.mjs",
       "root_cause": "43 lines replaced/restructured",
-      "fix": "Rewrote 125\u2192158 lines (43 removed)",
+      "fix": "Rewrote 125→158 lines (43 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -2874,7 +2874,7 @@
       "error_message": "Significant refactor of ",
       "file": "cli/commands/generate.mjs",
       "root_cause": "3 lines replaced/restructured",
-      "fix": "Rewrote 9\u219214 lines (3 removed)",
+      "fix": "Rewrote 9→14 lines (3 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -2890,7 +2890,7 @@
       "error_message": "Significant refactor of ",
       "file": "CHANGELOG.md",
       "root_cause": "6 lines replaced/restructured",
-      "fix": "Rewrote 6\u219215 lines (6 removed)",
+      "fix": "Rewrote 6→15 lines (6 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -2906,7 +2906,7 @@
       "error_message": "Significant refactor of ",
       "file": "templates/commands/docguard.review.md",
       "root_cause": "7 lines replaced/restructured",
-      "fix": "Rewrote 10\u219214 lines (7 removed)",
+      "fix": "Rewrote 10→14 lines (7 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -2922,7 +2922,7 @@
       "error_message": "Significant refactor of ",
       "file": "templates/commands/docguard.update.md",
       "root_cause": "2 lines replaced/restructured",
-      "fix": "Rewrote 8\u21929 lines (2 removed) | Also: For each affected document:; 3. Update the specific section that changed",
+      "fix": "Rewrote 8→9 lines (2 removed) | Also: For each affected document:; 3. Update the specific section that changed",
       "tags": [
         "auto-detected",
         "refactor",
@@ -2938,7 +2938,7 @@
       "error_message": "Significant refactor of ",
       "file": "templates/commands/docguard.init.md",
       "root_cause": "10 lines replaced/restructured",
-      "fix": "Rewrote 17\u219229 lines (10 removed)",
+      "fix": "Rewrote 17→29 lines (10 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -2985,7 +2985,7 @@
       "timestamp": "2026-07-03T16:02:44.054Z",
       "error_message": "Missing error handling in generateLlmsFullTxt",
       "file": "cli/commands/llms.mjs",
-      "root_cause": "Code path had no error handling \u2014 exceptions would propagate uncaught",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
       "fix": "Added try/catch block",
       "tags": [
         "auto-detected",
@@ -3017,7 +3017,7 @@
       "timestamp": "2026-07-03T16:03:49.461Z",
       "error_message": "Missing error handling in extractConventions",
       "file": "cli/commands/memory.mjs",
-      "root_cause": "Code path had no error handling \u2014 exceptions would propagate uncaught",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
       "fix": "Added try/catch block",
       "tags": [
         "auto-detected",
@@ -3033,8 +3033,8 @@
       "timestamp": "2026-07-03T16:06:27.493Z",
       "error_message": "Missing error handling in stampMarker",
       "file": "cli/commands/agents.mjs",
-      "root_cause": "Code path had no error handling \u2014 exceptions would propagate uncaught",
-      "fix": "Added try/catch block | Also: // \u2500\u2500 Sync + Check modes (v0.29) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500; /**",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block | Also: // ── Sync + Check modes (v0.29) ───────────────────────────; /**",
       "tags": [
         "auto-detected",
         "error-handling",
@@ -3065,7 +3065,7 @@
       "timestamp": "2026-07-03T16:17:04.491Z",
       "error_message": "Missing await",
       "file": "cli/docguard.mjs",
-      "root_cause": "Async call without await \u2014 returned Promise instead of value",
+      "root_cause": "Async call without await — returned Promise instead of value",
       "fix": "Added await to async call",
       "tags": [
         "auto-detected",
@@ -3081,7 +3081,7 @@
       "timestamp": "2026-07-03T16:18:05.057Z",
       "error_message": "Missing error handling in unknown",
       "file": "action.yml",
-      "root_cause": "Code path had no error handling \u2014 exceptions would propagate uncaught",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
       "fix": "Added try/catch block",
       "tags": [
         "auto-detected",
@@ -3114,7 +3114,7 @@
       "error_message": "Significant refactor of ",
       "file": "docs-canonical/ARCHITECTURE.md",
       "root_cause": "4 lines replaced/restructured",
-      "fix": "Rewrote 4\u21924 lines (4 removed)",
+      "fix": "Rewrote 4→4 lines (4 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -3130,7 +3130,7 @@
       "error_message": "Significant refactor of ",
       "file": "docs/commands.md",
       "root_cause": "2 lines replaced/restructured",
-      "fix": "Rewrote 12\u219247 lines (2 removed)",
+      "fix": "Rewrote 12→47 lines (2 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -3145,7 +3145,7 @@
       "timestamp": "2026-07-03T21:51:26.996Z",
       "error_message": "Missing error handling in featureGrade",
       "file": "cli/commands/trace.mjs",
-      "root_cause": "Code path had no error handling \u2014 exceptions would propagate uncaught",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
       "fix": "Added try/catch block",
       "tags": [
         "auto-detected",
@@ -3161,7 +3161,7 @@
       "timestamp": "2026-07-03T21:52:39.304Z",
       "error_message": "Missing error handling in parseCheckedTasks",
       "file": "cli/scanners/speckit.mjs",
-      "root_cause": "Code path had no error handling \u2014 exceptions would propagate uncaught",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
       "fix": "Added try/catch block",
       "tags": [
         "auto-detected",
@@ -3210,7 +3210,7 @@
       "error_message": "awesome-mcp-servers PR #9185 added a line containing the literal word 'undefined' to README instead of the DocGuard entry; bot flagged missing-glama, gh pr diff showed '+undefined', grep found no 'docguard'",
       "file": "(scratchpad node -e insertion script; result pushed to raccioly/awesome-mcp-servers add-docguard)",
       "root_cause": "Shell env-var vs argv error: `node -e \"...process.env.LINE...\" LINE=\"$LINE\"` passes LINE as a positional ARGV to node, NOT as an environment variable (env assignments must precede the command: `LINE=\"$LINE\" node -e`). So process.env.LINE was undefined and the script inserted the literal string 'undefined'. The invocation exited 0, so the `|| fallback` never ran, and it was committed+pushed unverified.",
-      "fix": "Rebuilt the branch: gh repo sync the fork to upstream, fresh clone, wrote the entry to a FILE (/tmp/dg-entry.txt) and inserted via a python heredoc (no shell-var interpolation), VERIFIED with grep for both the entry and the badge before committing, then force-pushed to the same PR branch (repairs the PR in place \u2014 keeps #9185, its thread, history). Lesson: for env\u2192node, put the assignment before the command; and ALWAYS grep-verify a generated file insertion before commit+push.",
+      "fix": "Rebuilt the branch: gh repo sync the fork to upstream, fresh clone, wrote the entry to a FILE (/tmp/dg-entry.txt) and inserted via a python heredoc (no shell-var interpolation), VERIFIED with grep for both the entry and the badge before committing, then force-pushed to the same PR branch (repairs the PR in place — keeps #9185, its thread, history). Lesson: for env→node, put the assignment before the command; and ALWAYS grep-verify a generated file insertion before commit+push.",
       "tags": [
         "shell",
         "env-var",
@@ -3258,6 +3258,42 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-07-06T01:30:00.000Z"
+    },
+    {
+      "id": "bug-199",
+      "timestamp": "2026-07-06T01:44:39.966Z",
+      "error_message": "Missing error handling in unknown",
+      "file": ".github/workflows/ci.yml",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "yml"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-06T01:44:39.966Z"
+    },
+    {
+      "id": "bug-200",
+      "timestamp": "2026-07-06T14:40:55.317Z",
+      "error_message": "ENOTDIR: not a directory, open '/dev/null/pre-commit' — docguard hooks / init --with hooks crashes when git core.hooksPath is /dev/null (Google Jules sandbox VM sets this; also any user who disables hooks that way)",
+      "file": "cli/shared-git.mjs",
+      "root_cause": "getHooksDir() ran `git rev-parse --git-path hooks`, which returns the literal '/dev/null' when core.hooksPath=/dev/null. The code did `if (out) return resolve(dir, out)` — resolving '/dev/null' verbatim as the hooks dir. Callers then wrote `<hooksDir>/pre-commit` = '/dev/null/pre-commit', which is ENOTDIR because /dev/null is a device file, not a directory.",
+      "fix": "Guard the /dev/null pseudo-path: `if (out && out !== '/dev/null') return resolve(dir, out)`. When core.hooksPath is /dev/null we fall through to the existing `.git/hooks` directory check, so hook install/list works normally. Added a regression test in tests/hooks.test.mjs (real git repo + `git config core.hooksPath /dev/null`) asserting getHooksDir falls back to .git/hooks and runHooks writes the hook without ENOTDIR. Independently found by Google Jules (PR #307) — adopted the fix cleanly without the PR's auto-generated .agent/skills noise.",
+      "tags": [
+        "hooks",
+        "git",
+        "dev-null",
+        "core.hooksPath",
+        "ENOTDIR",
+        "jules",
+        "shared-git"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-06T14:40:55.317Z"
     }
   ]
 }
