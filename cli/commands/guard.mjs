@@ -147,6 +147,10 @@ import { validateSchemaSync } from '../validators/schema-sync.mjs';
 import { validateSpecKitIntegration } from '../validators/spec-kit.mjs';
 import { validateCanonicalSync } from '../validators/canonical-sync.mjs';
 import { validateSurfaceSync } from '../validators/surface-sync.mjs';
+// v0.31.0 change-driven + smell detectors
+import { validateDiffSuspicion } from '../validators/diff-suspicion.mjs';
+import { validateReferenceExistence } from '../validators/reference-existence.mjs';
+import { validateApiDocSmells } from '../validators/api-doc-smells.mjs';
 
 /**
  * Internal guard — returns structured data, no console output, no process.exit.
@@ -313,6 +317,10 @@ export function runGuardInternal(projectDir, config) {
     { key: 'crossReference', name: 'Cross-Reference', fn: () => validateCrossReferences(projectDir, config) },
     { key: 'generatedStaleness', name: 'Generated-Staleness', fn: () => validateGeneratedStaleness(projectDir, config) },
     { key: 'surfaceSync', name: 'Surface-Sync', fn: () => validateSurfaceSync(projectDir, config) },
+    // v0.31.0 — change-driven + smell detectors (all confidence:low / soft).
+    { key: 'diffSuspicion', name: 'Diff-Suspicion', fn: () => validateDiffSuspicion(projectDir, config) },
+    { key: 'referenceExistence', name: 'Reference-Existence', fn: () => validateReferenceExistence(projectDir, config) },
+    { key: 'apiDocSmells', name: 'API-Doc-Smells', fn: () => validateApiDocSmells(projectDir, config) },
     // Metrics-Consistency runs post-loop (needs guard results)
   ];
 

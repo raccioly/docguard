@@ -77,6 +77,11 @@ export function loadConfig(projectDir) {
       security: false,
       environment: true,
       freshness: true,
+      // v0.31.0 — change-driven detectors default ON (soft, precise, quiet when
+      // nothing changed); api-doc-smells default OFF (low-yield, opt-in).
+      diffSuspicion: true,
+      referenceExistence: true,
+      apiDocSmells: false,
     },
   };
 
