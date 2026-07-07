@@ -178,6 +178,37 @@ const EXPLAINERS = {
     example: '`cli/commands/demo.mjs` exists and `| `demo` | Zero-install preview |` appears in README.md\'s commands table',
     standard: 'CDD principle: documented surfaces match implemented surfaces',
   },
+  diffSuspicion: {
+    title: 'Diff-Suspicion — docs describing code that just changed (DSP001)',
+    what: 'Change-driven. For each code file changed since the ref (`config.changedSinceRef`, else HEAD~1), flags a canonical doc or agent-instruction file that BOTH references the file (path/`module`) AND shares domain tokens that were removed/replaced in the diff. Deterministic diff-overlap rule (arXiv 2010.01625, F1 74.7); confidence:low.',
+    why:  'A doc that talks about a symbol the code just deleted is the highest-signal, lowest-cost drift class — and it is exactly what whole-repo scans miss but a diff makes obvious.',
+    triggers: [
+      ['describes X, which just had … removed/changed', 'Re-read the doc against the current file; the removed symbols may now be wrong. Suppress the pairing if it is a false positive.'],
+    ],
+    example: 'AUTH.md references `src/auth.ts` and `validateToken` was renamed away in the last commit',
+    standard: 'Just-in-time comment-code inconsistency detection (AAAI 2021)',
+  },
+  referenceExistence: {
+    title: 'Reference-Existence — doc names a code symbol that no longer exists (REF001)',
+    what: 'Two-revision check. A compound code identifier backticked in a doc that existed in the source when the doc was last updated but has ZERO whole-word matches at HEAD is flagged as outdated. Deterministic (arXiv 2212.01479); confidence:low.',
+    why:  'References go stale silently for years; the two-revision gate distinguishes "renamed away" from "never existed", keeping false positives near zero.',
+    triggers: [
+      ['references `X`, which existed … but has ZERO matches at HEAD', 'Update or remove the reference. Suppress with `<!-- docguard:ignore REF001 -->` if it is a still-relevant user-facing name.'],
+    ],
+    example: 'API-REFERENCE.md backticks `getUserById` which was deleted three commits ago',
+    standard: 'Outdated code-element reference detection (EMSE 2022)',
+  },
+  apiDocSmells: {
+    title: 'API-Doc-Smells — Bloated / Lazy API documentation (APS001/APS002)',
+    what: 'Length signals on doc units whose heading is a code signature (HTTP endpoint / function / backticked symbol). Lazy = ≤6 prose words (documented in name only); Bloated = ≥300 words for one unit. Deterministic (F1 0.90/0.95); confidence:low. OFF by default — enable with `validators.apiDocSmells: true`.',
+    why:  'An endpoint documented in name only, or buried in 400 words, both fail the reader — and both are detectable without understanding the prose.',
+    triggers: [
+      ['documented in name only', 'Describe what it does, its params, return, and errors — not just the signature.'],
+      ['is N words for one unit — Bloated', 'Trim to the essential contract; move examples/edge-cases elsewhere.'],
+    ],
+    example: '`#### GET /api/health` with an empty body → Lazy',
+    standard: 'API documentation smell taxonomy',
+  },
   crossReference: {
     title: 'Cross-Reference — internal markdown links resolve',
     what: 'Scans canonical docs for `[text](./OTHER.md#anchor)` and `#anchor` links. Verifies the target file exists and the anchor matches a heading.',
@@ -351,6 +382,9 @@ const DISPLAY_NAMES = {
   surfaceSync: 'Surface-Sync',
   canonicalSync: 'Canonical-Sync',
   metricsConsistency: 'Metrics-Consistency',
+  diffSuspicion: 'Diff-Suspicion',
+  referenceExistence: 'Reference-Existence',
+  apiDocSmells: 'API-Doc-Smells',
 };
 
 /** Collapse a key / display name to a comparable form: lowercase, alnum only. */
