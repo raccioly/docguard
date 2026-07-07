@@ -194,6 +194,35 @@ export function fileContentAtRev(dir, rev, filePath) {
   }
 }
 
+// Default source globs for symbol-existence grep (any-language).
+export const CODE_GLOBS = [
+  '*.ts', '*.tsx', '*.js', '*.jsx', '*.mjs', '*.cjs', '*.py', '*.go', '*.rs',
+  '*.java', '*.kt', '*.rb', '*.php', '*.cs', '*.swift', '*.scala', '*.dart', '*.c', '*.cpp', '*.h',
+];
+
+/**
+ * True if `symbol` appears as a whole word in the source tree AS OF `rev`.
+ * Uses `git grep -w -F` (fixed string, word boundary) at the given revision —
+ * exactly the "whole-word, case-sensitive, exact string match" the two-revision
+ * outdated-reference method specifies (arXiv 2212.01479). Restricted to code
+ * globs so a symbol still named in prose/docs doesn't count as "present".
+ *
+ * Returns false when absent, the rev is unknown, or git is unavailable — the
+ * caller pairs two calls (doc's last-update rev vs HEAD) to detect present→gone.
+ */
+export function symbolExistsAtRev(dir, symbol, rev, pathspecs = CODE_GLOBS) {
+  try {
+    execFileSync(
+      'git',
+      ['grep', '-q', '-w', '-F', '-e', symbol, rev, '--', ...pathspecs],
+      { cwd: dir, stdio: ['pipe', 'ignore', 'ignore'] }
+    );
+    return true; // exit 0 → at least one match
+  } catch {
+    return false; // exit 1 → no match (or bad rev / no git)
+  }
+}
+
 /**
  * Resolve the commit hash that last touched `filePath` (following renames), or
  * null. Used to anchor "the revision when this doc was last updated" for the
