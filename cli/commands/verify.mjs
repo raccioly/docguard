@@ -22,10 +22,50 @@
  *   docguard verify [--semantic | --instructions] [--format json]
  */
 
+import { basename } from 'node:path';
 import { c } from '../shared.mjs';
 import { detectAgentMode } from '../ensure-skills.mjs';
 import { extractSemanticClaims, buildSemanticVerifyTasks } from '../scanners/semantic-claims.mjs';
 import { auditInstructions } from '../scanners/instruction-audit.mjs';
+import { isGitRepo, getDiffText } from '../shared-git.mjs';
+import { parseUnifiedDiff, activityLabeledDiff } from '../shared-diff.mjs';
+
+const CHANGE_CODE_EXT = /\.(ts|tsx|js|jsx|mjs|cjs|py|go|rs|java|kt|rb|php|cs|swift|scala|dart)$/;
+
+/**
+ * Structured change context for staged agent tasks (feat 6). When `--since` is
+ * given, decompose the code diff into activity-labeled spans (ordered
+ * replace/delete/add) — the CARL-CCI representation shown to beat raw-text
+ * diffs (arXiv 2512.19883). The agent judging a claim then sees WHAT changed,
+ * not just the claim. Returns null when there's no ref / git / diff.
+ *
+ * Bounded: caps files and per-activity lines so the JSON stays agent-sized.
+ */
+function buildChangeContext(projectDir, since, { maxFiles = 40, maxLines = 6 } = {}) {
+  if (!since || !isGitRepo(projectDir)) return null;
+  const files = parseUnifiedDiff(getDiffText(projectDir, since))
+    .filter(f => f.newPath && CHANGE_CODE_EXT.test(f.newPath) && f.status !== 'deleted');
+  if (files.length === 0) return null;
+  const clip = (arr) => arr.slice(0, maxLines).map(s => s.length > 200 ? s.slice(0, 200) + '…' : s);
+  const activities = files.slice(0, maxFiles).map(f => ({
+    file: f.newPath,
+    activities: activityLabeledDiff(f).map(a => ({
+      type: a.type,
+      ...(a.del ? { del: clip(a.del) } : {}),
+      ...(a.add ? { add: clip(a.add) } : {}),
+    })),
+  }));
+  return { since, changedFiles: files.map(f => f.newPath), activities };
+}
+
+// Best-effort: is this semantic-verify task about code that just changed?
+function taskTouchesChange(task, changedSet, changedBasenames) {
+  const cite = task.citedCode || '';
+  if (!cite) return false;
+  if (changedSet.has(cite)) return true;
+  const b = basename(cite);
+  return changedBasenames.has(b) || [...changedSet].some(p => cite.includes(p) || p.includes(cite));
+}
 
 export function runVerify(projectDir, config, flags) {
   if (flags.instructions) {
@@ -37,13 +77,27 @@ export function runVerify(projectDir, config, flags) {
   const claims = extractSemanticClaims(projectDir, config);
   const tasks = buildSemanticVerifyTasks(claims);
 
+  // Change-aware staging (feat 6): if --since given, attach the structured diff
+  // and flag which claims are about just-changed code (verify those first).
+  const changeContext = buildChangeContext(projectDir, flags.since);
+  if (changeContext) {
+    const changedSet = new Set(changeContext.changedFiles);
+    const changedBasenames = new Set(changeContext.changedFiles.map(f => basename(f)));
+    for (const t of tasks) t.aboutChangedCode = taskTouchesChange(t, changedSet, changedBasenames);
+    // Prioritize changed-code claims first.
+    tasks.sort((a, b) => (b.aboutChangedCode ? 1 : 0) - (a.aboutChangedCode ? 1 : 0));
+  }
+
   if (isJson) {
     console.log(JSON.stringify({
       command: 'verify --semantic',
       project: config.projectName,
       claimCount: tasks.length,
       // How to act on this: each task is a claim to confirm against the code.
-      howToVerify: 'For each task, read the cited code (or grep for the constant/config), compare it to the documented value, and report any mismatch with both values. DocGuard cannot judge these — they require reading the code.',
+      howToVerify: changeContext
+        ? 'Claims flagged aboutChangedCode are about code that changed since the ref — verify those FIRST using changeContext.activities (the ordered replace/delete/add spans show exactly what changed). For each task, read the cited code, compare to the documented value, report mismatches with both values.'
+        : 'For each task, read the cited code (or grep for the constant/config), compare it to the documented value, and report any mismatch with both values. DocGuard cannot judge these — they require reading the code.',
+      ...(changeContext ? { changeContext } : {}),
       tasks,
     }, null, 2));
     return;
@@ -66,6 +120,10 @@ export function runVerify(projectDir, config, flags) {
   }
 
   console.log(`  ${c.yellow}${tasks.length} claim(s) to verify against the code:${c.reset}\n`);
+  if (changeContext) {
+    const nChanged = tasks.filter(t => t.aboutChangedCode).length;
+    console.log(`  ${c.cyan}⚡ ${nChanged} claim(s) are about code changed since ${flags.since}${c.reset} ${c.dim}— verify these first (structured diff in --format json).${c.reset}\n`);
+  }
   for (const [doc, ts] of byDoc) {
     console.log(`  ${c.bold}${doc}${c.reset}`);
     for (const t of ts) {
@@ -89,6 +147,9 @@ function runInstructionAudit(projectDir, config, flags) {
   const { rules, deterministic, tasks } = auditInstructions(projectDir, config);
   const { duplicates, negations, stalePointers, staleCommands } = deterministic;
   const findingCount = duplicates.length + negations.length + stalePointers.length + staleCommands.length;
+  // Structured change context helps the agent judge whether a rule about code
+  // has been invalidated by a recent change (feat 6).
+  const changeContext = buildChangeContext(projectDir, flags.since);
 
   if (isJson) {
     console.log(JSON.stringify({
@@ -100,6 +161,7 @@ function runInstructionAudit(projectDir, config, flags) {
       taskCount: tasks.length,
       // How to act on this: findings are proven; tasks need judgment.
       howToVerify: 'The findings are deterministic — fix them directly (delete the duplicate copy, resolve the negation in favour of one rule, repoint or remove stale paths/commands). For each task, read both rules in context and judge whether they contradict in practice; if so, report which should win, why, and which file to edit. DocGuard cannot judge the tasks — they require understanding intent.',
+      ...(changeContext ? { changeContext } : {}),
       tasks,
     }, null, 2));
     return;
