@@ -18,6 +18,25 @@ import { resolve, join, relative, basename, extname } from 'node:path';
 import { TRACE_MAP, TEST_PATTERNS, isTraceableSource } from '../shared-trace-patterns.mjs';
 import { walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
+import { tokenize } from '../shared-diff.mjs';
+import { rankBySimilarity } from '../shared-ir.mjs';
+
+// IR soft-link recovery (feat 5): tokenize test files once so an untraced
+// requirement can be matched to the test that most likely already covers it
+// (TF-IDF cosine, VSM). Capped so a huge test suite can't blow up guard.
+function buildTestCorpus(projectDir, projectFiles, { maxFiles = 250, maxTokens = 400 } = {}) {
+  const testFiles = projectFiles.filter(f =>
+    TEST_PATTERNS.some(p => p.test(f)) || /__tests__\//.test(f) || /tests?\//.test(f)
+  ).slice(0, maxFiles);
+  const corpus = [];
+  for (const relPath of testFiles) {
+    try {
+      const content = readFileSync(resolve(projectDir, relPath), 'utf-8');
+      corpus.push({ id: relPath, tokens: tokenize(content).slice(0, maxTokens) });
+    } catch { /* skip unreadable */ }
+  }
+  return corpus;
+}
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build', 'coverage',
@@ -208,20 +227,40 @@ function validateRequirementTraceability(projectDir, config, projectFiles) {
 
   // ── Step 3: Report traceability results ──
 
+  // IR soft-link recovery (feat 5): build the tokenized test corpus once, only
+  // if there are untraced requirements to match. Threshold is deliberately low
+  // — short requirement text vs a whole test file yields modest cosine scores;
+  // the hint is a suggestion, not proof.
+  const softThreshold = config.traceability?.irSoftThreshold ?? 0.10;
+  let testCorpus = null;
+
   // Check each documented requirement has at least one test reference
   for (const [reqId, location] of reqIds) {
     total++;
     if (testRefs.has(reqId)) {
       passed++;
     } else {
+      // Try to recover a likely-but-unannotated test via TF-IDF cosine.
+      let softHint = '';
+      let softText = `Add an @req ${reqId} comment to the test that verifies this requirement`;
+      const queryText = location.text && location.text.length > reqId.length ? location.text : reqId;
+      if (testCorpus === null) testCorpus = buildTestCorpus(projectDir, projectFiles);
+      if (testCorpus.length > 0) {
+        const ranked = rankBySimilarity(tokenize(queryText), testCorpus);
+        const top = ranked[0];
+        if (top && top.score >= softThreshold) {
+          const pct = (top.score * 100).toFixed(0);
+          softHint = ` — IR soft-match: ${top.id} (${pct}% similar) may already cover it`;
+          softText = `${top.id} looks like it already tests this (${pct}% similar) — add @req ${reqId} there, or if unrelated, write the missing test`;
+        }
+      }
       findings.push(mkFinding({
         code: 'TRC004',
         validator: 'traceability',
         severity: 'warn',
-        message: `Requirement ${reqId} (${location.file}:${location.line}) has no test coverage. ` +
-          `Add @req ${reqId} comment to the test that verifies this requirement`,
+        message: `Requirement ${reqId} (${location.file}:${location.line}) has no test coverage.${softHint || ' Add @req ' + reqId + ' comment to the test that verifies this requirement'}`,
         location: `${location.file}:${location.line}`,
-        suggestion: { kind: 'fix', text: `Add an @req ${reqId} comment to the test that verifies this requirement` },
+        suggestion: { kind: 'fix', text: softText },
       }));
     }
   }
@@ -269,7 +308,8 @@ function collectRequirementIds(projectDir, config, patterns) {
         while ((match = pattern.exec(lines[i])) !== null) {
           const reqId = match[0]; // e.g., "REQ-001"
           if (!reqIds.has(reqId)) {
-            reqIds.set(reqId, { file: docName, line: i + 1 });
+            // capture the line text (the requirement description) for IR soft-match
+            reqIds.set(reqId, { file: docName, line: i + 1, text: lines[i].trim() });
           }
         }
       }
