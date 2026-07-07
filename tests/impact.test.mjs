@@ -122,4 +122,60 @@ describe('docguard impact', () => {
       'non-code files should not appear in changedFiles');
     assert.ok(data.ignoredFiles.length > 0, 'ignored files should be reported separately');
   });
+
+  // ── v0.31.0 blast radius (feat 1) ──
+
+  it('SC-S11-007: flags an agent-instruction file that references changed code', () => {
+    dir = makeRepo({
+      'package.json': JSON.stringify({ name: 't', version: '0.0.0' }),
+      'src/auth.ts': 'export function login(){}\n',
+      'AGENTS.md': '# Agent rules\nAuth lives in `src/auth.ts` — never bypass it.\n',
+      '.docguard.json': JSON.stringify({ projectName: 't', profile: 'starter', version: '0.5' }),
+    });
+    gitInit(dir);
+    writeFileSync(join(dir, 'src/auth.ts'), 'export function login(){ /* changed */ }\n');
+    commit(dir, 'change auth');
+    const r = spawnSync('node', [CLI, 'impact', '--since', 'HEAD~1', '--format', 'json'], { cwd: dir, encoding: 'utf-8' });
+    const data = JSON.parse(r.stdout);
+    const agents = data.affectedDocs.find(d => d.doc === 'AGENTS.md');
+    assert.ok(agents, 'AGENTS.md should be flagged as affected by the code change');
+    assert.equal(agents.isAgentFile, true);
+  });
+
+  it('SC-S11-008: doc→doc blast radius flags docs (incl agent files) that reference a changed doc', () => {
+    dir = makeRepo({
+      'package.json': JSON.stringify({ name: 't', version: '0.0.0' }),
+      'docs-canonical/ARCHITECTURE.md': '# Architecture\nThe system.\n',
+      'docs-canonical/SECURITY.md': '# Security\nSee ARCHITECTURE.md for the layer map.\n',
+      'AGENTS.md': '# Agent rules\nFollow docs-canonical/ARCHITECTURE.md.\n',
+      '.docguard.json': JSON.stringify({ projectName: 't', profile: 'starter', version: '0.5' }),
+    });
+    gitInit(dir);
+    writeFileSync(join(dir, 'docs-canonical/ARCHITECTURE.md'), '# Architecture\nThe system, revised.\n');
+    commit(dir, 'revise architecture');
+    const r = spawnSync('node', [CLI, 'impact', '--since', 'HEAD~1', '--format', 'json'], { cwd: dir, encoding: 'utf-8' });
+    const data = JSON.parse(r.stdout);
+    const edge = data.blastRadius.find(b => b.changedDoc.endsWith('ARCHITECTURE.md'));
+    assert.ok(edge, `expected a blast-radius edge for ARCHITECTURE.md; got ${JSON.stringify(data.blastRadius)}`);
+    const deps = edge.dependents.map(d => d.doc);
+    assert.ok(deps.includes('SECURITY.md'), 'SECURITY.md references ARCHITECTURE.md → dependent');
+    assert.ok(deps.includes('AGENTS.md'), 'AGENTS.md references ARCHITECTURE.md → dependent');
+    assert.equal(edge.dependents.find(d => d.doc === 'AGENTS.md').isAgentFile, true);
+  });
+
+  it('blast radius does NOT fire from non-canonical .md (CHANGELOG/README/.wolf)', () => {
+    dir = makeRepo({
+      'package.json': JSON.stringify({ name: 't', version: '0.0.0' }),
+      'docs-canonical/ARCHITECTURE.md': '# Architecture\nSee CHANGELOG.md for history.\n',
+      'CHANGELOG.md': '# Changelog\n- init\n',
+      '.docguard.json': JSON.stringify({ projectName: 't', profile: 'starter', version: '0.5' }),
+    });
+    gitInit(dir);
+    writeFileSync(join(dir, 'CHANGELOG.md'), '# Changelog\n- init\n- more\n');
+    commit(dir, 'update changelog');
+    const r = spawnSync('node', [CLI, 'impact', '--since', 'HEAD~1', '--format', 'json'], { cwd: dir, encoding: 'utf-8' });
+    const data = JSON.parse(r.stdout);
+    assert.equal(data.blastRadius.length, 0,
+      'a CHANGELOG.md change must not blast-radius the docs that merely mention it');
+  });
 });
