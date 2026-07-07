@@ -77,11 +77,13 @@ export function loadConfig(projectDir) {
       security: false,
       environment: true,
       freshness: true,
-      // v0.31.0 — change-driven detectors default ON (soft, precise, quiet when
-      // nothing changed); api-doc-smells default OFF (low-yield, opt-in).
+      // v0.31.0 — all three default ON. Soft (confidence:low, never break CI),
+      // precise (zero false positives across the 6-repo corpus), and quiet when
+      // not applicable (no diff / no API-reference doc). api-doc-smells is
+      // low-yield but zero-FP, so on-by-default beats a self-counting split.
       diffSuspicion: true,
       referenceExistence: true,
-      apiDocSmells: false,
+      apiDocSmells: true,
     },
   };
 

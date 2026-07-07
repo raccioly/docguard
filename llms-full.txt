@@ -13,7 +13,7 @@
 
 <!-- docguard:version 0.6.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-05-31 -->
+<!-- docguard:last-reviewed 2026-07-03 -->
 
 | Metadata | Value |
 |----------|-------|
@@ -35,10 +35,10 @@ It targets development teams and AI coding agents that need to maintain document
 | Component | Responsibility | Location | Key Files |
 |-----------|---------------|----------|-----------|
 | **CLI Entry Point** | Argument parsing, config loading, command routing | `cli/` | `docguard.mjs` |
-| **Commands** | User-facing commands (the Daily 5 — init/guard/diff/sync/score — plus situational tools: diagnose, fix, generate, trace, explain, memory, upgrade, watch, demo, and `init --with` scaffolders) | `cli/commands/` | `*.mjs` |
-| **Validators** | 24 independent validation modules that check specific aspects of CDD compliance | `cli/validators/` | `*.mjs` |
-| **Scanners** | 11 project file scanners for test discovery, route detection, schema mapping, CDK/IaC, doc-tools, integrations, frontend surface, spec-kit, memory-plan | `cli/scanners/` | `*.mjs` |
-| **Writers** | Deterministic doc-mutation modules — section-addressable edits, mechanical fix registry, API-Reference writer (no LLM) | `cli/writers/` | `mechanical.mjs`, `sections.mjs`, `api-reference.mjs` |
+| **Commands** | User-facing commands (the Daily 5 — init/guard/diff/sync/score — plus situational tools: diagnose, fix, generate, trace, explain, verify, feedback, memory, agent, mcp, upgrade, watch, demo, and `init --with` scaffolders) | `cli/commands/` | `*.mjs` |
+| **Validators** | 24 independent validation modules that check specific aspects of CDD compliance — all emitting structured findings with stable codes (the `CODES` registry in `findings.mjs`) | `cli/validators/` | `*.mjs` |
+| **Scanners** | 16 project file scanners for test discovery, route detection, schema mapping, CDK/IaC, doc-tools, integrations, frontend surface, spec-kit, memory-plan, semantic claims, agent readability | `cli/scanners/` | `*.mjs` |
+| **Writers** | Deterministic doc-mutation and output modules — section-addressable edits, mechanical fix registry, API-Reference writer, generate I/O + doc builders (split from generate.mjs), SARIF emitter (no LLM) | `cli/writers/` | `mechanical.mjs`, `sections.mjs`, `api-reference.mjs`, `generate-io.mjs`, `doc-generators.mjs`, `sarif.mjs` |
 | **Config** | Configuration loading — defaults, `.docguard.json` merge, profile presets, project-type detection (extracted from the entry point to keep the import graph acyclic) | `cli/` | `config.mjs` |
 | **Shared** | Cross-cutting utilities — ignore/glob filters, source-root resolution, git helpers, and the shared doc→code trace patterns used by both `trace` and the Traceability validator | `cli/` | `shared-ignore.mjs`, `shared-source.mjs`, `shared-git.mjs`, `shared-trace-patterns.mjs`, `shared.mjs` |
 | **Templates** | Document skeletons (ARCHITECTURE, SECURITY, etc.) and slash command files for AI agents | `templates/` | `*.template`, `commands/*.md` |
@@ -55,6 +55,7 @@ It targets development teams and AI coding agents that need to maintain document
 | Optional external | `python3` (the developer's own) | AST-accurate Python parsing; not an npm/pip dependency, regex fallback when absent |
 | Package Manager | npm | Standard for Node.js CLIs |
 | Testing | `node:test` + `node:assert` | Built-in, no test framework dependency |
+| Docker | `Dockerfile` (MCP server image) | Lets MCP directory inspectors (Glama et al.) boot `docguard mcp` for introspection checks; not part of the npm distribution |
 
 ### Recognized Config Files
 
@@ -67,6 +68,9 @@ DocGuard recognizes and validates these project config files:
 | `vitest.config.ts` / `jest.config.ts` | Test runner config (scanned for custom test patterns) |
 | `.storybook/` | Component documentation tool (detected for docs-coverage) |
 | `.jules-setup.sh` | This repo's own Google Jules environment bootstrap script (internal tooling, not shipped) |
+| `.pre-commit-hooks.yaml` | This repo as a pre-commit hook source — consumers reference `repo: raccioly/docguard` to run `docguard-guard` (changed-only) per commit |
+| `glama.json` | Glama MCP directory metadata — declares repo maintainers so the Glama listing can be claimed/managed |
+| `server.json` | Official MCP Registry manifest (`io.github.raccioly/docguard`) — server name, npm package, stdio transport |
 
 ## Layer Boundaries
 
@@ -194,7 +198,7 @@ DocGuard has **zero runtime dependencies**. All functionality uses Node.js built
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 0.6.0 | 2026-05-31 | DocGuard Team | Refresh for v0.24.0: Python promoted to full support via a `python3` AST tier (`cli/scanners/py-ast.mjs`); JS/TS route extraction extended with cross-file mount-prefix resolution, object-form route declarations, and AST router-screen detection (`cli/scanners/js-ast.mjs`); removed the retired editor extension from the tech stack |
-| 0.5.0 | 2026-05-29 | DocGuard Team | Refresh for v0.22–v0.23: 24 validators, 11 scanners, new `config.mjs` (config extracted to break the demo↔docguard cycle) and `shared-trace-patterns.mjs` (shared multilingual trace patterns) |
+| 0.5.0 | 2026-05-29 | DocGuard Team | Refresh for v0.22–v0.23: validator + scanner set updated, new `config.mjs` (config extracted to break the demo↔docguard cycle) and `shared-trace-patterns.mjs` (shared multilingual trace patterns) |
 | 0.4.0 | 2026-03-13 | DocGuard Team | Complete rewrite with real project data, AI orchestration architecture |
 | 0.1.0 | 2026-03-13 | DocGuard Generate | Auto-generated skeleton |
 
@@ -219,7 +223,7 @@ tag (e.g. `@v0.12.0`) in production — `@main` is fine for tracking the bleedin
 
 ## Recipe 1 — Guard (mandatory CI gate)
 
-Runs all 24 validators. Read-only — never modifies your repo.
+Runs all 27 validators. Read-only — never modifies your repo.
 
 ```yaml
 name: DocGuard Guard
@@ -360,7 +364,7 @@ pre-commit:
 ```
 
 `--changed-only` ships in v0.12 and runs only Docs-Sync, Environment, and
-API-Surface against the staged files (instead of all 24 validators against
+API-Surface against the staged files (instead of all 27 validators against
 the whole repo). See Recipe 5 below.
 
 ## Recipe 5 — Pre-commit lite (changed files only)
@@ -432,7 +436,7 @@ Wire these into downstream steps:
 
 <!-- docguard:version 0.5.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-05-31 -->
+<!-- docguard:last-reviewed 2026-07-03 -->
 
 | Metadata | Value |
 |----------|-------|
@@ -467,6 +471,9 @@ The primary data structure. Controls all CLI behavior.
 | `projectTypeConfig.testFramework` | `string` | No | Auto-detected | Test framework name (e.g., `"node:test"`, `"jest"`) |
 | `projectTypeConfig.runCommand` | `string` | No | Auto-detected | Command to run the project |
 | `validators.*` | `boolean` | No | `true` | Enable/disable individual validators |
+| `collections.*` | `string` (glob) | No | — | Binds a documentation noun to a code collection: `"extractors": "src/extractors/*.py"` lets Metrics-Consistency flag a documented count that disagrees with the file count |
+| `docs.dirs` | `string[]` | No | Auto-detected | EXTENDS the auto-detected documentation homes (docs/, documentation/, guides/, …) with non-standard dirs; exclude via `.docguardignore` |
+| `severity.*` | `"high" \| "medium" \| "low"` | No | `"medium"` | Per-validator exit-code weight — `high` promotes warnings to blocking, `low` demotes them (display unchanged) |
 
 ### Example Configuration
 
@@ -591,7 +598,7 @@ The `score --format json` output:
 
 <!-- docguard:version 0.6.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-05-31 -->
+<!-- docguard:last-reviewed 2026-07-03 -->
 
 > DocGuard needs no environment variables. It has a single optional-load npm dependency (`@babel/parser`) and optionally uses the developer's own `python3`; everything else is Node.js built-ins.
 
@@ -748,7 +755,7 @@ node cli/docguard.mjs ci --threshold 70 --format json
 
 <!-- docguard:version 0.6.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-05-31 -->
+<!-- docguard:last-reviewed 2026-07-03 -->
 
 | Metadata | Value |
 |----------|-------|
@@ -1217,7 +1224,7 @@ For anyone reading this six months from now:
 
 <!-- docguard:version 0.8.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-05-31 -->
+<!-- docguard:last-reviewed 2026-07-03 -->
 
 > DocGuard has a single optional-load npm dependency (`@babel/parser`) and an optional `python3` AST tier. CLI integration tests cover the full stack with `node:test` (zero dev dependencies) and exercise both AST extractors (`js-ast`, `py-ast`) plus their regex fallbacks. The Python AST tests skip themselves automatically on a machine that lacks `python3`.
 
@@ -1335,6 +1342,8 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — indivi
 | 2026-05-26 | `tests/scoping-extended.test.mjs` | ARCHITECTURE.md | v0.15 P3 test fixture builds `// D' + 'RIFT:` strings via concat to test changed-files scoping without false-positiving the outer scan. | Info | By design — test implementation; mitigated by v0.15.1 hotfix that skips test files by default in Drift-Comments |
 | 2026-05-26 | `cli/validators/drift.mjs` | ARCHITECTURE.md | Drift-Comments validator v0.15.1+ skips test files by default (matches TODO-Tracking's pattern). Opt in via `config.drift.includeTestFiles` if your project genuinely uses DRIFT markers in test code. | Info | By design — defensive default to prevent fixture false-positives |
 | 2026-05-26 | `CHANGELOG.md` / `extensions/spec-kit-docguard/skills/*` | None | v0.12-v0.15 changelogs and release notes reference `// DRIFT:` in feature descriptions (e.g. K-3 .docguardignore, v0.13 sync, v0.14 P3 scoping). Documentation prose only, not actionable drift. | Info | By design — release notes |
+| 2026-07-03 | `templates/commands/*`, `CHANGELOG.md`, `docs/ai-integration.md` | None | v0.29 batch audit: the DRIFT mentions in recently-committed files are the known by-design classes above (template instruction text, validator docstrings, changelog prose, and the new AI-integration guide's workflow step 6 teaching the drift protocol). No new code deviations from canonical docs were introduced by the findings migration, generate split, or integration-surface work. | Info | Audited — no actionable drift |
+| 2026-07-03 | post-v0.29 batch (`cli/scanners/speckit.mjs`, `tests/speckit-phantom.test.mjs`, `packaging/*`) | None | Post-release batch audit (phantom detection, instruction audit, trace --features, distribution files): DRIFT mentions are validator/test/doc prose of the by-design classes above. No new code deviations. | Info | Audited — no actionable drift |
 
 
 ---
@@ -1350,6 +1359,135 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.31.0] - 2026-07-07
+
+Accuracy release — six research-backed detectors that make drift detection
+change-aware and language-agnostic, built on one shared diff foundation. Every
+new check was empirically tuned read-only against six real production repos
+(TypeScript + Python) before shipping; all are deterministic (no LLM at
+validation time) and soft (`confidence: low`, never break CI). Validator count
+24 → 27.
+
+### Added
+- **`docguard impact` — doc→doc blast radius + agent-instruction files** (feat 1).
+  Agent-instruction files (AGENTS.md/CLAUDE.md/GEMINI.md) are now indexed, so a
+  changed code file they reference is surfaced. New: when a canonical/agent doc
+  changes, the docs that reference it — including agent-instruction files — are
+  flagged as a "blast radius" (`{ changedDocs, blastRadius }` in JSON). No
+  verified competitor propagates doc staleness across the doc graph. Proven on a
+  real repo: an ARCHITECTURE.md change flags the AGENTS.md/CLAUDE.md that cite it.
+- **Diff-Suspicion validator (DSP001)** (feat 3) — change-driven. A doc that BOTH
+  references a code file changed since the ref AND shares domain tokens removed
+  in that diff is flagged for review. Deterministic diff-overlap rule
+  (arXiv 2010.01625, F1 74.7); path/module refs + domain-token filtering +
+  per-doc cap keep it quiet at PR granularity.
+- **Reference-Existence validator (REF001)** (feat 2) — two-revision check. A
+  compound code identifier backticked in a doc that existed when the doc was last
+  updated but has ZERO matches at HEAD is flagged as outdated (arXiv 2212.01479).
+  In-memory HEAD identifier set + authoritative git-grep confirmation; zero false
+  positives across the corpus.
+- **API-Doc-Smells validator (APS001 Bloated / APS002 Lazy)** (feat 4) —
+  deterministic length signals on signature-headed doc units (F1 0.90 / 0.95).
+- **IR-based traceability soft-matching** (feat 5) — `cli/shared-ir.mjs`
+  (zero-dep TF-IDF + cosine). An untraced requirement now surfaces the
+  TF-IDF-closest test file ("X may already cover it — add @req there"),
+  reducing false "no coverage" for tests that lack the annotation.
+- **`docguard verify --since <ref>` — change-aware staging** (feat 6). Attaches
+  an activity-labeled (ordered replace/delete/add) structured diff to the staged
+  agent-judgment tasks and flags which claims are about just-changed code —
+  CARL-CCI showed the structured-diff representation drives judgment accuracy
+  (arXiv 2512.19883).
+- **`cli/shared-diff.mjs`** — zero-dependency unified-diff parser + identifier-
+  aware tokenizer + activity-labeled diff, the shared foundation for feats 1/2/3/6.
+
+### Fixed
+- `hooks` crash from a `core.hooksPath` edge and other pre-ship bugs caught by
+  dogfooding DocGuard on itself (a `walkFiles`-vs-`git grep` dot-directory
+  asymmetry that fabricated reference-existence false positives; a `.map(basename)`
+  index-as-suffix crash in verify).
+- **Self-counting consistency** — `canonical-sync` and `metrics-consistency` now
+  agree on the validator count (both 27); a default-off validator previously made
+  them disagree.
+
+### Changed
+- New validators default ON except where noted; all are soft warnings.
+- README, ARCHITECTURE.md, quickstart, CI-RECIPES, AGENTS.md updated to 27
+  validators (historical version-log counts preserved).
+
+## [0.30.1] - 2026-07-06
+
+Patch release: a hooks crash fix that unblocks sandboxed CI/agent environments,
+plus two portability/robustness hardenings.
+
+### Fixed
+- **`hooks` and `init --with hooks` crashed under `core.hooksPath=/dev/null`**
+  (bug-200). `getHooksDir` resolved the literal `/dev/null` that
+  `git rev-parse --git-path hooks` returns when hooks are disabled that way, so
+  callers wrote `/dev/null/pre-commit` → `ENOTDIR: not a directory`. It now
+  guards the pseudo-path and falls back to `.git/hooks`. This unblocks the
+  Google Jules sandbox VM (which sets that config) and anyone who disables hooks
+  via `core.hooksPath=/dev/null`. Regression test added.
+
+### Changed
+- **`score`: dropped the shell `| wc -l` pipe** in the commit-churn estimate
+  (`estimateDocTax`) in favor of `execFileSync` + counting in JS — no shell,
+  portable to Windows (no `wc`), matching the pattern `freshness.mjs` already
+  uses.
+- **`.jules-setup.sh` hardened** so Google Jules stops aborting with "Working
+  tree is dirty" after setup: `npm install` → `npm ci` (never rewrites
+  `package-lock.json`), and `git clean -fd` → `git reset --hard HEAD &&
+  git clean -fd` (discards the tracked `.agent/skills` regeneration that
+  `--version` triggers; `-fd` respects `.gitignore`, so `node_modules` survives).
+
+## [0.30.0] - 2026-07-04
+
+Competitive-adoption batch (from the spec-kit catalog scan — the best ideas of
+45 doc/validation extensions, rebuilt on DocGuard's deterministic engine) plus
+the distribution-channel expansion.
+
+### Added
+- **Spec-Kit: phantom-completion detection (SPK008/SPK009)** — tasks marked
+  `[x]` in `tasks.md` whose named deliverables don't exist and carry no
+  implementation evidence (repo file names, code symbols, plan/spec artifacts,
+  task-ID annotations, git log) are flagged, capped at 10 per run with an
+  elision note. A checked task with no artifact is memory corruption for
+  agents. Precision-first: calibrated against this repo's own 57 checked tasks
+  (0 false positives) — prose-only and ID-only tasks are never accused. Opt
+  out via `specKit.phantomCheck: false`.
+- **`verify --instructions` — agent-instruction drift audit** (MemoryLint-
+  inspired). Extracts imperative rules from AGENTS.md/CLAUDE.md, flags exact
+  duplicates, never-vs-always contradiction pairs, stale file pointers, and
+  unknown `docguard` command references deterministically, then stages
+  topically-clustered rule pairs (cross-file prioritized, capped 40) as agent
+  judgment tasks — the same extraction/judgment split as `verify --semantic`.
+  Mirrors generated by `agents --sync` are skipped. Dogfooded: found a real
+  stale pointer in DocGuard's own AGENTS.md on first run (fixed).
+- **`trace --features` — per-feature spec-adherence report** (retrospective-
+  inspired). Every spec-kit feature scored individually: requirement-ID test
+  coverage (40%), task completion (25%), checked-task file evidence (20%),
+  artifact completeness (15%) — graded A–F, worst-first, one fix hint each;
+  unmeasurable signals are neutral (weights renormalize), never punitive.
+  `--format json` for CI.
+- **Distribution channels** — `.pre-commit-hooks.yaml` (validated with the
+  official pre-commit validator; changed-only guard per commit + full guard
+  for pre-push), official MCP Registry manifest (`server.json`, 2025-12-11
+  schema, ajv-validated; `mcpName` ownership proof added to package.json),
+  Smithery config, GitLab CI/CD Catalog component
+  (`templates/ci/gitlab-component.yml`, SARIF artifact), Homebrew formula with
+  the real npm-tarball sha256 (`packaging/homebrew/`), and a full submission
+  playbook (`packaging/submissions.md`). awesome-mcp-servers listing PR
+  submitted upstream.
+
+### Changed
+- The spec-kit catalog submission description (next release's prefill) now
+  leads with the differentiators: MCP server, SARIF output, deterministic
+  zero-LLM core, 24 validators with stable finding codes.
+- README: `verify --instructions` / `trace --features` / integrate-via
+  pre-commit/MCP/GitLab/Homebrew rows; the long-shipped Mermaid ER-diagram
+  generation is finally documented.
+
+## [0.29.0] - 2026-07-03
 
 Closes both gaps from LLM field report #6 (a downstream adopter reported guard
 **A+ / "Accurate: 100%" while a watched doc stated a wrong count** — the one
@@ -1613,137 +1751,8 @@ flagged.
   full local record under `.docguard/feedback/`, and prints a **1-click,
   prefilled, redacted, length-capped** GitHub issue URL (zero typing; no source
   code or secret values; capped well under GitHub's ~8 KB URL limit — the failure
-  mode of commit `3b600fd`).
-- **`docguard explain <CODE>`** — `explain` now resolves a finding code
-  (`docguard explain SEC001`) to its meaning, inline-suppression snippet, and the
-  feedback path, alongside the existing validator/warning lookup.
-- **Inline secret suppression** — `// docguard:ignore SEC001 — reason` (or
-  `// docguard:ignore-secret`, or `docguard:ignore SEC*`) on the flagged line or
-  the line above silences a single finding, instead of blinding the whole file
-  via `securityIgnore`. (field report #8)
-- **Read-only skills nudge** — when an agent has no `/docguard.*` commands
-  installed, `guard` *suggests* `docguard init` (it never writes — scaffolding
-  stays on `init`).
 
-### Fixed
-- **Natural-language values no longer flagged as hardcoded passwords** — a
-  `password`-style key whose value reads like prose (a validation message / UI
-  copy) is downgraded from a blocking error to a low-confidence, suppressible,
-  reportable warning. Still surfaced (no false-green); a genuine single-token
-  secret like `"SuperSecretPassword!"` stays a blocking error. (field report #1)
-- **`score` recognises modern test-runner config** — Vitest configured inside
-  `vite.config.*` (`vitest/config` import or a `test:` block), a `scripts.test`
-  that runs a known runner (`vitest`/`jest`/`mocha`/`ava`/…), and runner configs
-  in workspace subdirs (`backend/`, `frontend/`, …). A fully-tested Vite+Vitest
-  repo is no longer docked 15 points and told to "add a test runner". (field
-  report #3)
-- **TODO-Tracking scans `docs-canonical/{ROADMAP,CURRENT-STATE,BACKLOG,TODO}.md`**
-  — a TODO tracked in the canonical roadmap is no longer reported as untracked.
-  (field report #6)
-- **Env validator ignores runner/CI/SDK vars** — `VITEST`, `CI`, `GITHUB_*`,
-  `RUNNER_*`, `JEST_*`, `AWS_SESSION_TOKEN`, etc. are no longer reported as
-  undocumented (they're injected by the runner, not product config). `NODE_ENV`
-  is deliberately still treated as app config. (field report #7)
-- **Doc-Quality passive-voice has a per-doc override** — parity with
-  negation-load: `<!-- docguard:quality passive-voice off — reason -->` (or a
-  numeric threshold) silences the warning on legitimately passive sequence/flow
-  docs. (field report #9)
-
-### Notes
-- Tests 794 → 813 (new `tests/field-report-3.test.mjs`, each fix paired with a
-  non-vacuous control).
-- The detection-gap items from the report (semantic number/enum drift `verify
-  --semantic`, dynamic-import cycle breaks, spec-declares-but-no-route, `sync
-  --tests`, freshness precedence) are deliberately deferred — each is its own
-  design and would bloat this release.
-
-## [0.26.0] - 2026-06-10
-
-Acting on a second end-to-end LLM field report (a coding agent ran DocGuard on a
-stdlib-only Python security CLI). The report verified that the v0.25.0 "all
-fixed" claim was real but narrow — it patched the specific repros, not the
-general class — so several issues recurred. This round fixes the *class* and
-adds regression tests that assert the agent's actual scenario.
-
-### Fixed
-- **Read-only commands are strictly side-effect-free** — `guard`/`score`/`diff`/
-  `impact`/`diagnose`/`trace`/`explain`/`memory`/`demo` no longer run
-  `ensureSkills` (auto-init Spec Kit, spawn `specify`, write `.agent/.specify`).
-  A validate command must never mutate the tree. Scaffolding stays on
-  `init`/`generate`/`init --with`. (Bug #3)
-- **Surface detection ignores test fixtures by default** — a stdlib CLI was
-  documented as an Express/Flask/AWS web app because the manifest/route/env
-  scanners ingested the tool's own `tests/fixtures/`. Non-product dirs
-  (fixtures/tests/examples/testdata/samples) are now excluded from detection by
-  default (no `.docguardignore` required), overridable via
-  `detection.includeNonProduct`, and never applied to guard's structural checks. (Bug #1)
-- **Metrics-Consistency no longer corrupts correct numbers** — it only validates
-  a "N checks/validators" claim bound to DocGuard, stamps `actualSource`
-  provenance on every fix, and the auto-fix applier is fail-closed: it refuses to
-  overwrite a number without provenance and only rewrites DocGuard-bound lines.
-  (Previously "10 checks" describing a proof harness would be "fixed" to
-  DocGuard's own count.) (Bug #2)
-- **Project name comes from the manifest, not the directory** — reads
-  `pyproject [project].name` / `package.json` / `Cargo.toml` / `composer.json` /
-  `go.mod` before falling back to the dir basename (which is an auto-generated
-  slug inside a git worktree). (Bug #4)
-- **`generate` respects the active profile's doc set** — a `cli`/`library`
-  profile no longer proposes API-REFERENCE/INTEGRATIONS/SCREENS from an
-  incidental surface; suppressed docs surface a recoverable note. (Bug #5)
-- **Freshness warning states both remedies** (commit *or* a `last-reviewed`
-  marker) and is suppressed for docs marked `<!-- docguard:status approved -->`
-  in the same session. (Bug #6)
-- **Env-var detection counts reads, not mentions** — a single-pass lexer skips
-  env tokens inside comments and string literals (e.g. a detection signature
-  like `r"os.environ.get('JWT_SECRET')"`) and inside test dirs, so only genuine
-  runtime reads are reported. (Bug #7)
-
-### Added
-- **Pre-filled code-truth in `generate`** — the `source:"code"` sections now ship
-  real extracted content instead of empty templates: an ARCHITECTURE **Component
-  Map** (real source modules) and a **TEST-SPEC** doc with a pre-filled test
-  inventory (files + per-file case counts). The agent annotates responsibilities
-  instead of hand-grepping the structure.
-- **`docguard agent`** — a one-shot, dependency-ordered agent task graph
-  (`--format json` for the machine artifact). Phases `config → canonical-docs →
-  verify`; each task is `code-truth` (ships pre-filled content) or
-  `human-judgment` (instruction + grounding, never a committed guess), carries an
-  acceptance/verify command, and propagates confidence. Collapses ~10 manual
-  round-trips into one. `--profile <name>` previews a profile without running
-  `init` first.
-
-## [0.25.1] - 2026-06-09
-
-Patch release fixing a spec-kit extension install/update failure reported in
-[#229](https://github.com/raccioly/docguard/issues/229).
-
-### Fixed
-- **spec-kit extension installs again** — the `extension.yml` manifest declared
-  `aliases` identical to their own command names (`guard`, `fix`, `review`,
-  `score`). spec-kit registers the command name and each alias in one namespace,
-  so a name-equal alias self-collided and was rejected as a duplicate command,
-  breaking `specify extension add/update docguard` on v0.23.0–v0.25.0. Removed
-  the four self-referential aliases. (#229)
-
-### Changed
-- **Spec Kit catalog publishing goes through the Extension Submission issue
-  template** — per maintainer guidance ([github/spec-kit#2707](https://github.com/github/spec-kit/pull/2707))
-  and the Extension Publishing Guide. The release pipeline no longer opens a
-  direct PR against `catalog.community.json`; it builds a prefilled
-  `issues/new` form link (`.github/scripts/speckit-submission.py`) and opens a
-  one-click reminder issue in this repo so the submission is made through the
-  form (which auto-applies labels and assigns a maintainer). Removed the
-  orphaned `patch-catalog.py`.
-
-## [0.25.0] - 2026-06-03
-
-Field-report follow-up from dogfooding v0.24.0 on a real stdlib-only Python CLI
-(websec-validator). Fixes the bugs that bit a first run and adds CLI/library
-ergonomics. The headline is a silent `.docguardignore` failure: a gitignore-style
-`dir/` pattern matched nothing, so "ignored" directories were still scanned.
-
-
-<!-- truncated: 1762 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 1891 more lines — read CHANGELOG.md directly -->
 
 ---
 
@@ -1971,7 +1980,7 @@ returns `status` (PASS/WARN/FAIL, matches exit code 0/2/1), `findings[]`
 (Markdown tier map incl. `unclassified[]`), and `semanticClaims.count`
 (documented numbers not yet verified against code).
 
-- Every finding has a stable code (`STR001`, `ENV003`, `XRF002`, …) — all 24
+- Every finding has a stable code (`STR001`, `ENV003`, `XRF002`, …) — all 27
   validators emit them. `docguard explain <CODE>` gives the contract and fix.
 - Mechanical fixes go through `docguard fix --write` (provenance-checked,
   fail-closed) — never hand-apply what the tool fixes deterministically.
@@ -2033,9 +2042,23 @@ extensions/spec-kit-docguard/
 
 ## Agent Rules
 
+### Automated agents / bots (Jules "Sentinel", "Bolt", "Palette", and any auto-PR agent)
+- **Never open a duplicate PR.** Before opening ANY PR, search existing **open
+  AND closed** PRs and issues for the same topic/title. If it exists, STOP — do
+  not open another. (Dozens of duplicate command-injection and diff-optimization
+  PRs were closed as noise.)
+- **Do not re-open resolved work.** See `.jules/sentinel.md` (execSync/command
+  injection — RESOLVED in v0.21.1 + #296) and `.jules/bolt.md` (diff/scan
+  micro-optimizations — already applied; code refactored since). These are
+  historical learnings, **not** standing mandates to re-scan every run.
+- **Bar for a new PR:** a genuinely new, unaddressed finding, with evidence — a
+  concrete exploit path / failing test (security) or a benchmark showing >20%
+  real-workload improvement (performance). A Big-O note alone is insufficient.
+- This repo has **no web UI and no VS Code extension** — skip all UX tasks.
+
 ### Dependencies
 - Never add a package without first verifying it exists on the official registry (npm/PyPI).
-- Always pin to exact versions in package.json/requirements.txt. No ^, ~, or >= ranges.
+- Always pin to exact versions in `package.json` and `requirements.txt`. No ^, ~, or >= ranges.
 - Prefer packages with >10k weekly downloads and >1 maintainer.
 - If you suggest a package, confirm its first-publish date is older than 30 days.
 - Never modify .npmrc, pnpm-workspace.yaml, or dependabot.yml without explicit user confirmation.

@@ -76,7 +76,7 @@ graph TD
     Commands --> setup["setup wizard"]
     Commands --> other["diff · init · fix · trace · impact · sync<br/>explain · memory · upgrade · agents · hooks · badge · ci · watch"]
 
-    guard --> Validators["Validators (24)"]
+    guard --> Validators["Validators (27)"]
     generate --> Scanners["Scanners (4)<br/>routes · schemas · doc-tools · speckit"]
     score --> Scoring["Weighted Scoring<br/>8 categories"]
     diagnose --> Validators
@@ -254,7 +254,7 @@ DocGuard ships **18 commands** (the "Daily 5" + 13 situational tools, including 
 | Command | What It Does |
 |:--------|:-------------|
 | `init`  | Bootstrap a project (`--wizard` for interactive · `--with <name>` for scaffolders) |
-| `guard` | Validate against canonical docs — 24 validators |
+| `guard` | Validate against canonical docs — 27 validators |
 | `diff`  | Show gaps between docs and code (`--since <ref>` for impact mode) |
 | `sync`  | Refresh code-truth doc sections — keeps memory always up to date |
 | `score` | CDD maturity score (0-100; `--diff` for delta between refs) |
@@ -360,7 +360,7 @@ $ npx docguard-cli generate
 
 ## 🔍 Validators
 
-DocGuard runs **24 automated validators** on every `guard` check. Every one is **language-aware** as of v0.16 — patterns for Python (`test_*.py`), Rust (`tests/*.rs`), Go (`*_test.go`), Java (`*Test.java`), Ruby (`*_spec.rb`), PHP, and JS/TS all match.
+DocGuard runs **27 automated validators** on every `guard` check. Every one is **language-aware** as of v0.16 — patterns for Python (`test_*.py`), Rust (`tests/*.rs`), Go (`*_test.go`), Java (`*Test.java`), Ruby (`*_spec.rb`), PHP, and JS/TS all match.
 
 | # | Validator | What It Checks | Default |
 |:--|:----------|:--------------|:--------|
@@ -387,7 +387,10 @@ DocGuard runs **24 automated validators** on every `guard` check. Every one is *
 | 21 | **Generated-Staleness** | `source=code` sections match scanner output; `status: draft` doc age | ✅ On |
 | 22 | **Canonical-Sync** | DocGuard's own README count claims match code-truth (DocGuard repo only — N/A elsewhere) | ✅ On |
 | 23 | **Metrics-Consistency** | Hardcoded numbers match actual counts | ✅ On |
-| 24 | **Surface-Sync** | Item-level enumerable drift — names in doc tables/lists (commands, validators, etc.) match code-truth (opt-in via `surfaceSync.surfaces`; N/A unless configured) | ✅ On |
+| 24 | **Surface-Sync** | Item-level enumerable drift — names in doc tables/lists (commands, checks, etc.) match code-truth (opt-in via `surfaceSync.surfaces`; N/A unless configured) | ✅ On |
+| 25 | **Diff-Suspicion** | Change-driven: a doc/agent-instruction file that references code changed since the ref AND shares removed domain symbols is flagged for review (arXiv 2010.01625, F1 74.7) | ✅ On |
+| 26 | **Reference-Existence** | Two-revision check: a backticked code symbol present when the doc was last updated but gone at HEAD is flagged as outdated (arXiv 2212.01479) | ✅ On |
+| 27 | **API-Doc-Smells** | Bloated (≥300 words) / Lazy (≤6 prose words) API documentation units, keyed on signature-headed sections (F1 0.90/0.95) | ✅ On |
 
 **Per-validator controls** (in `.docguard.json`):
 ```json
@@ -456,7 +459,7 @@ DocGuard provides AI agent slash commands for integrated workflows. Installed au
 | Command | What It Does |
 |:--------|:-------------|
 | `/docguard.init` | Initialize Canonical-Driven Development in a new or existing project |
-| `/docguard.guard` | Run quality validation — check all 24 validators |
+| `/docguard.guard` | Run quality validation — check all 27 validators |
 | `/docguard.review` | Analyze doc quality and suggest improvements |
 | `/docguard.fix` | Generate targeted fix prompts for specific issues |
 | `/docguard.update` | Update canonical docs after code changes — detect drift and sync documentation |
@@ -615,7 +618,7 @@ Two ready-to-use templates ship with the Spec Kit extension and as standalone fi
 Recent highlights across the v0.16 → v0.19 line:
 
 - **`docguard explain <validator>`** — `docguard explain freshness` prints purpose, rules, common
-  failures, and fix recipes for any of the 24 validators. No need to dig into source.
+  failures, and fix recipes for any of the 27 validators. No need to dig into source.
 - **`docguard memory --diff`** — surface what changed in your canonical docs between two refs
   (`HEAD~10..HEAD` by default). Great for code review and changelog drafting.
 - **`docguard score --diff`** — see exactly which validators moved the score up or down between
