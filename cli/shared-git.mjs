@@ -149,6 +149,70 @@ export function changedFilesSince(dir, ref = 'HEAD~1') {
 }
 
 /**
+ * Return the raw unified-diff TEXT between `ref` and HEAD, restricted to code
+ * files (docs are excluded — a doc changing is not a code change that could
+ * make OTHER docs stale). Consumed by shared-diff.parseUnifiedDiff.
+ *
+ * `-U0`? No — we want a few lines of context so the parser can group activities
+ * and callers can see surrounding tokens; default 3 is fine. Returns '' on
+ * error / no diff. Caps output at ~5MB so a giant refactor can't OOM the CLI.
+ */
+export function getDiffText(dir, ref = 'HEAD~1', pathspec = null) {
+  try {
+    const args = ['diff', '--no-color', '--no-ext-diff', ref, 'HEAD'];
+    if (pathspec && pathspec.length) args.push('--', ...pathspec);
+    const raw = execFileSync('git', args, {
+      cwd: dir, encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'ignore'],
+      maxBuffer: 1024 * 1024 * 5,
+    });
+    return raw || '';
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * Read a file's contents AS OF a given revision (e.g. the commit where a doc
+ * was last touched), following the `<rev>:<path>` git addressing. Returns null
+ * when the path didn't exist at that rev, the rev is unknown, or git is
+ * unavailable — callers treat null as "no prior snapshot to compare".
+ *
+ * This is the backbone of the two-revision reference-existence check: read the
+ * source at the doc's last-updated commit vs HEAD and diff symbol presence.
+ */
+export function fileContentAtRev(dir, rev, filePath) {
+  try {
+    const raw = execFileSync(
+      'git',
+      ['show', `${rev}:${filePath}`],
+      { cwd: dir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'], maxBuffer: 1024 * 1024 * 10 }
+    );
+    return raw;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Resolve the commit hash that last touched `filePath` (following renames), or
+ * null. Used to anchor "the revision when this doc was last updated" for the
+ * two-revision check without re-parsing getFileHistory at every call site.
+ */
+export function lastCommitHash(dir, filePath) {
+  try {
+    const raw = execFileSync(
+      'git',
+      ['log', '--follow', '-1', '--format=%H', '--', filePath],
+      { cwd: dir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] }
+    ).trim();
+    return raw || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Resolve the absolute path to this repo's git hooks directory.
  *
  * Critically, this does NOT assume `<projectDir>/.git/hooks`: in a linked
