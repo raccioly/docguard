@@ -3294,6 +3294,26 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-07-06T14:40:55.317Z"
+    },
+    {
+      "id": "bug-201",
+      "timestamp": "2026-07-07T00:00:00Z",
+      "error_message": "reference-existence (REF001) fabricated 3 false positives in DocGuard AGENTS.md (after_implement, before_tasks, after_tasks flagged as removed) — symbols actually still present in .github/scripts/",
+      "file": "cli/validators/reference-existence.mjs",
+      "root_cause": "Asymmetry between two presence checks: the fast in-memory HEAD set was built with walkFiles() which SKIPS dot-directories (.github, .specify) by default (skipDotEntries), while the historical presence check used `git grep` which does NOT skip dot-dirs. So a symbol living only in a dot-dir read as absent-at-HEAD (walk missed it) but present-at-doc-rev (git grep found it) → false removed finding.",
+      "fix": "Confirm every walk-miss with an authoritative `git grep HEAD` before flagging (symbolExistsAtRev at HEAD). Only symbols absent from BOTH the walk AND git grep proceed to the historical check. Reduced docguard-self FPs 3→0.",
+      "tags": [
+        "reference-existence",
+        "walkFiles",
+        "git-grep",
+        "dot-dir",
+        "false-positive",
+        "dogfooding",
+        "v0.31.0"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-07T00:00:00Z"
     }
   ]
 }
