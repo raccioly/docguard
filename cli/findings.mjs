@@ -600,6 +600,38 @@ export const CODES = {
     help: 'Over 30% of sentences are conditional (if/unless/when…). Split conditionals into separate, unconditional requirements.',
     suppress: null,
   },
+
+  // ── v0.31.0 change-driven + IR detectors (all confidence:'low' / soft) ──
+  DSP001: {
+    validator: 'diff-suspicion',
+    title: 'Doc describes code that just changed',
+    help: 'A canonical doc (or agent-instruction file) references a code file AND shares wording with symbols removed/changed in that file since the compared revision. Deterministic diff-overlap rule (arXiv 2010.01625, F1 74.7). Low-confidence by design — re-read the doc against the current code; suppress the pairing if it is a false positive.',
+    suppress: null,
+  },
+  REF001: {
+    validator: 'reference-existence',
+    title: 'Doc references a code symbol that no longer exists',
+    help: 'A code-element reference in the doc matched source when the doc was last updated, but matches ZERO source instances at HEAD (two-revision check, arXiv 2212.01479). Excludes the two documented false-positive modes (removed-but-config-relevant flags, and symbols whose literal string was deleted while logic remains). Verify and update the reference.',
+    suppress: '<!-- docguard:ignore REF001 — still relevant, e.g. user-facing flag -->',
+  },
+  APS001: {
+    validator: 'api-doc-smells',
+    title: 'Bloated API documentation',
+    help: 'An API doc unit is excessively long / over-structured relative to the surface it documents (smell taxonomy, arXiv API-doc-smells; deterministic Bloated detector F1 0.90). Trim to the essential contract.',
+    suppress: '<!-- docguard:quality api-smell off — your reason -->',
+  },
+  APS002: {
+    validator: 'api-doc-smells',
+    title: 'Lazy API documentation',
+    help: 'An API doc unit is vague/generic or barely exceeds the signature it documents (deterministic Lazy detector F1 0.95). Document parameters, return, and errors concretely.',
+    suppress: '<!-- docguard:quality api-smell off — your reason -->',
+  },
+  IRT001: {
+    validator: 'traceability',
+    title: 'Requirement has no test/code link (IR soft-match)',
+    help: 'IR-based traceability recovery (TF-IDF + cosine, arXiv survey) found no test or code artifact above the similarity threshold for this requirement — not even a soft lexical match. Add a test annotation (@req <ID>) or verify the requirement is implemented. Low-confidence: similarity is a ranking signal, not proof.',
+    suppress: null,
+  },
 };
 
 /**
