@@ -43,7 +43,14 @@ const GENERIC_TOKENS = new Set([
   // presentational / CSS — styling churn is not API-contract drift
   'font', 'color', 'colors', 'tracking', 'surface', 'auto', 'full', 'next',
   'body', 'sans', 'blue', 'accent', 'size', 'spacing', 'margin', 'padding',
-  'width', 'height', 'flex', 'grid', 'font', 'bold', 'text', 'bg', 'rounded',
+  'width', 'height', 'flex', 'grid', 'bold', 'bg', 'rounded',
+  // HTTP / REST / handler plumbing — generic across any API route (globalshares
+  // corpus: a route-inventory doc + heavy rewrites flooded findings with these)
+  'code', 'json', 'err', 'error', 'message', 'auth', 'get', 'put', 'post',
+  'patch', 'delete', 'req', 'res', 'route', 'routes', 'handler', 'endpoint',
+  'method', 'headers', 'query', 'params', 'param', 'cron', 'process', 'api',
+  'path', 'lib', 'util', 'utils', 'helper', 'helpers', 'admin', 'roles', 'role',
+  'user', 'users', 'email', 'price', 'json', 'fetch', 'axios', 'send', 'call',
 ]);
 
 function escapeRegex(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
@@ -118,9 +125,14 @@ export function validateDiffSuspicion(projectDir, config = {}) {
     return resultFromFindings([], { passed: 0, total: 0, applicable: false });
   }
 
+  const maxPerDoc = Number.isInteger(cfg.maxPerDoc) ? cfg.maxPerDoc : 5;
   const findings = [];
   let pairsChecked = 0;
   for (const [docName, doc] of docs) {
+    // Collect this doc's suspect pairs, strongest overlap first, so a doc that
+    // inventories many changed files (e.g. an API-route reference) is capped
+    // with an elision note rather than flooding — the same discipline SPK008 uses.
+    const hits = [];
     for (const cf of changed) {
       const kind = referenceKind(doc.lines, cf.path);
       if (!kind) continue; // signal 1: doc must reference the changed file (path|module)
@@ -129,16 +141,31 @@ export function validateDiffSuspicion(projectDir, config = {}) {
       // signal 2: doc must share DOMAIN (non-generic) removed tokens
       const shared = rawShared.filter(t => !GENERIC_TOKENS.has(t));
       if (shared.length < minOverlap) continue;
+      hits.push({ path: cf.path, kind, shared });
+    }
+    hits.sort((a, b) => b.shared.length - a.shared.length);
+    for (const h of hits.slice(0, maxPerDoc)) {
       findings.push(mkFinding({
         code: 'DSP001',
         validator: 'diff-suspicion',
         severity: 'warn',
         confidence: 'low',
-        message: `${docName} describes ${cf.path} (${kind} ref), which just had ${shared.slice(0, 5).join(', ')}${shared.length > 5 ? '…' : ''} removed/changed (${ref}..HEAD) — verify the doc still matches.`,
+        message: `${docName} describes ${h.path} (${h.kind} ref), which just had ${h.shared.slice(0, 5).join(', ')}${h.shared.length > 5 ? '…' : ''} removed/changed (${ref}..HEAD) — verify the doc still matches.`,
         location: { file: docName },
         suggestion: {
-          summary: `Re-read ${docName} against the current ${cf.path}; the removed symbols (${shared.slice(0, 8).join(', ')}) may now be wrong.`,
+          summary: `Re-read ${docName} against the current ${h.path}; the removed symbols (${h.shared.slice(0, 8).join(', ')}) may now be wrong.`,
         },
+      }));
+    }
+    if (hits.length > maxPerDoc) {
+      findings.push(mkFinding({
+        code: 'DSP001',
+        validator: 'diff-suspicion',
+        severity: 'warn',
+        confidence: 'low',
+        message: `${docName} references ${hits.length - maxPerDoc} more changed file(s) with removed domain symbols (${ref}..HEAD) — a broad change; review ${docName} as a whole.`,
+        location: { file: docName },
+        suggestion: { summary: `${docName} looks broadly affected by this change set — review it end-to-end rather than line by line.` },
       }));
     }
   }
