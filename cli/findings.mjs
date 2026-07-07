@@ -626,12 +626,6 @@ export const CODES = {
     help: 'An API doc unit is vague/generic or barely exceeds the signature it documents (deterministic Lazy detector F1 0.95). Document parameters, return, and errors concretely.',
     suppress: '<!-- docguard:quality api-smell off — your reason -->',
   },
-  IRT001: {
-    validator: 'traceability',
-    title: 'Requirement has no test/code link (IR soft-match)',
-    help: 'IR-based traceability recovery (TF-IDF + cosine, arXiv survey) found no test or code artifact above the similarity threshold for this requirement — not even a soft lexical match. Add a test annotation (@req <ID>) or verify the requirement is implemented. Low-confidence: similarity is a ranking signal, not proof.',
-    suppress: null,
-  },
 };
 
 /**
