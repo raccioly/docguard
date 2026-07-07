@@ -68,7 +68,7 @@ returns `status` (PASS/WARN/FAIL, matches exit code 0/2/1), `findings[]`
 (Markdown tier map incl. `unclassified[]`), and `semanticClaims.count`
 (documented numbers not yet verified against code).
 
-- Every finding has a stable code (`STR001`, `ENV003`, `XRF002`, …) — all 24
+- Every finding has a stable code (`STR001`, `ENV003`, `XRF002`, …) — all 27
   validators emit them. `docguard explain <CODE>` gives the contract and fix.
 - Mechanical fixes go through `docguard fix --write` (provenance-checked,
   fail-closed) — never hand-apply what the tool fixes deterministically.

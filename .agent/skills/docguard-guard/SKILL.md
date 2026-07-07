@@ -7,10 +7,10 @@ description: Run DocGuard guard validation against Canonical-Driven Development 
 compatibility: Requires DocGuard CLI installed (npm i -g docguard-cli or npx docguard-cli)
 metadata:
   author: docguard
-  version: 0.29.0
+  version: 0.31.0
   source: extensions/spec-kit-docguard/skills/docguard-guard
 ---
-<!-- docguard:version: 0.29.0 -->
+<!-- docguard:version: 0.31.0 -->
 
 # DocGuard Guard Skill
 

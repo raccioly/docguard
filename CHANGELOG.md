@@ -7,6 +7,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.31.0] - 2026-07-07
+
+Accuracy release — six research-backed detectors that make drift detection
+change-aware and language-agnostic, built on one shared diff foundation. Every
+new check was empirically tuned read-only against six real production repos
+(TypeScript + Python) before shipping; all are deterministic (no LLM at
+validation time) and soft (`confidence: low`, never break CI). Validator count
+24 → 27.
+
+### Added
+- **`docguard impact` — doc→doc blast radius + agent-instruction files** (feat 1).
+  Agent-instruction files (AGENTS.md/CLAUDE.md/GEMINI.md) are now indexed, so a
+  changed code file they reference is surfaced. New: when a canonical/agent doc
+  changes, the docs that reference it — including agent-instruction files — are
+  flagged as a "blast radius" (`{ changedDocs, blastRadius }` in JSON). No
+  verified competitor propagates doc staleness across the doc graph. Proven on a
+  real repo: an ARCHITECTURE.md change flags the AGENTS.md/CLAUDE.md that cite it.
+- **Diff-Suspicion validator (DSP001)** (feat 3) — change-driven. A doc that BOTH
+  references a code file changed since the ref AND shares domain tokens removed
+  in that diff is flagged for review. Deterministic diff-overlap rule
+  (arXiv 2010.01625, F1 74.7); path/module refs + domain-token filtering +
+  per-doc cap keep it quiet at PR granularity.
+- **Reference-Existence validator (REF001)** (feat 2) — two-revision check. A
+  compound code identifier backticked in a doc that existed when the doc was last
+  updated but has ZERO matches at HEAD is flagged as outdated (arXiv 2212.01479).
+  In-memory HEAD identifier set + authoritative git-grep confirmation; zero false
+  positives across the corpus.
+- **API-Doc-Smells validator (APS001 Bloated / APS002 Lazy)** (feat 4) —
+  deterministic length signals on signature-headed doc units (F1 0.90 / 0.95).
+- **IR-based traceability soft-matching** (feat 5) — `cli/shared-ir.mjs`
+  (zero-dep TF-IDF + cosine). An untraced requirement now surfaces the
+  TF-IDF-closest test file ("X may already cover it — add @req there"),
+  reducing false "no coverage" for tests that lack the annotation.
+- **`docguard verify --since <ref>` — change-aware staging** (feat 6). Attaches
+  an activity-labeled (ordered replace/delete/add) structured diff to the staged
+  agent-judgment tasks and flags which claims are about just-changed code —
+  CARL-CCI showed the structured-diff representation drives judgment accuracy
+  (arXiv 2512.19883).
+- **`cli/shared-diff.mjs`** — zero-dependency unified-diff parser + identifier-
+  aware tokenizer + activity-labeled diff, the shared foundation for feats 1/2/3/6.
+
+### Fixed
+- `hooks` crash from a `core.hooksPath` edge and other pre-ship bugs caught by
+  dogfooding DocGuard on itself (a `walkFiles`-vs-`git grep` dot-directory
+  asymmetry that fabricated reference-existence false positives; a `.map(basename)`
+  index-as-suffix crash in verify).
+- **Self-counting consistency** — `canonical-sync` and `metrics-consistency` now
+  agree on the validator count (both 27); a default-off validator previously made
+  them disagree.
+
+### Changed
+- New validators default ON except where noted; all are soft warnings.
+- README, ARCHITECTURE.md, quickstart, CI-RECIPES, AGENTS.md updated to 27
+  validators (historical version-log counts preserved).
+
 ## [0.30.1] - 2026-07-06
 
 Patch release: a hooks crash fix that unblocks sandboxed CI/agent environments,
