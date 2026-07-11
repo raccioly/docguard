@@ -62,7 +62,7 @@ DocGuard enforces **Canonical-Driven Development (CDD)** — a methodology where
 
 DocGuard is an official [GitHub Spec Kit](https://github.com/github/spec-kit) community extension. It validates the artifacts that Spec Kit creates, ensuring your specs stay high-quality throughout the development lifecycle.
 
-📖 **[Philosophy](PHILOSOPHY.md)** · 📋 **[CDD Standard](STANDARD.md)** · ⚖️ **[Comparisons](COMPARISONS.md)** · 🗺️ **[Roadmap](ROADMAP.md)**
+📖 **[Philosophy](PHILOSOPHY.md)** · 📋 **[CDD Standard](STANDARD.md)** · ⚖️ **[Comparisons](COMPARISONS.md)** · 🔬 **[Validation](VALIDATION.md)** · 🗺️ **[Roadmap](ROADMAP.md)**
 
 ### Architecture
 

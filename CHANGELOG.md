@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **VALIDATION.md** — an honest benchmarks-style page documenting the
+  empirical method every detector goes through before shipping enabled
+  (read-only corpus runs on real production repos, keep/cut/tune, dogfooding)
+  and the measured v0.31/v0.32 results, including what DocGuard does NOT
+  claim. Linked from the README header.
 - **Agent nudge hook — `docguard hooks --claude`** (graphify's always-on-hook
   distribution pattern, pointed at doc integrity). Registers a `PostToolUse`
   hook in the project's `.claude/settings.json`: after the agent edits a
