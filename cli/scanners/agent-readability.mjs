@@ -14,6 +14,7 @@
 
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
+import { loadIgnorePatterns } from '../shared.mjs';
 
 /** chars/4 — the standard rough token estimate; consistency matters more than precision. */
 const estTokens = (s) => Math.ceil(s.length / 4);
@@ -31,9 +32,13 @@ function readIfExists(path) {
 function canonicalDocs(projectDir) {
   const dir = resolve(projectDir, 'docs-canonical');
   if (!existsSync(dir)) return [];
+  // Honor .docguardignore — an excluded doc (e.g. a historical audit) must
+  // not drag down the readability metrics either (same rule as the
+  // semantic-claim extractor, bug-212).
+  const isIgnored = loadIgnorePatterns(projectDir);
   try {
     return readdirSync(dir)
-      .filter(f => f.toLowerCase().endsWith('.md'))
+      .filter(f => f.toLowerCase().endsWith('.md') && !isIgnored(`docs-canonical/${f}`))
       .sort()
       .map(f => ({ name: `docs-canonical/${f}`, content: readIfExists(resolve(dir, f)) }))
       .filter(d => d.content !== null);
