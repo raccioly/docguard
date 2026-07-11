@@ -3,7 +3,7 @@ schema_version: "1.0"
 extension:
   id: "docguard"
   name: "DocGuard — CDD Enforcement"
-  version: "0.31.0"
+  version: "0.32.0"
   description: "Canonical-Driven Development enforcement as a true spec-kit extension. LLM-first design with automated validators, 4 AI behavior skills, spec-kit skill chaining, and workflow hooks. One pinned runtime dependency (@babel/parser); pure Node.js otherwise."
   author: "Ricardo Accioly"
   repository: "https://github.com/raccioly/docguard"
