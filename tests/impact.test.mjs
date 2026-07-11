@@ -178,4 +178,80 @@ describe('docguard impact', () => {
     assert.equal(data.blastRadius.length, 0,
       'a CHANGELOG.md change must not blast-radius the docs that merely mention it');
   });
+
+  // ── indirect impact via reverse import graph (SC-S11-009) ──
+
+  it('SC-S11-009: flags docs about an IMPORTER of the changed file (indirect)', () => {
+    dir = makeRepo({
+      'package.json': JSON.stringify({ name: 't', version: '0.0.0' }),
+      'src/db.mjs': 'export function query(){}\n',
+      'src/api.mjs': "import { query } from './db.mjs';\nexport function handler(){ return query(); }\n",
+      // The doc describes api.mjs ONLY — db.mjs itself is undocumented.
+      'docs-canonical/ARCHITECTURE.md': '# Architecture\nRequests flow through `src/api.mjs`.\n',
+      '.docguard.json': JSON.stringify({ projectName: 't', profile: 'starter', version: '0.5' }),
+    });
+    gitInit(dir);
+    writeFileSync(join(dir, 'src/db.mjs'), 'export function query(){ /* changed */ }\n');
+    commit(dir, 'change db');
+    const r = spawnSync('node', [CLI, 'impact', '--since', 'HEAD~1', '--format', 'json'], { cwd: dir, encoding: 'utf-8' });
+    const data = JSON.parse(r.stdout);
+    assert.ok(Array.isArray(data.indirectDocs), 'indirectDocs must be in the JSON payload');
+    const hit = data.indirectDocs.find(d => d.doc === 'ARCHITECTURE.md');
+    assert.ok(hit, `ARCHITECTURE.md should be indirect-affected; got ${JSON.stringify(data.indirectDocs)}`);
+    assert.ok(hit.chains.some(ch => ch.via === 'src/api.mjs' && ch.changed === 'src/db.mjs' && ch.hops === 1),
+      `chain should explain api.mjs imports db.mjs; got ${JSON.stringify(hit.chains)}`);
+  });
+
+  it('SC-S11-009: a doc DIRECTLY affected by the same change is not repeated as indirect', () => {
+    dir = makeRepo({
+      'package.json': JSON.stringify({ name: 't', version: '0.0.0' }),
+      'src/db.mjs': 'export function query(){}\n',
+      'src/api.mjs': "import { query } from './db.mjs';\nexport function handler(){ return query(); }\n",
+      // Doc references BOTH files — the direct hit must win.
+      'docs-canonical/ARCHITECTURE.md': '# Architecture\n`src/api.mjs` calls `src/db.mjs`.\n',
+      '.docguard.json': JSON.stringify({ projectName: 't', profile: 'starter', version: '0.5' }),
+    });
+    gitInit(dir);
+    writeFileSync(join(dir, 'src/db.mjs'), 'export function query(){ /* changed */ }\n');
+    commit(dir, 'change db');
+    const r = spawnSync('node', [CLI, 'impact', '--since', 'HEAD~1', '--format', 'json'], { cwd: dir, encoding: 'utf-8' });
+    const data = JSON.parse(r.stdout);
+    assert.ok(data.affectedDocs.some(d => d.doc === 'ARCHITECTURE.md'), 'direct hit expected');
+    assert.ok(!data.indirectDocs.some(d => d.doc === 'ARCHITECTURE.md'),
+      'doc must not appear as indirect when directly affected by the same change');
+  });
+
+  it('SC-S11-009: --no-indirect disables the import-graph analysis', () => {
+    dir = makeRepo({
+      'package.json': JSON.stringify({ name: 't', version: '0.0.0' }),
+      'src/db.mjs': 'export function query(){}\n',
+      'src/api.mjs': "import { query } from './db.mjs';\n",
+      'docs-canonical/ARCHITECTURE.md': '# Architecture\nSee `src/api.mjs`.\n',
+      '.docguard.json': JSON.stringify({ projectName: 't', profile: 'starter', version: '0.5' }),
+    });
+    gitInit(dir);
+    writeFileSync(join(dir, 'src/db.mjs'), 'export function query(){ /* changed */ }\n');
+    commit(dir, 'change db');
+    const r = spawnSync('node', [CLI, 'impact', '--since', 'HEAD~1', '--format', 'json', '--no-indirect'], { cwd: dir, encoding: 'utf-8' });
+    const data = JSON.parse(r.stdout);
+    assert.equal(data.indirectDocs.length, 0, 'no indirect analysis with --no-indirect');
+  });
+
+  it('blast radius sees Obsidian wikilink dependents ([[ARCHITECTURE]])', () => {
+    dir = makeRepo({
+      'package.json': JSON.stringify({ name: 't', version: '0.0.0' }),
+      'docs-canonical/ARCHITECTURE.md': '# Architecture\nThe system.\n',
+      'docs-canonical/SECURITY.md': '# Security\nSee [[ARCHITECTURE#Layers|the layer map]].\n',
+      '.docguard.json': JSON.stringify({ projectName: 't', profile: 'starter', version: '0.5' }),
+    });
+    gitInit(dir);
+    writeFileSync(join(dir, 'docs-canonical/ARCHITECTURE.md'), '# Architecture\nRevised.\n');
+    commit(dir, 'revise architecture');
+    const r = spawnSync('node', [CLI, 'impact', '--since', 'HEAD~1', '--format', 'json'], { cwd: dir, encoding: 'utf-8' });
+    const data = JSON.parse(r.stdout);
+    const edge = data.blastRadius.find(b => b.changedDoc.endsWith('ARCHITECTURE.md'));
+    assert.ok(edge, `expected a wikilink blast-radius edge; got ${JSON.stringify(data.blastRadius)}`);
+    assert.ok(edge.dependents.some(d => d.doc === 'SECURITY.md'),
+      'SECURITY.md references the changed doc only via [[ARCHITECTURE#…]] and must be flagged');
+  });
 });

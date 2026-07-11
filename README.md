@@ -325,6 +325,7 @@ Run them solo (`docguard init --with hooks`) or stacked (`docguard init --with a
 | `--apply` | Actually run the migration | upgrade |
 | `--pr` | Open a PR with the migration | upgrade |
 | `--reverse <file>` | Reverse traceability (code → docs) | trace |
+| `--no-indirect` | Skip the reverse-import-graph analysis (docs about modules that import a changed file) | impact, diff --since |
 | `--history` | Show fix audit log | fix |
 
 ### Example Output
@@ -383,7 +384,7 @@ DocGuard runs **27 automated validators** on every `guard` check. Every one is *
 | 17 | **TODO-Tracking** | Untracked TODOs/FIXMEs and skipped tests (skips test files by default) | ✅ On |
 | 18 | **Schema-Sync** | Database models documented in DATA-MODEL.md | ✅ On |
 | 19 | **Spec-Kit** | Spec quality validation (FR-IDs, mandatory sections, phased tasks) | ✅ On |
-| 20 | **Cross-Reference** | Internal markdown links + anchors resolve (with "did you mean?" hints) | ✅ On |
+| 20 | **Cross-Reference** | Internal markdown links + anchors resolve (with "did you mean?" hints); Obsidian wikilinks validated when the repo uses them as file links (`.obsidian` present or a target resolves) | ✅ On |
 | 21 | **Generated-Staleness** | `source=code` sections match scanner output; `status: draft` doc age | ✅ On |
 | 22 | **Canonical-Sync** | DocGuard's own README count claims match code-truth (DocGuard repo only — N/A elsewhere) | ✅ On |
 | 23 | **Metrics-Consistency** | Hardcoded numbers match actual counts | ✅ On |

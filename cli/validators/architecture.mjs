@@ -143,7 +143,14 @@ function validateConfigLayers(projectDir, config, layers, acc) {
 
 // ── Import Graph Builder ────────────────────────────────────────────────────
 
-function buildImportGraph(projectDir, config) {
+/**
+ * Build the project's JS/TS import graph. Exported for reuse by `impact`
+ * (indirect code→doc analysis walks this graph's reverse edges) — one graph
+ * builder, not two.
+ *
+ * @returns {{files: string[], edges: {from,to,dynamic}[], fileMap: Map<string,string[]>}}
+ */
+export function buildImportGraph(projectDir, config) {
   const graph = { files: [], edges: [], fileMap: new Map() };
 
   const allFiles = getFilesRecursive(projectDir, config, projectDir);

@@ -8,6 +8,13 @@
  *   - Markdown relative links:        [text](./OTHER.md)
  *                                     [text](./OTHER.md#anchor)
  *                                     [text](#anchor-in-same-doc)
+ *                                     [text](<path with spaces.md>)
+ *   - Obsidian wikilinks:             [[OTHER]]  [[OTHER#Heading]]  [[OTHER|alias]]
+ *     Validated only when the repo shows wikilinks-are-files evidence
+ *     (`.obsidian/` exists, or at least one wikilink target resolves) — some
+ *     repos use [[name]] as a non-file convention (template placeholders,
+ *     memory links) and must not be flagged. Image embeds `![[x.png]]` are
+ *     never treated as doc links.
  *   - Bare anchor refs:               see §3.2 ARCHITECTURE.md
  *                                     (Section 3.2 in DATA-MODEL.md)
  *   - Bracketed section refs:         [Section X.Y]
@@ -29,6 +36,8 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, dirname, basename, relative } from 'node:path';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
+import { resolveDocDirs } from '../shared.mjs';
+import { walkFiles } from '../shared-ignore.mjs';
 
 /**
  * Slugify a heading the way GitHub's markdown anchors work.
@@ -112,8 +121,13 @@ export function extractRefs(content, sourcePath) {
   //   ./RELATIVE.md
   //   ../OTHER.md#anchor
   //   #intra-doc-anchor
+  //   <path with spaces.md>   (CommonMark angle-bracket form)
   // We DON'T match http(s) targets here.
   const markdownLinkRe = /\[([^\]]+)\]\(((?!https?:|mailto:)[^)]+)\)/g;
+  // [[Target]] / [[Target#Heading]] / [[Target|alias]]. The (?<!!) guard
+  // excludes Obsidian image embeds ![[img.png]] — an embed is content, not a
+  // doc cross-reference.
+  const wikiLinkRe = /(?<!!)\[\[([^\]|#\n]+)(?:#([^\]|\n]*))?(?:\|[^\]\n]*)?\]\]/g;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -130,8 +144,14 @@ export function extractRefs(content, sourcePath) {
     markdownLinkRe.lastIndex = 0;
     while ((m = markdownLinkRe.exec(stripped)) !== null) {
       const target = m[2].trim();
-      // Drop any title text: [foo](bar "title") → bar
-      const cleanTarget = target.split(/\s+/)[0];
+      let cleanTarget;
+      if (target.startsWith('<') && target.includes('>')) {
+        // Angle-bracket form: the target is everything inside <…>, spaces allowed.
+        cleanTarget = target.slice(1, target.indexOf('>'));
+      } else {
+        // Drop any title text: [foo](bar "title") → bar
+        cleanTarget = target.split(/\s+/)[0];
+      }
       const hashIdx = cleanTarget.indexOf('#');
       let file, anchor;
       if (hashIdx === 0) {
@@ -145,11 +165,53 @@ export function extractRefs(content, sourcePath) {
         file = cleanTarget;
         anchor = null;
       }
+      // `./repo.md?x=1#setup` targets repo.md — the query never names a file.
+      if (file) file = file.split('?')[0];
       refs.push({ source: sourcePath, file, anchor, raw: m[0], line: i + 1 });
+    }
+
+    wikiLinkRe.lastIndex = 0;
+    while ((m = wikiLinkRe.exec(stripped)) !== null) {
+      const target = m[1].trim();
+      if (!target) continue;
+      const anchor = m[2] !== undefined ? m[2].trim() : null;
+      refs.push({ source: sourcePath, file: target, anchor: anchor || null, raw: m[0], line: i + 1, wiki: true });
     }
   }
 
   return refs;
+}
+
+/**
+ * Basename-stem → path index of every markdown file in the project's doc
+ * homes plus the already-collected canonical docs. Obsidian resolves
+ * wikilinks vault-wide by basename; this is the named-doc-dirs equivalent
+ * (never an arbitrary-subdir walk).
+ */
+function buildWikiIndex(projectDir, config, docs) {
+  const idx = new Map();
+  const add = (p) => {
+    const stem = basename(p).replace(/\.mdx?$/i, '').toLowerCase();
+    if (!idx.has(stem)) idx.set(stem, p);
+  };
+  for (const d of docs) add(d);
+  for (const d of resolveDocDirs(projectDir, config)) {
+    const abs = resolve(projectDir, d);
+    if (!existsSync(abs)) continue;
+    walkFiles(abs, (full) => { if (/\.mdx?$/i.test(full)) add(full); });
+  }
+  return idx;
+}
+
+/** Resolve a wikilink target: sibling path, project root, then vault index. */
+function resolveWikiTarget(sourcePath, target, projectDir, wikiIndex) {
+  const withExt = /\.mdx?$/i.test(target) ? target : `${target}.md`;
+  for (const base of [dirname(sourcePath), projectDir]) {
+    const p = resolve(base, withExt);
+    if (existsSync(p)) return p;
+  }
+  const stem = basename(withExt).replace(/\.mdx?$/i, '').toLowerCase();
+  return wikiIndex.get(stem) || null;
 }
 
 /**
@@ -297,9 +359,10 @@ function collectCanonicalDocs(projectDir) {
  * errors/warnings arrays from the same findings, so counts, exit codes, and
  * existing tests are unaffected; guard just renders richer output.
  */
-export function validateCrossReferences(projectDir, _config = {}) {
+export function validateCrossReferences(projectDir, config = {}) {
   const findings = [];
   const fixes = [];
+  const wikiRefs = []; // validated in a second pass — evidence gate needs the full set
   let passed = 0;
   let total = 0;
 
@@ -328,6 +391,10 @@ export function validateCrossReferences(projectDir, _config = {}) {
     const docName = basename(docPath);
 
     for (const ref of refs) {
+      if (ref.wiki) {
+        wikiRefs.push({ ...ref, docPath, docName });
+        continue;
+      }
       total++;
 
       // Resolve the target file (if any)
@@ -408,6 +475,60 @@ export function validateCrossReferences(projectDir, _config = {}) {
       }
 
       passed++;
+    }
+  }
+
+  // ── Wikilink pass — only when the repo demonstrably uses [[x]] as FILE
+  // links: `.obsidian/` exists, or at least one wikilink target resolves.
+  // Repos using [[name]] as a non-file convention are skipped silently.
+  if (wikiRefs.length > 0) {
+    const wikiIndex = buildWikiIndex(projectDir, config, docs);
+    const resolved = wikiRefs.map(r => ({
+      r,
+      path: resolveWikiTarget(r.docPath, r.file, projectDir, wikiIndex),
+    }));
+    const evidence = existsSync(resolve(projectDir, '.obsidian')) || resolved.some(x => x.path);
+    if (evidence) {
+      for (const { r, path } of resolved) {
+        total++;
+        if (!path) {
+          findings.push(mkFinding({
+            code: 'XRF001',
+            validator: 'crossReference',
+            severity: 'warn',
+            message: `${r.docName}:${r.line} — broken wikilink: target "[[${r.file}]]" not found`,
+            location: `${relative(projectDir, r.docPath)}:${r.line}`,
+            suggestion: { kind: 'fix', text: 'Fix the wikilink target (or remove the dead link)' },
+          }));
+          continue;
+        }
+        if (r.anchor) {
+          let anchors = anchorIndex.get(path);
+          if (!anchors) {
+            try {
+              anchors = new Set(extractHeadings(readFileSync(path, 'utf-8')).map(h => h.anchor));
+            } catch { anchors = new Set(); }
+            anchorIndex.set(path, anchors);
+          }
+          // Obsidian anchors are heading TEXT ([[Doc#Quick Start]]); compare
+          // through the same slug pipeline as inline links.
+          const normalized = slugifyHeading(r.anchor);
+          if (!anchors.has(normalized) && !anchors.has(r.anchor)) {
+            const suggestion = suggestAnchor(normalized, anchors);
+            const hint = suggestion ? ` (did you mean #${suggestion}?)` : '';
+            findings.push(mkFinding({
+              code: 'XRF002',
+              validator: 'crossReference',
+              severity: 'warn',
+              message: `${r.docName}:${r.line} — broken anchor: "[[${r.file}#${r.anchor}]]" doesn't match any heading in ${basename(path)}${hint}`,
+              location: `${relative(projectDir, r.docPath)}:${r.line}`,
+              suggestion: { kind: 'review', text: 'Update the wikilink heading to match a real heading in the target doc' },
+            }));
+            continue;
+          }
+        }
+        passed++;
+      }
     }
   }
 

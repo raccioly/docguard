@@ -21,6 +21,56 @@ import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { tokenize } from '../shared-diff.mjs';
 import { rankBySimilarity } from '../shared-ir.mjs';
 
+/**
+ * Optional graphify interop (github.com/Graphify-Labs/graphify, MIT).
+ * Teams that commit `graphify-out/graph.json` already carry a knowledge graph
+ * whose CODE side is deterministic tree-sitter extraction. If it's there, its
+ * doc↔code edges are one more linkage-evidence source for traceability.
+ *
+ * Trust rules (the determinism anchor):
+ *   - ONLY edges tagged confidence:"EXTRACTED" count — INFERRED/AMBIGUOUS
+ *     edges can come from graphify's LLM pass and must not vouch for a doc.
+ *   - Evidence-only: this can turn a would-be "unlinked doc" into a pass;
+ *     it never produces a finding.
+ *   - Zero-dep: one JSON read. Any parse/shape mismatch → null (no evidence).
+ *
+ * @returns {Map<string, Set<string>>|null} doc basename → linked code files
+ */
+function loadGraphifyDocLinks(projectDir) {
+  const p = resolve(projectDir, 'graphify-out', 'graph.json');
+  if (!existsSync(p)) return null;
+  try {
+    const raw = JSON.parse(readFileSync(p, 'utf-8'));
+    const nodes = Array.isArray(raw.nodes) ? raw.nodes : [];
+    // networkx serializes edges as "links"; older graphify exports used "edges".
+    const links = Array.isArray(raw.links) ? raw.links
+      : Array.isArray(raw.edges) ? raw.edges : [];
+    const nodeFile = new Map(); // node id → source_file
+    for (const n of nodes) {
+      if (n && n.id !== undefined && typeof n.source_file === 'string') {
+        nodeFile.set(n.id, n.source_file);
+      }
+    }
+    const docLinks = new Map();
+    for (const l of links) {
+      if (!l || l.confidence !== 'EXTRACTED') continue;
+      const sf = nodeFile.get(l.source);
+      const tf = nodeFile.get(l.target);
+      if (!sf || !tf) continue;
+      for (const [a, b] of [[sf, tf], [tf, sf]]) {
+        if (a.endsWith('.md') && !b.endsWith('.md') && isTraceableSource(b)) {
+          const doc = basename(a);
+          if (!docLinks.has(doc)) docLinks.set(doc, new Set());
+          docLinks.get(doc).add(b);
+        }
+      }
+    }
+    return docLinks.size > 0 ? docLinks : null;
+  } catch {
+    return null; // malformed graph = no evidence, never a finding
+  }
+}
+
 // IR soft-link recovery (feat 5): tokenize test files once so an untraced
 // requirement can be matched to the test that most likely already covers it
 // (TF-IDF cosine, VSM). Capped so a huge test suite can't blow up guard.
@@ -98,6 +148,10 @@ export function validateTraceability(projectDir, config) {
   const projectFiles = [];
   scanDir(projectDir, projectDir, projectFiles);
 
+  // Optional graphify interop: a committed knowledge graph is one more
+  // deterministic evidence source for doc↔code linkage.
+  const graphifyLinks = loadGraphifyDocLinks(projectDir);
+
   // Scan source files for `// @doc <filename>.md` annotations. An annotation
   // is an explicit author signal that a source file documents (or is
   // documented by) a canonical doc. It is the user-facing escape hatch when
@@ -147,6 +201,15 @@ export function validateTraceability(projectDir, config) {
         hasSource = true;
         break;
       }
+    }
+
+    // Graphify interop: an EXTRACTED doc↔code edge in a committed
+    // graphify-out/graph.json is author-grade linkage evidence (the graph's
+    // code side is deterministic AST extraction). Only trusted when at least
+    // one linked code file still exists — a stale graph must not vouch.
+    if (!hasSource && graphifyLinks && graphifyLinks.has(docName)) {
+      hasSource = [...graphifyLinks.get(docName)]
+        .some(f => existsSync(resolve(projectDir, f)) || existsSync(f));
     }
 
     if (hasSource) {
