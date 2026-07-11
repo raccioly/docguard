@@ -204,61 +204,68 @@ const TOOL_HANDLERS = {
 };
 
 /**
- * Serve MCP over stdio until stdin closes. The returned promise keeps the
- * dispatcher's `await` (and thus the process) alive for the server's lifetime.
+ * Transport-agnostic JSON-RPC dispatch. Returns the response message for a
+ * request, or null for notifications (which get no response by spec). Both
+ * the stdio and HTTP transports route through this one dispatcher.
  */
-export function runMcp(projectDir, _config, _flags) {
+function dispatchMessage(msg, projectDir) {
+  const result = (id, res) => ({ jsonrpc: '2.0', id, result: res });
+  const error = (id, code, message) => ({ jsonrpc: '2.0', id, error: { code, message } });
+
+  if (!msg || typeof msg !== 'object' || Array.isArray(msg) || msg.jsonrpc !== '2.0' || typeof msg.method !== 'string') {
+    return error(msg && msg.id !== undefined ? msg.id : null, E_INVALID_REQUEST, 'Invalid Request');
+  }
+  const { id, method, params } = msg;
+  const isNotification = id === undefined || id === null;
+
+  switch (method) {
+    case 'initialize':
+      return result(id, {
+        protocolVersion: typeof params?.protocolVersion === 'string' ? params.protocolVersion : PROTOCOL_VERSION,
+        capabilities: { tools: {} },
+        serverInfo: { name: 'docguard', version: _PKG.version },
+      });
+    case 'ping':
+      return result(id, {});
+    case 'tools/list':
+      return result(id, { tools: TOOLS });
+    case 'tools/call': {
+      const handler = TOOL_HANDLERS[params?.name];
+      if (!handler) return error(id, E_INVALID_PARAMS, `Unknown tool: ${params?.name}`);
+      // In-tool failures are tool RESULTS (isError), not protocol errors —
+      // one bad call must never take down the server or the session.
+      try {
+        const payload = handler(params?.arguments || {}, projectDir);
+        return result(id, { content: [{ type: 'text', text: JSON.stringify(payload, null, 2) }] });
+      } catch (err) {
+        return result(id, { content: [{ type: 'text', text: String((err && err.message) || err) }], isError: true });
+      }
+    }
+    default:
+      // Notifications (initialized, cancelled, …) get no response by spec.
+      if (isNotification) return null;
+      return error(id, E_METHOD_NOT_FOUND, `Method not found: ${method}`);
+  }
+}
+
+/**
+ * Serve MCP until the transport closes. The returned promise keeps the
+ * dispatcher's `await` (and thus the process) alive for the server's lifetime.
+ * Default transport is stdio; `--transport http` serves the same tools over
+ * the MCP Streamable HTTP transport so one shared process can serve a team.
+ */
+export function runMcp(projectDir, _config, flags = {}) {
+  if (flags.transport === 'http') return runMcpHttp(projectDir, flags);
+  if (flags.transport && flags.transport !== 'stdio') {
+    process.stderr.write(`docguard mcp: unknown transport "${flags.transport}" (expected stdio or http)\n`);
+    process.exitCode = 1;
+    return;
+  }
+
   const send = (msg) => {
     // A vanished client (EPIPE) is a normal shutdown, not a crash.
     try { process.stdout.write(JSON.stringify(msg) + '\n'); }
     catch { /* client gone — the readline close handler ends the server */ }
-  };
-  const reply = (id, result) => send({ jsonrpc: '2.0', id, result });
-  const replyError = (id, code, message) => send({ jsonrpc: '2.0', id, error: { code, message } });
-
-  const handleMessage = (msg) => {
-    if (!msg || typeof msg !== 'object' || Array.isArray(msg) || msg.jsonrpc !== '2.0' || typeof msg.method !== 'string') {
-      replyError(msg && msg.id !== undefined ? msg.id : null, E_INVALID_REQUEST, 'Invalid Request');
-      return;
-    }
-    const { id, method, params } = msg;
-    const isNotification = id === undefined || id === null;
-
-    switch (method) {
-      case 'initialize':
-        reply(id, {
-          protocolVersion: typeof params?.protocolVersion === 'string' ? params.protocolVersion : PROTOCOL_VERSION,
-          capabilities: { tools: {} },
-          serverInfo: { name: 'docguard', version: _PKG.version },
-        });
-        return;
-      case 'ping':
-        reply(id, {});
-        return;
-      case 'tools/list':
-        reply(id, { tools: TOOLS });
-        return;
-      case 'tools/call': {
-        const handler = TOOL_HANDLERS[params?.name];
-        if (!handler) {
-          replyError(id, E_INVALID_PARAMS, `Unknown tool: ${params?.name}`);
-          return;
-        }
-        // In-tool failures are tool RESULTS (isError), not protocol errors —
-        // one bad call must never take down the server or the session.
-        try {
-          const payload = handler(params?.arguments || {}, projectDir);
-          reply(id, { content: [{ type: 'text', text: JSON.stringify(payload, null, 2) }] });
-        } catch (err) {
-          reply(id, { content: [{ type: 'text', text: String((err && err.message) || err) }], isError: true });
-        }
-        return;
-      }
-      default:
-        // Notifications (initialized, cancelled, …) get no response by spec.
-        if (isNotification) return;
-        replyError(id, E_METHOD_NOT_FOUND, `Method not found: ${method}`);
-    }
   };
 
   process.stderr.write(`docguard mcp v${_PKG.version} — serving ${TOOLS.length} tools on stdio (project: ${projectDir})\n`);
@@ -270,14 +277,133 @@ export function runMcp(projectDir, _config, _flags) {
       if (!trimmed) return;
       let msg;
       try { msg = JSON.parse(trimmed); }
-      catch { replyError(null, E_PARSE, 'Parse error'); return; }
-      try { handleMessage(msg); }
-      catch (err) {
+      catch { send({ jsonrpc: '2.0', id: null, error: { code: E_PARSE, message: 'Parse error' } }); return; }
+      try {
+        const resp = dispatchMessage(msg, projectDir);
+        if (resp) send(resp);
+      } catch (err) {
         // Last-resort trap: a protocol-handler bug must not kill the server.
         process.stderr.write(`docguard mcp: internal error: ${err && err.stack || err}\n`);
-        if (msg && msg.id !== undefined && msg.id !== null) replyError(msg.id, E_INTERNAL, 'Internal error');
+        if (msg && msg.id !== undefined && msg.id !== null) {
+          send({ jsonrpc: '2.0', id: msg.id, error: { code: E_INTERNAL, message: 'Internal error' } });
+        }
       }
     });
     rl.on('close', () => done());
+  });
+}
+
+// ── Streamable HTTP transport ───────────────────────────────────────────────
+//
+// Minimal spec-compliant subset, zero-dep (node:http):
+//   - POST <path>: JSON-RPC request/batch in, application/json out. A body of
+//     only notifications → 202 Accepted, empty.
+//   - GET <path>: 405 — this server does not offer a server-initiated SSE
+//     stream (clients that need one fall back to plain request/response).
+//   - DELETE <path>: 200 — the server is stateless; nothing to clean up.
+//   - `Mcp-Session-Id` is issued on initialize and accepted (not required)
+//     afterwards — stateless by design, like `--stateless` HTTP MCP servers.
+//
+// Security posture (Security → Production-readiness → Simplicity):
+//   - Default bind 127.0.0.1 (loopback-only).
+//   - Binding any non-loopback host REQUIRES --api-key / DOCGUARD_API_KEY —
+//     the server refuses to start otherwise, instead of warning and exposing
+//     read access to the whole network.
+//   - When an api-key is set, every request must carry it
+//     (`Authorization: Bearer <key>` or `X-API-Key: <key>`) → else 401.
+//   - Origin allow-list on loopback binds (DNS-rebinding guard per the MCP
+//     Streamable HTTP security notes): browser-originated cross-site requests
+//     are rejected; non-browser clients send no Origin and pass.
+
+const HTTP_BODY_CAP = 4 * 1024 * 1024; // 4 MiB — guard payloads are large but bounded
+
+function isLoopbackHost(host) {
+  return host === '127.0.0.1' || host === 'localhost' || host === '::1';
+}
+
+async function runMcpHttp(projectDir, flags) {
+  const { createServer } = await import('node:http');
+  const { randomUUID } = await import('node:crypto');
+
+  const host = flags.host || '127.0.0.1';
+  const port = Number.isFinite(Number(flags.port)) && Number(flags.port) >= 0 ? Number(flags.port) : 8585;
+  const mountPath = flags.path || '/mcp';
+  const apiKey = flags.apiKey || process.env.DOCGUARD_API_KEY || '';
+
+  if (!isLoopbackHost(host) && !apiKey) {
+    process.stderr.write(
+      `docguard mcp: refusing to bind ${host} without an API key.\n` +
+      `Exposing the server beyond localhost requires --api-key <key> (or DOCGUARD_API_KEY).\n`);
+    process.exitCode = 1;
+    return;
+  }
+
+  const authorized = (req) => {
+    if (!apiKey) return true;
+    const auth = req.headers['authorization'] || '';
+    const xkey = req.headers['x-api-key'] || '';
+    return auth === `Bearer ${apiKey}` || xkey === apiKey;
+  };
+
+  const originAllowed = (req) => {
+    const origin = req.headers['origin'];
+    if (!origin) return true; // non-browser clients (MCP SDKs, curl) send none
+    try {
+      const o = new URL(origin);
+      return isLoopbackHost(o.hostname);
+    } catch { return false; }
+  };
+
+  const server = createServer((req, res) => {
+    const answer = (status, body, headers = {}) => {
+      res.writeHead(status, { 'content-type': 'application/json', ...headers });
+      res.end(body === undefined ? '' : JSON.stringify(body));
+    };
+
+    const url = (req.url || '').split('?')[0];
+    if (url !== mountPath) return answer(404, { error: 'not found' });
+    if (!originAllowed(req)) return answer(403, { error: 'origin not allowed' });
+    if (!authorized(req)) return answer(401, { error: 'unauthorized' }, { 'www-authenticate': 'Bearer' });
+
+    if (req.method === 'GET') return answer(405, { error: 'SSE stream not offered — POST JSON-RPC to this endpoint' }, { allow: 'POST, DELETE' });
+    if (req.method === 'DELETE') return answer(200, {}); // stateless — nothing to end
+    if (req.method !== 'POST') return answer(405, { error: 'method not allowed' }, { allow: 'POST, DELETE' });
+
+    let size = 0;
+    const chunks = [];
+    req.on('data', (c) => {
+      size += c.length;
+      if (size > HTTP_BODY_CAP) { answer(413, { error: 'payload too large' }); req.destroy(); return; }
+      chunks.push(c);
+    });
+    req.on('end', () => {
+      if (res.writableEnded) return;
+      let parsed;
+      try { parsed = JSON.parse(Buffer.concat(chunks).toString('utf-8')); }
+      catch { return answer(400, { jsonrpc: '2.0', id: null, error: { code: E_PARSE, message: 'Parse error' } }); }
+
+      try {
+        const messages = Array.isArray(parsed) ? parsed : [parsed];
+        const responses = messages.map((m) => dispatchMessage(m, projectDir)).filter(Boolean);
+        // New sessions get an id on initialize; we accept any/none afterwards.
+        const headers = messages.some((m) => m && m.method === 'initialize')
+          ? { 'mcp-session-id': randomUUID() } : {};
+        if (responses.length === 0) return answer(202, undefined, headers); // notifications only
+        return answer(200, Array.isArray(parsed) ? responses : responses[0], headers);
+      } catch (err) {
+        process.stderr.write(`docguard mcp: internal error: ${err && err.stack || err}\n`);
+        return answer(500, { jsonrpc: '2.0', id: null, error: { code: E_INTERNAL, message: 'Internal error' } });
+      }
+    });
+  });
+
+  return new Promise((done) => {
+    server.listen(port, host, () => {
+      const addr = server.address();
+      process.stderr.write(
+        `docguard mcp v${_PKG.version} — Streamable HTTP on http://${host}:${addr.port}${mountPath} ` +
+        `(project: ${projectDir}${apiKey ? ', api-key required' : ', loopback only'})\n`);
+    });
+    server.on('close', () => done());
   });
 }

@@ -13,6 +13,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (read-only corpus runs on real production repos, keep/cut/tune, dogfooding)
   and the measured v0.31/v0.32 results, including what DocGuard does NOT
   claim. Linked from the README header.
+- **MCP Streamable HTTP transport — `docguard mcp --transport http`.** One
+  shared process can now serve the DocGuard tools to a whole team: JSON-RPC
+  over POST (single + batch), 202 for notification-only bodies, session id
+  issued on initialize (stateless server — accepted, never required), GET
+  correctly 405s (no SSE stream offered). Zero-dep (`node:http`). Security
+  posture: binds `127.0.0.1` by default; binding any non-loopback host
+  REFUSES to start without `--api-key`/`DOCGUARD_API_KEY`; when a key is set
+  every request must carry it (`Authorization: Bearer` or `X-API-Key`);
+  browser cross-site origins are rejected (DNS-rebinding guard); 4 MiB body
+  cap. Flags: `--port` (default 8585), `--host`, `--api-key`, `--path`
+  (default `/mcp`). The stdio transport is unchanged and remains the default;
+  both share one JSON-RPC dispatcher.
 - **Agent nudge hook — `docguard hooks --claude`** (graphify's always-on-hook
   distribution pattern, pointed at doc integrity). Registers a `PostToolUse`
   hook in the project's `.claude/settings.json`: after the agent edits a
