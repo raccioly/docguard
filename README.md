@@ -274,7 +274,7 @@ DocGuard ships **18 commands** (the "Daily 5" + 13 situational tools, including 
 | `verify --semantic` | Extract documented numbers/limits/enums (retention days, rate limits, GSI/role counts, status enums) as a task list for an agent to check against code — the semantic-drift class regex/AST can't see |
 | `verify --instructions` | Audit AGENTS.md/CLAUDE.md themselves for drift: duplicate rules, never-vs-always contradictions, stale file pointers, unknown commands — plus clustered rule pairs as agent judgment tasks |
 | `feedback` | Report likely false positives back to DocGuard — local-first record + a 1-click prefilled, redacted GitHub issue (zero typing) |
-| `mcp` | MCP server over stdio — exposes guard/score/explain/verify/diagnose as native tools for Claude, Cursor, and any MCP client. Setup: `claude mcp add docguard -- npx docguard-cli mcp` |
+| `mcp` | MCP server — exposes guard/score/explain/verify/diagnose as native tools for Claude, Cursor, and any MCP client. Stdio: `claude mcp add docguard -- npx docguard-cli mcp`. Team-shared HTTP: `docguard mcp --transport http --port 8585` (loopback by default; non-loopback binds require `--api-key`) |
 | `memory` | Per-domain accuracy headline (endpoints / entities / env / tech) |
 | `memory --diff` | Drill into which specific claims don't match code |
 | `memory --pack` | Write `.docguard/context-pack.md` — compact, code-truth-stamped session-start context for AI agents |
@@ -326,6 +326,7 @@ Run them solo (`docguard init --with hooks`) or stacked (`docguard init --with a
 | `--pr` | Open a PR with the migration | upgrade |
 | `--reverse <file>` | Reverse traceability (code → docs) | trace |
 | `--no-indirect` | Skip the reverse-import-graph analysis (docs about modules that import a changed file) | impact, diff --since |
+| `--transport http` `--port` `--host` `--api-key` `--path` | Serve MCP over Streamable HTTP instead of stdio (team-shared server; loopback-only unless an api-key is set) | mcp |
 | `--history` | Show fix audit log | fix |
 
 ### Example Output

@@ -501,6 +501,23 @@ async function main() {
     } else if (args[i] === '--claude') {
       // hooks: install/remove the Claude Code agent nudge hook.
       flags.claude = true;
+    } else if (args[i] === '--transport' && args[i + 1]) {
+      // mcp: stdio (default) or http (Streamable HTTP, team-shared server).
+      flags.transport = args[i + 1];
+      i++;
+    } else if (args[i] === '--port' && args[i + 1]) {
+      flags.port = args[i + 1];
+      i++;
+    } else if (args[i] === '--host' && args[i + 1]) {
+      flags.host = args[i + 1];
+      i++;
+    } else if (args[i] === '--api-key' && args[i + 1]) {
+      flags.apiKey = args[i + 1];
+      i++;
+    } else if (args[i] === '--path' && args[i + 1]) {
+      // mcp --transport http: HTTP mount path (default /mcp).
+      flags.path = args[i + 1];
+      i++;
     } else if (args[i] === '--signals') {
       flags.signals = true;
     } else if (args[i] === '--debate') {
