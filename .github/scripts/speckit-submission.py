@@ -63,7 +63,7 @@ def build(version: str, download_url: str):
             "description": (
                 "The only doc-integrity engine with an MCP server, SARIF "
                 "output, and a deterministic zero-LLM core. Validates, "
-                "scores, and traces documentation against code — 24 "
+                "scores, and traces documentation against code — 27 "
                 "validators, stable finding codes, GitHub Action with PR "
                 "annotations, spec-kit hooks. Pure Node.js, one pinned dep."
             ),

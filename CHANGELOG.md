@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.32.0] - 2026-07-11
+
 Graph-informed accuracy batch — four improvements adapted from patterns proven
 in [graphify](https://github.com/Graphify-Labs/graphify) (MIT), rebuilt
 zero-dependency and deterministic for DocGuard. Empirically validated read-only
