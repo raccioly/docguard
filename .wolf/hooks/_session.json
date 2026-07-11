@@ -48,9 +48,34 @@
       "first_read": "2026-07-11T16:41:32.998Z"
     },
     "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/graphify-docguard-review-8a64ca/CHANGELOG.md": {
-      "count": 1,
-      "tokens": 45081,
+      "count": 2,
+      "tokens": 47871,
       "first_read": "2026-07-11T16:45:23.699Z"
+    },
+    "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/graphify-docguard-review-8a64ca/.docguardignore": {
+      "count": 1,
+      "tokens": 199,
+      "first_read": "2026-07-11T17:14:47.994Z"
+    },
+    "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/commands/hooks.mjs": {
+      "count": 4,
+      "tokens": 0,
+      "first_read": "2026-07-11T17:25:52.340Z"
+    },
+    "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/graphify-docguard-review-8a64ca/cli/commands/hooks.mjs": {
+      "count": 1,
+      "tokens": 0,
+      "first_read": "2026-07-11T17:28:28.733Z"
+    },
+    "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/graphify-docguard-review-8a64ca/cli/commands/mcp.mjs": {
+      "count": 1,
+      "tokens": 3098,
+      "first_read": "2026-07-11T17:35:50.973Z"
+    },
+    "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/graphify-docguard-review-8a64ca/docs-canonical/DATA-MODEL.md": {
+      "count": 1,
+      "tokens": 1668,
+      "first_read": "2026-07-11T17:45:51.544Z"
     }
   },
   "files_written": [
@@ -287,6 +312,276 @@
       "action": "edit",
       "tokens": 63,
       "at": "2026-07-11T16:47:48.389Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/graphify-docguard-review-8a64ca/.docguardignore",
+      "action": "edit",
+      "tokens": 166,
+      "at": "2026-07-11T17:14:56.088Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/graphify-docguard-review-8a64ca/cli/scanners/semantic-claims.mjs",
+      "action": "edit",
+      "tokens": 46,
+      "at": "2026-07-11T17:16:36.306Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/graphify-docguard-review-8a64ca/cli/scanners/semantic-claims.mjs",
+      "action": "edit",
+      "tokens": 248,
+      "at": "2026-07-11T17:16:42.634Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/graphify-docguard-review-8a64ca/tests/field-report-3-deferred.test.mjs",
+      "action": "edit",
+      "tokens": 316,
+      "at": "2026-07-11T17:17:06.051Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/graphify-docguard-review-8a64ca/docs-canonical/TEST-SPEC.md",
+      "action": "edit",
+      "tokens": 48,
+      "at": "2026-07-11T17:18:09.934Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/graphify-docguard-review-8a64ca/CHANGELOG.md",
+      "action": "edit",
+      "tokens": 186,
+      "at": "2026-07-11T17:18:33.142Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/graphify-docguard-review-8a64ca/CHANGELOG.md",
+      "action": "edit",
+      "tokens": 35,
+      "at": "2026-07-11T17:20:13.404Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/graphify-docguard-review-8a64ca/cli/commands/hooks.mjs",
+      "action": "edit",
+      "tokens": 169,
+      "at": "2026-07-11T17:28:39.639Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/graphify-docguard-review-8a64ca/cli/commands/hooks.mjs",
+      "action": "edit",
+      "tokens": 2176,
+      "at": "2026-07-11T17:29:21.684Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/graphify-docguard-review-8a64ca/cli/commands/hooks.mjs",
+      "action": "edit",
+      "tokens": 33,
+      "at": "2026-07-11T17:29:34.077Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/graphify-docguard-review-8a64ca/cli/commands/hooks.mjs",
+      "action": "edit",
+      "tokens": 40,
+      "at": "2026-07-11T17:29:34.813Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/graphify-docguard-review-8a64ca/cli/commands/hooks.mjs",
+      "action": "edit",
+      "tokens": 55,
+      "at": "2026-07-11T17:29:36.924Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/graphify-docguard-review-8a64ca/cli/commands/hooks.mjs",
+      "action": "edit",
+      "tokens": 21,
+      "at": "2026-07-11T17:29:39.682Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/graphify-docguard-review-8a64ca/cli/docguard.mjs",
+      "action": "edit",
+      "tokens": 69,
+      "at": "2026-07-11T17:30:20.057Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/graphify-docguard-review-8a64ca/cli/docguard.mjs",
+      "action": "edit",
+      "tokens": 144,
+      "at": "2026-07-11T17:30:24.101Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/graphify-docguard-review-8a64ca/cli/docguard.mjs",
+      "action": "edit",
+      "tokens": 18,
+      "at": "2026-07-11T17:30:32.247Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/graphify-docguard-review-8a64ca/cli/docguard.mjs",
+      "action": "edit",
+      "tokens": 91,
+      "at": "2026-07-11T17:30:35.534Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/graphify-docguard-review-8a64ca/cli/docguard.mjs",
+      "action": "edit",
+      "tokens": 79,
+      "at": "2026-07-11T17:30:37.960Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/graphify-docguard-review-8a64ca/cli/docguard.mjs",
+      "action": "edit",
+      "tokens": 82,
+      "at": "2026-07-11T17:30:40.627Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/graphify-docguard-review-8a64ca/tests/nudge-hook.test.mjs",
+      "action": "create",
+      "tokens": 1801,
+      "at": "2026-07-11T17:31:11.260Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/graphify-docguard-review-8a64ca/README.md",
+      "action": "edit",
+      "tokens": 207,
+      "at": "2026-07-11T17:32:04.818Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/graphify-docguard-review-8a64ca/CHANGELOG.md",
+      "action": "edit",
+      "tokens": 246,
+      "at": "2026-07-11T17:32:09.065Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/graphify-docguard-review-8a64ca/VALIDATION.md",
+      "action": "create",
+      "tokens": 1473,
+      "at": "2026-07-11T17:33:35.252Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/graphify-docguard-review-8a64ca/README.md",
+      "action": "edit",
+      "tokens": 52,
+      "at": "2026-07-11T17:33:56.888Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/graphify-docguard-review-8a64ca/CHANGELOG.md",
+      "action": "edit",
+      "tokens": 117,
+      "at": "2026-07-11T17:34:00.527Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/graphify-docguard-review-8a64ca/cli/commands/mcp.mjs",
+      "action": "edit",
+      "tokens": 2644,
+      "at": "2026-07-11T17:37:01.314Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/graphify-docguard-review-8a64ca/cli/docguard.mjs",
+      "action": "edit",
+      "tokens": 221,
+      "at": "2026-07-11T17:37:18.772Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/graphify-docguard-review-8a64ca/tests/mcp-http.test.mjs",
+      "action": "create",
+      "tokens": 1512,
+      "at": "2026-07-11T17:37:55.346Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/graphify-docguard-review-8a64ca/README.md",
+      "action": "edit",
+      "tokens": 88,
+      "at": "2026-07-11T17:38:12.333Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/graphify-docguard-review-8a64ca/README.md",
+      "action": "edit",
+      "tokens": 89,
+      "at": "2026-07-11T17:38:15.103Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/graphify-docguard-review-8a64ca/CHANGELOG.md",
+      "action": "edit",
+      "tokens": 260,
+      "at": "2026-07-11T17:38:20.885Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/graphify-docguard-review-8a64ca/cli/commands/impact.mjs",
+      "action": "edit",
+      "tokens": 95,
+      "at": "2026-07-11T17:39:21.275Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/graphify-docguard-review-8a64ca/cli/commands/impact.mjs",
+      "action": "edit",
+      "tokens": 1236,
+      "at": "2026-07-11T17:39:48.041Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/graphify-docguard-review-8a64ca/cli/commands/impact.mjs",
+      "action": "edit",
+      "tokens": 109,
+      "at": "2026-07-11T17:40:00.765Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/graphify-docguard-review-8a64ca/cli/docguard.mjs",
+      "action": "edit",
+      "tokens": 81,
+      "at": "2026-07-11T17:40:03.513Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/graphify-docguard-review-8a64ca/tests/impact.test.mjs",
+      "action": "edit",
+      "tokens": 645,
+      "at": "2026-07-11T17:40:24.276Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/graphify-docguard-review-8a64ca/tests/impact.test.mjs",
+      "action": "edit",
+      "tokens": 68,
+      "at": "2026-07-11T17:40:51.009Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/graphify-docguard-review-8a64ca/tests/impact.test.mjs",
+      "action": "edit",
+      "tokens": 115,
+      "at": "2026-07-11T17:41:32.275Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/graphify-docguard-review-8a64ca/README.md",
+      "action": "edit",
+      "tokens": 77,
+      "at": "2026-07-11T17:41:52.701Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/graphify-docguard-review-8a64ca/CHANGELOG.md",
+      "action": "edit",
+      "tokens": 202,
+      "at": "2026-07-11T17:41:56.919Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/graphify-docguard-review-8a64ca/cli/scanners/agent-readability.mjs",
+      "action": "edit",
+      "tokens": 47,
+      "at": "2026-07-11T17:44:04.753Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/graphify-docguard-review-8a64ca/cli/scanners/agent-readability.mjs",
+      "action": "edit",
+      "tokens": 188,
+      "at": "2026-07-11T17:44:09.637Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/graphify-docguard-review-8a64ca/docs-canonical/DATA-MODEL.md",
+      "action": "edit",
+      "tokens": 708,
+      "at": "2026-07-11T17:46:15.241Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/graphify-docguard-review-8a64ca/CHANGELOG.md",
+      "action": "edit",
+      "tokens": 167,
+      "at": "2026-07-11T17:47:45.386Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.claude/worktrees/graphify-docguard-review-8a64ca/CHANGELOG.md",
+      "action": "edit",
+      "tokens": 38,
+      "at": "2026-07-11T17:47:57.150Z"
     }
   ],
   "edit_counts": {
@@ -294,19 +589,30 @@
     "cli/findings.mjs": 1,
     "tests/reference-existence.test.mjs": 1,
     "cli/validators/cross-reference.mjs": 6,
-    "cli/commands/impact.mjs": 11,
+    "cli/commands/impact.mjs": 14,
     "tests/cross-reference.test.mjs": 1,
-    "tests/impact.test.mjs": 2,
+    "tests/impact.test.mjs": 5,
     "cli/validators/architecture.mjs": 1,
-    "cli/docguard.mjs": 1,
+    "cli/docguard.mjs": 9,
     "cli/validators/traceability.mjs": 3,
     "tests/traceability.test.mjs": 1,
-    "CHANGELOG.md": 1,
-    "README.md": 2
+    "CHANGELOG.md": 9,
+    "README.md": 7,
+    ".docguardignore": 1,
+    "cli/scanners/semantic-claims.mjs": 2,
+    "tests/field-report-3-deferred.test.mjs": 1,
+    "docs-canonical/TEST-SPEC.md": 1,
+    "cli/commands/hooks.mjs": 6,
+    "tests/nudge-hook.test.mjs": 1,
+    "VALIDATION.md": 1,
+    "cli/commands/mcp.mjs": 1,
+    "tests/mcp-http.test.mjs": 1,
+    "cli/scanners/agent-readability.mjs": 2,
+    "docs-canonical/DATA-MODEL.md": 1
   },
-  "anatomy_hits": 5,
-  "anatomy_misses": 5,
-  "repeated_reads_warned": 1,
+  "anatomy_hits": 8,
+  "anatomy_misses": 7,
+  "repeated_reads_warned": 5,
   "cerebrum_warnings": 0,
   "stop_count": 4
 }

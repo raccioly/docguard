@@ -3513,6 +3513,102 @@
       ],
       "occurrences": 1,
       "last_seen": "2026-07-11T00:00:00Z"
+    },
+    {
+      "id": "bug-214",
+      "timestamp": "2026-07-11T17:29:21.685Z",
+      "error_message": "Missing error handling in isOurNudgeGroup",
+      "file": "cli/commands/hooks.mjs",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-11T17:29:21.685Z"
+    },
+    {
+      "id": "bug-215",
+      "timestamp": "2026-07-11T17:30:20.058Z",
+      "error_message": "Wrong condition in logic",
+      "file": "cli/docguard.mjs",
+      "root_cause": "Condition was: if (DEPRECATED_COMMANDS[command] && !flags.quiet)",
+      "fix": "Changed to: if (DEPRECATED_COMMANDS[command] && !flags.quiet && !()",
+      "tags": [
+        "auto-detected",
+        "logic-fix",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-11T17:30:20.058Z"
+    },
+    {
+      "id": "bug-216",
+      "timestamp": "2026-07-11T17:30:35.535Z",
+      "error_message": "Incorrect value in code",
+      "file": "cli/docguard.mjs",
+      "root_cause": "Had 'agent'",
+      "fix": "Changed to `nudge-hook`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-11T17:30:35.535Z"
+    },
+    {
+      "id": "bug-217",
+      "timestamp": "2026-07-11T17:37:01.314Z",
+      "error_message": "Missing await",
+      "file": "cli/commands/mcp.mjs",
+      "root_cause": "Async call without await — returned Promise instead of value",
+      "fix": "Added await to async call",
+      "tags": [
+        "auto-detected",
+        "async-fix",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-11T17:37:01.314Z"
+    },
+    {
+      "id": "bug-218",
+      "timestamp": "2026-07-11T17:39:48.041Z",
+      "error_message": "Missing error handling in computeDocConflicts",
+      "file": "cli/commands/impact.mjs",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-11T17:39:48.041Z"
+    },
+    {
+      "id": "bug-219",
+      "timestamp": "2026-07-11T17:40:24.277Z",
+      "error_message": "Missing await",
+      "file": "tests/impact.test.mjs",
+      "root_cause": "Async call without await — returned Promise instead of value",
+      "fix": "Added await to async call",
+      "tags": [
+        "auto-detected",
+        "async-fix",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-11T17:40:24.277Z"
     }
   ]
 }

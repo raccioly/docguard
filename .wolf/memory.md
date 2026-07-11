@@ -942,3 +942,48 @@
 | 12:50 | Session end: 39 writes across 13 files (reference-existence.mjs, findings.mjs, reference-existence.test.mjs, cross-reference.mjs, impact.mjs) | 10 reads | ~85624 tok |
 | 12:51 | Session end: 39 writes across 13 files (reference-existence.mjs, findings.mjs, reference-existence.test.mjs, cross-reference.mjs, impact.mjs) | 10 reads | ~85624 tok |
 | 13:07 | Session end: 39 writes across 13 files (reference-existence.mjs, findings.mjs, reference-existence.test.mjs, cross-reference.mjs, impact.mjs) | 10 reads | ~85624 tok |
+| 13:14 | Edited .docguardignore | expanded (+10 lines) | ~155 |
+| 13:16 | Edited cli/scanners/semantic-claims.mjs | added 1 import(s) | ~43 |
+| 13:16 | Edited cli/scanners/semantic-claims.mjs | modified claimSourceDocs() | ~232 |
+| 13:17 | Edited tests/field-report-3-deferred.test.mjs | expanded (+14 lines) | ~295 |
+| 13:18 | Edited docs-canonical/TEST-SPEC.md | 10 → 30 | ~45 |
+| 13:18 | Edited CHANGELOG.md | 5→10 lines | ~173 |
+| 13:20 | Edited CHANGELOG.md | 3→5 lines | ~33 |
+| 13:28 | Edited cli/commands/hooks.mjs | added 1 condition(s) | ~158 |
+| 13:29 | Edited cli/commands/hooks.mjs | added error handling | ~2031 |
+| 13:29 | Edited cli/commands/hooks.mjs | inline fix | ~31 |
+| 13:29 | Edited cli/commands/hooks.mjs | 3→3 lines | ~38 |
+| 13:29 | Edited cli/commands/hooks.mjs | 6→5 lines | ~51 |
+| 13:29 | Edited cli/commands/hooks.mjs | removed 8 lines | ~20 |
+| 13:30 | Edited cli/docguard.mjs | 1→3 lines | ~64 |
+| 13:30 | Edited cli/docguard.mjs | added 1 condition(s) | ~135 |
+| 13:30 | Edited cli/docguard.mjs | inline fix | ~17 |
+| 13:30 | Edited cli/docguard.mjs | 1→3 lines | ~85 |
+| 13:30 | Edited cli/docguard.mjs | 3→6 lines | ~74 |
+| 13:30 | Edited cli/docguard.mjs | added 1 condition(s) | ~76 |
+| 13:31 | Created tests/nudge-hook.test.mjs | — | ~1681 |
+| 13:32 | Edited README.md | expanded (+13 lines) | ~194 |
+| 13:32 | Edited CHANGELOG.md | expanded (+13 lines) | ~230 |
+| 13:33 | Created VALIDATION.md | — | ~1375 |
+| 13:33 | Edited README.md | inline fix | ~48 |
+| 13:34 | Edited CHANGELOG.md | 4→9 lines | ~110 |
+| 13:37 | Edited cli/commands/mcp.mjs | added 15 condition(s) | ~2467 |
+| 13:37 | Edited cli/docguard.mjs | added 5 condition(s) | ~206 |
+| 13:37 | Created tests/mcp-http.test.mjs | — | ~1412 |
+| 13:38 | Edited README.md | inline fix | ~82 |
+| 13:38 | Edited README.md | 1→2 lines | ~83 |
+| 13:38 | Edited CHANGELOG.md | expanded (+12 lines) | ~243 |
+| 13:39 | Edited cli/commands/impact.mjs | added 1 import(s) | ~89 |
+| 13:39 | Edited cli/commands/impact.mjs | added error handling | ~1154 |
+| 13:40 | Edited cli/commands/impact.mjs | added 1 condition(s) | ~102 |
+| 13:40 | Edited cli/docguard.mjs | added 1 condition(s) | ~75 |
+| 13:40 | Edited tests/impact.test.mjs | expanded (+40 lines) | ~602 |
+| 13:40 | Edited tests/impact.test.mjs | 4→4 lines | ~64 |
+| 13:41 | Edited tests/impact.test.mjs | deepEqual() → includes() | ~107 |
+| 13:41 | Edited README.md | 1→2 lines | ~72 |
+| 13:41 | Edited CHANGELOG.md | expanded (+9 lines) | ~189 |
+| 13:44 | Edited cli/scanners/agent-readability.mjs | added 1 import(s) | ~44 |
+| 13:44 | Edited cli/scanners/agent-readability.mjs | modified canonicalDocs() | ~176 |
+| 13:46 | Edited docs-canonical/DATA-MODEL.md | expanded (+12 lines) | ~661 |
+| 13:47 | Edited CHANGELOG.md | expanded (+10 lines) | ~156 |
+| 13:47 | Edited CHANGELOG.md | reduced (-11 lines) | ~36 |
