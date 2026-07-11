@@ -225,4 +225,67 @@ describe('Traceability Validator', () => {
       `Python test should link TEST-SPEC.md; warnings: ${result.warnings.join('\n')}`);
     assert.deepEqual(result.warnings, []);
   });
+
+  // ── graphify interop: committed graph.json as linkage evidence ──
+
+  function writeGraph(dir, confidence) {
+    mkdirSync(join(dir, 'graphify-out'), { recursive: true });
+    writeFileSync(join(dir, 'graphify-out', 'graph.json'), JSON.stringify({
+      nodes: [
+        { id: 'doc:arch', label: 'ARCHITECTURE', source_file: 'docs-canonical/ARCHITECTURE.md' },
+        { id: 'code:util', label: 'helper', source_file: 'lib/util.xyz.mjs' },
+      ],
+      links: [
+        { source: 'doc:arch', target: 'code:util', relation: 'references', confidence },
+      ],
+    }));
+  }
+
+  it('graphify EXTRACTED doc↔code edge counts as linkage evidence (no TRC002)', () => {
+    mkdirSync(join(tmpDir, 'docs-canonical'), { recursive: true });
+    writeFileSync(join(tmpDir, 'docs-canonical', 'ARCHITECTURE.md'), '# Arch');
+    mkdirSync(join(tmpDir, 'lib'), { recursive: true });
+    writeFileSync(join(tmpDir, 'lib', 'util.xyz.mjs'), 'export const x = 1;\n');
+    writeGraph(tmpDir, 'EXTRACTED');
+
+    const config = { requiredFiles: { canonical: ['ARCHITECTURE.md'] } };
+    const result = validateTraceability(tmpDir, config);
+    assert.ok(!result.warnings.some(w => w.includes('ARCHITECTURE.md') && w.includes('unlinked')),
+      `graph evidence should link the doc; warnings: ${result.warnings.join('\n')}`);
+  });
+
+  it('graphify INFERRED edges do NOT vouch (determinism anchor)', () => {
+    mkdirSync(join(tmpDir, 'docs-canonical'), { recursive: true });
+    writeFileSync(join(tmpDir, 'docs-canonical', 'ARCHITECTURE.md'), '# Arch');
+    mkdirSync(join(tmpDir, 'lib'), { recursive: true });
+    writeFileSync(join(tmpDir, 'lib', 'util.xyz.mjs'), 'export const x = 1;\n');
+    writeGraph(tmpDir, 'INFERRED');
+
+    const config = { requiredFiles: { canonical: ['ARCHITECTURE.md'] } };
+    const result = validateTraceability(tmpDir, config);
+    assert.ok(result.warnings.some(w => w.includes('ARCHITECTURE.md') && w.includes('unlinked')),
+      'INFERRED-only graph must not suppress the unlinked-doc warning');
+  });
+
+  it('a stale graph (linked code file deleted) does NOT vouch', () => {
+    mkdirSync(join(tmpDir, 'docs-canonical'), { recursive: true });
+    writeFileSync(join(tmpDir, 'docs-canonical', 'ARCHITECTURE.md'), '# Arch');
+    writeGraph(tmpDir, 'EXTRACTED'); // lib/util.xyz.mjs intentionally NOT created
+
+    const config = { requiredFiles: { canonical: ['ARCHITECTURE.md'] } };
+    const result = validateTraceability(tmpDir, config);
+    assert.ok(result.warnings.some(w => w.includes('ARCHITECTURE.md') && w.includes('unlinked')),
+      'evidence pointing at deleted code must not count');
+  });
+
+  it('malformed graph.json is silently ignored (no evidence, no crash)', () => {
+    mkdirSync(join(tmpDir, 'docs-canonical'), { recursive: true });
+    writeFileSync(join(tmpDir, 'docs-canonical', 'ARCHITECTURE.md'), '# Arch');
+    mkdirSync(join(tmpDir, 'graphify-out'), { recursive: true });
+    writeFileSync(join(tmpDir, 'graphify-out', 'graph.json'), '{not json');
+
+    const config = { requiredFiles: { canonical: ['ARCHITECTURE.md'] } };
+    const result = validateTraceability(tmpDir, config);
+    assert.ok(result.warnings.some(w => w.includes('unlinked')), 'falls back to normal behavior');
+  });
 });

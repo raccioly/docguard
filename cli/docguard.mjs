@@ -495,6 +495,9 @@ async function main() {
       i++;
     } else if (args[i] === '--no-fix') {
       flags.noFix = true;
+    } else if (args[i] === '--no-indirect') {
+      // impact: skip the reverse-import-graph (indirect code→doc) analysis.
+      flags.indirect = false;
     } else if (args[i] === '--signals') {
       flags.signals = true;
     } else if (args[i] === '--debate') {

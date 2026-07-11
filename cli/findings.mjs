@@ -614,6 +614,12 @@ export const CODES = {
     help: 'A code-element reference in the doc matched source when the doc was last updated, but matches ZERO source instances at HEAD (two-revision check, arXiv 2212.01479). Excludes the two documented false-positive modes (removed-but-config-relevant flags, and symbols whose literal string was deleted while logic remains). Verify and update the reference.',
     suppress: '<!-- docguard:ignore REF001 — still relevant, e.g. user-facing flag -->',
   },
+  REF002: {
+    validator: 'reference-existence',
+    title: 'Code cites an ADR that has no document',
+    help: 'A code comment cites an Architecture Decision Record (e.g. ADR-012) that no ADR document defines — the citation is stale (renumbered, removed) or the ADR was never written. Numbers compare as integers, so ADR-0011 matches ADR-11. IETF RFC citations are deliberately not checked (external registry). Write the ADR, fix the number, or suppress on the citation line.',
+    suppress: '// docguard:ignore REF002 — your reason',
+  },
   APS001: {
     validator: 'api-doc-smells',
     title: 'Bloated API documentation',

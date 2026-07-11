@@ -279,4 +279,90 @@ describe('validateCrossReferences — end-to-end', () => {
     // 2 refs counted, both passed (skipped non-md target = pass)
     assert.equal(r.warnings.length, 0);
   });
+
+  it('strips query strings: ./DATA-MODEL.md?x=1#entities resolves to DATA-MODEL.md', () => {
+    dir = makeRepo({
+      'docs-canonical/ARCHITECTURE.md':
+        '# A\nSee [dm](./DATA-MODEL.md?plain=1#entities).\n',
+      'docs-canonical/DATA-MODEL.md': '# DM\n## Entities\nstub\n',
+    });
+    const r = validateCrossReferences(dir, {});
+    assert.equal(r.warnings.length, 0, JSON.stringify(r.warnings));
+  });
+
+  it('resolves CommonMark angle-bracket targets with spaces', () => {
+    dir = makeRepo({
+      'docs-canonical/ARCHITECTURE.md':
+        '# A\nSee [dm](<./data model.md#entities>).\n',
+      'docs-canonical/data model.md': '# DM\n## Entities\nstub\n',
+    });
+    const r = validateCrossReferences(dir, {});
+    assert.equal(r.warnings.length, 0, JSON.stringify(r.warnings));
+  });
+});
+
+describe('validateCrossReferences — wikilinks', () => {
+  let dir;
+  afterEach(() => { if (dir) rmSync(dir, { recursive: true, force: true }); });
+
+  it('flags a broken wikilink once the repo shows wikilinks-are-files evidence', () => {
+    dir = makeRepo({
+      'docs-canonical/ARCHITECTURE.md':
+        '# A\nSee [[DATA-MODEL]] and [[MISSING-DOC]].\n',
+      'docs-canonical/DATA-MODEL.md': '# DM\nstub\n', // resolves → evidence
+    });
+    const r = validateCrossReferences(dir, {});
+    assert.ok(r.warnings.some(w => w.includes('[[MISSING-DOC]]') && w.includes('not found')),
+      JSON.stringify(r.warnings));
+    assert.ok(!r.warnings.some(w => w.includes('[[DATA-MODEL]]')), 'resolved wikilink must pass');
+  });
+
+  it('stays SILENT when nothing resolves and no .obsidian exists (non-file [[x]] conventions)', () => {
+    dir = makeRepo({
+      'docs-canonical/ARCHITECTURE.md':
+        '# A\nMemory convention: link facts with [[some-slug]] and [[another-slug]].\n',
+    });
+    const r = validateCrossReferences(dir, {});
+    assert.equal(r.warnings.filter(w => w.includes('wikilink')).length, 0, JSON.stringify(r.warnings));
+  });
+
+  it('.obsidian/ presence alone is evidence enough', () => {
+    dir = makeRepo({
+      '.obsidian/app.json': '{}',
+      'docs-canonical/ARCHITECTURE.md': '# A\nSee [[MISSING-DOC]].\n',
+    });
+    const r = validateCrossReferences(dir, {});
+    assert.ok(r.warnings.some(w => w.includes('[[MISSING-DOC]]')), JSON.stringify(r.warnings));
+  });
+
+  it('validates wikilink heading anchors through the slug pipeline', () => {
+    dir = makeRepo({
+      'docs-canonical/ARCHITECTURE.md':
+        '# A\nSee [[DATA-MODEL#Quick Start]] and [[DATA-MODEL#Nope Nope]].\n',
+      'docs-canonical/DATA-MODEL.md': '# DM\n## Quick Start\nstub\n',
+    });
+    const r = validateCrossReferences(dir, {});
+    assert.ok(r.warnings.some(w => w.includes('Nope Nope')), JSON.stringify(r.warnings));
+    assert.ok(!r.warnings.some(w => w.includes('Quick Start') && w.includes('broken')),
+      'valid heading anchor must pass');
+  });
+
+  it('supports [[Target|alias]] and ignores image embeds ![[img.png]]', () => {
+    dir = makeRepo({
+      'docs-canonical/ARCHITECTURE.md':
+        '# A\nSee [[DATA-MODEL|the data model]] and ![[missing-diagram.png]].\n',
+      'docs-canonical/DATA-MODEL.md': '# DM\nstub\n',
+    });
+    const r = validateCrossReferences(dir, {});
+    assert.equal(r.warnings.length, 0, JSON.stringify(r.warnings));
+  });
+
+  it('resolves wikilinks vault-wide by basename via doc homes (docs/)', () => {
+    dir = makeRepo({
+      'docs-canonical/ARCHITECTURE.md': '# A\nSee [[nested-note]].\n',
+      'docs/guides/nested-note.md': '# Nested\nstub\n',
+    });
+    const r = validateCrossReferences(dir, {});
+    assert.equal(r.warnings.filter(w => w.includes('nested-note')).length, 0, JSON.stringify(r.warnings));
+  });
 });

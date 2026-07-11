@@ -7,6 +7,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Graph-informed accuracy batch — four improvements adapted from patterns proven
+in [graphify](https://github.com/Graphify-Labs/graphify) (MIT), rebuilt
+zero-dependency and deterministic for DocGuard. Empirically validated read-only
+against five real production repos before shipping: zero false positives; the
+indirect-impact analysis surfaced genuine, explainable chains on two of them.
+Validator count unchanged (27).
+
+### Added
+- **ADR-citation check (REF002, reference-existence)** — the code→doc direction
+  of reference existence. A code comment citing a decision record (uppercase
+  `ADR-` + number in a comment) is now verified against the ADR documents the
+  repo actually defines (single-file `ADR.md` sections, `ADR-*.md` filenames,
+  and madr-style `docs/adr/0007-*.md`). Numbers compare as integers
+  (`ADR-0011` matches `ADR-11`). Citations only count inside comments — string
+  literals and identifiers are ignored — and tests/fixtures are excluded
+  (non-product scoping). IETF RFC citations are deliberately out of scope
+  (external registry — would false-positive on every `RFC 793` comment). Soft
+  (`confidence: low`), capped at 10 findings, suppressible with
+  `// docguard:ignore REF002`, disable with
+  `referenceExistence.adrCitations: false`.
+- **Obsidian wikilink support (Cross-Reference + impact)** — `[[Doc]]`,
+  `[[Doc#Heading]]`, and `[[Doc|alias]]` are now validated like inline links
+  (broken target → XRF001, broken heading → XRF002), and `impact`'s doc→doc
+  blast radius sees wikilink dependents. Precision-gated: wikilinks are only
+  validated when the repo demonstrably uses them as FILE links (`.obsidian/`
+  exists, or at least one wikilink target resolves) — repos using `[[name]]`
+  as a non-file convention are skipped silently. Image embeds `![[x.png]]`
+  never count. Wikilink targets resolve sibling-first, then vault-wide by
+  basename across the project's doc homes.
+- **Indirect impact via the import graph (`docguard impact`)** — a changed file
+  with no doc references can still invalidate docs about the modules that
+  IMPORT it. `impact` now walks the reverse import graph (reusing the
+  Architecture validator's graph builder — one builder, not two) up to 2 hops
+  and reports docs describing an importer of a changed file, with the
+  explainable chain (`doc describes X, which imports changed Y`). Hub modules
+  (>15 imports, e.g. a CLI dispatcher) are suppressed — their docs would flag
+  on every dependency change. Docs already directly affected are not repeated.
+  JSON adds `indirectDocs`; disable with `--no-indirect`. JS/TS import graphs
+  only (the graph builder's scope).
+- **Graphify knowledge-graph interop (Traceability)** — teams that commit
+  `graphify-out/graph.json` (a tree-sitter knowledge graph) get its doc↔code
+  edges counted as linkage evidence before an "unlinked doc" (TRC002) is
+  raised. Trust rules: only `EXTRACTED` edges count (never the LLM-derived
+  `INFERRED`/`AMBIGUOUS` tiers), at least one linked code file must still
+  exist (a stale graph can't vouch), and the graph is evidence-only — it can
+  turn a warning into a pass but never produces a finding. Zero-dependency:
+  one JSON read; malformed graphs are silently ignored.
+
+### Fixed
+- **Cross-Reference link parsing** — query strings are stripped before target
+  resolution (`./DOC.md?plain=1#anchor` now resolves to `DOC.md` instead of a
+  phantom file), and CommonMark angle-bracket targets with spaces
+  (`[t](<my doc.md>)`) are resolved instead of being silently skipped.
+
 ## [0.31.0] - 2026-07-07
 
 Accuracy release — six research-backed detectors that make drift detection
