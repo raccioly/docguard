@@ -3,7 +3,7 @@
  * Creates git hooks that run guard/score before commits.
  */
 
-import { existsSync, writeFileSync, mkdirSync, chmodSync, readFileSync, unlinkSync } from 'node:fs';
+import { existsSync, writeFileSync, mkdirSync, chmodSync, readFileSync, unlinkSync, readdirSync } from 'node:fs';
 
 // v0.16-P3: managed-block markers. Letting users extend the hook with their
 // own commands (data-file guards, lint checks, etc.) without us clobbering
@@ -54,7 +54,7 @@ function spliceManagedBlock(existing, newBody) {
   const bodyNoShebang = newBody.replace(/^#!.*\n/, '');
   return `${before}${BEGIN_MARKER}\n${bodyNoShebang.replace(/\n+$/, '')}\n${END_MARKER}${after}`;
 }
-import { resolve } from 'node:path';
+import { resolve, relative, basename } from 'node:path';
 import { c } from '../shared.mjs';
 import { getHooksDir } from '../shared-git.mjs';
 
@@ -217,6 +217,15 @@ export function runHooks(projectDir, config, flags) {
   console.log(`${c.bold}🪝 DocGuard Hooks — ${config.projectName}${c.reset}`);
   console.log(`${c.dim}   Directory: ${projectDir}${c.reset}\n`);
 
+  // ── Claude Code agent nudge: `docguard hooks --claude` ──
+  // Separate path from git hooks: it edits .claude/settings.json, needs no
+  // git repo, and is explicitly opt-in (writing agent config unasked is a
+  // trust break — same class as the ensureSkills READ_ONLY_COMMANDS rule).
+  if (flags.claude) {
+    installClaudeNudge(projectDir, { remove: !!flags.remove });
+    return;
+  }
+
   // Resolve the real hooks dir via git — NOT `<projectDir>/.git/hooks`, which
   // is wrong inside a linked worktree (where `.git` is a file, not a dir) and
   // ignores a custom core.hooksPath.
@@ -336,4 +345,160 @@ export function runHooks(projectDir, config, flags) {
   }
 
   console.log('');
+}
+
+// ── Claude Code agent nudge ─────────────────────────────────────────────────
+//
+// `docguard hooks --claude` registers a PostToolUse hook in the PROJECT's
+// .claude/settings.json. After the agent edits a canonical doc (or a code
+// file the docs reference), the hook nudges it toward the right DocGuard
+// command — the graphify "query-first hook" distribution pattern, pointed at
+// doc integrity instead of graph queries.
+//
+// Trust rules:
+//   - Explicit opt-in only (never installed by ensureSkills/init).
+//   - Merge-safe: parses the existing settings.json and adds/removes ONLY the
+//     entry whose command contains the NUDGE_HOOK_COMMAND marker. A file that
+//     doesn't parse is never touched.
+//   - The runtime (`docguard nudge-hook`) is throttled and can never break an
+//     agent session: any internal error exits 0 with no output.
+
+const NUDGE_HOOK_COMMAND = 'docguard nudge-hook';
+const NUDGE_THROTTLE_MS = 30 * 60 * 1000; // one nudge per file per 30 min
+const NUDGE_STATE_PATH = '.docguard/nudge-state.json';
+const NUDGE_CODE_EXT = /\.(ts|tsx|js|jsx|mjs|cjs|py|go|rs|java|kt|rb|php|cs|swift)$/;
+const NUDGE_AGENT_FILES = new Set(['AGENTS.md', 'CLAUDE.md', 'GEMINI.md']);
+
+function isOurNudgeGroup(group) {
+  return Array.isArray(group?.hooks) &&
+    group.hooks.some(h => typeof h?.command === 'string' && h.command.includes(NUDGE_HOOK_COMMAND));
+}
+
+export function installClaudeNudge(projectDir, { remove = false } = {}) {
+  const settingsDir = resolve(projectDir, '.claude');
+  const settingsPath = resolve(settingsDir, 'settings.json');
+
+  let settings = {};
+  if (existsSync(settingsPath)) {
+    try {
+      settings = JSON.parse(readFileSync(settingsPath, 'utf-8'));
+    } catch {
+      console.log(`  ${c.red}❌ .claude/settings.json exists but is not valid JSON — refusing to touch it.${c.reset}`);
+      console.log(`  ${c.dim}Fix the file, then re-run docguard hooks --claude.${c.reset}\n`);
+      process.exitCode = 1;
+      return;
+    }
+  }
+
+  const groups = Array.isArray(settings.hooks?.PostToolUse) ? settings.hooks.PostToolUse : [];
+  const present = groups.some(isOurNudgeGroup);
+
+  if (remove) {
+    if (!present) {
+      console.log(`  ${c.dim}⏭️  No DocGuard nudge hook found in .claude/settings.json — nothing to remove.${c.reset}\n`);
+      return;
+    }
+    settings.hooks.PostToolUse = groups.filter(g => !isOurNudgeGroup(g));
+    if (settings.hooks.PostToolUse.length === 0) delete settings.hooks.PostToolUse;
+    if (Object.keys(settings.hooks).length === 0) delete settings.hooks;
+    writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n', 'utf-8');
+    console.log(`  ${c.yellow}🗑️  Removed the DocGuard nudge hook from .claude/settings.json${c.reset} ${c.dim}(everything else preserved)${c.reset}\n`);
+    return;
+  }
+
+  if (present) {
+    console.log(`  ${c.green}✅ DocGuard nudge hook already installed${c.reset} ${c.dim}(.claude/settings.json — idempotent)${c.reset}\n`);
+    return;
+  }
+
+  if (!settings.hooks) settings.hooks = {};
+  if (!Array.isArray(settings.hooks.PostToolUse)) settings.hooks.PostToolUse = [];
+  settings.hooks.PostToolUse.push({
+    matcher: 'Edit|Write|MultiEdit',
+    hooks: [{ type: 'command', command: NUDGE_HOOK_COMMAND }],
+  });
+
+  if (!existsSync(settingsDir)) mkdirSync(settingsDir, { recursive: true });
+  writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n', 'utf-8');
+  console.log(`  ${c.green}✅ Installed the DocGuard nudge hook${c.reset} → .claude/settings.json (PostToolUse)`);
+  console.log(`  ${c.dim}After an agent edits a canonical doc (or code the docs reference), it is${c.reset}`);
+  console.log(`  ${c.dim}nudged toward docguard guard --changed-only / docguard impact.${c.reset}`);
+  console.log(`  ${c.dim}Throttled: one nudge per file per 30 minutes. Remove: docguard hooks --claude --remove${c.reset}\n`);
+}
+
+/**
+ * Runtime for the PostToolUse hook (`docguard nudge-hook`). Reads the Claude
+ * Code hook payload from stdin, classifies the edited file, and emits a
+ * `{"decision":"block","reason":…}` nudge on stdout when — and only when —
+ * DocGuard has something specific to say. stdout is the machine channel:
+ * nothing else may be printed. Errors NEVER propagate (exit 0, silent) — a
+ * broken nudge must not degrade the agent session.
+ */
+export function runNudgeHook(projectDir) {
+  try {
+    const payload = JSON.parse(readFileSync(0, 'utf-8'));
+    const toolInput = payload.tool_input || payload.toolInput || {};
+    const filePath = toolInput.file_path || toolInput.filePath;
+    if (!filePath) return;
+
+    const rel = relative(projectDir, resolve(projectDir, filePath)).replace(/\\/g, '/');
+    if (!rel || rel.startsWith('..')) return;
+
+    let reason = null;
+    const base = basename(rel);
+    const isCanonicalDoc =
+      (rel.startsWith('docs-canonical/') && rel.endsWith('.md')) ||
+      (NUDGE_AGENT_FILES.has(base) && !rel.includes('/'));
+
+    if (isCanonicalDoc) {
+      reason = `DocGuard: you edited ${rel} — a canonical/agent doc that gates this repo. ` +
+        `Before finishing, run \`docguard guard --changed-only\` to confirm links, anchors, and count claims still hold.`;
+    } else if (NUDGE_CODE_EXT.test(rel)) {
+      const referencingDocs = docsReferencingFile(projectDir, base);
+      if (referencingDocs.length > 0) {
+        reason = `DocGuard: ${referencingDocs.slice(0, 3).join(', ')} reference${referencingDocs.length === 1 ? 's' : ''} ` +
+          `\`${base}\` — after your edits, run \`docguard impact\` to see which doc sections to re-read or update.`;
+      }
+    }
+    if (!reason) return;
+
+    // Throttle per file — iterative edits must not spam the agent.
+    const statePath = resolve(projectDir, NUDGE_STATE_PATH);
+    let state = {};
+    try { state = JSON.parse(readFileSync(statePath, 'utf-8')); } catch { /* first run */ }
+    const now = Date.now();
+    if (state[rel] && now - state[rel] < NUDGE_THROTTLE_MS) return;
+    state[rel] = now;
+    try {
+      mkdirSync(resolve(projectDir, '.docguard'), { recursive: true });
+      writeFileSync(statePath, JSON.stringify(state, null, 2) + '\n', 'utf-8');
+    } catch { /* state is best-effort; still nudge */ }
+
+    process.stdout.write(JSON.stringify({ decision: 'block', reason }) + '\n');
+  } catch {
+    // Silent by contract.
+  }
+}
+
+/** Which canonical/agent docs mention this basename? Cheap line scan. */
+function docsReferencingFile(projectDir, base) {
+  const docs = [];
+  const check = (name, full) => {
+    try {
+      if (readFileSync(full, 'utf-8').includes(base)) docs.push(name);
+    } catch { /* unreadable */ }
+  };
+  const dir = resolve(projectDir, 'docs-canonical');
+  if (existsSync(dir)) {
+    try {
+      for (const f of readdirSync(dir)) {
+        if (f.endsWith('.md')) check(f, resolve(dir, f));
+      }
+    } catch { /* unreadable dir */ }
+  }
+  for (const a of NUDGE_AGENT_FILES) {
+    const p = resolve(projectDir, a);
+    if (existsSync(p)) check(a, p);
+  }
+  return docs;
 }

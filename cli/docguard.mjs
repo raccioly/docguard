@@ -29,7 +29,7 @@ import { runScore } from './commands/score.mjs';
 import { runDiff } from './commands/diff.mjs';
 import { runAgents } from './commands/agents.mjs';
 import { runGenerate } from './commands/generate.mjs';
-import { runHooks } from './commands/hooks.mjs';
+import { runHooks, runNudgeHook } from './commands/hooks.mjs';
 import { runBadge } from './commands/badge.mjs';
 import { runCI } from './commands/ci.mjs';
 import { runFix } from './commands/fix.mjs';
@@ -498,6 +498,9 @@ async function main() {
     } else if (args[i] === '--no-indirect') {
       // impact: skip the reverse-import-graph (indirect code→doc) analysis.
       flags.indirect = false;
+    } else if (args[i] === '--claude') {
+      // hooks: install/remove the Claude Code agent nudge hook.
+      flags.claude = true;
     } else if (args[i] === '--signals') {
       flags.signals = true;
     } else if (args[i] === '--debate') {
@@ -548,7 +551,9 @@ async function main() {
   // `agent` emits a machine task graph (JSON by default) — it must be banner-
   // free and side-effect-free like the other read-only commands.
   // `mcp`: stdout IS the JSON-RPC transport — any banner byte corrupts the stream.
-  const headless = jsonMode || flags.write || flags.checkOnly || flags.changedOnly || flags.quiet || flags.plan || command === 'agent' || command === 'mcp';
+  // `nudge-hook`: stdout is the Claude Code hook feedback channel — any banner
+  // byte corrupts the JSON the hook runner parses.
+  const headless = jsonMode || flags.write || flags.checkOnly || flags.changedOnly || flags.quiet || flags.plan || command === 'agent' || command === 'mcp' || command === 'nudge-hook';
 
   if (!headless) printBanner();
 
@@ -575,6 +580,9 @@ async function main() {
     'verify',
     // mcp serves read-only tools over stdio — scaffolding writes are off-limits.
     'mcp',
+    // nudge-hook runs inside an agent's PostToolUse hook — it may write only
+    // its own .docguard/nudge-state.json throttle file, never scaffold skills.
+    'nudge-hook',
   ]);
 
   // Silent auto-check: install skills/commands if missing. Skip entirely in
@@ -627,7 +635,9 @@ async function main() {
     process.exit(1);
   }
 
-  if (DEPRECATED_COMMANDS[command] && !flags.quiet) {
+  // `hooks --claude` is a first-class new surface (agent nudge hook), not the
+  // deprecated git-hooks alias — no deprecation warning for it.
+  if (DEPRECATED_COMMANDS[command] && !flags.quiet && !(command === 'hooks' && flags.claude)) {
     const { since, replacement } = DEPRECATED_COMMANDS[command];
     console.error(`${c.yellow}⚠ Deprecated since v${since}:${c.reset} ${c.cyan}docguard ${command}${c.reset} → use ${c.cyan}${replacement}${c.reset}`);
     console.error(`${c.dim}  The old form still works in v0.20.x but will be removed in v1.0. See MIGRATION-v0.20.md.${c.reset}`);
@@ -674,7 +684,17 @@ async function main() {
       runAgent(projectDir, config, flags);
       break;
     case 'hooks':
+      if (flags.claude) {
+        // Agent nudge hook (.claude/settings.json) — direct path, no wizard.
+        runHooks(projectDir, config, flags);
+        break;
+      }
       await runInit(projectDir, config, { ...flags, with: ['hooks'], skipPrompts: true });
+      break;
+    case 'nudge-hook':
+      // Runtime for the Claude Code PostToolUse hook. stdout is the machine
+      // channel (headless — see the jsonMode/banner gate above).
+      runNudgeHook(projectDir);
       break;
     case 'badge':
       await runInit(projectDir, config, { ...flags, with: ['badge'], skipPrompts: true });

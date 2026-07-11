@@ -451,6 +451,19 @@ DocGuard works with **every major AI coding agent**. All canonical docs are plai
 | Google Gemini CLI | ✅ | `docguard agents --agent gemini` |
 | Kiro (AWS) | ✅ | — |
 
+### Always-on nudge hook (Claude Code)
+
+```bash
+docguard hooks --claude            # install   (remove: docguard hooks --claude --remove)
+```
+
+Registers a `PostToolUse` hook in the project's `.claude/settings.json`. After the
+agent edits a canonical doc it is nudged to run `docguard guard --changed-only`;
+after it edits a code file the docs reference, it is nudged toward `docguard impact`.
+Merge-safe (only DocGuard's own entry is ever added/removed), throttled to one nudge
+per file per 30 minutes, and the hook runtime can never break a session (errors are
+silent by contract). Explicit opt-in — `init` never installs it for you.
+
 ---
 
 ## ⚡ Slash Commands
