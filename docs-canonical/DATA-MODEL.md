@@ -21,6 +21,8 @@ DocGuard has **no database**. It is a stateless CLI tool that reads project file
 
 The primary data structure. Controls all CLI behavior.
 
+### Identity and required files
+
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
 | `projectName` | `string` | No | Inferred from `package.json` name or directory | Display name for reports |
@@ -30,12 +32,22 @@ The primary data structure. Controls all CLI behavior.
 | `requiredFiles.agentFile` | `string[]` | No | `["AGENTS.md", "CLAUDE.md"]` | AI agent config file options |
 | `requiredFiles.changelog` | `string` | No | `"CHANGELOG.md"` | Changelog file path |
 | `requiredFiles.driftLog` | `string` | No | `"DRIFT-LOG.md"` | Drift log file path |
+
+### Project-type behavior
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
 | `projectTypeConfig.needsEnvVars` | `boolean` | No | `true` | Whether ENVIRONMENT.md should check for env var docs |
 | `projectTypeConfig.needsEnvExample` | `boolean` | No | `true` | Whether `.env.example` is expected |
 | `projectTypeConfig.needsE2E` | `boolean` | No | `true` | Whether E2E test docs are expected |
 | `projectTypeConfig.needsDatabase` | `boolean` | No | `true` | Whether DATA-MODEL should expect entity docs |
 | `projectTypeConfig.testFramework` | `string` | No | Auto-detected | Test framework name (e.g., `"node:test"`, `"jest"`) |
 | `projectTypeConfig.runCommand` | `string` | No | Auto-detected | Command to run the project |
+
+### Validator tuning
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
 | `validators.*` | `boolean` | No | `true` | Enable/disable individual validators |
 | `collections.*` | `string` (glob) | No | — | Binds a documentation noun to a code collection: `"extractors": "src/extractors/*.py"` lets Metrics-Consistency flag a documented count that disagrees with the file count |
 | `docs.dirs` | `string[]` | No | Auto-detected | EXTENDS the auto-detected documentation homes (docs/, documentation/, guides/, …) with non-standard dirs; exclude via `.docguardignore` |
