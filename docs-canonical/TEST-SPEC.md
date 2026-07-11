@@ -19,7 +19,7 @@ DocGuard's tests verify command behavior through subprocess execution. Each test
 
 Tests are designed to be config-aware. They verify that project-type settings like needsEnvExample and testFramework correctly influence scoring and validation behavior. Regression guards pin specific bug fixes with dedicated assertions, ensuring fixed issues cannot recur.
 
-All tests use the built-in node:test framework with zero test dependencies. The test suite runs in under 10 seconds and is executed automatically by CI on every push.
+All tests use the built-in node:test framework with zero test dependencies. The test suite runs in under 30 seconds and is executed automatically by CI on every push.
 
 Test names follow the pattern: "verb + expected behavior" (e.g., "runs and shows a score", "respects projectTypeConfig"). Each test is self-contained with no shared mutable state between tests.
 

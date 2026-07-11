@@ -60,6 +60,11 @@ Validator count unchanged (27).
   resolution (`./DOC.md?plain=1#anchor` now resolves to `DOC.md` instead of a
   phantom file), and CommonMark angle-bracket targets with spaces
   (`[t](<my doc.md>)`) are resolved instead of being silently skipped.
+- **Semantic-claim extractor honors `.docguardignore`** — a doc the user
+  explicitly excluded from validation no longer feeds the "unverified claims"
+  pool (guard notice, `verify --semantic`, the ALCOA `Accurate` pillar). On
+  DocGuard's own repo an ignored historical audit contributed 28 of 39
+  reported claims, burying the actionable ones.
 
 ## [0.31.0] - 2026-07-07
 

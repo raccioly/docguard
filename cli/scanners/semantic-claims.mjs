@@ -23,6 +23,7 @@
 
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { resolve, join } from 'node:path';
+import { loadIgnorePatterns } from '../shared.mjs';
 
 // Numbers are only claims when adjacent to a recognized unit.
 const NUMBER_PATTERNS = [
@@ -49,17 +50,24 @@ const MAX_CLAIMS = 80;
 
 /** Canonical docs + the root docs where limits/counts commonly live. */
 function claimSourceDocs(projectDir) {
+  // Honor .docguardignore: a doc the user explicitly excluded from validation
+  // (e.g. a historical audit full of point-in-time counts) must not feed the
+  // "unverified claims" pool either — it inflated the count and buried the
+  // claims that ARE actionable (bug-212).
+  const isIgnored = loadIgnorePatterns(projectDir);
   const docs = [];
   const canonical = resolve(projectDir, 'docs-canonical');
   if (existsSync(canonical)) {
     try {
       for (const f of readdirSync(canonical)) {
-        if (f.toLowerCase().endsWith('.md')) docs.push(`docs-canonical/${f}`);
+        if (f.toLowerCase().endsWith('.md') && !isIgnored(`docs-canonical/${f}`)) {
+          docs.push(`docs-canonical/${f}`);
+        }
       }
     } catch { /* ignore */ }
   }
   for (const root of ['README.md', 'AGENTS.md']) {
-    if (existsSync(resolve(projectDir, root))) docs.push(root);
+    if (existsSync(resolve(projectDir, root)) && !isIgnored(root)) docs.push(root);
   }
   return docs;
 }
