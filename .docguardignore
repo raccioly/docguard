@@ -28,3 +28,13 @@ __pycache__/
 # current count would erase the historical record the audit exists to preserve.
 docs-canonical/SURFACE-AUDIT.md
 
+# Fixture/demo projects and packaging working notes — their .md files are
+# example content, not this project's documentation (doc-coverage tiering).
+# specs/ is deliberately NOT ignored: the Spec-Kit validator owns those.
+examples/
+examples/**
+templates/demo-fixture/
+templates/demo-fixture/**
+packaging/
+packaging/**
+

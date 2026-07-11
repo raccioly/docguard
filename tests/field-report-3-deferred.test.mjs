@@ -237,4 +237,18 @@ describe('field report #5 — verify --semantic extracts documented claims', () 
     assert.equal(extractSemanticClaims(dir, {}).length, 0);
     rmSync(dir, { recursive: true, force: true });
   });
+
+  it('honors .docguardignore — an ignored doc contributes no claims (bug-212)', () => {
+    const dir = tmp();
+    write(dir, {
+      'docs-canonical/LIMITS.md': '# Limits\n\nRetention is 30 days.\n',
+      'docs-canonical/OLD-AUDIT.md': '# Audit\n\nBack then we had 9 validators and 21 days retention.\n',
+      '.docguardignore': 'docs-canonical/OLD-AUDIT.md\n',
+    });
+    const claims = extractSemanticClaims(dir, {});
+    assert.ok(claims.some((c) => c.doc === 'docs-canonical/LIMITS.md'), 'non-ignored doc still scanned');
+    assert.ok(!claims.some((c) => c.doc === 'docs-canonical/OLD-AUDIT.md'),
+      `ignored doc must contribute nothing; got ${JSON.stringify(claims.map((c) => c.doc))}`);
+    rmSync(dir, { recursive: true, force: true });
+  });
 });

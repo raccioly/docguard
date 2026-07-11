@@ -3477,6 +3477,42 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-07-11T00:00:00Z"
+    },
+    {
+      "id": "bug-212",
+      "timestamp": "2026-07-11T17:16:42.634Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/scanners/semantic-claims.mjs",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 15→22 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-11T17:16:42.634Z"
+    },
+    {
+      "id": "bug-212",
+      "timestamp": "2026-07-11T00:00:00Z",
+      "error_message": "guard reported 39 unverified semantic claims; 28 came from docs-canonical/SURFACE-AUDIT.md which is explicitly listed in .docguardignore",
+      "file": "cli/scanners/semantic-claims.mjs",
+      "root_cause": "claimSourceDocs() enumerated docs-canonical/ + README/AGENTS without consulting loadIgnorePatterns — the extractor predates the ignore-honoring convention and was never wired to it",
+      "fix": "claimSourceDocs now filters through loadIgnorePatterns(projectDir); regression test added (ignored doc contributes no claims). Self-repo unverified claims 39 → 12.",
+      "tags": [
+        "semantic-claims",
+        "docguardignore",
+        "ignore-wiring",
+        "false-positive",
+        "verify-semantic"
+      ],
+      "related_bugs": [
+        "bug-211"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-07-11T00:00:00Z"
     }
   ]
 }
