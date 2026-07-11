@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Agent nudge hook — `docguard hooks --claude`** (graphify's always-on-hook
+  distribution pattern, pointed at doc integrity). Registers a `PostToolUse`
+  hook in the project's `.claude/settings.json`: after the agent edits a
+  canonical/agent doc it is nudged to run `docguard guard --changed-only`;
+  after it edits a code file the docs reference, it is nudged toward
+  `docguard impact`. Merge-safe (only DocGuard's own entry is added/removed;
+  an unparseable settings.json is never touched), idempotent, throttled (one
+  nudge per file per 30 min via `.docguard/nudge-state.json`), and the
+  `docguard nudge-hook` runtime is silent-on-error by contract — it can never
+  break an agent session. Explicit opt-in; `init`/`ensureSkills` never install
+  it. Remove with `docguard hooks --claude --remove`.
+
 ## [0.32.0] - 2026-07-11
 
 Graph-informed accuracy batch — four improvements adapted from patterns proven
