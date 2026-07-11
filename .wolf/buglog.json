@@ -3314,6 +3314,169 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-07-07T00:00:00Z"
+    },
+    {
+      "id": "bug-202",
+      "timestamp": "2026-07-11T16:23:11.081Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/validators/reference-existence.mjs",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 9→19 lines (3 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-11T16:23:11.081Z"
+    },
+    {
+      "id": "bug-203",
+      "timestamp": "2026-07-11T16:23:40.321Z",
+      "error_message": "Missing error handling in commentIndex",
+      "file": "cli/validators/reference-existence.mjs",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-11T16:23:40.321Z"
+    },
+    {
+      "id": "bug-204",
+      "timestamp": "2026-07-11T16:23:54.215Z",
+      "error_message": "Missing guard clause",
+      "file": "cli/validators/reference-existence.mjs",
+      "root_cause": "No early return/throw for edge case: !isGitRepo(projectDir",
+      "fix": "Added guard clause: if (!isGitRepo(projectDir)",
+      "tags": [
+        "auto-detected",
+        "guard-clause",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-07-11T16:24:09.297Z"
+    },
+    {
+      "id": "bug-205",
+      "timestamp": "2026-07-11T16:32:18.404Z",
+      "error_message": "Missing error handling in unknown",
+      "file": "cli/validators/cross-reference.mjs",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-11T16:32:18.404Z"
+    },
+    {
+      "id": "bug-206",
+      "timestamp": "2026-07-11T16:32:29.416Z",
+      "error_message": "Significant refactor of ",
+      "file": "cli/commands/impact.mjs",
+      "root_cause": "4 lines replaced/restructured",
+      "fix": "Rewrote 14→18 lines (4 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-11T16:32:29.416Z"
+    },
+    {
+      "id": "bug-207",
+      "timestamp": "2026-07-11T16:36:21.697Z",
+      "error_message": "Null/undefined access in ",
+      "file": "cli/commands/impact.mjs",
+      "root_cause": "Property access on potentially null/undefined value",
+      "fix": "Added null safety (optional chaining or null check)",
+      "tags": [
+        "auto-detected",
+        "null-safety",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-11T16:36:21.697Z"
+    },
+    {
+      "id": "bug-208",
+      "timestamp": "2026-07-11T16:37:27.018Z",
+      "error_message": "Incorrect value in code",
+      "file": "cli/commands/impact.mjs",
+      "root_cause": "Had `     ${c.dim}↳ describes${c.reset} ${ch.via} ${c.",
+      "fix": "Changed to `     ${c.dim}↳ describes${c.reset} ${ch.via}${c.d",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-11T16:37:27.018Z"
+    },
+    {
+      "id": "bug-209",
+      "timestamp": "2026-07-11T16:40:58.825Z",
+      "error_message": "Missing error handling in loadGraphifyDocLinks",
+      "file": "cli/validators/traceability.mjs",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-11T16:40:58.825Z"
+    },
+    {
+      "id": "bug-210",
+      "timestamp": "2026-07-11T16:46:22.632Z",
+      "error_message": "Incorrect value in code",
+      "file": "README.md",
+      "root_cause": "Had `--history`",
+      "fix": "Changed to `--no-indirect`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-11T16:46:22.632Z"
+    },
+    {
+      "id": "bug-211",
+      "timestamp": "2026-07-11T00:00:00Z",
+      "error_message": "REF002 (new ADR-citation check) flagged 5 findings on DocGuard itself — all false positives: the validator's own doc comments using ADR-012 as EXAMPLES, plus test-fixture citations",
+      "file": "cli/validators/reference-existence.mjs",
+      "root_cause": "Citation scan had no non-product scoping (tests/ counted) and the implementation's explanatory comments contained real-looking ADR-<digits> examples that match the detector's own regex",
+      "fix": "Applied isNonProductPath() to the citation walk (tests/fixtures/examples excluded, same scoping as surface scanners) and rewrote all in-source examples to digit-free placeholders (ADR-NNN). Self-guard back to baseline.",
+      "tags": [
+        "ref002",
+        "adr-citations",
+        "false-positive",
+        "dogfooding",
+        "self-guard",
+        "non-product-scoping"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-11T00:00:00Z"
     }
   ]
 }
