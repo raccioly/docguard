@@ -498,6 +498,9 @@ async function main() {
     } else if (args[i] === '--no-indirect') {
       // impact: skip the reverse-import-graph (indirect code→doc) analysis.
       flags.indirect = false;
+    } else if (args[i] === '--prs') {
+      // impact: open-PR doc-conflict analysis (needs the gh CLI).
+      flags.prs = true;
     } else if (args[i] === '--claude') {
       // hooks: install/remove the Claude Code agent nudge hook.
       flags.claude = true;

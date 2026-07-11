@@ -13,6 +13,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (read-only corpus runs on real production repos, keep/cut/tune, dogfooding)
   and the measured v0.31/v0.32 results, including what DocGuard does NOT
   claim. Linked from the README header.
+- **PR doc-conflict analysis — `docguard impact --prs`.** Maps every open
+  PR's changed files to the canonical docs they impact (same reference index
+  as regular impact; a PR editing a canonical doc directly counts too) and
+  reports pairs of PRs impacting the SAME doc — a merge-order risk: whichever
+  lands second must re-verify the shared doc. Uses the `gh` CLI (no token
+  handling in DocGuard); degrades to a clear message when `gh` is missing or
+  the repo isn't on GitHub. Capped at 20 open PRs per scan. The
+  graph-community version of this idea ships in graphify's `prs --conflicts`;
+  this is the doc-integrity equivalent.
 - **MCP Streamable HTTP transport — `docguard mcp --transport http`.** One
   shared process can now serve the DocGuard tools to a whole team: JSON-RPC
   over POST (single + batch), 202 for notification-only bodies, session id

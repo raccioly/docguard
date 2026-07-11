@@ -42,6 +42,7 @@
 
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { resolve, basename } from 'node:path';
+import { execFileSync } from 'node:child_process';
 
 import { c } from '../shared.mjs';
 import { changedFilesSince, isGitRepo } from '../shared-git.mjs';
@@ -127,6 +128,112 @@ function reverseImportAncestors(file, reverseEdges, maxHops = 2) {
   return seen;
 }
 
+// ── PR doc-conflict analysis (`impact --prs`) ───────────────────────────────
+//
+// Two open PRs whose changed files impact the SAME canonical doc are a
+// merge-order risk: whichever lands second must re-verify (and often re-edit)
+// a doc the first one already changed the ground truth for. The graph-
+// community version of this idea ships in graphify's `prs --conflicts`; this
+// is the doc-integrity equivalent, computed from DocGuard's own code→doc
+// reference index. Pure function — the `gh` plumbing stays at the edge.
+
+/**
+ * @param {Array<{number:number,title:string,files:string[]}>} prs
+ * @param {Map<string,string[]>} docsIndex  docName → lines[]
+ * @returns {{prImpacts: Array, conflicts: Array}}
+ */
+export function computeDocConflicts(prs, docsIndex) {
+  const prImpacts = prs.map(pr => {
+    const docs = new Set();
+    for (const f of pr.files) {
+      if (!CODE_EXTENSIONS.test(f)) {
+        // A PR that edits a canonical doc directly impacts that doc too.
+        if (f.endsWith('.md') && docsIndex.has(basename(f))) docs.add(basename(f));
+        continue;
+      }
+      for (const r of findReferences(f, docsIndex)) docs.add(r.doc);
+    }
+    return { number: pr.number, title: pr.title, docs: [...docs].sort() };
+  });
+
+  const conflicts = [];
+  for (let i = 0; i < prImpacts.length; i++) {
+    for (let j = i + 1; j < prImpacts.length; j++) {
+      const shared = prImpacts[i].docs.filter(d => prImpacts[j].docs.includes(d));
+      if (shared.length > 0) {
+        conflicts.push({ prs: [prImpacts[i].number, prImpacts[j].number], docs: shared });
+      }
+    }
+  }
+  return { prImpacts, conflicts };
+}
+
+const MAX_PRS = 20; // keep the per-PR file fetches bounded
+
+/** Fetch open PRs + their changed files via the gh CLI. Throws with a human message. */
+function fetchOpenPrs(projectDir) {
+  const gh = (args) => execFileSync('gh', args, {
+    cwd: projectDir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
+  });
+  let list;
+  try {
+    list = JSON.parse(gh(['pr', 'list', '--state', 'open', '--json', 'number,title', '--limit', String(MAX_PRS)]));
+  } catch (err) {
+    const msg = String(err?.message || err);
+    if (/ENOENT/.test(msg)) throw new Error('the GitHub CLI (gh) is not installed — install it or run impact without --prs');
+    throw new Error(`gh pr list failed — is this repo on GitHub and gh authenticated? (${msg.split('\n')[0]})`);
+  }
+  return list.map(pr => {
+    let files = [];
+    try {
+      files = JSON.parse(gh(['pr', 'view', String(pr.number), '--json', 'files']))
+        .files.map(f => f.path);
+    } catch { /* PR vanished mid-scan — treat as no files */ }
+    return { number: pr.number, title: pr.title, files };
+  });
+}
+
+function runPrConflicts(projectDir, flags, docsIndex) {
+  const isJson = flags.format === 'json';
+  let prs;
+  try {
+    prs = fetchOpenPrs(projectDir);
+  } catch (err) {
+    if (isJson) {
+      console.log(JSON.stringify({ error: err.message, prs: [], conflicts: [] }, null, 2));
+    } else {
+      console.log(`  ${c.yellow}⚠ ${err.message}${c.reset}`);
+    }
+    return;
+  }
+
+  const { prImpacts, conflicts } = computeDocConflicts(prs, docsIndex);
+
+  if (isJson) {
+    console.log(JSON.stringify({ prs: prImpacts, conflicts, timestamp: new Date().toISOString() }, null, 2));
+    return;
+  }
+
+  console.log(`${c.bold}📊 DocGuard Impact — open-PR doc conflicts${c.reset}\n`);
+  if (prImpacts.length === 0) {
+    console.log(`  ${c.green}✅ No open PRs.${c.reset}`);
+    return;
+  }
+  for (const pr of prImpacts) {
+    const docsNote = pr.docs.length > 0 ? pr.docs.join(', ') : `${c.dim}no canonical-doc impact${c.reset}`;
+    console.log(`  ${c.cyan}#${pr.number}${c.reset} ${pr.title.slice(0, 60)} ${c.dim}→${c.reset} ${docsNote}`);
+  }
+  if (conflicts.length === 0) {
+    console.log(`\n  ${c.green}✅ No two open PRs impact the same canonical doc.${c.reset}`);
+    return;
+  }
+  console.log(`\n  ${c.yellow}⚠ ${conflicts.length} doc-conflict pair(s) — merge order matters:${c.reset}`);
+  for (const cf of conflicts) {
+    console.log(`  ${c.yellow}#${cf.prs[0]} × #${cf.prs[1]}${c.reset} both impact ${c.cyan}${cf.docs.join(', ')}${c.reset}`);
+  }
+  console.log(`  ${c.dim}Whichever lands second should re-run docguard impact before updating the shared doc(s).${c.reset}`);
+}
+
 export function runImpact(projectDir, config, flags) {
   const isJson = flags.format === 'json';
   const since = flags.since || 'HEAD~1';
@@ -165,6 +272,12 @@ export function runImpact(projectDir, config, flags) {
     const p = resolve(projectDir, a);
     if (!existsSync(p)) continue;
     try { docsIndex.set(a, readFileSync(p, 'utf-8').split('\n')); agentDocs.add(a); } catch { /* skip */ }
+  }
+
+  // `impact --prs`: cross-PR doc-conflict analysis instead of a --since diff.
+  if (flags.prs) {
+    runPrConflicts(projectDir, flags, docsIndex);
+    return;
   }
 
   // Compute per-file references

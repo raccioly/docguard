@@ -237,6 +237,49 @@ describe('docguard impact', () => {
     assert.equal(data.indirectDocs.length, 0, 'no indirect analysis with --no-indirect');
   });
 
+  // ── impact --prs: cross-PR doc-conflict analysis ──
+
+  it('computeDocConflicts: two PRs touching files that impact the same doc are a conflict pair', async () => {
+    const { computeDocConflicts } = await import('../cli/commands/impact.mjs');
+    const docsIndex = new Map([
+      ['ARCHITECTURE.md', ['Requests flow through `src/api.mjs` and `src/db.mjs`.']],
+      ['SECURITY.md', ['Auth lives in `src/auth.mjs`.']],
+    ]);
+    const prs = [
+      { number: 1, title: 'api tweak', files: ['src/api.mjs'] },
+      { number: 2, title: 'db tweak', files: ['src/db.mjs'] },
+      { number: 3, title: 'auth tweak', files: ['src/auth.mjs'] },
+      { number: 4, title: 'doc edit', files: ['docs-canonical/SECURITY.md'] },
+    ];
+    const { prImpacts, conflicts } = computeDocConflicts(prs, docsIndex);
+    assert.deepEqual(prImpacts.find(p => p.number === 1).docs, ['ARCHITECTURE.md']);
+    // #1 and #2 collide on ARCHITECTURE.md; #3 (code) and #4 (direct doc edit) collide on SECURITY.md.
+    assert.ok(conflicts.some(cf => cf.prs.join(',') === '1,2' && cf.docs.includes('ARCHITECTURE.md')),
+      JSON.stringify(conflicts));
+    assert.ok(conflicts.some(cf => cf.prs.join(',') === '3,4' && cf.docs.includes('SECURITY.md')),
+      'a direct canonical-doc edit must conflict with a code PR impacting the same doc');
+    assert.ok(!conflicts.some(cf => cf.prs.includes(1) && cf.prs.includes(3)), 'no false pair');
+  });
+
+  it('impact --prs degrades gracefully when gh is unavailable', () => {
+    dir = makeRepo({
+      'package.json': JSON.stringify({ name: 't', version: '0.0.0' }),
+      'docs-canonical/ARCHITECTURE.md': '# Architecture\n',
+      '.docguard.json': JSON.stringify({ projectName: 't', profile: 'starter', version: '0.5' }),
+    });
+    gitInit(dir);
+    const r = spawnSync(process.execPath, [CLI, 'impact', '--prs', '--format', 'json'], {
+      cwd: dir, encoding: 'utf-8',
+      env: { ...process.env, PATH: '/nonexistent-bin' }, // no gh on PATH; node spawned by absolute path
+    });
+    // With PATH stripped, git itself is also unavailable — either guard
+    // (not-a-git-repo or gh-not-installed) must answer with a graceful JSON
+    // error payload, never a crash.
+    const data = JSON.parse(r.stdout);
+    assert.ok(data.error, `expected a graceful error payload; got ${r.stdout}`);
+    assert.ok(!r.stderr.includes('Error:'), `no stack trace expected; got ${r.stderr}`);
+  });
+
   it('blast radius sees Obsidian wikilink dependents ([[ARCHITECTURE]])', () => {
     dir = makeRepo({
       'package.json': JSON.stringify({ name: 't', version: '0.0.0' }),

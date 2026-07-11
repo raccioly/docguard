@@ -326,6 +326,7 @@ Run them solo (`docguard init --with hooks`) or stacked (`docguard init --with a
 | `--pr` | Open a PR with the migration | upgrade |
 | `--reverse <file>` | Reverse traceability (code → docs) | trace |
 | `--no-indirect` | Skip the reverse-import-graph analysis (docs about modules that import a changed file) | impact, diff --since |
+| `--prs` | Open-PR doc-conflict analysis — two PRs impacting the same canonical doc = merge-order risk (needs the `gh` CLI) | impact |
 | `--transport http` `--port` `--host` `--api-key` `--path` | Serve MCP over Streamable HTTP instead of stdio (team-shared server; loopback-only unless an api-key is set) | mcp |
 | `--history` | Show fix audit log | fix |
 
