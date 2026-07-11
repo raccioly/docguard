@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.32.0] - 2026-07-11
+
+Graph-informed release — detection improvements and integration surfaces
+adapted from patterns proven in
+[graphify](https://github.com/Graphify-Labs/graphify) (MIT), rebuilt
+zero-dependency and deterministic for DocGuard. The detectors were empirically
+validated read-only against five real production repos before shipping: zero
+false positives; the indirect-impact analysis surfaced genuine, explainable
+chains on two of them. Validator count unchanged (27).
+
 ### Added
 - **VALIDATION.md** — an honest benchmarks-style page documenting the
   empirical method every detector goes through before shipping enabled
@@ -45,17 +55,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `docguard nudge-hook` runtime is silent-on-error by contract — it can never
   break an agent session. Explicit opt-in; `init`/`ensureSkills` never install
   it. Remove with `docguard hooks --claude --remove`.
-
-## [0.32.0] - 2026-07-11
-
-Graph-informed accuracy batch — four improvements adapted from patterns proven
-in [graphify](https://github.com/Graphify-Labs/graphify) (MIT), rebuilt
-zero-dependency and deterministic for DocGuard. Empirically validated read-only
-against five real production repos before shipping: zero false positives; the
-indirect-impact analysis surfaced genuine, explainable chains on two of them.
-Validator count unchanged (27).
-
-### Added
 - **ADR-citation check (REF002, reference-existence)** — the code→doc direction
   of reference existence. A code comment citing a decision record (uppercase
   `ADR-` + number in a comment) is now verified against the ADR documents the
