@@ -39,3 +39,9 @@ dist/
 __pycache__/
 .venv
 .docguard/
+
+# Local security-scan artifacts (websec-validator) — contains fixture findings, machine-local
+websec-out/
+
+# OpenWolf private session memory (machine-local, not shared)
+.claude/openwolf-memory/
