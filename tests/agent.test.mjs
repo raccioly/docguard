@@ -85,3 +85,26 @@ describe('docguard agent — task graph (Phase 2b)', () => {
       'cli profile preview must not include API-REFERENCE tasks');
   });
 });
+
+describe('runAgent CLI outputs', () => {
+  it('runAgent outputs to console correctly', async () => {
+    const logs = [];
+    const originalLog = console.log;
+    console.log = (...args) => {
+      logs.push(args.join(' '));
+    };
+
+    try {
+      const { runAgent } = await import('../cli/commands/agent.mjs');
+      const { loadConfig } = await import('../cli/config.mjs');
+      let config; try { config = loadConfig(process.cwd()); } catch(e) { config = { projectName: "mock", profile: "cli" }; }
+      runAgent(process.cwd(), config, {});
+    } finally {
+      console.log = originalLog;
+    }
+
+    assert.ok(logs.some(log => log.includes('DocGuard Agent Task Graph')));
+    assert.ok(logs.some(log => log.includes('▸ config')));
+    assert.ok(logs.some(log => log.includes('▸ verify')));
+  });
+});
