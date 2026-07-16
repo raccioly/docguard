@@ -45,6 +45,7 @@ import { runImpact } from './commands/impact.mjs';
 import { runExplain } from './commands/explain.mjs';
 import { runFeedback } from './commands/feedback.mjs';
 import { runVerify } from './commands/verify.mjs';
+import { runReport } from './commands/report.mjs';
 import { runMemory } from './commands/memory.mjs';
 import { runDemo } from './commands/demo.mjs';
 import { runAgent } from './commands/agent.mjs';
@@ -80,7 +81,7 @@ ${c.bold}The Daily 5${c.reset} ${c.dim}— what you'll reach for 95% of the time
   ${c.green}guard${c.reset}      Validate against canonical docs (all validators)
   ${c.green}diff${c.reset}       Show gaps between docs and code (add ${c.cyan}--since <ref>${c.reset} for changed-file impact)
   ${c.green}sync${c.reset}       Refresh code-truth doc sections — keeps memory always up to date
-  ${c.green}score${c.reset}      CDD maturity score (0-100; ${c.cyan}--diff${c.reset} for delta between refs)
+  ${c.green}score${c.reset}      CDD maturity score (0-100; ${c.cyan}--diff${c.reset} for delta between refs, ${c.cyan}--trend${c.reset} for history from \`ci\` runs)
 
 ${c.bold}Tools (situational, but day-to-day useful)${c.reset}
   ${c.green}demo${c.reset}       Zero-install tour: see what DocGuard catches against a sample project in 30s
@@ -91,7 +92,9 @@ ${c.bold}Tools (situational, but day-to-day useful)${c.reset}
   ${c.green}explain${c.reset}    Explain a validator key, warning text, or finding code (${c.cyan}docguard explain SEC001${c.reset})
   ${c.green}verify${c.reset}     Extract documented numbers/limits/enums for an agent to check vs code (${c.cyan}--semantic${c.reset})
   ${c.green}feedback${c.reset}   Report likely false positives back to DocGuard (local-first + 1-click prefilled issue)
-  ${c.green}mcp${c.reset}        MCP server over stdio — guard/score/explain/verify/diagnose as agent tools
+  ${c.green}mcp${c.reset}        MCP server over stdio — guard/score/explain/verify/report/diagnose as agent tools
+  ${c.green}report${c.reset}     Compliance-evidence bundle — guard + score + ALCOA+ + integrity hash (${c.cyan}--format json${c.reset}, ${c.cyan}--out <file>${c.reset})
+  ${c.green}ci${c.reset}         Pipeline gate: guard + score in one command (${c.cyan}--threshold <n>${c.reset}, ${c.cyan}--fail-on-warning${c.reset}, ${c.cyan}--format json${c.reset}; records score history)
   ${c.green}memory${c.reset}     Show what DocGuard remembers (${c.cyan}--diff${c.reset} drills into drift)
   ${c.green}trace${c.reset}      Requirements traceability matrix (${c.cyan}--reverse${c.reset} for code→doc map, ${c.cyan}--features${c.reset} for per-feature adherence)
   ${c.green}upgrade${c.reset}    Migrate ${c.cyan}.docguard.json${c.reset} schema + CLI (${c.cyan}--apply --pr${c.reset} for team-wide PR)
@@ -100,14 +103,14 @@ ${c.bold}Tools (situational, but day-to-day useful)${c.reset}
 ${c.bold}init --with <name>${c.reset} ${c.dim}— optional scaffolders, picked at init time${c.reset}
   ${c.dim}agents${c.reset}     AGENTS.md / CLAUDE.md / .cursor/rules / Copilot instructions
   ${c.dim}hooks${c.reset}      Git pre-commit / pre-push hooks
-  ${c.dim}ci${c.reset}         GitHub Actions / pipeline config
+  ${c.dim}ci${c.reset}         Run the CI gate (guard + score) once, right after init
   ${c.dim}badge${c.reset}      Shields.io score badges for README
   ${c.dim}llms${c.reset}       llms.txt generation
   ${c.dim}publish${c.reset}    External doc-site scaffold (Mintlify) ${c.dim}— experimental${c.reset}
 
 ${c.bold}Deprecation aliases${c.reset} ${c.dim}— still work in v0.20.x with a yellow warning${c.reset}
   ${c.dim}setup${c.reset} → ${c.cyan}init --wizard${c.reset}
-  ${c.dim}agents · hooks · ci · badge · llms · publish${c.reset} → ${c.cyan}init --with <name>${c.reset}
+  ${c.dim}agents · hooks · badge · llms · publish${c.reset} → ${c.cyan}init --with <name>${c.reset}
   ${c.dim}impact${c.reset} → ${c.cyan}diff --since <ref>${c.reset}
   ${c.dim}audit${c.reset} → ${c.green}guard${c.reset} ${c.dim}(permanent — no warning, no removal planned)${c.reset}
   ${c.dim}See docs-implementation/MIGRATION-v0.20.md for the full timeline.${c.reset}
@@ -211,13 +214,15 @@ const COMMAND_HELP = {
   },
   guard: {
     summary: 'Validate code against canonical docs (all validators).',
-    usage: 'docguard guard [--format json] [--changed-only] [--fail-on-warning]',
+    usage: 'docguard guard [--format json|sarif|junit] [--changed-only] [--fail-on-warning]',
     flags: [
-      ['--format json', 'Machine-readable results for CI'],
+      ['--format json', 'Machine-readable results for CI (also: sarif, junit)'],
       ['--changed-only', 'Only validate docs/code touched in the working tree'],
       ['--fail-on-warning', 'Exit non-zero on warnings (strict CI)'],
+      ['--update-baseline', 'Freeze current findings to .docguard.baseline.json — adopt on a legacy repo without a red day one'],
+      ['--no-baseline', 'Ignore the committed baseline for this run (show everything)'],
     ],
-    examples: ['docguard guard', 'docguard guard --format json'],
+    examples: ['docguard guard', 'docguard guard --format json', 'docguard guard --update-baseline'],
   },
   score: {
     summary: 'CDD maturity score (0–100).',
@@ -428,6 +433,17 @@ async function main() {
       // avoid collision with `docguard init --profile <name>`. `--show-timings`
       // is the long form for users who prefer explicit verbs.
       flags.timings = true;
+    } else if (args[i] === '--trend') {
+      flags.trend = true;
+    } else if (args[i] === '--no-history') {
+      flags.noHistory = true;
+    } else if (args[i] === '--update-baseline') {
+      flags.updateBaseline = true;
+    } else if (args[i] === '--no-baseline') {
+      flags.noBaseline = true;
+    } else if (args[i] === '--out' && args[i + 1]) {
+      flags.out = args[i + 1];
+      i++;
     } else if (args[i] === '--quiet' || args[i] === '-q') {
       // v0.16-P5: suppress the banner + ensureSkills decorative line.
       // Useful inside git hooks (every commit prints the banner otherwise)
@@ -567,17 +583,25 @@ async function main() {
   // `generate --plan` (and were already suppressed for `--plan --write`).
   // v0.29: 'sarif' joins 'json' — any machine format where stdout IS the
   // artifact belongs here, or the banner corrupts the payload.
-  const jsonMode = flags.format === 'json' || flags.format === 'sarif';
+  // v0.33: 'junit' joins for the same reason (GitLab/Jenkins parse stdout XML).
+  const jsonMode = flags.format === 'json' || flags.format === 'sarif' || flags.format === 'junit';
   // `agent` emits a machine task graph (JSON by default) — it must be banner-
   // free and side-effect-free like the other read-only commands.
   // `mcp`: stdout IS the JSON-RPC transport — any banner byte corrupts the stream.
   // `nudge-hook`: stdout is the Claude Code hook feedback channel — any banner
   // byte corrupts the JSON the hook runner parses.
-  const headless = jsonMode || flags.write || flags.checkOnly || flags.changedOnly || flags.quiet || flags.plan || command === 'agent' || command === 'mcp' || command === 'nudge-hook';
+  // `report`: stdout IS the evidence artifact (markdown or JSON) — banner
+  // bytes would corrupt it for redirection/piping in both formats.
+  const headless = jsonMode || flags.write || flags.checkOnly || flags.changedOnly || flags.quiet || flags.plan || command === 'agent' || command === 'mcp' || command === 'nudge-hook' || command === 'report';
 
   if (!headless) printBanner();
 
   const config = loadConfig(projectDir);
+
+  // `--no-baseline` disables the committed adoption baseline for this run —
+  // threaded through config so guard, ci, report, and mcp all honor it the
+  // same way runGuardInternal sees everything else.
+  if (flags.noBaseline) config.baseline = false;
 
   // Commands that only READ and REPORT — they must never mutate the working
   // tree. Scaffolding (ensureSkills → .agent/.specify, spawning `specify`)
@@ -598,6 +622,14 @@ async function main() {
     'feedback',
     // verify only reads docs and emits a task list — pure report.
     'verify',
+    // report gathers evidence (guard+score, read-only); --out writes only the
+    // user-named file — it must never scaffold or mutate the tree otherwise.
+    'report',
+    // ci is the pipeline gate — it must never scaffold into the workspace it
+    // gates (review finding H1: bare `docguard ci` in text mode ran
+    // ensureSkills and wrote ~9 files before gating). Its only write is its
+    // own .docguard/history.jsonl, same carve-out as feedback.
+    'ci',
     // mcp serves read-only tools over stdio — scaffolding writes are off-limits.
     'mcp',
     // nudge-hook runs inside an agent's PostToolUse hook — it may write only
@@ -625,7 +657,8 @@ async function main() {
     setup:   { since: '0.20', replacement: 'docguard init --wizard' },
     agents:  { since: '0.20', replacement: 'docguard init --with agents' },
     hooks:   { since: '0.20', replacement: 'docguard init --with hooks' },
-    ci:      { since: '0.20', replacement: 'docguard init --with ci' },
+    // `ci` was deprecated here in v0.20 → un-deprecated in v0.33: it is the
+    // documented pipeline gate (guard + score + threshold), not a scaffolder.
     badge:   { since: '0.20', replacement: 'docguard init --with badge' },
     llms:    { since: '0.20', replacement: 'docguard init --with llms' },
     publish: { since: '0.20', replacement: 'docguard init --with publish' },
@@ -720,7 +753,13 @@ async function main() {
       await runInit(projectDir, config, { ...flags, with: ['badge'], skipPrompts: true });
       break;
     case 'ci':
-      await runInit(projectDir, config, { ...flags, with: ['ci'], skipPrompts: true });
+      // v0.33: restored as a first-class command. The v0.20 deprecation
+      // routed `ci` through runInit --with ci, which (a) scaffolded missing
+      // docs INTO the CI workspace — a validate command mutating the tree —
+      // and (b) printed init chrome into `--format json` stdout, corrupting
+      // it for parsers. A pipeline gate must be read-only and machine-clean,
+      // so it dispatches straight to runCI like guard/score.
+      runCI(projectDir, config, flags);
       break;
     case 'fix':
       runFix(projectDir, config, flags);
@@ -765,6 +804,12 @@ async function main() {
       // verification task list for the agent to check against code (semantic
       // drift — the class regex/AST can't see). Read-only.
       runVerify(projectDir, config, flags);
+      break;
+    case 'report':
+      // Compliance-evidence bundle (guard + score + ALCOA+ + fix history +
+      // integrity hash). Evidence, not a gate — always exits 0; guard/ci fail
+      // builds. Auditors need evidence collection that never self-censors.
+      runReport(projectDir, config, flags);
       break;
     case 'mcp':
       // MCP stdio server — guard/score/explain/verify-claims/diagnose as tools

@@ -29,6 +29,11 @@
       "enum": ["cli", "library", "webapp", "api", "unknown"],
       "description": "Project shape. Affects which validators run (e.g. webapp + api need env vars; cli/library can skip)."
     },
+    "baseline": {
+      "type": "boolean",
+      "description": "Set false to ignore a committed .docguard.baseline.json entirely (equivalent to always passing --no-baseline). Default: the baseline auto-applies when the file exists.",
+      "default": true
+    },
     "projectTypeConfig": {
       "type": "object",
       "description": "Per-type behavior knobs that override profile defaults.",
