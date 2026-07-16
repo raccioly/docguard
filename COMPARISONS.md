@@ -68,6 +68,25 @@
 
 ---
 
+### CDD vs Docs Platforms (GitBook, ReadMe, Docsie)
+
+| Dimension | Docs platforms | CDD (DocGuard) |
+|-----------|---------------|-----------------|
+| **What it is** | Hosted publishing: editor, docs site, search | Governance engine: validators, drift detection, CI gates |
+| **Unit of value** | A published page | A verified claim that docs match code |
+| **Staleness detection** | Probabilistic AI scan (e.g. GitBook Agent, beta) | 27 deterministic validators, stable finding codes, SARIF |
+| **Where docs live** | Their cloud (bi-directional git sync at best) | Your repo — git IS the editor and the audit trail |
+| **Audit trail** | None at any tier (GitBook/ReadMe, 2026) | `docguard report` — commit-stamped evidence bundle with integrity hash |
+| **Trend/analytics** | Reader analytics (page views, search misses) | Score history + `score --trend` (engineering trajectory) |
+| **AI surface** | Q&A assistant over whatever is written | MCP server over docs *proven* current at guard time |
+| **Enterprise trust** | SOC 2 / SSO / RBAC on their platform | Runs entirely local/CI — nothing leaves your infra |
+
+**Verdict**: Complementary, not competing. Platforms publish; DocGuard proves.
+The strongest setup gates the platform publish on `docguard ci` — readers only
+ever see docs that passed validation.
+
+---
+
 ## Part 2: How LLMs ACTUALLY Work With Project Context
 
 > This section exists because the user rightly asked: "Will this actually work with how LLMs process code?"

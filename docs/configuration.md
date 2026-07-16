@@ -111,6 +111,20 @@ Conventional doc folders (`docs/`, `doc/`, `documentation/`, `guides/`,
 that set with non-standard homes — it never replaces auto-detection. To exclude
 a conventional dir, list it in `.docguardignore`.
 
+## Adoption baseline — `baseline`
+
+When a committed `.docguard.baseline.json` exists (written by
+`docguard guard --update-baseline`), guard/ci suppress the frozen findings
+and gate only new drift. Set `"baseline": false` in `.docguard.json` to
+ignore the file entirely (same as always passing `--no-baseline`):
+
+```json
+{ "baseline": false }
+```
+
+Suppression is always visible in output and in the `baselineSuppressed`
+JSON field — nothing is silently hidden.
+
 ## Muting a validator
 
 Two ways to turn a validator off, for two different intents:

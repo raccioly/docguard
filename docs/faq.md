@@ -123,6 +123,18 @@ Yes — DocGuard ships a template at `templates/ci/github-actions.yml`. Copy it 
 
 Only if you install hooks (`docguard hooks`). Without hooks, it's advisory only.
 
+### I ran guard on our legacy repo and got dozens of findings. Now what?
+
+Freeze them and move forward:
+
+```bash
+npx docguard-cli guard --update-baseline   # writes .docguard.baseline.json — commit it
+```
+
+From then on guard/ci pass, suppress the frozen findings **visibly**
+("N pre-existing finding(s) suppressed"), and gate only NEW drift. Burn the
+baseline down at your own pace; `--no-baseline` shows the full picture anytime.
+
 ---
 
 ## Technical

@@ -38,6 +38,17 @@ npx docguard-cli diagnose --format prompt # Raw AI prompt (all issues combined)
 npx docguard-cli guard                   # Text output
 npx docguard-cli guard --format json     # Structured JSON (the stable agent contract)
 npx docguard-cli guard --format sarif    # SARIF 2.1.0 for GitHub Code Scanning
+npx docguard-cli guard --format junit    # JUnit XML for GitLab/Jenkins/Azure DevOps
+npx docguard-cli guard --update-baseline # Freeze current findings (brownfield adoption)
+npx docguard-cli guard --no-baseline     # Ignore the committed baseline this run
+```
+
+**Adoption baseline:** on a legacy repo, `--update-baseline` writes
+`.docguard.baseline.json` (commit it). From then on guard/ci suppress those
+frozen findings — visibly — and gate only new drift. Fingerprints are stable
+across line-number churn and volatile counts, so the baseline doesn't rot.
+
+```bash
 npx docguard-cli guard --verbose         # Show all check details
 npx docguard-cli guard --changed-only    # Pre-commit lite mode (fast subset)
 ```
@@ -181,7 +192,7 @@ never touched without `--force`.
 
 **MCP server over stdio** — DocGuard's read-only core as native agent tools
 (`docguard_guard`, `docguard_score`, `docguard_explain`,
-`docguard_verify_claims`, `docguard_diagnose`).
+`docguard_verify_claims`, `docguard_report`, `docguard_diagnose`).
 
 ```bash
 claude mcp add docguard -- npx docguard-cli mcp
@@ -211,15 +222,32 @@ npx docguard-cli memory --pack     # .docguard/context-pack.md (session-start co
 
 ## DevOps Commands
 
+### `docguard report`
+
+**Compliance-evidence bundle for audits** — guard verdict, CDD score, ALCOA+
+data-integrity attributes, findings grouped by code, and fix history, stamped
+with the git commit and a tamper-evident sha256 integrity hash. Evidence, not
+a gate: always exits 0 (`guard`/`ci` fail builds).
+
+```bash
+npx docguard-cli report                          # markdown to stdout
+npx docguard-cli report --format json            # machine bundle
+npx docguard-cli report --out evidence.md        # write to a file
+```
+
 ### `docguard ci`
 
-**Single command for CI/CD pipelines.** Runs guard + score internally (no subprocess).
+**Single command for CI/CD pipelines.** Runs guard + score internally (no
+subprocess). Read-only and machine-clean: it never scaffolds or mutates the
+workspace it validates. Each run appends one line to `.docguard/history.jsonl`
+so `docguard score --trend` can show the trajectory (opt out: `--no-history`).
 
 ```bash
 npx docguard-cli ci                              # Basic check
 npx docguard-cli ci --threshold 70               # Fail below score 70
 npx docguard-cli ci --threshold 80 --fail-on-warning  # Strict mode
 npx docguard-cli ci --format json                # JSON for GitHub Actions
+npx docguard-cli score --trend                   # Score history from past ci runs
 ```
 
 ### `docguard hooks`
