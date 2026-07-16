@@ -4,7 +4,7 @@
   "description": "The enforcement tool for Canonical-Driven Development (CDD). Audit, generate, and guard your project documentation.",
   "type": "module",
   "bin": {
-    "docguard": "./cli/docguard.mjs"
+    "docguard": "cli/docguard.mjs"
   },
   "scripts": {
     "docguard": "node cli/docguard.mjs",
@@ -36,7 +36,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/raccioly/docguard"
+    "url": "git+https://github.com/raccioly/docguard.git"
   },
   "homepage": "https://github.com/raccioly/docguard#readme",
   "mcpName": "io.github.raccioly/docguard",
