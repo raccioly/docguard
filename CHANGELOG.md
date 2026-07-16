@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.33.0] - 2026-07-16
+
 ### Added
 
 - **Adoption baseline — `guard --update-baseline` + committed `.docguard.baseline.json`.** The ESLint/semgrep-style brownfield pattern: freeze a legacy repo's existing findings once, commit the file, and guard/ci gate only NEW drift from then on — no red pipeline on adoption day. Fingerprints are content-addressed (finding code + location path with line numbers stripped + message with digit-runs normalized), so they survive line churn and volatile counts ("21 commits since…") — and they carry **occurrence counts**: freezing one hardcoded-secret finding in a file suppresses exactly one; a second instance of the same class surfaces and gates (the ESLint-baseline semantics). Suppression is never silent: the summary prints "N pre-existing finding(s) suppressed", `baselineSuppressed` rides the JSON contract, and `--no-baseline` (or `"baseline": false` in `.docguard.json`) shows everything. A malformed baseline is treated as absent — corruption can never un-gate CI. Applied inside `runGuardInternal`, so guard, ci, report, SARIF/JUnit outputs, and the MCP tools all honor it uniformly. Also: DocGuard's own files (`.docguard.json`, `.docguardignore`, `.docguard.baseline.json`) are exempt from Docs-Coverage's undocumented-config check — writing the baseline no longer instantly creates a DCV001 about the baseline.

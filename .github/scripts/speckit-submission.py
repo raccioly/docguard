@@ -61,11 +61,13 @@ def build(version: str, download_url: str):
             "name": "DocGuard — CDD Enforcement",
             "id": "docguard",
             "description": (
-                "The only doc-integrity engine with an MCP server, SARIF "
-                "output, and a deterministic zero-LLM core. Validates, "
-                "scores, and traces documentation against code — 27 "
-                "validators, stable finding codes, GitHub Action with PR "
-                "annotations, spec-kit hooks. Pure Node.js, one pinned dep."
+                "The only doc-integrity engine with an MCP server, "
+                "SARIF/JUnit output, and a deterministic zero-LLM core. "
+                "Validates, scores, and traces documentation against code — "
+                "27 validators, stable finding codes, adoption baseline for "
+                "legacy repos, compliance-evidence reports, GitHub Action "
+                "with PR annotations, spec-kit hooks. Pure Node.js, one "
+                "pinned dep."
             ),
             "author": "raccioly",
             "version": version,
