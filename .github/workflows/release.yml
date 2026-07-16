@@ -158,6 +158,14 @@ jobs:
   publish-npm:
     needs: [detect-version, test, create-release]
     runs-on: ubuntu-latest
+    # Provenance attestation needs an OIDC token: npm exchanges it with
+    # Sigstore to sign a statement that THIS tarball was built by THIS
+    # workflow from THIS commit. That's what supply-chain checks (npm's
+    # "Provenance" badge, Claude Code's unknown-package legitimacy check,
+    # socket.dev, etc.) verify — without it the package is unattributable.
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v6
@@ -165,8 +173,8 @@ jobs:
           node-version: 20
           registry-url: 'https://registry.npmjs.org'
 
-      - name: Publish
-        run: npm publish
+      - name: Publish (with provenance)
+        run: npm publish --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 

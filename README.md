@@ -769,6 +769,13 @@ See [CONTRIBUTING.md](CONTRIBUTING.md#research--academic-credits) for full citat
 
 ---
 
+## 🔒 Privacy & Supply Chain
+
+DocGuard is local-first: no telemetry, no analytics, no phone-home — the full
+(short) policy is in [PRIVACY.md](PRIVACY.md). npm releases are published with
+[provenance attestation](https://docs.npmjs.com/generating-provenance-statements),
+so you can verify each tarball was built by GitHub Actions from this repository.
+
 ## 📄 License
 
 [MIT](LICENSE) — Free to use, modify, and distribute.

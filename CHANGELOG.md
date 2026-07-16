@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **npm provenance attestation.** Releases now publish with `npm publish --provenance` (OIDC + Sigstore): every tarball carries a signed statement that it was built by this repo's GitHub Actions from a specific commit. This is what "unknown package" legitimacy checks (Claude Code, socket.dev, npm's Provenance badge) verify — DocGuard installs are now cryptographically attributable.
+- **PRIVACY.md** — the short, honest policy: DocGuard collects nothing, all analysis is local, no telemetry; the three explicit user-initiated outbound paths (`feedback` URL, `gh`-backed PR commands, opt-in HTTP transport) are enumerated. Ships in the npm package and unblocks Anthropic Connectors Directory submission (a missing privacy policy is an instant rejection there).
+- **FAQ**: why AI agents flag DocGuard as "unknown" on first install, and how to pre-trust it (project `.mcp.json`, Always allow, managed-settings allowlist).
+
 ## [0.33.0] - 2026-07-16
 
 ### Added
