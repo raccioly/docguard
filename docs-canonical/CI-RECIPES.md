@@ -139,6 +139,83 @@ jobs:
           score-threshold: '70'   # fail PRs that drop below 70/100
 ```
 
+## Recipe 1b — GitLab CI / Jenkins (JUnit output)
+
+Not on GitHub? `guard --format junit` emits one testcase per validator, which
+GitLab and Jenkins render natively in their test UIs:
+
+```yaml
+# .gitlab-ci.yml
+docguard:
+  image: node:20
+  script:
+    - npx docguard-cli guard --format junit > docguard-junit.xml
+  allow_failure:
+    exit_codes: [2]        # warnings stay visible but don't block the pipeline
+  artifacts:
+    when: always
+    reports:
+      junit: docguard-junit.xml
+```
+
+```groovy
+// Jenkinsfile — gate on errors (exit 1); treat warnings-only (exit 2) as unstable
+stage('DocGuard') {
+  steps {
+    sh '''
+      set +e
+      npx docguard-cli guard --format junit > docguard-junit.xml
+      rc=$?
+      [ "$rc" -eq 2 ] && exit 0   # warnings: report, don't fail the stage
+      exit $rc
+    '''
+  }
+  post { always { junit 'docguard-junit.xml' } }
+}
+```
+
+Exit codes match `guard` (1 = errors, 2 = warnings). Both recipes gate on
+errors while letting warnings-only runs pass with the findings visible in the
+test report.
+
+## Recipe 4b — Score history across ephemeral CI runs
+
+`docguard ci` appends each run to `.docguard/history.jsonl` (local-first —
+the directory is gitignored). CI workspaces are fresh every run, so restore
+and save the file with a cache step to keep `docguard score --trend` and
+`docguard report` seeing the full trajectory:
+
+```yaml
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: .docguard/history.jsonl
+          key: docguard-history-${{ github.ref_name }}-${{ github.run_id }}
+          restore-keys: docguard-history-${{ github.ref_name }}-
+      - run: npx docguard-cli ci --threshold 70
+      - run: npx docguard-cli score --trend   # print the trajectory in the job log
+```
+
+## Recipe 4c — Multi-repo scorecard (no extra tooling)
+
+For an org-wide view, run the gate per repo and collect the JSON — no
+dedicated command needed:
+
+```bash
+for d in repo-a repo-b repo-c; do
+  (cd "$d" && npx docguard-cli ci --format json --no-history \
+    | jq -r '[.project, .score, .grade, .status] | @tsv')
+done | column -t
+```
+
+Each line is `project  score  grade  PASS|WARN|FAIL`. Pipe to a dashboard,
+spreadsheet, or a scheduled Slack post. (A first-class cross-repo dashboard
+is the Phase 5 roadmap item — this recipe is the zero-dependency version.)
+
 ## Pre-commit hook (no GitHub Actions required)
 
 Run guard locally before every commit so you catch drift at typing time, not

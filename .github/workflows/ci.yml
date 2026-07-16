@@ -72,6 +72,33 @@ jobs:
       - name: Diagnose
         run: node cli/docguard.mjs diagnose
 
+      # ── v0.33 surfaces — dogfood every new command shape ──
+      - name: CI gate (self, records history)
+        run: node cli/docguard.mjs ci || [ $? -eq 2 ]
+
+      - name: Score trend (reads history from the ci step)
+        run: node cli/docguard.mjs score --trend
+
+      - name: Compliance report (markdown + json + integrity determinism)
+        run: |
+          node cli/docguard.mjs report > /tmp/report.md
+          head -5 /tmp/report.md
+          node cli/docguard.mjs report --format json | python3 -c "import json,sys; d=json.load(sys.stdin); assert d['integrity'].startswith('sha256:'), d; print('report json OK', d['integrity'][:20])"
+
+      - name: Guard JUnit output is valid XML
+        run: |
+          node cli/docguard.mjs guard --format junit > /tmp/guard-junit.xml || [ $? -eq 2 ]
+          python3 -c "import xml.etree.ElementTree as ET; r=ET.parse('/tmp/guard-junit.xml').getroot(); print('junit OK:', r.attrib)"
+
+      - name: Baseline roundtrip (freeze → pass → restore)
+        run: |
+          mkdir -p /tmp/docguard-baseline && cd /tmp/docguard-baseline
+          printf '{"projectName":"bl-ci","profile":"standard"}' > .docguard.json
+          mkdir -p docs-canonical && echo "# Architecture" > docs-canonical/ARCHITECTURE.md
+          node $GITHUB_WORKSPACE/cli/docguard.mjs guard --update-baseline
+          node $GITHUB_WORKSPACE/cli/docguard.mjs guard   # must exit 0 now
+          node $GITHUB_WORKSPACE/cli/docguard.mjs guard --no-baseline || [ $? -ne 0 ]
+
       # ── Cross-project tests ──
       - name: Init in temp dir
         run: |

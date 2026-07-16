@@ -123,13 +123,16 @@ Deep integration with development tools and platforms.
 
 ## Phase 5: Dashboard 💭
 
-Web-based CDD governance for teams and organizations.
+Web-based CDD governance for teams and organizations. The CLI-side
+foundations shipped first (local-first, no SaaS dependency): score history +
+`score --trend` records the trajectory per checkout, and `docguard report`
+produces the commit-stamped compliance-evidence bundle.
 
 - [ ] Web dashboard showing CDD scores across repos
-- [ ] Historical trend graphs
+- [x] Historical trends — CLI-side via `.docguard/history.jsonl` + `score --trend` (dashboard graphs still future)
 - [ ] Team leaderboards
 - [ ] Drift alerts (Slack/email)
-- [ ] Compliance reports (PDF export)
+- [x] Compliance reports — `docguard report` (markdown/JSON evidence bundle with integrity hash; PDF export still future)
 
 ---
 

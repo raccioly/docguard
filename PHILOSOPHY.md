@@ -115,6 +115,7 @@ CDD is a practitioner methodology whose patterns align with peer-reviewed resear
 - **Generate → validate → evaluate pipeline** — inspired by the AITPG framework (Lopez et al., IEEE TSE 2026): multi-agent generation grounded in standards produces more comprehensive documentation while staying semantically aligned with expert references.
 - **Calibrated quality evaluation** — DocGuard's HIGH/MEDIUM/LOW labels and multi-signal scoring adapt the CJE framework from TRACE (Lopez et al., IEEE TMLCN 2026).
 - **Standards-grounded generation** — each canonical document maps to a relevant standard (arc42, C4, OWASP ASVS, ISO 29119, OpenAPI, 12-Factor App).
+- **Enforcement over instructions** — a 2026 ETH Zurich study (138 repos, 5,694 agent PRs) found the most common style of agent-instruction file *degrades* agent performance; practitioner reports converge on the same conclusion: written rules are routinely ignored, programmatic checks are respected. CDD's answer is to make the docs machine-verified rather than merely machine-readable.
 
 > **Lead researcher**: [Martin Manuel Lopez](https://github.com/martinmanuel9) · [ORCID 0009-0002-7652-2385](https://orcid.org/0009-0002-7652-2385), University of Arizona
 
