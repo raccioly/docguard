@@ -119,6 +119,25 @@ Exit code 0 = pass, 1 = fail. Use `--threshold` to set minimum score.
 
 Yes — DocGuard ships a template at `templates/ci/github-actions.yml`. Copy it to `.github/workflows/` or use the reusable action in `action.yml`.
 
+### Claude (or my AI agent) says DocGuard is "unknown" and wants a legitimacy check. Why?
+
+That's the agent's default posture toward **any** third-party MCP server or
+npx package — MCP servers run code with your permissions, so unknown ones get
+a trust prompt. It's not a DocGuard-specific flag. What DocGuard provides so
+the check can pass:
+
+- **npm provenance** — releases are signed by GitHub Actions (Sigstore), so
+  the tarball is verifiably built from this repository.
+- **Official MCP registry** — `io.github.raccioly/docguard` is a verified
+  namespace at registry.modelcontextprotocol.io.
+- **Read-only annotations** — every MCP tool declares `readOnlyHint`; the
+  server never writes or reaches the network.
+- **[PRIVACY.md](../PRIVACY.md)** — no telemetry, no data collection.
+
+To stop the prompt on your own machines: approve with "Always allow", or
+pre-trust it for a whole team via a project-scoped `.mcp.json` /
+enterprise managed-settings allowlist.
+
 ### Does DocGuard block commits?
 
 Only if you install hooks (`docguard hooks`). Without hooks, it's advisory only.
