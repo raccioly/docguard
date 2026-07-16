@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.33.1] - 2026-07-16
+
 ### Added
 
 - **Claude Desktop one-click extension (`.mcpb`).** Each release now attaches `docguard-v<version>.mcpb` — the official MCP Bundle format: drag into Claude Desktop → Settings → Extensions, pick the project folder, done. No npm, no JSON editing. Built by the new `build-mcpb` release job from the exact npm-pack payload (manifest template in `mcpb/`, packed with `@anthropic-ai/mcpb`). README gained one-click install badges for Cursor and VS Code (MCP deeplinks) alongside the Claude Code and registry paths.
