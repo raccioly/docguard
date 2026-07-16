@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-07-11T17:47:57.144Z
-> Files: 681 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-07-16T01:51:08.316Z
+> Files: 692 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../../../tmp/
 
@@ -23,10 +23,10 @@
 - `.pre-commit-hooks.yaml` — DocGuard hooks for the pre-commit framework (https://pre-commit.com). (~490 tok)
 - `action.yml` — Declares fs (~7591 tok)
 - `AGENTS.md` — AI Agent Instructions — DocGuard (~1827 tok)
-- `CHANGELOG.md` — Changelog (~47879 tok)
+- `CHANGELOG.md` — Changelog (~49280 tok)
 - `CLAUDE.md` — OpenWolf (~57 tok)
 - `CODE_OF_CONDUCT.md` — Contributor Covenant Code of Conduct (~532 tok)
-- `COMPARISONS.md` — Comparisons & Honest Limitations (~3053 tok)
+- `COMPARISONS.md` — Comparisons & Honest Limitations (~3382 tok)
 - `CONTRIBUTING.md` — Contributing to DocGuard (~1780 tok)
 - `docguard-cli-0.22.0.tgz` (~80828 tok)
 - `docguard-cli-0.23.0.tgz` (~81238 tok)
@@ -36,13 +36,13 @@
 - `LICENSE` — Project license (~286 tok)
 - `package-lock.json` — npm lock file (~617 tok)
 - `package.json` — Node.js package manifest (~459 tok)
-- `PHILOSOPHY.md` — The Philosophy of Canonical-Driven Development (~1757 tok)
+- `PHILOSOPHY.md` — The Philosophy of Canonical-Driven Development (~1854 tok)
 - `pr_description.md` (~260 tok)
 - `pyproject.toml` — The enforcement tool for Canonical-Driven Development (CDD). Audit, generate, and guard your project (~358 tok)
 - `README.es.md` — 🛡️ DocGuard (~1098 tok)
-- `README.md` — Project documentation (~8909 tok)
+- `README.md` — Project documentation (~9554 tok)
 - `README.pt-BR.md` — 🛡️ DocGuard (~1075 tok)
-- `ROADMAP.md` — DocGuard Roadmap (~2432 tok)
+- `ROADMAP.md` — DocGuard Roadmap (~2529 tok)
 - `SECURITY.md` — Security Policy (~357 tok)
 - `server.json` (~272 tok)
 - `smithery.yaml` — Smithery configuration for the DocGuard MCP server. (~283 tok)
@@ -952,7 +952,7 @@
 
 ## .github/workflows/
 
-- `ci.yml` — CI: DocGuard CI (~1041 tok)
+- `ci.yml` — CI: DocGuard CI (~1468 tok)
 - `release.yml` — CI: Auto Release — Tag, GitHub Release, npm, PyPI (~3434 tok)
 - `sync-speckit-catalog.yml` — CI: Prepare Spec Kit Catalog Submission (Manual) (~1385 tok)
 
@@ -965,9 +965,9 @@
 ## cli/
 
 - `config.mjs` — DocGuard — configuration loading. (~3265 tok)
-- `docguard.mjs` — DocGuard CLI — The enforcement tool for Canonical-Driven Development (CDD) (~10132 tok)
+- `docguard.mjs` — DocGuard CLI — The enforcement tool for Canonical-Driven Development (CDD) (~10928 tok)
 - `findings.mjs` — Findings — the structured, LLM-addressable result unit (v0.27). (~10332 tok)
-- `shared-git.mjs` — Shared Git Utilities — single source of truth for `git log` plumbing (~1851 tok)
+- `shared-git.mjs` — Shared Git Utilities — single source of truth for `git log` plumbing (~3012 tok)
 - `shared-ignore.mjs` — Shared Ignore Utility — Unified file filtering for all validators. (~4132 tok)
 - `shared-source.mjs` — Shared Source Resolution — Monorepo-aware source discovery. (~4655 tok)
 - `shared.mjs` — Shared constants for DocGuard CLI — colors, profiles, version. (~3496 tok)
@@ -976,18 +976,20 @@
 
 - `agent.mjs` — `docguard agent` — the one-shot agent task graph. (~1644 tok)
 - `agents.mjs` — Agents Command — Generate agent-specific config files from AGENTS.md (~3307 tok)
+- `ci.mjs` — CI Command — Single command for CI/CD pipelines (~1226 tok)
 - `diff.mjs` — Diff Command — Show differences between canonical docs and implementation (~4128 tok)
 - `explain.mjs` — Explain Command — v0.16-P6. (~9474 tok)
 - `feedback.mjs` — Feedback Command — close the loop with the tool's maintainers (v0.27). (~1920 tok)
 - `generate.mjs` — Generate Command — Reverse-engineer canonical docs from an existing codebase (~6250 tok)
-- `guard.mjs` — Guard Command — Validate project against its canonical documentation (~11608 tok)
+- `guard.mjs` — Guard Command — Validate project against its canonical documentation (~12874 tok)
 - `hooks.mjs` — Hooks Command — Generate pre-commit/pre-push hooks for DocGuard (~5102 tok)
 - `impact.mjs` — Impact Command — S-11 (~5302 tok)
 - `init.mjs` — Init Command — Initialize CDD documentation from templates (~7278 tok)
 - `llms.mjs` — llms Command — Generate llms.txt from canonical documentation (~2137 tok)
-- `mcp.mjs` — MCP Command — DocGuard as a Model Context Protocol server (stdio). (~4705 tok)
+- `mcp.mjs` — MCP Command — DocGuard as a Model Context Protocol server (stdio). (~4890 tok)
 - `memory.mjs` — Memory Command — v0.17-P2. (~2957 tok)
-- `score.mjs` — Score Command — Calculate CDD maturity score (0-100) (~12221 tok)
+- `report.mjs` — Report Command — Compliance-evidence bundle for audits. (~2383 tok)
+- `score.mjs` — Score Command — Calculate CDD maturity score (0-100) (~12818 tok)
 - `setup.mjs` — Setup Command — Interactive onboarding wizard for DocGuard (~5280 tok)
 - `sync-tests.mjs` — `docguard sync --tests` — reconcile the TEST-SPEC Source-to-Test Map from disk. (~3191 tok)
 - `sync.mjs` — Sync Command — keep the documentation memory ALWAYS UP TO DATE. (~2371 tok)
@@ -1013,7 +1015,7 @@
 - `changelog.mjs` — Changelog Validator — Checks CHANGELOG.md has an [Unreleased] section, (~1050 tok)
 - `cross-reference.mjs` — Cross-Reference Validator — S-8 / K-7 (~6034 tok)
 - `doc-quality.mjs` — Doc Quality Validator — Measures documentation writing quality (~6826 tok)
-- `docs-coverage.mjs` — Docs-Coverage Validator — Detects code features not referenced in docs. (~5516 tok)
+- `docs-coverage.mjs` — Docs-Coverage Validator — Detects code features not referenced in docs. (~5607 tok)
 - `docs-diff.mjs` — Docs-Diff Validator — Checks alignment between canonical docs and code. (~3326 tok)
 - `docs-sync.mjs` — Docs-Sync Validator — Checks that source files have matching canonical doc entries (~2949 tok)
 - `drift.mjs` — Drift Validator — Every // DRIFT: comment must have a DRIFT-LOG.md entry (~1290 tok)
@@ -1034,12 +1036,16 @@
 
 ## cli/writers/
 
+- `baseline.mjs` — Adoption Baseline — `.docguard.baseline.json` (repo root, COMMITTED). (~994 tok)
+- `history.mjs` — Score History — local-first trend memory at `.docguard/history.jsonl`. (~815 tok)
+- `junit.mjs` — JUnit XML writer — `docguard guard --format junit`. (~1073 tok)
 - `mechanical.mjs` — Mechanical Fix Registry — applies deterministic, no-LLM fixes in place. (~3290 tok)
 - `sarif.mjs` — SARIF 2.1.0 writer — `docguard guard --format sarif`. (~1315 tok)
 
 ## docs-canonical/
 
 - `ARCHITECTURE.md` — Architecture (~3029 tok)
+- `CI-RECIPES.md` — CI Recipes (~2441 tok)
 - `DATA-MODEL.md` — Data Model (~1741 tok)
 - `REQUIREMENTS.md` — Requirements (~673 tok)
 - `SURFACE-AUDIT.md` — DocGuard Surface Audit (~5703 tok)
@@ -1048,9 +1054,9 @@
 ## docs/
 
 - `ai-integration.md` — AI Integration Guide (~2024 tok)
-- `commands.md` — Commands Reference (~2157 tok)
-- `configuration.md` — Configuration (~1375 tok)
-- `faq.md` — Frequently Asked Questions (~1519 tok)
+- `commands.md` — Commands Reference (~2511 tok)
+- `configuration.md` — Configuration (~1491 tok)
+- `faq.md` — Frequently Asked Questions (~1627 tok)
 
 ## extensions/spec-kit-docguard/
 
@@ -1066,7 +1072,7 @@
 
 ## schemas/
 
-- `docguard-config.schema.json` — behavior: docs (~3015 tok)
+- `docguard-config.schema.json` — behavior: docs (~3090 tok)
 
 ## templates/
 
@@ -1092,6 +1098,7 @@
 - `agent-readability.test.mjs` — Declares metric (~1049 tok)
 - `agent.test.mjs` — Exports x (~1138 tok)
 - `agents-sync.test.mjs` — CLI: run (~1367 tok)
+- `baseline.test.mjs` — Adoption baseline — `.docguard.baseline.json` (v0.33). (~1919 tok)
 - `changelog.test.mjs` — Exports x, x (~1315 tok)
 - `commands.test.mjs` — DocGuard CLI Tests — Tests all commands and flags (~10442 tok)
 - `cross-reference.test.mjs` — Cross-Reference Validator — K-7 / S-8 (~4060 tok)
@@ -1099,13 +1106,15 @@
 - `field-report-3-deferred.test.mjs` — v0.28 — the detection-gap items deferred from LLM field report #3. (~3325 tok)
 - `field-report-3.test.mjs` — v0.27 — LLM field report #3. (~3315 tok)
 - `freshness.test.mjs` — runGit: commitOldCode (~3536 tok)
+- `history.test.mjs` — Score history + `score --trend` (v0.33). (~1702 tok)
 - `hooks.test.mjs` — Declares afterFirst (~2420 tok)
 - `impact.test.mjs` — S-11 — `docguard impact` command. (~4128 tok)
 - `instruction-audit.test.mjs` — Instruction Audit scanner tests (field report #11 — MemoryLint-inspired). (~2387 tok)
 - `inventory.test.mjs` — Declares make (~1048 tok)
+- `junit.test.mjs` — `docguard guard --format junit` — JUnit XML for GitLab/Jenkins/Azure (v0.33). (~1307 tok)
 - `llms-full-pack.test.mjs` — CLI: run (~1304 tok)
-- `mcp-http.test.mjs` — MCP Streamable HTTP transport — `docguard mcp --transport http`. (~1412 tok)
-- `mcp.test.mjs` — MCP Server Tests — `docguard mcp` over stdio. (~2138 tok)
+- `mcp-http.test.mjs` — MCP Streamable HTTP transport — `docguard mcp --transport http`. (~1416 tok)
+- `mcp.test.mjs` — MCP Server Tests — `docguard mcp` over stdio. (~2282 tok)
 - `mechanical.test.mjs` — Declares write (~1161 tok)
 - `memory-plan.test.mjs` — Exports u, Button (~1834 tok)
 - `metrics-consistency.test.mjs` — Declares guardResults (~3942 tok)
@@ -1113,8 +1122,10 @@
 - `nudge-hook.test.mjs` — Agent nudge hook — `docguard hooks --claude` + `docguard nudge-hook`. (~1681 tok)
 - `project-type.test.mjs` — Declares make (~2140 tok)
 - `reference-existence.test.mjs` — Exports validateToken, getUserById, verifyToken, getUserById + 4 more (~1853 tok)
+- `report.test.mjs` — `docguard report` — compliance-evidence bundle (v0.33). (~1636 tok)
 - `sarif.test.mjs` — Declares CLI (~1455 tok)
 - `shared-source.test.mjs` — API routes: GET (4 endpoints) (~1714 tok)
 - `speckit-phantom.test.mjs` — Exports users, fetchUserRecords, retry, adapter + 2 more (~2500 tok)
 - `trace-features.test.mjs` — `trace --features` — per-feature spec-kit adherence scoring. (~2423 tok)
 - `traceability.test.mjs` — Exports foo, GET, x (~3729 tok)
+- `v020-consolidation.test.mjs` — v0.20 — Surface consolidation tests. (~2540 tok)

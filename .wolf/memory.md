@@ -987,3 +987,133 @@
 | 13:46 | Edited docs-canonical/DATA-MODEL.md | expanded (+12 lines) | ~661 |
 | 13:47 | Edited CHANGELOG.md | expanded (+10 lines) | ~156 |
 | 13:47 | Edited CHANGELOG.md | reduced (-11 lines) | ~36 |
+
+## Session: 2026-07-15 18:08
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 18:22 | Edited cli/shared-git.mjs | added error handling | ~260 |
+| 18:22 | Edited cli/commands/score.mjs | modified computeAlcoaCompliance() | ~75 |
+| 18:23 | Created cli/commands/report.mjs | — | ~2061 |
+| 18:23 | Edited cli/docguard.mjs | added 1 import(s) | ~27 |
+| 18:23 | Edited cli/docguard.mjs | added 1 condition(s) | ~42 |
+| 18:23 | Edited cli/docguard.mjs | 1→3 lines | ~94 |
+| 18:23 | Edited cli/docguard.mjs | 2→5 lines | ~67 |
+| 18:23 | Edited cli/docguard.mjs | 1→2 lines | ~74 |
+| 18:23 | Edited cli/docguard.mjs | modified 28() | ~160 |
+| 18:25 | Created tests/report.test.mjs | — | ~1636 |
+| 18:26 | Edited README.md | inline fix | ~34 |
+| 18:26 | Edited README.md | 18 → 19 | ~18 |
+| 18:26 | Edited README.md | 1→2 lines | ~90 |
+| 18:26 | Edited CHANGELOG.md | 1→5 lines | ~284 |
+| 18:27 | Edited docs/commands.md | expanded (+13 lines) | ~151 |
+| 18:27 | Implemented docguard report (evidence bundle: guard+score+ALCOA+integrity sha256) + tests + README/commands.md/CHANGELOG wiring | cli/commands/report.mjs, cli/shared-git.mjs, cli/docguard.mjs, tests/report.test.mjs | 991/991 tests green, self-guard clean | ~9000 |
+| 18:29 | Created cli/writers/history.mjs | — | ~723 |
+| 18:29 | Created cli/commands/ci.mjs | — | ~1064 |
+| 18:30 | Edited cli/commands/score.mjs | added 1 condition(s) | ~89 |
+| 18:30 | Edited cli/commands/score.mjs | added 2 condition(s) | ~533 |
+| 18:30 | Edited cli/commands/score.mjs | added 1 import(s) | ~38 |
+| 18:30 | Edited cli/docguard.mjs | added 2 condition(s) | ~52 |
+| 18:30 | Edited cli/docguard.mjs | inline fix | ~45 |
+| 18:31 | Created tests/history.test.mjs | — | ~1429 |
+| 18:33 | Edited cli/docguard.mjs | expanded (+6 lines) | ~137 |
+| 18:33 | Edited cli/docguard.mjs | 3→4 lines | ~82 |
+| 18:33 | Edited cli/docguard.mjs | 1→2 lines | ~101 |
+| 18:33 | Edited cli/docguard.mjs | inline fix | ~23 |
+| 18:33 | Edited cli/docguard.mjs | inline fix | ~27 |
+| 18:33 | Edited README.md | inline fix | ~84 |
+| 18:33 | Edited README.md | 19 → 20 | ~18 |
+| 18:33 | Edited README.md | 1→3 lines | ~166 |
+| 18:34 | Edited tests/history.test.mjs | 4→8 lines | ~126 |
+| 18:35 | Edited tests/v020-consolidation.test.mjs | 10→14 lines | ~170 |
+| 18:35 | Edited tests/v020-consolidation.test.mjs | expanded (+12 lines) | ~142 |
+| 18:36 | Edited CHANGELOG.md | expanded (+6 lines) | ~366 |
+| 18:37 | Edited docs/commands.md | 10→14 lines | ~187 |
+| 18:37 | Edited docs-canonical/CI-RECIPES.md | expanded (+22 lines) | ~221 |
+| 18:39 | History+trend: writers/history.mjs, ci appends history.jsonl, score --trend; FIXED ci routing bug (bug-228: un-deprecated ci, direct dispatch, no init mutation, clean JSON) | cli/writers/history.mjs, ci.mjs, score.mjs, docguard.mjs, tests, README, CHANGELOG, CI-RECIPES | 1001/1001 green | ~12000 |
+| 18:40 | Edited COMPARISONS.md | expanded (+19 lines) | ~367 |
+| 18:40 | Edited ROADMAP.md | reports() → first() | ~173 |
+| 18:41 | Iteration 1 wrap: COMPARISONS docs-platform section, ROADMAP Phase 5 partial-delivery, CI-RECIPES 4b, cerebrum+buglog updated | COMPARISONS.md, ROADMAP.md, docs-canonical/CI-RECIPES.md, .wolf/* | 1001/1001, guard 0 errors, score 100/100 | ~4000 |
+| 18:42 | Session end: 39 writes across 15 files (shared-git.mjs, score.mjs, report.mjs, docguard.mjs, report.test.mjs) | 4 reads | ~17735 tok |
+| 18:48 | Edited docs-canonical/CI-RECIPES.md | expanded (+16 lines) | ~164 |
+| 18:48 | Iteration 2: empirical read-only validation on 4 real repos (0 crashes, valid JSON everywhere), org-sweep CUT → Recipe 4c multi-repo scorecard | docs-canonical/CI-RECIPES.md, .wolf/cerebrum.md | all pass | ~3500 |
+| 18:49 | Session end: 40 writes across 15 files (shared-git.mjs, score.mjs, report.mjs, docguard.mjs, report.test.mjs) | 4 reads | ~17910 tok |
+| 18:54 | Created cli/writers/junit.mjs | — | ~870 |
+| 18:55 | Edited cli/commands/guard.mjs | added 1 condition(s) | ~231 |
+| 18:55 | Edited cli/commands/guard.mjs | added 1 import(s) | ~26 |
+| 18:55 | Edited cli/docguard.mjs | 3→4 lines | ~85 |
+| 18:55 | Edited cli/commands/mcp.mjs | expanded (+10 lines) | ~154 |
+| 18:55 | Edited cli/commands/mcp.mjs | modified docguard_report() | ~49 |
+| 18:55 | Edited cli/commands/mcp.mjs | added 1 import(s) | ~25 |
+| 18:56 | Edited tests/mcp.test.mjs | 9→9 lines | ~125 |
+| 18:56 | Edited tests/mcp-http.test.mjs | 8→8 lines | ~103 |
+| 18:56 | Edited tests/mcp.test.mjs | expanded (+14 lines) | ~164 |
+| 18:56 | Created tests/junit.test.mjs | — | ~1130 |
+| 18:57 | Edited README.md | 1→2 lines | ~74 |
+| 18:57 | Edited README.md | inline fix | ~35 |
+| 18:57 | Edited cli/docguard.mjs | inline fix | ~31 |
+| 18:57 | Edited docs/commands.md | 1→2 lines | ~44 |
+| 18:57 | Edited docs/commands.md | 2→2 lines | ~33 |
+| 18:57 | Edited docs-canonical/CI-RECIPES.md | modified stage() | ~210 |
+| 18:57 | Edited CHANGELOG.md | 3→7 lines | ~242 |
+| 18:58 | Iteration 3: guard --format junit (writers/junit.mjs, GitLab/Jenkins recipes), docguard_report MCP tool (5→6 tools) | junit.mjs, guard.mjs, mcp.mjs, docguard.mjs, tests, README, docs, CHANGELOG | 1005/1005 green, self-guard clean | ~8000 |
+| 18:59 | Session end: 58 writes across 21 files (shared-git.mjs, score.mjs, report.mjs, docguard.mjs, report.test.mjs) | 4 reads | ~21797 tok |
+| 19:04 | Created cli/writers/baseline.mjs | — | ~741 |
+| 19:04 | Edited cli/commands/guard.mjs | added 4 condition(s) | ~395 |
+| 19:04 | Edited cli/commands/guard.mjs | 4→5 lines | ~27 |
+| 19:04 | Edited cli/commands/guard.mjs | added 1 import(s) | ~54 |
+| 19:05 | Edited cli/commands/guard.mjs | added 1 condition(s) | ~200 |
+| 19:05 | Edited cli/commands/guard.mjs | added 1 condition(s) | ~163 |
+| 19:05 | Edited cli/docguard.mjs | added 2 condition(s) | ~81 |
+| 19:05 | Edited cli/docguard.mjs | added 1 condition(s) | ~79 |
+| 19:07 | Edited cli/validators/docs-coverage.mjs | 2→7 lines | ~98 |
+| 19:07 | Created tests/baseline.test.mjs | — | ~1352 |
+| 19:08 | Edited tests/baseline.test.mjs | 10→11 lines | ~155 |
+| 19:09 | Edited cli/docguard.mjs | 10→12 lines | ~201 |
+| 19:09 | Edited schemas/docguard-config.schema.json | 5→10 lines | ~144 |
+| 19:09 | Edited README.md | 1→2 lines | ~123 |
+| 19:09 | Edited docs/commands.md | expanded (+10 lines) | ~151 |
+| 19:09 | Edited CHANGELOG.md | 3→5 lines | ~323 |
+| 19:11 | Iteration 4: adoption baseline (writers/baseline.mjs, guard --update-baseline/--no-baseline, config.baseline, DCV001 self-file exemption, schema prop) — validated on taxes_helper (1→0 exit, 64 suppressed, restored) | baseline.mjs, guard.mjs, docguard.mjs, docs-coverage.mjs, schema, tests, docs | 1012/1012 green | ~11000 |
+| 19:12 | Edited README.md | expanded (+14 lines) | ~413 |
+| 19:12 | Edited README.md | inline fix | ~38 |
+| 19:12 | Edited README.md | 2→3 lines | ~32 |
+| 19:13 | Iteration 5 wrap: README Enterprise Adoption section + ToC; sync --write (no drift); loop closed — v0.33 batch complete | README.md, .wolf/memory.md | 1012/1012, guard 0 errors, score 100 A+ | ~3000 |
+| 19:14 | Session end: 77 writes across 25 files (shared-git.mjs, score.mjs, report.mjs, docguard.mjs, report.test.mjs) | 4 reads | ~26899 tok |
+| 21:36 | Edited docs/configuration.md | modified entirely() | ~129 |
+| 21:37 | Edited docs/faq.md | expanded (+12 lines) | ~146 |
+| 21:37 | Edited .github/workflows/ci.yml | expanded (+27 lines) | ~447 |
+| 21:37 | Edited README.md | expanded (+8 lines) | ~258 |
+| 21:38 | Edited README.md | modified line() | ~435 |
+| 21:39 | Edited PHILOSOPHY.md | 1→2 lines | ~144 |
+| 21:46 | Edited cli/docguard.mjs | 3→8 lines | ~125 |
+| 21:46 | Edited cli/writers/baseline.mjs | added 1 condition(s) | ~609 |
+| 21:46 | Edited cli/commands/guard.mjs | added 1 condition(s) | ~328 |
+| 21:47 | Edited cli/commands/report.mjs | modified critical() | ~105 |
+| 21:47 | Edited cli/commands/report.mjs | added 1 condition(s) | ~101 |
+| 21:47 | Edited cli/commands/report.mjs | modified if() | ~90 |
+| 21:47 | Edited cli/commands/report.mjs | modified scope() | ~140 |
+| 21:47 | Edited cli/commands/report.mjs | inline fix | ~74 |
+| 21:47 | Edited cli/commands/report.mjs | evidence() → reason() | ~110 |
+| 21:47 | Edited cli/commands/ci.mjs | modified counts() | ~235 |
+| 21:47 | Edited cli/commands/ci.mjs | modified slice() | ~107 |
+| 21:47 | Edited cli/commands/ci.mjs | 9→10 lines | ~84 |
+| 21:48 | Edited cli/commands/ci.mjs | modified if() | ~211 |
+| 21:48 | Edited cli/writers/junit.mjs | added 1 condition(s) | ~430 |
+| 21:48 | Edited cli/writers/junit.mjs | 9→9 lines | ~113 |
+| 21:48 | Edited cli/writers/junit.mjs | modified Mapping() | ~108 |
+| 21:48 | Edited cli/commands/guard.mjs | added 2 condition(s) | ~306 |
+| 21:48 | Edited cli/writers/history.mjs | 6→8 lines | ~149 |
+| 21:48 | Edited cli/writers/history.mjs | inline fix | ~31 |
+| 21:49 | Edited cli/writers/history.mjs | 5→9 lines | ~114 |
+| 21:49 | Edited docs-canonical/CI-RECIPES.md | modified stage() | ~227 |
+| 21:49 | Edited README.md | inline fix | ~74 |
+| 21:49 | Edited tests/baseline.test.mjs | expanded (+35 lines) | ~680 |
+| 21:49 | Edited tests/junit.test.mjs | expanded (+15 lines) | ~197 |
+| 21:49 | Edited tests/history.test.mjs | expanded (+16 lines) | ~232 |
+| 21:50 | Edited CHANGELOG.md | inline fix | ~107 |
+| 21:50 | Edited CHANGELOG.md | inline fix | ~63 |
+| 21:50 | Edited CHANGELOG.md | inline fix | ~85 |
+| 21:51 | Edited CHANGELOG.md | 3→5 lines | ~252 |
+| 21:52 | Full pre-release audit: 12 review findings fixed (baseline counts H2, ci READ_ONLY H1, suppression disclosure H3, junit crash path, ci effective/threshold status, hash scope) + market research cited in README/PHILOSOPHY + dogfooding (ci.yml smokes all new cmds, FAQ, config docs, What's-New de-rotted) | cli+tests+docs | 1018/1018 green, taxes_helper re-validated | ~25000 |
+| 21:52 | Session end: 112 writes across 29 files (shared-git.mjs, score.mjs, report.mjs, docguard.mjs, report.test.mjs) | 9 reads | ~51384 tok |
