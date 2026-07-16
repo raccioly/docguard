@@ -1,0 +1,57 @@
+{
+  "manifest_version": "0.3",
+  "name": "docguard",
+  "display_name": "DocGuard",
+  "version": "__VERSION__",
+  "description": "Deterministic doc-drift detection: guard, score, explain, verify-claims, report and diagnose as read-only MCP tools.",
+  "long_description": "DocGuard validates your project's documentation against its code — 27 deterministic validators, CDD maturity score, compliance-evidence reports, requirements traceability — with a zero-LLM core. Every tool is read-only: it inspects the project folder you choose and never writes, mutates, or reaches the network. Local-first: no telemetry, no data collection (see PRIVACY.md in the repository).",
+  "author": {
+    "name": "Ricardo Accioly",
+    "url": "https://github.com/raccioly"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/raccioly/docguard.git"
+  },
+  "homepage": "https://github.com/raccioly/docguard#readme",
+  "documentation": "https://github.com/raccioly/docguard/blob/main/docs/ai-integration.md",
+  "support": "https://github.com/raccioly/docguard/issues",
+  "keywords": ["documentation", "validation", "drift-detection", "cdd", "traceability", "code-quality"],
+  "server": {
+    "type": "node",
+    "entry_point": "cli/docguard.mjs",
+    "mcp_config": {
+      "command": "node",
+      "args": [
+        "${__dirname}/cli/docguard.mjs",
+        "mcp",
+        "--dir",
+        "${user_config.project_dir}"
+      ],
+      "env": {}
+    }
+  },
+  "user_config": {
+    "project_dir": {
+      "type": "directory",
+      "title": "Project folder",
+      "description": "The repository DocGuard analyzes by default. Every tool also accepts a per-call projectDir override.",
+      "required": true
+    }
+  },
+  "tools": [
+    { "name": "docguard_guard", "description": "Run every enabled validator against the project's canonical docs" },
+    { "name": "docguard_score", "description": "CDD maturity score (0-100) with per-category breakdown" },
+    { "name": "docguard_explain", "description": "Explain a stable finding code (STR001, ENV003, ...)" },
+    { "name": "docguard_verify_claims", "description": "Extract documented numbers/limits/enums as verification tasks" },
+    { "name": "docguard_report", "description": "Commit-stamped compliance-evidence bundle with integrity hash" },
+    { "name": "docguard_diagnose", "description": "Only what needs fixing, shaped for an agent to act on" }
+  ],
+  "compatibility": {
+    "platforms": ["darwin", "win32", "linux"],
+    "runtimes": {
+      "node": ">=18.0.0"
+    }
+  }
+}
