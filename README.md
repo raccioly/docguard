@@ -454,6 +454,15 @@ DocGuard ships **18 professional templates** with metadata, badges, and revision
 
 ## 🤖 AI Agent Support
 
+### One-click MCP install
+
+[![Add to Cursor](https://img.shields.io/badge/Cursor-Add_MCP_Server-000000?logo=cursor)](cursor://anysphere.cursor-deeplink/mcp/install?name=docguard&config=eyJjb21tYW5kIjogIm5weCIsICJhcmdzIjogWyIteSIsICJkb2NndWFyZC1jbGkiLCAibWNwIl19)
+[![Install in VS Code](https://img.shields.io/badge/VS_Code-Install_MCP_Server-0098FF?logo=githubcopilot)](vscode:mcp/install?%7B%22name%22%3A%22docguard%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22docguard-cli%22%2C%22mcp%22%5D%7D)
+
+- **Claude Code**: `claude mcp add docguard -- npx docguard-cli mcp`
+- **Claude Desktop**: download `docguard-v<version>.mcpb` from the [latest release](https://github.com/raccioly/docguard/releases/latest) and drag it into Settings → Extensions — you'll be asked which project folder to analyze. No npm, no JSON editing.
+- **Anything MCP**: DocGuard is a verified namespace on the [official MCP registry](https://registry.modelcontextprotocol.io/v0/servers?search=docguard) (`io.github.raccioly/docguard`).
+
 DocGuard works with **every major AI coding agent**. All canonical docs are plain markdown — no vendor lock-in.
 
 | Agent | Compatibility | Auto-Generate Config |

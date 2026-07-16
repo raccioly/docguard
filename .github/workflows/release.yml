@@ -154,6 +154,39 @@ jobs:
             "spec-kit-docguard-v${VERSION}.zip" \
             --clobber
 
+  # ── Step 4b: Build and attach Claude Desktop extension (.mcpb) ─────────
+  # One-click local install for Claude Desktop (Settings → Extensions).
+  # Stages the exact npm-pack payload + the one production dep, stamps the
+  # manifest template, and packs with the official @anthropic-ai/mcpb tool
+  # (its schema is strict — the template must contain no unknown keys).
+  build-mcpb:
+    needs: [detect-version, create-release]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+
+      - name: Stage and pack .mcpb
+        run: |
+          VERSION="${{ needs.detect-version.outputs.version }}"
+          npm pack --pack-destination /tmp
+          mkdir -p /tmp/mcpb && tar xzf /tmp/docguard-cli-*.tgz -C /tmp/mcpb
+          cd /tmp/mcpb/package
+          npm install --omit=dev --no-audit --no-fund
+          sed "s/__VERSION__/${VERSION}/" "$GITHUB_WORKSPACE/mcpb/manifest.template.json" > manifest.json
+          npx -y @anthropic-ai/mcpb pack . "/tmp/docguard-v${VERSION}.mcpb"
+
+      - name: Upload to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ needs.detect-version.outputs.version }}"
+          gh release upload "v${VERSION}" \
+            "/tmp/docguard-v${VERSION}.mcpb" \
+            --clobber
+
   # ── Step 5: Publish to npm ─────────────────────────────────────────────
   publish-npm:
     needs: [detect-version, test, create-release]
