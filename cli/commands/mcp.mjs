@@ -27,6 +27,7 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runGuardInternal } from './guard.mjs';
 import { runScoreInternal } from './score.mjs';
+import { buildReport } from './report.mjs';
 import { loadConfig } from '../config.mjs';
 import { CODES } from '../findings.mjs';
 import { extractSemanticClaims, buildSemanticVerifyTasks } from '../scanners/semantic-claims.mjs';
@@ -111,6 +112,16 @@ const TOOLS = [
     annotations: READONLY_ANNOTATIONS,
   },
   {
+    name: 'docguard_report',
+    title: 'Compliance-evidence bundle',
+    description: 'Generate the commit-stamped compliance-evidence bundle: guard verdict per validator, findings grouped by stable code, CDD score, ALCOA+ data-integrity attributes, fix history, and a tamper-evident sha256 integrity hash. Evidence, not a gate — it reports state without failing.',
+    inputSchema: {
+      type: 'object',
+      properties: { ...PROJECT_DIR_PROP },
+    },
+    annotations: READONLY_ANNOTATIONS,
+  },
+  {
     name: 'docguard_diagnose',
     title: 'Diagnose what to fix',
     description: 'Run guard and return only what needs fixing: failing/warning validators with their messages, structured findings, and suggested next actions — shaped for an agent to act on.',
@@ -167,6 +178,11 @@ const TOOL_HANDLERS = {
       note: 'Deterministic discovery, LLM judgment — the caller verifies each claim against the code and reports any mismatch with both values.',
       tasks: buildSemanticVerifyTasks(claims),
     };
+  },
+
+  docguard_report(args, defaultDir) {
+    const { dir, config } = resolveTarget(args, defaultDir);
+    return buildReport(dir, config);
   },
 
   docguard_diagnose(args, defaultDir) {

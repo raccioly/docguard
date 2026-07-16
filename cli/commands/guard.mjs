@@ -16,6 +16,8 @@ import { checkUpgradeStatus } from './upgrade.mjs';
 import { changedFilesSince, isGitRepo } from '../shared-git.mjs';
 import { extractSemanticClaims } from '../scanners/semantic-claims.mjs';
 import { toSarif } from '../writers/sarif.mjs';
+import { toJUnit } from '../writers/junit.mjs';
+import { loadBaseline, saveBaseline, fingerprintFinding, BASELINE_FILE } from '../writers/baseline.mjs';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve as resolvePath, relative as relativePath } from 'node:path';
 import { fileURLToPath as fp } from 'node:url';
@@ -393,6 +395,42 @@ export function runGuardInternal(projectDir, config) {
     }
   }
 
+  // ── Adoption baseline (v0.33) ──
+  // If the repo committed `.docguard.baseline.json`, findings frozen at
+  // adoption time are suppressed BEFORE any tally — so exit codes, severity
+  // rollups, json/sarif/junit, ci, and report all gate only NEW drift.
+  // Suppression is visible (baselineSuppressed in the payload + a display
+  // note), applies only to findings-backed results (legacy string-only
+  // errors/warnings can't be fingerprinted), and `--no-baseline`
+  // (config.baseline === false) turns it off.
+  let baselineSuppressed = 0;
+  const baselineMap = config.baseline === false ? null : loadBaseline(projectDir);
+  if (baselineMap) {
+    // Occurrence budget: each fingerprint suppresses at most its frozen
+    // count (H2). Validators run in a fixed order, so consumption is
+    // deterministic — the same tree always suppresses the same instances.
+    const remaining = new Map(baselineMap);
+    for (const r of results) {
+      if (!Array.isArray(r.findings) || r.findings.length === 0) continue;
+      if (r.errors.length + r.warnings.length !== r.findings.length) continue;
+      const kept = r.findings.filter(f => {
+        const fp = fingerprintFinding(f);
+        const budget = remaining.get(fp) || 0;
+        if (budget <= 0) return true;
+        remaining.set(fp, budget - 1);
+        return false;
+      });
+      const removed = r.findings.length - kept.length;
+      if (removed === 0) continue;
+      baselineSuppressed += removed;
+      r.findings = kept;
+      r.errors = kept.filter(f => f.severity === 'error').map(f => f.message);
+      r.warnings = kept.filter(f => f.severity !== 'error').map(f => f.message);
+      r.total = r.passed + kept.length;
+      Object.assign(r, classifyResult(r));
+    }
+  }
+
   const activeResults = results.filter(r => r.status !== 'skipped');
   const totalErrors = activeResults.reduce((sum, r) => sum + r.errors.length, 0);
   const totalWarnings = activeResults.reduce((sum, r) => sum + r.warnings.length, 0);
@@ -464,6 +502,7 @@ export function runGuardInternal(projectDir, config) {
     // things they've marked as high-severity.
     effectiveErrors,
     effectiveWarnings,
+    baselineSuppressed,
     coverage,
     semanticClaims,
     validators: results,
@@ -555,6 +594,30 @@ export function runGuard(projectDir, config, flags) {
     console.log(`${c.cyan}⚡ docguard guard --changed-only${c.reset} ${c.dim}(${label})${c.reset}${escalatedNote}\n`);
   }
 
+  // ── `--update-baseline`: freeze the CURRENT full finding set ──
+  // Runs with the baseline disabled so the file captures everything visible
+  // today (updating through an active baseline would only ever shrink it).
+  if (flags.updateBaseline) {
+    // --changed-only rewrites config.validators to the 5-validator lite set;
+    // freezing THAT would silently shrink the committed team baseline to a
+    // subset (L1). Refuse the combination rather than corrupt the file.
+    if (flags.changedOnly) {
+      console.error(`${c.red}✗ --update-baseline cannot be combined with --changed-only — the baseline must freeze the FULL validator set, not the pre-commit lite subset.${c.reset}`);
+      process.exitCode = 1;
+      return;
+    }
+    const fullData = runGuardInternal(projectDir, { ...config, baseline: false });
+    const n = saveBaseline(projectDir, fullData.findings || []);
+    if (flags.format === 'json') {
+      process.stdout.write(JSON.stringify({ written: true, file: BASELINE_FILE, fingerprints: n, findings: (fullData.findings || []).length }, null, 2) + '\n');
+    } else {
+      console.log(`${c.green}✅ Baseline written:${c.reset} ${BASELINE_FILE} (${n} fingerprint(s))`);
+      console.log(`${c.dim}   Commit it. guard/ci now gate only NEW findings; --no-baseline shows everything.${c.reset}`);
+    }
+    process.exitCode = 0;
+    return;
+  }
+
   const data = runGuardInternal(projectDir, config);
 
   // ── SARIF output (2.1.0) ──
@@ -564,6 +627,17 @@ export function runGuard(projectDir, config, flags) {
     const sarif = toSarif(data, { projectDir });
     process.exitCode = data.effectiveErrors > 0 ? 1 : data.effectiveWarnings > 0 ? 2 : 0;
     process.stdout.write(JSON.stringify(sarif, null, 2) + '\n');
+    return;
+  }
+
+  // ── JUnit XML output ──
+  // SARIF is GitHub's language; JUnit is everyone else's (GitLab
+  // artifacts:reports:junit, Jenkins junit step, Azure DevOps, CircleCI).
+  // Exit-code semantics identical to sarif/json.
+  if (flags.format === 'junit') {
+    const xml = toJUnit(data);
+    process.exitCode = data.effectiveErrors > 0 ? 1 : data.effectiveWarnings > 0 ? 2 : 0;
+    process.stdout.write(xml + '\n');
     return;
   }
 
@@ -669,6 +743,12 @@ export function runGuard(projectDir, config, flags) {
     // note below spells out any escalation/demotion.
     const warnSuffix = data.effectiveWarnings > 0 ? `, ${data.effectiveWarnings} warning(s)` : '';
     console.log(`  ${c.red}${c.bold}❌ FAIL${c.reset} ${c.red}— ${data.passed}/${data.total} passed, ${data.effectiveErrors} blocking issue(s)${warnSuffix}${c.reset}`);
+  }
+
+  // Baseline suppression is always visible — a gate that hides findings
+  // silently is the false-green failure mode this tool exists to prevent.
+  if (data.baselineSuppressed > 0) {
+    console.log(`  ${c.dim}📋 ${data.baselineSuppressed} pre-existing finding(s) suppressed by ${BASELINE_FILE} (--no-baseline to show)${c.reset}`);
   }
 
   // ── Next steps — every run ends with a suggested action (v0.27) ──

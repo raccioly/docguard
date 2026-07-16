@@ -107,11 +107,15 @@ describe('v0.20 — deprecation aliases (keep working + emit warning)', () => {
   // Each [command, expectedReplacement] pair. The command must still exit 0
   // (or at least dispatch its underlying runner) and emit a deprecation warning
   // to stderr that mentions the v0.20 replacement.
+  // v0.33: `ci` is NOT in this list anymore — it was un-deprecated. The v0.20
+  // routing sent the pipeline gate through runInit, which scaffolded missing
+  // docs into the CI workspace and printed init chrome into --format json.
+  // A gate must be read-only and machine-clean, so `ci` dispatches directly
+  // again (see the dedicated test below).
   const DEPRECATED_PAIRS = [
     ['setup', 'init --wizard'],
     ['agents', 'init --with agents'],
     ['hooks', 'init --with hooks'],
-    ['ci', 'init --with ci'],
     ['badge', 'init --with badge'],
     ['llms', 'init --with llms'],
     ['publish', 'init --with publish'],
@@ -134,6 +138,18 @@ describe('v0.20 — deprecation aliases (keep working + emit warning)', () => {
         `${cmd}: expected hint to mention "${replacement}"; got: ${combined.slice(0, 300)}`);
     });
   }
+
+  it('`ci` dispatches directly — no deprecation warning, no init scaffolding (v0.33)', () => {
+    dir = makeFixture();
+    const r = spawnSync('node', [CLI, 'ci', '--no-history'], {
+      cwd: dir,
+      encoding: 'utf-8',
+    });
+    assert.ok(!(r.stderr + r.stdout).includes('Deprecated since'),
+      'ci must not warn — it is a first-class command again');
+    assert.ok(!(r.stderr + r.stdout).includes('DocGuard Init'),
+      'ci must not route through init');
+  });
 
   it('--quiet suppresses the deprecation warning', () => {
     dir = makeFixture();

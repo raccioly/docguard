@@ -11,6 +11,7 @@ import { validateSecurity } from '../validators/security.mjs';
 import { runGuardInternal } from './guard.mjs';
 import { extractSemanticClaims } from '../scanners/semantic-claims.mjs';
 import { assessAgentReadability } from '../scanners/agent-readability.mjs';
+import { loadHistory, sparkline } from '../writers/history.mjs';
 
 /**
  * Detect whether the project configures a test runner (the "Check 3" of the
@@ -144,6 +145,10 @@ const WEIGHTS = {
 };
 
 export function runScore(projectDir, config, flags) {
+  // v0.33: `--trend` renders the local score history recorded by `docguard
+  // ci` (.docguard/history.jsonl) instead of recomputing a score.
+  if (flags.trend) return runTrend(projectDir, config, flags);
+
   // v0.16-P1: suppress banner in JSON mode so stdout stays parseable.
   // Was already fixed for guard/diagnose in v0.12; score/trace/diff missed
   // the pattern. Reported on a Python project where `score --format json`
@@ -345,6 +350,52 @@ export function runScore(projectDir, config, flags) {
 }
 
 /**
+ * `score --trend` — render the score trajectory from `.docguard/history.jsonl`
+ * (written by `docguard ci`). Read-only display; exits 0 whether or not
+ * history exists — trend is information, not a gate.
+ */
+function runTrend(projectDir, config, flags) {
+  const isJson = flags.format === 'json';
+  const entries = loadHistory(projectDir, 50);
+
+  if (isJson) {
+    const latest = entries[entries.length - 1] || null;
+    const first = entries[0] || null;
+    process.stdout.write(JSON.stringify({
+      project: config.projectName,
+      entries,
+      latest,
+      delta: latest && first ? latest.score - first.score : null,
+    }, null, 2) + '\n');
+    return;
+  }
+
+  console.log(`${c.bold}📈 DocGuard Score Trend — ${config.projectName}${c.reset}\n`);
+  if (entries.length === 0) {
+    console.log(`  ${c.dim}No history yet. Run ${c.cyan}docguard ci${c.dim} to start recording`);
+    console.log(`  score history to .docguard/history.jsonl (one line per run).${c.reset}\n`);
+    return;
+  }
+
+  const scores = entries.map(e => e.score);
+  const latest = entries[entries.length - 1];
+  const first = entries[0];
+  const delta = latest.score - first.score;
+  const deltaStr = delta > 0 ? `${c.green}+${delta}${c.reset}` : delta < 0 ? `${c.red}${delta}${c.reset}` : '±0';
+
+  console.log(`  ${sparkline(scores)}  ${first.score} → ${c.bold}${latest.score}${c.reset} (${deltaStr}) over ${entries.length} run(s)\n`);
+
+  const recent = entries.slice(-10);
+  for (const e of recent) {
+    const icon = e.status === 'PASS' ? '✅' : e.status === 'WARN' ? '⚠️ ' : '❌';
+    const when = (e.timestamp || '').slice(0, 10);
+    const commit = e.commit ? ` ${c.dim}@${e.commit.slice(0, 7)}${c.reset}` : '';
+    console.log(`  ${icon} ${when}  ${String(e.score).padStart(3)}/100 (${e.grade})${commit}`);
+  }
+  console.log('');
+}
+
+/**
  * Internal scoring — returns data without printing.
  * Used by badge, ci, and other commands that need the score.
  */
@@ -363,8 +414,11 @@ export function runScoreInternal(projectDir, config) {
  *        + Complete, Consistent, Enduring, Available
  *
  * Reference: WHO Technical Report Series, No. 996, 2016, Annex 5
+ *
+ * Exported for `docguard report` — the evidence bundle embeds the same
+ * ALCOA+ table the score display renders, from one computation.
  */
-function computeAlcoaCompliance(projectDir, config, scores) {
+export function computeAlcoaCompliance(projectDir, config, scores) {
   const attributes = [];
 
   // 1. Attributable — Can we trace who wrote/reviewed docs?

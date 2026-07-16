@@ -43,6 +43,11 @@ const COMMON_DOTFILES = new Set([
   '.babelrc', '.browserslistrc', '.stylelintrc',
   '.dockerignore', '.python-version', '.tool-versions', '.ruby-version',
   '.gitkeep', '.keep',
+  // DocGuard's own files — self-explanatory (embedded _comment / schema),
+  // and flagging them creates a warning the moment a team adopts the tool
+  // (e.g. `guard --update-baseline` writing the baseline instantly produced
+  // a DCV001 about the baseline file itself).
+  '.docguard.json', '.docguardignore', '.docguard.baseline.json',
 ]);
 
 // Generated tool artifacts (caches, coverage data, lock-data) that land at the

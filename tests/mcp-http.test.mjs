@@ -65,12 +65,12 @@ describe('docguard mcp --transport http', () => {
     assert.equal(body.result.serverInfo.name, 'docguard');
   });
 
-  it('tools/list returns the five read-only tools', async () => {
+  it('tools/list returns the six read-only tools', async () => {
     const res = await post(rpc('tools/list', {}, 2));
     const body = await res.json();
     const names = body.result.tools.map(t => t.name);
     assert.deepEqual(names.sort(), [
-      'docguard_diagnose', 'docguard_explain', 'docguard_guard', 'docguard_score', 'docguard_verify_claims',
+      'docguard_diagnose', 'docguard_explain', 'docguard_guard', 'docguard_report', 'docguard_score', 'docguard_verify_claims',
     ]);
   });
 
