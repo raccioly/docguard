@@ -344,7 +344,7 @@ function findTestFiles(rootDir, dir, files, config) {
 // inside template literals is a comment marker for the regex but not a real
 // annotation to track). Set config.todoTracking.includeTestFiles = true to override.
 const TEST_FILE_RE = /(^|\/)__tests?__\//;
-const TEST_NAME_RE = /\.(test|spec)\.(ts|tsx|js|jsx|mjs|cjs|py|java|go)$/;
+const TEST_NAME_RE = /(?:\.(?:test|spec)\.[cm]?[jt]sx?|(?:^|\/)test_[^/]*\.py|_test\.(?:py|go)|_spec\.rb|(?:^|\/)[^/]*_test\.rb)$/i;
 
 // The validator's own source file describes the keyword list in its docstring
 // and code. Skipping itself avoids self-referential false positives.

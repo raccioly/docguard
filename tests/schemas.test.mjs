@@ -141,4 +141,23 @@ describe('scanSchemasDeep — honors config.ignore (.docguardignore consolidatio
 
     fs.rmSync(dir, { recursive: true, force: true });
   });
+
+  it('does not crash when OpenAPI schema field.type is undefined', () => {
+    const docTools = {
+      openapi: {
+        schemas: [
+          {
+            name: 'User',
+            fields: [
+              { name: 'id', type: 'string' },
+              { name: 'profile', type: undefined }
+            ]
+          }
+        ]
+      }
+    };
+
+    // Should not crash
+    scanSchemasDeep('/', {}, docTools, {});
+  });
 });

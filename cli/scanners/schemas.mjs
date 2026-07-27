@@ -715,6 +715,7 @@ function extractOpenAPIRelationships(schemas) {
   const relationships = [];
   for (const schema of schemas) {
     for (const field of schema.fields) {
+      if (!field.type) continue;
       if (field.type !== 'string' && field.type !== 'number' && field.type !== 'boolean' && field.type !== 'integer') {
         // Likely a reference to another schema
         const target = schemas.find(s => s.name.toLowerCase() === field.type.toLowerCase());

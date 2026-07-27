@@ -125,4 +125,24 @@ describe('Todo-Tracking Validator', () => {
     assert.equal(todoWarnings.length, 1,
       `Expected 1 TODO warning from # comment, got: ${JSON.stringify(result.warnings)}`);
   });
+
+  it('TODO in Python test file is excluded from source TODOs', () => {
+    writeFileSync(join(tmpDir, 'test_app.py'), `
+      # TODO: fix this test
+      def test_foo(): pass
+    `);
+
+    const result = validateTodoTracking(tmpDir, {});
+    assert.equal(result.warnings.length, 0, "Should not flag TODO in test files");
+  });
+
+  it('TODO in Go test file is excluded from source TODOs', () => {
+    writeFileSync(join(tmpDir, 'app_test.go'), `
+      // TODO: fix this test
+      func TestFoo(t *testing.T) {}
+    `);
+
+    const result = validateTodoTracking(tmpDir, {});
+    assert.equal(result.warnings.length, 0, "Should not flag TODO in test files");
+  });
 });
