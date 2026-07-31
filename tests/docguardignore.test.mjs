@@ -23,6 +23,9 @@ import {
   mergeIgnoreFile,
   shouldIgnore,
   buildIgnoreFilter,
+  isNonProductDir,
+  isNonProductPath,
+  relPosix,
 } from '../cli/shared-ignore.mjs';
 
 function make(files) {
@@ -181,5 +184,25 @@ describe('.docguardignore — trailing-slash directory patterns (B1a regression)
     mergeIgnoreFile(dir, config);
     assert.equal(shouldIgnore('build/output.js', config), true);
     assert.equal(shouldIgnore('src/main.js', config), false);
+  });
+});
+
+describe('isNonProductDir and isNonProductPath', () => {
+  it('isNonProductDir correctly identifies non-product directories', () => {
+    assert.equal(isNonProductDir('tests'), true);
+    assert.equal(isNonProductDir('src'), false);
+    assert.equal(isNonProductDir('tests', { detection: { includeNonProduct: true } }), false);
+  });
+
+  it('isNonProductPath correctly identifies non-product paths', () => {
+    assert.equal(isNonProductPath('src/utils/tests/foo.js'), true);
+    assert.equal(isNonProductPath('src/utils/foo.js'), false);
+    assert.equal(isNonProductPath('src/utils/tests/foo.js', { detection: { includeNonProduct: true } }), false);
+  });
+});
+
+describe('relPosix', () => {
+  it('relPosix correctly returns relative POSIX paths', () => {
+    assert.equal(relPosix('/home/user/project', '/home/user/project/src/index.js'), 'src/index.js');
   });
 });
