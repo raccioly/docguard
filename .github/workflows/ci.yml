@@ -24,7 +24,7 @@ jobs:
         with:
           fetch-depth: 0 # Full git history for freshness validator
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node-version }}
 
@@ -130,7 +130,7 @@ jobs:
     needs: test
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 20
           registry-url: 'https://registry.npmjs.org'
