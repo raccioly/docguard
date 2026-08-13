@@ -3,7 +3,7 @@
  * Creates git hooks that run guard/score before commits.
  */
 
-import { existsSync, writeFileSync, mkdirSync, chmodSync, readFileSync, unlinkSync, readdirSync } from 'node:fs';
+import { existsSync, writeFileSync, mkdirSync, chmodSync, readFileSync, unlinkSync } from 'node:fs';
 
 // v0.16-P3: managed-block markers. Letting users extend the hook with their
 // own commands (data-file guards, lint checks, etc.) without us clobbering
@@ -57,6 +57,7 @@ function spliceManagedBlock(existing, newBody) {
 import { resolve, relative, basename } from 'node:path';
 import { c } from '../shared.mjs';
 import { getHooksDir } from '../shared-git.mjs';
+import { listCanonicalDocs } from '../shared-ignore.mjs';
 
 const HOOKS = {
   'pre-commit': {
@@ -488,14 +489,11 @@ function docsReferencingFile(projectDir, base) {
       if (readFileSync(full, 'utf-8').includes(base)) docs.push(name);
     } catch { /* unreadable */ }
   };
-  const dir = resolve(projectDir, 'docs-canonical');
-  if (existsSync(dir)) {
-    try {
-      for (const f of readdirSync(dir)) {
-        if (f.endsWith('.md')) check(f, resolve(dir, f));
-      }
-    } catch { /* unreadable dir */ }
-  }
+  // Recursive — a nested doc mentioning the edited file must still trigger
+  // the post-commit nudge. `name` stays the bare basename to match this
+  // function's pre-existing flat-tree display (the nudge message lists
+  // "ARCHITECTURE.md, SECURITY.md", not full nested paths).
+  for (const doc of listCanonicalDocs(projectDir)) check(basename(doc.rel), doc.abs);
   for (const a of NUDGE_AGENT_FILES) {
     const p = resolve(projectDir, a);
     if (existsSync(p)) check(a, p);

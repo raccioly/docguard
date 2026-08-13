@@ -20,9 +20,10 @@
  * All findings confidence:'low' / soft — a nudge to right-size the doc.
  */
 
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { basename } from 'node:path';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
+import { listCanonicalDocs } from '../shared-ignore.mjs';
 
 const HEADING = /^(#{1,6})\s+(.*)$/;
 // A heading that documents an API/code unit — NOT a prose section heading.
@@ -94,18 +95,20 @@ export function validateApiDocSmells(projectDir, config = {}) {
   const lazyMax = Number.isInteger(cfg.lazyMaxWords) ? cfg.lazyMaxWords : 6;
   const bloatedMin = Number.isInteger(cfg.bloatedMinWords) ? cfg.bloatedMinWords : 300;
 
-  const docsDir = resolve(projectDir, 'docs-canonical');
-  if (!existsSync(docsDir)) {
+  const docFiles = listCanonicalDocs(projectDir); // recursive
+  if (docFiles.length === 0) {
     return resultFromFindings([], { passed: 0, total: 0, applicable: false });
   }
-  let docFiles = [];
-  try { docFiles = readdirSync(docsDir).filter(f => f.endsWith('.md')); } catch { /* skip */ }
 
   const findings = [];
   let unitCount = 0;
-  for (const f of docFiles) {
+  for (const doc of docFiles) {
     let content;
-    try { content = readFileSync(resolve(docsDir, f), 'utf-8'); } catch { continue; }
+    try { content = readFileSync(doc.abs, 'utf-8'); } catch { continue; }
+    // `f` stays the bare basename — matches this validator's pre-existing
+    // flat-tree message/location format exactly (both were already bare
+    // filenames, not project-relative paths, before this fix).
+    const f = basename(doc.rel);
     const units = extractUnits(content);
     for (const u of units) {
       unitCount++;

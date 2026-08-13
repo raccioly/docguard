@@ -16,7 +16,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, relative, basename, extname } from 'node:path';
 import { TRACE_MAP, TEST_PATTERNS, isTraceableSource } from '../shared-trace-patterns.mjs';
-import { walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
+import { walkFiles as sharedWalkFiles, listCanonicalDocs } from '../shared-ignore.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { tokenize } from '../shared-diff.mjs';
 import { rankBySimilarity } from '../shared-ir.mjs';
@@ -231,21 +231,25 @@ export function validateTraceability(projectDir, config) {
   }
 
   // ── Detect orphaned files (exist but not required) ──
-  try {
-    const existingDocs = readdirSync(docsDir).filter(f => f.endsWith('.md'));
-    for (const docFile of existingDocs) {
-      if (!requiredDocs.has(docFile) && TRACE_MAP[docFile]) {
-        findings.push(mkFinding({
-          code: 'TRC003',
-          validator: 'traceability',
-          severity: 'warn',
-          message: `${docFile} — file exists in docs-canonical/ but is not in your requiredFiles config. Consider deleting it or adding it to .docguard.json requiredFiles.canonical`,
-          location: `docs-canonical/${docFile}`,
-          suggestion: { kind: 'review', text: 'Delete the doc, or add it to requiredFiles.canonical in .docguard.json so it gets validated' },
-        }));
-      }
+  // Recursive — a nested stray doc must be visible too. TRACE_MAP/requiredDocs
+  // matching stays keyed by bare basename (TRACE_MAP's own keys are
+  // conventional top-level names); `location` uses the real path so the
+  // finding points at the actual file instead of a fabricated flat one — for
+  // a flat tree `doc.rel` already equals the old `docs-canonical/${docFile}`
+  // template exactly, so this is a no-op on the flat case.
+  for (const doc of listCanonicalDocs(projectDir)) {
+    const docFile = basename(doc.rel);
+    if (!requiredDocs.has(docFile) && TRACE_MAP[docFile]) {
+      findings.push(mkFinding({
+        code: 'TRC003',
+        validator: 'traceability',
+        severity: 'warn',
+        message: `${docFile} — file exists in docs-canonical/ but is not in your requiredFiles config. Consider deleting it or adding it to .docguard.json requiredFiles.canonical`,
+        location: doc.rel,
+        suggestion: { kind: 'review', text: 'Delete the doc, or add it to requiredFiles.canonical in .docguard.json so it gets validated' },
+      }));
     }
-  } catch { /* ignore */ }
+  }
 
   // ── Part 2: Requirement ID Traceability (V-Model) ──
   const reqResult = validateRequirementTraceability(projectDir, config, projectFiles);
@@ -427,17 +431,10 @@ function scanTestFilesForReferences(projectDir, projectFiles, patterns) {
 function getRequirementDocPaths(projectDir, config) {
   const paths = [];
 
-  // docs-canonical/ directory
-  const docsDir = resolve(projectDir, 'docs-canonical');
-  if (existsSync(docsDir)) {
-    try {
-      for (const f of readdirSync(docsDir)) {
-        if (extname(f).toLowerCase() === '.md') {
-          paths.push(join(docsDir, f));
-        }
-      }
-    } catch { /* ignore */ }
-  }
+  // docs-canonical/ directory — recursive. Consumer re-derives the display
+  // path via relative(projectDir, docPath), so nested docs already report
+  // their real path with no further change needed there.
+  for (const doc of listCanonicalDocs(projectDir)) paths.push(doc.abs);
 
   // Root-level docs
   const rootDocs = ['REQUIREMENTS.md', 'spec.md', 'README.md'];

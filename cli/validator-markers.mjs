@@ -20,8 +20,9 @@
  * Zero NPM dependencies — pure Node.js built-ins.
  */
 
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
-import { resolve, join } from 'node:path';
+import { existsSync, readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { listCanonicalDocs } from './shared-ignore.mjs';
 
 // `<!-- docguard:validator <key> n/a [— reason] -->`
 // Separator before the reason may be —, :, or one-or-more hyphens. Reason
@@ -30,15 +31,10 @@ const MARKER_RE = /<!--\s*docguard:validator\s+([A-Za-z0-9_-]+)\s+n\/a\b\s*(?:[�
 
 /** Files where a validator marker is honored — the docs humans actually read. */
 function markerSourceFiles(projectDir) {
-  const files = [];
-  const canonicalDir = resolve(projectDir, 'docs-canonical');
-  if (existsSync(canonicalDir)) {
-    try {
-      for (const f of readdirSync(canonicalDir)) {
-        if (f.toLowerCase().endsWith('.md')) files.push(join(canonicalDir, f));
-      }
-    } catch { /* ignore */ }
-  }
+  // Recursive: a marker declared in docs-canonical/01-architecture/FOO.md must
+  // be honored too — a flat read silently dropped the suppression and the
+  // validator ran anyway, which reads as "DocGuard ignored my n/a".
+  const files = listCanonicalDocs(projectDir).map(d => d.abs);
   for (const root of ['AGENTS.md', 'README.md', 'CLAUDE.md']) {
     const p = resolve(projectDir, root);
     if (existsSync(p)) files.push(p);

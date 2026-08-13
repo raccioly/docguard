@@ -10,6 +10,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, extname, basename, relative, dirname } from 'node:path';
 import { c } from '../shared.mjs';
 import { detectSpecKit } from '../scanners/speckit.mjs';
+import { listCanonicalDocs } from '../shared-ignore.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build', 'coverage',
@@ -74,11 +75,11 @@ export function runTraceReverse(projectDir, config, flags) {
   const stem = base.replace(/\.[^.]+$/, '');
 
   const matches = []; // { doc, line, content, kind }
-  for (const f of readdirSync(docsDir)) {
-    if (!f.endsWith('.md')) continue;
-    const docPath = resolve(docsDir, f);
+  // Recursive — a nested doc mentioning this file must still be found, or
+  // `trace --reverse` falsely reports "no canonical doc references this".
+  for (const doc of listCanonicalDocs(projectDir)) {
     let content;
-    try { content = readFileSync(docPath, 'utf-8'); } catch { continue; }
+    try { content = readFileSync(doc.abs, 'utf-8'); } catch { continue; }
     const lines = content.split('\n');
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
@@ -87,7 +88,7 @@ export function runTraceReverse(projectDir, config, flags) {
       else if (line.includes(base)) kind = 'basename';
       else if (new RegExp(`\`${escapeRegex(stem)}\``).test(line)) kind = 'module';
       if (kind) {
-        matches.push({ doc: f, line: i + 1, content: line.trim(), kind });
+        matches.push({ doc: doc.rel, line: i + 1, content: line.trim(), kind });
       }
     }
   }
@@ -155,13 +156,11 @@ export function runTrace(projectDir, config, flags) {
   );
 
   // ── 2. Inventory canonical docs ──
+  // NOTE: currently unused downstream (outputText ignores its 3rd param) —
+  // kept for API stability and future use. Recursive so it isn't ANOTHER
+  // silent flat-read landmine if something starts consuming it.
   const docsDir = resolve(projectDir, 'docs-canonical');
-  const canonicalDocs = [];
-  if (existsSync(docsDir)) {
-    for (const f of readdirSync(docsDir)) {
-      if (f.endsWith('.md')) canonicalDocs.push(f);
-    }
-  }
+  const canonicalDocs = listCanonicalDocs(projectDir).map(d => d.rel);
 
   // ── 3. Scan project files ──
   const projectFiles = [];

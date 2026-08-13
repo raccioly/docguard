@@ -351,6 +351,59 @@ export function walkFiles(dir, callback, opts = {}) {
 }
 
 /**
+ * Enumerate the project's canonical docs — RECURSIVELY.
+ *
+ * Five call sites used to do this by hand with a flat
+ * `readdirSync('docs-canonical').filter(f => f.endsWith('.md'))`. That works
+ * only for a flat tree; a project that groups its canonical docs in subfolders
+ * (`docs-canonical/01-architecture/MODULE-MAP.md` — a common convention once a
+ * repo has more than a handful) was invisible to ALL of them. The failure was
+ * silent and pointed the wrong way: docs-sync flagged every service as
+ * undocumented while the docs sat right there, `docguard:validator … n/a`
+ * markers in nested docs were ignored, and readability/freshness scored an
+ * empty set. This is the single shared implementation — same rule as
+ * `walkFiles`: exactly one correct way to enumerate, so the answers can't drift.
+ *
+ * Contract:
+ *   - Recursive; delegates traversal to `walkFiles`, so `ignoreDirs` and the
+ *     skip-dot-directories rule apply. A dot-FILE ending in `.md` is kept, to
+ *     preserve the flat behavior these call sites had.
+ *   - `.md` matching is case-INSENSITIVE. Three of the five original call sites
+ *     lowercased and two did not; one tool must not hold two opinions about
+ *     what a canonical doc is. The inclusive reading wins.
+ *   - Sorted by relative path, so output is deterministic across platforms.
+ *   - NEVER throws. An unreadable subtree yields the files that were readable.
+ *
+ * @param {string} projectDir - Project root (absolute)
+ * @param {{dirName?: string, isIgnored?: ((relPath: string) => boolean) | null}} [opts]
+ *   `isIgnored` — optional `.docguardignore` predicate from the caller (see
+ *   `loadIgnorePatterns` in shared.mjs). Passed in rather than imported so this
+ *   module stays a leaf with no local imports.
+ * @returns {Array<{abs: string, rel: string}>} `rel` is project-relative POSIX
+ */
+export function listCanonicalDocs(projectDir, opts = {}) {
+  const { dirName = 'docs-canonical', isIgnored = null } = opts;
+  const root = resolvePath(projectDir, dirName);
+  if (!existsSync(root)) return [];
+
+  const isMarkdown = (name) => name.toLowerCase().endsWith('.md');
+  const out = [];
+  walkFiles(root, (abs) => {
+    if (!isMarkdown(abs)) return;
+    const rel = relPosix(projectDir, abs);
+    if (isIgnored && isIgnored(rel)) return;
+    out.push({ abs, rel });
+  }, {
+    // Keep dot-FILES that are markdown (old flat behavior included them);
+    // dot-DIRECTORIES still get skipped, since the predicate only matches `.md`.
+    keepDot: isMarkdown,
+  });
+
+  out.sort((a, b) => (a.rel < b.rel ? -1 : a.rel > b.rel ? 1 : 0));
+  return out;
+}
+
+/**
  * Count files under `projectDir` matching an anchored glob (project-relative).
  * The code-truth side of `config.collections` (metrics-consistency).
  *

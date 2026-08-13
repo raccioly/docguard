@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.34.0] - 2026-08-13
+
+### Fixed
+
+- **Canonical docs in subfolders were invisible across 19 call sites (`listCanonicalDocs`).** Every consumer of `docs-canonical/` enumerated it by hand with a flat `readdirSync(...).filter(f => f.endsWith('.md'))`, so a project that groups its canonical docs — `docs-canonical/01-architecture/MODULE-MAP.md`, a common convention past a handful of files — was scanned as if those docs did not exist. Replaced all 19 with one shared recursive enumerator (`listCanonicalDocs` in `shared-ignore.mjs`, built on the existing `walkFiles`), which honors `.docguardignore` per-doc against the full relative path, skips dot-directories while keeping dot-markdown files, and returns sorted project-relative POSIX paths.
+
+  First pass (5 sites) fixed the worst offenders: **docs-sync** reported services as undocumented while the documentation sat right there (an *unfixable* DSY002 — editing the nested doc could never clear it); `docguard:validator … n/a` **markers** in nested docs were dropped, so a validator declared N/A ran anyway; **semantic-claims** never scanned nested docs for unverified claims; **agent-readability** scored an empty set; **ALCOA** reported "all docs updated within 30 days" against zero documents, so a stale nested tree scored green.
+
+  Second pass (14 more sites, across `impact`, `init`, `llms`, `memory`, `trace`, `hooks`, and the `api-doc-smells`/`cross-reference`/`diff-suspicion`/`doc-quality`/`docs-coverage`/`generated-staleness`/`reference-existence`/`traceability` validators) closed the rest. The standout: **generated-staleness**'s cheap pre-flight check missed a nested `docguard:section source=code` marker and concluded "nothing to do" — the *entire validator* silently never ran, disabling drift detection outright rather than just under-reporting it. Also fixed: `trace --reverse <file>` falsely reporting no canonical doc references a file documented only in a nested doc; `reference-existence` never indexing symbol references made from nested docs; `init`'s re-init detection treating an already-initialized nested-docs project as first-run; a post-commit hook nudge that couldn't find docs referencing an edited file; and orphaned-doc detection in `traceability` that was blind to strays outside the top level.
+
+  Two behavior notes: `.md` matching is now uniformly case-insensitive (some call sites lowercased, some didn't — one tool must not hold two opinions about what a canonical doc is), and projects with nested canonical docs will see freshness, readability, and claim counts move as those documents become visible for the first time. Where a site's message or `location` text is user-visible (validator findings, CLI output), the fix preserves the exact flat-tree wording — only visibility into nested docs changed, not the format of existing output. Verified against DocGuard's own repo (flat `docs-canonical/`, so a correct fix must produce identical output): `guard`/`score` JSON byte-identical apart from timings across both passes (282/291, 0 errors, 14 warnings). 18 regression tests across `tests/canonical-docs-nested.test.mjs` and `tests/canonical-docs-nested-phase2.test.mjs`; 9 of them fail against the previous release, proving they actually catch the bug.
+
 ## [0.33.1] - 2026-07-16
 
 ### Added

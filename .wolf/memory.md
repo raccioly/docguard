@@ -1117,3 +1117,93 @@
 | 21:51 | Edited CHANGELOG.md | 3→5 lines | ~252 |
 | 21:52 | Full pre-release audit: 12 review findings fixed (baseline counts H2, ci READ_ONLY H1, suppression disclosure H3, junit crash path, ci effective/threshold status, hash scope) + market research cited in README/PHILOSOPHY + dogfooding (ci.yml smokes all new cmds, FAQ, config docs, What's-New de-rotted) | cli+tests+docs | 1018/1018 green, taxes_helper re-validated | ~25000 |
 | 21:52 | Session end: 112 writes across 29 files (shared-git.mjs, score.mjs, report.mjs, docguard.mjs, report.test.mjs) | 9 reads | ~51384 tok |
+
+## Session: 2026-08-12 19:59
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-08-12 19:59
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 20:03 | Created ../../../../private/tmp/claude-501/-Users-ricardoaccioly-Repo-claude-canonical-spec-kit/25ac0636-5765-49fe-a808-dd97dc825b30/scratchpad/probe.mjs | — | ~755 |
+| 20:05 | Edited cli/shared-ignore.mjs | added 3 condition(s) | ~718 |
+| 20:05 | Edited cli/validators/docs-sync.mjs | 4→4 lines | ~79 |
+| 20:05 | Edited cli/validators/docs-sync.mjs | 13→11 lines | ~116 |
+| 20:05 | Edited cli/validator-markers.mjs | added 1 import(s) | ~39 |
+| 20:05 | Edited cli/validator-markers.mjs | 9→4 lines | ~77 |
+| 20:05 | Edited cli/scanners/semantic-claims.mjs | reduced (-7 lines) | ~96 |
+| 20:06 | Edited cli/scanners/semantic-claims.mjs | added 1 import(s) | ~53 |
+| 20:06 | Edited cli/scanners/agent-readability.mjs | added 1 import(s) | ~56 |
+| 20:06 | Edited cli/scanners/agent-readability.mjs | modified canonicalDocs() | ~136 |
+| 20:06 | Edited cli/commands/score.mjs | modified for() | ~137 |
+| 20:07 | Edited cli/commands/score.mjs | 3→4 lines | ~68 |
+| 20:07 | Edited cli/commands/score.mjs | modified for() | ~86 |
+| 20:07 | Edited cli/commands/score.mjs | 7→2 lines | ~35 |
+| 20:07 | Edited cli/commands/score.mjs | added 1 import(s) | ~33 |
+| 20:08 | Created ../../../../private/tmp/claude-501/-Users-ricardoaccioly-Repo-claude-canonical-spec-kit/25ac0636-5765-49fe-a808-dd97dc825b30/scratchpad/probe-mixed.mjs | — | ~523 |
+| 20:10 | Created tests/canonical-docs-nested.test.mjs | — | ~1919 |
+| 20:10 | Edited tests/canonical-docs-nested.test.mjs | expanded (+8 lines) | ~257 |
+| 20:10 | Edited tests/canonical-docs-nested.test.mjs | inline fix | ~23 |
+| 20:13 | Edited CHANGELOG.md | 3→7 lines | ~519 |
+| 20:14 | canonical-docs recursion fix (5 of 15 sites) + 12 regression tests | cli/shared-ignore.mjs, cli/validators/docs-sync.mjs, cli/validator-markers.mjs, cli/scanners/{semantic-claims,agent-readability}.mjs, cli/commands/score.mjs, tests/canonical-docs-nested.test.mjs, CHANGELOG.md | 1030/1030 tests pass; self-scan byte-identical (282/291) | ~45k |
+| 20:15 | Session end: 20 writes across 10 files (probe.mjs, shared-ignore.mjs, docs-sync.mjs, validator-markers.mjs, semantic-claims.mjs) | 4 reads | ~38909 tok |
+
+## Session: 2026-08-13 10:28
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 14:46 | Edited cli/commands/impact.mjs | added 1 import(s) | ~104 |
+| 14:46 | Edited cli/commands/impact.mjs | 14→13 lines | ~200 |
+| 14:46 | Edited cli/commands/impact.mjs | 8→8 lines | ~101 |
+| 14:46 | Edited cli/commands/init.mjs | added 1 import(s) | ~52 |
+| 14:46 | Edited cli/commands/init.mjs | 8→4 lines | ~78 |
+| 14:46 | Edited cli/commands/llms.mjs | added 1 import(s) | ~60 |
+| 14:47 | Edited cli/commands/llms.mjs | reduced (-6 lines) | ~94 |
+| 14:47 | Edited cli/commands/llms.mjs | 10→5 lines | ~67 |
+| 14:47 | Edited cli/commands/llms.mjs | inline fix | ~18 |
+| 14:47 | Edited cli/commands/memory.mjs | added 1 import(s) | ~56 |
+| 14:47 | Edited cli/commands/memory.mjs | modified if() | ~130 |
+| 14:47 | Edited cli/commands/trace.mjs | added 1 import(s) | ~40 |
+| 14:47 | Edited cli/commands/trace.mjs | modified for() | ~211 |
+| 14:47 | Edited cli/commands/trace.mjs | 8→5 lines | ~87 |
+| 14:48 | Edited cli/commands/trace.mjs | 5→6 lines | ~102 |
+| 14:48 | Edited cli/commands/hooks.mjs | added 1 import(s) | ~53 |
+| 14:48 | Edited cli/commands/hooks.mjs | modified docsReferencingFile() | ~163 |
+| 14:48 | Edited cli/commands/hooks.mjs | inline fix | ~27 |
+| 14:48 | Edited cli/validators/api-doc-smells.mjs | added 1 import(s) | ~57 |
+| 14:48 | Edited cli/validators/api-doc-smells.mjs | modified if() | ~433 |
+| 14:49 | Edited cli/validators/api-doc-smells.mjs | 2→2 lines | ~21 |
+| 14:49 | Edited cli/validators/api-doc-smells.mjs | 3→2 lines | ~28 |
+| 14:49 | Edited cli/validators/cross-reference.mjs | inline fix | ~19 |
+| 14:49 | Edited cli/validators/cross-reference.mjs | modified collectCanonicalDocs() | ~32 |
+| 14:49 | Edited cli/validators/cross-reference.mjs | inline fix | ~14 |
+| 14:49 | Edited cli/validators/cross-reference.mjs | inline fix | ~18 |
+| 14:49 | Edited cli/validators/diff-suspicion.mjs | added 1 import(s) | ~98 |
+| 14:49 | Edited cli/validators/diff-suspicion.mjs | 2→2 lines | ~27 |
+| 14:49 | Edited cli/validators/diff-suspicion.mjs | reduced (-7 lines) | ~23 |
+| 14:50 | Edited cli/validators/doc-quality.mjs | added 1 import(s) | ~66 |
+| 14:50 | Edited cli/validators/doc-quality.mjs | modified getCanonicalDocs() | ~50 |
+| 14:50 | Edited cli/validators/doc-quality.mjs | modified getCanonicalDocs() | ~150 |
+| 14:50 | Edited cli/validators/doc-quality.mjs | inline fix | ~19 |
+| 14:51 | Edited cli/commands/hooks.mjs | 3→5 lines | ~98 |
+| 14:52 | Edited cli/validators/api-doc-smells.mjs | modified for() | ~444 |
+| 14:52 | Edited cli/validators/api-doc-smells.mjs | added 1 import(s) | ~54 |
+| 14:52 | Edited cli/validators/diff-suspicion.mjs | 1→3 lines | ~63 |
+| 14:53 | Edited cli/validators/docs-coverage.mjs | inline fix | ~27 |
+| 14:53 | Edited cli/validators/docs-coverage.mjs | reduced (-7 lines) | ~24 |
+| 14:53 | Edited cli/validators/generated-staleness.mjs | added 1 import(s) | ~64 |
+| 14:53 | Edited cli/validators/generated-staleness.mjs | modified _quickScan() | ~440 |
+| 14:54 | Edited cli/validators/reference-existence.mjs | inline fix | ~23 |
+| 14:54 | Edited cli/validators/reference-existence.mjs | 6→3 lines | ~59 |
+| 14:54 | Edited cli/validators/traceability.mjs | inline fix | ~24 |
+| 14:54 | Edited cli/validators/traceability.mjs | 16→20 lines | ~303 |
+| 14:54 | Edited cli/validators/traceability.mjs | reduced (-7 lines) | ~75 |
+| 14:56 | Created ../../../../private/tmp/claude-501/-Users-ricardoaccioly-Repo-claude-canonical-spec-kit/25ac0636-5765-49fe-a808-dd97dc825b30/scratchpad/probe-phase2.mjs | — | ~1015 |
+| 14:57 | Created tests/canonical-docs-nested-phase2.test.mjs | — | ~1368 |
+| 14:57 | Edited tests/canonical-docs-nested-phase2.test.mjs | expanded (+8 lines) | ~288 |
+| 14:59 | Edited CHANGELOG.md | modified repo() | ~858 |
+| 14:59 | Edited package.json | inline fix | ~7 |
+| 14:59 | Edited CHANGELOG.md | 3→5 lines | ~14 |
+| 15:00 | phase 2: fixed remaining 14 flat-readdirSync sites (19 total across both passes) + 6 tests + v0.34.0 bump | cli/{commands,validators}/*.mjs (14 files), CHANGELOG.md, package.json, tests/canonical-docs-nested-phase2.test.mjs | 1036/1036 pass; self-scan byte-identical; 4/6 new tests fail on v0.33.1 | ~85k |

@@ -12,6 +12,7 @@ import { runGuardInternal } from './guard.mjs';
 import { extractSemanticClaims } from '../scanners/semantic-claims.mjs';
 import { assessAgentReadability } from '../scanners/agent-readability.mjs';
 import { loadHistory, sparkline } from '../writers/history.mjs';
+import { listCanonicalDocs } from '../shared-ignore.mjs';
 
 /**
  * Detect whether the project configures a test runner (the "Check 3" of the
@@ -424,16 +425,16 @@ export function computeAlcoaCompliance(projectDir, config, scores) {
   // 1. Attributable — Can we trace who wrote/reviewed docs?
   const hasGit = existsSync(resolve(projectDir, '.git'));
   const docsDir = resolve(projectDir, 'docs-canonical');
+  // Recursive — a nested canonical tree is still the canonical tree. A flat
+  // read scored ALCOA against an empty doc set on those projects.
+  const canonicalDocs = listCanonicalDocs(projectDir);
   let hasReviewedMeta = false;
-  if (existsSync(docsDir)) {
+  for (const doc of canonicalDocs) {
     try {
-      const docs = readdirSync(docsDir).filter(f => f.endsWith('.md'));
-      for (const doc of docs) {
-        const content = readFileSync(join(docsDir, doc), 'utf-8');
-        if (content.includes('docguard:last-reviewed') || content.includes('last-reviewed')) {
-          hasReviewedMeta = true;
-          break;
-        }
+      const content = readFileSync(doc.abs, 'utf-8');
+      if (content.includes('docguard:last-reviewed') || content.includes('last-reviewed')) {
+        hasReviewedMeta = true;
+        break;
       }
     } catch { /* ignore */ }
   }
@@ -457,16 +458,13 @@ export function computeAlcoaCompliance(projectDir, config, scores) {
 
   // 3. Contemporaneous — Are docs kept current?
   let freshnessMet = true;
-  if (existsSync(docsDir)) {
+  for (const doc of canonicalDocs) {
     try {
-      const docs = readdirSync(docsDir).filter(f => f.endsWith('.md'));
-      for (const doc of docs) {
-        const stat_ = statSync(join(docsDir, doc));
-        const daysSinceModified = (Date.now() - stat_.mtimeMs) / (1000 * 60 * 60 * 24);
-        if (daysSinceModified > 30) {
-          freshnessMet = false;
-          break;
-        }
+      const stat_ = statSync(doc.abs);
+      const daysSinceModified = (Date.now() - stat_.mtimeMs) / (1000 * 60 * 60 * 24);
+      if (daysSinceModified > 30) {
+        freshnessMet = false;
+        break;
       }
     } catch { /* ignore */ }
   }
@@ -1079,13 +1077,8 @@ function getSuggestion(category, score, details) {
  */
 function estimateDocTax(projectDir, config, scores) {
   // Count tracked docs
-  const canonicalDir = resolve(projectDir, 'docs-canonical');
-  let docCount = 0;
-  if (existsSync(canonicalDir)) {
-    try {
-      docCount = readdirSync(canonicalDir).filter(f => f.endsWith('.md')).length;
-    } catch { /* ignore */ }
-  }
+  // Recursive — nested canonical docs cost maintenance too, so they count.
+  let docCount = listCanonicalDocs(projectDir).length;
   // Add root tracking files
   if (existsSync(resolve(projectDir, 'CHANGELOG.md'))) docCount++;
   if (existsSync(resolve(projectDir, 'DRIFT-LOG.md'))) docCount++;

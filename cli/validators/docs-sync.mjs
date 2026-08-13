@@ -10,7 +10,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, extname, basename } from 'node:path';
 import { resolveSourceRoots } from '../shared-source.mjs';
-import { relPosix, walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
+import { relPosix, walkFiles as sharedWalkFiles, listCanonicalDocs } from '../shared-ignore.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 
 const IGNORE_DIRS = new Set([
@@ -71,15 +71,13 @@ export function validateDocsSync(projectDir, config) {
   let passed = 0;
   let total = 0;
 
-  // Load all canonical doc content for checking
-  const canonicalDir = resolve(projectDir, 'docs-canonical');
+  // Load all canonical doc content for checking. Recursive — docs grouped in
+  // subfolders (docs-canonical/01-architecture/…) count as canonical too; a
+  // flat read made every service they documented look undocumented.
   let canonicalContent = '';
-  if (existsSync(canonicalDir)) {
+  for (const doc of listCanonicalDocs(projectDir)) {
     try {
-      const files = readdirSync(canonicalDir).filter(f => f.endsWith('.md'));
-      for (const f of files) {
-        canonicalContent += readFileSync(resolve(canonicalDir, f), 'utf-8') + '\n';
-      }
+      canonicalContent += readFileSync(doc.abs, 'utf-8') + '\n';
     } catch {
       // Skip if can't read
     }

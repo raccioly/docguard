@@ -18,11 +18,12 @@
  * or no code change carries removed tokens, so it stays silent off-CI.
  */
 
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve, basename } from 'node:path';
 import { isGitRepo, getDiffText } from '../shared-git.mjs';
 import { parseUnifiedDiff, removedTokens, tokenize, tokenOverlap } from '../shared-diff.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
+import { listCanonicalDocs } from '../shared-ignore.mjs';
 
 const CODE_EXTENSIONS = /\.(ts|tsx|js|jsx|mjs|cjs|py|go|rs|java|kt|rb|php|cs|swift|scala|dart)$/;
 
@@ -64,14 +65,9 @@ function indexDocs(projectDir) {
       docs.set(name, { lines: content.split('\n'), tokens: tokenize(content) });
     } catch { /* skip unreadable */ }
   };
-  const docsDir = resolve(projectDir, 'docs-canonical');
-  if (existsSync(docsDir)) {
-    try {
-      for (const f of readdirSync(docsDir)) {
-        if (f.endsWith('.md')) add(f, resolve(docsDir, f));
-      }
-    } catch { /* skip */ }
-  }
+  // Recursive. Keyed by bare basename — matches this validator's pre-existing
+  // flat-tree DSP001 message format ("ARCHITECTURE.md describes...").
+  for (const doc of listCanonicalDocs(projectDir)) add(basename(doc.rel), doc.abs);
   // Agent-instruction files are documentation too — they routinely name code.
   for (const agent of ['AGENTS.md', 'CLAUDE.md', 'GEMINI.md']) {
     const p = resolve(projectDir, agent);

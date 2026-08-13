@@ -40,13 +40,14 @@
  * @req SC-S11-009 — docs referencing an importer of a changed file are flagged as indirect
  */
 
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve, basename } from 'node:path';
 import { execFileSync } from 'node:child_process';
 
 import { c } from '../shared.mjs';
 import { changedFilesSince, isGitRepo } from '../shared-git.mjs';
 import { buildImportGraph } from '../validators/architecture.mjs';
+import { listCanonicalDocs } from '../shared-ignore.mjs';
 
 /**
  * File extensions we consider "code" for the purposes of impact analysis.
@@ -254,19 +255,18 @@ export function runImpact(projectDir, config, flags) {
 
   // Index canonical docs once, PLUS root agent-instruction files (they name
   // code and other docs, so they belong in both code→doc and doc→doc analysis).
-  const docsDir = resolve(projectDir, 'docs-canonical');
-  const docsIndex = new Map(); // docName → lines[]
+  const docsIndex = new Map(); // docName (basename) → lines[]
   const agentDocs = new Set(); // which indexed docs are agent-instruction files
-  if (existsSync(docsDir)) {
+  // Recursive — a nested canonical doc must be indexed too. Keyed by basename
+  // (not full path) to match this file's existing basename-based lookups
+  // (`docsIndex.has(basename(f))`, `indexBasenames`); a doc in a subfolder
+  // with a name clashing an already-indexed doc will overwrite it in the Map,
+  // same pre-existing behavior as a canonical doc clashing an agent doc name.
+  for (const doc of listCanonicalDocs(projectDir)) {
     try {
-      for (const f of readdirSync(docsDir)) {
-        if (!f.endsWith('.md')) continue;
-        try {
-          const content = readFileSync(resolve(docsDir, f), 'utf-8');
-          docsIndex.set(f, content.split('\n'));
-        } catch { /* skip unreadable */ }
-      }
-    } catch { /* skip if dir unreadable */ }
+      const content = readFileSync(doc.abs, 'utf-8');
+      docsIndex.set(basename(doc.rel), content.split('\n'));
+    } catch { /* skip unreadable */ }
   }
   for (const a of AGENT_FILES) {
     const p = resolve(projectDir, a);

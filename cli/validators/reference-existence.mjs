@@ -41,7 +41,7 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { resolve, extname, relative, basename } from 'node:path';
 import { isGitRepo, lastCommitHash, symbolExistsAtRev } from '../shared-git.mjs';
-import { walkFiles, isNonProductPath } from '../shared-ignore.mjs';
+import { walkFiles, isNonProductPath, listCanonicalDocs } from '../shared-ignore.mjs';
 import { readScannable } from '../shared-source.mjs';
 import { resolveDocDirs } from '../shared.mjs';
 import { mkFinding, resultFromFindings, lineSuppresses } from '../findings.mjs';
@@ -170,12 +170,9 @@ function indexDocs(projectDir) {
       docs.push({ name, path: full, refs: extractRefs(content) });
     } catch { /* skip */ }
   };
-  const docsDir = resolve(projectDir, 'docs-canonical');
-  if (existsSync(docsDir)) {
-    try {
-      for (const f of readdirSync(docsDir)) if (f.endsWith('.md')) push(f, resolve(docsDir, f));
-    } catch { /* skip */ }
-  }
+  // Recursive. `name` stays the bare basename — matches this validator's
+  // pre-existing flat-tree message/location format exactly.
+  for (const doc of listCanonicalDocs(projectDir)) push(basename(doc.rel), doc.abs);
   for (const agent of ['AGENTS.md', 'CLAUDE.md', 'GEMINI.md']) {
     const p = resolve(projectDir, agent);
     if (existsSync(p)) push(agent, p);

@@ -21,7 +21,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, relative, basename, extname } from 'node:path';
 import { resolveSourceRoots } from '../shared-source.mjs';
-import { shouldIgnore, walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
+import { shouldIgnore, walkFiles as sharedWalkFiles, listCanonicalDocs } from '../shared-ignore.mjs';
 import { detectIaC, hasInfrastructureHeading, buildIaCWarning } from '../scanners/iac.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 
@@ -508,14 +508,7 @@ function collectDocContent(projectDir) {
     if (existsSync(p)) docPaths.push(p);
   }
 
-  const canonDir = resolve(projectDir, 'docs-canonical');
-  if (existsSync(canonDir)) {
-    try {
-      for (const entry of readdirSync(canonDir)) {
-        if (entry.endsWith('.md')) docPaths.push(resolve(canonDir, entry));
-      }
-    } catch { /* skip */ }
-  }
+  for (const doc of listCanonicalDocs(projectDir)) docPaths.push(doc.abs); // recursive
 
   const extDir = resolve(projectDir, 'extensions');
   if (existsSync(extDir)) {

@@ -21,9 +21,10 @@
  * Zero NPM dependencies. Pure orchestration of existing diff helpers.
  */
 
-import { existsSync, readFileSync, readdirSync, mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { c } from '../shared.mjs';
+import { listCanonicalDocs } from '../shared-ignore.mjs';
 import { diffRoutes, diffEntities, diffEnvVars, diffTechStack } from './diff.mjs';
 import { buildMemoryPlan } from '../scanners/memory-plan.mjs';
 import { runGuardInternal } from './guard.mjs';
@@ -97,19 +98,17 @@ function runMemoryPack(projectDir, config, flags) {
   lines.push(`- Tests: ${plan.surface.tests.totalFiles} files, ${plan.surface.tests.totalCases} cases`);
   lines.push('');
 
-  const docsDir = resolve(projectDir, 'docs-canonical');
-  if (existsSync(docsDir)) {
+  const canonicalDocs = listCanonicalDocs(projectDir);
+  if (canonicalDocs.length > 0) {
     lines.push('## Canonical docs');
     lines.push('');
-    let entries = [];
-    try { entries = readdirSync(docsDir).filter(f => f.endsWith('.md')).sort(); } catch { /* ignore */ }
-    for (const doc of entries) {
+    for (const doc of canonicalDocs) {
       let reviewed = '';
       try {
-        const m = readFileSync(resolve(docsDir, doc), 'utf-8').match(/docguard:last-reviewed\s+(\d{4}-\d{2}-\d{2})/);
+        const m = readFileSync(doc.abs, 'utf-8').match(/docguard:last-reviewed\s+(\d{4}-\d{2}-\d{2})/);
         if (m) reviewed = ` (last-reviewed ${m[1]})`;
       } catch { /* ignore */ }
-      lines.push(`- docs-canonical/${doc}${reviewed}`);
+      lines.push(`- ${doc.rel}${reviewed}`);
     }
     lines.push('');
   }

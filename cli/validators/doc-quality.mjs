@@ -20,9 +20,10 @@
  * built-ins reading files only.
  */
 
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { resolve, join, extname, relative } from 'node:path';
+import { existsSync, readFileSync, statSync } from 'node:fs';
+import { resolve, join, extname, relative, basename } from 'node:path';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
+import { listCanonicalDocs } from '../shared-ignore.mjs';
 
 // ──── Metric Thresholds ────
 // These define "good" vs "warning" boundaries for each metric.
@@ -446,24 +447,12 @@ function getGradeLabel(grade) {
  * Collect all markdown files in docs-canonical/ directory.
  */
 function getCanonicalDocs(projectDir) {
-  const docsDir = resolve(projectDir, 'docs-canonical');
-  const docs = [];
-
-  if (!existsSync(docsDir)) return docs;
-
-  try {
-    const entries = readdirSync(docsDir);
-    for (const entry of entries) {
-      if (extname(entry).toLowerCase() === '.md') {
-        docs.push({
-          name: entry,
-          path: join(docsDir, entry),
-        });
-      }
-    }
-  } catch {
-    // Directory read failed silently
-  }
+  // Recursive. `name` stays the bare basename (not the full nested path) to
+  // match this function's pre-existing flat-tree display format exactly —
+  // messages read "ARCHITECTURE.md: ..." not "docs-canonical/x/ARCHITECTURE.md: ...".
+  // Same collision tradeoff as elsewhere: two nested docs sharing a basename
+  // are indistinguishable by name (pre-existing risk, not new).
+  const docs = listCanonicalDocs(projectDir).map(d => ({ name: basename(d.rel), path: d.abs }));
 
   // Also check README.md at project root
   const readmePath = resolve(projectDir, 'README.md');

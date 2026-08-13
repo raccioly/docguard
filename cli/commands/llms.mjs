@@ -15,9 +15,10 @@
  *   - `docguard guard` validates llms.txt exists and is current
  */
 
-import { existsSync, readFileSync, writeFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve, join, basename } from 'node:path';
 import { c } from '../shared.mjs';
+import { listCanonicalDocs } from '../shared-ignore.mjs';
 
 // ──── Doc descriptions for llms.txt ────
 const DOC_DESCRIPTIONS = {
@@ -58,18 +59,12 @@ export function generateLlmsTxt(projectDir, config) {
   }
   lines.push('');
 
-  // ── Canonical Docs ──
-  const docsDir = resolve(projectDir, 'docs-canonical');
+  // ── Canonical Docs ── (recursive — a nested doc still belongs in llms.txt)
   const existingDocs = [];
-
-  if (existsSync(docsDir)) {
-    try {
-      const entries = readdirSync(docsDir).filter(f => f.endsWith('.md')).sort();
-      for (const entry of entries) {
-        const desc = DOC_DESCRIPTIONS[entry] || `${entry.replace('.md', '')} documentation`;
-        existingDocs.push({ path: `docs-canonical/${entry}`, name: entry, desc });
-      }
-    } catch { /* ignore */ }
+  for (const doc of listCanonicalDocs(projectDir)) {
+    const entry = basename(doc.rel);
+    const desc = DOC_DESCRIPTIONS[entry] || `${entry.replace('.md', '')} documentation`;
+    existingDocs.push({ path: doc.rel, name: entry, desc });
   }
 
   if (existingDocs.length > 0) {
@@ -160,13 +155,8 @@ export function generateLlmsFullTxt(projectDir, config) {
 
   // Same doc discovery as the index form: canonical docs + present optional docs.
   const docPaths = [];
-  const docsDir = resolve(projectDir, 'docs-canonical');
-  if (existsSync(docsDir)) {
-    try {
-      for (const entry of readdirSync(docsDir).filter(f => f.endsWith('.md')).sort()) {
-        docPaths.push({ path: `docs-canonical/${entry}`, desc: DOC_DESCRIPTIONS[entry] || null });
-      }
-    } catch { /* ignore */ }
+  for (const doc of listCanonicalDocs(projectDir)) {
+    docPaths.push({ path: doc.rel, desc: DOC_DESCRIPTIONS[basename(doc.rel)] || null });
   }
   for (const [file, desc] of Object.entries(OPTIONAL_DOCS)) {
     if (existsSync(resolve(projectDir, file))) docPaths.push({ path: file, desc });

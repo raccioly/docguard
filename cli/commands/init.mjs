@@ -11,6 +11,7 @@
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
+import { listCanonicalDocs } from '../shared-ignore.mjs';
 import { fileURLToPath } from 'node:url';
 import { createInterface } from 'node:readline';
 import { execSync } from 'node:child_process';
@@ -135,13 +136,9 @@ function shouldRunGenerate(projectDir, flags) {
   if (flags.fix)             return false; // --fix = deterministic create-missing-from-templates (headless)
 
   // If canonical docs already exist, this is a re-init, not a first-run.
-  const canonicalDir = resolve(projectDir, 'docs-canonical');
-  if (existsSync(canonicalDir)) {
-    try {
-      const entries = readdirSync(canonicalDir).filter(f => f.endsWith('.md'));
-      if (entries.length > 0) return false;
-    } catch { /* fall through */ }
-  }
+  // Recursive — a project whose only canonical docs are nested must still be
+  // detected as already-initialized, or the wizard re-triggers on every run.
+  if (listCanonicalDocs(projectDir).length > 0) return false;
 
   // Existing-code signals: any of cli/, src/, lib/, app/ as a directory.
   const codeDirs = ['cli', 'src', 'lib', 'app'];

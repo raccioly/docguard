@@ -21,9 +21,10 @@
  * Zero npm dependencies — pure Node.js built-ins.
  */
 
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
-import { resolve, join } from 'node:path';
+import { existsSync, readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { loadIgnorePatterns } from '../shared.mjs';
+import { listCanonicalDocs } from '../shared-ignore.mjs';
 
 // Numbers are only claims when adjacent to a recognized unit.
 const NUMBER_PATTERNS = [
@@ -55,17 +56,10 @@ function claimSourceDocs(projectDir) {
   // "unverified claims" pool either — it inflated the count and buried the
   // claims that ARE actionable (bug-212).
   const isIgnored = loadIgnorePatterns(projectDir);
-  const docs = [];
-  const canonical = resolve(projectDir, 'docs-canonical');
-  if (existsSync(canonical)) {
-    try {
-      for (const f of readdirSync(canonical)) {
-        if (f.toLowerCase().endsWith('.md') && !isIgnored(`docs-canonical/${f}`)) {
-          docs.push(`docs-canonical/${f}`);
-        }
-      }
-    } catch { /* ignore */ }
-  }
+  // Recursive — nested canonical docs make claims too. The ignore predicate is
+  // applied per-doc inside the helper against the full relative path, so a
+  // pattern like `docs-canonical/99-archive/**` still excludes a subtree.
+  const docs = listCanonicalDocs(projectDir, { isIgnored }).map(d => d.rel);
   for (const root of ['README.md', 'AGENTS.md']) {
     if (existsSync(resolve(projectDir, root)) && !isIgnored(root)) docs.push(root);
   }

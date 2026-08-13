@@ -29,6 +29,7 @@ import { resolve, basename, join } from 'node:path';
 import { buildMemoryPlan } from '../scanners/memory-plan.mjs';
 import { getSection } from '../writers/sections.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
+import { listCanonicalDocs } from '../shared-ignore.mjs';
 
 /**
  * v0.18-P1 fast-path: cheap pre-flight to detect whether ANY canonical doc
@@ -41,34 +42,36 @@ import { mkFinding, resultFromFindings } from '../findings.mjs';
  */
 function _quickScan(projectDir) {
   const out = { hasMarkers: false, hasDrafts: false };
-  const candidateDirs = [
-    resolve(projectDir, 'docs-canonical'),
-    projectDir, // for README.md, AGENTS.md, etc.
-  ];
+  // Recursive for docs-canonical/ — a marker in a nested doc must still be
+  // found, or this pre-flight false-negatives and skips the ENTIRE validator
+  // (buildMemoryPlan never even runs), silently disabling drift detection.
+  // projectDir itself stays a SHALLOW, non-recursive scan by design — it's
+  // here only to catch root-level README.md/AGENTS.md, not to walk the repo.
+  const candidateFiles = listCanonicalDocs(projectDir).map(d => d.abs);
+  try {
+    for (const entry of readdirSync(projectDir)) {
+      if (entry.endsWith('.md')) candidateFiles.push(join(projectDir, entry));
+    }
+  } catch { /* ignore */ }
+
   // We only need a single match in any file to know the validator has work.
   // Short-circuit aggressively: stop the moment we find either signal.
-  for (const dir of candidateDirs) {
-    if (!existsSync(dir)) continue;
-    let entries;
-    try { entries = readdirSync(dir); } catch { continue; }
-    for (const entry of entries) {
-      if (!entry.endsWith('.md')) continue;
-      // Skip very large files quickly — for canonical docs, > 200 KB is unusual
-      // and almost certainly not the marker-heavy file we're looking for.
-      let stat;
-      try { stat = statSync(join(dir, entry)); } catch { continue; }
-      if (!stat.isFile()) continue;
-      if (stat.size > 200_000) continue;
-      let content;
-      try { content = readFileSync(join(dir, entry), 'utf-8'); } catch { continue; }
-      if (!out.hasMarkers && /<!--\s*docguard:section\s+[^>]*source=code/i.test(content)) {
-        out.hasMarkers = true;
-      }
-      if (!out.hasDrafts && /(?:^---\s*\n[\s\S]*?\bstatus:\s*draft\b[\s\S]*?\n---|<!--\s*status:\s*draft\s*-->)/im.test(content)) {
-        out.hasDrafts = true;
-      }
-      if (out.hasMarkers && out.hasDrafts) return out;
+  for (const full of candidateFiles) {
+    // Skip very large files quickly — for canonical docs, > 200 KB is unusual
+    // and almost certainly not the marker-heavy file we're looking for.
+    let stat;
+    try { stat = statSync(full); } catch { continue; }
+    if (!stat.isFile()) continue;
+    if (stat.size > 200_000) continue;
+    let content;
+    try { content = readFileSync(full, 'utf-8'); } catch { continue; }
+    if (!out.hasMarkers && /<!--\s*docguard:section\s+[^>]*source=code/i.test(content)) {
+      out.hasMarkers = true;
     }
+    if (!out.hasDrafts && /(?:^---\s*\n[\s\S]*?\bstatus:\s*draft\b[\s\S]*?\n---|<!--\s*status:\s*draft\s*-->)/im.test(content)) {
+      out.hasDrafts = true;
+    }
+    if (out.hasMarkers && out.hasDrafts) return out;
   }
   return out;
 }

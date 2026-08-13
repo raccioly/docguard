@@ -33,11 +33,11 @@
  * @req SC-K7-004 — code-fenced examples don't trigger false positives
  */
 
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { resolve, join, dirname, basename, relative } from 'node:path';
+import { existsSync, readFileSync } from 'node:fs';
+import { resolve, dirname, basename, relative } from 'node:path';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { resolveDocDirs } from '../shared.mjs';
-import { walkFiles } from '../shared-ignore.mjs';
+import { walkFiles, listCanonicalDocs } from '../shared-ignore.mjs';
 
 /**
  * Slugify a heading the way GitHub's markdown anchors work.
@@ -323,18 +323,7 @@ function resolveTarget(sourcePath, targetRel, projectDir) {
  * validators — `docs-canonical/`, root tracking files, and AGENTS.md.
  */
 function collectCanonicalDocs(projectDir) {
-  const docs = [];
-  const cdir = resolve(projectDir, 'docs-canonical');
-  if (existsSync(cdir)) {
-    try {
-      for (const f of readdirSync(cdir)) {
-        if (f.endsWith('.md')) {
-          const p = join(cdir, f);
-          if (statSync(p).isFile()) docs.push(p);
-        }
-      }
-    } catch {}
-  }
+  const docs = listCanonicalDocs(projectDir).map(d => d.abs); // recursive
   // Standard root-level docs that are commonly cross-referenced. We index
   // them so links like [CONTRIBUTING.md](CONTRIBUTING.md#some-section) can
   // resolve. The list is conservative — adding everything would pull in
