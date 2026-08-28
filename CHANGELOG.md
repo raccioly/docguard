@@ -16,8 +16,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **`@babel/parser` 7.29.7 → 8.0.4** (major bump; runtime dependency used by the JS/Python AST, routes, and schema scanners). Full suite green, no breaking API usage found. (#331)
 - Bumped `actions/setup-node` and `actions/setup-python` to v7 in CI/release workflows. (#330)
+
+### Reverted
+
+- **`@babel/parser` 8.0.4 → back to 7.29.7.** Dependabot's major-bump PR (#331) tested green locally and merged, but `8.0.4` requires Node `^22.18.0 || >=24.11.0` — it silently dropped Node 18 (and, per its own `engines` field, isn't really supported on 20 either, though it happened to run there). This project declares `"engines": {"node": ">=18.0.0"}` and CI gates all four Node versions; the release pipeline itself caught it — `test (18)` failed with 20 broken AST-parsing tests while 20/22/24 passed, so nothing published (npm/PyPI publish correctly never ran). Reverted and re-verified locally across Node 18, 20, 22, and 24 before re-releasing. Lesson: a major bump of a parsing library needs the full supported-version matrix tested, not just the developer's local Node version — `engines` mismatches don't show up as install failures, they show up as silent behavioral differences.
 
 ### Tests
 

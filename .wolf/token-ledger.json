@@ -2,12 +2,12 @@
   "version": 1,
   "created_at": "2026-05-26T15:31:59.491Z",
   "lifetime": {
-    "total_tokens_estimated": 6616928,
-    "total_reads": 1603,
-    "total_writes": 2909,
+    "total_tokens_estimated": 6617937,
+    "total_reads": 1604,
+    "total_writes": 2915,
     "total_sessions": 47,
     "anatomy_hits": 988,
-    "anatomy_misses": 611,
+    "anatomy_misses": 612,
     "repeated_reads_blocked": 940,
     "estimated_savings_vs_bare_cli": 5293889
   },
@@ -25794,6 +25794,59 @@
         "writes_count": 52,
         "repeated_reads_blocked": 8,
         "anatomy_lookups": 14
+      }
+    },
+    {
+      "id": "session-2026-08-28-2148",
+      "started": "2026-08-28T01:48:33.769Z",
+      "ended": "2026-08-28T16:44:55.548Z",
+      "reads": [
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/scanners/schemas.mjs",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/scanners/schemas.mjs",
+          "tokens_estimated": 73,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/validators/todo-tracking.mjs",
+          "tokens_estimated": 38,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/tests/schemas.test.mjs",
+          "tokens_estimated": 280,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/tests/todo-tracking.test.mjs",
+          "tokens_estimated": 281,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/CHANGELOG.md",
+          "tokens_estimated": 330,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/package.json",
+          "tokens_estimated": 7,
+          "action": "edit"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 0,
+        "output_tokens_estimated": 1009,
+        "reads_count": 1,
+        "writes_count": 6,
+        "repeated_reads_blocked": 0,
+        "anatomy_lookups": 0
       }
     }
   ],

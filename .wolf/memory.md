@@ -1236,3 +1236,6 @@
 | 12:41 | Edited CHANGELOG.md | expanded (+16 lines) | ~308 |
 | 12:41 | Edited package.json | inline fix | ~7 |
 | 12:43 | triaged 8 open PRs + 3 issues: merged babel bump (#331), GH Actions bump (#330), walkFiles tests (#324); cherry-picked OpenAPI crash + TODO-tracking fixes from #328 with a corrected test (original hung on a bad `/` fixture path); closed 4 redundant/stale PRs + 1 stale issue; scoped #326 (configurable docs location) separately; v0.34.1 | cli/scanners/schemas.mjs, cli/validators/todo-tracking.mjs, tests/{schemas,todo-tracking}.test.mjs, CHANGELOG.md, package.json | 1042/1042 pass; guard exit=0 | ~70k |
+| 12:44 | Session end: 6 writes across 6 files (schemas.mjs, todo-tracking.mjs, schemas.test.mjs, todo-tracking.test.mjs, CHANGELOG.md) | 1 reads | ~1009 tok |
+| 12:49 | Edited package.json | inline fix | ~9 |
+| 12:51 | Edited CHANGELOG.md | 4→7 lines | ~271 |

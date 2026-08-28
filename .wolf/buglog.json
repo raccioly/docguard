@@ -4377,6 +4377,43 @@
       "occurrences": 1,
       "last_seen": "2026-08-28T16:45:00Z",
       "notes": "Lesson for reviewing ANY externally/bot-authored PR before merging: run its tests MERGED ONTO current main (not the raw branch) and TIME the run, not just check pass/fail — a test that passes but is 1000x slower than it should be is often a sign the test isn't exercising what it claims to."
+    },
+    {
+      "id": "bug-266",
+      "timestamp": "2026-08-28T16:49:33.891Z",
+      "error_message": "Incorrect value in code",
+      "file": "package.json",
+      "root_cause": "Had \"8.0.4\"",
+      "fix": "Changed to \"7.29.7\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "json"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-28T16:49:33.891Z"
+    },
+    {
+      "id": "bug-255",
+      "timestamp": "2026-08-28T16:55:00Z",
+      "error_message": "v0.34.1 release pipeline failed on test (18) — 20 tests failing, all in js-ast/routes/schemas AST-parsing tests — while test (20)/(22)/(24) passed. create-release, publish-npm, publish-pypi correctly skipped (dependency gate worked as designed, nothing published).",
+      "file": "package.json, package-lock.json",
+      "root_cause": "Merged dependabot PR #331 bumping @babel/parser 7.29.7 to 8.0.4 (major) after testing 1036/1036 green — but only on the local machine's Node 24. @babel/parser@8.0.4's own package.json declares engines: {node: '^22.18.0 || >=24.11.0'} — it silently dropped Node 18 (and isn't really supported on 20 either, though it happened to still work there). docguard-cli declares engines: {node: '>=18.0.0'} and CI's test matrix gates all of 18/20/22/24 — the mismatch only manifests as behavioral breakage (bad AST parse results), not an install failure, so npm install/npm ci never complained.",
+      "fix": "Reverted @babel/parser to 7.29.7 in package.json + package-lock.json (npm install to resync lock). Installed Node 18 and 20 locally via fnm (previously only had 22/24) and re-ran the FULL suite on all four versions (18, 20, 22, 24) before pushing again — closing the exact gap that let this ship in the first place. Commented on the merged PR #331 documenting the revert for the historical record.",
+      "tags": [
+        "dependency-bump",
+        "babel-parser",
+        "node-version-compat",
+        "engines-field",
+        "release-pipeline-caught-it",
+        "ci-test-matrix",
+        "major-version-bump"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-28T16:55:00Z",
+      "notes": "The release pipeline did exactly its job: test(18) failed, everything downstream (tag/npm/pypi) correctly skipped via job dependencies, nothing bad shipped. The gap was in MY pre-push verification, not the CI design."
     }
   ]
 }
