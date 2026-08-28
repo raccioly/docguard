@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-08-13T18:59:25.435Z
-> Files: 700 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-08-28T16:41:43.483Z
+> Files: 703 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../../../tmp/
 
@@ -29,7 +29,7 @@
 - `.pre-commit-hooks.yaml` — DocGuard hooks for the pre-commit framework (https://pre-commit.com). (~490 tok)
 - `action.yml` — Declares fs (~7591 tok)
 - `AGENTS.md` — AI Agent Instructions — DocGuard (~1827 tok)
-- `CHANGELOG.md` — Changelog (~50468 tok)
+- `CHANGELOG.md` — Changelog (~50746 tok)
 - `CLAUDE.md` — OpenWolf (~57 tok)
 - `CODE_OF_CONDUCT.md` — Contributor Covenant Code of Conduct (~532 tok)
 - `COMPARISONS.md` — Comparisons & Honest Limitations (~3382 tok)
@@ -41,7 +41,7 @@
 - `glama.json` (~29 tok)
 - `LICENSE` — Project license (~286 tok)
 - `package-lock.json` — npm lock file (~617 tok)
-- `package.json` — Node.js package manifest (~466 tok)
+- `package.json` — Node.js package manifest (~465 tok)
 - `PHILOSOPHY.md` — The Philosophy of Canonical-Driven Development (~1854 tok)
 - `pr_description.md` (~260 tok)
 - `pyproject.toml` — The enforcement tool for Canonical-Driven Development (CDD). Audit, generate, and guard your project (~358 tok)
@@ -1011,6 +1011,7 @@
 - `memory-plan.mjs` — Memory Plan — the orchestration artifact behind AI-powered Generate. (~5744 tok)
 - `project-type.mjs` — Project-Type Detection — the language-agnostic spine. (~4190 tok)
 - `routes.mjs` — Deep Route Scanner (~7712 tok)
+- `schemas.mjs` — Deep Schema Scanner (~7517 tok)
 - `semantic-claims.mjs` — Semantic claim extractor (LLM field report #5). (~2120 tok)
 - `speckit.mjs` — Spec Kit Scanner — Detect, validate, and integrate with GitHub Spec Kit (~8882 tok)
 
@@ -1040,7 +1041,7 @@
 - `structure.mjs` — Structure Validator — Checks that all required CDD files exist (~1647 tok)
 - `surface-sync.mjs` — Surface-Sync Validator — item-level drift detection for enumerable surfaces. (~4219 tok)
 - `test-spec.mjs` — Test Spec Validator — Checks that tests exist per TEST-SPEC.md coverage rules (~4463 tok)
-- `todo-tracking.mjs` — TODO/FIXME Tracking Validator — Ensures code annotations are documented (~3916 tok)
+- `todo-tracking.mjs` — TODO/FIXME Tracking Validator — Ensures code annotations are documented (~3931 tok)
 - `traceability.mjs` — Traceability Validator — Checks that canonical docs are linked to source code (~5732 tok)
 
 ## cli/writers/
@@ -1135,8 +1136,10 @@
 - `reference-existence.test.mjs` — Exports validateToken, getUserById, verifyToken, getUserById + 4 more (~1853 tok)
 - `report.test.mjs` — `docguard report` — compliance-evidence bundle (v0.33). (~1636 tok)
 - `sarif.test.mjs` — Declares CLI (~1455 tok)
+- `schemas.test.mjs` — '] }); (~1716 tok)
 - `shared-source.test.mjs` — API routes: GET (4 endpoints) (~1714 tok)
 - `speckit-phantom.test.mjs` — Exports users, fetchUserRecords, retry, adapter + 2 more (~2500 tok)
+- `todo-tracking.test.mjs` — result: myFunc, myFunc, check, legacy (~1491 tok)
 - `trace-features.test.mjs` — `trace --features` — per-feature spec-kit adherence scoring. (~2423 tok)
 - `traceability.test.mjs` — Exports foo, GET, x (~3729 tok)
 - `v020-consolidation.test.mjs` — v0.20 — Surface consolidation tests. (~2540 tok)

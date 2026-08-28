@@ -125,6 +125,34 @@ describe('generateERDiagram', () => {
   });
 });
 
+describe('extractOpenAPIRelationships — field with no `type`', () => {
+  it('does not crash on a field with no `type` (valid OpenAPI, e.g. a bare $ref)', () => {
+    const dir = fs.mkdtempSync(join(tmpdir(), 'docguard-schema-notype-'));
+    const docTools = {
+      openapi: {
+        found: true,
+        schemas: [
+          {
+            name: 'User',
+            fields: [
+              { name: 'id', type: 'string' },
+              { name: 'profile', type: undefined },
+            ],
+          },
+        ],
+      },
+    };
+
+    // Must actually reach extractOpenAPIRelationships (requires openapi.found)
+    // rather than falling through to a real directory scan.
+    const result = scanSchemasDeep(dir, {}, docTools, {});
+    assert.equal(result.source, 'openapi');
+    assert.deepEqual(result.relationships, []);
+
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+});
+
 describe('scanSchemasDeep — honors config.ignore (.docguardignore consolidation)', () => {
   it('drops entities whose source file the user excluded', () => {
     const dir = fs.mkdtempSync(join(tmpdir(), 'docguard-schema-ignore-'));

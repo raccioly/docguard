@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.34.1] - 2026-08-28
+
+### Fixed
+
+- **OpenAPI schema field with no `type` crashed schema sync.** `extractOpenAPIRelationships` called `.toLowerCase()` on `field.type` unconditionally — a field with no `type` (valid OpenAPI, e.g. a bare `$ref`) threw instead of being skipped. (#328)
+- **TODO-Tracking never recognized Python/Go/Ruby test-file naming.** The test-file exclusion regex only matched the dotted JS convention (`foo.test.py`), which nobody writes — real Python/Go/Ruby test files are `test_foo.py`, `foo_test.py`, `foo_test.go`, `foo_spec.rb`. TODOs inside those files' actual test functions were flagged as untracked source TODOs. Now recognizes the idiomatic naming for all three. (#328)
+
+### Changed
+
+- **`@babel/parser` 7.29.7 → 8.0.4** (major bump; runtime dependency used by the JS/Python AST, routes, and schema scanners). Full suite green, no breaking API usage found. (#331)
+- Bumped `actions/setup-node` and `actions/setup-python` to v7 in CI/release workflows. (#330)
+
+### Tests
+
+- Added coverage for `walkFiles`, `isNonProductDir`, and `isNonProductPath` in `shared-ignore.mjs`. (#324)
+
 ## [0.34.0] - 2026-08-13
 
 ### Fixed

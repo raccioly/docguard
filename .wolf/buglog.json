@@ -4318,9 +4318,65 @@
         "readdirSync",
         "basename-preservation"
       ],
-      "related_bugs": ["bug-252"],
+      "related_bugs": [
+        "bug-252"
+      ],
       "occurrences": 1,
       "last_seen": "2026-08-13T19:00:00Z"
+    },
+    {
+      "id": "bug-263",
+      "timestamp": "2026-08-28T16:38:52.952Z",
+      "error_message": "Missing guard clause",
+      "file": "cli/scanners/schemas.mjs",
+      "root_cause": "No early return/throw for edge case: !field.type",
+      "fix": "Added guard clause: if (!field.type)",
+      "tags": [
+        "auto-detected",
+        "guard-clause",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-28T16:38:52.952Z"
+    },
+    {
+      "id": "bug-264",
+      "timestamp": "2026-08-28T16:41:43.490Z",
+      "error_message": "Incorrect value in code",
+      "file": "package.json",
+      "root_cause": "Had \"0.34.0\"",
+      "fix": "Changed to \"0.34.1\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "json"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-28T16:41:43.490Z"
+    },
+    {
+      "id": "bug-254",
+      "timestamp": "2026-08-28T16:45:00Z",
+      "error_message": "extractOpenAPIRelationships crashed on a field with no `type` (a bare $ref is valid OpenAPI); TODO-Tracking's test-file exclusion regex only matched the dotted JS convention (foo.test.py), never the idiomatic Python/Go/Ruby naming (test_foo.py, foo_test.go, foo_spec.rb), so TODOs inside real test files' test functions were flagged as untracked source TODOs",
+      "file": "cli/scanners/schemas.mjs, cli/validators/todo-tracking.mjs",
+      "root_cause": "schemas.mjs: field.type undefined passed the !== checks (undefined !== 'string' etc. all true) then .toLowerCase() threw. todo-tracking.mjs: TEST_NAME_RE only had the JS-style dotted pattern applied across all languages, which nobody actually writes in Python/Go/Ruby.",
+      "fix": "Cherry-picked from PR #328 (external/bot-authored, closed unmerged): added `if (!field.type) continue;` guard; replaced TEST_NAME_RE with a pattern covering the JS dotted convention plus idiomatic test_*.py/*_test.py/*_test.go/*_spec.rb/*_test.rb. The PR's OWN test was broken and had to be rewritten: it called scanSchemasDeep('/', {}, docTools, {}) where docTools.openapi was missing `found: true` — since scanSchemasDeep's OpenAPI early-return requires `openapi.found` truthy, the malformed fixture fell through into a REAL directory scan of '/', turning a 118ms test into 190+ seconds (confirmed via isolated timing: clean main runs schemas.test.mjs in 118ms, PR328-merged runs it in 10s+ timeout). Fixed by adding `found: true` to the fixture and using a proper mkdtempSync tmpdir instead of '/'.",
+      "tags": [
+        "openapi",
+        "schemas",
+        "todo-tracking",
+        "crash",
+        "false-positive",
+        "test-hygiene",
+        "external-pr-review",
+        "performance-regression"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-28T16:45:00Z",
+      "notes": "Lesson for reviewing ANY externally/bot-authored PR before merging: run its tests MERGED ONTO current main (not the raw branch) and TIME the run, not just check pass/fail — a test that passes but is 1000x slower than it should be is often a sign the test isn't exercising what it claims to."
     }
   ]
 }

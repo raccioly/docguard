@@ -1207,3 +1207,32 @@
 | 14:59 | Edited package.json | inline fix | ~7 |
 | 14:59 | Edited CHANGELOG.md | 3→5 lines | ~14 |
 | 15:00 | phase 2: fixed remaining 14 flat-readdirSync sites (19 total across both passes) + 6 tests + v0.34.0 bump | cli/{commands,validators}/*.mjs (14 files), CHANGELOG.md, package.json, tests/canonical-docs-nested-phase2.test.mjs | 1036/1036 pass; self-scan byte-identical; 4/6 new tests fail on v0.33.1 | ~85k |
+| 15:03 | Session end: 52 writes across 18 files (impact.mjs, init.mjs, llms.mjs, memory.mjs, trace.mjs) | 16 reads | ~124750 tok |
+| 15:06 | Session end: 52 writes across 18 files (impact.mjs, init.mjs, llms.mjs, memory.mjs, trace.mjs) | 16 reads | ~124750 tok |
+
+## Session: 2026-08-17 11:09
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-08-17 11:09
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-08-28 21:48
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-08-28 21:48
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 12:38 | Edited cli/scanners/schemas.mjs | added 1 condition(s) | ~68 |
+| 12:39 | Edited cli/validators/todo-tracking.mjs | inline fix | ~36 |
+| 12:40 | Edited tests/schemas.test.mjs | expanded (+28 lines) | ~262 |
+| 12:40 | Edited tests/todo-tracking.test.mjs | modified test_foo() | ~263 |
+| 12:41 | Edited CHANGELOG.md | expanded (+16 lines) | ~308 |
+| 12:41 | Edited package.json | inline fix | ~7 |
+| 12:43 | triaged 8 open PRs + 3 issues: merged babel bump (#331), GH Actions bump (#330), walkFiles tests (#324); cherry-picked OpenAPI crash + TODO-tracking fixes from #328 with a corrected test (original hung on a bad `/` fixture path); closed 4 redundant/stale PRs + 1 stale issue; scoped #326 (configurable docs location) separately; v0.34.1 | cli/scanners/schemas.mjs, cli/validators/todo-tracking.mjs, tests/{schemas,todo-tracking}.test.mjs, CHANGELOG.md, package.json | 1042/1042 pass; guard exit=0 | ~70k |

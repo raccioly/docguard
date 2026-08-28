@@ -1,425 +1,62 @@
 {
-  "session_id": "session-2026-08-13-1028",
-  "started": "2026-08-13T14:28:17.955Z",
+  "session_id": "session-2026-08-28-2148",
+  "started": "2026-08-28T01:48:33.769Z",
   "files_read": {
-    "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.github/workflows/release.yml": {
-      "count": 1,
-      "tokens": 3434,
-      "first_read": "2026-08-13T18:39:22.314Z"
-    },
-    "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/commands/impact.mjs": {
-      "count": 1,
-      "tokens": 5302,
-      "first_read": "2026-08-13T18:43:33.473Z"
-    },
-    "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/commands/llms.mjs": {
-      "count": 3,
-      "tokens": 2066,
-      "first_read": "2026-08-13T18:43:34.021Z"
-    },
-    "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/commands/memory.mjs": {
-      "count": 1,
-      "tokens": 2957,
-      "first_read": "2026-08-13T18:43:35.126Z"
-    },
-    "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/commands/trace.mjs": {
-      "count": 1,
-      "tokens": 7746,
-      "first_read": "2026-08-13T18:43:35.516Z"
-    },
-    "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/commands/hooks.mjs": {
-      "count": 2,
-      "tokens": 5099,
-      "first_read": "2026-08-13T18:44:08.850Z"
-    },
-    "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/validators/api-doc-smells.mjs": {
-      "count": 2,
-      "tokens": 1606,
-      "first_read": "2026-08-13T18:44:09.934Z"
-    },
-    "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/validators/cross-reference.mjs": {
-      "count": 1,
-      "tokens": 6034,
-      "first_read": "2026-08-13T18:44:10.490Z"
-    },
-    "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/validators/diff-suspicion.mjs": {
+    "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/scanners/schemas.mjs": {
       "count": 1,
       "tokens": 0,
-      "first_read": "2026-08-13T18:44:11.139Z"
-    },
-    "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/validators/doc-quality.mjs": {
-      "count": 2,
-      "tokens": 6838,
-      "first_read": "2026-08-13T18:44:14.225Z"
-    },
-    "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/validators/docs-coverage.mjs": {
-      "count": 3,
-      "tokens": 5607,
-      "first_read": "2026-08-13T18:44:15.341Z"
-    },
-    "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/validators/generated-staleness.mjs": {
-      "count": 2,
-      "tokens": 2919,
-      "first_read": "2026-08-13T18:44:16.401Z"
-    },
-    "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/validators/reference-existence.mjs": {
-      "count": 1,
-      "tokens": 3577,
-      "first_read": "2026-08-13T18:44:16.448Z"
-    },
-    "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/validators/traceability.mjs": {
-      "count": 1,
-      "tokens": 5647,
-      "first_read": "2026-08-13T18:44:24.237Z"
-    },
-    "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/commands/init.mjs": {
-      "count": 1,
-      "tokens": 7278,
-      "first_read": "2026-08-13T18:44:32.326Z"
-    },
-    "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/CHANGELOG.md": {
-      "count": 1,
-      "tokens": 50130,
-      "first_read": "2026-08-13T18:58:56.729Z"
+      "first_read": "2026-08-28T16:38:47.662Z"
     }
   },
   "files_written": [
     {
-      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/commands/impact.mjs",
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/scanners/schemas.mjs",
       "action": "edit",
-      "tokens": 112,
-      "at": "2026-08-13T18:46:31.385Z"
+      "tokens": 73,
+      "at": "2026-08-28T16:38:52.951Z"
     },
     {
-      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/commands/impact.mjs",
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/validators/todo-tracking.mjs",
       "action": "edit",
-      "tokens": 215,
-      "at": "2026-08-13T18:46:37.676Z"
+      "tokens": 38,
+      "at": "2026-08-28T16:39:16.761Z"
     },
     {
-      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/commands/impact.mjs",
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/tests/schemas.test.mjs",
       "action": "edit",
-      "tokens": 108,
-      "at": "2026-08-13T18:46:46.720Z"
+      "tokens": 280,
+      "at": "2026-08-28T16:40:04.319Z"
     },
     {
-      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/commands/init.mjs",
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/tests/todo-tracking.test.mjs",
       "action": "edit",
-      "tokens": 56,
-      "at": "2026-08-13T18:46:50.323Z"
-    },
-    {
-      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/commands/init.mjs",
-      "action": "edit",
-      "tokens": 84,
-      "at": "2026-08-13T18:46:54.435Z"
-    },
-    {
-      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/commands/llms.mjs",
-      "action": "edit",
-      "tokens": 65,
-      "at": "2026-08-13T18:46:58.244Z"
-    },
-    {
-      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/commands/llms.mjs",
-      "action": "edit",
-      "tokens": 100,
-      "at": "2026-08-13T18:47:02.906Z"
-    },
-    {
-      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/commands/llms.mjs",
-      "action": "edit",
-      "tokens": 72,
-      "at": "2026-08-13T18:47:07.231Z"
-    },
-    {
-      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/commands/llms.mjs",
-      "action": "edit",
-      "tokens": 19,
-      "at": "2026-08-13T18:47:15.199Z"
-    },
-    {
-      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/commands/memory.mjs",
-      "action": "edit",
-      "tokens": 60,
-      "at": "2026-08-13T18:47:18.804Z"
-    },
-    {
-      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/commands/memory.mjs",
-      "action": "edit",
-      "tokens": 139,
-      "at": "2026-08-13T18:47:30.714Z"
-    },
-    {
-      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/commands/trace.mjs",
-      "action": "edit",
-      "tokens": 43,
-      "at": "2026-08-13T18:47:38.907Z"
-    },
-    {
-      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/commands/trace.mjs",
-      "action": "edit",
-      "tokens": 226,
-      "at": "2026-08-13T18:47:45.354Z"
-    },
-    {
-      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/commands/trace.mjs",
-      "action": "edit",
-      "tokens": 93,
-      "at": "2026-08-13T18:47:51.096Z"
-    },
-    {
-      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/commands/trace.mjs",
-      "action": "edit",
-      "tokens": 109,
-      "at": "2026-08-13T18:48:06.608Z"
-    },
-    {
-      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/commands/hooks.mjs",
-      "action": "edit",
-      "tokens": 57,
-      "at": "2026-08-13T18:48:21.000Z"
-    },
-    {
-      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/commands/hooks.mjs",
-      "action": "edit",
-      "tokens": 174,
-      "at": "2026-08-13T18:48:27.638Z"
-    },
-    {
-      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/commands/hooks.mjs",
-      "action": "edit",
-      "tokens": 29,
-      "at": "2026-08-13T18:48:36.591Z"
-    },
-    {
-      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/validators/api-doc-smells.mjs",
-      "action": "edit",
-      "tokens": 61,
-      "at": "2026-08-13T18:48:40.308Z"
-    },
-    {
-      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/validators/api-doc-smells.mjs",
-      "action": "edit",
-      "tokens": 464,
-      "at": "2026-08-13T18:48:52.901Z"
-    },
-    {
-      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/validators/api-doc-smells.mjs",
-      "action": "edit",
-      "tokens": 22,
-      "at": "2026-08-13T18:49:01.853Z"
-    },
-    {
-      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/validators/api-doc-smells.mjs",
-      "action": "edit",
-      "tokens": 30,
-      "at": "2026-08-13T18:49:09.500Z"
-    },
-    {
-      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/validators/cross-reference.mjs",
-      "action": "edit",
-      "tokens": 20,
-      "at": "2026-08-13T18:49:13.730Z"
-    },
-    {
-      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/validators/cross-reference.mjs",
-      "action": "edit",
-      "tokens": 34,
-      "at": "2026-08-13T18:49:17.380Z"
-    },
-    {
-      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/validators/cross-reference.mjs",
-      "action": "edit",
-      "tokens": 15,
-      "at": "2026-08-13T18:49:30.395Z"
-    },
-    {
-      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/validators/cross-reference.mjs",
-      "action": "edit",
-      "tokens": 19,
-      "at": "2026-08-13T18:49:36.782Z"
-    },
-    {
-      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/validators/diff-suspicion.mjs",
-      "action": "edit",
-      "tokens": 105,
-      "at": "2026-08-13T18:49:46.293Z"
-    },
-    {
-      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/validators/diff-suspicion.mjs",
-      "action": "edit",
-      "tokens": 28,
-      "at": "2026-08-13T18:49:53.659Z"
-    },
-    {
-      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/validators/diff-suspicion.mjs",
-      "action": "edit",
-      "tokens": 25,
-      "at": "2026-08-13T18:49:57.113Z"
-    },
-    {
-      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/validators/doc-quality.mjs",
-      "action": "edit",
-      "tokens": 71,
-      "at": "2026-08-13T18:50:04.674Z"
-    },
-    {
-      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/validators/doc-quality.mjs",
-      "action": "edit",
-      "tokens": 53,
-      "at": "2026-08-13T18:50:15.432Z"
-    },
-    {
-      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/validators/doc-quality.mjs",
-      "action": "edit",
-      "tokens": 161,
-      "at": "2026-08-13T18:50:34.532Z"
-    },
-    {
-      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/validators/doc-quality.mjs",
-      "action": "edit",
-      "tokens": 21,
-      "at": "2026-08-13T18:50:37.908Z"
-    },
-    {
-      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/commands/hooks.mjs",
-      "action": "edit",
-      "tokens": 105,
-      "at": "2026-08-13T18:51:00.289Z"
-    },
-    {
-      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/validators/api-doc-smells.mjs",
-      "action": "edit",
-      "tokens": 476,
-      "at": "2026-08-13T18:52:27.234Z"
-    },
-    {
-      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/validators/api-doc-smells.mjs",
-      "action": "edit",
-      "tokens": 58,
-      "at": "2026-08-13T18:52:31.163Z"
-    },
-    {
-      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/validators/diff-suspicion.mjs",
-      "action": "edit",
-      "tokens": 67,
-      "at": "2026-08-13T18:52:51.837Z"
-    },
-    {
-      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/validators/docs-coverage.mjs",
-      "action": "edit",
-      "tokens": 29,
-      "at": "2026-08-13T18:53:20.062Z"
-    },
-    {
-      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/validators/docs-coverage.mjs",
-      "action": "edit",
-      "tokens": 25,
-      "at": "2026-08-13T18:53:23.863Z"
-    },
-    {
-      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/validators/generated-staleness.mjs",
-      "action": "edit",
-      "tokens": 69,
-      "at": "2026-08-13T18:53:41.737Z"
-    },
-    {
-      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/validators/generated-staleness.mjs",
-      "action": "edit",
-      "tokens": 471,
-      "at": "2026-08-13T18:53:53.393Z"
-    },
-    {
-      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/validators/reference-existence.mjs",
-      "action": "edit",
-      "tokens": 25,
-      "at": "2026-08-13T18:54:02.369Z"
-    },
-    {
-      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/validators/reference-existence.mjs",
-      "action": "edit",
-      "tokens": 63,
-      "at": "2026-08-13T18:54:13.726Z"
-    },
-    {
-      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/validators/traceability.mjs",
-      "action": "edit",
-      "tokens": 25,
-      "at": "2026-08-13T18:54:29.176Z"
-    },
-    {
-      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/validators/traceability.mjs",
-      "action": "edit",
-      "tokens": 324,
-      "at": "2026-08-13T18:54:37.490Z"
-    },
-    {
-      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/cli/validators/traceability.mjs",
-      "action": "edit",
-      "tokens": 80,
-      "at": "2026-08-13T18:54:42.396Z"
-    },
-    {
-      "file": "/private/tmp/claude-501/-Users-ricardoaccioly-Repo-claude-canonical-spec-kit/25ac0636-5765-49fe-a808-dd97dc825b30/scratchpad/probe-phase2.mjs",
-      "action": "create",
-      "tokens": 1087,
-      "at": "2026-08-13T18:56:01.608Z"
-    },
-    {
-      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/tests/canonical-docs-nested-phase2.test.mjs",
-      "action": "create",
-      "tokens": 1466,
-      "at": "2026-08-13T18:57:08.841Z"
-    },
-    {
-      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/tests/canonical-docs-nested-phase2.test.mjs",
-      "action": "edit",
-      "tokens": 308,
-      "at": "2026-08-13T18:57:41.080Z"
+      "tokens": 281,
+      "at": "2026-08-28T16:40:25.756Z"
     },
     {
       "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/CHANGELOG.md",
       "action": "edit",
-      "tokens": 920,
-      "at": "2026-08-13T18:59:12.408Z"
+      "tokens": 330,
+      "at": "2026-08-28T16:41:38.454Z"
     },
     {
       "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/package.json",
       "action": "edit",
       "tokens": 7,
-      "at": "2026-08-13T18:59:22.208Z"
-    },
-    {
-      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/CHANGELOG.md",
-      "action": "edit",
-      "tokens": 15,
-      "at": "2026-08-13T18:59:25.441Z"
+      "at": "2026-08-28T16:41:43.489Z"
     }
   ],
   "edit_counts": {
-    "cli/commands/impact.mjs": 3,
-    "cli/commands/init.mjs": 2,
-    "cli/commands/llms.mjs": 4,
-    "cli/commands/memory.mjs": 2,
-    "cli/commands/trace.mjs": 4,
-    "cli/commands/hooks.mjs": 4,
-    "cli/validators/api-doc-smells.mjs": 6,
-    "cli/validators/cross-reference.mjs": 4,
-    "cli/validators/diff-suspicion.mjs": 4,
-    "cli/validators/doc-quality.mjs": 4,
-    "cli/validators/docs-coverage.mjs": 2,
-    "cli/validators/generated-staleness.mjs": 2,
-    "cli/validators/reference-existence.mjs": 2,
-    "cli/validators/traceability.mjs": 3,
-    "../../../../private/tmp/claude-501/-Users-ricardoaccioly-Repo-claude-canonical-spec-kit/25ac0636-5765-49fe-a808-dd97dc825b30/scratchpad/probe-phase2.mjs": 1,
-    "tests/canonical-docs-nested-phase2.test.mjs": 2,
-    "CHANGELOG.md": 2,
+    "cli/scanners/schemas.mjs": 1,
+    "cli/validators/todo-tracking.mjs": 1,
+    "tests/schemas.test.mjs": 1,
+    "tests/todo-tracking.test.mjs": 1,
+    "CHANGELOG.md": 1,
     "package.json": 1
   },
-  "anatomy_hits": 14,
-  "anatomy_misses": 2,
-  "repeated_reads_warned": 8,
+  "anatomy_hits": 0,
+  "anatomy_misses": 1,
+  "repeated_reads_warned": 0,
   "cerebrum_warnings": 0,
   "stop_count": 0
 }
