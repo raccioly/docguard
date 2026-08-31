@@ -257,7 +257,10 @@ export function collectCodeTests(dir, config = {}) {
   // 2. recursive scan of each source root (co-located + nested __tests__)
   for (const root of resolveSourceRoots(dir, config)) {
     for (const f of getFilesRecursive(root, config)) {
-      if (isTest(f)) codeTests.add(relative(dir, f));
+      if (isTest(f)) {
+        const rel = relative(dir, f);
+        if (!shouldIgnore(rel, config)) codeTests.add(rel);
+      }
     }
   }
 
@@ -266,7 +269,10 @@ export function collectCodeTests(dir, config = {}) {
     const testDir = join(resolve(dir), td);
     if (!existsSync(testDir)) continue;
     for (const f of getFilesRecursive(testDir, config)) {
-      if (isTest(f)) codeTests.add(relative(dir, f));
+      if (isTest(f)) {
+        const rel = relative(dir, f);
+        if (!shouldIgnore(rel, config)) codeTests.add(rel);
+      }
     }
   }
 
