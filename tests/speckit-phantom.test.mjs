@@ -12,7 +12,7 @@ import { execSync } from 'node:child_process';
 const CBX = '- [x' + '] ';
 const CBU = '- [ ' + '] ';
 
-import { validateSpecKitIntegration } from '../cli/scanners/speckit.mjs';
+import { validateSpecKitIntegration, parseCheckedTasks } from '../cli/scanners/speckit.mjs';
 
 let hasGit = true;
 try { execSync('git --version', { stdio: 'ignore' }); } catch { hasGit = false; }
@@ -234,5 +234,16 @@ describe('Spec-Kit — phantom-completion detection (SPK008/SPK009)', () => {
     assert.equal(clean.errors.length, 0);
     assert.deepEqual(phantoms(clean), []);
     assert.ok(clean.total > 0 && clean.passed <= clean.total);
+  });
+});
+
+describe('parseCheckedTasks', () => {
+  it('extracts checked tasks correctly', () => {
+    const content = 'Some text\n- [x] T123 Task 1\n- [X] T124 Task 2\n- [ ] T125 Task 3';
+    const tasks = parseCheckedTasks(content);
+    assert.equal(tasks.length, 2);
+    assert.equal(tasks[0].id, 'T123');
+    assert.equal(tasks[0].text, 'Task 1');
+    assert.equal(tasks[0].line, 2);
   });
 });
