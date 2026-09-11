@@ -3,7 +3,7 @@
  * Creates git hooks that run guard/score before commits.
  */
 
-import { existsSync, writeFileSync, mkdirSync, chmodSync, readFileSync, unlinkSync } from 'node:fs';
+import { existsSync, mkdirSync, chmodSync, readFileSync, unlinkSync } from 'node:fs';
 
 // v0.16-P3: managed-block markers. Letting users extend the hook with their
 // own commands (data-file guards, lint checks, etc.) without us clobbering
@@ -56,8 +56,27 @@ function spliceManagedBlock(existing, newBody) {
 }
 import { resolve, relative, basename } from 'node:path';
 import { c } from '../shared.mjs';
+import { safeWrite } from '../writers/generate-io.mjs';
 import { getHooksDir } from '../shared-git.mjs';
 import { listCanonicalDocs } from '../shared-ignore.mjs';
+
+// Git enforcement is offline and fail-closed; agent nudges stay best-effort.
+const ENFORCEMENT_RUNTIME = `
+if ! command -v node >/dev/null 2>&1; then
+  echo "❌ Node.js runtime not found — operation blocked" >&2
+  exit 1
+fi
+
+# Git runs these hooks from the worktree root. Prefer its installed version.
+if [ -x "./node_modules/.bin/docguard" ]; then
+  DOCGUARD="./node_modules/.bin/docguard"
+elif command -v docguard >/dev/null 2>&1; then
+  DOCGUARD="docguard"
+else
+  echo "❌ DocGuard not found locally or on PATH — operation blocked" >&2
+  exit 1
+fi
+`;
 
 const HOOKS = {
   'pre-commit': {
@@ -70,20 +89,11 @@ const HOOKS = {
 
 echo "🛡️  Running DocGuard guard..."
 
-# Check if docguard is available
-if command -v npx &> /dev/null; then
-  npx docguard-cli guard
-  EXIT_CODE=$?
-elif command -v docguard &> /dev/null; then
-  docguard guard
-  EXIT_CODE=$?
-else
-  echo "⚠️  DocGuard not found. Skipping guard check."
-  echo "   Install: npm install -g docguard"
-  exit 0
-fi
+${ENFORCEMENT_RUNTIME}
+"$DOCGUARD" guard
+EXIT_CODE=$?
 
-if [ $EXIT_CODE -eq 1 ]; then
+if [ "$EXIT_CODE" -ne 0 ] && [ "$EXIT_CODE" -ne 2 ]; then
   echo ""
   echo "❌ DocGuard guard FAILED — commit blocked"
   echo "   Fix the errors above, then try again."
@@ -110,22 +120,28 @@ MIN_SCORE=60
 
 echo "📊 Running DocGuard score check (minimum: $MIN_SCORE)..."
 
-# Get score as JSON
-if command -v npx &> /dev/null; then
-  RESULT=$(npx docguard-cli score --format json 2>/dev/null)
-elif command -v docguard &> /dev/null; then
-  RESULT=$(docguard score --format json 2>/dev/null)
-else
-  echo "⚠️  DocGuard not found. Skipping score check."
-  exit 0
+${ENFORCEMENT_RUNTIME}
+
+# Score has no warning exit status: any command failure blocks the push.
+RESULT=$("$DOCGUARD" score --format json)
+EXIT_CODE=$?
+if [ "$EXIT_CODE" -ne 0 ]; then
+  echo "❌ DocGuard score failed (exit $EXIT_CODE) — push blocked" >&2
+  exit 1
 fi
 
-# Parse score from JSON
-SCORE=$(echo "$RESULT" | grep -o '"score":[0-9]*' | head -1 | cut -d: -f2)
-
-if [ -z "$SCORE" ]; then
-  echo "⚠️  Could not determine CDD score. Push allowed."
-  exit 0
+# Parse the complete JSON document, never a substring or a nested score.
+SCORE=$(printf '%s' "$RESULT" | node -e '
+  try {
+    const result = JSON.parse(require("node:fs").readFileSync(0, "utf8"));
+    if (!result || Array.isArray(result) || !Number.isInteger(result.score) ||
+        result.score < 0 || result.score > 100) process.exit(1);
+    process.stdout.write(String(result.score));
+  } catch { process.exit(1); }
+')
+if [ "$?" -ne 0 ] || [ -z "$SCORE" ]; then
+  echo "❌ Could not determine a valid CDD score — push blocked" >&2
+  exit 1
 fi
 
 echo "   CDD Score: $SCORE/100"
@@ -188,24 +204,29 @@ const PRE_COMMIT_AUTOFIX = `#!/bin/sh
 # Install: docguard hooks --type pre-commit --auto-fix
 # Remove: rm .git/hooks/pre-commit
 
-RUN="npx docguard-cli"
-if command -v docguard >/dev/null 2>&1; then RUN="docguard"; fi
+${ENFORCEMENT_RUNTIME}
 
 echo "🛡️  DocGuard: applying mechanical fixes…"
 # 1. Deterministically remove stale documented endpoints (safe, no AI).
-$RUN fix --write
+if ! "$DOCGUARD" fix --write; then
+  echo "❌ DocGuard fix failed — commit blocked" >&2
+  exit 1
+fi
 # 2. Re-stage anything DocGuard rewrote so the fix is part of THIS commit.
-git add docs-canonical/ 2>/dev/null
+if ! git add docs-canonical/; then
+  echo "❌ Could not stage DocGuard fixes — commit blocked" >&2
+  exit 1
+fi
 
 # 3. Validate.
-$RUN guard
+"$DOCGUARD" guard
 EXIT_CODE=$?
 
-if [ $EXIT_CODE -eq 1 ]; then
+if [ "$EXIT_CODE" -ne 0 ] && [ "$EXIT_CODE" -ne 2 ]; then
   echo ""
   echo "❌ DocGuard guard FAILED — commit blocked."
   echo "   Remaining issues need an AI agent (content rewrites, not mechanical):"
-  echo "   Run: $RUN diagnose   (emits ready-to-paste agent fix prompts)"
+  echo "   Run: $DOCGUARD diagnose   (emits ready-to-paste agent fix prompts)"
   echo "   To skip: git commit --no-verify"
   exit 1
 elif [ $EXIT_CODE -eq 2 ]; then
@@ -306,7 +327,7 @@ export function runHooks(projectDir, config, flags) {
       // re-install.
       const spliced = spliceManagedBlock(existing, newContent);
       if (spliced !== null) {
-        writeFileSync(hookPath, spliced, 'utf-8');
+        safeWrite(hookPath, spliced);
         chmodSync(hookPath, 0o755);
         console.log(`  ${c.green}↻ ${name}${c.reset}: updated DocGuard managed block (preserved user content around it)`);
         installed++;
@@ -330,7 +351,7 @@ export function runHooks(projectDir, config, flags) {
       // --force path: write fresh managed-block version
     }
 
-    writeFileSync(hookPath, newContent, 'utf-8');
+    safeWrite(hookPath, newContent);
     chmodSync(hookPath, 0o755);
     console.log(`  ${c.green}✅ ${name}${c.reset}: ${desc}`);
     installed++;
@@ -402,7 +423,7 @@ export function installClaudeNudge(projectDir, { remove = false } = {}) {
     settings.hooks.PostToolUse = groups.filter(g => !isOurNudgeGroup(g));
     if (settings.hooks.PostToolUse.length === 0) delete settings.hooks.PostToolUse;
     if (Object.keys(settings.hooks).length === 0) delete settings.hooks;
-    writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n', 'utf-8');
+    safeWrite(settingsPath, JSON.stringify(settings, null, 2) + '\n');
     console.log(`  ${c.yellow}🗑️  Removed the DocGuard nudge hook from .claude/settings.json${c.reset} ${c.dim}(everything else preserved)${c.reset}\n`);
     return;
   }
@@ -420,7 +441,7 @@ export function installClaudeNudge(projectDir, { remove = false } = {}) {
   });
 
   if (!existsSync(settingsDir)) mkdirSync(settingsDir, { recursive: true });
-  writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n', 'utf-8');
+  safeWrite(settingsPath, JSON.stringify(settings, null, 2) + '\n');
   console.log(`  ${c.green}✅ Installed the DocGuard nudge hook${c.reset} → .claude/settings.json (PostToolUse)`);
   console.log(`  ${c.dim}After an agent edits a canonical doc (or code the docs reference), it is${c.reset}`);
   console.log(`  ${c.dim}nudged toward docguard guard --changed-only / docguard impact.${c.reset}`);
@@ -472,7 +493,7 @@ export function runNudgeHook(projectDir) {
     state[rel] = now;
     try {
       mkdirSync(resolve(projectDir, '.docguard'), { recursive: true });
-      writeFileSync(statePath, JSON.stringify(state, null, 2) + '\n', 'utf-8');
+      safeWrite(statePath, JSON.stringify(state, null, 2) + '\n');
     } catch { /* state is best-effort; still nudge */ }
 
     process.stdout.write(JSON.stringify({ decision: 'block', reason }) + '\n');

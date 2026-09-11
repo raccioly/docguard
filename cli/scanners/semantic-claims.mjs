@@ -1,3 +1,4 @@
+import { docRolePath } from '../shared-doc-roles.mjs';
 /**
  * Semantic claim extractor (LLM field report #5).
  *
@@ -21,10 +22,12 @@
  * Zero npm dependencies — pure Node.js built-ins.
  */
 
-import { existsSync, readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { lstatSync, realpathSync, readdirSync, openSync, readSync, fstatSync, closeSync, constants } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
+import { resolve, relative, isAbsolute, sep } from 'node:path';
 import { loadIgnorePatterns } from '../shared.mjs';
-import { listCanonicalDocs } from '../shared-ignore.mjs';
+
 
 // Numbers are only claims when adjacent to a recognized unit.
 const NUMBER_PATTERNS = [
@@ -44,26 +47,167 @@ const NUMBER_PATTERNS = [
 const ENUM_LIST_RE = /\b[A-Z][A-Z0-9_]{2,}(?:\s*(?:\/|,|\||\bor\b)\s*[A-Z][A-Z0-9_]{2,}){1,}\b/g;
 const ENUM_CONTEXT_RE = /\b(status|state|enum|values?|one of|phase|stage|transitions?)\b/i;
 
-// A code path mentioned in or near the claim — the agent's starting point.
-const CITED_CODE_RE = /`?([\w./-]+\.(?:ts|tsx|js|mjs|cjs|jsx|py|go|rs|java|kt|rb|php|sql|yaml|yml|json))`?(?::(\d+))?/;
+export const SEMANTIC_COVERAGE_LIMITATION = 'Semantic claim discovery is limited to docs-canonical/**/*.md, explicitly mapped Markdown document roles, README.md, and AGENTS.md, subject to ignores, safety checks, and scan budgets. Other resolved documentation homes are unscanned/unsupported by this extractor; guard coverage labels do not extend this scope. Hashes cover only captured document and cited-source inputs, not all documentation or factual correctness.';
 
 const MAX_CLAIMS = 80;
+const MAX_EVIDENCE_FILE_BYTES = 1024 * 1024;
+const MAX_EVIDENCE_BYTES = 8 * MAX_EVIDENCE_FILE_BYTES;
+const MAX_EVIDENCE_FILES = 128;
+const MAX_CITED_SOURCES = 8;
 
-/** Canonical docs + the root docs where limits/counts commonly live. */
-function claimSourceDocs(projectDir) {
-  // Honor .docguardignore: a doc the user explicitly excluded from validation
-  // (e.g. a historical audit full of point-in-time counts) must not feed the
-  // "unverified claims" pool either — it inflated the count and buried the
-  // claims that ARE actionable (bug-212).
-  const isIgnored = loadIgnorePatterns(projectDir);
-  // Recursive — nested canonical docs make claims too. The ignore predicate is
-  // applied per-doc inside the helper against the full relative path, so a
-  // pattern like `docs-canonical/99-archive/**` still excludes a subtree.
-  const docs = listCanonicalDocs(projectDir, { isIgnored }).map(d => d.rel);
-  for (const root of ['README.md', 'AGENTS.md']) {
-    if (existsSync(resolve(projectDir, root)) && !isIgnored(root)) docs.push(root);
+export function contentHash(content) {
+  return `sha256:${createHash('sha256').update(content).digest('hex')}`;
+}
+
+function unknownFile(path, reason) {
+  return { path: path || null, status: 'unknown', hash: null, reason };
+}
+
+function privateSegment(part) {
+  return part.toLowerCase() === '.local' || /^\.env(?:\.|$)/i.test(part);
+}
+
+/** Per-run bounded cache. Never follows symlinks, reads secrets, or leaves root. */
+export function createEvidenceReader(projectDir) {
+  let root;
+  try { root = realpathSync(projectDir); } catch { /* unknown root */ }
+  const cache = new Map();
+  let bytes = 0;
+  return (citation) => {
+    const path = typeof citation === 'string' ? citation.replace(/:\d+(?:-\d+)?$/, '') : null;
+    if (!path) return { evidence: unknownFile(path, 'not-cited'), content: null };
+    if (cache.has(path)) return cache.get(path);
+    const fail = (reason) => ({ evidence: unknownFile(path, reason), content: null });
+    if (!root || isAbsolute(path) || /[\\:\0]/.test(path) || path.split('/').some(p => p === '..' || privateSegment(p))) {
+      return fail('unsafe-path');
+    }
+    if (cache.size >= MAX_EVIDENCE_FILES) return fail('file-budget');
+    let result;
+    let fd;
+    try {
+      let full = root;
+      let inspected;
+      for (const part of path.split('/').filter(p => p && p !== '.')) {
+        full = resolve(full, part);
+        inspected = lstatSync(full);
+        if (inspected.isSymbolicLink()) throw new Error('symlink');
+      }
+      const actual = realpathSync(full);
+      const rel = relative(root, actual);
+      if (!rel || rel === '..' || rel.startsWith(`..${sep}`) || isAbsolute(rel) || rel.split(sep).some(privateSegment)) {
+        throw new Error('unsafe-path');
+      }
+      fd = openSync(actual, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
+      const stat = fstatSync(fd);
+      if (!stat.isFile()) throw new Error('not-file');
+      if (stat.dev !== inspected?.dev || stat.ino !== inspected?.ino) throw new Error('changed-during-read');
+      if (stat.size > MAX_EVIDENCE_FILE_BYTES) throw new Error('file-too-large');
+      if (bytes + stat.size > MAX_EVIDENCE_BYTES) throw new Error('byte-budget');
+      const buffer = Buffer.alloc(stat.size);
+      let offset = 0;
+      while (offset < buffer.length) {
+        const n = readSync(fd, buffer, offset, buffer.length - offset, offset);
+        if (!n) break;
+        offset += n;
+      }
+      bytes += offset;
+      const after = fstatSync(fd);
+      if (offset !== stat.size || after.size !== stat.size || after.mtimeMs !== stat.mtimeMs || after.ctimeMs !== stat.ctimeMs) {
+        throw new Error('changed-during-read');
+      }
+      result = { evidence: { path, status: 'snapshot', hash: contentHash(buffer) }, content: buffer.toString('utf8') };
+    } catch (err) {
+      const reasons = ['symlink', 'unsafe-path', 'not-file', 'file-too-large', 'byte-budget', 'changed-during-read'];
+      result = fail(reasons.includes(err.message) ? err.message : 'unavailable');
+    } finally {
+      if (fd !== undefined) closeSync(fd);
+    }
+    cache.set(path, result);
+    return result;
+  };
+}
+
+/** Candidate paths only; the reader decides whether they can be used safely. */
+export function citedSources(text, limit = MAX_CITED_SOURCES) {
+  const paths = [];
+  for (const match of String(text || '').slice(0, 32768).matchAll(/`([^`\n]+)`|([^\s`]+)/g)) {
+    const candidate = match[1] || match[2].replace(/^[(["']+|[)\],;.!"']+$/g, '');
+    if (!/(?:\.(?:ts|tsx|js|mjs|cjs|jsx|py|go|rs|java|kt|rb|php|sql|yaml|yml|json)|(?:^|\/)\.env(?:\.[\w.-]+)?)(?::\d+(?:-\d+)?)?$/.test(candidate)) continue;
+    if (!paths.includes(candidate)) paths.push(candidate);
+    if (paths.length >= limit) break;
+  }
+  return paths;
+}
+
+/** Stable identity excludes line numbers, discovery order, and content hashes. */
+export function semanticClaimId(claim) {
+  return `claim.${contentHash(JSON.stringify([
+    claim.doc, claim.section, claim.kind, claim.subkind, claim.value, claim.unit,
+    String(claim.text || '').replace(/\s+/g, ' ').trim(),
+    (claim.citedCode || '').replace(/:\d+(?:-\d+)?$/, ''),
+  ])).slice(7)}`;
+}
+
+/** Hashes bind a snapshot to its inputs; they are never evidence of review. */
+export function taskEvidence(read, doc, citations = [], taskContent = '') {
+  const document = read(doc).evidence;
+  const citedSourceFiles = [...new Set(citations)].slice(0, MAX_CITED_SOURCES).map(p => read(p).evidence);
+  const snapshot = { document, citedSources: citedSourceFiles, taskContentHash: contentHash(taskContent) };
+  return {
+    kind: 'snapshot', verification: 'unverified', factualAccuracy: 'unknown',
+    limitation: SEMANTIC_COVERAGE_LIMITATION,
+    ...snapshot,
+    sourceCoverage: citedSourceFiles.length && citedSourceFiles.every(s => s.status === 'snapshot') ? 'cited-only' : 'unknown',
+    snapshotHash: contentHash(JSON.stringify(snapshot)),
+  };
+}
+
+/** Two bounded read-only Git queries per artifact, never per task. */
+export function gitEvidence(projectDir) {
+  const result = { revision: null, dirty: null, status: 'unknown' };
+  const options = { cwd: projectDir, encoding: 'utf8', timeout: 1500, maxBuffer: 65536,
+    stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, GIT_OPTIONAL_LOCKS: '0' } };
+  try {
+    const revision = execFileSync('git', ['rev-parse', '--verify', 'HEAD'], options).trim();
+    if (/^[a-f0-9]{40,64}$/.test(revision)) result.revision = revision;
+  } catch { /* missing Git/revision stays unknown */ }
+  try {
+    result.dirty = execFileSync('git', ['status', '--porcelain', '--untracked-files=normal'], options).length > 0;
+  } catch { /* dirty state unknown */ }
+  if (result.revision !== null && result.dirty !== null) result.status = 'snapshot';
+  return result;
+}
+
+/** Bounded canonical inventory that does not traverse private or symlink dirs. */
+export function evidenceDocs(projectDir, config = {}) {
+  const docs = [];
+  let directories = 0;
+  const walk = (rel) => {
+    if (++directories > MAX_EVIDENCE_FILES || docs.length >= MAX_EVIDENCE_FILES) return;
+    try {
+      if (lstatSync(resolve(projectDir, rel)).isSymbolicLink()) return;
+      for (const entry of readdirSync(resolve(projectDir, rel), { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+        if (docs.length >= MAX_EVIDENCE_FILES) break;
+        if (entry.isSymbolicLink() || privateSegment(entry.name)) continue;
+        const path = `${rel}/${entry.name}`;
+        if (entry.isDirectory() && !entry.name.startsWith('.')) walk(path);
+        else if (entry.isFile() && /\.md$/i.test(entry.name)) docs.push(path);
+      }
+    } catch { /* inventory is heuristic, not proof of coverage */ }
+  };
+  walk('docs-canonical');
+  for (const role of Object.keys(config.docs?.roles || {})) {
+    const path = docRolePath(config, role);
+    if (/\.md$/i.test(path) && !docs.includes(path)) docs.push(path);
   }
   return docs;
+}
+
+/** Canonical docs + root docs, honoring the existing ignore contract. */
+function claimSourceDocs(projectDir, read, config) {
+  // The legacy matcher reads its file itself; never call it for an unsafe file.
+  const isIgnored = read('.docguardignore').content === null ? () => false : loadIgnorePatterns(projectDir);
+  return [...evidenceDocs(projectDir, config), 'README.md', 'AGENTS.md'].filter(doc => !isIgnored(doc));
 }
 
 /** True if a line is inside a fenced code block (toggled by the caller). */
@@ -74,8 +218,8 @@ function findCitedCode(lines, idx) {
   for (let d = 0; d <= 1; d++) {
     for (const j of d === 0 ? [idx] : [idx - d, idx + d]) {
       if (j < 0 || j >= lines.length) continue;
-      const m = CITED_CODE_RE.exec(lines[j]);
-      if (m) return m[2] ? `${m[1]}:${m[2]}` : m[1];
+      const cited = citedSources(lines[j], 1)[0];
+      if (cited) return cited;
     }
   }
   return null;
@@ -85,13 +229,13 @@ function findCitedCode(lines, idx) {
  * Extract semantic claims from a project's canonical docs.
  * @returns {Array<{ doc, line, section, kind, subkind, value, unit, text, citedCode }>}
  */
-export function extractSemanticClaims(projectDir, config = {}) {
+export function extractSemanticClaims(projectDir, config = {}, read = createEvidenceReader(projectDir)) {
   const claims = [];
   const seen = new Set();
 
-  for (const doc of claimSourceDocs(projectDir)) {
-    let content;
-    try { content = readFileSync(resolve(projectDir, doc), 'utf-8'); } catch { continue; }
+  for (const doc of claimSourceDocs(projectDir, read, config)) {
+    const { content } = read(doc);
+    if (content === null) continue;
     const lines = content.split('\n');
     let section = '';
     let inFence = false;
@@ -108,7 +252,11 @@ export function extractSemanticClaims(projectDir, config = {}) {
         const key = `${doc}:${lineNo}:${claim.kind}:${claim.value}:${claim.unit || ''}`;
         if (seen.has(key)) return;
         seen.add(key);
-        claims.push({ doc, line: lineNo, section, citedCode: findCitedCode(lines, i), text: line.trim().slice(0, 200), ...claim });
+        if (claims.length >= MAX_CLAIMS) return;
+        const candidate = { doc, line: lineNo, section, citedCode: findCitedCode(lines, i), text: line.trim().slice(0, 200), ...claim };
+        candidate.stableId = semanticClaimId({ ...candidate, text: line.trim() });
+        candidate.evidence = taskEvidence(read, doc, candidate.citedCode ? [candidate.citedCode] : [], line.trim());
+        claims.push(candidate);
       };
 
       for (const { kind, re } of NUMBER_PATTERNS) {
@@ -147,6 +295,8 @@ export function buildSemanticVerifyTasks(claims) {
       : `the ${c.subkind} value ${c.value}${c.unit ? ` ${c.unit}` : ''}`;
     return {
       id: `verify.semantic.${i + 1}`,
+      stableId: c.stableId || semanticClaimId(c),
+      evidence: c.evidence || taskEvidence(path => ({ evidence: unknownFile(path, 'not-captured') }), c.doc, c.citedCode ? [c.citedCode] : []),
       doc: c.doc,
       line: c.line,
       section: c.section,
@@ -155,7 +305,7 @@ export function buildSemanticVerifyTasks(claims) {
       unit: c.unit,
       citedCode: c.citedCode,
       claim: c.text,
-      instruction: `Verify ${what} documented in ${c.doc}:${c.line}${c.section ? ` (section "${c.section}")` : ''} against the code.${where} If the code disagrees, the doc (or the code) is wrong — report the mismatch with both values.`,
+      instruction: `Verify ${what} documented in ${c.doc}:${c.line}${c.section ? ` (section "${c.section}")` : ''} against the code.${where} If the code disagrees, the doc (or the code) is wrong — report the mismatch with both values. Attached hashes capture an unverified snapshot; guard does not verify this claim.`,
       confidence: 'requires-human',
     };
   });

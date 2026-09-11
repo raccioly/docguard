@@ -1,3 +1,5 @@
+import { hasWorkerConfig } from './shared-source.mjs';
+import { applyDocRoles } from './shared-doc-roles.mjs';
 /**
  * DocGuard — configuration loading.
  *
@@ -78,9 +80,9 @@ export function loadConfig(projectDir) {
       environment: true,
       freshness: true,
       // v0.31.0 — all three default ON. Soft (confidence:low, never break CI),
-      // precise (zero false positives across the 6-repo corpus), and quiet when
+      // heuristic (field cases require ongoing precision checks), and quiet when
       // not applicable (no diff / no API-reference doc). api-doc-smells is
-      // low-yield but zero-FP, so on-by-default beats a self-counting split.
+      // Detection yield and false positives must be measured per supported syntax.
       diffSuspicion: true,
       referenceExistence: true,
       apiDocSmells: true,
@@ -139,7 +141,7 @@ export function loadConfig(projectDir) {
       // Merge .docguardignore patterns into config.ignore so every validator
       // honors them without having to know about the file.
       mergeIgnoreFile(projectDir, merged);
-      return merged;
+      return applyDocRoles(projectDir, merged);
     } catch (e) {
       console.error(`${c.red}Error parsing .docguard.json: ${e.message}${c.reset}`);
       process.exit(1);
@@ -162,6 +164,7 @@ export function loadConfig(projectDir) {
  * Returns: 'cli' | 'library' | 'webapp' | 'api' | 'unknown'
  */
 function autoDetectProjectType(dir) {
+  if (hasWorkerConfig(dir)) return 'api';
   const pkgPath = resolve(dir, 'package.json');
   if (existsSync(pkgPath)) {
     try {

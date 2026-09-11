@@ -1,3 +1,4 @@
+import { remapDocPath } from '../shared-doc-roles.mjs';
 /**
  * Structure Validator — Checks that all required CDD files exist
  *
@@ -105,7 +106,8 @@ export function validateDocSections(projectDir, config) {
       : ['## Setup Steps'], // Always need setup steps, env vars optional
   };
 
-  for (const [file, sections] of Object.entries(requiredSections)) {
+  for (const [defaultFile, sections] of Object.entries(requiredSections)) {
+    const file = remapDocPath(config, defaultFile);
     const fullPath = resolve(projectDir, file);
     if (!existsSync(fullPath)) continue;
 

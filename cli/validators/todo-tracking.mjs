@@ -19,6 +19,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, relative, extname } from 'node:path';
 import { shouldIgnore, walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
+import { parseJsTs, walk } from '../scanners/js-ast.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build', 'coverage',
@@ -62,7 +63,7 @@ function commentPortion(line) {
 
 // Test skip patterns for common test frameworks
 const SKIP_PATTERNS = [
-  /\btest\.skip\s*\(/,
+  /\btest\.(?:skip|fixme)\s*\(/,
   /\bit\.skip\s*\(/,
   /\bdescribe\.skip\s*\(/,
   /\bxit\s*\(/,
@@ -73,8 +74,61 @@ const SKIP_PATTERNS = [
   /\bit\.todo\s*\(/,
 ];
 
-// Skip explanation patterns (comments that justify the skip)
-const SKIP_REASON_PATTERN = /\/\/\s*(REASON|SKIP|TODO|FIXME|NOTE|WHY)\s*:/i;
+// Reasons must contain text and belong to this call, not a neighboring test.
+const SKIP_REASON_PATTERN = /(?:REASON|SKIP|TODO|FIXME|NOTE|WHY)\s*:\s*\S/i;
+
+function hasAdjacentReason(content, call, comments) {
+  return comments.some(comment => {
+    if (!SKIP_REASON_PATTERN.test(comment.value)) return false;
+    if (comment.end <= call.start) {
+      // A trailing comment belongs to the preceding statement.
+      const lineStart = content.lastIndexOf('\n', comment.start - 1) + 1;
+      if (!/^\s*$/.test(content.slice(lineStart, comment.start))) return false;
+      const gap = content.slice(comment.end, call.start);
+      return call.loc.start.line - comment.loc.end.line <= 3 && /^\s*$/.test(gap);
+    }
+    if (comment.start >= call.end && comment.loc.start.line === call.loc.end.line) {
+      return /^[\s;]*$/.test(content.slice(call.end, comment.start));
+    }
+    return false;
+  });
+}
+
+function skippedCalls(content, filename) {
+  const { ast, ok } = parseJsTs(content, filename);
+  if (!ok || ast.errors?.length) return null;
+  const calls = [];
+  walk(ast, node => {
+    if (node.type !== 'CallExpression') return;
+    const callee = content.slice(node.callee.start, node.callee.end).replace(/\s/g, '');
+    if (!/^(?:(?:test(?:\.describe)?|it|describe)\.(?:skip|todo)|test\.fixme|xit|xdescribe|xtest)$/.test(callee)) return;
+    const [condition, reason] = node.arguments;
+    // Playwright's conditional overload takes a reason in argument two.
+    // A title followed by a callback is a declaration, not an explanation.
+    const explicitReason = /^(?:test\.skip|test\.fixme)$/.test(callee) &&
+      condition && condition.type !== 'StringLiteral' && condition.type !== 'TemplateLiteral' &&
+      (reason?.type === 'StringLiteral' && reason.value.trim().length > 0 ||
+        reason?.type === 'TemplateLiteral' && reason.expressions.length === 0 &&
+        reason.quasis.some(part => (part.value.cooked ?? part.value.raw).trim().length > 0));
+    calls.push({ line: node.loc.start.line, hasReason: Boolean(explicitReason) ||
+      hasAdjacentReason(content, node, ast.comments || []) });
+  });
+  return calls;
+}
+
+// Parser failure/unavailability cannot turn an unexplained skip into a pass.
+function fallbackSkippedCalls(content) {
+  const lines = content.split('\n');
+  const calls = [];
+  for (let i = 0; i < lines.length; i++) {
+    if (!SKIP_PATTERNS.some(p => p.test(lines[i]))) continue;
+    // Only a directly preceding comment is unambiguous without a parser.
+    const previous = lines[i - 1] || '';
+    calls.push({ line: i + 1, hasReason: /^\s*\/\//.test(previous) &&
+      SKIP_REASON_PATTERN.test(previous) });
+  }
+  return calls;
+}
 
 /**
  * Main validator — checks for untracked TODOs and unexplained test skips.
@@ -139,29 +193,8 @@ function checkSkippedTests(projectDir, config) {
     const hasSkip = SKIP_PATTERNS.some(p => p.test(content));
     if (!hasSkip) continue;
 
-    const lines = content.split('\n');
-
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-
-      // Check if this line has a test skip pattern
-      const isSkipped = SKIP_PATTERNS.some(p => p.test(line));
-      if (!isSkipped) continue;
-
-      // Check surrounding lines (3 above, 1 below, and inline) for explanation
-      // Developers commonly place block comments above the skip call
-      const surroundingLines = [];
-      for (let j = Math.max(0, i - 3); j <= Math.min(lines.length - 1, i + 1); j++) {
-        surroundingLines.push(lines[j]);
-      }
-
-      // Also check for block comment pattern: /* REASON: ... */ or /** ... REASON: ... */
-      const blockCommentPattern = /\/\*[\s\S]*?(REASON|SKIP|TODO|FIXME|NOTE|WHY)\s*:/i;
-
-      const hasReason =
-        surroundingLines.some(l => SKIP_REASON_PATTERN.test(l)) ||
-        blockCommentPattern.test(surroundingLines.join('\n'));
-
+    const calls = skippedCalls(content, relPath) ?? fallbackSkippedCalls(content);
+    for (const { line, hasReason } of calls) {
       if (hasReason) {
         skippedWithReason++;
       } else {
@@ -170,9 +203,9 @@ function checkSkippedTests(projectDir, config) {
           code: 'TDO001',
           validator: 'todoTracking',
           severity: 'warn',
-          message: `Skipped test without explanation at ${relPath}:${i + 1}. ` +
+          message: `Skipped test without explanation at ${relPath}:${line}. ` +
             `Add a // REASON: comment explaining why the test is skipped`,
-          location: `${relPath}:${i + 1}`,
+          location: `${relPath}:${line}`,
           suggestion: {
             kind: 'fix',
             text: 'Add a // REASON: comment on or up to 3 lines above the skip explaining why',

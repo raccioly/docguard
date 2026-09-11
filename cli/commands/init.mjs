@@ -1,3 +1,4 @@
+import { assertDefaultDocWrites } from '../shared-doc-roles.mjs';
 /**
  * Init Command — Initialize CDD documentation from templates
  *
@@ -9,7 +10,7 @@
  * with a warning suggesting spec-kit installation.
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync, lstatSync, realpathSync, copyFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { listCanonicalDocs } from '../shared-ignore.mjs';
 import { fileURLToPath } from 'node:url';
@@ -17,14 +18,15 @@ import { createInterface } from 'node:readline';
 import { execSync } from 'node:child_process';
 import { c, PROFILES, CURRENT_SCHEMA_VERSION } from '../shared.mjs';
 import { ensureSkills, detectAgentMode, detectAIAgent, isSpecKitAvailable, isSpecKitInitialized, getDetectedAgent, safeSpawnSpecify } from '../ensure-skills.mjs';
+import { safeWrite } from '../writers/generate-io.mjs';
 
 // v0.20: scaffolder names that can be passed via `init --with <name>` and
-// dispatched to the corresponding standalone runner. Each name maps to its
-// canonical command module. Keep in sync with cli/docguard.mjs router.
+// dispatched to their writers. CI scaffolding is distinct from the standalone
+// `ci` validation gate; it copies the maintained workflow starter.
 const SCAFFOLDER_DISPATCH = {
   agents:  async (dir, cfg, flags) => (await import('./agents.mjs')).runAgents(dir, cfg, flags),
   hooks:   async (dir, cfg, flags) => (await import('./hooks.mjs')).runHooks(dir, cfg, flags),
-  ci:      async (dir, cfg, flags) => (await import('./ci.mjs')).runCI(dir, cfg, flags),
+  ci:      (dir, cfg, flags) => scaffoldCI(dir, flags),
   badge:   async (dir, cfg, flags) => (await import('./badge.mjs')).runBadge(dir, cfg, flags),
   llms:    async (dir, cfg, flags) => (await import('./llms.mjs')).runLlms(dir, cfg, flags),
   publish: async (dir, cfg, flags) => (await import('./publish.mjs')).runPublish(dir, cfg, flags),
@@ -78,6 +80,43 @@ function detectProjectType(dir) {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const TEMPLATES_DIR = resolve(__dirname, '../../templates');
+
+function scaffoldCI(projectDir, flags) {
+  // Resolve the user's root once (e.g. macOS /tmp), then refuse symlinks in
+  // every destination component, including the backup safeWrite will use.
+  const root = realpathSync(projectDir);
+  const target = resolve(root, '.github/workflows/docguard.yml');
+  let existing;
+  for (const [path, directory] of [
+    [resolve(root, '.github'), true],
+    [dirname(target), true],
+    [target, false],
+    [target + '.bak', false],
+  ]) {
+    let stat;
+    try { stat = lstatSync(path); } catch (err) {
+      if (err.code === 'ENOENT') continue;
+      throw err;
+    }
+    if (stat.isSymbolicLink() || (directory ? !stat.isDirectory() : !stat.isFile())) {
+      throw new Error(`Unsafe CI scaffold path: ${path} (expected a real ${directory ? 'directory' : 'file'}, not a symlink)`);
+    }
+    if (!directory && stat.nlink > 1) throw new Error(`Unsafe CI scaffold path: ${path} (hard-linked file)`);
+    if (path === target) existing = stat;
+  }
+  if (existing && !flags.force) {
+    console.log(`  ${c.dim}⏭️  .github/workflows/docguard.yml exists; use --force to overwrite${c.reset}`);
+    return;
+  }
+  // Copy literally: the starter's fixed package pin is release-tested, and
+  // GitHub expressions must not go through canonical-doc interpolation.
+  const content = readFileSync(resolve(TEMPLATES_DIR, 'ci/github-actions.yml'), 'utf-8');
+  // safeWrite's generic backup is best-effort and skips empty files. Here a
+  // forced replacement requires a successful backup, including empty files.
+  if (existing) copyFileSync(target, target + '.bak');
+  safeWrite(target, content);
+  console.log(`  ${c.green}✅ .github/workflows/docguard.yml ${existing ? 'replaced (backup: docguard.yml.bak)' : 'created'}${c.reset}`);
+}
 
 /**
  * v0.28 (field report #11): inject a `<!-- docguard:last-reviewed DATE -->`
@@ -160,6 +199,7 @@ function shouldRunGenerate(projectDir, flags) {
 }
 
 export async function runInit(projectDir, config, flags) {
+  if (true) assertDefaultDocWrites(config);
   // v0.20: `--wizard` dispatches to the full interactive onboarding (formerly
   // `docguard setup`). Done before profile validation so the wizard can ask
   // for the profile itself if needed.
@@ -178,7 +218,13 @@ export async function runInit(projectDir, config, flags) {
     console.log(`${c.dim}   canonical docs from your code instead of dumping a blank skeleton.${c.reset}`);
     console.log(`${c.dim}   (Opt out: ${c.cyan}docguard init --skeleton${c.dim} for the blank-template path.)${c.reset}\n`);
     const { runGenerate } = await import('./generate.mjs');
-    return runGenerate(projectDir, config, { ...flags, plan: true });
+    const result = await runGenerate(projectDir, config, { ...flags, plan: true });
+    // Smart init still honors explicit workflow/scaffolder requests after the
+    // plan, with the same ordering and stop-on-failure semantics as skeletons.
+    if (Array.isArray(flags.with) && flags.with.length > 0) {
+      await runScaffolders(projectDir, config, flags, flags.with);
+    }
+    return result;
   }
 
   const profileName = flags.profile || 'standard';

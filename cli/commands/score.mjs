@@ -1,3 +1,4 @@
+import { applyDocRoles, remapDocPath, resolveDocRole } from '../shared-doc-roles.mjs';
 /**
  * Score Command — Calculate CDD maturity score (0-100)
  * Shows category breakdown with weighted scoring.
@@ -146,6 +147,7 @@ const WEIGHTS = {
 };
 
 export function runScore(projectDir, config, flags) {
+  config = applyDocRoles(projectDir, config);
   // v0.33: `--trend` renders the local score history recorded by `docguard
   // ci` (.docguard/history.jsonl) instead of recomputing a score.
   if (flags.trend) return runTrend(projectDir, config, flags);
@@ -162,9 +164,9 @@ export function runScore(projectDir, config, flags) {
 
   const { scores, totalScore, grade, details } = calcAllScores(projectDir, config);
 
-  // ── "Memory" framing: split signals into Completeness vs Accuracy ──
-  // Completeness = "is the memory whole?"  Accuracy = "does it match code?"
-  // No weight changes — just a derived view of the existing per-category scores.
+  // Structural signals are useful proxies, not a measurement of factual truth.
+  // Preserve threshold arithmetic while making the evidence boundary explicit.
+  const assurance = buildScoreAssurance(projectDir, config);
   const COMPLETENESS = new Set(['structure', 'docQuality']);
   const memory = (() => {
     let cW = 0, cP = 0, aW = 0, aP = 0;
@@ -175,7 +177,8 @@ export function runScore(projectDir, config, flags) {
     }
     return {
       completeness: cW ? Math.round(cP / cW) : 0,
-      accuracy: aW ? Math.round(aP / aW) : 0,
+      structuralAlignment: aW ? Math.round(aP / aW) : 0,
+      accuracy: null,
     };
   })();
 
@@ -185,6 +188,8 @@ export function runScore(projectDir, config, flags) {
       project: config.projectName,
       score: totalScore,
       grade,
+      scoreKind: 'structural-maturity',
+      assurance,
       memory,
       categories: {},
     };
@@ -193,7 +198,7 @@ export function runScore(projectDir, config, flags) {
         score,
         weight: WEIGHTS[cat],
         weighted: Math.round((score / 100) * WEIGHTS[cat]),
-        axis: COMPLETENESS.has(cat) ? 'completeness' : 'accuracy',
+        axis: COMPLETENESS.has(cat) ? 'completeness' : 'structuralAlignment',
       };
     }
     console.log(JSON.stringify(result, null, 2));
@@ -217,11 +222,11 @@ export function runScore(projectDir, config, flags) {
   console.log(`  ${gradeColor}${c.bold}CDD Maturity Score: ${totalScore}/100 (${grade})${c.reset}`);
   // Memory framing: is the documentation memory COMPLETE and ACCURATE?
   const memColor = (s) => s >= 80 ? c.green : s >= 60 ? c.yellow : c.red;
-  console.log(`  ${c.dim}Memory:${c.reset} ${memColor(memory.completeness)}Completeness ${memory.completeness}%${c.reset} ${c.dim}·${c.reset} ${memColor(memory.accuracy)}Accuracy ${memory.accuracy}%${c.reset}`);
+  console.log(`  ${c.dim}Memory:${c.reset} ${memColor(memory.completeness)}Completeness ${memory.completeness}%${c.reset} ${c.dim}·${c.reset} ${c.cyan}Factual accuracy: unverified${c.reset}`);
 
   // Grade description
   const descriptions = {
-    'A+': 'Excellent — CDD fully adopted',
+    'A+': 'Excellent structural maturity — factual claims still require verification',
     'A': 'Great — Strong CDD compliance',
     'B': 'Good — Most CDD practices in place',
     'C': 'Fair — Partial CDD adoption',
@@ -229,6 +234,7 @@ export function runScore(projectDir, config, flags) {
     'F': 'Not Started — Run `docguard init` first',
   };
   console.log(`  ${c.dim}${descriptions[grade]}${c.reset}\n`);
+  console.log(`  ${c.dim}${assurance.unverifiedClaims ?? 'Unknown number of'} extracted claim(s) await verification. No extracted claims does not prove correctness.${c.reset}\n`);
 
   // Suggestions
   const weakest = Object.entries(scores)
@@ -401,8 +407,21 @@ function runTrend(projectDir, config, flags) {
  * Used by badge, ci, and other commands that need the score.
  */
 export function runScoreInternal(projectDir, config) {
+  config = applyDocRoles(projectDir, config);
   const { scores, totalScore, grade } = calcAllScores(projectDir, config);
-  return { score: totalScore, grade, categories: scores };
+  return { score: totalScore, grade, categories: scores, scoreKind: 'structural-maturity', assurance: buildScoreAssurance(projectDir, config) };
+}
+
+/** Evidence boundary shared by human, CI, report, and MCP score consumers. */
+export function buildScoreAssurance(projectDir, config) {
+  let unverifiedClaims = null;
+  try { unverifiedClaims = extractSemanticClaims(projectDir, config).length; } catch { /* unknown, never zero on failure */ }
+  return {
+    status: 'unverified',
+    factualAccuracy: null,
+    unverifiedClaims,
+    limitation: 'Structural maturity is not factual accuracy. Claim discovery is heuristic; uncaptured prose remains unverified.',
+  };
 }
 
 /**
@@ -528,11 +547,11 @@ export function computeAlcoaCompliance(projectDir, config, scores) {
   } else {
     attributes.push({
       name: 'Accurate',
-      met: true,
-      status: 'met',
-      evidence: `Drift: ${scores.drift}%, doc quality: ${scores.docQuality}%, no unverified factual claims`,
-      gap: null,
-      fix: null,
+      met: false,
+      status: 'unverified',
+      evidence: null,
+      gap: 'No candidate claims extracted; factual accuracy of the prose has not been established',
+      fix: 'Review material claims against source evidence and approved requirements',
     });
   }
 
@@ -657,7 +676,8 @@ function calcDocQualityScore(dir, config) {
   let total = 0;
   const failures = []; // Track specific failures for actionable suggestions
 
-  for (const [file, sections] of Object.entries(checks)) {
+  for (const [defaultFile, sections] of Object.entries(checks)) {
+    const file = remapDocPath(config, defaultFile);
     const fullPath = resolve(dir, file);
     if (!existsSync(fullPath)) {
       failures.push({ file, issue: 'file missing' });
@@ -761,7 +781,7 @@ function calcTestingScore(dir, config) {
   else failures.push({ issue: 'no test files found (looked in tests/, src/**/__tests__, and configured testPatterns)' });
 
   // ── Check 2: TEST-SPEC.md exists (30 pts) ──
-  if (existsSync(resolve(dir, 'docs-canonical/TEST-SPEC.md'))) score += 30;
+  if (existsSync(resolveDocRole(dir, config, 'testSpec'))) score += 30;
   else failures.push({ issue: 'TEST-SPEC.md missing', fixCmd: 'docguard fix --doc test-spec' });
 
   // ── Check 3: Test config or built-in runner (15 pts) ──
@@ -853,7 +873,7 @@ function calcSecurityScore(dir, config) {
   const failures = [];
 
   // SECURITY.md exists (25 pts)
-  if (existsSync(resolve(dir, 'docs-canonical/SECURITY.md'))) score += 25;
+  if (existsSync(resolveDocRole(dir, config, 'security'))) score += 25;
   else failures.push({ issue: 'SECURITY.md missing', fixCmd: 'docguard fix --doc security' });
 
   // .gitignore exists and includes .env (15 + 15 pts)
@@ -908,7 +928,7 @@ function calcEnvironmentScore(dir, config) {
   const ptc = config.projectTypeConfig || {};
   const failures = [];
 
-  if (existsSync(resolve(dir, 'docs-canonical/ENVIRONMENT.md'))) score += 40;
+  if (existsSync(resolveDocRole(dir, config, 'environment'))) score += 40;
   else failures.push({ issue: 'ENVIRONMENT.md missing', fixCmd: 'docguard fix --doc environment' });
 
   // .env.example — only check if project needs env vars
@@ -978,8 +998,8 @@ function calcChangelogScore(dir, config) {
   return { score: Math.min(100, score), failures };
 }
 
-function calcArchitectureScore(dir) {
-  const archPath = resolve(dir, 'docs-canonical/ARCHITECTURE.md');
+function calcArchitectureScore(dir, config) {
+  const archPath = resolveDocRole(dir, config, 'architecture');
   if (!existsSync(archPath)) {
     return { score: 0, failures: [{ issue: 'ARCHITECTURE.md missing', fixCmd: 'docguard fix --doc architecture' }] };
   }

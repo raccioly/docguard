@@ -2,7 +2,7 @@
 
 <!-- docguard:version 0.6.0 -->
 <!-- docguard:status living -->
-<!-- docguard:last-reviewed 2026-07-02 -->
+<!-- docguard:last-reviewed 2026-09-11 -->
 <!-- docguard:owner @raccioly -->
 
 > The planned evolution of DocGuard and Canonical-Driven Development (CDD).
@@ -21,6 +21,10 @@
 Make **Canonical-Driven Development** the industry standard for AI-age software projects — where documentation drives development and machines enforce compliance.
 
 ---
+
+## Current priority
+
+The current investment sequence is correctness, reproducible evidence, and a contribution-to-regression loop. [TRUST-ROADMAP.md](docs-implementation/TRUST-ROADMAP.md) supplies the researched capability comparison, local implementation scope, proposed experiments, acceptance criteria, and reasons to stop or change direction. Historical phase entries below remain a record of earlier plans; the proposed dashboard is deferred pending evidence of an unmet team need.
 
 ## Current Phase
 

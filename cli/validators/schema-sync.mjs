@@ -1,3 +1,4 @@
+import { docRolePath, resolveDocRole } from '../shared-doc-roles.mjs';
 /**
  * Schema Sync Validator — Ensures database schemas are documented in DATA-MODEL.md
  *
@@ -90,7 +91,7 @@ export function validateSchemaSync(projectDir, config) {
   let total = 0;
 
   // Check if DATA-MODEL.md exists
-  const dataModelPath = resolve(projectDir, 'docs-canonical', 'DATA-MODEL.md');
+  const dataModelPath = resolveDocRole(projectDir, config, 'dataModel');
   if (!existsSync(dataModelPath)) {
     // No DATA-MODEL.md — nothing to sync against
     // Only warn if we detect schema files
@@ -103,7 +104,7 @@ export function validateSchemaSync(projectDir, config) {
         severity: 'warn',
         message: `Found ${detectedModels.length} database model(s) (${detectedModels.map(m => m.name).slice(0, 5).join(', ')}${detectedModels.length > 5 ? '...' : ''}) ` +
           `but no DATA-MODEL.md exists. Run \`docguard init\` to create one, then document your schema`,
-        location: 'docs-canonical/DATA-MODEL.md',
+        location: docRolePath(config, 'dataModel'),
         suggestion: { kind: 'fix', text: 'Create DATA-MODEL.md, then document the detected models in it', command: 'docguard init' },
       }));
     }

@@ -1,3 +1,5 @@
+import { describeCheckCoverage, summarizeCheckCoverage } from '../validator-coverage.mjs';
+import { applyDocRoles } from '../shared-doc-roles.mjs';
 /**
  * Guard Command — Validate project against its canonical documentation
  * Runs all enabled validators and reports results.
@@ -8,7 +10,7 @@
  */
 
 import { c, resolveSeverity, loadIgnorePatterns, resolveDocDirs } from '../shared.mjs';
-import { walkFiles } from '../shared-ignore.mjs';
+import { walkFiles, buildIgnoreFilter } from '../shared-ignore.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { loadValidatorSuppressions } from '../validator-markers.mjs';
 import { detectAgentMode, isSpecKitInitialized } from '../ensure-skills.mjs';
@@ -239,28 +241,29 @@ function collectMarkdown(projectDir) {
 /**
  * Classify every discoverable Markdown file into a validation tier:
  *   canonical    — in requiredFiles.canonical (structure + review-gated)
- *   tracked      — under a doc home or root-level (claim/freshness checks reach it)
+ *   tracked      — inventoried under a doc home or at root; individual detector scopes differ
  *   ignored      — matched by .docguardignore
  *   unclassified — under NO tier; drift here is invisible (the Gap-1 trap)
  */
 function computeDocCoverage(projectDir, config) {
-  const isIgnored = loadIgnorePatterns(projectDir);
+  const fileIgnored = loadIgnorePatterns(projectDir);
+  const configIgnored = buildIgnoreFilter(config.ignore || []);
+  const isIgnored = path => fileIgnored(path) || configIgnored(path);
   const canonical = new Set(
     ((config.requiredFiles && config.requiredFiles.canonical) || []).map(p => p.replace(/\\/g, '/'))
   );
   // Any path declared in documentTypes is a KNOWN doc (even if optional) — not
   // "untracked." This keeps the warning specific to genuinely-unenrolled files.
   const known = new Set(Object.keys(config.documentTypes || {}).map(p => p.replace(/\\/g, '/')));
-  // Same doc-home set the claim scanner uses — so "tracked" provably means
-  // "actually scanned," never a label the scanner ignores. With trailing slash
-  // for prefix matching.
+  // This is a document inventory, not a claim that every detector checks
+  // each tracked file. Keep individual check coverage separate.
   const docHomePrefixes = resolveDocDirs(projectDir, config).map(d => d.replace(/\/?$/, '/'));
   const all = collectMarkdown(projectDir);
   let canonicalCount = 0, tracked = 0, ignored = 0;
   const unclassified = [];
   for (const rel of all) {
-    if (canonical.has(rel)) { canonicalCount++; continue; }
     if (isIgnored(rel) || DOCGUARD_OWN_DOC_RE.test(rel)) { ignored++; continue; }
+    if (canonical.has(rel)) { canonicalCount++; continue; }
     const inHome = docHomePrefixes.some(h => rel.startsWith(h));
     const atRoot = !rel.includes('/');
     if (inHome || atRoot || known.has(rel)) { tracked++; continue; }
@@ -270,6 +273,7 @@ function computeDocCoverage(projectDir, config) {
 }
 
 export function runGuardInternal(projectDir, config) {
+  config = applyDocRoles(projectDir, config);
   const validators = config.validators || {};
   const results = [];
 
@@ -286,8 +290,7 @@ export function runGuardInternal(projectDir, config) {
     { key: 'freshness', name: 'Freshness', fn: () => {
       // v0.29: adapter now emits structured findings (FRS001–FRS005). The
       // validator keeps its array-of-{status, code, doc, message} contract;
-      // messages are byte-identical (the sweep-needed nudge below regex-matches
-      // them), so counts/exit codes are unchanged.
+      // messages describe review signals rather than asserting semantic drift.
       const freshnessResults = validateFreshness(projectDir, config);
       const findings = [];
       let passed = 0;
@@ -298,14 +301,14 @@ export function runGuardInternal(projectDir, config) {
           code: r.code || null,
           validator: 'freshness',
           severity: r.status === 'fail' ? 'error' : 'warn',
+          confidence: r.confidence || 'low',
           message: r.message,
           location: r.doc || null,
-          suggestion: r.code === 'FRS001'
-            ? { kind: 'fix', text: 'Commit the doc, or stamp it reviewed', pragma: '<!-- docguard:last-reviewed YYYY-MM-DD -->' }
-            : { kind: 'fix', text: 'Refresh the stale code-truth sections', command: 'docguard sync --write' },
+          suggestion: r.suggestion || { kind: 'review', text: 'Review the document against its intended scope. A history signal does not establish which side should change.' },
         }));
       }
-      return resultFromFindings(findings, { passed, total: passed + findings.length });
+      const skipped = freshnessResults.filter(r => r.status === 'skip');
+      return { ...resultFromFindings(findings, { passed, total: passed + findings.length }), ...(passed + findings.length === 0 && skipped.length ? { applicability: { status: 'no-matches', reason: skipped.map(r => r.message).join('; ') } } : {}) };
     }},
     { key: 'traceability', name: 'Traceability', fn: () => validateTraceability(projectDir, config) },
     { key: 'docsDiff', name: 'Docs-Diff', fn: () => validateDocsDiff(projectDir, config) },
@@ -358,7 +361,7 @@ export function runGuardInternal(projectDir, config) {
       results.push({ ...result, name, key, durationMs, ...classifyResult(result) });
     } catch (err) {
       const durationMs = Math.round((performance.now() - start) * 100) / 100;
-      results.push({ name, key, status: 'fail', quality: 'LOW', errors: [err.message], warnings: [], passed: 0, total: 1, durationMs });
+      results.push({ name, key, status: 'fail', quality: 'LOW', applicability: { status: 'error', reason: 'Validator could not complete: ' + err.message }, errors: [err.message], warnings: [], passed: 0, total: 1, durationMs });
     }
   }
 
@@ -376,7 +379,7 @@ export function runGuardInternal(projectDir, config) {
       results.push({ ...result, name: 'Canonical-Sync', key: 'canonicalSync', durationMs, ...classifyResult(result) });
     } catch (err) {
       const durationMs = Math.round((performance.now() - start) * 100) / 100;
-      results.push({ name: 'Canonical-Sync', key: 'canonicalSync', status: 'fail', quality: 'LOW', errors: [err.message], warnings: [], passed: 0, total: 1, durationMs });
+      results.push({ name: 'Canonical-Sync', key: 'canonicalSync', status: 'fail', quality: 'LOW', applicability: { status: 'error', reason: 'Validator could not complete: ' + err.message }, errors: [err.message], warnings: [], passed: 0, total: 1, durationMs });
     }
   }
 
@@ -391,7 +394,7 @@ export function runGuardInternal(projectDir, config) {
       results.push({ ...result, name: 'Metrics-Consistency', key: 'metricsConsistency', durationMs, ...classifyResult(result) });
     } catch (err) {
       const durationMs = Math.round((performance.now() - start) * 100) / 100;
-      results.push({ name: 'Metrics-Consistency', key: 'metricsConsistency', status: 'fail', quality: 'LOW', errors: [err.message], warnings: [], passed: 0, total: 1, durationMs });
+      results.push({ name: 'Metrics-Consistency', key: 'metricsConsistency', status: 'fail', quality: 'LOW', applicability: { status: 'error', reason: 'Validator could not complete: ' + err.message }, errors: [err.message], warnings: [], passed: 0, total: 1, durationMs });
     }
   }
 
@@ -431,6 +434,11 @@ export function runGuardInternal(projectDir, config) {
     }
   }
 
+  for (const key of ['canonicalSync', 'metricsConsistency']) {
+    if (validators[key] === false && !results.some(r => r.key === key)) results.push({ key, name: key === 'canonicalSync' ? 'Canonical-Sync' : 'Metrics-Consistency', status: 'skipped', quality: null, errors: [], warnings: [], passed: 0, total: 0, durationMs: 0 });
+  }
+  for (const result of results) result.applicability = describeCheckCoverage(projectDir, config, result);
+  const checkCoverage = summarizeCheckCoverage(results);
   const activeResults = results.filter(r => r.status !== 'skipped');
   const totalErrors = activeResults.reduce((sum, r) => sum + r.errors.length, 0);
   const totalWarnings = activeResults.reduce((sum, r) => sum + r.warnings.length, 0);
@@ -504,6 +512,7 @@ export function runGuardInternal(projectDir, config) {
     effectiveWarnings,
     baselineSuppressed,
     coverage,
+    checkCoverage,
     semanticClaims,
     validators: results,
     // Unknown keys in `docguard:validator … n/a` markers — typo protection so
@@ -671,8 +680,9 @@ export function runGuard(projectDir, config, flags) {
     // Not applicable — nothing to validate. Render neutrally (NOT a green pass)
     // so the reader can tell "checked and clean" apart from "nothing checked".
     if (v.status === 'na') {
-      const reason = v.note ? ` ${c.dim}(${v.note})${c.reset}` : ` ${c.dim}(nothing to validate)${c.reset}`;
-      console.log(`  ${c.dim}➖ ${v.name}${c.reset} ${c.dim}[N/A]${c.reset}${reason}`);
+      const showReason = flags.verbose || ['unsupported', 'partial', 'missing-prerequisite', 'error'].includes(v.applicability.status);
+      const reason = showReason ? ` ${c.dim}(${v.applicability.reason})${c.reset}` : '';
+      console.log(`  ${c.dim}➖ ${v.name}${c.reset} ${c.dim}[${v.applicability.status}]${c.reset}${reason}`);
       continue;
     }
 
@@ -770,6 +780,8 @@ export function runGuard(projectDir, config, flags) {
   if (Array.isArray(data.reportable) && data.reportable.length > 0) {
     const n = data.reportable.length;
     console.log(`  ${c.dim}↪ ${n} finding(s) look uncertain (possible false positives). Review or report: ${c.cyan}${skill('feedback')}${c.reset}`);
+  } else if (Array.isArray(data.findings) && data.findings.length > 0) {
+    console.log(`  ${c.dim}Disagree with a finding? Review a contribution: ${c.cyan}docguard feedback --code <CODE> --preview${c.reset}`);
   }
 
   // Read-only skills nudge (never writes — that's `init`'s job). If the agent
@@ -801,9 +813,14 @@ export function runGuard(projectDir, config, flags) {
       }
     }
   }
+  if (data.checkCoverage) {
+    const counts = data.checkCoverage.counts;
+    console.log('  Check coverage: ' + Object.entries(counts).filter(([, count]) => count > 0).map(([status, count]) => count + ' ' + status.replaceAll('-', ' ')).join(' · '));
+    console.log('  Document inventory and passing checks do not establish factual accuracy.');
+  }
   if (data.semanticClaims && data.semanticClaims.count > 0) {
     console.log(`\n  ${c.cyan}🔍 ${data.semanticClaims.count} documented claim(s) (counts/limits/enums) are unverified against code.${c.reset}`);
-    console.log(`     ${c.dim}A green guard means the structure is sound — NOT that these values still match the code.${c.reset}`);
+    console.log(`     ${c.dim}A passing guard means configured gates passed; these values remain unverified.${c.reset}`);
     console.log(`     ${c.dim}Confirm them: ${c.cyan}${skill('verify')} --semantic${c.reset}`);
   }
 
@@ -873,7 +890,7 @@ export function runGuard(projectDir, config, flags) {
     if (freshness && freshness.warnings) {
       const staleDocs = freshness.warnings.filter(w => /\d+ code commits since/.test(w));
       if (staleDocs.length >= 2) {
-        console.log(`\n  ${c.yellow}↻ ${staleDocs.length} docs are stale (10+ commits since last update). Run ${c.cyan}docguard sync --write${c.yellow} to refresh code-truth sections in one pass.${c.reset}`);
+        console.log(`\n  ${c.yellow}↻ ${staleDocs.length} documents have repository-history review signals. Review their scope and intended behavior before changing documentation or code.${c.reset}`);
       }
     }
   }

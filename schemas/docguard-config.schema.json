@@ -185,10 +185,52 @@
       "type": "object",
       "description": "Documentation discovery (field report #6 follow-up).",
       "properties": {
+        "roles": {
+          "type": "object",
+          "description": "Explicit canonical document roles in an existing layout. Each mapping is required and remains subject to content checks; maps do not certify prose or change historical intent.",
+          "properties": {
+            "architecture": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\.[mM][dD]$"
+            },
+            "dataModel": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\.[mM][dD]$"
+            },
+            "security": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\.[mM][dD]$"
+            },
+            "testSpec": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\.[mM][dD]$"
+            },
+            "environment": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\.[mM][dD]$"
+            },
+            "apiReference": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\.[mM][dD]$"
+            },
+            "requirements": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\.[mM][dD]$"
+            }
+          },
+          "additionalProperties": false
+        },
         "dirs": {
           "type": "array",
           "items": { "type": "string" },
-          "description": "Additional documentation-home directories to claim-scan and count as 'tracked' (relative paths, e.g. [\"reference\", \"website/docs\"]). This EXTENDS the auto-detected conventional homes (docs/, doc/, documentation/, guides/, guide/, handbook/, manual/, wiki/, docs-canonical/, docs-implementation/, extensions/) — it never replaces them, since the goal is to track MORE clearly-documentation folders automatically. Only NAMED dirs are scanned; arbitrary subdirectories are never walked. To EXCLUDE a conventional dir, list it in .docguardignore."
+          "description": "Additional documentation inventory directories, extending conventional homes. Explicit directories also participate in freshness review. Inventory membership does not imply every detector scans every document; semantic extraction has its own declared scope. Use docs.roles to map existing Markdown documents to canonical roles, and .docguardignore to exclude paths."
         }
       },
       "additionalProperties": true

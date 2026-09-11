@@ -10,9 +10,11 @@
  *   - pnpm-workspace.yaml          (packages:)
  *   - turbo.json                   (presence → trust package.json workspaces)
  *
- * Zero NPM dependencies — pure Node.js built-ins only.
+ * Source discovery uses Node.js built-ins; Worker binding analysis optionally
+ * loads the existing @babel/parser dependency, with a lexical fallback.
  */
 
+import { createRequire } from 'node:module';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, dirname, relative, extname } from 'node:path';
 import { shouldIgnore, isNonProductDir, isNonProductPath } from './shared-ignore.mjs';
@@ -316,6 +318,223 @@ export function isRunnerEnvVar(name) {
   return RUNNER_ENV_PREFIXES.some((p) => name.startsWith(p));
 }
 
+
+/** Wrangler is static evidence only: never load or execute project config. */
+export function hasWorkerConfig(dir) {
+  return ['wrangler.toml', 'wrangler.json', 'wrangler.jsonc'].some(name => {
+    try { return statSync(join(dir, name)).isFile(); } catch { return false; }
+  });
+}
+
+function workerConfigForFile(projectDir, file) {
+  const root = resolve(projectDir);
+  let dir = dirname(file);
+  while (dir === root || (!relative(root, dir).startsWith('..') && !relative(root, dir).startsWith('/'))) {
+    if (hasWorkerConfig(dir)) return true;
+    if (dir === root) break;
+    dir = dirname(dir);
+  }
+  return false;
+}
+
+// Optional-load the existing parser directly: shared helpers must not depend
+// on the scanner layer. No project modules or configuration are executed.
+let workerParse = null;
+try { workerParse = createRequire(import.meta.url)('@babel/parser').parse; } catch { /* lexical fallback */ }
+
+function workerType(param) {
+  const type = param?.typeAnnotation?.typeAnnotation;
+  return type?.type === 'TSTypeReference' && type.typeName?.type === 'Identifier' ? type.typeName.name : '';
+}
+
+/** Static lexical binding analysis; collect declarations before resolving reads. */
+function workerAstBindings(ast, configured) {
+  const root = { parent: null, functionScope: true, env: undefined };
+  const reads = [];
+  const bind = (pattern, scope, value = false) => {
+    if (!pattern) return;
+    if (pattern.type === 'Identifier' && pattern.name === 'env') scope.env = value;
+    else if (pattern.type === 'AssignmentPattern') bind(pattern.left, scope, value);
+    else if (pattern.type === 'RestElement') bind(pattern.argument, scope, value);
+    else if (pattern.type === 'ArrayPattern') for (const element of pattern.elements) bind(element, scope, value);
+    else if (pattern.type === 'ObjectPattern') {
+      for (const property of pattern.properties) bind(property.type === 'RestElement' ? property.argument : property.value, scope, value);
+    }
+  };
+  const functionTypes = new Set(['FunctionDeclaration', 'FunctionExpression', 'ArrowFunctionExpression', 'ObjectMethod', 'ClassMethod', 'ClassPrivateMethod']);
+  function visit(node, scope, parent) {
+    if (!node || typeof node.type !== 'string') return;
+    if (node.type === 'FunctionDeclaration' || node.type === 'ClassDeclaration') bind(node.id, scope);
+    if (functionTypes.has(node.type)) {
+      scope = { parent: scope, functionScope: true, env: undefined };
+      if (node.type === 'FunctionExpression') bind(node.id, scope);
+      const key = node.key?.name || node.key?.value || node.id?.name ||
+        (parent?.type === 'ObjectProperty' ? parent.key?.name || parent.key?.value : parent?.type === 'VariableDeclarator' ? parent.id?.name : '');
+      const request = workerType(node.params[0]) === 'Request';
+      for (const param of node.params) {
+        const target = param.type === 'AssignmentPattern' ? param.left : param;
+        const worker = target.type === 'Identifier' && target.name === 'env' &&
+          /^(?:Env|[\w$]*Env|[\w$]*Bindings)$/.test(workerType(target)) && (configured || (key === 'fetch' && request));
+        bind(param, scope, worker);
+      }
+    } else if (['BlockStatement', 'ForStatement', 'ForOfStatement', 'ForInStatement', 'CatchClause', 'SwitchStatement', 'ClassExpression', 'ClassDeclaration', 'StaticBlock'].includes(node.type)) {
+      scope = { parent: scope, functionScope: node.type === 'StaticBlock', env: undefined };
+      if (node.type === 'CatchClause') bind(node.param, scope);
+      if (node.type === 'ClassExpression' || node.type === 'ClassDeclaration') bind(node.id, scope);
+    }
+    if (node.type === 'VariableDeclaration') {
+      let declarationScope = scope;
+      if (node.kind === 'var') while (!declarationScope.functionScope && declarationScope.parent) declarationScope = declarationScope.parent;
+      for (const declaration of node.declarations) bind(declaration.id, declarationScope);
+    }
+    if (node.type === 'ImportDeclaration') for (const spec of node.specifiers) bind(spec.local, scope);
+    if ((node.type === 'MemberExpression' || node.type === 'OptionalMemberExpression') && node.object?.type === 'Identifier' && node.object.name === 'env') {
+      const name = node.computed ? (node.property.type === 'StringLiteral' ? node.property.value : null) : node.property.name;
+      if (name) reads.push({ scope, name });
+    }
+    for (const [key, child] of Object.entries(node)) {
+      if (['loc', 'start', 'end', 'extra', 'comments', 'tokens'].includes(key)) continue;
+      if (Array.isArray(child)) for (const item of child) visit(item, scope, node);
+      else if (child && typeof child === 'object') visit(child, scope, node);
+    }
+  }
+  visit(ast.program, root, null);
+  const names = new Set();
+  for (const read of reads) {
+    let scope = read.scope;
+    while (scope && scope.env === undefined) scope = scope.parent;
+    if (scope?.env === true) names.add(read.name);
+  }
+  return names;
+}
+
+/** Optional parser argument makes the absent/failed-parser contract testable. */
+export function extractWorkerEnvBindings(content, filename = 'file.ts', configured = false, parse = workerParse) {
+  if (parse) {
+    try {
+      const plugins = ['decorators-legacy', 'classProperties', 'topLevelAwait'];
+      if (/\.[cm]?tsx?$/.test(filename)) plugins.push('typescript');
+      if (/\.[jt]sx?$/.test(filename) && !filename.endsWith('.ts')) plugins.push('jsx');
+      const ast = parse(content, { sourceType: 'unambiguous', allowReturnOutsideFunction: true, plugins });
+      return workerAstBindings(ast, configured);
+    } catch { /* Failed parsing retains conservative lexical evidence. */ }
+  }
+  return workerEnvUsageFallback(content, classifyChars(content, extname(filename)), configured);
+}
+
+// Resolve binding positions in simple lexical patterns, not property names.
+// Defaults may refer to env without introducing a new local env binding.
+function lexicalEnvBinding(pattern) {
+  const split = (text, delimiter) => {
+    const parts = []; let depth = 0, start = 0;
+    for (let i = 0; i < text.length; i++) {
+      if ('([{'.includes(text[i])) depth++;
+      else if (')]}'.includes(text[i])) depth--;
+      else if (text[i] === delimiter && depth === 0) { parts.push(text.slice(start, i)); start = i + 1; }
+    }
+    return [...parts, text.slice(start)];
+  };
+  const binding = text => {
+    text = split(text.trim().replace(/^\.\.\./, ''), '=')[0].trim();
+    if (text.startsWith('{') && text.endsWith('}')) {
+      return split(text.slice(1, -1), ',').some(property => {
+        const pair = split(property, ':');
+        return binding(pair.length > 1 ? pair.slice(1).join(':') : property);
+      });
+    }
+    if (text.startsWith('[') && text.endsWith(']')) return split(text.slice(1, -1), ',').some(binding);
+    return /^env\s*(?::[^]*)?$/.test(text);
+  };
+  return split(pattern, ',').some(binding);
+}
+
+/** Conservative, parser-independent support for ordinary typed function bodies. */
+function workerEnvUsageFallback(content, kind, configured) {
+  // Mask regex literals where an expression may start. Division remains code.
+  for (let i = 0; i < content.length; i++) {
+    if (kind[i] || content[i] !== '/') continue;
+    const prefix = content.slice(0, i).trimEnd();
+    if (prefix && !/[=(:,[!&|?{};]$/.test(prefix) && !/(?:\b(?:return|throw|yield|case)|=>)$/.test(prefix)) continue;
+    let end = i + 1, bracket = false;
+    for (; end < content.length && content[end] !== '\n'; end++) {
+      if (content[end] === '\\') { end++; continue; }
+      if (content[end] === '[') bracket = true;
+      if (content[end] === ']') bracket = false;
+      if (content[end] === '/' && !bracket) break;
+    }
+    if (content[end] === '/') { kind.fill(1, i, end + 1); i = end; }
+  }
+  const code = content.split('').map((ch, i) => kind[i] === 0 ? ch : (ch === '\n' ? '\n' : ' ')).join('');
+  const braces = new Map(), parens = new Map();
+  const stack = [], parentheses = [];
+  for (let i = 0; i < code.length; i++) {
+    if (code[i] === '{') stack.push(i);
+    else if (code[i] === '}' && stack.length) braces.set(stack.pop(), i);
+    else if (code[i] === '(') parentheses.push(i);
+    else if (code[i] === ')' && parentheses.length) parens.set(parentheses.pop(), i);
+  }
+  const scopes = [], functionScopes = [], loops = [];
+  const functions = /\(([^()]*)\)\s*(?::\s*[\w$.[\]<>| ,]+)?\s*(?:=>\s*)?\{/g;
+  for (const match of code.matchAll(functions)) {
+    const prefix = code.slice(Math.max(0, match.index - 80), match.index);
+    if (/\b(?:if|for|while|switch|with)\s*$/.test(prefix)) continue;
+    const start = match.index + match[0].length - 1, end = braces.get(start);
+    if (end === undefined) continue;
+    const scope = { start, end };
+    if (!/\bcatch\s*$/.test(prefix)) functionScopes.push(scope);
+    const params = match[1];
+    if (!lexicalEnvBinding(params)) continue;
+    const typed = /(?:^|,)\s*env\s*:\s*(?:Env|[\w$]*Env|[\w$]*Bindings)\s*(?=,|$)/.test(params);
+    const fetch = /\bfetch\s*(?::|=)?\s*$/.test(prefix);
+    const request = /^\s*[\w$]+\s*:\s*Request\s*,/.test(params);
+    scopes.push({ ...scope, binding: typed && (configured || (fetch && request)) });
+  }
+  for (const match of code.matchAll(/(?:\(\s*env\s*\)|\benv)\s*=>\s*/g)) {
+    const start = match.index + match[0].length;
+    let end = braces.get(start);
+    if (end === undefined) {
+      end = start; let depth = 0;
+      for (; end < code.length; end++) {
+        const ch = code[end];
+        if (depth === 0 && /[,;\n)}\]]/.test(ch)) break;
+        if ('({['.includes(ch)) depth++;
+        else if (')}]'.includes(ch)) depth--;
+      }
+    }
+    scopes.push({ start: start - 1, end, binding: false });
+  }
+  for (const match of code.matchAll(/\bfor\s*(?:await\s*)?\(/g)) {
+    const open = match.index + match[0].length - 1, close = parens.get(open);
+    if (close === undefined) continue;
+    let body = close + 1;
+    while (/\s/.test(code[body] || '') && body < code.length) body++;
+    const end = braces.get(body) ?? code.indexOf(';', body);
+    if (end >= 0) loops.push({ start: match.index, end, headerEnd: close });
+  }
+  for (const match of code.matchAll(/\b(const|let|var)\s+(env\b|\{[^;]*?\}|\[[^;]*?\])/g)) {
+    if (!lexicalEnvBinding(match[2])) continue;
+    let scope;
+    if (match[1] === 'var') {
+      scope = functionScopes.filter(s => s.start < match.index && match.index < s.end).sort((a, b) => b.start - a.start)[0];
+    } else {
+      scope = loops.find(s => s.start < match.index && match.index < s.headerEnd);
+      if (!scope) scope = [...braces].filter(([start, end]) => start < match.index && match.index < end)
+        .sort(([a], [b]) => b - a).map(([start, end]) => ({ start, end }))[0];
+    }
+    scopes.push({ ...(scope || { start: -1, end: code.length }), binding: false });
+  }
+  const names = new Set();
+  const access = /\benv\s*(?:(?:\?\.|\.)\s*([A-Za-z_$][\w$]*)|(?:\?\.)?\s*\[\s*['"]([A-Za-z_$][\w$]*)['"]\s*\])/g;
+  for (const match of content.matchAll(access)) {
+    if (kind[match.index] !== 0) continue;
+    if (/[\w$]$/.test(code.slice(0, match.index)) || /[.?]$/.test(code.slice(0, match.index).trimEnd())) continue;
+    const scope = scopes.filter(s => s.start < match.index && match.index < s.end)
+      .sort((a, b) => b.start - a.start || Number(a.binding) - Number(b.binding))[0];
+    if (scope?.binding) names.add(match[1] || match[2]);
+  }
+  return names;
+}
+
 export function grepEnvUsage(projectDir, config = {}) {
   const names = new Set();
   const roots = resolveSourceRoots(projectDir, config);
@@ -359,6 +578,9 @@ export function grepEnvUsage(projectDir, config = {}) {
     // the access KEYWORD (process/os/import) — for a real read the keyword is
     // code while only the argument 'X' is a string, so the name is still caught.
     const kind = classifyChars(content, extname(filePath));
+    if (['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs'].includes(extname(filePath))) {
+      for (const name of extractWorkerEnvBindings(content, filePath, workerConfigForFile(projectDir, filePath))) names.add(name);
+    }
     // patterns[2] is the import.meta.env one — its matches are Vite-injected
     // when the name is an intrinsic, and must not be reported as user env vars.
     for (let i = 0; i < patterns.length; i++) {

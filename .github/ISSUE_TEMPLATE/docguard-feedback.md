@@ -1,26 +1,28 @@
 ---
 name: DocGuard feedback (false positive / detection gap)
-about: Report a finding DocGuard got wrong, or a check it should make. Usually opened pre-filled by `docguard feedback`.
-title: "[feedback] <CODE> (<validator>): <short message>"
+about: Contribute a synthetic reproduction of a disputed finding or missed defect.
+title: "[feedback] <CODE>: <short description>"
 labels: docguard-feedback
 ---
 
-<!--
-Most of this is filled in automatically when you run `docguard feedback`.
-No source code or secret values are included — only a finding code, a basename,
-a line number, and DocGuard's own redacted context.
--->
-
 - **DocGuard version:**
-- **Finding code:** <!-- e.g. SEC001 -->
-- **Validator:**
-- **Location (basename:line):**
-- **Confidence:** <!-- high | low -->
+- **Runtime / operating system:**
+- **Finding code / detector:**
+- **Type:** false positive / missed defect / unsupported syntax / policy question
+- **Existing open and closed issues/PRs checked:**
 
-**What DocGuard flagged**
+**Expected behavior**
 
-<!-- The redacted context from `docguard feedback`. -->
+**Actual behavior and exact command**
 
-**Why it's wrong (or what it missed)**
+**Minimal synthetic reproduction**
 
-<!-- One or two lines: this is UI copy, a runner var, a dynamic-import cycle break, etc. -->
+Provide invented source and minimal configuration. Review all content before sharing. Full local feedback records can contain private paths and diagnostic text; do not attach them by default.
+
+**Neighboring valid or invalid case**
+
+What closely related example should still pass or fail after a fix?
+
+**Contribution**
+
+A report or a test-only contribution is welcome. See CONTRIBUTING.md, "Turn a finding into a regression test". No credentials or private source are required.

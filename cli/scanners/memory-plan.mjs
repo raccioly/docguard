@@ -1,3 +1,4 @@
+import { remapDocPath } from '../shared-doc-roles.mjs';
 /**
  * Memory Plan — the orchestration artifact behind AI-powered Generate.
  *
@@ -32,110 +33,263 @@ const md = {
 };
 
 /**
- * v0.15-P1: in-process cache (Map). buildMemoryPlan is expensive (~400ms on
- * an enterprise client project) because it triggers routes/schemas/screens/
- * frontend scanners — all of which walk the source tree.
- *
- * v0.18-P2: cross-process cache (`.docguard/plan.cache.json`). CI flows that
- * run guard → sync → fix as separate processes each pay the build cost.
- * The disk cache shares the plan across processes, keyed by a tree-state
- * hash so we invalidate when the source tree changes.
- *
- * Cache key: projectDir + a config fingerprint (sourceRoot, ignore,
- * projectType, profile). Other config mutations (e.g. changedFiles
- * per-validator) don't invalidate the plan.
- *
- * Bypass with `_skipCache: true` in opts — used by tests.
+ * Both cache layers share a working-tree identity (NFR-003). Content, paths,
+ * configuration and scanner implementation participate: HEAD/status/mtimes
+ * alone cannot distinguish repeated edits to an already-dirty file.
  */
-import { createHash } from 'node:crypto';
-import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync, statSync } from 'node:fs';
-import { resolve as resolvePath, join as joinPath } from 'node:path';
-import { execFileSync } from 'node:child_process';
+import { createHash, randomUUID } from 'node:crypto';
+import {
+  existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync, lstatSync,
+  openSync, closeSync, readSync, fstatSync, renameSync, unlinkSync, constants,
+} from 'node:fs';
+import { resolve as resolvePath, join as joinPath, relative, isAbsolute } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { DEFAULT_IGNORE_DIRS, buildIgnoreFilter } from '../shared-ignore.mjs';
+import { astTierAvailable } from './js-ast.mjs';
+import { pyAstAvailable } from './py-ast.mjs';
 
-const _memoryPlanCache = new Map(); // key → plan
+const _memoryPlanCache = new Map(); // config key → { treeHash, plan }
 const _DISK_CACHE_PATH = '.docguard/plan.cache.json';
-const _DISK_CACHE_VERSION = '1';  // bump if cache shape changes
+const _DISK_CACHE_VERSION = '2';
+const _CACHE_IGNORE_DIRS = new Set([
+  ...DEFAULT_IGNORE_DIRS, '.local', '.docguard', '.wolf', '.codex', '.claude',
+]);
+// A large/unreadable tree is a cache miss, never a partial cache identity.
+const _MAX_HASH_BYTES = 64 * 1024 * 1024;
+const _MAX_HASH_ENTRIES = 50_000;
+const _MAX_CACHE_BYTES = 16 * 1024 * 1024;
+const _MAX_MEMORY_PLANS = 32;
+let _scannerIdentity;
 
-/**
- * v0.18-P2: tree-state hash. Cheap signature of the source tree that
- * changes whenever something a scanner would care about changes. We use:
- *   - git HEAD commit SHA (when in a git repo) — captures committed state
- *   - mtime sum of top-level config files (package.json, pyproject.toml,
- *     Cargo.toml, etc.) — captures uncommitted bumps to deps
- * Combined into a 12-char hex fingerprint.
- *
- * NOT a perfect cache key — a user editing src/foo.ts without bumping a
- * config file won't invalidate. But guard/sync/fix all run in quick
- * succession within a CI step, and the user's flow IS bump + commit + run.
- * The tradeoff favors speed: the worst case is one stale plan per CI run,
- * recoverable with `--no-plan-cache` or a tree change.
- */
-function _treeStateHash(projectDir) {
-  let signal = '';
-  // git HEAD
-  try {
-    const sha = execFileSync('git', ['rev-parse', 'HEAD'], {
-      cwd: projectDir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
-    }).trim();
-    signal += `git:${sha};`;
-  } catch { /* not a git repo, or no commits */ }
-  // mtime of common manifest files
-  const manifests = [
-    'package.json', 'pyproject.toml', 'Cargo.toml', 'go.mod',
-    'pom.xml', 'build.gradle', 'Gemfile', 'composer.json',
-    '.docguard.json',
-  ];
-  for (const m of manifests) {
-    try {
-      const s = statSync(resolvePath(projectDir, m));
-      signal += `${m}:${s.mtimeMs};`;
-    } catch { /* not present */ }
+function _stableConfig(value) {
+  if (value === null || typeof value === 'string' || typeof value === 'boolean') return value;
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (Array.isArray(value)) return value.map(_stableConfig);
+  if (value && Object.getPrototypeOf(value) === Object.prototype) {
+    return Object.fromEntries(Object.keys(value).sort()
+      .filter(k => value[k] !== undefined).map(k => [k, _stableConfig(value[k])]));
   }
-  return createHash('sha256').update(signal).digest('hex').slice(0, 12);
+  throw new Error('Non-JSON scanner configuration');
 }
 
-/**
- * v0.18-P2: read the disk cache. Returns null when the file is missing,
- * the schema version mismatches, the tree hash doesn't match, or anything
- * about the load is suspicious. Never throws — cache miss is silent.
- */
-function _readDiskCache(projectDir, configKey) {
+function _cacheKey(projectDir, config) {
   try {
-    const p = resolvePath(projectDir, _DISK_CACHE_PATH);
-    if (!existsSync(p)) return null;
-    const data = JSON.parse(readFileSync(p, 'utf-8'));
-    if (data.v !== _DISK_CACHE_VERSION) return null;
-    if (data.configKey !== configKey) return null;
-    const currentHash = _treeStateHash(projectDir);
-    if (data.treeHash !== currentHash) return null;
-    return data.plan || null;
-  } catch {
-    return null;
-  }
+    if (_scannerIdentity === undefined) {
+      // Once per process: also invalidate developer builds without a version
+      // bump. Loaded ESM modules themselves are immutable within this process.
+      const cli = fileURLToPath(new URL('../', import.meta.url));
+      const hash = createHash('sha256');
+      hash.update(readFileSync(new URL('../../package.json', import.meta.url)));
+      for (const dir of [cli, joinPath(cli, 'scanners')]) {
+        for (const name of readdirSync(dir).sort()) {
+          if (name.endsWith('.mjs')) hash.update(name).update(readFileSync(joinPath(dir, name)));
+        }
+      }
+      hash.update(JSON.stringify([process.version, astTierAvailable(), pyAstAvailable()]));
+      _scannerIdentity = hash.digest('hex');
+    }
+    // changedFiles scopes validators, not plan scanners; diskCache is policy.
+    const { changedFiles, diskCache, ...scannerConfig } = config;
+    return createHash('sha256').update(JSON.stringify([
+      projectDir, _scannerIdentity, _stableConfig(scannerConfig),
+    ])).digest('hex');
+  } catch { return null; }
 }
 
-/**
- * v0.18-P2: write the disk cache. Best-effort — failures are silent (the
- * in-process cache still works). `.docguard/` directory created if needed.
- */
-function _writeDiskCache(projectDir, configKey, plan) {
+function _treeStateHash(projectDir, config) {
   try {
-    const fullDir = resolvePath(projectDir, '.docguard');
-    if (!existsSync(fullDir)) mkdirSync(fullDir, { recursive: true });
-    const payload = {
-      v: _DISK_CACHE_VERSION,
-      configKey,
-      treeHash: _treeStateHash(projectDir),
-      plan,
-      writtenAt: new Date().toISOString(),
+    // Source roots outside this tree cannot be certified by a project walk.
+    const ignored = buildIgnoreFilter(config.ignore || []);
+    const covered = root => {
+      const rel = relative(projectDir, resolvePath(projectDir, root)).replaceAll('\\', '/');
+      return !isAbsolute(rel) && rel !== '..' && !rel.startsWith('../')
+        && !rel.split('/').some(part => _CACHE_IGNORE_DIRS.has(part)) && !ignored(rel);
     };
-    writeFileSync(
-      resolvePath(projectDir, _DISK_CACHE_PATH),
-      JSON.stringify(payload),  // compact — this file isn't human-edited
-      'utf-8'
-    );
-  } catch {
-    // swallow — the cache is auxiliary
+    const roots = Array.isArray(config.sourceRoot) ? config.sourceRoot : [config.sourceRoot];
+    for (const root of roots.filter(Boolean)) {
+      if (!covered(root)) return null;
+    }
+    const hash = createHash('sha256');
+    const buffer = Buffer.allocUnsafe(64 * 1024);
+    let bytes = 0;
+    let entries = 0;
+    function walk(dir, prefix = '') {
+      for (const name of readdirSync(dir).sort()) {
+        if (_CACHE_IGNORE_DIRS.has(name)) continue;
+        const rel = prefix ? `${prefix}/${name}` : name;
+        // Always fingerprint the rules themselves, even if they exclude self.
+        if (name !== '.docguardignore' && name !== '.docguard.json' && ignored(rel)) continue;
+        if (++entries > _MAX_HASH_ENTRIES) throw new Error('Cache tree too large');
+        const path = joinPath(dir, name);
+        const stat = lstatSync(path);
+        // Do not follow links (including broken links/cycles/private targets).
+        // Some scanners follow known input names, so skipping a link is not a
+        // complete identity either: bypass caching for the whole build.
+        if (stat.isSymbolicLink()) throw new Error('Linked input');
+        hash.update(JSON.stringify([rel, stat.isDirectory() ? 'dir' : 'file']));
+        if (stat.isDirectory()) { walk(path, rel); continue; }
+        if (!stat.isFile()) throw new Error('Non-regular input');
+        // SECURITY.md: .env values must never be read. Metadata still tracks
+        // existence/replacement/edits without incorporating secret contents.
+        if (/^\.env(?:\.|$)/.test(name)) {
+          hash.update(JSON.stringify([stat.size, stat.mtimeMs, stat.ctimeMs, stat.ino]));
+          continue;
+        }
+        bytes += stat.size;
+        if (bytes > _MAX_HASH_BYTES) throw new Error('Cache tree too large');
+        const fd = openSync(path, constants.O_RDONLY | (constants.O_NOFOLLOW || 0));
+        try {
+          const before = fstatSync(fd);
+          if (!before.isFile() || before.ino !== stat.ino || before.dev !== stat.dev)
+            throw new Error('Input replaced while hashing');
+          const content = createHash('sha256');
+          let count = 0;
+          let n;
+          while ((n = readSync(fd, buffer, 0, buffer.length, null)) > 0) {
+            count += n;
+            if (count > stat.size) throw new Error('Input grew while hashing');
+            content.update(buffer.subarray(0, n));
+          }
+          const after = fstatSync(fd);
+          if (count !== stat.size || before.mtimeMs !== after.mtimeMs || before.ctimeMs !== after.ctimeMs)
+            throw new Error('Input changed while hashing');
+          hash.update(content.digest('hex'));
+        } finally { closeSync(fd); }
+      }
+    }
+    walk(projectDir);
+    // Inspect declarations before expanding workspace globs: the shared
+    // resolver can otherwise traverse an external/private workspace just to
+    // discover its package names. This check only reads root manifests that
+    // the completed walk already certified as regular files.
+    for (const name of ['package.json', 'pnpm-workspace.yaml']) {
+      const path = joinPath(projectDir, name);
+      if (!existsSync(path)) continue;
+      if (ignored(name) || !lstatSync(path).isFile()) return null;
+      const fd = openSync(path, constants.O_RDONLY | (constants.O_NOFOLLOW || 0));
+      let content;
+      try { content = readFileSync(fd, 'utf-8'); }
+      finally { closeSync(fd); }
+      const declarations = name === 'package.json'
+        ? (() => {
+          const workspaces = JSON.parse(content).workspaces;
+          return Array.isArray(workspaces) ? workspaces : workspaces?.packages || [];
+        })()
+        : [...content.matchAll(/^\s*-\s*['"]?([^'"\n]+?)['"]?\s*$/gm)].map(m => m[1]);
+      if (declarations.some(root => !covered(root))) return null;
+    }
+    return hash.digest('hex');
+  } catch { return null; }
+}
+
+function _cacheDirectorySafe(projectDir) {
+  try { return lstatSync(joinPath(projectDir, '.docguard')).isDirectory(); }
+  catch { return false; }
+}
+
+/** Validate the serialized contract before any consumer can dereference it. */
+function _validCachedPlan(plan) {
+  const record = value => value !== null && typeof value === 'object' && !Array.isArray(value);
+  const text = value => typeof value === 'string';
+  const nullableText = value => value == null || text(value);
+  const count = value => Number.isSafeInteger(value) && value >= 0;
+  const list = (value, valid) => Array.isArray(value) && value.every(valid);
+  const texts = value => list(value, text);
+  const records = value => list(value, record);
+  // Consumers serialize grounding and other scanner metadata. Reject deep or
+  // oversized object graphs too, so valid JSON cannot cause a stack overflow.
+  let nodes = 0;
+  const json = (value, depth = 0) => {
+    if (++nodes > 200_000 || depth > 64) return false;
+    if (value === null || text(value) || typeof value === 'boolean') return true;
+    if (typeof value === 'number') return Number.isFinite(value);
+    if (!record(value) && !Array.isArray(value)) return false;
+    return Object.values(value).every(child => json(child, depth + 1));
+  };
+  const ecosystem = value => record(value) && text(value.dir) && text(value.language)
+    && text(value.kind) && nullableText(value.framework);
+  const profile = value => record(value) && text(value.kind) && typeof value.polyglot === 'boolean'
+    && texts(value.languages) && texts(value.frameworks) && list(value.ecosystems, ecosystem)
+    && (value.primary === null || ecosystem(value.primary));
+  const docPath = value => text(value) && /^docs-(?:canonical|implementation)\/.+\.md$/.test(value)
+    && !/[\\:\x00-\x1f]/.test(value) && value.split('/').every(part => part && !part.startsWith('.'));
+  const grounding = value => value == null || record(value);
+  const section = value => record(value) && text(value.id) && (
+    value.source === 'code' ? text(value.body)
+      : value.source === 'human' && text(value.task) && grounding(value.grounding)
+  );
+  const namedFile = value => record(value) && text(value.name) && text(value.file);
+  if (!record(plan) || !json(plan) || !profile(plan.profile) || !texts(plan.notes)
+      || !list(plan.docs, doc => record(doc) && docPath(doc.path) && list(doc.sections, section))
+      || !list(plan.agentTasks, task => record(task) && docPath(task.doc) && text(task.sectionId)
+        && text(task.instruction) && grounding(task.grounding))) return false;
+  const s = plan.surface;
+  return record(s) && profile(s.profile)
+    && list(s.endpoints, e => record(e) && text(e.method) && text(e.path) && typeof e.auth === 'boolean')
+    && list(s.entities, e => record(e) && text(e.name) && records(e.fields))
+    && list(s.screens, e => record(e) && text(e.path) && text(e.file) && nullableText(e.component))
+    && [s.components, s.stores, s.hooks, s.contexts].every(items => list(items, namedFile))
+    && list(s.apiCalls, e => record(e) && text(e.method) && text(e.path))
+    && texts(s.envVars)
+    && list(s.integrations, e => record(e) && text(e.name) && text(e.category) && texts(e.evidence))
+    && list(s.modules, e => record(e) && text(e.name) && text(e.path) && ['module', 'file'].includes(e.kind))
+    && record(s.tests) && count(s.tests.totalFiles) && count(s.tests.totalCases)
+    && list(s.tests.files, e => record(e) && text(e.file) && count(e.cases))
+    && record(s.i18n) && texts(s.i18n.usedKeys) && texts(s.i18n.missing)
+    && list(s.i18n.locales, e => record(e) && text(e.file) && count(e.keys))
+    && record(s.frontend) && [s.frontend.framework, s.frontend.stateLib, s.frontend.dataLib].every(nullableText);
+}
+
+/** One insertion policy for fresh builds and disk promotions (FIFO, not LRU). */
+function _rememberPlan(key, treeHash, plan) {
+  _memoryPlanCache.delete(key);
+  while (_memoryPlanCache.size >= _MAX_MEMORY_PLANS) {
+    _memoryPlanCache.delete(_memoryPlanCache.keys().next().value);
+  }
+  _memoryPlanCache.set(key, { treeHash, plan });
+}
+
+function _readDiskCache(projectDir, configKey, treeHash) {
+  try {
+    if (!_cacheDirectorySafe(projectDir)) return null;
+    const path = resolvePath(projectDir, _DISK_CACHE_PATH);
+    const stat = lstatSync(path);
+    if (!stat.isFile() || stat.size > _MAX_CACHE_BYTES) return null;
+    const fd = openSync(path, constants.O_RDONLY | (constants.O_NOFOLLOW || 0));
+    let data;
+    try { data = JSON.parse(readFileSync(fd, 'utf-8')); }
+    finally { closeSync(fd); }
+    if (data.v !== _DISK_CACHE_VERSION || data.configKey !== configKey || data.treeHash !== treeHash) return null;
+    return _validCachedPlan(data.plan) ? data.plan : null;
+  } catch { return null; }
+}
+
+function _writeDiskCache(projectDir, configKey, treeHash, plan) {
+  let temporary;
+  try {
+    const dir = joinPath(projectDir, '.docguard');
+    if (!existsSync(dir)) mkdirSync(dir);
+    if (!_cacheDirectorySafe(projectDir)) return;
+    const path = resolvePath(projectDir, _DISK_CACHE_PATH);
+    // Never read or overwrite the target of a pre-existing cache symlink.
+    try { if (!lstatSync(path).isFile()) return; }
+    catch (err) { if (err.code !== 'ENOENT') return; }
+    const payload = JSON.stringify({
+      v: _DISK_CACHE_VERSION, configKey, treeHash, plan, writtenAt: new Date().toISOString(),
+    });
+    if (Buffer.byteLength(payload) > _MAX_CACHE_BYTES) return;
+    temporary = joinPath(dir, `plan.cache.${randomUUID()}.tmp`);
+    // safeWrite is for generated docs (backup + overwrite). Cache publication
+    // needs an exclusive temporary file + atomic rename so competing readers
+    // never see partial JSON; backups would only preserve disposable data.
+    writeFileSync(temporary, payload, { encoding: 'utf-8', flag: 'wx', mode: 0o600 });
+    if (!_cacheDirectorySafe(projectDir)) return;
+    renameSync(temporary, path);
+  } catch { /* cache persistence is best-effort */ }
+  finally {
+    if (temporary && _cacheDirectorySafe(projectDir)) {
+      try { unlinkSync(temporary); } catch { /* renamed or unavailable */ }
+    }
   }
 }
 
@@ -143,52 +297,41 @@ export function clearMemoryPlanCache() {
   _memoryPlanCache.clear();
 }
 
-function _cacheKey(projectDir, config) {
-  return JSON.stringify({
-    dir: projectDir,
-    sourceRoot: config.sourceRoot,
-    ignore: Array.isArray(config.ignore) ? [...config.ignore].sort() : null,
-    projectType: config.projectType,
-    profile: config.profile,
-  });
-}
-
-/**
- * Build the full memory plan for a project.
- * @returns {{ profile, surface, docs, agentTasks }}
- *   docs[].sections[]: { id, source:'code', body } OR { id, source:'human', task, grounding }
- *   agentTasks: flattened prose tasks the AI must write.
- */
+/** Build the plan, caching only a complete, stable working-tree snapshot. */
 export function buildMemoryPlan(projectDir, config = {}, opts = {}) {
-  const useCache = !opts._skipCache;
-  const key = useCache ? _cacheKey(projectDir, config) : null;
-
-  // L1: in-process Map (same-run guard → sync → fix).
-  if (useCache) {
+  projectDir = resolvePath(projectDir);
+  // Read current ignore rules on every call, including calls with reused config.
+  // Refuse symlinked ignore files rather than following them in the cache layer.
+  let cacheable = !opts._skipCache;
+  try {
+    const path = joinPath(projectDir, '.docguardignore');
+    if (lstatSync(path).isFile()) {
+      const patterns = readFileSync(path, 'utf-8').split(/\r?\n/)
+        .map(line => line.trim()).filter(line => line && !line.startsWith('#'));
+      config = { ...config, ignore: [...new Set([...(config.ignore || []), ...patterns])] };
+    } else { cacheable = false; }
+  } catch (err) { if (err.code !== 'ENOENT') cacheable = false; }
+  const key = cacheable ? _cacheKey(projectDir, config) : null;
+  const treeHash = key ? _treeStateHash(projectDir, config) : null;
+  if (treeHash) {
     const cached = _memoryPlanCache.get(key);
-    if (cached) return cached;
-  }
-
-  // L2: cross-process disk cache (CI guard → CI sync → CI fix).
-  // v0.18-P2: opt-in via config.diskCache !== false (default ON).
-  // Tree-state hash invalidates when source files change.
-  const diskCacheEnabled = useCache && config.diskCache !== false;
-  if (diskCacheEnabled) {
-    const onDisk = _readDiskCache(projectDir, key);
-    if (onDisk) {
-      _memoryPlanCache.set(key, onDisk);  // promote to L1
-      return onDisk;
+    if (cached?.treeHash === treeHash) return cached.plan;
+    _memoryPlanCache.delete(key);
+    if (config.diskCache !== false) {
+      const onDisk = _readDiskCache(projectDir, key, treeHash);
+      if (onDisk) {
+        _rememberPlan(key, treeHash, onDisk);
+        return onDisk;
+      }
     }
-  }
+  } else if (key) { _memoryPlanCache.delete(key); }
 
-  // Miss — build fresh.
   const result = _buildMemoryPlanUncached(projectDir, config);
-
-  if (useCache) {
-    _memoryPlanCache.set(key, result);
-  }
-  if (diskCacheEnabled) {
-    _writeDiskCache(projectDir, key, result);
+  // Scanners perform several walks. Do not stamp a mixed-state result with a
+  // later tree's identity if an editor changed inputs during the build.
+  if (treeHash && _treeStateHash(projectDir, config) === treeHash) {
+    _rememberPlan(key, treeHash, result);
+    if (config.diskCache !== false) _writeDiskCache(projectDir, key, treeHash, result);
   }
   return result;
 }
@@ -465,5 +608,7 @@ function _buildMemoryPlanUncached(projectDir, config = {}) {
     ],
   });
 
+  for (const doc of docs) doc.path = remapDocPath(config, doc.path);
+  for (const task of agentTasks) task.doc = remapDocPath(config, task.doc);
   return { profile, surface, docs, agentTasks, notes };
 }

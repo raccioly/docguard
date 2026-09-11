@@ -62,6 +62,7 @@ export function runCI(projectDir, config, flags) {
       errors: guardData.errors,
       warnings: guardData.warnings,
       baselineSuppressed: guardData.baselineSuppressed || 0,
+        checkCoverage: guardData.checkCoverage,
       passed: guardData.passed,
       total: guardData.total,
       status,
@@ -74,6 +75,8 @@ export function runCI(projectDir, config, flags) {
       project: config.projectName,
       profile: config.profile || 'standard',
       projectType: config.projectType || 'unknown',
+      scoreKind: scoreData.scoreKind,
+      assurance: scoreData.assurance,
       score: scoreData.score,
       grade: scoreData.grade,
       guard: {

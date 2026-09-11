@@ -23,6 +23,8 @@
 
 import { buildMemoryPlan } from '../scanners/memory-plan.mjs';
 import { c } from '../shared.mjs';
+import { createEvidenceReader, citedSources, taskEvidence, gitEvidence, SEMANTIC_COVERAGE_LIMITATION } from '../scanners/semantic-claims.mjs';
+import { buildScoreAssurance } from './score.mjs';
 
 const PHASES = ['config', 'canonical-docs', 'verify'];
 
@@ -31,8 +33,8 @@ function docSlug(path) {
 }
 
 /**
- * Transform a memory plan into the ordered agent task graph. Pure — no I/O — so
- * it is unit-testable and reused by both the command and `generate`.
+ * Transform a memory plan into the ordered agent task graph, with bounded
+ * read-only input snapshots. Evidence records inputs, never completed review.
  */
 export function buildAgentTaskGraph(projectDir, config, plan) {
   const profileName = config.profile || 'standard';
@@ -69,7 +71,13 @@ export function buildAgentTaskGraph(projectDir, config, plan) {
           ? `Insert the pre-filled "${sec.id}" content into ${doc.path} verbatim — it is extracted from your code. Only fill any \`<!-- … -->\` placeholders.`
           : sec.task,
         grounding: sec.grounding || null,
-        acceptance: { verify: 'docguard guard --format json', expect: `no missing/stale finding for ${doc.path}` },
+        acceptance: {
+          verify: 'docguard guard --format json',
+          expect: `no missing/stale finding for ${doc.path}; ${isCode ? 'compare generated content with current sources' : 'review prose against sources and project intent separately'}`,
+          scope: 'structural-only',
+          reviewRequired: true,
+          factualAccuracy: 'unknown',
+        },
         confidence: isCode ? 'high' : 'requires-human',
       });
     }
@@ -81,15 +89,27 @@ export function buildAgentTaskGraph(projectDir, config, plan) {
     phase: 'verify',
     file: null,
     kind: 'verify',
-    instruction: 'Run `docguard guard --format json`. Resolve every error and warning, then re-run until clean. Run `docguard score` to confirm the maturity grade.',
+    instruction: 'Run `docguard guard --format json`. Resolve every error, then re-run until there are 0 errors. Triage warnings and record unresolved warnings; warnings do not fail this acceptance gate. Run `docguard score` for structural maturity, and `docguard verify --semantic` to obtain unverified claim tasks for separate source review. Neither guard nor score verifies prose or factual accuracy.',
     prefilled: null,
     grounding: null,
-    acceptance: { verify: 'docguard guard --format json', expect: '0 errors' },
+    acceptance: { verify: 'docguard guard --format json', expect: '0 errors', warnings: 'triage-and-report', scope: 'structural-only', factualAccuracy: 'unknown' },
     confidence: 'high',
   });
 
+  const read = createEvidenceReader(projectDir);
+  for (const task of tasks) {
+    const inputs = JSON.stringify({ instruction: task.instruction, prefilled: task.prefilled, grounding: task.grounding });
+    const citations = citedSources([read(task.file).content, task.prefilled, task.instruction].filter(Boolean).join('\n'));
+    task.evidence = taskEvidence(read, task.file, citations, inputs);
+  }
+
+  const assurance = buildScoreAssurance(projectDir, config);
+  assurance.limitation += ` ${SEMANTIC_COVERAGE_LIMITATION}`;
+
   return {
     project: config.projectName,
+    provenance: { kind: 'snapshot', git: gitEvidence(projectDir) },
+    assurance,
     profile: { name: profileName, kind: plan.profile.kind, languages: plan.profile.languages, frameworks: plan.profile.frameworks },
     order: PHASES,
     counts: {
@@ -106,7 +126,7 @@ export function runAgent(projectDir, config, flags) {
   // Allow `--profile <name>` to preview a profile's plan without having to run
   // `init` first (the field-report agent had no config yet on its first call).
   const cfg = flags.profile ? { ...config, profile: flags.profile } : config;
-  const plan = buildMemoryPlan(projectDir, cfg);
+  const plan = buildMemoryPlan(projectDir, { ...cfg, diskCache: false });
   const graph = buildAgentTaskGraph(projectDir, cfg, plan);
 
   if (flags.format === 'json') {
@@ -119,6 +139,7 @@ export function runAgent(projectDir, config, flags) {
   {
     console.log(`${c.bold}🤖 DocGuard Agent Task Graph — ${graph.project}${c.reset}`);
     console.log(`${c.dim}   profile: ${graph.profile.name} · kind: ${graph.profile.kind} · ${graph.counts.tasks} tasks (${graph.counts.codeTruth} code-truth, ${graph.counts.humanJudgment} human)${c.reset}\n`);
+    console.log(`  ${c.dim}Snapshot only · structural checks do not verify prose · ${graph.assurance.unverifiedClaims ?? 'unknown'} extracted claims await review.${c.reset}\n`);
     for (const phase of graph.order) {
       const inPhase = graph.tasks.filter(t => t.phase === phase);
       if (!inPhase.length) continue;

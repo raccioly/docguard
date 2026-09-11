@@ -1,3 +1,4 @@
+import { assertDefaultDocWrites } from '../shared-doc-roles.mjs';
 /**
  * Diagnose Command — The AI Orchestrator
  *
@@ -181,6 +182,7 @@ const FIX_INSTRUCTIONS = {
 };
 
 export function runDiagnose(projectDir, config, flags) {
+  if (flags.auto) assertDefaultDocWrites(config);
   // ── Step 0: Detect agent mode (LLM-first) ──
   const agentMode = detectAgentMode(projectDir);
 
@@ -347,6 +349,9 @@ function outputJSON(guardData, scoreData, issues) {
     status: guardData.status,
     score: scoreData.score,
     grade: scoreData.grade,
+    scoreKind: scoreData.scoreKind,
+    assurance: scoreData.assurance,
+    checkCoverage: guardData.checkCoverage,
     issueCount: issues.length,
     issues: issues.map(i => ({
       severity: i.severity,
@@ -493,7 +498,8 @@ function outputPrompt(projectDir, guardData, scoreData, issues, flags, agentMode
     lines.push('After making all fixes, run: docguard guard');
   }
   lines.push('Expected result: All checks pass (0 errors, 0 warnings)');
-  lines.push(`Target score: ≥${Math.min(scoreData.score + 5, 100)}/100`);
+  lines.push(`Structural baseline: ${scoreData.score}/100. Resolve evidenced defects; verify material claims separately.`);
+  lines.push('Preserve approved requirements when implementation disagrees. A higher score is not proof of factual correctness.');
 
   // Agent-aware: add explicit checklist for basic-tier agents
   if (agentTier === 'basic') {
@@ -581,7 +587,7 @@ function outputDebatePrompt(projectDir, guardData, scoreData, issues, agentMode 
   lines.push('   c. What content to write (be specific, not vague)');
   const verifyCmd = agentMode === 'llm' ? '/docguard.guard' : 'docguard guard';
   lines.push(`4. After all fixes, verify with: ${verifyCmd}`);
-  lines.push(`5. Target score: ≥${Math.min(scoreData.score + 10, 100)}/100`);
+  lines.push('5. Verify repaired claims against their evidence and retain unresolved uncertainty. Structural score is a proxy.');
   lines.push('');
   lines.push('═══════════════════════════════════════════════════════');
   lines.push('Execute all three perspectives in sequence, then implement the Synthesizer\'s plan.');

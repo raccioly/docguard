@@ -1,3 +1,4 @@
+import { assertDefaultDocWrites } from '../shared-doc-roles.mjs';
 /**
  * Sync Command — keep the documentation memory ALWAYS UP TO DATE.
  *
@@ -78,6 +79,7 @@ function sectionTouchedByChanges(sectionId, changedFiles) {
 }
 
 export function runSync(projectDir, config, flags) {
+  if (flags.write) assertDefaultDocWrites(config);
   // v0.28 (field report #10): `--tests` reconciles the hand-maintained TEST-SPEC
   // Source-to-Test Map from disk (ghost-source removal + new co-located pairs) —
   // a distinct path from the generated code-truth section refresh below.

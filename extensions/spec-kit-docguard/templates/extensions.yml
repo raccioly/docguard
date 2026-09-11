@@ -17,8 +17,7 @@ hooks:
       command: speckit.docguard.guard
       description: "Validate documentation passes CDD standards after implementation"
       enabled: true
-      optional: true
-      prompt: "Run DocGuard guard to verify documentation quality after implementation changes?"
+      optional: false
 
   # Run DocGuard review before /speckit.tasks to catch doc drift early
   before_tasks:

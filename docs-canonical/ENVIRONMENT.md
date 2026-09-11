@@ -4,7 +4,7 @@
 
 <!-- docguard:version 0.6.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-07-03 -->
+<!-- docguard:last-reviewed 2026-09-11 -->
 
 > DocGuard needs no environment variables. It has a single optional-load npm dependency (`@babel/parser`) and optionally uses the developer's own `python3`; everything else is Node.js built-ins.
 
@@ -33,9 +33,9 @@
 ## Setup Steps
 
 1. Clone the repository: `git clone https://github.com/raccioly/docguard.git`
-2. No install needed — uses only Node.js built-in modules
+2. Run `npm ci` to install the locked Babel parser dependency for the full JS/TS extraction tier
 3. Run directly: `node cli/docguard.mjs --help`
-4. Or use via npx: `npx docguard --help`
+4. Or use via npx: `npx docguard-cli --help`
 
 ## Development
 

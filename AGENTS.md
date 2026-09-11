@@ -1,6 +1,6 @@
 # AI Agent Instructions — DocGuard
 
-<!-- docguard:last-reviewed 2026-07-03 -->
+<!-- docguard:last-reviewed 2026-09-11 -->
 
 > This project follows **Canonical-Driven Development (CDD)**.
 > Documentation is the source of truth. Read before coding.
@@ -154,3 +154,7 @@ extensions/spec-kit-docguard/
 ### CI/CD
 - Never write a workflow using `pull_request_target` with checkout of PR-controlled refs.
 - Always pin third-party GitHub Actions to commit SHA, not @v1 or @main.
+
+## Evidence and contributions
+
+A structural score is a maturity proxy. Preserve `assurance` and nullable factual accuracy in automation; a clean guard does not establish arbitrary prose correctness. Review human intent separately from generated code facts. To challenge any finding, run `docguard feedback --code <CODE> --preview`, inspect the metadata-only public draft, and check the supplied search link for existing open and closed work. Contribute a synthetic failing example paired with a neighboring valid case. Submission remains opt-in.

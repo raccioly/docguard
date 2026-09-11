@@ -20,23 +20,41 @@
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
 const CLI = join(process.cwd(), 'cli/docguard.mjs');
+
+// Each child gets its own temp root, including simultaneous runtime matrices.
+// Inspect kept fixtures before finally removes only this invocation's directory.
+function runDemo(args = [], inspect = () => {}) {
+  const tmp = mkdtempSync(join(tmpdir(), 'docguard-demo-test-'));
+  try {
+    const result = spawnSync(process.execPath, [CLI, 'demo', ...args], {
+      encoding: 'utf-8',
+      env: { ...process.env, TMPDIR: tmp, TMP: tmp, TEMP: tmp },
+    });
+    assert.ifError(result.error);
+    assert.equal(result.status, 0, result.stderr);
+    inspect(result, tmp);
+    return result;
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+}
 
 // Strip ANSI color codes so regex assertions are readable
 function stripAnsi(s) { return s.replace(/\x1B\[[0-9;]*[A-Za-z]/g, ''); }
 
 describe('docguard demo', () => {
   it('runs end-to-end and exits 0', () => {
-    const r = spawnSync('node', [CLI, 'demo', '--quiet'], { encoding: 'utf-8' });
+    const r = runDemo(['--quiet']);
     assert.equal(r.status, 0, `demo should exit 0; got ${r.status}\nstderr: ${r.stderr}`);
   });
 
   it('output shows the demo banner + scan + score + CTA', () => {
-    const r = spawnSync('node', [CLI, 'demo'], { encoding: 'utf-8' });
+    const r = runDemo();
     const out = stripAnsi(r.stdout);
     assert.match(out, /DocGuard Demo/);
     assert.match(out, /What DocGuard found in your fixture/);
@@ -49,7 +67,7 @@ describe('docguard demo', () => {
   });
 
   it('--quiet suppresses the banner', () => {
-    const r = spawnSync('node', [CLI, 'demo', '--quiet'], { encoding: 'utf-8' });
+    const r = runDemo(['--quiet']);
     const out = stripAnsi(r.stdout);
     // Quiet mode skips the intro and fixture-path lines but still shows findings
     assert.doesNotMatch(out, /No install\. No setup\./);
@@ -58,32 +76,25 @@ describe('docguard demo', () => {
   });
 
   it('cleans up the temp fixture by default', () => {
-    // Count tmp-dir entries before/after to verify no leak
-    const tmp = tmpdir();
-    const before = readdirSync(tmp).filter(f => f.startsWith('docguard-demo-')).length;
-    spawnSync('node', [CLI, 'demo', '--quiet'], { encoding: 'utf-8' });
-    const after = readdirSync(tmp).filter(f => f.startsWith('docguard-demo-')).length;
-    assert.equal(after, before, `demo should clean up its temp fixture; before=${before} after=${after}`);
+    runDemo(['--quiet'], (_result, tmp) => {
+      assert.deepEqual(readdirSync(tmp), [], 'demo should remove its fixture from the isolated temp root');
+    });
   });
 
   it('--keep preserves the temp fixture and reports its path', () => {
-    const tmp = tmpdir();
-    const before = readdirSync(tmp).filter(f => f.startsWith('docguard-demo-'));
-    const r = spawnSync('node', [CLI, 'demo', '--keep', '--quiet'], { encoding: 'utf-8' });
-    const after = readdirSync(tmp).filter(f => f.startsWith('docguard-demo-'));
-    assert.equal(after.length, before.length + 1, 'should keep one new fixture dir');
-    // The output should tell the user where it lives
-    const out = stripAnsi(r.stdout);
-    assert.match(out, /Fixture kept at \/.*docguard-demo-/);
-    // Clean up the kept fixture so we don't leak across tests
-    const kept = after.find(d => !before.includes(d));
-    if (kept) {
-      try { require('node:fs').rmSync(join(tmp, kept), { recursive: true, force: true }); } catch { /* ok */ }
-    }
+    runDemo(['--keep', '--quiet'], (result, tmp) => {
+      const kept = readdirSync(tmp);
+      assert.equal(kept.length, 1, 'should keep exactly one fixture directory');
+      assert.match(kept[0], /^docguard-demo-/);
+      const fixture = join(tmp, kept[0]);
+      assert.ok(existsSync(join(fixture, 'package.json')), 'kept fixture retains its project files');
+      assert.ok(stripAnsi(result.stdout).includes('Fixture kept at ' + fixture + ' (--keep)'),
+        'reported path must identify the retained fixture');
+    });
   });
 
   it('top-5 findings span multiple validators (not all from one)', () => {
-    const r = spawnSync('node', [CLI, 'demo', '--quiet'], { encoding: 'utf-8' });
+    const r = runDemo(['--quiet']);
     const out = stripAnsi(r.stdout);
     // Find the validator-name lines (numbered 1-5 with "[SEV] <Validator>")
     const validatorMatches = [...out.matchAll(/^\s+\d+\.\s+\[(?:HIGH|MED|LOW)\]\s+(\S[^\n]*?)$/gm)]

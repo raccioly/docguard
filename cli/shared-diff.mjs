@@ -169,7 +169,7 @@ export function activityLabeledDiff(fileDiff) {
 }
 
 /**
- * Tokens that LEFT the code in this file diff — union over every '-' line
+ * Old-side tokens absent from additions, plus removed declaration names, from every '-' line
  * (both pure deletes and the "old" side of replaces). This is the
  * `deleted ∪ replaceOld` span the outdated-comment research keys on: a doc
  * that still talks about these tokens is a drift suspect.
@@ -181,6 +181,27 @@ export function removedTokens(fileDiff, opts) {
       if (ln.op === '-') for (const t of tokenize(ln.text, opts)) set.add(t);
     }
   }
+  // Reformatting or movement into another hunk does not remove a token.
+  for (const token of addedTokens(fileDiff, opts)) set.delete(token);
+  // A retained call is not a retained declaration. Preserve name evidence when
+  // declarations disappear, even if additions still reference those names.
+  const declarationNames = op => {
+    const text = (fileDiff.hunks || []).flatMap(h => h.lines)
+      .filter(line => line.op === op).map(line => line.text).join('\n');
+    const names = new Map();
+    const pattern = /\b(?:function\s*\*?\s*|def\s+|class\s+|(?:const|let|var)\s+)([A-Za-z_$][\w$]*)/g;
+    for (const match of text.matchAll(pattern)) {
+      names.set(match[1], (names.get(match[1]) || 0) + 1);
+    }
+    return names;
+  };
+  const declarationsAdded = declarationNames('+');
+  for (const [name, count] of declarationNames('-')) {
+    if (count > (declarationsAdded.get(name) || 0)) {
+      for (const token of tokenize(name, opts)) set.add(token);
+    }
+  }
+
   return set;
 }
 

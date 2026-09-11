@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.36.0] - 2026-09-11
+
+### Fixed
+
+- Catalog submission drafts leave verification checkboxes unchecked, remove unsupported exclusivity claims, and require release-specific evidence before submission.
+
+- Enterprise precision: preserve implementation evidence when API contracts omit routes; avoid formatting-only drift, negated technology claims, explained-skip noise, and narrowly identified synthetic mock passwords. Paired true-defect controls prevent broad suppression.
+
+- **CI scaffolding**: `init --with ci` now writes the maintained workflow instead of executing a CI check; preserves existing files and rejects unsafe paths.
+
+- Independent review fixes bound disk-cache promotion, reject malformed cached plans, preserve unknown report states, and report feedback persistence failures explicitly.
+- Memory-plan caches invalidate on relevant source/document/configuration content and scanner changes, including ordinary uncommitted edits and fresh-process reads. Partial identities bypass reuse; disk writes are atomic and cache paths avoid symlink/private targets.
+- Generated Git enforcement hooks parse formatted JSON, prefer installed local tools, and block unavailable or failed runtimes. Warning policy stays explicit. The Spec Kit after-implementation hook matches its mandatory contract.
+- Traceability distinguishes requirement annotations and test labels from fixture strings. Freshness covers configured/nested docs and source additions/deletions, batches history reads, and rejects future review dates. Watch mode handles asynchronous errors and cleans up resources.
+- CI templates use verified action commit pins, a fixed CLI version, full history, and checked JSON/exit status. The repository CI matrix explicitly emits TAP for its runtime budget.
+
+### Changed
+
+- Score, diagnose, CI, and report identify the grade as structural maturity and expose unverified factual accuracy. **Machine-contract correction:** score JSON now returns null for memory.accuracy; the former proxy is memory.structuralAlignment. Category axes use structuralAlignment. Numeric score thresholds are unchanged. Consumers must preserve unknown values.
+- Canonical documentation now reflects the Babel dependency, HTTP MCP security boundary, auxiliary files, current score contract, and limits of coverage claims. CI recipes refer to maintained templates; generated audit/probe artifacts have explicit analysis exclusions.
+
+### Added
+
+- Explicit validator applicability/check coverage, bounded Worker binding extraction, and canonical document-role mappings for existing Markdown layouts. Custom mappings support validation/read-only plans; legacy automatic writes fail closed.
+- Freshness emits low-confidence review tasks; explicit historical/superseded/deprecated documents retain their recorded intent without currentness assertions.
+
+- Feedback selection with --code or --all, including confident findings, plus --preview to skip feedback-record writes. Public issue drafts contain metadata only, and search links help contributors check open and closed issues/PRs. Test-only synthetic reproductions are documented as a contribution path.
+- Stable semantic-claim identifiers and bounded snapshot evidence for agent tasks; revision/dirty metadata and explicit uncertainty in context packs. Hashes identify inputs rather than assert review or correctness.
+- A research-backed trust roadmap with competitor capabilities, proposed evaluations, contribution economics, and staged acceptance criteria.
+
+### Migration
+
+- Regenerate installed Git hooks and update installed Spec Kit registrations to receive their new behavior. Enforcement requires an installed local DocGuard or a binary on PATH; hooks no longer fetch a package through npx. Review nullable accuracy handling in JSON consumers before upgrading automation.
+
 ## [0.35.0] - 2026-09-11
 
 ### Added

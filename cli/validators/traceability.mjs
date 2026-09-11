@@ -6,7 +6,7 @@
  *   2. Requirement Traceability (V-Model): Requirement IDs in docs trace to tests
  *
  * Requirement traceability is opt-in by convention — if no requirement IDs are
- * found (REQ-001, FR-001, etc.), the check silently passes. Once you add IDs,
+ * defined or explicitly annotated (REQ-001, FR-001, etc.), the check silently passes. Once you add IDs,
  * DocGuard automatically enforces traceability.
  *
  * Inspired by ISO/IEC/IEEE 29119, IEEE 1016, and V-Model methodology.
@@ -20,6 +20,7 @@ import { walkFiles as sharedWalkFiles, listCanonicalDocs } from '../shared-ignor
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { tokenize } from '../shared-diff.mjs';
 import { rankBySimilarity } from '../shared-ir.mjs';
+import { parseJsTs, walk } from '../scanners/js-ast.mjs';
 
 /**
  * Optional graphify interop (github.com/Graphify-Labs/graphify, MIT).
@@ -71,13 +72,18 @@ function loadGraphifyDocLinks(projectDir) {
   }
 }
 
+// A test directory also contains fixtures and configuration. Only source files
+// are eligible for annotations or candidate-test similarity hints.
+function isTestSource(file) {
+  return /\.(?:[cm]?[jt]sx?|py|go|rs|java|kt|rb|php|sh)$/.test(file)
+    && (TEST_PATTERNS.some(pattern => pattern.test(file)) || /(?:^|\/)(?:__tests__|tests?)\//.test(file));
+}
+
 // IR soft-link recovery (feat 5): tokenize test files once so an untraced
 // requirement can be matched to the test that most likely already covers it
 // (TF-IDF cosine, VSM). Capped so a huge test suite can't blow up guard.
 function buildTestCorpus(projectDir, projectFiles, { maxFiles = 250, maxTokens = 400 } = {}) {
-  const testFiles = projectFiles.filter(f =>
-    TEST_PATTERNS.some(p => p.test(f)) || /__tests__\//.test(f) || /tests?\//.test(f)
-  ).slice(0, maxFiles);
+  const testFiles = projectFiles.filter(isTestSource).slice(0, maxFiles);
   const corpus = [];
   for (const relPath of testFiles) {
     try {
@@ -134,7 +140,7 @@ export function validateTraceability(projectDir, config) {
   let total = 0;
 
   const docsDir = resolve(projectDir, 'docs-canonical');
-  if (!existsSync(docsDir)) {
+  if (!existsSync(docsDir) && getRequirementDocPaths(projectDir, config).length === 0) {
     // No docs-canonical dir at all — structure validator handles this
     return resultFromFindings([], { passed: 0, total: 0 });
   }
@@ -166,9 +172,14 @@ export function validateTraceability(projectDir, config) {
     // Skip docs not in the user's required list
     if (!requiredDocs.has(docName)) continue;
 
-    total++;
-    const docPath = resolve(docsDir, docName);
+    const configuredPath = (config.requiredFiles?.canonical || []).find(file => basename(file) === docName);
+    const docPath = configuredPath && (configuredPath.includes('/') || existsSync(resolve(projectDir, configuredPath)))
+      ? resolve(projectDir, configuredPath) : resolve(docsDir, docName);
     const docExists = existsSync(docPath);
+    // Discovering feature specs must not activate missing-canonical findings
+    // for a repository without a canonical home. Structure owns that absence.
+    if (!existsSync(docsDir) && !docExists) continue;
+    total++;
 
     if (!docExists) {
       findings.push(mkFinding({
@@ -176,7 +187,7 @@ export function validateTraceability(projectDir, config) {
         validator: 'traceability',
         severity: 'warn',
         message: `${docName} — required but missing, no traceability possible`,
-        location: `docs-canonical/${docName}`,
+        location: relative(projectDir, docPath),
         suggestion: { kind: 'fix', text: 'Create the required doc from the professional template', command: 'docguard init' },
       }));
       continue;
@@ -220,7 +231,7 @@ export function validateTraceability(projectDir, config) {
         validator: 'traceability',
         severity: 'warn',
         message: `${docName} — exists but no matching source code found (unlinked doc)`,
-        location: `docs-canonical/${docName}`,
+        location: relative(projectDir, docPath),
         suggestion: {
           kind: 'fix',
           text: 'Link a source file explicitly with a header annotation if the code lives in a non-standard location',
@@ -237,7 +248,7 @@ export function validateTraceability(projectDir, config) {
   // finding points at the actual file instead of a fabricated flat one — for
   // a flat tree `doc.rel` already equals the old `docs-canonical/${docFile}`
   // template exactly, so this is a no-op on the flat case.
-  for (const doc of listCanonicalDocs(projectDir)) {
+  for (const doc of listCanonicalDocs(projectDir, { config })) {
     const docFile = basename(doc.rel);
     if (!requiredDocs.has(docFile) && TRACE_MAP[docFile]) {
       findings.push(mkFinding({
@@ -266,7 +277,7 @@ export function validateTraceability(projectDir, config) {
  * Scan docs for requirement IDs and verify they appear in test files.
  *
  * Behavior:
- *   - If no requirement IDs found anywhere → silently passes (0 checks)
+ *   - If no definitions or test declarations exist → silently passes (0 checks)
  *   - If IDs found → validates each has a matching test reference
  *   - Reports untraced requirements and orphaned test refs
  */
@@ -283,11 +294,6 @@ function validateRequirementTraceability(projectDir, config, projectFiles) {
 
   // ── Step 1: Collect requirement IDs from documentation ──
   const reqIds = collectRequirementIds(projectDir, config, patterns);
-
-  // If no requirement IDs found, silently pass — this project doesn't use them
-  if (reqIds.size === 0) {
-    return { findings, passed, total };
-  }
 
   // ── Step 2: Scan test files for requirement ID references ──
   const testRefs = scanTestFilesForReferences(projectDir, projectFiles, patterns);
@@ -309,7 +315,7 @@ function validateRequirementTraceability(projectDir, config, projectFiles) {
     } else {
       // Try to recover a likely-but-unannotated test via TF-IDF cosine.
       let softHint = '';
-      let softText = `Add an @req ${reqId} comment to the test that verifies this requirement`;
+      let softText = `Review existing tests for this requirement. If a test verifies it, add an @req ${reqId} annotation or requirement ID test label; write a test only if behavioral coverage is actually missing.`;
       const queryText = location.text && location.text.length > reqId.length ? location.text : reqId;
       if (testCorpus === null) testCorpus = buildTestCorpus(projectDir, projectFiles);
       if (testCorpus.length > 0) {
@@ -318,16 +324,16 @@ function validateRequirementTraceability(projectDir, config, projectFiles) {
         if (top && top.score >= softThreshold) {
           const pct = (top.score * 100).toFixed(0);
           softHint = ` — IR soft-match: ${top.id} (${pct}% similar) may already cover it`;
-          softText = `${top.id} looks like it already tests this (${pct}% similar) — add @req ${reqId} there, or if unrelated, write the missing test`;
+          softText = `Review ${top.id} as a candidate (${pct}% text similarity, not coverage evidence). Add @req ${reqId} only if it verifies the requirement; otherwise inspect other tests before deciding a new test is needed.`;
         }
       }
       findings.push(mkFinding({
         code: 'TRC004',
         validator: 'traceability',
         severity: 'warn',
-        message: `Requirement ${reqId} (${location.file}:${location.line}) has no test coverage.${softHint || ' Add @req ' + reqId + ' comment to the test that verifies this requirement'}`,
+        message: `Requirement ${reqId} (${location.file}:${location.line}) has no recognized test annotation or label; behavioral coverage is unknown.${softHint}`,
         location: `${location.file}:${location.line}`,
-        suggestion: { kind: 'fix', text: softText },
+        suggestion: { kind: 'review', text: softText },
       }));
     }
   }
@@ -367,16 +373,53 @@ function collectRequirementIds(projectDir, config, patterns) {
     const lines = content.split('\n');
     const docName = relative(projectDir, docPath);
 
+    let fence = null;
+    let exampleLevel = null;
+    let inComment = false;
     for (let i = 0; i < lines.length; i++) {
+      let line = lines[i];
+      if (/^(?: {4}|\t)/.test(line) && !fence && !inComment) continue;
+      const marker = line.match(/^\s{0,3}(`{3,}|~{3,})/);
+      if (fence) {
+        if (marker && marker[1][0] === fence[0] && marker[1].length >= fence.length
+          && line.slice(marker[0].length).trim() === '') fence = null;
+        continue;
+      }
+      if (marker) { fence = marker[1]; continue; }
+      // Comments and fenced examples cannot define requirements. Preserve
+      // physical line numbers instead of scanning a compacted document.
+      line = line.replace(/<!--[\s\S]*?-->/g, '');
+      if (inComment) {
+        const close = line.indexOf('-->');
+        if (close < 0) continue;
+        line = line.slice(close + 3);
+        inComment = false;
+      }
+      const open = line.indexOf('<!--');
+      if (open >= 0) { line = line.slice(0, open); inComment = true; }
+      const heading = line.match(/^\s{0,3}(#{1,6})\s+(.*)/);
+      if (heading) {
+        if (exampleLevel !== null && heading[1].length <= exampleLevel) exampleLevel = null;
+        if (exampleLevel === null && /^(?:(?:requirement|task)[ -]+)?(?:examples?|ID[ -]+(?:formats?|syntax|examples?)|(?:formats?|syntax)[ -]+(?:of[ -]+)?IDs?)\b/i.test(heading[2])) {
+          exampleLevel = heading[1].length;
+        }
+      }
+      if (exampleLevel !== null) continue;
       for (const pattern of patterns) {
-        // Reset regex lastIndex for each line
         pattern.lastIndex = 0;
         let match;
-        while ((match = pattern.exec(lines[i])) !== null) {
-          const reqId = match[0]; // e.g., "REQ-001"
+        while ((match = pattern.exec(line)) !== null) {
+          // Definitions lead a line, heading, list item or first table cell.
+          // Later prose references must not satisfy a missing requirement ID.
+          const prefix = line.slice(0, match.index);
+          if (!/^\s{0,3}(?:#{1,6}\s+|[-*+]\s+(?:\[[ xX]\]\s+)?|\d+[.)]\s+|\|\s*)?[\s*`_]*$/.test(prefix)) {
+            if (!match[0].length) pattern.lastIndex++;
+            continue;
+          }
+          const reqId = match[0];
+          if (!reqId.length) { pattern.lastIndex++; continue; }
           if (!reqIds.has(reqId)) {
-            // capture the line text (the requirement description) for IR soft-match
-            reqIds.set(reqId, { file: docName, line: i + 1, text: lines[i].trim() });
+            reqIds.set(reqId, { file: docName, line: i + 1, text: line.trim() });
           }
         }
       }
@@ -386,12 +429,74 @@ function collectRequirementIds(projectDir, config, patterns) {
   return reqIds;
 }
 
+// A mention in fixture data is not a coverage declaration. Keep the same ID
+// patterns, but apply them only to annotations and test labels. In particular,
+// prose discussing an annotation ("never annotates @req ...") is not one.
+function testDeclarations(content, filename) {
+  const declarations = [];
+  const comment = (text, line) => {
+    for (const [offset, raw] of text.split('\n').entries()) {
+      const body = raw.replace(/^\s*\*?\s*/, '');
+      if (/^(?:@(?:req|task|covers)\s|Testing\s)/i.test(body)) {
+        declarations.push({ text: body, line: line + offset });
+      }
+    }
+  };
+  const labelName = /^(?:test|it|describe|context|specify|Run|DisplayName)$/;
+  const ext = extname(filename);
+  if (/^\.(?:[cm]?[jt]s|[jt]sx)$/.test(ext)) {
+    const { ast, ok } = parseJsTs(content, filename);
+    if (ok) {
+      for (const c of ast.comments || []) comment(c.value, c.loc.start.line);
+      const isLabelCall = (callee) => {
+        if (callee?.type === 'Identifier') return labelName.test(callee.name);
+        if (callee?.type !== 'MemberExpression' || callee.computed) return false;
+        return labelName.test(callee.property.name)
+          || (/^(?:only|skip|todo|concurrent|serial)$/.test(callee.property.name)
+            && isLabelCall(callee.object));
+      };
+      walk(ast.program, node => {
+        if (node.type !== 'CallExpression' || !isLabelCall(node.callee)) return;
+        const label = node.arguments[0];
+        if (label?.type === 'StringLiteral'
+          || (label?.type === 'TemplateLiteral' && label.expressions.length === 0)) {
+          // Scan source spelling to retain physical lines and custom patterns.
+          declarations.push({ text: content.slice(label.start + 1, label.end - 1), line: label.loc.start.line });
+        }
+      });
+      return declarations.sort((a, b) => a.line - b.line);
+    }
+  }
+
+  // Other languages, and JS/TS without the optional parser: lex comments and
+  // strings together so comment-like text inside a fixture stays opaque.
+  // This is deliberately a best-effort tier, like the multilingual scanners.
+  const tokens = /\/\*[\s\S]*?(?:\*\/|$)|\/\/[^\n]*|\#[^\n]*|"""[\s\S]*?(?:"""|$)|'''[\s\S]*?(?:'''|$)|"(?:\\[\s\S]|[^"\\])*"|'(?:\\[\s\S]|[^'\\])*'|`(?:\\[\s\S]|[^`\\])*`/g;
+  const hashComments = /\.(?:py|rb|php|sh)$/.test(ext);
+  let end = 0;
+  let line = 1;
+  let code = '';
+  for (const token of content.matchAll(tokens)) {
+    const gap = content.slice(end, token.index);
+    line += (gap.match(/\n/g) || []).length;
+    code += gap;
+    const text = token[0];
+    if (text.startsWith('//') || text.startsWith('/*') || (hashComments && text.startsWith('#'))) {
+      comment(text.replace(/^(?:\/\/|\/\*|#)/, ''), line);
+    } else if (/^["'`]/.test(text)
+      && /\b(?:test|it|describe|context|specify|Run|DisplayName)(?:\.(?:only|skip|todo|concurrent|serial))*\s*\(?\s*$/.test(code)) {
+      declarations.push({ text: text.slice(1, -1), line });
+    }
+    line += (text.match(/\n/g) || []).length;
+    // Strings must break a possible label prefix; comments are whitespace.
+    code = text.startsWith('/') || text.startsWith('#') ? code + ' ' : ';';
+    end = token.index + text.length;
+  }
+  return declarations;
+}
+
 function scanTestFilesForReferences(projectDir, projectFiles, patterns) {
-  const testFiles = projectFiles.filter(f =>
-    TEST_PATTERNS.some(p => p.test(f)) ||   // multilingual: JS/TS, Python, Go, Rust, Java/Kotlin, Ruby, PHP
-    /__tests__\//.test(f) ||
-    /tests?\//.test(f)
-  );
+  const testFiles = projectFiles.filter(isTestSource);
 
   const testRefs = new Map(); // reqId → [{ file, line }]
 
@@ -406,16 +511,16 @@ function scanTestFilesForReferences(projectDir, projectFiles, patterns) {
     const hasMatch = patterns.some(p => { p.lastIndex = 0; return p.test(content); });
     if (!hasMatch) continue;
 
-    const lines = content.split('\n');
-
-    for (let i = 0; i < lines.length; i++) {
+    for (const declaration of testDeclarations(content, relPath)) {
       for (const pattern of patterns) {
         pattern.lastIndex = 0;
         let match;
-        while ((match = pattern.exec(lines[i])) !== null) {
+        while ((match = pattern.exec(declaration.text)) !== null) {
+          if (!match[0]) { pattern.lastIndex++; continue; }
           const reqId = match[0];
           if (!testRefs.has(reqId)) testRefs.set(reqId, []);
-          testRefs.get(reqId).push({ file: relPath, line: i + 1 });
+          const line = declaration.line + (declaration.text.slice(0, match.index).match(/\n/g) || []).length;
+          testRefs.get(reqId).push({ file: relPath, line });
         }
       }
     }
@@ -434,7 +539,7 @@ function getRequirementDocPaths(projectDir, config) {
   // docs-canonical/ directory — recursive. Consumer re-derives the display
   // path via relative(projectDir, docPath), so nested docs already report
   // their real path with no further change needed there.
-  for (const doc of listCanonicalDocs(projectDir)) paths.push(doc.abs);
+  for (const doc of listCanonicalDocs(projectDir, { config })) paths.push(doc.abs);
 
   // Root-level docs
   const rootDocs = ['REQUIREMENTS.md', 'spec.md', 'README.md'];
@@ -444,10 +549,19 @@ function getRequirementDocPaths(projectDir, config) {
   }
 
   // User-configured requirement docs
-  const configDocs = config.traceability?.requirementDocs || [];
+  const configDocs = [...(config.requiredFiles?.canonical || []), ...(config.traceability?.requirementDocs || [])];
   for (const doc of configDocs) {
     const p = resolve(projectDir, doc);
-    if (existsSync(p) && !paths.includes(p)) paths.push(p);
+    const rel = relative(projectDir, p);
+    if (rel === '..' || rel.startsWith('../') || rel.split(/[\\/]/).includes('.local')) continue;
+    try {
+      if (statSync(p).isFile() && !paths.includes(p)) paths.push(p);
+      else if (statSync(p).isDirectory()) {
+        for (const entry of listCanonicalDocs(projectDir, { dirName: doc, config: {} })) {
+          if (!paths.includes(entry.abs)) paths.push(entry.abs);
+        }
+      }
+    } catch { /* Structural validators own missing or unreadable doc paths. */ }
   }
 
   // Spec Kit artifacts: .specify/specs/*/spec.md (v3+) and specs/*/spec.md (legacy)

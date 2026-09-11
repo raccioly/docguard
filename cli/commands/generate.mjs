@@ -1,3 +1,4 @@
+import { assertDefaultDocWrites } from '../shared-doc-roles.mjs';
 /**
  * Generate Command — Reverse-engineer canonical docs from an existing codebase
  * Scans source code and creates documentation templates pre-filled with project data.
@@ -39,6 +40,7 @@ const CODE_EXTENSIONS = new Set([
  * inserted as agent-task placeholders), respecting human prose via markers.
  */
 export function runGeneratePlan(projectDir, config, flags) {
+  if (flags.write) assertDefaultDocWrites(config);
   // `--profile <name>` previews a profile's doc set without needing `init` first.
   if (flags.profile) config = { ...config, profile: flags.profile };
   const plan = buildMemoryPlan(projectDir, config);
@@ -137,6 +139,7 @@ export function runGeneratePlan(projectDir, config, flags) {
 }
 
 export function runGenerate(projectDir, config, flags) {
+  if (!flags.plan || flags.write) assertDefaultDocWrites(config);
   // --plan: emit the AI-powered "memory plan" — the agent task manifest. The CLI
   // builds the code-truth skeleton (marked sections) + tells the agent exactly
   // what prose to write per section. This is the language-aware Generate path.

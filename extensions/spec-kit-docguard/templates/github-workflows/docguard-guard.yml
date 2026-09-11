@@ -1,48 +1,93 @@
-# DocGuard Guard — runs all validators on every PR and main push.
-#
-# This is the canonical CI gate. It does NOT modify your repo — it only
-# reports. Pair with `docguard-autofix.yml` if you want mechanical fixes
-# applied automatically.
-#
-# Setup:
-#   1. Copy this file to .github/workflows/docguard-guard.yml
-#   2. (Optional) Set `fail-on-warning: 'true'` to make warnings block the PR.
+# Copy this starter to .github/workflows/. Reports stay in runner temp.
+# The static CLI pin is checked against package.json by ci-reproducibility tests.
+# Warnings are non-blocking; set FAIL_ON_WARNING to true to make them fail.
 name: DocGuard Guard
 
 on:
-  push:
-    branches: [main]
   pull_request:
+    branches: [main]
+  push:
     branches: [main]
 
 permissions:
   contents: read
-  pull-requests: write     # only needed for the optional score comment below
 
 jobs:
   guard:
     runs-on: ubuntu-latest
+    env:
+      FAIL_ON_WARNING: 'false'
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      - name: Initialize report paths
+        shell: bash
+        run: |
+          echo "DOCGUARD_REPORT=$RUNNER_TEMP/docguard-report.json" >> "$GITHUB_ENV"
+          echo "DOCGUARD_LOG=$RUNNER_TEMP/docguard-stderr.log" >> "$GITHUB_ENV"
+          echo "DOCGUARD_SCORE=$RUNNER_TEMP/docguard-score.json" >> "$GITHUB_ENV"
 
-      - name: Run all validators
-        uses: raccioly/docguard@v0.25.0
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
-          command: guard
-          # Flip to 'true' once your repo is clean — turns warnings into hard failures.
-          fail-on-warning: 'false'
+          fetch-depth: 0 # Freshness needs the complete commit history.
+          persist-credentials: false
 
-  # Optional: post the CDD score on every PR as a tracked metric.
-  score:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Score & comment
-        uses: raccioly/docguard@v0.25.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          command: score
-          format: json
+          node-version: '20'
+
+      - name: Install DocGuard
+        run: npm install --global --ignore-scripts docguard-cli@0.36.0
+
+      - name: Run DocGuard
+        shell: bash
+        run: |
+          status=0
+          docguard guard --format json > "$DOCGUARD_REPORT" 2> "$DOCGUARD_LOG" || status=$?
+          cat "$DOCGUARD_LOG" >&2
+          # Validate machine output and normalize the verdict from the actual
+          # exit code (including CI threshold failures in older releases).
+          DOCGUARD_STATUS="$status" node --input-type=module -e '
+            import fs from "node:fs";
+            const file = process.env.DOCGUARD_REPORT;
+            const report = JSON.parse(fs.readFileSync(file, "utf8"));
+            if (!report || typeof report !== "object" || Array.isArray(report)) throw new Error("Invalid DocGuard report");
+            const status = Number(process.env.DOCGUARD_STATUS);
+            report.status = status === 0 ? "PASS" : status === 2 ? "WARN" : "FAIL";
+            fs.writeFileSync(file, JSON.stringify(report, null, 2) + "\n");
+          '
+          if [ "$status" -eq 2 ] && [ "$FAIL_ON_WARNING" != 'true' ]; then
+            echo "::warning::DocGuard found warnings; see the report artifact"
+            exit 0
+          fi
+          exit "$status"
+
+      # Optional PR score stays read-only and travels with the findings artifact.
+      - name: Capture PR score
+        if: always() && github.event_name == 'pull_request'
+        run: docguard score --format json > "$DOCGUARD_SCORE"
+
+      - name: Display Results
+        if: always()
+        shell: bash
+        run: |
+          echo "## DocGuard Report" >> "$GITHUB_STEP_SUMMARY"
+          if [ -s "$DOCGUARD_REPORT" ]; then
+            echo '<details><summary>JSON findings</summary>' >> "$GITHUB_STEP_SUMMARY"
+            echo '' >> "$GITHUB_STEP_SUMMARY"
+            echo '````json' >> "$GITHUB_STEP_SUMMARY"
+            cat "$DOCGUARD_REPORT" >> "$GITHUB_STEP_SUMMARY"
+            echo '````' >> "$GITHUB_STEP_SUMMARY"
+            echo '</details>' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'No report produced; inspect the install/run logs.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload Report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: docguard-report
+          path: |
+            ${{ env.DOCGUARD_REPORT }}
+            ${{ env.DOCGUARD_LOG }}
+            ${{ env.DOCGUARD_SCORE }}
+          if-no-files-found: warn
