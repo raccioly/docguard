@@ -18,8 +18,8 @@
       "first_read": "2026-09-11T14:49:34.552Z"
     },
     "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.github/workflows/release.yml": {
-      "count": 9,
-      "tokens": 5444,
+      "count": 10,
+      "tokens": 6014,
       "first_read": "2026-09-11T15:15:37.248Z"
     },
     "/private/tmp/claude-501/-Users-ricardoaccioly-Repo-claude-canonical-spec-kit/25ac0636-5765-49fe-a808-dd97dc825b30/tasks/bcylzwtls.output": {
@@ -61,6 +61,11 @@
       "count": 1,
       "tokens": 0,
       "first_read": "2026-09-11T16:44:06.922Z"
+    },
+    "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/README.md": {
+      "count": 1,
+      "tokens": 9554,
+      "first_read": "2026-09-11T18:56:48.652Z"
     }
   },
   "files_written": [
@@ -255,22 +260,35 @@
       "action": "edit",
       "tokens": 212,
       "at": "2026-09-11T16:39:55.629Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.github/workflows/release.yml",
+      "action": "edit",
+      "tokens": 845,
+      "at": "2026-09-11T18:56:06.356Z"
+    },
+    {
+      "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/README.md",
+      "action": "edit",
+      "tokens": 263,
+      "at": "2026-09-11T18:56:56.174Z"
     }
   ],
   "edit_counts": {
     ".github/dependabot.yml": 1,
     "CHANGELOG.md": 9,
     "package.json": 3,
-    ".github/workflows/release.yml": 11,
+    ".github/workflows/release.yml": 12,
     ".github/workflows/ci.yml": 1,
     ".github/workflows/auto-merge.yml": 3,
     ".github/workflows/scheduled-release.yml": 2,
     ".github/workflows/jules-triage.yml": 1,
-    "tests/commands.test.mjs": 1
+    "tests/commands.test.mjs": 1,
+    "README.md": 1
   },
-  "anatomy_hits": 2,
+  "anatomy_hits": 3,
   "anatomy_misses": 10,
-  "repeated_reads_warned": 11,
+  "repeated_reads_warned": 12,
   "cerebrum_warnings": 0,
-  "stop_count": 28
+  "stop_count": 32
 }

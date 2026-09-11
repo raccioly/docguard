@@ -143,6 +143,25 @@ docguard diagnose
 
 > **Note:** The Python package is a thin wrapper that delegates to `npx`. Node.js 18+ is required on the system.
 
+### Docker (MCP server)
+
+The MCP server ships as a container image on GHCR — no Node.js install required. Public image, so no authentication is needed to pull it:
+
+```bash
+# Run the MCP server against the current directory
+docker run -i --rm -v "$PWD":/workspace ghcr.io/raccioly/docguard:latest
+```
+
+The entrypoint is the **stdio** MCP transport: stdout is the JSON-RPC channel, so don't pipe anything else into it. Mount the project you want inspected at `/workspace` and pass `{"projectDir": "/workspace"}` in tool calls (or rely on the default working directory).
+
+Pin a version rather than tracking `latest` in CI:
+
+```bash
+docker run -i --rm -v "$PWD":/workspace ghcr.io/raccioly/docguard:0.34.9
+```
+
+The server is **read-only** — it never writes to the mounted project.
+
 ### More ways to integrate
 
 - **pre-commit** — changed-only guard on every commit:

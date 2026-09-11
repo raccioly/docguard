@@ -154,6 +154,59 @@ jobs:
             "spec-kit-docguard-v${VERSION}.zip" \
             --clobber
 
+  # ── Step 4c: Publish the MCP server image to GHCR ──────────────────────
+  # The Dockerfile already existed but was only ever built FROM SOURCE by MCP
+  # directory inspectors (Glama et al.) on every check, and was undocumented.
+  # Publishing it means they (and CI users) can pull a prebuilt image instead.
+  #
+  # GHCR, not GitHub's npm registry: public GHCR images pull with NO auth,
+  # whereas npm.pkg.github.com requires a PAT even for public packages — which
+  # would make it strictly worse than npmjs.com and purely cosmetic.
+  #
+  # NOTHING depends on this job, so a failure here cannot block npm, PyPI, the
+  # GitHub Release, or the catalog reminder — they all run in parallel. It is
+  # deliberately NOT `continue-on-error`, because that reports a failed job as
+  # successful and would hide a broken image behind a green run.
+  #
+  # Uses the docker CLI (preinstalled on the runner) rather than third-party
+  # actions: two separate action-pin problems bit this pipeline today
+  # (@babel/parser major, and a pypa action too old for metadata 2.5), and this
+  # needs no action versions at all. Auth is GITHUB_TOKEN — nothing to expire.
+  publish-ghcr:
+    needs: [detect-version, test, create-release]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Log in to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Build and push image
+        run: |
+          VERSION="${{ needs.detect-version.outputs.version }}"
+          # GHCR requires a lowercase path; github.repository is already
+          # lowercase here but normalise anyway so a future rename can't break it.
+          IMAGE="ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')"
+          echo "Building $IMAGE:$VERSION"
+          docker build -t "$IMAGE:$VERSION" -t "$IMAGE:latest" .
+
+          # Prove the image actually starts before publishing it. The entrypoint
+          # is an stdio MCP server, so it blocks waiting on stdin — feed it a
+          # JSON-RPC initialize and require a response rather than just checking
+          # the container didn't exit.
+          echo "Smoke-testing the image..."
+          REQ='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"ci","version":"0"}}}'
+          OUT="$(echo "$REQ" | timeout 60 docker run -i --rm "$IMAGE:$VERSION" 2>/dev/null | head -1 || true)"
+          echo "response: ${OUT:0:200}"
+          echo "$OUT" | grep -q '"jsonrpc"' || { echo "::error::Image did not answer an MCP initialize over stdio — not publishing."; exit 1; }
+
+          docker push "$IMAGE:$VERSION"
+          docker push "$IMAGE:latest"
+          echo "Published $IMAGE:$VERSION and :latest"
+
   # ── Step 4b: Build and attach Claude Desktop extension (.mcpb) ─────────
   # One-click local install for Claude Desktop (Settings → Extensions).
   # Stages the exact npm-pack payload + the one production dep, stamps the

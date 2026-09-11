@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.35.0] - 2026-09-11
+
+### Added
+
+- **The MCP server image is now published to GHCR** as `ghcr.io/raccioly/docguard` (version tag + `latest`), and documented in the README for the first time. The Dockerfile already existed and worked, but was only ever built *from source* by MCP directory inspectors on every check, and had zero mentions in `README.md` or `docs/` — so it was effectively invisible. A published image means inspectors and CI users pull a prebuilt one instead.
+  - **GHCR rather than GitHub's npm registry:** public GHCR images pull with no authentication, whereas `npm.pkg.github.com` requires a PAT even for public packages — mirroring the npm package there would have been strictly worse than npmjs.com and purely cosmetic.
+  - The job **smoke-tests the image before pushing**: it feeds a JSON-RPC `initialize` over stdio and requires a valid response, so a container that builds but doesn't serve MCP never reaches the registry. Verified locally end to end before shipping.
+  - Authenticates with `GITHUB_TOKEN` — no stored credential, consistent with npm and PyPI now both being credential-free.
+  - **Nothing depends on this job**, so a Docker failure cannot block npm, PyPI, the GitHub Release, or the catalog reminder. Deliberately *not* `continue-on-error`, which would report a failed job as successful and hide a broken image behind a green run.
+  - Uses the docker CLI rather than third-party actions: two separate action-pin problems bit this pipeline today, and this needs no action versions at all.
+
 ## [0.34.9] - 2026-09-11
 
 No code changes. Fixes the PyPI publish that v0.34.8 broke, and re-syncs the registries (npm reached 0.34.8; PyPI did not).

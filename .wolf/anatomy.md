@@ -1,6 +1,6 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-09-11T16:39:55.617Z
+> Auto-maintained by OpenWolf. Last scanned: 2026-09-11T18:56:56.165Z
 > Files: 707 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../../../tmp/
@@ -46,7 +46,7 @@
 - `pr_description.md` (~260 tok)
 - `pyproject.toml` — The enforcement tool for Canonical-Driven Development (CDD). Audit, generate, and guard your project (~358 tok)
 - `README.es.md` — 🛡️ DocGuard (~1098 tok)
-- `README.md` — Project documentation (~9554 tok)
+- `README.md` — Project documentation (~10093 tok)
 - `README.pt-BR.md` — 🛡️ DocGuard (~1075 tok)
 - `ROADMAP.md` — DocGuard Roadmap (~2529 tok)
 - `SECURITY.md` — Security Policy (~357 tok)
@@ -962,7 +962,7 @@
 - `auto-merge.yml` — CI: Auto-merge (green bot PRs) (~2234 tok)
 - `ci.yml` — CI: DocGuard CI (~1843 tok)
 - `jules-triage.yml` — CI: Jules PR Triage (~1635 tok)
-- `release.yml` — CI: Auto Release — Tag, GitHub Release, npm, PyPI (~6014 tok)
+- `release.yml` — CI: Auto Release — Tag, GitHub Release, npm, PyPI (~6837 tok)
 - `scheduled-release.yml` — CI: Scheduled Release (~2099 tok)
 - `sync-speckit-catalog.yml` — CI: Prepare Spec Kit Catalog Submission (Manual) (~1385 tok)
 
