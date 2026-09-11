@@ -7,7 +7,7 @@
  */
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { parseJsTs, extractJsSchemaBodies, extractJsRouteCalls, extractJsRouteObjects, extractJsMountsAndImports, extractJsxRouteScreens } from '../cli/scanners/js-ast.mjs';
+import { parseJsTs, extractJsSchemaBodies, extractJsRouteCalls, extractJsRouteObjects, extractJsMountsAndImports, extractJsxRouteScreens, astTierAvailable } from '../cli/scanners/js-ast.mjs';
 
 describe('parseJsTs', () => {
   it('parses TypeScript with types + decorators', () => {
@@ -220,5 +220,11 @@ describe('extractJsxRouteScreens — React Router screens', () => {
 
   it('returns null on parse failure (caller falls back to the window regex)', () => {
     assert.strictEqual(extractJsxRouteScreens('not ) ( valid <', 'routes.tsx'), null);
+  });
+});
+
+describe('astTierAvailable', () => {
+  it('returns a boolean', () => {
+    assert.equal(typeof astTierAvailable(), 'boolean');
   });
 });
