@@ -4736,6 +4736,22 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-09-11T15:55:22.456Z"
+    },
+    {
+      "id": "bug-287",
+      "timestamp": "2026-09-11T15:57:59.781Z",
+      "error_message": "Significant refactor of ",
+      "file": ".github/workflows/release.yml",
+      "root_cause": "11 lines replaced/restructured",
+      "fix": "Rewrote 14→17 lines (11 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "yml"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T15:57:59.781Z"
     }
   ]
 }
