@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.34.9] - 2026-09-11
+
+No code changes. Fixes the PyPI publish that v0.34.8 broke, and re-syncs the registries (npm reached 0.34.8; PyPI did not).
+
+### Fixed
+
+- **Bumped `pypa/gh-action-pypi-publish` to v1.14.2.** v0.34.8's PyPI publish failed with `InvalidDistribution: Invalid distribution metadata: '2.5' is not a valid metadata version` — the older pin (copied from `raccioly/websec-validator`) bundles a twine too old to understand `Metadata-Version: 2.5`, which current `setuptools`/`build` emits. The failure was in metadata validation, not authentication, so it says nothing either way about the Trusted Publishing migration; that still needs a green run to be confirmed. Pinned by dereferenced **commit** SHA, not the annotated tag object's own SHA — those differ, and pinning the wrong one silently fails to resolve.
+  - Note for `websec-validator`: it still carries the old pin and will hit this same wall as soon as its `setuptools` moves forward.
+
 ## [0.34.8] - 2026-09-11
 
 No code changes. Completes the credential-free release pipeline.

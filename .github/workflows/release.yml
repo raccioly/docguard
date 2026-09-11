@@ -343,7 +343,17 @@ jobs:
       # No TWINE_USERNAME/TWINE_PASSWORD: the OIDC exchange against the trusted
       # publisher configured on PyPI (raccioly / docguard / release.yml /
       # environment: pypi) IS the authentication.
-      - uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b  # release/v1
+      # v1.14.2. Pinned by COMMIT sha (dereferenced from the annotated tag, not
+      # the tag object's own sha -- those differ for annotated tags and pinning
+      # the wrong one does not resolve).
+      #
+      # Do NOT pin this back to the older release/v1 sha used by
+      # raccioly/websec-validator: that build's bundled twine rejects
+      # `Metadata-Version: 2.5`, which current setuptools/build now emits --
+      # "InvalidDistribution: '2.5' is not a valid metadata version". v0.34.8
+      # failed exactly there. websec-validator still carries that old pin and
+      # will hit the same wall whenever its setuptools moves forward.
+      - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33  # v1.14.2
 
   # ── Step 7: Prepare Spec Kit community catalog submission ──────────────
   # Per spec-kit maintainer guidance (github/spec-kit#2707) and spec-kit's
