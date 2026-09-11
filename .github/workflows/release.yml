@@ -212,11 +212,23 @@ jobs:
           # permission" while an empty _authToken was present, then ENEEDAUTH
           # once it wasn't -- neither of which names the actual cause.
           node-version: 24
-          # registry-url IS required (npm's documented example sets it). An
-          # earlier theory blamed the empty _authToken it writes; that was
-          # wrong. The empty token only mattered BECAUSE Node 20 had already
-          # taken OIDC off the table, leaving token auth as the only path.
-          registry-url: 'https://registry.npmjs.org'
+          # NO registry-url, deliberately, and this combination has never
+          # actually been tried before. Tracing every failed run:
+          #   v0.34.4  Node 20 + registry-url  -> E404      (Node too old for
+          #                                                  OIDC; empty token
+          #                                                  used instead)
+          #   v0.34.5  Node 20 + no registry   -> ENEEDAUTH (no token at all,
+          #                                                  Node still too old)
+          #   v0.34.6  Node 24 + registry-url  -> E404      (Node fine, but the
+          #                                                  empty _authToken
+          #                                                  setup-node writes
+          #                                                  took the token path)
+          # Each run had exactly ONE of the two blockers. Node >= 22.14 clears
+          # the OIDC floor; omitting registry-url stops setup-node writing
+          # `//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}`, which with
+          # NODE_AUTH_TOKEN unset expands to an EMPTY token that npm still
+          # treats as configured auth. npm defaults to registry.npmjs.org
+          # anyway, so nothing is lost by omitting it.
 
       # Belt and braces: Node 24 already bundles npm >= 11.5.1, but pin
       # explicitly so a runner-image change can't silently drop below the
@@ -250,12 +262,37 @@ jobs:
           fi
           echo "OIDC preconditions satisfied."
 
+      # Diagnostics. Six releases have failed here on a generic 404 that never
+      # names the real cause, so capture the auth state BEFORE publishing
+      # rather than inferring it from the failure afterwards.
+      - name: Diagnose npm auth state
+        run: |
+          echo "--- versions ---"
+          echo "node=$(node -p 'process.versions.node')  npm=$(npm --version)"
+          echo "--- OIDC env present? (values intentionally not printed) ---"
+          [ -n "$ACTIONS_ID_TOKEN_REQUEST_URL" ] && echo "ACTIONS_ID_TOKEN_REQUEST_URL: set" || echo "ACTIONS_ID_TOKEN_REQUEST_URL: MISSING"
+          [ -n "$ACTIONS_ID_TOKEN_REQUEST_TOKEN" ] && echo "ACTIONS_ID_TOKEN_REQUEST_TOKEN: set" || echo "ACTIONS_ID_TOKEN_REQUEST_TOKEN: MISSING"
+          echo "--- resolved registry ---"
+          npm config get registry
+          echo "--- .npmrc files (token VALUES redacted, presence shown) ---"
+          USERCONFIG=$(npm config list | sed -n 's/^userconfig = "\(.*\)"$/\1/p')
+          for f in "$USERCONFIG" ".npmrc" "$HOME/.npmrc"; do
+            if [ -n "$f" ] && [ -f "$f" ]; then
+              echo "  [$f]"
+              sed -E 's/(_authToken=).*/\1<REDACTED-OR-EMPTY>/' "$f" | sed 's/^/    /'
+            else
+              echo "  [$f] (absent)"
+            fi
+          done
+
       # No --provenance flag and no NODE_AUTH_TOKEN: under Trusted Publishing
       # npm generates provenance attestations automatically, and the OIDC
       # exchange against the trusted-publisher connection on npmjs.com
       # (raccioly/docguard -> release.yml) IS the authentication.
+      # --loglevel verbose so that if this fails again, the log shows which
+      # auth path npm chose instead of leaving it to inference.
       - name: Publish (provenance is automatic under Trusted Publishing)
-        run: npm publish
+        run: npm publish --loglevel verbose
 
   # ── Step 6: Publish to PyPI ────────────────────────────────────────────
   publish-pypi:

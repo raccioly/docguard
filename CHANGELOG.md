@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.34.7] - 2026-09-11
+
+No code changes. Seventh npm publish attempt — the first to try the combination that was never actually tested.
+
+### Fixed
+
+- **Node 24 *and* no `registry-url` together.** Tracing every prior failure showed each run had exactly one of the two blockers, never neither: v0.34.4 (Node 20 + `registry-url`) → `E404`, Node below the 22.14.0 OIDC floor so the empty `_authToken` was used; v0.34.5 (Node 20, no `registry-url`) → `ENEEDAUTH`, no token but Node still too old; v0.34.6 (Node 24 + `registry-url`) → `E404`, Node fine but the empty token `setup-node` writes took the token path. Node ≥ 22.14 clears the OIDC floor and omitting `registry-url` stops an empty `_authToken` being written; npm defaults to registry.npmjs.org regardless.
+- **Added auth-state diagnostics and `--loglevel verbose` to the publish step**, so a further failure reports which auth path npm chose rather than leaving it to inference from a generic 404.
+
 ## [0.34.6] - 2026-09-11
 
 No code changes. The actual root cause of the npm publish failure, after five wrong diagnoses.

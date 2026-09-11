@@ -1,6 +1,6 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-09-11T15:58:20.999Z
+> Auto-maintained by OpenWolf. Last scanned: 2026-09-11T16:09:12.886Z
 > Files: 707 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../../../tmp/
@@ -962,7 +962,7 @@
 - `auto-merge.yml` — CI: Auto-merge (green bot PRs) (~2234 tok)
 - `ci.yml` — CI: DocGuard CI (~1843 tok)
 - `jules-triage.yml` — CI: Jules PR Triage (~1635 tok)
-- `release.yml` — CI: Auto Release — Tag, GitHub Release, npm, PyPI (~4763 tok)
+- `release.yml` — CI: Auto Release — Tag, GitHub Release, npm, PyPI (~5444 tok)
 - `scheduled-release.yml` — CI: Scheduled Release (~2099 tok)
 - `sync-speckit-catalog.yml` — CI: Prepare Spec Kit Catalog Submission (Manual) (~1385 tok)
 
