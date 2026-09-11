@@ -45,7 +45,7 @@ docguard score
 
 | Command | Alias | Purpose |
 |---------|-------|---------|
-| `speckit.docguard.guard` | `docguard.guard` | Run 19-validator quality gate with severity triage |
+| `speckit.docguard.guard` | `docguard.guard` | Run configurable quality gate with severity triage |
 | `speckit.docguard.fix` | `docguard.fix` | AI-driven documentation repair with codebase research |
 | `speckit.docguard.review` | `docguard.review` | Cross-document semantic consistency analysis (read-only) |
 | `speckit.docguard.score` | `docguard.score` | CDD maturity score with ROI improvement roadmap |

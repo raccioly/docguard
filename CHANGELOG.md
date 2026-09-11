@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.36.1] - 2026-09-11
+
+### Fixed
+
+- Removed stale validator counts from the Spec Kit extension installation description, README, and repair skill. Found by installing the published v0.36.0 ZIP in a disposable Spec Kit project. The validation engine is unchanged.
+
+
 ## [0.36.0] - 2026-09-11
 
 ### Fixed

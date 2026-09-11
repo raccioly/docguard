@@ -5110,6 +5110,22 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-09-11T20:42:23.164Z"
+    },
+    {
+      "id": "bug-311",
+      "timestamp": "2026-09-11T21:26:46.402Z",
+      "error_message": "Published Spec Kit installation displayed an obsolete validator count",
+      "file": "extensions/spec-kit-docguard/extension.yml",
+      "root_cause": "Descriptive metadata and skill prose hardcoded a count outside synchronized documentation checks",
+      "fix": "Remove the hardcoded count from all three extension surfaces and verify the published ZIP after installation",
+      "tags": [
+        "release",
+        "metadata",
+        "documentation"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T21:26:46.402Z"
     }
   ]
 }
