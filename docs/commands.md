@@ -132,7 +132,7 @@ npx docguard-cli init --skip-prompts            # No AI prompt output
 
 ```bash
 npx docguard-cli generate
-npx docguard-cli generate --dir /path/to/project
+npx docguard-cli generate --dir ./my-project
 ```
 
 **Detects:** Next.js, React, Vue, Angular, Express, Fastify, Hono, Django, FastAPI, SvelteKit, and more.
