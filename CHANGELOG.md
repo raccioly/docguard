@@ -9,12 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.34.7] - 2026-09-11
 
-No code changes. Seventh npm publish attempt — the first to try the combination that was never actually tested.
+**npm publishing is fixed.** First release since v0.34.0 to reach npm, PyPI, and GitHub in sync. Seven releases were needed because three independent faults were stacked, each masking the next.
 
 ### Fixed
 
 - **Node 24 *and* no `registry-url` together.** Tracing every prior failure showed each run had exactly one of the two blockers, never neither: v0.34.4 (Node 20 + `registry-url`) → `E404`, Node below the 22.14.0 OIDC floor so the empty `_authToken` was used; v0.34.5 (Node 20, no `registry-url`) → `ENEEDAUTH`, no token but Node still too old; v0.34.6 (Node 24 + `registry-url`) → `E404`, Node fine but the empty token `setup-node` writes took the token path. Node ≥ 22.14 clears the OIDC floor and omitting `registry-url` stops an empty `_authToken` being written; npm defaults to registry.npmjs.org regardless.
 - **Added auth-state diagnostics and `--loglevel verbose` to the publish step**, so a further failure reports which auth path npm chose rather than leaving it to inference from a generic 404.
+- **The final fault: the npm trusted publisher was stored with a trailing slash in its Repository field** (`docguard/`), so the saved config read `raccioly/docguard/` and never matched the OIDC claim `raccioly/docguard`. This was invisible until the first two faults were cleared, because only then did npm get far enough to attempt the exchange and say so: `POST /-/npm/v1/oidc/token/exchange/package/docguard-cli → "OIDC token exchange error - package not found"`. Fixed by adding a second trusted publisher with the exact value (additively — never deleting the only publisher on a package mid-repair). The `--loglevel verbose` added in this same release is what surfaced it.
 
 ## [0.34.6] - 2026-09-11
 

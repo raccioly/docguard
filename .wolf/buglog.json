@@ -4768,6 +4768,27 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-09-11T16:08:59.962Z"
+    },
+    {
+      "id": "bug-259",
+      "timestamp": "2026-09-11T16:20:00Z",
+      "error_message": "RESOLVED: npm publish failed for SEVEN consecutive releases (v0.34.1 - v0.34.7). Final error before the fix: 'npm verbose oidc Failed token exchange request with body message: OIDC token exchange error - package not found' on POST /-/npm/v1/oidc/token/exchange/package/docguard-cli.",
+      "file": ".github/workflows/release.yml + npmjs.com trusted publisher config",
+      "root_cause": "THREE independent faults stacked, each masking the next, which is why six fixes each 'changed the error' without fixing it. (1) NPM_TOKEN expired ~2026-08 (bug-256). (2) After migrating to Trusted Publishing, the publish job ran Node 20 -- npm Trusted Publishing requires npm >= 11.5.1 AND Node >= 22.14.0, and below that floor npm never ATTEMPTS the OIDC exchange, silently falling back to token auth. (3) The npm-side trusted publisher was created with the Repository field containing a TRAILING SLASH ('docguard/'), so the stored config was 'raccioly/docguard/' and never matched the OIDC claim 'raccioly/docguard'. Fault 3 was invisible until faults 1 and 2 were cleared, because only then did npm get far enough to actually attempt the exchange and report a specific error.",
+      "fix": "(1) Trusted Publishing replaces the expiring token (bug-257). (2) publish-npm now runs Node 24, with an explicit precondition assert on Node >= 22.14.0, npm >= 11.5.1 and ACTIONS_ID_TOKEN_REQUEST_URL. (3) Added a SECOND trusted publisher on npmjs.com with Repository exactly 'docguard' (no trailing slash) -- deliberately additive rather than deleting the malformed one, so a failed recreate could not leave the package with no publisher at all. Publish succeeded immediately on rerun: docguard-cli@0.34.7 is live and tagged latest; npm, PyPI and the git tag are all in sync at 0.34.7 for the first time since 0.34.0.",
+      "tags": [
+        "npm-publish",
+        "trusted-publishing",
+        "oidc",
+        "node-version-floor",
+        "trailing-slash",
+        "stacked-faults",
+        "resolved"
+      ],
+      "related_bugs": ["bug-256", "bug-257", "bug-258"],
+      "occurrences": 7,
+      "last_seen": "2026-09-11T16:12:49Z",
+      "notes": "Process lesson, not just a technical one: six releases were burned guessing from a generic 404 when `npm publish --loglevel verbose` named the exact failing endpoint and reason on the FIRST run that had it. When an error is generic and a fix 'changes the error' without fixing it, that is the signal to stop iterating and start instrumenting. Also: display text is not data -- the malformed trailing slash was visible in the UI the whole time but rendered as 'raccioly/docguard/' which looked like a path separator; it was only provable once a correct second entry rendered differently ('raccioly/docguard') right next to it."
     }
   ]
 }
