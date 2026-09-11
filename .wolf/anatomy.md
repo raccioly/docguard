@@ -1,6 +1,6 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-09-11T15:46:08.405Z
+> Auto-maintained by OpenWolf. Last scanned: 2026-09-11T15:50:08.916Z
 > Files: 707 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../../../tmp/
@@ -29,7 +29,7 @@
 - `.pre-commit-hooks.yaml` — DocGuard hooks for the pre-commit framework (https://pre-commit.com). (~490 tok)
 - `action.yml` — Declares fs (~7591 tok)
 - `AGENTS.md` — AI Agent Instructions — DocGuard (~1827 tok)
-- `CHANGELOG.md` — Changelog (~53091 tok)
+- `CHANGELOG.md` — Changelog (~53296 tok)
 - `CLAUDE.md` — OpenWolf (~57 tok)
 - `CODE_OF_CONDUCT.md` — Contributor Covenant Code of Conduct (~532 tok)
 - `COMPARISONS.md` — Comparisons & Honest Limitations (~3382 tok)
@@ -1116,7 +1116,7 @@
 - `canonical-docs-nested-phase2.test.mjs` — Phase 2 of the nested-canonical-docs fix: the remaining 14 sites found (~1482 tok)
 - `canonical-docs-nested.test.mjs` — Regression: canonical docs in SUBFOLDERS must be seen by every consumer. (~2028 tok)
 - `changelog.test.mjs` — Exports x, x (~1315 tok)
-- `commands.test.mjs` — DocGuard CLI Tests — Tests all commands and flags (~10442 tok)
+- `commands.test.mjs` — DocGuard CLI Tests — Tests all commands and flags (~10729 tok)
 - `cross-reference.test.mjs` — Cross-Reference Validator — K-7 / S-8 (~4060 tok)
 - `ensure-skills-idempotent.test.mjs` — v0.24 — Skill install is idempotent (field report, Issue D). (~1133 tok)
 - `field-report-3-deferred.test.mjs` — v0.28 — the detection-gap items deferred from LLM field report #3. (~3325 tok)

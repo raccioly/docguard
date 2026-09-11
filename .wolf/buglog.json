@@ -4672,6 +4672,38 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-09-11T15:45:32.759Z"
+    },
+    {
+      "id": "bug-283",
+      "timestamp": "2026-09-11T15:49:08.791Z",
+      "error_message": "Significant refactor of ",
+      "file": "tests/commands.test.mjs",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 8→25 lines (3 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T15:49:08.791Z"
+    },
+    {
+      "id": "bug-284",
+      "timestamp": "2026-09-11T15:50:08.928Z",
+      "error_message": "Incorrect value in code",
+      "file": "CHANGELOG.md",
+      "root_cause": "Had `scheduled-release.yml`",
+      "fix": "Changed to `tests/commands.test.mjs`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T15:50:08.928Z"
     }
   ]
 }

@@ -930,13 +930,30 @@ describe('docguard watch', () => {
         output += data.toString();
       });
 
-      // Wait until initial output signals it's ready
-      await waitFor(() => output.includes('Watching 5 directories') || output.includes('Watching for changes'));
+      // Wait for the REAL readiness marker: "Watching N directories", which is
+      // printed only after the initial guard run finishes and the watchers are
+      // actually registered. Order of output is:
+      //
+      //     👁️  DocGuard Watch — <dir>
+      //        Watching for changes... (Ctrl+C to stop)   ← NOT ready yet
+      //        [HH:MM:SS] Running guard...                ← takes seconds
+      //        Watching N directories                     ← ready
+      //
+      // This used to wait on `'Watching 5 directories' || 'Watching for
+      // changes'`. The count is actually 4, so the first branch never matched
+      // and it always fell through to the second — which fires BEFORE the
+      // initial guard run. The file write below then landed while the watchers
+      // were still unregistered and was missed entirely. On a fast runner the
+      // guard run finished inside the 500ms buffer and it passed; on a loaded
+      // one it didn't. That flake failed 2 of 3 release runs (on Node 24 and
+      // then Node 22) and blocked the pipeline. Match the count, don't hardcode.
+      await waitFor(() => /Watching \d+ directories/.test(output));
 
       assert.match(output, /DocGuard Watch/);
       assert.match(output, /Watching for changes/);
+      assert.match(output, /Watching \d+ directories/);
 
-      // Wait an extra moment to ensure the watcher is fully registered
+      // Small extra buffer: fs.watch registration can lag the log line slightly.
       await new Promise(r => setTimeout(r, 500));
 
       // Test file change
