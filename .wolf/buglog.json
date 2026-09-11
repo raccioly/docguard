@@ -4450,6 +4450,58 @@
       "occurrences": 3,
       "last_seen": "2026-09-11T14:34:00Z",
       "notes": "Do NOT keep blindly retrying publish-npm if this recurs after a token rotation looks successful — verify the token's actual publish scope/expiration on npmjs.com first. Also: don't assume '404 on a publish that should be an update' is a transient registry blip just because npm's status page is green and the error text sounds like a missing-package error — check secret rotation dates before concluding 'try again later'."
+    },
+    {
+      "id": "bug-270",
+      "timestamp": "2026-09-11T15:15:53.416Z",
+      "error_message": "Significant refactor of ",
+      "file": ".github/workflows/release.yml",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 10→18 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "yml"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T15:15:53.416Z"
+    },
+    {
+      "id": "bug-271",
+      "timestamp": "2026-09-11T15:17:16.971Z",
+      "error_message": "Incorrect value in code",
+      "file": "package.json",
+      "root_cause": "Had \"0.34.2\"",
+      "fix": "Changed to \"0.34.3\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "json"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T15:17:16.971Z"
+    },
+    {
+      "id": "bug-257",
+      "timestamp": "2026-09-11T15:20:00Z",
+      "error_message": "Resolution of bug-256 (expired NPM_TOKEN blocking publish-npm for 2 releases).",
+      "file": ".github/workflows/release.yml",
+      "root_cause": "See bug-256: a stored GitHub secret (NPM_TOKEN) with an ~90-day expiration window, no rotation reminder, silent failure mode (npm returns 404 not 401/403 on the auth-scope failure). Structural problem: ANY stored long-lived publish credential recurs this exact class of outage eventually.",
+      "fix": "Migrated publish-npm from NODE_AUTH_TOKEN (classic token auth) to npm Trusted Publishing (OIDC) — configured a trusted publisher on npmjs.com for docguard-cli (GitHub Actions, raccioly/docguard, release.yml, 'Allow npm publish' enabled since the workflow does a direct publish not stage+publish), then removed NODE_AUTH_TOKEN from the workflow entirely and added `npm install -g npm@latest` before publish (Trusted Publishing needs npm CLI >=11.5.0; Node 20's bundled npm predates that). The existing `id-token: write` permission (already present for provenance signing) is reused for the OIDC exchange itself — no new permissions needed. Nothing in this setup can expire the way a stored token did; npm mints a short-lived token per run. Verified end-to-end with a real v0.34.3 release (no code changes, purely to exercise the new pipeline — a rerun of the OLD failed job would have used the stale pre-fix workflow file, since GitHub Actions reruns pin to the original run's commit).",
+      "tags": [
+        "npm-publish",
+        "trusted-publishing",
+        "oidc",
+        "release-pipeline",
+        "permanent-fix",
+        "browser-automation"
+      ],
+      "related_bugs": ["bug-256"],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T15:20:00Z",
+      "notes": "The npm-side setup (trusted publisher config) was done via Claude in Chrome browser automation on the user's authenticated session — the user generated nothing themselves manually beyond confirming form field values live, since a different browser extension's autofill overlay blocked automation from reaching two fields directly. Token/credential VALUES never passed through the agent's context at any point — only the trusted-publisher CONFIGURATION (org/repo/workflow name, which are not secrets) did."
     }
   ]
 }

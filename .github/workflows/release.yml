@@ -206,10 +206,18 @@ jobs:
           node-version: 20
           registry-url: 'https://registry.npmjs.org'
 
+      # Trusted Publishing (OIDC) needs npm CLI >= 11.5.0; Node 20's bundled
+      # npm predates that, so self-update first. No NODE_AUTH_TOKEN needed —
+      # npm exchanges the id-token (permissions, above) directly with the
+      # registry via the trusted-publisher connection configured on
+      # npmjs.com (raccioly/docguard, release.yml). This replaces the
+      # NPM_TOKEN-based auth that silently broke for 2 releases (v0.34.1,
+      # v0.34.2 never reached npm) when the token expired — nothing here
+      # can expire the same way; a short-lived token is minted per run.
+      - run: npm install -g npm@latest
+
       - name: Publish (with provenance)
         run: npm publish --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   # ── Step 6: Publish to PyPI ────────────────────────────────────────────
   publish-pypi:

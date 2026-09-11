@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.34.3] - 2026-09-11
+
+No code changes from v0.34.2 — this release exists to exercise the fixed publish pipeline end to end (a re-run of a past workflow job uses the workflow file as it existed at that run's commit, so getting the fix below actually tested required a fresh run).
+
+### Fixed
+
+- **npm publish switched from a stored `NODE_AUTH_TOKEN` to Trusted Publishing (OIDC).** The token that broke v0.34.1/v0.34.2's npm publish (see their entries below) is retired — `publish-npm` now authenticates via the `id-token: write` OIDC token exchanged directly with npm's registry, matched against a trusted-publisher connection configured on npmjs.com (raccioly/docguard, `release.yml`). Nothing here can expire the way a stored token did; a short-lived token is minted per run. Also self-updates npm before publishing (`npm install -g npm@latest`), since Trusted Publishing needs npm CLI >= 11.5.0 and Node 20's bundled npm predates that.
+- v0.34.1 and v0.34.2 remain permanently missing from npm (tag/GitHub release/PyPI all landed for both) — not worth backfilling now that publishing works again going forward.
+
 ## [0.34.2] - 2026-09-11
 
 ### Fixed
