@@ -7,14 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.34.3] - 2026-09-11
+## [0.34.4] - 2026-09-11
 
-No code changes from v0.34.2 — this release exists to exercise the fixed publish pipeline end to end (a re-run of a past workflow job uses the workflow file as it existed at that run's commit, so getting the fix below actually tested required a fresh run).
+No code changes from v0.34.3 — v0.34.3's own npm-publish fix (below) turned out to have a bug, caught by this very release attempt: `npm install -g npm@latest` resolved to npm 12.0.2, which requires Node `^22.22.2 || ^24.15.0 || >=26.0.0` — newer than the Node 20 this job runs on, so the self-update step itself failed before publish ever ran. Same class of mistake as the `@babel/parser` major bump earlier (bug-255): an unpinned "latest" floated past what the job's Node version supports.
 
 ### Fixed
 
-- **npm publish switched from a stored `NODE_AUTH_TOKEN` to Trusted Publishing (OIDC).** The token that broke v0.34.1/v0.34.2's npm publish (see their entries below) is retired — `publish-npm` now authenticates via the `id-token: write` OIDC token exchanged directly with npm's registry, matched against a trusted-publisher connection configured on npmjs.com (raccioly/docguard, `release.yml`). Nothing here can expire the way a stored token did; a short-lived token is minted per run. Also self-updates npm before publishing (`npm install -g npm@latest`), since Trusted Publishing needs npm CLI >= 11.5.0 and Node 20's bundled npm predates that.
-- v0.34.1 and v0.34.2 remain permanently missing from npm (tag/GitHub release/PyPI all landed for both) — not worth backfilling now that publishing works again going forward.
+- **Pinned the npm self-update to the 11.x line (`npm@11`, not `npm@latest`).** npm 11.x declares `engines: {node: '^20.17.0 || >=22.9.0'}` — compatible with the Node 20.20.2 this job actually runs, and 11.19.1 (what it resolves to) is well past the 11.5.0 floor Trusted Publishing needs. Verified locally in an isolated prefix on Node 20.20.2 (the exact runner version from the failure log) before pushing.
+
+### Added
+
+- **Test-runtime budget in CI (`TEST_BUDGET_MS`, 120s).** A test that walks an unintended tree still *passes* — it just takes forever, so no correctness gate catches it. PR #328 did exactly that (a test passed `/` as a project dir): `tests/schemas.test.mjs` went 118ms → >10s and the whole suite ~25s → 190s, green the entire time. CI now fails on the duration instead. Normal runs are ~33s (Node 24) to ~51s (Node 18), so the budget catches catastrophes without tripping on runner jitter.
+- **`auto-merge.yml` — hands-off merging for green bot PRs.** Fires on CI completion, independently re-verifies all four Node legs via the API, then merges. Deliberately does *not* use `gh pr merge --auto`: GitHub's native auto-merge needs repo-level `allow_auto_merge` plus **required** status checks, and without required checks configured it merges immediately without waiting for CI — worse than merging by hand. Policy: dependabot patch/minor auto-merges (majors never — a `@babel/parser` major silently dropped Node 18 and broke a release); Jules PRs auto-merge only when test-only or docs-only, with anything touching `cli/` logic, `.github/`, or `package.json` labeled and held for a human.
+- **`scheduled-release.yml` — weekly batched releases.** Mondays 09:00 UTC (plus `workflow_dispatch` for on-demand, with a patch/minor choice). Bumps the version, generates a changelog entry from the commits since the last tag, re-runs the suite and `guard` before committing, then pushes — which triggers `release.yml` to do the actual tag/GitHub Release/npm/PyPI publish. No-ops when nothing releasable has landed (`.wolf/` bookkeeping alone never justifies a release), so it won't cut empty versions.
+
+### Changed
+
+- **`jules-triage.yml` now detects duplicates by changed-file overlap, not just normalized titles.** Title-equality was too strict: #324 ("add tests for untested shared-ignore utilities"), #325 ("add missing tests for shared-ignore functions") and #329 ("Add unit tests for shared-ignore detection utilities") were the same work, all three sat open, and two would have collided on the same import block if merged together. Still metadata-only — never checks out PR code.
+
+## [0.34.3] - 2026-09-11
+
+No functional code changes from v0.34.2 — this release was meant to exercise the Trusted Publishing fix end to end (a re-run of a past workflow job uses the workflow file as it existed at that run's commit, so testing a workflow-file fix requires a fresh run) but its own fix had a bug — see v0.34.4. Tag, GitHub release, and PyPI landed; npm did not.
+
+### Fixed
+
+- **npm publish switched from a stored `NODE_AUTH_TOKEN` to Trusted Publishing (OIDC).** The token that broke v0.34.1/v0.34.2's npm publish (see their entries below) is retired — `publish-npm` now authenticates via the `id-token: write` OIDC token exchanged directly with npm's registry, matched against a trusted-publisher connection configured on npmjs.com (raccioly/docguard, `release.yml`). Nothing here can expire the way a stored token did; a short-lived token is minted per run.
+- v0.34.1 and v0.34.2 remain permanently missing from npm (tag/GitHub release/PyPI all landed for both) — not worth backfilling now that publishing works again going forward. v0.34.3 joined them for a different reason (see above); v0.34.4 is the one to actually check landed.
 
 ## [0.34.2] - 2026-09-11
 

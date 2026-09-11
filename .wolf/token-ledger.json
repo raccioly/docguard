@@ -2,14 +2,14 @@
   "version": 1,
   "created_at": "2026-05-26T15:31:59.491Z",
   "lifetime": {
-    "total_tokens_estimated": 7032979,
-    "total_reads": 1625,
-    "total_writes": 2954,
+    "total_tokens_estimated": 7203916,
+    "total_reads": 1637,
+    "total_writes": 2978,
     "total_sessions": 52,
-    "anatomy_hits": 996,
-    "anatomy_misses": 625,
-    "repeated_reads_blocked": 940,
-    "estimated_savings_vs_bare_cli": 5295489
+    "anatomy_hits": 1002,
+    "anatomy_misses": 631,
+    "repeated_reads_blocked": 948,
+    "estimated_savings_vs_bare_cli": 5518235
   },
   "sessions": [
     {
@@ -26304,6 +26304,249 @@
         "writes_count": 3,
         "repeated_reads_blocked": 0,
         "anatomy_lookups": 1
+      }
+    },
+    {
+      "id": "session-2026-09-11-1037",
+      "started": "2026-09-11T14:37:40.706Z",
+      "ended": "2026-09-11T15:19:12.439Z",
+      "reads": [
+        {
+          "file": "/private/tmp/claude-501/-Users-ricardoaccioly-Repo-claude-canonical-spec-kit/25ac0636-5765-49fe-a808-dd97dc825b30/tasks/brseuna27.output",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.github/dependabot.yml",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/CHANGELOG.md",
+          "tokens_estimated": 51473,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.github/workflows/release.yml",
+          "tokens_estimated": 3434,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.github/dependabot.yml",
+          "tokens_estimated": 206,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/CHANGELOG.md",
+          "tokens_estimated": 635,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/package.json",
+          "tokens_estimated": 7,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.github/workflows/release.yml",
+          "tokens_estimated": 248,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/CHANGELOG.md",
+          "tokens_estimated": 332,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/CHANGELOG.md",
+          "tokens_estimated": 7,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/package.json",
+          "tokens_estimated": 7,
+          "action": "edit"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 54907,
+        "output_tokens_estimated": 1442,
+        "reads_count": 4,
+        "writes_count": 7,
+        "repeated_reads_blocked": 2,
+        "anatomy_lookups": 2
+      }
+    },
+    {
+      "id": "session-2026-09-11-1037",
+      "started": "2026-09-11T14:37:40.706Z",
+      "ended": "2026-09-11T15:21:55.013Z",
+      "reads": [
+        {
+          "file": "/private/tmp/claude-501/-Users-ricardoaccioly-Repo-claude-canonical-spec-kit/25ac0636-5765-49fe-a808-dd97dc825b30/tasks/brseuna27.output",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.github/dependabot.yml",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/CHANGELOG.md",
+          "tokens_estimated": 51473,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.github/workflows/release.yml",
+          "tokens_estimated": 3434,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.github/dependabot.yml",
+          "tokens_estimated": 206,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/CHANGELOG.md",
+          "tokens_estimated": 635,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/package.json",
+          "tokens_estimated": 7,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.github/workflows/release.yml",
+          "tokens_estimated": 248,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/CHANGELOG.md",
+          "tokens_estimated": 332,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/CHANGELOG.md",
+          "tokens_estimated": 7,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/package.json",
+          "tokens_estimated": 7,
+          "action": "edit"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 54907,
+        "output_tokens_estimated": 1442,
+        "reads_count": 4,
+        "writes_count": 7,
+        "repeated_reads_blocked": 2,
+        "anatomy_lookups": 2
+      }
+    },
+    {
+      "id": "session-2026-09-11-1037",
+      "started": "2026-09-11T14:37:40.706Z",
+      "ended": "2026-09-11T15:30:58.184Z",
+      "reads": [
+        {
+          "file": "/private/tmp/claude-501/-Users-ricardoaccioly-Repo-claude-canonical-spec-kit/25ac0636-5765-49fe-a808-dd97dc825b30/tasks/brseuna27.output",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.github/dependabot.yml",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/CHANGELOG.md",
+          "tokens_estimated": 51752,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.github/workflows/release.yml",
+          "tokens_estimated": 4114,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.github/dependabot.yml",
+          "tokens_estimated": 206,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/CHANGELOG.md",
+          "tokens_estimated": 635,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/package.json",
+          "tokens_estimated": 7,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.github/workflows/release.yml",
+          "tokens_estimated": 248,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/CHANGELOG.md",
+          "tokens_estimated": 332,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/CHANGELOG.md",
+          "tokens_estimated": 7,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/package.json",
+          "tokens_estimated": 7,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/.github/workflows/release.yml",
+          "tokens_estimated": 322,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/CHANGELOG.md",
+          "tokens_estimated": 602,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/ricardoaccioly/Repo_claude/canonical-spec-kit/package.json",
+          "tokens_estimated": 7,
+          "action": "edit"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 55866,
+        "output_tokens_estimated": 2373,
+        "reads_count": 4,
+        "writes_count": 10,
+        "repeated_reads_blocked": 4,
+        "anatomy_lookups": 2
       }
     }
   ],

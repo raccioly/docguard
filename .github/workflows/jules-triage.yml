@@ -52,7 +52,32 @@ jobs:
               .trim();
             const mine = norm(title);
             const { data: open } = await github.rest.pulls.list({ owner, repo, state: 'open', per_page: 100 });
-            const dup = mine && open.find((p) => p.number !== num && norm(p.title) === mine);
+            let dup = mine && open.find((p) => p.number !== num && norm(p.title) === mine);
+
+            // Title-equality alone is too strict: #324 "add tests for untested
+            // shared-ignore utilities", #325 "add missing tests for
+            // shared-ignore functions" and #329 "Add unit tests for
+            // shared-ignore detection utilities" were the SAME work, all three
+            // sat open, and two of them would have collided on the same import
+            // block if merged together. So also treat a PR as a duplicate when
+            // it touches an identical file set to another open Jules PR.
+            // Still metadata-only (listFiles) — never checks out PR code.
+            if (!dup) {
+              const fileSet = async (n) => {
+                const { data } = await github.rest.pulls.listFiles({ owner, repo, pull_number: n, per_page: 300 });
+                return data.map((f) => f.filename).sort().join('|');
+              };
+              try {
+                const mineFiles = await fileSet(num);
+                if (mineFiles) {
+                  for (const p of open) {
+                    if (p.number === num) continue;
+                    if (p.user.login !== 'google-labs-jules[bot]') continue;
+                    if (await fileSet(p.number) === mineFiles) { dup = p; break; }
+                  }
+                }
+              } catch (e) { core.info(`file-overlap dup check skipped: ${e.message}`); }
+            }
 
             const addLabel = async (name) => {
               try {

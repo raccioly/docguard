@@ -1,0 +1,135 @@
+name: Auto-merge (green bot PRs)
+
+# Hands-off merging for bot PRs that have ALREADY passed the full CI matrix.
+#
+# WHY workflow_run AND NOT `gh pr merge --auto`: GitHub's native auto-merge
+# requires the repo-level `allow_auto_merge` setting plus REQUIRED status
+# checks in branch protection. Without required checks configured, `--auto`
+# merges IMMEDIATELY without waiting for CI — worse than merging by hand.
+# This workflow instead fires only after "DocGuard CI" reports success for
+# the head SHA, re-verifies every matrix leg via the API, and merges itself.
+# No repo settings required, and it is fail-closed: anything unexpected → skip.
+#
+# SECURITY: workflow_run runs in the BASE repo context with write scope, so it
+# NEVER checks out or executes PR code. It reads PR metadata + check results
+# via the API only. (Same rule as jules-triage.yml / AGENTS.md CI rule.)
+#
+# WHAT AUTO-MERGES:
+#   - dependabot: patch + minor only. Majors NEVER (v0.34.1 shipped a Node-18
+#     break from an auto-accepted @babel/parser major; bug-255).
+#   - jules: test-only and docs-only changes. Anything touching cli/ logic,
+#     .github/, or package.json is labeled and left for a human.
+
+on:
+  workflow_run:
+    workflows: ["DocGuard CI"]
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+  checks: read
+  actions: read
+
+jobs:
+  auto-merge:
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Evaluate and merge if safe
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const run = context.payload.workflow_run;
+            const headSha = run.head_sha;
+
+            // ── Locate the PR for this CI run ────────────────────────────
+            const { data: prs } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+              owner, repo, commit_sha: headSha,
+            });
+            const pr = prs.find((p) => p.state === 'open');
+            if (!pr) { core.info('No open PR for this SHA — nothing to do.'); return; }
+            const num = pr.number;
+            const author = pr.user.login;
+
+            const BOT_DEPENDABOT = 'dependabot[bot]';
+            const BOT_JULES = 'google-labs-jules[bot]';
+            if (![BOT_DEPENDABOT, BOT_JULES].includes(author)) {
+              core.info(`#${num} authored by ${author} (not a handled bot) — leaving alone.`);
+              return;
+            }
+
+            const hold = async (label, why) => {
+              try {
+                await github.rest.issues.addLabels({ owner, repo, issue_number: num, labels: [label] });
+              } catch (e) { core.info(`label skipped: ${e.message}`); }
+              await github.rest.issues.createComment({
+                owner, repo, issue_number: num,
+                body: `⏸️ **Held for human review** — ${why}\n\nCI is green, but this falls outside the auto-merge policy in \`.github/workflows/auto-merge.yml\`.`,
+              });
+              core.notice(`#${num} held: ${why}`);
+            };
+
+            // ── Re-verify EVERY matrix leg independently ─────────────────
+            // workflow_run.conclusion=success covers this run, but be explicit:
+            // all four Node legs must be present AND successful. Fail closed.
+            const { data: checks } = await github.rest.checks.listForRef({
+              owner, repo, ref: headSha, per_page: 100,
+            });
+            const REQUIRED = ['test (18)', 'test (20)', 'test (22)', 'test (24)'];
+            const bad = [];
+            for (const name of REQUIRED) {
+              const c = checks.check_runs.find((r) => r.name === name);
+              if (!c) bad.push(`${name}: missing`);
+              else if (c.conclusion !== 'success') bad.push(`${name}: ${c.conclusion}`);
+            }
+            if (bad.length) {
+              core.info(`#${num} not merging — checks not all green: ${bad.join(', ')}`);
+              return;
+            }
+
+            // ── Scope gate: what files does this PR touch? ───────────────
+            const { data: files } = await github.rest.pulls.listFiles({
+              owner, repo, pull_number: num, per_page: 300,
+            });
+            const paths = files.map((f) => f.filename);
+
+            if (author === BOT_DEPENDABOT) {
+              // Version delta from the title: "bump X from 1.2.3 to 1.2.4"
+              const m = /from (\d+)\.(\d+)\.(\d+)\S* to (\d+)\.(\d+)\.(\d+)/.exec(pr.title || '');
+              if (!m) { await hold('needs-review', 'could not parse the version delta from the PR title.'); return; }
+              const [fromMaj, fromMin] = [Number(m[1]), Number(m[2])];
+              const [toMaj, toMin] = [Number(m[4]), Number(m[5])];
+              if (toMaj !== fromMaj) {
+                await hold('needs-review', `this is a **major** bump (${m[1]}.${m[2]}.${m[3]} → ${m[4]}.${m[5]}.${m[6]}). Majors are never auto-merged — a @babel/parser major silently dropped Node 18 support and broke a release (bug-255).`);
+                return;
+              }
+              core.info(`#${num} dependabot ${toMin !== fromMin ? 'minor' : 'patch'} bump — eligible.`);
+            } else {
+              // Jules: only test-only / docs-only changes auto-merge.
+              const risky = paths.filter((p) =>
+                !(p.startsWith('tests/') || p.startsWith('docs/') || p.endsWith('.md'))
+              );
+              if (risky.length) {
+                await hold('jules-review', `it changes non-test/non-doc files:\n${risky.map((p) => `- \`${p}\``).join('\n')}\n\nProduction-logic changes from an agent get a human read before they ship to npm.`);
+                return;
+              }
+              core.info(`#${num} jules test/docs-only (${paths.length} files) — eligible.`);
+            }
+
+            // ── Merge ────────────────────────────────────────────────────
+            try {
+              await github.rest.pulls.merge({
+                owner, repo, pull_number: num, merge_method: 'squash',
+              });
+              await github.rest.issues.createComment({
+                owner, repo, issue_number: num,
+                body: `🤖 **Auto-merged** — all four Node legs (18/20/22/24) green, within the test-runtime budget, and inside the auto-merge policy in \`.github/workflows/auto-merge.yml\`.`,
+              });
+              core.notice(`Merged #${num}.`);
+            } catch (e) {
+              core.warning(`Merge of #${num} failed: ${e.message}`);
+              await hold('needs-review', `auto-merge failed: \`${e.message}\``);
+            }

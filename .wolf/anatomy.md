@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-09-11T15:17:16.962Z
-> Files: 704 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-09-11T15:34:41.013Z
+> Files: 707 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../../../tmp/
 
@@ -29,7 +29,7 @@
 - `.pre-commit-hooks.yaml` — DocGuard hooks for the pre-commit framework (https://pre-commit.com). (~490 tok)
 - `action.yml` — Declares fs (~7591 tok)
 - `AGENTS.md` — AI Agent Instructions — DocGuard (~1827 tok)
-- `CHANGELOG.md` — Changelog (~51752 tok)
+- `CHANGELOG.md` — Changelog (~52543 tok)
 - `CLAUDE.md` — OpenWolf (~57 tok)
 - `CODE_OF_CONDUCT.md` — Contributor Covenant Code of Conduct (~532 tok)
 - `COMPARISONS.md` — Comparisons & Honest Limitations (~3382 tok)
@@ -959,8 +959,11 @@
 
 ## .github/workflows/
 
-- `ci.yml` — CI: DocGuard CI (~1468 tok)
-- `release.yml` — CI: Auto Release — Tag, GitHub Release, npm, PyPI (~4114 tok)
+- `auto-merge.yml` — CI: Auto-merge (green bot PRs) (~1917 tok)
+- `ci.yml` — CI: DocGuard CI (~1843 tok)
+- `jules-triage.yml` — CI: Jules PR Triage (~1635 tok)
+- `release.yml` — CI: Auto Release — Tag, GitHub Release, npm, PyPI (~4258 tok)
+- `scheduled-release.yml` — CI: Scheduled Release (~1539 tok)
 - `sync-speckit-catalog.yml` — CI: Prepare Spec Kit Catalog Submission (Manual) (~1385 tok)
 
 ## .jules/

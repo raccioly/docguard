@@ -4498,10 +4498,132 @@
         "permanent-fix",
         "browser-automation"
       ],
-      "related_bugs": ["bug-256"],
+      "related_bugs": [
+        "bug-256"
+      ],
       "occurrences": 1,
       "last_seen": "2026-09-11T15:20:00Z",
       "notes": "The npm-side setup (trusted publisher config) was done via Claude in Chrome browser automation on the user's authenticated session — the user generated nothing themselves manually beyond confirming form field values live, since a different browser extension's autofill overlay blocked automation from reaching two fields directly. Token/credential VALUES never passed through the agent's context at any point — only the trusted-publisher CONFIGURATION (org/repo/workflow name, which are not secrets) did."
+    },
+    {
+      "id": "bug-273",
+      "timestamp": "2026-09-11T15:25:25.069Z",
+      "error_message": "Significant refactor of ",
+      "file": ".github/workflows/release.yml",
+      "root_cause": "8 lines replaced/restructured",
+      "fix": "Rewrote 9→16 lines (8 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "yml"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T15:25:25.069Z"
+    },
+    {
+      "id": "bug-274",
+      "timestamp": "2026-09-11T15:26:38.465Z",
+      "error_message": "Significant refactor of ",
+      "file": "CHANGELOG.md",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 10→18 lines (3 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T15:26:38.465Z"
+    },
+    {
+      "id": "bug-275",
+      "timestamp": "2026-09-11T15:26:43.072Z",
+      "error_message": "Incorrect value in code",
+      "file": "package.json",
+      "root_cause": "Had \"0.34.3\"",
+      "fix": "Changed to \"0.34.4\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "json"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T15:26:43.072Z"
+    },
+    {
+      "id": "bug-258",
+      "timestamp": "2026-09-11T15:28:00Z",
+      "error_message": "v0.34.3's own npm-publish fix (Trusted Publishing) failed on its first real test: 'npm install -g npm@latest' errored EBADENGINE, npm@12.0.2 requires node ^22.22.2 || ^24.15.0 || >=26.0.0, actual was npm 10.8.2 / node v20.20.2.",
+      "file": ".github/workflows/release.yml",
+      "root_cause": "Same class of mistake as bug-255 (@babel/parser major bump breaking Node 18): an unpinned `npm@latest` in the publish-npm job's self-update step floated to npm 12, which had bumped ITS OWN Node engine floor past the Node 20 this job runs on. The bug shipped in v0.34.3 because it wasn't (couldn't be) tested locally — GitHub Actions' OIDC token exchange only exists inside an actual Actions run, so the self-update step's own compatibility was the first thing to actually execute in CI, and it failed before publish ever ran.",
+      "fix": "Pinned to `npm install -g npm@11` instead of `npm@latest`. npm 11.x declares engines {node: '^20.17.0 || >=22.9.0'}, compatible with the job's Node 20.20.2, and resolves to 11.19.1 -- well past the 11.5.0 floor Trusted Publishing needs. Verified locally this time: installed npm@11 into an isolated --prefix on Node 20.20.2 (matching the exact runner version from the failure log) and confirmed it resolves cleanly before pushing v0.34.4.",
+      "tags": [
+        "npm-publish",
+        "trusted-publishing",
+        "engines-field",
+        "unpinned-latest",
+        "release-pipeline",
+        "same-mistake-twice"
+      ],
+      "related_bugs": [
+        "bug-256",
+        "bug-257",
+        "bug-255"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T15:28:00Z",
+      "notes": "Pattern worth internalizing: 'npm install -g npm@latest' (or any @latest) in a CI step pinned to an older Node version is never safe to assume works, because npm's OWN major versions bump their engines floor over time just like any other package. Always pin to a specific major/range you've checked against the job's actual Node version, and verify by actually installing it (even in an isolated prefix) rather than reasoning from memory about what should be compatible."
+    },
+    {
+      "id": "bug-277",
+      "timestamp": "2026-09-11T15:31:51.639Z",
+      "error_message": "Missing error handling in unknown",
+      "file": ".github/workflows/ci.yml",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "yml"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T15:31:51.639Z"
+    },
+    {
+      "id": "bug-278",
+      "timestamp": "2026-09-11T15:33:55.369Z",
+      "error_message": "Missing error handling in unknown",
+      "file": ".github/workflows/jules-triage.yml",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "yml"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T15:33:55.369Z"
+    },
+    {
+      "id": "bug-279",
+      "timestamp": "2026-09-11T15:34:41.023Z",
+      "error_message": "Missing error handling in unknown",
+      "file": "CHANGELOG.md",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T15:34:41.023Z"
     }
   ]
 }

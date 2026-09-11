@@ -207,14 +207,21 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
 
       # Trusted Publishing (OIDC) needs npm CLI >= 11.5.0; Node 20's bundled
-      # npm predates that, so self-update first. No NODE_AUTH_TOKEN needed —
-      # npm exchanges the id-token (permissions, above) directly with the
-      # registry via the trusted-publisher connection configured on
-      # npmjs.com (raccioly/docguard, release.yml). This replaces the
-      # NPM_TOKEN-based auth that silently broke for 2 releases (v0.34.1,
-      # v0.34.2 never reached npm) when the token expired — nothing here
-      # can expire the same way; a short-lived token is minted per run.
-      - run: npm install -g npm@latest
+      # npm predates that, so self-update first. Pinned to the 11.x line
+      # (NOT `npm@latest`) because npm 12 requires Node ^22.22.2 || ^24.15.0
+      # || >=26.0.0 -- newer than the Node 20 this job runs on. Learned this
+      # the hard way: the first cut of this fix used `npm@latest` and broke
+      # the same way the @babel/parser major bump did earlier (bug-255) --
+      # an unpinned "latest" floated past what this job's Node version
+      # supports. npm 11.x itself supports Node ^20.17.0 || >=22.9.0, so it
+      # installs cleanly here. No NODE_AUTH_TOKEN needed — npm exchanges the
+      # id-token (permissions, above) directly with the registry via the
+      # trusted-publisher connection configured on npmjs.com
+      # (raccioly/docguard, release.yml). This replaces the NPM_TOKEN-based
+      # auth that silently broke for 2 releases (v0.34.1, v0.34.2 never
+      # reached npm) when the token expired — nothing here can expire the
+      # same way; a short-lived token is minted per run.
+      - run: npm install -g npm@11
 
       - name: Publish (with provenance)
         run: npm publish --provenance

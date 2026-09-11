@@ -45,8 +45,30 @@ jobs:
         run: python3 -c "import docguard_cli.wrapper; print('docguard_cli.wrapper OK')"
 
       # ── Automated Test Suite ──
-      - name: Run Tests
-        run: npm test
+      # Also enforces a RUNTIME BUDGET. A test that walks an unintended tree
+      # (e.g. passing '/' as a project dir) still PASSES — it just takes
+      # forever. PR #328 did exactly that: tests/schemas.test.mjs went from
+      # 118ms to >10s and the whole suite from ~25s to 190s, green the entire
+      # time. Only a duration check catches that class, so auto-merge depends
+      # on this gate existing. Normal: ~33s (node 24) to ~51s (node 18) on CI.
+      # Budget is deliberately loose — it catches catastrophes, not jitter.
+      - name: Run Tests (with runtime budget)
+        env:
+          TEST_BUDGET_MS: 120000
+        run: |
+          set -o pipefail
+          npm test 2>&1 | tee /tmp/test-output.txt
+          DURATION=$(grep -oE 'duration_ms [0-9]+' /tmp/test-output.txt | tail -1 | grep -oE '[0-9]+' | cut -d. -f1)
+          if [ -z "$DURATION" ]; then
+            echo "::warning::Could not parse test duration — skipping budget check"
+            exit 0
+          fi
+          echo "Test suite duration: ${DURATION}ms (budget: ${TEST_BUDGET_MS}ms)"
+          if [ "$DURATION" -gt "$TEST_BUDGET_MS" ]; then
+            echo "::error::Test suite took ${DURATION}ms, over the ${TEST_BUDGET_MS}ms budget."
+            echo "::error::Something is scanning far more than it should (see PR #328 / bug-254)."
+            exit 1
+          fi
 
       # ── Self-validation (dogfooding) ──
       - name: CLI Version

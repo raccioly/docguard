@@ -1,0 +1,137 @@
+name: Scheduled Release
+
+# Self-sustaining releases: batches whatever has landed on main since the last
+# tag into a weekly patch release, instead of cutting a version per merge.
+#
+# WHY BATCHED AND NOT PER-MERGE: every release publishes to npm AND PyPI
+# publicly. Per-merge releases would burn a version number per dependabot
+# patch and publish constantly. Weekly batching keeps releases hands-off
+# without turning the registry into a changelog.
+#
+# HOW IT TRIGGERS THE ACTUAL RELEASE: this workflow only bumps package.json
+# and pushes. release.yml is triggered by pushes that touch package.json, so
+# it picks up from there and does tag → GitHub Release → npm → PyPI → catalog
+# reminder. Keeping the publish logic in one place (release.yml) on purpose.
+#
+# NO-OP WHEN NOTHING CHANGED: if there are no commits since the last release
+# tag, this exits without bumping — no empty releases.
+
+on:
+  schedule:
+    - cron: '0 9 * * 1' # Mondays 09:00 UTC
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Version bump type'
+        required: false
+        default: 'patch'
+        type: choice
+        options: [patch, minor]
+
+permissions:
+  contents: write
+
+jobs:
+  cut-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 20
+
+      - name: Check for unreleased changes
+        id: check
+        run: |
+          CURRENT=$(node -p "require('./package.json').version")
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          echo "current=$CURRENT" >> "$GITHUB_OUTPUT"
+
+          if [ -z "$LAST_TAG" ]; then
+            echo "No tags yet — nothing to compare against, skipping."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Commits since the last tag, excluding the release commits themselves
+          # and the OpenWolf bookkeeping noise (.wolf/ is auto-written by hooks
+          # every session and must never on its own justify a release).
+          COMMITS=$(git log "${LAST_TAG}..HEAD" --oneline -- . ':!.wolf' | grep -viE '^[0-9a-f]+ (release|chore\(release\)):' || true)
+          COUNT=$(echo "$COMMITS" | grep -c . || true)
+
+          echo "Last tag: $LAST_TAG"
+          echo "Releasable commits since: $COUNT"
+          echo "$COMMITS"
+
+          if [ "$COUNT" -eq 0 ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "last_tag=$LAST_TAG" >> "$GITHUB_OUTPUT"
+            # Stash the log for the changelog entry
+            echo "$COMMITS" > /tmp/commits.txt
+          fi
+
+      - name: Bump version and write changelog
+        if: steps.check.outputs.changed == 'true'
+        run: |
+          BUMP="${{ inputs.bump || 'patch' }}"
+          OLD="${{ steps.check.outputs.current }}"
+          NEW=$(node -e "
+            const [maj,min,pat] = '$OLD'.split('.').map(Number);
+            console.log('$BUMP' === 'minor' ? \`\${maj}.\${min+1}.0\` : \`\${maj}.\${min}.\${pat+1}\`);
+          ")
+          echo "Bumping $OLD → $NEW"
+
+          node -e "
+            const fs = require('fs');
+            const p = JSON.parse(fs.readFileSync('package.json','utf8'));
+            p.version = '$NEW';
+            fs.writeFileSync('package.json', JSON.stringify(p,null,2) + '\n');
+          "
+          npm install --package-lock-only --ignore-scripts
+
+          # Changelog entry from the commit subjects, so release.yml's notes
+          # extractor (which reads the '## [VERSION]' section) has real content.
+          {
+            echo "## [$NEW] - $(date -u +%Y-%m-%d)"
+            echo
+            echo "Automated weekly release — batches everything merged since \`${{ steps.check.outputs.last_tag }}\`."
+            echo
+            echo "### Changed"
+            echo
+            sed -E 's/^[0-9a-f]+ /- /' /tmp/commits.txt
+            echo
+          } > /tmp/entry.md
+
+          # Splice in directly under '## [Unreleased]'
+          awk '/^## \[Unreleased\]/ { print; print ""; while ((getline line < "/tmp/entry.md") > 0) print line; next } { print }' \
+            CHANGELOG.md > /tmp/CHANGELOG.new && mv /tmp/CHANGELOG.new CHANGELOG.md
+
+          # Keep the spec-kit extension metadata in lockstep (same thing
+          # `docguard fix --write` does locally before a manual release).
+          node cli/docguard.mjs fix --write || true
+
+          echo "NEW_VERSION=$NEW" >> "$GITHUB_ENV"
+
+      - name: Verify the tree is still green before releasing
+        if: steps.check.outputs.changed == 'true'
+        run: |
+          npm ci
+          npm test
+          node cli/docguard.mjs guard || [ $? -eq 2 ]
+
+      - name: Commit and push (this triggers release.yml)
+        if: steps.check.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json CHANGELOG.md extensions/ .agent/ 2>/dev/null || true
+          git commit -m "release: v${NEW_VERSION} — automated weekly batch
+
+          Cut by .github/workflows/scheduled-release.yml. Publishing itself is
+          handled by release.yml, which triggers on this package.json change."
+          git push origin HEAD:main
