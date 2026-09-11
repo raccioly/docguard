@@ -298,6 +298,19 @@ jobs:
   publish-pypi:
     needs: [detect-version, test, create-release]
     runs-on: ubuntu-latest
+    # PyPI Trusted Publishing (OIDC) — same rationale as publish-npm: a stored
+    # API token is a credential that expires silently and takes the release
+    # pipeline down with it (see bug-256: NPM_TOKEN expired and cost seven
+    # releases to diagnose). PYPI_API_TOKEN was last rotated 2026-03-15 and was
+    # the next one due to do exactly that. Nothing here can expire.
+    #
+    # `environment` MUST match the Environment name configured in the PyPI
+    # trusted publisher, and `id-token: write` is what mints the OIDC token.
+    # Mirrors the working setup in raccioly/websec-validator's publish.yml.
+    environment: pypi
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -312,16 +325,25 @@ jobs:
           grep 'version' pyproject.toml
 
       - name: Install build tools
-        run: pip install build twine
+        run: pip install build
 
       - name: Build
         run: python -m build
 
-      - name: Publish
-        run: python -m twine upload dist/*
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+      # Assert the OIDC precondition before publishing, rather than finding out
+      # via an auth error that doesn't name the cause (the npm lesson).
+      - name: Assert OIDC token is available
+        run: |
+          if [ -z "$ACTIONS_ID_TOKEN_REQUEST_URL" ]; then
+            echo "::error::ACTIONS_ID_TOKEN_REQUEST_URL is unset — this job lacks id-token: write, so PyPI Trusted Publishing cannot authenticate."
+            exit 1
+          fi
+          echo "OIDC token endpoint available; publishing via Trusted Publishing."
+
+      # No TWINE_USERNAME/TWINE_PASSWORD: the OIDC exchange against the trusted
+      # publisher configured on PyPI (raccioly / docguard / release.yml /
+      # environment: pypi) IS the authentication.
+      - uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b  # release/v1
 
   # ── Step 7: Prepare Spec Kit community catalog submission ──────────────
   # Per spec-kit maintainer guidance (github/spec-kit#2707) and spec-kit's

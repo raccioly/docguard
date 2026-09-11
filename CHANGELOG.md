@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.34.8] - 2026-09-11
+
+No code changes. Completes the credential-free release pipeline.
+
+### Changed
+
+- **PyPI publishing migrated from a stored API token to Trusted Publishing (OIDC)**, matching what `publish-npm` now does. `PYPI_API_TOKEN` was last rotated 2026-03-15 and was the next stored credential due to expire silently and take the pipeline down — exactly the failure that cost seven releases on the npm side (bug-256/bug-259). `publish-pypi` now runs with `environment: pypi` + `id-token: write` and publishes via `pypa/gh-action-pypi-publish`; the trusted publisher is registered on PyPI as `raccioly` / `docguard` / `release.yml` / environment `pypi`. Mirrors the working setup already in `raccioly/websec-validator`. Neither registry now depends on a credential that can expire.
+- Added an OIDC precondition assert to `publish-pypi` so a missing `id-token: write` fails with a message naming the cause rather than as an opaque auth error.
+
 ## [0.34.7] - 2026-09-11
 
 **npm publishing is fixed.** First release since v0.34.0 to reach npm, PyPI, and GitHub in sync. Seven releases were needed because three independent faults were stacked, each masking the next.

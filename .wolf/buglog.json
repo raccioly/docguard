@@ -4785,10 +4785,30 @@
         "stacked-faults",
         "resolved"
       ],
-      "related_bugs": ["bug-256", "bug-257", "bug-258"],
+      "related_bugs": [
+        "bug-256",
+        "bug-257",
+        "bug-258"
+      ],
       "occurrences": 7,
       "last_seen": "2026-09-11T16:12:49Z",
       "notes": "Process lesson, not just a technical one: six releases were burned guessing from a generic 404 when `npm publish --loglevel verbose` named the exact failing endpoint and reason on the FIRST run that had it. When an error is generic and a fix 'changes the error' without fixing it, that is the signal to stop iterating and start instrumenting. Also: display text is not data -- the malformed trailing slash was visible in the UI the whole time but rendered as 'raccioly/docguard/' which looked like a path separator; it was only provable once a correct second entry rendered differently ('raccioly/docguard') right next to it."
+    },
+    {
+      "id": "bug-290",
+      "timestamp": "2026-09-11T16:33:44.539Z",
+      "error_message": "Significant refactor of ",
+      "file": ".github/workflows/release.yml",
+      "root_cause": "6 lines replaced/restructured",
+      "fix": "Rewrote 27→49 lines (6 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "yml"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T16:33:44.539Z"
     }
   ]
 }
