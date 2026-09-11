@@ -13,6 +13,7 @@ import {
   readScannable,
   isGeneratedPath,
   MAX_SCAN_BYTES,
+  isRunnerEnvVar,
 } from '../cli/shared-source.mjs';
 
 function write(dir, rel, content) {
@@ -139,5 +140,14 @@ describe('readScannable — size cap + generated/minified skip', () => {
 
   it('returns null for a missing/unreadable file (never throws)', () => {
     assert.equal(readScannable(join(dir, 'does-not-exist.ts')), null);
+  });
+});
+
+describe('isRunnerEnvVar', () => {
+  it('correctly identifies runner and CI variables', () => {
+    assert.equal(isRunnerEnvVar('CI'), true);
+    assert.equal(isRunnerEnvVar('GITHUB_TOKEN'), true);
+    assert.equal(isRunnerEnvVar('MY_APP_VAR'), false);
+    assert.equal(isRunnerEnvVar('DATABASE_URL'), false);
   });
 });

@@ -4,7 +4,7 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
-import { validateSpecKitIntegration } from '../cli/scanners/speckit.mjs';
+import { validateSpecKitIntegration, parseCheckedTasks } from '../cli/scanners/speckit.mjs';
 
 describe('Spec-Kit — bugfix spec type', () => {
   let tmpDir;
@@ -68,5 +68,19 @@ describe('Spec-Kit — bugfix spec type', () => {
       w.some(x => /Missing mandatory section/.test(x)),
       'a feature spec (no bugfix marker) must still be held to the spec template'
     );
+  });
+});
+
+describe('parseCheckedTasks', () => {
+  it('extracts checked task IDs and text', () => {
+    const content = `
+- [x] T001 Implement login
+- [ ] T002 Implement logout
+- [x] T003 Fix bug (done)
+    `;
+    const tasks = parseCheckedTasks(content);
+    assert.equal(tasks.length, 2);
+    assert.equal(tasks[0].id, 'T001');
+    assert.equal(tasks[1].id, 'T003');
   });
 });
