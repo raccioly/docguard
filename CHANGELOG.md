@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.34.2] - 2026-09-11
+
+### Fixed
+
+- **`@babel/parser` 7.29.7 → 7.29.8** — the newest 7.x patch, confirmed Node-18-compatible. Supersedes dependabot's repeat proposal of the 8.0.4 major bump (already reverted once in 0.34.1 — see below) with the correct fix. (#333)
+- **`docs-diff`'s `collectCodeTests` ignored `.docguardignore`/`config.ignore` during recursive test-directory scans**, so excluded test files could still count toward test-coverage validation, producing false positives on projects that explicitly excluded fixture/generated test dirs. Both recursive walkers now filter through `shouldIgnore` before collecting. (#334)
+- Doc example for `generate --dir` used a non-existent absolute path (`/path/to/project`), which fails with `EACCES` if anyone actually runs it verbatim. Now a relative path. (#338)
+
+### Changed
+
+- Bumped the `osv-scanner-action` reusable workflows (supply-chain scanning) from v2.3.8 to v2.5.1. (#336)
+- **`.github/dependabot.yml`: added an ignore rule for `@babel/parser` major-version bumps.** The 8.x line requires Node `^22.18.0 || >=24.11.0`, silently dropping Node 18 (which this project supports and CI gates on) — confirmed twice now (#331 in 0.34.1, #335 closed this release) that dependabot will keep proposing it every cycle since it can't see the `engines` mismatch. Patches/minors on the 7.x line still flow through normally.
+
+### Tests
+
+- Added coverage for previously-untested exports: `surfaceConfidence`, `astTierAvailable`, `parseCheckedTasks`, `compileGlob`, `isRunnerEnvVar`. (#337, #339)
+
+### Known issue
+
+- **npm publish is blocked on an expired `NPM_TOKEN`.** `v0.34.1`'s npm publish failed identically three times (Aug 28 ×2, Sep 11) with a `404` on the registry PUT immediately after successful provenance signing — not a registry incident (npm status green throughout, `docguard-cli` package unaffected on the registry). The token was last rotated 2026-05-22 and last worked for the 2026-08-13 (v0.34.0) publish; the failure window is consistent with npm's ~90-day Automation-token expiration. `v0.34.1` and `v0.34.2` are both tagged, GitHub-released, and on PyPI, but missing from npm until the token is rotated.
+
 ## [0.34.1] - 2026-08-28
 
 ### Fixed

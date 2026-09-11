@@ -4414,6 +4414,42 @@
       "occurrences": 1,
       "last_seen": "2026-08-28T16:55:00Z",
       "notes": "The release pipeline did exactly its job: test(18) failed, everything downstream (tag/npm/pypi) correctly skipped via job dependencies, nothing bad shipped. The gap was in MY pre-push verification, not the CI design."
+    },
+    {
+      "id": "bug-268",
+      "timestamp": "2026-09-11T14:49:52.110Z",
+      "error_message": "Incorrect value in code",
+      "file": "package.json",
+      "root_cause": "Had \"0.34.1\"",
+      "fix": "Changed to \"0.34.2\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "json"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T14:49:52.110Z"
+    },
+    {
+      "id": "bug-256",
+      "timestamp": "2026-09-11T15:00:00Z",
+      "error_message": "publish-npm for v0.34.1 failed identically 3 times across 2 weeks (2026-08-28 x2, 2026-09-11): provenance signs successfully (distinct Sigstore transparency-log entry each time) then npm error E404 'docguard-cli@0.34.1 is not in this registry' on the PUT, ~0.1-0.4s later.",
+      "file": ".github/workflows/release.yml (NPM_TOKEN secret, not a code file)",
+      "root_cause": "NPM_TOKEN (a GitHub Actions repo secret) most likely expired. gh secret list shows it was last rotated 2026-05-22; the v0.34.0 publish succeeded on 2026-08-13 (day 83) using this same token, and every attempt since 2026-08-28 (day 98) has failed identically — consistent with npm's ~90-day default expiration on Automation tokens. npm returns 404 rather than 401/403 for some auth-scope failures during publish (a known npm registry quirk — doesn't confirm a package exists to an unauthorized/wrongly-scoped identity), which is why the error text looks like a missing-package error instead of an auth error. Confirmed NOT a registry incident: npm status page all-green throughout, incident history shows no active issue, and docguard-cli's existing versions were untouched on the registry each time.",
+      "fix": "Cannot fix from the CLI/repo — requires the user to generate a new npm Automation token (npmjs.com account settings) with publish rights to docguard-cli, and update the NPM_TOKEN secret in GitHub repo settings. Documented in CHANGELOG v0.34.2 'Known issue' section so it's visible to anyone checking why npm is behind. v0.34.1 and v0.34.2 are both correctly tagged/GitHub-released/PyPI-published (those don't depend on NPM_TOKEN) — only npm is stuck.",
+      "tags": [
+        "npm-publish",
+        "token-expiration",
+        "ci-secret",
+        "release-pipeline",
+        "not-fixable-by-agent",
+        "e404-masks-auth-failure"
+      ],
+      "related_bugs": [],
+      "occurrences": 3,
+      "last_seen": "2026-09-11T14:34:00Z",
+      "notes": "Do NOT keep blindly retrying publish-npm if this recurs after a token rotation looks successful — verify the token's actual publish scope/expiration on npmjs.com first. Also: don't assume '404 on a publish that should be an update' is a transient registry blip just because npm's status page is green and the error text sounds like a missing-package error — check secret rotation dates before concluding 'try again later'."
     }
   ]
 }

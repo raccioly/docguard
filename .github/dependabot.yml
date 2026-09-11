@@ -7,6 +7,15 @@ updates:
     groups:
       all-npm:
         patterns: ["*"]
+    ignore:
+      # @babel/parser 8.x requires Node ^22.18.0 || >=24.11.0, silently dropping
+      # Node 18 — which this project declares support for and CI gates on.
+      # Confirmed twice (PRs #331, #335): the major bump passes tests on a
+      # single local Node version but breaks the Node 18 CI job with wrong
+      # AST-parse results (not an install failure, so it slips past casual
+      # review). Stay on 7.x; take patches (see #333) via version-update:semver-patch/minor.
+      - dependency-name: "@babel/parser"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
