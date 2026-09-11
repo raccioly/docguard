@@ -166,101 +166,63 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: 20
+          # MUST be >= 22.14.0. npm Trusted Publishing (OIDC) requires
+          # npm CLI >= 11.5.1 AND Node >= 22.14.0 -- per npm's own docs.
+          # This job ran Node 20 for five straight failed releases
+          # (v0.34.1 - v0.34.5): below that floor npm never even ATTEMPTS the
+          # OIDC exchange, it just falls through to token auth. That produced
+          # two different red herrings -- E404 "not found or you do not have
+          # permission" while an empty _authToken was present, then ENEEDAUTH
+          # once it wasn't -- neither of which names the actual cause.
+          node-version: 24
+          # registry-url IS required (npm's documented example sets it). An
+          # earlier theory blamed the empty _authToken it writes; that was
+          # wrong. The empty token only mattered BECAUSE Node 20 meant OIDC
+          # was off the table and token auth was the only path left.
+          registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false
 
-      - name: Stage and pack .mcpb
-        run: |
-          VERSION="${{ needs.detect-version.outputs.version }}"
-          npm pack --pack-destination /tmp
-          mkdir -p /tmp/mcpb && tar xzf /tmp/docguard-cli-*.tgz -C /tmp/mcpb
-          cd /tmp/mcpb/package
-          npm install --omit=dev --no-audit --no-fund
-          sed "s/__VERSION__/${VERSION}/" "$GITHUB_WORKSPACE/mcpb/manifest.template.json" > manifest.json
-          npx -y @anthropic-ai/mcpb pack . "/tmp/docguard-v${VERSION}.mcpb"
-
-      - name: Upload to release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          VERSION="${{ needs.detect-version.outputs.version }}"
-          gh release upload "v${VERSION}" \
-            "/tmp/docguard-v${VERSION}.mcpb" \
-            --clobber
-
-  # ── Step 5: Publish to npm ─────────────────────────────────────────────
-  publish-npm:
-    needs: [detect-version, test, create-release]
-    runs-on: ubuntu-latest
-    # Provenance attestation needs an OIDC token: npm exchanges it with
-    # Sigstore to sign a statement that THIS tarball was built by THIS
-    # workflow from THIS commit. That's what supply-chain checks (npm's
-    # "Provenance" badge, Claude Code's unknown-package legitimacy check,
-    # socket.dev, etc.) verify — without it the package is unattributable.
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 20
-          # DELIBERATELY NO `registry-url`. setup-node's registry-url writes an
-          # .npmrc containing:
-          #     //registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}
-          # With NODE_AUTH_TOKEN removed (Trusted Publishing), that expands to
-          # an EMPTY token. npm then takes the token-auth path holding no token
-          # and 404s, never attempting the OIDC exchange at all. v0.34.4 failed
-          # exactly this way: npm@11 installed fine, provenance signed fine, no
-          # OIDC notice in the log, then "404 ... could not be found or you do
-          # not have permission". npm defaults to registry.npmjs.org anyway, so
-          # dropping this loses nothing.
-
-      # Trusted Publishing (OIDC) needs npm CLI >= 11.5.0; Node 20's bundled
-      # npm predates that, so self-update first. Pinned to the 11.x line
-      # (NOT `npm@latest`) because npm 12 requires Node ^22.22.2 || ^24.15.0
-      # || >=26.0.0 -- newer than the Node 20 this job runs on. Learned this
-      # the hard way: the first cut of this fix used `npm@latest` and broke
-      # the same way the @babel/parser major bump did earlier (bug-255) --
-      # an unpinned "latest" floated past what this job's Node version
-      # supports. npm 11.x itself supports Node ^20.17.0 || >=22.9.0, so it
-      # installs cleanly here. No NODE_AUTH_TOKEN needed — npm exchanges the
-      # id-token (permissions, above) directly with the registry via the
-      # trusted-publisher connection configured on npmjs.com
-      # (raccioly/docguard, release.yml). This replaces the NPM_TOKEN-based
-      # auth that silently broke for 2 releases (v0.34.1, v0.34.2 never
-      # reached npm) when the token expired — nothing here can expire the
-      # same way; a short-lived token is minted per run.
+      # Belt and braces: Node 24 already bundles npm >= 11.5.1, but pin
+      # explicitly so a runner image change can't silently drop below the
+      # floor. npm@11 (not @latest) -- npm 12 raised its own Node floor and
+      # an unpinned "latest" is exactly how bug-255/bug-258 happened.
       - run: npm install -g npm@11
 
-      # Fail LOUDLY if anything put an auth token back in the npm config.
-      # A stray (even empty) _authToken silently routes npm away from OIDC and
-      # the only symptom is a generic 404 that reads like a missing package --
-      # it cost four releases (v0.34.1 through v0.34.4) to identify. Better to
-      # break here with a clear message than to publish-fail cryptically again.
-      - name: Assert no npm auth token is configured (OIDC must be the path)
+      # Assert the OIDC preconditions rather than discovering a violation as
+      # an unrelated-looking auth error three minutes later.
+      - name: Assert Trusted Publishing preconditions
         run: |
-          npm --version
-          # NOTE: `npm config get <key>` refuses on auth keys ("protected") and
-          # `npm config list --json` omits them entirely, so neither can be used
-          # to detect this. Grep the actual .npmrc files instead.
-          USERCONFIG=$(npm config list | sed -n 's/^userconfig = "\(.*\)"$/\1/p')
-          HITS=""
-          for f in "$USERCONFIG" ".npmrc" "$HOME/.npmrc"; do
-            if [ -n "$f" ] && [ -f "$f" ] && grep -qE '_authToken|_auth[[:space:]]*=' "$f"; then
-              HITS="$HITS $f"
-            fi
-          done
-          if [ -n "$HITS" ]; then
-            echo "::error::npm auth token found in:$HITS"
-            echo "::error::Even an EMPTY _authToken routes npm to token auth and skips OIDC/Trusted Publishing —"
-            echo "::error::the only symptom is a generic 404 that reads like a missing package."
-            echo "::error::Remove registry-url from setup-node and any NODE_AUTH_TOKEN from this job."
+          NODE_V=$(node -p "process.versions.node")
+          NPM_V=$(npm --version)
+          echo "node=$NODE_V npm=$NPM_V"
+          node -e '
+            const [nMaj,nMin] = process.versions.node.split(".").map(Number);
+            const ok = nMaj > 22 || (nMaj === 22 && nMin >= 14);
+            if (!ok) {
+              console.error(`::error::Node ${process.versions.node} is below the 22.14.0 floor npm Trusted Publishing requires. OIDC will silently not be attempted and publish will fail as an auth error.`);
+              process.exit(1);
+            }
+          '
+          node -e '
+            const v = process.argv[1].split(".").map(Number);
+            const ok = v[0] > 11 || (v[0] === 11 && (v[1] > 5 || (v[1] === 5 && v[2] >= 1)));
+            if (!ok) {
+              console.error(`::error::npm ${process.argv[1]} is below the 11.5.1 floor npm Trusted Publishing requires.`);
+              process.exit(1);
+            }
+          ' "$NPM_V"
+          if [ -z "$ACTIONS_ID_TOKEN_REQUEST_URL" ]; then
+            echo "::error::ACTIONS_ID_TOKEN_REQUEST_URL is unset — the job lacks id-token: write, so no OIDC token can be minted."
             exit 1
           fi
-          echo "No auth token configured — npm will use OIDC (Trusted Publishing)."
+          echo "OIDC preconditions satisfied."
 
-      - name: Publish (with provenance)
-        run: npm publish --provenance
+      # No --provenance flag: with Trusted Publishing, npm generates and
+      # publishes provenance attestations automatically. No NODE_AUTH_TOKEN
+      # either -- the OIDC exchange against the trusted-publisher connection
+      # on npmjs.com (raccioly/docguard -> release.yml) is the auth.
+      - name: Publish (provenance is automatic under Trusted Publishing)
+        run: npm publish
 
   # ── Step 6: Publish to PyPI ────────────────────────────────────────────
   publish-pypi:

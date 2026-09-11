@@ -4704,6 +4704,38 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-09-11T15:50:08.928Z"
+    },
+    {
+      "id": "bug-285",
+      "timestamp": "2026-09-11T15:55:09.291Z",
+      "error_message": "Significant refactor of ",
+      "file": "CHANGELOG.md",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 9→21 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T15:55:09.291Z"
+    },
+    {
+      "id": "bug-286",
+      "timestamp": "2026-09-11T15:55:22.456Z",
+      "error_message": "Incorrect value in code",
+      "file": "CHANGELOG.md",
+      "root_cause": "Had `.npmrc`",
+      "fix": "Changed to `npm config get`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T15:55:22.456Z"
     }
   ]
 }
