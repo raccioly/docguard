@@ -5126,6 +5126,22 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-09-11T21:26:46.402Z"
+    },
+    {
+      "id": "bug-312",
+      "timestamp": "2026-09-11T21:33:22.758Z",
+      "error_message": "Spec Kit verbose helper emitted malformed JSON for current CLI output",
+      "file": "extensions/spec-kit-docguard/scripts/bash/docguard-check-docs.sh",
+      "root_cause": "Legacy regex parsing expected compact score fields and prose guard output; CLI lookup missed installed docguard and did not quote paths",
+      "fix": "Parse and validate structured JSON and exit status; prefer local installs, safely quote executable paths, and refuse implicit npx downloads",
+      "tags": [
+        "release",
+        "json",
+        "hooks"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T21:33:22.758Z"
     }
   ]
 }

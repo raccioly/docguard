@@ -1,5 +1,5 @@
 ---
-description: Keep canonical docs always up to date — refresh code-truth sections in place, preserve human prose
+description: Refresh canonical code-truth sections and flag prose for review — refresh code-truth sections in place, preserve human prose
 allowed-tools: Bash, Read, Edit
 ---
 
