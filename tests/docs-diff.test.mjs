@@ -82,4 +82,22 @@ describe('Docs-Diff Validator', () => {
         `warning must name the file/tech; got: ${drift}`);
     });
   });
+
+  it('collectCodeTests ignores test files excluded by config', async () => {
+    const { collectCodeTests } = await import('../cli/validators/docs-diff.mjs');
+    const tmpDir2 = mkdtempSync(join(tmpdir(), 'docguard-test2-'));
+    try {
+      mkdirSync(join(tmpDir2, 'src'));
+      writeFileSync(join(tmpDir2, 'src/a.test.js'), 'test()');
+      writeFileSync(join(tmpDir2, 'src/ignored.test.js'), 'test()');
+
+      const config = { ignore: ['src/ignored.test.js'] };
+      const codeTests = collectCodeTests(tmpDir2, config);
+
+      assert.ok(codeTests.has('src/a.test.js'), 'should find a.test.js');
+      assert.ok(!codeTests.has('src/ignored.test.js'), 'should ignore src/ignored.test.js');
+    } finally {
+      rmSync(tmpDir2, { recursive: true, force: true });
+    }
+  });
 });
