@@ -6,7 +6,8 @@ import { tmpdir } from 'node:os';
 import {
   isNonProductDir,
   isNonProductPath,
-  walkFiles
+  walkFiles,
+  compileGlob
 } from '../cli/shared-ignore.mjs';
 
 test('isNonProductDir identifies detection ignore dirs correctly', (t) => {
@@ -68,4 +69,17 @@ test('walkFiles recursively visits files and respects options', (t) => {
   assert.ok(visitedKeepDot.some(f => f.endsWith('config.json')));
 
   rmSync(tmpDir, { recursive: true, force: true });
+});
+
+test('compileGlob converts glob patterns to valid regexps', (t) => {
+  // compileGlob already anchors with ^ and $ if the glob implies it (or produces a full match regex)
+  const re = new RegExp(compileGlob('src/**/*.js'));
+  assert.ok(re.test('src/index.js'));
+  assert.ok(re.test('src/components/button.js'));
+  assert.ok(!re.test('src/index.ts'));
+
+  const re2 = new RegExp(compileGlob('*.{js,ts}'));
+  assert.ok(re2.test('app.js'));
+  assert.ok(re2.test('app.ts'));
+  assert.ok(!re2.test('app.jsx'));
 });
