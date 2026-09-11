@@ -51,6 +51,16 @@
       "count": 1,
       "tokens": 0,
       "first_read": "2026-09-11T16:39:11.726Z"
+    },
+    "/private/tmp/claude-501/-Users-ricardoaccioly-Repo-claude-canonical-spec-kit/25ac0636-5765-49fe-a808-dd97dc825b30/tasks/bflc3gu0x.output": {
+      "count": 2,
+      "tokens": 0,
+      "first_read": "2026-09-11T16:42:40.087Z"
+    },
+    "/private/tmp/claude-501/-Users-ricardoaccioly-Repo-claude-canonical-spec-kit/25ac0636-5765-49fe-a808-dd97dc825b30/tasks/b2dhgtypc.output": {
+      "count": 1,
+      "tokens": 0,
+      "first_read": "2026-09-11T16:44:06.922Z"
     }
   },
   "files_written": [
@@ -259,8 +269,8 @@
     "tests/commands.test.mjs": 1
   },
   "anatomy_hits": 2,
-  "anatomy_misses": 8,
-  "repeated_reads_warned": 10,
+  "anatomy_misses": 10,
+  "repeated_reads_warned": 11,
   "cerebrum_warnings": 0,
-  "stop_count": 26
+  "stop_count": 28
 }

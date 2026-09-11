@@ -13,6 +13,7 @@ No code changes. Fixes the PyPI publish that v0.34.8 broke, and re-syncs the reg
 
 ### Fixed
 
+- **PyPI Trusted Publishing confirmed working; `PYPI_API_TOKEN` deleted.** v0.34.9 published to PyPI with no `TWINE_USERNAME`/`TWINE_PASSWORD` anywhere in the workflow, which means the OIDC path is what authenticated. Both registries and the git tag now serve 0.34.9, and **no workflow references any stored publishing credential** — neither registry depends on something that can expire.
 - **Bumped `pypa/gh-action-pypi-publish` to v1.14.2.** v0.34.8's PyPI publish failed with `InvalidDistribution: Invalid distribution metadata: '2.5' is not a valid metadata version` — the older pin (copied from `raccioly/websec-validator`) bundles a twine too old to understand `Metadata-Version: 2.5`, which current `setuptools`/`build` emits. The failure was in metadata validation, not authentication, so it says nothing either way about the Trusted Publishing migration; that still needs a green run to be confirmed. Pinned by dereferenced **commit** SHA, not the annotated tag object's own SHA — those differ, and pinning the wrong one silently fails to resolve.
   - Note for `websec-validator`: it still carries the old pin and will hit this same wall as soon as its `setuptools` moves forward.
 
