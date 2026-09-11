@@ -1,3 +1,4 @@
+import { docRolePath, resolveDocRole } from '../shared-doc-roles.mjs';
 /**
  * Environment Validator — Checks ENVIRONMENT.md docs and .env.example
  * Now respects projectTypeConfig (e.g., skip env checks for CLI tools)
@@ -19,8 +20,8 @@ export function validateEnvironment(projectDir, config) {
   let total = 0;
   const ptc = config.projectTypeConfig || {};
 
-  const envDoc = 'docs-canonical/ENVIRONMENT.md';
-  const envDocPath = resolve(projectDir, envDoc);
+  const envDoc = docRolePath(config, 'environment');
+  const envDocPath = resolveDocRole(projectDir, config, 'environment');
   if (!existsSync(envDocPath)) {
     // Structure validator catches missing files. Keep the exact legacy shape
     // here (no `findings` key) — tests deep-equal this early return.

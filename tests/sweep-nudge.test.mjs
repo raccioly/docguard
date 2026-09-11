@@ -29,7 +29,7 @@ function makeRepo(files) {
 }
 
 function gitInit(dir, opts = {}) {
-  const env = { ...process.env, GIT_AUTHOR_NAME: 't', GIT_AUTHOR_EMAIL: 't@t', GIT_COMMITTER_NAME: 't', GIT_COMMITTER_EMAIL: 't@t' };
+  const env = { ...process.env, GIT_AUTHOR_NAME: 't', GIT_AUTHOR_EMAIL: 't@t', GIT_COMMITTER_NAME: 't', GIT_COMMITTER_EMAIL: 't@t', ...opts };
   spawnSync('git', ['init', '-q'], { cwd: dir, env });
   spawnSync('git', ['add', '.'], { cwd: dir, env });
   spawnSync('git', ['-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q', '-m', 'init'], { cwd: dir, env });
@@ -75,21 +75,26 @@ describe('K-6 — sweep-needed nudge', () => {
       'AGENTS.md': '# Agents\nstub.',
       'CHANGELOG.md': '# Changelog\n## [Unreleased]\n',
       'DRIFT-LOG.md': '# Drift Log\n',
-      '.docguard.json': JSON.stringify({ projectName: 'sweep-stub', profile: 'starter', version: '0.5' }),
+      '.docguard.json': JSON.stringify({ projectName: 'sweep-stub', profile: 'starter', version: '0.5', validators: { freshness: true } }),
     });
-    gitInit(dir);
-
-    // We can't easily simulate "10+ commits since" in a unit test without
-    // burning real CPU on commits. Instead, we just confirm the guard runs
-    // without crashing — the sweep nudge logic is exercised even when zero
-    // stale docs match (the no-nudge branch).
-    const r = spawnSync('node', [CLI, 'guard'], { cwd: dir, encoding: 'utf-8' });
-    assert.ok(r.stdout.length > 0, 'guard should produce output');
-    // Either way: there must be NO crash, and IF the nudge appears it must
-    // mention `sync --write`.
-    if (r.stdout.includes('↻')) {
-      assert.match(r.stdout, /docguard sync --write/);
-      assert.match(r.stdout, /docs are stale/);
+    gitInit(dir, { GIT_AUTHOR_DATE: '2020-01-01T00:00:00Z', GIT_COMMITTER_DATE: '2020-01-01T00:00:00Z' });
+    const env = { ...process.env, GIT_AUTHOR_DATE: '2020-01-02T00:00:00Z', GIT_COMMITTER_DATE: '2020-01-02T00:00:00Z' };
+    for (let i = 0; i < 11; i++) {
+      writeFileSync(join(dir, 'main.js'), 'export const value = ' + i + ';');
+      assert.equal(spawnSync('git', ['add', 'main.js'], { cwd: dir, env }).status, 0);
+      assert.equal(spawnSync('git', ['-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-qm', 'change'], { cwd: dir, env }).status, 0);
+    }
+    const r = spawnSync(process.execPath, [CLI, 'guard'], { cwd: dir, encoding: 'utf8' });
+    assert.match(r.stdout, /documents have repository-history review signals/);
+    assert.match(r.stdout, /before changing documentation or code/);
+    assert.doesNotMatch(r.stdout, /docs are stale/);
+    const data = JSON.parse(spawnSync(process.execPath, [CLI, 'guard', '--format', 'json'], { cwd: dir, encoding: 'utf8' }).stdout);
+    const findings = data.findings.filter(f => f.validator === 'freshness');
+    assert.ok(findings.length >= 2);
+    for (const finding of findings) {
+      assert.equal(finding.confidence, 'low');
+      assert.equal(finding.suggestion.kind, 'review');
+      assert.equal(finding.suggestion.command, undefined);
     }
   });
 

@@ -2,7 +2,7 @@
 
 <!-- docguard:version 0.8.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-07-03 -->
+<!-- docguard:last-reviewed 2026-09-11 -->
 
 > DocGuard has a single optional-load npm dependency (`@babel/parser`) and an optional `python3` AST tier. CLI integration tests cover the full stack with `node:test` (zero dev dependencies) and exercise both AST extractors (`js-ast`, `py-ast`) plus their regex fallbacks. The Python AST tests skip themselves automatically on a machine that lacks `python3`.
 
@@ -17,11 +17,11 @@
 
 DocGuard's tests verify command behavior through subprocess execution. Each test runs the full CLI binary via execSync, capturing stdout and checking output patterns. This approach tests the complete stack in a single pass: argument parsing, config loading, validator execution, and output formatting.
 
-Tests are designed to be config-aware. They verify that project-type settings like needsEnvExample and testFramework correctly influence scoring and validation behavior. Regression guards pin specific bug fixes with dedicated assertions, ensuring fixed issues cannot recur.
+Tests are designed to be config-aware. They verify that project-type settings like needsEnvExample and testFramework correctly influence scoring and validation behavior. Regression guards preserve known failures with dedicated assertions and neighboring valid cases.
 
-All tests use the built-in node:test framework with zero test dependencies. The test suite runs in under 30 seconds and is executed automatically by CI on every push.
+All tests use the built-in node:test framework with zero test dependencies. CI runs the suite on Node 18, 20, 22, and 24. Its runtime budget catches large regressions; local timing depends on runtime and filesystem. Record measured timing with its environment rather than asserting a universal duration.
 
-Test names follow the pattern: "verb + expected behavior" (e.g., "runs and shows a score", "respects projectTypeConfig"). Each test is self-contained with no shared mutable state between tests.
+Test names follow the pattern: "verb + expected behavior" (e.g., "runs and shows a score", "respects projectTypeConfig"). Each test should isolate its mutable fixtures and clean up its resources.
 
 ## Test Categories
 
@@ -33,16 +33,16 @@ Test names follow the pattern: "verb + expected behavior" (e.g., "runs and shows
 > **CLI integration tests cover the full stack** — this is a CLI tool with zero UI surface.
 > Commands are validated end-to-end via Node.js subprocess execution, making separate E2E tests redundant.
 
-All test files live in `tests/` and match the glob `tests/*.test.mjs` — individual files are not enumerated here (the suite grows every release); see the Source-to-Test Map below for the source→test traceability that matters.
+All test files live in `tests/` and match the glob `tests/*.test.mjs` — the test runner supplies the current inventory as the suite grows; see the Source-to-Test Map below for the source→test traceability that matters.
 
 ## Coverage Rules
 
 | Metric | Target | Current |
 |--------|:------:|:-------:|
-| Command Coverage | 100% | 100% (all commands) |
-| Validator Coverage | 80% | 100% (all validators) |
-| Flag Coverage | 80% | 100% |
-| Test Count | — | 600+ tests (`npm test`) |
+| Command Coverage | Every public command | Scenario coverage; inspect tests before claiming exhaustive behavior |
+| Validator Coverage | Every validator | Positive, negative, and regression cases |
+| Flag Coverage | Risk-based | Tested scenarios; no exhaustive coverage claim |
+| Test Count | — | Current count is emitted by `npm test` |
 
 ## Source-to-Test Map
 
@@ -68,8 +68,8 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — indivi
 | `cli/validators/docs-diff.mjs` | `tests/commands.test.mjs` | ✅ |
 
 > **Note**: `watch.mjs` is an interactive file-watcher (uses `fs.watch` + process signals). It is
-> verified via manual execution rather than automated tests, which is appropriate for
-> interactive/daemon-style commands per ISO/IEC/IEEE 29119-3 §7.2 (manual test procedures).
+> covered by automated lifecycle tests, including filesystem watcher error handling.
+> Manual checks supplement platform-specific event behavior.
 
 ## Critical CLI Flows
 
@@ -97,4 +97,15 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — indivi
 | 0.5.0 | 2026-03-13 | @raccioly | Added diagnose, guard JSON, profile, tax tests (24→30) |
 | 0.3.0 | 2026-03-12 | @raccioly | Real tests, project-type-aware spec |
 | 0.1.0 | 2026-03-12 | DocGuard Generate | Auto-generated (corrected) |
-| `cli/scanners/schemas.mjs` | `tests/schemas.test.mjs` | ✅ |
+
+## Trust regression scenarios
+
+`tests/score-assurance.test.mjs` checks that structural grades never claim factual verification and that CI, diagnose, and reports retain this boundary. `tests/feedback-contributions.test.mjs` checks confident-finding selection, preview behavior, and outbound metadata privacy. Cache tests must change source contents without changing a manifest or Git HEAD, including repeated edits and fresh-process reads. Hook tests execute generated scripts against controlled runtimes rather than merely matching shell text. Traceability tests pair synthetic fixture IDs with genuine requirement annotations.
+
+A detector fix should include a clean near-miss and a real defect. Held-out neighboring cases are required to evaluate generalization. The proposed external benchmark is specified in `docs-implementation/TRUST-ROADMAP.md`; its targets are acceptance criteria, not measured results.
+
+## Enterprise precision regressions
+
+Regression cases are synthetic and name no consumer repositories. Keep a valid near-neighbor beside every detected defect: formatting versus declaration deletion; negated versus current technology use; explained versus unexplained skips; mock expectations versus credentials; implemented versus omitted contract endpoints; Worker bindings versus local variables; historical versus active documents. Check coverage tests distinguish unsupported and missing inputs from executed checks. Document-role tests exercise mapped findings, raw/loaded configuration parity, unsafe paths, and read-only planning without writes.
+
+Independent review must challenge suppression paths, not only the original false-positive example. Cross-project runs use disposable snapshots and verify consumer content remains unchanged. Finding counts alone cannot establish precision or recall.

@@ -1,3 +1,4 @@
+import { assertDefaultDocWrites } from '../shared-doc-roles.mjs';
 /**
  * Fix Command — The AI Orchestrator
  * 
@@ -37,6 +38,7 @@ const API_DOC = 'docs-canonical/API-REFERENCE.md';
  * @returns {{ applied: boolean, removed: Array<{method,path}>, skipped?: string }}
  */
 export function applyApiSurfaceWrites(projectDir, config, { force = false } = {}) {
+  assertDefaultDocWrites(config);
   const drift = computeApiSurfaceDrift(projectDir, config);
   // Only spec-confirmed absences are safe to delete deterministically.
   const removable = drift.confidence === 'spec' ? drift.documentedButAbsent : [];
@@ -273,6 +275,7 @@ IMPORTANT: A new contributor should be able to follow this doc and have the proj
  * @returns {{ applied: object[], skipped: object[], total: number }}
  */
 export function applyAllMechanicalFixes(projectDir, config, opts = {}) {
+  assertDefaultDocWrites(config);
   const { force = false, forceRedo = false } = opts;
   const guardData = runGuardInternal(projectDir, config);
   const fixes = [];
@@ -372,6 +375,7 @@ function runWriteMode(projectDir, config, flags) {
 // ── Main Entry ─────────────────────────────────────────────────────────────
 
 export function runFix(projectDir, config, flags) {
+  if (flags.write) assertDefaultDocWrites(config);
   const isJson = flags.format === 'json';
   const isPrompt = flags.format === 'prompt';
   const autoFix = flags.auto || false;

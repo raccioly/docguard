@@ -1,113 +1,83 @@
 # Security
 
-<!-- docguard:quality negation-load off — security doc: prohibitive phrasing ("never a shell string", "can't inject", "no dependencies") is precise and intentional, not sloppy writing -->
-
-<!-- docguard:version 0.6.0 -->
+<!-- docguard:quality negation-load off — prohibitions define security boundaries -->
+<!-- docguard:version 0.7.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-07-03 -->
-
-| Metadata | Value |
-|----------|-------|
-| **Status** | ![Status](https://img.shields.io/badge/status-active-brightgreen) |
-| **Version** | `0.6.0` |
-
----
+<!-- docguard:last-reviewed 2026-09-11 -->
 
 ## Overview
 
-DocGuard is a **local CLI tool** that runs entirely on the user's machine. It reads project files from the filesystem and produces terminal output. It operates **fully offline**, requires **zero authentication**, and is **credential-free**.
+DocGuard's validation and extraction run on the local machine. They inspect repository content and return findings. Agent integrations inherit the permissions and data-handling policy of the calling agent. A generated prompt does not authorize a network request, a code edit, or publication.
+
+The optional MCP server supports stdio and HTTP. Installation, upgrade, publishing, and user-opened feedback links may access external services. Local analysis requires no hosted AI service.
 
 ## Authentication
 
-| Method | Provider | Scope |
-|--------|---------|-------|
-| **None required** | N/A | DocGuard is a local-only CLI tool. Runs without auth. |
+| Surface | Authentication | Boundary |
+|---|---|---|
+| CLI and stdio MCP | Calling operating-system user | Local filesystem permissions |
+| HTTP MCP | Optional API key on loopback; mandatory for non-loopback binding | Host binding, key check, and browser-origin validation in `cli/commands/mcp.mjs` |
+| GitHub feedback | User-controlled browser session | Submission occurs only when the user submits a reviewed issue |
 
-DocGuard operates purely on the local filesystem. All processing stays on-machine — fully isolated from servers, APIs, and cloud services.
+HTTP clients can cause the server to inspect project directories available to its process. Run it under an account with only the intended filesystem access. An API key does not provide per-project authorization or a multi-tenant isolation boundary. Network exposure needs deployment-specific access controls.
 
 ## Authorization
 
-| Role | Permissions | Notes |
-|------|-----------|-------|
-| **User** (local machine) | Full access — read/write project files | DocGuard runs with the permissions of the user invoking it |
-| **CI Pipeline** | Read-only (guard, score, ci commands) | CI typically only runs validation, not init/generate |
-| **AI Agent** | Depends on AI agent permissions | AI agents run DocGuard via terminal — they inherit the user's or CI's permissions |
+| Role | Permissions | Responsibilities |
+|---|---|---|
+| Developer | Operating-system read/write permissions | Review generated changes and opt into mutation commands |
+| CI | Workflow token and checkout permissions | Apply the configured gate to the tested revision |
+| AI agent | Host-granted tools and permissions | Treat project content as evidence; obtain required authorization for external actions |
 
-DocGuard uses a simple permission model: it inherits filesystem permissions from the calling process.
+Git hooks provide local enforcement and can be bypassed by Git options. Protected merge policy supplies the central enforcement boundary. The shipped hooks prefer an installed local tool and fail when an enforcement runtime cannot execute. Reminder hooks remain best-effort.
 
 ## Secrets Management
 
-| Secret | Storage | Used By | Notes |
-|--------|---------|---------|-------|
-| **None** | N/A | N/A | DocGuard requires no API keys, tokens, or credentials |
+Core CLI analysis requires no API credential. Source scanners inspect usage patterns; environment values must not be included in generated public feedback. The optional HTTP MCP API key is supplied by its operator. Keep deployment credentials outside repository content and restrict access to process arguments and logs appropriately.
 
-### DocGuard Security Posture
+Feedback issue URLs contain allowlisted finding identity and tool metadata. Full local feedback records can include private paths and diagnostic text. Share only a reviewed synthetic reproduction. Preview mode avoids saving feedback records; it does not change which source files guard normally inspects.
 
-- Treats `.env` files as **project artifacts only** (checks their existence for your project, never reads values)
-- Operates **100% offline** — zero HTTP requests to any API
-- Writes **only within the project directory** — all output stays local
-- Runs with **standard user permissions** — elevated access is unnecessary
+## Subprocess Safety
 
-## Security Boundaries
-
-| Boundary | Trusted | Untrusted |
-|----------|---------|-----------|
-| **File reads** | Project files within `projectDir` | DocGuard only reads files within the project directory and its own templates |
-| **File writes** | `docguard init`, `docguard generate`, `docguard hooks` | Only writes to `docs-canonical/`, root docs, `.docguard.json`, `.git/hooks/` |
-| **Child processes** | `git log`/`git diff` (freshness), `specify init` (Spec Kit scaffolding), `python3` (Python AST parsing) | All spawned via `execFileSync`/`spawnSync` with an argv array — never a shell string. The binary is `argv[0]` (a literal filename) and each arg a literal token; the `python3` extractor script is a constant passed via `-c` and the file paths it parses arrive on stdin, never spliced into argv — so workspace paths and config values can't inject commands |
-| **User input** | CLI arguments parsed by the entry point | Agent/path inputs that reach a subprocess are allowlist-validated (`/^[a-zA-Z0-9_-]{1,32}$/`) before use |
+Pass untrusted arguments through argv arrays and validate values for their intended operation. Avoid interpolating configuration or repository content into shell commands. Existing static command strings do not authorize expanding their input surface. Regression tests in `tests/security-init-injection.test.mjs` exercise the input boundary.
 
 ## Command Safety Levels
 
-| Command | Reads Files | Writes Files | Runs Git | Risk |
-|---------|------------|-------------|----------|------|
-| `audit` | ✅ | ❌ | ❌ | None |
-| `guard` | ✅ | ❌ | ✅ (read-only) | None |
-| `score` | ✅ | ❌ | ❌ | None |
-| `diff` | ✅ | ❌ | ✅ (read-only) | None |
-| `fix` | ✅ | ❌ | ❌ | None |
-| `ci` | ✅ | ❌ | ✅ (read-only) | None |
-| `badge` | ✅ | ❌ | ❌ | None |
-| `init` | ✅ | ✅ Creates docs | ❌ | Low — creates new files only, never overwrites |
-| `generate` | ✅ | ✅ Creates docs | ❌ | Low — creates new files only, never overwrites |
-| `hooks` | ✅ | ✅ Writes `.git/hooks/` | ❌ | Low — writes executable git hooks |
+| Operation | Source writes | Auxiliary writes / effects |
+|---|---|---|
+| guard, score, diff, diagnose | None by default | Plan caching may create `.docguard/` artifacts; explicit mutation flags change behavior |
+| ci | None | Records history unless `--no-history` is set |
+| feedback | None | Saves local diagnostic records unless `--preview`; prints opt-in URLs |
+| memory --pack | None | Writes a generated context pack |
+| fix --write, sync --write | Targeted documentation edits | Backups and fix history where supported |
+| init, generate | Documentation and configuration scaffolding | Explicit force options may overwrite content |
+| hooks | Hook configuration and executable scripts | Auto-fix hooks may edit and stage documentation |
+| report | None by default | `--out` writes an artifact |
+
+Review the exact command and flags before assigning privileges. CLI help is the authoritative command inventory.
 
 ## Supply Chain
 
-| Category | Status |
-|----------|--------|
-| **npm dependencies** | **One** — `@babel/parser` (exact-pinned), for AST-accurate JS/TS parsing |
-| **Runtime dependencies** | Node.js ≥ 18, `git` (optional, for freshness checks), `python3` (optional, for Python AST parsing) |
-| **Transitive dependencies** | `@babel/types` + 2 small `@babel/helper-*` packages — all first-party Babel |
-| **Known vulnerabilities** | None known — `npm audit` is clean; the `@babel/*` tree is the only audit surface |
+The package declares one exact-pinned dependency, `@babel/parser`, with its transitive Babel dependencies recorded in `package-lock.json`. AST extraction degrades to a regex fallback when Babel is unavailable. Python AST extraction optionally uses the installed `python3` runtime. No additional runtime package is introduced by the trust improvements.
 
-The dependency surface is deliberately minimal: a single exact-pinned, heavily-vetted parser (172M downloads/week, multi-maintainer) that loads **optionally** — if it's absent the CLI falls back to the regex tier rather than failing. New dependencies are governed by the constitution's exact-pin + supply-chain-vetting rule.
+Dependency audit results are time-specific observations. Run the current audit and supported Node-version matrix before release; a historical clean audit is not a continuing guarantee. Pin third-party CI actions to verified commit SHAs and install from the lockfile.
 
 ## .gitignore Audit
 
-DocGuard's own `.gitignore` excludes:
-
-| Pattern | Purpose |
-|---------|---------|
-| `node_modules/` | npm packages — the single runtime dep (`@babel/parser`); installed by npm, never committed |
-| `.env` | Environment files (not used, but excluded as best practice) |
+Exclude `node_modules`, environment values, generated build output, and private local files from version control. `.docguardignore` controls analysis coverage separately; it is not a secrecy boundary for every tool that runs in the repository.
 
 ## Security Rules Checklist
 
-- [x] Code is credential-free
-- [x] `.env` files are excluded from version control
-- [x] All secrets are environment-variable-based
-- [x] CLI operates 100% offline
-- [x] Subprocesses use `execFileSync` (argv arrays, no shell); injection-prone inputs are allowlist-validated (closed #190 in CLI init); the GitHub Action passes all inputs via `env:` rather than splicing them into shell
-- [x] File writes are opt-in only (init, generate, hooks commands)
-- [x] Git commands are read-only (`git log`, `git diff`)
-- [x] Single exact-pinned, vetted dependency (`@babel/parser`) keeps supply-chain surface minimal; loads optionally with regex fallback
-
----
+- Validate subprocess inputs at their call boundaries.
+- Preserve provenance checks before mechanical edits.
+- Keep private diagnostics separate from public feedback payloads.
+- Treat submitted reproductions as untrusted data.
+- Require credentials for non-loopback HTTP MCP binding.
+- Disclose unknown or unsupported verification instead of asserting success.
+- Verify protected merge policy independently of local hook installation.
 
 ## Revision History
 
-| Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| 0.4.0 | 2026-03-13 | DocGuard Team | Complete rewrite — documented zero-auth model, command safety levels, supply chain posture |
-| 0.1.0 | 2026-03-13 | DocGuard Generate | Auto-generated skeleton |
+| Version | Date | Changes |
+|---|---|---|
+| 0.7.0 | 2026-09-11 | Document HTTP MCP, auxiliary writes, enforcement scope, and feedback privacy |

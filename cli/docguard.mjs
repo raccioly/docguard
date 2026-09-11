@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { assertDefaultDocWrites } from './shared-doc-roles.mjs';
 
 /**
  * DocGuard CLI — The enforcement tool for Canonical-Driven Development (CDD)
@@ -292,10 +293,10 @@ const COMMAND_HELP = {
     examples: ['docguard memory', 'docguard memory --diff'],
   },
   feedback: {
-    summary: 'Report likely false positives back to DocGuard. Collects the low-confidence findings of a guard run, saves a full local record under .docguard/feedback/, and prints a one-click, prefilled, redacted GitHub issue URL (zero typing, no source code or secret values).',
-    usage: 'docguard feedback [--format json]',
-    flags: [['--format json', 'Machine-readable list of reportable findings + URLs']],
-    examples: ['docguard feedback'],
+    summary: 'Review detection feedback locally. Select any finding with --code or --all, check duplicates, and prepare a metadata-only issue URL. Nothing is submitted automatically.',
+    usage: 'docguard feedback [--code <CODE> | --all] [--preview] [--format json]',
+    flags: [['--code <CODE>', 'Select a finding regardless of confidence'], ['--all', 'Select every active finding'], ['--preview', 'Skip local feedback-record writes'], ['--format json', 'Machine-readable selected findings and issue/search URLs']],
+    examples: ['docguard feedback', 'docguard feedback --code TRC005 --preview', 'docguard feedback --all --format json'],
   },
   verify: {
     summary: 'Extract the semantic claims in your canonical docs — documented numbers, limits, and enums (retention days, rate limits, GSI/role counts, status enums) — as a verification task list the agent checks against the code. This is the highest-value bug class (a doc value that drifted from code) and the one regex/AST cannot judge. DocGuard finds the claims; the LLM confirms them.',
@@ -537,6 +538,12 @@ async function main() {
       // mcp --transport http: HTTP mount path (default /mcp).
       flags.path = args[i + 1];
       i++;
+    } else if (args[i] === '--code') {
+      flags.code = args[i + 1] && !args[i + 1].startsWith('--') ? args[++i] : '';
+    } else if (args[i] === '--all') {
+      flags.all = true;
+    } else if (args[i] === '--preview') {
+      flags.preview = true;
     } else if (args[i] === '--signals') {
       flags.signals = true;
     } else if (args[i] === '--debate') {
@@ -597,6 +604,7 @@ async function main() {
   if (!headless) printBanner();
 
   const config = loadConfig(projectDir);
+  if (['init', 'setup', 'generate'].includes(command) && !(command === 'generate' && flags.plan && !flags.write) || ['sync', 'fix'].includes(command) && flags.write || command === 'diagnose' && flags.auto) assertDefaultDocWrites(config);
 
   // `--no-baseline` disables the committed adoption baseline for this run —
   // threaded through config so guard, ci, report, and mcp all honor it the

@@ -157,3 +157,44 @@ DocGuard auto-detects your project type from `package.json`:
 | `library` | ✗ | ✗ | ✗ | ✗ |
 | `webapp` | ✓ | ✓ | ✓ | ✓ |
 | `api` | ✓ | ✓ | ✗ | ✓ |
+
+## Existing documentation layouts
+
+Use explicit document roles to validate Markdown files in an existing layout. A mapping replaces the default path for that role, makes the mapped file required, and enrolls it in the canonical inventory. Missing files and content defects remain findings. No project names or framework-specific paths are required.
+
+```json
+{
+  "docs": {
+    "roles": {
+      "architecture": "docs/design.md",
+      "dataModel": "specs/data-model.md",
+      "environment": "operations/setup.md",
+      "apiReference": "reference/http.md"
+    }
+  }
+}
+```
+
+Supported roles are architecture, dataModel, security, testSpec, environment, apiReference, and requirements. Paths must name Markdown files within the project; private directories, parent traversal, absolute paths, and symlink destinations are rejected. Several roles may reference one document. Each role's content checks still apply; a mapping is not a correctness attestation. Default roles remain unchanged unless explicitly mapped.
+
+This first version supports validation, scoring, and read-only planning. Legacy automatic document generation, sync writes, and repair writes refuse custom mappings before scaffolding or modifying files. This protects existing documents while writer behavior is extended and reviewed. Read-only plans identify mapped destinations; a human or agent can review the proposed work against the existing document structure.
+
+The docs.dirs setting extends document inventory and explicitly opts additional directories into freshness review. Inventory membership does not mean every detector checks every file. Semantic extraction covers canonical Markdown, explicitly mapped Markdown roles, README, and AGENTS within its safety and size limits; other prose remains unverified.
+
+## Review signals and historical material
+
+Freshness findings describe repository-history review signals with low confidence. They do not establish semantic drift or instruct automatic rewriting. After reviewing the relevant intent and implementation, record a review date or propose the appropriate code/document change.
+
+Use an explicit historical, superseded, or deprecated status when a document records past decisions rather than current instructions:
+
+```markdown
+<!-- docguard:status historical -->
+```
+
+These statuses skip currentness assertions; they do not hide structural or other applicable findings. A filename containing ADR does not automatically exempt an active decision. Existing explicit validator/section exemptions continue to require reasons.
+
+## Understanding check coverage
+
+Guard JSON includes checkCoverage and an applicability record per validator. States distinguish checked, partial, disabled, not-applicable, missing-prerequisite, unsupported, no-matches, and error. A passing gate means the selected policy passed; it does not mean unsupported languages or unmatched inputs were examined. CI and reports preserve this disclosure. Python import-graph analysis remains unsupported; mixed Python/JS projects disclose partial architecture coverage.
+
+Wrangler configuration supplies evidence for Worker classification. Supported typed Worker bindings participate in environment extraction without executing configuration or application code. Dynamic names, alias/dataflow tracking, and unsupported forms remain outside this bounded analysis. The existing optional Babel parser resolves lexical bindings; the fallback covers ordinary tested scopes and has lower syntax coverage.

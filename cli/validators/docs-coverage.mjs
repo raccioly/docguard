@@ -1,3 +1,4 @@
+import { docRolePath, resolveDocRole } from '../shared-doc-roles.mjs';
 /**
  * Docs-Coverage Validator — Detects code features not referenced in docs.
  *
@@ -113,7 +114,7 @@ export function validateDocsCoverage(projectDir, config) {
   findings.push(...readmeChecks.findings);
 
   // ── Check 6: IaC-aware Infrastructure documentation ──
-  const iacChecks = checkIaCDocumentation(projectDir, iac);
+  const iacChecks = checkIaCDocumentation(projectDir, iac, config);
   total += iacChecks.total;
   passed += iacChecks.passed;
   findings.push(...iacChecks.findings);
@@ -233,7 +234,7 @@ function checkSourceDirs(projectDir, allDocContent, config = {}, iac = { isIaC: 
   let passed = 0;
   let total = 0;
 
-  const archPath = resolve(projectDir, 'docs-canonical/ARCHITECTURE.md');
+  const archPath = resolveDocRole(projectDir, config, 'architecture');
   if (!existsSync(archPath)) return { findings, passed, total };
 
   let archContent;
@@ -336,11 +337,11 @@ function isInsideIaCPackage(relPath, packageDirs) {
  * has no Infrastructure heading. Suppresses the generic per-directory
  * warnings that would otherwise fire for bin/, lib/, modules/, handlers/, etc.
  */
-function checkIaCDocumentation(projectDir, iac) {
+function checkIaCDocumentation(projectDir, iac, config = {}) {
   const findings = [];
   if (!iac || !iac.isIaC) return { findings, passed: 0, total: 0 };
 
-  const archPath = resolve(projectDir, 'docs-canonical/ARCHITECTURE.md');
+  const archPath = resolveDocRole(projectDir, config, 'architecture');
   if (!existsSync(archPath)) {
     // No ARCHITECTURE.md at all — structure validator will catch that.
     // Don't double-warn here.
@@ -363,7 +364,7 @@ function checkIaCDocumentation(projectDir, iac) {
       validator: 'docsCoverage',
       severity: 'warn',
       message: buildIaCWarning(tool),
-      location: 'docs-canonical/ARCHITECTURE.md',
+      location: docRolePath(config, 'architecture'),
       suggestion: { kind: 'fix', text: `Add an "Infrastructure" section to ARCHITECTURE.md covering the ${tool.label} layout` },
     }));
   }

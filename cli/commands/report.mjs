@@ -74,22 +74,25 @@ export function buildReport(projectDir, config) {
       // Audit-critical (H3): evidence must disclose what a committed baseline
       // is suppressing — "no findings" with a hidden baseline is false green.
       baselineSuppressed: guardData.baselineSuppressed || 0,
+        checkCoverage: guardData.checkCoverage,
       validators: (guardData.validators || [])
         .filter(v => v.status !== 'skipped')
-        .map(v => ({ name: v.name, status: v.status })),
+        .map(v => ({ name: v.name, status: v.status, applicability: v.applicability })),
     },
     findings: findingsSummary,
     score: {
       score: scoreData.score,
       grade: scoreData.grade,
       categories: scoreData.categories,
+      scoreKind: scoreData.scoreKind,
+      assurance: scoreData.assurance,
     },
     alcoa: {
       score: alcoa.score,
       met: alcoa.met,
       total: alcoa.total,
       attributes: alcoa.attributes.map(a => ({
-        name: a.name, met: a.met, evidence: a.evidence, gap: a.gap,
+        name: a.name, met: a.met, status: a.status || (a.met ? 'met' : 'unmet'), evidence: a.evidence, gap: a.gap,
       })),
     },
     fixHistory: {
@@ -109,7 +112,7 @@ export function buildReport(projectDir, config) {
   return { ...payload, generatedAt: new Date().toISOString(), integrity };
 }
 
-function toMarkdown(r) {
+export function toMarkdown(r) {
   const lines = [];
   const gitLine = r.git
     ? `commit \`${r.git.commit.slice(0, 12)}\`${r.git.branch ? ` (${r.git.branch})` : ' (detached HEAD)'}${r.git.dirty ? ' — **uncommitted changes present**' : ''}`
@@ -123,7 +126,8 @@ function toMarkdown(r) {
   lines.push('');
   lines.push('| Metric | Value |');
   lines.push('|--------|-------|');
-  lines.push(`| CDD Score | ${r.score.score}/100 (${r.score.grade}) |`);
+  lines.push(`| CDD Score (structural maturity) | ${r.score.score}/100 (${r.score.grade}) |`);
+  lines.push(`| Factual accuracy | Unverified — ${r.score.assurance.unverifiedClaims ?? 'unknown number of'} extracted claim(s); discovery is heuristic |`);
   lines.push(`| Guard | ${r.guard.status.toUpperCase()} — ${r.guard.passed}/${r.guard.total} checks, ${r.guard.errors} error(s), ${r.guard.warnings} warning(s) |`);
   if (r.guard.baselineSuppressed > 0) {
     lines.push(`| Baseline | ⚠️ ${r.guard.baselineSuppressed} pre-existing finding(s) suppressed by \`.docguard.baseline.json\` — not reflected in the counts above |`);
@@ -147,7 +151,7 @@ function toMarkdown(r) {
   if (r.findings.length === 0) {
     lines.push(r.guard.baselineSuppressed > 0
       ? `No new findings beyond the ${r.guard.baselineSuppressed} suppressed by the committed baseline (run \`docguard guard --no-baseline\` for the full picture).`
-      : 'No findings — documentation matches the implementation at this commit.');
+      : 'No findings were emitted by the configured checks. Factual accuracy remains unverified.');
   } else {
     lines.push('| Code | Severity | Count | Example |');
     lines.push('|------|----------|------:|---------|');
@@ -159,10 +163,11 @@ function toMarkdown(r) {
 
   lines.push('## ALCOA+ Attributes');
   lines.push('');
-  lines.push('| Attribute | Met | Evidence / Gap |');
+  lines.push('| Attribute | Status | Evidence / Gap |');
   lines.push('|-----------|-----|----------------|');
   for (const a of r.alcoa.attributes) {
-    lines.push(`| ${a.name} | ${a.met ? '✅' : '❌'} | ${(a.met ? a.evidence : a.gap) || '—'} |`);
+    const status = a.status === 'unverified' ? '🔍 unverified' : a.met ? '✅ met' : '❌ unmet';
+    lines.push(`| ${a.name} | ${status} | ${(a.met ? a.evidence : a.gap) || '—'} |`);
   }
   lines.push('');
 

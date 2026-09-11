@@ -16,6 +16,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, relative, dirname, basename } from 'node:path';
 import { shouldIgnore, relPosix, isNonProductDir } from '../shared-ignore.mjs';
+import { hasWorkerConfig } from '../shared-source.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build', 'coverage', 'target',
@@ -26,6 +27,9 @@ const IGNORE_DIRS = new Set([
 // Manifest filename → ecosystem language.
 const MANIFESTS = [
   { file: 'package.json', lang: 'JavaScript' },
+  { file: 'wrangler.toml', lang: 'JavaScript' },
+  { file: 'wrangler.json', lang: 'JavaScript' },
+  { file: 'wrangler.jsonc', lang: 'JavaScript' },
   { file: 'pyproject.toml', lang: 'Python' },
   { file: 'requirements.txt', lang: 'Python' },
   { file: 'setup.py', lang: 'Python' },
@@ -169,7 +173,8 @@ function classify(lang, dir, deps) {
   let kind = 'library';
 
   if (lang === 'JavaScript' || lang === 'TypeScript') {
-    if (has(deps, 'next')) { framework = 'Next.js'; kind = 'webapp'; }
+    if (hasWorkerConfig(dir)) { framework = 'Cloudflare Workers'; kind = 'service'; }
+    else if (has(deps, 'next')) { framework = 'Next.js'; kind = 'webapp'; }
     else if (has(deps, 'react', 'vue', '@angular/core', 'svelte', '@sveltejs/kit', 'nuxt')) { framework = has(deps,'react')?'React':has(deps,'vue')?'Vue':'Frontend'; kind = 'webapp'; }
     else if (has(deps, 'express', 'fastify', 'hono', 'koa', '@nestjs/core')) { framework = has(deps,'express')?'Express':has(deps,'fastify')?'Fastify':has(deps,'@nestjs/core')?'NestJS':'Hono'; kind = 'api'; }
   } else if (lang === 'Python') {

@@ -156,3 +156,18 @@ The following papers directly influenced DocGuard's design:
 ## License
 
 By contributing, you agree that your contributions will be licensed under the MIT License.
+
+## Turn a finding into a regression test
+
+A report or a test-only contribution is useful even when you cannot fix the detector. Start with `docguard feedback --code <CODE> --preview` for a disputed finding, or `docguard feedback --all --preview` to review active findings. Confidence is a tool estimate; high-confidence findings can still be wrong.
+
+1. Open the generated search link and check existing issues and pull requests, including closed work. Add evidence to a matching discussion instead of opening a duplicate. A previously fixed issue needs a current reproduction before it is treated as a regression.
+2. State expected behavior and actual behavior. Distinguish a false positive, a missed defect, unsupported syntax, and a policy preference. A suppression by itself does not demonstrate a bug.
+3. Create the smallest synthetic project that preserves the behavior. Use invented names and values. Include the tool version, runtime version, minimal configuration, exact command, and expected finding code. Avoid attaching the full local feedback record: it can contain private project details.
+4. Add a test in `tests/` using `node:test` and temporary directories. A false-positive case should stay clean; a neighboring real defect must still emit the finding. For a missed detection, assert the expected finding and include a similar valid case.
+5. Run the focused test against the affected version. Describe the reproduction result honestly. A test that never exercised the intended parser path is not evidence of a fix.
+6. Submit the reviewed example or a test-only PR. Mark a deliberately failing reproducer clearly; maintainers can incorporate it with the fix. Follow the repository's changelog and canonical-documentation rules when changing behavior.
+
+Maintainers should acknowledge reproducible reports, preserve contributor attribution with consent, and record the causal defect family in the regression test. Reproduction success and triage time matter more than issue volume. Do not execute arbitrary submitted scripts with repository credentials. Security-sensitive reports belong in the private channel described by SECURITY.md.
+
+The public issue draft contains metadata only. Opening a link is optional, and DocGuard never submits a report automatically.

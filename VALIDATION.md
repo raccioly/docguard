@@ -1,13 +1,12 @@
 # Validation — how DocGuard's detectors earn their defaults
 
-DocGuard's detection claims are tested against **real production repositories
-before every accuracy release**, not just against unit-test fixtures. This page
+Detector changes should be tested against both synthetic controls and real repository snapshots. The September 2026 field assessment found false positives and unsupported coverage that prior passing tests did not reveal. Historical results below describe their original samples; they are not a current zero-false-positive guarantee. This page
 documents the method and the measured results, in the spirit of an honest
 benchmarks page: what we measured, what we found, and what we do *not* claim.
 
 ## The method
 
-Every new detector goes through the same pipeline before it ships enabled:
+The required evaluation process is:
 
 1. **Build** the detector from a published method where one exists (research
    papers, field-tested heuristics), deterministic and zero-LLM.
@@ -72,7 +71,7 @@ tuning; the levers that mattered:
 
 ## Standing verification
 
-- **969 tests**, zero test dependencies (`node:test`), Node 18/20/22 CI matrix.
+- Built-in `node:test`, with Node 18/20/22/24 in the supported CI matrix. Per-change validation records contain measured test totals.
 - **Self-guarded:** every push runs all 27 validators against DocGuard's own
   docs; count claims in this README family are machine-governed
   (Canonical-Sync), so "27 validators" is checked, not remembered.
@@ -88,7 +87,7 @@ tuning; the levers that mattered:
   correctness, intent) are surfaced as agent tasks (`verify --semantic`,
   `diagnose`), never auto-judged.
 - **Soft by default.** The v0.31/v0.32 detectors are `confidence: low` and
-  never break CI — they exist to direct human/agent attention, not to gate.
+  emit warnings by default. Exit 2 still fails an ordinary shell step; CI warning policy and severity overrides determine enforcement.
 
 *Method note: corpus runs are point-in-time (repos evolve); each accuracy
 release re-runs the sweep. Full per-release detail lives in the

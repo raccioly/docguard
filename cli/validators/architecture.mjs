@@ -17,8 +17,9 @@
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, extname, relative, dirname, basename } from 'node:path';
-import { shouldIgnore, walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
+import { shouldIgnore, isNonProductPath, walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
+import { resolveDocRole } from '../shared-doc-roles.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build',
@@ -32,10 +33,12 @@ const CODE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.mjs', '.cjs', '.jsx']);
 // byte-identical to the legacy strings — resultFromFindings derives the
 // errors/warnings arrays from the same findings array (acc), which the
 // helpers below mutate in place.
-export function validateArchitecture(projectDir, config) {
+export function validateArchitecture(projectDir, config = {}) {
   const acc = { findings: [], passed: 0, total: 0 };
+  let applicability = { status: 'checked', reason: 'JS/TS static import graph inspected; arbitrary runtime dependencies are not resolved' };
   const compose = () => ({
     name: 'architecture',
+    applicability,
     ...resultFromFindings(acc.findings, { passed: acc.passed, total: acc.total }),
   });
 
@@ -47,6 +50,14 @@ export function validateArchitecture(projectDir, config) {
 
   // ── 2. Auto-detect import graph ──
   const importGraph = buildImportGraph(projectDir, config);
+  if (importGraph.unsupportedFiles.length > 0) {
+    applicability = {
+      status: importGraph.files.length > 0 ? 'partial' : 'unsupported',
+      reason: 'Python import graph analysis is unsupported: relative imports, package paths, src-layout resolution and dynamic imports are not verified; JS/TS findings, when present, are retained',
+    };
+  } else if (importGraph.files.length === 0) {
+    applicability = { status: 'not-applicable', reason: 'No supported JS/TS source files found for import graph analysis' };
+  }
   if (importGraph.files.length === 0) return compose();
 
   // ── 3. Detect circular dependencies ──
@@ -67,8 +78,8 @@ export function validateArchitecture(projectDir, config) {
   }
 
   // ── 4. Check layer boundaries from ARCHITECTURE.md ──
-  const archPath = resolve(projectDir, 'docs-canonical/ARCHITECTURE.md');
-  if (existsSync(archPath)) {
+  const archPath = resolveDocRole(projectDir, config, 'architecture');
+  if (archPath && existsSync(archPath)) {
     const archContent = readFileSync(archPath, 'utf-8');
     const declaredLayers = parseLayerBoundaries(archContent);
 
@@ -151,9 +162,12 @@ function validateConfigLayers(projectDir, config, layers, acc) {
  * @returns {{files: string[], edges: {from,to,dynamic}[], fileMap: Map<string,string[]>}}
  */
 export function buildImportGraph(projectDir, config) {
-  const graph = { files: [], edges: [], fileMap: new Map() };
+  const graph = { files: [], edges: [], fileMap: new Map(), unsupportedFiles: [] };
 
   const allFiles = getFilesRecursive(projectDir, config, projectDir);
+  graph.unsupportedFiles = allFiles
+    .filter(f => extname(f) === '.py' && !isNonProductPath(relative(projectDir, f).replace(/\\/g, '/'), config))
+    .map(f => relative(projectDir, f));
   const codeFiles = allFiles.filter(f => CODE_EXTENSIONS.has(extname(f)));
 
   for (const file of codeFiles) {

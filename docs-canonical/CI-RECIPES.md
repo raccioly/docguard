@@ -1,295 +1,75 @@
 # CI Recipes
 
-<!-- docguard:quality negation-load off — operational doc: "read-only, never modifies your repo", "fork PRs won't run", "don't commit X" are precise prohibitions; positive rephrasing would reduce clarity -->
-
-<!-- docguard:section id=overview source=human -->
-This document covers the GitHub Action and CI integration patterns DocGuard ships.
-Each recipe is a copy-pasteable workflow you can drop into `.github/workflows/`.
-
-DocGuard exposes itself as a composite action at `raccioly/docguard@<tag>` and
-also ships starter workflow templates under
-`extensions/spec-kit-docguard/templates/github-workflows/`. Pin to a specific
-tag (e.g. `@v0.12.0`) in production — `@main` is fine for tracking the bleeding edge.
-<!-- /docguard:section -->
+<!-- docguard:last-reviewed 2026-09-11 -->
+<!-- docguard:status active -->
 
 ## Recipe 1 — Guard (mandatory CI gate)
 
-Runs all 27 validators. Read-only — never modifies your repo.
+Run `docguard init --with ci` to create `.github/workflows/docguard.yml`. Existing workflows are preserved; explicit `--force` backs up and replaces the file. The standalone `docguard ci` command continues to execute checks. Start from `templates/ci/github-actions.yml` or the Spec Kit guard workflow in `extensions/spec-kit-docguard/templates/github-workflows/`. These checked-in templates are the maintained source for action pins, runtime selection, and report handling. Copying a template does not configure repository branch protection; require its check independently.
 
-```yaml
-name: DocGuard Guard
-on:
-  push: { branches: [main] }
-  pull_request: { branches: [main] }
-permissions:
-  contents: read
-jobs:
-  guard:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }   # Freshness validator needs git history
-      - uses: raccioly/docguard@v0.12.0
-        with:
-          command: guard
-          fail-on-warning: 'false' # flip to true once your repo is clean
+Use a fixed tool version, full Git history for freshness, and explicit warning policy. Run the check against the actual revision proposed for merging. A missing executable, malformed report, or unexpected nonzero exit is a tool failure, not a successful scan. Configure merge-queue triggers if the repository uses a merge queue.
+
+```sh
+node_modules/.bin/docguard ci --format json --no-history > docguard-report.json
 ```
 
-Inputs that matter:
-- `command: guard` (default)
-- `fail-on-warning` — `false` (default) treats warnings as exit 0, `true` fails the job
-- `format: json` — emits machine-readable output for downstream steps
+The CLI exits 0 for pass, 1 for failure, and 2 for warning-only results. A plain shell step treats both 1 and 2 as failures. To permit warnings, capture the exit status explicitly and allow only 0 or 2. To block warnings, use `ci --fail-on-warning`. Severity overrides retain their configured meaning.
 
 ## Recipe 2 — Auto-Fix (PR-time mechanical fixes)
 
-Applies deterministic fixes — version bumps, count drift, removed endpoints,
-changelog stubs — and commits them back to the PR branch.
+Run `fix --write` on a controlled checkout when documentation mutation is intended. Review the resulting diff and rerun guard. Preserve human-authored intent; a disagreement may require fixing implementation rather than rewriting the specification.
 
-```yaml
-name: DocGuard Auto-Fix
-on:
-  pull_request:
-    types: [opened, synchronize, reopened]
-permissions:
-  contents: write          # commit back to PR branch
-  pull-requests: write     # post summary comment
-jobs:
-  autofix:
-    runs-on: ubuntu-latest
-    if: github.event.pull_request.head.repo.full_name == github.repository
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.ref }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-          fetch-depth: 0
-      - uses: raccioly/docguard@v0.12.0
-        with:
-          command: fix
-          auto-commit: 'true'
-          comment-on-pr: 'true'
-```
+Mechanical replacements require their existing provenance and generated-section safeguards. A scheduled or PR repair workflow should create a reviewable branch/PR and deduplicate existing repair work. Grant write privileges only to that explicitly enabled workflow. Fork contributions should receive read-only verification unless a separate trusted process handles repair.
 
-What gets fixed automatically (no AI involved):
-- `replace-version` — bump `package.json`-derived version mentions in docs.
-- `replace-count` — fix line/file/endpoint counts in canonical docs.
-- `insert-changelog-unreleased` — drop an Unreleased stub when missing.
-- `remove-endpoint` — strip an endpoint block from `API-REFERENCE.md` when the route was deleted from code (gated by a generated marker).
-
-What does NOT get fixed automatically (run `/docguard.fix` from your editor):
-- Entire prose rewrites — these need AI judgement.
-- New endpoint documentation — needs human description of behavior.
-- Schema docs for entities that don't have an obvious template.
-
-**Fork PRs are skipped by design.** GitHub's branch protections won't let an
-Action push to a fork, and the workflow refuses to try.
+The shipped auto-fix template and composite action expose optional commit/comment behavior. Review those flags and their permissions before enabling them. A generated workflow is executable code and deserves the same review as another repository change.
 
 ## Recipe 3 — Sync (memory refresh on a schedule or pre-merge)
 
-`sync --write` regenerates code-truth doc sections marked
-`<!-- docguard:section source=code -->`. Use it on a schedule for "always up
-to date" guarantees, or pre-merge as a stricter version of Recipe 2.
+`sync --write` regenerates sections declared as code-derived. Human sections retain judgment and rationale. Cache identity reflects relevant inputs, so ordinary source edits invalidate a prior plan.
 
-```yaml
-name: DocGuard Nightly Sync
-on:
-  schedule:
-    - cron: '0 6 * * *'   # daily at 06:00 UTC
-  workflow_dispatch: {}
-permissions:
-  contents: write
-  pull-requests: write
-jobs:
-  sync:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
-      - uses: raccioly/docguard@v0.12.0
-        with:
-          command: sync
-          auto-commit: 'true'   # opens a commit on default branch
-          commit-message: 'docs: nightly DocGuard memory sync'
-```
-
-For the PR variant (run sync against a PR rather than scheduled), use the same
-config as Recipe 2 but with `command: sync` instead of `command: fix`.
+On a schedule, produce a diff, check for an existing repair PR, and create a new proposal only when meaningful work remains. Keep clean runs quiet. Set an owner and response expectation for unresolved findings. Scheduled source scans cannot detect every external deployment or vendor change; operational checks need their own evidence.
 
 ## Recipe 4 — Score (track CDD maturity over time)
 
-Posts the CDD score as a PR comment so reviewers see whether docs are getting
-better or worse with each change.
+`score --format json` reports structural maturity. Its numeric threshold is stable, while `assurance` explicitly states that factual accuracy remains unverified. Comparing scores is meaningful only with the same tool/configuration and a comparable coverage scope.
 
-```yaml
-name: DocGuard Score
-on:
-  pull_request: { branches: [main] }
-permissions:
-  contents: read
-  pull-requests: write
-jobs:
-  score:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: raccioly/docguard@v0.12.0
-        with:
-          command: score
-          format: json
-          score-threshold: '70'   # fail PRs that drop below 70/100
-```
+Use guard findings and declared verification evidence for enforcement. A high score alone does not establish current documentation, correct prose, or regulatory compliance.
 
 ## Recipe 1b — GitLab CI / Jenkins (JUnit output)
 
-Not on GitHub? `guard --format junit` emits one testcase per validator, which
-GitLab and Jenkins render natively in their test UIs:
-
-```yaml
-# .gitlab-ci.yml
-docguard:
-  image: node:20
-  script:
-    - npx docguard-cli guard --format junit > docguard-junit.xml
-  allow_failure:
-    exit_codes: [2]        # warnings stay visible but don't block the pipeline
-  artifacts:
-    when: always
-    reports:
-      junit: docguard-junit.xml
-```
-
-```groovy
-// Jenkinsfile — gate on errors (exit 1); treat warnings-only (exit 2) as unstable
-stage('DocGuard') {
-  steps {
-    sh '''
-      set +e
-      npx docguard-cli guard --format junit > docguard-junit.xml
-      rc=$?
-      [ "$rc" -eq 2 ] && exit 0   # warnings: report, don't fail the stage
-      exit $rc
-    '''
-  }
-  post { always { junit 'docguard-junit.xml' } }
-}
-```
-
-Exit codes match `guard` (1 = errors, 2 = warnings). Both recipes gate on
-errors while letting warnings-only runs pass with the findings visible in the
-test report.
+`guard --format junit` emits a test report suitable for GitLab/Jenkins ingestion. Install a fixed DocGuard version in the job, capture the exit status, and upload the report even on failures. Permitting exit 2 is an explicit warning policy; other nonzero statuses remain failures.
 
 ## Recipe 4b — Score history across ephemeral CI runs
 
-`docguard ci` appends each run to `.docguard/history.jsonl` (local-first —
-the directory is gitignored). CI workspaces are fresh every run, so restore
-and save the file with a cache step to keep `docguard score --trend` and
-`docguard report` seeing the full trajectory:
-
-```yaml
-jobs:
-  ci:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/cache@v4
-        with:
-          path: .docguard/history.jsonl
-          key: docguard-history-${{ github.ref_name }}-${{ github.run_id }}
-          restore-keys: docguard-history-${{ github.ref_name }}-
-      - run: npx docguard-cli ci --threshold 70
-      - run: npx docguard-cli score --trend   # print the trajectory in the job log
-```
+`ci` records history by default. `--no-history` opts out. Ephemeral runners need an explicitly configured artifact or cache policy if trends are to span runs. Treat restored history as informational data, not proof that the current checkout was verified. Avoid sharing writable caches between untrusted pull requests and privileged release workflows.
 
 ## Recipe 4c — Multi-repo scorecard (no extra tooling)
 
-For an org-wide view, run the gate per repo and collect the JSON — no
-dedicated command needed:
-
-```bash
-for d in repo-a repo-b repo-c; do
-  (cd "$d" && npx docguard-cli ci --format json --no-history \
-    | jq -r '[.project, .score, .grade, .status] | @tsv')
-done | column -t
-```
-
-Each line is `project  score  grade  PASS|WARN|FAIL`. Pipe to a dashboard,
-spreadsheet, or a scheduled Slack post. (A first-class cross-repo dashboard
-is the Phase 5 roadmap item — this recipe is the zero-dependency version.)
+Run `ci --format json` per repository and retain project, revision, tool version, configuration, status, and assurance scope. Aggregate findings by code while preserving their repository ownership. Report unsupported and unclassified coverage alongside successful checks.
 
 ## Pre-commit hook (no GitHub Actions required)
 
-Run guard locally before every commit so you catch drift at typing time, not
-in CI. Works with [husky](https://typicode.github.io/husky/),
-[lefthook](https://github.com/evilmartians/lefthook), or plain Git hooks.
+`docguard hooks --type pre-commit` installs a local gate that prefers the repository's installed DocGuard binary. The hook blocks an unavailable runtime. `--auto-fix` additionally applies mechanical fixes and stages their output; enable it only when that mutation is intended.
 
-```yaml
-# .lefthook.yml
-pre-commit:
-  commands:
-    docguard:
-      run: npx docguard-cli guard --changed-only
-      glob: '**/*.{ts,tsx,js,jsx,py,go,rs,java,kt,rb}'
-```
-
-`--changed-only` ships in v0.12 and runs only Docs-Sync, Environment, and
-API-Surface against the staged files (instead of all 27 validators against
-the whole repo). See Recipe 5 below.
+Regenerate installed hooks after upgrading to pick up changes in hook behavior. The pre-push score hook parses real JSON and enforces its configured minimum; it complements the full CI gate. Local hooks can be bypassed, so protected merges remain necessary for shared enforcement.
 
 ## Recipe 5 — Pre-commit lite (changed files only)
 
-For developers who want zero-cost feedback before push:
-
-```bash
-npx docguard-cli guard --changed-only --since HEAD~1
-```
-
-This runs a curated subset of validators (Docs-Sync, Environment, API-Surface)
-against files modified since the given ref. Designed to complete in under 2
-seconds on average repos. See `docs-canonical/ARCHITECTURE.md` for the
-selected-validators rationale.
+`guard --changed-only --since <ref>` runs its curated validator subset with changed-file scoping, plus explicitly escalated validators. Use a full guard at the merge boundary. The entry point and `guard.mjs` define the current subset; a copied list in this recipe would drift.
 
 ## Permissions cheatsheet
 
-| Recipe | `contents` | `pull-requests` | Notes |
-|--------|------------|-----------------|-------|
-| Guard | `read` | none (or `write` for score comment) | Safe on fork PRs. |
-| Auto-Fix | `write` | `write` | Skips fork PRs automatically. |
-| Sync | `write` | `write` (PR variant only) | Schedule variant pushes to default branch. |
-| Score | `read` | `write` | Always safe. |
+| Operation | Default authority | Additional authority |
+|---|---|---|
+| Guard, score, report | Repository read | Artifact storage if configured |
+| Mechanical repair | Read/write controlled checkout | Branch/PR publication only when enabled |
+| Feedback preview | Local analysis | User submits reviewed public metadata voluntarily |
+| Scheduled review | Repository read | Notification or publication only when explicitly configured |
 
 ## Action inputs reference
 
-| Input | Default | Used by |
-|-------|---------|---------|
-| `command` | `guard` | all |
-| `working-directory` | `.` | all |
-| `node-version` | `20` | all |
-| `format` | `text` | guard / score / diff |
-| `fail-on-warning` | `false` | guard |
-| `score-threshold` | `0` | score |
-| `auto-commit` | `false` | fix / sync |
-| `commit-message` | `docs: apply DocGuard mechanical fixes` | fix / sync |
-| `comment-on-pr` | `false` | fix / sync (also score has its own comment) |
-| `bot-name` | `docguard-bot` | fix / sync |
-| `bot-email` | `docguard-bot@users.noreply.github.com` | fix / sync |
+`action.yml` is the authoritative composite-action input contract. Review command selection, warning policy, score threshold, working directory, and optional commit/comment flags. Pin the action to a reviewed commit and retain the corresponding release label for maintenance.
 
 ## Action outputs reference
 
-| Output | Type | Set by |
-|--------|------|--------|
-| `score` | number (0-100) | command=score |
-| `grade` | string (A+..F) | command=score |
-| `result` | JSON | command=score, format=json |
-| `fixes-applied` | number (file count) | command=fix or sync |
-| `changed-files` | newline-separated paths | command=fix or sync |
-| `committed` | `"true"` / `"false"` | auto-commit=true |
-
-Wire these into downstream steps:
-
-```yaml
-- id: fix
-  uses: raccioly/docguard@v0.12.0
-  with: { command: fix, auto-commit: 'true' }
-- if: steps.fix.outputs.fixes-applied != '0'
-  run: echo "Applied ${{ steps.fix.outputs.fixes-applied }} fixes"
-```
+Read the outputs declared in `action.yml` and the command's JSON schema before wiring downstream steps. Preserve unknown/unverified values. An integrity digest detects changes to covered report data; it is neither a trusted signature nor proof of a correct scanner.

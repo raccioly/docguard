@@ -9,6 +9,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, extname } from 'node:path';
 import { shouldIgnore, relPosix, walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
 import { mkFinding, resultFromFindings, lineSuppresses } from '../findings.mjs';
+import { parseJsTs, walk } from '../scanners/js-ast.mjs';
 
 // Each secret pattern maps to a stable finding code (see cli/findings.mjs CODES)
 // so it is `explain`-able and inline-suppressible (`// docguard:ignore SEC00x`).
@@ -42,28 +43,19 @@ const SECRET_PATTERNS = [
   { pattern: /(?:sk-|sk_live_|sk_test_)[a-zA-Z0-9]{20,}/g, label: 'API secret key (Stripe/OpenAI pattern)' },
 ];
 
-// Known-safe placeholder/example values that should never be flagged
-const SAFE_PATTERNS = [
-  /EXAMPLE/i,                           // AWS docs example keys contain "EXAMPLE"
-  /placeholder\s*=\s*["']/i,           // HTML placeholder attributes
-  /example\s*:/i,                       // OpenAPI example: blocks
-  /['"]password123['"]/,               // Common test fixture value
-  /\/\/\s*example/i,                    // Code comments with "example"
-  /<!--.*-->/,                          // HTML comments
-];
-
 /**
- * Check if a match line is a known-safe placeholder/example.
- * @param {string} line - The full source line containing the match
- * @param {string} matchStr - The matched string
- * @returns {boolean} - true if this is a safe/placeholder value
+ * Placeholder exemptions belong to the matched value, never sibling fields
+ * or trailing comments. Recognizable provider keys use only the exact public
+ * AWS example exception, even when the surrounding text says "example".
  */
-function isSafePlaceholder(line, matchStr) {
-  // Check if the matched string itself contains "EXAMPLE"
-  if (/EXAMPLE/i.test(matchStr)) return true;
-
-  // Check if the source line matches any safe pattern
-  return SAFE_PATTERNS.some(p => p.test(line));
+function isSafePlaceholder(line, matchStr, label) {
+  if (label === 'AWS Access Key ID') return matchStr === 'AKIAIOSFODNN7EXAMPLE';
+  if (label === 'API secret key (Stripe/OpenAI pattern)') return false;
+  const value = quotedValue(matchStr);
+  if (/EXAMPLE/i.test(value) || value === 'password123') return true;
+  // Retain documentation-only line comments; executable code followed by an
+  // example comment is not documentation-only and must still be checked.
+  return /^\s*\/\/\s*example\b/i.test(line);
 }
 
 /**
@@ -99,6 +91,42 @@ function quotedValue(matchStr) {
   return m ? m[1] : '';
 }
 
+/**
+ * Only explicit synthetic password vocabulary inside a mock-call expectation
+ * qualifies. Test paths, assertion context, or a private-looking value alone
+ * are insufficient. Provider key signatures remain independently scanned.
+ * Unknown syntax/parser failure supplies no exemptions.
+ */
+function fixturePasswordRanges(content, filename) {
+  if (!/(?:^|\/)__tests?__\/|\.(?:test|spec)\.[cm]?[jt]sx?$/.test(filename)) return [];
+  const { ast, ok } = parseJsTs(content, filename);
+  if (!ok || ast.errors?.length) return [];
+  const ranges = [];
+  walk(ast, node => {
+    if (node.type !== 'CallExpression') return;
+    const callee = node.callee;
+    if (callee.type !== 'MemberExpression' || callee.computed ||
+        !/^(?:toHaveBeenCalledWith|toHaveBeenLastCalledWith|toHaveBeenNthCalledWith)$/.test(callee.property.name)) return;
+    const expectation = callee.object;
+    if (expectation.type !== 'CallExpression' || expectation.callee.type !== 'Identifier' ||
+        expectation.callee.name !== 'expect') return;
+    // Inspect direct object arguments only; executing a nested callback or
+    // helper inside an assertion does not make its credentials fixture data.
+    for (const arg of node.arguments) {
+      if (arg.type !== 'ObjectExpression') continue;
+      for (const prop of arg.properties) {
+        if (prop.type !== 'ObjectProperty' || prop.computed ||
+            !/^(?:password|passwd|pwd)$/i.test(prop.key.name || prop.key.value || '') ||
+            prop.value.type !== 'StringLiteral') continue;
+        if (/^(?:test|mock|dummy|fixture)[_-]?(?:password|passwd|pwd)[0-9!@#$%_*.-]*$/i.test(prop.value.value)) {
+          ranges.push([prop.start, prop.end]);
+        }
+      }
+    }
+  });
+  return ranges;
+}
+
 export function validateSecurity(projectDir, config) {
   /** @type {import('../findings.mjs').Finding[]} */
   const findings = [];
@@ -124,6 +152,7 @@ export function validateSecurity(projectDir, config) {
     scanned++;
     const content = readFileSync(filePath, 'utf-8');
     let lines = null;
+    let fixtureRanges = null;
 
     for (const { pattern, label } of SECRET_PATTERNS) {
       pattern.lastIndex = 0;
@@ -143,14 +172,19 @@ export function validateSecurity(projectDir, config) {
 
         // Skip known-safe placeholder/example values, but keep scanning for a
         // real one further down the file.
-        if (isSafePlaceholder(matchLine, match[0])) continue;
+        if (isSafePlaceholder(matchLine, match[0], label)) continue;
 
         const code = LABEL_TO_CODE[label];
+        if (code === 'SEC001') {
+          fixtureRanges ??= fixturePasswordRanges(content, relPath);
+          if (fixtureRanges.some(([start, end]) => match.index >= start &&
+              match.index + match[0].length <= end)) continue;
+        }
 
         // v0.27 (#8): honour an inline `// docguard:ignore SEC00x` pragma on the
         // line or the line above — per-line suppression instead of blinding the
         // whole file via `securityIgnore`.
-        if (code && lineSuppresses(code, matchLine, prevLine)) break;
+        if (code && lineSuppresses(code, matchLine, prevLine)) continue;
 
         const location = `${relPath}:${lineNo}`;
         const value = quotedValue(match[0]);
@@ -186,7 +220,8 @@ export function validateSecurity(projectDir, config) {
             },
           }));
         }
-        // One finding per (file, label) is enough — the reported message is
+        if (isProse) continue;
+        // One blocking finding per (file, label) is enough — the reported message is
         // identical for repeats and we've already proven a match exists.
         break;
       }

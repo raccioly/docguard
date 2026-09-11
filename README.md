@@ -102,20 +102,13 @@ graph TD
 
 ## Why DocGuard?
 
-Documentation that drifts from code is worse than no documentation — it
-confidently misleads humans and AI agents alike. DocGuard treats your canonical
-docs as an enforced contract: deterministic validators diff what the docs claim
-against what the code does, on every commit, with no LLM required. The full
-thesis (and the research behind it) lives in [PHILOSOPHY.md](PHILOSOPHY.md);
-recent feature highlights moved [below](#-whats-new).
+DocGuard checks declared documentation facts against repository evidence and gives agents structured repair tasks. Deterministic checks cover supported facts, references, and generated sections. Human-authored requirements and architectural decisions retain their authority when implementation diverges.
 
-The field data backs the enforcement-over-instructions bet: an ETH Zurich
-study across 138 repos / 5,694 agent PRs found the most popular style of
-agent-instruction file *hurts* agent performance, and practitioners keep
-converging on the same lesson — written rules are routinely ignored;
-programmatic checks are what agents (and humans) actually respect. That is
-exactly the layer DocGuard provides: not another instructions file, but the
-validator suite that makes the instructions and docs verifiably true.
+A guard result describes the checks performed. The CDD grade measures structural maturity. Factual accuracy stays explicitly unverified until the relevant claims have supporting evidence. Coverage and unresolved claims remain visible, so teams can choose an appropriate enforcement policy.
+
+Research motivates evaluation of this approach. A 2026 study found that repository context files did not generally improve task success and increased inference cost in its evaluated settings. It also found agents generally followed the instructions. These results support testing concise, relevant context and measuring actual task outcomes; they do not establish DocGuard's effectiveness. [Evaluating AGENTS.md, revised June 2026](https://arxiv.org/abs/2602.11988v2).
+
+The development plan prioritizes accurate detection, reproducible evidence, and contributor-supplied regression cases. See [the trust roadmap](docs-implementation/TRUST-ROADMAP.md) for implementation status, proposed experiments, and acceptance criteria.
 
 ---
 
@@ -215,7 +208,7 @@ DocGuard splits drift into two kinds and is explicit about which is which:
 
 `docguard fix --write` only touches docs marked `<!-- docguard:generated true -->` (override with `--force`), is idempotent, and prints exactly what changed. It never rewrites prose — that stays with the agent.
 
-### Hands-off loop (set and forget)
+### Continuous documentation workflow
 
 ```
 guard ──▶ fix --write (mechanical, auto) ──▶ guard ──▶ diagnose (agent prompts for the rest)

@@ -18,6 +18,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, extname, basename, relative } from 'node:path';
 import { shouldIgnore, globMatch, walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
 import { collectPackageJsons, detectDocker, resolveSourceRoots } from '../shared-source.mjs';
+import { docRolePath, resolveDocRole } from '../shared-doc-roles.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 
 const IGNORE_DIRS = new Set([
@@ -38,7 +39,7 @@ const CODE_EXTENSIONS = new Set([
 const DRIFT_FINDINGS = {
   'Tech Stack': {
     code: 'DDF001',
-    location: 'docs-canonical/ARCHITECTURE.md',
+    role: 'architecture',
     suggestion: {
       kind: 'review',
       text: 'Reconcile the Tech Stack in ARCHITECTURE.md with the actual dependencies — document the new tech or remove stale entries',
@@ -46,7 +47,7 @@ const DRIFT_FINDINGS = {
   },
   'Test Files': {
     code: 'DDF002',
-    location: 'docs-canonical/TEST-SPEC.md',
+    role: 'testSpec',
     suggestion: {
       kind: 'review',
       text: 'Reconcile TEST-SPEC.md with the test files on disk — document new tests or remove stale entries',
@@ -58,7 +59,7 @@ const DRIFT_FINDINGS = {
  * Validate doc-code alignment — compares canonical docs vs source code.
  * @returns {{ errors: string[], warnings: string[], passed: number, total: number }}
  */
-export function validateDocsDiff(projectDir, config) {
+export function validateDocsDiff(projectDir, config = {}) {
   const findings = [];
   let passed = 0;
   let total = 0;
@@ -105,7 +106,7 @@ export function validateDocsDiff(projectDir, config) {
         validator: 'docsDiff',
         severity: 'warn',
         message: `${result.title} drift: ${parts.join('; ')}`,
-        location: meta.location,
+        location: docRolePath(config, meta.role),
         suggestion: meta.suggestion,
       }));
     }
@@ -116,8 +117,51 @@ export function validateDocsDiff(projectDir, config) {
 
 // ── Diff Functions (lightweight versions for validator) ──────────────────
 
+/** Evaluate mentions locally; optionality is not evidence of absence or use. */
+function mentionsCurrentTechnology(content, tech, technologies) {
+  const escape = value => value.replace(/[.*+?^\x24{}()|[\]\\]/g, character => '\\' + character);
+  const names = new RegExp('\\b(?:' + technologies.map(escape).join('|') + ')\\b', 'gi');
+  const sentences = content.replace(/<!--[^]*?-->/g, '').replace(/[\x60*]/g, '')
+    .split(/\n|[;!?]|\.(?=\s|$)/);
+  for (const sentence of sentences) {
+    let subject = null;
+    for (let clause of sentence.split(/\b(?:but|whereas|while|however)\b/i)) {
+      let mentions = [...clause.matchAll(names)];
+      // Carry an omitted subject only within the same sentence, and only for
+      // an explicit continuation predicate ("but [it] is used ...").
+      if (!mentions.length && subject && /^\s*,?\s*(?:it\s+)?(?:is|was|remains)\s+/i.test(clause)) {
+        clause = subject + ' ' + clause.trim().replace(/^,\s*/, '').replace(/^it\s+/i, '');
+        mentions = [...clause.matchAll(names)];
+      }
+      if (mentions.length) subject = mentions.at(-1)[0];
+      // A leading "No" governs every item in a subject list, including tools
+      // outside our vocabulary. Stop at the predicate; later claims stay live.
+      const negativeList = /^\s*No\s+(.+?)\s+(?:is|are|was|were)\s+used\b/i.exec(clause);
+      const negativeListEnd = negativeList &&
+        !/\b(?:is|are|was|were|uses?|used|requires?|required)\b/i.test(negativeList[1])
+        ? clause.indexOf(negativeList[1]) + negativeList[1].length : -1;
+      for (let i = 0; i < mentions.length; i++) {
+        const mention = mentions[i];
+        if (mention[0].toLowerCase() !== tech.toLowerCase()) continue;
+        if (mention.index < negativeListEnd) continue;
+        const before = clause.slice(i ? mentions[i - 1].index + mentions[i - 1][0].length : 0, mention.index);
+        const after = clause.slice(mention.index + mention[0].length, mentions[i + 1]?.index ?? clause.length)
+          .replace(/^\s*[|:(—-]\s*/, ' ').trim();
+        const negativeBefore = /\b(?:no|without|neither|nor|not(?:\s+using|\s+used)?|(?:do|does|did)\s+not\s+use|never\s+used?|no\s+longer\s+(?:use|using)|(?:migrated|moved)\s+(?:away\s+)?from)\s*$/i;
+        const historicalBefore = /\b(?:previously|formerly|historically|once)\s+(?:(?:we\s+)?(?:used?|using)\s+)?$|\bused\s+to\s+use\s*$/i;
+        const negativeAfter = /^(?:(?:is|was|are|were)\s+)?(?:not\s+(?:used|using|supported|adopted)|no\s+longer\s+(?:used|supported)|unused|removed|retired)\b/i;
+        const optionalAfter = /^(?:(?:is|was|are|were)\s+)?(?:not\s+(?:needed|required)|optional)\b/i;
+        const historicalAfter = /^(?:(?:is|was|were)\s+)?(?:previously|formerly|historically|once)\b|^(?:was|were)\s+used\b/i;
+        if (!negativeBefore.test(before) && !historicalBefore.test(before) &&
+            !negativeAfter.test(after) && !optionalAfter.test(after) && !historicalAfter.test(after)) return true;
+      }
+    }
+  }
+  return false;
+}
+
 export function diffTechStack(dir, config = {}) {
-  const archPath = resolve(dir, 'docs-canonical/ARCHITECTURE.md');
+  const archPath = resolveDocRole(dir, config, 'architecture');
   if (!existsSync(archPath)) return null;
 
   // Monorepo-aware: merge dependencies across the root package + the source-root
@@ -134,7 +178,7 @@ export function diffTechStack(dir, config = {}) {
     'TypeScript', 'Tailwind', 'Docker', 'Terraform'];
 
   for (const tech of techPatterns) {
-    if (archContent.toLowerCase().includes(tech.toLowerCase())) {
+    if (mentionsCurrentTechnology(archContent, tech, techPatterns)) {
       docTech.add(tech);
     }
   }
@@ -177,7 +221,7 @@ export function diffTechStack(dir, config = {}) {
  * Always ignores node_modules via globMatch().
  */
 function diffTests(dir, config) {
-  const testSpecPath = resolve(dir, 'docs-canonical/TEST-SPEC.md');
+  const testSpecPath = resolveDocRole(dir, config, 'testSpec');
   if (!existsSync(testSpecPath)) return null;
 
   // Strip fenced code blocks first — they contain shell commands like

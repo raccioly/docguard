@@ -61,7 +61,7 @@ def build(version: str, download_url: str):
             "name": "DocGuard — CDD Enforcement",
             "id": "docguard",
             "description": (
-                "The only doc-integrity engine with an MCP server, "
+                "A documentation-integrity engine with an MCP server, "
                 "SARIF/JUnit output, and a deterministic zero-LLM core. "
                 "Validates, scores, and traces documentation against code — "
                 "27 validators, stable finding codes, adoption baseline for "
@@ -125,7 +125,7 @@ def build(version: str, download_url: str):
         ("tags", "Tags",
          "documentation, validation, quality, cdd, traceability, ai-agents, enforcement, spec-kit"),
         ("features", "Key Features",
-         "- 19-validator quality gate with severity triage and a remediation plan\n"
+         "- Configurable quality gate with severity triage and a remediation plan\n"
          "- AI-driven documentation repair with codebase research and validation loops\n"
          "- Cross-document semantic consistency analysis (read-only review)\n"
          "- CDD maturity score with an ROI-based improvement roadmap\n"
@@ -134,10 +134,10 @@ def build(version: str, download_url: str):
         ("testing", "Testing Checklist", None),
         ("requirements", "Submission Requirements", None),
         ("testing-details", "Testing Details",
-         "**Tested on:** Linux + macOS with the spec-kit CLI.\n\n"
+         "**Release verification:** Record the platforms and results actually tested before submission.\n\n"
          "**Install:**\n```bash\n"
          f"specify extension add docguard --from {download_url}\n```\n\n"
-         "**Scenarios verified:**\n"
+         "**Scenarios to verify for this release:**\n"
          "1. Extension installs from the release ZIP without manifest validation errors.\n"
          "2. All six `speckit.docguard.*` commands resolve and run.\n"
          "3. The three workflow hooks register against spec-kit's lifecycle."),
@@ -179,7 +179,7 @@ def render_body(fields, checkbox_items) -> str:
     blocks = []
     for fid, label, value in fields:
         if value is None:  # checkbox group
-            ticked = "\n".join(f"- [x] {item}" for item in checkbox_items[fid])
+            ticked = "\n".join(f"- [ ] {item}" for item in checkbox_items[fid])
             blocks.append(f"### {label}\n\n{ticked}")
         else:
             blocks.append(f"### {label}\n\n{value}")

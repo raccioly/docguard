@@ -1,3 +1,4 @@
+import { resolveDocRole } from './shared-doc-roles.mjs';
 /**
  * Shared Ignore Utility — Unified file filtering for all validators.
  *
@@ -384,11 +385,11 @@ export function walkFiles(dir, callback, opts = {}) {
 export function listCanonicalDocs(projectDir, opts = {}) {
   const { dirName = 'docs-canonical', isIgnored = null } = opts;
   const root = resolvePath(projectDir, dirName);
-  if (!existsSync(root)) return [];
+  // An explicit role may live outside the conventional canonical directory.
 
   const isMarkdown = (name) => name.toLowerCase().endsWith('.md');
   const out = [];
-  walkFiles(root, (abs) => {
+  if (existsSync(root)) walkFiles(root, (abs) => {
     if (!isMarkdown(abs)) return;
     const rel = relPosix(projectDir, abs);
     if (isIgnored && isIgnored(rel)) return;
@@ -399,6 +400,18 @@ export function listCanonicalDocs(projectDir, opts = {}) {
     keepDot: isMarkdown,
   });
 
+  let roleConfig = opts.config;
+  if (!roleConfig) {
+    const configFile = resolvePath(projectDir, '.docguard.json');
+    try { if (existsSync(configFile)) roleConfig = JSON.parse(readFileSync(configFile, 'utf-8')); }
+    catch { /* loadConfig owns malformed configuration errors */ }
+  }
+  for (const role of Object.keys(roleConfig?.docs?.roles || {})) {
+    const abs = resolveDocRole(projectDir, roleConfig, role);
+    const rel = relPosix(projectDir, abs);
+    if (!existsSync(abs) || !isMarkdown(abs) || (isIgnored && isIgnored(rel))) continue;
+    if (!out.some(doc => doc.abs === abs)) out.push({ abs, rel });
+  }
   out.sort((a, b) => (a.rel < b.rel ? -1 : a.rel > b.rel ? 1 : 0));
   return out;
 }

@@ -19,9 +19,11 @@
  */
 
 import { existsSync, readFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import { resolve, basename } from 'node:path';
-import { isGitRepo, getDiffText } from '../shared-git.mjs';
+import { isGitRepo, getDiffText, fileContentAtRev } from '../shared-git.mjs';
 import { parseUnifiedDiff, removedTokens, tokenize, tokenOverlap } from '../shared-diff.mjs';
+import { parseJsTs } from '../scanners/js-ast.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { listCanonicalDocs } from '../shared-ignore.mjs';
 
@@ -65,9 +67,8 @@ function indexDocs(projectDir) {
       docs.set(name, { lines: content.split('\n'), tokens: tokenize(content) });
     } catch { /* skip unreadable */ }
   };
-  // Recursive. Keyed by bare basename — matches this validator's pre-existing
-  // flat-tree DSP001 message format ("ARCHITECTURE.md describes...").
-  for (const doc of listCanonicalDocs(projectDir)) add(basename(doc.rel), doc.abs);
+  // Preserve paths: nested documents with identical basenames are distinct.
+  for (const doc of listCanonicalDocs(projectDir)) add(doc.rel, doc.abs);
   // Agent-instruction files are documentation too — they routinely name code.
   for (const agent of ['AGENTS.md', 'CLAUDE.md', 'GEMINI.md']) {
     const p = resolve(projectDir, agent);
@@ -94,6 +95,39 @@ function referenceKind(docLines, file) {
   return null;
 }
 
+// Compare full snapshots: indentation cannot be inferred from isolated hunks.
+// Isolated Python parses stdin data; project code is never imported/executed.
+// Missing interpreters or parse failures retain the token-based evidence.
+function samePythonAst(projectDir, ref, file) {
+  const before = fileContentAtRev(projectDir, ref, file.oldPath);
+  const after = fileContentAtRev(projectDir, 'HEAD', file.newPath);
+  if (before === null || after === null) return false;
+  const script = 'import ast,json,sys; a,b=json.load(sys.stdin); print(ast.dump(ast.parse(a)) == ast.dump(ast.parse(b)))';
+  for (const command of ['python3', 'python']) {
+    const result = spawnSync(command, ['-I', '-S', '-c', script], {
+      input: JSON.stringify([before, after]), encoding: 'utf-8',
+      timeout: 4000, maxBuffer: 1024 * 1024,
+    });
+    if (result.status === 0) return result.stdout.trim() === 'True';
+    if (result.error?.code !== 'ENOENT') return false;
+  }
+  return false;
+}
+
+// Ignore parser bookkeeping only; retain every semantic AST field.
+function sameJsAst(projectDir, ref, file) {
+  const before = fileContentAtRev(projectDir, ref, file.oldPath);
+  const after = fileContentAtRev(projectDir, 'HEAD', file.newPath);
+  if (before === null || after === null) return false;
+  const oldTree = parseJsTs(before, file.oldPath);
+  const newTree = parseJsTs(after, file.newPath);
+  if (!oldTree.ok || !newTree.ok || oldTree.ast.errors?.length || newTree.ast.errors?.length) return false;
+  const metadata = new Set(['start', 'end', 'loc', 'extra', 'comments',
+    'leadingComments', 'trailingComments', 'innerComments', 'tokens', 'errors']);
+  const normalize = ast => JSON.stringify(ast, (key, value) => metadata.has(key) ? undefined : value);
+  return normalize(oldTree.ast) === normalize(newTree.ast);
+}
+
 export function validateDiffSuspicion(projectDir, config = {}) {
   const cfg = config.diffSuspicion || {};
   const minOverlap = Number.isInteger(cfg.minOverlap) ? cfg.minOverlap : 2;
@@ -109,8 +143,10 @@ export function validateDiffSuspicion(projectDir, config = {}) {
   );
   // Precompute removed-token sets; drop files whose change removed nothing.
   const changed = changedFiles
-    .map(f => ({ path: f.newPath, removed: removedTokens(f) }))
-    .filter(f => f.removed.size > 0);
+    .map(f => ({ file: f, path: f.newPath, removed: removedTokens(f) }))
+    .filter(f => f.removed.size > 0)
+    .filter(f => !f.path.endsWith('.py') || !samePythonAst(projectDir, ref, f.file))
+    .filter(f => !/\.[cm]?[jt]sx?$/.test(f.path) || !sameJsAst(projectDir, ref, f.file));
 
   if (changed.length === 0) {
     return resultFromFindings([], { passed: 0, total: 0, applicable: false });
@@ -146,10 +182,10 @@ export function validateDiffSuspicion(projectDir, config = {}) {
         validator: 'diff-suspicion',
         severity: 'warn',
         confidence: 'low',
-        message: `${docName} describes ${h.path} (${h.kind} ref), which just had ${h.shared.slice(0, 5).join(', ')}${h.shared.length > 5 ? '…' : ''} removed/changed (${ref}..HEAD) — verify the doc still matches.`,
+        message: `${docName} describes ${h.path} (${h.kind} ref), and overlaps old-side diff tokens: ${h.shared.slice(0, 5).join(', ')}${h.shared.length > 5 ? '…' : ''} or removed declaration names (${ref}..HEAD) — possible drift; review whether the documentation is affected.`,
         location: { file: docName },
         suggestion: {
-          summary: `Re-read ${docName} against the current ${h.path}; the removed symbols (${h.shared.slice(0, 8).join(', ')}) may now be wrong.`,
+          summary: `Re-read ${docName} against the current ${h.path}; the old-side tokens (${h.shared.slice(0, 8).join(', ')}) do not establish a semantic contradiction.`,
         },
       }));
     }
@@ -159,7 +195,7 @@ export function validateDiffSuspicion(projectDir, config = {}) {
         validator: 'diff-suspicion',
         severity: 'warn',
         confidence: 'low',
-        message: `${docName} references ${hits.length - maxPerDoc} more changed file(s) with removed domain symbols (${ref}..HEAD) — a broad change; review ${docName} as a whole.`,
+        message: `${docName} references ${hits.length - maxPerDoc} more changed file(s) with old-side token overlap (${ref}..HEAD) — a broad change; review ${docName} as a whole.`,
         location: { file: docName },
         suggestion: { summary: `${docName} looks broadly affected by this change set — review it end-to-end rather than line by line.` },
       }));

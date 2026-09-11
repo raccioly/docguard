@@ -2,7 +2,7 @@
 
 <!-- docguard:version 0.6.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-07-03 -->
+<!-- docguard:last-reviewed 2026-09-11 -->
 
 | Metadata | Value |
 |----------|-------|
@@ -25,8 +25,8 @@ It targets development teams and AI coding agents that need to maintain document
 |-----------|---------------|----------|-----------|
 | **CLI Entry Point** | Argument parsing, config loading, command routing | `cli/` | `docguard.mjs` |
 | **Commands** | User-facing commands (the Daily 5 — init/guard/diff/sync/score — plus situational tools: diagnose, fix, generate, trace, explain, verify, feedback, memory, agent, mcp, upgrade, watch, demo, and `init --with` scaffolders) | `cli/commands/` | `*.mjs` |
-| **Validators** | 24 independent validation modules that check specific aspects of CDD compliance — all emitting structured findings with stable codes (the `CODES` registry in `findings.mjs`) | `cli/validators/` | `*.mjs` |
-| **Scanners** | 16 project file scanners for test discovery, route detection, schema mapping, CDK/IaC, doc-tools, integrations, frontend surface, spec-kit, memory-plan, semantic claims, agent readability | `cli/scanners/` | `*.mjs` |
+| **Validators** | Independent validation modules that check specific aspects of CDD compliance — all emitting structured findings with stable codes (the `CODES` registry in `findings.mjs`) | `cli/validators/` | `*.mjs` |
+| **Scanners** | Project file scanners for test discovery, route detection, schema mapping, CDK/IaC, doc-tools, integrations, frontend surface, spec-kit, memory-plan, semantic claims, agent readability | `cli/scanners/` | `*.mjs` |
 | **Writers** | Deterministic doc-mutation and output modules — section-addressable edits, mechanical fix registry, API-Reference writer, generate I/O + doc builders (split from generate.mjs), SARIF emitter (no LLM) | `cli/writers/` | `mechanical.mjs`, `sections.mjs`, `api-reference.mjs`, `generate-io.mjs`, `doc-generators.mjs`, `sarif.mjs` |
 | **Config** | Configuration loading — defaults, `.docguard.json` merge, profile presets, project-type detection (extracted from the entry point to keep the import graph acyclic) | `cli/` | `config.mjs` |
 | **Shared** | Cross-cutting utilities — ignore/glob filters, source-root resolution, git helpers, and the shared doc→code trace patterns used by both `trace` and the Traceability validator | `cli/` | `shared-ignore.mjs`, `shared-source.mjs`, `shared-git.mjs`, `shared-trace-patterns.mjs`, `shared.mjs` |
@@ -44,7 +44,7 @@ It targets development teams and AI coding agents that need to maintain document
 | Optional external | `python3` (the developer's own) | AST-accurate Python parsing; not an npm/pip dependency, regex fallback when absent |
 | Package Manager | npm | Standard for Node.js CLIs |
 | Testing | `node:test` + `node:assert` | Built-in, no test framework dependency |
-| Docker | `Dockerfile` (MCP server image) | Lets MCP directory inspectors (Glama et al.) boot `docguard mcp` for introspection checks; not part of the npm distribution |
+| Docker | `Dockerfile` (MCP server image) | Published to GHCR for stdio MCP use; HTTP transport is also available with explicit configuration |
 
 ### Recognized Config Files
 
@@ -63,7 +63,7 @@ DocGuard recognizes and validates these project config files:
 
 ## Layer Boundaries
 
-The architecture follows a strict 4-layer model where each layer can only import from the layers below it.
+The architecture separates command orchestration, validation, extraction, output, configuration, and shared utilities. The boundaries below describe responsibilities and permitted dependencies.
 
 | Layer | Contains | Can Import From | Cannot Import From |
 |-------|----------|----------------|--------------------|
@@ -71,7 +71,7 @@ The architecture follows a strict 4-layer model where each layer can only import
 | **Commands** (`cli/commands/`) | User-facing command logic | Validators, Config (via `docguard.mjs` exports) | Isolated — each command is self-contained |
 | **Validators** (`cli/validators/`) | Independent validation modules | Scanners, Shared utilities, Node.js built-ins | Cannot import from Commands or Writers |
 | **Scanners** (`cli/scanners/`) | Project intelligence — detect routes, schemas, IaC, frontend surface | Shared utilities, Node.js built-ins | Cannot import from Validators, Commands, Writers |
-| **Writers** (`cli/writers/`) | Mutate canonical docs surgically (section-addressable, no LLM) | Node.js built-ins only | Cannot import from Validators, Scanners, Commands |
+| **Writers** (`cli/writers/`) | Mutate canonical docs surgically (section-addressable, no LLM) | Shared helpers, Scanners for generated content, Node.js built-ins | Cannot import from Commands or Validators |
 | **Shared** (`cli/shared-*.mjs`) | Cross-cutting utilities: ignore/glob filters, source-root resolution, git helpers, shared trace patterns | Node.js built-ins only | Cannot import from any other layer |
 | **Config** (`cli/config.mjs`) | `loadConfig` + defaults/profile merge + project-type detection | Shared utilities, Node.js built-ins | Cannot import from Commands (extracted so `demo`→`docguard` is no longer a cycle) |
 | **Entry Point** (`cli/docguard.mjs`) | ANSI colors, argument parsing, command dispatch, banner/help | Commands, Config (`loadConfig`) | Calls validators only through commands |
@@ -169,7 +169,7 @@ docguard guard → validates the newly written document
 
 ## External Dependencies
 
-DocGuard has **zero runtime dependencies**. All functionality uses Node.js built-in modules.
+DocGuard declares one exact-pinned runtime dependency, `@babel/parser`. It loads optionally: installations without Babel use a less precise regex fallback. The modules below supply the remaining runtime functionality.
 
 | Module | Usage |
 |--------|-------|

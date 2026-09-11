@@ -1,14 +1,72 @@
 /**
- * Freshness Validator — Check if documentation is stale relative to code changes.
+ * Freshness Validator — Identify documentation review tasks from code history.
  * Uses git history to compare when docs were last modified vs when code was last changed.
  * 
- * This catches the exact issue the user identified: docs say "[ ] planned"
- * but the code has already been implemented and committed.
+ * This is a repository-wide review heuristic, not proof of semantic drift.
  */
 
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, lstatSync } from 'node:fs';
 import { resolve, join, extname } from 'node:path';
-import { execSync, execFileSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
+import { buildIgnoreFilter, loadDocguardIgnore, DEFAULT_IGNORE_DIRS, relPosix } from '../shared-ignore.mjs';
+
+// Keep aligned with shared-source's supported languages, including module variants.
+const CODE_EXTS = ['.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx', '.mts', '.cts',
+  '.py', '.java', '.go', '.rs', '.rb', '.php'];
+const CODE_PATHS = CODE_EXTS.map(ext => `*${ext}`);
+
+function pathFilter(dir, config) {
+  const ignored = buildIgnoreFilter([...(config.ignore || []), ...loadDocguardIgnore(dir)]);
+  return path => path === '..' || path.startsWith('../') ||
+    path.split('/').some(part => part === '.local' || DEFAULT_IGNORE_DIRS.has(part)) || ignored(path);
+}
+
+function safeExistingPath(dir, abs) {
+  try {
+    let current = dir;
+    for (const part of relPosix(dir, abs).split('/')) {
+      current = join(current, part);
+      if (lstatSync(current).isSymbolicLink()) return false;
+    }
+    return true;
+  } catch { return false; }
+}
+
+// Unlike a stat-based walk, this never follows a symlink into private/outside data.
+function collectDocs(dir, config, ignored) {
+  const files = new Set();
+  function add(path, recurse = false) {
+    if (typeof path !== 'string') return;
+    const abs = resolve(dir, path);
+    const rel = relPosix(dir, abs);
+    if (ignored(rel)) return;
+    try {
+      if (!safeExistingPath(dir, abs)) return;
+      const stat = lstatSync(abs);
+      if (stat.isFile()) files.add(rel);
+      else if (recurse && stat.isDirectory()) {
+        for (const entry of readdirSync(abs, { withFileTypes: true })) {
+          if (entry.name.startsWith('.')) continue;
+          if (entry.isDirectory() || extname(entry.name).toLowerCase() === '.md') add(join(rel, entry.name), true);
+        }
+      }
+    } catch { /* Missing/unreadable docs are handled by structural validators. */ }
+  }
+  add('docs-canonical', true);
+  // Additional homes are opt-in: inferred doc directories are not review policy.
+  for (const path of Array.isArray(config.docs?.dirs) ? config.docs.dirs : []) add(path, true);
+  for (const file of config.requiredFiles?.canonical || []) add(file, true);
+  const agents = config.requiredFiles?.agentFile || ['AGENTS.md', 'CLAUDE.md'];
+  for (const file of Array.isArray(agents) ? agents : [agents]) add(file);
+  for (const [file, spec] of Object.entries(config.documentTypes || {})) {
+    if (spec?.category === 'canonical') add(file, true);
+  }
+  add('ROADMAP.md');
+  // Changelog and deviation logs have their own review signals below.
+  const tracking = [config.requiredFiles?.changelog || 'CHANGELOG.md', config.requiredFiles?.driftLog || 'DRIFT-LOG.md']
+    .map(path => relPosix(dir, resolve(dir, path)));
+  return [...files].filter(file => !tracking.includes(file)).sort();
+}
 
 // B-5 fix (v0.13.1): use a defensive import. If `shared-git.mjs` is missing
 // or unloadable in the end-user install (whatever the root cause — partial
@@ -28,9 +86,6 @@ try {
   _sharedGetLastCommitDate = null;
 }
 
-// (v0.29 cleanup: a dead IGNORE_DIRS set lived here — defined but never
-// referenced. Freshness reads specific configured docs; it never walks.)
-
 /**
  * Read the `<!-- docguard:last-reviewed YYYY-MM-DD -->` header from a doc file.
  * Returns the parsed Date when present, null otherwise (file missing, header
@@ -45,13 +100,13 @@ export function readLastReviewedDate(absPath) {
     const m = content.match(/<!--\s*docguard:last-reviewed\s+(\d{4}-\d{2}-\d{2})\s*-->/);
     if (!m) return null;
     const d = new Date(m[1] + 'T00:00:00Z');
-    if (isNaN(d.getTime())) return null;
+    if (isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== m[1]) return null;
     // Reject future-dated headers. A typo'd or copy-pasted future date (e.g.
     // 2030-01-01) would otherwise make a genuinely stale doc look "fresh"
     // forever — its age goes negative and "commits since" rounds to zero. A
     // review can't legitimately have happened in the future, so we ignore the
-    // header and fall back to the real git date. (1-day grace for timezones.)
-    if (d.getTime() > Date.now() + 24 * 60 * 60 * 1000) return null;
+    // header and fall back to the real git date (UTC calendar days).
+    if (d.getTime() > Date.now()) return null;
     return d;
   } catch {
     return null;
@@ -60,15 +115,26 @@ export function readLastReviewedDate(absPath) {
 
 /**
  * Read the `<!-- docguard:status <value> -->` marker (draft | review | approved
- * | living). Returns the lowercased value, or null. Used by the uncommitted-doc
+ * | living | active | deprecated | historical | superseded). Returns the lowercased value, or null. Used by the uncommitted-doc
  * check (Bug #6): a doc the agent generated this session and marked `approved`
  * has an explicit currency signal even before it's committed.
  */
 function readDocStatus(absPath) {
   try {
     const content = readFileSync(absPath, 'utf-8');
-    const m = content.match(/<!--\s*docguard:status\s+([a-z]+)\s*-->/i);
-    return m ? m[1].toLowerCase() : null;
+    let fence = null;
+    for (const line of content.split('\n')) {
+      const marker = line.match(/^\s{0,3}(`{3,}|~{3,})/);
+      if (fence) {
+        if (marker && marker[1][0] === fence[0] && marker[1].length >= fence.length
+          && line.slice(marker[0].length).trim() === '') fence = null;
+        continue;
+      }
+      if (marker) { fence = marker[1]; continue; }
+      const m = line.match(/^\s*<!--\s*docguard:status\s+([a-z]+)\s*-->\s*$/i);
+      if (m) return m[1].toLowerCase();
+    }
+    return null;
   } catch {
     return null;
   }
@@ -105,23 +171,21 @@ function getLastGitDate(filePath, dir) {
 }
 
 /**
- * Get the count of commits that touched code files since a given date.
+ * Read committed source changes once, including additions and deletions.
  */
-function getCodeCommitsSince(date, dir) {
-  try {
-    const isoDate = date.toISOString();
-    // execFileSync (argv array) + count in JS — no shell `| wc -l` pipe, which
-    // isn't portable (Windows) and made the count depend on an external binary.
-    const out = execFileSync(
-      'git',
-      ['log', `--since=${isoDate}`, '--oneline', '--diff-filter=M', '--',
-        '*.js', '*.mjs', '*.ts', '*.tsx', '*.py', '*.java', '*.go'],
-      { cwd: dir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
-    ).trim();
-    return out ? out.split('\n').filter(Boolean).length : 0;
-  } catch {
-    return 0;
-  }
+function getCodeHistory(dir, ignored) {
+  // One query per validation, independent of document count/review dates.
+  // NUL-delimited names also handle spaces/newlines without shell parsing.
+  const out = execFileSync('git',
+    ['log', '--format=%x1e%H%x00%aI%x00%cI', '--name-only', '-z', '--no-renames', '--',
+      ...CODE_PATHS, ':(exclude).local/**', ':(exclude)**/.local/**'],
+    { cwd: dir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'], maxBuffer: 16 * 1024 * 1024 });
+  return out.split('\x1e').slice(1).map(record => {
+    const [hash, authorDate, commitDate, ...names] = record.split('\0');
+    const paths = names.map(name => name.replace(/^\n/, '')).filter(name =>
+      name && CODE_EXTS.includes(extname(name)) && !ignored(name));
+    return { hash, date: new Date(authorDate), since: new Date(commitDate), paths };
+  }).filter(commit => commit.paths.length);
 }
 
 /**
@@ -129,7 +193,7 @@ function getCodeCommitsSince(date, dir) {
  */
 function isGitRepo(dir) {
   try {
-    execSync('git rev-parse --is-inside-work-tree', {
+    execFileSync('git', ['rev-parse', '--is-inside-work-tree'], {
       cwd: dir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe']
     });
     return true;
@@ -143,7 +207,7 @@ function isGitRepo(dir) {
  */
 function getTotalCommits(dir) {
   try {
-    return parseInt(execSync('git rev-list --count HEAD', {
+    return parseInt(execFileSync('git', ['rev-list', '--count', 'HEAD'], {
       cwd: dir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe']
     }).trim()) || 0;
   } catch {
@@ -152,22 +216,8 @@ function getTotalCommits(dir) {
 }
 
 /**
- * Get the last N commits touching code files (not docs).
+ * Evaluate review signals against repository-wide code history.
  */
-function getRecentCodeCommits(dir, count = 5) {
-  try {
-    const out = execFileSync(
-      'git',
-      ['log', `-${count}`, '--format=%h %aI %s', '--',
-        '*.js', '*.mjs', '*.ts', '*.tsx', '*.py', '*.java'],
-      { cwd: dir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
-    ).trim();
-    return out ? out.split('\n') : [];
-  } catch {
-    return [];
-  }
-}
-
 export function validateFreshness(dir, config) {
   const results = [];
 
@@ -189,32 +239,32 @@ export function validateFreshness(dir, config) {
   }
 
   // ── 1. Check each canonical doc's last update vs latest code commit ──
-  const docFiles = [
-    'docs-canonical/ARCHITECTURE.md',
-    'docs-canonical/DATA-MODEL.md',
-    'docs-canonical/SECURITY.md',
-    'docs-canonical/TEST-SPEC.md',
-    'docs-canonical/ENVIRONMENT.md',
-    'ROADMAP.md',
-    'AGENTS.md',
-  ];
-
-  // Get the most recent code commit date
-  const recentCodeCommits = getRecentCodeCommits(dir, 1);
-  let latestCodeDate = null;
-  if (recentCodeCommits.length > 0) {
-    const parts = recentCodeCommits[0].split(' ');
-    if (parts.length >= 2) {
-      latestCodeDate = new Date(parts[1]);
-    }
+  const ignored = pathFilter(dir, config);
+  const docFiles = collectDocs(dir, config, ignored);
+  let history;
+  try { history = getCodeHistory(dir, ignored); } catch {
+    return [{ status: 'skip', message: 'Code history unavailable — freshness check skipped' }];
   }
+  const latestCodeDate = history[0]?.date || null;
+  const counts = new Map();
+  const getCodeCommitsSince = date => {
+    const key = date.toISOString();
+    if (!counts.has(key)) counts.set(key, history.filter(commit => commit.since >= date).length);
+    return counts.get(key);
+  };
 
-  const STALE_THRESHOLD_DAYS = 30; // Docs older than 30 days vs latest code = stale
-  const WARNING_THRESHOLD_COMMITS = 10; // More than 10 code commits since last doc update = stale
+  const REVIEW_THRESHOLD_DAYS = 30; // Repository-wide trigger, not proof of drift
+  const WARNING_THRESHOLD_COMMITS = 10; // Repository-wide review trigger
 
   for (const docFile of docFiles) {
     const docPath = resolve(dir, docFile);
     if (!existsSync(docPath)) continue;
+    const docStatus = readDocStatus(docPath);
+    if (['historical', 'superseded', 'deprecated'].includes(docStatus)) {
+      results.push({ status: 'skip', doc: docFile,
+        message: `${docFile} is marked ${docStatus} — currentness review not applicable; historical accuracy is not verified` });
+      continue;
+    }
 
     // Prefer the explicit `<!-- docguard:last-reviewed YYYY-MM-DD -->` header
     // over the git commit date. A reviewer who reads a doc and stamps the
@@ -231,10 +281,10 @@ export function validateFreshness(dir, config) {
       // `<!-- docguard:status approved -->` has signaled it's intentionally
       // current. In the generate-then-fill flow the human hasn't committed yet,
       // so the "uncommitted" warning is noise — suppress it for approved docs.
-      if (readDocStatus(docPath) === 'approved') {
+      if (docStatus === 'approved') {
         results.push({
           status: 'pass',
-          message: `${docFile} is marked approved (not yet committed — fine mid-session)`,
+          message: `${docFile} is marked approved (not yet committed; author signal, not semantic verification)`,
         });
         continue;
       }
@@ -244,7 +294,7 @@ export function validateFreshness(dir, config) {
         status: 'warn',
         code: 'FRS001',
         doc: docFile,
-        message: `${docFile} exists but is not yet committed to git — commit it, or add a <!-- docguard:last-reviewed YYYY-MM-DD --> marker (or <!-- docguard:status approved -->).`,
+        message: `${docFile} exists but is not yet committed to git — review due: no dated review signal. After reviewing intent and implementation, commit it or add a <!-- docguard:last-reviewed YYYY-MM-DD --> marker.`,
       });
       continue;
     }
@@ -260,14 +310,14 @@ export function validateFreshness(dir, config) {
     const sinceDate = reviewedDate
       ? new Date(reviewedDate.getTime() + 24 * 60 * 60 * 1000 - 1000)
       : docDate;
-    const codeCommitsSince = getCodeCommitsSince(sinceDate, dir);
+    const codeCommitsSince = getCodeCommitsSince(sinceDate);
 
     if (codeCommitsSince >= WARNING_THRESHOLD_COMMITS) {
       results.push({
         status: 'warn',
         code: 'FRS002',
         doc: docFile,
-        message: `${docFile} — ${codeCommitsSince} code commits since last doc update (${docDate.toISOString().split('T')[0]})`,
+        message: `${docFile} — review due: ${codeCommitsSince} code commits since last doc update/review (${docDate.toISOString().split('T')[0]}); repository-wide heuristic, not evidence this document is stale`,
       });
       continue;
     }
@@ -275,12 +325,12 @@ export function validateFreshness(dir, config) {
     // Check age vs latest code commit
     if (latestCodeDate) {
       const daysDiff = Math.floor((latestCodeDate - docDate) / (1000 * 60 * 60 * 24));
-      if (daysDiff > STALE_THRESHOLD_DAYS) {
+      if (daysDiff > REVIEW_THRESHOLD_DAYS) {
         results.push({
           status: 'warn',
           code: 'FRS003',
           doc: docFile,
-          message: `${docFile} — last updated ${daysDiff} days before latest code change`,
+          message: `${docFile} — review due: last updated ${daysDiff} days before latest code change; repository-wide heuristic, not evidence this document is stale`,
         });
         continue;
       }
@@ -288,13 +338,14 @@ export function validateFreshness(dir, config) {
 
     results.push({
       status: 'pass',
-      message: `${docFile} is fresh`,
+      message: `${docFile} — no review due by the repository-wide history heuristic; not proof the document is fresh (not semantic verification)`,
     });
   }
 
   // ── 2. Check CHANGELOG.md was updated in the last 5 code commits ──
   const changelogPath = resolve(dir, config.requiredFiles?.changelog || 'CHANGELOG.md');
-  if (existsSync(changelogPath)) {
+  if (!ignored(relPosix(dir, changelogPath)) && safeExistingPath(dir, changelogPath)
+    && !['historical', 'superseded', 'deprecated'].includes(readDocStatus(changelogPath))) {
     const changelogDate =
       readLastReviewedDate(changelogPath) ||
       getLastGitDate(config.requiredFiles?.changelog || 'CHANGELOG.md', dir);
@@ -305,12 +356,12 @@ export function validateFreshness(dir, config) {
           status: 'warn',
           code: 'FRS004',
           doc: config.requiredFiles?.changelog || 'CHANGELOG.md',
-          message: `CHANGELOG.md not updated in ${daysDiff} days despite code changes`,
+          message: `${config.requiredFiles?.changelog || 'CHANGELOG.md'} — review due: last updated ${daysDiff} days before latest code change; verify whether release notes are needed`,
         });
       } else {
         results.push({
           status: 'pass',
-          message: 'CHANGELOG.md is up to date',
+          message: `${config.requiredFiles?.changelog || 'CHANGELOG.md'} — no review due by the history heuristic (not semantic verification)`,
         });
       }
     }
@@ -318,7 +369,8 @@ export function validateFreshness(dir, config) {
 
   // ── 3. Check DRIFT-LOG.md was updated if there are DRIFT comments ──
   const driftPath = resolve(dir, config.requiredFiles?.driftLog || 'DRIFT-LOG.md');
-  if (existsSync(driftPath)) {
+  if (history.length && !ignored(relPosix(dir, driftPath)) && safeExistingPath(dir, driftPath)
+    && !['historical', 'superseded', 'deprecated'].includes(readDocStatus(driftPath))) {
     const driftDate = getLastGitDate(config.requiredFiles?.driftLog || 'DRIFT-LOG.md', dir);
     // Check for recent DRIFT comments ADDED to code. The old approach piped
     // `git log --all -p | grep -c DRIFT:`, which counted DRIFT: on removed
@@ -329,7 +381,8 @@ export function validateFreshness(dir, config) {
     try {
       const diff = execFileSync(
         'git',
-        ['log', '-5', '-p', '--', '*.js', '*.mjs', '*.ts', '*.tsx', '*.py'],
+        ['log', '-5', '-p', '--', ...[...new Set(history.slice(0, 5).flatMap(commit => commit.paths))]
+          .map(path => `:(literal)${path}`)],
         { cwd: dir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
       );
       const driftCount = diff
@@ -337,18 +390,22 @@ export function validateFreshness(dir, config) {
         .filter(l => /^\+(?!\+\+)/.test(l) && l.includes('DRIFT:'))
         .length;
       if (driftCount > 0 && driftDate) {
-        const codeCommitsSince = getCodeCommitsSince(driftDate, dir);
+        const codeCommitsSince = getCodeCommitsSince(driftDate);
         if (codeCommitsSince > 3) {
           results.push({
             status: 'warn',
             code: 'FRS005',
             doc: config.requiredFiles?.driftLog || 'DRIFT-LOG.md',
-            message: `DRIFT-LOG.md may be stale — ${driftCount} DRIFT comments found in recent commits`,
+            message: `${config.requiredFiles?.driftLog || 'DRIFT-LOG.md'} — review due: ${driftCount} added DRIFT comment lines found in recent commits; verify whether deviations are already recorded`,
           });
         }
       }
     } catch { /* skip */ }
   }
 
-  return results;
+  return results.map(result => result.status === 'warn' ? {
+    ...result,
+    confidence: 'low',
+    suggestion: { kind: 'review', text: 'Review this history signal against the document’s purpose and intended behavior. Confirm whether documentation or code needs a change; record a review date only after reviewing. Preserve intentional historical content.' },
+  } : result);
 }

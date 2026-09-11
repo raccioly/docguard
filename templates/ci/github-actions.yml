@@ -1,3 +1,5 @@
+# Copy this starter to .github/workflows/. Reports stay in runner temp.
+# The static CLI pin is checked against package.json by ci-reproducibility tests.
 name: DocGuard CDD Check
 
 on:
@@ -11,29 +13,67 @@ permissions:
 
 jobs:
   docguard:
-    name: CDD Compliance
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Initialize report paths
+        shell: bash
+        run: |
+          echo "DOCGUARD_REPORT=$RUNNER_TEMP/docguard-report.json" >> "$GITHUB_ENV"
+          echo "DOCGUARD_LOG=$RUNNER_TEMP/docguard-stderr.log" >> "$GITHUB_ENV"
 
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0 # Freshness needs the complete commit history.
+          persist-credentials: false
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '20'
 
-      - name: Run DocGuard CI
-        run: npx docguard-cli ci --format json --threshold 70 > docguard-report.json
+      - name: Install DocGuard
+        run: npm install --global --ignore-scripts docguard-cli@0.36.0
+
+      - name: Run DocGuard
+        shell: bash
+        run: |
+          status=0
+          docguard ci --format json --threshold 70 --no-history > "$DOCGUARD_REPORT" 2> "$DOCGUARD_LOG" || status=$?
+          cat "$DOCGUARD_LOG" >&2
+          # Validate machine output and normalize the verdict from the actual
+          # exit code (including CI threshold failures in older releases).
+          DOCGUARD_STATUS="$status" node --input-type=module -e '
+            import fs from "node:fs";
+            const file = process.env.DOCGUARD_REPORT;
+            const report = JSON.parse(fs.readFileSync(file, "utf8"));
+            if (!report || typeof report !== "object" || Array.isArray(report)) throw new Error("Invalid DocGuard report");
+            const status = Number(process.env.DOCGUARD_STATUS);
+            report.status = status === 0 ? "PASS" : status === 2 ? "WARN" : "FAIL";
+            fs.writeFileSync(file, JSON.stringify(report, null, 2) + "\n");
+          '
+          exit "$status"
 
       - name: Display Results
         if: always()
+        shell: bash
         run: |
-          echo "## DocGuard Report" >> $GITHUB_STEP_SUMMARY
-          echo '```json' >> $GITHUB_STEP_SUMMARY
-          cat docguard-report.json >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "## DocGuard Report" >> "$GITHUB_STEP_SUMMARY"
+          if [ -s "$DOCGUARD_REPORT" ]; then
+            echo '<details><summary>JSON findings</summary>' >> "$GITHUB_STEP_SUMMARY"
+            echo '' >> "$GITHUB_STEP_SUMMARY"
+            echo '````json' >> "$GITHUB_STEP_SUMMARY"
+            cat "$DOCGUARD_REPORT" >> "$GITHUB_STEP_SUMMARY"
+            echo '````' >> "$GITHUB_STEP_SUMMARY"
+            echo '</details>' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'No report produced; inspect the install/run logs.' >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Upload Report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: docguard-report
-          path: docguard-report.json
+          path: |
+            ${{ env.DOCGUARD_REPORT }}
+            ${{ env.DOCGUARD_LOG }}
+          if-no-files-found: warn

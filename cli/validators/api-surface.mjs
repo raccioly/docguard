@@ -1,3 +1,4 @@
+import { docRolePath, resolveDocRole } from '../shared-doc-roles.mjs';
 /**
  * API-Surface Validator — Detects drift between the documented API surface
  * (docs-canonical/API-REFERENCE.md) and the project's actual API surface.
@@ -9,18 +10,16 @@
  *   1. OpenAPI spec (sourceRoot/workspace-aware)  → high confidence
  *   2. Monorepo-aware code route scan             → lower confidence (warn only)
  *
- * Severity policy:
- *   - documented-but-absent  → ERROR when confirmed by an OpenAPI spec
- *                              (docs lie about a real endpoint → fail the build);
- *                              downgraded to WARNING on heuristic code-scan only.
- *   - present-but-undocumented → WARNING (a real route missing from the docs).
+ * OpenAPI remains the contract authority, not proof of runtime absence.
+ * Contract omissions are errors with independent code evidence. Removal needs
+ * both a contract omission and a nonempty code scan without the endpoint;
+ * code-present and unknown-coverage omissions stay review-only.
  *
  * Also flags MULTIPLE OpenAPI specs in the repo that disagree on their endpoint
  * set (e.g. a served spec and a generated spec that have diverged).
  *
  * Returns { errors, warnings, passed, total, fixes, authoritativeSpec } — the
- * `fixes` array lists deterministic remove-endpoint actions that
- * `docguard fix --write` can apply without an LLM.
+ * `fixes` array contains only omissions corroborated by a nonempty code scan.
  */
 
 import { existsSync, readFileSync } from 'node:fs';
@@ -33,7 +32,7 @@ import { relPosix } from '../shared-ignore.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 
 const MAX_REPORTED = 15;
-const API_DOC = 'docs-canonical/API-REFERENCE.md';
+
 
 /** Walk up from a dir to the nearest enclosing package.json directory. */
 function nearestPackageDir(projectDir, startDir) {
@@ -180,10 +179,11 @@ export function resolveApiSurface(projectDir, config) {
  * Compute API-surface drift in a structured, reusable form.
  * Used by the validator AND by `docguard fix --write`.
  * @returns {{ applicable, confidence, source, documented, documentedButAbsent,
- *             presentButUndocumented, matched }}
+ *             contractMismatches, presentButUndocumented, matched }}
  */
 export function computeApiSurfaceDrift(projectDir, config) {
-  const apiDocPath = resolve(projectDir, API_DOC);
+  const API_DOC = docRolePath(config, 'apiReference');
+  const apiDocPath = resolveDocRole(projectDir, config, 'apiReference');
   if (!existsSync(apiDocPath)) {
     return { applicable: false, confidence: 'none', source: null,
       documented: [], documentedButAbsent: [], presentButUndocumented: [], matched: [] };
@@ -198,12 +198,34 @@ export function computeApiSurfaceDrift(projectDir, config) {
   }
 
   const cmp = compareEndpoints(documented, surface.endpoints);
+  // The legacy writer treats spec-confidence documentedButAbsent as deletable.
+  // Keep contract omissions separate from their removable subset. An omission
+  // alone cannot authorize removal; code-present and unknown results are excluded.
+  let contractMismatches = [];
+  if (surface.confidence === 'spec' && cmp.documentedButAbsent.length) {
+    const framework = detectFramework(projectDir, config);
+    const routes = scanRoutesDeep(projectDir, { framework }, {}, { config });
+    const routeKeys = new Set(routes.map(r => endpointKey(r.method, r.path)));
+    contractMismatches = cmp.documentedButAbsent.map(endpoint => ({
+      ...endpoint,
+      authority: { kind: 'openapi', source: surface.source, status: 'not-declared', confidence: 'high' },
+      codeEvidence: {
+        status: routeKeys.has(endpointKey(endpoint.method, endpoint.path))
+          ? 'present' : routes.length ? 'not-found' : 'unknown',
+        confidence: 'low',
+      },
+    }));
+  }
   return {
     applicable: true,
     confidence: surface.confidence,
     source: surface.source,
     documented,
-    documentedButAbsent: cmp.documentedButAbsent,
+    documentedButAbsent: surface.confidence === 'spec'
+      ? contractMismatches.filter(e => e.codeEvidence.status === 'not-found')
+        .map(({ method, path }) => ({ method, path }))
+      : cmp.documentedButAbsent,
+    contractMismatches,
     presentButUndocumented: cmp.presentButUndocumented,
     matched: cmp.matched,
   };
@@ -251,11 +273,10 @@ export function computeSpecVsRouteDrift(projectDir, config) {
   };
 }
 
-// v0.29: migrated to structured findings (API001–API005). Messages are
-// byte-identical to the legacy strings — resultFromFindings derives the
-// errors/warnings arrays from the same findings; `fixes` and
-// `authoritativeSpec` are preserved.
+// Findings retain the authority behind each mismatch; contract authority
+// must never be presented as proof that no implementation exists.
 export function validateApiSurface(projectDir, config) {
+  const API_DOC = docRolePath(config, 'apiReference');
   const findings = [];
   const fixes = [];
   const trim = (arr) => {
@@ -365,66 +386,69 @@ export function validateApiSurface(projectDir, config) {
     };
   }
 
-  const { documentedButAbsent, presentButUndocumented, matched, confidence, source } = drift;
-  const total = matched.length + documentedButAbsent.length + presentButUndocumented.length + specRouteTotal;
+  const { documentedButAbsent, contractMismatches = [], presentButUndocumented, matched, confidence, source } = drift;
+  const total = matched.length + (confidence === 'spec' ? contractMismatches.length : documentedButAbsent.length) + presentButUndocumented.length + specRouteTotal;
   const passed = matched.length + specRoutePassed;
 
-  // documented-but-absent → deterministic remove-endpoint fixes
-  if (documentedButAbsent.length) {
-    const { shown, extra } = trim(documentedButAbsent);
+  // Spec omissions stay actionable without masquerading as runtime absence.
+  if (contractMismatches.length) {
+    const { shown, extra } = trim(contractMismatches);
     for (const e of shown) {
-      const msg = `Documented endpoint not found in code: ${e.method} ${e.path} (${API_DOC})`;
-      if (confidence === 'spec') {
-        findings.push(mkFinding({
-          code: 'API004',
-          validator: 'apiSurface',
-          severity: 'error',
-          message: msg,
+      const codeDescription = e.codeEvidence.status === 'present'
+        ? 'A matching route was extracted from code.'
+        : e.codeEvidence.status === 'not-found'
+          ? 'No matching route was extracted from code; scanner coverage may be incomplete.'
+          : 'Code presence is unknown: no routes were extracted.';
+      findings.push({
+        ...mkFinding({
+          code: 'API004', validator: 'apiSurface', severity: 'error',
+          confidence: 'high', // certain contract omission, NOT certain code absence
+          message: `Documented endpoint missing from OpenAPI contract (${source}): ${e.method} ${e.path} (${API_DOC}). ${codeDescription}`,
           location: API_DOC,
-          suggestion: { kind: 'fix', text: 'Remove the dead endpoint from the doc', command: 'docguard fix --write' },
-        }));
-      } else {
-        findings.push(mkFinding({
-          code: 'API004',
-          validator: 'apiSurface',
-          severity: 'warn',
-          // The "[code-scan — verify]" suffix marks this as heuristic-only:
-          // the route scanner may simply not see the endpoint's registration.
-          confidence: 'low',
-          message: `${msg} [code-scan — verify]`,
-          location: API_DOC,
-          suggestion: { kind: 'review', text: 'Verify the endpoint really is gone from the code, then remove it from the doc' },
-        }));
-      }
+          suggestion: e.codeEvidence.status === 'not-found'
+            ? { kind: 'fix', text: 'Remove the endpoint omitted from the contract and not found by the code scan; verify scanner coverage before applying', command: 'docguard fix --write' }
+            : { kind: 'review', text: e.codeEvidence.status === 'present'
+            ? 'Reconcile the implementation with the intended contract; update OpenAPI if the route is intended. Preserve the documented endpoint during review.'
+            : 'Reconcile the contract and documentation with the intended API. Verify implementation coverage and whether the endpoint was removed before editing documentation.' },
+        }),
+        evidence: { authority: e.authority, code: e.codeEvidence },
+      });
     }
     if (extra > 0) {
-      const tail = `…and ${extra} more documented endpoint(s) not found in code`;
-      if (confidence === 'spec') {
-        findings.push(mkFinding({
-          code: 'API004',
-          validator: 'apiSurface',
-          severity: 'error',
-          message: tail,
-          location: API_DOC,
-          suggestion: { kind: 'fix', text: 'Remove the dead endpoints from the doc', command: 'docguard fix --write' },
-        }));
-      } else {
-        findings.push(mkFinding({
-          code: 'API004',
-          validator: 'apiSurface',
-          severity: 'warn',
-          confidence: 'low',
-          message: tail,
-          location: API_DOC,
-          suggestion: { kind: 'review', text: 'Verify each documented endpoint against the code, then prune the doc' },
-        }));
-      }
+      findings.push(mkFinding({
+        code: 'API004', validator: 'apiSurface', severity: 'error',
+        message: `…and ${extra} more documented endpoint(s) missing from OpenAPI contract (${source}); code presence requires individual review`,
+        location: API_DOC,
+        suggestion: { kind: 'review', text: 'Reconcile each contract omission with code and intended behavior before editing documentation' },
+      }));
     }
-    // Only spec-confirmed absences are safe to auto-remove.
-    if (confidence === 'spec') {
-      for (const e of documentedButAbsent) {
-        fixes.push({ type: 'remove-endpoint', method: e.method, path: e.path, doc: API_DOC });
-      }
+  }
+
+  // Only the contract-and-code corroborated subset reaches mechanical writes.
+  if (confidence === 'spec') {
+    for (const e of documentedButAbsent) {
+      fixes.push({ type: 'remove-endpoint', method: e.method, path: e.path, doc: API_DOC });
+    }
+  }
+
+  // Without a spec, a negative scan remains a low-confidence review candidate.
+  if (confidence !== 'spec' && documentedButAbsent.length) {
+    const { shown, extra } = trim(documentedButAbsent);
+    for (const e of shown) {
+      findings.push(mkFinding({
+        code: 'API004', validator: 'apiSurface', severity: 'warn', confidence: 'low',
+        message: `Documented endpoint not found in code: ${e.method} ${e.path} (${API_DOC}) [code-scan — verify]`,
+        location: API_DOC,
+        suggestion: { kind: 'review', text: 'Verify the endpoint really is gone from the code, then remove it from the doc' },
+      }));
+    }
+    if (extra > 0) {
+      findings.push(mkFinding({
+        code: 'API004', validator: 'apiSurface', severity: 'warn', confidence: 'low',
+        message: `…and ${extra} more documented endpoint(s) not found by the code scanner`,
+        location: API_DOC,
+        suggestion: { kind: 'review', text: 'Verify each documented endpoint against the code before editing documentation' },
+      }));
     }
   }
 
@@ -436,7 +460,7 @@ export function validateApiSurface(projectDir, config) {
         code: 'API005',
         validator: 'apiSurface',
         severity: 'warn',
-        message: `Undocumented endpoint in code: ${e.method} ${e.path} — add it to ${API_DOC}`,
+        message: `Undocumented endpoint in ${confidence === 'spec' ? `OpenAPI contract (${source})` : 'code'}: ${e.method} ${e.path} — add it to ${API_DOC}`,
         location: API_DOC,
         suggestion: { kind: 'fix', text: `Document the endpoint in ${API_DOC}` },
       }));
@@ -446,7 +470,7 @@ export function validateApiSurface(projectDir, config) {
         code: 'API005',
         validator: 'apiSurface',
         severity: 'warn',
-        message: `…and ${extra} more undocumented endpoint(s) in code`,
+        message: `…and ${extra} more undocumented endpoint(s) in ${confidence === 'spec' ? `OpenAPI contract (${source})` : 'code'}`,
         location: API_DOC,
         suggestion: { kind: 'fix', text: `Document the remaining endpoints in ${API_DOC}` },
       }));

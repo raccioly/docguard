@@ -38,3 +38,9 @@ templates/demo-fixture/**
 packaging/
 packaging/**
 
+
+# Generated audit reports and probe templates are historical tool output, not product source.
+websec-out/
+websec-out/**
+graphify-out/
+graphify-out/**

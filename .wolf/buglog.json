@@ -4809,6 +4809,307 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-09-11T16:33:44.539Z"
+    },
+    {
+      "id": "bug-291",
+      "timestamp": "2026-09-11T19:39:03.585Z",
+      "error_message": "Source changes returned stale cached documentation plans",
+      "file": "cli/scanners/memory-plan.mjs",
+      "root_cause": "Cache identity relied on manifests and HEAD, missing source content",
+      "fix": "Hash bounded relevant input content and scanner/config identity; fail closed on incomplete reads and publish atomically",
+      "tags": [
+        "cache",
+        "stale-source"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T19:39:03.585Z"
+    },
+    {
+      "id": "bug-292",
+      "timestamp": "2026-09-11T19:39:03.585Z",
+      "error_message": "Generated pre-push hook allowed an unparsed formatted score",
+      "file": "cli/commands/hooks.mjs",
+      "root_cause": "Compact JSON regex did not match real formatted command output",
+      "fix": "Parse JSON with Node and block malformed output or unavailable runtime",
+      "tags": [
+        "hooks",
+        "enforcement"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T19:39:03.585Z"
+    },
+    {
+      "id": "bug-293",
+      "timestamp": "2026-09-11T19:39:03.585Z",
+      "error_message": "Requirement IDs inside test fixtures generated false orphan findings",
+      "file": "cli/validators/traceability.mjs",
+      "root_cause": "Generic source matching treated fixture strings as declarations",
+      "fix": "Extract real comments and test labels with AST or scoped lexical fallback",
+      "tags": [
+        "traceability",
+        "false-positive"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T19:39:03.585Z"
+    },
+    {
+      "id": "bug-294",
+      "timestamp": "2026-09-11T19:39:03.585Z",
+      "error_message": "Freshness omitted configured nested documents and watcher errors escaped cleanup",
+      "file": "cli/validators/freshness.mjs",
+      "root_cause": "Narrow source/doc discovery and incomplete asynchronous lifecycle handling",
+      "fix": "Expand scoped freshness inputs; batch history; reject future dates; coalesce watch work and clean up on errors",
+      "tags": [
+        "freshness",
+        "watch"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T19:39:03.585Z"
+    },
+    {
+      "id": "bug-295",
+      "timestamp": "2026-09-11T19:39:03.585Z",
+      "error_message": "Structural score and empty claim sets implied factual accuracy",
+      "file": "cli/commands/score.mjs",
+      "root_cause": "Structural proxies and absence of extracted claims were treated as verification",
+      "fix": "Expose structural maturity separately and preserve null/unverified assurance across consumers",
+      "tags": [
+        "score",
+        "assurance"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T19:39:03.585Z"
+    },
+    {
+      "id": "bug-296",
+      "timestamp": "2026-09-11T19:39:03.585Z",
+      "error_message": "init --with ci executed a check instead of creating a workflow",
+      "file": "cli/commands/init.mjs",
+      "root_cause": "Scaffolder dispatcher called the standalone CI runner",
+      "fix": "Copy the maintained template with preserve/force behavior and destination checks",
+      "tags": [
+        "init",
+        "ci"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T19:39:03.585Z"
+    },
+    {
+      "id": "bug-297",
+      "timestamp": "2026-09-11T19:41:37.939Z",
+      "error_message": "Disk cache promotion exceeded the entry bound and accepted malformed nested plans",
+      "file": "cli/scanners/memory-plan.mjs",
+      "root_cause": "Disk-hit insertion bypassed eviction and envelope validation omitted nested consumer shapes",
+      "fix": "Use shared bounded insertion and validate cached plan shapes and depth before reuse",
+      "tags": [
+        "cache",
+        "review"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T19:41:37.939Z"
+    },
+    {
+      "id": "bug-298",
+      "timestamp": "2026-09-11T19:41:37.939Z",
+      "error_message": "Empty findings implied implementation correctness; unknown ALCOA rendered as failed",
+      "file": "cli/commands/report.mjs",
+      "root_cause": "Markdown presentation ignored assurance and unknown status",
+      "fix": "Scope empty output to configured checks and preserve unverified ALCOA status",
+      "tags": [
+        "report",
+        "assurance"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T19:41:37.939Z"
+    },
+    {
+      "id": "bug-299",
+      "timestamp": "2026-09-11T19:41:37.939Z",
+      "error_message": "Feedback reported saved file paths after persistence failed",
+      "file": "cli/commands/feedback.mjs",
+      "root_cause": "JSON emitted before writes and errors were swallowed",
+      "fix": "Persist first; expose saved/error per record; null unsaved file and exit 1 on failure",
+      "tags": [
+        "feedback",
+        "io"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T19:41:37.939Z"
+    },
+    {
+      "id": "bug-300",
+      "timestamp": "2026-09-11T19:42:37.776Z",
+      "error_message": "Workflow expression scope was invalid and baseline restoration assertion accepted every status",
+      "file": ".github/workflows/ci.yml",
+      "root_cause": "runner.temp used at job env scope; shell OR expression treated any failure as expected",
+      "fix": "Move report paths into supported step contexts and assert the expected baseline-restored exit status with executable regression coverage",
+      "tags": [
+        "ci",
+        "review",
+        "templates"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T19:42:37.776Z"
+    },
+    {
+      "id": "bug-301",
+      "timestamp": "2026-09-11T20:42:23.164Z",
+      "error_message": "OpenAPI omissions attributed to missing implementation",
+      "file": "cli/validators/api-surface.mjs",
+      "root_cause": "Contract evidence was treated as code evidence",
+      "fix": "Cross-check extracted code routes, identify authority, and refuse removal when the route exists or code evidence is unavailable",
+      "tags": [
+        "precision",
+        "regression"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T20:42:23.164Z"
+    },
+    {
+      "id": "bug-302",
+      "timestamp": "2026-09-11T20:42:23.164Z",
+      "error_message": "Formatting-only edits produced deletion review noise",
+      "file": "cli/validators/diff-suspicion.mjs",
+      "root_cause": "Removed tokens were not compared with reintroduced tokens or syntax-equivalent code",
+      "fix": "Compare additions and AST equivalence while preserving genuinely removed declarations",
+      "tags": [
+        "precision",
+        "regression"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T20:42:23.164Z"
+    },
+    {
+      "id": "bug-303",
+      "timestamp": "2026-09-11T20:42:23.164Z",
+      "error_message": "Negated or historical technology prose appeared as current use",
+      "file": "cli/validators/docs-diff.mjs",
+      "root_cause": "Technology names matched without assertion context",
+      "fix": "Recognize negation including coordinated lists; retain independent affirmative claims",
+      "tags": [
+        "precision",
+        "regression"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T20:42:23.164Z"
+    },
+    {
+      "id": "bug-304",
+      "timestamp": "2026-09-11T20:42:23.164Z",
+      "error_message": "Synthetic expectations flagged while sibling placeholders could hide real credentials",
+      "file": "cli/validators/security.mjs",
+      "root_cause": "Text-wide placeholder handling lacked expression ownership",
+      "fix": "Restrict exemptions to explicit synthetic mock expectations and preserve real-secret controls",
+      "tags": [
+        "precision",
+        "regression"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T20:42:23.164Z"
+    },
+    {
+      "id": "bug-305",
+      "timestamp": "2026-09-11T20:42:23.164Z",
+      "error_message": "Explained conditional skips warned and nested suite skips were missed",
+      "file": "cli/validators/todo-tracking.mjs",
+      "root_cause": "Skip patterns did not distinguish titles, reasons, and nested suites",
+      "fix": "Recognize static reasons and suite calls with neighboring unexplained-skip controls",
+      "tags": [
+        "precision",
+        "regression"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T20:42:23.164Z"
+    },
+    {
+      "id": "bug-306",
+      "timestamp": "2026-09-11T20:42:23.164Z",
+      "error_message": "Worker bindings missing or confused by lexical shadowing",
+      "file": "cli/shared-source.mjs",
+      "root_cause": "Worker handler scope and lexical declarations were not modeled",
+      "fix": "Resolve bindings using optional existing Babel parser and conservative tested fallback",
+      "tags": [
+        "precision",
+        "regression"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T20:42:23.164Z"
+    },
+    {
+      "id": "bug-307",
+      "timestamp": "2026-09-11T20:42:23.164Z",
+      "error_message": "Custom document layout bypassed writer and path boundaries",
+      "file": "cli/shared-doc-roles.mjs",
+      "root_cause": "Hardcoded writers and direct readers did not share role validation",
+      "fix": "Validate role paths including symlinks and private aliases; fence CLI and direct automatic writers",
+      "tags": [
+        "precision",
+        "regression"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T20:42:23.164Z"
+    },
+    {
+      "id": "bug-308",
+      "timestamp": "2026-09-11T20:42:23.164Z",
+      "error_message": "Zero matches could imply comprehensive successful checks",
+      "file": "cli/commands/guard.mjs",
+      "root_cause": "Applicability and document inventory were conflated with evidence coverage",
+      "fix": "Expose check states and reasons independently of legacy gate status",
+      "tags": [
+        "precision",
+        "regression"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T20:42:23.164Z"
+    },
+    {
+      "id": "bug-309",
+      "timestamp": "2026-09-11T20:42:23.164Z",
+      "error_message": "Missing test annotation mislabeled behavioral coverage; spec checks coupled to canonical folder",
+      "file": "cli/validators/traceability.mjs",
+      "root_cause": "Annotation absence treated as proof and missing canonical folder stopped unrelated spec checks",
+      "fix": "Describe annotation uncertainty, scan spec artifacts independently, avoid duplicate default-file warnings and non-test hints",
+      "tags": [
+        "precision",
+        "regression"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T20:42:23.164Z"
+    },
+    {
+      "id": "bug-310",
+      "timestamp": "2026-09-11T20:42:23.164Z",
+      "error_message": "Concurrent demo tests raced and kept fixtures leaked",
+      "file": "tests/demo-command.test.mjs",
+      "root_cause": "Global temporary directory counts plus swallowed ESM require error",
+      "fix": "Use isolated temporary roots and imported rmSync with finally cleanup",
+      "tags": [
+        "precision",
+        "regression"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T20:42:23.164Z"
     }
   ]
 }

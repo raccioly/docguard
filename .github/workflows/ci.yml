@@ -7,6 +7,9 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -20,11 +23,16 @@ jobs:
         node-version: [18, 20, 22, 24]
 
     steps:
-      - uses: actions/checkout@v7
+      - name: Initialize report paths
+        shell: bash
+        run: |
+          echo "DOCGUARD_REPORT=$RUNNER_TEMP/docguard-report.json" >> "$GITHUB_ENV"
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0 # Full git history for freshness validator
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: ${{ matrix.node-version }}
 
@@ -53,15 +61,16 @@ jobs:
       # on this gate existing. Normal: ~33s (node 24) to ~51s (node 18) on CI.
       # Budget is deliberately loose — it catches catastrophes, not jitter.
       - name: Run Tests (with runtime budget)
+        shell: bash
         env:
           TEST_BUDGET_MS: 120000
         run: |
           set -o pipefail
-          npm test 2>&1 | tee /tmp/test-output.txt
-          DURATION=$(grep -oE 'duration_ms [0-9]+' /tmp/test-output.txt | tail -1 | grep -oE '[0-9]+' | cut -d. -f1)
+          node --test --test-reporter=tap tests/*.test.mjs 2>&1 | tee /tmp/test-output.txt
+          DURATION=$(awk '/^# duration_ms [0-9]+/ { duration = int($3) } END { print duration }' /tmp/test-output.txt)
           if [ -z "$DURATION" ]; then
-            echo "::warning::Could not parse test duration — skipping budget check"
-            exit 0
+            echo "::error::Missing TAP suite duration — runtime budget could not be verified"
+            exit 1
           fi
           echo "Test suite duration: ${DURATION}ms (budget: ${TEST_BUDGET_MS}ms)"
           if [ "$DURATION" -gt "$TEST_BUDGET_MS" ]; then
@@ -75,9 +84,21 @@ jobs:
         run: node cli/docguard.mjs --version
 
       - name: Guard (self-check)
+        shell: bash
         run: |
           # Exit 0 = pass, Exit 1 = errors (fail CI), Exit 2 = warnings only (allow)
-          node cli/docguard.mjs guard || [ $? -eq 2 ]
+          status=0
+          node cli/docguard.mjs guard --format json > "$DOCGUARD_REPORT" || status=$?
+          cat "$DOCGUARD_REPORT"
+          [ "$status" -eq 0 ] || [ "$status" -eq 2 ]
+
+      - name: Upload guard findings
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: docguard-report-node-${{ matrix.node-version }}
+          path: ${{ env.DOCGUARD_REPORT }}
+          if-no-files-found: warn
 
       - name: Score
         run: node cli/docguard.mjs score
@@ -113,13 +134,20 @@ jobs:
           python3 -c "import xml.etree.ElementTree as ET; r=ET.parse('/tmp/guard-junit.xml').getroot(); print('junit OK:', r.attrib)"
 
       - name: Baseline roundtrip (freeze → pass → restore)
+        shell: bash
         run: |
           mkdir -p /tmp/docguard-baseline && cd /tmp/docguard-baseline
           printf '{"projectName":"bl-ci","profile":"standard"}' > .docguard.json
           mkdir -p docs-canonical && echo "# Architecture" > docs-canonical/ARCHITECTURE.md
-          node $GITHUB_WORKSPACE/cli/docguard.mjs guard --update-baseline
-          node $GITHUB_WORKSPACE/cli/docguard.mjs guard   # must exit 0 now
-          node $GITHUB_WORKSPACE/cli/docguard.mjs guard --no-baseline || [ $? -ne 0 ]
+          node "$GITHUB_WORKSPACE/cli/docguard.mjs" guard --update-baseline
+          node "$GITHUB_WORKSPACE/cli/docguard.mjs" guard   # must exit 0 now
+          status=0
+          node "$GITHUB_WORKSPACE/cli/docguard.mjs" guard --no-baseline || status=$?
+          # This incomplete standard-profile fixture has errors, not just warnings.
+          if [ "$status" -ne 1 ]; then
+            echo "::error::Expected guard --no-baseline to exit 1, got $status"
+            exit 1
+          fi
 
       # ── Cross-project tests ──
       - name: Init in temp dir
@@ -151,8 +179,8 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
     needs: test
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 20
           registry-url: 'https://registry.npmjs.org'

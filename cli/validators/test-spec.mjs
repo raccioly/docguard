@@ -1,3 +1,4 @@
+import { docRolePath, resolveDocRole } from '../shared-doc-roles.mjs';
 /**
  * Test Spec Validator — Checks that tests exist per TEST-SPEC.md coverage rules
  * Now respects projectTypeConfig (e.g., skip E2E for CLI tools)
@@ -19,8 +20,8 @@ export function validateTestSpec(projectDir, config) {
   let total = 0;
   let note;
 
-  const specDoc = 'docs-canonical/TEST-SPEC.md';
-  const testSpecPath = resolve(projectDir, specDoc);
+  const specDoc = docRolePath(config, 'testSpec');
+  const testSpecPath = resolveDocRole(projectDir, config, 'testSpec');
   if (!existsSync(testSpecPath)) {
     // Structure validator catches this. Keep the exact legacy shape here
     // (no `findings` key) — tests deep-equal this early return.

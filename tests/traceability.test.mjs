@@ -43,7 +43,7 @@ describe('Traceability Validator', () => {
     const joined = result.warnings.join(' | ');
     assert.ok(!/\bT300\b|\bT1000\b|\bT200\b/.test(joined),
       `prose T### must not be flagged as untraced requirements; got: ${joined}`);
-    assert.ok(/Requirement T001 .* no test coverage/.test(joined),
+    assert.ok(/Requirement T001 .* no recognized test annotation or label/.test(joined),
       `the real checklist task T001 must be collected + traced; got: ${joined}`);
   });
 
@@ -138,7 +138,7 @@ describe('Traceability Validator', () => {
     assert.strictEqual(result.total, 1);
     assert.deepEqual(result.errors, []);
     assert.strictEqual(result.warnings.length, 1);
-    assert.strictEqual(result.warnings[0], `Requirement ${ID2} (REQUIREMENTS.md:2) has no test coverage. Add @req ${ID2} comment to the test that verifies this requirement`);
+    assert.strictEqual(result.warnings[0], `Requirement ${ID2} (REQUIREMENTS.md:2) has no recognized test annotation or label; behavioral coverage is unknown.`);
   });
 
   it('warns when an orphaned test reference exists', () => {

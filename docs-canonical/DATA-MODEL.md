@@ -2,12 +2,12 @@
 
 <!-- docguard:version 0.5.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-07-03 -->
+<!-- docguard:last-reviewed 2026-09-11 -->
 
 | Metadata | Value |
 |----------|-------|
 | **Status** | ![Status](https://img.shields.io/badge/status-active-brightgreen) |
-| **Version** | `0.4.0` |
+| **Version** | `0.5.0` |
 | **Database** | None — DocGuard is a stateless CLI tool |
 | **Storage** | File-system only (reads project files, writes generated docs) |
 
@@ -15,7 +15,7 @@
 
 ## Entities
 
-DocGuard has **no database**. It is a stateless CLI tool that reads project files and produces output. The "data model" consists of the configuration schemas, validator output formats, and document metadata structures documented below. All data is file-system based — DocGuard reads `.docguard.json`, scans the project directory, and validates canonical documents against the codebase.
+DocGuard uses filesystem artifacts for configuration, optional caches, and history. Commands read project files and produce structured output. The "data model" consists of the configuration schemas, validator output formats, and document metadata structures documented below. All data is file-system based — DocGuard reads `.docguard.json`, scans the project directory, and validates canonical documents against the codebase.
 
 ## Configuration: `.docguard.json`
 
@@ -113,16 +113,16 @@ Every CDD document includes DocGuard metadata as HTML comments at the top:
 
 ## Validator Output Format
 
-Each validator returns a standardized result object:
+Validators emit findings and aggregate counts. The guard adapter adds names and statuses:
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `name` | `string` | Validator name (e.g., `"structure"`, `"changelog"`) |
 | `status` | `string` | `"pass"`, `"warn"`, or `"fail"` |
-| `checks` | `object[]` | Array of individual check results |
-| `checks[].label` | `string` | Human-readable check description |
-| `checks[].passed` | `boolean` | Whether the check passed |
-| `checks[].message` | `string` | Details about the result |
+| `findings` | `object[]` | Stable code, validator, severity, confidence, location, message, suggestion |
+| `passed`, `total` | `number` | Applicable check counts |
+| `errors`, `warnings` | `string[]` | Compatibility message arrays |
+| `applicable` | `boolean` | Optional applicability indicator; false becomes N/A |
 
 ## Fix Command Issue Format
 
@@ -150,10 +150,10 @@ The `score --format json` output:
 |-------|------|-------------|
 | `score` | `number` | CDD maturity score (0-100) |
 | `grade` | `string` | Letter grade: `A+`, `A`, `B`, `C`, `D`, `F` |
-| `breakdown` | `object` | Per-category scores |
-| `breakdown.structure` | `number` | Points for docs-canonical/ structure |
-| `breakdown.content` | `number` | Points for document completeness |
-| `breakdown.freshness` | `number` | Points for recently updated docs |
+| `categories` | `object` | Per-category score, weight, weighted contribution, and axis |
+| `scoreKind` | `string` | `structural-maturity` |
+| `assurance` | `object` | Factual accuracy remains unverified; extracted candidate count is heuristic |
+| `memory` | `object` | Completeness and structural alignment proxies; accuracy is null |
 
 ---
 
@@ -163,3 +163,19 @@ The `score --format json` output:
 |---------|------|--------|---------|
 | 0.4.0 | 2026-03-13 | DocGuard Team | Complete rewrite — documented all config formats, output schemas, metadata headers |
 | 0.1.0 | 2026-03-13 | DocGuard Generate | Auto-generated skeleton |
+
+## Score assurance contract
+
+The numeric CDD score estimates structural maturity. Factual accuracy and regulatory assurance require separate evidence. Existing score and grade thresholds remain stable. Score JSON identifies its scope as `structural-maturity`. `memory.accuracy` is nullable: `null` represents unverified factual accuracy; the former proxy is exposed as `memory.structuralAlignment`. Consumers must preserve null as an unknown value.
+
+An `assurance` object accompanies score, diagnose, CI, and report output. It contains `status` (`unverified`), `factualAccuracy` (`null`), and `unverifiedClaims` (a count of extracted candidates, or null if extraction failed). Even zero extracted candidates leaves prose unverified. Claim discovery uses a bounded heuristic. These fields explain evidence limits while existing CI thresholds retain their numeric meaning.
+
+## Feedback contribution contract
+
+`feedback` defaults to uncertain findings. `--code <CODE>` selects a finding regardless of confidence; `--all` includes all active findings. `--preview` emits reviewable output and skips feedback-record writes. Unknown codes fail with a clear error. Shared issue URLs contain only allowlisted finding identity, tool version, and contribution instructions. Source-derived messages, paths, snippets, and suggestions stay in the local record. Each result includes a search URL covering existing issues and pull requests, including closed work, so contributors can check for duplicates before submitting. The user controls submission through the reviewed issue draft.
+
+## Check coverage and document roles
+
+Each guard validator adds applicability with status and reason. checkCoverage contains counts by status, limitations naming checks that were not fully performed, and an explanatory limitation. These fields describe coverage independently from legacy status, totals, findings, and exit codes. CI/report consumers preserve them, including disabled-check counts.
+
+Optional docs.roles maps canonical roles to safe project-relative Markdown paths. Configuration normalization replaces each mapped default in requiredFiles.canonical and documentTypes. Read-only callers accept the normalized mapping. Legacy document writers reject custom mappings until write semantics support existing layouts safely. The configuration schema and docs/configuration.md define the current role names and supported operations.
