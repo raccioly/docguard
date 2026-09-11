@@ -1,13 +1,13 @@
 # DocGuard — CDD Enforcement Extension for Spec Kit
 
-Enterprise-grade Canonical-Driven Development (CDD) enforcement and **AI-readable project memory** for [Spec Kit](https://github.com/github/spec-kit). DocGuard builds a complete, language-aware documentation memory of any codebase (`generate --plan`), keeps it always up to date as code changes (`sync`), and verifies it (`guard`) — with deterministic mechanical fixes (`fix --write`) where it can and grounded agent prompts where prose is needed.
+Enterprise-grade Canonical-Driven Development (CDD) enforcement and **AI-readable project memory** for [Spec Kit](https://github.com/github/spec-kit). DocGuard builds source-derived documentation context for supported code (`generate --plan`), refreshes generated sections as code changes (`sync`), and checks configured rules (`guard`) — with deterministic mechanical fixes (`fix --write`) where it can and grounded agent prompts where prose is needed.
 
 ## Features
 
-- **24 Validators** — Structure, Security, Doc Quality, Test-Spec, Drift-Comments, API-Surface, Freshness, Cross-Reference, and 13 more
-- **Language-agnostic** — JS/TS, Python, Rust, Go, Java/Kotlin, Ruby, PHP, C#. Polyglot/monorepo-aware.
+- **Configurable validators** — Structure, Security, Doc Quality, Test-Spec, Drift-Comments, API-Surface, Freshness, Cross-Reference, and more; use `docguard --help` for the current surface
+- **Language-specific extraction** — Supported checks cover several languages and monorepos. Coverage varies by detector; unsupported inputs remain unverified.
 - **AI-powered Generate** — `generate --plan` builds the code-truth skeleton in `<!-- docguard:section -->` markers and emits a structured agent task manifest; the AI writes the prose.
-- **Always up to date** — `sync` surgically refreshes code-truth doc sections in place, **preserves human prose**, flags prose for agent review.
+- **Refresh and review** — `sync` surgically refreshes code-truth doc sections in place, **preserves human prose**, flags prose for agent review.
 - **Mechanical `fix --write`** — deterministic, no-LLM: remove stale documented endpoints, refresh stale "N validators" counts, replace stale version refs, insert missing `## [Unreleased]`.
 - **5 AI Skills** — docguard-fix, docguard-guard, docguard-sync, docguard-review, docguard-score (enterprise-grade behavior protocols, not just step-lists)
 - **Workflow Chaining** — YAML handoffs enable guard → sync → fix → review → score flows
@@ -20,7 +20,7 @@ Enterprise-grade Canonical-Driven Development (CDD) enforcement and **AI-readabl
 npm install -g docguard-cli
 ```
 
-Or use via npx:
+Spec Kit orchestration scripts require a local `node_modules/docguard-cli` installation or `docguard` on PATH; they do not implicitly download a CLI. Direct CLI use via npx remains available:
 ```bash
 npx docguard-cli guard
 ```
@@ -45,7 +45,7 @@ docguard score
 
 | Command | Alias | Purpose |
 |---------|-------|---------|
-| `speckit.docguard.guard` | `docguard.guard` | Run 19-validator quality gate with severity triage |
+| `speckit.docguard.guard` | `docguard.guard` | Run configurable quality gate with severity triage |
 | `speckit.docguard.fix` | `docguard.fix` | AI-driven documentation repair with codebase research |
 | `speckit.docguard.review` | `docguard.review` | Cross-document semantic consistency analysis (read-only) |
 | `speckit.docguard.score` | `docguard.score` | CDD maturity score with ROI improvement roadmap |

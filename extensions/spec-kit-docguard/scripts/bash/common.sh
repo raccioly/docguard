@@ -23,25 +23,17 @@ find_docguard_root() {
 
 find_docguard_cli() {
     local root="${1:-$(pwd)}"
-    
-    # Check for local dev mode first
-    if [ -f "$root/cli/docguard.mjs" ]; then
-        echo "node $root/cli/docguard.mjs"
+    local entry
+    for entry in "$root/cli/docguard.mjs" "$root/node_modules/docguard-cli/cli/docguard.mjs"; do
+        if [ -f "$entry" ] && command -v node >/dev/null 2>&1; then
+            printf '%q %q\n' "$(command -v node)" "$entry"
+            return 0
+        fi
+    done
+    if command -v docguard >/dev/null 2>&1; then
+        printf '%q\n' "$(command -v docguard)"
         return 0
     fi
-    
-    # Check for global install
-    if command -v docguard-cli >/dev/null 2>&1; then
-        echo "docguard-cli"
-        return 0
-    fi
-    
-    # Fall back to npx
-    if command -v npx >/dev/null 2>&1; then
-        echo "npx docguard-cli"
-        return 0
-    fi
-    
     return 1
 }
 

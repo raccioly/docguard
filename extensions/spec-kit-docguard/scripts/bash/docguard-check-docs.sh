@@ -104,17 +104,24 @@ if $JSON_MODE; then
     # Optionally include score and guard
     EXTRAS=""
     if $VERBOSE; then
-        SCORE_OUTPUT=$(eval $CLI_CMD score --format json 2>/dev/null || echo "")
-        GUARD_OUTPUT=$(eval $CLI_CMD guard 2>&1 || true)
-        
-        # Extract score
-        SCORE=$(echo "$SCORE_OUTPUT" | grep -o '"total":[0-9]*' | head -1 | sed 's/"total"://' || echo "0")
-        
-        # Extract guard pass/total from output like "156/160 passed"
-        GUARD_PASS=$(echo "$GUARD_OUTPUT" | grep -o '[0-9]*/[0-9]* passed' | sed 's|/.*||' || echo "0")
-        GUARD_TOTAL=$(echo "$GUARD_OUTPUT" | grep -o '[0-9]*/[0-9]* passed' | sed 's|.*/||; s| .*||' || echo "0")
-        
-        EXTRAS=",\"score\":$SCORE,\"guardPass\":$GUARD_PASS,\"guardTotal\":$GUARD_TOTAL"
+        SCORE_OUTPUT=$(eval "$CLI_CMD score --format json")
+        SCORE=$(printf '%s' "$SCORE_OUTPUT" | node -e '
+          const d=JSON.parse(require("fs").readFileSync(0,"utf8"));
+          if(!Number.isFinite(d.score) || d.score<0 || d.score>100) throw Error("Invalid DocGuard score");
+          process.stdout.write(String(d.score));
+        ')
+        GUARD_STATUS=0
+        GUARD_OUTPUT=$(eval "$CLI_CMD guard --format json") || GUARD_STATUS=$?
+        EXTRAS=$(printf '%s' "$GUARD_OUTPUT" | node -e '
+          const d=JSON.parse(require("fs").readFileSync(0,"utf8"));
+          const exit=Number(process.argv[2]);
+          const expected={PASS:0,WARN:2,FAIL:1};
+          if(!Object.hasOwn(expected,d.status) || expected[d.status]!==exit ||
+             !Number.isInteger(d.passed) || !Number.isInteger(d.total) ||
+             d.passed<0 || d.total<d.passed) throw Error("Invalid DocGuard guard report");
+          const fields={score:Number(process.argv[1]),guardPass:d.passed,guardTotal:d.total,guardStatus:d.status};
+          process.stdout.write(","+JSON.stringify(fields).slice(1,-1));
+        ' "$SCORE" "$GUARD_STATUS")
     fi
     
     # Check for spec-kit
