@@ -4624,6 +4624,54 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-09-11T15:34:41.023Z"
+    },
+    {
+      "id": "bug-280",
+      "timestamp": "2026-09-11T15:44:51.130Z",
+      "error_message": "Significant refactor of ",
+      "file": ".github/workflows/release.yml",
+      "root_cause": "9 lines replaced/restructured",
+      "fix": "Rewrote 16→21 lines (9 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "yml"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T15:44:51.130Z"
+    },
+    {
+      "id": "bug-281",
+      "timestamp": "2026-09-11T15:45:19.623Z",
+      "error_message": "Significant refactor of ",
+      "file": ".github/workflows/scheduled-release.yml",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 11→45 lines (3 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "yml"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T15:45:19.623Z"
+    },
+    {
+      "id": "bug-282",
+      "timestamp": "2026-09-11T15:45:32.759Z",
+      "error_message": "Wrong condition in logic",
+      "file": ".github/workflows/auto-merge.yml",
+      "root_cause": "Condition was: if (author === BOT_DEPENDABOT)",
+      "fix": "Changed to: if (author === BOT_ACTIONS)",
+      "tags": [
+        "auto-detected",
+        "logic-fix",
+        "yml"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T15:45:32.759Z"
     }
   ]
 }

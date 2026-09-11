@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.34.5] - 2026-09-11
+
+No code changes. Fifth attempt at the npm publish — and the actual root cause of the 404, which the previous four all masked.
+
+### Fixed
+
+- **Removed `registry-url` from the publish job's `setup-node`.** This is what was actually breaking Trusted Publishing. `setup-node`'s `registry-url` writes an `.npmrc` containing `//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}`; with `NODE_AUTH_TOKEN` removed in v0.34.3, that expanded to an **empty** token. npm then took the token-auth path holding no token and 404'd, never attempting the OIDC exchange — which is why the log showed provenance signing succeed, no OIDC notice at all, and then `404 ... could not be found or you do not have permission`. npm defaults to `registry.npmjs.org` anyway, so nothing is lost. Verified the npm-side trusted publisher config is correct and saved (`raccioly/docguard` → `release.yml`, with both `npm publish` and `npm stage publish` permissions).
+- **Added a fail-loud guard before publish.** Asserts no `_authToken` exists in any `.npmrc` (userconfig, project, home) and fails with an explicit message if one does. An empty token silently routes npm away from OIDC and the only symptom is a generic 404 that reads like a missing package — that ambiguity is what cost four releases. Note `npm config get` refuses on auth keys ("protected") and `npm config list --json` omits them, so the guard greps the files directly; both directions were verified locally.
+- **`scheduled-release.yml` no longer pushes directly to `main`.** Two stacked blockers made that impossible once branch protection landed: `main` now requires a PR and `github-actions[bot]` has no bypass; and a PR opened with `GITHUB_TOKEN` doesn't trigger workflows, so the required `test (18/20/22/24)` checks would never report and the PR could never merge. It now pushes a `release/vX.Y.Z` branch, opens a PR, and explicitly dispatches `ci.yml` against that branch so the checks do report. `auto-merge.yml` gained a correspondingly narrow rule for these: `github-actions[bot]` PRs merge only from a `release/` branch and only when they touch nothing beyond version, changelog, and generated extension metadata.
+
 ## [0.34.4] - 2026-09-11
 
 No code changes from v0.34.3 — v0.34.3's own npm-publish fix (below) turned out to have a bug, caught by this very release attempt: `npm install -g npm@latest` resolved to npm 12.0.2, which requires Node `^22.22.2 || ^24.15.0 || >=26.0.0` — newer than the Node 20 this job runs on, so the self-update step itself failed before publish ever ran. Same class of mistake as the `@babel/parser` major bump earlier (bug-255): an unpinned "latest" floated past what the job's Node version supports.

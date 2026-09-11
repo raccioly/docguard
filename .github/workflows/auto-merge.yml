@@ -56,7 +56,8 @@ jobs:
 
             const BOT_DEPENDABOT = 'dependabot[bot]';
             const BOT_JULES = 'google-labs-jules[bot]';
-            if (![BOT_DEPENDABOT, BOT_JULES].includes(author)) {
+            const BOT_ACTIONS = 'github-actions[bot]';
+            if (![BOT_DEPENDABOT, BOT_JULES, BOT_ACTIONS].includes(author)) {
               core.info(`#${num} authored by ${author} (not a handled bot) — leaving alone.`);
               return;
             }
@@ -96,7 +97,23 @@ jobs:
             });
             const paths = files.map((f) => f.filename);
 
-            if (author === BOT_DEPENDABOT) {
+            if (author === BOT_ACTIONS) {
+              // Release PRs cut by scheduled-release.yml. Tightly constrained:
+              // must come from a release/ branch and touch ONLY the version +
+              // changelog + generated extension metadata. Anything else under
+              // this bot's name is not something we cut, so hold it.
+              if (!pr.head.ref.startsWith('release/')) {
+                await hold('needs-review', `an automated PR from a non-\`release/\` branch (\`${pr.head.ref}\`).`);
+                return;
+              }
+              const ALLOWED = /^(package(-lock)?\.json|CHANGELOG\.md|extensions\/|\.agent\/)/;
+              const unexpected = paths.filter((p) => !ALLOWED.test(p));
+              if (unexpected.length) {
+                await hold('needs-review', `a release PR touching unexpected files:\n${unexpected.map((p) => `- \`${p}\``).join('\n')}`);
+                return;
+              }
+              core.info(`#${num} automated release PR (${pr.head.ref}) — eligible.`);
+            } else if (author === BOT_DEPENDABOT) {
               // Version delta from the title: "bump X from 1.2.3 to 1.2.4"
               const m = /from (\d+)\.(\d+)\.(\d+)\S* to (\d+)\.(\d+)\.(\d+)/.exec(pr.title || '');
               if (!m) { await hold('needs-review', 'could not parse the version delta from the PR title.'); return; }

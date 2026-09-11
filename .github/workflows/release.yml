@@ -204,7 +204,16 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 20
-          registry-url: 'https://registry.npmjs.org'
+          # DELIBERATELY NO `registry-url`. setup-node's registry-url writes an
+          # .npmrc containing:
+          #     //registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}
+          # With NODE_AUTH_TOKEN removed (Trusted Publishing), that expands to
+          # an EMPTY token. npm then takes the token-auth path holding no token
+          # and 404s, never attempting the OIDC exchange at all. v0.34.4 failed
+          # exactly this way: npm@11 installed fine, provenance signed fine, no
+          # OIDC notice in the log, then "404 ... could not be found or you do
+          # not have permission". npm defaults to registry.npmjs.org anyway, so
+          # dropping this loses nothing.
 
       # Trusted Publishing (OIDC) needs npm CLI >= 11.5.0; Node 20's bundled
       # npm predates that, so self-update first. Pinned to the 11.x line
@@ -222,6 +231,33 @@ jobs:
       # reached npm) when the token expired — nothing here can expire the
       # same way; a short-lived token is minted per run.
       - run: npm install -g npm@11
+
+      # Fail LOUDLY if anything put an auth token back in the npm config.
+      # A stray (even empty) _authToken silently routes npm away from OIDC and
+      # the only symptom is a generic 404 that reads like a missing package --
+      # it cost four releases (v0.34.1 through v0.34.4) to identify. Better to
+      # break here with a clear message than to publish-fail cryptically again.
+      - name: Assert no npm auth token is configured (OIDC must be the path)
+        run: |
+          npm --version
+          # NOTE: `npm config get <key>` refuses on auth keys ("protected") and
+          # `npm config list --json` omits them entirely, so neither can be used
+          # to detect this. Grep the actual .npmrc files instead.
+          USERCONFIG=$(npm config list | sed -n 's/^userconfig = "\(.*\)"$/\1/p')
+          HITS=""
+          for f in "$USERCONFIG" ".npmrc" "$HOME/.npmrc"; do
+            if [ -n "$f" ] && [ -f "$f" ] && grep -qE '_authToken|_auth[[:space:]]*=' "$f"; then
+              HITS="$HITS $f"
+            fi
+          done
+          if [ -n "$HITS" ]; then
+            echo "::error::npm auth token found in:$HITS"
+            echo "::error::Even an EMPTY _authToken routes npm to token auth and skips OIDC/Trusted Publishing —"
+            echo "::error::the only symptom is a generic 404 that reads like a missing package."
+            echo "::error::Remove registry-url from setup-node and any NODE_AUTH_TOKEN from this job."
+            exit 1
+          fi
+          echo "No auth token configured — npm will use OIDC (Trusted Publishing)."
 
       - name: Publish (with provenance)
         run: npm publish --provenance

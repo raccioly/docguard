@@ -124,14 +124,48 @@ jobs:
           npm test
           node cli/docguard.mjs guard || [ $? -eq 2 ]
 
-      - name: Commit and push (this triggers release.yml)
+      # Two stacked constraints make a direct `git push origin HEAD:main`
+      # impossible here, so this opens a PR instead:
+      #
+      #   1. main requires a pull request. github-actions[bot] is not an admin
+      #      and has no bypass, so a direct push is rejected outright.
+      #   2. A PR opened with GITHUB_TOKEN does NOT trigger further workflow
+      #      runs (GitHub's loop guard). So ci.yml would never fire on it, the
+      #      required test (18/20/22/24) checks would never report, and the PR
+      #      would sit forever on "Expected — waiting for status to be
+      #      reported" — unmergeable.
+      #
+      # So: push a branch (unprotected), open the PR, then explicitly dispatch
+      # ci.yml against that branch so the checks DO report on its head SHA.
+      # auto-merge.yml then merges it once all four legs are green, and the
+      # resulting package.json change on main triggers release.yml to publish.
+      - name: Open release PR and kick off its CI
         if: steps.check.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          BRANCH="release/v${NEW_VERSION}"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
           git add package.json package-lock.json CHANGELOG.md extensions/ .agent/ 2>/dev/null || true
           git commit -m "release: v${NEW_VERSION} — automated weekly batch
 
           Cut by .github/workflows/scheduled-release.yml. Publishing itself is
-          handled by release.yml, which triggers on this package.json change."
-          git push origin HEAD:main
+          handled by release.yml, which triggers once this lands on main."
+          git push origin "$BRANCH"
+
+          gh pr create \
+            --base main \
+            --head "$BRANCH" \
+            --title "release: v${NEW_VERSION} — automated weekly batch" \
+            --body "Automated weekly release cut by \`scheduled-release.yml\`.
+
+          Batches everything merged since \`${{ steps.check.outputs.last_tag }}\`. Tests and \`guard\` already passed on this tree before the PR was opened; CI is dispatched separately below so the required checks report (a GITHUB_TOKEN-opened PR does not trigger workflows on its own).
+
+          Once green, \`auto-merge.yml\` merges this, and the \`package.json\` change triggers \`release.yml\` to tag and publish."
+
+          # Required checks must actually report on this SHA or the PR can
+          # never merge -- see constraint 2 above.
+          gh workflow run ci.yml --ref "$BRANCH"
+          echo "Opened $BRANCH and dispatched CI."
