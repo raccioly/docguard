@@ -101,10 +101,8 @@ const FIX_INSTRUCTIONS = {
     autoFixable: false,
   },
   'Freshness': {
-    action: 'Review stale documents',
-    command: 'docguard fix --doc',
-    llmCommand: '/docguard.fix --doc',
-    description: 'Documents haven\'t been reviewed since recent code changes. Re-run fix --doc for each stale doc.',
+    action: 'Review document evidence against relevant changes',
+    description: 'Review signals do not establish incorrect documentation. Check whether the documentation or implementation needs a change; preserve approved intent.',
     autoFixable: false,
   },
   // ── Routed (Phase F): these used to fall through to a generic "Manual review needed" ──
@@ -254,23 +252,6 @@ export function runDiagnose(projectDir, config, flags) {
         }
       }
       if (mechanicalCount > 0 || hasStructural || autoFixable.length > 0) console.log('');
-    }
-  }
-
-  // Detect stale docs from freshness and map to specific fix --doc targets
-  for (const issue of issues) {
-    if (issue.validator === 'Freshness' && !issue.docTarget) {
-      const match = issue.message.match(/([\w-]+\.md)/i);
-      if (match) {
-        const docName = match[1].toLowerCase().replace('.md', '');
-        const docMap = { 'architecture': 'architecture', 'data-model': 'data-model', 'security': 'security', 'test-spec': 'test-spec', 'environment': 'environment' };
-        issue.docTarget = docMap[docName] || null;
-        if (issue.docTarget) {
-          issue.command = agentMode === 'llm'
-            ? `/docguard.fix --doc ${issue.docTarget}`
-            : `docguard fix --doc ${issue.docTarget}`;
-        }
-      }
     }
   }
 
@@ -497,7 +478,7 @@ function outputPrompt(projectDir, guardData, scoreData, issues, flags, agentMode
   } else {
     lines.push('After making all fixes, run: docguard guard');
   }
-  lines.push('Expected result: All checks pass (0 errors, 0 warnings)');
+  lines.push('Expected result: Resolve verified defects; explain remaining review signals and unsupported checks. Do not rewrite correct documents merely to remove warnings.');
   lines.push(`Structural baseline: ${scoreData.score}/100. Resolve evidenced defects; verify material claims separately.`);
   lines.push('Preserve approved requirements when implementation disagrees. A higher score is not proof of factual correctness.');
 

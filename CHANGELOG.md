@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Documentation coverage honors configured documentation directories and raw role mappings, while excluded/private/symlinked documents cannot supply evidence. Reproduced against a pinned SvelteKit checkout.
+- Configuration path construction and existence checks produce low-confidence review signals instead of asserting that directories are undocumented config files. Parsed comments and example strings do not establish file usage; findings identify the scanned documentation scope.
+- Schema synchronization honors file exclusions and counts each source file once across overlapping roots, preserving separate models with the same name. Verified against a pinned Django checkout.
+- Feature trace scoring uses the validator's explicit test annotations and labels; fixture JSON and incidental source strings no longer inflate requirement linkage. This does not yet solve duplicate requirement identities across specs.
+- Diagnosis preserves freshness as a review task instead of suggesting incomplete or automatic document rewrites, and its AI prompt no longer demands removal of every warning.
+
 ## [0.36.1] - 2026-09-11
 
 ### Fixed

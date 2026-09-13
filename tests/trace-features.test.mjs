@@ -24,6 +24,7 @@ import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 
 import { runTrace, runTraceFeatures } from '../cli/commands/trace.mjs';
+import { validateTraceability } from '../cli/validators/traceability.mjs';
 
 // Built by concatenation — see NB in the header comment.
 const FR1 = ['FR', '001'].join('-');
@@ -113,6 +114,37 @@ describe('trace --features', () => {
     assert.equal(skeletal.weakest, 'reqCoverage');
     assert.match(skeletal.fixHint, new RegExp(FR2));
   });
+
+  for (const [name, filename, source, linked] of [
+    ['fixture JSON', 'data.json', JSON.stringify({ sample: FR2 }), false],
+    ['fixture source string', 'fixture.test.mjs', 'const sample = ' + JSON.stringify('// @req ' + FR2) + ';\n', false],
+    ['annotated executable test', 'behavior.test.mjs',
+      'import { test } from "node:test";\n// @req ' + FR2 + '\ntest("behavior", () => {});\n', true],
+    ['executable test label', 'label.test.mjs',
+      'import { test } from "node:test";\ntest(' + JSON.stringify(FR2 + ' behavior') + ', () => {});\n', true],
+  ]) {
+    it('agrees with the validator about ' + name, () => {
+      dir = makeTwoFeatureRepo();
+      write(dir, 'tests/' + filename, source);
+      const validation = validateTraceability(dir, CONFIG);
+      const missing = validation.findings.filter(f => f.code === 'TRC004');
+      assert.equal(missing.length, linked ? 0 : 1);
+      if (!linked) assert.match(missing[0].message, new RegExp(FR2));
+      assert.equal(validation.passed, linked ? 2 : 1);
+      assert.equal(validation.total, 2);
+
+      const parsed = JSON.parse(capture(() => runTraceFeatures(dir, CONFIG, { format: 'json' })));
+      const feature = parsed.features.find(f => f.name === '002-skeletal');
+      assert.deepEqual(feature.signals.reqCoverage, {
+        pct: linked ? 100 : 0,
+        covered: linked ? 1 : 0,
+        total: 1,
+        uncovered: linked ? [] : [FR2],
+      });
+      const control = parsed.features.find(f => f.name === '001-complete');
+      assert.equal(control.signals.reqCoverage.pct, 100);
+    });
+  }
 
   it('orders features worst-first in JSON and summary points at the worst', () => {
     dir = makeTwoFeatureRepo();

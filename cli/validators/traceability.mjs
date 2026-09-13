@@ -495,7 +495,14 @@ function testDeclarations(content, filename) {
   return declarations;
 }
 
-function scanTestFilesForReferences(projectDir, projectFiles, patterns) {
+/**
+ * Read explicit requirement annotations and test labels from eligible test sources.
+ * Shared by validation and feature scoring; fixture data is not linkage evidence.
+ * Callers supply project-relative candidate paths and global requirement regexes.
+ * No files are written and no findings or suppression policy are consulted.
+ * @returns {Map<string, Array<{file: string, line: number}>>} ID to declaration locations
+ */
+export function scanTestFilesForReferences(projectDir, projectFiles, patterns) {
   const testFiles = projectFiles.filter(isTestSource);
 
   const testRefs = new Map(); // reqId → [{ file, line }]
