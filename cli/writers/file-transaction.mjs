@@ -2,17 +2,17 @@
  * Small, dependency-free multi-file transaction for lifecycle state.
  *
  * Every replacement is staged beside its destination before the first visible
- * mutation. Originals are retained in memory and restored if any rename,
+ * mutation. Originals are retained in memory and restored if any replacement,
  * deletion, or post-commit validation fails. This gives callers an all-old or
  * all-new working tree for the small bounded JSON/Markdown files DocGuard owns.
  * @implements docguard.document-lifecycle#FR-013
  */
 
 import {
+  copyFileSync,
   existsSync,
   mkdirSync,
   readFileSync,
-  renameSync,
   rmSync,
   writeFileSync,
 } from 'node:fs';
@@ -62,7 +62,9 @@ export function commitFileTransaction(entries, { validate = null, afterMutation 
       if (entry.content === null) {
         if (entry.existed) rmSync(entry.path);
       } else {
-        renameSync(entry.staged, entry.path);
+        // copyFileSync overwrites on every supported Node platform. renameSync
+        // cannot replace an existing destination consistently on Windows.
+        copyFileSync(entry.staged, entry.path);
       }
       applied.push(entry);
       if (afterMutation) afterMutation(entry, applied.length);

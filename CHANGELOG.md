@@ -43,6 +43,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Archive recovery validation now has an independent scanner boundary shared by
   lifecycle, registry, and traceability checks, avoiding cyclic ownership while
   preserving the same fail-closed tombstone contract.
+- Staged lifecycle replacements use a cross-platform overwrite operation, so
+  existing registry and Markdown targets do not rely on POSIX rename behavior.
 - The R2 lifecycle spec now records its reviewed implementation outcome as
   verified while remaining an active living specification. Governing agent,
   architecture, CI, environment, requirements, security, and test documents
