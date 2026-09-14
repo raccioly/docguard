@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.37.1] - 2026-09-14
+
+Automated weekly release — batches everything merged since `v0.37.0`.
+
+### Changed
+
+- fix: synchronize release version surfaces (#354)
+- fix: clarify lifecycle scope and harden patch releases (#353)
+- fix: enforce Spec Kit catalog form bounds (#352)
+- fix: derive Spec Kit catalog inventory from manifest (#351)
+
+
 ### Fixed
 
 - Spec Kit catalog submissions now derive command and hook counts from the
