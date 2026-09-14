@@ -5222,6 +5222,23 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-09-14T14:22:14.613Z"
+    },
+    {
+      "id": "bug-318",
+      "timestamp": "2026-09-14T14:25:08.472Z",
+      "error_message": "Badge CLI tests refresh generated skills in the source checkout",
+      "file": "tests/commands.test.mjs",
+      "root_cause": "Tests used the default repository cwd for a deprecated alias that initializes skills",
+      "fix": "Run both badge cases in disposable projects using process.execPath, closed tooling PATH and test cleanup",
+      "tags": [
+        "tests",
+        "isolation"
+      ],
+      "related_bugs": [
+        "bug-317"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-09-14T14:25:08.472Z"
     }
   ]
 }

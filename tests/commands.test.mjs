@@ -5,7 +5,7 @@
 
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { execSync, spawn } from 'node:child_process';
+import { execSync, execFileSync, spawn } from 'node:child_process';
 import { mkdtempSync, mkdirSync, rmSync, existsSync, writeFileSync, readFileSync, chmodSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -78,8 +78,19 @@ describe('docguard audit', () => {
 
 
 describe('docguard badge', () => {
-  it('runs and shows badges', () => {
-    const output = run('badge');
+  // The deprecated alias initializes skills: keep its writes out of the source tree.
+  function runBadge(t, args = []) {
+    const project = mkdtempSync(join(tmpdir(), 'dg-badge-command-'));
+    t.after(() => rmSync(project, { recursive: true, force: true }));
+    return execFileSync(process.execPath, [CLI, 'badge', ...args], {
+      cwd: project, encoding: 'utf8', timeout: 15000,
+      // No host Spec Kit installation may run during this fixture.
+      env: { ...process.env, NO_COLOR: '1', PATH: '' },
+    });
+  }
+
+  it('runs and shows badges', t => {
+    const output = runBadge(t);
     assert.match(output, /DocGuard Badge/);
     assert.match(output, /Score Badge:/);
     assert.match(output, /Type Badge:/);
@@ -87,8 +98,8 @@ describe('docguard badge', () => {
     assert.match(output, /img\.shields\.io/);
   });
 
-  it('outputs JSON with --format json', () => {
-    const output = run('badge --format json');
+  it('outputs JSON with --format json', t => {
+    const output = runBadge(t, ['--format', 'json']);
     const jsonStart = output.indexOf('{');
     const jsonStr = output.substring(jsonStart);
     const parsed = JSON.parse(jsonStr);
