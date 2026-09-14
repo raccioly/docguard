@@ -409,6 +409,89 @@
           }
         ]
       }
+    },
+    {
+      "specId": "docguard.precision-evidence-loop",
+      "path": "specs/007-precision-evidence-loop/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "approved",
+          "delivery": "in_progress",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": "living"
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md",
+            "docs-canonical/CI-RECIPES.md",
+            "docs-canonical/REQUIREMENTS.md",
+            "docs-canonical/SECURITY.md",
+            "docs-canonical/TEST-SPEC.md"
+          ]
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.precision-evidence-loop#FR-001",
+          "docguard.precision-evidence-loop#FR-002",
+          "docguard.precision-evidence-loop#FR-003",
+          "docguard.precision-evidence-loop#FR-004",
+          "docguard.precision-evidence-loop#FR-005",
+          "docguard.precision-evidence-loop#FR-006",
+          "docguard.precision-evidence-loop#FR-007",
+          "docguard.precision-evidence-loop#FR-008",
+          "docguard.precision-evidence-loop#FR-009",
+          "docguard.precision-evidence-loop#FR-010",
+          "docguard.precision-evidence-loop#FR-011",
+          "docguard.precision-evidence-loop#FR-012",
+          "docguard.precision-evidence-loop#FR-013",
+          "docguard.precision-evidence-loop#FR-014",
+          "docguard.precision-evidence-loop#FR-015",
+          "docguard.precision-evidence-loop#FR-016",
+          "docguard.precision-evidence-loop#FR-017",
+          "docguard.precision-evidence-loop#SC-001",
+          "docguard.precision-evidence-loop#SC-002",
+          "docguard.precision-evidence-loop#SC-003",
+          "docguard.precision-evidence-loop#SC-004",
+          "docguard.precision-evidence-loop#SC-005",
+          "docguard.precision-evidence-loop#SC-006"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/007-precision-evidence-loop/spec.md",
+            "digest": "sha256:8c60c59cbfd19f69fa2c08da502bebd361f229646a0ca20e2da37a785d08d317"
+          },
+          {
+            "path": "specs/007-precision-evidence-loop/plan.md",
+            "digest": "sha256:b4d6b96aa5cab77474542e248997bad0446d211b3c4e70d19c75779342fff50e"
+          },
+          {
+            "path": "specs/007-precision-evidence-loop/tasks.md",
+            "digest": "sha256:9f2ffcb05c5f714c5a9cfdbc0246382f9682b231507797be3e7d835e1e28cf86"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 0,
+          "total": 19
+        },
+        "implementationEvidence": [],
+        "testEvidence": []
+      }
     }
   ],
   "tombstones": [

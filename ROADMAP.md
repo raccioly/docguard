@@ -94,7 +94,9 @@ transaction rollback fixtures, and `after_implement`/`after_converge` evidence
 gates. Broader symbol inference remains intentionally unsupported until R3 can
 measure its false-positive cost.
 
-### R3 — Independent precision benchmark (planned)
+### R3 — Independent precision benchmark (in progress)
+
+Governing spec: `specs/007-precision-evidence-loop/spec.md`.
 
 Build a reproducible corpus beyond the maintainer's projects. Sample JavaScript,
 TypeScript, Python, fallback-language, monorepo, generated-code, and sparse-doc
@@ -110,7 +112,9 @@ skipping supported cases does not qualify as an improvement.
 Contribution slices: redistributable fixture snapshots, adjudication schema,
 corpus runner, result visualizer, and language-specific labeled cases.
 
-### R4 — Contribution-to-regression loop (planned)
+### R4 — Contribution-to-regression loop (in progress)
+
+Governing spec: `specs/007-precision-evidence-loop/spec.md`.
 
 Turn disputed findings into safe public regression cases. Extend `feedback` with
 a fixture manifest that records detector family, configuration, expected result,

@@ -26,6 +26,10 @@ Automated weekly release — batches everything merged since `v0.37.1`.
 
 ### Added
 
+- The active precision-evidence specification defines a reproducible R3/R4
+  benchmark, leakage-safe split contract, adjudication taxonomy, public-source
+  safety boundary, and contribution-to-regression workflow before implementation.
+
 - `docguard reconcile --since <ref>` emits a deterministic JSON review graph
   that separates mechanical facts, approved intent, decisions, unrelated
   changes, and unsupported evidence. Its write mode delegates only mechanical
