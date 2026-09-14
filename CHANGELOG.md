@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `agents --check` preserves the repository and never bootstraps skills or invokes Spec Kit; stale managed files still exit 2, and explicit setup remains available.
 - Documentation coverage honors configured documentation directories and raw role mappings, while excluded/private/symlinked documents cannot supply evidence. Reproduced against a pinned SvelteKit checkout.
 - Configuration path construction and existence checks produce low-confidence review signals instead of asserting that directories are undocumented config files. Parsed comments and example strings do not establish file usage; findings identify the scanned documentation scope.
 - Schema synchronization honors file exclusions and counts each source file once across overlapping roots, preserving separate models with the same name. Verified against a pinned Django checkout.

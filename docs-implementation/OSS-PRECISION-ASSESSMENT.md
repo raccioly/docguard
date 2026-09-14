@@ -1,6 +1,6 @@
 # Independent open-source precision assessment
 
-This is an ongoing evaluation for the 24-hour improvement effort begun September 13, 2026 at 00:08 UTC. The released baseline is DocGuard 0.36.1 (`6c80d6aedae3bb31430cb91494e42bc62db7c7fe`). Results below are observations, not a release attestation or an estimate of universal accuracy.
+This evaluation began September 13, 2026 at 00:08 UTC. The original effort reached a usage limit and did not run continuously for 24 hours. Work resumed September 14; the expired automation is paused. The released baseline is DocGuard 0.36.1 (`6c80d6aedae3bb31430cb91494e42bc62db7c7fe`). Results below are observations, not a release attestation or an estimate of universal accuracy.
 
 ## Evaluation method
 
@@ -18,7 +18,7 @@ Baseline: seven errors and 44 warnings. The seven errors require a canonical dir
 
 DCV004 says `.svelte-kit` is a config file that no documentation mentions. The [project structure guide, lines 89–91](https://github.com/sveltejs/kit/blob/4da6320db8d70b73b93e142e4bb6ba9173be3b97/documentation/docs/10-getting-started/30-project-structure.md#L89-L91) explicitly explains the generated directory. The [source test](https://github.com/sveltejs/kit/blob/4da6320db8d70b73b93e142e4bb6ba9173be3b97/packages/kit/src/core/adapt/builder.spec.js#L31) includes a path expression that the detector can treat as a config reference.
 
-A second run supplied `config.docs = { dirs: ['documentation/docs'] }` directly to `runGuardInternal`, keeping all other loaded configuration unchanged. Results were still seven errors and 44 warnings. A direct `validateDocsCoverage` call reproduced DCV004. Its `collectDocContent` function uses fixed directories and does not receive the config argument. This isolates an implementation defect rather than an absent user setting. The configured-directory correction removes this finding on the same checkout. Its focused suite passes 107 tests, including exclusions, raw role mapping and neighboring genuinely undocumented configs. This is preliminary validation; the final combined runtime matrix remains pending. Directory-versus-file inference is a separate remaining limitation.
+A second run supplied `config.docs = { dirs: ['documentation/docs'] }` directly to `runGuardInternal`, keeping all other loaded configuration unchanged. Results were still seven errors and 44 warnings. A direct `validateDocsCoverage` call reproduced DCV004. Its `collectDocContent` function uses fixed directories and does not receive the config argument. This isolates an implementation defect rather than an absent user setting. The configured-directory correction removes this finding on the same checkout. Its focused suite passes 107 tests, including exclusions, raw role mapping and neighboring genuinely undocumented configs. The combined precision batch subsequently passed the supported-runtime matrix at commit 7729306; see the validation checkpoint below. Directory-versus-file inference is a separate remaining limitation.
 
 ### Review signals: conditional tests
 
@@ -81,3 +81,10 @@ The combined candidate before the conservative literal prefilter passed 1,603 te
 Same-process, alternating validator samples reveal a real documentation-coverage cost from source parsing. After the prefilter, warm DocGuard-repository samples are 143–166 ms versus 34–41 ms released; Astro samples are 917–1,254 ms versus 546–595 ms; SvelteKit samples are 727–804 ms versus 444–501 ms. Four samples per version and project include a first cold measurement; these ranges list subsequent measurements. This is validator latency on this machine, not a throughput benchmark or proof of the cause of full-suite timing. The CI suite budget remains 120 seconds. An immutable local baseline run and CI comparison are required before judging the overall regression. Do not relax that budget to make this patch green.
 
 Final configured field rerun, before the prefilter: SvelteKit 7 errors/42 warnings (baseline 7/44), Astro 7/35 (baseline 7/34), Django default 8/13 (unchanged), FastAPI 8/9 (unchanged). Astro adds an additional low-confidence path candidate; all four DCV004 findings are review signals. Warning counts are not accepted-defect counts.
+
+
+### September 14 continuation
+
+[CI at commit 7729306](https://github.com/raccioly/docguard/actions/runs/34728642151) passed 1,604 tests on each runtime: Node 18 in 53,856 ms, Node 20 in 52,039 ms, Node 22 in 46,767 ms, and Node 24 in 34,149 ms. Security checks also passed. All suite times meet the unchanged 120-second budget. These runs resolve the pending matrix above, but do not erase the measured validator parsing cost or prove identical performance across machines. The proposed controlled local baseline/candidate experiment was interrupted by the usage limit and is not evidence.
+
+A further CLI defect was reproduced: agents --check could bootstrap skills and invoke installed Spec Kit through both automatic setup and the deprecated alias dispatcher. The correction bypasses both setup paths for checks while preserving explicit setup. Executable tests snapshot fresh, stale and unmanaged repositories and trap external tooling; the three check cases failed before the correction, while the explicit-setup control passed. All ten new and existing agent-family tests pass on Node 18 and Node 24. Self-guard has zero errors and eight low-confidence review warnings (FRS005 and DSP001); no review dates or suppressions were changed to remove them. This follow-up is separate from the CI-verified commit above.

@@ -5206,6 +5206,22 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-09-13T00:29:54.368Z"
+    },
+    {
+      "id": "bug-317",
+      "timestamp": "2026-09-14T14:22:14.613Z",
+      "error_message": "agents --check scaffolds files and invokes Spec Kit",
+      "file": "cli/docguard.mjs",
+      "root_cause": "The check flag bypassed neither automatic setup nor the deprecated agents alias dispatch through init",
+      "fix": "Skip automatic setup and dispatch checks directly to runAgents; snapshot repositories and trap setup tooling with an explicit-setup control",
+      "tags": [
+        "read-only",
+        "cli",
+        "regression"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-14T14:22:14.613Z"
     }
   ]
 }
