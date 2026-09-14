@@ -109,6 +109,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The living-maintenance architecture description now states its positive
   eligibility rule directly, keeping the canonical document within its
   negation-load quality threshold.
+- The document-lifecycle registry records that canonical wording review as a
+  separate maintenance outcome; the generated history remains append-only.
 
 ## [0.38.0] - 2026-09-14
 

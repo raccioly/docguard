@@ -30,7 +30,7 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "f3e4d76e94f5b21073421d2ff8b2a1228a5dd55b",
+          "lastReviewedRevision": "a384a04479103b43587a2f79470b3b4a1031d242",
           "outcomes": [
             {
               "revision": "834e0a2299402205f5bdca7a55e353bad71bab28",
@@ -69,6 +69,40 @@
             {
               "revision": "f3e4d76e94f5b21073421d2ff8b2a1228a5dd55b",
               "reason": "Reviewed living-spec maintenance now records verified-to-verified outcomes only for new linked behavior or canonical intent; generated lifecycle churn cannot self-qualify.",
+              "evidence": [
+                "cli/commands/reconcile.mjs",
+                "cli/commands/retire.mjs",
+                "cli/commands/specs.mjs",
+                "cli/commands/sync.mjs",
+                "cli/docguard.mjs",
+                "cli/scanners/document-lifecycle.mjs",
+                "cli/scanners/lifecycle-context.mjs",
+                "cli/scanners/reconciliation.mjs",
+                "cli/scanners/requirement-evidence.mjs",
+                "cli/scanners/retirement-manifest.mjs",
+                "cli/scanners/spec-registry.mjs",
+                "cli/shared-sync-scope.mjs",
+                "cli/validators/traceability.mjs",
+                "cli/writers/file-transaction.mjs",
+                "cli/writers/spec-outcomes.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/DATA-MODEL.md",
+                "docs-canonical/REQUIREMENTS.md",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/archive.test.mjs",
+                "tests/document-lifecycle.test.mjs",
+                "tests/file-transaction.test.mjs",
+                "tests/hooks-contract.test.mjs",
+                "tests/reconcile.test.mjs",
+                "tests/spec-completion.test.mjs",
+                "tests/spec-registry.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            },
+            {
+              "revision": "a384a04479103b43587a2f79470b3b4a1031d242",
+              "reason": "Reviewed the canonical architecture wording for living-spec maintenance eligibility; the positive rule preserves the delivered behavior and passes document quality.",
               "evidence": [
                 "cli/commands/reconcile.mjs",
                 "cli/commands/retire.mjs",
@@ -138,7 +172,7 @@
         "artifacts": [
           {
             "path": "specs/006-document-lifecycle/spec.md",
-            "digest": "sha256:205d40e8676725a50d5de57a959379602678727679946c950f77f5934553eae7"
+            "digest": "sha256:35989fea62cfd2ce2d8022ca695ecd19d6bb466b5bc9e1ac7283b272cf67643a"
           },
           {
             "path": "specs/006-document-lifecycle/plan.md",
