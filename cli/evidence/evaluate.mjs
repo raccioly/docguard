@@ -121,7 +121,6 @@ function evaluateDeclaration(projectDir, config, declaration, read) {
     : 'The selected statement contradicts its current declared evidence.';
   return resultState(declaration, selection, source, state, compared.match ? 'predicate-satisfied' : 'predicate-mismatch', message, {
     documentValue: compared.documentValue,
-    sourceValue: compared.sourceValue,
   });
 }
 

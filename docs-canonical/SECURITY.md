@@ -42,7 +42,9 @@ bound work. The oasdiff and Buf adapters consume saved outputs and current input
 hashes. They never invoke those tools, execute project code, install packages,
 resolve remote references, or make network requests. A clean saved report is
 evidence only for its declared command, producer metadata, inputs, and selected
-statement.
+statement. Machine output omits raw source values so a mistaken JSON Pointer
+cannot copy a secret into CI logs or an agent transcript. Values remain in
+process only for typed comparison and non-reversible identities.
 
 Feedback issue URLs contain allowlisted detector metadata, classification, parser tier, and a synthetic-shape duplicate identity. Full local finding records can include private paths and diagnostic text. Fixture manifests are accepted only with explicit synthetic-content and redaction-review attestations; they reject escaping paths, `.git`, `.local`, symlinked inputs, unsafe config values, and oversized content. Preview mode avoids all writes. Generated tests contain the attested synthetic fixture, so users must review it before contribution.
 
@@ -95,6 +97,7 @@ Exclude `node_modules`, environment values, generated build output, and private 
 
 | Version | Date | Changes |
 |---|---|---|
+| 0.10.0 | 2026-09-14 | Prevent scoped evidence output from exposing raw source values |
 | 0.9.0 | 2026-09-14 | Document public benchmark isolation and synthetic feedback-fixture privacy boundaries |
 | 0.8.0 | 2026-09-14 | Document reconciliation and transactional spec lifecycle authority |
 | 0.7.0 | 2026-09-11 | Document HTTP MCP, auxiliary writes, enforcement scope, and feedback privacy |

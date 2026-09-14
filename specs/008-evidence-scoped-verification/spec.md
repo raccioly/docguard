@@ -76,6 +76,8 @@ can pass; missing evidence and unsupported report shapes stay visible.
   `verified-within-scope`, `contradicted`, `stale`, `inconclusive`, or
   `unsupported`, with a stable claim ID, document location, adapter, predicate,
   input hashes, evidence hash, reason code, and explicit scope limitation.
+  Public output MUST NOT include the raw source value; exact comparison may
+  retain it only in process and bind it into non-reversible identities.
 - **FR-009**: `docguard verify --evidence --format json` MUST expose the complete
   machine contract. Human output MUST group states by action and show the next
   exact file or producer step. Existing `--semantic` and `--instructions`

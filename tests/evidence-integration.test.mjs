@@ -157,7 +157,10 @@ describe('evidence-scoped verification', () => {
     const dir = fixture(t);
     write(dir, 'config/policy.json', JSON.stringify({ retentionDays: 31, roles: ['admin', 'editor', 'viewer'] }));
     let result = evaluateEvidence(dir, {});
-    assert.equal(result.results.find(item => item.declarationId === 'policy.retention').state, 'contradicted');
+    const contradiction = result.results.find(item => item.declarationId === 'policy.retention');
+    assert.equal(contradiction.state, 'contradicted');
+    assert.equal(Object.hasOwn(contradiction, 'sourceValue'), false, 'public results must not expose raw source values');
+    assert.equal(contradiction.documentValue, 30, 'the already-public document value remains available for exact claim coverage');
 
     write(dir, 'api/current.yaml', 'openapi: 3.1.0\n');
     result = evaluateEvidence(dir, {});

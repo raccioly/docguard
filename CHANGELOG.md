@@ -39,6 +39,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Evidence results no longer expose raw JSON source values in CLI, guard, MCP,
+  or agent output. Comparisons retain values only in process and bind them into
+  non-reversible identities, preventing an unsafe declaration from copying a
+  secret into logs.
 - Scheduled release pull requests now require a repository-scoped
   `RELEASE_PR_TOKEN`, allowing ordinary pull-request CI to run and the
   fail-closed auto-merge workflow to observe the successful event. The previous

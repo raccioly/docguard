@@ -572,7 +572,7 @@
         "artifacts": [
           {
             "path": "specs/008-evidence-scoped-verification/spec.md",
-            "digest": "sha256:b6c293317a720676a2f3bc84b8e6e77ad7d67eb448f36f0ed1e66e14c768b2b0"
+            "digest": "sha256:711971e25daf977d976944afeaf7fcb66f2bf5e9eace5591019d17eb1397e454"
           },
           {
             "path": "specs/008-evidence-scoped-verification/plan.md",
