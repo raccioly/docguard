@@ -10,15 +10,14 @@ import { docRolePath, resolveDocRole } from '../shared-doc-roles.mjs';
  * Zero NPM runtime dependencies — pure Node.js built-ins only.
  */
 
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { resolve, join, relative, extname, basename } from 'node:path';
+import { existsSync, readFileSync } from 'node:fs';
+import { resolve, relative, basename } from 'node:path';
 import { resolveSourceRoots } from '../shared-source.mjs';
-import { walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
+import { DEFAULT_IGNORE_DIRS, relPosix, shouldIgnore, walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 
 const IGNORE_DIRS = new Set([
-  'node_modules', '.git', '.next', 'dist', 'build', 'coverage',
-  '.cache', '__pycache__', '.venv', 'vendor', '.turbo', '.vercel',
+  ...DEFAULT_IGNORE_DIRS,
   '.amplify-hosting', '.serverless',
 ]);
 
@@ -192,7 +191,8 @@ function detectAllModels(projectDir, config = {}) {
  * Find schema files for a given detector configuration.
  */
 function findSchemaFiles(projectDir, detector, config = {}) {
-  const files = [];
+  // Deduplicate files, not model names: separate schemas may share a name.
+  const files = new Set();
 
   // Monorepo-aware: resolve each searchDir against the project root AND every
   // configured source root (config.sourceRoot + workspaces), so schemas under
@@ -203,19 +203,24 @@ function findSchemaFiles(projectDir, detector, config = {}) {
   for (const base of bases) {
     for (const searchDir of detector.searchDirs) {
       const dir = resolve(base, searchDir);
-      if (seenDirs.has(dir) || !existsSync(dir)) continue;
+      const rel = relPosix(projectDir, dir);
+      if (seenDirs.has(dir) || !existsSync(dir) ||
+          rel.split('/').some(part => IGNORE_DIRS.has(part)) ||
+          shouldIgnore(rel + '/', config)) continue;
       seenDirs.add(dir);
-      scanSchemaDir(dir, detector.filePattern, files);
+      scanSchemaDir(dir, detector.filePattern, files, projectDir, config);
     }
   }
 
-  return files;
+  return [...files];
 }
 
 // v0.29 consolidation: traversal delegates to the shared canonical walker.
-function scanSchemaDir(dir, filePattern, files) {
+function scanSchemaDir(dir, filePattern, files, projectDir, config) {
   sharedWalkFiles(dir, (full) => {
-    if (filePattern.test(basename(full))) files.push(full);
+    if (filePattern.test(basename(full)) && !shouldIgnore(relPosix(projectDir, full), config)) {
+      files.add(full);
+    }
   }, { ignoreDirs: IGNORE_DIRS });
 }
 

@@ -10,6 +10,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, extname, basename, relative, dirname } from 'node:path';
 import { c } from '../shared.mjs';
 import { detectSpecKit } from '../scanners/speckit.mjs';
+import { scanTestFilesForReferences, collectRequirementIds, resolveRequirementReferences } from '../validators/traceability.mjs';
 import { listCanonicalDocs } from '../shared-ignore.mjs';
 
 const IGNORE_DIRS = new Set([
@@ -378,7 +379,7 @@ function scanDir(rootDir, dir, files) {
 // repo-wide scores that `docguard score` produces. Deterministic signals only —
 // no LLM judgment:
 //
-//   reqCoverage          40%  FR-/SC- IDs in spec.md referenced by any test file
+//   reqCoverage          40%  FR-/SC- IDs in spec.md explicitly annotated or labeled in test sources
 //   taskCompletion       25%  checked/total `- [x]` tasks in tasks.md
 //   taskEvidence         20%  checked tasks whose line names an existing file
 //   artifactCompleteness 15%  spec.md (40%) + plan.md (30%) + tasks.md (30%)
@@ -425,34 +426,21 @@ function featureBar(score) {
 }
 
 /**
- * Collect every FR-/SC- ID referenced anywhere in a test file, once for the
- * whole project. Test-file discovery mirrors the traceability validator's
- * scanTestFilesForReferences(): TEST_PATTERNS ∪ __tests__/ ∪ tests?/ dirs, and
- * any occurrence of the ID in file content counts (not just @req lines).
+ * Collect declared FR-/SC- test links once for the whole project, using the
+ * validator's source eligibility and annotation/label parser. This is positive
+ * linkage evidence, independent of validator findings or suppression policy.
  */
 function collectTestReferencedIds(projectDir) {
   const projectFiles = [];
   scanDir(projectDir, projectDir, projectFiles);
-  const testFiles = projectFiles.filter(f =>
-    TEST_PATTERNS.some(p => p.test(f)) || /__tests__\//.test(f) || /tests?\//.test(f)
-  );
-
-  const ids = new Set();
-  for (const rel of testFiles) {
-    let content;
-    try { content = readFileSync(resolve(projectDir, rel), 'utf-8'); } catch { continue; }
-    FEATURE_REQ_RE.lastIndex = 0;
-    let m;
-    while ((m = FEATURE_REQ_RE.exec(content)) !== null) ids.add(m[0]);
-  }
-  return ids;
+  return scanTestFilesForReferences(projectDir, projectFiles, [FEATURE_REQ_RE]);
 }
 
 /**
  * Compute the four adherence signals for one detected spec-kit feature.
  * Each signal: { applicable, value (0..1 | null), ...n/m detail fields }.
  */
-function computeFeatureSignals(projectDir, feature, testRefIds) {
+function computeFeatureSignals(projectDir, feature, testRefIds, definitions) {
   // ── artifactCompleteness — always measurable ──
   const artifactValue = (feature.hasSpec ? 0.4 : 0)
     + (feature.hasPlan ? 0.3 : 0)
@@ -483,21 +471,11 @@ function computeFeatureSignals(projectDir, feature, testRefIds) {
     }
   }
 
-  // ── reqCoverage — spec.md IDs that appear in ANY test file ──
-  const specIds = [];
-  if (feature.hasSpec && feature.specPath) {
-    try {
-      const spec = readFileSync(feature.specPath, 'utf-8');
-      const seen = new Set();
-      FEATURE_REQ_RE.lastIndex = 0;
-      let m;
-      while ((m = FEATURE_REQ_RE.exec(spec)) !== null) {
-        if (!seen.has(m[0])) { seen.add(m[0]); specIds.push(m[0]); }
-      }
-    } catch { /* unreadable spec → no IDs */ }
-  }
-  const covered = specIds.filter(id => testRefIds.has(id));
-  const uncovered = specIds.filter(id => !testRefIds.has(id));
+  // ── reqCoverage — spec.md IDs declared in eligible test annotations or labels ──
+  const specPath = feature.specPath ? relative(projectDir, feature.specPath).replaceAll('\\', '/') : null;
+  const specIds = [...definitions.values()].filter(def => def.file === specPath).map(def => def.id);
+  const covered = specIds.filter(id => testRefIds.has(`${specPath}#${id}`));
+  const uncovered = specIds.filter(id => !testRefIds.has(`${specPath}#${id}`));
 
   return {
     reqCoverage: {
@@ -606,10 +584,11 @@ export function runTraceFeatures(projectDir, config, flags) {
     return;
   }
 
-  const testRefIds = collectTestReferencedIds(projectDir);
+  const definitions = collectRequirementIds(projectDir, config, [FEATURE_REQ_RE]);
+  const testRefIds = resolveRequirementReferences(definitions, collectTestReferencedIds(projectDir));
 
   const features = speckit.specs.map(f => {
-    const signals = computeFeatureSignals(projectDir, f, testRefIds);
+    const signals = computeFeatureSignals(projectDir, f, testRefIds, definitions);
     const score = scoreFromSignals(signals);
     const weakest = weakestSignal(signals);
     const needsFix = weakest !== null && signals[weakest].value < 1;

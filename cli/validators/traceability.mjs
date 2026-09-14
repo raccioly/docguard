@@ -297,6 +297,9 @@ function validateRequirementTraceability(projectDir, config, projectFiles) {
 
   // ── Step 2: Scan test files for requirement ID references ──
   const testRefs = scanTestFilesForReferences(projectDir, projectFiles, patterns);
+  const resolvedRefs = resolveRequirementReferences(reqIds, testRefs);
+  const definitionCounts = new Map();
+  for (const def of reqIds.values()) definitionCounts.set(def.id, (definitionCounts.get(def.id) || 0) + 1);
 
   // ── Step 3: Report traceability results ──
 
@@ -308,14 +311,15 @@ function validateRequirementTraceability(projectDir, config, projectFiles) {
   let testCorpus = null;
 
   // Check each documented requirement has at least one test reference
-  for (const [reqId, location] of reqIds) {
+  for (const [key, location] of reqIds) {
+    const reqId = location.id;
     total++;
-    if (testRefs.has(reqId)) {
+    if (resolvedRefs.has(key)) {
       passed++;
     } else {
       // Try to recover a likely-but-unannotated test via TF-IDF cosine.
       let softHint = '';
-      let softText = `Review existing tests for this requirement. If a test verifies it, add an @req ${reqId} annotation or requirement ID test label; write a test only if behavioral coverage is actually missing.`;
+      let softText = `Review existing tests for this requirement. If a test verifies it, add an @req ${key} annotation or requirement ID test label; write a test only if behavioral coverage is actually missing.`;
       const queryText = location.text && location.text.length > reqId.length ? location.text : reqId;
       if (testCorpus === null) testCorpus = buildTestCorpus(projectDir, projectFiles);
       if (testCorpus.length > 0) {
@@ -324,14 +328,14 @@ function validateRequirementTraceability(projectDir, config, projectFiles) {
         if (top && top.score >= softThreshold) {
           const pct = (top.score * 100).toFixed(0);
           softHint = ` — IR soft-match: ${top.id} (${pct}% similar) may already cover it`;
-          softText = `Review ${top.id} as a candidate (${pct}% text similarity, not coverage evidence). Add @req ${reqId} only if it verifies the requirement; otherwise inspect other tests before deciding a new test is needed.`;
+          softText = `Review ${top.id} as a candidate (${pct}% text similarity, not coverage evidence). Add @req ${key} only if it verifies the requirement; otherwise inspect other tests before deciding a new test is needed.`;
         }
       }
       findings.push(mkFinding({
         code: 'TRC004',
         validator: 'traceability',
         severity: 'warn',
-        message: `Requirement ${reqId} (${location.file}:${location.line}) has no recognized test annotation or label; behavioral coverage is unknown.${softHint}`,
+        message: `Requirement ${reqId} (${location.file}:${location.line}) has no recognized test annotation or label; behavioral coverage is unknown.${definitionCounts.get(reqId) > 1 ? ` This ID occurs in multiple documents; use ${key} to disambiguate test references.` : ""}${softHint}`,
         location: `${location.file}:${location.line}`,
         suggestion: { kind: 'review', text: softText },
       }));
@@ -340,15 +344,16 @@ function validateRequirementTraceability(projectDir, config, projectFiles) {
 
   // Check for orphaned test refs (tests referencing non-existent requirements)
   for (const [reqId, refs] of testRefs) {
-    if (!reqIds.has(reqId)) {
+    const orphan = refs.find(ref => ref.scope ? !reqIds.has(`${ref.scope}#${reqId}`) : !definitionCounts.has(reqId));
+    if (orphan) {
       total++;
       findings.push(mkFinding({
         code: 'TRC005',
         validator: 'traceability',
         severity: 'warn',
-        message: `Test references ${reqId} (${refs[0].file}:${refs[0].line}) but no requirement ` +
+        message: `Test references ${orphan.scope ? `${orphan.scope}#` : ""}${reqId} (${orphan.file}:${orphan.line}) but no requirement ` +
           `with this ID exists in documentation. Remove the reference or add the requirement to docs`,
-        location: `${refs[0].file}:${refs[0].line}`,
+        location: `${orphan.file}:${orphan.line}`,
         suggestion: { kind: 'review', text: 'Remove the stale reference, or add the requirement to the documentation' },
       }));
     }
@@ -357,7 +362,7 @@ function validateRequirementTraceability(projectDir, config, projectFiles) {
   return { findings, passed, total };
 }
 
-function collectRequirementIds(projectDir, config, patterns) {
+export function collectRequirementIds(projectDir, config, patterns = DEFAULT_REQ_PATTERNS) {
   const reqIds = new Map(); // reqId → { file, line }
   const docSearchPaths = getRequirementDocPaths(projectDir, config);
 
@@ -371,7 +376,7 @@ function collectRequirementIds(projectDir, config, patterns) {
     if (!hasMatch) continue;
 
     const lines = content.split('\n');
-    const docName = relative(projectDir, docPath);
+    const docName = relative(projectDir, docPath).replaceAll("\\", "/");
 
     let fence = null;
     let exampleLevel = null;
@@ -418,8 +423,9 @@ function collectRequirementIds(projectDir, config, patterns) {
           }
           const reqId = match[0];
           if (!reqId.length) { pattern.lastIndex++; continue; }
-          if (!reqIds.has(reqId)) {
-            reqIds.set(reqId, { file: docName, line: i + 1, text: line.trim() });
+          const key = `${docName}#${reqId}`;
+          if (!reqIds.has(key)) {
+            reqIds.set(key, { id: reqId, file: docName, line: i + 1, text: line.trim() });
           }
         }
       }
@@ -427,6 +433,26 @@ function collectRequirementIds(projectDir, config, patterns) {
   }
 
   return reqIds;
+}
+
+/** Resolve positive test links without sharing evidence between document scopes. */
+export function resolveRequirementReferences(definitions, references) {
+  const byId = new Map();
+  for (const [key, definition] of definitions) {
+    if (!byId.has(definition.id)) byId.set(definition.id, []);
+    byId.get(definition.id).push(key);
+  }
+  const resolved = new Map();
+  for (const [id, refs] of references) {
+    const candidates = byId.get(id) || [];
+    for (const ref of refs) {
+      const key = ref.scope ? `${ref.scope}#${id}` : candidates.length === 1 ? candidates[0] : null;
+      if (!key || !definitions.has(key)) continue;
+      if (!resolved.has(key)) resolved.set(key, []);
+      resolved.get(key).push(ref);
+    }
+  }
+  return resolved;
 }
 
 // A mention in fixture data is not a coverage declaration. Keep the same ID
@@ -495,7 +521,14 @@ function testDeclarations(content, filename) {
   return declarations;
 }
 
-function scanTestFilesForReferences(projectDir, projectFiles, patterns) {
+/**
+ * Read explicit requirement annotations and test labels from eligible test sources.
+ * Shared by validation and feature scoring; fixture data is not linkage evidence.
+ * Callers supply project-relative candidate paths and global requirement regexes.
+ * No files are written and no findings or suppression policy are consulted.
+ * @returns {Map<string, Array<{file: string, line: number}>>} ID to declaration locations
+ */
+export function scanTestFilesForReferences(projectDir, projectFiles, patterns) {
   const testFiles = projectFiles.filter(isTestSource);
 
   const testRefs = new Map(); // reqId → [{ file, line }]
@@ -520,7 +553,12 @@ function scanTestFilesForReferences(projectDir, projectFiles, patterns) {
           const reqId = match[0];
           if (!testRefs.has(reqId)) testRefs.set(reqId, []);
           const line = declaration.line + (declaration.text.slice(0, match.index).match(/\n/g) || []).length;
-          testRefs.get(reqId).push({ file: relPath, line });
+          // A document qualifier is repository-relative and exact; never fall
+          // back to a bare ID when a supplied qualifier fails to resolve.
+          const prefix = declaration.text.slice(0, match.index);
+          const qualifier = prefix.match(/([^\s`"'<>()[\]{}]+)#$/);
+          const scope = qualifier ? qualifier[1].replaceAll('\\', '/').replace(/^\.\//, '') : null;
+          testRefs.get(reqId).push({ file: relPath, line, scope });
         }
       }
     }

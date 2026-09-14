@@ -5142,6 +5142,120 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-09-11T21:33:22.758Z"
+    },
+    {
+      "id": "bug-313",
+      "timestamp": "2026-09-13T00:29:54.315Z",
+      "error_message": "Documented config remains DCV004 with docs.dirs configured",
+      "file": "cli/validators/docs-coverage.mjs",
+      "root_cause": "Fixed document collector discarded configuration; path construction was also treated as proof of a file",
+      "fix": "Honor configured scoped document evidence; distinguish direct IO from unverified paths with paired controls",
+      "tags": [
+        "precision",
+        "oss-assessment",
+        "regression"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-13T00:29:54.368Z"
+    },
+    {
+      "id": "bug-314",
+      "timestamp": "2026-09-13T00:29:54.368Z",
+      "error_message": "Excluded models are counted and overlapping roots duplicate one model",
+      "file": "cli/validators/schema-sync.mjs",
+      "root_cause": "Schema traversal did not apply file excludes or deduplicate resolved files",
+      "fix": "Filter through shared ignores and deduplicate by source file, preserving equal model names in separate files",
+      "tags": [
+        "precision",
+        "oss-assessment",
+        "regression"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-13T00:29:54.368Z"
+    },
+    {
+      "id": "bug-315",
+      "timestamp": "2026-09-13T00:29:54.368Z",
+      "error_message": "Fixture JSON containing FR-001 creates feature coverage",
+      "file": "cli/commands/trace.mjs",
+      "root_cause": "Feature scoring scanned arbitrary text unlike the validator",
+      "fix": "Reuse positive annotation and label extraction from the validator",
+      "tags": [
+        "precision",
+        "oss-assessment",
+        "regression"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-13T00:29:54.368Z"
+    },
+    {
+      "id": "bug-316",
+      "timestamp": "2026-09-13T00:29:54.368Z",
+      "error_message": "Freshness review emits incomplete docguard fix --doc",
+      "file": "cli/commands/diagnose.mjs",
+      "root_cause": "Generic repair routing converted review heuristics to document rewrites",
+      "fix": "Leave freshness repair commands unset and preserve review-first guidance; executable CLI regression uses at least three Git commits",
+      "tags": [
+        "precision",
+        "oss-assessment",
+        "regression"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-13T00:29:54.368Z"
+    },
+    {
+      "id": "bug-317",
+      "timestamp": "2026-09-14T14:22:14.613Z",
+      "error_message": "agents --check scaffolds files and invokes Spec Kit",
+      "file": "cli/docguard.mjs",
+      "root_cause": "The check flag bypassed neither automatic setup nor the deprecated agents alias dispatch through init",
+      "fix": "Skip automatic setup and dispatch checks directly to runAgents; snapshot repositories and trap setup tooling with an explicit-setup control",
+      "tags": [
+        "read-only",
+        "cli",
+        "regression"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-14T14:22:14.613Z"
+    },
+    {
+      "id": "bug-318",
+      "timestamp": "2026-09-14T14:25:08.472Z",
+      "error_message": "Badge CLI tests refresh generated skills in the source checkout",
+      "file": "tests/commands.test.mjs",
+      "root_cause": "Tests used the default repository cwd for a deprecated alias that initializes skills",
+      "fix": "Run both badge cases in disposable projects using process.execPath, closed tooling PATH and test cleanup",
+      "tags": [
+        "tests",
+        "isolation"
+      ],
+      "related_bugs": [
+        "bug-317"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-09-14T14:25:08.472Z"
+    },
+    {
+      "id": "bug-319",
+      "timestamp": "2026-09-14T14:57:06.826Z",
+      "error_message": "Repeated requirement IDs across documents share coverage incorrectly",
+      "file": "cli/validators/traceability.mjs",
+      "root_cause": "Definitions and feature coverage were indexed by bare IDs across the entire project",
+      "fix": "Use document-qualified definition keys and shared resolution; only unique bare IDs or exact qualified references earn credit",
+      "tags": [
+        "traceability",
+        "false-assurance"
+      ],
+      "related_bugs": [
+        "bug-315"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-09-14T14:57:06.826Z"
     }
   ]
 }

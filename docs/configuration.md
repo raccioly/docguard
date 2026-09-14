@@ -198,3 +198,18 @@ These statuses skip currentness assertions; they do not hide structural or other
 Guard JSON includes checkCoverage and an applicability record per validator. States distinguish checked, partial, disabled, not-applicable, missing-prerequisite, unsupported, no-matches, and error. A passing gate means the selected policy passed; it does not mean unsupported languages or unmatched inputs were examined. CI and reports preserve this disclosure. Python import-graph analysis remains unsupported; mixed Python/JS projects disclose partial architecture coverage.
 
 Wrangler configuration supplies evidence for Worker classification. Supported typed Worker bindings participate in environment extraction without executing configuration or application code. Dynamic names, alias/dataflow tracking, and unsupported forms remain outside this bounded analysis. The existing optional Babel parser resolves lexical bindings; the fallback covers ordinary tested scopes and has lower syntax coverage.
+
+### Evidence boundaries in documentation and schema scans
+
+Documentation-coverage filename checks search supported Markdown in conventional and explicitly configured homes, mapped role files, and supported extension metadata. Configured homes extend the defaults. Excluded files, private paths and symlinks cannot satisfy a documentation reference. This search does not establish absence of an explanation in external sites, RST, or unsupported formats.
+
+A parsed direct file-read/write call supplies stronger path evidence than a path construction or existence check. Ambiguous paths remain low-confidence review signals; a directory name alone does not establish a configuration file. The bounded detector does not resolve arbitrary import aliases or dynamic paths. Schema synchronization applies source exclusions and deduplicates overlapping roots by source file, preserving models in distinct files even when names match.
+
+Feature requirement scoring recognizes eligible test annotations and labels using the validator parser. An arbitrary fixture string is not linkage evidence, and a recognized link is not proof of behavioral coverage. Duplicate requirement IDs across separate specifications remain a known scoping limitation.
+
+
+### Requirement identity across documents
+
+Requirement definitions are identified by repository-relative document path plus ID. A bare test annotation such as `@req FR-001` earns linkage credit only when that ID is defined in one document. When features reuse an ID, qualify the declaration: `@req specs/payments/spec.md#FR-001`. The same spelling works in a test label. Use forward slashes; an optional leading `./` is accepted. Qualifiers are exact repository-relative paths, not paths relative to the test file.
+
+Validation and `trace --features` share definition parsing and reference resolution. A qualified reference credits only its target document. Ambiguous bare references credit neither feature and produce a review finding for each unresolved definition. A wrong qualifier is an orphan reference and never falls back to a bare match. Repeated mentions within one document do not create additional identities. Linkage remains evidence of a declaration, not proof of behavioral correctness; lifecycle and arbitrary verification-link semantics are separate concerns.

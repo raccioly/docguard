@@ -652,6 +652,8 @@ async function main() {
     command !== 'setup' &&
     command !== 'init' &&
     !READ_ONLY_COMMANDS.has(command) &&
+    // Agent-family staleness checks must not bootstrap skills or Spec Kit.
+    !(command === 'agents' && flags.check) &&
     !headless
   ) {
     ensureSkills(projectDir, flags);
@@ -733,8 +735,9 @@ async function main() {
       }
       break;
     case 'agents':
-      // v0.20: deprecated → dispatches through init --with
-      await runInit(projectDir, config, { ...flags, with: ['agents'], skipPrompts: true });
+      // A staleness check must bypass init's scaffolding and skill installation.
+      if (flags.check) runAgents(projectDir, config, flags);
+      else await runInit(projectDir, config, { ...flags, with: ['agents'], skipPrompts: true });
       break;
     case 'generate':
       runGenerate(projectDir, config, flags);
