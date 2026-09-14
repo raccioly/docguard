@@ -33,6 +33,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   corpus plus one intentionally unsupported case.
 - Close every R7 task after exact-evidence review and correct the completed R6
   task list's stale “In progress” label to its verified living-contract state.
+- Complete the reviewed R7 lifecycle transaction at the exact implementation
+  revision, recording the bounded selector, frozen benchmark, CLI integration,
+  canonical documentation, test matrix, package smoke test, and detector corpus
+  as delivery evidence with no accepted deviations.
 - Add opt-in `docguard agent --task <text>` context selection after the frozen
   promotion gate passed. Existing `docguard agent` output remains unchanged;
   task mode emits bounded current evidence or an explicit abstention in aligned

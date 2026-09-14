@@ -1720,7 +1720,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "in_progress",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -1746,8 +1746,29 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "5b3fc58279065b231c6297b6ecd4cadc254a02c6",
+          "outcomes": [
+            {
+              "revision": "5b3fc58279065b231c6297b6ecd4cadc254a02c6",
+              "reason": "Reviewed frozen 27-run promotion evidence, bounded selector and abstention controls, opt-in CLI integration, strict schemas, lifecycle exclusions, Node 18/20/22/24 matrix, packed parser-absent execution, self-guard, and complete external detector corpus with no accepted deviations.",
+              "evidence": [
+                "benchmarks/agent-context/run.mjs",
+                "cli/commands/agent.mjs",
+                "cli/docguard.mjs",
+                "cli/scanners/task-context.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/DATA-MODEL.md",
+                "docs-canonical/REQUIREMENTS.md",
+                "docs-canonical/SECURITY.md",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/agent-context-benchmark.test.mjs",
+                "tests/npm-pack-smoke.test.mjs",
+                "tests/task-context.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -1778,7 +1799,7 @@
         "artifacts": [
           {
             "path": "specs/010-task-specific-agent-context/spec.md",
-            "digest": "sha256:75982c5c24ccc27b4956b17d858f02cecec4274842e80146a8665f0a5560f85f"
+            "digest": "sha256:bd8a48ebdb68134426627deb8420add84a0ac4f76f6ad5ecb970341a0c1304b0"
           },
           {
             "path": "specs/010-task-specific-agent-context/plan.md",

@@ -119,3 +119,9 @@ feature.
 - Preventing an agent from reading additional repository files after startup.
 - Claiming general agent-productivity improvement from three synthetic tasks.
 - Replacing repository-native tests, review, or access controls.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `5b3fc58279065b231c6297b6ecd4cadc254a02c6` — Reviewed frozen 27-run promotion evidence, bounded selector and abstention controls, opt-in CLI integration, strict schemas, lifecycle exclusions, Node 18/20/22/24 matrix, packed parser-absent execution, self-guard, and complete external detector corpus with no accepted deviations. Evidence: `benchmarks/agent-context/run.mjs`, `cli/commands/agent.mjs`, `cli/docguard.mjs`, `cli/scanners/task-context.mjs`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/DATA-MODEL.md`, `docs-canonical/REQUIREMENTS.md`, `docs-canonical/SECURITY.md`, `docs-canonical/TEST-SPEC.md`, `tests/agent-context-benchmark.test.mjs`, `tests/npm-pack-smoke.test.mjs`, `tests/task-context.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->
