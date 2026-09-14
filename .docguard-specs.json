@@ -1786,11 +1786,11 @@
           },
           {
             "path": "specs/010-task-specific-agent-context/tasks.md",
-            "digest": "sha256:ec90de965f8203756a55b885919f37299a145756e31162102cc66a8c987cf2d8"
+            "digest": "sha256:fa87ece99690f8f6350ff17320bbdeaa77ec40338be3026e407a3f11916149b2"
           }
         ],
         "taskCompletion": {
-          "checked": 14,
+          "checked": 15,
           "total": 16
         },
         "implementationEvidence": [

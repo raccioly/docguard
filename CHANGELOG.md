@@ -27,6 +27,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   violations; targeted packets reduced median steps by 50% and latency by 17%
   against context packs while increasing uncached input tokens by 80%. The
   retained report limits the claim and keeps the interface opt-in.
+- Verify the complete R7 implementation with 1,784 passing tests on Node 18,
+  20, 22, and 24, extracted-package execution without the optional parser,
+  frozen fixture/reference replay, and the regression-free 24-case detector
+  corpus plus one intentionally unsupported case.
 - Add opt-in `docguard agent --task <text>` context selection after the frozen
   promotion gate passed. Existing `docguard agent` output remains unchanged;
   task mode emits bounded current evidence or an explicit abstention in aligned

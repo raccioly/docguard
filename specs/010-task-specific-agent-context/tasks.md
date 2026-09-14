@@ -28,5 +28,5 @@
 
 - [x] T013 Promote the opt-in CLI contract only if every gate passes; otherwise remove it.
 - [x] T014 Update canonical, public, AI-agent, contribution, and roadmap guidance.
-- [ ] T015 Run focused, full, matrix, package, guard, and detector benchmark checks.
+- [x] T015 Run focused, full, matrix, package, guard, and detector benchmark checks.
 - [ ] T016 Complete lifecycle verification with exact reviewed evidence.
