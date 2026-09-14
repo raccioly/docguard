@@ -290,7 +290,7 @@ DocGuard ships **23 commands** (the "Daily 5" + 18 situational tools, including 
 | `fix --write` | Apply deterministic fixes (no AI — version bumps, counts, anchors, sections) |
 | `fix --history` | Audit log of every mechanical fix applied (from `.docguard/fixed.json`) |
 | `generate` | Reverse-engineer docs from existing codebase (`--plan` for AI scan) — includes auto-generated Mermaid ER diagrams from your detected schemas (Prisma/Drizzle/TypeORM/Sequelize/Django/Rails) in DATA-MODEL.md |
-| `agent` | One-shot agent task graph — ordered, pre-filled code-truth, per-task verify (`--format json`) |
+| `agent` | One-shot agent task graph, or a bounded current-evidence packet for one task (`--task <text>`, `--format json`) |
 | `explain <warning\|CODE>` | Paste any warning — or a finding code like `SEC001` — to get the validator's docstring, fix path, and how to suppress |
 | `verify --evidence` | Evaluate strict statement-to-source declarations for typed JSON values, bounded collection counts, saved oasdiff JSON, and saved Buf JSON Lines. Results distinguish scoped verification, contradiction, stale inputs, inconclusive evidence, and unsupported formats. |
 | `verify --semantic` | Extract documented numbers/limits/enums (retention days, rate limits, GSI/role counts, status enums) as a task list for an agent to check against code — the semantic-drift class regex/AST can't see |
@@ -726,6 +726,11 @@ Highlights of the current line (v0.29 → v0.33):
   agent-instruction files for contradictions and stale pointers.
 - **`docguard agent`** — one-shot ordered task graph with pre-filled code-truth, collapsing ~10
   agent round-trips into one call.
+- **`docguard agent --task <text>`** — opt-in task context from approved current
+  specs and canonical docs, with hashed excerpts, source/test pointers, strict
+  budgets, and honest abstention. The frozen 27-run evaluation preserved every
+  tested behavior and cut median steps by 50% and latency by 17% versus the
+  context pack, while using 80% more uncached input tokens.
 
 See [CHANGELOG.md](CHANGELOG.md) for the full history.
 

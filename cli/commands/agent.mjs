@@ -1,5 +1,6 @@
 /**
  * @implements docguard.evidence-scoped-verification#FR-012
+ * @implements docguard.task-specific-agent-context#FR-010
  * `docguard agent` — the one-shot agent task graph.
  *
  * Field report §2: an LLM told "run docguard and fix the docs" had to drive ~10

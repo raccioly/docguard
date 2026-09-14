@@ -161,6 +161,29 @@ can append a maintenance outcome at `verified → verified` only when a new link
 source, test, canonical document, or decision changed after the last reviewed
 revision. Generated registry and outcome updates do not satisfy that gate.
 
+## Task Context Packet
+
+`docguard agent --task <text> --format json` emits a transient
+`docguard.task-context` object governed by
+`schemas/docguard-task-context.schema.json`. The command does not persist the
+task or packet.
+
+| Field | Description |
+|-------|-------------|
+| `task.digest`, `task.characters` | Normalized task identity and bounded length; raw task text is omitted |
+| `provenance.git`, `provenance.registry` | Captured Git and lifecycle-registry state |
+| `assurance` | Retrieval-only scope, unknown factual accuracy, and unverified status |
+| `selection` | Targeted or abstained state, threshold, candidate/omission counts, excluded lifecycle documents, and fixed budgets |
+| `excerpts[]` | Repository-relative path, line range, content/file hashes, kind, optional spec ID, score, reasons, and bounded content |
+| `pointers[]` | Safe task, cited-source, implementation, or test paths with hashes and qualified requirements |
+| `verification[]` | Commands and purposes that still need execution |
+| `navigation` | Safe canonical-document inventory and approved current spec paths |
+| `limitations`, `coreDigest` | Explicit epistemic limits and deterministic packet-core identity |
+
+Selection reads at most 32 documents and 256 chunks, emits at most six
+16-line excerpts totaling 6,000 characters and eight pointers, and limits task
+input to 2,000 characters. An abstention emits no excerpts or pointers.
+
 ## Document Metadata Headers
 
 Every CDD document includes DocGuard metadata as HTML comments at the top:

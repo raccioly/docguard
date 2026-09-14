@@ -13,6 +13,7 @@
     "init": "node cli/docguard.mjs init",
     "score": "node cli/docguard.mjs score",
     "benchmark": "node benchmarks/run.mjs",
+    "benchmark:agent-context": "node benchmarks/agent-context/run.mjs",
     "diff": "node cli/docguard.mjs diff",
     "generate": "node cli/docguard.mjs generate",
     "hooks": "node cli/docguard.mjs hooks",

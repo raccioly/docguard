@@ -56,6 +56,7 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/commands/diff.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/commands/generate.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/commands/agents.mjs` | `tests/commands.test.mjs` | ✅ |
+| `cli/commands/agent.mjs`, `cli/scanners/task-context.mjs` | `tests/agent.test.mjs`, `tests/task-context.test.mjs` | ✅ |
 | `cli/commands/hooks.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/commands/diagnose.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/commands/badge.mjs` | `tests/commands.test.mjs` | ✅ |
@@ -72,6 +73,7 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/commands/specs.mjs` completion path | `tests/spec-completion.test.mjs` | ✅ |
 | `benchmarks/lib/manifest.mjs`, `benchmarks/lib/metrics.mjs`, `benchmarks/lib/compare.mjs` | `tests/benchmark-manifest.test.mjs`, `tests/benchmark-metrics.test.mjs` | ✅ |
 | `benchmarks/lib/runner.mjs`, `benchmarks/run.mjs` | `tests/benchmark-runner.test.mjs` | ✅ |
+| `benchmarks/agent-context/run.mjs`, task-context schemas and fixtures | `tests/agent-context-benchmark.test.mjs` | ✅ |
 | `cli/evidence/*.mjs`, `cli/validators/evidence.mjs` | `tests/evidence-manifest.test.mjs`, `tests/evidence-adapters.test.mjs`, `tests/evidence-integration.test.mjs` | ✅ |
 | `cli/feedback-fixture.mjs`, `cli/commands/feedback.mjs` | `tests/feedback-fixture.test.mjs`, `tests/feedback-contributions.test.mjs` | ✅ |
 | `cli/validators/document-lifecycle.mjs` | `tests/document-lifecycle.test.mjs` | ✅ |
@@ -146,6 +148,14 @@ remain unchanged, human guidance to contain an exact rerun, and machine stdout
 to remain parseable while stderr carries the typed diagnostic.
 
 Independent review must challenge suppression paths, not only the original false-positive example. Cross-project runs use disposable snapshots and verify consumer content remains unchanged. Finding counts alone cannot establish precision or recall.
+
+Task-context tests require exact path and qualified-requirement priority,
+determinism, fixed excerpt/read budgets, stale and retired lifecycle exclusion,
+private/symlink rejection, honest abstention, aligned human/JSON output, and
+unchanged task-graph behavior. The frozen agent benchmark keeps hidden
+evaluators outside copied repositories, proves original fail-to-pass and
+pass-to-pass states plus reviewed references, records all 27 observations, and
+applies its committed non-inferiority and efficiency gate without an LLM judge.
 
 Run `node benchmarks/run.mjs` for the network-free synthetic corpus. Run `node benchmarks/run.mjs --external --baseline benchmarks/baseline.json` explicitly for pinned public sources. The comparator gates new case-level false positives, false negatives, removals, and supported-case abstentions. Persisted cold/warm timings are observational because matching Node and platform metadata cannot exclude host contention. Runtime regression claims require at least five controlled samples from the same paired comparison session and a greater-than-20-percent real-workload change.
 

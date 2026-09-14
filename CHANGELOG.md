@@ -82,6 +82,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Document the promoted task-context contract, schema, lifecycle exclusions,
+  assurance boundary, benchmark reproduction path, measured tradeoffs, and
+  contribution protocol across canonical, public, and agent guidance.
 - Evidence selectors support ATX and Setext Markdown headings while ignoring
   fenced examples, `verify` rejects conflicting modes with a stable JSON error,
   and every Evidence finding is reachable through `docguard explain`.

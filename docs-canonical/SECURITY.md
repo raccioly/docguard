@@ -46,6 +46,14 @@ statement. Machine output omits raw source values so a mistaken JSON Pointer
 cannot copy a secret into CI logs or an agent transcript. Values remain in
 process only for typed comparison and non-reversible identities.
 
+Task-context selection reuses the same bounded safe reader. It accepts at most
+2,000 normalized task characters, stores only the task digest in output, and
+does not execute project code, hooks, package managers, an LLM, or network
+requests. Eligible prose is limited to configured canonical documents, approved
+current specs whose recorded digest matches, and bounded project rules. `.local`,
+environment files, traversal, backslashes, symlinks, oversized files, retired or
+unapproved specs, and stale registry artifacts never enter selected content.
+
 Feedback issue URLs contain allowlisted detector metadata, classification, parser tier, and a synthetic-shape duplicate identity. Full local finding records can include private paths and diagnostic text. Fixture manifests are accepted only with explicit synthetic-content and redaction-review attestations; they reject escaping paths, `.git`, `.local`, symlinked inputs, unsafe config values, and oversized content. Preview mode avoids all writes. Generated tests contain the attested synthetic fixture, so users must review it before contribution.
 
 The optional external benchmark accepts only credential-free public HTTPS Git URLs pinned to full commit hashes. It disables interactive Git authentication and global/system Git configuration, forbids the file protocol, never runs project scripts, copies no `.git` metadata into case projects, and removes its temporary root by default. External execution is absent from ordinary tests and package installation.
@@ -61,7 +69,8 @@ Pass untrusted arguments through argv arrays and validate values for their inten
 | guard, score, diff, diagnose | None by default | Plan caching may create `.docguard/` artifacts; explicit mutation flags change behavior |
 | ci | None | Records history unless `--no-history` is set |
 | feedback | None | Saves local records or an explicitly requested direct `tests/*.test.mjs` contribution unless `--preview`; prints opt-in URLs but never submits |
-| memory --pack | None | Writes a generated context pack |
+| memory --pack | None | Writes a generated context pack unless `--stdout` is used |
+| agent, agent --task | None | Emits a task graph or transient bounded context; never stores raw task text or selected output |
 | fix --write, sync --write | Targeted documentation edits | Mapped human documents permit only unique `source=code` sections; backups and fix history remain enabled where supported |
 | reconcile | None by default | `--write` delegates only mechanical generated-section refreshes to `sync` |
 | specs, specs preflight | None for check/plan modes | `specs --write` refreshes the registry; `specs complete --write` transactionally records a reviewed outcome and active context |

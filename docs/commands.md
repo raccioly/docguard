@@ -221,6 +221,26 @@ npx docguard-cli fix --doc environment
 
 **Output includes:** TASK, PURPOSE, RESEARCH STEPS (what to grep/read), WRITE THE DOCUMENT (expected sections).
 
+### `docguard agent`
+
+**Build an agent task graph or select bounded evidence for one task.** Existing
+task-graph behavior is unchanged when `--task` is absent.
+
+```bash
+npx docguard-cli agent
+npx docguard-cli agent --format json
+npx docguard-cli agent --task "Implement acme.payments#FR-003 in src/payments.mjs"
+npx docguard-cli agent --task "Fix SEC001 in src/config.mjs" --format json
+```
+
+Task mode reads only configured canonical documents, approved current specs,
+project rules, and exact linked source/test pointers. It excludes retired,
+unapproved, digest-stale, private, unsafe, and symlinked material. JSON output
+uses `schemas/docguard-task-context.schema.json`, contains a task digest instead
+of raw task text, and reports retrieval-only assurance. When no excerpt reaches
+the frozen relevance threshold, it returns `selection.status: "abstained"` with
+a navigation map rather than weak context.
+
 ### `docguard agents`
 
 **Generate agent-specific config files** from AGENTS.md.

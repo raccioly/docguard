@@ -859,6 +859,7 @@ async function main() {
     case 'agent':
       // v0.26 (field report §2): one-shot, dependency-ordered task graph with
       // pre-filled code-truth + per-task verify. Read-only; JSON by default.
+      // @implements docguard.task-specific-agent-context#FR-010
       runAgent(projectDir, config, flags);
       break;
     case 'hooks':
