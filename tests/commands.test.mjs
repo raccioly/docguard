@@ -305,12 +305,12 @@ describe('field report fixes — init --fix headless + generate --plan no side-e
 });
 
 describe('read-only commands are side-effect-free (v0.26 field report Bug #3)', () => {
-  // A bare `docguard guard`/`score`/`diff` used to run ensureSkills →
+  // A bare `docguard guard`/`score`/`diff`/`fix` used to run ensureSkills →
   // auto-init Spec Kit and write .agent/.specify into the tree before printing
   // results. A validate/report command must never mutate the working tree —
   // this holds even when the `specify` CLI is absent, because ensureSkills
   // writes .agent/skills unconditionally regardless of the spawn.
-  for (const cmd of ['guard', 'score', 'diff']) {
+  for (const cmd of ['guard', 'score', 'diff', 'fix']) {
     it(`docguard ${cmd} does not scaffold .agent/ or .specify/`, () => {
       const tmpDir = mkdtempSync(join(tmpdir(), `sg-readonly-${cmd}-`));
       try {
@@ -403,11 +403,17 @@ describe('field report F1/F3 — kind-aware generate + cli/library profiles', ()
 });
 
 describe('docguard hooks', () => {
-  it('lists available hooks', () => {
-    const output = run('hooks --list');
+  it('lists available hooks without scaffolding the inspected repository', t => {
+    const tmpDir = mkdtempSync(join(tmpdir(), 'sg-hooks-list-'));
+    t.after(() => rmSync(tmpDir, { recursive: true, force: true }));
+    execSync('git init -q', { cwd: tmpDir });
+    writeFileSync(join(tmpDir, 'package.json'), '{"name":"hooks-list","version":"1.0.0"}');
+
+    const output = run(`hooks --list --dir ${tmpDir}`);
     assert.match(output, /pre-commit/);
     assert.match(output, /pre-push/);
     assert.match(output, /commit-msg/);
+    assert.equal(existsSync(join(tmpDir, '.agent')), false, 'listing hooks must not install agent skills');
   });
 });
 

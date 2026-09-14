@@ -5436,6 +5436,42 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-09-14T19:45:00.000Z"
+    },
+    {
+      "id": "bug-335",
+      "timestamp": "2026-09-14T20:05:00.000Z",
+      "error_message": "A repository search failed with zsh: unmatched quote",
+      "file": "session shell commands",
+      "root_cause": "A compound ripgrep expression mixed shell quotes and a literal backtick in one command string",
+      "fix": "Split the search into simple single-quoted patterns without shell-sensitive tokens",
+      "tags": ["shell", "tooling", "operator-error"],
+      "related_bugs": ["bug-327"],
+      "occurrences": 1,
+      "last_seen": "2026-09-14T20:05:00.000Z"
+    },
+    {
+      "id": "bug-336",
+      "timestamp": "2026-09-14T20:05:00.000Z",
+      "error_message": "A multi-file patch failed because one expected test context did not match",
+      "file": "session apply_patch operation",
+      "root_cause": "The patch coupled independent file edits into one context-sensitive operation",
+      "fix": "Apply independent file changes separately and verify each exact context before continuing",
+      "tags": ["patching", "tooling", "operator-error"],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-14T20:05:00.000Z"
+    },
+    {
+      "id": "bug-337",
+      "timestamp": "2026-09-14T20:05:00.000Z",
+      "error_message": "The full test suite changed five checked-in agent skills during a documentation-only release correction",
+      "file": "cli/docguard.mjs; .github/workflows/scheduled-release.yml",
+      "root_cause": "Read-only hooks --list and fix invocations could enter setup, while the release workflow updated extension skill versions without refreshing their checked-in agent copies",
+      "fix": "Bypass setup for read-only inventory and fix commands, synchronize managed agent skills during release preparation, and enforce byte-identical copies with regression tests",
+      "tags": ["read-only", "release", "skills", "side-effect", "regression"],
+      "related_bugs": ["bug-317", "bug-318", "bug-331"],
+      "occurrences": 1,
+      "last_seen": "2026-09-14T20:05:00.000Z"
     }
   ]
 }

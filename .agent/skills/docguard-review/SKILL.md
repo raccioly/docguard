@@ -6,10 +6,10 @@ description: Cross-document consistency analysis and quality assessment. Perform
 compatibility: Requires DocGuard CLI installed (npm i -g docguard-cli or npx docguard-cli)
 metadata:
   author: docguard
-  version: 0.36.2
+  version: 0.37.0
   source: extensions/spec-kit-docguard/skills/docguard-review
 ---
-<!-- docguard:version: 0.36.2 -->
+<!-- docguard:version: 0.37.0 -->
 
 # DocGuard Review Skill
 

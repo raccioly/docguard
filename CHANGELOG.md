@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Lifecycle planning now marks the merged v0.37.0 delivery complete and separates
   its released registry/retirement contract from the still-planned completion
   transaction and post-hoc reconciliation work.
+- `docguard hooks --list` and non-writing `docguard fix` invocations no longer
+  enter setup or refresh agent files. Automated releases now synchronize the
+  checked-in `.agent` skills with the released extension before verification.
 
 ## [0.37.0] - 2026-09-14
 
