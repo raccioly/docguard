@@ -90,6 +90,12 @@ signal and lexical identity; similarly named local objects do not grant binding
 status. The parser fallback discloses unsupported class, Pages, and imported-env
 forms instead of treating their absence from the inventory as proof.
 
+Repository-root guidance reads only bounded ancestor metadata: regular
+`.docguard.json`, `package.json`, and `pnpm-workspace.yaml` files, plus Git's
+reported working-tree root. It does not execute package managers or project
+code, follow manifest symlinks, scan outside the selected Git boundary, or
+change the directory passed to a command.
+
 Dependency audit results are time-specific observations. Run the current audit and supported Node-version matrix before release; a historical clean audit is not a continuing guarantee. Pin third-party CI actions to verified commit SHAs and install from the lockfile.
 
 ## .gitignore Audit

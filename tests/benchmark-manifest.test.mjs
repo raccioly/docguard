@@ -13,6 +13,7 @@ import { resolve } from 'node:path';
  * @req docguard.precision-evidence-loop#SC-001
  * @req docguard.precision-evidence-loop#SC-002
  * @req docguard.precision-evidence-loop#SC-005
+ * @req specs/009-language-repository-coverage/spec.md#FR-015
  * @req docs-canonical/REQUIREMENTS.md#FR-004
  */
 

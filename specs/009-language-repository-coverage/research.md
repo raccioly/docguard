@@ -64,6 +64,13 @@ Sources:
 
 - [Git rev-parse](https://git-scm.com/docs/git-rev-parse)
 - [npm workspaces](https://docs.npmjs.com/cli/using-npm/workspaces/)
+- [pnpm workspace packages](https://pnpm.io/settings#packages)
+
+pnpm makes `pnpm-workspace.yaml` authoritative when present and supports `*`,
+`**`, explicit paths, and exclusion patterns. The detector therefore does not
+fall back to `package.json#workspaces` beside a pnpm workspace file, and it
+requires a real nested package manifest before treating a matched directory as
+owned.
 
 ## Rejected alternatives
 
@@ -74,4 +81,3 @@ Sources:
 | Treat every `.env` property as a Worker binding | It turns ordinary application objects and test helpers into environment variables. |
 | Permit mapped writes with `--force` | Force expresses overwrite intent but does not establish which bytes DocGuard owns. |
 | Auto-jump to the Git root | Polyrepos and nested independent projects make that behavior surprising and potentially much broader than requested. |
-

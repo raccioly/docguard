@@ -44,7 +44,9 @@ npx docguard-cli fix --write 2>&1
 
 Removes endpoints documented in `docs-canonical/API-REFERENCE.md` that the OpenAPI
 spec confirms no longer exist (table row + detail block). Only edits
-`docguard:generated` docs, idempotent, prints what changed. Don't hand-edit these.
+`docguard:generated` whole documents. Mapped human docs expose only unique
+`source=code` sections, and `--force` cannot bypass ownership. The operation is
+idempotent and prints what changed. Don't hand-edit generated sections.
 
 ### Step 1: Diagnose Current State
 

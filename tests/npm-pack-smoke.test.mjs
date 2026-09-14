@@ -14,6 +14,7 @@
  * a missing `schemas/` directory until we added it to the files array.
  *
  * @req SC-PACK-001 — npm pack succeeds without errors
+ * @req specs/009-language-repository-coverage/spec.md#SC-005
  * @req SC-PACK-002 — packed tarball includes cli/, schemas/, templates/, commands/
  * @req SC-PACK-003 — extracted package can run `docguard --version`
  * @req SC-PACK-004 — extracted package can run a full guard against a fixture

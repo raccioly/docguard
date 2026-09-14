@@ -25,8 +25,8 @@
 
 ## Phase 4: Monorepo roots and closeout
 
-- [ ] T012 Detect ancestor DocGuard and workspace ownership without widening scope.
-- [ ] T013 Add human and structured rerun guidance with suppression controls.
-- [ ] T014 Update canonical, public, CLI, and AI-agent contracts.
+- [x] T012 Detect ancestor DocGuard and workspace ownership without widening scope.
+- [x] T013 Add human and structured rerun guidance with suppression controls.
+- [x] T014 Update canonical, public, CLI, and AI-agent contracts.
 - [ ] T015 Run focused, full, guard, benchmark, package, and Node-matrix checks.
 - [ ] T016 Complete lifecycle verification after all four reviewed slices merge.

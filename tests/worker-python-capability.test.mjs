@@ -1,3 +1,4 @@
+/** @req specs/009-language-repository-coverage/spec.md#SC-002 */
 import { it } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync } from 'node:fs';

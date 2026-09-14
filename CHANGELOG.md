@@ -29,6 +29,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   through generate-plan, sync, and mechanical repair. Commands validate all
   mapped targets before writing, preserve backups and surrounding bytes, reject
   shared or malformed ownership, and never treat `--force` as authorization.
+- Commands launched from an implicitly selected nested package now detect a
+  governing ancestor `.docguard.json` or npm/pnpm workspace declaration and
+  provide an exact repository-scope rerun. Scope never changes automatically;
+  explicit selection, local configuration, exclusions, Git-only ancestry, and
+  nested repositories suppress guidance. Machine stdout stays parseable while
+  a typed JSON diagnostic is emitted on stderr.
 
 - The active evidence-scoped verification specification defines strict,
   local-only bindings from exact Markdown statements to JSON Pointer values,

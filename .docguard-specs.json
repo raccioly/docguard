@@ -846,7 +846,7 @@
           {
             "requirementId": "SC-005",
             "file": "tests/npm-pack-smoke.test.mjs",
-            "line": 21
+            "line": 22
           }
         ]
       }
@@ -921,11 +921,11 @@
           },
           {
             "path": "specs/009-language-repository-coverage/tasks.md",
-            "digest": "sha256:30a712a18f0a251890629bbd527f534ffb38929faa775eba7add4c0cf1535b4c"
+            "digest": "sha256:36afce03be8c1165e314bb53ee6ce3b11f572deb3d932efa9aabdcbf2d52042f"
           }
         ],
         "taskCompletion": {
-          "checked": 7,
+          "checked": 14,
           "total": 16
         },
         "implementationEvidence": [
@@ -968,6 +968,21 @@
             "requirementId": "FR-007",
             "file": "cli/shared-source.mjs",
             "line": 357
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "cli/writers/sections.mjs",
+            "line": 101
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/shared-doc-roles.mjs",
+            "line": 71
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "cli/shared-doc-roles.mjs",
+            "line": 72
           }
         ],
         "testEvidence": [
@@ -999,37 +1014,97 @@
           {
             "requirementId": "FR-006",
             "file": "tests/worker-python-capability.test.mjs",
-            "line": 48
+            "line": 49
           },
           {
             "requirementId": "FR-006",
             "file": "tests/worker-python-capability.test.mjs",
-            "line": 61
+            "line": 62
           },
           {
             "requirementId": "FR-006",
             "file": "tests/worker-python-capability.test.mjs",
-            "line": 72
+            "line": 73
           },
           {
             "requirementId": "FR-007",
             "file": "tests/worker-python-capability.test.mjs",
-            "line": 98
+            "line": 99
           },
           {
             "requirementId": "FR-008",
             "file": "tests/npm-pack-smoke.test.mjs",
-            "line": 22
+            "line": 23
           },
           {
             "requirementId": "FR-008",
             "file": "tests/worker-python-capability.test.mjs",
-            "line": 111
+            "line": 112
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "tests/mapped-writers.test.mjs",
+            "line": 2
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "tests/sync.test.mjs",
+            "line": 122
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "tests/doc-role-boundaries.test.mjs",
+            "line": 64
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "tests/mapped-writers.test.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "tests/doc-role-boundaries.test.mjs",
+            "line": 195
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "tests/mapped-writers.test.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-015",
+            "file": "tests/benchmark-manifest.test.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-015",
+            "file": "tests/benchmark-manifest.test.mjs",
+            "line": 118
           },
           {
             "requirementId": "SC-001",
             "file": "tests/python-import-graph.test.mjs",
             "line": 6
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/worker-python-capability.test.mjs",
+            "line": 1
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/mapped-writers.test.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/sync.test.mjs",
+            "line": 123
+          },
+          {
+            "requirementId": "SC-005",
+            "file": "tests/npm-pack-smoke.test.mjs",
+            "line": 17
           }
         ]
       }

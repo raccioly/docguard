@@ -139,6 +139,12 @@ dynamic imports, `sys.path` mutation, parse failures, interpreter absence, and
 ambiguous workspace modules must remain partial or unsupported applicability.
 Tests never import or execute fixture modules.
 
+Repository-root fixtures pair ancestor DocGuard, npm workspace, and pnpm
+include evidence with explicit-dir, local-config, exclusion, Git-only, and
+nested-repository controls. Command tests require the selected package result to
+remain unchanged, human guidance to contain an exact rerun, and machine stdout
+to remain parseable while stderr carries the typed diagnostic.
+
 Independent review must challenge suppression paths, not only the original false-positive example. Cross-project runs use disposable snapshots and verify consumer content remains unchanged. Finding counts alone cannot establish precision or recall.
 
 Run `node benchmarks/run.mjs` for the network-free synthetic corpus. Run `node benchmarks/run.mjs --external --baseline benchmarks/baseline.json` explicitly for pinned public sources. The comparator gates new case-level false positives, false negatives, removals, and supported-case abstentions. Persisted cold/warm timings are observational because matching Node and platform metadata cannot exclude host contention. Runtime regression claims require at least five controlled samples from the same paired comparison session and a greater-than-20-percent real-workload change.

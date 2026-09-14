@@ -103,7 +103,8 @@ that ref. Use that diff to:
 |---|---|
 | `↻ docs-canonical/API-REFERENCE.md → endpoints` | Code-truth refreshed by `--write`. No action needed. |
 | `🤖 docs-canonical/API-REFERENCE.md → overview` | Open the doc; update the `overview` prose to reflect the new endpoint set. |
-| `Skipped … not marked docguard:generated` | The doc isn't owned by DocGuard. Either add the marker (and commit ownership) or skip with `--force`. |
+| `Skipped … not marked docguard:generated` | A default-path doc lacks whole-document ownership. Review before using `--force`; a mapped human doc still requires a unique `source=code` section. |
+| `malformed or duplicate docguard:section markers` | Stop. Repair ownership markers explicitly; `--force` cannot authorize the write. |
 | `Documentation memory is up to date` | Done — no drift. |
 
 ## Anti-patterns (do NOT do these)
