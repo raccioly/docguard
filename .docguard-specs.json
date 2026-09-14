@@ -180,7 +180,7 @@
           },
           {
             "path": "specs/006-document-lifecycle/tasks.md",
-            "digest": "sha256:66a553bdcd7fb5e2d3a21755d1f8ec16a5800450453b4dc188065541cdb3e2ca"
+            "digest": "sha256:a53716e90ad72020860a378a05dddb399bacd7f3126ff53bf98a95d042fcbeed"
           }
         ],
         "taskCompletion": {
@@ -953,7 +953,7 @@
           },
           {
             "path": "specs/009-language-repository-coverage/plan.md",
-            "digest": "sha256:91e9b6a5bf6d6cd63080bfddb3f323a40d9b59d549d77897b6e2484777d3ac82"
+            "digest": "sha256:a843cdac74fd5405e2bc5029d5a710e6b841cc615ab2cb97706d2e67cbe3885e"
           },
           {
             "path": "specs/009-language-repository-coverage/tasks.md",
@@ -1803,7 +1803,7 @@
           },
           {
             "path": "specs/010-task-specific-agent-context/plan.md",
-            "digest": "sha256:cf2e094cde54afc06b316bc2ef252309f66781aa86684d0d7dcf74bd631f48cf"
+            "digest": "sha256:9eae19f760f1ff5a6fffd2d2817b4afb202bedaed03cff291896d8a1faafccc5"
           },
           {
             "path": "specs/010-task-specific-agent-context/tasks.md",

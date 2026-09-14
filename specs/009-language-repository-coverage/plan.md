@@ -1,13 +1,13 @@
 # Implementation Plan: Language and Repository Coverage
 
-**Status**: In progress
+**Status**: Implemented and verified; retained as a living contract
 **Spec**: `specs/009-language-repository-coverage/spec.md`
 
 ## Summary
 
-Deliver R6 in four reviewable slices: Python import graphs, current Cloudflare
+R6 was delivered in four reviewable slices: Python import graphs, current Cloudflare
 binding forms, section-owned mapped writers, and monorepo-root guidance. Keep the
-spec active as the shared contract until all four slices pass the release matrix.
+spec active as the shared contract for future coverage changes.
 
 ## Technical Context
 

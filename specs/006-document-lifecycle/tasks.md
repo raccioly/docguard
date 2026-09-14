@@ -1,6 +1,6 @@
 # Tasks: Document Lifecycle and Reconciliation
 
-**Status**: Active
+**Status**: Verified; living specification maintenance continues
 **Spec**: `specs/006-document-lifecycle/spec.md`
 
 ## Phase 1: Safe retirement
@@ -13,7 +13,7 @@
 - [x] T006 Add focused disposable-repository tests.
 - [x] T007 Retire DocGuard's superseded specs and planning documents with the command.
 - [x] T008 Update current README, architecture, test policy, agent guidance, and generated indexes.
-- [x] T009 Run full regression, guard, and packaging checks; release remains held while the registry increment is unimplemented and guard reports planned-work warnings.
+- [x] T009 Run full regression, guard, and packaging checks; hold the release until the registry increment is implemented and planned-work warnings are cleared.
 - [x] T010 Open and merge reviewed PR #349, publish v0.37.0, and verify every
   distribution artifact independently.
 

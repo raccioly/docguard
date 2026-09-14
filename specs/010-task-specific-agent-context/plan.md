@@ -1,5 +1,7 @@
 # Implementation Plan: Task-Specific Agent Context
 
+**Status**: Implemented and verified; retained as a living evaluation contract
+
 ## Summary
 
 Determine whether a deterministic, provenance-rich evidence packet gives coding
