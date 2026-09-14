@@ -10,8 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Spec Kit catalog submissions now derive command and hook counts from the
-  extension manifest and avoid hardcoded validator totals, preventing release
-  reminders from advertising stale extension capabilities.
+  extension manifest, avoid hardcoded validator totals, and enforce the form's
+  description and tag bounds, preventing stale or invalid release reminders.
 
 ## [0.37.0] - 2026-09-14
 
