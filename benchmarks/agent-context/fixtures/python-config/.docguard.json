@@ -1,0 +1,6 @@
+{
+  "version": "0.39",
+  "projectName": "python-config-fixture",
+  "profile": "starter",
+  "requiredFiles": { "canonical": ["docs-canonical/SECURITY.md"], "agentFile": ["AGENTS.md"], "changelog": "CHANGELOG.md", "driftLog": "DRIFT-LOG.md" }
+}

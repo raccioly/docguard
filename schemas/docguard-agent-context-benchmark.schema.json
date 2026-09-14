@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raccioly.github.io/docguard/schemas/docguard-agent-context-benchmark.schema.json",
+  "title": "DocGuard task-specific agent context benchmark",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schemaVersion", "protocol", "conditions", "promotion", "tasks"],
+  "properties": {
+    "$schema": { "const": "https://raccioly.github.io/docguard/schemas/docguard-agent-context-benchmark.schema.json" },
+    "schemaVersion": { "const": 1 },
+    "protocol": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "frozenAt", "seed", "repetitions", "timeoutMs", "harness", "model"],
+      "properties": {
+        "id": { "const": "docguard-agent-context-v1" },
+        "frozenAt": { "type": "string", "format": "date" },
+        "seed": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "repetitions": { "type": "integer", "minimum": 3, "maximum": 20 },
+        "timeoutMs": { "type": "integer", "minimum": 1000, "maximum": 900000 },
+        "harness": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "model": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["cliVersion", "id", "reasoningEffort", "sandbox"],
+          "properties": {
+            "cliVersion": { "type": "string", "minLength": 1, "maxLength": 128 },
+            "id": { "type": "string", "minLength": 1, "maxLength": 128 },
+            "reasoningEffort": { "enum": ["low", "medium", "high"] },
+            "sandbox": { "const": "workspace-write" }
+          }
+        }
+      }
+    },
+    "conditions": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "uniqueItems": true,
+      "prefixItems": [
+        { "const": "task-only" },
+        { "const": "context-pack" },
+        { "const": "targeted-packet" }
+      ],
+      "items": false
+    },
+    "promotion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["nonInferiorityFailures", "maxAdditionalRequirementViolations", "maxAdditionalUnnecessaryEdits", "minimumMedianReductionPercent", "successGainQualifies"],
+      "properties": {
+        "nonInferiorityFailures": { "const": 1 },
+        "maxAdditionalRequirementViolations": { "const": 0 },
+        "maxAdditionalUnnecessaryEdits": { "const": 0 },
+        "minimumMedianReductionPercent": { "const": 15 },
+        "successGainQualifies": { "const": true }
+      }
+    },
+    "tasks": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": { "$ref": "#/$defs/task" }
+    }
+  },
+  "$defs": {
+    "path": { "type": "string", "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\).+" },
+    "task": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "fixture", "hiddenEvaluator", "reference", "prompt", "allowedChanges", "visibleTest", "expectedInitial"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{2,63}$" },
+        "fixture": { "$ref": "#/$defs/path" },
+        "hiddenEvaluator": { "$ref": "#/$defs/path" },
+        "reference": { "$ref": "#/$defs/path" },
+        "prompt": { "type": "string", "minLength": 20, "maxLength": 2000 },
+        "allowedChanges": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/path" } },
+        "visibleTest": { "type": "array", "minItems": 2, "items": { "type": "string", "minLength": 1, "maxLength": 512 } },
+        "expectedInitial": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["passed", "failed"],
+          "properties": {
+            "passed": { "type": "integer", "minimum": 1 },
+            "failed": { "type": "integer", "minimum": 1 }
+          }
+        }
+      }
+    }
+  }
+}

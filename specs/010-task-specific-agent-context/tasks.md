@@ -7,20 +7,20 @@
 
 - [x] T001 Review existing agent graph, context-pack, evidence, and lifecycle surfaces.
 - [x] T002 Synthesize primary research and predeclare the v1 promotion gate.
-- [ ] T003 Add strict deterministic benchmark and result schemas.
-- [ ] T004 Add three synthetic tasks with hidden fail-to-pass and pass-to-pass tests.
+- [x] T003 Add strict deterministic benchmark and result schemas.
+- [x] T004 Add three synthetic tasks with hidden fail-to-pass and pass-to-pass tests.
 
 ## Phase 2: Experimental packet
 
-- [ ] T005 Build bounded deterministic task normalization and ranking.
-- [ ] T006 Select current canonical/spec evidence and exclude retired or unsafe paths.
-- [ ] T007 Emit cited excerpts, source/test pointers, verification commands, and assurance.
-- [ ] T008 Prove deterministic abstention, budgets, provenance, and private-path controls.
+- [x] T005 Build bounded deterministic task normalization and ranking.
+- [x] T006 Select current canonical/spec evidence and exclude retired or unsafe paths.
+- [x] T007 Emit cited excerpts, source/test pointers, verification commands, and assurance.
+- [x] T008 Prove deterministic abstention, budgets, provenance, and private-path controls.
 
 ## Phase 3: Controlled evaluation
 
-- [ ] T009 Implement fresh-repository materialization and hidden-test scoring.
-- [ ] T010 Capture steps, tokens, latency, edits, violations, failures, and patches.
+- [x] T009 Implement fresh-repository materialization and hidden-test scoring.
+- [x] T010 Capture steps, tokens, latency, edits, violations, failures, and patches.
 - [ ] T011 Run and retain all 27 frozen trials or explicit infrastructure failures.
 - [ ] T012 Apply the immutable promotion decision and publish the research result.
 

@@ -1,0 +1,6 @@
+{
+  "version": "0.39",
+  "projectName": "option-migration-fixture",
+  "profile": "starter",
+  "requiredFiles": { "canonical": ["docs-canonical/REQUIREMENTS.md"], "agentFile": ["AGENTS.md"], "changelog": "CHANGELOG.md", "driftLog": "DRIFT-LOG.md" }
+}
