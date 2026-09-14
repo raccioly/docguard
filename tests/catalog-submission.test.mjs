@@ -47,3 +47,12 @@ test('catalog form retains release identity in a bounded URL', () => {
   assert.equal(url.searchParams.get('commands-count'), String(expected.commands));
   assert.equal(url.searchParams.get('hooks-count'), String(expected.hooks));
 });
+
+test('catalog form respects upstream description and tag bounds', () => {
+  const text = execFileSync('python3', ['-B', script, '--url', '1.2.3', download], { encoding: 'utf8' }).trim();
+  const url = new URL(text);
+  const description = url.searchParams.get('description');
+  const tags = url.searchParams.get('tags').split(',').map(tag => tag.trim()).filter(Boolean);
+  assert.ok(description.length > 0 && description.length <= 200);
+  assert.ok(tags.length >= 2 && tags.length <= 5);
+});

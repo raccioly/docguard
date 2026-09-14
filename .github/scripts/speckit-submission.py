@@ -30,6 +30,12 @@ from urllib.parse import urlencode, quote
 FORM_URL = "https://github.com/github/spec-kit/issues/new"
 TEMPLATE = "extension_submission.yml"
 MANIFEST = Path(__file__).resolve().parents[2] / "extensions/spec-kit-docguard/extension.yml"
+DESCRIPTION = (
+    "Documentation integrity for AI-assisted repositories: lifecycle registry, "
+    "drift validation, traceability, safe archival, SARIF/JUnit, MCP, GitHub "
+    "Actions, and Spec Kit hooks."
+)
+TAGS = ["documentation", "validation", "traceability", "ai-agents", "spec-kit"]
 
 
 def manifest_inventory(path: Path = MANIFEST):
@@ -94,15 +100,7 @@ def build(version: str, download_url: str):
         "docguard": {
             "name": "DocGuard — CDD Enforcement",
             "id": "docguard",
-            "description": (
-                "A documentation-integrity engine with an MCP server, "
-                "SARIF/JUnit output, and a deterministic zero-LLM core. "
-                "Validates, scores, and traces documentation against code — "
-                "stable finding codes, adoption baseline for "
-                "legacy repos, compliance-evidence reports, GitHub Action "
-                "with PR annotations, spec-kit hooks. Pure Node.js, one "
-                "pinned dep."
-            ),
+            "description": DESCRIPTION,
             "author": "raccioly",
             "version": version,
             "download_url": download_url,
@@ -123,10 +121,7 @@ def build(version: str, download_url: str):
                 ],
             },
             "provides": {"commands": command_count, "hooks": hook_count},
-            "tags": [
-                "documentation", "validation", "quality", "cdd",
-                "traceability", "ai-agents", "enforcement", "spec-kit",
-            ],
+            "tags": TAGS,
             "verified": False,
             "downloads": 0,
             "stars": 0,
@@ -156,8 +151,7 @@ def build(version: str, download_url: str):
          "- specify - optional (auto-initializes the SDD workflow during docguard init)"),
         ("commands-count", "Number of Commands", str(command_count)),
         ("hooks-count", "Number of Hooks (optional)", str(hook_count)),
-        ("tags", "Tags",
-         "documentation, validation, quality, cdd, traceability, ai-agents, enforcement, spec-kit"),
+        ("tags", "Tags", ", ".join(TAGS)),
         ("features", "Key Features",
          "- Configurable quality gate with severity triage and a remediation plan\n"
          "- AI-driven documentation repair with codebase research and validation loops\n"
