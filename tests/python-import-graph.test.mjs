@@ -108,4 +108,3 @@ describe('Python architecture graph', { skip: HAS_PY ? false : 'python3 not on P
     assert.equal(validateArchitecture(dir, {}).applicability.status, 'partial');
   });
 });
-

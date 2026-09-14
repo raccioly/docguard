@@ -77,6 +77,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- R6 regression fixtures now follow the repository's single-newline EOF format,
+  keeping release diff checks clean.
 - Evidence results no longer expose raw JSON source values in CLI, guard, MCP,
   or agent output. Comparisons retain values only in process and bind them into
   non-reversible identities, preventing an unsafe declaration from copying a

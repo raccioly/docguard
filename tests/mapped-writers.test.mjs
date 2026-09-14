@@ -92,4 +92,3 @@ describe('mapped document writers', () => {
     assert.ok(inspectSections(valid + '\n<!-- /docguard:section -->').issues.some(issue => issue.code === 'unmatched-close'));
   });
 });
-
