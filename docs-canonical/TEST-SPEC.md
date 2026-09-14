@@ -126,6 +126,12 @@ Retirement tests use disposable Git repositories and verify both sides of the bo
 
 Regression cases are synthetic and name no consumer repositories. Keep a valid near-neighbor beside every detected defect: formatting versus declaration deletion; negated versus current technology use; explained versus unexplained skips; mock expectations versus credentials; implemented versus omitted contract endpoints; Worker bindings versus local variables; historical versus active documents. Check coverage tests distinguish unsupported and missing inputs from executed checks. Document-role tests exercise mapped findings, raw/loaded configuration parity, unsafe paths, and read-only planning without writes.
 
+Worker fixtures reproduce Cloudflare's module-handler argument, exported Pages
+context, imported global `env`, and entrypoint-class property forms. Every form
+has a lookalike source, class, function, shadow, or computed-key control. The
+packed-package test runs without installed Babel and requires AST-only forms to
+remain disclosed as limitations.
+
 Python import-graph fixtures cover regular flat and `src/` packages, absolute
 and explicit-relative imports, cycles, and configured layer violations. Paired
 controls keep standard-library and third-party imports out of the local graph;

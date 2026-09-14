@@ -77,6 +77,13 @@ Review the exact command and flags before assigning privileges. CLI help is the 
 
 The package declares one exact-pinned dependency, `@babel/parser`, with its transitive Babel dependencies recorded in `package-lock.json`. AST extraction degrades to a regex fallback when Babel is unavailable. Python AST extraction optionally uses the installed `python3` runtime. No additional runtime package is introduced by the trust improvements.
 
+Cloudflare binding extraction reads source and Wrangler file presence only. It
+does not load configuration, import application modules, contact Cloudflare, or
+read binding values. AST trust requires an official handler/export/import/class
+signal and lexical identity; similarly named local objects do not grant binding
+status. The parser fallback discloses unsupported class, Pages, and imported-env
+forms instead of treating their absence from the inventory as proof.
+
 Dependency audit results are time-specific observations. Run the current audit and supported Node-version matrix before release; a historical clean audit is not a continuing guarantee. Pin third-party CI actions to verified commit SHAs and install from the lockfile.
 
 ## .gitignore Audit

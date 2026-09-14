@@ -19,6 +19,7 @@
  * @req SC-PACK-004 — extracted package can run a full guard against a fixture
  * @req SC-PACK-005 — schemas/docguard-config.schema.json is in the package
  * @req docguard.evidence-scoped-verification#SC-005
+ * @req docguard.language-repository-coverage#FR-008
  */
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
@@ -135,5 +136,26 @@ describe('npm pack smoke', { skip: SKIP }, () => {
     assert.ok(Array.isArray(data.validators), 'validators array should be present');
 
     rmSync(fixtureDir, { recursive: true, force: true });
+  });
+
+  it('extracted package discloses AST-only Worker forms when Babel is absent', () => {
+    packDir = tmp('pack');
+    extractDir = tmp('extract');
+    spawnSync('npm', ['pack', '--pack-destination', packDir], { cwd: process.cwd() });
+    const tarball = readdirSync(packDir).find(f => f.endsWith('.tgz'));
+    spawnSync('tar', ['xzf', join(packDir, tarball), '-C', extractDir]);
+    const modulePath = join(extractDir, 'package/cli/shared-source.mjs');
+    const script = [
+      `import { extractWorkerEnvBindings } from ${JSON.stringify('file://' + modulePath)};`,
+      'const source = \'import { env } from "cloudflare:workers"; consume(env.API_TOKEN);\';',
+      'const result = extractWorkerEnvBindings(source, "worker.ts");',
+      'console.log(JSON.stringify({ names: [...result], limitations: result.limitations }));',
+    ].join('\n');
+    const r = spawnSync('node', ['--input-type=module', '-e', script], { encoding: 'utf-8' });
+    assert.equal(r.status, 0, r.stderr);
+    assert.deepEqual(JSON.parse(r.stdout), {
+      names: [],
+      limitations: ['worker-imported-env-needs-ast'],
+    });
   });
 });

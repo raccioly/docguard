@@ -18,6 +18,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   violations, and keeps dynamic imports, `sys.path` mutation, parse failures,
   interpreter absence, and ambiguous workspace modules visible as partial or
   unsupported coverage.
+- Environment scanning now recognizes current Cloudflare module-handler `env`,
+  Pages `context.env`, entrypoint-class `this.env`, and imported
+  `cloudflare:workers` `env` forms with lexical alias and shadow tracking.
+  Lookalike objects and imports stay excluded, and parser-absent packages expose
+  the AST-only forms they could not verify.
 
 - The active evidence-scoped verification specification defines strict,
   local-only bindings from exact Markdown statements to JSON Pointer values,

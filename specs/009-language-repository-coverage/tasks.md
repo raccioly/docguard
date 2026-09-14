@@ -12,9 +12,9 @@
 
 ## Phase 2: Cloudflare bindings
 
-- [ ] T005 Add imported `env` and supported class `this.env` extraction.
-- [ ] T006 Add Pages `onRequest*` `context.env` extraction.
-- [ ] T007 Add lexical-shadowing and unsupported fallback controls.
+- [x] T005 Add imported `env` and supported class `this.env` extraction.
+- [x] T006 Add Pages `onRequest*` `context.env` extraction.
+- [x] T007 Add lexical-shadowing and unsupported fallback controls.
 
 ## Phase 3: Mapped document writers
 

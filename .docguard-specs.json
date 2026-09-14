@@ -921,11 +921,11 @@
           },
           {
             "path": "specs/009-language-repository-coverage/tasks.md",
-            "digest": "sha256:6dd5ad95ebd6862ac6f65d2f755710bf01f2fc4042b49ce47ca63bb62ebcee21"
+            "digest": "sha256:30a712a18f0a251890629bbd527f534ffb38929faa775eba7add4c0cf1535b4c"
           }
         ],
         "taskCompletion": {
-          "checked": 4,
+          "checked": 7,
           "total": 16
         },
         "implementationEvidence": [
@@ -958,6 +958,16 @@
             "requirementId": "FR-005",
             "file": "cli/validators/architecture.mjs",
             "line": 172
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/shared-source.mjs",
+            "line": 356
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/shared-source.mjs",
+            "line": 357
           }
         ],
         "testEvidence": [
@@ -965,6 +975,61 @@
             "requirementId": "FR-001",
             "file": "tests/py-ast.test.mjs",
             "line": 94
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/python-import-graph.test.mjs",
+            "line": 2
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/python-import-graph.test.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/python-import-graph.test.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/python-import-graph.test.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/worker-python-capability.test.mjs",
+            "line": 48
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/worker-python-capability.test.mjs",
+            "line": 61
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/worker-python-capability.test.mjs",
+            "line": 72
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/worker-python-capability.test.mjs",
+            "line": 98
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/npm-pack-smoke.test.mjs",
+            "line": 22
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/worker-python-capability.test.mjs",
+            "line": 111
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/python-import-graph.test.mjs",
+            "line": 6
           }
         ]
       }

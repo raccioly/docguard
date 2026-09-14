@@ -174,7 +174,7 @@ export function resolveSourceRoots(projectDir, config = {}) {
   for (const d of getWorkspaceDirs(projectDir)) add(d);
 
   // 3. conventional roots (only those that exist)
-  const conventional = ['src', 'app', 'lib', 'server', 'api', 'backend/src', 'backend', 'cli'];
+  const conventional = ['src', 'app', 'lib', 'server', 'api', 'functions', 'backend/src', 'backend', 'cli'];
   for (const cr of conventional) add(resolve(projectDir, cr));
 
   // 4. Fall back to the project root ONLY when nothing else resolved. Adding it
@@ -347,50 +347,120 @@ function workerType(param) {
   return type?.type === 'TSTypeReference' && type.typeName?.type === 'Identifier' ? type.typeName.name : '';
 }
 
-/** Static lexical binding analysis; collect declarations before resolving reads. */
+const WORKER_ENTRYPOINTS = new Set(['WorkerEntrypoint', 'DurableObject', 'WorkflowEntrypoint']);
+const WORKER_HANDLER_KEYS = new Set(['fetch', 'scheduled', 'queue', 'email', 'tail', 'trace', 'alarm', 'test']);
+const PAGES_HANDLER_RE = /^onRequest(?:Get|Post|Put|Patch|Delete|Head|Options)?$/;
+
+/**
+ * Static lexical binding analysis; collect declarations before resolving reads.
+ * @implements docguard.language-repository-coverage#FR-006
+ * @implements docguard.language-repository-coverage#FR-007
+ */
 function workerAstBindings(ast, configured) {
-  const root = { parent: null, functionScope: true, env: undefined };
+  const root = { parent: null, functionScope: true, bindings: new Map(), thisEnv: false };
   const reads = [];
-  const bind = (pattern, scope, value = false) => {
+  const exportedHandlers = new Set();
+  const bind = (pattern, scope, value = false, objectSource = null) => {
     if (!pattern) return;
-    if (pattern.type === 'Identifier' && pattern.name === 'env') scope.env = value;
-    else if (pattern.type === 'AssignmentPattern') bind(pattern.left, scope, value);
-    else if (pattern.type === 'RestElement') bind(pattern.argument, scope, value);
-    else if (pattern.type === 'ArrayPattern') for (const element of pattern.elements) bind(element, scope, value);
+    if (pattern.type === 'Identifier') scope.bindings.set(pattern.name, value);
+    else if (pattern.type === 'AssignmentPattern') bind(pattern.left, scope, value, objectSource);
+    else if (pattern.type === 'RestElement') bind(pattern.argument, scope, value, objectSource);
+    else if (pattern.type === 'ArrayPattern') for (const element of pattern.elements) bind(element, scope, false);
     else if (pattern.type === 'ObjectPattern') {
-      for (const property of pattern.properties) bind(property.type === 'RestElement' ? property.argument : property.value, scope, value);
+      for (const property of pattern.properties) {
+        if (property.type === 'RestElement') bind(property.argument, scope, false);
+        else {
+          const key = property.computed ? property.key?.value : (property.key?.name || property.key?.value);
+          bind(property.value, scope, objectSource === 'pages-context' && key === 'env' ? 'worker-env' : false);
+        }
+      }
     }
   };
+  const lookup = (name, scope) => {
+    while (scope) {
+      if (scope.bindings.has(name)) return scope.bindings.get(name);
+      scope = scope.parent;
+    }
+    return undefined;
+  };
+  const propertyName = node => node?.computed
+    ? (node.property?.type === 'StringLiteral' ? node.property.value : null)
+    : (node?.property?.name || null);
+  const valueKind = (node, scope) => {
+    if (!node) return false;
+    if (node.type === 'Identifier') return lookup(node.name, scope) || false;
+    if (node.type !== 'MemberExpression' && node.type !== 'OptionalMemberExpression') return false;
+    const property = propertyName(node);
+    if (property !== 'env') return false;
+    if (node.object?.type === 'Identifier' && lookup(node.object.name, scope) === 'pages-context') return 'worker-env';
+    if (node.object?.type === 'ThisExpression' && scope.thisEnv) return 'worker-env';
+    return false;
+  };
+
+  // Module imports and direct named exports are instantiated before execution,
+  // so collect their identity before walking source-order declarations.
+  for (const statement of ast.program.body || []) {
+    if (statement.type === 'ImportDeclaration') {
+      const trusted = statement.source?.value === 'cloudflare:workers';
+      for (const specifier of statement.specifiers || []) {
+        const imported = specifier.imported?.name || specifier.imported?.value;
+        const kind = trusted && imported === 'env' ? 'worker-env'
+          : trusted && WORKER_ENTRYPOINTS.has(imported) ? 'worker-entrypoint-class' : false;
+        if (specifier.local?.name) root.bindings.set(specifier.local.name, kind);
+      }
+    }
+    const declaration = statement.type === 'ExportNamedDeclaration' ? statement.declaration : null;
+    if (declaration?.type === 'FunctionDeclaration') exportedHandlers.add(declaration);
+    if (declaration?.type === 'VariableDeclaration') {
+      for (const item of declaration.declarations || []) if (item.init) exportedHandlers.add(item.init);
+    }
+  }
+
   const functionTypes = new Set(['FunctionDeclaration', 'FunctionExpression', 'ArrowFunctionExpression', 'ObjectMethod', 'ClassMethod', 'ClassPrivateMethod']);
   function visit(node, scope, parent) {
     if (!node || typeof node.type !== 'string') return;
     if (node.type === 'FunctionDeclaration' || node.type === 'ClassDeclaration') bind(node.id, scope);
     if (functionTypes.has(node.type)) {
-      scope = { parent: scope, functionScope: true, env: undefined };
+      const inheritedThis = node.type === 'ArrowFunctionExpression' ? scope.thisEnv
+        : ['ClassMethod', 'ClassPrivateMethod'].includes(node.type) ? scope.thisEnv : false;
+      scope = { parent: scope, functionScope: true, bindings: new Map(), thisEnv: inheritedThis };
       if (node.type === 'FunctionExpression') bind(node.id, scope);
       const key = node.key?.name || node.key?.value || node.id?.name ||
         (parent?.type === 'ObjectProperty' ? parent.key?.name || parent.key?.value : parent?.type === 'VariableDeclarator' ? parent.id?.name : '');
       const request = workerType(node.params[0]) === 'Request';
-      for (const param of node.params) {
+      for (const param of node.params) bind(param, scope, false);
+      if (exportedHandlers.has(node) && PAGES_HANDLER_RE.test(key) && node.params[0]) {
+        const target = node.params[0].type === 'AssignmentPattern' ? node.params[0].left : node.params[0];
+        if (target.type === 'Identifier') bind(target, scope, 'pages-context');
+        else bind(target, scope, false, 'pages-context');
+      } else for (const param of node.params) {
         const target = param.type === 'AssignmentPattern' ? param.left : param;
+        const typed = /^(?:Env|[\w$]*Env|[\w$]*Bindings)$/.test(workerType(target));
         const worker = target.type === 'Identifier' && target.name === 'env' &&
-          /^(?:Env|[\w$]*Env|[\w$]*Bindings)$/.test(workerType(target)) && (configured || (key === 'fetch' && request));
-        bind(param, scope, worker);
+          ((configured && WORKER_HANDLER_KEYS.has(key)) || (typed && (configured || (key === 'fetch' && request))));
+        if (worker) bind(target, scope, 'worker-env');
       }
     } else if (['BlockStatement', 'ForStatement', 'ForOfStatement', 'ForInStatement', 'CatchClause', 'SwitchStatement', 'ClassExpression', 'ClassDeclaration', 'StaticBlock'].includes(node.type)) {
-      scope = { parent: scope, functionScope: node.type === 'StaticBlock', env: undefined };
+      const workerClass = ['ClassExpression', 'ClassDeclaration'].includes(node.type)
+        && node.superClass?.type === 'Identifier' && lookup(node.superClass.name, scope) === 'worker-entrypoint-class';
+      scope = { parent: scope, functionScope: node.type === 'StaticBlock', bindings: new Map(), thisEnv: workerClass || scope.thisEnv };
       if (node.type === 'CatchClause') bind(node.param, scope);
       if (node.type === 'ClassExpression' || node.type === 'ClassDeclaration') bind(node.id, scope);
     }
     if (node.type === 'VariableDeclaration') {
       let declarationScope = scope;
       if (node.kind === 'var') while (!declarationScope.functionScope && declarationScope.parent) declarationScope = declarationScope.parent;
-      for (const declaration of node.declarations) bind(declaration.id, declarationScope);
+      for (const declaration of node.declarations) {
+        const kind = valueKind(declaration.init, scope);
+        bind(declaration.id, declarationScope, kind, kind);
+      }
     }
-    if (node.type === 'ImportDeclaration') for (const spec of node.specifiers) bind(spec.local, scope);
-    if ((node.type === 'MemberExpression' || node.type === 'OptionalMemberExpression') && node.object?.type === 'Identifier' && node.object.name === 'env') {
-      const name = node.computed ? (node.property.type === 'StringLiteral' ? node.property.value : null) : node.property.name;
-      if (name) reads.push({ scope, name });
+    if (node.type === 'ImportDeclaration') {
+      for (const spec of node.specifiers) if (!scope.bindings.has(spec.local?.name)) bind(spec.local, scope);
+    }
+    if (node.type === 'MemberExpression' || node.type === 'OptionalMemberExpression') {
+      const name = propertyName(node);
+      if (name) reads.push({ scope, name, object: node.object });
     }
     for (const [key, child] of Object.entries(node)) {
       if (['loc', 'start', 'end', 'extra', 'comments', 'tokens'].includes(key)) continue;
@@ -399,13 +469,7 @@ function workerAstBindings(ast, configured) {
     }
   }
   visit(ast.program, root, null);
-  const names = new Set();
-  for (const read of reads) {
-    let scope = read.scope;
-    while (scope && scope.env === undefined) scope = scope.parent;
-    if (scope?.env === true) names.add(read.name);
-  }
-  return names;
+  return new Set(reads.filter(read => valueKind(read.object, read.scope) === 'worker-env').map(read => read.name));
 }
 
 /** Optional parser argument makes the absent/failed-parser contract testable. */
@@ -419,7 +483,13 @@ export function extractWorkerEnvBindings(content, filename = 'file.ts', configur
       return workerAstBindings(ast, configured);
     } catch { /* Failed parsing retains conservative lexical evidence. */ }
   }
-  return workerEnvUsageFallback(content, classifyChars(content, extname(filename)), configured);
+  const result = workerEnvUsageFallback(content, classifyChars(content, extname(filename)), configured);
+  const fallbackOnly = [];
+  if (/cloudflare:workers/.test(content) && /\bimport\s*\{[^}]*\benv\b/.test(content)) fallbackOnly.push('worker-imported-env-needs-ast');
+  if (/\bonRequest(?:Get|Post|Put|Patch|Delete|Head|Options)?\b/.test(content) && /\bcontext\s*\.\s*env\b/.test(content)) fallbackOnly.push('pages-context-needs-ast');
+  if (/\bextends\s+(?:WorkerEntrypoint|DurableObject|WorkflowEntrypoint)\b/.test(content) && /\bthis\s*\.\s*env\b/.test(content)) fallbackOnly.push('worker-class-env-needs-ast');
+  result.limitations = fallbackOnly;
+  return result;
 }
 
 // Resolve binding positions in simple lexical patterns, not property names.
@@ -537,6 +607,7 @@ function workerEnvUsageFallback(content, kind, configured) {
 
 export function grepEnvUsage(projectDir, config = {}) {
   const names = new Set();
+  names.limitations = [];
   const roots = resolveSourceRoots(projectDir, config);
   const seen = new Set();
 
@@ -579,7 +650,9 @@ export function grepEnvUsage(projectDir, config = {}) {
     // code while only the argument 'X' is a string, so the name is still caught.
     const kind = classifyChars(content, extname(filePath));
     if (['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs'].includes(extname(filePath))) {
-      for (const name of extractWorkerEnvBindings(content, filePath, workerConfigForFile(projectDir, filePath))) names.add(name);
+      const workerBindings = extractWorkerEnvBindings(content, filePath, workerConfigForFile(projectDir, filePath));
+      for (const name of workerBindings) names.add(name);
+      for (const limitation of workerBindings.limitations || []) names.limitations.push({ code: limitation, file: rel.replace(/\\/g, '/') });
     }
     // patterns[2] is the import.meta.env one — its matches are Vite-injected
     // when the name is an intrinsic, and must not be reported as user env vars.
