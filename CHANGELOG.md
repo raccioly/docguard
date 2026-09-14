@@ -18,6 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `docguard hooks --list` and non-writing `docguard fix` invocations no longer
   enter setup or refresh agent files. Automated releases now synchronize the
   checked-in `.agent` skills with the released extension before verification.
+- Automated releases now update PyPI metadata, MCP registry metadata, Spec Kit
+  metadata, AI skill markers, and both copyable CI pins through one fail-closed
+  synchronizer before testing or opening a release pull request.
 
 ## [0.37.0] - 2026-09-14
 

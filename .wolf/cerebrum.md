@@ -146,3 +146,5 @@
 - **2026-09-14 — Badge test isolation:** legacy badge aliases run init and may refresh skills even when testing output. Keep their fixtures outside the source checkout; use the current Node executable and prevent global setup tooling from entering tests. Read-only audit/score tests remain separate from mutating alias tests.
 
 - **2026-09-14 — Scoped requirement identity:** validator and feature scoring share document-qualified definitions and positive reference resolution. Bare IDs resolve only when unique; an invalid qualifier never falls back. Repeated definitions in one document collapse; cross-document IDs remain separate. Qualified paths are repository-relative with forward slashes.
+
+- **2026-09-14 — Release versions are a transaction:** package.json is the source of truth, but a release is not coherent until PyPI, MCP registry, Spec Kit metadata, skill markers, managed agent copies, and copyable CI pins match it. Synchronize only an explicit allowlist of active publication surfaces, validate every expected field before writing, and leave historical version references untouched.
