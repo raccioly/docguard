@@ -53,8 +53,14 @@ function parseAttrs(attrStr) {
  * @returns {Array<{ id, source, attrs, openLine, closeLine, body }>}
  */
 export function parseSections(content) {
+  return inspectSections(content).sections;
+}
+
+/** Parse sections and retain malformed-marker evidence for write authorization. */
+export function inspectSections(content) {
   const lines = String(content).split('\n');
   const sections = [];
+  const issues = [];
   let open = null;
 
   for (let i = 0; i < lines.length; i++) {
@@ -70,17 +76,39 @@ export function parseSections(content) {
           body: lines.slice(open.openLine + 1, i).join('\n'),
         });
         open = null;
-      }
-      // A close with no matching open is ignored.
+      } else issues.push({ code: 'unmatched-close', line: i + 1 });
       continue;
     }
     const om = line.match(OPEN_RE);
     if (om) {
       // Abandon any still-open (malformed) section; start fresh here.
+      if (open !== null) issues.push({ code: 'nested-or-unclosed', line: open.openLine + 1 });
       open = { attrs: parseAttrs(om[1] || ''), openLine: i };
     }
   }
-  return sections;
+  if (open !== null) issues.push({ code: 'unclosed', line: open.openLine + 1 });
+  const counts = new Map();
+  for (const section of sections) {
+    if (!section.id) issues.push({ code: 'missing-id', line: section.openLine + 1 });
+    counts.set(section.id, (counts.get(section.id) || 0) + 1);
+  }
+  for (const [id, count] of counts) if (id && count > 1) issues.push({ code: 'duplicate-id', id, count });
+  return { sections, issues };
+}
+
+/**
+ * Return the unique code-owned section or throw before a mapped write.
+ * @implements docguard.language-repository-coverage#FR-009
+ */
+export function assertOwnedCodeSection(content, id, path = 'document') {
+  const inspected = inspectSections(content);
+  if (inspected.issues.length) {
+    throw new Error(`${path}: malformed or duplicate docguard:section markers; no write was applied.`);
+  }
+  const matches = inspected.sections.filter(section => section.id === id);
+  if (matches.length !== 1) throw new Error(`${path}: section ${id} must exist exactly once before a bounded write.`);
+  if (matches[0].source !== 'code') throw new Error(`${path}: section ${id} is source=${matches[0].source}; only source=code is writable.`);
+  return matches[0];
 }
 
 /** Get a single section by id, or null. */

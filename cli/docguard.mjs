@@ -700,7 +700,10 @@ async function main() {
   if (!headless) printBanner();
 
   const config = loadConfig(projectDir);
-  if (['init', 'setup', 'generate'].includes(command) && !(command === 'generate' && flags.plan && !flags.write) || ['sync', 'fix'].includes(command) && flags.write || command === 'diagnose' && flags.auto) assertDefaultDocWrites(config);
+  // Init and diagnose --auto can scaffold several unrelated files and retain
+  // their legacy default-layout contract. Generate, sync, and fix perform their
+  // own target/section authorization so mapped layouts can use bounded writers.
+  if (['init', 'setup'].includes(command) || command === 'diagnose' && flags.auto) assertDefaultDocWrites(config);
 
   // `--no-baseline` disables the committed adoption baseline for this run —
   // threaded through config so guard, ci, report, and mcp all honor it the

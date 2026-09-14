@@ -23,6 +23,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `cloudflare:workers` `env` forms with lexical alias and shadow tracking.
   Lookalike objects and imports stay excluded, and parser-absent packages expose
   the AST-only forms they could not verify.
+- Mapped documentation layouts now support safe mutation. New or explicitly
+  generated single-role targets permit whole-document generation; existing
+  human documents permit only unique, well-formed `source=code` section updates
+  through generate-plan, sync, and mechanical repair. Commands validate all
+  mapped targets before writing, preserve backups and surrounding bytes, reject
+  shared or malformed ownership, and never treat `--force` as authorization.
 
 - The active evidence-scoped verification specification defines strict,
   local-only bindings from exact Markdown statements to JSON Pointer values,

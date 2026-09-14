@@ -177,7 +177,15 @@ Use explicit document roles to validate Markdown files in an existing layout. A 
 
 Supported roles are architecture, dataModel, security, testSpec, environment, apiReference, and requirements. Paths must name Markdown files within the project; private directories, parent traversal, absolute paths, and symlink destinations are rejected. Several roles may reference one document. Each role's content checks still apply; a mapping is not a correctness attestation. Default roles remain unchanged unless explicitly mapped.
 
-This first version supports validation, scoring, and read-only planning. Legacy automatic document generation, sync writes, and repair writes refuse custom mappings before scaffolding or modifying files. This protects existing documents while writer behavior is extended and reviewed. Read-only plans identify mapped destinations; a human or agent can review the proposed work against the existing document structure.
+Mapped paths use an explicit ownership contract for writes:
+
+- A missing mapped target may be generated when exactly one role maps to it.
+- An existing file with `<!-- docguard:generated true -->` grants DocGuard full-document ownership. Generation and mechanical whole-document repair keep their normal backup behavior.
+- An existing human document grants bounded ownership only through one unique, well-formed `<!-- docguard:section id=<id> source=code -->` region. `generate --plan --write`, `sync --write`, and section regeneration may replace that region while preserving every surrounding byte.
+- Missing, duplicate, nested, unclosed, or `source=human` markers reject the write before mutation. Several roles mapped to one file also reject whole-document generation.
+- `--force` never grants ownership and cannot bypass these checks.
+
+Broad legacy scaffolding such as `diagnose --auto` remains unavailable for a mapped layout because it cannot select an operation-specific owned target safely. Read-only plans identify mapped destinations without requiring ownership markers.
 
 The docs.dirs setting extends document inventory and explicitly opts additional directories into freshness review. Inventory membership does not mean every detector checks every file. Semantic extraction covers canonical Markdown, explicitly mapped Markdown roles, README, and AGENTS within its safety and size limits; other prose remains unverified.
 

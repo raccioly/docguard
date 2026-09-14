@@ -18,10 +18,10 @@
 
 ## Phase 3: Mapped document writers
 
-- [ ] T008 Define operation-specific mapped write authorization.
-- [ ] T009 Permit unique `source=code` section synchronization and regeneration.
-- [ ] T010 Permit safe new/generated whole-document targets and reject shared roles.
-- [ ] T011 Prove byte preservation, backup behavior, and force-resistant failures.
+- [x] T008 Define operation-specific mapped write authorization.
+- [x] T009 Permit unique `source=code` section synchronization and regeneration.
+- [x] T010 Permit safe new/generated whole-document targets and reject shared roles.
+- [x] T011 Prove byte preservation, backup behavior, and force-resistant failures.
 
 ## Phase 4: Monorepo roots and closeout
 

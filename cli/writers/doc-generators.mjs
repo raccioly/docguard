@@ -12,15 +12,17 @@ import { resolve, basename, extname } from 'node:path';
 import { c } from '../shared.mjs';
 import { generateERDiagram } from '../scanners/schemas.mjs';
 import { safeWrite, appendStandardsCitation } from './generate-io.mjs';
+import { assertMappedFullDocumentWrites, docRolePath, resolveDocRole } from '../shared-doc-roles.mjs';
 
 // ── Document Generators ────────────────────────────────────────────────────
 
 export function generateArchitecture(dir, config, stack, scan, flags, docTools) {
-  const path = resolve(dir, 'docs-canonical/ARCHITECTURE.md');
+  const path = resolveDocRole(dir, config, 'architecture');
   if (existsSync(path) && !flags.force) {
     console.log(`  ${c.dim}⏭️  ARCHITECTURE.md (exists)${c.reset}`);
     return false;
   }
+  assertMappedFullDocumentWrites(dir, config, ['architecture']);
 
   const techRows = Object.entries(stack)
     .filter(([, v]) => v)
@@ -182,7 +184,7 @@ See \\\`docs-canonical/ADR.md\\\` for the full decision log.
 ## 10. Quality Requirements
 <!-- arc42: §10 — Quality Requirements -->
 
-See \\\`docs-canonical/TEST-SPEC.md\\\` for test requirements and coverage targets.
+See \\\`${docRolePath(config, 'testSpec')}\\\` for test requirements and coverage targets.
 
 ## 11. Risks & Technical Debt
 <!-- arc42: §11 — Risk Assessment and Technical Debt -->
@@ -216,11 +218,12 @@ See \\\`docs-canonical/KNOWN-GOTCHAS.md\\\` for known issues.
 // ── API Reference Generator (NEW — from deep route scanning) ───────────────
 
 export function generateApiReference(dir, config, stack, deepRoutes, flags) {
-  const path = resolve(dir, 'docs-canonical/API-REFERENCE.md');
+  const path = resolveDocRole(dir, config, 'apiReference');
   if (existsSync(path) && !flags.force) {
     console.log(`  ${c.dim}⏭️  API-REFERENCE.md (exists)${c.reset}`);
     return false;
   }
+  assertMappedFullDocumentWrites(dir, config, ['apiReference']);
 
   // Group routes by resource (first path segment after /api/)
   const groups = {};
@@ -313,11 +316,12 @@ ${resourceSections}
 // ── Enhanced Data Model Generator ──────────────────────────────────────────
 
 export function generateDataModel(dir, config, stack, scan, flags, deepSchemas) {
-  const path = resolve(dir, 'docs-canonical/DATA-MODEL.md');
+  const path = resolveDocRole(dir, config, 'dataModel');
   if (existsSync(path) && !flags.force) {
     console.log(`  ${c.dim}⏭️  DATA-MODEL.md (exists)${c.reset}`);
     return false;
   }
+  assertMappedFullDocumentWrites(dir, config, ['dataModel']);
 
   // Use deep schemas if available, fallback to basic scan
   let entities = [];
@@ -466,11 +470,12 @@ ${erDiagram}
 }
 
 export function generateEnvironment(dir, config, stack, scan, flags) {
-  const path = resolve(dir, 'docs-canonical/ENVIRONMENT.md');
+  const path = resolveDocRole(dir, config, 'environment');
   if (existsSync(path) && !flags.force) {
     console.log(`  ${c.dim}⏭️  ENVIRONMENT.md (exists)${c.reset}`);
     return false;
   }
+  assertMappedFullDocumentWrites(dir, config, ['environment']);
 
   const envVarRows = scan.envVars.map(v =>
     `| \`${v.name}\` | ${categorizeEnvVar(v.name)} | Yes | \`${v.example}\` | |`
@@ -529,11 +534,12 @@ ${envVarRows || '| <!-- No .env.example found --> | | | | |'}
 }
 
 export function generateTestSpec(dir, config, stack, scan, flags) {
-  const path = resolve(dir, 'docs-canonical/TEST-SPEC.md');
+  const path = resolveDocRole(dir, config, 'testSpec');
   if (existsSync(path) && !flags.force) {
     console.log(`  ${c.dim}⏭️  TEST-SPEC.md (exists)${c.reset}`);
     return false;
   }
+  assertMappedFullDocumentWrites(dir, config, ['testSpec']);
 
   // Build service-to-test map
   const serviceMap = [];
@@ -614,11 +620,12 @@ ${serviceRows || '| <!-- No services found --> | | | |'}
 }
 
 export function generateSecurity(dir, config, stack, scan, flags) {
-  const path = resolve(dir, 'docs-canonical/SECURITY.md');
+  const path = resolveDocRole(dir, config, 'security');
   if (existsSync(path) && !flags.force) {
     console.log(`  ${c.dim}⏭️  SECURITY.md (exists)${c.reset}`);
     return false;
   }
+  assertMappedFullDocumentWrites(dir, config, ['security']);
 
   const content = `# Security
 
@@ -682,6 +689,15 @@ ${scan.envVars.filter(v => isSecretVar(v.name)).map(v =>
 export function generateRootFiles(dir, config, stack, scan, flags, docTools) {
   let created = 0;
   let skipped = 0;
+  const canonicalFiles = [
+    [docRolePath(config, 'architecture'), 'System design (arc42 aligned)'],
+    [docRolePath(config, 'apiReference'), 'API endpoint documentation'],
+    [docRolePath(config, 'dataModel'), 'Database schemas & entities'],
+    [docRolePath(config, 'security'), 'Auth & secrets'],
+    [docRolePath(config, 'testSpec'), 'Test requirements'],
+    [docRolePath(config, 'environment'), 'Environment setup'],
+  ];
+  const canonicalRows = canonicalFiles.map(([path, purpose]) => `| \`${path}\` | ${purpose} |`).join('\n');
 
   // AGENTS.md (AGENTS.md Standard compliant)
   const agentsPath = resolve(dir, 'AGENTS.md');
@@ -696,7 +712,7 @@ export function generateRootFiles(dir, config, stack, scan, flags, docTools) {
 
 ## Workflow
 
-1. **Read** \`docs-canonical/\` before suggesting changes
+1. **Read** the configured canonical files under **Key Files** before suggesting changes
 2. **Check** existing patterns in the codebase
 3. **Run** \`npx docguard-cli diagnose\` to see what needs fixing
 4. **Confirm** your approach before writing code
@@ -712,12 +728,7 @@ ${Object.entries(stack).filter(([, v]) => v).map(([k, v]) => `- **${k}**: ${v}`)
 
 | File | Purpose |
 |------|---------|
-| \`docs-canonical/ARCHITECTURE.md\` | System design (arc42 aligned) |
-| \`docs-canonical/API-REFERENCE.md\` | API endpoint documentation |
-| \`docs-canonical/DATA-MODEL.md\` | Database schemas & entities |
-| \`docs-canonical/SECURITY.md\` | Auth & secrets |
-| \`docs-canonical/TEST-SPEC.md\` | Test requirements |
-| \`docs-canonical/ENVIRONMENT.md\` | Environment setup |
+${canonicalRows}
 | \`AGENTS.md\` | AI agent instructions (this file) |
 | \`CHANGELOG.md\` | Change tracking |
 | \`DRIFT-LOG.md\` | Documented deviations |
@@ -729,7 +740,7 @@ ${Object.entries(stack).filter(([, v]) => v).map(([k, v]) => `- **${k}**: ${v}`)
 ### Allowed
 
 - Read any file in the repository
-- Modify files within \`src/\`, \`tests/\`, and \`docs-canonical/\`
+- Modify files within \`src/\`, \`tests/\`, and the configured canonical documentation paths
 - Run test commands (\`npm test\`, \`npx docguard-cli guard\`)
 - Create new files in appropriate directories
 
@@ -780,8 +791,8 @@ npx docguard-cli generate       # Generate docs from code
 
 - Never commit without updating CHANGELOG.md
 - If code deviates from docs, add \`// DRIFT: reason\`
-- Security rules in SECURITY.md are mandatory
-- Test requirements in TEST-SPEC.md must be met
+- Security rules in \`${docRolePath(config, 'security')}\` are mandatory
+- Test requirements in \`${docRolePath(config, 'testSpec')}\` must be met
 - Documentation changes must pass \`docguard guard\`
 `;
     safeWrite(agentsPath, content);

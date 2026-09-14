@@ -1,6 +1,6 @@
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -116,5 +116,42 @@ describe('docguard sync', () => {
     assert.ok(j.updates.some(u => u.section === 'endpoints'));
     assert.ok(j.reviews.some(r => r.section === 'overview'));
     assert.equal(j.applied, false);
+  });
+
+  /**
+   * @req docguard.language-repository-coverage#FR-009
+   * @req docguard.language-repository-coverage#SC-003
+   */
+  it('updates only an owned section in a mapped human document and creates a backup', () => {
+    const mapped = 'handbook/http.md';
+    write(mapped, read('docs-canonical/API-REFERENCE.md')
+      .replace('<!-- docguard:generated true -->\n\n', '')
+      .replace('Hand-written overview — must survive.', 'Enterprise prose before and after must survive.'));
+    rmSync(join(dir, 'docs-canonical/API-REFERENCE.md'));
+    const before = read(mapped);
+    quiet(() => runSync(dir, { ...config, docs: { roles: { apiReference: mapped } } }, { write: true }));
+    const after = read(mapped);
+    assert.ok(after.includes('/api/orders'));
+    assert.ok(after.includes('Enterprise prose before and after must survive.'));
+    assert.equal(after.slice(0, after.indexOf('<!-- docguard:section id=endpoints')), before.slice(0, before.indexOf('<!-- docguard:section id=endpoints')));
+    assert.equal(after.slice(after.indexOf('<!-- /docguard:section -->') + 26), before.slice(before.indexOf('<!-- /docguard:section -->') + 26));
+    assert.equal(existsSync(join(dir, mapped + '.bak')), true);
+  });
+
+  it('rejects malformed or human-source mapped ownership even with force', () => {
+    const mapped = 'handbook/http.md';
+    const base = read('docs-canonical/API-REFERENCE.md').replace('<!-- docguard:generated true -->\n\n', '');
+    rmSync(join(dir, 'docs-canonical/API-REFERENCE.md'));
+    const mappedConfig = { ...config, docs: { roles: { apiReference: mapped } } };
+    for (const content of [
+      base.replace('<!-- /docguard:section -->', '<!-- docguard:section id=broken source=code -->'),
+      base.replace('id=endpoints source=code', 'id=endpoints source=human'),
+    ]) {
+      write(mapped, content);
+      const before = read(mapped);
+      assert.throws(() => quiet(() => runSync(dir, mappedConfig, { write: true, force: true })), /malformed|source=human/);
+      assert.equal(read(mapped), before);
+      assert.equal(existsSync(join(dir, mapped + '.bak')), false, 'failed sync creates no backup side effect');
+    }
   });
 });

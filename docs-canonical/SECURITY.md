@@ -62,7 +62,7 @@ Pass untrusted arguments through argv arrays and validate values for their inten
 | ci | None | Records history unless `--no-history` is set |
 | feedback | None | Saves local records or an explicitly requested direct `tests/*.test.mjs` contribution unless `--preview`; prints opt-in URLs but never submits |
 | memory --pack | None | Writes a generated context pack |
-| fix --write, sync --write | Targeted documentation edits | Backups and fix history where supported |
+| fix --write, sync --write | Targeted documentation edits | Mapped human documents permit only unique `source=code` sections; backups and fix history remain enabled where supported |
 | reconcile | None by default | `--write` delegates only mechanical generated-section refreshes to `sync` |
 | specs, specs preflight | None for check/plan modes | `specs --write` refreshes the registry; `specs complete --write` transactionally records a reviewed outcome and active context |
 | verify --evidence | None | Reads the strict local manifest, selected Markdown, source files, and saved reports; guard consumes the same evaluator |
@@ -72,6 +72,12 @@ Pass untrusted arguments through argv arrays and validate values for their inten
 | report | None by default | `--out` writes an artifact |
 
 Review the exact command and flags before assigning privileges. CLI help is the authoritative command inventory.
+
+Mapped paths do not weaken the write boundary. A new target or an existing
+`docguard:generated true` file can receive a single-role full-document write;
+otherwise only an exact code-owned section can change. The command validates
+all mapped targets before its first visible write, rejects malformed or shared
+ownership, and treats `--force` as overwrite intent rather than authorization.
 
 ## Supply Chain
 

@@ -233,7 +233,7 @@ for (const args of [['generate', '--plan', '--write'], ['generate', '--plan', '-
     const result = spawnSync(process.execPath, [cli, ...args, '--dir', dir], { encoding: 'utf8', timeout: 15000 });
     assert.equal(result.error, undefined);
     assert.equal(result.status, 1, result.stderr);
-    assert.match(result.stderr + result.stdout, /Custom docs.roles.*read-only/);
+    assert.match(result.stderr + result.stdout, /section .* must exist exactly once|multiple roles/);
     assert.deepEqual(snapshot(dir), before, 'blocked command must not create or overwrite any file');
     for (const path of ['.agent', '.agents', '.specify', 'docs-canonical', 'docs-implementation']) {
       assert.equal(existsSync(join(dir, path)), false, path + ' must not be scaffolded');
