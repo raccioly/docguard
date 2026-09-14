@@ -921,11 +921,11 @@
           },
           {
             "path": "specs/009-language-repository-coverage/tasks.md",
-            "digest": "sha256:36afce03be8c1165e314bb53ee6ce3b11f572deb3d932efa9aabdcbf2d52042f"
+            "digest": "sha256:1f604bdb08275da4f4cff6b66f895974f34bcf350ced6448e3fa144581835342"
           }
         ],
         "taskCompletion": {
-          "checked": 14,
+          "checked": 16,
           "total": 16
         },
         "implementationEvidence": [
@@ -983,6 +983,21 @@
             "requirementId": "FR-011",
             "file": "cli/shared-doc-roles.mjs",
             "line": 72
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "cli/repository-root.mjs",
+            "line": 113
+          },
+          {
+            "requirementId": "FR-013",
+            "file": "cli/repository-root.mjs",
+            "line": 114
+          },
+          {
+            "requirementId": "FR-014",
+            "file": "cli/repository-root.mjs",
+            "line": 115
           }
         ],
         "testEvidence": [
@@ -1072,14 +1087,29 @@
             "line": 4
           },
           {
+            "requirementId": "FR-012",
+            "file": "tests/repository-root.test.mjs",
+            "line": 2
+          },
+          {
+            "requirementId": "FR-013",
+            "file": "tests/repository-root.test.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-014",
+            "file": "tests/repository-root.test.mjs",
+            "line": 4
+          },
+          {
             "requirementId": "FR-015",
             "file": "tests/benchmark-manifest.test.mjs",
             "line": 16
           },
           {
-            "requirementId": "FR-015",
-            "file": "tests/benchmark-manifest.test.mjs",
-            "line": 118
+            "requirementId": "FR-016",
+            "file": "tests/repository-root.test.mjs",
+            "line": 6
           },
           {
             "requirementId": "SC-001",
@@ -1100,6 +1130,11 @@
             "requirementId": "SC-003",
             "file": "tests/sync.test.mjs",
             "line": 123
+          },
+          {
+            "requirementId": "SC-004",
+            "file": "tests/repository-root.test.mjs",
+            "line": 5
           },
           {
             "requirementId": "SC-005",

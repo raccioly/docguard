@@ -35,6 +35,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   explicit selection, local configuration, exclusions, Git-only ancestry, and
   nested repositories suppress guidance. Machine stdout stays parseable while
   a typed JSON diagnostic is emitted on stderr.
+- R6 verification now records 1,765 passing tests across Node 18, 20, 22, and
+  24, successful packed-package and parser-absent execution, schema and syntax
+  checks, and a regression-free frozen corpus. All 24 evaluable cases passed;
+  the dynamic-Python control remained explicitly unsupported as designed.
 
 - The active evidence-scoped verification specification defines strict,
   local-only bindings from exact Markdown statements to JSON Pointer values,
