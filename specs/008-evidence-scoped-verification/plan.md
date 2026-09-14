@@ -1,6 +1,6 @@
 # Implementation Plan: Evidence-Scoped Verification
 
-**Status**: Implemented and verified; lifecycle closeout pending
+**Status**: Implemented and verified; retained as a living contract
 **Spec**: `specs/008-evidence-scoped-verification/spec.md`
 
 ## Summary

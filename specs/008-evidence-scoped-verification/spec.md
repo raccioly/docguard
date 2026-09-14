@@ -132,3 +132,9 @@ can pass; missing evidence and unsupported report shapes stay visible.
   remote evidence in the initial release.
 - Rewriting canonical intent when implementation differs.
 - Treating a verified statement as a freshness exemption for its document.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `138571668102d3e59c54d219478d284d3ae139b8` — Verified scoped evidence adapters and integrations across the supported Node matrix, package fallback, schema validation, and frozen external corpus with no baseline regression. Evidence: `cli/commands/agent.mjs`, `cli/commands/explain.mjs`, `cli/commands/guard.mjs`, `cli/commands/mcp.mjs`, `cli/commands/score.mjs`, `cli/commands/verify.mjs`, `cli/config.mjs`, `cli/evidence/adapters.mjs`, `cli/evidence/evaluate.mjs`, `cli/evidence/manifest.mjs`, `cli/evidence/markdown.mjs`, `cli/findings.mjs`, `cli/validators/evidence.mjs`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/CI-RECIPES.md`, `docs-canonical/DATA-MODEL.md`, `docs-canonical/REQUIREMENTS.md`, `docs-canonical/SECURITY.md`, `docs-canonical/TEST-SPEC.md`, `tests/evidence-adapters.test.mjs`, `tests/evidence-integration.test.mjs`, `tests/evidence-manifest.test.mjs`, `tests/mcp-http.test.mjs`, `tests/mcp.test.mjs`, `tests/npm-pack-smoke.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->

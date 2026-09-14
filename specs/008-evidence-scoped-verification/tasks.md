@@ -1,6 +1,6 @@
 # Tasks: Evidence-Scoped Verification
 
-**Status**: In progress
+**Status**: Verified; living contract
 **Spec**: `specs/008-evidence-scoped-verification/spec.md`
 
 ## Phase 1: Contract and selectors

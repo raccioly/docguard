@@ -484,7 +484,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "in_progress",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -508,8 +508,42 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "138571668102d3e59c54d219478d284d3ae139b8",
+          "outcomes": [
+            {
+              "revision": "138571668102d3e59c54d219478d284d3ae139b8",
+              "reason": "Verified scoped evidence adapters and integrations across the supported Node matrix, package fallback, schema validation, and frozen external corpus with no baseline regression.",
+              "evidence": [
+                "cli/commands/agent.mjs",
+                "cli/commands/explain.mjs",
+                "cli/commands/guard.mjs",
+                "cli/commands/mcp.mjs",
+                "cli/commands/score.mjs",
+                "cli/commands/verify.mjs",
+                "cli/config.mjs",
+                "cli/evidence/adapters.mjs",
+                "cli/evidence/evaluate.mjs",
+                "cli/evidence/manifest.mjs",
+                "cli/evidence/markdown.mjs",
+                "cli/findings.mjs",
+                "cli/validators/evidence.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/CI-RECIPES.md",
+                "docs-canonical/DATA-MODEL.md",
+                "docs-canonical/REQUIREMENTS.md",
+                "docs-canonical/SECURITY.md",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/evidence-adapters.test.mjs",
+                "tests/evidence-integration.test.mjs",
+                "tests/evidence-manifest.test.mjs",
+                "tests/mcp-http.test.mjs",
+                "tests/mcp.test.mjs",
+                "tests/npm-pack-smoke.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -538,15 +572,15 @@
         "artifacts": [
           {
             "path": "specs/008-evidence-scoped-verification/spec.md",
-            "digest": "sha256:44df40568b380425b5ac8a3998f652741ad5be42ae73a9d4d9c5874228d80262"
+            "digest": "sha256:b6c293317a720676a2f3bc84b8e6e77ad7d67eb448f36f0ed1e66e14c768b2b0"
           },
           {
             "path": "specs/008-evidence-scoped-verification/plan.md",
-            "digest": "sha256:dbdd049c2b167f59cce60c1097b43eccd74500d1d2bd4478d979accbad9be4c7"
+            "digest": "sha256:29ed9e14ea8cf7ae1ef44b6a02da4ceb00a0a30f2f19f22d1c8a50262f25ec48"
           },
           {
             "path": "specs/008-evidence-scoped-verification/tasks.md",
-            "digest": "sha256:eafa314463a4f6507147c91392cedd5c01544b08504530ab7f6cd898935601e4"
+            "digest": "sha256:975702fb2073dd5349819c2656de215d600fb38285be5875f18ec01bf9578dc0"
           }
         ],
         "taskCompletion": {

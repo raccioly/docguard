@@ -34,6 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   completion transaction as current behavior instead of future work.
 - Requirement-qualified implementation and test links now cover every R5
   integration surface used by lifecycle reconciliation, including MCP.
+- The R5 living specification now records its exact reviewed implementation
+  revision and complete evidence set through the verified lifecycle transaction.
 
 ### Fixed
 
