@@ -49,6 +49,14 @@ provides:
       file: "commands/generate.md"
       description: "Reverse-engineer canonical docs from existing codebase"
 
+    - name: "speckit.docguard.brief"
+      file: "commands/brief.md"
+      description: "Brief prior spec intent and lifecycle before creating a new specification"
+
+    - name: "speckit.docguard.preflight"
+      file: "commands/preflight.md"
+      description: "Gate a generated specification against registry integrity and prior intent"
+
   # GitHub Actions workflow starters — copyable templates users drop into
   # .github/workflows/ for guard/fix/sync/score integration.
   workflows:
@@ -74,15 +82,20 @@ provides:
       description: "Initialize a new canonical document with metadata header"
 
 hooks:
+  before_specify:
+    command: "speckit.docguard.brief"
+    optional: false
+    description: "Load current spec intent and block specification on stale lifecycle state"
+
   after_implement:
     command: "speckit.docguard.guard"
     optional: false
     description: "Quality gate — ensures docs stay in sync with code"
 
   before_tasks:
-    command: "speckit.docguard.review"
-    optional: true
-    prompt: "Review documentation consistency before generating tasks?"
+    command: "speckit.docguard.preflight"
+    optional: false
+    description: "Gate the generated spec before task generation"
 
   after_tasks:
     command: "speckit.docguard.score"

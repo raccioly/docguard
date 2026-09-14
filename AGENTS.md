@@ -50,6 +50,7 @@ code-truth sections), `score` (CDD maturity 0-100).
 **Tools** — `demo` (zero-install tour), `diagnose` (guard → AI fix prompts),
 `fix` (AI fix instructions; `--doc <name>`), `generate` (reverse-engineer docs;
 `--plan`), `retire` (remove reviewed docs from active context),
+`specs` (check/refresh the spec lifecycle registry and preflight new specs),
 `explain` (explain a validator/warning), `memory` (what DocGuard
 remembers), `trace` (requirements traceability; `--reverse`), `upgrade` (migrate
 config/CLI), `watch` (live re-guard).
@@ -69,7 +70,7 @@ returns `status` (PASS/WARN/FAIL, matches exit code 0/2/1), `findings[]`
 (Markdown tier map incl. `unclassified[]`), and `semanticClaims.count`
 (documented numbers not yet verified against code).
 
-- Every finding has a stable code (`STR001`, `ENV003`, `XRF002`, …) — all 28
+- Every finding has a stable code (`STR001`, `ENV003`, `XRF002`, …) — all 29
   validators emit them. `docguard explain <CODE>` gives the contract and fix.
 - Mechanical fixes go through `docguard fix --write` (provenance-checked,
   fail-closed) — never hand-apply what the tool fixes deterministically.
@@ -82,6 +83,10 @@ returns `status` (PASS/WARN/FAIL, matches exit code 0/2/1), `findings[]`
 - Treat `specs/` and planning docs as active intent only. Review candidates with
   `docguard retire --plan`; retire only explicit, clean tracked documents after
   their shipped outcomes are represented in current docs and `CHANGELOG.md`.
+- Run `docguard specs preflight` before drafting and `docguard specs preflight
+  --path <spec>` before planning. Refresh `.docguard-specs.json` with `specs
+  --write`; never edit generated intent/evidence fields or treat bare requirement
+  IDs as completion proof.
 
 ## AI Skills
 

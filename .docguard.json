@@ -39,7 +39,8 @@
     "security": true,
     "environment": true,
     "freshness": true,
-    "documentLifecycle": true
+    "documentLifecycle": true,
+    "specRegistry": true
   },
   "severity": {},
   "surfaceSync": {

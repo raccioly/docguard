@@ -15,9 +15,10 @@ import {
   unlinkSync,
 } from 'node:fs';
 import { spawnSync } from 'node:child_process';
-import { dirname, extname, relative, resolve, sep } from 'node:path';
+import { basename, dirname, extname, relative, resolve, sep } from 'node:path';
 import { safeWrite } from '../writers/generate-io.mjs';
 import { scanDocumentLifecycle } from '../scanners/document-lifecycle.mjs';
+import { parseSpecId, readSpecRegistry } from '../scanners/spec-registry.mjs';
 import {
   collectRequirementIdsFromContent,
   requirementPatterns,
@@ -164,6 +165,21 @@ function assertNoLiveBackreferences(projectDir, files) {
   }
 }
 
+function assertNoCurrentRegisteredSpec(projectDir, files) {
+  const loaded = readSpecRegistry(projectDir);
+  if (loaded.error) throw new Error(`Retirement cannot verify spec lifecycle: ${loaded.error}`);
+  if (!loaded.exists) return;
+  for (const entry of loaded.value.specs) {
+    const lifecycle = entry.reviewed?.lifecycle || entry.lifecycle;
+    if (lifecycle?.context !== 'current') continue;
+    const specDir = dirname(entry.path);
+    const selected = files.find(path => path === entry.path || path.startsWith(`${specDir}/`));
+    if (selected) {
+      throw new Error(`Retirement refuses active registered spec ${entry.specId} (${selected}). Transition it through the docguard specs lifecycle before removing its artifacts.`);
+    }
+  }
+}
+
 function refExists(projectDir, ref) {
   const result = spawnSync('git', ['show-ref', '--verify', '--quiet', ref], { cwd: projectDir });
   return result.status === 0;
@@ -223,6 +239,7 @@ function writeArchive(projectDir, config, flags) {
   const selectedEvidence = evidence.find(path => files.includes(path));
   if (selectedEvidence) throw new Error(`Evidence cannot be retired in the same operation: ${selectedEvidence}`);
   assertArchivable(projectDir, files, config);
+  assertNoCurrentRegisteredSpec(projectDir, files);
   assertNoLiveBackreferences(projectDir, files);
 
   const commit = git(projectDir, ['rev-parse', 'HEAD']).trim();
@@ -231,6 +248,12 @@ function writeArchive(projectDir, config, flags) {
   const archivedAt = new Date().toISOString();
   const manifest = loadManifest(projectDir);
   const patterns = requirementPatterns(config);
+  const specIdsByDirectory = new Map();
+  for (const path of files) {
+    if (basename(path).toLowerCase() !== 'spec.md') continue;
+    const specId = parseSpecId(readFileSync(resolve(projectDir, path), 'utf8'));
+    if (specId) specIdsByDirectory.set(dirname(path), specId);
+  }
   const entries = files.map(path => {
     const content = readFileSync(resolve(projectDir, path), 'utf8');
     const requirementIds = [...new Set(
@@ -243,6 +266,7 @@ function writeArchive(projectDir, config, flags) {
       archivedFrom: commit,
       blob: git(projectDir, ['rev-parse', `HEAD:${path}`]).trim(),
       reason: flags.reason.trim(),
+      ...(specIdsByDirectory.get(dirname(path)) ? { specId: specIdsByDirectory.get(dirname(path)) } : {}),
       ...(supersededBy ? { supersededBy } : {}),
       ...(evidence.length > 0 ? { evidence } : {}),
       ...(requirementIds.length > 0 ? { requirementIds } : {}),

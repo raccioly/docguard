@@ -18,11 +18,11 @@
 
 ## Phase 2: Registry and lifecycle follow-up
 
-- [ ] T011 Define the versioned registry schema and transition invariants with immutable spec IDs, tombstones, orthogonal lifecycle dimensions, split reviewed control fields, observed projections, and cross-ledger consistency.
-- [ ] T012 Extract the existing feature-trace calculation into a reusable evidence builder.
-- [ ] T013 Add a pure registry projector and dedicated `docguard specs --write|--check` flows; no other command may write lifecycle state.
-- [ ] T014 Add `docguard specs preflight` with an advisory pre-specification briefing plus a generated-spec gate with structural blockers and review-only semantic overlap.
-- [ ] T015 Add manifest integrity, `supersededBy` currentness, and lifecycle-transition validation.
+- [x] T011 Define the versioned registry schema and transition invariants with immutable spec IDs, tombstones, orthogonal lifecycle dimensions, split reviewed control fields, observed projections, and cross-ledger consistency.
+- [x] T012 Extract the existing feature-trace calculation into a reusable evidence builder.
+- [x] T013 Add a pure registry projector and dedicated `docguard specs --write|--check` flows; no other command may write lifecycle state.
+- [x] T014 Add `docguard specs preflight` with an advisory pre-specification briefing plus a generated-spec gate with structural blockers, review-only semantic overlap, and mandatory Spec Kit `before_specify`/`before_tasks` hooks.
+- [x] T015 Add manifest integrity, reciprocal lineage, `supersededBy` currentness, and lifecycle-state validation.
 - [ ] T016 Add transactional registry/recovery writes with rollback, then status adapters and monorepo fixtures contributed by users.
 
 ## Phase 3: Post-hoc reconciliation

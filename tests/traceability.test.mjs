@@ -125,6 +125,19 @@ describe('Traceability Validator', () => {
     assert.deepEqual(result.warnings, []);
   });
 
+  it('resolves immutable spec ID qualifiers to the current spec path', () => {
+    const id = 'FR' + '-' + '777';
+    mkdirSync(join(tmpDir, 'specs', '001-feature'), { recursive: true });
+    writeFileSync(join(tmpDir, 'specs', '001-feature', 'spec.md'),
+      `# Feature\n\n**Spec ID**: \`acme.feature\`\n\n- **${id}**: The system MUST work.\n`);
+    mkdirSync(join(tmpDir, 'tests'), { recursive: true });
+    writeFileSync(join(tmpDir, 'tests', 'feature.test.js'), `// @req acme.feature#${id}\ntest('works', () => {});\n`);
+    const result = validateTraceability(tmpDir, { requiredFiles: { canonical: [] } });
+    assert.equal(result.total, 1);
+    assert.equal(result.passed, 1);
+    assert.deepEqual(result.warnings, []);
+  });
+
   it('warns when a requirement has no test coverage', () => {
     const ID2 = 'REQ' + '-' + '902';
     mkdirSync(join(tmpDir, 'docs-canonical'), { recursive: true });

@@ -52,6 +52,7 @@ import { runDemo } from './commands/demo.mjs';
 import { runAgent } from './commands/agent.mjs';
 import { runMcp } from './commands/mcp.mjs';
 import { runArchive } from './commands/retire.mjs';
+import { runSpecs } from './commands/specs.mjs';
 import { ensureSkills } from './ensure-skills.mjs';
 
 // ── Shared constants (imported to break circular dependencies) ──────────
@@ -99,6 +100,7 @@ ${c.bold}Tools (situational, but day-to-day useful)${c.reset}
   ${c.green}ci${c.reset}         Pipeline gate: guard + score in one command (${c.cyan}--threshold <n>${c.reset}, ${c.cyan}--fail-on-warning${c.reset}, ${c.cyan}--format json${c.reset}; records score history)
   ${c.green}memory${c.reset}     Show what DocGuard remembers (${c.cyan}--diff${c.reset} drills into drift)
   ${c.green}retire${c.reset}     Remove reviewed docs from active AI context (${c.cyan}--plan${c.reset}; explicit ${c.cyan}--write --path${c.reset})
+  ${c.green}specs${c.reset}      Track spec lifecycle and evidence (${c.cyan}--check|--write${c.reset}; ${c.cyan}preflight --path <spec>${c.reset})
   ${c.green}trace${c.reset}      Requirements traceability matrix (${c.cyan}--reverse${c.reset} for code→doc map, ${c.cyan}--features${c.reset} for per-feature adherence)
   ${c.green}upgrade${c.reset}    Migrate ${c.cyan}.docguard.json${c.reset} schema + CLI (${c.cyan}--apply --pr${c.reset} for team-wide PR)
   ${c.green}watch${c.reset}      Live mode: re-run guard on file changes
@@ -131,9 +133,9 @@ ${c.bold}Options:${c.reset}
   --threshold <n> Minimum score for CI pass (used with ci command)
   --fail-on-warning  Fail CI on warnings (used with ci command)
   --auto          Auto-fix what's possible (used with fix command)
-  --write         Apply deterministic fixes in place (fix command): removes
-                  documented endpoints the OpenAPI spec confirms are gone.
-                  Only edits docguard:generated docs unless --force.
+  --write         Apply a command's explicit deterministic write path. For fix,
+                  only edits docguard:generated docs unless --force; specs
+                  refreshes observed registry evidence; retire requires --path.
   --plan          AI-powered Generate (generate command): scan any project
                   (JS/Python/Rust/Go/Java/…), emit the agent task manifest +
                   code-truth skeleton. Add --write to scaffold, --format json
@@ -326,6 +328,18 @@ const COMMAND_HELP = {
       ['--format json', 'Machine-readable plan or result'],
     ],
     examples: ['docguard retire --plan', 'docguard retire --check --format json', 'docguard retire --write --path specs/001-done --reason "Implemented in v1.2"'],
+  },
+  specs: {
+    summary: 'Maintain the deterministic spec lifecycle and evidence registry.',
+    usage: 'docguard specs [--check|--write] | docguard specs preflight [--path <spec>] [--format json]',
+    flags: [
+      ['--check', 'Exit 2 when the committed registry is missing, stale, or inconsistent'],
+      ['--write', 'Refresh observed evidence while preserving reviewed lifecycle fields'],
+      ['preflight', 'Brief prior specs, or gate a generated draft with --path'],
+      ['--path <spec>', 'Generated spec to compare against current lifecycle state'],
+      ['--format json', 'Machine-readable registry or preflight result'],
+    ],
+    examples: ['docguard specs --check', 'docguard specs --write', 'docguard specs preflight', 'docguard specs preflight --path specs/007-feature/spec.md'],
   },
 };
 
@@ -661,7 +675,7 @@ async function main() {
   // `diff`/`impact` only read; `demo` runs against a throwaway fixture.)
   const READ_ONLY_COMMANDS = new Set([
     'guard', 'audit', 'score', 'diff', 'impact',
-    'diagnose', 'trace', 'explain', 'memory', 'demo', 'agent', 'retire', 'archive',
+    'diagnose', 'trace', 'explain', 'memory', 'demo', 'agent', 'retire', 'archive', 'specs',
     // feedback only writes its own .docguard/feedback/ — it must NOT scaffold
     // skills or touch source, so it's gated out of ensureSkills like the rest.
     'feedback',
@@ -869,6 +883,9 @@ async function main() {
     case 'retire':
     case 'archive': // Development alias; `retire` avoids collision with Spec Kit Archive.
       runArchive(projectDir, config, flags);
+      break;
+    case 'specs':
+      runSpecs(projectDir, config, flags);
       break;
     case 'demo':
       // v0.21: zero-install "ah-ha" moment — runs guard against a baked-in

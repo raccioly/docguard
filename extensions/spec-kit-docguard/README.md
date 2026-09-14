@@ -9,7 +9,7 @@ Enterprise-grade Canonical-Driven Development (CDD) enforcement and **AI-readabl
 - **AI-powered Generate** — `generate --plan` builds the code-truth skeleton in `<!-- docguard:section -->` markers and emits a structured agent task manifest; the AI writes the prose.
 - **Refresh and review** — `sync` surgically refreshes code-truth doc sections in place, **preserves human prose**, flags prose for agent review.
 - **Mechanical `fix --write`** — deterministic, no-LLM: remove stale documented endpoints, refresh stale "N validators" counts, replace stale version refs, insert missing `## [Unreleased]`.
-- **5 AI Skills** — docguard-fix, docguard-guard, docguard-sync, docguard-review, docguard-score (enterprise-grade behavior protocols, not just step-lists)
+- **4 AI Skills** — docguard-fix, docguard-guard, docguard-review, docguard-score (enterprise-grade behavior protocols, not just step-lists)
 - **Workflow Chaining** — YAML handoffs enable guard → sync → fix → review → score flows
 - **Spec Kit Hooks** — Quality gate integrations at implement, tasks, and review phases
 - **Minimal Dependencies** — one pinned, optional-load parser (`@babel/parser`); Node.js built-ins otherwise
@@ -51,6 +51,8 @@ docguard score
 | `speckit.docguard.score` | `docguard.score` | CDD maturity score with ROI improvement roadmap |
 | `speckit.docguard.diagnose` | — | Diagnose issues + generate multi-perspective AI prompts |
 | `speckit.docguard.generate` | — | Reverse-engineer canonical docs from codebase |
+| `speckit.docguard.brief` | — | Load current spec intent before specification |
+| `speckit.docguard.preflight` | — | Gate the generated spec before task generation |
 
 ## AI Skills
 
@@ -73,13 +75,20 @@ DocGuard integrates into the spec-kit workflow through hooks:
 
 ```yaml
 hooks:
-  after_implement:   # Optional — quality gate after /speckit.implement
+  before_specify:    # Mandatory — read current spec intent first
+    command: speckit.docguard.brief
+  after_implement:   # Mandatory — quality gate after /speckit.implement
     command: speckit.docguard.guard
-  before_tasks:      # Optional — review docs before task generation
-    command: speckit.docguard.review
+  before_tasks:      # Mandatory — gate the generated spec
+    command: speckit.docguard.preflight
   after_tasks:       # Optional — show score after tasks
     command: speckit.docguard.score
 ```
+
+The hooks call the deterministic CLI contract. The pre-specification hook emits
+a current-intent briefing; the pre-task hook checks the actual generated spec.
+Spec Kit dispatches the hooks through its agent workflow, while
+`docguard specs --check` remains the CI enforcement surface.
 
 ### Workflow Chaining
 

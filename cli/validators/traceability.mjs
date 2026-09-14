@@ -15,18 +15,23 @@
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, relative, basename, extname } from 'node:path';
-import { TRACE_MAP, TEST_PATTERNS, isTraceableSource } from '../shared-trace-patterns.mjs';
+import { TRACE_MAP, isTraceableSource } from '../shared-trace-patterns.mjs';
 import { walkFiles as sharedWalkFiles, listCanonicalDocs } from '../shared-ignore.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { tokenize } from '../shared-diff.mjs';
 import { rankBySimilarity } from '../shared-ir.mjs';
-import { parseJsTs, walk } from '../scanners/js-ast.mjs';
+import {
+  isTestSource,
+  resolveRequirementReferences as resolveRequirementReferencesShared,
+  scanTestFilesForReferences as scanTestFilesForReferencesShared,
+} from '../scanners/requirement-evidence.mjs';
 import {
   DEFAULT_REQ_PATTERNS,
   collectRequirementIdsFromContent,
   requirementPatterns,
 } from '../shared-requirements.mjs';
 import { readRetirementManifest } from '../scanners/document-lifecycle.mjs';
+import { parseSpecId } from '../scanners/spec-registry.mjs';
 
 /**
  * Optional graphify interop (github.com/Graphify-Labs/graphify, MIT).
@@ -76,13 +81,6 @@ function loadGraphifyDocLinks(projectDir) {
   } catch {
     return null; // malformed graph = no evidence, never a finding
   }
-}
-
-// A test directory also contains fixtures and configuration. Only source files
-// are eligible for annotations or candidate-test similarity hints.
-function isTestSource(file) {
-  return /\.(?:[cm]?[jt]sx?|py|go|rs|java|kt|rb|php|sh)$/.test(file)
-    && (TEST_PATTERNS.some(pattern => pattern.test(file)) || /(?:^|\/)(?:__tests__|tests?)\//.test(file));
 }
 
 // IR soft-link recovery (feat 5): tokenize test files once so an untraced
@@ -331,7 +329,7 @@ function validateRequirementTraceability(projectDir, config, projectFiles) {
   // Check for orphaned test refs (tests referencing non-existent requirements)
   for (const [reqId, refs] of testRefs) {
     const orphan = refs.find(ref => ref.scope
-      ? !reqIds.has(`${ref.scope}#${reqId}`) && !retiredReqIds.has(`${ref.scope}#${reqId}`)
+      ? resolveRequirementReferences(reqIds, new Map([[reqId, [ref]]]), retiredReqIds).size === 0
       : !definitionCounts.has(reqId) && !retiredDefinitionCounts.has(reqId));
     if (orphan) {
       total++;
@@ -380,8 +378,9 @@ export function collectRequirementIds(projectDir, config, patterns = DEFAULT_REQ
 
     const docName = relative(projectDir, docPath).replaceAll("\\", "/");
     const content = readFileSync(docPath, 'utf-8');
+    const specId = parseSpecId(content);
     for (const [key, definition] of collectRequirementIdsFromContent(content, docName, patterns)) {
-      if (!reqIds.has(key)) reqIds.set(key, definition);
+      if (!reqIds.has(key)) reqIds.set(key, { ...definition, specId });
     }
   }
 
@@ -390,93 +389,7 @@ export function collectRequirementIds(projectDir, config, patterns = DEFAULT_REQ
 
 /** Resolve positive test links without sharing evidence between document scopes. */
 export function resolveRequirementReferences(definitions, references, retiredDefinitions = new Set()) {
-  const byId = new Map();
-  for (const [key, definition] of definitions) {
-    if (!byId.has(definition.id)) byId.set(definition.id, []);
-    byId.get(definition.id).push(key);
-  }
-  for (const key of retiredDefinitions) {
-    const id = key.slice(key.lastIndexOf('#') + 1);
-    if (!byId.has(id)) byId.set(id, []);
-    if (!byId.get(id).includes(key)) byId.get(id).push(key);
-  }
-  const resolved = new Map();
-  for (const [id, refs] of references) {
-    const candidates = byId.get(id) || [];
-    for (const ref of refs) {
-      const key = ref.scope ? `${ref.scope}#${id}` : candidates.length === 1 ? candidates[0] : null;
-      if (!key || !definitions.has(key)) continue;
-      if (!resolved.has(key)) resolved.set(key, []);
-      resolved.get(key).push(ref);
-    }
-  }
-  return resolved;
-}
-
-// A mention in fixture data is not a coverage declaration. Keep the same ID
-// patterns, but apply them only to annotations and test labels. In particular,
-// prose discussing an annotation ("never annotates @req ...") is not one.
-function testDeclarations(content, filename) {
-  const declarations = [];
-  const comment = (text, line) => {
-    for (const [offset, raw] of text.split('\n').entries()) {
-      const body = raw.replace(/^\s*\*?\s*/, '');
-      if (/^(?:@(?:req|task|covers)\s|Testing\s)/i.test(body)) {
-        declarations.push({ text: body, line: line + offset });
-      }
-    }
-  };
-  const labelName = /^(?:test|it|describe|context|specify|Run|DisplayName)$/;
-  const ext = extname(filename);
-  if (/^\.(?:[cm]?[jt]s|[jt]sx)$/.test(ext)) {
-    const { ast, ok } = parseJsTs(content, filename);
-    if (ok) {
-      for (const c of ast.comments || []) comment(c.value, c.loc.start.line);
-      const isLabelCall = (callee) => {
-        if (callee?.type === 'Identifier') return labelName.test(callee.name);
-        if (callee?.type !== 'MemberExpression' || callee.computed) return false;
-        return labelName.test(callee.property.name)
-          || (/^(?:only|skip|todo|concurrent|serial)$/.test(callee.property.name)
-            && isLabelCall(callee.object));
-      };
-      walk(ast.program, node => {
-        if (node.type !== 'CallExpression' || !isLabelCall(node.callee)) return;
-        const label = node.arguments[0];
-        if (label?.type === 'StringLiteral'
-          || (label?.type === 'TemplateLiteral' && label.expressions.length === 0)) {
-          // Scan source spelling to retain physical lines and custom patterns.
-          declarations.push({ text: content.slice(label.start + 1, label.end - 1), line: label.loc.start.line });
-        }
-      });
-      return declarations.sort((a, b) => a.line - b.line);
-    }
-  }
-
-  // Other languages, and JS/TS without the optional parser: lex comments and
-  // strings together so comment-like text inside a fixture stays opaque.
-  // This is deliberately a best-effort tier, like the multilingual scanners.
-  const tokens = /\/\*[\s\S]*?(?:\*\/|$)|\/\/[^\n]*|\#[^\n]*|"""[\s\S]*?(?:"""|$)|'''[\s\S]*?(?:'''|$)|"(?:\\[\s\S]|[^"\\])*"|'(?:\\[\s\S]|[^'\\])*'|`(?:\\[\s\S]|[^`\\])*`/g;
-  const hashComments = /\.(?:py|rb|php|sh)$/.test(ext);
-  let end = 0;
-  let line = 1;
-  let code = '';
-  for (const token of content.matchAll(tokens)) {
-    const gap = content.slice(end, token.index);
-    line += (gap.match(/\n/g) || []).length;
-    code += gap;
-    const text = token[0];
-    if (text.startsWith('//') || text.startsWith('/*') || (hashComments && text.startsWith('#'))) {
-      comment(text.replace(/^(?:\/\/|\/\*|#)/, ''), line);
-    } else if (/^["'`]/.test(text)
-      && /\b(?:test|it|describe|context|specify|Run|DisplayName)(?:\.(?:only|skip|todo|concurrent|serial))*\s*\(?\s*$/.test(code)) {
-      declarations.push({ text: text.slice(1, -1), line });
-    }
-    line += (text.match(/\n/g) || []).length;
-    // Strings must break a possible label prefix; comments are whitespace.
-    code = text.startsWith('/') || text.startsWith('#') ? code + ' ' : ';';
-    end = token.index + text.length;
-  }
-  return declarations;
+  return resolveRequirementReferencesShared(definitions, references, retiredDefinitions);
 }
 
 /**
@@ -487,42 +400,7 @@ function testDeclarations(content, filename) {
  * @returns {Map<string, Array<{file: string, line: number}>>} ID to declaration locations
  */
 export function scanTestFilesForReferences(projectDir, projectFiles, patterns) {
-  const testFiles = projectFiles.filter(isTestSource);
-
-  const testRefs = new Map(); // reqId → [{ file, line }]
-
-  for (const relPath of testFiles) {
-    const fullPath = resolve(projectDir, relPath);
-    if (!existsSync(fullPath)) continue;
-
-    let content;
-    try { content = readFileSync(fullPath, 'utf-8'); } catch { continue; }
-
-    // Fast early-return: skip expensive string split if no requirement patterns exist
-    const hasMatch = patterns.some(p => { p.lastIndex = 0; return p.test(content); });
-    if (!hasMatch) continue;
-
-    for (const declaration of testDeclarations(content, relPath)) {
-      for (const pattern of patterns) {
-        pattern.lastIndex = 0;
-        let match;
-        while ((match = pattern.exec(declaration.text)) !== null) {
-          if (!match[0]) { pattern.lastIndex++; continue; }
-          const reqId = match[0];
-          if (!testRefs.has(reqId)) testRefs.set(reqId, []);
-          const line = declaration.line + (declaration.text.slice(0, match.index).match(/\n/g) || []).length;
-          // A document qualifier is repository-relative and exact; never fall
-          // back to a bare ID when a supplied qualifier fails to resolve.
-          const prefix = declaration.text.slice(0, match.index);
-          const qualifier = prefix.match(/([^\s`"'<>()[\]{}]+)#$/);
-          const scope = qualifier ? qualifier[1].replaceAll('\\', '/').replace(/^\.\//, '') : null;
-          testRefs.get(reqId).push({ file: relPath, line, scope });
-        }
-      }
-    }
-  }
-
-  return testRefs;
+  return scanTestFilesForReferencesShared(projectDir, projectFiles, patterns);
 }
 
 /**

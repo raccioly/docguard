@@ -99,12 +99,6 @@ The registry points to approved prose; it does not duplicate or replace it.
   survive path changes and retirement as tombstones, and never be reused.
   Reviewed lifecycle and lineage fields are authoritative; observed evidence
   fields are deterministically regenerated.
-- **FR-013a**: The registry MUST be managed through one dedicated `docguard specs`
-  command family. `specs --check` validates the committed projection, `specs
-  --write` refreshes derived evidence without changing reviewed fields, `specs
-  preflight` evaluates a draft, and `specs complete` plans or applies a reviewed
-  delivery transition. Other commands MAY consume the registry but MUST NOT
-  maintain independent lifecycle state.
 - **FR-014**: Approved active requirement prose MUST remain the source of intent.
   The registry is an index and provenance ledger; generated AI context packs are
   disposable projections of current registry entries and canonical docs.
@@ -128,6 +122,12 @@ The registry points to approved prose; it does not duplicate or replace it.
 - **FR-019**: A future upstream Spec Kit proposal MUST be limited to a generic
   lifecycle metadata or hook contract proven by the DocGuard extension; DocGuard
   detection policy remains outside Spec Kit core.
+- **FR-020**: The registry MUST be managed through one dedicated `docguard specs`
+  command family. `specs --check` validates the committed projection, `specs
+  --write` refreshes derived evidence without changing reviewed fields, `specs
+  preflight` evaluates a draft, and `specs complete` plans or applies a reviewed
+  delivery transition. Generic `retire` MUST refuse active registered specs so
+  another command cannot bypass the registry transaction.
 
 ## Authority model
 
@@ -165,37 +165,49 @@ so regeneration cannot silently change policy:
     {
       "specId": "docguard.document-lifecycle",
       "path": "specs/006-document-lifecycle/spec.md",
-      "lifecycle": {
-        "approval": "approved",
-        "delivery": "in_progress",
-        "context": "current",
-        "retirementReason": null,
-        "storage": "working_tree",
-        "persistenceModel": "living"
-      },
-      "relations": [],
-      "scope": {
-        "canonicalDocs": ["docs-canonical/ARCHITECTURE.md"]
+      "reviewed": {
+        "lifecycle": {
+          "approval": "approved",
+          "delivery": "in_progress",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": "living"
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": ["docs-canonical/ARCHITECTURE.md"]
+        },
+        "reconciliation": { "lastReviewedRevision": null }
       },
       "intent": {
         "requirements": ["docguard.document-lifecycle#FR-001"]
       },
       "observed": {
-        "artifactDigest": "sha256:<content-address>",
+        "artifacts": [
+          { "path": "specs/006-document-lifecycle/spec.md", "digest": "sha256:<content-address>" }
+        ],
         "taskCompletion": { "checked": 9, "total": 23 },
         "implementationEvidence": [],
-        "testEvidence": [],
-        "lastReconciledRevision": null
+        "testEvidence": []
       }
     }
   ]
 }
 ```
 
-Generation preserves reviewed `lifecycle`, `relations`, and `scope` values, rebuilds
-`intent` references and `observed` evidence, sorts all unordered fields, and
-omits wall-clock timestamps. `--check` compares the committed bytes with a fresh
-projection, making registry drift reproducible in CI.
+Generation preserves the entire `reviewed` block, rebuilds `intent` references
+and `observed` evidence, sorts all unordered fields, and omits wall-clock
+timestamps. `--check` compares the committed bytes with a fresh projection,
+making registry drift reproducible in CI. Unknown reviewed fields and invalid
+enum values fail closed instead of being discarded during regeneration. The
+normative machine contract is `schemas/docguard-specs.schema.json`.
 
 The path-qualified identity already supported by traceability remains a migration
 format. Completion evidence requires the immutable `specId#requirementId` form;
@@ -310,6 +322,8 @@ documents must be replaced and reconfigured before retirement.
   longer appear in active search paths after their outcomes are preserved.
 - **SC-006**: A future reconciliation benchmark correctly separates intentional
   change from seeded code regression without silently editing requirements.
+- **SC-007**: Repeated registry projection is byte-identical, preserves reviewed
+  fields, and never credits a bare reused requirement ID as lifecycle evidence.
 
 ## Non-goals
 

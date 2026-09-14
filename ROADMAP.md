@@ -17,42 +17,46 @@ structural score is useful, but it is not proof that arbitrary prose is true.
 
 Give specifications and planning documents an explicit end of life.
 
-- [ ] Ship `docguard retire --plan|--check` and explicit, fail-closed writes.
-- [ ] Keep archived content in Git and record only recovery metadata in
+- [x] Ship `docguard retire --plan|--check` and explicit, fail-closed writes.
+- [x] Keep archived content in Git and record only recovery metadata in
   `.docguard-archive.json`; do not copy obsolete prose into a second document tree.
-- [ ] Retire DocGuard's own completed specs, migration plans, and historical
+- [x] Retire DocGuard's own completed specs, migration plans, and historical
   audits after their current outcomes are represented in canonical docs and the
   changelog.
-- [ ] Add lifecycle status validation for `active`, `completed`, `superseded`,
+- [x] Add lifecycle status validation for `active`, `completed`, `superseded`,
   and `archived`; task completion and `Completed` artifact maturity remain
   review signals rather than proof of retirement.
 - [ ] Add optional Spec Kit hooks that check archive readiness after convergence.
-- [ ] Add `.docguard-specs.json`, a committed lifecycle control plane. Reviewed
+- [x] Add `.docguard-specs.json`, a committed lifecycle control plane. Reviewed
   approval, delivery, context, storage, persistence policy, lineage, and scope
   are authoritative; requirement references and
   implementation/test evidence are deterministic projections. Approved prose
   remains the source of behavioral intent.
-- [ ] Add a dedicated `docguard specs` command family: deterministic
-  `--write|--check`, advisory request briefing, generated-spec preflight, and a
-  reviewed completion transition. No other command writes lifecycle state.
-- [ ] Add a `before_specify` briefing and a generated-spec gate so the actual
+- [x] Add a dedicated `docguard specs` command family with deterministic
+  `--write|--check`, advisory request briefing, and generated-spec preflight.
+  Generic retirement refuses active registered specs so it cannot bypass the
+  lifecycle control plane.
+- [x] Add a pre-specification briefing and a generated-spec gate so the actual
   draft is checked against active and prior requirements plus current code before
   planning starts. The briefing informs; only the reviewable draft can be gated.
-- [ ] Give every spec an immutable metadata ID; use
+- [x] Connect the Spec Kit extension's mandatory `before_specify` and
+  `before_tasks` hooks to the same deterministic briefing and generated-spec
+  gate. Keep `docguard specs --check` as the CI enforcement surface because
+  hooks are agent-dispatched workflow automation.
+- [x] Give every active spec an immutable metadata ID; use
   `specId#requirementId` for completion evidence and preserve retired identities
   as registry tombstones so bare IDs cannot rebind.
 - [ ] Add an `implemented → verified` completion transaction that appends a
   bounded outcome record, refreshes mechanical facts, records reconciliation,
   and regenerates active AI context.
-- [ ] Cross-check spec storage state against `.docguard-archive.json`. The
+- [x] Cross-check spec storage state against `.docguard-archive.json`. The
   archive manifest owns document recovery; the spec registry owns governance,
   and disagreement between them blocks a transition.
 
-Contribution slices: registry schema and invariants, pure registry projector,
-trace evidence extraction, transition validator, additional status formats,
-monorepo path handling, archive-manifest consistency, and Spec Kit lifecycle
-fixtures. Every detector change needs a stale example and a neighboring current
-example.
+Contribution slices: reviewed completion transitions, exact-revision
+implementation evidence, additional status formats, monorepo/workspace identity,
+restore and re-retire event handling, and Spec Kit lifecycle fixtures. Every
+detector change needs a stale example and a neighboring current example.
 
 ### R2 — Reconcile behavior changes made outside a spec (planned)
 

@@ -510,6 +510,36 @@ export const CODES = {
     help: 'The retirement manifest records this path, but the document still exists in the working tree. Remove it through the reviewed retirement transaction or remove the incorrect manifest event; the two states must agree.',
     suppress: null,
   },
+  SPR001: {
+    validator: 'specRegistry',
+    title: 'Spec registry missing or stale',
+    help: 'The committed `.docguard-specs.json` does not match the deterministic projection of current specs, tasks, tests, and archive tombstones. Run `docguard specs --write`, review the diff, and commit it with the behavior change.',
+    suppress: null,
+  },
+  SPR002: {
+    validator: 'specRegistry',
+    title: 'Spec identity missing or reused',
+    help: 'Every active spec needs one immutable lowercase Spec ID in authoritative metadata. IDs survive moves and retirement and may never be reused. Add `**Spec ID**: ` followed by a unique namespaced ID in backticks.',
+    suppress: null,
+  },
+  SPR003: {
+    validator: 'specRegistry',
+    title: 'Spec registry is invalid',
+    help: 'The registry is malformed or contains an unsupported lifecycle value. DocGuard refuses to overwrite invalid reviewed state. Repair the named field, then run `docguard specs --write`.',
+    suppress: null,
+  },
+  SPR004: {
+    validator: 'specRegistry',
+    title: 'Spec lifecycle contradicts storage',
+    help: 'Working-tree presence, lifecycle context, storage state, and the recovery archive disagree. Active specs must be current/working_tree; retired specs must be retired/git_history with a reason and matching archive event.',
+    suppress: null,
+  },
+  SPR005: {
+    validator: 'specRegistry',
+    title: 'New spec overlaps prior intent',
+    help: 'Preflight found lexical overlap with a prior spec. This is a review hint, never proof of duplication or delivery. Inspect the prior lifecycle and evidence before adding an explicit supersedes or related relationship.',
+    suppress: null,
+  },
   XRF001: {
     validator: 'crossReference',
     title: 'Broken doc link',

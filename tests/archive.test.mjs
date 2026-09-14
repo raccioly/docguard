@@ -19,6 +19,7 @@ import { fileURLToPath } from 'node:url';
  * @req specs/006-document-lifecycle/spec.md#SC-001
  * @req specs/006-document-lifecycle/spec.md#SC-002
  * @req specs/006-document-lifecycle/spec.md#SC-003
+ * @req docguard.document-lifecycle#FR-020
  */
 
 const CLI = fileURLToPath(new URL('../cli/docguard.mjs', import.meta.url));
@@ -188,5 +189,35 @@ describe('docguard retire', () => {
     assert.equal(result.status, 1);
     assert.match(JSON.parse(result.stdout).error, /live backreference/);
     assert.equal(existsSync(join(dir, 'docs', 'old.md')), true);
+  });
+
+  it('refuses to bypass the registry lifecycle for an active registered spec', t => {
+    const dir = fixture(t);
+    writeFileSync(join(dir, '.docguard-specs.json'), JSON.stringify({
+      $schema: 'https://raccioly.github.io/docguard/schemas/docguard-specs.schema.json',
+      schemaVersion: 1,
+      specs: [{
+        specId: 'acme.done',
+        path: 'specs/001-done/spec.md',
+        reviewed: {
+          lifecycle: {
+            approval: 'approved', delivery: 'implemented', context: 'current',
+            retirementReason: null, storage: 'working_tree', persistenceModel: 'living',
+          },
+          relations: { extends: [], duplicates: [], conflictsWith: [], supersedes: [], supersededBy: [] },
+          scope: { canonicalDocs: [] },
+          reconciliation: { lastReviewedRevision: null },
+        },
+      }],
+      tombstones: [],
+    }));
+    git(dir, 'add', '.docguard-specs.json');
+    git(dir, 'commit', '-qm', 'register active spec');
+    const result = run(dir, [
+      '--write', '--path', 'specs/001-done', '--reason', 'Done', '--format', 'json',
+    ]);
+    assert.equal(result.status, 1);
+    assert.match(JSON.parse(result.stdout).error, /refuses active registered spec/);
+    assert.equal(existsSync(join(dir, 'specs', '001-done', 'spec.md')), true);
   });
 });

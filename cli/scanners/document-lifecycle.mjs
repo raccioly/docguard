@@ -15,7 +15,7 @@ const MANIFEST_PATH = '.docguard-archive.json';
 
 export function readRetirementManifest(projectDir) {
   const path = resolve(projectDir, MANIFEST_PATH);
-  if (!existsSync(path)) return { ok: true, paths: new Set(), entries: [], error: null };
+  if (!existsSync(path)) return { ok: true, paths: new Set(), entries: [], retention: null, error: null };
   try {
     const parsed = JSON.parse(readFileSync(path, 'utf8'));
     if (parsed?.schemaVersion !== 1 || parsed?.strategy !== 'git-history' || !Array.isArray(parsed.entries)) {
@@ -36,6 +36,10 @@ export function readRetirementManifest(projectDir) {
         || typeof entry?.blob !== 'string'
         || !/^[0-9a-f]{40}(?:[0-9a-f]{24})?$/.test(entry.blob)
         || typeof entry?.reason !== 'string' || !entry.reason.trim()
+        || (entry?.requirementIds !== undefined && (!Array.isArray(entry.requirementIds)
+          || entry.requirementIds.some(id => typeof id !== 'string' || !id || id.length > 128 || /[\s#\0]/.test(id))))
+        || (entry?.specId !== undefined && (typeof entry.specId !== 'string'
+          || !/^[a-z0-9][a-z0-9._-]{2,127}$/.test(entry.specId)))
         || (!globalRecovery && !entryRecovery)) {
         throw new Error(`invalid recovery entry for ${path || '<unknown path>'}`);
       }
@@ -44,10 +48,11 @@ export function readRetirementManifest(projectDir) {
       ok: true,
       paths: new Set(parsed.entries.map(entry => entry.path)),
       entries: parsed.entries,
+      retention: parsed.retention || null,
       error: null,
     };
   } catch (error) {
-    return { ok: false, paths: new Set(), entries: [], error: `${MANIFEST_PATH}: ${error.message}` };
+    return { ok: false, paths: new Set(), entries: [], retention: null, error: `${MANIFEST_PATH}: ${error.message}` };
   }
 }
 

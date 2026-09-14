@@ -116,10 +116,37 @@ manifest stores no retired prose.
 | `entries[].restore` | `string` | Convenience command derived from structured source/path fields |
 
 Existing manifests may carry one shared top-level `retention` record for a
-batch created before per-entry retention metadata was introduced. A future
-registry validator will project both forms into one normalized model. Lifecycle
+batch created before per-entry retention metadata was introduced. The spec
+registry projects both forms into one normalized tombstone model. Lifecycle
 and traceability consumers reject incomplete recovery entries; an unverified
 manifest cannot suppress active-context or orphan-reference findings.
+
+## Spec Lifecycle Registry: `.docguard-specs.json`
+
+The committed registry indexes which specifications govern the project and what
+the repository can prove about them. It never copies requirement prose. Its
+normative JSON Schema is `schemas/docguard-specs.schema.json`.
+
+| Field | Authority | Description |
+|-------|-----------|-------------|
+| `$schema`, `schemaVersion` | Contract | Exact schema URL and version `1` |
+| `specs[].specId` | Spec metadata | Immutable lowercase namespaced identity; never generated or reused |
+| `specs[].path` | Projection | Current spec path or former path for a retired record |
+| `specs[].reviewed.lifecycle` | Human review | Orthogonal approval, delivery, context, retirement reason, storage, and persistence policy |
+| `specs[].reviewed.relations` | Human review | `extends`, `duplicates`, `conflictsWith`, `supersedes`, and `supersededBy` spec-ID edges |
+| `specs[].reviewed.scope.canonicalDocs` | Human review | Canonical documents affected by the specification |
+| `specs[].reviewed.reconciliation.lastReviewedRevision` | Human review | Exact Git revision whose doc impact was reviewed, or `null` |
+| `specs[].intent.requirements` | Projection | `specId#requirementId` identities parsed from the active spec |
+| `specs[].observed.artifacts` | Projection | Paths and SHA-256 content identities for spec, plan, and tasks |
+| `specs[].observed.taskCompletion` | Projection | Checked and total Markdown task boxes; not proof of delivery |
+| `specs[].observed.testEvidence` | Projection | Explicitly spec-qualified test annotations or labels only |
+| `tombstones[]` | Recovery projection | Retired identities linked to source revision, blob, retention ref, object format, and recoverability |
+
+`docguard specs --write` regenerates only projected fields and preserves the
+entire `reviewed` block. Unknown reviewed fields, invalid lifecycle values,
+duplicate identities, and archive/storage contradictions fail closed. The
+output omits timestamps and sorts unordered collections, so `specs --check`
+can compare a byte-stable result in CI.
 
 ## Document Metadata Headers
 
