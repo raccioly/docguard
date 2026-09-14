@@ -40,6 +40,15 @@ Automated weekly release — batches everything merged since `v0.37.1`.
   comparison fails case-first on new misses, noise, abstention, or removed
   evidence; runtime comparisons require identical environments and use the
   repository's greater-than-20-percent materiality policy.
+- Public-repository evidence can be persisted as a review candidate and checked
+  case-first against later runs. Reports include Wilson 95% confidence bounds,
+  retained cold/warm observations, config and source digests, and validator
+  check coverage; Git sources are fetched once per run and copied without their
+  repository metadata for paired cases.
+- The evaluation split pins reviewed Express, Fastify, Flask, chi, and Changesets
+  revisions. Each public repository has an unmodified SEC005 control and an
+  exact-precondition synthetic defect, providing JavaScript, TypeScript
+  monorepo, Python, and Go evidence without executing third-party project code.
 
 - `docguard reconcile --since <ref>` emits a deterministic JSON review graph
   that separates mechanical facts, approved intent, decisions, unrelated

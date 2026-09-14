@@ -10,6 +10,7 @@ function emptyCounts() {
   return {
     cases: 0, repositories: 0, truePositives: 0, falsePositives: 0,
     falseNegatives: 0, abstainedSupportedCases: 0, unsupportedCases: 0,
+    defectCases: 0, cleanControlCases: 0, cleanControlCasesWithFindings: 0,
     repairs: { accepted: 0, rejected: 0, notEvaluated: 0 },
   };
 }
@@ -18,9 +19,24 @@ function ratio(numerator, denominator) {
   return denominator === 0 ? null : Number((numerator / denominator).toFixed(6));
 }
 
+export function wilsonInterval(successes, total, z = 1.96) {
+  if (!Number.isInteger(successes) || !Number.isInteger(total) || total < 0 || successes < 0 || successes > total) {
+    throw new Error('Wilson interval requires integer successes within a non-negative total.');
+  }
+  if (total === 0) return null;
+  const probability = successes / total;
+  const z2 = z * z;
+  const denominator = 1 + z2 / total;
+  const center = (probability + z2 / (2 * total)) / denominator;
+  const margin = z * Math.sqrt((probability * (1 - probability) + z2 / (4 * total)) / total) / denominator;
+  return { lower: Number(Math.max(0, center - margin).toFixed(6)), upper: Number(Math.min(1, center + margin).toFixed(6)) };
+}
+
 function finalize(counts, repositories) {
   const precisionDenominator = counts.truePositives + counts.falsePositives;
   const recallDenominator = counts.truePositives + counts.falseNegatives;
+  const repairDenominator = counts.repairs.accepted + counts.repairs.rejected;
+  const cleanAccuracy = wilsonInterval(counts.cleanControlCases - counts.cleanControlCasesWithFindings, counts.cleanControlCases);
   return {
     ...counts,
     repositories: repositories.size,
@@ -29,7 +45,17 @@ function finalize(counts, repositories) {
     falsePositivesPerRepository: ratio(counts.falsePositives, repositories.size),
     abstentionRate: ratio(counts.abstainedSupportedCases, counts.cases),
     unsupportedRate: ratio(counts.unsupportedCases, counts.cases + counts.unsupportedCases),
-    acceptedRepairRate: ratio(counts.repairs.accepted, counts.repairs.accepted + counts.repairs.rejected),
+    acceptedRepairRate: ratio(counts.repairs.accepted, repairDenominator),
+    confidence95: {
+      method: 'Wilson score interval, z=1.96',
+      precision: wilsonInterval(counts.truePositives, precisionDenominator),
+      recall: wilsonInterval(counts.truePositives, recallDenominator),
+      falsePositiveCaseRate: cleanAccuracy ? {
+        lower: Number((1 - cleanAccuracy.upper).toFixed(6)),
+        upper: Number((1 - cleanAccuracy.lower).toFixed(6)),
+      } : null,
+      acceptedRepairRate: wilsonInterval(counts.repairs.accepted, repairDenominator),
+    },
   };
 }
 
@@ -41,6 +67,11 @@ function summarize(cases) {
     if (!measured(item)) continue;
     counts.cases++;
     repositories.add(item.repositoryGroup);
+    if (item.classification === 'defect') counts.defectCases++;
+    if (item.classification === 'clean_control') {
+      counts.cleanControlCases++;
+      if (item.unexpected.length > 0) counts.cleanControlCasesWithFindings++;
+    }
     counts.truePositives += item.actual.filter(identity => item.expected.includes(identity)).length;
     counts.falsePositives += item.unexpected.length;
     counts.falseNegatives += item.missing.length;

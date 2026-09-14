@@ -114,14 +114,26 @@ function invokeGuard(projectDir) {
   return { report, exitCode: result.status, durationMs };
 }
 
-function materializeCase(item, manifestDir, runRoot) {
+function materializeCase(item, manifestDir, runRoot, sourceCache) {
   const destination = join(runRoot, item.id);
   if (item.source.kind === 'fixture') {
     const source = resolve(manifestDir, item.source.path);
     cpSync(source, destination, { recursive: true, dereference: false, errorOnExist: true });
   } else {
-    mkdirSync(destination, { recursive: true });
-    materializeGit(item.source, destination);
+    const cacheKey = `${item.source.url}@${item.source.revision}`;
+    let source = sourceCache.get(cacheKey);
+    if (!source) {
+      source = join(runRoot, '.sources', item.source.revision);
+      mkdirSync(dirname(source), { recursive: true });
+      materializeGit(item.source, source);
+      sourceCache.set(cacheKey, source);
+    }
+    cpSync(source, destination, {
+      recursive: true,
+      dereference: false,
+      errorOnExist: true,
+      filter: path => relative(source, path).split(sep)[0] !== '.git',
+    });
   }
   applyExactMutations(destination, item.mutations);
   if (item.config) {
@@ -155,6 +167,7 @@ function caseCore(item, sourceRevision, invocation) {
     classification: item.classification,
     repairOutcome: item.repairOutcome,
     sourceRevision,
+    configDigest: digest(JSON.stringify(item.config)),
     scope: item.scope,
     expected,
     forbidden: item.forbidden,
@@ -164,6 +177,12 @@ function caseCore(item, sourceRevision, invocation) {
     forbiddenObserved,
     abstained,
     applicability: validator?.applicability || { status: 'unknown', reason: 'Validator result was not present.' },
+    checkCoverage: validator ? {
+      status: validator.status,
+      passed: validator.passed,
+      total: validator.total,
+      quality: validator.quality,
+    } : null,
     commandStatus: invocation.report.status,
     status,
   };
@@ -177,12 +196,13 @@ export function runBenchmark({ manifestPath = resolve(BENCHMARK_ROOT, 'corpus.js
   const runRoot = mkdtempSync(join(tmpdir(), 'docguard-benchmark-'));
   const coreCases = [];
   const observations = [];
+  const sourceCache = new Map();
   try {
     for (const item of selected) {
       const sourceRevision = item.source.kind === 'git'
         ? item.source.revision
         : fixtureDigest(resolve(dirname(absoluteManifest), item.source.path));
-      const projectDir = materializeCase(item, dirname(absoluteManifest), runRoot);
+      const projectDir = materializeCase(item, dirname(absoluteManifest), runRoot, sourceCache);
       const cold = invokeGuard(projectDir);
       const warm = invokeGuard(projectDir);
       coreCases.push(caseCore(item, sourceRevision, warm));

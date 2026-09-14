@@ -482,11 +482,11 @@
           },
           {
             "path": "specs/007-precision-evidence-loop/tasks.md",
-            "digest": "sha256:1c71580d4c8430f6da9d2525ef9afcd91540bdb6cb7c39666e46574fd55284de"
+            "digest": "sha256:2cafa6e00f2bff29d944685ab4e1531977d36cf94e4fae61ae3997e9a216f197"
           }
         ],
         "taskCompletion": {
-          "checked": 9,
+          "checked": 10,
           "total": 19
         },
         "implementationEvidence": [
@@ -526,9 +526,24 @@
             "line": 5
           },
           {
+            "requirementId": "FR-007",
+            "file": "benchmarks/lib/metrics.mjs",
+            "line": 4
+          },
+          {
             "requirementId": "FR-008",
             "file": "benchmarks/lib/manifest.mjs",
             "line": 8
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "benchmarks/lib/compare.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "benchmarks/lib/compare.mjs",
+            "line": 5
           },
           {
             "requirementId": "FR-017",
@@ -573,9 +588,24 @@
             "line": 10
           },
           {
+            "requirementId": "FR-007",
+            "file": "tests/benchmark-metrics.test.mjs",
+            "line": 5
+          },
+          {
             "requirementId": "FR-008",
             "file": "tests/benchmark-manifest.test.mjs",
             "line": 11
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "tests/benchmark-metrics.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "tests/benchmark-metrics.test.mjs",
+            "line": 7
           },
           {
             "requirementId": "FR-017",

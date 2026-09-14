@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
  * @req docguard.precision-evidence-loop#FR-010
  */
 
-import { calculateMetrics } from '../benchmarks/lib/metrics.mjs';
+import { calculateMetrics, wilsonInterval } from '../benchmarks/lib/metrics.mjs';
 import { compareBenchmarkCores, compareRuntimeObservations } from '../benchmarks/lib/compare.mjs';
 
 const result = (overrides = {}) => ({
@@ -33,6 +33,9 @@ describe('benchmark metrics', () => {
     assert.equal(metrics.byParserTier['py-ast'].recall, null);
     assert.equal(metrics.byParserTier['py-ast'].falsePositivesPerRepository, null);
     assert.equal(metrics.aggregate.acceptedRepairRate, null);
+    assert.deepEqual(metrics.aggregate.confidence95.acceptedRepairRate, null);
+    assert.deepEqual(wilsonInterval(0, 0), null);
+    assert.deepEqual(wilsonInterval(12, 12), { lower: 0.757499, upper: 1 });
   });
 
   it('tracks accepted repair outcomes without treating unevaluated repairs as rejection', () => {

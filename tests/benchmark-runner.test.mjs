@@ -26,6 +26,9 @@ describe('benchmark runner', () => {
     assert.equal(byId.get('dev-js-security-control').actual.length, 0);
     assert.equal(byId.get('dev-js-security-defect').status, 'PASS');
     assert.deepEqual(byId.get('dev-js-security-defect').actual, ['SEC001@src/config.js']);
+    assert.match(byId.get('dev-js-security-defect').configDigest, /^sha256:[a-f0-9]{64}$/);
+    assert.equal(byId.get('dev-js-security-defect').checkCoverage.status, 'fail');
+    assert.ok(byId.get('dev-js-security-defect').checkCoverage.total > 0);
     assert.equal(byId.get('eval-python-unsupported').status, 'UNSUPPORTED');
     assert.equal(result.observations.retainedRoot, null);
   });
