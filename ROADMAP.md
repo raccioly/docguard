@@ -151,7 +151,9 @@ Node 18, 20, 22, and 24, package extraction without the optional parser, Draft
 2020-12 schema validation, and the frozen 24-case public/synthetic corpus with
 no baseline regression.
 
-### R6 — Language and repository coverage (planned)
+### R6 — Language and repository coverage (in progress)
+
+Governing spec: `specs/009-language-repository-coverage/spec.md`.
 
 Add capabilities only with explicit applicability and controls. Priorities are
 Python import relationships, additional Worker binding forms, custom document

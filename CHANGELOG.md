@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Define the reviewed R6 language and repository coverage contract, including
+  explicit false-positive controls for Python imports, Cloudflare bindings,
+  mapped document ownership, and monorepo-root guidance.
+
+### Added
+
 - The active evidence-scoped verification specification defines strict,
   local-only bindings from exact Markdown statements to JSON Pointer values,
   bounded repository collections, saved oasdiff JSON, and saved Buf JSON Lines.

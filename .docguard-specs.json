@@ -852,6 +852,87 @@
       }
     },
     {
+      "specId": "docguard.language-repository-coverage",
+      "path": "specs/009-language-repository-coverage/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "approved",
+          "delivery": "in_progress",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": "living"
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md",
+            "docs-canonical/ENVIRONMENT.md",
+            "docs-canonical/REQUIREMENTS.md",
+            "docs-canonical/SECURITY.md",
+            "docs-canonical/TEST-SPEC.md"
+          ]
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.language-repository-coverage#FR-001",
+          "docguard.language-repository-coverage#FR-002",
+          "docguard.language-repository-coverage#FR-003",
+          "docguard.language-repository-coverage#FR-004",
+          "docguard.language-repository-coverage#FR-005",
+          "docguard.language-repository-coverage#FR-006",
+          "docguard.language-repository-coverage#FR-007",
+          "docguard.language-repository-coverage#FR-008",
+          "docguard.language-repository-coverage#FR-009",
+          "docguard.language-repository-coverage#FR-010",
+          "docguard.language-repository-coverage#FR-011",
+          "docguard.language-repository-coverage#FR-012",
+          "docguard.language-repository-coverage#FR-013",
+          "docguard.language-repository-coverage#FR-014",
+          "docguard.language-repository-coverage#FR-015",
+          "docguard.language-repository-coverage#FR-016",
+          "docguard.language-repository-coverage#SC-001",
+          "docguard.language-repository-coverage#SC-002",
+          "docguard.language-repository-coverage#SC-003",
+          "docguard.language-repository-coverage#SC-004",
+          "docguard.language-repository-coverage#SC-005"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/009-language-repository-coverage/spec.md",
+            "digest": "sha256:04f5ddc3354e49281aada67acd237b16962458291320888305612ce5f8d37deb"
+          },
+          {
+            "path": "specs/009-language-repository-coverage/plan.md",
+            "digest": "sha256:91e9b6a5bf6d6cd63080bfddb3f323a40d9b59d549d77897b6e2484777d3ac82"
+          },
+          {
+            "path": "specs/009-language-repository-coverage/tasks.md",
+            "digest": "sha256:ee85c41b2f014d85f7fbcd2a3206ca557f89ade4872e9acd095e64a42c41f4bd"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 0,
+          "total": 16
+        },
+        "implementationEvidence": [],
+        "testEvidence": []
+      }
+    },
+    {
       "specId": "docguard.precision-evidence-loop",
       "path": "specs/007-precision-evidence-loop/spec.md",
       "reviewed": {
