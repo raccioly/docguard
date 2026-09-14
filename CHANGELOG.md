@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.39.0] - 2026-09-14
+
+Automated weekly release — batches everything merged since `v0.38.0`.
+
+### Changed
+
+- feat: establish evidence-driven precision and feedback loop (#361)
+- fix: authorize automated release pull requests (#360)
+
+
 ### Added
 
 - The active precision-evidence specification defines a reproducible R3/R4
