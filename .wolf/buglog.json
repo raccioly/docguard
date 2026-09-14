@@ -5376,6 +5376,30 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-09-14T17:20:00.000Z"
+    },
+    {
+      "id": "bug-330",
+      "timestamp": "2026-09-14T17:45:00.000Z",
+      "error_message": "Spec registry projection reparsed the full test corpus once per active spec and crossed the scanner-to-validator architecture boundary",
+      "file": "cli/scanners/spec-registry.mjs",
+      "root_cause": "Requirement evidence lived inside the Traceability validator, so registry reuse required an inverted dependency and repeated project-wide work",
+      "fix": "Extract the declaration parser and resolver into requirement-evidence.mjs, make both validators consume it, and scan tests once before partitioning evidence by immutable spec identity",
+      "tags": ["architecture", "performance", "spec-registry", "traceability"],
+      "related_bugs": ["bug-319", "bug-323"],
+      "occurrences": 1,
+      "last_seen": "2026-09-14T17:45:00.000Z"
+    },
+    {
+      "id": "bug-331",
+      "timestamp": "2026-09-14T17:55:00.000Z",
+      "error_message": "Spec Kit extension metadata documented four AI skills while the shipped bundle contains five",
+      "file": "extensions/spec-kit-docguard/extension.yml",
+      "root_cause": "The extension description and agent table were updated independently from the bundled skills directory",
+      "fix": "Restore the five-skill count, name docguard-sync in the extension README and AGENTS table, and validate the local v0.37.0 extension through Spec Kit's installer",
+      "tags": ["documentation-drift", "spec-kit", "release-metadata"],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-14T17:55:00.000Z"
     }
   ]
 }

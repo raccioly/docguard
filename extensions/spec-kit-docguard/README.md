@@ -9,7 +9,7 @@ Enterprise-grade Canonical-Driven Development (CDD) enforcement and **AI-readabl
 - **AI-powered Generate** — `generate --plan` builds the code-truth skeleton in `<!-- docguard:section -->` markers and emits a structured agent task manifest; the AI writes the prose.
 - **Refresh and review** — `sync` surgically refreshes code-truth doc sections in place, **preserves human prose**, flags prose for agent review.
 - **Mechanical `fix --write`** — deterministic, no-LLM: remove stale documented endpoints, refresh stale "N validators" counts, replace stale version refs, insert missing `## [Unreleased]`.
-- **4 AI Skills** — docguard-fix, docguard-guard, docguard-review, docguard-score (enterprise-grade behavior protocols, not just step-lists)
+- **5 AI Skills** — docguard-fix, docguard-guard, docguard-review, docguard-score, docguard-sync (enterprise-grade behavior protocols, not just step-lists)
 - **Workflow Chaining** — YAML handoffs enable guard → sync → fix → review → score flows
 - **Spec Kit Hooks** — Quality gate integrations at implement, tasks, and review phases
 - **Minimal Dependencies** — one pinned, optional-load parser (`@babel/parser`); Node.js built-ins otherwise
@@ -56,7 +56,7 @@ docguard score
 
 ## AI Skills
 
-DocGuard provides 4 enterprise-grade AI behavior protocols modeled after Spec Kit's skill architecture:
+DocGuard provides 5 enterprise-grade AI behavior protocols modeled after Spec Kit's skill architecture:
 
 | Skill | Lines | What It Does |
 |-------|:-----:|-------------|
@@ -64,6 +64,7 @@ DocGuard provides 4 enterprise-grade AI behavior protocols modeled after Spec Ki
 | `docguard-fix` | 195 | 7-step research workflow with per-document codebase research, 3-iteration validation loops |
 | `docguard-review` | 170 | Semantic cross-document analysis with 6 analysis passes and quality scoring matrix |
 | `docguard-score` | 165 | CDD maturity assessment with ROI-based improvement roadmap and grade progression |
+| `docguard-sync` | — | Refresh code-truth sections while preserving human prose and routing it for review |
 
 Skills differ from commands in a critical way: **commands tell agents what to run** (step-lists), while **skills tell agents how to think, validate, and iterate** (behavior protocols).
 

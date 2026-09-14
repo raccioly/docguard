@@ -98,6 +98,7 @@ DocGuard provides enterprise-grade AI behavior protocols via the Spec Kit extens
 | `docguard-fix` | 7-step research workflow with validation loops (max 3 iterations) |
 | `docguard-review` | Read-only semantic cross-document consistency analysis |
 | `docguard-score` | CDD maturity assessment with ROI-based improvement roadmap |
+| `docguard-sync` | Mechanical code-truth refresh with explicit prose review boundaries |
 
 Skills are located at `extensions/spec-kit-docguard/skills/*/SKILL.md`. They tell agents **how to think**, not just what to run.
 
