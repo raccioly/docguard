@@ -5,10 +5,10 @@
 
 ## Phase 1: Python import graph
 
-- [ ] T001 Add batched AST import extraction without project-module execution.
-- [ ] T002 Resolve flat, `src/`, package, module, and explicit-relative imports.
-- [ ] T003 Preserve dynamic, parse, namespace, and root limitations in applicability.
-- [ ] T004 Add paired Python graph, cycle, layer, and unsupported fixtures.
+- [x] T001 Add batched AST import extraction without project-module execution.
+- [x] T002 Resolve flat, `src/`, package, module, and explicit-relative imports.
+- [x] T003 Preserve dynamic, parse, namespace, and root limitations in applicability.
+- [x] T004 Add paired Python graph, cycle, layer, and unsupported fixtures.
 
 ## Phase 2: Cloudflare bindings
 
@@ -30,4 +30,3 @@
 - [ ] T014 Update canonical, public, CLI, and AI-agent contracts.
 - [ ] T015 Run focused, full, guard, benchmark, package, and Node-matrix checks.
 - [ ] T016 Complete lifecycle verification after all four reviewed slices merge.
-

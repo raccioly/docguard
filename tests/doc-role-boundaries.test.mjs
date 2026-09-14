@@ -14,6 +14,7 @@ import { runDiagnose } from '../cli/commands/diagnose.mjs';
 import { computeApiSurfaceDrift, validateApiSurface } from '../cli/validators/api-surface.mjs';
 import { validateEnvironment } from '../cli/validators/environment.mjs';
 import { validateTestSpec } from '../cli/validators/test-spec.mjs';
+import { pyAstAvailable } from '../cli/scanners/py-ast.mjs';
 
 const cli = fileURLToPath(new URL('../cli/docguard.mjs', import.meta.url));
 const validatorKeys = 'structure docsSync drift changelog testSpec environment security architecture freshness traceability docsDiff apiSurface metadataSync docsCoverage docQuality todoTracking schemaSync specKit crossReference generatedStaleness surfaceSync diffSuspicion referenceExistence apiDocSmells canonicalSync metricsConsistency'.split(' ');
@@ -142,7 +143,7 @@ for (const [role, validate, content] of [
   }
 }
 
-test('preserves unsupported versus disabled coverage in diagnose JSON', t => {
+test('preserves supported-or-unsupported versus disabled coverage in diagnose JSON', t => {
   const dir = temp(t);
   safeWrite(join(dir, 'src/main.py'), 'import os\n');
   for (const enabled of [true, false]) {
@@ -158,7 +159,10 @@ test('preserves unsupported versus disabled coverage in diagnose JSON', t => {
     assert.equal(diagnose.status, 'PASS');
     assert.equal(diagnose.issueCount, 0);
     assert.deepEqual(diagnose.checkCoverage, guard.checkCoverage);
-    assert.equal(diagnose.checkCoverage.limitations.find(v => v.key === 'architecture').status, enabled ? 'unsupported' : 'disabled');
+    const architecture = diagnose.checkCoverage.limitations.find(v => v.key === 'architecture');
+    if (!enabled) assert.equal(architecture.status, 'disabled');
+    else if (pyAstAvailable()) assert.equal(architecture, undefined);
+    else assert.equal(architecture.status, 'unsupported');
     assert.deepEqual(snapshot(dir), before);
   }
 });

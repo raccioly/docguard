@@ -126,6 +126,13 @@ Retirement tests use disposable Git repositories and verify both sides of the bo
 
 Regression cases are synthetic and name no consumer repositories. Keep a valid near-neighbor beside every detected defect: formatting versus declaration deletion; negated versus current technology use; explained versus unexplained skips; mock expectations versus credentials; implemented versus omitted contract endpoints; Worker bindings versus local variables; historical versus active documents. Check coverage tests distinguish unsupported and missing inputs from executed checks. Document-role tests exercise mapped findings, raw/loaded configuration parity, unsafe paths, and read-only planning without writes.
 
+Python import-graph fixtures cover regular flat and `src/` packages, absolute
+and explicit-relative imports, cycles, and configured layer violations. Paired
+controls keep standard-library and third-party imports out of the local graph;
+dynamic imports, `sys.path` mutation, parse failures, interpreter absence, and
+ambiguous workspace modules must remain partial or unsupported applicability.
+Tests never import or execute fixture modules.
+
 Independent review must challenge suppression paths, not only the original false-positive example. Cross-project runs use disposable snapshots and verify consumer content remains unchanged. Finding counts alone cannot establish precision or recall.
 
 Run `node benchmarks/run.mjs` for the network-free synthetic corpus. Run `node benchmarks/run.mjs --external --baseline benchmarks/baseline.json` explicitly for pinned public sources. The comparator gates new case-level false positives, false negatives, removals, and supported-case abstentions. Persisted cold/warm timings are observational because matching Node and platform metadata cannot exclude host contention. Runtime regression claims require at least five controlled samples from the same paired comparison session and a greater-than-20-percent real-workload change.

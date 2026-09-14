@@ -921,15 +921,52 @@
           },
           {
             "path": "specs/009-language-repository-coverage/tasks.md",
-            "digest": "sha256:ee85c41b2f014d85f7fbcd2a3206ca557f89ade4872e9acd095e64a42c41f4bd"
+            "digest": "sha256:6dd5ad95ebd6862ac6f65d2f755710bf01f2fc4042b49ce47ca63bb62ebcee21"
           }
         ],
         "taskCompletion": {
-          "checked": 0,
+          "checked": 4,
           "total": 16
         },
-        "implementationEvidence": [],
-        "testEvidence": []
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/scanners/py-ast.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/validators/architecture.mjs",
+            "line": 169
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/validators/architecture.mjs",
+            "line": 170
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/scanners/py-ast.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/validators/architecture.mjs",
+            "line": 171
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/validators/architecture.mjs",
+            "line": 172
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/py-ast.test.mjs",
+            "line": 94
+          }
+        ]
       }
     },
     {

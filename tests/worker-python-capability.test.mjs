@@ -107,7 +107,7 @@ it('does not classify fixture Wrangler files as the project runtime', t => {
   assert.equal(detectProjectProfile(dir).kind, 'library');
 });
 
-it('reports Python architecture as unsupported with no fabricated pass', t => {
+it('retains supported Python edges while dynamic imports keep applicability partial', t => {
   const dir = fixture(t, {
     'pyproject.toml': '[project]\nname = "service"',
     'src/service/__init__.py': '',
@@ -116,19 +116,19 @@ it('reports Python architecture as unsupported with no fabricated pass', t => {
     'src/service/models.py': 'class Model: pass',
   });
   const result = validateArchitecture(dir, {});
-  assert.equal(result.applicability.status, 'unsupported');
-  assert.match(result.applicability.reason, /Python.*relative imports.*package paths.*src-layout.*dynamic imports/);
-  assert.equal(result.total, 0);
+  assert.equal(result.applicability.status, 'partial');
+  assert.match(result.applicability.reason, /dynamic Python import/);
+  assert.ok(result.findings.some(f => f.code === 'ARC002'));
+  assert.equal(result.total, 1);
   assert.equal(result.passed, 0);
-  assert.deepEqual(result.findings, []);
 });
 
-it('retains real JS cycle findings alongside partial Python coverage', t => {
+it('retains real JS cycle findings alongside supported Python imports', t => {
   const dir = fixture(t, {
     'src/a.js': 'import "./b.js";', 'src/b.js': 'import "./a.js";', 'src/app.py': 'import os',
   });
   const result = validateArchitecture(dir, {});
-  assert.equal(result.applicability.status, 'partial');
+  assert.equal(result.applicability.status, 'checked');
   assert.ok(result.findings.some(f => f.code === 'ARC002'));
 });
 

@@ -12,8 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Define the reviewed R6 language and repository coverage contract, including
   explicit false-positive controls for Python imports, Cloudflare bindings,
   mapped document ownership, and monorepo-root guidance.
-
-### Added
+- Architecture validation now builds repository-local Python import graphs from
+  the optional standard-library AST tier. It resolves regular flat and `src/`
+  packages plus explicit relative imports, detects cycles and configured layer
+  violations, and keeps dynamic imports, `sys.path` mutation, parse failures,
+  interpreter absence, and ambiguous workspace modules visible as partial or
+  unsupported coverage.
 
 - The active evidence-scoped verification specification defines strict,
   local-only bindings from exact Markdown statements to JSON Pointer values,
