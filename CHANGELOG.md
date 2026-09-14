@@ -31,6 +31,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   20, 22, and 24, extracted-package execution without the optional parser,
   frozen fixture/reference replay, and the regression-free 24-case detector
   corpus plus one intentionally unsupported case.
+- Close every R7 task after exact-evidence review and correct the completed R6
+  task list's stale “In progress” label to its verified living-contract state.
 - Add opt-in `docguard agent --task <text>` context selection after the frozen
   promotion gate passed. Existing `docguard agent` output remains unchanged;
   task mode emits bounded current evidence or an explicit abstention in aligned

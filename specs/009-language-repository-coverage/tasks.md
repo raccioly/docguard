@@ -1,6 +1,6 @@
 # Tasks: Language and Repository Coverage
 
-**Status**: In progress
+**Status**: Verified; living contract
 **Spec**: `specs/009-language-repository-coverage/spec.md`
 
 ## Phase 1: Python import graph

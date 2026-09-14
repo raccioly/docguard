@@ -957,7 +957,7 @@
           },
           {
             "path": "specs/009-language-repository-coverage/tasks.md",
-            "digest": "sha256:1f604bdb08275da4f4cff6b66f895974f34bcf350ced6448e3fa144581835342"
+            "digest": "sha256:ae0381ab64bf755fcc61868d29c16899f7540e4eec1db3f91205644dc34d3130"
           }
         ],
         "taskCompletion": {
@@ -1786,11 +1786,11 @@
           },
           {
             "path": "specs/010-task-specific-agent-context/tasks.md",
-            "digest": "sha256:fa87ece99690f8f6350ff17320bbdeaa77ec40338be3026e407a3f11916149b2"
+            "digest": "sha256:d07bf44a66d56789ce403b2b6dfc10bb1d7b21704e3601bc0bdb99e0ec330ff4"
           }
         ],
         "taskCompletion": {
-          "checked": 15,
+          "checked": 16,
           "total": 16
         },
         "implementationEvidence": [

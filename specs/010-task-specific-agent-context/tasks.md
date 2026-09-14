@@ -1,6 +1,6 @@
 # Tasks: Task-Specific Agent Context
 
-**Status**: In progress
+**Status**: Verified; living evaluation contract
 **Spec**: `specs/010-task-specific-agent-context/spec.md`
 
 ## Phase 1: Contract and frozen protocol
@@ -29,4 +29,4 @@
 - [x] T013 Promote the opt-in CLI contract only if every gate passes; otherwise remove it.
 - [x] T014 Update canonical, public, AI-agent, contribution, and roadmap guidance.
 - [x] T015 Run focused, full, matrix, package, guard, and detector benchmark checks.
-- [ ] T016 Complete lifecycle verification with exact reviewed evidence.
+- [x] T016 Complete lifecycle verification with exact reviewed evidence.
