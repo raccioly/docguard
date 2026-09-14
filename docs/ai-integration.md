@@ -18,6 +18,7 @@ what it finds. The division of labour never changes:
 | GitHub Code Scanning / SARIF dashboards | **SARIF output** | `npx docguard-cli guard --format sarif` |
 | A PR reviewer (human or bot) | **GitHub Action** | inline annotations + sticky doc-impact comment, default on |
 | An LLM reading the repo cold | **llms.txt / llms-full.txt / context pack** | `docguard llms`, `llms --full`, `memory --pack` |
+| An agent starting one concrete change | **Task context** | `docguard agent --task "Implement acme.feature#FR-001" --format json` |
 
 ## MCP server (native tools, no shelling out)
 
@@ -110,9 +111,24 @@ and degrade gracefully on fork tokens and shallow clones.
 | `llms-full.txt` | `docguard llms --full` | Full doc bodies inlined — one fetch, per-doc 400-line cap |
 | `.docguard/context-pack.md` | `docguard memory --pack` | Compact session-start context: guard status, scanner-derived surface counts, doc index with review dates, your AGENTS.md rules verbatim, known drift. Everything derived from code — regenerable, hallucination-free |
 | `.docguard-specs.json` | `docguard specs --check` / `--write` | Committed spec lifecycle index: reviewed status and lineage plus deterministic artifact, task, and requirement-scoped test evidence. Requirement prose stays in each authoritative spec. |
+| Task-context JSON | `docguard agent --task <text> --format json` | Read-only, bounded excerpts from approved current evidence plus source/test pointers. It excludes retired and unsafe material and abstains when relevance is weak. |
 
 Load the context pack at agent session start; regenerate any time — it is
 never hand-edited.
+
+For a concrete change, task context can reduce discovery steps:
+
+```bash
+docguard agent --task "Implement acme.payments#FR-003 in src/payments.mjs" --format json
+```
+
+Treat the packet as a retrieval aid. Hashes prove which bytes were selected;
+they do not prove the prose is correct. Read additional code or documentation
+when the task requires it, and use the navigation map when the selector
+abstains. Protocol v1 preserved all 27 synthetic task outcomes and reduced
+median steps by 50% and latency by 17% versus `memory --pack`, but increased
+median uncached input tokens by 80%; teams optimizing token spend may prefer
+the context pack.
 
 ## One source of truth for agent files
 

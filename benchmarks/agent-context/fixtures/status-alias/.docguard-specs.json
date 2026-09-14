@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 2,
+  "specs": [
+    {
+      "specId": "acme.status-aliases",
+      "path": "specs/001-status-aliases/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "approved",
+          "delivery": "implemented",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": "living"
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": [
+            "docs-canonical/REQUIREMENTS.md"
+          ]
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "acme.status-aliases#FR-001"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/001-status-aliases/spec.md",
+            "digest": "sha256:bc7825941dc962aba937b0386e3e541d64532910c18669591d99a98c9c362648"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 0,
+          "total": 1
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "src/status.mjs",
+            "line": 1
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/status.test.mjs",
+            "line": 1
+          }
+        ]
+      }
+    }
+  ],
+  "tombstones": []
+}

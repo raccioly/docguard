@@ -81,6 +81,16 @@ suspected false positive, false negative, unsupported syntax, or policy
 disagreement. Test-only contributions are welcome; maintainers can own the
 detector change after the behavior is reproduced.
 
+## Contributing an agent-context case
+
+Run `npm run benchmark:agent-context` to validate the frozen synthetic fixtures
+without invoking a model. New task classes belong in a new predeclared protocol,
+not in the completed v1 matrix. Include an agent-visible fixture, evaluator-only
+fail-to-pass and pass-to-pass checks, reviewed reference behavior, an exact
+changed-file allowlist, model/harness identity, repetitions, and promotion
+thresholds before collecting observations. Keep private repositories, prompts,
+source patches, credentials, and raw model prose out of committed results.
+
 ## Adding a New Validator
 
 > **Findings rule:** new validators MUST emit structured findings

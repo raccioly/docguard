@@ -1,0 +1,58 @@
+{
+  "$schema": "https://raccioly.github.io/docguard/schemas/docguard-agent-context-benchmark.schema.json",
+  "schemaVersion": 1,
+  "protocol": {
+    "id": "docguard-agent-context-v1",
+    "frozenAt": "2026-09-14",
+    "seed": "docguard-r7-v1",
+    "repetitions": 3,
+    "timeoutMs": 300000,
+    "harness": "codex-exec-jsonl-v1",
+    "model": {
+      "cliVersion": "0.154.0-alpha.6.2",
+      "id": "gpt-5.3-codex-spark",
+      "reasoningEffort": "low",
+      "sandbox": "workspace-write"
+    }
+  },
+  "conditions": ["task-only", "context-pack", "targeted-packet"],
+  "promotion": {
+    "nonInferiorityFailures": 1,
+    "maxAdditionalRequirementViolations": 0,
+    "maxAdditionalUnnecessaryEdits": 0,
+    "minimumMedianReductionPercent": 15,
+    "successGainQualifies": true
+  },
+  "tasks": [
+    {
+      "id": "status-alias",
+      "fixture": "fixtures/status-alias",
+      "hiddenEvaluator": "hidden/status-alias/evaluate.mjs",
+      "reference": "reference/status-alias/status.mjs",
+      "prompt": "Update src/status.mjs to complete acme.status-aliases#FR-001. Preserve existing behavior, make the smallest justified change, and run the repository tests.",
+      "allowedChanges": ["src/status.mjs"],
+      "visibleTest": ["node", "--test", "tests/*.test.mjs"],
+      "expectedInitial": { "passed": 5, "failed": 2 }
+    },
+    {
+      "id": "python-config",
+      "fixture": "fixtures/python-config",
+      "hiddenEvaluator": "hidden/python-config/evaluate.py",
+      "reference": "reference/python-config/config_loader.py",
+      "prompt": "Update config_loader.py to complete acme.safe-config#FR-001. Preserve existing behavior, make the smallest justified change, and run the repository tests.",
+      "allowedChanges": ["config_loader.py"],
+      "visibleTest": ["python3", "-m", "unittest", "discover", "-s", "tests"],
+      "expectedInitial": { "passed": 5, "failed": 3 }
+    },
+    {
+      "id": "option-migration",
+      "fixture": "fixtures/option-migration",
+      "hiddenEvaluator": "hidden/option-migration/evaluate.mjs",
+      "reference": "reference/option-migration/options.mjs",
+      "prompt": "Update src/options.mjs to complete acme.timeout-options#FR-001. Preserve existing behavior, make the smallest justified change, and run the repository tests.",
+      "allowedChanges": ["src/options.mjs"],
+      "visibleTest": ["node", "--test", "tests/*.test.mjs"],
+      "expectedInitial": { "passed": 5, "failed": 2 }
+    }
+  ]
+}

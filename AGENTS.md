@@ -49,7 +49,8 @@ code-truth sections), `score` (CDD maturity 0-100).
 
 **Tools** — `demo` (zero-install tour), `diagnose` (guard → AI fix prompts),
 `fix` (AI fix instructions; `--doc <name>`), `generate` (reverse-engineer docs;
-`--plan`), `retire` (remove reviewed docs from active context),
+`--plan`), `agent` (task graph; `--task <text>` for bounded current evidence),
+`retire` (remove reviewed docs from active context),
 `specs` (check/refresh/preflight/complete the spec lifecycle registry),
 `reconcile` (classify code/spec changes since a Git ref without rewriting intent),
 `explain` (explain a validator/warning), `memory` (what DocGuard
@@ -102,6 +103,10 @@ checks only the selected package unless it is explicitly rerun with `--dir`.
   changed feature. Only its mechanical write plan may run automatically;
   unsupported changes and possible regressions require review. `docguard specs
   complete` records that review and regenerates the active context projection.
+- For a concrete implementation task, prefer `docguard agent --task <text>
+  --format json`. Follow only selected current evidence, retain its
+  retrieval-only assurance, inspect additional repository facts as needed, and
+  fall back to normal discovery when `selection.status` is `abstained`.
 
 ## AI Skills
 

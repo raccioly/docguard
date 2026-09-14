@@ -21,6 +21,7 @@
  * @req SC-PACK-005 — schemas/docguard-config.schema.json is in the package
  * @req docguard.evidence-scoped-verification#SC-005
  * @req docguard.language-repository-coverage#FR-008
+ * @req docguard.task-specific-agent-context#FR-010
  */
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
@@ -74,6 +75,8 @@ describe('npm pack smoke', { skip: SKIP }, () => {
       'schemas/docguard-specs.schema.json should ship');
     assert.ok(existsSync(join(pkgDir, 'schemas/docguard-evidence.schema.json')),
       'schemas/docguard-evidence.schema.json should ship');
+    assert.ok(existsSync(join(pkgDir, 'schemas/docguard-task-context.schema.json')),
+      'schemas/docguard-task-context.schema.json should ship');
     assert.ok(existsSync(join(pkgDir, 'cli/evidence/evaluate.mjs')),
       'evidence evaluator should ship');
     assert.ok(existsSync(join(pkgDir, 'templates/evidence-manifest.json')),
@@ -158,5 +161,28 @@ describe('npm pack smoke', { skip: SKIP }, () => {
       names: [],
       limitations: ['worker-imported-env-needs-ast'],
     });
+  });
+
+  it('extracted package emits task context without the optional parser installed', () => {
+    packDir = tmp('pack');
+    extractDir = tmp('extract');
+    const fixtureDir = tmp('task-context');
+    spawnSync('npm', ['pack', '--pack-destination', packDir], { cwd: process.cwd() });
+    const tarball = readdirSync(packDir).find(f => f.endsWith('.tgz'));
+    spawnSync('tar', ['xzf', join(packDir, tarball), '-C', extractDir]);
+    mkdirSync(join(fixtureDir, 'docs-canonical'));
+    mkdirSync(join(fixtureDir, 'src'));
+    writeFileSync(join(fixtureDir, 'package.json'), JSON.stringify({ name: 'task-smoke', version: '1.0.0', type: 'module' }));
+    writeFileSync(join(fixtureDir, '.docguard.json'), JSON.stringify({ projectName: 'task-smoke', profile: 'starter', version: '0.5', requiredFiles: { canonical: ['docs-canonical/REQUIREMENTS.md'] } }));
+    writeFileSync(join(fixtureDir, 'docs-canonical/REQUIREMENTS.md'), '# Requirements\n\nUpdate `normalizeThing` in `src/tool.mjs` without changing its public return type.\n');
+    writeFileSync(join(fixtureDir, 'src/tool.mjs'), 'export const normalizeThing = value => value;\n');
+    const cli = join(extractDir, 'package/cli/docguard.mjs');
+    const result = spawnSync('node', [cli, 'agent', '--task', 'Update normalizeThing in src/tool.mjs', '--format', 'json', '--dir', fixtureDir], { encoding: 'utf8' });
+    assert.equal(result.status, 0, result.stderr);
+    const packet = JSON.parse(result.stdout);
+    assert.equal(packet.kind, 'docguard.task-context');
+    assert.equal(packet.selection.status, 'targeted');
+    assert.ok(packet.pointers.some(pointer => pointer.path === 'src/tool.mjs'));
+    rmSync(fixtureDir, { recursive: true, force: true });
   });
 });

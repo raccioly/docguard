@@ -1,0 +1,120 @@
+{
+  "schemaVersion": 2,
+  "specs": [
+    {
+      "specId": "acme.timeout-options",
+      "path": "specs/002-timeout-options/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "approved",
+          "delivery": "implemented",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": "living"
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [
+            "acme.retired-timeout"
+          ],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": [
+            "docs-canonical/REQUIREMENTS.md"
+          ]
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "acme.timeout-options#FR-001"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/002-timeout-options/spec.md",
+            "digest": "sha256:76a7b7e22fcb94a949676f2bbfd7a77f3f9817eef58679ec21192e2638079c3d"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 0,
+          "total": 1
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "src/options.mjs",
+            "line": 1
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/options.test.mjs",
+            "line": 1
+          }
+        ]
+      }
+    },
+    {
+      "specId": "acme.retired-timeout",
+      "path": "specs/001-retired-timeout/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "approved",
+          "delivery": "verified",
+          "context": "retired",
+          "retirementReason": "superseded_by_current_timeout_contract",
+          "storage": "working_tree",
+          "persistenceModel": "immutable_history"
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": [
+            "acme.timeout-options"
+          ]
+        },
+        "scope": {
+          "canonicalDocs": [
+            "docs-canonical/REQUIREMENTS.md"
+          ]
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "acme.retired-timeout#FR-001"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/001-retired-timeout/spec.md",
+            "digest": "sha256:5050956bb8b59ae1543170b4678e2708fd38436a99bbd46d424dd912d6792b62"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 0,
+          "total": 1
+        },
+        "implementationEvidence": [],
+        "testEvidence": []
+      }
+    }
+  ],
+  "tombstones": []
+}

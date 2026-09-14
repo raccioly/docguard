@@ -9,6 +9,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Define the reviewed R7 task-specific agent-context contract and frozen
+  evaluation protocol. Product behavior remains gated on 27 repeated hidden-test
+  trials comparing task-only, existing context-pack, and targeted-packet inputs.
+- Add the frozen R7 benchmark harness, strict manifest/result schemas, and three
+  synthetic JavaScript/Python tasks with hidden fail-to-pass checks, pass-to-pass
+  controls, reviewed reference behavior, deterministic shuffled ordering,
+  resumable observations, and an immutable promotion decision. The experimental
+  selector emits bounded provenance-rich evidence or an honest abstention and
+  remains outside the public CLI until the recorded trial gate passes.
+- Correct the R7 Codex executor invocation to use `--approve-for-me` as the
+  workspace-write selector. Codex CLI rejects that flag when an equivalent
+  explicit `--sandbox workspace-write` is also present; the failed zero-step
+  diagnostic matrix was discarded before product observations began.
+- Record all 27 frozen R7 trials and the resulting promotion decision. Every
+  condition passed nine of nine runs with no requirement or changed-file policy
+  violations; targeted packets reduced median steps by 50% and latency by 17%
+  against context packs while increasing uncached input tokens by 80%. The
+  retained report limits the claim and keeps the interface opt-in.
+- Verify the complete R7 implementation with 1,784 passing tests on Node 18,
+  20, 22, and 24, extracted-package execution without the optional parser,
+  frozen fixture/reference replay, and the regression-free 24-case detector
+  corpus plus one intentionally unsupported case.
+- Close every R7 task after exact-evidence review and correct the completed R6
+  task list's stale “In progress” label to its verified living-contract state.
+- Complete the reviewed R7 lifecycle transaction at the exact implementation
+  revision, recording the bounded selector, frozen benchmark, CLI integration,
+  canonical documentation, test matrix, package smoke test, and detector corpus
+  as delivery evidence with no accepted deviations.
+- Add opt-in `docguard agent --task <text>` context selection after the frozen
+  promotion gate passed. Existing `docguard agent` output remains unchanged;
+  task mode emits bounded current evidence or an explicit abstention in aligned
+  human and deterministic JSON forms.
 - Define the reviewed R6 language and repository coverage contract, including
   explicit false-positive controls for Python imports, Cloudflare bindings,
   mapped document ownership, and monorepo-root guidance.
@@ -60,6 +92,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Document the promoted task-context contract, schema, lifecycle exclusions,
+  assurance boundary, benchmark reproduction path, measured tradeoffs, and
+  contribution protocol across canonical, public, and agent guidance.
 - Evidence selectors support ATX and Setext Markdown headings while ignoring
   fenced examples, `verify` rejects conflicting modes with a stable JSON error,
   and every Evidence finding is reachable through `docguard explain`.
@@ -77,6 +112,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The R7 harness now expands its frozen visible-test globs before spawning Node,
+  preserving the same checks on Node 18, and binds retained observations to
+  exact harness and selector digests for reproducibility.
+- Agent-context promotion now becomes incomplete when any trial has an
+  infrastructure failure. Zero-step model-service exits are classified apart
+  from agent failures, and bounded diagnostics retain useful trailing errors
+  after repetitive CLI startup warnings.
 - R6 regression fixtures now follow the repository's single-newline EOF format,
   keeping release diff checks clean.
 - Evidence results no longer expose raw JSON source values in CLI, guard, MCP,

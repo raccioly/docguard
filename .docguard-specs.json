@@ -957,7 +957,7 @@
           },
           {
             "path": "specs/009-language-repository-coverage/tasks.md",
-            "digest": "sha256:1f604bdb08275da4f4cff6b66f895974f34bcf350ced6448e3fa144581835342"
+            "digest": "sha256:ae0381ab64bf755fcc61868d29c16899f7540e4eec1db3f91205644dc34d3130"
           }
         ],
         "taskCompletion": {
@@ -1710,6 +1710,297 @@
             "requirementId": "SC-006",
             "file": "tests/feedback-fixture.test.mjs",
             "line": 15
+          }
+        ]
+      }
+    },
+    {
+      "specId": "docguard.task-specific-agent-context",
+      "path": "specs/010-task-specific-agent-context/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "approved",
+          "delivery": "verified",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": "living"
+        },
+        "relations": {
+          "extends": [
+            "docguard.document-lifecycle",
+            "docguard.evidence-scoped-verification"
+          ],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md",
+            "docs-canonical/DATA-MODEL.md",
+            "docs-canonical/REQUIREMENTS.md",
+            "docs-canonical/SECURITY.md",
+            "docs-canonical/TEST-SPEC.md"
+          ]
+        },
+        "reconciliation": {
+          "lastReviewedRevision": "5b3fc58279065b231c6297b6ecd4cadc254a02c6",
+          "outcomes": [
+            {
+              "revision": "5b3fc58279065b231c6297b6ecd4cadc254a02c6",
+              "reason": "Reviewed frozen 27-run promotion evidence, bounded selector and abstention controls, opt-in CLI integration, strict schemas, lifecycle exclusions, Node 18/20/22/24 matrix, packed parser-absent execution, self-guard, and complete external detector corpus with no accepted deviations.",
+              "evidence": [
+                "benchmarks/agent-context/run.mjs",
+                "cli/commands/agent.mjs",
+                "cli/docguard.mjs",
+                "cli/scanners/task-context.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/DATA-MODEL.md",
+                "docs-canonical/REQUIREMENTS.md",
+                "docs-canonical/SECURITY.md",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/agent-context-benchmark.test.mjs",
+                "tests/npm-pack-smoke.test.mjs",
+                "tests/task-context.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.task-specific-agent-context#FR-001",
+          "docguard.task-specific-agent-context#FR-002",
+          "docguard.task-specific-agent-context#FR-003",
+          "docguard.task-specific-agent-context#FR-004",
+          "docguard.task-specific-agent-context#FR-005",
+          "docguard.task-specific-agent-context#FR-006",
+          "docguard.task-specific-agent-context#FR-007",
+          "docguard.task-specific-agent-context#FR-008",
+          "docguard.task-specific-agent-context#FR-009",
+          "docguard.task-specific-agent-context#FR-010",
+          "docguard.task-specific-agent-context#FR-011",
+          "docguard.task-specific-agent-context#FR-012",
+          "docguard.task-specific-agent-context#FR-013",
+          "docguard.task-specific-agent-context#FR-014",
+          "docguard.task-specific-agent-context#FR-015",
+          "docguard.task-specific-agent-context#SC-001",
+          "docguard.task-specific-agent-context#SC-002",
+          "docguard.task-specific-agent-context#SC-003",
+          "docguard.task-specific-agent-context#SC-004",
+          "docguard.task-specific-agent-context#SC-005"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/010-task-specific-agent-context/spec.md",
+            "digest": "sha256:bd8a48ebdb68134426627deb8420add84a0ac4f76f6ad5ecb970341a0c1304b0"
+          },
+          {
+            "path": "specs/010-task-specific-agent-context/plan.md",
+            "digest": "sha256:cf2e094cde54afc06b316bc2ef252309f66781aa86684d0d7dcf74bd631f48cf"
+          },
+          {
+            "path": "specs/010-task-specific-agent-context/tasks.md",
+            "digest": "sha256:d07bf44a66d56789ce403b2b6dfc10bb1d7b21704e3601bc0bdb99e0ec330ff4"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 16,
+          "total": 16
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/scanners/task-context.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/scanners/task-context.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/scanners/task-context.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/scanners/task-context.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/scanners/task-context.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/scanners/task-context.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/scanners/task-context.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "cli/scanners/task-context.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "cli/scanners/task-context.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/commands/agent.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/docguard.mjs",
+            "line": 862
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "benchmarks/agent-context/run.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "benchmarks/agent-context/run.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-013",
+            "file": "benchmarks/agent-context/run.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-014",
+            "file": "benchmarks/agent-context/run.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-015",
+            "file": "benchmarks/agent-context/run.mjs",
+            "line": 9
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/task-context.test.mjs",
+            "line": 2
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/task-context.test.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/task-context.test.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/task-context.test.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/task-context.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/task-context.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/task-context.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/task-context.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "tests/task-context.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "tests/npm-pack-smoke.test.mjs",
+            "line": 24
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "tests/task-context.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "tests/agent-context-benchmark.test.mjs",
+            "line": 2
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "tests/agent-context-benchmark.test.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-013",
+            "file": "tests/agent-context-benchmark.test.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-014",
+            "file": "tests/agent-context-benchmark.test.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-015",
+            "file": "tests/agent-context-benchmark.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/task-context.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/task-context.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/agent-context-benchmark.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "SC-004",
+            "file": "tests/agent-context-benchmark.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "SC-005",
+            "file": "tests/agent-context-benchmark.test.mjs",
+            "line": 9
           }
         ]
       }
