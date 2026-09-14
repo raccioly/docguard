@@ -100,6 +100,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   outcome. The gate requires a linked source, test, canonical-document, or
   decision delta after the prior review and rejects empty repeats caused only by
   generated registry, context, or outcome churn.
+- The document-lifecycle living spec records the maintenance transition at its
+  exact reviewed revision, preserving the earlier delivery outcome and current
+  active-context policy.
 
 ## [0.38.0] - 2026-09-14
 

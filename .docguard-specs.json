@@ -30,11 +30,45 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "834e0a2299402205f5bdca7a55e353bad71bab28",
+          "lastReviewedRevision": "f3e4d76e94f5b21073421d2ff8b2a1228a5dd55b",
           "outcomes": [
             {
               "revision": "834e0a2299402205f5bdca7a55e353bad71bab28",
               "reason": "Implemented and reviewed R2 lifecycle transactions, reconciliation classifications, qualified evidence gates, active-context regeneration, and Spec Kit completion hooks.",
+              "evidence": [
+                "cli/commands/reconcile.mjs",
+                "cli/commands/retire.mjs",
+                "cli/commands/specs.mjs",
+                "cli/commands/sync.mjs",
+                "cli/docguard.mjs",
+                "cli/scanners/document-lifecycle.mjs",
+                "cli/scanners/lifecycle-context.mjs",
+                "cli/scanners/reconciliation.mjs",
+                "cli/scanners/requirement-evidence.mjs",
+                "cli/scanners/retirement-manifest.mjs",
+                "cli/scanners/spec-registry.mjs",
+                "cli/shared-sync-scope.mjs",
+                "cli/validators/traceability.mjs",
+                "cli/writers/file-transaction.mjs",
+                "cli/writers/spec-outcomes.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/DATA-MODEL.md",
+                "docs-canonical/REQUIREMENTS.md",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/archive.test.mjs",
+                "tests/document-lifecycle.test.mjs",
+                "tests/file-transaction.test.mjs",
+                "tests/hooks-contract.test.mjs",
+                "tests/reconcile.test.mjs",
+                "tests/spec-completion.test.mjs",
+                "tests/spec-registry.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            },
+            {
+              "revision": "f3e4d76e94f5b21073421d2ff8b2a1228a5dd55b",
+              "reason": "Reviewed living-spec maintenance now records verified-to-verified outcomes only for new linked behavior or canonical intent; generated lifecycle churn cannot self-qualify.",
               "evidence": [
                 "cli/commands/reconcile.mjs",
                 "cli/commands/retire.mjs",
@@ -104,7 +138,7 @@
         "artifacts": [
           {
             "path": "specs/006-document-lifecycle/spec.md",
-            "digest": "sha256:de7409f43d37095df5405f34adc44a0fa895e71ab3f2b36219d6aed280757b9a"
+            "digest": "sha256:205d40e8676725a50d5de57a959379602678727679946c950f77f5934553eae7"
           },
           {
             "path": "specs/006-document-lifecycle/plan.md",
