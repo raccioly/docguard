@@ -64,7 +64,7 @@ function makeTwoFeatureRepo() {
     '# Tasks\n\n## Phase 1\n- [x] Create src/lib/core.mjs with the parser\n- [x] Wire everything up\n');
   write(dir, 'src/lib/core.mjs', 'export const core = 1;\n');
   write(dir, 'tests/core.test.mjs',
-    `// @req ${FR1}\nimport { core } from '../src/lib/core.mjs';\n`);
+    `// @req specs/001-complete/spec.md#${FR1}\nimport { core } from '../src/lib/core.mjs';\n`);
 
   write(dir, 'specs/002-skeletal/spec.md',
     `# Feature: Skeletal\n\n## Requirements\n- ${FR2}: never implemented\n`);
@@ -119,9 +119,9 @@ describe('trace --features', () => {
     ['fixture JSON', 'data.json', JSON.stringify({ sample: FR2 }), false],
     ['fixture source string', 'fixture.test.mjs', 'const sample = ' + JSON.stringify('// @req ' + FR2) + ';\n', false],
     ['annotated executable test', 'behavior.test.mjs',
-      'import { test } from "node:test";\n// @req ' + FR2 + '\ntest("behavior", () => {});\n', true],
+      'import { test } from "node:test";\n// @req specs/002-skeletal/spec.md#' + FR2 + '\ntest("behavior", () => {});\n', true],
     ['executable test label', 'label.test.mjs',
-      'import { test } from "node:test";\ntest(' + JSON.stringify(FR2 + ' behavior') + ', () => {});\n', true],
+      'import { test } from "node:test";\ntest(' + JSON.stringify('specs/002-skeletal/spec.md#' + FR2 + ' behavior') + ', () => {});\n', true],
   ]) {
     it('agrees with the validator about ' + name, () => {
       dir = makeTwoFeatureRepo();
@@ -145,6 +145,16 @@ describe('trace --features', () => {
       assert.equal(control.signals.reqCoverage.pct, 100);
     });
   }
+
+  it('does not let a bare ID become feature evidence after another spec is retired', () => {
+    dir = makeTwoFeatureRepo();
+    write(dir, 'tests/bare.test.mjs',
+      'import { test } from "node:test";\n// @req ' + FR2 + '\ntest("legacy behavior", () => {});\n');
+    const parsed = JSON.parse(capture(() => runTraceFeatures(dir, CONFIG, { format: 'json' })));
+    const feature = parsed.features.find(f => f.name === '002-skeletal');
+    assert.equal(feature.signals.reqCoverage.covered, 0);
+    assert.deepEqual(feature.signals.reqCoverage.uncovered, [FR2]);
+  });
 
   it('orders features worst-first in JSON and summary points at the worst', () => {
     dir = makeTwoFeatureRepo();

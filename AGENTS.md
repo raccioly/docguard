@@ -49,7 +49,8 @@ code-truth sections), `score` (CDD maturity 0-100).
 
 **Tools** — `demo` (zero-install tour), `diagnose` (guard → AI fix prompts),
 `fix` (AI fix instructions; `--doc <name>`), `generate` (reverse-engineer docs;
-`--plan`), `explain` (explain a validator/warning), `memory` (what DocGuard
+`--plan`), `retire` (remove reviewed docs from active context),
+`explain` (explain a validator/warning), `memory` (what DocGuard
 remembers), `trace` (requirements traceability; `--reverse`), `upgrade` (migrate
 config/CLI), `watch` (live re-guard).
 
@@ -68,7 +69,7 @@ returns `status` (PASS/WARN/FAIL, matches exit code 0/2/1), `findings[]`
 (Markdown tier map incl. `unclassified[]`), and `semanticClaims.count`
 (documented numbers not yet verified against code).
 
-- Every finding has a stable code (`STR001`, `ENV003`, `XRF002`, …) — all 27
+- Every finding has a stable code (`STR001`, `ENV003`, `XRF002`, …) — all 28
   validators emit them. `docguard explain <CODE>` gives the contract and fix.
 - Mechanical fixes go through `docguard fix --write` (provenance-checked,
   fail-closed) — never hand-apply what the tool fixes deterministically.
@@ -78,6 +79,9 @@ returns `status` (PASS/WARN/FAIL, matches exit code 0/2/1), `findings[]`
 - Doc≠code does not mean the doc is wrong — canonical docs are the spec. If the
   code regressed from a documented decision, fix the code or log a
   `// DRIFT: reason` + DRIFT-LOG.md entry instead of rewriting the doc.
+- Treat `specs/` and planning docs as active intent only. Review candidates with
+  `docguard retire --plan`; retire only explicit, clean tracked documents after
+  their shipped outcomes are represented in current docs and `CHANGELOG.md`.
 
 ## AI Skills
 

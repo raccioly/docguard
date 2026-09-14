@@ -486,6 +486,30 @@ export const CODES = {
     help: 'Guard reports at most 10 phantom-completion findings (SPK008) per run to avoid noise; this line counts the remainder. Fix or uncheck the reported tasks and re-run guard to surface more, or set `"specKit": { "phantomCheck": false }` in .docguard.json to disable the check.',
     suppress: null,
   },
+  DLC001: {
+    validator: 'documentLifecycle',
+    title: 'Terminal document remains in active context',
+    help: 'A tracked Markdown file declares itself superseded, deprecated, obsolete, or archived but remains searchable as current repository context. Confirm its outcomes are represented in current docs, then use `docguard retire --write --path <path> --reason <reason>`.',
+    suppress: null,
+  },
+  DLC002: {
+    validator: 'documentLifecycle',
+    title: 'Completed task list needs lifecycle review',
+    help: 'A spec has checked tasks and no open tasks. This is a review signal, not proof that the feature shipped. Confirm release evidence and current documentation before archiving the spec.',
+    suppress: null,
+  },
+  DLC003: {
+    validator: 'documentLifecycle',
+    title: 'Document lifecycle coverage incomplete',
+    help: 'DocGuard could not enumerate or read every tracked Markdown document. Fix Git access or file readability and rerun guard; an incomplete lifecycle scan must not be interpreted as a clean result.',
+    suppress: null,
+  },
+  DLC004: {
+    validator: 'documentLifecycle',
+    title: 'Retired document remains active',
+    help: 'The retirement manifest records this path, but the document still exists in the working tree. Remove it through the reviewed retirement transaction or remove the incorrect manifest event; the two states must agree.',
+    suppress: null,
+  },
   XRF001: {
     validator: 'crossReference',
     title: 'Broken doc link',

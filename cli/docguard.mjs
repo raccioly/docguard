@@ -51,6 +51,7 @@ import { runMemory } from './commands/memory.mjs';
 import { runDemo } from './commands/demo.mjs';
 import { runAgent } from './commands/agent.mjs';
 import { runMcp } from './commands/mcp.mjs';
+import { runArchive } from './commands/retire.mjs';
 import { ensureSkills } from './ensure-skills.mjs';
 
 // ── Shared constants (imported to break circular dependencies) ──────────
@@ -97,6 +98,7 @@ ${c.bold}Tools (situational, but day-to-day useful)${c.reset}
   ${c.green}report${c.reset}     Compliance-evidence bundle — guard + score + ALCOA+ + integrity hash (${c.cyan}--format json${c.reset}, ${c.cyan}--out <file>${c.reset})
   ${c.green}ci${c.reset}         Pipeline gate: guard + score in one command (${c.cyan}--threshold <n>${c.reset}, ${c.cyan}--fail-on-warning${c.reset}, ${c.cyan}--format json${c.reset}; records score history)
   ${c.green}memory${c.reset}     Show what DocGuard remembers (${c.cyan}--diff${c.reset} drills into drift)
+  ${c.green}retire${c.reset}     Remove reviewed docs from active AI context (${c.cyan}--plan${c.reset}; explicit ${c.cyan}--write --path${c.reset})
   ${c.green}trace${c.reset}      Requirements traceability matrix (${c.cyan}--reverse${c.reset} for code→doc map, ${c.cyan}--features${c.reset} for per-feature adherence)
   ${c.green}upgrade${c.reset}    Migrate ${c.cyan}.docguard.json${c.reset} schema + CLI (${c.cyan}--apply --pr${c.reset} for team-wide PR)
   ${c.green}watch${c.reset}      Live mode: re-run guard on file changes
@@ -109,12 +111,12 @@ ${c.bold}init --with <name>${c.reset} ${c.dim}— optional scaffolders, picked a
   ${c.dim}llms${c.reset}       llms.txt generation
   ${c.dim}publish${c.reset}    External doc-site scaffold (Mintlify) ${c.dim}— experimental${c.reset}
 
-${c.bold}Deprecation aliases${c.reset} ${c.dim}— still work in v0.20.x with a yellow warning${c.reset}
+${c.bold}Deprecation aliases${c.reset} ${c.dim}— supported until v1.0 with a yellow warning${c.reset}
   ${c.dim}setup${c.reset} → ${c.cyan}init --wizard${c.reset}
   ${c.dim}agents · hooks · badge · llms · publish${c.reset} → ${c.cyan}init --with <name>${c.reset}
   ${c.dim}impact${c.reset} → ${c.cyan}diff --since <ref>${c.reset}
   ${c.dim}audit${c.reset} → ${c.green}guard${c.reset} ${c.dim}(permanent — no warning, no removal planned)${c.reset}
-  ${c.dim}See docs-implementation/MIGRATION-v0.20.md for the full timeline.${c.reset}
+  ${c.dim}Run the legacy form to see its replacement.${c.reset}
 
 ${c.bold}Options:${c.reset}
   --dir <path>    Project directory (default: current directory)
@@ -307,6 +309,23 @@ const COMMAND_HELP = {
       ['--format json', 'Machine-readable task list (the agent-executable artifact)'],
     ],
     examples: ['docguard verify --semantic', 'docguard verify --semantic --format json'],
+  },
+  retire: {
+    summary: 'Remove reviewed docs from active AI context while preserving recovery from a retained Git ref.',
+    usage: 'docguard retire [--plan|--check] | --write --path <document> [--path <document>...] --reason <text> [--superseded-by <document>] [--evidence <document>...] [--retention-ref <ref>]',
+    flags: [
+      ['--plan', 'Read-only lifecycle candidate inventory (default behavior)'],
+      ['--check', 'Exit 2 when high-confidence lifecycle candidates remain'],
+      ['--fail-on-warning', 'With --check: also gate low-confidence review candidates'],
+      ['--write', 'Retire only the explicitly selected clean tracked documents'],
+      ['--path <path>', 'Documentation file or document-only directory; repeatable'],
+      ['--reason <text>', 'Required explanation recorded in the archive manifest'],
+      ['--superseded-by <path>', 'Current document that replaces the archived material'],
+      ['--evidence <path>', 'Clean current document that contains the consolidated outcome; repeatable'],
+      ['--retention-ref <ref>', 'Branch ref that must retain the source revision'],
+      ['--format json', 'Machine-readable plan or result'],
+    ],
+    examples: ['docguard retire --plan', 'docguard retire --check --format json', 'docguard retire --write --path specs/001-done --reason "Implemented in v1.2"'],
   },
 };
 
@@ -535,8 +554,26 @@ async function main() {
       flags.apiKey = args[i + 1];
       i++;
     } else if (args[i] === '--path' && args[i + 1]) {
-      // mcp --transport http: HTTP mount path (default /mcp).
-      flags.path = args[i + 1];
+      if (command === 'retire' || command === 'archive') {
+        flags.paths = flags.paths || [];
+        flags.paths.push(args[i + 1]);
+      } else {
+        // mcp --transport http: HTTP mount path (default /mcp).
+        flags.path = args[i + 1];
+      }
+      i++;
+    } else if (args[i] === '--reason' && args[i + 1]) {
+      flags.reason = args[i + 1];
+      i++;
+    } else if (args[i] === '--superseded-by' && args[i + 1]) {
+      flags.supersededBy = args[i + 1];
+      i++;
+    } else if (args[i] === '--evidence' && args[i + 1]) {
+      flags.evidencePaths = flags.evidencePaths || [];
+      flags.evidencePaths.push(args[i + 1]);
+      i++;
+    } else if (args[i] === '--retention-ref' && args[i + 1]) {
+      flags.retentionRef = args[i + 1];
       i++;
     } else if (args[i] === '--code') {
       flags.code = args[i + 1] && !args[i + 1].startsWith('--') ? args[++i] : '';
@@ -624,7 +661,7 @@ async function main() {
   // `diff`/`impact` only read; `demo` runs against a throwaway fixture.)
   const READ_ONLY_COMMANDS = new Set([
     'guard', 'audit', 'score', 'diff', 'impact',
-    'diagnose', 'trace', 'explain', 'memory', 'demo', 'agent',
+    'diagnose', 'trace', 'explain', 'memory', 'demo', 'agent', 'retire', 'archive',
     // feedback only writes its own .docguard/feedback/ — it must NOT scaffold
     // skills or touch source, so it's gated out of ensureSkills like the rest.
     'feedback',
@@ -659,10 +696,9 @@ async function main() {
     ensureSkills(projectDir, flags);
   }
 
-  // v0.20: deprecation aliases. The legacy command keeps working through v0.20
+  // v0.20: deprecation aliases. The legacy command keeps working until v1.0
   // and emits a yellow stderr warning suggesting the new shape. Quiet mode
   // (e.g. inside hooks) suppresses the warning so CI output stays clean.
-  // The full deprecation timeline is in docs-implementation/MIGRATION-v0.20.md.
   const DEPRECATED_COMMANDS = {
     setup:   { since: '0.20', replacement: 'docguard init --wizard' },
     agents:  { since: '0.20', replacement: 'docguard init --with agents' },
@@ -694,7 +730,7 @@ async function main() {
   if (DROPPED_ALIASES[command]) {
     console.error(`${c.red}Unknown command: ${command}${c.reset}`);
     console.error(`${c.yellow}Hint: this alias was removed in v0.20. Try ${c.cyan}docguard ${DROPPED_ALIASES[command]}${c.yellow}.${c.reset}`);
-    console.error(`${c.dim}See docs-implementation/MIGRATION-v0.20.md for the full list.${c.reset}`);
+    console.error(`${c.dim}Use the replacement shown above; removed aliases are not restored.${c.reset}`);
     process.exit(1);
   }
 
@@ -703,7 +739,7 @@ async function main() {
   if (DEPRECATED_COMMANDS[command] && !flags.quiet && !(command === 'hooks' && flags.claude)) {
     const { since, replacement } = DEPRECATED_COMMANDS[command];
     console.error(`${c.yellow}⚠ Deprecated since v${since}:${c.reset} ${c.cyan}docguard ${command}${c.reset} → use ${c.cyan}${replacement}${c.reset}`);
-    console.error(`${c.dim}  The old form still works in v0.20.x but will be removed in v1.0. See MIGRATION-v0.20.md.${c.reset}`);
+    console.error(`${c.dim}  The old form remains compatible until v1.0.${c.reset}`);
   }
 
   switch (command) {
@@ -829,6 +865,10 @@ async function main() {
       break;
     case 'memory':
       runMemory(projectDir, config, flags);
+      break;
+    case 'retire':
+    case 'archive': // Development alias; `retire` avoids collision with Spec Kit Archive.
+      runArchive(projectDir, config, flags);
       break;
     case 'demo':
       // v0.21: zero-install "ah-ha" moment — runs guard against a baked-in

@@ -79,6 +79,7 @@ export function loadConfig(projectDir) {
       security: false,
       environment: true,
       freshness: true,
+      documentLifecycle: true,
       // v0.31.0 — all three default ON. Soft (confidence:low, never break CI),
       // heuristic (field cases require ongoing precision checks), and quiet when
       // not applicable (no diff / no API-reference doc). api-doc-smells is

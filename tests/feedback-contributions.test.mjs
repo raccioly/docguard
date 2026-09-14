@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { buildIssueUrl } from '../cli/commands/feedback.mjs';
 
-// @req FR-002 — confident findings can be challenged without sharing source data.
+// @req docs-canonical/REQUIREMENTS.md#FR-002 — confident findings can be challenged without sharing source data.
 describe('feedback contribution workflow', () => {
   let dir;
   afterEach(() => { if (dir) rmSync(dir,{recursive:true,force:true}); dir = null; });

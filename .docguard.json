@@ -38,7 +38,8 @@
     "testSpec": true,
     "security": true,
     "environment": true,
-    "freshness": true
+    "freshness": true,
+    "documentLifecycle": true
   },
   "severity": {},
   "surfaceSync": {

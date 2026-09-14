@@ -21,6 +21,12 @@ import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { tokenize } from '../shared-diff.mjs';
 import { rankBySimilarity } from '../shared-ir.mjs';
 import { parseJsTs, walk } from '../scanners/js-ast.mjs';
+import {
+  DEFAULT_REQ_PATTERNS,
+  collectRequirementIdsFromContent,
+  requirementPatterns,
+} from '../shared-requirements.mjs';
+import { readRetirementManifest } from '../scanners/document-lifecycle.mjs';
 
 /**
  * Optional graphify interop (github.com/Graphify-Labs/graphify, MIT).
@@ -100,29 +106,6 @@ const IGNORE_DIRS = new Set([
   '.amplify-hosting', '.serverless',
 ]);
 
-
-// ──── Default requirement ID patterns ────
-// Users can override via config.traceability.requirementPattern
-// Includes spec-kit standard IDs: FR-xxx, SC-xxx, T-xxx
-const DEFAULT_REQ_PATTERNS = [
-  /\b(REQ)-(\d{2,4})\b/g,
-  /\b(FR)-(\d{2,4})\b/g,
-  /\b(NFR)-(\d{2,4})\b/g,
-  /\b(US)-(\d{2,4})\b/g,
-  /\b(STORY)-(\d{2,4})\b/g,
-  /\b(AC)-(\d{2,4})\b/g,
-  /\b(UC)-(\d{2,4})\b/g,
-  /\b(SYS)-(\d{2,4})\b/g,
-  /\b(ARCH)-(\d{2,4})\b/g,
-  /\b(MOD)-(\d{2,4})\b/g,
-  /\b(SC)-(\d{2,4})\b/g,     // Spec Kit: Success Criteria
-  // Spec Kit task IDs (T001, T002). Unlike the hyphenated IDs above, a bare
-  // `T350` over-matches prose (timeouts, model names, status codes), forcing
-  // spurious "untraced requirement" warnings. Anchor to the two contexts where
-  // a real task ID actually appears: a markdown checklist marker (`- [ ] T001`,
-  // the spec-kit tasks.md format) or a test annotation (`@req T001`/`@task`).
-  /(?<=\[[ xX]\]\s|@(?:req|task|covers)\s)(T)(\d{3,4})\b/g,
-];
 
 /**
  * Validate traceability — ensures canonical docs have corresponding source artifacts,
@@ -287,19 +270,22 @@ function validateRequirementTraceability(projectDir, config, projectFiles) {
   let total = 0;
 
   // Get requirement patterns (user-configurable or defaults)
-  const customPattern = config.traceability?.requirementPattern;
-  const patterns = customPattern
-    ? [new RegExp(customPattern, 'g')]
-    : DEFAULT_REQ_PATTERNS;
+  const patterns = requirementPatterns(config);
 
   // ── Step 1: Collect requirement IDs from documentation ──
   const reqIds = collectRequirementIds(projectDir, config, patterns);
+  const retiredReqIds = loadRetiredRequirementIds(projectDir);
 
   // ── Step 2: Scan test files for requirement ID references ──
   const testRefs = scanTestFilesForReferences(projectDir, projectFiles, patterns);
-  const resolvedRefs = resolveRequirementReferences(reqIds, testRefs);
+  const resolvedRefs = resolveRequirementReferences(reqIds, testRefs, retiredReqIds);
   const definitionCounts = new Map();
   for (const def of reqIds.values()) definitionCounts.set(def.id, (definitionCounts.get(def.id) || 0) + 1);
+  const retiredDefinitionCounts = new Map();
+  for (const key of retiredReqIds) {
+    const id = key.slice(key.lastIndexOf('#') + 1);
+    retiredDefinitionCounts.set(id, (retiredDefinitionCounts.get(id) || 0) + 1);
+  }
 
   // ── Step 3: Report traceability results ──
 
@@ -344,7 +330,9 @@ function validateRequirementTraceability(projectDir, config, projectFiles) {
 
   // Check for orphaned test refs (tests referencing non-existent requirements)
   for (const [reqId, refs] of testRefs) {
-    const orphan = refs.find(ref => ref.scope ? !reqIds.has(`${ref.scope}#${reqId}`) : !definitionCounts.has(reqId));
+    const orphan = refs.find(ref => ref.scope
+      ? !reqIds.has(`${ref.scope}#${reqId}`) && !retiredReqIds.has(`${ref.scope}#${reqId}`)
+      : !definitionCounts.has(reqId) && !retiredDefinitionCounts.has(reqId));
     if (orphan) {
       total++;
       findings.push(mkFinding({
@@ -362,6 +350,27 @@ function validateRequirementTraceability(projectDir, config, projectFiles) {
   return { findings, passed, total };
 }
 
+/**
+ * Retired requirement identities remain known without restoring obsolete prose
+ * to active context. Invalid manifests supply no evidence; Document-Lifecycle
+ * reports their integrity failure separately.
+ */
+function loadRetiredRequirementIds(projectDir) {
+  const manifest = readRetirementManifest(projectDir);
+  if (!manifest.ok) return new Set();
+  const ids = new Set();
+  for (const entry of manifest.entries) {
+    if (!Array.isArray(entry.requirementIds)) continue;
+    const path = entry.path.replaceAll('\\', '/').replace(/^\.\//, '');
+    for (const id of entry.requirementIds) {
+      if (typeof id === 'string' && id.length <= 128 && /^[^\s#\0]+$/.test(id)) {
+        ids.add(`${path}#${id}`);
+      }
+    }
+  }
+  return ids;
+}
+
 export function collectRequirementIds(projectDir, config, patterns = DEFAULT_REQ_PATTERNS) {
   const reqIds = new Map(); // reqId → { file, line }
   const docSearchPaths = getRequirementDocPaths(projectDir, config);
@@ -369,66 +378,10 @@ export function collectRequirementIds(projectDir, config, patterns = DEFAULT_REQ
   for (const docPath of docSearchPaths) {
     if (!existsSync(docPath)) continue;
 
-    const content = readFileSync(docPath, 'utf-8');
-
-    // Fast early-return: skip expensive string split if no requirement patterns exist
-    const hasMatch = patterns.some(p => { p.lastIndex = 0; return p.test(content); });
-    if (!hasMatch) continue;
-
-    const lines = content.split('\n');
     const docName = relative(projectDir, docPath).replaceAll("\\", "/");
-
-    let fence = null;
-    let exampleLevel = null;
-    let inComment = false;
-    for (let i = 0; i < lines.length; i++) {
-      let line = lines[i];
-      if (/^(?: {4}|\t)/.test(line) && !fence && !inComment) continue;
-      const marker = line.match(/^\s{0,3}(`{3,}|~{3,})/);
-      if (fence) {
-        if (marker && marker[1][0] === fence[0] && marker[1].length >= fence.length
-          && line.slice(marker[0].length).trim() === '') fence = null;
-        continue;
-      }
-      if (marker) { fence = marker[1]; continue; }
-      // Comments and fenced examples cannot define requirements. Preserve
-      // physical line numbers instead of scanning a compacted document.
-      line = line.replace(/<!--[\s\S]*?-->/g, '');
-      if (inComment) {
-        const close = line.indexOf('-->');
-        if (close < 0) continue;
-        line = line.slice(close + 3);
-        inComment = false;
-      }
-      const open = line.indexOf('<!--');
-      if (open >= 0) { line = line.slice(0, open); inComment = true; }
-      const heading = line.match(/^\s{0,3}(#{1,6})\s+(.*)/);
-      if (heading) {
-        if (exampleLevel !== null && heading[1].length <= exampleLevel) exampleLevel = null;
-        if (exampleLevel === null && /^(?:(?:requirement|task)[ -]+)?(?:examples?|ID[ -]+(?:formats?|syntax|examples?)|(?:formats?|syntax)[ -]+(?:of[ -]+)?IDs?)\b/i.test(heading[2])) {
-          exampleLevel = heading[1].length;
-        }
-      }
-      if (exampleLevel !== null) continue;
-      for (const pattern of patterns) {
-        pattern.lastIndex = 0;
-        let match;
-        while ((match = pattern.exec(line)) !== null) {
-          // Definitions lead a line, heading, list item or first table cell.
-          // Later prose references must not satisfy a missing requirement ID.
-          const prefix = line.slice(0, match.index);
-          if (!/^\s{0,3}(?:#{1,6}\s+|[-*+]\s+(?:\[[ xX]\]\s+)?|\d+[.)]\s+|\|\s*)?[\s*`_]*$/.test(prefix)) {
-            if (!match[0].length) pattern.lastIndex++;
-            continue;
-          }
-          const reqId = match[0];
-          if (!reqId.length) { pattern.lastIndex++; continue; }
-          const key = `${docName}#${reqId}`;
-          if (!reqIds.has(key)) {
-            reqIds.set(key, { id: reqId, file: docName, line: i + 1, text: line.trim() });
-          }
-        }
-      }
+    const content = readFileSync(docPath, 'utf-8');
+    for (const [key, definition] of collectRequirementIdsFromContent(content, docName, patterns)) {
+      if (!reqIds.has(key)) reqIds.set(key, definition);
     }
   }
 
@@ -436,11 +389,16 @@ export function collectRequirementIds(projectDir, config, patterns = DEFAULT_REQ
 }
 
 /** Resolve positive test links without sharing evidence between document scopes. */
-export function resolveRequirementReferences(definitions, references) {
+export function resolveRequirementReferences(definitions, references, retiredDefinitions = new Set()) {
   const byId = new Map();
   for (const [key, definition] of definitions) {
     if (!byId.has(definition.id)) byId.set(definition.id, []);
     byId.get(definition.id).push(key);
+  }
+  for (const key of retiredDefinitions) {
+    const id = key.slice(key.lastIndexOf('#') + 1);
+    if (!byId.has(id)) byId.set(id, []);
+    if (!byId.get(id).includes(key)) byId.get(id).push(key);
   }
   const resolved = new Map();
   for (const [id, refs] of references) {

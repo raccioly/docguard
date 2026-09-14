@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `docguard retire` introduces a document-lifecycle boundary for specs, plans,
+  migrations, and historical audits. Plan mode is read-only; `--check` can gate
+  remaining candidates; writes require explicit clean tracked paths and a
+  reason. Retired prose stays recoverable from a verified retention ref while
+  `.docguard-archive.json` records source commits, blob identities, rationale,
+  replacements, evidence documents, retired requirement identities, Git object
+  format, and restore commands. Traceability recognizes those identities as
+  tombstones, preventing historical test annotations from becoming orphans or
+  silently rebinding to a later spec. Incomplete recovery entries cannot supply
+  tombstones or suppress lifecycle findings.
+- Guard includes a Document-Lifecycle validator with stable `DLC001`–`DLC004`
+  findings. Exact terminal status is high-confidence; `Completed` maturity and a
+  fully checked task list remain low-confidence review signals. Incomplete scan
+  coverage and manifest/working-tree disagreement cannot produce a false clean.
+  Projects outside a Git working tree report the validator as non-applicable,
+  and every lifecycle result is discoverable through `docguard explain`.
+
+### Changed
+
+- The roadmap now contains current intent and contribution-ready work only.
+  Released specs and historical implementation documents are retired from the
+  active tree so AI agents cannot interpret them as current requirements.
+- The active lifecycle specification separates safe mechanical fact refreshes
+  from requirement reconciliation: implementation drift never authorizes
+  silently rewriting approved intent.
+- The llms.txt generators now use the shared backup-before-write path, including
+  when active context indexes are regenerated after archival.
+- Feature completion evidence now requires document-qualified requirement
+  annotations. Bare IDs remain available in the repository-wide matrix but
+  cannot rebind to a different feature after retirement.
+
 ## [0.36.2] - 2026-09-14
 
 ### Fixed
@@ -1573,8 +1606,8 @@ See docs-implementation/MIGRATION-v0.20.md for the full list.
 - **v1.0.0**: deprecated commands removed. At least 2-3 months out.
 - **forever**: `audit → guard` stays.
 
-See **[MIGRATION-v0.20.md](docs-implementation/MIGRATION-v0.20.md)** for
-the full guide.
+The v0.20 migration guide is preserved through `.docguard-archive.json` and Git
+history.
 
 ## [0.19.0] - 2026-05-26
 

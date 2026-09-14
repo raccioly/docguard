@@ -8,8 +8,8 @@ import { buildScoreAssurance, computeAlcoaCompliance, runScoreInternal } from '.
 import { loadConfig } from '../cli/config.mjs';
 import { buildReport, toMarkdown } from '../cli/commands/report.mjs';
 
-// @req FR-001 — structural scores never assert a measured factual accuracy.
-// @req FR-003 — score consumers preserve the same evidence limitations.
+// @req docs-canonical/REQUIREMENTS.md#FR-001 — structural scores never assert a measured factual accuracy.
+// @req docs-canonical/REQUIREMENTS.md#FR-003 — score consumers preserve the same evidence limitations.
 describe('score assurance', () => {
   let dir;
   afterEach(() => { if (dir) rmSync(dir, { recursive: true, force: true }); });

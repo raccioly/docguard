@@ -15,10 +15,11 @@
  *   - `docguard guard` validates llms.txt exists and is current
  */
 
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve, join, basename } from 'node:path';
 import { c } from '../shared.mjs';
 import { listCanonicalDocs } from '../shared-ignore.mjs';
+import { safeWrite } from '../writers/generate-io.mjs';
 
 // ──── Doc descriptions for llms.txt ────
 const DOC_DESCRIPTIONS = {
@@ -201,7 +202,7 @@ export function runLlms(projectDir, config, flags) {
 
   const fileName = full ? 'llms-full.txt' : 'llms.txt';
   const outputPath = resolve(projectDir, fileName);
-  writeFileSync(outputPath, content, 'utf-8');
+  safeWrite(outputPath, content);
 
   console.log(`${c.bold}📄 DocGuard ${fileName} Generator${c.reset}`);
   console.log(`${c.green}✅ Generated ${outputPath}${c.reset}`);

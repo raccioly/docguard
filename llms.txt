@@ -9,7 +9,6 @@
 - [ENVIRONMENT](docs-canonical/ENVIRONMENT.md): Setup instructions, environment variables, and prerequisites
 - [REQUIREMENTS](docs-canonical/REQUIREMENTS.md): REQUIREMENTS documentation
 - [SECURITY](docs-canonical/SECURITY.md): Authentication, authorization, secrets management, and security policies
-- [SURFACE-AUDIT](docs-canonical/SURFACE-AUDIT.md): SURFACE-AUDIT documentation
 - [TEST-SPEC](docs-canonical/TEST-SPEC.md): Test coverage requirements, testing strategy, and quality rules
 
 ## Optional

@@ -64,6 +64,9 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/commands/watch.mjs` | `tests/commands.test.mjs` | ✅ pass |
 | `cli/commands/publish.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/commands/trace.mjs` | `tests/commands.test.mjs` | ✅ |
+| `cli/shared-requirements.mjs` | `tests/traceability.test.mjs`, `tests/archive.test.mjs` | ✅ |
+| `cli/commands/retire.mjs` | `tests/archive.test.mjs` | ✅ |
+| `cli/validators/document-lifecycle.mjs` | `tests/document-lifecycle.test.mjs` | ✅ |
 | `cli/validators/structure.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/validators/docs-diff.mjs` | `tests/commands.test.mjs` | ✅ |
 
@@ -102,7 +105,9 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 
 `tests/score-assurance.test.mjs` checks that structural grades never claim factual verification and that CI, diagnose, and reports retain this boundary. `tests/feedback-contributions.test.mjs` checks confident-finding selection, preview behavior, and outbound metadata privacy. Cache tests must change source contents without changing a manifest or Git HEAD, including repeated edits and fresh-process reads. Hook tests execute generated scripts against controlled runtimes rather than merely matching shell text. Traceability tests pair synthetic fixture IDs with genuine requirement annotations.
 
-A detector fix should include a clean near-miss and a real defect. Held-out neighboring cases are required to evaluate generalization. The proposed external benchmark is specified in `docs-implementation/TRUST-ROADMAP.md`; its targets are acceptance criteria, not measured results.
+A detector fix should include a clean near-miss and a real defect. Held-out neighboring cases are required to evaluate generalization. The proposed external benchmark is specified in `ROADMAP.md`; its targets are acceptance criteria, not measured results.
+
+Retirement tests use disposable Git repositories and verify both sides of the boundary: completed planning material is reported for review, while active neighboring material stays clean. Write-path tests must prove retained-ref recovery metadata and refusal of source code, dirty, untracked, required, symlinked, private, protected, submodule, and out-of-root paths. Read-only plan and check modes must not modify repository state.
 
 ## Enterprise precision regressions
 

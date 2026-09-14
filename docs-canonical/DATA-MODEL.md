@@ -1,13 +1,13 @@
 # Data Model
 
-<!-- docguard:version 0.5.0 -->
+<!-- docguard:version 0.6.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-09-11 -->
+<!-- docguard:last-reviewed 2026-09-14 -->
 
 | Metadata | Value |
 |----------|-------|
 | **Status** | ![Status](https://img.shields.io/badge/status-active-brightgreen) |
-| **Version** | `0.5.0` |
+| **Version** | `0.6.0` |
 | **Database** | None — DocGuard is a stateless CLI tool |
 | **Storage** | File-system only (reads project files, writes generated docs) |
 
@@ -92,6 +92,35 @@ The primary data structure. Controls all CLI behavior.
 }
 ```
 
+## Retirement Manifest: `.docguard-archive.json`
+
+The manifest is an append-only recovery ledger for documentation removed from
+active context by `docguard retire`. Git content remains authoritative; the
+manifest stores no retired prose.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `schemaVersion` | `number` | Manifest contract version; currently `1` |
+| `strategy` | `"git-history"` | Recovery storage strategy |
+| `entries[].path` | `string` | Former repository-relative document path |
+| `entries[].archivedAt` | ISO timestamp | Historical field name for retirement time |
+| `entries[].archivedFrom` | Git object ID | Source revision containing the exact document |
+| `entries[].blob` | Git object ID | Exact retired content identity; length follows repository object format |
+| `entries[].reason` | `string` | Reviewed retirement rationale |
+| `entries[].supersededBy` | `string` | Optional current replacement document |
+| `entries[].evidence` | `string[]` | Optional clean documents containing consolidated outcomes |
+| `entries[].requirementIds` | `string[]` | Requirement identities declared by the retired file; traceability keeps them as tombstones and never treats them as active requirements |
+| `entries[].retentionRef` | `string` | Branch ref proven to contain the source revision |
+| `entries[].objectFormat` | `"sha1" \| "sha256"` | Git repository object format |
+| `entries[].recoverability` | `"verified"` | Result of the retained-ref ancestor check at retirement time |
+| `entries[].restore` | `string` | Convenience command derived from structured source/path fields |
+
+Existing manifests may carry one shared top-level `retention` record for a
+batch created before per-entry retention metadata was introduced. A future
+registry validator will project both forms into one normalized model. Lifecycle
+and traceability consumers reject incomplete recovery entries; an unverified
+manifest cannot suppress active-context or orphan-reference findings.
+
 ## Document Metadata Headers
 
 Every CDD document includes DocGuard metadata as HTML comments at the top:
@@ -161,6 +190,7 @@ The `score --format json` output:
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 0.6.0 | 2026-09-14 | DocGuard Team | Add the document-retirement recovery manifest, retained-ref proof, and retired requirement tombstones |
 | 0.4.0 | 2026-03-13 | DocGuard Team | Complete rewrite — documented all config formats, output schemas, metadata headers |
 | 0.1.0 | 2026-03-13 | DocGuard Generate | Auto-generated skeleton |
 

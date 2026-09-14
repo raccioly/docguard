@@ -69,15 +69,15 @@ DocGuard is an official [GitHub Spec Kit](https://github.com/github/spec-kit) co
 
 ```mermaid
 graph TD
-    CLI["CLI Entry<br/>docguard.mjs"] --> Commands["Commands (20)"]
+    CLI["CLI Entry<br/>docguard.mjs"] --> Commands["Commands (21)"]
     Commands --> guard["guard"]
     Commands --> generate["generate"]
     Commands --> score["score"]
     Commands --> diagnose["diagnose"]
     Commands --> setup["setup wizard"]
-    Commands --> other["diff · init · fix · trace · impact · sync<br/>explain · memory · upgrade · agents · hooks · badge · ci · watch"]
+    Commands --> other["diff · init · fix · trace · impact · sync · retire<br/>explain · memory · upgrade · agents · hooks · badge · ci · watch"]
 
-    guard --> Validators["Validators (27)"]
+    guard --> Validators["Validators (28)"]
     generate --> Scanners["Scanners (4)<br/>routes · schemas · doc-tools · speckit"]
     score --> Scoring["Weighted Scoring<br/>8 categories"]
     diagnose --> Validators
@@ -108,7 +108,7 @@ A guard result describes the checks performed. The CDD grade measures structural
 
 Research motivates evaluation of this approach. A 2026 study found that repository context files did not generally improve task success and increased inference cost in its evaluated settings. It also found agents generally followed the instructions. These results support testing concise, relevant context and measuring actual task outcomes; they do not establish DocGuard's effectiveness. [Evaluating AGENTS.md, revised June 2026](https://arxiv.org/abs/2602.11988v2).
 
-The development plan prioritizes accurate detection, reproducible evidence, and contributor-supplied regression cases. See [the trust roadmap](docs-implementation/TRUST-ROADMAP.md) for implementation status, proposed experiments, and acceptance criteria.
+The [current roadmap](ROADMAP.md) prioritizes accurate detection, reproducible evidence, document lifecycle management, and contributor-supplied regression cases. Released plans and superseded specifications are removed from active AI context and remain recoverable from Git.
 
 ---
 
@@ -268,14 +268,14 @@ This installs DocGuard's slash commands (`/docguard.init`, `/docguard.guard`, `/
 
 ## Usage
 
-DocGuard ships **20 commands** (the "Daily 5" + 15 situational tools, including the zero-install `demo`, the `mcp` server, and the `ci` pipeline gate). Six additional one-shot scaffolders are accessed via `docguard init --with <name>`. Seven v0.19 commands continue to work as deprecation aliases through v0.20.x — see [MIGRATION-v0.20.md](docs-implementation/MIGRATION-v0.20.md).
+DocGuard ships **21 commands** (the "Daily 5" + 16 situational tools, including lifecycle retirement, the zero-install `demo`, the `mcp` server, and the `ci` pipeline gate). Six additional one-shot scaffolders are accessed via `docguard init --with <name>`. Legacy command forms remain compatible until v1.0 and print their replacements.
 
 **The Daily 5** — what you'll reach for 95% of the time:
 
 | Command | What It Does |
 |:--------|:-------------|
 | `init`  | Bootstrap a project (`--wizard` for interactive · `--with <name>` for scaffolders) |
-| `guard` | Validate against canonical docs — 27 validators |
+| `guard` | Validate against canonical docs — 28 validators |
 | `diff`  | Show gaps between docs and code (`--since <ref>` for impact mode) |
 | `sync`  | Refresh code-truth doc sections — keeps memory always up to date |
 | `score` | CDD maturity score (0-100; `--diff` for delta between refs) |
@@ -295,6 +295,7 @@ DocGuard ships **20 commands** (the "Daily 5" + 15 situational tools, including 
 | `verify --semantic` | Extract documented numbers/limits/enums (retention days, rate limits, GSI/role counts, status enums) as a task list for an agent to check against code — the semantic-drift class regex/AST can't see |
 | `verify --instructions` | Audit AGENTS.md/CLAUDE.md themselves for drift: duplicate rules, never-vs-always contradictions, stale file pointers, unknown commands — plus clustered rule pairs as agent judgment tasks |
 | `feedback` | Report likely false positives back to DocGuard — local-first record + a 1-click prefilled, redacted GitHub issue (zero typing) |
+| `retire` | Find completed or superseded planning material (`--plan`/`--check`; `--fail-on-warning` gates advisory candidates) and explicitly remove clean tracked documentation from active AI context. `.docguard-archive.json` records recovery metadata and retired requirement identities, and `--retention-ref` proves the source revision remains reachable. This is separate from the Spec Kit Archive extension, which consolidates feature documents. |
 | `mcp` | MCP server — exposes guard/score/explain/verify/report/diagnose as native tools for Claude, Cursor, and any MCP client. Stdio: `claude mcp add docguard -- npx docguard-cli mcp`. Team-shared HTTP: `docguard mcp --transport http --port 8585` (loopback by default; non-loopback binds require `--api-key`) |
 | `report` | Compliance-evidence bundle for audits — guard verdict + CDD score + ALCOA+ attributes + fix history, stamped with git commit and a tamper-evident sha256 integrity hash (`--format json`, `--out <file>`). Evidence, not a gate: always exits 0 |
 | `ci` | Pipeline gate: guard + score in one command — never scaffolds or touches source; its only write is its own `.docguard/history.jsonl` (opt out: `--no-history`). `--threshold <n>` fails below a score, `--fail-on-warning` for strict mode, `--format json` for parsers |
@@ -321,7 +322,7 @@ DocGuard ships **20 commands** (the "Daily 5" + 15 situational tools, including 
 
 Run them solo (`docguard init --with hooks`) or stacked (`docguard init --with agents,hooks,badge,ci`).
 
-**Deprecation aliases** — `setup` · `agents` · `hooks` · `ci` · `badge` · `llms` · `publish` · `impact` keep working in v0.20.x with a yellow stderr warning. `audit → guard` is permanent (no warning). See [MIGRATION-v0.20.md](docs-implementation/MIGRATION-v0.20.md).
+**Deprecation aliases** — `setup` · `agents` · `hooks` · `badge` · `llms` · `publish` · `impact` remain compatible until v1.0 with a yellow stderr warning. `audit → guard` is permanent and silent; `ci` is a current first-class pipeline command.
 
 ### CLI Flags
 
@@ -330,7 +331,7 @@ Run them solo (`docguard init --with hooks`) or stacked (`docguard init --with a
 | `--dir <path>` | Project directory (default: `.`) | All |
 | `--verbose` | Show detailed output | All |
 | `--quiet` / `-q` | Suppress banner — for hooks, CI loops, scripts | All |
-| `--format json` | Machine-readable output (clean JSON, no ANSI bleed) | guard, score, diff, trace, diagnose, memory, impact, explain |
+| `--format json` | Machine-readable output (clean JSON, no ANSI bleed) | guard, score, diff, trace, diagnose, memory, impact, explain, retire |
 | `--format sarif` | SARIF 2.1.0 output — findings as rules/results for GitHub Code Scanning and SARIF dashboards | guard |
 | `--format junit` | JUnit XML output — one testcase per validator, for GitLab CI (`artifacts:reports:junit`), Jenkins, Azure DevOps, CircleCI | guard |
 | `--update-baseline` | Adopt DocGuard on a legacy repo without a red day one: freeze today's findings into a committed `.docguard.baseline.json`; guard/ci then gate only NEW drift. Suppression is always visible ("N pre-existing finding(s) suppressed"), and `--no-baseline` shows the full picture | guard |
@@ -389,7 +390,7 @@ $ npx docguard-cli generate
 
 ## 🔍 Validators
 
-DocGuard runs **27 automated validators** on every `guard` check. Every one is **language-aware** as of v0.16 — patterns for Python (`test_*.py`), Rust (`tests/*.rs`), Go (`*_test.go`), Java (`*Test.java`), Ruby (`*_spec.rb`), PHP, and JS/TS all match.
+DocGuard runs **28 automated validators** on every `guard` check. Source-facing validators are language-aware where their evidence model applies; repository and document validators operate independently of source language.
 
 | # | Validator | What It Checks | Default |
 |:--|:----------|:--------------|:--------|
@@ -412,14 +413,15 @@ DocGuard runs **27 automated validators** on every `guard` check. Every one is *
 | 17 | **TODO-Tracking** | Untracked TODOs/FIXMEs and skipped tests (skips test files by default) | ✅ On |
 | 18 | **Schema-Sync** | Database models documented in DATA-MODEL.md | ✅ On |
 | 19 | **Spec-Kit** | Spec quality validation (FR-IDs, mandatory sections, phased tasks) | ✅ On |
-| 20 | **Cross-Reference** | Internal markdown links + anchors resolve (with "did you mean?" hints); Obsidian wikilinks validated when the repo uses them as file links (`.obsidian` present or a target resolves) | ✅ On |
-| 21 | **Generated-Staleness** | `source=code` sections match scanner output; `status: draft` doc age | ✅ On |
-| 22 | **Canonical-Sync** | DocGuard's own README count claims match code-truth (DocGuard repo only — N/A elsewhere) | ✅ On |
-| 23 | **Metrics-Consistency** | Hardcoded numbers match actual counts | ✅ On |
-| 24 | **Surface-Sync** | Item-level enumerable drift — names in doc tables/lists (commands, checks, etc.) match code-truth (opt-in via `surfaceSync.surfaces`; N/A unless configured) | ✅ On |
-| 25 | **Diff-Suspicion** | Change-driven: a doc/agent-instruction file that references code changed since the ref AND shares removed domain symbols is flagged for review (arXiv 2010.01625, F1 74.7) | ✅ On |
-| 26 | **Reference-Existence** | Two-revision check: a backticked code symbol present when the doc was last updated but gone at HEAD is flagged as outdated (arXiv 2212.01479) | ✅ On |
-| 27 | **API-Doc-Smells** | Bloated (≥300 words) / Lazy (≤6 prose words) API documentation units, keyed on signature-headed sections (F1 0.90/0.95) | ✅ On |
+| 20 | **Document-Lifecycle** | Exact terminal states, advisory completion signals, incomplete coverage, and manifest/working-tree inconsistencies | ✅ On |
+| 21 | **Cross-Reference** | Internal markdown links + anchors resolve (with "did you mean?" hints); Obsidian wikilinks validated when the repo uses them as file links (`.obsidian` present or a target resolves) | ✅ On |
+| 22 | **Generated-Staleness** | `source=code` sections match scanner output; `status: draft` doc age | ✅ On |
+| 23 | **Canonical-Sync** | DocGuard's own README count claims match code-truth (DocGuard repo only — N/A elsewhere) | ✅ On |
+| 24 | **Metrics-Consistency** | Hardcoded numbers match actual counts | ✅ On |
+| 25 | **Surface-Sync** | Item-level enumerable drift — names in doc tables/lists (commands, checks, etc.) match code-truth (opt-in via `surfaceSync.surfaces`; N/A unless configured) | ✅ On |
+| 26 | **Diff-Suspicion** | Change-driven: a doc/agent-instruction file that references code changed since the ref AND shares removed domain symbols is flagged for review (arXiv 2010.01625, F1 74.7) | ✅ On |
+| 27 | **Reference-Existence** | Two-revision check: a backticked code symbol present when the doc was last updated but gone at HEAD is flagged as outdated (arXiv 2212.01479) | ✅ On |
+| 28 | **API-Doc-Smells** | Bloated (≥300 words) / Lazy (≤6 prose words) API documentation units, keyed on signature-headed sections (F1 0.90/0.95) | ✅ On |
 
 **Per-validator controls** (in `.docguard.json`):
 ```json
@@ -510,7 +512,7 @@ DocGuard provides AI agent slash commands for integrated workflows. Installed au
 | Command | What It Does |
 |:--------|:-------------|
 | `/docguard.init` | Initialize Canonical-Driven Development in a new or existing project |
-| `/docguard.guard` | Run quality validation — check all 27 validators |
+| `/docguard.guard` | Run quality validation — check all 28 validators |
 | `/docguard.review` | Analyze doc quality and suggest improvements |
 | `/docguard.fix` | Generate targeted fix prompts for specific issues |
 | `/docguard.update` | Update canonical docs after code changes — detect drift and sync documentation |

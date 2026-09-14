@@ -252,6 +252,20 @@ const EXPLAINERS = {
     example: 'plan.md has Summary, Technical Context, Constitution Check, Project Structure',
     standard: 'GitHub Spec Kit',
   },
+  documentLifecycle: {
+    title: 'Document-Lifecycle — retired documents leave active AI context safely',
+    what: 'Scans Git-tracked Markdown for exact terminal lifecycle metadata, completed specs that merit review, and disagreement between the working tree and .docguard-archive.json. It does not infer that completed work is safe to retire.',
+    why: 'Historical specs and plans can mislead people and agents when they remain mixed with current intent. Retirement must preserve recovery evidence and avoid deleting still-referenced context.',
+    triggers: [
+      ['declares terminal lifecycle status', 'Review the document, its backreferences, and its replacement or evidence, then retire the explicit clean tracked path with `docguard retire --write`.'],
+      ['artifact maturity is', 'Completion is only a review signal. Confirm the implemented outcome is represented in current documentation before considering retirement.'],
+      ['fully checked task list', 'Checked tasks do not prove delivery or documentation reconciliation. Verify code/test evidence and current docs.'],
+      ['Document lifecycle coverage is', 'Restore Git access, repair the retirement manifest, or make tracked Markdown readable before relying on the lifecycle result.'],
+      ['recorded as retired but remains', 'Complete the recorded retirement or correct the manifest so active context and recovery metadata agree.'],
+    ],
+    example: 'A superseded plan is absent from the working tree, recorded in .docguard-archive.json with a retained Git ref, and linked to its current replacement.',
+    standard: 'Canonical-Driven Development lifecycle and Git-backed recovery contract',
+  },
 
   // ── Backfilled in v0.24 (field report, Issue A) ─────────────────────────
   // These validators were registered in guard but had no explain entry, so
@@ -377,6 +391,7 @@ const DISPLAY_NAMES = {
   todoTracking: 'TODO-Tracking',
   schemaSync: 'Schema-Sync',
   specKit: 'Spec-Kit',
+  documentLifecycle: 'Document-Lifecycle',
   crossReference: 'Cross-Reference',
   generatedStaleness: 'Generated-Staleness',
   surfaceSync: 'Surface-Sync',

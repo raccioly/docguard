@@ -433,7 +433,17 @@ function featureBar(score) {
 function collectTestReferencedIds(projectDir) {
   const projectFiles = [];
   scanDir(projectDir, projectDir, projectFiles);
-  return scanTestFilesForReferences(projectDir, projectFiles, [FEATURE_REQ_RE]);
+  const references = scanTestFilesForReferences(projectDir, projectFiles, [FEATURE_REQ_RE]);
+  // Feature completion evidence must survive spec retirement and ID reuse.
+  // Bare FR-001 references can be useful navigation for the repo-wide matrix,
+  // but they can rebind to a different feature after the original spec leaves
+  // the working tree. Keep only document-qualified identities here.
+  const qualified = new Map();
+  for (const [id, refs] of references) {
+    const scoped = refs.filter(ref => ref.scope);
+    if (scoped.length > 0) qualified.set(id, scoped);
+  }
+  return qualified;
 }
 
 /**
