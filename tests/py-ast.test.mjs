@@ -90,6 +90,28 @@ describe('py-ast — Python AST extraction', { skip: HAS_PY ? false : 'python3 n
     const e = parse('class Plain:\n    x = 1\n    def m(self): ...\n');
     assert.deepEqual(e.schemas, []);
   });
+
+  /** @req docguard.language-repository-coverage#FR-001 */
+  it('extracts static imports and reports runtime import-path behavior', () => {
+    const e = parse([
+      'import package.module as module',
+      'from . import sibling',
+      'from ..shared.tools import helper',
+      'import importlib, sys',
+      'importlib.import_module(name)',
+      'sys.path.insert(0, location)',
+    ].join('\n'));
+    assert.equal(e.ok, true);
+    assert.deepEqual(e.imports, [
+      { kind: 'import', module: 'package.module', level: 0, names: [] },
+      { kind: 'from', module: '', level: 1, names: ['sibling'] },
+      { kind: 'from', module: 'shared.tools', level: 2, names: ['helper'] },
+      { kind: 'import', module: 'importlib', level: 0, names: [] },
+      { kind: 'import', module: 'sys', level: 0, names: [] },
+    ]);
+    assert.equal(e.dynamicImports, true);
+    assert.equal(e.pathMutation, true);
+  });
 });
 
 describe('py-ast — contract when python3 is absent', { skip: HAS_PY ? 'python3 is present' : false }, () => {

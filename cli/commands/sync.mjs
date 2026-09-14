@@ -1,4 +1,4 @@
-import { assertDefaultDocWrites } from '../shared-doc-roles.mjs';
+import { isMappedDocPath } from '../shared-doc-roles.mjs';
 /**
  * Sync Command — keep the documentation memory ALWAYS UP TO DATE.
  *
@@ -15,12 +15,13 @@ import { assertDefaultDocWrites } from '../shared-doc-roles.mjs';
  * @implements docguard.document-lifecycle#FR-010
  */
 
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { c } from '../shared.mjs';
 import { buildMemoryPlan } from '../scanners/memory-plan.mjs';
-import { getSection, replaceSection } from '../writers/sections.mjs';
+import { assertOwnedCodeSection, getSection, inspectSections, replaceSection } from '../writers/sections.mjs';
+import { safeWrite } from '../writers/generate-io.mjs';
 import { hasGeneratedMarker } from '../writers/api-reference.mjs';
 import { runSyncTests } from './sync-tests.mjs';
 import { sectionTouchedByChanges } from '../shared-sync-scope.mjs';
@@ -48,7 +49,6 @@ function gitChangedFiles(projectDir, since) {
  */
 
 export function runSync(projectDir, config, flags) {
-  if (flags.write) assertDefaultDocWrites(config);
   // v0.28 (field report #10): `--tests` reconciles the hand-maintained TEST-SPEC
   // Source-to-Test Map from disk (ghost-source removal + new co-located pairs) —
   // a distinct path from the generated code-truth section refresh below.
@@ -62,6 +62,7 @@ export function runSync(projectDir, config, flags) {
   const updates = [];   // { doc, section, status }
   const reviews = [];   // { doc, section, reason }
   const skipped = [];   // { doc, reason }
+  const pendingWrites = [];
 
   for (const doc of plan.docs) {
     const full = resolve(projectDir, doc.path);
@@ -70,7 +71,11 @@ export function runSync(projectDir, config, flags) {
       continue;
     }
     let content = readFileSync(full, 'utf-8');
-    if (!hasGeneratedMarker(content) && !flags.force) {
+    const mapped = isMappedDocPath(config, doc.path);
+    if (apply && mapped && inspectSections(content).issues.length) {
+      throw new Error(`${doc.path}: malformed or duplicate docguard:section markers; no write was applied.`);
+    }
+    if (!hasGeneratedMarker(content) && !flags.force && !mapped) {
       skipped.push({ doc: doc.path, reason: 'not marked docguard:generated (use --force to sync anyway)' });
       continue;
     }
@@ -98,7 +103,11 @@ export function runSync(projectDir, config, flags) {
       }
       codeSectionChanged = true;
       updates.push({ doc: doc.path, section: sec.id, status: apply ? 'updated' : 'stale' });
-      if (apply) { content = replaceSection(content, sec.id, sec.body).content; docChanged = true; }
+      if (apply) {
+        if (mapped) assertOwnedCodeSection(content, sec.id, doc.path);
+        content = replaceSection(content, sec.id, sec.body).content;
+        docChanged = true;
+      }
     }
 
     // If code changed, the prose around it may need an agent's eyes.
@@ -110,8 +119,12 @@ export function runSync(projectDir, config, flags) {
       }
     }
 
-    if (apply && docChanged) writeFileSync(full, content, 'utf-8');
+    if (apply && docChanged) pendingWrites.push({ full, content });
   }
+
+  // Authorization for every mapped target completed above. Only now expose
+  // writes, preserving backup behavior for both default and mapped layouts.
+  for (const pending of pendingWrites) safeWrite(pending.full, pending.content);
 
   const result = {
     project: config.projectName,

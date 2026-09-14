@@ -1,4 +1,9 @@
-import { assertDefaultDocWrites } from '../shared-doc-roles.mjs';
+/**
+ * @implements docguard.language-repository-coverage#FR-009
+ * @implements docguard.language-repository-coverage#FR-010
+ * @implements docguard.language-repository-coverage#FR-011
+ */
+import { assertMappedFullDocumentWrites, docRolePath, isMappedDocPath, mappedRolesForPath, resolveDocRole } from '../shared-doc-roles.mjs';
 /**
  * Generate Command — Reverse-engineer canonical docs from an existing codebase
  * Scans source code and creates documentation templates pre-filled with project data.
@@ -6,7 +11,7 @@ import { assertDefaultDocWrites } from '../shared-doc-roles.mjs';
  * This is the "killer feature" — take any project and auto-generate CDD docs.
  */
 
-import { existsSync, readFileSync, mkdirSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve, extname, basename, relative } from 'node:path';
 import { c } from '../shared.mjs';
 import { walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
@@ -14,7 +19,7 @@ import { detectDocTools } from '../scanners/doc-tools.mjs';
 import { scanRoutesDeep } from '../scanners/routes.mjs';
 import { scanSchemasDeep } from '../scanners/schemas.mjs';
 import { buildMemoryPlan } from '../scanners/memory-plan.mjs';
-import { upsertSection } from '../writers/sections.mjs';
+import { assertOwnedCodeSection, replaceSection, upsertSection } from '../writers/sections.mjs';
 import { safeWrite, registerGeneratedCanonicalDocs, surfaceConfidence } from '../writers/generate-io.mjs';
 import {
   generateArchitecture, generateApiReference, generateDataModel,
@@ -40,10 +45,31 @@ const CODE_EXTENSIONS = new Set([
  * inserted as agent-task placeholders), respecting human prose via markers.
  */
 export function runGeneratePlan(projectDir, config, flags) {
-  if (flags.write) assertDefaultDocWrites(config);
   // `--profile <name>` previews a profile's doc set without needing `init` first.
   if (flags.profile) config = { ...config, profile: flags.profile };
   const plan = buildMemoryPlan(projectDir, config);
+
+  // Existing mapped human documents grant ownership section-by-section. Check
+  // every target before the first write so one malformed later file cannot
+  // leave an earlier document partially updated.
+  if (flags.write) {
+    for (const doc of plan.docs) {
+      const full = resolve(projectDir, doc.path);
+      if (!isMappedDocPath(config, doc.path)) continue;
+      if (!existsSync(full)) {
+        if (mappedRolesForPath(config, doc.path).length > 1) {
+          throw new Error(`Mapped document ${doc.path} serves multiple roles; whole-document scaffolding is unavailable.`);
+        }
+        continue;
+      }
+      const content = readFileSync(full, 'utf8');
+      const fullyOwned = /^[ \t]*<!--\s*docguard:generated\s+true\s*-->[ \t]*$/mi.test(content);
+      if (fullyOwned) assertMappedFullDocumentWrites(projectDir, config, mappedRolesForPath(config, doc.path));
+      else for (const sec of doc.sections.filter(item => item.source === 'code')) {
+        assertOwnedCodeSection(content, sec.id, doc.path);
+      }
+    }
+  }
 
   if (flags.format === 'json') {
     console.log(JSON.stringify({
@@ -80,8 +106,6 @@ export function runGeneratePlan(projectDir, config, flags) {
 
   // --write: scaffold the skeleton docs with code sections + agent-task placeholders.
   if (flags.write) {
-    const docsDir = resolve(projectDir, 'docs-canonical');
-    if (!existsSync(docsDir)) mkdirSync(docsDir, { recursive: true });
     let wrote = 0;
     for (const doc of plan.docs) {
       const full = resolve(projectDir, doc.path);
@@ -89,11 +113,16 @@ export function runGeneratePlan(projectDir, config, flags) {
       let content = existsSync(full)
         ? readFileSync(full, 'utf-8')
         : `# ${title}\n\n<!-- docguard:generated true -->\n`;
+      const boundedMapped = isMappedDocPath(config, doc.path) && existsSync(full)
+        && !/^[ \t]*<!--\s*docguard:generated\s+true\s*-->[ \t]*$/mi.test(content);
       for (const sec of doc.sections) {
+        if (boundedMapped && sec.source !== 'code') continue;
         const body = sec.source === 'code'
           ? sec.body
           : `> **AI task:** ${sec.task}\n<!-- docguard:pending agent writes this section -->`;
-        content = upsertSection(content, sec.id, body, { source: sec.source }).content;
+        content = boundedMapped
+          ? replaceSection(content, sec.id, body).content
+          : upsertSection(content, sec.id, body, { source: sec.source }).content;
       }
       // Route through safeWrite: creates the parent dir (docs-implementation/ may
       // not exist yet — was an ENOENT crash) and snapshots a .bak before writing.
@@ -139,7 +168,6 @@ export function runGeneratePlan(projectDir, config, flags) {
 }
 
 export function runGenerate(projectDir, config, flags) {
-  if (!flags.plan || flags.write) assertDefaultDocWrites(config);
   // --plan: emit the AI-powered "memory plan" — the agent task manifest. The CLI
   // builds the code-truth skeleton (marked sections) + tells the agent exactly
   // what prose to write per section. This is the language-aware Generate path.
@@ -191,17 +219,23 @@ export function runGenerate(projectDir, config, flags) {
   console.log('');
 
   // ── 6. Generate Documents ──
-  const docsDir = resolve(projectDir, 'docs-canonical');
-  if (!existsSync(docsDir)) {
-    mkdirSync(docsDir, { recursive: true });
-  }
+  // Preflight every mapped whole-document target before the first generator
+  // writes. Existing targets are skipped unless --force, so they do not need
+  // ownership merely to run ordinary generation.
+  const candidateRoles = ['architecture', ...(deepRoutes.length > 0 ? ['apiReference'] : []),
+    'dataModel', 'environment', 'testSpec', 'security'];
+  const writableRoles = candidateRoles.filter(role => {
+    const target = resolveDocRole(projectDir, config, role);
+    return !existsSync(target) || flags.force;
+  });
+  assertMappedFullDocumentWrites(projectDir, config, writableRoles);
 
   // ── Safety: warn if --force will overwrite existing files ──
   if (flags.force) {
     const targetFiles = [
-      'docs-canonical/ARCHITECTURE.md', 'docs-canonical/API-REFERENCE.md',
-      'docs-canonical/DATA-MODEL.md', 'docs-canonical/ENVIRONMENT.md',
-      'docs-canonical/TEST-SPEC.md', 'docs-canonical/SECURITY.md',
+      docRolePath(config, 'architecture'), docRolePath(config, 'apiReference'),
+      docRolePath(config, 'dataModel'), docRolePath(config, 'environment'),
+      docRolePath(config, 'testSpec'), docRolePath(config, 'security'),
       'AGENTS.md', 'CHANGELOG.md', 'DRIFT-LOG.md',
     ];
     const existing = targetFiles.filter(f => existsSync(resolve(projectDir, f)));
@@ -248,9 +282,9 @@ export function runGenerate(projectDir, config, flags) {
   // B7: keep guard coherent — register the canonical docs we emitted so the
   // traceability validator doesn't flag the generator's own output.
   const registered = registerGeneratedCanonicalDocs(projectDir, [
-    'docs-canonical/ARCHITECTURE.md', 'docs-canonical/API-REFERENCE.md',
-    'docs-canonical/DATA-MODEL.md', 'docs-canonical/ENVIRONMENT.md',
-    'docs-canonical/TEST-SPEC.md', 'docs-canonical/SECURITY.md',
+    docRolePath(config, 'architecture'), docRolePath(config, 'apiReference'),
+    docRolePath(config, 'dataModel'), docRolePath(config, 'environment'),
+    docRolePath(config, 'testSpec'), docRolePath(config, 'security'),
   ]);
 
   console.log(`\n${c.bold}  ─────────────────────────────────────${c.reset}`);

@@ -71,6 +71,12 @@ returns `status` (PASS/WARN/FAIL, matches exit code 0/2/1), `findings[]`
 (Markdown tier map incl. `unclassified[]`), `evidence`, and `semanticClaims.count`
 (documented numbers not yet verified against code).
 
+When a command is launched from an implicitly selected nested package, inspect
+stderr for repository-root guidance. Human output supplies an exact rerun;
+machine modes emit a `docguard.repository-root-guidance` JSON diagnostic there
+so stdout remains a valid JSON/SARIF/JUnit artifact. The current command still
+checks only the selected package unless it is explicitly rerun with `--dir`.
+
 - Every structured finding has a stable code (`STR001`, `ENV003`, `XRF002`, …).
   `docguard explain <CODE>` gives the contract and fix.
 - When `evidence.configured` is true, inspect `docguard verify --evidence

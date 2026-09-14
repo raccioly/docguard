@@ -151,7 +151,9 @@ Node 18, 20, 22, and 24, package extraction without the optional parser, Draft
 2020-12 schema validation, and the frozen 24-case public/synthetic corpus with
 no baseline regression.
 
-### R6 — Language and repository coverage (planned)
+### R6 — Language and repository coverage (verified; release pending)
+
+Governing spec: `specs/009-language-repository-coverage/spec.md`.
 
 Add capabilities only with explicit applicability and controls. Priorities are
 Python import relationships, additional Worker binding forms, custom document
@@ -161,6 +163,15 @@ Unsupported extraction must remain visible and must not become a success claim.
 Contribution slices: one parser or framework per pull request, paired supported
 and unsupported fixtures, and benchmark deltas for any performance-sensitive
 scanner change.
+
+The implementation now covers Python static import graphs, current Cloudflare
+binding forms, ownership-safe mapped document writers, and advisory npm/pnpm
+workspace-root discovery. Verification passed 1,765 tests on Node 18, 20, 22,
+and 24, package extraction without the optional parser, schema and source syntax
+checks, and the frozen corpus with 24 evaluable cases passing plus one expected
+unsupported dynamic-Python case. Self-guard has no errors; its three DSP001
+warnings are low-confidence review prompts for canonical documents already
+updated in the same change set.
 
 ### R7 — Task-specific agent context (research)
 

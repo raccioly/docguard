@@ -1,3 +1,8 @@
+/**
+ * @implements docguard.language-repository-coverage#FR-006
+ * @implements docguard.language-repository-coverage#FR-007
+ * @implements docguard.language-repository-coverage#FR-008
+ */
 import { docRolePath, resolveDocRole } from '../shared-doc-roles.mjs';
 /**
  * Environment Validator — Checks ENVIRONMENT.md docs and .env.example
@@ -18,6 +23,7 @@ export function validateEnvironment(projectDir, config) {
   const findings = [];
   let passed = 0;
   let total = 0;
+  let applicability = null;
   const ptc = config.projectTypeConfig || {};
 
   const envDoc = docRolePath(config, 'environment');
@@ -113,6 +119,13 @@ export function validateEnvironment(projectDir, config) {
     }
 
     const codeUsed = grepEnvUsage(projectDir, config);
+    if (codeUsed.limitations?.length) {
+      const forms = [...new Set(codeUsed.limitations.map(item => item.code))].join(', ');
+      applicability = {
+        status: 'partial',
+        reason: `Environment findings are retained; the parser fallback cannot verify these Worker forms: ${forms}`,
+      };
+    }
 
     // Only assess when code actually reads env vars — otherwise the check is
     // vacuous (always passes) and would just inflate the count.
@@ -180,5 +193,5 @@ export function validateEnvironment(projectDir, config) {
     passed++;
   }
 
-  return { name: 'environment', ...resultFromFindings(findings, { passed, total }) };
+  return { name: 'environment', ...(applicability ? { applicability } : {}), ...resultFromFindings(findings, { passed, total }) };
 }

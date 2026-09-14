@@ -57,6 +57,7 @@ import { runArchive } from './commands/retire.mjs';
 import { runSpecs } from './commands/specs.mjs';
 import { runReconcile } from './commands/reconcile.mjs';
 import { ensureSkills } from './ensure-skills.mjs';
+import { detectRepositoryRootGuidance, renderRepositoryRootGuidance } from './repository-root.mjs';
 
 // ── Shared constants (imported to break circular dependencies) ──────────
 import { c, PROFILES } from './shared.mjs';
@@ -125,7 +126,7 @@ ${c.bold}Deprecation aliases${c.reset} ${c.dim}— supported until v1.0 with a y
   ${c.dim}Run the legacy form to see its replacement.${c.reset}
 
 ${c.bold}Options:${c.reset}
-  --dir <path>    Project directory (default: current directory)
+  --dir <path>    Project directory (default: current directory; explicit paths suppress ancestor-root guidance)
   --verbose       Show detailed output
   --format json   Output results as JSON (for CI)
   --fix           Auto-create missing files from templates
@@ -138,7 +139,8 @@ ${c.bold}Options:${c.reset}
   --fail-on-warning  Fail CI on warnings (used with ci command)
   --auto          Auto-fix what's possible (used with fix command)
   --write         Apply a command's explicit deterministic write path. For fix,
-                  only edits docguard:generated docs unless --force; specs
+                  mapped human docs require unique source=code ownership and
+                  --force cannot grant ownership; specs
                   refreshes observed registry evidence; retire requires --path.
   --plan          AI-powered Generate (generate command): scan any project
                   (JS/Python/Rust/Go/Java/…), emit the agent task manifest +
@@ -392,6 +394,7 @@ async function main() {
   // Parse flags
   const flags = {
     dir: '.',
+    dirExplicit: false,
     verbose: false,
     format: 'text',
     fix: false,
@@ -402,6 +405,7 @@ async function main() {
   for (let i = 1; i < args.length; i++) {
     if (args[i] === '--dir' && args[i + 1]) {
       flags.dir = args[i + 1];
+      flags.dirExplicit = true;
       i++;
     } else if (args[i] === '--verbose') {
       flags.verbose = true;
@@ -699,8 +703,18 @@ async function main() {
 
   if (!headless) printBanner();
 
+  const rootGuidance = detectRepositoryRootGuidance(projectDir, {
+    explicitDir: flags.dirExplicit,
+    argv: args,
+  });
+  if (rootGuidance) {
+    process.stderr.write(renderRepositoryRootGuidance(rootGuidance, { machine: jsonMode }) + '\n');
+  }
   const config = loadConfig(projectDir);
-  if (['init', 'setup', 'generate'].includes(command) && !(command === 'generate' && flags.plan && !flags.write) || ['sync', 'fix'].includes(command) && flags.write || command === 'diagnose' && flags.auto) assertDefaultDocWrites(config);
+  // Init and diagnose --auto can scaffold several unrelated files and retain
+  // their legacy default-layout contract. Generate, sync, and fix perform their
+  // own target/section authorization so mapped layouts can use bounded writers.
+  if (['init', 'setup'].includes(command) || command === 'diagnose' && flags.auto) assertDefaultDocWrites(config);
 
   // `--no-baseline` disables the committed adoption baseline for this run —
   // threaded through config so guard, ci, report, and mcp all honor it the

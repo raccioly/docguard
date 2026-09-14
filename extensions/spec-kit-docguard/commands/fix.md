@@ -30,7 +30,9 @@ npx --yes docguard-cli@latest fix --write
 ```
 
 Output lists every applied fix. Idempotent: re-running is a no-op if nothing changed.
-Only edits `<!-- docguard:generated true -->` docs unless `--force`.
+Whole-document fixes require `<!-- docguard:generated true -->`. A mapped human
+document permits only a unique `source=code` section fix; `--force` cannot grant
+ownership.
 
 ### Step 2 — Identify remaining issues by kind
 
@@ -70,5 +72,5 @@ Iterate until clean (max 3 rounds; if still failing, report remaining issues).
 
 - `--write` — apply deterministic fixes in place (step 1).
 - `--doc <name>` — emit a research-grounded prompt for one specific document (step 3).
-- `--force` — for `--write`, edit docs that lack the generated marker.
+- `--force` — for `--write`, permit supported unmarked default-path fixes; mapped ownership checks remain mandatory.
 - `--format json` — machine-readable issue list (with `fixKind`).

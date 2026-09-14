@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, readdirSync, readFileSync, readlinkSync, rmSync, symlinkSync } from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, rmSync, symlinkSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
@@ -9,11 +9,11 @@ import { safeWrite } from '../cli/writers/generate-io.mjs';
 import { loadConfig } from '../cli/config.mjs';
 import { applyDocRoles } from '../cli/shared-doc-roles.mjs';
 import { listCanonicalDocs } from '../cli/shared-ignore.mjs';
-import { applyAllMechanicalFixes, applyApiSurfaceWrites } from '../cli/commands/fix.mjs';
-import { runDiagnose } from '../cli/commands/diagnose.mjs';
+import { applyApiSurfaceWrites } from '../cli/commands/fix.mjs';
 import { computeApiSurfaceDrift, validateApiSurface } from '../cli/validators/api-surface.mjs';
 import { validateEnvironment } from '../cli/validators/environment.mjs';
 import { validateTestSpec } from '../cli/validators/test-spec.mjs';
+import { pyAstAvailable } from '../cli/scanners/py-ast.mjs';
 
 const cli = fileURLToPath(new URL('../cli/docguard.mjs', import.meta.url));
 const validatorKeys = 'structure docsSync drift changelog testSpec environment security architecture freshness traceability docsDiff apiSurface metadataSync docsCoverage docQuality todoTracking schemaSync specKit crossReference generatedStaleness surfaceSync diffSuspicion referenceExistence apiDocSmells canonicalSync metricsConsistency'.split(' ');
@@ -61,25 +61,22 @@ function invoke(dir, args) {
 }
 
 for (const mode of ['raw', 'loaded']) {
-  test('refuses direct mapped writers before any mutation: ' + mode, t => {
+  /** @req docguard.language-repository-coverage#FR-010 */
+  test('permits a generated mapped API writer and leaves the legacy path untouched: ' + mode, t => {
     const { dir, raw } = mappedFixture(t);
     const config = mode === 'raw' ? raw : loadConfig(dir);
-    const before = snapshot(dir);
     const candidates = validateApiSurface(dir, config).fixes;
     assert.ok(candidates.some(f => f.type === 'remove-endpoint' && f.doc === 'reference/http.md'), 'fixture must exercise a real pending write');
-    for (const force of [false, true]) {
-      for (const write of [applyAllMechanicalFixes, applyApiSurfaceWrites]) {
-        assert.throws(() => write(dir, config, { force }), /read-only planning/);
-        assert.deepEqual(snapshot(dir), before);
-      }
-      assert.throws(() => runDiagnose(dir, config, { auto: true, force }), /read-only planning/);
-      assert.deepEqual(snapshot(dir), before);
-    }
+    const result = applyApiSurfaceWrites(dir, config);
+    assert.equal(result.applied, true);
+    assert.doesNotMatch(readFileSync(join(dir, 'reference/http.md'), 'utf8'), /removed/);
+    assert.match(readFileSync(join(dir, 'docs-canonical/API-REFERENCE.md'), 'utf8'), /removed/);
+    assert.equal(existsSync(join(dir, 'reference/http.md.bak')), true);
   });
 }
 
-for (const args of [['diagnose', '--auto'], ['diagnose', '--auto', '--force'], ['diagnose', '--auto', '--format', 'json'], ['fix', '--write'], ['sync', '--write'], ['generate', '--plan', '--write']]) {
-  test('refuses CLI mapped writes without auxiliary side effects: ' + args.join(' '), t => {
+for (const args of [['diagnose', '--auto'], ['diagnose', '--auto', '--force'], ['diagnose', '--auto', '--format', 'json']]) {
+  test('keeps broad diagnose scaffolding blocked for mapped layouts: ' + args.join(' '), t => {
     const { dir } = mappedFixture(t);
     const before = snapshot(dir);
     const result = invoke(dir, args);
@@ -88,6 +85,130 @@ for (const args of [['diagnose', '--auto'], ['diagnose', '--auto', '--force'], [
     assert.deepEqual(snapshot(dir), before);
   });
 }
+
+test('CLI fix writes a fully generated mapped document', t => {
+  const { dir } = mappedFixture(t);
+  const result = invoke(dir, ['fix', '--write']);
+  assert.equal(result.status, 0, result.stderr);
+  assert.doesNotMatch(readFileSync(join(dir, 'reference/http.md'), 'utf8'), /removed/);
+  assert.match(readFileSync(join(dir, 'docs-canonical/API-REFERENCE.md'), 'utf8'), /removed/);
+});
+
+test('generate plan updates only owned mapped code sections', t => {
+  const dir = temp(t);
+  safeWrite(join(dir, '.docguard.json'), JSON.stringify({
+    projectName: 'bounded-plan', diskCache: false, sourceRoot: 'src',
+    docs: { roles: {
+      architecture: 'handbook/system.md',
+      testSpec: 'handbook/testing.md',
+    } },
+  }));
+  safeWrite(join(dir, 'package.json'), JSON.stringify({ name: 'bounded-plan', type: 'module' }));
+  safeWrite(join(dir, 'src/index.js'), 'export const answer = 42;\n');
+  const previewResult = invoke(dir, ['generate', '--plan', '--format', 'json']);
+  assert.equal(previewResult.status, 0, previewResult.stderr);
+  const preview = JSON.parse(previewResult.stdout);
+  for (const doc of preview.docs.filter(item => item.path.startsWith('handbook/'))) {
+    const owned = doc.sections.filter(section => section.source === 'code')
+      .map(section => `<!-- docguard:section id=${section.id} source=code -->\nstale\n<!-- /docguard:section -->`)
+      .join('\n');
+    safeWrite(join(dir, doc.path), `# Human title\nKeep before.\n${owned}\nKeep after.\n`);
+  }
+  const before = readFileSync(join(dir, 'handbook/system.md'), 'utf8');
+  const result = invoke(dir, ['generate', '--plan', '--write']);
+  assert.equal(result.status, 0, result.stderr);
+  const after = readFileSync(join(dir, 'handbook/system.md'), 'utf8');
+  assert.match(after, /Keep before\./);
+  assert.match(after, /Keep after\./);
+  assert.notEqual(after, before);
+  assert.equal(readFileSync(join(dir, 'handbook/system.md.bak'), 'utf8'), before);
+  assert.equal(existsSync(join(dir, 'docs-canonical')), false);
+});
+
+test('generate plan authorizes every mapped target before its first write', t => {
+  const dir = temp(t);
+  safeWrite(join(dir, '.docguard.json'), JSON.stringify({
+    projectName: 'atomic-plan', diskCache: false, sourceRoot: 'src',
+    docs: { roles: {
+      architecture: 'handbook/system.md',
+      testSpec: 'handbook/testing.md',
+    } },
+  }));
+  safeWrite(join(dir, 'package.json'), JSON.stringify({ name: 'atomic-plan', type: 'module' }));
+  safeWrite(join(dir, 'src/index.js'), 'export const answer = 42;\n');
+  safeWrite(join(dir, 'tests/index.test.js'), "import test from 'node:test';\ntest('answer', () => {});\n");
+  const previewResult = invoke(dir, ['generate', '--plan', '--format', 'json']);
+  assert.equal(previewResult.status, 0, previewResult.stderr);
+  const preview = JSON.parse(previewResult.stdout);
+  const architecture = preview.docs.find(item => item.path === 'handbook/system.md');
+  const valid = architecture.sections.filter(section => section.source === 'code')
+    .map(section => `<!-- docguard:section id=${section.id} source=code -->\nstale\n<!-- /docguard:section -->`)
+    .join('\n');
+  safeWrite(join(dir, 'handbook/system.md'), `# Human\n${valid}\n`);
+  safeWrite(join(dir, 'handbook/testing.md'), '<!-- docguard:section id=test-inventory source=code -->\nstale\n');
+  const before = snapshot(dir);
+  const result = invoke(dir, ['generate', '--plan', '--write']);
+  assert.equal(result.status, 1);
+  assert.match(result.stderr + result.stdout, /malformed|no write was applied/);
+  assert.deepEqual(snapshot(dir), before);
+});
+
+test('full generation honors all mapped role paths in files and AGENTS.md', t => {
+  const dir = temp(t);
+  const roles = {
+    architecture: 'handbook/architecture.md', apiReference: 'handbook/api.md',
+    dataModel: 'handbook/data.md', security: 'handbook/security.md',
+    testSpec: 'handbook/testing.md', environment: 'handbook/environment.md',
+  };
+  safeWrite(join(dir, '.docguard.json'), JSON.stringify({ projectName: 'mapped-generate', diskCache: false, docs: { roles } }));
+  safeWrite(join(dir, 'package.json'), JSON.stringify({ name: 'mapped-generate', type: 'module' }));
+  safeWrite(join(dir, 'src/index.js'), "app.get('/health', handler);\n");
+  const result = invoke(dir, ['generate']);
+  assert.equal(result.status, 0, result.stderr);
+  for (const path of Object.values(roles)) assert.equal(existsSync(join(dir, path)), true, path);
+  assert.equal(existsSync(join(dir, 'docs-canonical')), false);
+  const agents = readFileSync(join(dir, 'AGENTS.md'), 'utf8');
+  for (const path of Object.values(roles)) assert.match(agents, new RegExp(path.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.doesNotMatch(agents, /docs-canonical\/(?:ARCHITECTURE|API-REFERENCE|DATA-MODEL|SECURITY|TEST-SPEC|ENVIRONMENT)\.md/);
+});
+
+test('full generation preflights shared mapped targets before creating anything', t => {
+  const dir = temp(t);
+  safeWrite(join(dir, '.docguard.json'), JSON.stringify({
+    projectName: 'mapped-atomic', diskCache: false,
+    docs: { roles: {
+      architecture: 'handbook/architecture.md',
+      dataModel: 'handbook/shared.md', testSpec: 'handbook/shared.md',
+    } },
+  }));
+  safeWrite(join(dir, 'package.json'), JSON.stringify({ name: 'mapped-atomic', type: 'module' }));
+  const result = invoke(dir, ['generate']);
+  assert.equal(result.status, 1);
+  assert.match(result.stderr + result.stdout, /multiple roles/);
+  assert.equal(existsSync(join(dir, 'handbook')), false);
+  assert.equal(existsSync(join(dir, 'docs-canonical')), false);
+  for (const path of ['AGENTS.md', 'CHANGELOG.md', 'DRIFT-LOG.md']) {
+    assert.equal(existsSync(join(dir, path)), false, path);
+  }
+});
+
+/** @req docguard.language-repository-coverage#FR-011 */
+test('force cannot overwrite an existing mapped human API document', t => {
+  const { dir, raw } = mappedFixture(t);
+  const path = join(dir, 'reference/http.md');
+  safeWrite(path, 'Human introduction\n#### GET /api/removed\n');
+  const before = snapshot(dir);
+  assert.throws(() => applyApiSurfaceWrites(dir, raw, { force: true }), /not fully owned|--force cannot/);
+  assert.deepEqual(snapshot(dir), before);
+});
+
+test('mapped sync with no owned generated sections is a read-only no-op', t => {
+  const { dir } = mappedFixture(t);
+  const before = snapshot(dir);
+  const result = invoke(dir, ['sync', '--write']);
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(snapshot(dir), before);
+});
 
 test('keeps ordinary mapped diagnose JSON read-only', t => {
   const { dir } = mappedFixture(t);
@@ -142,7 +263,7 @@ for (const [role, validate, content] of [
   }
 }
 
-test('preserves unsupported versus disabled coverage in diagnose JSON', t => {
+test('preserves supported-or-unsupported versus disabled coverage in diagnose JSON', t => {
   const dir = temp(t);
   safeWrite(join(dir, 'src/main.py'), 'import os\n');
   for (const enabled of [true, false]) {
@@ -158,7 +279,10 @@ test('preserves unsupported versus disabled coverage in diagnose JSON', t => {
     assert.equal(diagnose.status, 'PASS');
     assert.equal(diagnose.issueCount, 0);
     assert.deepEqual(diagnose.checkCoverage, guard.checkCoverage);
-    assert.equal(diagnose.checkCoverage.limitations.find(v => v.key === 'architecture').status, enabled ? 'unsupported' : 'disabled');
+    const architecture = diagnose.checkCoverage.limitations.find(v => v.key === 'architecture');
+    if (!enabled) assert.equal(architecture.status, 'disabled');
+    else if (pyAstAvailable()) assert.equal(architecture, undefined);
+    else assert.equal(architecture.status, 'unsupported');
     assert.deepEqual(snapshot(dir), before);
   }
 });

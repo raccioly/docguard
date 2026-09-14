@@ -1,5 +1,5 @@
 /** Explicit document roles let existing repository layouts serve as canonical input. */
-import { lstatSync } from 'node:fs';
+import { existsSync, lstatSync, readFileSync } from 'node:fs';
 import { resolve, isAbsolute, join } from 'node:path';
 export const DOC_ROLES = Object.freeze({
   architecture: 'docs-canonical/ARCHITECTURE.md', dataModel: 'docs-canonical/DATA-MODEL.md',
@@ -50,6 +50,49 @@ export function applyDocRoles(projectDir, config) {
 export function remapDocPath(config, path) {
   const role = Object.keys(DOC_ROLES).find(key => DOC_ROLES[key] === path);
   return role ? docRolePath(config, role) : path;
+}
+
+export function mappedRolesForPath(config = {}, path) {
+  const target = String(path).replace(/\\/g, '/').replace(/^\.\//, '');
+  return Object.keys(DOC_ROLES).filter(role => {
+    const configured = config.docs?.roles?.[role];
+    return configured !== undefined && docRolePath(config, role) === target && target !== DOC_ROLES[role];
+  });
+}
+
+export function isMappedDocPath(config = {}, path) {
+  return mappedRolesForPath(config, path).length > 0;
+}
+
+/**
+ * Authorize a whole-document write to custom role targets. New files are safe;
+ * existing files must explicitly grant full ownership and one file cannot be
+ * the whole-document target of several roles.
+ * @implements docguard.language-repository-coverage#FR-010
+ * @implements docguard.language-repository-coverage#FR-011
+ */
+export function assertMappedFullDocumentWrites(projectDir, config = {}, roles = Object.keys(DOC_ROLES)) {
+  const selected = roles.filter(role => Object.hasOwn(DOC_ROLES, role) && config.docs?.roles?.[role] !== undefined
+    && docRolePath(config, role) !== DOC_ROLES[role]);
+  const paths = new Map();
+  for (const role of selected) {
+    const rel = docRolePath(config, role);
+    if (!paths.has(rel)) paths.set(rel, []);
+    paths.get(rel).push(role);
+  }
+  for (const [rel, owners] of paths) {
+    const allOwners = mappedRolesForPath(config, rel);
+    if (allOwners.length > 1) {
+      throw new Error(`Mapped document ${rel} serves multiple roles (${allOwners.join(', ')}); whole-document generation is unavailable. Use unique source=code sections instead.`);
+    }
+    const role = owners[0];
+    const full = resolveDocRole(projectDir, config, role);
+    if (!existsSync(full)) continue;
+    const content = readFileSync(full, 'utf8');
+    if (!/^[ \t]*<!--\s*docguard:generated\s+true\s*-->[ \t]*$/mi.test(content)) {
+      throw new Error(`Mapped document ${rel} is not fully owned by DocGuard. Add unique source=code sections for bounded writes; --force cannot overwrite its prose.`);
+    }
+  }
 }
 
 export function assertDefaultDocWrites(config) {

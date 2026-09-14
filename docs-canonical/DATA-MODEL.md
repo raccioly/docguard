@@ -278,4 +278,12 @@ same-value match.
 
 Each guard validator adds applicability with status and reason. checkCoverage contains counts by status, limitations naming checks that were not fully performed, and an explanatory limitation. These fields describe coverage independently from legacy status, totals, findings, and exit codes. CI/report consumers preserve them, including disabled-check counts.
 
-Optional docs.roles maps canonical roles to safe project-relative Markdown paths. Configuration normalization replaces each mapped default in requiredFiles.canonical and documentTypes. Read-only callers accept the normalized mapping. Legacy document writers reject custom mappings until write semantics support existing layouts safely. The configuration schema and docs/configuration.md define the current role names and supported operations.
+Optional docs.roles maps canonical roles to safe project-relative Markdown paths. Configuration normalization replaces each mapped default in requiredFiles.canonical and documentTypes. A mapped write is authorized either for a unique `source=code` section in an existing human file or for a missing/explicitly generated single-role whole document. Marker shape, role cardinality, and ownership are validated before mutation; `--force` does not alter that model. The configuration schema and docs/configuration.md define the role names and operation-specific contract.
+
+Repository-root guidance is an ephemeral diagnostic and is never persisted in
+project configuration. Its machine shape is
+`{selectedDir,suggestedDir,reason,evidence,packagePath,gitRoot,rerun,automaticScopeChange}`.
+`reason` is `ancestor_docguard_config`, `npm_workspace`, or `pnpm_workspace`;
+`automaticScopeChange` is always false. Machine modes wrap it with type
+`docguard.repository-root-guidance` on stderr so their primary stdout schema is
+unchanged.

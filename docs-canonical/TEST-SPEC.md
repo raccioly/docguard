@@ -124,7 +124,26 @@ Retirement tests use disposable Git repositories and verify both sides of the bo
 
 ## Enterprise precision regressions
 
-Regression cases are synthetic and name no consumer repositories. Keep a valid near-neighbor beside every detected defect: formatting versus declaration deletion; negated versus current technology use; explained versus unexplained skips; mock expectations versus credentials; implemented versus omitted contract endpoints; Worker bindings versus local variables; historical versus active documents. Check coverage tests distinguish unsupported and missing inputs from executed checks. Document-role tests exercise mapped findings, raw/loaded configuration parity, unsafe paths, and read-only planning without writes.
+Regression cases are synthetic and name no consumer repositories. Keep a valid near-neighbor beside every detected defect: formatting versus declaration deletion; negated versus current technology use; explained versus unexplained skips; mock expectations versus credentials; implemented versus omitted contract endpoints; Worker bindings versus local variables; historical versus active documents. Check coverage tests distinguish unsupported and missing inputs from executed checks. Document-role tests exercise mapped findings, raw/loaded configuration parity, unsafe paths, read-only planning, successful section-bounded generation/sync/repair, backup creation, multi-target preflight atomicity, and force-resistant malformed/shared ownership.
+
+Worker fixtures reproduce Cloudflare's module-handler argument, exported Pages
+context, imported global `env`, and entrypoint-class property forms. Every form
+has a lookalike source, class, function, shadow, or computed-key control. The
+packed-package test runs without installed Babel and requires AST-only forms to
+remain disclosed as limitations.
+
+Python import-graph fixtures cover regular flat and `src/` packages, absolute
+and explicit-relative imports, cycles, and configured layer violations. Paired
+controls keep standard-library and third-party imports out of the local graph;
+dynamic imports, `sys.path` mutation, parse failures, interpreter absence, and
+ambiguous workspace modules must remain partial or unsupported applicability.
+Tests never import or execute fixture modules.
+
+Repository-root fixtures pair ancestor DocGuard, npm workspace, and pnpm
+include evidence with explicit-dir, local-config, exclusion, Git-only, and
+nested-repository controls. Command tests require the selected package result to
+remain unchanged, human guidance to contain an exact rerun, and machine stdout
+to remain parseable while stderr carries the typed diagnostic.
 
 Independent review must challenge suppression paths, not only the original false-positive example. Cross-project runs use disposable snapshots and verify consumer content remains unchanged. Finding counts alone cannot establish precision or recall.
 

@@ -340,7 +340,7 @@ require current SHA-256 identities for every declared repository input.
 
 | Flag | Description | Commands |
 |:-----|:------------|:---------|
-| `--dir <path>` | Project directory (default: `.`) | All |
+| `--dir <path>` | Project directory (default: `.`); explicit selection suppresses ancestor-root guidance | All |
 | `--verbose` | Show detailed output | All |
 | `--quiet` / `-q` | Suppress banner — for hooks, CI loops, scripts | All |
 | `--format json` | Machine-readable output (clean JSON, no ANSI bleed) | guard, score, diff, trace, diagnose, memory, impact, explain, verify, reconcile, retire, specs |
@@ -368,6 +368,15 @@ require current SHA-256 identities for every declared repository input.
 | `--prs` | Open-PR doc-conflict analysis — two PRs impacting the same canonical doc = merge-order risk (needs the `gh` CLI) | impact |
 | `--transport http` `--port` `--host` `--api-key` `--path` | Serve MCP over Streamable HTTP instead of stdio (team-shared server; loopback-only unless an api-key is set) | mcp |
 | `--history` | Show fix audit log | fix |
+
+When run from a nested package without `--dir`, DocGuard checks only that
+selected directory. If a bounded ancestor scan finds a `.docguard.json` or an
+npm/pnpm workspace declaration that owns the package, stderr shows an exact
+repository-scope rerun command. DocGuard never changes scope automatically. JSON,
+SARIF, and JUnit stdout remain valid; machine runs receive one typed
+`docguard.repository-root-guidance` JSON diagnostic on stderr. A local config,
+an explicit `--dir`, an unmatched workspace, or a nested Git boundary suppresses
+the suggestion.
 
 ### Example Output
 

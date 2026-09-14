@@ -1,4 +1,8 @@
 /**
+ * @implements docguard.language-repository-coverage#FR-009
+ * @implements docguard.language-repository-coverage#FR-010
+ * @implements docguard.language-repository-coverage#FR-011
+ *
  * Mechanical Fix Registry — applies deterministic, no-LLM fixes in place.
  *
  * Validators surface structured `fixes[]` actions; this module knows how to
@@ -37,16 +41,30 @@ try {
   _sectionsModule = null;
 }
 
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { removeEndpoints, hasGeneratedMarker } from './api-reference.mjs';
+import { safeWrite } from './generate-io.mjs';
+import { assertMappedFullDocumentWrites, isMappedDocPath, mappedRolesForPath } from '../shared-doc-roles.mjs';
+
+function authorizeMappedWholeDocument(projectDir, config, path) {
+  if (!isMappedDocPath(config, path)) return null;
+  try {
+    assertMappedFullDocumentWrites(projectDir, config, mappedRolesForPath(config, path));
+    return null;
+  } catch (error) {
+    return error.message;
+  }
+}
 
 const esc = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /** replace-count: "<found> <label>" → "<actual> <label>" in the file. */
-function applyReplaceCount(projectDir, fix) {
+function applyReplaceCount(projectDir, fix, opts = {}) {
   const full = resolve(projectDir, fix.file);
   if (!existsSync(full)) return { applied: false };
+  const blocked = authorizeMappedWholeDocument(projectDir, opts.config, fix.file);
+  if (blocked) return { applied: false, skipped: blocked };
   // Bug #2 (fail-closed): NEVER overwrite a number without provenance proving
   // the "actual" describes the SAME subject. The Metrics-Consistency validator
   // stamps `actualSource` (e.g. "docguard.guard.checks") only for claims it
@@ -74,14 +92,16 @@ function applyReplaceCount(projectDir, fix) {
     return `${fix.actual}${tail}`;
   });
   if (!changed || next === content) return { applied: false };
-  writeFileSync(full, next, 'utf-8');
+  safeWrite(full, next);
   return { applied: true, detail: `${fix.file}: "${fix.found} ${fix.label}" → "${fix.actual} ${fix.label}"` };
 }
 
 /** replace-version: stale version → current, ONLY in actionable contexts. */
-function applyReplaceVersion(projectDir, fix) {
+function applyReplaceVersion(projectDir, fix, opts = {}) {
   const full = resolve(projectDir, fix.file);
   if (!existsSync(full)) return { applied: false };
+  const blocked = authorizeMappedWholeDocument(projectDir, opts.config, fix.file);
+  if (blocked) return { applied: false, skipped: blocked };
   const content = readFileSync(full, 'utf-8');
   const f = esc(fix.found);
   // Mirror metadata-sync's actionable detection so we never touch prose.
@@ -93,7 +113,7 @@ function applyReplaceVersion(projectDir, fix) {
   let next = content;
   for (const re of patterns) next = next.replace(re, `$1${fix.actual}`);
   if (next === content) return { applied: false };
-  writeFileSync(full, next, 'utf-8');
+  safeWrite(full, next);
   return { applied: true, detail: `${fix.file}: v${fix.found} → v${fix.actual}` };
 }
 
@@ -112,21 +132,23 @@ function applyInsertChangelogUnreleased(projectDir, fix) {
   }
   const block = idx > 0 && lines[idx - 1].trim() !== '' ? ['', '## [Unreleased]', ''] : ['## [Unreleased]', ''];
   lines.splice(idx, 0, ...block);
-  writeFileSync(full, lines.join('\n'), 'utf-8');
+  safeWrite(full, lines.join('\n'));
   return { applied: true, detail: `${fix.file}: added ## [Unreleased]` };
 }
 
 /** remove-endpoint: delegate to the API-REFERENCE writer (marker-gated). */
-function applyRemoveEndpoint(projectDir, fix, { force = false } = {}) {
+function applyRemoveEndpoint(projectDir, fix, { force = false, config = {} } = {}) {
   const full = resolve(projectDir, fix.doc || 'docs-canonical/API-REFERENCE.md');
   if (!existsSync(full)) return { applied: false };
+  const blocked = authorizeMappedWholeDocument(projectDir, config, fix.doc || 'docs-canonical/API-REFERENCE.md');
+  if (blocked) return { applied: false, skipped: blocked };
   const content = readFileSync(full, 'utf-8');
   if (!hasGeneratedMarker(content) && !force) {
     return { applied: false, skipped: `${fix.doc} not docguard:generated (use --force)` };
   }
   const { content: next, removed } = removeEndpoints(content, [{ method: fix.method, path: fix.path }]);
   if (removed.length === 0 || next === content) return { applied: false };
-  writeFileSync(full, next, 'utf-8');
+  safeWrite(full, next);
   return { applied: true, detail: `${fix.doc}: removed ${fix.method} ${fix.path}` };
 }
 
@@ -142,7 +164,7 @@ function applyRemoveEndpoint(projectDir, fix, { force = false } = {}) {
  *
  * fix shape: { type: 'regenerate-section', doc, sectionId, body }
  */
-function applyRegenerateSection(projectDir, fix) {
+function applyRegenerateSection(projectDir, fix, opts = {}) {
   if (!fix.doc || !fix.sectionId || fix.body == null) {
     return { applied: false, skipped: 'regenerate-section needs doc, sectionId, body' };
   }
@@ -152,17 +174,23 @@ function applyRegenerateSection(projectDir, fix) {
   // Lazy-import the section writer to avoid a top-level circular risk.
   // section APIs are synchronous and well-isolated; this works because
   // mechanical.mjs already uses top-level await for fix-memory.
-  const { getSection, replaceSection } = _sectionsModule || {};
-  if (typeof getSection !== 'function' || typeof replaceSection !== 'function') {
+  const { assertOwnedCodeSection, getSection, replaceSection } = _sectionsModule || {};
+  if (typeof getSection !== 'function' || typeof replaceSection !== 'function' || typeof assertOwnedCodeSection !== 'function') {
     return { applied: false, skipped: 'sections module unavailable' };
   }
   const existing = getSection(content, fix.sectionId);
   if (!existing) return { applied: false, skipped: `section ${fix.sectionId} not present in ${fix.doc}` };
+  if (isMappedDocPath(opts.config, fix.doc)) {
+    try { assertOwnedCodeSection(content, fix.sectionId, fix.doc); }
+    catch (error) { return { applied: false, skipped: error.message }; }
+  } else if (existing.source !== 'code') {
+    return { applied: false, skipped: `${fix.doc}: section ${fix.sectionId} is not source=code` };
+  }
   if (existing.body.trim() === String(fix.body).trim()) {
     return { applied: false, skipped: `${fix.doc} § ${fix.sectionId} already current` };
   }
   const next = replaceSection(content, fix.sectionId, fix.body).content;
-  writeFileSync(full, next, 'utf-8');
+  safeWrite(full, next);
   return { applied: true, detail: `${fix.doc}: regenerated § ${fix.sectionId}` };
 }
 
@@ -177,12 +205,14 @@ function applyRegenerateSection(projectDir, fix) {
  * forms — won't touch the broken slug if it happens to appear as plain text.
  * Idempotent: if no occurrence is found (already fixed), no-op.
  */
-function applyReplaceAnchor(projectDir, fix) {
+function applyReplaceAnchor(projectDir, fix, opts = {}) {
   if (!fix.doc || !fix.from || !fix.to) {
     return { applied: false, skipped: 'replace-anchor needs doc, from, to' };
   }
   const full = resolve(projectDir, fix.doc);
   if (!existsSync(full)) return { applied: false, skipped: `doc not found: ${fix.doc}` };
+  const blocked = authorizeMappedWholeDocument(projectDir, opts.config, fix.doc);
+  if (blocked) return { applied: false, skipped: blocked };
   const content = readFileSync(full, 'utf-8');
 
   // Match an anchor inside a markdown link: `](#from)` OR `](path#from)`.
@@ -194,7 +224,7 @@ function applyReplaceAnchor(projectDir, fix) {
   if (next === content) {
     return { applied: false, skipped: `${fix.doc}: anchor #${fix.from} not found (already fixed?)` };
   }
-  writeFileSync(full, next, 'utf-8');
+  safeWrite(full, next);
   return { applied: true, detail: `${fix.doc}: #${fix.from} → #${fix.to}` };
 }
 

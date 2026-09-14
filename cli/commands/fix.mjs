@@ -1,4 +1,8 @@
-import { assertDefaultDocWrites } from '../shared-doc-roles.mjs';
+/**
+ * @implements docguard.language-repository-coverage#FR-010
+ * @implements docguard.language-repository-coverage#FR-011
+ */
+import { assertMappedFullDocumentWrites, docRolePath, isMappedDocPath, resolveDocRole } from '../shared-doc-roles.mjs';
 /**
  * Fix Command — The AI Orchestrator
  * 
@@ -14,7 +18,7 @@ import { assertDefaultDocWrites } from '../shared-doc-roles.mjs';
  *   --auto          Create skeleton files (NOT content) via init
  */
 
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { existsSync, readFileSync, mkdirSync } from 'node:fs';
 import { resolve, basename, dirname } from 'node:path';
 import { execSync, execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -23,9 +27,8 @@ import { computeApiSurfaceDrift } from '../validators/api-surface.mjs';
 import { removeEndpoints, hasGeneratedMarker } from '../writers/api-reference.mjs';
 import { applyMechanicalFixes } from '../writers/mechanical.mjs';
 import { loadFixMemory } from '../writers/fix-memory.mjs';
+import { safeWrite } from '../writers/generate-io.mjs';
 import { runGuardInternal } from './guard.mjs';
-
-const API_DOC = 'docs-canonical/API-REFERENCE.md';
 
 /**
  * Apply DETERMINISTIC, no-LLM API-surface fixes: remove endpoints documented in
@@ -38,13 +41,13 @@ const API_DOC = 'docs-canonical/API-REFERENCE.md';
  * @returns {{ applied: boolean, removed: Array<{method,path}>, skipped?: string }}
  */
 export function applyApiSurfaceWrites(projectDir, config, { force = false } = {}) {
-  assertDefaultDocWrites(config);
   const drift = computeApiSurfaceDrift(projectDir, config);
   // Only spec-confirmed absences are safe to delete deterministically.
   const removable = drift.confidence === 'spec' ? drift.documentedButAbsent : [];
   if (removable.length === 0) return { applied: false, removed: [] };
 
-  const apiDocPath = resolve(projectDir, API_DOC);
+  const apiDoc = docRolePath(config, 'apiReference');
+  const apiDocPath = resolveDocRole(projectDir, config, 'apiReference');
   if (!existsSync(apiDocPath)) return { applied: false, removed: [] };
 
   const content = readFileSync(apiDocPath, 'utf-8');
@@ -52,17 +55,18 @@ export function applyApiSurfaceWrites(projectDir, config, { force = false } = {}
     return {
       applied: false,
       removed: [],
-      skipped: `${API_DOC} is not marked '<!-- docguard:generated true -->'. ` +
+      skipped: `${apiDoc} is not marked '<!-- docguard:generated true -->'. ` +
         `Re-run with --force to edit it, or fix it via an AI agent (/docguard.fix --doc api-reference).`,
     };
   }
+  if (isMappedDocPath(config, apiDoc)) assertMappedFullDocumentWrites(projectDir, config, ['apiReference']);
 
   const { content: newContent, removed } = removeEndpoints(content, removable);
   if (removed.length === 0 || newContent === content) {
     return { applied: false, removed: [] }; // idempotent no-op
   }
 
-  writeFileSync(apiDocPath, newContent, 'utf-8');
+  safeWrite(apiDocPath, newContent);
   // Map removed keys back to {method,path} for reporting.
   const removedEndpoints = removable.filter(e => removed.includes(`${e.method.toUpperCase()} ${normalizeForKey(e.path)}`));
   return { applied: true, removed: removedEndpoints.length ? removedEndpoints : removable };
@@ -275,7 +279,6 @@ IMPORTANT: A new contributor should be able to follow this doc and have the proj
  * @returns {{ applied: object[], skipped: object[], total: number }}
  */
 export function applyAllMechanicalFixes(projectDir, config, opts = {}) {
-  assertDefaultDocWrites(config);
   const { force = false, forceRedo = false } = opts;
   const guardData = runGuardInternal(projectDir, config);
   const fixes = [];
@@ -284,7 +287,7 @@ export function applyAllMechanicalFixes(projectDir, config, opts = {}) {
   }
   // v0.14-P1: forwarding forceRedo so users with `--force-redo` can override
   // ping-pong suppression for a specific fix they actually want re-applied.
-  const { applied, skipped } = applyMechanicalFixes(projectDir, fixes, { force, forceRedo });
+  const { applied, skipped } = applyMechanicalFixes(projectDir, fixes, { force, forceRedo, config });
   return { applied, skipped, total: fixes.length };
 }
 
@@ -375,7 +378,6 @@ function runWriteMode(projectDir, config, flags) {
 // ── Main Entry ─────────────────────────────────────────────────────────────
 
 export function runFix(projectDir, config, flags) {
-  if (flags.write) assertDefaultDocWrites(config);
   const isJson = flags.format === 'json';
   const isPrompt = flags.format === 'prompt';
   const autoFix = flags.auto || false;

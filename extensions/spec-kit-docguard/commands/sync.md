@@ -46,7 +46,7 @@ npx --yes docguard-cli@latest guard
 
 - `--since <ref>` — also report which code files changed since this git ref (context for prose updates).
 - `--write` — apply the mechanical refreshes. Default is a dry-run preview.
-- `--force` — sync docs even without the `<!-- docguard:generated true -->` marker.
+- `--force` — sync unmarked default-path docs. It never bypasses mapped-document section ownership.
 - `--format json` — machine-readable output (`updates`, `reviews`, `skipped`).
 
 ## When to use

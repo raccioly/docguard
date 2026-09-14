@@ -1,3 +1,4 @@
+/** @req specs/009-language-repository-coverage/spec.md#SC-002 */
 import { it } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync } from 'node:fs';
@@ -43,6 +44,82 @@ it('recognizes a block arrow fetch handler and ignores arbitrary object env prop
     'src/worker.ts': 'export default { fetch: (req: Request, env: Env) => { const value = env.API_TOKEN; return [object.env.FAKE, object?.env.OTHER, env.CACHE]; } };',
   });
   assert.deepEqual([...grepEnvUsage(dir)].sort(), ['API_TOKEN', 'CACHE']);
+});
+
+/** @req docguard.language-repository-coverage#FR-006 */
+it('recognizes imported Worker env with aliases and lexical shadowing', () => {
+  const code = [
+    'import { env as bindings } from "cloudflare:workers";',
+    'const runtime = bindings;',
+    'function read() { return runtime.API_TOKEN; }',
+    'function shadow(runtime) { return runtime.NOT_A_BINDING; }',
+  ].join('\n');
+  assert.deepEqual([...extractWorkerEnvBindings(code, 'worker.ts')], ['API_TOKEN']);
+  const control = 'import { env as bindings } from "ordinary-config"; export const value = bindings.NOT_A_BINDING;';
+  assert.deepEqual([...extractWorkerEnvBindings(control, 'worker.ts')], []);
+});
+
+/** @req docguard.language-repository-coverage#FR-006 */
+it('recognizes this.env only on imported Cloudflare entrypoint classes', () => {
+  const code = [
+    'import { WorkerEntrypoint as Entry, DurableObject } from "cloudflare:workers";',
+    'export default class extends Entry { fetch() { const bindings = this.env; return bindings.API_TOKEN; } }',
+    'export class Durable extends DurableObject { read() { return this.env.STATE_BUCKET; } }',
+    'class Ordinary extends Base { read() { return this.env.NOT_A_BINDING; } }',
+  ].join('\n');
+  assert.deepEqual([...extractWorkerEnvBindings(code, 'worker.ts')].sort(), ['API_TOKEN', 'STATE_BUCKET']);
+});
+
+/** @req docguard.language-repository-coverage#FR-006 */
+it('recognizes Pages context.env only in directly exported onRequest handlers', () => {
+  const code = [
+    'export async function onRequest(context) { const bindings = context.env; return bindings.API_TOKEN; }',
+    'export const onRequestGet: PagesFunction<Env> = async ({ env }) => env.CACHE;',
+    'export const onRequestPost = async (context) => { const { env: runtime } = context; return runtime.DB; };',
+    'function helper(context) { return context.env.NOT_A_BINDING; }',
+    'export function ordinary(context) { return context.env.STILL_NOT_A_BINDING; }',
+  ].join('\n');
+  assert.deepEqual([...extractWorkerEnvBindings(code, 'pages.ts')].sort(), ['API_TOKEN', 'CACHE', 'DB']);
+});
+
+it('aggregates official Worker and Pages forms into environment usage', t => {
+  const dir = fixture(t, {
+    'wrangler.toml': 'name = "edge-service"',
+    'src/worker.js': [
+      'import { env as globalEnv, WorkerEntrypoint } from "cloudflare:workers";',
+      'export default { fetch(request, env) { return env.HANDLER_TOKEN; }, queue(batch, env) { return env.QUEUE; } };',
+      'export class Rpc extends WorkerEntrypoint { read() { return this.env.RPC_TOKEN; } }',
+      'export const globalValue = globalEnv.GLOBAL_TOKEN;',
+    ].join('\n'),
+    'functions/index.js': 'export function onRequest(context) { return context.env.PAGES_TOKEN; }',
+  });
+  assert.deepEqual([...grepEnvUsage(dir)].sort(), ['GLOBAL_TOKEN', 'HANDLER_TOKEN', 'PAGES_TOKEN', 'QUEUE', 'RPC_TOKEN']);
+});
+
+/** @req docguard.language-repository-coverage#FR-007 */
+it('does not trust lookalike imports, classes, handlers, or dynamic property names', () => {
+  const code = [
+    'import { env as config } from "local-config";',
+    'class WorkerEntrypoint {}',
+    'class Local extends WorkerEntrypoint { read() { return this.env.CLASS_FAKE; } }',
+    'function onRequest(context) { return context.env.PAGES_FAKE; }',
+    'const key = "SECRET";',
+    'export default { fetch(req: Request, env: Env) { return env[key]; } };',
+  ].join('\n');
+  assert.deepEqual([...extractWorkerEnvBindings(code, 'worker.ts')], []);
+});
+
+/** @req docguard.language-repository-coverage#FR-008 */
+it('marks AST-only Worker forms unsupported in the lexical fallback', () => {
+  for (const [code, expected] of [
+    ['import { env } from "cloudflare:workers"; consume(env.API_TOKEN);', 'worker-imported-env-needs-ast'],
+    ['export function onRequest(context) { return context.env.API_TOKEN; }', 'pages-context-needs-ast'],
+    ['class Entry extends WorkerEntrypoint { read() { return this.env.API_TOKEN; } }', 'worker-class-env-needs-ast'],
+  ]) {
+    const result = extractWorkerEnvBindings(code, 'worker.ts', false, null);
+    assert.deepEqual([...result], []);
+    assert.ok(result.limitations.includes(expected));
+  }
 });
 
 it('keeps comments, strings, untyped scopes and shadowed env out of bindings', t => {
@@ -107,7 +184,7 @@ it('does not classify fixture Wrangler files as the project runtime', t => {
   assert.equal(detectProjectProfile(dir).kind, 'library');
 });
 
-it('reports Python architecture as unsupported with no fabricated pass', t => {
+it('retains supported Python edges while dynamic imports keep applicability partial', t => {
   const dir = fixture(t, {
     'pyproject.toml': '[project]\nname = "service"',
     'src/service/__init__.py': '',
@@ -116,19 +193,19 @@ it('reports Python architecture as unsupported with no fabricated pass', t => {
     'src/service/models.py': 'class Model: pass',
   });
   const result = validateArchitecture(dir, {});
-  assert.equal(result.applicability.status, 'unsupported');
-  assert.match(result.applicability.reason, /Python.*relative imports.*package paths.*src-layout.*dynamic imports/);
-  assert.equal(result.total, 0);
+  assert.equal(result.applicability.status, 'partial');
+  assert.match(result.applicability.reason, /dynamic Python import/);
+  assert.ok(result.findings.some(f => f.code === 'ARC002'));
+  assert.equal(result.total, 1);
   assert.equal(result.passed, 0);
-  assert.deepEqual(result.findings, []);
 });
 
-it('retains real JS cycle findings alongside partial Python coverage', t => {
+it('retains real JS cycle findings alongside supported Python imports', t => {
   const dir = fixture(t, {
     'src/a.js': 'import "./b.js";', 'src/b.js': 'import "./a.js";', 'src/app.py': 'import os',
   });
   const result = validateArchitecture(dir, {});
-  assert.equal(result.applicability.status, 'partial');
+  assert.equal(result.applicability.status, 'checked');
   assert.ok(result.findings.some(f => f.code === 'ARC002'));
 });
 

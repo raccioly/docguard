@@ -353,7 +353,7 @@ npx docguard-cli diff
 
 | Flag | Description |
 |------|-------------|
-| `--dir <path>` | Project directory (default: current directory) |
+| `--dir <path>` | Project directory (default: current directory); explicit selection suppresses ancestor-root guidance |
 | `--format <type>` | Output format: `text` (default), `json`, `prompt` |
 | `--verbose` | Show detailed output |
 | `--profile <name>` | Compliance profile: `starter`, `standard`, `enterprise` |
@@ -367,3 +367,10 @@ npx docguard-cli diff
 | `--force` | Overwrite existing files |
 | `--help` | Show help |
 | `--version` | Show version |
+
+Without `--dir`, a command remains scoped to the current directory. DocGuard
+reads only bounded ancestors for an owning `.docguard.json`, npm `workspaces`, or
+pnpm `packages` declaration. When one includes the selected package, human
+stderr prints an exact `--dir` rerun; JSON/SARIF/JUnit runs receive a typed JSON
+diagnostic on stderr. Stdout and the selected scan scope do not change. A nested
+Git root prevents a suggestion from crossing into an outer repository.

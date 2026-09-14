@@ -18,6 +18,11 @@ Two modes:
 - **`--plan`** (AI-powered, recommended) — emits a structured agent task manifest + writes the code-truth skeleton inside `<!-- docguard:section -->` markers. The AI agent then writes the prose grounded in scanned facts. Human prose is preserved.
 - **default** — purely deterministic generation: writes templated docs with TODO placeholders. Use when no AI agent is available.
 
+With `docs.roles`, a missing or explicitly generated single-role target can
+receive a full document. Existing human documents receive only bounded updates
+inside unique `source=code` sections. Shared roles and malformed markers fail
+before any mapped document is written, even with `--force`.
+
 ## User Input
 
 $ARGUMENTS
@@ -70,4 +75,4 @@ npx --yes docguard-cli@latest generate $ARGUMENTS
 ## Flags
 
 - `--doc <name>` — Generate a specific document only
-- `--dir <path>` — Run on a different directory
+- `--dir <path>` — Run on a different directory; explicit selection suppresses ancestor-root guidance

@@ -20,6 +20,8 @@ import { resolve, join, extname, relative, dirname, basename } from 'node:path';
 import { shouldIgnore, isNonProductPath, walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { resolveDocRole } from '../shared-doc-roles.mjs';
+import { getWorkspaceDirs } from '../shared-source.mjs';
+import { extractPythonFiles } from '../scanners/py-ast.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build',
@@ -27,7 +29,7 @@ const IGNORE_DIRS = new Set([
   'templates', 'configs', 'Research', 'docs-canonical', 'docs-implementation',
 ]);
 
-const CODE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.mjs', '.cjs', '.jsx']);
+const JS_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.mjs', '.cjs', '.jsx']);
 
 // v0.29: migrated to structured findings (ARC001–ARC003). Messages are
 // byte-identical to the legacy strings — resultFromFindings derives the
@@ -35,7 +37,7 @@ const CODE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.mjs', '.cjs', '.jsx']);
 // helpers below mutate in place.
 export function validateArchitecture(projectDir, config = {}) {
   const acc = { findings: [], passed: 0, total: 0 };
-  let applicability = { status: 'checked', reason: 'JS/TS static import graph inspected; arbitrary runtime dependencies are not resolved' };
+  let applicability = { status: 'checked', reason: 'Repository-local JS/TS and Python static import graphs inspected; runtime dependency resolution is outside scope' };
   const compose = () => ({
     name: 'architecture',
     applicability,
@@ -50,15 +52,19 @@ export function validateArchitecture(projectDir, config = {}) {
 
   // ── 2. Auto-detect import graph ──
   const importGraph = buildImportGraph(projectDir, config);
-  if (importGraph.unsupportedFiles.length > 0) {
+  if (importGraph.limitations.length > 0) {
     applicability = {
       status: importGraph.files.length > 0 ? 'partial' : 'unsupported',
-      reason: 'Python import graph analysis is unsupported: relative imports, package paths, src-layout resolution and dynamic imports are not verified; JS/TS findings, when present, are retained',
+      reason: `Static import findings are retained; incomplete evidence: ${summarizeLimitations(importGraph.limitations)}`,
     };
   } else if (importGraph.files.length === 0) {
-    applicability = { status: 'not-applicable', reason: 'No supported JS/TS source files found for import graph analysis' };
+    applicability = { status: 'not-applicable', reason: 'No supported JS/TS or Python source files found for import graph analysis' };
   }
   if (importGraph.files.length === 0) return compose();
+
+  if (layers && Object.keys(layers).length > 0) {
+    validatePythonConfigLayers(importGraph, layers, acc);
+  }
 
   // ── 3. Detect circular dependencies ──
   const circles = detectCircularDeps(importGraph);
@@ -122,7 +128,7 @@ function validateConfigLayers(projectDir, config, layers, acc) {
 
     const files = getFilesRecursive(layerDir, config, projectDir);
     for (const file of files) {
-      if (!CODE_EXTENSIONS.has(extname(file))) continue;
+      if (!JS_EXTENSIONS.has(extname(file))) continue;
 
       const content = readFileSync(file, 'utf-8');
       const relPath = relative(projectDir, file);
@@ -155,20 +161,25 @@ function validateConfigLayers(projectDir, config, layers, acc) {
 // ── Import Graph Builder ────────────────────────────────────────────────────
 
 /**
- * Build the project's JS/TS import graph. Exported for reuse by `impact`
+ * Build the project's repository-local JS/TS and Python static import graph.
+ * Exported for reuse by `impact`
  * (indirect code→doc analysis walks this graph's reverse edges) — one graph
  * builder, not two.
  *
- * @returns {{files: string[], edges: {from,to,dynamic}[], fileMap: Map<string,string[]>}}
+ * @implements docguard.language-repository-coverage#FR-002
+ * @implements docguard.language-repository-coverage#FR-003
+ * @implements docguard.language-repository-coverage#FR-004
+ * @implements docguard.language-repository-coverage#FR-005
+ * @returns {{files: string[], edges: {from,to,dynamic,language}[], fileMap: Map<string,string[]>, unsupportedFiles: string[], limitations: object[]}}
  */
 export function buildImportGraph(projectDir, config) {
-  const graph = { files: [], edges: [], fileMap: new Map(), unsupportedFiles: [] };
+  const graph = { files: [], edges: [], fileMap: new Map(), unsupportedFiles: [], limitations: [] };
 
   const allFiles = getFilesRecursive(projectDir, config, projectDir);
-  graph.unsupportedFiles = allFiles
+  const pythonFiles = allFiles
     .filter(f => extname(f) === '.py' && !isNonProductPath(relative(projectDir, f).replace(/\\/g, '/'), config))
-    .map(f => relative(projectDir, f));
-  const codeFiles = allFiles.filter(f => CODE_EXTENSIONS.has(extname(f)));
+    .filter(f => !(config && shouldIgnore(relative(projectDir, f), config)));
+  const codeFiles = allFiles.filter(f => JS_EXTENSIONS.has(extname(f)));
 
   for (const file of codeFiles) {
     const relPath = relative(projectDir, file);
@@ -190,7 +201,7 @@ export function buildImportGraph(projectDir, config) {
         const fromDir = dirname(file);
         const resolved = resolveImport(fromDir, imp.spec, projectDir);
         if (resolved) {
-          graph.edges.push({ from: relPath, to: resolved, dynamic: imp.dynamic });
+          graph.edges.push({ from: relPath, to: resolved, dynamic: imp.dynamic, language: 'javascript' });
           // v0.28 (field report #2): a dynamic `await import()` does NOT create a
           // load-time edge — it's the canonical way to BREAK an import cycle. So
           // it's excluded from the cycle-detection adjacency (fileMap) while still
@@ -204,7 +215,169 @@ export function buildImportGraph(projectDir, config) {
     } catch { /* skip binary or unreadable files */ }
   }
 
+  addPythonImportGraph(projectDir, config || {}, pythonFiles, graph);
+
   return graph;
+}
+
+function posixPath(path) {
+  return path.replace(/\\/g, '/');
+}
+
+function summarizeLimitations(limitations) {
+  const labels = {
+    'python-interpreter-unavailable': 'Python interpreter unavailable',
+    'python-parse-failed': 'Python parse failure',
+    'python-dynamic-import': 'dynamic Python import',
+    'python-path-mutation': 'runtime sys.path mutation',
+    'python-relative-outside-package': 'relative import outside a resolvable package',
+    'python-ambiguous-module': 'ambiguous Python module across import roots',
+  };
+  const counts = new Map();
+  for (const item of limitations) counts.set(item.code, (counts.get(item.code) || 0) + 1);
+  return [...counts].map(([code, count]) => `${labels[code] || code}${count > 1 ? ` (${count})` : ''}`).join('; ');
+}
+
+function pythonImportRoots(projectDir, config, pythonFiles) {
+  const candidates = [];
+  const add = (path, priority) => {
+    const absolute = resolve(path);
+    if (!existsSync(absolute) || candidates.some(item => item.path === absolute)) return;
+    if (!pythonFiles.some(file => file === absolute || !relative(absolute, file).startsWith('..'))) return;
+    candidates.push({ path: absolute, priority });
+  };
+  const configured = config.sourceRoot ? (Array.isArray(config.sourceRoot) ? config.sourceRoot : [config.sourceRoot]) : [];
+  for (const root of configured) {
+    const absolute = resolve(projectDir, root);
+    if (existsSync(join(absolute, 'src'))) add(join(absolute, 'src'), 0);
+    add(absolute, 1);
+    if (existsSync(join(absolute, '__init__.py'))) add(dirname(absolute), 2);
+  }
+  for (const workspace of getWorkspaceDirs(projectDir)) {
+    if (existsSync(join(workspace, 'src'))) add(join(workspace, 'src'), 3);
+    add(workspace, 4);
+  }
+  if (existsSync(join(projectDir, 'src'))) add(join(projectDir, 'src'), 5);
+  add(projectDir, 6);
+  return candidates.sort((a, b) => a.priority - b.priority || b.path.length - a.path.length);
+}
+
+function pythonModuleForFile(file, roots) {
+  const containing = roots.filter(root => {
+    const rel = relative(root.path, file);
+    return rel !== '' && !rel.startsWith('..') && !rel.startsWith('/');
+  });
+  if (containing.length === 0) return null;
+  const selected = containing[0];
+  const rel = posixPath(relative(selected.path, file));
+  const parts = rel.replace(/\.py$/, '').split('/');
+  const isPackage = parts.at(-1) === '__init__';
+  if (isPackage) parts.pop();
+  if (parts.length === 0) return null;
+  let cursor = selected.path;
+  let namespace = false;
+  const packageParts = isPackage ? parts : parts.slice(0, -1);
+  for (const part of packageParts) {
+    cursor = join(cursor, part);
+    if (!existsSync(join(cursor, '__init__.py'))) namespace = true;
+  }
+  return { name: parts.join('.'), packageName: (isPackage ? parts : parts.slice(0, -1)).join('.'), namespace, root: selected.path };
+}
+
+function pythonImportCandidates(imp, owner) {
+  let base = imp.module || '';
+  if (imp.level > 0) {
+    const pkg = owner.packageName ? owner.packageName.split('.') : [];
+    const remove = imp.level - 1;
+    if (remove >= pkg.length && !(remove === 0 && pkg.length > 0)) return { candidates: [], outside: true };
+    const prefix = pkg.slice(0, pkg.length - remove);
+    base = [...prefix, ...(base ? base.split('.') : [])].join('.');
+  }
+  if (imp.kind === 'import') return { candidates: base ? [base] : [], outside: false };
+  const names = Array.isArray(imp.names) ? imp.names.filter(name => name && name !== '*') : [];
+  if (names.length === 0) return { candidates: base ? [base] : [], outside: false };
+  return { candidates: names.map(name => [base, name].filter(Boolean).join('.')), fallback: base || null, outside: false };
+}
+
+function addPythonImportGraph(projectDir, config, pythonFiles, graph) {
+  if (pythonFiles.length === 0) return;
+  const extracted = extractPythonFiles(pythonFiles);
+  if (extracted === null) {
+    graph.unsupportedFiles.push(...pythonFiles.map(file => posixPath(relative(projectDir, file))));
+    graph.limitations.push({ code: 'python-interpreter-unavailable', files: graph.unsupportedFiles.length });
+    return;
+  }
+  const roots = pythonImportRoots(projectDir, config, pythonFiles);
+  const moduleByFile = new Map();
+  const modules = new Map();
+  for (const file of pythonFiles) {
+    const owner = pythonModuleForFile(file, roots);
+    if (!owner) continue;
+    moduleByFile.set(file, owner);
+    if (!modules.has(owner.name)) modules.set(owner.name, []);
+    modules.get(owner.name).push({ file, ...owner });
+  }
+
+  for (const file of pythonFiles) {
+    const relPath = posixPath(relative(projectDir, file));
+    const parsed = extracted[file];
+    const owner = moduleByFile.get(file);
+    if (!parsed?.ok || !owner) {
+      graph.unsupportedFiles.push(relPath);
+      graph.limitations.push({ code: 'python-parse-failed', file: relPath });
+      continue;
+    }
+    graph.files.push(relPath);
+    const resolvedImports = [];
+    if (parsed.dynamicImports) graph.limitations.push({ code: 'python-dynamic-import', file: relPath });
+    if (parsed.pathMutation) graph.limitations.push({ code: 'python-path-mutation', file: relPath });
+    for (const imp of parsed.imports || []) {
+      const request = pythonImportCandidates(imp, owner);
+      if (request.outside) {
+        graph.limitations.push({ code: 'python-relative-outside-package', file: relPath });
+        continue;
+      }
+      const selected = [];
+      for (const candidate of request.candidates) {
+        const matches = modules.get(candidate) || [];
+        if (matches.length > 1) {
+          graph.limitations.push({ code: 'python-ambiguous-module', file: relPath, module: candidate });
+        } else if (matches.length === 1) {
+          selected.push(matches[0]);
+        }
+      }
+      if (selected.length === 0 && request.fallback) {
+        const matches = modules.get(request.fallback) || [];
+        if (matches.length > 1) graph.limitations.push({ code: 'python-ambiguous-module', file: relPath, module: request.fallback });
+        else if (matches.length === 1) selected.push(matches[0]);
+      }
+      for (const target of selected) {
+        const to = posixPath(relative(projectDir, target.file));
+        if (to === relPath || resolvedImports.includes(to)) continue;
+        graph.edges.push({ from: relPath, to, dynamic: false, language: 'python' });
+        resolvedImports.push(to);
+      }
+    }
+    graph.fileMap.set(relPath, resolvedImports);
+  }
+}
+
+function validatePythonConfigLayers(graph, layers, acc) {
+  const layerEntries = Object.entries(layers)
+    .filter(([, value]) => value?.dir && Array.isArray(value.canImport))
+    .map(([name, value]) => ({ name, dir: posixPath(value.dir).replace(/\/$/, ''), canImport: value.canImport }));
+  for (const edge of graph.edges.filter(item => item.language === 'python')) {
+    const from = layerEntries.find(layer => edge.from === layer.dir || edge.from.startsWith(`${layer.dir}/`));
+    const to = layerEntries.find(layer => edge.to === layer.dir || edge.to.startsWith(`${layer.dir}/`));
+    if (!from || !to || from.name === to.name || from.canImport.includes(to.name)) continue;
+    acc.total++;
+    acc.findings.push(mkFinding({
+      code: 'ARC001', validator: 'architecture', severity: 'error',
+      message: `${edge.from}: ${from.name} layer imports from forbidden layer (${to.dir})`,
+      location: edge.from,
+      suggestion: { kind: 'fix', text: 'Remove the import or route it through an allowed layer (see the layers config in .docguard.json)' },
+    }));
+  }
 }
 
 /**

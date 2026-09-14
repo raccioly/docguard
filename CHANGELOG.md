@@ -9,6 +9,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Define the reviewed R6 language and repository coverage contract, including
+  explicit false-positive controls for Python imports, Cloudflare bindings,
+  mapped document ownership, and monorepo-root guidance.
+- Architecture validation now builds repository-local Python import graphs from
+  the optional standard-library AST tier. It resolves regular flat and `src/`
+  packages plus explicit relative imports, detects cycles and configured layer
+  violations, and keeps dynamic imports, `sys.path` mutation, parse failures,
+  interpreter absence, and ambiguous workspace modules visible as partial or
+  unsupported coverage.
+- Environment scanning now recognizes current Cloudflare module-handler `env`,
+  Pages `context.env`, entrypoint-class `this.env`, and imported
+  `cloudflare:workers` `env` forms with lexical alias and shadow tracking.
+  Lookalike objects and imports stay excluded, and parser-absent packages expose
+  the AST-only forms they could not verify.
+- Mapped documentation layouts now support safe mutation. New or explicitly
+  generated single-role targets permit whole-document generation; existing
+  human documents permit only unique, well-formed `source=code` section updates
+  through generate-plan, sync, and mechanical repair. Commands validate all
+  mapped targets before writing, preserve backups and surrounding bytes, reject
+  shared or malformed ownership, and never treat `--force` as authorization.
+- Commands launched from an implicitly selected nested package now detect a
+  governing ancestor `.docguard.json` or npm/pnpm workspace declaration and
+  provide an exact repository-scope rerun. Scope never changes automatically;
+  explicit selection, local configuration, exclusions, Git-only ancestry, and
+  nested repositories suppress guidance. Machine stdout stays parseable while
+  a typed JSON diagnostic is emitted on stderr.
+- R6 verification now records 1,765 passing tests across Node 18, 20, 22, and
+  24, successful packed-package and parser-absent execution, schema and syntax
+  checks, and a regression-free frozen corpus. All 24 evaluable cases passed;
+  the dynamic-Python control remained explicitly unsupported as designed.
+- Qualified R6 traceability now covers every changed command, validator,
+  writer, and neighboring control used by mapped-document and parser-capability
+  behavior, allowing lifecycle completion to reject omissions deterministically.
+- The R6 living specification now records its reviewed implementation revision,
+  complete evidence set, verified delivery state, and zero accepted deviations.
+
 - The active evidence-scoped verification specification defines strict,
   local-only bindings from exact Markdown statements to JSON Pointer values,
   bounded repository collections, saved oasdiff JSON, and saved Buf JSON Lines.
@@ -41,6 +77,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- R6 regression fixtures now follow the repository's single-newline EOF format,
+  keeping release diff checks clean.
 - Evidence results no longer expose raw JSON source values in CLI, guard, MCP,
   or agent output. Comparisons retain values only in process and bind them into
   non-reversible identities, preventing an unsafe declaration from copying a

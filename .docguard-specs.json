@@ -846,7 +846,431 @@
           {
             "requirementId": "SC-005",
             "file": "tests/npm-pack-smoke.test.mjs",
-            "line": 21
+            "line": 22
+          }
+        ]
+      }
+    },
+    {
+      "specId": "docguard.language-repository-coverage",
+      "path": "specs/009-language-repository-coverage/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "approved",
+          "delivery": "verified",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": "living"
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md",
+            "docs-canonical/ENVIRONMENT.md",
+            "docs-canonical/REQUIREMENTS.md",
+            "docs-canonical/SECURITY.md",
+            "docs-canonical/TEST-SPEC.md"
+          ]
+        },
+        "reconciliation": {
+          "lastReviewedRevision": "722a80210ff37d97520a4077c7134bc3a5255742",
+          "outcomes": [
+            {
+              "revision": "722a80210ff37d97520a4077c7134bc3a5255742",
+              "reason": "Reviewed all four R6 slices: Python static import graphs, Cloudflare binding extraction, ownership-safe mapped writers, and advisory repository-root guidance. The supported Node matrix, full suite, packed parser-absent path, schemas, syntax checks, self-guard, and frozen precision corpus passed without detector regression.",
+              "evidence": [
+                "cli/commands/fix.mjs",
+                "cli/commands/generate.mjs",
+                "cli/repository-root.mjs",
+                "cli/scanners/py-ast.mjs",
+                "cli/shared-doc-roles.mjs",
+                "cli/shared-source.mjs",
+                "cli/validators/architecture.mjs",
+                "cli/validators/environment.mjs",
+                "cli/writers/doc-generators.mjs",
+                "cli/writers/mechanical.mjs",
+                "cli/writers/sections.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/ENVIRONMENT.md",
+                "docs-canonical/REQUIREMENTS.md",
+                "docs-canonical/SECURITY.md",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/benchmark-manifest.test.mjs",
+                "tests/check-coverage.test.mjs",
+                "tests/doc-role-boundaries.test.mjs",
+                "tests/doc-role-mapping.test.mjs",
+                "tests/mapped-writers.test.mjs",
+                "tests/npm-pack-smoke.test.mjs",
+                "tests/py-ast.test.mjs",
+                "tests/python-import-graph.test.mjs",
+                "tests/repository-root.test.mjs",
+                "tests/sync.test.mjs",
+                "tests/worker-python-capability.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.language-repository-coverage#FR-001",
+          "docguard.language-repository-coverage#FR-002",
+          "docguard.language-repository-coverage#FR-003",
+          "docguard.language-repository-coverage#FR-004",
+          "docguard.language-repository-coverage#FR-005",
+          "docguard.language-repository-coverage#FR-006",
+          "docguard.language-repository-coverage#FR-007",
+          "docguard.language-repository-coverage#FR-008",
+          "docguard.language-repository-coverage#FR-009",
+          "docguard.language-repository-coverage#FR-010",
+          "docguard.language-repository-coverage#FR-011",
+          "docguard.language-repository-coverage#FR-012",
+          "docguard.language-repository-coverage#FR-013",
+          "docguard.language-repository-coverage#FR-014",
+          "docguard.language-repository-coverage#FR-015",
+          "docguard.language-repository-coverage#FR-016",
+          "docguard.language-repository-coverage#SC-001",
+          "docguard.language-repository-coverage#SC-002",
+          "docguard.language-repository-coverage#SC-003",
+          "docguard.language-repository-coverage#SC-004",
+          "docguard.language-repository-coverage#SC-005"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/009-language-repository-coverage/spec.md",
+            "digest": "sha256:fe79c3ab345a201ad2019f1c33bb6e8ab076e9dfa83dfdcd6d5d7f385eed645f"
+          },
+          {
+            "path": "specs/009-language-repository-coverage/plan.md",
+            "digest": "sha256:91e9b6a5bf6d6cd63080bfddb3f323a40d9b59d549d77897b6e2484777d3ac82"
+          },
+          {
+            "path": "specs/009-language-repository-coverage/tasks.md",
+            "digest": "sha256:1f604bdb08275da4f4cff6b66f895974f34bcf350ced6448e3fa144581835342"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 16,
+          "total": 16
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/scanners/py-ast.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/validators/architecture.mjs",
+            "line": 169
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/validators/architecture.mjs",
+            "line": 170
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/scanners/py-ast.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/validators/architecture.mjs",
+            "line": 171
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/validators/architecture.mjs",
+            "line": 172
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/shared-source.mjs",
+            "line": 356
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/validators/environment.mjs",
+            "line": 2
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/shared-source.mjs",
+            "line": 357
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/validators/environment.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "cli/validators/environment.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "cli/commands/generate.mjs",
+            "line": 2
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "cli/writers/mechanical.mjs",
+            "line": 2
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "cli/writers/sections.mjs",
+            "line": 101
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/commands/fix.mjs",
+            "line": 2
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/commands/generate.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/shared-doc-roles.mjs",
+            "line": 71
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/writers/doc-generators.mjs",
+            "line": 2
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/writers/mechanical.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "cli/commands/fix.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "cli/commands/generate.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "cli/shared-doc-roles.mjs",
+            "line": 72
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "cli/writers/doc-generators.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "cli/writers/mechanical.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "cli/repository-root.mjs",
+            "line": 113
+          },
+          {
+            "requirementId": "FR-013",
+            "file": "cli/repository-root.mjs",
+            "line": 114
+          },
+          {
+            "requirementId": "FR-014",
+            "file": "cli/repository-root.mjs",
+            "line": 115
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/py-ast.test.mjs",
+            "line": 94
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/python-import-graph.test.mjs",
+            "line": 2
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/python-import-graph.test.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/check-coverage.test.mjs",
+            "line": 2
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/python-import-graph.test.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/python-import-graph.test.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/worker-python-capability.test.mjs",
+            "line": 49
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/worker-python-capability.test.mjs",
+            "line": 62
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/worker-python-capability.test.mjs",
+            "line": 73
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/worker-python-capability.test.mjs",
+            "line": 99
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/npm-pack-smoke.test.mjs",
+            "line": 23
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/worker-python-capability.test.mjs",
+            "line": 112
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "tests/doc-role-mapping.test.mjs",
+            "line": 2
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "tests/mapped-writers.test.mjs",
+            "line": 2
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "tests/sync.test.mjs",
+            "line": 122
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "tests/doc-role-boundaries.test.mjs",
+            "line": 64
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "tests/doc-role-mapping.test.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "tests/mapped-writers.test.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "tests/doc-role-boundaries.test.mjs",
+            "line": 195
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "tests/doc-role-mapping.test.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "tests/mapped-writers.test.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "tests/repository-root.test.mjs",
+            "line": 2
+          },
+          {
+            "requirementId": "FR-013",
+            "file": "tests/repository-root.test.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-014",
+            "file": "tests/repository-root.test.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-015",
+            "file": "tests/benchmark-manifest.test.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-016",
+            "file": "tests/repository-root.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/check-coverage.test.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/python-import-graph.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/worker-python-capability.test.mjs",
+            "line": 1
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/doc-role-mapping.test.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/mapped-writers.test.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/sync.test.mjs",
+            "line": 123
+          },
+          {
+            "requirementId": "SC-004",
+            "file": "tests/repository-root.test.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "SC-005",
+            "file": "tests/npm-pack-smoke.test.mjs",
+            "line": 17
           }
         ]
       }

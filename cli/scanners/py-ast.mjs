@@ -13,6 +13,8 @@
  * (or `python`) isn't on PATH, or the subprocess errors, every entry point here
  * returns `null` and the callers transparently fall back to their regex (beta)
  * tier. Python parsing never becomes load-bearing for the CLI to run.
+ * @implements docguard.language-repository-coverage#FR-001
+ * @implements docguard.language-repository-coverage#FR-004
  */
 import { spawnSync } from 'node:child_process';
 
@@ -147,6 +149,37 @@ def fields_from_class(cls):
                         rels.append(rel)
     return pyd, orm, rels
 
+def imports_from_tree(tree):
+    imports = []
+    dynamic = False
+    path_mutation = False
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for name in node.names:
+                imports.append({"kind": "import", "module": name.name, "level": 0, "names": []})
+        elif isinstance(node, ast.ImportFrom):
+            imports.append({
+                "kind": "from", "module": node.module or "", "level": node.level or 0,
+                "names": [name.name for name in node.names]
+            })
+        elif isinstance(node, ast.Call):
+            fn = node.func
+            if isinstance(fn, ast.Name) and fn.id == "__import__":
+                dynamic = True
+            elif isinstance(fn, ast.Attribute):
+                if isinstance(fn.value, ast.Name) and fn.value.id == "importlib" and fn.attr == "import_module":
+                    dynamic = True
+                if fn.attr in {"append", "insert", "extend"} and isinstance(fn.value, ast.Attribute):
+                    if isinstance(fn.value.value, ast.Name) and fn.value.value.id == "sys" and fn.value.attr == "path":
+                        path_mutation = True
+        elif isinstance(node, (ast.Assign, ast.AugAssign)):
+            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+            for target in targets:
+                if isinstance(target, ast.Attribute) and isinstance(target.value, ast.Name):
+                    if target.value.id == "sys" and target.attr == "path":
+                        path_mutation = True
+    return imports, dynamic, path_mutation
+
 results = []
 for path in sys.stdin.read().splitlines():
     path = path.strip()
@@ -169,7 +202,11 @@ for path in sys.stdin.read().splitlines():
                 schemas.append({"name": node.name, "fields": pyd, "kind": "pydantic", "rels": rels})
             elif any(b in ORM_BASES for b in bn) and orm:
                 schemas.append({"name": node.name, "fields": orm, "kind": "sqlalchemy", "rels": rels})
-    results.append({"file": path, "ok": True, "routes": routes, "schemas": schemas})
+    imports, dynamic_imports, path_mutation = imports_from_tree(tree)
+    results.append({
+        "file": path, "ok": True, "routes": routes, "schemas": schemas,
+        "imports": imports, "dynamicImports": dynamic_imports, "pathMutation": path_mutation
+    })
 
 sys.stdout.write(json.dumps(results))
 `;
@@ -178,7 +215,7 @@ sys.stdout.write(json.dumps(results))
  * Parse a batch of Python files in ONE python3 subprocess.
  *
  * @param {string[]} filePaths - absolute paths to .py files
- * @returns {Object<string, {ok:boolean, routes?, schemas?}>|null}
+ * @returns {Object<string, {ok:boolean, routes?, schemas?, imports?, dynamicImports?, pathMutation?}>|null}
  *   A map keyed by the input path, or `null` when Python is unavailable / the
  *   subprocess failed / output was unparseable (caller falls back to regex).
  *   An empty input returns `{}` (nothing to do, but Python IS available).
