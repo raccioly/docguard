@@ -103,6 +103,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The document-lifecycle living spec records the maintenance transition at its
   exact reviewed revision, preserving the earlier delivery outcome and current
   active-context policy.
+- The precision-evidence living spec records the structured-location regression
+  fix as a second reviewed outcome, linked to its implementation and focused
+  tests rather than overwriting the original milestone evidence.
 
 ## [0.38.0] - 2026-09-14
 
