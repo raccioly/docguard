@@ -5,11 +5,11 @@
 
 ## Phase 1: Contract and runner
 
-- [ ] T001 Define the strict benchmark and feedback fixture JSON schemas.
-- [ ] T002 Implement safe manifest loading, immutable IDs, split-leak checks, and exact mutation preconditions.
-- [ ] T003 Implement disposable synthetic materialization and local guard invocation without project-code execution.
-- [ ] T004 Normalize scoped finding identities and reject unlabelled in-scope output.
-- [ ] T005 Separate deterministic core results from runtime observations and environment metadata.
+- [x] T001 Define the strict benchmark and feedback fixture JSON schemas.
+- [x] T002 Implement safe manifest loading, immutable IDs, split-leak checks, and exact mutation preconditions.
+- [x] T003 Implement disposable synthetic materialization and local guard invocation without project-code execution.
+- [x] T004 Normalize scoped finding identities and reject unlabelled in-scope output.
+- [x] T005 Separate deterministic core results from runtime observations and environment metadata.
 
 ## Phase 2: Corpus and metrics
 

@@ -482,15 +482,122 @@
           },
           {
             "path": "specs/007-precision-evidence-loop/tasks.md",
-            "digest": "sha256:9f2ffcb05c5f714c5a9cfdbc0246382f9682b231507797be3e7d835e1e28cf86"
+            "digest": "sha256:4a94290e2baeee3e264c476f2c845155ddfc738e63695a5563fd80879184e58e"
           }
         ],
         "taskCompletion": {
-          "checked": 0,
+          "checked": 5,
           "total": 19
         },
-        "implementationEvidence": [],
-        "testEvidence": []
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "benchmarks/lib/manifest.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "benchmarks/lib/runner.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "benchmarks/lib/manifest.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "benchmarks/lib/manifest.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "benchmarks/lib/manifest.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "benchmarks/lib/runner.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "benchmarks/lib/runner.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "benchmarks/lib/manifest.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-017",
+            "file": "benchmarks/lib/runner.mjs",
+            "line": 6
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/benchmark-manifest.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/benchmark-runner.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/benchmark-manifest.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/benchmark-manifest.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/benchmark-manifest.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/benchmark-runner.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/benchmark-runner.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/benchmark-manifest.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-017",
+            "file": "tests/benchmark-runner.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/benchmark-runner.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "SC-004",
+            "file": "tests/benchmark-manifest.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "SC-004",
+            "file": "tests/benchmark-runner.test.mjs",
+            "line": 13
+          }
+        ]
       }
     }
   ],

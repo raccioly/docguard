@@ -1,0 +1,5 @@
+{
+  "name": "benchmark-js-security-control",
+  "private": true,
+  "type": "module"
+}

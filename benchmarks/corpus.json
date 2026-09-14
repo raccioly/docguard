@@ -1,0 +1,58 @@
+{
+  "$schema": "https://raccioly.github.io/docguard/schemas/docguard-benchmark.schema.json",
+  "schemaVersion": 1,
+  "cases": [
+    {
+      "id": "dev-js-security-control",
+      "split": "development",
+      "repositoryGroup": "synthetic-js-security",
+      "causalFamily": "hardcoded-password-assignment",
+      "parserTier": "js-ast",
+      "classification": "clean_control",
+      "source": { "kind": "fixture", "path": "fixtures/js-security-control" },
+      "scope": { "validatorKey": "security", "codes": ["SEC001"] },
+      "config": { "profile": "starter", "diskCache": false, "validators": { "security": true } },
+      "mutations": [],
+      "expected": [],
+      "forbidden": ["SEC001@src/config.js"],
+      "oppositeControl": null
+    },
+    {
+      "id": "dev-js-security-defect",
+      "split": "development",
+      "repositoryGroup": "synthetic-js-security",
+      "causalFamily": "hardcoded-password-assignment",
+      "parserTier": "js-ast",
+      "classification": "defect",
+      "source": { "kind": "fixture", "path": "fixtures/js-security-control" },
+      "scope": { "validatorKey": "security", "codes": ["SEC001"] },
+      "config": { "profile": "starter", "diskCache": false, "validators": { "security": true } },
+      "mutations": [
+        {
+          "path": "src/config.js",
+          "find": "export const passwordPolicy = 'minimum 12 characters';",
+          "replace": "export const password = 'real-looking-password';",
+          "expectedOccurrences": 1
+        }
+      ],
+      "expected": ["SEC001@src/config.js"],
+      "forbidden": [],
+      "oppositeControl": "dev-js-security-control"
+    },
+    {
+      "id": "eval-python-unsupported",
+      "split": "evaluation",
+      "repositoryGroup": "synthetic-python-unsupported",
+      "causalFamily": "dynamic-python-import",
+      "parserTier": "py-ast",
+      "classification": "unsupported_syntax",
+      "source": { "kind": "fixture", "path": "fixtures/python-unsupported" },
+      "scope": { "validatorKey": "architecture", "codes": ["ARC001"] },
+      "config": { "profile": "starter", "diskCache": false, "validators": { "architecture": true } },
+      "mutations": [],
+      "expected": [],
+      "forbidden": [],
+      "oppositeControl": null
+    }
+  ]
+}

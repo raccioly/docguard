@@ -29,6 +29,11 @@ Automated weekly release — batches everything merged since `v0.37.1`.
 - The active precision-evidence specification defines a reproducible R3/R4
   benchmark, leakage-safe split contract, adjudication taxonomy, public-source
   safety boundary, and contribution-to-regression workflow before implementation.
+- The repository benchmark now has a strict versioned manifest, safe disposable
+  fixture runner, exact mutation preconditions, scoped finding identities, and
+  deterministic core output separated from runtime observations. Contribution
+  inputs reject private or credentialed Git endpoints, unsafe config paths,
+  prototype keys, symlinked fixtures, and interactive Git authentication.
 
 - `docguard reconcile --since <ref>` emits a deterministic JSON review graph
   that separates mechanical facts, approved intent, decisions, unrelated
