@@ -1713,6 +1713,89 @@
           }
         ]
       }
+    },
+    {
+      "specId": "docguard.task-specific-agent-context",
+      "path": "specs/010-task-specific-agent-context/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "approved",
+          "delivery": "in_progress",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": "living"
+        },
+        "relations": {
+          "extends": [
+            "docguard.document-lifecycle",
+            "docguard.evidence-scoped-verification"
+          ],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md",
+            "docs-canonical/DATA-MODEL.md",
+            "docs-canonical/REQUIREMENTS.md",
+            "docs-canonical/SECURITY.md",
+            "docs-canonical/TEST-SPEC.md"
+          ]
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.task-specific-agent-context#FR-001",
+          "docguard.task-specific-agent-context#FR-002",
+          "docguard.task-specific-agent-context#FR-003",
+          "docguard.task-specific-agent-context#FR-004",
+          "docguard.task-specific-agent-context#FR-005",
+          "docguard.task-specific-agent-context#FR-006",
+          "docguard.task-specific-agent-context#FR-007",
+          "docguard.task-specific-agent-context#FR-008",
+          "docguard.task-specific-agent-context#FR-009",
+          "docguard.task-specific-agent-context#FR-010",
+          "docguard.task-specific-agent-context#FR-011",
+          "docguard.task-specific-agent-context#FR-012",
+          "docguard.task-specific-agent-context#FR-013",
+          "docguard.task-specific-agent-context#FR-014",
+          "docguard.task-specific-agent-context#FR-015",
+          "docguard.task-specific-agent-context#SC-001",
+          "docguard.task-specific-agent-context#SC-002",
+          "docguard.task-specific-agent-context#SC-003",
+          "docguard.task-specific-agent-context#SC-004",
+          "docguard.task-specific-agent-context#SC-005"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/010-task-specific-agent-context/spec.md",
+            "digest": "sha256:75982c5c24ccc27b4956b17d858f02cecec4274842e80146a8665f0a5560f85f"
+          },
+          {
+            "path": "specs/010-task-specific-agent-context/plan.md",
+            "digest": "sha256:cf2e094cde54afc06b316bc2ef252309f66781aa86684d0d7dcf74bd631f48cf"
+          },
+          {
+            "path": "specs/010-task-specific-agent-context/tasks.md",
+            "digest": "sha256:92b7425d9b71feb96aba9d643c017e6b14512f1c524526f891691b47c7c0223e"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 2,
+          "total": 16
+        },
+        "implementationEvidence": [],
+        "testEvidence": []
+      }
     }
   ],
   "tombstones": [

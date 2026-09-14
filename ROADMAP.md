@@ -173,7 +173,9 @@ unsupported dynamic-Python case. Self-guard has no errors; its three DSP001
 warnings are low-confidence review prompts for canonical documents already
 updated in the same change set.
 
-### R7 — Task-specific agent context (research)
+### R7 — Task-specific agent context (evaluation in progress)
+
+Governing spec: `specs/010-task-specific-agent-context/spec.md`.
 
 Evaluate targeted evidence packets against ordinary repository context and the
 existing DocGuard context pack. Freeze repository snapshots, model/harness
@@ -183,6 +185,12 @@ violations, unnecessary edits, tokens, latency, and human intervention.
 Ship only if repeated trials improve task outcomes or reduce cost within a
 predeclared non-inferiority margin. An LLM judge or DocGuard score alone is not
 sufficient evidence.
+
+Protocol v1 freezes three synthetic tasks, three conditions, three repetitions,
+the model and harness identity, hidden regression tests, safety checks, metrics,
+and promotion threshold before any trial results. The experimental selector
+must abstain on weak evidence and remains outside the public CLI until all gates
+pass.
 
 ## Contribution standard
 

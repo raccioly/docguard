@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Define the reviewed R7 task-specific agent-context contract and frozen
+  evaluation protocol. Product behavior remains gated on 27 repeated hidden-test
+  trials comparing task-only, existing context-pack, and targeted-packet inputs.
 - Define the reviewed R6 language and repository coverage contract, including
   explicit false-positive controls for Python imports, Cloudflare bindings,
   mapped document ownership, and monorepo-root guidance.
