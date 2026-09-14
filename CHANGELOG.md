@@ -7,8 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- The active evidence-scoped verification specification defines strict,
+  local-only bindings from exact Markdown statements to JSON Pointer values,
+  bounded repository collections, saved oasdiff JSON, and saved Buf JSON Lines.
+  Its five-state contract distinguishes scoped verification, contradiction,
+  stale inputs, inconclusive evidence, and unsupported formats without
+  claiming whole-document factual accuracy.
+- `.docguard-evidence.json` can now bind one exact Markdown statement to a
+  typed RFC 6901 JSON value, a bounded repository collection, saved oasdiff
+  JSON, or saved Buf JSON Lines. `verify --evidence`, guard, score assurance,
+  agent context, SARIF, and JUnit preserve scoped verified, contradicted, stale,
+  inconclusive, and unsupported states; stale external reports are invalidated
+  by declared input hashes and no adapter executes project or third-party code.
+
+### Changed
+
+- Evidence selectors support ATX and Setext Markdown headings while ignoring
+  fenced examples, `verify` rejects conflicting modes with a stable JSON error,
+  and every Evidence finding is reachable through `docguard explain`.
+- MCP clients can call `docguard_verify_evidence` directly. The existing
+  `docguard_verify_claims` tool removes a semantic task only when a unique,
+  exact declaration already verified that same claim within scope.
+- Roadmap and command documentation now describe the already-released R2 spec
+  completion transaction as current behavior instead of future work.
+- Requirement-qualified implementation and test links now cover every R5
+  integration surface used by lifecycle reconciliation, including MCP.
+- The R5 living specification now records its exact reviewed implementation
+  revision and complete evidence set through the verified lifecycle transaction.
+- The living-spec maintenance outcome records the post-review source-value
+  redaction at its exact revision with no accepted deviations.
+
 ### Fixed
 
+- Evidence results no longer expose raw JSON source values in CLI, guard, MCP,
+  or agent output. Comparisons retain values only in process and bind them into
+  non-reversible identities, preventing an unsafe declaration from copying a
+  secret into logs.
 - Scheduled release pull requests now require a repository-scoped
   `RELEASE_PR_TOKEN`, allowing ordinary pull-request CI to run and the
   fail-closed auto-merge workflow to observe the successful event. The previous
@@ -22,6 +58,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   comments before matching. Malformed test fixtures containing literal
   `test.skip()` examples no longer become false warnings when Babel is absent;
   executable unexplained skips remain visible.
+
+- Canonical architecture, data, security, CI, test, requirements, README, agent
+  instructions, Spec Kit commands, and all five distributed AI skills now
+  preserve the evidence scope boundary. Agents inspect deterministic evidence
+  before heuristic claims and never rewrite approved intent merely because
+  current code differs.
 
 ## [0.39.0] - 2026-09-14
 

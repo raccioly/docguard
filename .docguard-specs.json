@@ -479,6 +479,379 @@
       }
     },
     {
+      "specId": "docguard.evidence-scoped-verification",
+      "path": "specs/008-evidence-scoped-verification/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "approved",
+          "delivery": "verified",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": "living"
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md",
+            "docs-canonical/CI-RECIPES.md",
+            "docs-canonical/DATA-MODEL.md",
+            "docs-canonical/REQUIREMENTS.md",
+            "docs-canonical/SECURITY.md",
+            "docs-canonical/TEST-SPEC.md"
+          ]
+        },
+        "reconciliation": {
+          "lastReviewedRevision": "bd9250b84617164381cba82afa03fd151e5cbe87",
+          "outcomes": [
+            {
+              "revision": "138571668102d3e59c54d219478d284d3ae139b8",
+              "reason": "Verified scoped evidence adapters and integrations across the supported Node matrix, package fallback, schema validation, and frozen external corpus with no baseline regression.",
+              "evidence": [
+                "cli/commands/agent.mjs",
+                "cli/commands/explain.mjs",
+                "cli/commands/guard.mjs",
+                "cli/commands/mcp.mjs",
+                "cli/commands/score.mjs",
+                "cli/commands/verify.mjs",
+                "cli/config.mjs",
+                "cli/evidence/adapters.mjs",
+                "cli/evidence/evaluate.mjs",
+                "cli/evidence/manifest.mjs",
+                "cli/evidence/markdown.mjs",
+                "cli/findings.mjs",
+                "cli/validators/evidence.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/CI-RECIPES.md",
+                "docs-canonical/DATA-MODEL.md",
+                "docs-canonical/REQUIREMENTS.md",
+                "docs-canonical/SECURITY.md",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/evidence-adapters.test.mjs",
+                "tests/evidence-integration.test.mjs",
+                "tests/evidence-manifest.test.mjs",
+                "tests/mcp-http.test.mjs",
+                "tests/mcp.test.mjs",
+                "tests/npm-pack-smoke.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            },
+            {
+              "revision": "bd9250b84617164381cba82afa03fd151e5cbe87",
+              "reason": "Self-review removed raw source values from public evidence output and added a regression assertion; scoped comparison behavior and all integrations remain verified.",
+              "evidence": [
+                "cli/commands/agent.mjs",
+                "cli/commands/explain.mjs",
+                "cli/commands/guard.mjs",
+                "cli/commands/mcp.mjs",
+                "cli/commands/score.mjs",
+                "cli/commands/verify.mjs",
+                "cli/config.mjs",
+                "cli/evidence/adapters.mjs",
+                "cli/evidence/evaluate.mjs",
+                "cli/evidence/manifest.mjs",
+                "cli/evidence/markdown.mjs",
+                "cli/findings.mjs",
+                "cli/validators/evidence.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/CI-RECIPES.md",
+                "docs-canonical/DATA-MODEL.md",
+                "docs-canonical/REQUIREMENTS.md",
+                "docs-canonical/SECURITY.md",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/evidence-adapters.test.mjs",
+                "tests/evidence-integration.test.mjs",
+                "tests/evidence-manifest.test.mjs",
+                "tests/mcp-http.test.mjs",
+                "tests/mcp.test.mjs",
+                "tests/npm-pack-smoke.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.evidence-scoped-verification#FR-001",
+          "docguard.evidence-scoped-verification#FR-002",
+          "docguard.evidence-scoped-verification#FR-003",
+          "docguard.evidence-scoped-verification#FR-004",
+          "docguard.evidence-scoped-verification#FR-005",
+          "docguard.evidence-scoped-verification#FR-006",
+          "docguard.evidence-scoped-verification#FR-007",
+          "docguard.evidence-scoped-verification#FR-008",
+          "docguard.evidence-scoped-verification#FR-009",
+          "docguard.evidence-scoped-verification#FR-010",
+          "docguard.evidence-scoped-verification#FR-011",
+          "docguard.evidence-scoped-verification#FR-012",
+          "docguard.evidence-scoped-verification#FR-013",
+          "docguard.evidence-scoped-verification#SC-001",
+          "docguard.evidence-scoped-verification#SC-002",
+          "docguard.evidence-scoped-verification#SC-003",
+          "docguard.evidence-scoped-verification#SC-004",
+          "docguard.evidence-scoped-verification#SC-005"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/008-evidence-scoped-verification/spec.md",
+            "digest": "sha256:665b4126aedccb0873a08e51533ed0ce011528342d18bfd283f3277dc602810c"
+          },
+          {
+            "path": "specs/008-evidence-scoped-verification/plan.md",
+            "digest": "sha256:29ed9e14ea8cf7ae1ef44b6a02da4ceb00a0a30f2f19f22d1c8a50262f25ec48"
+          },
+          {
+            "path": "specs/008-evidence-scoped-verification/tasks.md",
+            "digest": "sha256:975702fb2073dd5349819c2656de215d600fb38285be5875f18ec01bf9578dc0"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 17,
+          "total": 17
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/evidence/manifest.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/evidence/adapters.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/evidence/manifest.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/evidence/adapters.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/evidence/adapters.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/evidence/adapters.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/evidence/markdown.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/evidence/evaluate.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "cli/evidence/evaluate.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "cli/commands/mcp.mjs",
+            "line": 2
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "cli/commands/verify.mjs",
+            "line": 23
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/commands/guard.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/config.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/evidence/evaluate.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/findings.mjs",
+            "line": 2
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/validators/evidence.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "cli/evidence/evaluate.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "cli/commands/agent.mjs",
+            "line": 2
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "cli/commands/mcp.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "cli/commands/score.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "cli/evidence/evaluate.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-013",
+            "file": "cli/commands/explain.mjs",
+            "line": 2
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/evidence-manifest.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/evidence-integration.test.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/evidence-manifest.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/evidence-adapters.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/evidence-adapters.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/evidence-integration.test.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/evidence-integration.test.mjs",
+            "line": 20
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/evidence-integration.test.mjs",
+            "line": 21
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/evidence-manifest.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/evidence-integration.test.mjs",
+            "line": 22
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "tests/evidence-integration.test.mjs",
+            "line": 23
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "tests/evidence-integration.test.mjs",
+            "line": 24
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "tests/evidence-integration.test.mjs",
+            "line": 25
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "tests/evidence-integration.test.mjs",
+            "line": 26
+          },
+          {
+            "requirementId": "FR-013",
+            "file": "tests/evidence-manifest.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/evidence-adapters.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/evidence-integration.test.mjs",
+            "line": 27
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/evidence-integration.test.mjs",
+            "line": 28
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/evidence-integration.test.mjs",
+            "line": 29
+          },
+          {
+            "requirementId": "SC-004",
+            "file": "tests/evidence-integration.test.mjs",
+            "line": 30
+          },
+          {
+            "requirementId": "SC-004",
+            "file": "tests/mcp-http.test.mjs",
+            "line": 2
+          },
+          {
+            "requirementId": "SC-004",
+            "file": "tests/mcp.test.mjs",
+            "line": 2
+          },
+          {
+            "requirementId": "SC-005",
+            "file": "tests/npm-pack-smoke.test.mjs",
+            "line": 21
+          }
+        ]
+      }
+    },
+    {
       "specId": "docguard.precision-evidence-loop",
       "path": "specs/007-precision-evidence-loop/spec.md",
       "reviewed": {

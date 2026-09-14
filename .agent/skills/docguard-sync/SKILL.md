@@ -76,6 +76,7 @@ For each `🤖 Prose to review` entry:
 
 ```bash
 npx --yes docguard-cli@latest guard
+npx --yes docguard-cli@latest verify --evidence
 ```
 
 Confirm there are no errors. If the API surface drifted (`API-Surface` failures),
@@ -110,3 +111,4 @@ that ref. Use that diff to:
 - ❌ Editing inside `<!-- docguard:section source=code -->` — DocGuard will rewrite it on the next sync.
 - ❌ Removing the markers to "make the doc look cleaner" — that breaks future sync/regeneration.
 - ❌ Skipping `sync --write` and editing the code section by hand — let DocGuard do it.
+- ❌ Rewriting an evidence-bound human statement from generated code alone — rerun the declared predicate and review approved intent first.

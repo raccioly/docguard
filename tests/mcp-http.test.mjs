@@ -1,4 +1,5 @@
 /**
+ * @req docguard.evidence-scoped-verification#SC-004
  * MCP Streamable HTTP transport — `docguard mcp --transport http`.
  *
  * Spawns the real server on an ephemeral port and exercises the transport
@@ -65,12 +66,12 @@ describe('docguard mcp --transport http', () => {
     assert.equal(body.result.serverInfo.name, 'docguard');
   });
 
-  it('tools/list returns the six read-only tools', async () => {
+  it('tools/list returns the seven read-only tools', async () => {
     const res = await post(rpc('tools/list', {}, 2));
     const body = await res.json();
     const names = body.result.tools.map(t => t.name);
     assert.deepEqual(names.sort(), [
-      'docguard_diagnose', 'docguard_explain', 'docguard_guard', 'docguard_report', 'docguard_score', 'docguard_verify_claims',
+      'docguard_diagnose', 'docguard_explain', 'docguard_guard', 'docguard_report', 'docguard_score', 'docguard_verify_claims', 'docguard_verify_evidence',
     ]);
   });
 

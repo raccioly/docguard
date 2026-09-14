@@ -22,6 +22,19 @@ The required evaluation process is:
    false-positives on DocGuard itself gets fixed before release (see the
    examples below).
 
+## Results — evidence-scoped verification (v0.40.0 candidate)
+
+The R5 candidate passed 1,733 tests on each supported Node release (18, 20, 22,
+and 24). The extracted npm tarball ran without installed dependencies, exercising
+the optional-parser fallback, and the evidence manifest/example passed an
+independent JSON Schema Draft 2020-12 validator.
+
+The complete frozen benchmark ran 24 paired synthetic/public cases across 12
+repository groups. Comparison found no new false positives, false negatives,
+supported-case abstentions, or removed evidence. Persisted runtime observations
+remain non-comparable by policy; performance claims require five controlled
+same-session samples.
+
 The corpus is six production repositories spanning TypeScript/Next.js SaaS
 applications, a Python data pipeline, a financial research lab, and a
 messaging-platform integration — different sizes, doc cultures, and stacks.
@@ -72,7 +85,7 @@ tuning; the levers that mattered:
 ## Standing verification
 
 - Built-in `node:test`, with Node 18/20/22/24 in the supported CI matrix. Per-change validation records contain measured test totals.
-- **Self-guarded:** every push runs all 29 validators against DocGuard's own
+- **Self-guarded:** every push runs all 30 validators against DocGuard's own
   docs; count claims in this README family are machine-governed
   (Canonical-Sync), so the validator count is checked, not remembered.
 - **Deterministic core:** no LLM calls at validation time, one pinned
@@ -83,9 +96,10 @@ tuning; the levers that mattered:
 - **No recall guarantee.** Precision-first means some real drift is missed by
   design; the recall-maximizing variants of these detectors were tested and
   rejected because false-positive floods destroy trust faster than misses do.
-- **No LLM-grade semantic judgment.** Claims a regex cannot verify (prose
-  correctness, intent) are surfaced as agent tasks (`verify --semantic`,
-  `diagnose`), never auto-judged.
+- **No arbitrary prose judgment.** Strict `.docguard-evidence.json`
+  declarations can verify selected statements against supported local sources.
+  Remaining prose correctness and intent are surfaced as agent tasks
+  (`verify --semantic`, `diagnose`), never auto-judged.
 - **Soft by default.** The v0.31/v0.32 detectors are `confidence: low` and
   emit warnings by default. Exit 2 still fails an ordinary shell step; CI warning policy and severity overrides determine enforcement.
 

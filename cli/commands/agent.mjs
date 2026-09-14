@@ -1,4 +1,5 @@
 /**
+ * @implements docguard.evidence-scoped-verification#FR-012
  * `docguard agent` — the one-shot agent task graph.
  *
  * Field report §2: an LLM told "run docguard and fix the docs" had to drive ~10
@@ -25,6 +26,7 @@ import { buildMemoryPlan } from '../scanners/memory-plan.mjs';
 import { c } from '../shared.mjs';
 import { createEvidenceReader, citedSources, taskEvidence, gitEvidence, SEMANTIC_COVERAGE_LIMITATION } from '../scanners/semantic-claims.mjs';
 import { buildScoreAssurance } from './score.mjs';
+import { evaluateEvidence } from '../evidence/evaluate.mjs';
 
 const PHASES = ['config', 'canonical-docs', 'verify'];
 
@@ -89,7 +91,7 @@ export function buildAgentTaskGraph(projectDir, config, plan) {
     phase: 'verify',
     file: null,
     kind: 'verify',
-    instruction: 'Run `docguard guard --format json`. Resolve every error, then re-run until there are 0 errors. Triage warnings and record unresolved warnings; warnings do not fail this acceptance gate. Run `docguard score` for structural maturity, and `docguard verify --semantic` to obtain unverified claim tasks for separate source review. Neither guard nor score verifies prose or factual accuracy.',
+    instruction: 'Run `docguard guard --format json`. Resolve every error, then re-run until there are 0 errors. Triage warnings and record unresolved warnings; warnings do not fail this acceptance gate. Run `docguard verify --evidence` for exact declared checks and `docguard verify --semantic` for remaining heuristic claim tasks. Run `docguard score` for structural maturity. Neither guard nor score verifies prose; scoped evidence verifies only its selected statements and does not establish whole-document factual accuracy.',
     prefilled: null,
     grounding: null,
     acceptance: { verify: 'docguard guard --format json', expect: '0 errors', warnings: 'triage-and-report', scope: 'structural-only', factualAccuracy: 'unknown' },
@@ -105,11 +107,13 @@ export function buildAgentTaskGraph(projectDir, config, plan) {
 
   const assurance = buildScoreAssurance(projectDir, config);
   assurance.limitation += ` ${SEMANTIC_COVERAGE_LIMITATION}`;
+  const evidence = evaluateEvidence(projectDir, config);
 
   return {
     project: config.projectName,
     provenance: { kind: 'snapshot', git: gitEvidence(projectDir) },
     assurance,
+    evidence,
     profile: { name: profileName, kind: plan.profile.kind, languages: plan.profile.languages, frameworks: plan.profile.frameworks },
     order: PHASES,
     counts: {

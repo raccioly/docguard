@@ -28,13 +28,13 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 1. Run DocGuard guard validation:
 ```bash
-npx --yes docguard-cli@latest guard $ARGUMENTS
+npx --yes docguard-cli@latest guard --format json $ARGUMENTS
 ```
 
 2. Parse each validator's result and build a severity-ranked findings table. Status glyphs: ✅ pass, ⚠️ warning, ❌ fail, ➖ N/A (nothing to validate — NOT a pass; the dimension was not assessed).
 
 3. **Triage by severity**:
-   - **CRITICAL**: Structure, Security, Test-Spec failures → fix immediately
+   - **CRITICAL**: Structure, Security, Test-Spec, Evidence contradiction/manifest failures → fix immediately
    - **HIGH**: Doc Sections, Drift-Comments, Changelog, Traceability, API-Surface → fix before commit
    - **MEDIUM**: Freshness, Docs-Coverage, Doc-Quality, Metrics → fix this sprint
    - **LOW**: TODO-Tracking, Schema-Sync, Spec-Kit, Metadata → fix when convenient
@@ -66,6 +66,7 @@ npx --yes docguard-cli@latest guard $ARGUMENTS
 | TODO-Tracking | TODOs are tracked |
 | Schema-Sync | Schema documentation matches code |
 | Spec-Kit | Spec quality (FR-IDs, sections) |
+| Evidence | Exact declared statements match current local sources or saved compatibility reports |
 | Metrics-Consistency | Internal counts are accurate |
 
 ## Flags

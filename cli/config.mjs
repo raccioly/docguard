@@ -1,6 +1,7 @@
 import { hasWorkerConfig } from './shared-source.mjs';
 import { applyDocRoles } from './shared-doc-roles.mjs';
 /**
+ * @implements docguard.evidence-scoped-verification#FR-010
  * DocGuard — configuration loading.
  *
  * Extracted from docguard.mjs (v0.23.0) to break the demo.mjs → docguard.mjs
@@ -81,6 +82,7 @@ export function loadConfig(projectDir) {
       freshness: true,
       documentLifecycle: true,
       specRegistry: true,
+      evidence: true,
       // v0.31.0 — all three default ON. Soft (confidence:low, never break CI),
       // heuristic (field cases require ongoing precision checks), and quiet when
       // not applicable (no diff / no API-reference doc). api-doc-smells is
@@ -225,6 +227,7 @@ const _KNOWN_VALIDATORS = [
   'apiSurface', 'metadataSync', 'docsCoverage', 'docQuality', 'todoTracking',
   'schemaSync', 'specKit', 'crossReference', 'generatedStaleness',
   'canonicalSync', 'surfaceSync', 'metricsConsistency',
+  'evidence',
 ];
 
 function _kebabToCamel(k) {

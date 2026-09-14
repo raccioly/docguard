@@ -15,6 +15,21 @@ node_modules/.bin/docguard ci --format json --no-history > docguard-report.json
 
 The CLI exits 0 for pass, 1 for failure, and 2 for warning-only results. A plain shell step treats both 1 and 2 as failures. To permit warnings, capture the exit status explicitly and allow only 0 or 2. To block warnings, use `ci --fail-on-warning`. Severity overrides retain their configured meaning.
 
+When `.docguard-evidence.json` exists, guard also evaluates its declarations.
+Contradictions are high-confidence errors. Stale input digests, missing or
+ambiguous targets, malformed evidence, and unsupported report shapes remain
+visible warnings. Inspect the complete contract with:
+
+```bash
+npx docguard-cli verify --evidence --format json
+```
+
+Generate oasdiff or Buf reports in an earlier pinned CI step, save their machine
+output, and declare SHA-256 identities for every repository input. DocGuard
+consumes those artifacts; it does not install or invoke either producer. Keep
+the broad freshness and semantic review paths enabled because exact evidence
+does not cover undeclared prose.
+
 ## Recipe 2 — Auto-Fix (PR-time mechanical fixes)
 
 Run `fix --write` on a controlled checkout when documentation mutation is intended. Review the resulting diff and rerun guard. Preserve human-authored intent; a disagreement may require fixing implementation rather than rewriting the specification.

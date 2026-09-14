@@ -96,7 +96,7 @@ ${c.bold}Tools (situational, but day-to-day useful)${c.reset}
   ${c.green}generate${c.reset}   Reverse-engineer canonical docs from existing code (${c.cyan}--plan${c.reset} for AI scan)
   ${c.green}agent${c.reset}      One-shot agent task graph — ordered tasks, pre-filled code-truth, per-task verify (${c.cyan}--format json${c.reset})
   ${c.green}explain${c.reset}    Explain a validator key, warning text, or finding code (${c.cyan}docguard explain SEC001${c.reset})
-  ${c.green}verify${c.reset}     Extract documented numbers/limits/enums for an agent to check vs code (${c.cyan}--semantic${c.reset})
+  ${c.green}verify${c.reset}     Check declared local evidence or extract claims for review (${c.cyan}--evidence${c.reset}, ${c.cyan}--semantic${c.reset})
   ${c.green}feedback${c.reset}   Report likely false positives back to DocGuard (local-first + 1-click prefilled issue)
   ${c.green}mcp${c.reset}        MCP server over stdio — guard/score/explain/verify/report/diagnose as agent tools
   ${c.green}report${c.reset}     Compliance-evidence bundle — guard + score + ALCOA+ + integrity hash (${c.cyan}--format json${c.reset}, ${c.cyan}--out <file>${c.reset})
@@ -307,14 +307,15 @@ const COMMAND_HELP = {
     examples: ['docguard feedback', 'docguard feedback --code TRC005 --preview', 'docguard feedback --fixture-manifest feedback.json --reduce --preview --format json'],
   },
   verify: {
-    summary: 'Extract the semantic claims in your canonical docs — documented numbers, limits, and enums (retention days, rate limits, GSI/role counts, status enums) — as a verification task list the agent checks against the code. This is the highest-value bug class (a doc value that drifted from code) and the one regex/AST cannot judge. DocGuard finds the claims; the LLM confirms them.',
-    usage: 'docguard verify [--semantic|--instructions] [--format json]',
+    summary: 'Verify exact declared evidence, extract heuristic semantic claims, or audit agent instructions.',
+    usage: 'docguard verify [--evidence|--semantic|--instructions] [--format json]',
     flags: [
+      ['--evidence', 'Evaluate `.docguard-evidence.json` using local bounded JSON, collection, oasdiff, and Buf evidence'],
       ['--semantic', 'Extract documented numbers/limits/enums to verify against code (the current — and default — mode)'],
       ['--instructions', 'Audit AGENTS.md/CLAUDE.md for duplicate, contradictory, and stale-pointer rules (deterministic findings + agent conflict tasks)'],
       ['--format json', 'Machine-readable task list (the agent-executable artifact)'],
     ],
-    examples: ['docguard verify --semantic', 'docguard verify --semantic --format json'],
+    examples: ['docguard verify --evidence', 'docguard verify --evidence --format json', 'docguard verify --semantic --format json'],
   },
   retire: {
     summary: 'Remove reviewed docs from active AI context while preserving recovery from a retained Git ref.',
@@ -438,6 +439,8 @@ async function main() {
       // v0.28 (field report #5): `docguard verify --semantic` extracts
       // documented numbers/enums/limits for the agent to check against code.
       flags.semantic = true;
+    } else if (args[i] === '--evidence') {
+      flags.evidence = true;
     } else if (args[i] === '--instructions') {
       // v0.30: `docguard verify --instructions` audits AGENTS.md/CLAUDE.md for
       // duplicate/contradictory/stale rules (MemoryLint-inspired).

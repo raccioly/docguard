@@ -173,6 +173,7 @@ If user has run score before (check git log for score badge changes):
 - **Be actionable** — every recommendation must have a specific action
 - **Compare before/after** — if user has previously run score in this session, show improvement
 - **Focus on ROI** — surface the cheapest fixes with the biggest score impact first
+- **Keep assurance separate** — report `assurance.declaredEvidence` and remaining `unverifiedClaims` beside the structural score; never convert a scoped evidence pass into an accuracy score for a document or project
 
 ## Context
 

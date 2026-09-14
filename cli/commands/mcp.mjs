@@ -1,8 +1,10 @@
 /**
+ * @implements docguard.evidence-scoped-verification#FR-009
+ * @implements docguard.evidence-scoped-verification#FR-012
  * MCP Command — DocGuard as a Model Context Protocol server (stdio).
  *
  * `docguard mcp` exposes the read-only core (guard / score / explain /
- * verify-claims / diagnose) as MCP tools any MCP client (Claude, Cursor,
+ * verify-evidence / verify-claims / diagnose) as MCP tools any MCP client (Claude, Cursor,
  * agent SDKs) can call over stdio. JSON-RPC 2.0, newline-delimited, per the
  * MCP stdio transport (protocol revision 2024-11-05).
  *
@@ -31,6 +33,7 @@ import { buildReport } from './report.mjs';
 import { loadConfig } from '../config.mjs';
 import { CODES } from '../findings.mjs';
 import { extractSemanticClaims, buildSemanticVerifyTasks } from '../scanners/semantic-claims.mjs';
+import { coverSemanticClaims, evaluateEvidence } from '../evidence/evaluate.mjs';
 
 const _PKG = JSON.parse(readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', 'package.json'), 'utf-8'));
 
@@ -98,6 +101,16 @@ const TOOLS = [
         },
       },
       required: ['code'],
+    },
+    annotations: READONLY_ANNOTATIONS,
+  },
+  {
+    name: 'docguard_verify_evidence',
+    title: 'Verify declared evidence',
+    description: 'Evaluate `.docguard-evidence.json` against bounded local sources. Returns explicit verified-within-scope, contradicted, stale, inconclusive, and unsupported states; verification applies only to each selected statement.',
+    inputSchema: {
+      type: 'object',
+      properties: { ...PROJECT_DIR_PROP },
     },
     annotations: READONLY_ANNOTATIONS,
   },
@@ -173,11 +186,18 @@ const TOOL_HANDLERS = {
   docguard_verify_claims(args, defaultDir) {
     const { dir, config } = resolveTarget(args, defaultDir);
     const claims = extractSemanticClaims(dir, config);
+    const coverage = coverSemanticClaims(claims, evaluateEvidence(dir, config));
     return {
       claimCount: claims.length,
+      verifiedWithinScope: coverage.verifiedWithinScope,
       note: 'Deterministic discovery, LLM judgment — the caller verifies each claim against the code and reports any mismatch with both values.',
-      tasks: buildSemanticVerifyTasks(claims),
+      tasks: buildSemanticVerifyTasks(coverage.remaining),
     };
+  },
+
+  docguard_verify_evidence(args, defaultDir) {
+    const { dir, config } = resolveTarget(args, defaultDir);
+    return evaluateEvidence(dir, config);
   },
 
   docguard_report(args, defaultDir) {

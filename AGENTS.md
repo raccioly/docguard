@@ -68,11 +68,15 @@ Prefer the machine contract over parsing prose: `docguard guard --format json`
 returns `status` (PASS/WARN/FAIL, matches exit code 0/2/1), `findings[]`
 (`{code, severity, confidence, message, location, suggestion}`), `nextStep`,
 `reportable[]` (low-confidence findings — verify before acting), `coverage`
-(Markdown tier map incl. `unclassified[]`), and `semanticClaims.count`
+(Markdown tier map incl. `unclassified[]`), `evidence`, and `semanticClaims.count`
 (documented numbers not yet verified against code).
 
-- Every finding has a stable code (`STR001`, `ENV003`, `XRF002`, …) — all 29
-  validators emit them. `docguard explain <CODE>` gives the contract and fix.
+- Every structured finding has a stable code (`STR001`, `ENV003`, `XRF002`, …).
+  `docguard explain <CODE>` gives the contract and fix.
+- When `evidence.configured` is true, inspect `docguard verify --evidence
+  --format json` first. A `verified-within-scope` result covers only its selected
+  statement. Contradictions can indicate code regressions from approved intent;
+  stale reports must be regenerated from their declared inputs.
 - Mechanical fixes go through `docguard fix --write` (provenance-checked,
   fail-closed) — never hand-apply what the tool fixes deterministically.
 - Genuine false positives: suppress at the site with `// docguard:ignore <CODE>`

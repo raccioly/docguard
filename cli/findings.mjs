@@ -1,4 +1,5 @@
 /**
+ * @implements docguard.evidence-scoped-verification#FR-010
  * Findings — the structured, LLM-addressable result unit (v0.27).
  *
  * Background (LLM field report #3): DocGuard's whole job is to tell an agent
@@ -685,6 +686,36 @@ export const CODES = {
     title: 'Lazy API documentation',
     help: 'An API doc unit is vague/generic or barely exceeds the signature it documents (deterministic Lazy detector F1 0.95). Document parameters, return, and errors concretely.',
     suppress: '<!-- docguard:quality api-smell off — your reason -->',
+  },
+  EVD001: {
+    validator: 'evidence',
+    title: 'Evidence manifest is invalid',
+    help: 'The strict `.docguard-evidence.json` contract is malformed, unsafe, duplicated, or combines an adapter with an incompatible predicate. Compare it with `templates/evidence-manifest.json`, repair the named field, and rerun `docguard verify --evidence`.',
+    suppress: null,
+  },
+  EVD002: {
+    validator: 'evidence',
+    title: 'Declared evidence contradicts documentation',
+    help: 'A unique Markdown statement and its current declared source disagree under an exact predicate. Review approved intent before changing either side; implementation may have regressed from the document.',
+    suppress: null,
+  },
+  EVD003: {
+    validator: 'evidence',
+    title: 'Saved evidence is stale',
+    help: 'A saved oasdiff or Buf report names an input whose current SHA-256 differs from the declared snapshot. Regenerate the upstream report with the recorded command and producer version, update every input digest, then review the dependent statement.',
+    suppress: null,
+  },
+  EVD004: {
+    validator: 'evidence',
+    title: 'Evidence verification is inconclusive',
+    help: 'DocGuard could not safely and uniquely read the declaration, document statement, source, or report. Restore the evidence or narrow the target; missing evidence never becomes a pass.',
+    suppress: null,
+  },
+  EVD005: {
+    validator: 'evidence',
+    title: 'Evidence format is unsupported',
+    help: 'The adapter version, command, source type, report shape, or predicate is outside the implemented contract. Keep the finding visible and contribute a synthetic failing fixture plus a neighboring valid control before expanding support.',
+    suppress: null,
   },
 };
 

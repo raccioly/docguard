@@ -28,14 +28,16 @@ claude mcp add docguard -- npx docguard-cli mcp
 npx docguard-cli mcp
 ```
 
-Five tools, each accepting an optional `projectDir`:
+Seven tools, each accepting an optional `projectDir`:
 
 | Tool | Returns |
 |------|---------|
 | `docguard_guard` | The full guard JSON contract — status, findings (stable codes), coverage, unverified-claim count |
 | `docguard_score` | `{score, grade, categories}` |
 | `docguard_explain` | A finding code's contract: title, help, suppression pragma, owning validator |
+| `docguard_verify_evidence` | Exact declared statement-to-source checks with scoped verification states |
 | `docguard_verify_claims` | Documented numbers/limits/enums as verification tasks — **the caller checks each against the code** |
+| `docguard_report` | Commit-stamped compliance evidence with a tamper-evident integrity hash |
 | `docguard_diagnose` | Failing/warning validators with per-finding suggestions, shaped for action |
 
 The server is read-only (never scaffolds), keeps stdout as a pure JSON-RPC
@@ -135,7 +137,7 @@ is the canonical source.
 ## The agent workflow
 
 ```
-specs preflight → diagnose → fix (research + write) → guard → verify --semantic → done
+specs preflight → diagnose → fix (research + write) → guard → verify --evidence → verify --semantic → done
 ```
 
 1. **`docguard specs preflight`** — before specification, load the current intent
@@ -146,7 +148,10 @@ specs preflight → diagnose → fix (research + write) → guard → verify --s
 3. **`docguard fix --doc <name>`** — emits research steps + expected structure
    for one doc. Execute the research, write real content, no placeholders.
 4. **`docguard guard`** — verify. Loop until PASS.
-5. **`docguard verify --semantic`** — extract every checkable documented claim
+5. **`docguard verify --evidence`** — evaluate exact, typed declarations against
+   local JSON, bounded collections, or saved compatibility reports. Preserve
+   each state and its statement-level scope.
+6. **`docguard verify --semantic`** — extract every remaining checkable documented claim
    (counts, limits, enums) with the nearest cited code path. **You** compare
    each value against the code: a green guard asserts structure, not the truth
    of documented numbers. This is the highest-value step an agent can run.
@@ -183,9 +188,13 @@ integrity. Each failing metric names its fix.
    acting, suppress at the site with it, report false positives via `feedback`.
 3. **Run `guard` after every fix batch** — loop until PASS.
 4. **Never treat `na` as a pass** — "nothing to validate" is a coverage gap.
-5. **Check `semanticClaims.count` on green runs** — offer `verify --semantic`.
-6. **Respect the drift protocol** — deviating from canonical docs requires
+5. **Inspect `evidence` on every configured run** — resolve contradictions,
+   stale inputs, inconclusive targets, and unsupported formats before claiming
+   the selected statement is current.
+6. **Check `semanticClaims.count` on green runs** — run `verify --semantic` for
+   the claims that lack unique exact evidence.
+7. **Respect the drift protocol** — deviating from canonical docs requires
    `// DRIFT: reason` + a DRIFT-LOG.md entry, not a silent doc rewrite; the
    docs may be right and the code wrong.
-7. **`score --tax`** periodically — documentation should stay an asset, not a
+8. **`score --tax`** periodically — documentation should stay an asset, not a
    burden.

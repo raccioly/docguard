@@ -1,4 +1,5 @@
 /**
+ * @req docguard.evidence-scoped-verification#SC-004
  * MCP Server Tests — `docguard mcp` over stdio.
  *
  * Spawns the real server and drives the MCP handshake end-to-end:
@@ -134,14 +135,14 @@ describe('docguard mcp', () => {
     client.send({ jsonrpc: '2.0', method: 'notifications/initialized' });
   });
 
-  it('tools/list exposes the six DocGuard tools with input schemas', async () => {
+  it('tools/list exposes the seven DocGuard tools with input schemas', async () => {
     const res = await client.request({ jsonrpc: '2.0', id: 2, method: 'tools/list' });
     assert.equal(res.id, 2);
     const tools = res.result.tools;
-    assert.equal(tools.length, 6);
+    assert.equal(tools.length, 7);
     assert.deepEqual(
       tools.map((t) => t.name).sort(),
-      ['docguard_diagnose', 'docguard_explain', 'docguard_guard', 'docguard_report', 'docguard_score', 'docguard_verify_claims']
+      ['docguard_diagnose', 'docguard_explain', 'docguard_guard', 'docguard_report', 'docguard_score', 'docguard_verify_claims', 'docguard_verify_evidence']
     );
     for (const t of tools) {
       assert.ok(t.description, `${t.name} must have a description`);
@@ -149,6 +150,19 @@ describe('docguard mcp', () => {
     }
     const explain = tools.find((t) => t.name === 'docguard_explain');
     assert.deepEqual(explain.inputSchema.required, ['code']);
+  });
+
+  it('tools/call docguard_verify_evidence returns the scoped evidence contract', async () => {
+    const res = await client.request({
+      jsonrpc: '2.0',
+      id: 22,
+      method: 'tools/call',
+      params: { name: 'docguard_verify_evidence', arguments: { projectDir: fixture } },
+    });
+    assert.equal(res.result.isError, undefined);
+    const body = JSON.parse(res.result.content[0].text);
+    assert.equal(body.exists, false);
+    assert.match(body.scopeLimitation, /declared Markdown statement/i);
   });
 
   it('tools/call docguard_report returns the evidence bundle with integrity hash', async () => {

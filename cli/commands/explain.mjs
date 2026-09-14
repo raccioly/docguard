@@ -1,4 +1,5 @@
 /**
+ * @implements docguard.evidence-scoped-verification#FR-013
  * Explain Command — v0.16-P6.
  *
  * Asked for by a user who'd spent 5-10 minutes per warning spelunking
@@ -278,6 +279,20 @@ const EXPLAINERS = {
     example: '`docguard specs preflight --path specs/007-feature/spec.md` blocks reused IDs and reports prior lifecycle/evidence before planning.',
     standard: 'Canonical-Driven Development lifecycle registry contract',
   },
+  evidence: {
+    title: 'Evidence — declared statements match bounded local sources',
+    what: 'Evaluates opt-in declarations in `.docguard-evidence.json`. Each declaration selects one exact statement under one Markdown heading, reads a bounded local JSON value, file collection, saved oasdiff report, or saved Buf report, and reports verified-within-scope, contradicted, stale, inconclusive, or unsupported.',
+    why: 'Structural checks can prove that documentation exists and is connected, but they cannot prove factual claims. Evidence declarations add reproducible checks for selected high-value statements without claiming that the whole document is accurate.',
+    triggers: [
+      ['Evidence manifest is invalid', 'Validate `.docguard-evidence.json` against `schemas/docguard-evidence.schema.json`; unknown fields and ambiguous declarations fail closed.'],
+      ['Declared evidence contradicts', 'Inspect the selected statement and source. Update the implementation when the canonical statement is still intended, or revise the statement through the normal reviewed documentation workflow.'],
+      ['Declared evidence is stale', 'Regenerate the saved external-tool report from the declared inputs and update their SHA-256 digests.'],
+      ['Declared evidence is inconclusive', 'Repair the missing or ambiguous heading/statement, unreadable source, unsafe collection, or malformed saved report before relying on the declaration.'],
+      ['Declared evidence uses an unsupported', 'Use a documented adapter version and command, or upgrade DocGuard when support for that producer shape becomes available.'],
+    ],
+    example: 'A retention statement under `## Policy` declares JSON Pointer `/retentionDays`; `docguard verify --evidence` reports verified-within-scope only when the exact typed values match.',
+    standard: 'RFC 6901 JSON Pointer; JSON Schema 2020-12; DocGuard evidence-scoping contract',
+  },
 
   // ── Backfilled in v0.24 (field report, Issue A) ─────────────────────────
   // These validators were registered in guard but had no explain entry, so
@@ -410,6 +425,7 @@ const DISPLAY_NAMES = {
   surfaceSync: 'Surface-Sync',
   canonicalSync: 'Canonical-Sync',
   metricsConsistency: 'Metrics-Consistency',
+  evidence: 'Evidence',
   diffSuspicion: 'Diff-Suspicion',
   referenceExistence: 'Reference-Existence',
   apiDocSmells: 'API-Doc-Smells',

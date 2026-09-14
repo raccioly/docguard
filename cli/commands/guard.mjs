@@ -1,6 +1,7 @@
 import { describeCheckCoverage, summarizeCheckCoverage } from '../validator-coverage.mjs';
 import { applyDocRoles } from '../shared-doc-roles.mjs';
 /**
+ * @implements docguard.evidence-scoped-verification#FR-010
  * Guard Command — Validate project against its canonical documentation
  * Runs all enabled validators and reports results.
  *
@@ -157,6 +158,8 @@ import { validateReferenceExistence } from '../validators/reference-existence.mj
 import { validateApiDocSmells } from '../validators/api-doc-smells.mjs';
 import { validateDocumentLifecycle } from '../validators/document-lifecycle.mjs';
 import { validateSpecRegistry } from '../validators/spec-registry.mjs';
+import { validateEvidence } from '../validators/evidence.mjs';
+import { coverSemanticClaims } from '../evidence/evaluate.mjs';
 
 /**
  * Internal guard — returns structured data, no console output, no process.exit.
@@ -323,6 +326,7 @@ export function runGuardInternal(projectDir, config) {
     { key: 'specKit', name: 'Spec-Kit', fn: () => validateSpecKitIntegration(projectDir, config) },
     { key: 'documentLifecycle', name: 'Document-Lifecycle', fn: () => validateDocumentLifecycle(projectDir, config) },
     { key: 'specRegistry', name: 'Spec-Registry', fn: () => validateSpecRegistry(projectDir, config) },
+    { key: 'evidence', name: 'Evidence', fn: () => validateEvidence(projectDir, config) },
     { key: 'crossReference', name: 'Cross-Reference', fn: () => validateCrossReferences(projectDir, config) },
     { key: 'generatedStaleness', name: 'Generated-Staleness', fn: () => validateGeneratedStaleness(projectDir, config) },
     { key: 'surfaceSync', name: 'Surface-Sync', fn: () => validateSurfaceSync(projectDir, config) },
@@ -492,9 +496,14 @@ export function runGuardInternal(projectDir, config) {
   const lite = Array.isArray(config.changedFiles);
   let coverage = null;
   let semanticClaims = null;
+  const evidence = results.find(result => result.key === 'evidence')?.evidence || null;
   if (!lite) {
     try { coverage = computeDocCoverage(projectDir, config); } catch { coverage = null; }
-    try { semanticClaims = { count: extractSemanticClaims(projectDir, config).length }; }
+    try {
+      const claims = extractSemanticClaims(projectDir, config);
+      const scoped = coverSemanticClaims(claims, evidence);
+      semanticClaims = { count: scoped.unverified, discovered: scoped.total, verifiedWithinScope: scoped.verifiedWithinScope, coveredClaimIds: scoped.covered };
+    }
     catch { semanticClaims = null; }
   }
 
@@ -518,6 +527,7 @@ export function runGuardInternal(projectDir, config) {
     coverage,
     checkCoverage,
     semanticClaims,
+    evidence,
     validators: results,
     // Unknown keys in `docguard:validator … n/a` markers — typo protection so
     // a mistyped key doesn't silently fail to suppress. Surfaced by runGuard.
@@ -539,7 +549,7 @@ export function runGuardInternal(projectDir, config) {
  * Freshness (git log), Traceability (REQ scan), Doc-Quality (prose lint) —
  * stay off for speed.
  */
-export const CHANGED_ONLY_VALIDATORS = ['docsSync', 'environment', 'apiSurface', 'drift', 'todoTracking'];
+export const CHANGED_ONLY_VALIDATORS = ['docsSync', 'environment', 'apiSurface', 'drift', 'todoTracking', 'evidence'];
 
 /**
  * Build a validators map that enables the pre-commit-lite set — PLUS any
@@ -560,6 +570,7 @@ export function liteValidatorsConfig(config = {}) {
     'apiSurface', 'metadataSync', 'docsCoverage', 'docQuality', 'todoTracking',
     'schemaSync', 'specKit', 'crossReference', 'generatedStaleness',
     'canonicalSync', 'metricsConsistency',
+    'evidence',
   ];
   const userValidators = (config && config.validators) || {};
   const out = {};

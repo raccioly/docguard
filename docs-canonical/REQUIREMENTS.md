@@ -14,6 +14,7 @@
 | FR-003 | P1 | CI, diagnose, and report preserve score assurance limits in machine output. Existing score thresholds keep their numeric meaning. | tests/score-assurance.test.mjs |
 | FR-004 | P1 | Detector quality is measured with independently labelled defect/control pairs, split-safe repository groups, explicit unsupported coverage, null-safe metrics, confidence limits, and case-first baseline comparison. | tests/benchmark-manifest.test.mjs, tests/benchmark-metrics.test.mjs, tests/benchmark-runner.test.mjs |
 | FR-005 | P1 | Users can turn a false positive, false negative, unsupported syntax case, ambiguity, or policy dispute into a redaction-attested synthetic fixture with an opposite control, deterministic reduction, duplicate search, and optional test-only contribution. | tests/feedback-fixture.test.mjs, tests/feedback-contributions.test.mjs |
+| FR-006 | P1 | Teams can bind an exact Markdown statement to safe, local, typed evidence and receive scoped verified, contradicted, stale, inconclusive, or unsupported results through verify, guard, and agent assurance without granting whole-document accuracy. | tests/evidence-manifest.test.mjs, tests/evidence-adapters.test.mjs, tests/evidence-integration.test.mjs |
 
 ## Non-Functional Requirements
 
