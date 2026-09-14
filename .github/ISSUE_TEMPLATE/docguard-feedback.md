@@ -8,7 +8,9 @@ labels: docguard-feedback
 - **DocGuard version:**
 - **Runtime / operating system:**
 - **Finding code / detector:**
-- **Type:** false positive / missed defect / unsupported syntax / policy question
+- **Classification:** false_positive / false_negative / unsupported_syntax / ambiguous / policy_disagreement
+- **Parser tier and supported scope:**
+- **Synthetic duplicate identity (`dgf-…`):**
 - **Existing open and closed issues/PRs checked:**
 
 **Expected behavior**
@@ -25,4 +27,4 @@ What closely related example should still pass or fail after a fix?
 
 **Contribution**
 
-A report or a test-only contribution is welcome. See CONTRIBUTING.md, "Turn a finding into a regression test". No credentials or private source are required.
+A report or a test-only contribution is welcome. Confirm the reproduction, opposite control, redaction attestation, supported scope, and benchmark delta. See CONTRIBUTING.md, "Turn a finding into a regression test". No credentials or private source are required.

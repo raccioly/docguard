@@ -35,7 +35,9 @@ Git hooks provide local enforcement and can be bypassed by Git options. Protecte
 
 Core CLI analysis requires no API credential. Source scanners inspect usage patterns; environment values must not be included in generated public feedback. The optional HTTP MCP API key is supplied by its operator. Keep deployment credentials outside repository content and restrict access to process arguments and logs appropriately.
 
-Feedback issue URLs contain allowlisted finding identity and tool metadata. Full local feedback records can include private paths and diagnostic text. Share only a reviewed synthetic reproduction. Preview mode avoids saving feedback records; it does not change which source files guard normally inspects.
+Feedback issue URLs contain allowlisted detector metadata, classification, parser tier, and a synthetic-shape duplicate identity. Full local finding records can include private paths and diagnostic text. Fixture manifests are accepted only with explicit synthetic-content and redaction-review attestations; they reject escaping paths, `.git`, `.local`, symlinked inputs, unsafe config values, and oversized content. Preview mode avoids all writes. Generated tests contain the attested synthetic fixture, so users must review it before contribution.
+
+The optional external benchmark accepts only credential-free public HTTPS Git URLs pinned to full commit hashes. It disables interactive Git authentication and global/system Git configuration, forbids the file protocol, never runs project scripts, copies no `.git` metadata into case projects, and removes its temporary root by default. External execution is absent from ordinary tests and package installation.
 
 ## Subprocess Safety
 
@@ -47,7 +49,7 @@ Pass untrusted arguments through argv arrays and validate values for their inten
 |---|---|---|
 | guard, score, diff, diagnose | None by default | Plan caching may create `.docguard/` artifacts; explicit mutation flags change behavior |
 | ci | None | Records history unless `--no-history` is set |
-| feedback | None | Saves local diagnostic records unless `--preview`; prints opt-in URLs |
+| feedback | None | Saves local records or an explicitly requested direct `tests/*.test.mjs` contribution unless `--preview`; prints opt-in URLs but never submits |
 | memory --pack | None | Writes a generated context pack |
 | fix --write, sync --write | Targeted documentation edits | Backups and fix history where supported |
 | reconcile | None by default | `--write` delegates only mechanical generated-section refreshes to `sync` |
@@ -83,5 +85,6 @@ Exclude `node_modules`, environment values, generated build output, and private 
 
 | Version | Date | Changes |
 |---|---|---|
+| 0.9.0 | 2026-09-14 | Document public benchmark isolation and synthetic feedback-fixture privacy boundaries |
 | 0.8.0 | 2026-09-14 | Document reconciliation and transactional spec lifecycle authority |
 | 0.7.0 | 2026-09-11 | Document HTTP MCP, auxiliary writes, enforcement scope, and feedback privacy |

@@ -301,10 +301,10 @@ const COMMAND_HELP = {
     examples: ['docguard memory', 'docguard memory --diff'],
   },
   feedback: {
-    summary: 'Review detection feedback locally. Select any finding with --code or --all, check duplicates, and prepare a metadata-only issue URL. Nothing is submitted automatically.',
-    usage: 'docguard feedback [--code <CODE> | --all] [--preview] [--format json]',
-    flags: [['--code <CODE>', 'Select a finding regardless of confidence'], ['--all', 'Select every active finding'], ['--preview', 'Skip local feedback-record writes'], ['--format json', 'Machine-readable selected findings and issue/search URLs']],
-    examples: ['docguard feedback', 'docguard feedback --code TRC005 --preview', 'docguard feedback --all --format json'],
+    summary: 'Review detection feedback locally, or validate and reduce a synthetic fixture manifest. Duplicate searches cover open and closed work; nothing is submitted automatically.',
+    usage: 'docguard feedback [--code <CODE> | --all] [--classification <class>] [--fixture-manifest <path> [--reduce] [--contribution <path>]] [--preview] [--format json]',
+    flags: [['--code <CODE>', 'Select a finding regardless of confidence'], ['--all', 'Select every active finding'], ['--classification <class>', 'false_positive, false_negative, unsupported_syntax, ambiguous, or policy_disagreement'], ['--fixture-manifest <path>', 'Validate a reviewed synthetic fixture and opposite control'], ['--reduce', 'Deterministically reduce a reproducing fixture'], ['--contribution <path>', 'Write a test-only contribution when required evidence is present'], ['--preview', 'Skip local writes and return contribution text inline'], ['--format json', 'Machine-readable evidence and issue/search URLs']],
+    examples: ['docguard feedback', 'docguard feedback --code TRC005 --preview', 'docguard feedback --fixture-manifest feedback.json --reduce --preview --format json'],
   },
   verify: {
     summary: 'Extract the semantic claims in your canonical docs — documented numbers, limits, and enums (retention days, rate limits, GSI/role counts, status enums) — as a verification task list the agent checks against the code. This is the highest-value bug class (a doc value that drifted from code) and the one regex/AST cannot judge. DocGuard finds the claims; the LLM confirms them.',
@@ -626,6 +626,17 @@ async function main() {
       flags.all = true;
     } else if (args[i] === '--preview') {
       flags.preview = true;
+    } else if (args[i] === '--classification' && args[i + 1]) {
+      flags.classification = args[i + 1].replaceAll('-', '_');
+      i++;
+    } else if (args[i] === '--fixture-manifest' && args[i + 1]) {
+      flags.fixtureManifest = args[i + 1];
+      i++;
+    } else if (args[i] === '--reduce') {
+      flags.reduce = true;
+    } else if (args[i] === '--contribution' && args[i + 1]) {
+      flags.contribution = args[i + 1];
+      i++;
     } else if (args[i] === '--signals') {
       flags.signals = true;
     } else if (args[i] === '--debate') {

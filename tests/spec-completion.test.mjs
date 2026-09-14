@@ -97,6 +97,41 @@ describe('Spec completion transaction', () => {
     assert.match(result.archiveReadiness.reason, /successor/);
   });
 
+  it('records reviewed maintenance for verified living specs and rejects empty repeats', t => {
+    const dir = fixture(t);
+    let registry = JSON.parse(readFileSync(join(dir, SPEC_REGISTRY_PATH), 'utf8'));
+    registry.specs[0].reviewed.lifecycle.persistenceModel = 'living';
+    write(dir, SPEC_REGISTRY_PATH, `${JSON.stringify(registry, null, 2)}\n`);
+    git(dir, ['add', '.']);
+    git(dir, ['commit', '-qm', 'living policy']);
+    const initialRevision = git(dir, ['rev-parse', 'HEAD']);
+    assert.equal(completeSpec(dir, {}, {
+      id: 'acme.feature', since: initialRevision, write: true, reason: 'Initial review.',
+    }, { guardResult: passingGuard }).status, 'VERIFIED');
+    git(dir, ['add', '.']);
+    git(dir, ['commit', '-qm', 'initial outcome']);
+
+    write(dir, 'packages/api/src/feature.js', '/** @implements acme.feature#FR-001 */\nexport const feature = false;\n');
+    git(dir, ['add', '.']);
+    git(dir, ['commit', '-qm', 'maintain feature']);
+    const maintenanceRevision = git(dir, ['rev-parse', 'HEAD']);
+    const plan = planSpecCompletion(dir, {}, { id: 'acme.feature' }, { guardResult: passingGuard });
+    assert.equal(plan.status, 'READY');
+    assert.equal(plan.transition, 'verified→verified');
+    assert.equal(completeSpec(dir, {}, {
+      id: 'acme.feature', write: true, reason: 'Reviewed living-spec maintenance.',
+    }, { guardResult: passingGuard }).status, 'VERIFIED');
+    registry = JSON.parse(readFileSync(join(dir, SPEC_REGISTRY_PATH), 'utf8'));
+    assert.equal(registry.specs[0].reviewed.reconciliation.lastReviewedRevision, maintenanceRevision);
+    assert.equal(registry.specs[0].reviewed.reconciliation.outcomes.length, 2);
+    git(dir, ['add', '.']);
+    git(dir, ['commit', '-qm', 'maintenance outcome']);
+
+    const duplicate = planSpecCompletion(dir, {}, { id: 'acme.feature' }, { guardResult: passingGuard });
+    assert.equal(duplicate.status, 'BLOCKED');
+    assert.ok(duplicate.blockers.some(issue => issue.code === 'SPC006' && /new linked/.test(issue.message)));
+  });
+
   it('blocks checked-task false assurance when qualified evidence is absent', t => {
     const dir = fixture(t, { implementation: false, test: false });
     const result = planSpecCompletion(dir, {}, {

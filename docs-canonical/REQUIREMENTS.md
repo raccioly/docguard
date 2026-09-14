@@ -1,5 +1,6 @@
 # Requirements
 
+<!-- docguard:quality negation-load off — requirements define explicit failure and non-disclosure boundaries -->
 <!-- docguard:version 0.2.0 -->
 <!-- docguard:status active -->
 <!-- docguard:last-reviewed 2026-09-14 -->
@@ -11,6 +12,8 @@
 | FR-001 | P1 | Score distinguishes structural maturity from unverified factual accuracy, even when candidate extraction finds nothing. | tests/score-assurance.test.mjs |
 | FR-002 | P1 | Users can dispute any active finding, preview feedback, and prepare public metadata without sharing source-derived strings automatically. | tests/feedback-contributions.test.mjs |
 | FR-003 | P1 | CI, diagnose, and report preserve score assurance limits in machine output. Existing score thresholds keep their numeric meaning. | tests/score-assurance.test.mjs |
+| FR-004 | P1 | Detector quality is measured with independently labelled defect/control pairs, split-safe repository groups, explicit unsupported coverage, null-safe metrics, confidence limits, and case-first baseline comparison. | tests/benchmark-manifest.test.mjs, tests/benchmark-metrics.test.mjs, tests/benchmark-runner.test.mjs |
+| FR-005 | P1 | Users can turn a false positive, false negative, unsupported syntax case, ambiguity, or policy dispute into a redaction-attested synthetic fixture with an opposite control, deterministic reduction, duplicate search, and optional test-only contribution. | tests/feedback-fixture.test.mjs, tests/feedback-contributions.test.mjs |
 
 ## Non-Functional Requirements
 
@@ -22,7 +25,7 @@
 
 ## Success Criteria
 
-The full supported-runtime test matrix and guard determine local release readiness. Detector quality requires independent positive and negative examples. External precision, recall, and agent productivity targets belong to the evaluation plan; a structural score is not evidence of those outcomes.
+The full supported-runtime test matrix and guard determine local release readiness. The reviewed benchmark records observed detector precision and recall with explicit coverage limits; its finite confidence interval is not universal accuracy. Agent productivity remains a separate R7 evaluation, and a structural score is not evidence of that outcome.
 
 ## User Scenarios
 

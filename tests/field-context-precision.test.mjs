@@ -7,6 +7,8 @@ import { safeWrite } from '../cli/writers/generate-io.mjs';
 import { validateSecurity } from '../cli/validators/security.mjs';
 import { validateTodoTracking } from '../cli/validators/todo-tracking.mjs';
 
+// @req docguard.precision-evidence-loop#FR-003
+
 function scan(t, source, validator, filename = 'sample.test.tsx') {
   const dir = mkdtempSync(join(tmpdir(), 'docguard-field-context-'));
   t.after(() => rmSync(dir, { recursive: true, force: true }));
@@ -133,4 +135,16 @@ test('retains matched placeholder exemption independently of unrelated fields', 
 
 test('trailing example comment does not excuse a credential', t => {
   assert.equal(scan(t, 'const password = "actualsecret"; // example usage', validateSecurity).find(f => f.code === 'SEC001')?.severity, 'error');
+});
+
+test('TypeScript type annotations cannot hide hardcoded credentials', t => {
+  const source = [
+    'const password: string = "actualsecret";',
+    'class Config { apiKey?: string = "real-looking-api-key-value"; }',
+    'const config: { secretKey: string } = { secretKey: "real-looking-secret-key-value" };',
+  ].join('\n');
+  const findings = scan(t, source, validateSecurity, 'sample.ts');
+  for (const code of ['SEC001', 'SEC002', 'SEC003']) {
+    assert.ok(findings.some(finding => finding.code === code), code);
+  }
 });

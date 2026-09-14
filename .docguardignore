@@ -35,6 +35,8 @@ examples/
 examples/**
 templates/demo-fixture/
 templates/demo-fixture/**
+benchmarks/fixtures/
+benchmarks/fixtures/**
 packaging/
 packaging/**
 

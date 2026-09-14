@@ -27,8 +27,8 @@
 
 ## Phase 3: Completion and post-hoc reconciliation (R2)
 
-These tasks were not part of the v0.37.0 release contract. They implement the
-next roadmap priority and remain open until their evidence gates pass.
+These tasks completed the post-v0.37.0 lifecycle increment and passed their
+evidence gates before v0.38.0.
 
 - [x] T016 Add staged registry/recovery transactions with rollback, status
   adapters, and monorepo fixtures before enabling completion writes.

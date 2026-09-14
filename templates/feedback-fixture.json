@@ -1,0 +1,18 @@
+{
+  "$schema": "https://raccioly.github.io/docguard/schemas/docguard-feedback-fixture.schema.json",
+  "schemaVersion": 1,
+  "classification": "false_positive",
+  "detector": { "code": "SEC001", "validator": "security" },
+  "parserTier": "js-ast",
+  "config": { "profile": "starter", "diskCache": false, "validators": { "security": true } },
+  "expectedIdentity": "SEC001@src/case.js",
+  "interestingness": { "predicate": "finding_present" },
+  "fixture": { "files": [{ "path": "src/case.js", "content": "const password = \"validation message with several words\";\n" }] },
+  "oppositeControl": { "files": [{ "path": "src/case.js", "content": "const password = \"real-looking-password\";\n" }] },
+  "provenance": { "synthetic": true, "redactionAttested": true },
+  "contribution": {
+    "testOnly": true,
+    "scopeDocumented": true,
+    "benchmarkDelta": { "falsePositives": 0, "falseNegatives": 0, "unsupportedCases": 0, "abstainedSupportedCases": 0 }
+  }
+}

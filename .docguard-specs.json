@@ -30,11 +30,79 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "834e0a2299402205f5bdca7a55e353bad71bab28",
+          "lastReviewedRevision": "a384a04479103b43587a2f79470b3b4a1031d242",
           "outcomes": [
             {
               "revision": "834e0a2299402205f5bdca7a55e353bad71bab28",
               "reason": "Implemented and reviewed R2 lifecycle transactions, reconciliation classifications, qualified evidence gates, active-context regeneration, and Spec Kit completion hooks.",
+              "evidence": [
+                "cli/commands/reconcile.mjs",
+                "cli/commands/retire.mjs",
+                "cli/commands/specs.mjs",
+                "cli/commands/sync.mjs",
+                "cli/docguard.mjs",
+                "cli/scanners/document-lifecycle.mjs",
+                "cli/scanners/lifecycle-context.mjs",
+                "cli/scanners/reconciliation.mjs",
+                "cli/scanners/requirement-evidence.mjs",
+                "cli/scanners/retirement-manifest.mjs",
+                "cli/scanners/spec-registry.mjs",
+                "cli/shared-sync-scope.mjs",
+                "cli/validators/traceability.mjs",
+                "cli/writers/file-transaction.mjs",
+                "cli/writers/spec-outcomes.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/DATA-MODEL.md",
+                "docs-canonical/REQUIREMENTS.md",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/archive.test.mjs",
+                "tests/document-lifecycle.test.mjs",
+                "tests/file-transaction.test.mjs",
+                "tests/hooks-contract.test.mjs",
+                "tests/reconcile.test.mjs",
+                "tests/spec-completion.test.mjs",
+                "tests/spec-registry.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            },
+            {
+              "revision": "f3e4d76e94f5b21073421d2ff8b2a1228a5dd55b",
+              "reason": "Reviewed living-spec maintenance now records verified-to-verified outcomes only for new linked behavior or canonical intent; generated lifecycle churn cannot self-qualify.",
+              "evidence": [
+                "cli/commands/reconcile.mjs",
+                "cli/commands/retire.mjs",
+                "cli/commands/specs.mjs",
+                "cli/commands/sync.mjs",
+                "cli/docguard.mjs",
+                "cli/scanners/document-lifecycle.mjs",
+                "cli/scanners/lifecycle-context.mjs",
+                "cli/scanners/reconciliation.mjs",
+                "cli/scanners/requirement-evidence.mjs",
+                "cli/scanners/retirement-manifest.mjs",
+                "cli/scanners/spec-registry.mjs",
+                "cli/shared-sync-scope.mjs",
+                "cli/validators/traceability.mjs",
+                "cli/writers/file-transaction.mjs",
+                "cli/writers/spec-outcomes.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/DATA-MODEL.md",
+                "docs-canonical/REQUIREMENTS.md",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/archive.test.mjs",
+                "tests/document-lifecycle.test.mjs",
+                "tests/file-transaction.test.mjs",
+                "tests/hooks-contract.test.mjs",
+                "tests/reconcile.test.mjs",
+                "tests/spec-completion.test.mjs",
+                "tests/spec-registry.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            },
+            {
+              "revision": "a384a04479103b43587a2f79470b3b4a1031d242",
+              "reason": "Reviewed the canonical architecture wording for living-spec maintenance eligibility; the positive rule preserves the delivered behavior and passes document quality.",
               "evidence": [
                 "cli/commands/reconcile.mjs",
                 "cli/commands/retire.mjs",
@@ -104,15 +172,15 @@
         "artifacts": [
           {
             "path": "specs/006-document-lifecycle/spec.md",
-            "digest": "sha256:4874baea0ec2439d9a5f6223eecb10ac53755c1e48c974d5cd42c9915d75e281"
+            "digest": "sha256:35989fea62cfd2ce2d8022ca695ecd19d6bb466b5bc9e1ac7283b272cf67643a"
           },
           {
             "path": "specs/006-document-lifecycle/plan.md",
-            "digest": "sha256:cbb46666fc2ccae79e0e83fb03b220c920b8bab34e9f05b5ab85960867123a77"
+            "digest": "sha256:22f6aa07bb3be96ef7b648c2b50a7ecd78993a8e28920572fbbc8f96eb83cca7"
           },
           {
             "path": "specs/006-document-lifecycle/tasks.md",
-            "digest": "sha256:cc9191b7aafd1bbcab99c2d050dafa7d40ccc1b883aeff81ae6cc58aaca4717a"
+            "digest": "sha256:66a553bdcd7fb5e2d3a21755d1f8ec16a5800450453b4dc188065541cdb3e2ca"
           }
         ],
         "taskCompletion": {
@@ -406,6 +474,445 @@
             "requirementId": "SC-007",
             "file": "tests/spec-registry.test.mjs",
             "line": 14
+          }
+        ]
+      }
+    },
+    {
+      "specId": "docguard.precision-evidence-loop",
+      "path": "specs/007-precision-evidence-loop/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "approved",
+          "delivery": "verified",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": "living"
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md",
+            "docs-canonical/CI-RECIPES.md",
+            "docs-canonical/REQUIREMENTS.md",
+            "docs-canonical/SECURITY.md",
+            "docs-canonical/TEST-SPEC.md"
+          ]
+        },
+        "reconciliation": {
+          "lastReviewedRevision": "8f8518524516fcdf77a69386258a49ff4c12c92f",
+          "outcomes": [
+            {
+              "revision": "f84c187626be0e1b6ab56ec7002c9c168ac290d6",
+              "reason": "Reviewed precision corpus, feedback contribution workflow, four-version regression matrix, package composition, dependency audit, and external baseline passed; traceability and changed-evidence invalidation were verified.",
+              "evidence": [
+                "benchmarks/fixtures/generated-security-control/src/generated-client/config.js",
+                "benchmarks/fixtures/go-todo-control/app.go",
+                "benchmarks/fixtures/js-security-control/src/config.js",
+                "benchmarks/fixtures/monorepo-security-control/packages/auth/src/config.ts",
+                "benchmarks/fixtures/python-security-control/app.py",
+                "benchmarks/fixtures/python-unsupported/app.py",
+                "benchmarks/fixtures/ts-security-control/src/config.ts",
+                "benchmarks/lib/compare.mjs",
+                "benchmarks/lib/manifest.mjs",
+                "benchmarks/lib/metrics.mjs",
+                "benchmarks/lib/runner.mjs",
+                "benchmarks/run.mjs",
+                "cli/commands/feedback.mjs",
+                "cli/feedback-fixture.mjs",
+                "cli/validators/security.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/CI-RECIPES.md",
+                "docs-canonical/REQUIREMENTS.md",
+                "docs-canonical/SECURITY.md",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/benchmark-manifest.test.mjs",
+                "tests/benchmark-metrics.test.mjs",
+                "tests/benchmark-runner.test.mjs",
+                "tests/feedback-contributions.test.mjs",
+                "tests/feedback-fixture.test.mjs",
+                "tests/field-context-precision.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            },
+            {
+              "revision": "8f8518524516fcdf77a69386258a49ff4c12c92f",
+              "reason": "Reviewed feedback regression generation now normalizes structured finding locations through one shared identity function; lifecycle maintenance evidence and focused regression tests passed.",
+              "evidence": [
+                "benchmarks/fixtures/generated-security-control/src/generated-client/config.js",
+                "benchmarks/fixtures/go-todo-control/app.go",
+                "benchmarks/fixtures/js-security-control/src/config.js",
+                "benchmarks/fixtures/monorepo-security-control/packages/auth/src/config.ts",
+                "benchmarks/fixtures/python-security-control/app.py",
+                "benchmarks/fixtures/python-unsupported/app.py",
+                "benchmarks/fixtures/ts-security-control/src/config.ts",
+                "benchmarks/lib/compare.mjs",
+                "benchmarks/lib/manifest.mjs",
+                "benchmarks/lib/metrics.mjs",
+                "benchmarks/lib/runner.mjs",
+                "benchmarks/run.mjs",
+                "cli/commands/feedback.mjs",
+                "cli/feedback-fixture.mjs",
+                "cli/validators/security.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/CI-RECIPES.md",
+                "docs-canonical/REQUIREMENTS.md",
+                "docs-canonical/SECURITY.md",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/benchmark-manifest.test.mjs",
+                "tests/benchmark-metrics.test.mjs",
+                "tests/benchmark-runner.test.mjs",
+                "tests/feedback-contributions.test.mjs",
+                "tests/feedback-fixture.test.mjs",
+                "tests/field-context-precision.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.precision-evidence-loop#FR-001",
+          "docguard.precision-evidence-loop#FR-002",
+          "docguard.precision-evidence-loop#FR-003",
+          "docguard.precision-evidence-loop#FR-004",
+          "docguard.precision-evidence-loop#FR-005",
+          "docguard.precision-evidence-loop#FR-006",
+          "docguard.precision-evidence-loop#FR-007",
+          "docguard.precision-evidence-loop#FR-008",
+          "docguard.precision-evidence-loop#FR-009",
+          "docguard.precision-evidence-loop#FR-010",
+          "docguard.precision-evidence-loop#FR-011",
+          "docguard.precision-evidence-loop#FR-012",
+          "docguard.precision-evidence-loop#FR-013",
+          "docguard.precision-evidence-loop#FR-014",
+          "docguard.precision-evidence-loop#FR-015",
+          "docguard.precision-evidence-loop#FR-016",
+          "docguard.precision-evidence-loop#FR-017",
+          "docguard.precision-evidence-loop#SC-001",
+          "docguard.precision-evidence-loop#SC-002",
+          "docguard.precision-evidence-loop#SC-003",
+          "docguard.precision-evidence-loop#SC-004",
+          "docguard.precision-evidence-loop#SC-005",
+          "docguard.precision-evidence-loop#SC-006"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/007-precision-evidence-loop/spec.md",
+            "digest": "sha256:5ee5b2e1653b7196ec19755ce2506a79bb8eedc8ccdc72aa8c8672f13912fd8d"
+          },
+          {
+            "path": "specs/007-precision-evidence-loop/plan.md",
+            "digest": "sha256:4a0b380b1d28a6743cf95b3cc162421c2666c42582a0369ab498799a2223c9c3"
+          },
+          {
+            "path": "specs/007-precision-evidence-loop/tasks.md",
+            "digest": "sha256:f712d9c80309b9a73a3ccdcfad90e3f972810ebbb8c9336e9af951308ece3ec4"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 19,
+          "total": 19
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "benchmarks/lib/manifest.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "benchmarks/lib/runner.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "benchmarks/fixtures/generated-security-control/src/generated-client/config.js",
+            "line": 1
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "benchmarks/fixtures/go-todo-control/app.go",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "benchmarks/fixtures/js-security-control/src/config.js",
+            "line": 1
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "benchmarks/fixtures/monorepo-security-control/packages/auth/src/config.ts",
+            "line": 1
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "benchmarks/fixtures/python-security-control/app.py",
+            "line": 1
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "benchmarks/fixtures/ts-security-control/src/config.ts",
+            "line": 1
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "benchmarks/lib/manifest.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/validators/security.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "benchmarks/lib/manifest.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "benchmarks/lib/manifest.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "benchmarks/lib/runner.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "benchmarks/fixtures/python-unsupported/app.py",
+            "line": 1
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "benchmarks/lib/runner.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "benchmarks/run.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "benchmarks/lib/metrics.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "benchmarks/lib/manifest.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "benchmarks/lib/compare.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "benchmarks/lib/compare.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "cli/feedback-fixture.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "cli/commands/feedback.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-013",
+            "file": "cli/feedback-fixture.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-014",
+            "file": "cli/feedback-fixture.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-015",
+            "file": "cli/commands/feedback.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-015",
+            "file": "cli/feedback-fixture.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-016",
+            "file": "cli/commands/feedback.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "FR-016",
+            "file": "cli/feedback-fixture.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-017",
+            "file": "benchmarks/lib/runner.mjs",
+            "line": 6
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/benchmark-manifest.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/benchmark-runner.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/benchmark-manifest.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/field-context-precision.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/benchmark-manifest.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/benchmark-manifest.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/benchmark-runner.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/benchmark-runner.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/benchmark-metrics.test.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/benchmark-manifest.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "tests/benchmark-metrics.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "tests/benchmark-metrics.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "tests/feedback-fixture.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "tests/feedback-fixture.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-013",
+            "file": "tests/feedback-fixture.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-014",
+            "file": "tests/feedback-fixture.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-015",
+            "file": "tests/feedback-contributions.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-015",
+            "file": "tests/feedback-fixture.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-016",
+            "file": "tests/feedback-contributions.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-016",
+            "file": "tests/feedback-fixture.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-017",
+            "file": "tests/benchmark-runner.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/benchmark-manifest.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/benchmark-manifest.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/benchmark-runner.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "SC-004",
+            "file": "tests/benchmark-manifest.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "SC-004",
+            "file": "tests/benchmark-runner.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "SC-005",
+            "file": "tests/benchmark-manifest.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "SC-006",
+            "file": "tests/feedback-fixture.test.mjs",
+            "line": 15
           }
         ]
       }

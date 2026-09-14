@@ -56,6 +56,13 @@ function archiveReadiness(spec, targetVerified = false) {
   return { status: 'READY', reason: 'Run the reviewed spec retirement flow after the verified state is committed and retained.' };
 }
 
+function completionTransition(spec) {
+  if (spec?.reviewed.lifecycle.delivery === 'verified') return 'verified→verified';
+  return spec?.reviewed.lifecycle.delivery === 'in_progress'
+    ? 'in_progress→implemented→verified'
+    : 'implemented→verified';
+}
+
 export function planSpecCompletion(projectDir, config, flags, options = {}) {
   const projection = projectSpecRegistry(projectDir, config);
   const loaded = readSpecRegistry(projectDir);
@@ -70,8 +77,12 @@ export function planSpecCompletion(projectDir, config, flags, options = {}) {
 
   let reconcile = null;
   if (spec) {
+    const maintenance = spec.reviewed.lifecycle.delivery === 'verified'
+      && spec.reviewed.lifecycle.persistenceModel === 'living';
     if (spec.reviewed.lifecycle.approval !== 'approved') blockers.push({ code: 'SPC002', message: 'Only an approved spec can become verified.' });
-    if (!['in_progress', 'implemented'].includes(spec.reviewed.lifecycle.delivery)) blockers.push({ code: 'SPC002', message: `Expected delivery=in_progress or implemented, found ${spec.reviewed.lifecycle.delivery}.` });
+    if (!['in_progress', 'implemented'].includes(spec.reviewed.lifecycle.delivery) && !maintenance) {
+      blockers.push({ code: 'SPC002', message: `Expected delivery=in_progress, implemented, or verified with persistenceModel=living; found ${spec.reviewed.lifecycle.delivery}/${spec.reviewed.lifecycle.persistenceModel || 'unset'}.` });
+    }
     const tasks = spec.observed.taskCompletion;
     if (!tasks.total || tasks.checked !== tasks.total) blockers.push({ code: 'SPC003', message: `All tasks must be checked (${tasks.checked}/${tasks.total}).` });
     if (spec.observed.implementationEvidence.length === 0) blockers.push({ code: 'SPC004', message: 'At least one qualified source implementation annotation is required.' });
@@ -92,6 +103,14 @@ export function planSpecCompletion(projectDir, config, flags, options = {}) {
       if (reconcile.status === 'UNSUPPORTED' || reconcile.status === 'BLOCKED') blockers.push({ code: 'SPC006', message: 'Reconciliation coverage is unsupported or blocked.' });
       const unresolved = reconcile.classifications.filter(item => item.disposition === 'unsupported_or_ambiguous');
       if (unresolved.length) blockers.push({ code: 'SPC006', message: `Unresolved changed files: ${unresolved.map(item => item.path).join(', ')}.` });
+      if (maintenance) {
+        const reviewable = reconcile.classifications.filter(item =>
+          item.specs.includes(spec.specId)
+          && ['source', 'test', 'canonical_doc', 'decision'].includes(item.kind));
+        if (revision === spec.reviewed.reconciliation.lastReviewedRevision || reviewable.length === 0) {
+          blockers.push({ code: 'SPC006', message: 'Living-spec maintenance requires a new linked source, test, canonical-document, or decision change since the last reviewed revision.' });
+        }
+      }
     }
   }
   const guard = options.guardResult || runGuardInternal(projectDir, config);
@@ -100,7 +119,7 @@ export function planSpecCompletion(projectDir, config, flags, options = {}) {
     status: blockers.length ? 'BLOCKED' : 'READY',
     specId: flags.id || null,
     revision,
-    transition: spec?.reviewed.lifecycle.delivery === 'in_progress' ? 'in_progress→implemented→verified' : 'implemented→verified',
+    transition: completionTransition(spec),
     blockers,
     reconciliation: reconcile,
     evidence: spec ? [...new Set([

@@ -7,6 +7,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- The active precision-evidence specification defines a reproducible R3/R4
+  benchmark, leakage-safe split contract, adjudication taxonomy, public-source
+  safety boundary, and contribution-to-regression workflow before implementation.
+- The repository benchmark now has a strict versioned manifest, safe disposable
+  fixture runner, exact mutation preconditions, scoped finding identities, and
+  deterministic core output separated from runtime observations. Contribution
+  inputs reject private or credentialed Git endpoints, unsafe config paths,
+  prototype keys, symlinked fixtures, and interactive Git authentication.
+- Precision evidence now reports null-safe TP/FP/FN, precision, recall,
+  false-positive density, supported-case abstention, unsupported coverage, and
+  reviewed repair outcomes by repository, detector, and parser tier. Baseline
+  comparison fails case-first on new misses, noise, abstention, or removed
+  evidence; persisted timings stay observational until a controlled paired
+  session can apply the repository's greater-than-20-percent materiality policy.
+- Public-repository evidence can be persisted as a review candidate and checked
+  case-first against later runs. Reports include Wilson 95% confidence bounds,
+  retained cold/warm observations, config and source digests, and validator
+  check coverage; Git sources are fetched once per run and copied without their
+  repository metadata for paired cases.
+- The evaluation split pins reviewed Express, Fastify, Flask, chi, and Changesets
+  revisions. Each public repository has an unmodified SEC005 control and an
+  exact-precondition synthetic defect, providing JavaScript, TypeScript
+  monorepo, Python, and Go evidence without executing third-party project code.
+- The first reviewed baseline records 24 measured cases across 12 independent
+  repository groups: 12/12 seeded defects detected, no observed scoped false
+  positives or supported-case abstentions, and one explicit unsupported case.
+  Wilson 95% bounds limit the observed precision/recall lower bound to 0.757499
+  and the clean-control false-positive case-rate upper bound to 0.242501, so the
+  evidence cannot be misread as a universal 100% accuracy claim.
+- Synthetic feedback fixtures now distinguish false positives, false negatives,
+  unsupported syntax, ambiguity, and policy disagreement. Strict manifests
+  require an exact expected identity, parser tier, explicit interestingness
+  predicate, same-path opposite control, bounded configuration, and reviewed
+  synthetic/redaction attestations.
+- `docguard feedback --fixture-manifest` verifies the reproduction and control
+  in isolated temporary projects. `--reduce` minimizes content deterministically;
+  preview returns stable duplicate identity plus all/open/closed searches; and
+  `--contribution tests/<name>.test.mjs` emits a test-only regression after
+  scope and benchmark-delta evidence passes validation. Submission remains
+  entirely opt-in.
+
+### Changed
+
+- Canonical architecture, data, test, security, CI, requirement, contribution,
+  issue, PR, and roadmap guidance now describes the delivered precision and
+  feedback contracts. Superseded “planned benchmark” and incomplete lifecycle
+  language was removed from active AI context while living specs retain their
+  current operational contract.
+
 ### Fixed
 
 - Scheduled releases now grant the repository token the `pull-requests: write`
@@ -14,6 +65,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   dispatch steps. Their checkout and Node setup actions are pinned to reviewed
   commit SHAs, so the next automated release can complete without the manual
   recovery used for v0.38.0.
+- Typed TypeScript credential assignments such as `apiKey: string = "…"` can
+  no longer bypass hardcoded-secret detection. The precision corpus found and
+  reproduces this false negative while preserving an opposite clean control.
+- Persisted benchmark timings no longer produce performance-regression claims
+  from matching platform labels alone. Controlled comparisons require at least
+  five samples from the same paired session before applying the 20-percent gate,
+  preventing host contention from masquerading as a tool slowdown.
+- Benchmark cleanup tests now isolate their temporary parent, so concurrent
+  benchmark processes cannot be mistaken for leaked directories. The runner
+  rejects missing or symlinked temporary parents before materialization.
+- Baseline comparison now invalidates reviewed evidence when a fixture digest,
+  configuration, classification, parser tier, scope, or expected/forbidden
+  label changes. Changed evidence can no longer inherit a previously reviewed
+  result without explicit re-adjudication and baseline replacement.
+- The reviewed baseline was re-adjudicated after adding qualified ownership to
+  13 synthetic fixture cases. Only source digests changed; all labels, controls,
+  scoped outcomes, confidence bounds, and the explicit unsupported case remain
+  unchanged.
+- Closeout passed all 1,708 tests independently on Node 18, 20, 22, and 24,
+  the 24-case external baseline with zero scoped FP/FN regressions, package
+  composition, and a zero-vulnerability production dependency audit. Three
+  low-confidence diff-suspicion prompts were reviewed as non-contradictions;
+  no detector or repository-wide suppression was added.
+- The R3/R4 living specification is lifecycle-verified against the branch's
+  exact merge base. Its registry outcome records the reviewed implementation
+  and test evidence, and the task ledger no longer presents completed work as
+  active implementation.
+- Generated regression contributions now share the same finding-identity
+  normalizer as feedback verification, including structured `{ file, line }`
+  locations. Validators that return object locations no longer generate tests
+  that compare against `[object Object]`.
+- Verified living specs can now record a new `verified → verified` maintenance
+  outcome. The gate requires a linked source, test, canonical-document, or
+  decision delta after the prior review and rejects empty repeats caused only by
+  generated registry, context, or outcome churn.
+- The document-lifecycle living spec records the maintenance transition at its
+  exact reviewed revision, preserving the earlier delivery outcome and current
+  active-context policy.
+- The precision-evidence living spec records the structured-location regression
+  fix as a second reviewed outcome, linked to its implementation and focused
+  tests rather than overwriting the original milestone evidence.
+- The living-maintenance architecture description now states its positive
+  eligibility rule directly, keeping the canonical document within its
+  negation-load quality threshold.
+- The document-lifecycle registry records that canonical wording review as a
+  separate maintenance outcome; the generated history remains append-only.
 
 ## [0.38.0] - 2026-09-14
 
