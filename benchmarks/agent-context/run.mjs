@@ -276,7 +276,10 @@ async function runTrial(manifest, trial, executable) {
     const prompt = buildTrialPrompt(trial.task, trial.condition, projectDir);
     const args = [
       'exec', '--ephemeral', '--json', '--ignore-user-config', '--ignore-rules',
-      '--sandbox', manifest.protocol.model.sandbox, '--approve-for-me',
+      // In this CLI version --approve-for-me already selects workspace-write
+      // and is mutually exclusive with --sandbox. The manifest still freezes
+      // the effective sandbox so a future harness cannot silently broaden it.
+      '--approve-for-me',
       '-m', manifest.protocol.model.id,
       '-c', `model_reasoning_effort=${manifest.protocol.model.reasoningEffort}`,
       '-C', projectDir, prompt,

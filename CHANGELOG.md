@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   resumable observations, and an immutable promotion decision. The experimental
   selector emits bounded provenance-rich evidence or an honest abstention and
   remains outside the public CLI until the recorded trial gate passes.
+- Correct the R7 Codex executor invocation to use `--approve-for-me` as the
+  workspace-write selector. Codex CLI rejects that flag when an equivalent
+  explicit `--sandbox workspace-write` is also present; the failed zero-step
+  diagnostic matrix was discarded before product observations began.
 - Define the reviewed R6 language and repository coverage contract, including
   explicit false-positive controls for Python imports, Cloudflare bindings,
   mapped document ownership, and monorepo-root guidance.
