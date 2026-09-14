@@ -31,5 +31,8 @@ docguard specs complete --id <spec-id> --since <ref> --check --format json
 docguard specs complete --id <spec-id> --since <ref> --write --reason "<reviewed outcome>"
 ```
 
-The write atomically records the outcome, advances delivery through
-`implemented` to `verified`, and regenerates `.docguard/current-context.json`.
+The write records the outcome, advances delivery through `implemented` to
+`verified`, and regenerates `.docguard/current-context.json` as one staged,
+post-validated set. In-process write or validation failures roll the set back;
+the command does not claim a durable journal across power loss or forced
+termination.

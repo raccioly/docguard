@@ -45,6 +45,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   preserving the same fail-closed tombstone contract.
 - Staged lifecycle replacements use a cross-platform overwrite operation, so
   existing registry and Markdown targets do not rely on POSIX rename behavior.
+- Lifecycle documentation now states the transaction's exact durability scope:
+  staged writes and in-process rollback, without claiming crash consistency.
 - The R2 lifecycle spec now records its reviewed implementation outcome as
   verified while remaining an active living specification. Governing agent,
   architecture, CI, environment, requirements, security, and test documents

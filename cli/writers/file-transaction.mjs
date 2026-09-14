@@ -3,8 +3,9 @@
  *
  * Every replacement is staged beside its destination before the first visible
  * mutation. Originals are retained in memory and restored if any replacement,
- * deletion, or post-commit validation fails. This gives callers an all-old or
- * all-new working tree for the small bounded JSON/Markdown files DocGuard owns.
+ * deletion, or post-commit validation fails. When the operation returns or
+ * throws, callers see the all-old or all-new set. This is in-process rollback,
+ * not a durable transaction journal across power loss or forced termination.
  * @implements docguard.document-lifecycle#FR-013
  */
 
