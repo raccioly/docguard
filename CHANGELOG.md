@@ -102,6 +102,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The R7 harness now expands its frozen visible-test globs before spawning Node,
+  preserving the same checks on Node 18, and binds retained observations to
+  exact harness and selector digests for reproducibility.
+- Agent-context promotion now becomes incomplete when any trial has an
+  infrastructure failure. Zero-step model-service exits are classified apart
+  from agent failures, and bounded diagnostics retain useful trailing errors
+  after repetitive CLI startup warnings.
 - R6 regression fixtures now follow the repository's single-newline EOF format,
   keeping release diff checks clean.
 - Evidence results no longer expose raw JSON source values in CLI, guard, MCP,

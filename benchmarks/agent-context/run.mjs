@@ -25,6 +25,7 @@ const MANIFEST_PATH = join(HERE, 'manifest.json');
 const RESULT_SCHEMA = 'https://raccioly.github.io/docguard/schemas/docguard-agent-context-result.schema.json';
 const DEFAULT_RESULT = join(HERE, 'results/observed-v1.json');
 const DOCGUARD = join(REPO_ROOT, 'cli/docguard.mjs');
+const TASK_SELECTOR = join(REPO_ROOT, 'cli/scanners/task-context.mjs');
 const FIXED_GIT_ENV = {
   ...process.env,
   GIT_AUTHOR_NAME: 'DocGuard Benchmark',
@@ -129,7 +130,16 @@ function evaluateHidden(task, projectDir) {
 
 function runVisible(task, projectDir) {
   const [command, ...args] = task.visibleTest;
-  return runFile(command, args, { cwd: projectDir, timeout: 60000 });
+  const expanded = args.flatMap(arg => {
+    if (!arg.includes('*')) return [arg];
+    const directory = dirname(arg);
+    const pattern = basename(arg).replace(/[.+^${}()|[\]\\]/g, '\\$&').replaceAll('*', '.*');
+    const root = resolve(projectDir, directory);
+    if (!existsSync(root)) return [arg];
+    const matches = readdirSync(root).filter(name => new RegExp(`^${pattern}$`).test(name)).sort();
+    return matches.length ? matches.map(name => join(directory, name)) : [arg];
+  });
+  return runFile(command, expanded, { cwd: projectDir, timeout: 60000 });
 }
 
 function materialize(task, label = 'trial') {
@@ -257,6 +267,12 @@ function usageFrom(events) {
   };
 }
 
+function boundedFailure(run) {
+  const lines = String(run.stderr || run.signal || 'agent failed').split('\n')
+    .filter(line => line.trim() && !line.includes('state db discrepancy during find_thread_path'));
+  return lines.slice(-12).join('\n').slice(-2000) || 'agent failed without diagnostic output';
+}
+
 function changedFiles(projectDir) {
   const result = runFile('git', ['status', '--porcelain=v1', '-z'], { cwd: projectDir });
   if (result.status !== 0) throw new Error(`git status failed: ${result.stderr}`);
@@ -290,7 +306,10 @@ async function runTrial(manifest, trial, executable) {
     const visible = runVisible(trial.task, projectDir);
     const files = changedFiles(projectDir);
     const unnecessary = files.filter(path => !trial.task.allowedChanges.includes(path));
-    const status = run.timedOut ? 'timed-out' : run.status === 0 ? 'completed' : 'agent-failed';
+    const substantiveEvents = events.some(event => event.type === 'item.started' || event.type === 'item.completed');
+    const status = run.timedOut ? 'timed-out'
+      : run.status === 0 ? 'completed'
+        : substantiveEvents ? 'agent-failed' : 'infrastructure-failed';
     const success = status === 'completed' && hidden.passed === hidden.total && visible.status === 0 && unnecessary.length === 0;
     const completedItems = events.filter(event => event.type === 'item.completed');
     const steps = completedItems.filter(event => ['command_execution', 'file_change', 'mcp_tool_call', 'tool_call'].includes(event.item?.type)).length;
@@ -311,7 +330,7 @@ async function runTrial(manifest, trial, executable) {
       latencyMs: run.latencyMs,
       humanIntervention: success ? 0 : 1,
       patchDigest: patchDigest(projectDir),
-      failure: status === 'completed' ? (success ? null : `verification failed: ${hidden.failures.join('; ')}${visible.status === 0 ? '' : '; visible tests failed'}${unnecessary.length ? `; unnecessary edits: ${unnecessary.join(', ')}` : ''}`) : String(run.stderr || run.signal || 'agent failed').slice(0, 1000),
+      failure: status === 'completed' ? (success ? null : `verification failed: ${hidden.failures.join('; ')}${visible.status === 0 ? '' : '; visible tests failed'}${unnecessary.length ? `; unnecessary edits: ${unnecessary.join(', ')}` : ''}`) : boundedFailure(run),
     };
   } catch (error) {
     return {
@@ -339,6 +358,10 @@ export function aggregateTrials(manifest, trials) {
     const group = trials.filter(trial => trial.condition === condition);
     aggregate[condition] = {
       runs: group.length,
+      completedRuns: group.filter(trial => trial.status === 'completed').length,
+      infrastructureFailures: group.filter(trial => trial.status === 'infrastructure-failed').length,
+      timedOut: group.filter(trial => trial.status === 'timed-out').length,
+      agentFailures: group.filter(trial => trial.status === 'agent-failed').length,
       successes: group.filter(trial => trial.success).length,
       failures: group.filter(trial => !trial.success).length,
       requirementViolations: group.reduce((sum, trial) => sum + trial.requirementViolations, 0),
@@ -362,6 +385,10 @@ export function decidePromotion(manifest, aggregate) {
   const targeted = aggregate['targeted-packet'];
   if ([taskOnly, full, targeted].some(value => value.runs !== manifest.tasks.length * manifest.protocol.repetitions)) {
     return { status: 'incomplete', reasons: ['The frozen 27-run matrix is incomplete.'] };
+  }
+  const infrastructureFailures = taskOnly.infrastructureFailures + full.infrastructureFailures + targeted.infrastructureFailures;
+  if (infrastructureFailures > 0) {
+    return { status: 'incomplete', reasons: [`${infrastructureFailures} trial(s) ended in infrastructure failure; promotion requires observations from every frozen trial.`] };
   }
   const reasons = [];
   const nonInferior = targeted.failures <= Math.min(taskOnly.failures, full.failures) + manifest.promotion.nonInferiorityFailures;
@@ -396,6 +423,9 @@ function buildResult(manifest, fixtureSummaries, trials, executableVersion) {
     core: {
       protocolId: manifest.protocol.id,
       manifestDigest: sha256(stableJson(manifest)),
+      harnessDigest: sha256(readFileSync(fileURLToPath(import.meta.url))),
+      analysisDigest: sha256(readFileSync(fileURLToPath(import.meta.url))),
+      selectorDigest: sha256(readFileSync(TASK_SELECTOR)),
       fixtureDigests: Object.fromEntries(fixtureSummaries.map(item => [item.id, item.fixtureDigest])),
       trialOrder: orderedTrials(manifest).map(trial => trial.id),
       aggregate,

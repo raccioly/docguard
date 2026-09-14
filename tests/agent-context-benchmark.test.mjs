@@ -39,6 +39,7 @@ function allPaths(root, prefix = '') {
 function observation(condition, overrides = {}) {
   return {
     condition,
+    status: 'completed',
     success: true,
     requirementViolations: 0,
     unnecessaryEdits: 0,
@@ -69,6 +70,11 @@ test('proves visible controls pass, hidden defects fail, and references satisfy 
     ['option-migration', 5, 2],
   ]);
   assert.ok(results.every(result => /^sha256:[a-f0-9]{64}$/.test(result.fixtureDigest)));
+});
+
+test('expands visible test globs in the harness for the complete Node support range', () => {
+  const results = verifyFixtures();
+  assert.equal(results.length, 3);
 });
 
 test('keeps hidden evaluators and reviewed references outside agent-visible fixtures', () => {
@@ -113,6 +119,9 @@ test('promotion gate requires non-inferiority, safety, and measured benefit', ()
 
   const noBenefit = manifest.conditions.flatMap(condition => Array.from({ length: 9 }, () => observation(condition)));
   assert.equal(decidePromotion(manifest, aggregateTrials(manifest, noBenefit)).status, 'reject');
+
+  const infrastructureFailure = safeGain.map((trial, index) => index === 0 ? { ...trial, status: 'infrastructure-failed', success: false } : trial);
+  assert.equal(decidePromotion(manifest, aggregateTrials(manifest, infrastructureFailure)).status, 'incomplete');
 });
 
 test('ships strict schemas for packets, frozen inputs, and recorded outputs', () => {
@@ -122,4 +131,18 @@ test('ships strict schemas for packets, frozen inputs, and recorded outputs', ()
     assert.equal(schema.type, 'object');
     assert.equal(schema.additionalProperties, false);
   }
+});
+
+test('retains all completed v1 observations and reproduces the fixed promotion decision', () => {
+  const manifest = loadManifest();
+  const result = JSON.parse(readFileSync(join(BENCHMARK, 'results/observed-v1.json'), 'utf8'));
+  assert.equal(result.observations.trials.length, 27);
+  assert.ok(result.observations.trials.every(trial => trial.status === 'completed'));
+  for (const field of ['manifestDigest', 'harnessDigest', 'analysisDigest', 'selectorDigest']) {
+    assert.match(result.core[field], /^sha256:[a-f0-9]{64}$/);
+  }
+  const aggregate = aggregateTrials(manifest, result.observations.trials);
+  assert.deepEqual(result.core.aggregate, aggregate);
+  assert.deepEqual(result.core.decision, decidePromotion(manifest, aggregate));
+  assert.equal(result.core.decision.status, 'promote');
 });

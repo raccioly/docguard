@@ -11,6 +11,7 @@
  * @req docguard.task-specific-agent-context#FR-010
  * @req docguard.task-specific-agent-context#SC-001
  * @req docguard.task-specific-agent-context#SC-002
+ * @req docs-canonical/REQUIREMENTS.md#FR-007
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';

@@ -29,6 +29,14 @@ it does not retain prompts, source patches, or model prose. The manifest,
 fixtures, hidden evaluators, reference behavior, and shuffled order are versioned
 beside the harness.
 
+The result records separate digests for the selector, the executor that produced
+the observations, and the current analysis logic. The observation harness is
+recoverable at its full Git revision. A later Node 18 portability fix expanded
+the already-frozen visible-test glob before spawning Node, and a scoring fix made
+infrastructure failures categorically ineligible for promotion. Reapplying the
+fixed analysis to the original 27 completed observations preserves the promotion
+decision; the quota-limited diagnostic rerun was discarded.
+
 Reproduce fixture controls without invoking a model:
 
 ```sh

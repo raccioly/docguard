@@ -41,6 +41,10 @@
     "aggregate": {
       "task-only": {
         "runs": 9,
+        "completedRuns": 9,
+        "infrastructureFailures": 0,
+        "timedOut": 0,
+        "agentFailures": 0,
         "successes": 9,
         "failures": 0,
         "requirementViolations": 0,
@@ -51,6 +55,10 @@
       },
       "context-pack": {
         "runs": 9,
+        "completedRuns": 9,
+        "infrastructureFailures": 0,
+        "timedOut": 0,
+        "agentFailures": 0,
         "successes": 9,
         "failures": 0,
         "requirementViolations": 0,
@@ -61,6 +69,10 @@
       },
       "targeted-packet": {
         "runs": 9,
+        "completedRuns": 9,
+        "infrastructureFailures": 0,
+        "timedOut": 0,
+        "agentFailures": 0,
         "successes": 9,
         "failures": 0,
         "requirementViolations": 0,
@@ -80,7 +92,10 @@
         "steps": 50,
         "latency": 16.987814394621527
       }
-    }
+    },
+    "harnessDigest": "sha256:3f998e6aa4963dbbb64b04d919d563f297b3d683ff71058318491486c5e89fe2",
+    "analysisDigest": "sha256:b13ede63413f951422ce2f9beb6f097110cb718890e86026e68b41b22d6916f4",
+    "selectorDigest": "sha256:5eab3808d588b337f2ec6f89b4b0b5abc252ff6a23e302013078d42f6cc2f1ff"
   },
   "observations": {
     "generatedAt": "2026-09-14T23:04:20.607Z",
@@ -88,7 +103,8 @@
       "platform": "darwin",
       "arch": "arm64",
       "node": "v26.7.0",
-      "codex": "codex-cli 0.154.0-alpha.6.2"
+      "codex": "codex-cli 0.154.0-alpha.6.2",
+      "observedHarnessRevision": "55f724d3a41e6066ed87e95347c0e12fd2ab33f8"
     },
     "trials": [
       {

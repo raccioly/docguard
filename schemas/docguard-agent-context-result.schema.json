@@ -11,10 +11,13 @@
     "core": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["protocolId", "manifestDigest", "fixtureDigests", "trialOrder", "aggregate", "decision"],
+      "required": ["protocolId", "manifestDigest", "harnessDigest", "analysisDigest", "selectorDigest", "fixtureDigests", "trialOrder", "aggregate", "decision"],
       "properties": {
         "protocolId": { "const": "docguard-agent-context-v1" },
         "manifestDigest": { "$ref": "#/$defs/digest" },
+        "harnessDigest": { "$ref": "#/$defs/digest" },
+        "analysisDigest": { "$ref": "#/$defs/digest" },
+        "selectorDigest": { "$ref": "#/$defs/digest" },
         "fixtureDigests": { "type": "object", "minProperties": 3, "additionalProperties": { "$ref": "#/$defs/digest" } },
         "trialOrder": { "type": "array", "minItems": 27, "items": { "type": "string" } },
         "aggregate": { "type": "object" },
