@@ -91,4 +91,14 @@ describe('ensureSkills — idempotent, no per-command rewrite churn', () => {
       assert.match(md, /<!-- docguard:version:/, `${d}/SKILL.md is missing the docguard:version marker`);
     }
   });
+
+  it('keeps repository agent copies byte-identical to the released skills', () => {
+    const sourceRoot = join(process.cwd(), 'extensions/spec-kit-docguard/skills');
+    const installedRoot = join(process.cwd(), '.agent/skills');
+    for (const d of readdirSync(sourceRoot).filter(n => n.startsWith('docguard-'))) {
+      const source = readFileSync(join(sourceRoot, d, 'SKILL.md'), 'utf-8');
+      const installed = readFileSync(join(installedRoot, d, 'SKILL.md'), 'utf-8');
+      assert.equal(installed, source, `${d}/SKILL.md must be refreshed in the release commit`);
+    }
+  });
 });

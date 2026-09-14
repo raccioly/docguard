@@ -76,11 +76,11 @@
           },
           {
             "path": "specs/006-document-lifecycle/tasks.md",
-            "digest": "sha256:9bd8203ad8e666f7f71d6302c61ff1cfd1c1e75379da89b84cc790a69aff6a2b"
+            "digest": "sha256:f1786145b4bb77eab2bfa9c8593186e890bf50ae56236d22d5c136ca7d5ec3b2"
           }
         ],
         "taskCompletion": {
-          "checked": 14,
+          "checked": 15,
           "total": 23
         },
         "implementationEvidence": [],

@@ -662,10 +662,11 @@ async function main() {
   // same way runGuardInternal sees everything else.
   if (flags.noBaseline) config.baseline = false;
 
-  // Commands that only READ and REPORT — they must never mutate the working
-  // tree. Scaffolding (ensureSkills → .agent/.specify, spawning `specify`)
-  // belongs to setup/init/generate and the `init --with` family, where the
-  // user is establishing or expanding their setup, not auditing it.
+  // Commands whose normal mode only reads/reports, plus explicit writers whose
+  // mutations must stay scoped to their named output. They must never add
+  // unrelated setup files. Scaffolding (ensureSkills → .agent/.specify,
+  // spawning `specify`) belongs to setup/init/generate and `init --with`, where
+  // the user is establishing or expanding setup rather than inspecting it.
   //
   // v0.26 (field report Bug #3): a bare `docguard guard` used to run
   // ensureSkills → auto-init Spec Kit → spawn `specify` and write ~9 files into
@@ -675,7 +676,7 @@ async function main() {
   // `diff`/`impact` only read; `demo` runs against a throwaway fixture.)
   const READ_ONLY_COMMANDS = new Set([
     'guard', 'audit', 'score', 'diff', 'impact',
-    'diagnose', 'trace', 'explain', 'memory', 'demo', 'agent', 'retire', 'archive', 'specs',
+    'diagnose', 'fix', 'trace', 'explain', 'memory', 'demo', 'agent', 'retire', 'archive', 'specs',
     // feedback only writes its own .docguard/feedback/ — it must NOT scaffold
     // skills or touch source, so it's gated out of ensureSkills like the rest.
     'feedback',
@@ -703,6 +704,7 @@ async function main() {
     command !== 'setup' &&
     command !== 'init' &&
     !READ_ONLY_COMMANDS.has(command) &&
+    !(command === 'hooks' && flags.list) &&
     // Agent-family staleness checks must not bootstrap skills or Spec Kit.
     !(command === 'agents' && flags.check) &&
     !headless
@@ -798,8 +800,9 @@ async function main() {
       runAgent(projectDir, config, flags);
       break;
     case 'hooks':
-      if (flags.claude) {
-        // Agent nudge hook (.claude/settings.json) — direct path, no wizard.
+      if (flags.claude || flags.list) {
+        // Agent nudge and read-only inventory paths bypass the setup wizard.
+        // Listing hooks must not refresh unrelated skills in the repository.
         runHooks(projectDir, config, flags);
         break;
       }

@@ -13,7 +13,7 @@ structural score is useful, but it is not proof that arbitrary prose is true.
 
 ## Current priorities
 
-### R1 — Document lifecycle and context hygiene (in progress)
+### R1 — Document lifecycle foundation (released in v0.37.0)
 
 Give specifications and planning documents an explicit end of life.
 
@@ -26,7 +26,6 @@ Give specifications and planning documents an explicit end of life.
 - [x] Add lifecycle status validation for `active`, `completed`, `superseded`,
   and `archived`; task completion and `Completed` artifact maturity remain
   review signals rather than proof of retirement.
-- [ ] Add optional Spec Kit hooks that check archive readiness after convergence.
 - [x] Add `.docguard-specs.json`, a committed lifecycle control plane. Reviewed
   approval, delivery, context, storage, persistence policy, lineage, and scope
   are authoritative; requirement references and
@@ -46,19 +45,29 @@ Give specifications and planning documents an explicit end of life.
 - [x] Give every active spec an immutable metadata ID; use
   `specId#requirementId` for completion evidence and preserve retired identities
   as registry tombstones so bare IDs cannot rebind.
-- [ ] Add an `implemented → verified` completion transaction that appends a
-  bounded outcome record, refreshes mechanical facts, records reconciliation,
-  and regenerates active AI context.
 - [x] Cross-check spec storage state against `.docguard-archive.json`. The
   archive manifest owns document recovery; the spec registry owns governance,
   and disagreement between them blocks a transition.
+- [x] Merge the reviewed implementation in PR #349 and publish the verified
+  npm, PyPI, GHCR, MCPB, and Spec Kit extension artifacts as v0.37.0.
 
-Contribution slices: reviewed completion transitions, exact-revision
-implementation evidence, additional status formats, monorepo/workspace identity,
-restore and re-retire event handling, and Spec Kit lifecycle fixtures. Every
-detector change needs a stale example and a neighboring current example.
+R1 deliberately shipped the registry and safe-retirement boundary before adding
+completion writes. Transaction rollback, status adapters, monorepo identity,
+restore/re-retire handling, and reviewed completion transitions remain R2 work;
+they are not part of the v0.37.0 contract.
 
-### R2 — Reconcile behavior changes made outside a spec (planned)
+### R2 — Completion and post-hoc reconciliation (planned)
+
+Close the lifecycle loop without allowing current code to silently redefine
+approved intent.
+
+- [ ] Add staged registry/recovery transactions with rollback before any command
+  can update both lifecycle ledgers.
+- [ ] Add an `implemented → verified` completion transaction that appends a
+  bounded outcome record, refreshes mechanical facts, records the exact
+  reconciliation revision, and regenerates active AI context.
+- [ ] Add optional Spec Kit hooks that check archive readiness after convergence
+  or verification; CLI and CI remain the enforcement boundary.
 
 Detect post-hoc implementation changes without silently redefining approved
 intent. `docguard reconcile --since <ref>` will classify affected material:
