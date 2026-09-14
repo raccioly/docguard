@@ -965,9 +965,34 @@
             "line": 356
           },
           {
+            "requirementId": "FR-006",
+            "file": "cli/validators/environment.mjs",
+            "line": 2
+          },
+          {
             "requirementId": "FR-007",
             "file": "cli/shared-source.mjs",
             "line": 357
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/validators/environment.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "cli/validators/environment.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "cli/commands/generate.mjs",
+            "line": 2
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "cli/writers/mechanical.mjs",
+            "line": 2
           },
           {
             "requirementId": "FR-009",
@@ -976,13 +1001,53 @@
           },
           {
             "requirementId": "FR-010",
+            "file": "cli/commands/fix.mjs",
+            "line": 2
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/commands/generate.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-010",
             "file": "cli/shared-doc-roles.mjs",
             "line": 71
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/writers/doc-generators.mjs",
+            "line": 2
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/writers/mechanical.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "cli/commands/fix.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "cli/commands/generate.mjs",
+            "line": 4
           },
           {
             "requirementId": "FR-011",
             "file": "cli/shared-doc-roles.mjs",
             "line": 72
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "cli/writers/doc-generators.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "cli/writers/mechanical.mjs",
+            "line": 4
           },
           {
             "requirementId": "FR-012",
@@ -1015,6 +1080,11 @@
             "requirementId": "FR-003",
             "file": "tests/python-import-graph.test.mjs",
             "line": 3
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/check-coverage.test.mjs",
+            "line": 2
           },
           {
             "requirementId": "FR-004",
@@ -1058,6 +1128,11 @@
           },
           {
             "requirementId": "FR-009",
+            "file": "tests/doc-role-mapping.test.mjs",
+            "line": 2
+          },
+          {
+            "requirementId": "FR-009",
             "file": "tests/mapped-writers.test.mjs",
             "line": 2
           },
@@ -1073,6 +1148,11 @@
           },
           {
             "requirementId": "FR-010",
+            "file": "tests/doc-role-mapping.test.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-010",
             "file": "tests/mapped-writers.test.mjs",
             "line": 3
           },
@@ -1080,6 +1160,11 @@
             "requirementId": "FR-011",
             "file": "tests/doc-role-boundaries.test.mjs",
             "line": 195
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "tests/doc-role-mapping.test.mjs",
+            "line": 4
           },
           {
             "requirementId": "FR-011",
@@ -1113,6 +1198,11 @@
           },
           {
             "requirementId": "SC-001",
+            "file": "tests/check-coverage.test.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "SC-001",
             "file": "tests/python-import-graph.test.mjs",
             "line": 6
           },
@@ -1120,6 +1210,11 @@
             "requirementId": "SC-002",
             "file": "tests/worker-python-capability.test.mjs",
             "line": 1
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/doc-role-mapping.test.mjs",
+            "line": 5
           },
           {
             "requirementId": "SC-003",

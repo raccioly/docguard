@@ -1,4 +1,8 @@
 /**
+ * @implements docguard.language-repository-coverage#FR-009
+ * @implements docguard.language-repository-coverage#FR-010
+ * @implements docguard.language-repository-coverage#FR-011
+ *
  * Mechanical Fix Registry — applies deterministic, no-LLM fixes in place.
  *
  * Validators surface structured `fixes[]` actions; this module knows how to

@@ -1,3 +1,8 @@
+/**
+ * @implements docguard.language-repository-coverage#FR-006
+ * @implements docguard.language-repository-coverage#FR-007
+ * @implements docguard.language-repository-coverage#FR-008
+ */
 import { docRolePath, resolveDocRole } from '../shared-doc-roles.mjs';
 /**
  * Environment Validator — Checks ENVIRONMENT.md docs and .env.example

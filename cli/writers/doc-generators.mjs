@@ -1,4 +1,7 @@
 /**
+ * @implements docguard.language-repository-coverage#FR-010
+ * @implements docguard.language-repository-coverage#FR-011
+ *
  * Document Generators — the seven doc emitters behind `docguard generate`:
  * ARCHITECTURE, API-REFERENCE, DATA-MODEL, ENVIRONMENT, TEST-SPEC, SECURITY,
  * plus the root files (AGENTS.md, CHANGELOG.md, DRIFT-LOG.md).

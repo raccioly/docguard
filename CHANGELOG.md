@@ -39,6 +39,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   24, successful packed-package and parser-absent execution, schema and syntax
   checks, and a regression-free frozen corpus. All 24 evaluable cases passed;
   the dynamic-Python control remained explicitly unsupported as designed.
+- Qualified R6 traceability now covers every changed command, validator,
+  writer, and neighboring control used by mapped-document and parser-capability
+  behavior, allowing lifecycle completion to reject omissions deterministically.
 
 - The active evidence-scoped verification specification defines strict,
   local-only bindings from exact Markdown statements to JSON Pointer values,

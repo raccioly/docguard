@@ -1,3 +1,8 @@
+/**
+ * @implements docguard.language-repository-coverage#FR-009
+ * @implements docguard.language-repository-coverage#FR-010
+ * @implements docguard.language-repository-coverage#FR-011
+ */
 import { assertMappedFullDocumentWrites, docRolePath, isMappedDocPath, mappedRolesForPath, resolveDocRole } from '../shared-doc-roles.mjs';
 /**
  * Generate Command — Reverse-engineer canonical docs from an existing codebase

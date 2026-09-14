@@ -1,3 +1,7 @@
+/**
+ * @req docguard.language-repository-coverage#FR-004
+ * @req docguard.language-repository-coverage#SC-001
+ */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';

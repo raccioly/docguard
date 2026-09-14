@@ -1,3 +1,7 @@
+/**
+ * @implements docguard.language-repository-coverage#FR-010
+ * @implements docguard.language-repository-coverage#FR-011
+ */
 import { assertMappedFullDocumentWrites, docRolePath, isMappedDocPath, resolveDocRole } from '../shared-doc-roles.mjs';
 /**
  * Fix Command — The AI Orchestrator
