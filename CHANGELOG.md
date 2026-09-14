@@ -42,6 +42,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Qualified R6 traceability now covers every changed command, validator,
   writer, and neighboring control used by mapped-document and parser-capability
   behavior, allowing lifecycle completion to reject omissions deterministically.
+- The R6 living specification now records its reviewed implementation revision,
+  complete evidence set, verified delivery state, and zero accepted deviations.
 
 - The active evidence-scoped verification specification defines strict,
   local-only bindings from exact Markdown statements to JSON Pointer values,

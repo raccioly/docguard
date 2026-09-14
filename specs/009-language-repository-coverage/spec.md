@@ -127,3 +127,8 @@ the scan automatically.
 - Giving DocGuard ownership of prose outside explicit code-source markers.
 - Automatically changing the project directory selected by the user.
 
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `722a80210ff37d97520a4077c7134bc3a5255742` — Reviewed all four R6 slices: Python static import graphs, Cloudflare binding extraction, ownership-safe mapped writers, and advisory repository-root guidance. The supported Node matrix, full suite, packed parser-absent path, schemas, syntax checks, self-guard, and frozen precision corpus passed without detector regression. Evidence: `cli/commands/fix.mjs`, `cli/commands/generate.mjs`, `cli/repository-root.mjs`, `cli/scanners/py-ast.mjs`, `cli/shared-doc-roles.mjs`, `cli/shared-source.mjs`, `cli/validators/architecture.mjs`, `cli/validators/environment.mjs`, `cli/writers/doc-generators.mjs`, `cli/writers/mechanical.mjs`, `cli/writers/sections.mjs`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/ENVIRONMENT.md`, `docs-canonical/REQUIREMENTS.md`, `docs-canonical/SECURITY.md`, `docs-canonical/TEST-SPEC.md`, `tests/benchmark-manifest.test.mjs`, `tests/check-coverage.test.mjs`, `tests/doc-role-boundaries.test.mjs`, `tests/doc-role-mapping.test.mjs`, `tests/mapped-writers.test.mjs`, `tests/npm-pack-smoke.test.mjs`, `tests/py-ast.test.mjs`, `tests/python-import-graph.test.mjs`, `tests/repository-root.test.mjs`, `tests/sync.test.mjs`, `tests/worker-python-capability.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->
