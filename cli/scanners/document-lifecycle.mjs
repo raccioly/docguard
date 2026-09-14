@@ -7,53 +7,28 @@ import { existsSync, readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 import { shouldIgnore } from '../shared-ignore.mjs';
+import { readSpecRegistry } from './spec-registry.mjs';
+import { readRetirementManifest } from './retirement-manifest.mjs';
 
 const RETIRED_STATUSES = new Set(['archived', 'deprecated', 'obsolete', 'superseded']);
 const COMPLETION_STATUSES = new Set(['complete', 'completed']);
 const EXCLUDED_PREFIXES = ['.git', '.local', '.docguard'];
-const MANIFEST_PATH = '.docguard-archive.json';
+const SUPPRESSIBLE_DELIVERY = new Set(['verified', 'released']);
 
-export function readRetirementManifest(projectDir) {
-  const path = resolve(projectDir, MANIFEST_PATH);
-  if (!existsSync(path)) return { ok: true, paths: new Set(), entries: [], retention: null, error: null };
-  try {
-    const parsed = JSON.parse(readFileSync(path, 'utf8'));
-    if (parsed?.schemaVersion !== 1 || parsed?.strategy !== 'git-history' || !Array.isArray(parsed.entries)) {
-      throw new Error('unsupported schema');
-    }
-    const globalRecovery = parsed.retention?.recoverability === 'verified'
-      && typeof parsed.retention?.ref === 'string'
-      && /^(?:sha1|sha256)$/.test(parsed.retention?.objectFormat || '');
-    for (const entry of parsed.entries) {
-      const path = entry?.path;
-      const entryRecovery = entry?.recoverability === 'verified'
-        && typeof entry?.retentionRef === 'string'
-        && /^(?:sha1|sha256)$/.test(entry?.objectFormat || '');
-      if (typeof path !== 'string' || !path || path.startsWith('/')
-        || path.replaceAll('\\', '/').split('/').includes('..')
-        || typeof entry?.archivedFrom !== 'string'
-        || !/^[0-9a-f]{40}(?:[0-9a-f]{24})?$/.test(entry.archivedFrom)
-        || typeof entry?.blob !== 'string'
-        || !/^[0-9a-f]{40}(?:[0-9a-f]{24})?$/.test(entry.blob)
-        || typeof entry?.reason !== 'string' || !entry.reason.trim()
-        || (entry?.requirementIds !== undefined && (!Array.isArray(entry.requirementIds)
-          || entry.requirementIds.some(id => typeof id !== 'string' || !id || id.length > 128 || /[\s#\0]/.test(id))))
-        || (entry?.specId !== undefined && (typeof entry.specId !== 'string'
-          || !/^[a-z0-9][a-z0-9._-]{2,127}$/.test(entry.specId)))
-        || (!globalRecovery && !entryRecovery)) {
-        throw new Error(`invalid recovery entry for ${path || '<unknown path>'}`);
-      }
-    }
-    return {
-      ok: true,
-      paths: new Set(parsed.entries.map(entry => entry.path)),
-      entries: parsed.entries,
-      retention: parsed.retention || null,
-      error: null,
-    };
-  } catch (error) {
-    return { ok: false, paths: new Set(), entries: [], retention: null, error: `${MANIFEST_PATH}: ${error.message}` };
-  }
+/**
+ * Read only the narrow registry state needed to avoid asking users to retire a
+ * verified living specification. Any malformed or unknown shape fails closed:
+ * the ordinary lifecycle review signal remains visible.
+ * @implements docguard.document-lifecycle#FR-002
+ */
+function readVerifiedLivingSpecPaths(projectDir) {
+  const registry = readSpecRegistry(projectDir);
+  if (!registry.exists || registry.error) return new Set();
+  return new Set(registry.value.specs
+    .filter(spec => spec.reviewed.lifecycle.context === 'current'
+      && spec.reviewed.lifecycle.persistenceModel === 'living'
+      && SUPPRESSIBLE_DELIVERY.has(spec.reviewed.lifecycle.delivery))
+    .map(spec => spec.path));
 }
 
 function trackedFiles(projectDir) {
@@ -110,6 +85,7 @@ export function scanDocumentLifecycle(projectDir, config = {}) {
     };
   }
   const tracked = new Set(inventory.files);
+  const verifiedLivingSpecs = readVerifiedLivingSpecPaths(projectDir);
   const markdown = inventory.files.filter(path => /\.md$/i.test(path));
   const candidates = [];
   const unreadable = [];
@@ -159,7 +135,7 @@ export function scanDocumentLifecycle(projectDir, config = {}) {
     }
     if (path.startsWith('specs/') && /(?:^|\/)spec\.md$/i.test(path)) {
       const tasks = completedTaskSignal(projectDir, path, content, tracked);
-      if (tasks) {
+      if (tasks && !verifiedLivingSpecs.has(path)) {
         candidates.push({
           code: 'DLC002',
           path: dirname(path),

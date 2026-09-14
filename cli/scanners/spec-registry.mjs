@@ -13,7 +13,7 @@ import { existsSync, lstatSync, readFileSync, realpathSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { dirname, relative, resolve, sep } from 'node:path';
 import { detectSpecKit } from './speckit.mjs';
-import { readRetirementManifest } from './document-lifecycle.mjs';
+import { readRetirementManifest } from './retirement-manifest.mjs';
 import { collectRequirementIdsFromContent, requirementPatterns } from '../shared-requirements.mjs';
 import { walkFiles } from '../shared-ignore.mjs';
 import { scanImplementationFilesForReferences, scanTestFilesForReferences } from './requirement-evidence.mjs';

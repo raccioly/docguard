@@ -29,6 +29,30 @@ function repository(t, files) {
   return dir;
 }
 
+function registryEntry(lifecycle) {
+  return {
+    specId: 'docguard.lifecycle-test',
+    path: 'specs/006-lifecycle/spec.md',
+    reviewed: {
+      lifecycle: {
+        approval: 'approved',
+        context: lifecycle.context,
+        delivery: lifecycle.delivery,
+        retirementReason: null,
+        storage: 'working_tree',
+        persistenceModel: lifecycle.persistenceModel,
+      },
+      relations: {
+        extends: [], duplicates: [], conflictsWith: [], supersedes: [], supersededBy: [],
+      },
+      scope: { canonicalDocs: [] },
+      reconciliation: { lastReviewedRevision: null, outcomes: [] },
+    },
+    intent: { requirements: [] },
+    observed: { artifacts: [], taskCompletion: { checked: 1, total: 1 }, implementationEvidence: [], testEvidence: [] },
+  };
+}
+
 describe('Document-Lifecycle validator', () => {
   it('is not applicable outside a Git working tree', t => {
     const dir = mkdtempSync(join(tmpdir(), 'docguard-lifecycle-no-git-'));
@@ -69,6 +93,61 @@ describe('Document-Lifecycle validator', () => {
     });
     const result = validateDocumentLifecycle(dir);
     assert.equal(result.findings.length, 0);
+  });
+
+  it('keeps a registry-verified living spec in active context without a retirement warning', t => {
+    const dir = repository(t, {
+      'specs/006-lifecycle/spec.md': '# Lifecycle\n\n**Status**: Active\n',
+      'specs/006-lifecycle/tasks.md': '# Tasks\n\n- [x] T001 Build\n- [x] T002 Verify\n',
+      '.docguard-specs.json': JSON.stringify({
+        $schema: 'https://raccioly.github.io/docguard/schemas/docguard-specs.schema.json',
+        schemaVersion: 2,
+        specs: [registryEntry({ context: 'current', persistenceModel: 'living', delivery: 'verified' })],
+        tombstones: [],
+      }),
+    });
+
+    const result = validateDocumentLifecycle(dir);
+
+    assert.equal(result.findings.length, 0);
+  });
+
+  it('does not suppress completed-task review for unverified or non-living registry entries', t => {
+    const variants = [
+      { context: 'current', persistenceModel: 'living', delivery: 'in_progress' },
+      { context: 'current', persistenceModel: 'flow_back', delivery: 'verified' },
+      { context: 'retired', persistenceModel: 'living', delivery: 'verified' },
+    ];
+    for (const lifecycle of variants) {
+      const dir = repository(t, {
+        'specs/006-lifecycle/spec.md': '# Lifecycle\n\n**Status**: Active\n',
+        'specs/006-lifecycle/tasks.md': '# Tasks\n\n- [x] T001 Build\n',
+        '.docguard-specs.json': JSON.stringify({
+          $schema: 'https://raccioly.github.io/docguard/schemas/docguard-specs.schema.json',
+          schemaVersion: 2,
+          specs: [registryEntry(lifecycle)],
+          tombstones: [],
+        }),
+      });
+
+      const result = validateDocumentLifecycle(dir);
+
+      assert.equal(result.findings.length, 1);
+      assert.equal(result.findings[0].code, 'DLC002');
+    }
+  });
+
+  it('fails closed when the lifecycle registry is malformed', t => {
+    const dir = repository(t, {
+      'specs/006-lifecycle/spec.md': '# Lifecycle\n\n**Status**: Active\n',
+      'specs/006-lifecycle/tasks.md': '# Tasks\n\n- [x] T001 Build\n',
+      '.docguard-specs.json': '{broken',
+    });
+
+    const result = validateDocumentLifecycle(dir);
+
+    assert.equal(result.findings.length, 1);
+    assert.equal(result.findings[0].code, 'DLC002');
   });
 
   it('ignores status-like examples outside document metadata', t => {

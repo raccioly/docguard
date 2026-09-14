@@ -86,6 +86,11 @@
         },
         "implementationEvidence": [
           {
+            "requirementId": "FR-002",
+            "file": "cli/scanners/document-lifecycle.mjs",
+            "line": 22
+          },
+          {
             "requirementId": "FR-010",
             "file": "cli/commands/reconcile.mjs",
             "line": 3

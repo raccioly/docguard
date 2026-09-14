@@ -30,7 +30,7 @@ import {
   collectRequirementIdsFromContent,
   requirementPatterns,
 } from '../shared-requirements.mjs';
-import { readRetirementManifest } from '../scanners/document-lifecycle.mjs';
+import { readRetirementManifest } from '../scanners/retirement-manifest.mjs';
 import { parseSpecId } from '../scanners/spec-registry.mjs';
 
 /**

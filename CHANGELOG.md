@@ -34,6 +34,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   registry, allowing DocGuard's own reconciliation gate to distinguish reviewed
   implementation from unsupported files.
 
+### Fixed
+
+- Completed tasks no longer produce a permanent retirement warning for an
+  exact-path spec whose reviewed registry state is current, living, and verified
+  or released. Missing, malformed, stale, and non-living registry state still
+  fails closed to the review signal.
+
 ## [0.37.1] - 2026-09-14
 
 Automated weekly release — batches everything merged since `v0.37.0`.
