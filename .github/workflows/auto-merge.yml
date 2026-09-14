@@ -101,10 +101,9 @@ jobs:
 
             if (releasePr) {
               // Release PRs cut by scheduled-release.yml. Tightly constrained:
-              // must come from a release/ branch and touch ONLY the version +
-              // changelog + generated extension metadata. Anything else under
-              // this bot's name is not something we cut, so hold it.
-              const ALLOWED = /^(package(-lock)?\.json|pyproject\.toml|server\.json|CHANGELOG\.md|templates\/ci\/github-actions\.yml|extensions\/spec-kit-docguard\/|\.agent\/)/;
+              // must come from a release/ branch and touch ONLY the exact
+              // version, changelog, extension and generated skill surfaces.
+              const ALLOWED = /^(package(-lock)?\.json|pyproject\.toml|server\.json|CHANGELOG\.md|templates\/ci\/github-actions\.yml|extensions\/spec-kit-docguard\/(extension\.yml|templates\/github-workflows\/(docguard-guard|docguard-autofix)\.yml|skills\/docguard-(fix|guard|review|score|sync)\/SKILL\.md)|\.agent\/skills\/docguard-(fix|guard|review|score|sync)\/SKILL\.md)$/;
               const unexpected = paths.filter((p) => !ALLOWED.test(p));
               if (unexpected.length) {
                 await hold('needs-review', `a release PR touching unexpected files:\n${unexpected.map((p) => `- \`${p}\``).join('\n')}`);

@@ -19,9 +19,25 @@ describe('scheduled release workflow', () => {
     assert.match(autoMerge, /pr\.head\.repo\.full_name === `\$\{owner\}\/\$\{repo\}`/);
     assert.match(autoMerge, /\^release\\\/v\\d\+\\\.\\d\+\\\.\\d\+\$/);
     assert.match(autoMerge, /\^release: v\\d\+\\\.\\d\+\\\.\\d\+ — automated weekly batch\$/);
-    for (const expected of ['pyproject\\.toml', 'server\\.json', 'templates\\/ci\\/github-actions\\.yml', 'extensions\\/spec-kit-docguard\\/']) {
-      assert.ok(autoMerge.includes(expected), `release allowlist is missing ${expected}`);
-    }
+    const source = autoMerge.match(/const ALLOWED = \/(.+)\/;/)?.[1];
+    assert.ok(source, 'release path allowlist must remain explicit');
+    const allowed = new RegExp(source);
+    for (const path of [
+      'package.json', 'package-lock.json', 'pyproject.toml', 'server.json', 'CHANGELOG.md',
+      'templates/ci/github-actions.yml',
+      'extensions/spec-kit-docguard/extension.yml',
+      'extensions/spec-kit-docguard/templates/github-workflows/docguard-guard.yml',
+      'extensions/spec-kit-docguard/templates/github-workflows/docguard-autofix.yml',
+      'extensions/spec-kit-docguard/skills/docguard-guard/SKILL.md',
+      '.agent/skills/docguard-sync/SKILL.md',
+    ]) assert.ok(allowed.test(path), `release allowlist rejected ${path}`);
+    for (const path of [
+      'extensions/spec-kit-docguard/scripts/bash/publish.sh',
+      'extensions/spec-kit-docguard/commands/docguard.guard.md',
+      '.agent/settings.json',
+      'templates/SECURITY.md.template',
+      '.github/workflows/release.yml',
+    ]) assert.equal(allowed.test(path), false, `release allowlist admitted ${path}`);
     assert.match(autoMerge, /const unexpected = paths\.filter/);
   });
 
