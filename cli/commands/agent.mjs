@@ -27,6 +27,7 @@ import { c } from '../shared.mjs';
 import { createEvidenceReader, citedSources, taskEvidence, gitEvidence, SEMANTIC_COVERAGE_LIMITATION } from '../scanners/semantic-claims.mjs';
 import { buildScoreAssurance } from './score.mjs';
 import { evaluateEvidence } from '../evidence/evaluate.mjs';
+import { buildTaskContextPacket } from '../scanners/task-context.mjs';
 
 const PHASES = ['config', 'canonical-docs', 'verify'];
 
@@ -127,6 +128,46 @@ export function buildAgentTaskGraph(projectDir, config, plan) {
 }
 
 export function runAgent(projectDir, config, flags) {
+  if (flags.task !== undefined) {
+    let packet;
+    try {
+      packet = buildTaskContextPacket(projectDir, config, flags.task);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Task context input is invalid.';
+      if (flags.format === 'json') console.log(JSON.stringify({ status: 'error', code: 'TASK_CONTEXT_INPUT', message }, null, 2));
+      else console.error(`${c.red}Error:${c.reset} ${message}`);
+      process.exitCode = 1;
+      return null;
+    }
+    if (flags.format === 'json') {
+      console.log(JSON.stringify(packet, null, 2));
+      return packet;
+    }
+
+    console.log(`${c.bold}🎯 DocGuard Task Context — ${config.projectName}${c.reset}`);
+    console.log(`${c.dim}   ${packet.selection.status} · ${packet.selection.selectedExcerpts} excerpt(s) · task ${packet.task.digest}${c.reset}\n`);
+    console.log(`  ${c.dim}Retrieval only · factual accuracy remains unknown · verify before editing.${c.reset}\n`);
+    if (packet.selection.status === 'abstained') {
+      console.log(`  ${c.yellow}No evidence met the relevance threshold. Use the navigation map for normal repository discovery.${c.reset}\n`);
+    }
+    for (const excerpt of packet.excerpts) {
+      console.log(`  ${c.bold}${excerpt.path}:${excerpt.startLine}-${excerpt.endLine}${c.reset} ${c.dim}[${excerpt.kind} · score ${excerpt.score}]${c.reset}`);
+      for (const line of excerpt.content.split('\n')) console.log(`    ${line}`);
+      console.log('');
+    }
+    if (packet.pointers.length) {
+      console.log(`  ${c.bold}Evidence pointers${c.reset}`);
+      for (const pointer of packet.pointers) console.log(`    - ${pointer.path} (${pointer.kind}: ${pointer.reasons.join(', ')})`);
+      console.log('');
+    }
+    console.log(`  ${c.bold}Verify${c.reset}`);
+    for (const item of packet.verification) console.log(`    - ${item.command} — ${item.purpose}`);
+    console.log(`\n  ${c.bold}Limits${c.reset}`);
+    for (const limitation of packet.limitations) console.log(`    - ${limitation}`);
+    console.log(`\n  ${c.dim}Run with --format json for hashes, machine-readable reasons, assurance, and navigation.${c.reset}`);
+    return packet;
+  }
+
   // Allow `--profile <name>` to preview a profile's plan without having to run
   // `init` first (the field-report agent had no config yet on its first call).
   const cfg = flags.profile ? { ...config, profile: flags.profile } : config;

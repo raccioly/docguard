@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raccioly.github.io/docguard/schemas/docguard-task-context.schema.json",
+  "title": "DocGuard task-specific context packet",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "kind", "task", "provenance", "assurance", "selection", "excerpts", "pointers", "verification", "navigation", "limitations", "coreDigest"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "kind": { "const": "docguard.task-context" },
+    "task": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["digest", "characters"],
+      "properties": {
+        "digest": { "$ref": "#/$defs/digest" },
+        "characters": { "type": "integer", "minimum": 1, "maximum": 2000 }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["git", "registry"],
+      "properties": {
+        "git": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["revision", "dirty", "status"],
+          "properties": {
+            "revision": { "type": ["string", "null"], "pattern": "^[a-f0-9]{40,64}$" },
+            "dirty": { "type": ["boolean", "null"] },
+            "status": { "enum": ["snapshot", "unknown"] }
+          }
+        },
+        "registry": { "enum": ["snapshot", "unavailable"] }
+      }
+    },
+    "assurance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scope", "factualAccuracy", "verification"],
+      "properties": {
+        "scope": { "const": "retrieval-only" },
+        "factualAccuracy": { "type": "null" },
+        "verification": { "const": "unverified" }
+      }
+    },
+    "selection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "threshold", "candidatesConsidered", "selectedExcerpts", "omittedCandidates", "excludedLifecycleDocuments", "limits", "truncated"],
+      "properties": {
+        "status": { "enum": ["targeted", "abstained"] },
+        "threshold": { "type": "integer", "minimum": 1 },
+        "candidatesConsidered": { "type": "integer", "minimum": 0 },
+        "selectedExcerpts": { "type": "integer", "minimum": 0, "maximum": 6 },
+        "omittedCandidates": { "type": "integer", "minimum": 0 },
+        "excludedLifecycleDocuments": { "type": "integer", "minimum": 0 },
+        "limits": { "$ref": "#/$defs/limits" },
+        "truncated": { "type": "boolean" }
+      }
+    },
+    "excerpts": { "type": "array", "maxItems": 6, "items": { "$ref": "#/$defs/excerpt" } },
+    "pointers": { "type": "array", "maxItems": 8, "items": { "$ref": "#/$defs/pointer" } },
+    "verification": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/verification" } },
+    "navigation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["canonicalDocs", "activeSpecs"],
+      "properties": {
+        "canonicalDocs": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/path" } },
+        "activeSpecs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["specId", "path"],
+            "properties": { "specId": { "$ref": "#/$defs/specId" }, "path": { "$ref": "#/$defs/path" } }
+          }
+        }
+      }
+    },
+    "limitations": { "type": "array", "minItems": 2, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+    "coreDigest": { "$ref": "#/$defs/digest" }
+  },
+  "$defs": {
+    "digest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "path": { "type": "string", "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\).+" },
+    "specId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._/-]{2,127}$" },
+    "limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["taskChars", "documents", "chunks", "selectedExcerpts", "linesPerExcerpt", "totalChars", "pointers"],
+      "properties": {
+        "taskChars": { "const": 2000 },
+        "documents": { "const": 32 },
+        "chunks": { "const": 256 },
+        "selectedExcerpts": { "const": 6 },
+        "linesPerExcerpt": { "const": 16 },
+        "totalChars": { "const": 6000 },
+        "pointers": { "const": 8 }
+      }
+    },
+    "excerpt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "kind", "specId", "heading", "startLine", "endLine", "fileHash", "excerptHash", "score", "reasons", "content"],
+      "properties": {
+        "path": { "$ref": "#/$defs/path" },
+        "kind": { "enum": ["canonical", "active-spec", "project-rules"] },
+        "specId": { "anyOf": [{ "$ref": "#/$defs/specId" }, { "type": "null" }] },
+        "heading": { "type": "string", "minLength": 1 },
+        "startLine": { "type": "integer", "minimum": 1 },
+        "endLine": { "type": "integer", "minimum": 1 },
+        "fileHash": { "$ref": "#/$defs/digest" },
+        "excerptHash": { "$ref": "#/$defs/digest" },
+        "score": { "type": "integer", "minimum": 1 },
+        "reasons": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+        "content": { "type": "string", "maxLength": 6000 }
+      }
+    },
+    "pointer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "kind", "requirements", "reasons", "hash"],
+      "properties": {
+        "path": { "$ref": "#/$defs/path" },
+        "kind": { "enum": ["task-path", "cited-source", "implementation", "test"] },
+        "requirements": { "type": "array", "uniqueItems": true, "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._/-]{2,127}#(?:FR|SC|NFR)-[0-9]{3}$" } },
+        "reasons": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+        "hash": { "$ref": "#/$defs/digest" }
+      }
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "purpose"],
+      "properties": {
+        "command": { "type": "string", "minLength": 1 },
+        "purpose": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

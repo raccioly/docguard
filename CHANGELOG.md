@@ -27,6 +27,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   violations; targeted packets reduced median steps by 50% and latency by 17%
   against context packs while increasing uncached input tokens by 80%. The
   retained report limits the claim and keeps the interface opt-in.
+- Add opt-in `docguard agent --task <text>` context selection after the frozen
+  promotion gate passed. Existing `docguard agent` output remains unchanged;
+  task mode emits bounded current evidence or an explicit abstention in aligned
+  human and deterministic JSON forms.
 - Define the reviewed R6 language and repository coverage contract, including
   explicit false-positive controls for Python imports, Cloudflare bindings,
   mapped document ownership, and monorepo-root guidance.

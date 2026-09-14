@@ -95,7 +95,7 @@ ${c.bold}Tools (situational, but day-to-day useful)${c.reset}
   ${c.green}diagnose${c.reset}   AI orchestrator — guard → emit fix prompts in one command
   ${c.green}fix${c.reset}        Generate AI fix instructions for specific docs
   ${c.green}generate${c.reset}   Reverse-engineer canonical docs from existing code (${c.cyan}--plan${c.reset} for AI scan)
-  ${c.green}agent${c.reset}      One-shot agent task graph — ordered tasks, pre-filled code-truth, per-task verify (${c.cyan}--format json${c.reset})
+  ${c.green}agent${c.reset}      Agent task graph or bounded task context (${c.cyan}--task <text>${c.reset}, ${c.cyan}--format json${c.reset})
   ${c.green}explain${c.reset}    Explain a validator key, warning text, or finding code (${c.cyan}docguard explain SEC001${c.reset})
   ${c.green}verify${c.reset}     Check declared local evidence or extract claims for review (${c.cyan}--evidence${c.reset}, ${c.cyan}--semantic${c.reset})
   ${c.green}feedback${c.reset}   Report likely false positives back to DocGuard (local-first + 1-click prefilled issue)
@@ -215,13 +215,14 @@ const COMMAND_HELP = {
     examples: ['docguard generate', 'docguard generate --plan', 'docguard generate --plan --write', 'docguard generate --plan --format json'],
   },
   agent: {
-    summary: 'One-shot agent task graph: ordered, dependency-aware, with pre-filled code-truth + per-task verify.',
-    usage: 'docguard agent [--profile <name>] [--format json]',
+    summary: 'Agent task graph, or a bounded evidence packet for one explicit task.',
+    usage: 'docguard agent [--task <text>] [--profile <name>] [--format json]',
     flags: [
-      ['--format json', 'Machine-readable task graph (the agent-executable artifact)'],
+      ['--task <text>', 'Select current task-linked requirements and evidence; abstain when relevance is weak'],
+      ['--format json', 'Machine-readable task graph or deterministic task packet'],
       ['--profile <name>', 'Preview a profile (cli/library/standard/…) without running init first'],
     ],
-    examples: ['docguard agent', 'docguard agent --format json', 'docguard agent --profile cli --format json'],
+    examples: ['docguard agent', 'docguard agent --task "Fix SEC001 in src/config.mjs"', 'docguard agent --task "Implement acme.feature#FR-001" --format json'],
   },
   guard: {
     summary: 'Validate code against canonical docs (all validators).',
@@ -551,6 +552,8 @@ async function main() {
       // v0.21: `docguard demo --keep` doesn't delete the temp fixture after
       // running (useful for poking around what DocGuard set up).
       flags.keep = true;
+    } else if (args[i] === '--task') {
+      flags.task = args[i + 1] && !args[i + 1].startsWith('--') ? args[++i] : '';
     } else if (!args[i].startsWith('--') && i > 0) {
       // Positional args go into flags.args for commands that take them (e.g.
       // `docguard trace --reverse <path>`). Skip the command itself (i === 0).

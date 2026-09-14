@@ -115,8 +115,8 @@ test('promotion gate requires non-inferiority, safety, and measured benefit', ()
   assert.equal(decidePromotion(manifest, aggregateTrials(manifest, noBenefit)).status, 'reject');
 });
 
-test('ships strict schemas for frozen inputs and recorded outputs', () => {
-  for (const file of ['docguard-agent-context-benchmark.schema.json', 'docguard-agent-context-result.schema.json']) {
+test('ships strict schemas for packets, frozen inputs, and recorded outputs', () => {
+  for (const file of ['docguard-task-context.schema.json', 'docguard-agent-context-benchmark.schema.json', 'docguard-agent-context-result.schema.json']) {
     const schema = JSON.parse(readFileSync(join(ROOT, 'schemas', file), 'utf8'));
     assert.equal(schema.$schema, 'https://json-schema.org/draft/2020-12/schema');
     assert.equal(schema.type, 'object');

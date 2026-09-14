@@ -8,16 +8,20 @@
  * @req docguard.task-specific-agent-context#FR-007
  * @req docguard.task-specific-agent-context#FR-008
  * @req docguard.task-specific-agent-context#FR-009
+ * @req docguard.task-specific-agent-context#FR-010
  * @req docguard.task-specific-agent-context#SC-001
  * @req docguard.task-specific-agent-context#SC-002
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { buildTaskContextPacket, TASK_CONTEXT_LIMITS } from '../cli/scanners/task-context.mjs';
 import { contentHash } from '../cli/scanners/semantic-claims.mjs';
+
+const CLI = resolve('cli/docguard.mjs');
 
 function write(root, path, content) {
   const target = join(root, path);
@@ -159,5 +163,40 @@ describe('task-specific context selector', () => {
     const packet = buildTaskContextPacket(root, {}, 'Update normalizeStatus.');
     assert.ok(packet.excerpts.every(item => item.specId !== 'acme.status'));
     assert.equal(packet.selection.excludedLifecycleDocuments, 2);
+  });
+
+  it('exposes aligned opt-in human and deterministic JSON CLI output', t => {
+    const root = fixture(t);
+    const task = 'Update src/status.mjs for acme.status#FR-001 normalization.';
+    const json = spawnSync(process.execPath, [CLI, 'agent', '--task', task, '--format', 'json', '--dir', root], {
+      encoding: 'utf8', env: { ...process.env, NO_COLOR: '1' },
+    });
+    assert.equal(json.status, 0, json.stderr);
+    const packet = JSON.parse(json.stdout);
+    assert.equal(packet.kind, 'docguard.task-context');
+    assert.equal(packet.selection.status, 'targeted');
+    assert.ok(!json.stdout.includes(task));
+    assert.ok(!Object.hasOwn(packet, 'timestamp'));
+
+    const human = spawnSync(process.execPath, [CLI, 'agent', '--task', task, '--dir', root], {
+      encoding: 'utf8', env: { ...process.env, NO_COLOR: '1' },
+    });
+    assert.equal(human.status, 0, human.stderr);
+    assert.match(human.stdout, /DocGuard Task Context/);
+    assert.match(human.stdout, /specs\/001-status\/spec\.md:\d+-\d+/);
+    assert.match(human.stdout, /Retrieval only · factual accuracy remains unknown/);
+    assert.match(human.stdout, /src\/status\.mjs \(task-path:/);
+  });
+
+  it('returns a stable machine error for a missing task value', t => {
+    const root = fixture(t);
+    const result = spawnSync(process.execPath, [CLI, 'agent', '--task', '--format', 'json', '--dir', root], {
+      encoding: 'utf8', env: { ...process.env, NO_COLOR: '1' },
+    });
+    assert.equal(result.status, 1);
+    assert.deepEqual(JSON.parse(result.stdout), {
+      status: 'error', code: 'TASK_CONTEXT_INPUT', message: 'Task context requires a non-empty task.',
+    });
+    assert.equal(result.stderr, '');
   });
 });
