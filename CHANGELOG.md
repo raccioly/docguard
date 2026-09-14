@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Scheduled release pull requests now require a repository-scoped
+  `RELEASE_PR_TOKEN`, allowing ordinary pull-request CI to run and the
+  fail-closed auto-merge workflow to observe the successful event. The previous
+  `GITHUB_TOKEN` plus `workflow_dispatch` workaround produced green checks that
+  could not activate auto-merge and forced an administrator merge for v0.39.0.
+- Release, CI, bot, composite-action, supply-chain, and distributed workflow
+  actions are pinned to reviewed commit SHAs. Artifact upload moved from the
+  Node 20-based v4 action to v7.0.1, and the shipped Spec Kit auto-fix workflow
+  now tracks the current DocGuard release instead of v0.25.0.
+- Parser-fallback skipped-test detection now masks strings, templates, and
+  comments before matching. Malformed test fixtures containing literal
+  `test.skip()` examples no longer become false warnings when Babel is absent;
+  executable unexplained skips remain visible.
+
 ## [0.39.0] - 2026-09-14
 
 Automated weekly release — batches everything merged since `v0.38.0`.

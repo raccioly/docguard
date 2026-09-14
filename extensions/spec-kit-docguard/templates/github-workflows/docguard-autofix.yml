@@ -35,7 +35,7 @@ jobs:
     if: github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - name: Checkout PR branch (with write token)
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event.pull_request.head.ref }}
           # Default GITHUB_TOKEN has the contents:write scope granted above.
@@ -44,7 +44,7 @@ jobs:
           fetch-depth: 0
 
       - name: Run DocGuard fix --write + auto-commit + PR comment
-        uses: raccioly/docguard@v0.25.0
+        uses: raccioly/docguard@v0.39.0
         with:
           command: fix
           auto-commit: 'true'
