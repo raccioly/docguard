@@ -193,7 +193,7 @@
           {
             "requirementId": "FR-013",
             "file": "cli/writers/file-transaction.mjs",
-            "line": 8
+            "line": 9
           },
           {
             "requirementId": "FR-014",
