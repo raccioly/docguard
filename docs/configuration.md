@@ -206,3 +206,10 @@ Documentation-coverage filename checks search supported Markdown in conventional
 A parsed direct file-read/write call supplies stronger path evidence than a path construction or existence check. Ambiguous paths remain low-confidence review signals; a directory name alone does not establish a configuration file. The bounded detector does not resolve arbitrary import aliases or dynamic paths. Schema synchronization applies source exclusions and deduplicates overlapping roots by source file, preserving models in distinct files even when names match.
 
 Feature requirement scoring recognizes eligible test annotations and labels using the validator parser. An arbitrary fixture string is not linkage evidence, and a recognized link is not proof of behavioral coverage. Duplicate requirement IDs across separate specifications remain a known scoping limitation.
+
+
+### Requirement identity across documents
+
+Requirement definitions are identified by repository-relative document path plus ID. A bare test annotation such as `@req FR-001` earns linkage credit only when that ID is defined in one document. When features reuse an ID, qualify the declaration: `@req specs/payments/spec.md#FR-001`. The same spelling works in a test label. Use forward slashes; an optional leading `./` is accepted. Qualifiers are exact repository-relative paths, not paths relative to the test file.
+
+Validation and `trace --features` share definition parsing and reference resolution. A qualified reference credits only its target document. Ambiguous bare references credit neither feature and produce a review finding for each unresolved definition. A wrong qualifier is an orphan reference and never falls back to a bare match. Repeated mentions within one document do not create additional identities. Linkage remains evidence of a declaration, not proof of behavioral correctness; lifecycle and arbitrary verification-link semantics are separate concerns.

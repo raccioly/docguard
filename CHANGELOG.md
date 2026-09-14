@@ -7,7 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.36.2] - 2026-09-14
+
 ### Fixed
+
+- Requirement identities include the defining document, preventing duplicate IDs across specs from sharing test coverage. Validator and feature scores share resolution; unique bare IDs remain compatible, and qualified references target exactly one document.
 
 - Legacy badge command tests run in disposable projects with host setup tooling excluded, preventing source-checkout mutations during the test suite.
 

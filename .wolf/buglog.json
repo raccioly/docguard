@@ -5239,6 +5239,23 @@
       ],
       "occurrences": 1,
       "last_seen": "2026-09-14T14:25:08.472Z"
+    },
+    {
+      "id": "bug-319",
+      "timestamp": "2026-09-14T14:57:06.826Z",
+      "error_message": "Repeated requirement IDs across documents share coverage incorrectly",
+      "file": "cli/validators/traceability.mjs",
+      "root_cause": "Definitions and feature coverage were indexed by bare IDs across the entire project",
+      "fix": "Use document-qualified definition keys and shared resolution; only unique bare IDs or exact qualified references earn credit",
+      "tags": [
+        "traceability",
+        "false-assurance"
+      ],
+      "related_bugs": [
+        "bug-315"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-09-14T14:57:06.826Z"
     }
   ]
 }
