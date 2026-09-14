@@ -29,6 +29,23 @@ The shipped auto-fix template and composite action expose optional commit/commen
 
 On a schedule, produce a diff, check for an existing repair PR, and create a new proposal only when meaningful work remains. Keep clean runs quiet. Set an owner and response expectation for unresolved findings. Scheduled source scans cannot detect every external deployment or vendor change; operational checks need their own evidence.
 
+## Recipe 3a — Protected scheduled releases
+
+The repository's scheduled release workflow opens a reviewable `release/vX.Y.Z`
+pull request because `main` requires pull requests and four runtime checks. GitHub
+places pull-request workflows created with the repository `GITHUB_TOKEN` into an
+approval-required state. A separately dispatched workflow does not satisfy the
+auto-merge gate because that gate accepts successful `pull_request` runs only.
+
+Configure `RELEASE_PR_TOKEN` as either a repository-scoped GitHub App token or a
+fine-grained user token with **Contents: write** and **Pull requests: write**.
+The workflow fails before creating a branch when the credential is absent. The
+token creates the pull request; the release workflow retains the repository
+token for its own checkout and branch push. Auto-merge independently verifies
+the repository, release-branch/version shape, allowed file set, and all four
+required Node checks before merging. Rotate the credential through repository
+secret management and never expose it to pull-request jobs.
+
 ## Recipe 3b — Spec completion and post-hoc reconciliation
 
 Run `docguard reconcile --since <merge-base> --format json` when implementation

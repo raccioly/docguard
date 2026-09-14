@@ -3,12 +3,26 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const workflow = readFileSync(new URL('../.github/workflows/scheduled-release.yml', import.meta.url), 'utf8');
+const autoMerge = readFileSync(new URL('../.github/workflows/auto-merge.yml', import.meta.url), 'utf8');
 
 describe('scheduled release workflow', () => {
   it('grants exactly the write scopes required by its release PR flow', () => {
-    assert.match(workflow, /permissions:\n  contents: write\n  pull-requests: write\n  actions: write\n/);
+    assert.match(workflow, /permissions:\n  contents: write\n  pull-requests: write\n/);
+    assert.doesNotMatch(workflow, /\n  actions: write\n/);
     assert.match(workflow, /gh pr create/);
-    assert.match(workflow, /gh workflow run ci\.yml/);
+    assert.match(workflow, /GH_TOKEN: \$\{\{ secrets\.RELEASE_PR_TOKEN \}\}/);
+    assert.match(workflow, /if \[ -z "\$RELEASE_PR_TOKEN" \]/);
+    assert.doesNotMatch(workflow, /gh workflow run ci\.yml/);
+  });
+
+  it('recognizes authenticated release PRs by constrained branch, title, repository, and files', () => {
+    assert.match(autoMerge, /pr\.head\.repo\.full_name === `\$\{owner\}\/\$\{repo\}`/);
+    assert.match(autoMerge, /\^release\\\/v\\d\+\\\.\\d\+\\\.\\d\+\$/);
+    assert.match(autoMerge, /\^release: v\\d\+\\\.\\d\+\\\.\\d\+ — automated weekly batch\$/);
+    for (const expected of ['pyproject\\.toml', 'server\\.json', 'templates\\/ci\\/github-actions\\.yml', 'extensions\\/spec-kit-docguard\\/']) {
+      assert.ok(autoMerge.includes(expected), `release allowlist is missing ${expected}`);
+    }
+    assert.match(autoMerge, /const unexpected = paths\.filter/);
   });
 
   it('pins third-party actions to reviewed commit SHAs', () => {

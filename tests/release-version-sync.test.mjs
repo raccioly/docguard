@@ -22,6 +22,7 @@ function fixture({ brokenTemplate = false } = {}) {
   write(root, 'extensions/spec-kit-docguard/extension.yml', 'extension:\n  id: "docguard"\n  version: "0.37.0"\n');
   write(root, 'templates/ci/github-actions.yml', brokenTemplate ? 'no package pin\n' : 'run: npm install docguard-cli@0.37.0\n');
   write(root, 'extensions/spec-kit-docguard/templates/github-workflows/docguard-guard.yml', 'run: npm install docguard-cli@0.37.0\n');
+  write(root, 'extensions/spec-kit-docguard/templates/github-workflows/docguard-autofix.yml', 'uses: raccioly/docguard@v0.37.0\n');
   for (const name of ['docguard-guard', 'docguard-sync']) {
     write(root, `extensions/spec-kit-docguard/skills/${name}/SKILL.md`, [
       '---', 'metadata:', '  author: docguard', '  version: 0.37.0', '---',
@@ -38,7 +39,7 @@ describe('release version synchronization', () => {
     try {
       const result = syncReleaseVersion(root);
       assert.equal(result.version, '9.8.7');
-      assert.equal(result.changed.length, 7);
+      assert.equal(result.changed.length, 8);
       assert.match(readFileSync(join(root, 'pyproject.toml'), 'utf8'), /version = "9\.8\.7"/);
       const server = JSON.parse(readFileSync(join(root, 'server.json'), 'utf8'));
       assert.equal(server.version, '9.8.7');

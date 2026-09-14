@@ -39,6 +39,9 @@ const skipCases = [
   ['ignores quoted skip syntax', 'const sample = "test.skip()";', 0],
   ['ignores commented skip syntax', '// test.skip();', 0],
   ['retains parse-failure skip', 'test.skip();\nconst invalid = ;', 1],
+  ['ignores quoted skip when parsing fails', 'const sample = "test.skip()";\nconst invalid = ;', 0],
+  ['ignores commented skip when parsing fails', '// test.skip();\nconst invalid = ;', 0],
+  ['ignores block-comment skip when parsing fails', '/* test.skip(); */\nconst invalid = ;', 0],
 ];
 for (const [name, source, count] of skipCases) {
   test(name, t => {

@@ -119,15 +119,58 @@ function skippedCalls(content, filename) {
 // Parser failure/unavailability cannot turn an unexplained skip into a pass.
 function fallbackSkippedCalls(content) {
   const lines = content.split('\n');
+  const codeLines = maskJsNonCode(content).split('\n');
   const calls = [];
-  for (let i = 0; i < lines.length; i++) {
-    if (!SKIP_PATTERNS.some(p => p.test(lines[i]))) continue;
+  for (let i = 0; i < codeLines.length; i++) {
+    if (!SKIP_PATTERNS.some(p => p.test(codeLines[i]))) continue;
     // Only a directly preceding comment is unambiguous without a parser.
     const previous = lines[i - 1] || '';
     calls.push({ line: i + 1, hasReason: /^\s*\/\//.test(previous) &&
       SKIP_REASON_PATTERN.test(previous) });
   }
   return calls;
+}
+
+/**
+ * Preserve line structure while hiding comments and string/template literals.
+ * This keeps the parser-failure fallback from treating fixture text such as
+ * `"test.skip()"` as executable code. Template interpolation is intentionally
+ * masked with the surrounding template: on malformed input it is safer to miss
+ * that uncommon form than to report prose as a real skipped test.
+ */
+function maskJsNonCode(content) {
+  let state = 'code';
+  let escaped = false;
+  let out = '';
+  for (let i = 0; i < content.length; i++) {
+    const ch = content[i];
+    const next = content[i + 1];
+    if (state === 'code') {
+      if (ch === '/' && next === '/') { out += '  '; i++; state = 'line-comment'; continue; }
+      if (ch === '/' && next === '*') { out += '  '; i++; state = 'block-comment'; continue; }
+      if (ch === "'") { out += ' '; state = 'single'; escaped = false; continue; }
+      if (ch === '"') { out += ' '; state = 'double'; escaped = false; continue; }
+      if (ch === '`') { out += ' '; state = 'template'; escaped = false; continue; }
+      out += ch;
+      continue;
+    }
+    if (ch === '\n') {
+      out += '\n';
+      if (state === 'line-comment') state = 'code';
+      if (state === 'single' || state === 'double') escaped = false;
+      continue;
+    }
+    if (state === 'block-comment' && ch === '*' && next === '/') {
+      out += '  '; i++; state = 'code'; continue;
+    }
+    if (state === 'line-comment' || state === 'block-comment') { out += ' '; continue; }
+    const quote = state === 'single' ? "'" : state === 'double' ? '"' : '`';
+    if (!escaped && ch === quote) { out += ' '; state = 'code'; continue; }
+    if (!escaped && ch === '\\') { escaped = true; out += ' '; continue; }
+    escaped = false;
+    out += ' ';
+  }
+  return out;
 }
 
 /**

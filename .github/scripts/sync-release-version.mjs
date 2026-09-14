@@ -103,6 +103,13 @@ export function syncReleaseVersion(root = process.cwd()) {
     ));
   }
 
+  stageText(staged, root, 'extensions/spec-kit-docguard/templates/github-workflows/docguard-autofix.yml', content => replaceRequired(
+    content,
+    /raccioly\/docguard@v\d+\.\d+\.\d+/g,
+    `raccioly/docguard@v${version}`,
+    'extensions/spec-kit-docguard/templates/github-workflows/docguard-autofix.yml action pin',
+  ));
+
   const skillsRoot = resolve(root, 'extensions/spec-kit-docguard/skills');
   if (!existsSync(skillsRoot)) throw new Error('extensions/spec-kit-docguard/skills: required release surface is missing');
   const skillFiles = readdirSync(skillsRoot, { withFileTypes: true })

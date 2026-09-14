@@ -31,7 +31,6 @@ on:
 permissions:
   contents: write
   pull-requests: write
-  actions: write
 
 jobs:
   cut-release:
@@ -135,20 +134,29 @@ jobs:
       #
       #   1. main requires a pull request. github-actions[bot] is not an admin
       #      and has no bypass, so a direct push is rejected outright.
-      #   2. A PR opened with GITHUB_TOKEN does NOT trigger further workflow
-      #      runs (GitHub's loop guard). So ci.yml would never fire on it, the
-      #      required test (18/20/22/24) checks would never report, and the PR
-      #      would sit forever on "Expected — waiting for status to be
-      #      reported" — unmergeable.
+      #   2. A PR opened with GITHUB_TOKEN starts pull_request workflows in an
+      #      approval-required state. A separately dispatched CI run is not a
+      #      pull_request run, so it cannot activate the fail-closed auto-merge
+      #      workflow even when its checks pass.
       #
-      # So: push a branch (unprotected), open the PR, then explicitly dispatch
-      # ci.yml against that branch so the checks DO report on its head SHA.
-      # auto-merge.yml then merges it once all four legs are green, and the
-      # resulting package.json change on main triggers release.yml to publish.
-      - name: Open release PR and kick off its CI
+      # RELEASE_PR_TOKEN must be a repository-scoped GitHub App token or a
+      # fine-grained user token with Contents and Pull requests write access.
+      # Using that token to create the PR produces an ordinary pull_request run;
+      # auto-merge.yml then merges only after all four required legs pass.
+      - name: Require release PR credential
         if: steps.check.outputs.changed == 'true'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_PR_TOKEN: ${{ secrets.RELEASE_PR_TOKEN }}
+        run: |
+          if [ -z "$RELEASE_PR_TOKEN" ]; then
+            echo "::error::RELEASE_PR_TOKEN is required. Configure a repository-scoped GitHub App or fine-grained token with Contents and Pull requests write access."
+            exit 1
+          fi
+
+      - name: Open release PR
+        if: steps.check.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_PR_TOKEN }}
         run: |
           BRANCH="release/v${NEW_VERSION}"
           git config user.name "github-actions[bot]"
@@ -167,11 +175,8 @@ jobs:
             --title "release: v${NEW_VERSION} — automated weekly batch" \
             --body "Automated weekly release cut by \`scheduled-release.yml\`.
 
-          Batches everything merged since \`${{ steps.check.outputs.last_tag }}\`. Tests and \`guard\` already passed on this tree before the PR was opened; CI is dispatched separately below so the required checks report (a GITHUB_TOKEN-opened PR does not trigger workflows on its own).
+          Batches everything merged since \`${{ steps.check.outputs.last_tag }}\`. Tests and \`guard\` already passed on this tree before the PR was opened. The release credential creates a normal pull request so required CI checks can run and the fail-closed auto-merge policy can evaluate them.
 
           Once green, \`auto-merge.yml\` merges this, and the \`package.json\` change triggers \`release.yml\` to tag and publish."
 
-          # Required checks must actually report on this SHA or the PR can
-          # never merge -- see constraint 2 above.
-          gh workflow run ci.yml --ref "$BRANCH"
-          echo "Opened $BRANCH and dispatched CI."
+          echo "Opened $BRANCH; pull-request CI will report on its merge revision."
