@@ -30,6 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - MCP clients can call `docguard_verify_evidence` directly. The existing
   `docguard_verify_claims` tool removes a semantic task only when a unique,
   exact declaration already verified that same claim within scope.
+- Roadmap and command documentation now describe the already-released R2 spec
+  completion transaction as current behavior instead of future work.
 
 ### Fixed
 

@@ -170,9 +170,11 @@ the same local ID commonly appears in several specs.
 
 The generated-spec preflight blocks missing or duplicate identity, stale
 registry state, unsafe paths, and broken lifecycle lineage. Text similarity is
-low-confidence review context and never blocks by itself. A future
-`specs complete` transaction will verify exact-revision implementation evidence,
-canonical outcomes, and context regeneration before marking a spec verified.
+low-confidence review context and never blocks by itself. `specs complete`
+verifies exact-revision implementation evidence, canonical outcomes, and context
+regeneration before marking a spec verified; `--write` requires a reviewed
+reason and performs the registry, spec outcome, and current-context writes as
+one rollback-safe transaction.
 
 ### `docguard retire`
 

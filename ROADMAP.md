@@ -53,8 +53,8 @@ Give specifications and planning documents an explicit end of life.
 
 R1 deliberately shipped the registry and safe-retirement boundary before adding
 completion writes. Transaction rollback, status adapters, monorepo identity,
-restore/re-retire handling, and reviewed completion transitions remain R2 work;
-they are not part of the v0.37.0 contract.
+restore/re-retire handling, and reviewed completion transitions followed in R2
+and shipped in v0.38.0; they are outside the v0.37.0 contract.
 
 ### R2 — Completion and post-hoc reconciliation (released in v0.38.0)
 

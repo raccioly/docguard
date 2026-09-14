@@ -30,4 +30,4 @@
 
 - [x] T015 Update canonical architecture, security, test, CI, requirements, roadmap, and agent skills.
 - [x] T016 Run focused, full, guard, benchmark, package, supported-runtime, and external-corpus checks.
-- [ ] T017 Complete the reviewed lifecycle transaction and retain the spec as a living verification contract.
+- [x] T017 Complete the reviewed lifecycle transaction and retain the spec as a living verification contract.

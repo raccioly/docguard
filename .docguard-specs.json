@@ -546,11 +546,11 @@
           },
           {
             "path": "specs/008-evidence-scoped-verification/tasks.md",
-            "digest": "sha256:d37506288a967caa3b73fed9b5864d5c8bbc8bf2dc6c715f9ec2c5120858eb32"
+            "digest": "sha256:eafa314463a4f6507147c91392cedd5c01544b08504530ab7f6cd898935601e4"
           }
         ],
         "taskCompletion": {
-          "checked": 16,
+          "checked": 17,
           "total": 17
         },
         "implementationEvidence": [
