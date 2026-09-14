@@ -10,6 +10,7 @@
 
 - On field/bug reports, Ricardo prefers **"triage & verify first"** over jumping to fixes — confirm each item against current code (reproduce where possible) and explicitly challenge the report's own stated root-cause before writing any fix. (Chosen on the websec-validator field report, 2026-06-02.)
 - **2026-09-14** — Hold lifecycle releases until the authority model, false-positive boundary, and interoperability with current Spec Kit extensions have been independently challenged. The user wants the spec tracker to become the daily source of lifecycle truth, with release only after meaningful, tested improvement.
+- **2026-09-14** — Do not call a release cycle finished while post-tag fixes remain on `main`, and keep roadmap milestones visibly separated into shipped and future work. Feature foundations use a minor release; fixes merged after that tag require a patch release before updating the external catalog submission.
 
 ## Key Learnings
 

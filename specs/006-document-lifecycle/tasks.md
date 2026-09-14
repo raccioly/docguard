@@ -14,19 +14,24 @@
 - [x] T007 Retire DocGuard's superseded specs and planning documents with the command.
 - [x] T008 Update current README, architecture, test policy, agent guidance, and generated indexes.
 - [x] T009 Run full regression, guard, and packaging checks; release remains held while the registry increment is unimplemented and guard reports planned-work warnings.
-- [ ] T010 Open and merge a reviewed pull request.
+- [x] T010 Open and merge reviewed PR #349, publish v0.37.0, and verify every
+  distribution artifact independently.
 
-## Phase 2: Registry and lifecycle follow-up
+## Phase 2: Registry and preflight
 
 - [x] T011 Define the versioned registry schema and transition invariants with immutable spec IDs, tombstones, orthogonal lifecycle dimensions, split reviewed control fields, observed projections, and cross-ledger consistency.
 - [x] T012 Extract the existing feature-trace calculation into a reusable evidence builder.
 - [x] T013 Add a pure registry projector and dedicated `docguard specs --write|--check` flows; no other command may write lifecycle state.
 - [x] T014 Add `docguard specs preflight` with an advisory pre-specification briefing plus a generated-spec gate with structural blockers, review-only semantic overlap, and mandatory Spec Kit `before_specify`/`before_tasks` hooks.
 - [x] T015 Add manifest integrity, reciprocal lineage, `supersededBy` currentness, and lifecycle-state validation.
-- [ ] T016 Add transactional registry/recovery writes with rollback, then status adapters and monorepo fixtures contributed by users.
 
-## Phase 3: Post-hoc reconciliation
+## Phase 3: Completion and post-hoc reconciliation (R2)
 
+These tasks were not part of the v0.37.0 release contract. They implement the
+next roadmap priority and remain open until their evidence gates pass.
+
+- [ ] T016 Add staged registry/recovery transactions with rollback, status
+  adapters, and monorepo fixtures before enabling completion writes.
 - [ ] T017 Specify the reconcile JSON graph and confidence model.
 - [ ] T018 Classify mechanical facts, approved intent, decisions, and unsupported evidence.
 - [ ] T019 Implement `reconcile --since <ref>` as a read-only plan.
