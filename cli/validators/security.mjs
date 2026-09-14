@@ -35,10 +35,10 @@ const IGNORE_DIRS = new Set([
 
 // Patterns that might indicate hardcoded secrets
 const SECRET_PATTERNS = [
-  { pattern: /(?:password|passwd|pwd)\s*[:=]\s*['"][^'"]{8,}['"]/gi, label: 'hardcoded password' },
-  { pattern: /(?:api[_-]?key|apikey)\s*[:=]\s*['"][^'"]{16,}['"]/gi, label: 'hardcoded API key' },
-  { pattern: /(?:secret[_-]?key|secretkey)\s*[:=]\s*['"][^'"]{16,}['"]/gi, label: 'hardcoded secret key' },
-  { pattern: /(?:access[_-]?token|accesstoken)\s*[:=]\s*['"][^'"]{16,}['"]/gi, label: 'hardcoded access token' },
+  { pattern: /(?:password|passwd|pwd)\??\s*(?:=\s*|:\s*(?:[^'";=\n]+?=\s*)?)['"][^'"]{8,}['"]/gi, label: 'hardcoded password' },
+  { pattern: /(?:api[_-]?key|apikey)\??\s*(?:=\s*|:\s*(?:[^'";=\n]+?=\s*)?)['"][^'"]{16,}['"]/gi, label: 'hardcoded API key' },
+  { pattern: /(?:secret[_-]?key|secretkey)\??\s*(?:=\s*|:\s*(?:[^'";=\n]+?=\s*)?)['"][^'"]{16,}['"]/gi, label: 'hardcoded secret key' },
+  { pattern: /(?:access[_-]?token|accesstoken)\??\s*(?:=\s*|:\s*(?:[^'";=\n]+?=\s*)?)['"][^'"]{16,}['"]/gi, label: 'hardcoded access token' },
   { pattern: /AKIA[0-9A-Z]{16}/g, label: 'AWS Access Key ID' },
   { pattern: /(?:sk-|sk_live_|sk_test_)[a-zA-Z0-9]{20,}/g, label: 'API secret key (Stripe/OpenAI pattern)' },
 ];

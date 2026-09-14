@@ -34,6 +34,12 @@ Automated weekly release — batches everything merged since `v0.37.1`.
   deterministic core output separated from runtime observations. Contribution
   inputs reject private or credentialed Git endpoints, unsafe config paths,
   prototype keys, symlinked fixtures, and interactive Git authentication.
+- Precision evidence now reports null-safe TP/FP/FN, precision, recall,
+  false-positive density, supported-case abstention, unsupported coverage, and
+  reviewed repair outcomes by repository, detector, and parser tier. Baseline
+  comparison fails case-first on new misses, noise, abstention, or removed
+  evidence; runtime comparisons require identical environments and use the
+  repository's greater-than-20-percent materiality policy.
 
 - `docguard reconcile --since <ref>` emits a deterministic JSON review graph
   that separates mechanical facts, approved intent, decisions, unrelated
@@ -62,6 +68,9 @@ Automated weekly release — batches everything merged since `v0.37.1`.
 
 ### Fixed
 
+- Typed TypeScript credential assignments such as `apiKey: string = "…"` can
+  no longer bypass hardcoded-secret detection. The precision corpus found and
+  reproduces this false negative while preserving an opposite clean control.
 - Completed tasks no longer produce a permanent retirement warning for an
   exact-path spec whose reviewed registry state is current, living, and verified
   or released. Missing, malformed, stale, and non-living registry state still

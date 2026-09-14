@@ -482,11 +482,11 @@
           },
           {
             "path": "specs/007-precision-evidence-loop/tasks.md",
-            "digest": "sha256:4a94290e2baeee3e264c476f2c845155ddfc738e63695a5563fd80879184e58e"
+            "digest": "sha256:1c71580d4c8430f6da9d2525ef9afcd91540bdb6cb7c39666e46574fd55284de"
           }
         ],
         "taskCompletion": {
-          "checked": 5,
+          "checked": 9,
           "total": 19
         },
         "implementationEvidence": [

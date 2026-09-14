@@ -13,10 +13,10 @@
 
 ## Phase 2: Corpus and metrics
 
-- [ ] T006 Add defect/control pairs for JavaScript, TypeScript, Python, fallback, monorepo, generated, and sparse-doc categories.
-- [ ] T007 Implement per-case, repository, detector, parser-tier, and aggregate metrics with null denominators.
-- [ ] T008 Implement baseline comparison that catches new FP/FN and increased unsupported or abstained supported cases.
-- [ ] T009 Prove byte-stable core results across repeated unchanged runs.
+- [x] T006 Add defect/control pairs for JavaScript, TypeScript, Python, fallback, monorepo, generated, and sparse-doc categories.
+- [x] T007 Implement per-case, repository, detector, parser-tier, and aggregate metrics with null denominators.
+- [x] T008 Implement baseline comparison that catches new FP/FN and increased unsupported or abstained supported cases.
+- [x] T009 Prove byte-stable core results across repeated unchanged runs.
 - [ ] T010 Run and independently adjudicate at least five pinned public repositories in disposable checkouts.
 - [ ] T011 Commit the reviewed baseline, confidence limits, and actual runtime observations.
 

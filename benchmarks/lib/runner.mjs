@@ -16,6 +16,7 @@ import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { loadBenchmarkManifest, safeRelativePath } from './manifest.mjs';
+import { calculateMetrics } from './metrics.mjs';
 
 const BENCHMARK_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const REPO_ROOT = resolve(BENCHMARK_ROOT, '..');
@@ -152,6 +153,7 @@ function caseCore(item, sourceRevision, invocation) {
     causalFamily: item.causalFamily,
     parserTier: item.parserTier,
     classification: item.classification,
+    repairOutcome: item.repairOutcome,
     sourceRevision,
     scope: item.scope,
     expected,
@@ -192,6 +194,7 @@ export function runBenchmark({ manifestPath = resolve(BENCHMARK_ROOT, 'corpus.js
       tool: { version: PACKAGE.version, revision: gitRevision() },
       cases: coreCases.sort((a, b) => a.id.localeCompare(b.id)),
     };
+    core.metrics = calculateMetrics(core.cases);
     return {
       core,
       observations: {

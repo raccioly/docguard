@@ -33,7 +33,12 @@ describe('benchmark manifest contract', () => {
     assert.throws(() => parseBenchmarkManifest(duplicate, manifestPath), /Duplicate benchmark case ID/);
 
     const leakage = fresh();
-    leakage.cases[2].repositoryGroup = leakage.cases[0].repositoryGroup;
+    const development = leakage.cases.find(item => item.split === 'development');
+    const evaluation = leakage.cases.find(item => item.split === 'evaluation');
+    const evaluationGroup = evaluation.repositoryGroup;
+    for (const item of leakage.cases.filter(candidate => candidate.repositoryGroup === evaluationGroup)) {
+      item.repositoryGroup = development.repositoryGroup;
+    }
     assert.throws(() => parseBenchmarkManifest(leakage, manifestPath), /split leakage in repositoryGroup/);
   });
 
@@ -43,7 +48,7 @@ describe('benchmark manifest contract', () => {
     assert.throws(() => parseBenchmarkManifest(missingControl, manifestPath), /oppositeControl/);
 
     const floating = fresh();
-    floating.cases[2].source = { kind: 'git', url: 'https://github.com/example/project.git', revision: 'main', license: 'MIT' };
+    floating.cases.find(item => item.id === 'eval-python-unsupported').source = { kind: 'git', url: 'https://github.com/example/project.git', revision: 'main', license: 'MIT' };
     assert.throws(() => parseBenchmarkManifest(floating, manifestPath), /full 40- or 64-character/);
 
     for (const path of ['../secret', '.local/secret', '.git/config', 'dir\\file']) {
@@ -65,7 +70,7 @@ describe('benchmark manifest contract', () => {
       'https://example.com:8443/project.git',
     ]) {
       const manifest = fresh();
-      manifest.cases[2].source = { kind: 'git', url, revision: 'a'.repeat(40), license: 'MIT' };
+      manifest.cases.find(item => item.id === 'eval-python-unsupported').source = { kind: 'git', url, revision: 'a'.repeat(40), license: 'MIT' };
       assert.throws(() => parseBenchmarkManifest(manifest, manifestPath), /credential-free|public HTTPS/);
     }
 

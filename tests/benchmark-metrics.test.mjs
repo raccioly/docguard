@@ -1,0 +1,75 @@
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+
+/**
+ * @req docguard.precision-evidence-loop#FR-007
+ * @req docguard.precision-evidence-loop#FR-009
+ * @req docguard.precision-evidence-loop#FR-010
+ */
+
+import { calculateMetrics } from '../benchmarks/lib/metrics.mjs';
+import { compareBenchmarkCores, compareRuntimeObservations } from '../benchmarks/lib/compare.mjs';
+
+const result = (overrides = {}) => ({
+  id: 'case', repositoryGroup: 'repo', parserTier: 'js-ast',
+  classification: 'defect', scope: { validatorKey: 'security', codes: ['SEC001'] },
+  expected: ['SEC001@a.js'], actual: ['SEC001@a.js'], unexpected: [], missing: [],
+  abstained: false, repairOutcome: 'not_evaluated', ...overrides,
+});
+
+describe('benchmark metrics', () => {
+  it('reports exact counts and null ratios instead of claiming unsupported perfection', () => {
+    const metrics = calculateMetrics([
+      result(),
+      result({ id: 'fp', classification: 'clean_control', expected: [], actual: ['SEC001@b.js'], unexpected: ['SEC001@b.js'] }),
+      result({ id: 'unsupported', classification: 'unsupported_syntax', expected: [], actual: [], unexpected: [], parserTier: 'py-ast' }),
+    ]);
+    assert.equal(metrics.aggregate.truePositives, 1);
+    assert.equal(metrics.aggregate.falsePositives, 1);
+    assert.equal(metrics.aggregate.precision, 0.5);
+    assert.equal(metrics.aggregate.recall, 1);
+    assert.equal(metrics.aggregate.unsupportedRate, 0.333333);
+    assert.equal(metrics.byParserTier['py-ast'].precision, null);
+    assert.equal(metrics.byParserTier['py-ast'].recall, null);
+    assert.equal(metrics.byParserTier['py-ast'].falsePositivesPerRepository, null);
+    assert.equal(metrics.aggregate.acceptedRepairRate, null);
+  });
+
+  it('tracks accepted repair outcomes without treating unevaluated repairs as rejection', () => {
+    const metrics = calculateMetrics([
+      result({ id: 'accepted', repairOutcome: 'accepted' }),
+      result({ id: 'rejected', repairOutcome: 'rejected' }),
+      result({ id: 'unknown' }),
+    ]).aggregate;
+    assert.deepEqual(metrics.repairs, { accepted: 1, rejected: 1, notEvaluated: 1 });
+    assert.equal(metrics.acceptedRepairRate, 0.5);
+  });
+});
+
+describe('benchmark comparison', () => {
+  it('fails independently on new false negatives, false positives, abstention, and removed cases', () => {
+    const baselineCases = [result({ id: 'fn' }), result({ id: 'fp' }), result({ id: 'abstain' }), result({ id: 'removed' })];
+    const candidateCases = [
+      result({ id: 'fn', actual: [], missing: ['SEC001@a.js'] }),
+      result({ id: 'fp', actual: ['SEC001@a.js', 'SEC001@extra.js'], unexpected: ['SEC001@extra.js'] }),
+      result({ id: 'abstain', abstained: true }),
+    ];
+    const comparison = compareBenchmarkCores(
+      { schemaVersion: 1, cases: baselineCases },
+      { schemaVersion: 1, cases: candidateCases },
+    );
+    assert.equal(comparison.status, 'FAIL');
+    assert.deepEqual(comparison.regressions.map(item => item.kind), [
+      'new-supported-abstention', 'new-false-negative', 'new-false-positive', 'case-removed',
+    ]);
+  });
+
+  it('compares runtime only in the same environment and uses the 20 percent policy', () => {
+    const environment = { node: 'v22', platform: 'linux', arch: 'x64' };
+    const baseline = { environment, cases: [{ id: 'a', coldMs: 100, warmMs: 50 }] };
+    assert.equal(compareRuntimeObservations(baseline, { environment: { ...environment, node: 'v24' }, cases: [] }).comparable, false);
+    const comparison = compareRuntimeObservations(baseline, { environment, cases: [{ id: 'a', coldMs: 121, warmMs: 60 }] });
+    assert.equal(comparison.comparable, true);
+    assert.deepEqual(comparison.regressions.map(item => item.phase), ['coldMs']);
+  });
+});

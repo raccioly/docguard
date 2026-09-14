@@ -18,7 +18,8 @@ const IDENTITY = /^([A-Z]{3}\d{3})@(.+)$/;
 const CLASSIFICATIONS = new Set(['defect', 'clean_control', 'ambiguous', 'unsupported_syntax', 'policy_disagreement']);
 const SPLITS = new Set(['development', 'evaluation']);
 const TIERS = new Set(['js-ast', 'py-ast', 'regex-fallback', 'fallback-language', 'mixed', 'not-applicable']);
-const CASE_KEYS = new Set(['id', 'split', 'repositoryGroup', 'causalFamily', 'parserTier', 'classification', 'source', 'scope', 'config', 'mutations', 'expected', 'forbidden', 'oppositeControl']);
+const REPAIR_OUTCOMES = new Set(['accepted', 'rejected', 'not_evaluated']);
+const CASE_KEYS = new Set(['id', 'split', 'repositoryGroup', 'causalFamily', 'parserTier', 'classification', 'source', 'scope', 'config', 'mutations', 'expected', 'forbidden', 'oppositeControl', 'repairOutcome']);
 const SOURCE_KEYS = new Set(['kind', 'path', 'url', 'revision', 'license']);
 const SCOPE_KEYS = new Set(['validatorKey', 'codes']);
 const MUTATION_KEYS = new Set(['path', 'find', 'replace', 'expectedOccurrences']);
@@ -144,6 +145,7 @@ function validateCase(value, index, manifestDir) {
   if (!SPLITS.has(value.split)) throw new Error(`${label}.split is invalid.`);
   if (!CLASSIFICATIONS.has(value.classification)) throw new Error(`${label}.classification is invalid.`);
   if (!TIERS.has(value.parserTier)) throw new Error(`${label}.parserTier is invalid.`);
+  if (!REPAIR_OUTCOMES.has(value.repairOutcome)) throw new Error(`${label}.repairOutcome is invalid.`);
   const scope = object(value.scope, `${label}.scope`);
   exactKeys(scope, SCOPE_KEYS, `${label}.scope`);
   const codes = strings(scope.codes, `${label}.scope.codes`, CODE);
@@ -175,6 +177,7 @@ function validateCase(value, index, manifestDir) {
     expected,
     forbidden,
     oppositeControl: value.oppositeControl || null,
+    repairOutcome: value.repairOutcome,
   };
 }
 
