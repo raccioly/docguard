@@ -5472,6 +5472,18 @@
       "related_bugs": ["bug-317", "bug-318", "bug-331"],
       "occurrences": 1,
       "last_seen": "2026-09-14T20:05:00.000Z"
+    },
+    {
+      "id": "bug-338",
+      "timestamp": "2026-09-14T18:09:28.000Z",
+      "error_message": "The scheduled v0.37.1 release stopped because package.json was bumped while CI templates, PyPI metadata, and MCP registry metadata remained on v0.37.0",
+      "file": ".github/workflows/scheduled-release.yml; templates/ci/github-actions.yml; extensions/spec-kit-docguard/templates/github-workflows/docguard-guard.yml; pyproject.toml; server.json",
+      "root_cause": "Release preparation delegated only Markdown and extension metadata to the general DocGuard fixer, leaving non-Markdown publication surfaces outside a single explicit release transaction",
+      "fix": "Add a fail-closed release synchronizer with an explicit active-surface allowlist, validate field cardinality before the first write, refresh managed agent copies afterward, and regression-test successful and aborted synchronization",
+      "tags": ["release", "automation", "version-sync", "publication", "regression"],
+      "related_bugs": ["bug-331", "bug-337"],
+      "occurrences": 1,
+      "last_seen": "2026-09-14T18:09:28.000Z"
     }
   ]
 }

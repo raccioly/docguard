@@ -111,9 +111,10 @@ jobs:
           awk '/^## \[Unreleased\]/ { print; print ""; while ((getline line < "/tmp/entry.md") > 0) print line; next } { print }' \
             CHANGELOG.md > /tmp/CHANGELOG.new && mv /tmp/CHANGELOG.new CHANGELOG.md
 
-          # Keep the spec-kit extension metadata in lockstep (same thing
-          # `docguard fix --write` does locally before a manual release).
-          node cli/docguard.mjs fix --write || true
+          # Synchronize every active publication surface from package.json.
+          # This is fail-closed: missing or duplicated fields stop the release
+          # before any release metadata is written.
+          node .github/scripts/sync-release-version.mjs
           # The extension skills are authoritative. Refresh their checked-in
           # `.agent` copies before the parity test and release commit.
           node --input-type=module -e "import { ensureSkills } from './cli/ensure-skills.mjs'; ensureSkills(process.cwd(), { format: 'json', noSpecKit: true });"
@@ -151,7 +152,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -b "$BRANCH"
-          git add package.json package-lock.json CHANGELOG.md extensions/ .agent/ 2>/dev/null || true
+          git add package.json package-lock.json pyproject.toml server.json CHANGELOG.md templates/ extensions/ .agent/ 2>/dev/null || true
           git commit -m "release: v${NEW_VERSION} — automated weekly batch
 
           Cut by .github/workflows/scheduled-release.yml. Publishing itself is
