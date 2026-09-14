@@ -502,8 +502,43 @@
           },
           {
             "requirementId": "FR-003",
+            "file": "benchmarks/fixtures/generated-security-control/src/generated-client/config.js",
+            "line": 1
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "benchmarks/fixtures/go-todo-control/app.go",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "benchmarks/fixtures/js-security-control/src/config.js",
+            "line": 1
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "benchmarks/fixtures/monorepo-security-control/packages/auth/src/config.ts",
+            "line": 1
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "benchmarks/fixtures/python-security-control/app.py",
+            "line": 1
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "benchmarks/fixtures/ts-security-control/src/config.ts",
+            "line": 1
+          },
+          {
+            "requirementId": "FR-003",
             "file": "benchmarks/lib/manifest.mjs",
             "line": 5
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/validators/security.mjs",
+            "line": 6
           },
           {
             "requirementId": "FR-004",
@@ -522,8 +557,18 @@
           },
           {
             "requirementId": "FR-006",
+            "file": "benchmarks/fixtures/python-unsupported/app.py",
+            "line": 1
+          },
+          {
+            "requirementId": "FR-006",
             "file": "benchmarks/lib/runner.mjs",
             "line": 5
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "benchmarks/run.mjs",
+            "line": 3
           },
           {
             "requirementId": "FR-007",
@@ -551,6 +596,11 @@
             "line": 3
           },
           {
+            "requirementId": "FR-012",
+            "file": "cli/commands/feedback.mjs",
+            "line": 15
+          },
+          {
             "requirementId": "FR-013",
             "file": "cli/feedback-fixture.mjs",
             "line": 4
@@ -562,8 +612,18 @@
           },
           {
             "requirementId": "FR-015",
+            "file": "cli/commands/feedback.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-015",
             "file": "cli/feedback-fixture.mjs",
             "line": 6
+          },
+          {
+            "requirementId": "FR-016",
+            "file": "cli/commands/feedback.mjs",
+            "line": 17
           },
           {
             "requirementId": "FR-016",
@@ -591,6 +651,11 @@
             "requirementId": "FR-003",
             "file": "tests/benchmark-manifest.test.mjs",
             "line": 8
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/field-context-precision.test.mjs",
+            "line": 10
           },
           {
             "requirementId": "FR-004",
@@ -654,8 +719,18 @@
           },
           {
             "requirementId": "FR-015",
+            "file": "tests/feedback-contributions.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-015",
             "file": "tests/feedback-fixture.test.mjs",
             "line": 13
+          },
+          {
+            "requirementId": "FR-016",
+            "file": "tests/feedback-contributions.test.mjs",
+            "line": 10
           },
           {
             "requirementId": "FR-016",

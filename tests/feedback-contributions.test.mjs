@@ -6,6 +6,8 @@ import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { buildIssueUrl } from '../cli/commands/feedback.mjs';
 
+// @req docguard.precision-evidence-loop#FR-015
+// @req docguard.precision-evidence-loop#FR-016
 // @req docs-canonical/REQUIREMENTS.md#FR-002 — confident findings can be challenged without sharing source data.
 describe('feedback contribution workflow', () => {
   let dir;

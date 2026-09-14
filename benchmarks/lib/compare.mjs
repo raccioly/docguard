@@ -23,6 +23,16 @@ export function compareBenchmarkCores(baseline, candidate) {
       regressions.push({ id, kind: 'case-removed', detail: 'A baseline case is absent from the candidate.' });
       continue;
     }
+    const definitionFields = ['sourceRevision', 'configDigest', 'classification', 'parserTier', 'scope', 'expected', 'forbidden'];
+    const changedFields = definitionFields.filter(field => JSON.stringify(before[field]) !== JSON.stringify(after[field]));
+    if (changedFields.length) {
+      regressions.push({
+        id,
+        kind: 'case-evidence-changed',
+        fields: changedFields,
+        detail: 'Reviewed source, configuration, classification, scope, or labels changed; adjudicate and replace the baseline explicitly.',
+      });
+    }
     for (const identity of difference(after.missing, before.missing)) {
       regressions.push({ id, kind: 'new-false-negative', identity });
     }

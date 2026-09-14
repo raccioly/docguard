@@ -3,6 +3,7 @@
  *
  * Respects config.securityIgnore (glob patterns) and config.ignore (global).
  * Uses shared-ignore.mjs for consistent filtering (Constitution IV, v1.1.0).
+ * @implements docguard.precision-evidence-loop#FR-003
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';

@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+/** @implements docguard.precision-evidence-loop#FR-006 */
+
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { runBenchmark } from './lib/runner.mjs';

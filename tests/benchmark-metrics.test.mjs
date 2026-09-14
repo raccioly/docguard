@@ -13,6 +13,7 @@ import { compareBenchmarkCores, compareRuntimeObservations } from '../benchmarks
 const result = (overrides = {}) => ({
   id: 'case', repositoryGroup: 'repo', parserTier: 'js-ast',
   classification: 'defect', scope: { validatorKey: 'security', codes: ['SEC001'] },
+  sourceRevision: 'sha256:source-1', configDigest: 'sha256:config-1',
   expected: ['SEC001@a.js'], actual: ['SEC001@a.js'], unexpected: [], missing: [],
   abstained: false, repairOutcome: 'not_evaluated', ...overrides,
 });
@@ -65,6 +66,20 @@ describe('benchmark comparison', () => {
     assert.deepEqual(comparison.regressions.map(item => item.kind), [
       'new-supported-abstention', 'new-false-negative', 'new-false-positive', 'case-removed',
     ]);
+  });
+
+  it('invalidates reviewed evidence when fixture source or labels change', () => {
+    const comparison = compareBenchmarkCores(
+      { schemaVersion: 1, cases: [result()] },
+      { schemaVersion: 1, cases: [result({ sourceRevision: 'sha256:source-2', expected: [] })] },
+    );
+    assert.equal(comparison.status, 'FAIL');
+    assert.deepEqual(comparison.regressions[0], {
+      id: 'case',
+      kind: 'case-evidence-changed',
+      fields: ['sourceRevision', 'expected'],
+      detail: 'Reviewed source, configuration, classification, scope, or labels changed; adjudicate and replace the baseline explicitly.',
+    });
   });
 
   it('keeps persisted timings observational and gates only controlled same-session samples', () => {

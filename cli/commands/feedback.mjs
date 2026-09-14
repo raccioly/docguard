@@ -12,6 +12,9 @@
  *
  * Nothing is transmitted automatically. This command never scaffolds skills
  * or edits source files. Zero npm dependencies — pure Node.js built-ins.
+ * @implements docguard.precision-evidence-loop#FR-012
+ * @implements docguard.precision-evidence-loop#FR-015
+ * @implements docguard.precision-evidence-loop#FR-016
  */
 
 import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';

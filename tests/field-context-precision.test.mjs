@@ -7,6 +7,8 @@ import { safeWrite } from '../cli/writers/generate-io.mjs';
 import { validateSecurity } from '../cli/validators/security.mjs';
 import { validateTodoTracking } from '../cli/validators/todo-tracking.mjs';
 
+// @req docguard.precision-evidence-loop#FR-003
+
 function scan(t, source, validator, filename = 'sample.test.tsx') {
   const dir = mkdtempSync(join(tmpdir(), 'docguard-field-context-'));
   t.after(() => rmSync(dir, { recursive: true, force: true }));
