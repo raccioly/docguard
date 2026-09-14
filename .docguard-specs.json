@@ -474,7 +474,7 @@
         "artifacts": [
           {
             "path": "specs/007-precision-evidence-loop/spec.md",
-            "digest": "sha256:8c60c59cbfd19f69fa2c08da502bebd361f229646a0ca20e2da37a785d08d317"
+            "digest": "sha256:9d72f11e414346f0ec856756d39af635bb576599332563bee9a27dceae463b7b"
           },
           {
             "path": "specs/007-precision-evidence-loop/plan.md",
@@ -546,6 +546,31 @@
             "line": 5
           },
           {
+            "requirementId": "FR-011",
+            "file": "cli/feedback-fixture.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-013",
+            "file": "cli/feedback-fixture.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-014",
+            "file": "cli/feedback-fixture.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-015",
+            "file": "cli/feedback-fixture.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-016",
+            "file": "cli/feedback-fixture.mjs",
+            "line": 7
+          },
+          {
             "requirementId": "FR-017",
             "file": "benchmarks/lib/runner.mjs",
             "line": 6
@@ -608,6 +633,36 @@
             "line": 7
           },
           {
+            "requirementId": "FR-011",
+            "file": "tests/feedback-fixture.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "tests/feedback-fixture.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-013",
+            "file": "tests/feedback-fixture.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-014",
+            "file": "tests/feedback-fixture.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-015",
+            "file": "tests/feedback-fixture.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-016",
+            "file": "tests/feedback-fixture.test.mjs",
+            "line": 14
+          },
+          {
             "requirementId": "FR-017",
             "file": "tests/benchmark-runner.test.mjs",
             "line": 11
@@ -640,6 +695,11 @@
           {
             "requirementId": "SC-005",
             "file": "tests/benchmark-manifest.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "SC-006",
+            "file": "tests/feedback-fixture.test.mjs",
             "line": 15
           }
         ]

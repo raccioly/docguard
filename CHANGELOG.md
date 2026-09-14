@@ -7,23 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed
-
-- Scheduled releases now grant the repository token the `pull-requests: write`
-  and `actions: write` scopes required by their existing PR creation and CI
-  dispatch steps. Their checkout and Node setup actions are pinned to reviewed
-  commit SHAs, so the next automated release can complete without the manual
-  recovery used for v0.38.0.
-
-## [0.38.0] - 2026-09-14
-
-Automated weekly release — batches everything merged since `v0.37.1`.
-
-### Changed
-
-- feat: close the spec lifecycle reconciliation loop (#357)
-
-
 ### Added
 
 - The active precision-evidence specification defines a reproducible R3/R4
@@ -38,8 +21,8 @@ Automated weekly release — batches everything merged since `v0.37.1`.
   false-positive density, supported-case abstention, unsupported coverage, and
   reviewed repair outcomes by repository, detector, and parser tier. Baseline
   comparison fails case-first on new misses, noise, abstention, or removed
-  evidence; runtime comparisons require identical environments and use the
-  repository's greater-than-20-percent materiality policy.
+  evidence; persisted timings stay observational until a controlled paired
+  session can apply the repository's greater-than-20-percent materiality policy.
 - Public-repository evidence can be persisted as a review candidate and checked
   case-first against later runs. Reports include Wilson 95% confidence bounds,
   retained cold/warm observations, config and source digests, and validator
@@ -67,6 +50,43 @@ Automated weekly release — batches everything merged since `v0.37.1`.
   scope and benchmark-delta evidence passes validation. Submission remains
   entirely opt-in.
 
+### Changed
+
+- Canonical architecture, data, test, security, CI, requirement, contribution,
+  issue, PR, and roadmap guidance now describes the delivered precision and
+  feedback contracts. Superseded “planned benchmark” and incomplete lifecycle
+  language was removed from active AI context while living specs retain their
+  current operational contract.
+
+### Fixed
+
+- Scheduled releases now grant the repository token the `pull-requests: write`
+  and `actions: write` scopes required by their existing PR creation and CI
+  dispatch steps. Their checkout and Node setup actions are pinned to reviewed
+  commit SHAs, so the next automated release can complete without the manual
+  recovery used for v0.38.0.
+- Typed TypeScript credential assignments such as `apiKey: string = "…"` can
+  no longer bypass hardcoded-secret detection. The precision corpus found and
+  reproduces this false negative while preserving an opposite clean control.
+- Persisted benchmark timings no longer produce performance-regression claims
+  from matching platform labels alone. Controlled comparisons require at least
+  five samples from the same paired session before applying the 20-percent gate,
+  preventing host contention from masquerading as a tool slowdown.
+- Benchmark cleanup tests now isolate their temporary parent, so concurrent
+  benchmark processes cannot be mistaken for leaked directories. The runner
+  rejects missing or symlinked temporary parents before materialization.
+
+## [0.38.0] - 2026-09-14
+
+Automated weekly release — batches everything merged since `v0.37.1`.
+
+### Changed
+
+- feat: close the spec lifecycle reconciliation loop (#357)
+
+
+### Added
+
 - `docguard reconcile --since <ref>` emits a deterministic JSON review graph
   that separates mechanical facts, approved intent, decisions, unrelated
   changes, and unsupported evidence. Its write mode delegates only mechanical
@@ -83,11 +103,6 @@ Automated weekly release — batches everything merged since `v0.37.1`.
 
 ### Changed
 
-- Canonical architecture, data, test, security, CI, requirement, contribution,
-  issue, PR, and roadmap guidance now describes the delivered precision and
-  feedback contracts. Superseded “planned benchmark” and incomplete lifecycle
-  language was removed from active AI context while living specs retain their
-  current operational contract.
 - Spec registry schema v2 adds qualified source implementation evidence and up
   to 20 reviewed reconciliation outcomes. Version 1 remains readable for a
   fail-closed migration through `docguard specs --write`.
@@ -99,9 +114,6 @@ Automated weekly release — batches everything merged since `v0.37.1`.
 
 ### Fixed
 
-- Typed TypeScript credential assignments such as `apiKey: string = "…"` can
-  no longer bypass hardcoded-secret detection. The precision corpus found and
-  reproduces this false negative while preserving an opposite clean control.
 - Completed tasks no longer produce a permanent retirement warning for an
   exact-path spec whose reviewed registry state is current, living, and verified
   or released. Missing, malformed, stale, and non-living registry state still

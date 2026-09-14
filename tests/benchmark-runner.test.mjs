@@ -16,8 +16,6 @@ import { tmpdir } from 'node:os';
 import { applyExactMutations, findingIdentity, runBenchmark } from '../benchmarks/lib/runner.mjs';
 
 const manifestPath = resolve('benchmarks/corpus.json');
-const benchmarkRoots = () => new Set(readdirSync(tmpdir()).filter(name => name.startsWith('docguard-benchmark-')));
-
 describe('benchmark runner', () => {
   it('detects the defect, keeps its opposite control clean, and classifies unsupported evidence', () => {
     const result = runBenchmark({ manifestPath });
@@ -41,11 +39,15 @@ describe('benchmark runner', () => {
     assert.equal(Object.hasOwn(first.core, 'environment'), false);
   });
 
-  it('removes its disposable root by default', () => {
-    const before = benchmarkRoots();
-    runBenchmark({ manifestPath });
-    const after = benchmarkRoots();
-    assert.deepEqual(after, before);
+  it('removes its own disposable root even when other benchmarks run concurrently', t => {
+    const temporaryParent = mkdtempSync(join(tmpdir(), 'docguard-benchmark-test-'));
+    t.after(() => rmSync(temporaryParent, { recursive: true, force: true }));
+    runBenchmark({ manifestPath, temporaryParent });
+    assert.deepEqual(readdirSync(temporaryParent), []);
+    assert.throws(
+      () => runBenchmark({ manifestPath, temporaryParent: join(temporaryParent, 'missing') }),
+      /existing non-symlink directory/,
+    );
   });
 
   it('fails exact mutations without changing the source when preconditions differ', t => {

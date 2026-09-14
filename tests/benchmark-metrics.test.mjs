@@ -67,12 +67,23 @@ describe('benchmark comparison', () => {
     ]);
   });
 
-  it('compares runtime only in the same environment and uses the 20 percent policy', () => {
+  it('keeps persisted timings observational and gates only controlled same-session samples', () => {
     const environment = { node: 'v22', platform: 'linux', arch: 'x64' };
     const baseline = { environment, cases: [{ id: 'a', coldMs: 100, warmMs: 50 }] };
     assert.equal(compareRuntimeObservations(baseline, { environment: { ...environment, node: 'v24' }, cases: [] }).comparable, false);
-    const comparison = compareRuntimeObservations(baseline, { environment, cases: [{ id: 'a', coldMs: 121, warmMs: 60 }] });
+    const observational = compareRuntimeObservations(baseline, { environment, cases: [{ id: 'a', coldMs: 121, warmMs: 60 }] });
+    assert.equal(observational.comparable, false);
+    assert.match(observational.reason, /observational/);
+    const comparisonProtocol = { controlled: true, sessionId: 'paired-run-1', sampleCount: 5 };
+    const comparison = compareRuntimeObservations(
+      { ...baseline, comparisonProtocol },
+      { environment, comparisonProtocol, cases: [{ id: 'a', coldMs: 121, warmMs: 60 }] },
+    );
     assert.equal(comparison.comparable, true);
     assert.deepEqual(comparison.regressions.map(item => item.phase), ['coldMs']);
+    assert.equal(compareRuntimeObservations(
+      { ...baseline, comparisonProtocol },
+      { environment, comparisonProtocol: { ...comparisonProtocol, sessionId: 'other-run' }, cases: [] },
+    ).comparable, false);
   });
 });

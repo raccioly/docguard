@@ -188,12 +188,22 @@ function caseCore(item, sourceRevision, invocation) {
   };
 }
 
-export function runBenchmark({ manifestPath = resolve(BENCHMARK_ROOT, 'corpus.json'), includeExternal = false, split = null, keep = false } = {}) {
+export function runBenchmark({
+  manifestPath = resolve(BENCHMARK_ROOT, 'corpus.json'),
+  includeExternal = false,
+  split = null,
+  keep = false,
+  temporaryParent = tmpdir(),
+} = {}) {
   const absoluteManifest = resolve(manifestPath);
   const manifestText = readFileSync(absoluteManifest, 'utf8');
   const manifest = loadBenchmarkManifest(absoluteManifest);
   const selected = manifest.cases.filter(item => (!split || item.split === split) && (includeExternal || item.source.kind === 'fixture'));
-  const runRoot = mkdtempSync(join(tmpdir(), 'docguard-benchmark-'));
+  const requestedParent = resolve(temporaryParent);
+  if (!existsSync(requestedParent) || lstatSync(requestedParent).isSymbolicLink() || !statSync(requestedParent).isDirectory()) {
+    throw new Error('Benchmark temporary parent must be an existing non-symlink directory.');
+  }
+  const runRoot = mkdtempSync(join(realpathSync(requestedParent), 'docguard-benchmark-'));
   const coreCases = [];
   const observations = [];
   const sourceCache = new Map();

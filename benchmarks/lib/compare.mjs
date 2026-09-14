@@ -47,6 +47,21 @@ export function compareRuntimeObservations(baseline, candidate) {
   if (JSON.stringify(baseline?.environment) !== JSON.stringify(candidate?.environment)) {
     return { comparable: false, reason: 'Runtime environments differ.', regressions: [] };
   }
+  const baselineProtocol = baseline?.comparisonProtocol;
+  const candidateProtocol = candidate?.comparisonProtocol;
+  const controlled = baselineProtocol?.controlled === true
+    && candidateProtocol?.controlled === true
+    && baselineProtocol.sessionId
+    && baselineProtocol.sessionId === candidateProtocol.sessionId
+    && baselineProtocol.sampleCount >= 5
+    && candidateProtocol.sampleCount >= 5;
+  if (!controlled) {
+    return {
+      comparable: false,
+      reason: 'Persisted runtime snapshots are observational; regression claims require at least five controlled samples from the same comparison session.',
+      regressions: [],
+    };
+  }
   const previous = new Map((baseline.cases || []).map(item => [item.id, item]));
   const regressions = [];
   for (const item of candidate.cases || []) {

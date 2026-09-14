@@ -77,9 +77,11 @@ regressions. A warning reduction caused by skipping supported inputs is visible.
   positives, or increased unsupported/abstained supported cases even if total
   warning count falls.
 - **FR-010**: Runtime reporting MUST preserve cold and warm observations
-  separately and compare like environments. Performance-sensitive changes need
-  a measured real-workload improvement greater than 20 percent, matching the
-  repository contribution policy.
+  separately. Persisted timings are observational because matching environment
+  labels do not establish an idle host. Runtime regression claims require at
+  least five controlled samples from the same paired comparison session and a
+  measured real-workload change greater than 20 percent, matching the repository
+  contribution policy.
 - **FR-011**: Feedback fixture manifests MUST record detector, configuration,
   expected identity, opposite control, classification, interestingness
   predicate, and provenance-redaction attestation.
