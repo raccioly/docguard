@@ -79,6 +79,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   configuration, classification, parser tier, scope, or expected/forbidden
   label changes. Changed evidence can no longer inherit a previously reviewed
   result without explicit re-adjudication and baseline replacement.
+- The reviewed baseline was re-adjudicated after adding qualified ownership to
+  13 synthetic fixture cases. Only source digests changed; all labels, controls,
+  scoped outcomes, confidence bounds, and the explicit unsupported case remain
+  unchanged.
 - Closeout passed all 1,708 tests independently on Node 18, 20, 22, and 24,
   the 24-case external baseline with zero scoped FP/FN regressions, package
   composition, and a zero-vulnerability production dependency audit. Three
