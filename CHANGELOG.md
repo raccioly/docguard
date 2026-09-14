@@ -36,6 +36,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   integration surface used by lifecycle reconciliation, including MCP.
 - The R5 living specification now records its exact reviewed implementation
   revision and complete evidence set through the verified lifecycle transaction.
+- The living-spec maintenance outcome records the post-review source-value
+  redaction at its exact revision with no accepted deviations.
 
 ### Fixed
 

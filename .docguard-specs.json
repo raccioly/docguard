@@ -508,11 +508,44 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "138571668102d3e59c54d219478d284d3ae139b8",
+          "lastReviewedRevision": "bd9250b84617164381cba82afa03fd151e5cbe87",
           "outcomes": [
             {
               "revision": "138571668102d3e59c54d219478d284d3ae139b8",
               "reason": "Verified scoped evidence adapters and integrations across the supported Node matrix, package fallback, schema validation, and frozen external corpus with no baseline regression.",
+              "evidence": [
+                "cli/commands/agent.mjs",
+                "cli/commands/explain.mjs",
+                "cli/commands/guard.mjs",
+                "cli/commands/mcp.mjs",
+                "cli/commands/score.mjs",
+                "cli/commands/verify.mjs",
+                "cli/config.mjs",
+                "cli/evidence/adapters.mjs",
+                "cli/evidence/evaluate.mjs",
+                "cli/evidence/manifest.mjs",
+                "cli/evidence/markdown.mjs",
+                "cli/findings.mjs",
+                "cli/validators/evidence.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/CI-RECIPES.md",
+                "docs-canonical/DATA-MODEL.md",
+                "docs-canonical/REQUIREMENTS.md",
+                "docs-canonical/SECURITY.md",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/evidence-adapters.test.mjs",
+                "tests/evidence-integration.test.mjs",
+                "tests/evidence-manifest.test.mjs",
+                "tests/mcp-http.test.mjs",
+                "tests/mcp.test.mjs",
+                "tests/npm-pack-smoke.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            },
+            {
+              "revision": "bd9250b84617164381cba82afa03fd151e5cbe87",
+              "reason": "Self-review removed raw source values from public evidence output and added a regression assertion; scoped comparison behavior and all integrations remain verified.",
               "evidence": [
                 "cli/commands/agent.mjs",
                 "cli/commands/explain.mjs",
@@ -572,7 +605,7 @@
         "artifacts": [
           {
             "path": "specs/008-evidence-scoped-verification/spec.md",
-            "digest": "sha256:711971e25daf977d976944afeaf7fcb66f2bf5e9eace5591019d17eb1397e454"
+            "digest": "sha256:665b4126aedccb0873a08e51533ed0ce011528342d18bfd283f3277dc602810c"
           },
           {
             "path": "specs/008-evidence-scoped-verification/plan.md",
