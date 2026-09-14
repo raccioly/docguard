@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- The active evidence-scoped verification specification defines strict,
+  local-only bindings from exact Markdown statements to JSON Pointer values,
+  bounded repository collections, saved oasdiff JSON, and saved Buf JSON Lines.
+  Its five-state contract distinguishes scoped verification, contradiction,
+  stale inputs, inconclusive evidence, and unsupported formats without
+  claiming whole-document factual accuracy.
+
 ### Fixed
 
 - Scheduled release pull requests now require a repository-scoped

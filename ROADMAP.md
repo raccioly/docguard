@@ -131,7 +131,9 @@ Maintained artifacts: `templates/feedback-fixture.json`,
 `schemas/docguard-feedback-fixture.schema.json`, and the generated direct
 `tests/*.test.mjs` contribution path.
 
-### R5 — Evidence-scoped verification (planned)
+### R5 — Evidence-scoped verification (in progress)
+
+Governing spec: `specs/008-evidence-scoped-verification/spec.md`.
 
 Replace broad age-based review prompts with declared source-to-document
 dependencies where available. Start with bounded claim types such as named JSON

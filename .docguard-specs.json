@@ -479,6 +479,85 @@
       }
     },
     {
+      "specId": "docguard.evidence-scoped-verification",
+      "path": "specs/008-evidence-scoped-verification/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "approved",
+          "delivery": "in_progress",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": "living"
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md",
+            "docs-canonical/CI-RECIPES.md",
+            "docs-canonical/DATA-MODEL.md",
+            "docs-canonical/REQUIREMENTS.md",
+            "docs-canonical/SECURITY.md",
+            "docs-canonical/TEST-SPEC.md"
+          ]
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.evidence-scoped-verification#FR-001",
+          "docguard.evidence-scoped-verification#FR-002",
+          "docguard.evidence-scoped-verification#FR-003",
+          "docguard.evidence-scoped-verification#FR-004",
+          "docguard.evidence-scoped-verification#FR-005",
+          "docguard.evidence-scoped-verification#FR-006",
+          "docguard.evidence-scoped-verification#FR-007",
+          "docguard.evidence-scoped-verification#FR-008",
+          "docguard.evidence-scoped-verification#FR-009",
+          "docguard.evidence-scoped-verification#FR-010",
+          "docguard.evidence-scoped-verification#FR-011",
+          "docguard.evidence-scoped-verification#FR-012",
+          "docguard.evidence-scoped-verification#FR-013",
+          "docguard.evidence-scoped-verification#SC-001",
+          "docguard.evidence-scoped-verification#SC-002",
+          "docguard.evidence-scoped-verification#SC-003",
+          "docguard.evidence-scoped-verification#SC-004",
+          "docguard.evidence-scoped-verification#SC-005"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/008-evidence-scoped-verification/spec.md",
+            "digest": "sha256:44df40568b380425b5ac8a3998f652741ad5be42ae73a9d4d9c5874228d80262"
+          },
+          {
+            "path": "specs/008-evidence-scoped-verification/plan.md",
+            "digest": "sha256:380012735bbe5657dcfd09250c6d931806baaf0728df555da29e943050809f6d"
+          },
+          {
+            "path": "specs/008-evidence-scoped-verification/tasks.md",
+            "digest": "sha256:613dfcef276f0dcdb3c5c9213cd04d98f6003f856ff05352e1acecd95e64b43d"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 0,
+          "total": 17
+        },
+        "implementationEvidence": [],
+        "testEvidence": []
+      }
+    },
+    {
       "specId": "docguard.precision-evidence-loop",
       "path": "specs/007-precision-evidence-loop/spec.md",
       "reviewed": {
