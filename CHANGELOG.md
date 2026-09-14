@@ -40,6 +40,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   exact-path spec whose reviewed registry state is current, living, and verified
   or released. Missing, malformed, stale, and non-living registry state still
   fails closed to the review signal.
+- Archive recovery validation now has an independent scanner boundary shared by
+  lifecycle, registry, and traceability checks, avoiding cyclic ownership while
+  preserving the same fail-closed tombstone contract.
 
 ## [0.37.1] - 2026-09-14
 

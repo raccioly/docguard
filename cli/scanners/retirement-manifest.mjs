@@ -1,3 +1,8 @@
+/**
+ * Validate recovery evidence before archived requirements can leave the active
+ * working tree or become traceability tombstones.
+ * @implements docguard.document-lifecycle#FR-007
+ */
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 

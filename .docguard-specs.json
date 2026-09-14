@@ -91,6 +91,11 @@
             "line": 22
           },
           {
+            "requirementId": "FR-007",
+            "file": "cli/scanners/retirement-manifest.mjs",
+            "line": 4
+          },
+          {
             "requirementId": "FR-010",
             "file": "cli/commands/reconcile.mjs",
             "line": 3
@@ -144,6 +149,11 @@
             "requirementId": "FR-013",
             "file": "cli/scanners/spec-registry.mjs",
             "line": 7
+          },
+          {
+            "requirementId": "FR-013",
+            "file": "cli/validators/traceability.mjs",
+            "line": 14
           },
           {
             "requirementId": "FR-013",
