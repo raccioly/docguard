@@ -32,6 +32,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   exact declaration already verified that same claim within scope.
 - Roadmap and command documentation now describe the already-released R2 spec
   completion transaction as current behavior instead of future work.
+- Requirement-qualified implementation and test links now cover every R5
+  integration surface used by lifecycle reconciliation, including MCP.
 
 ### Fixed
 

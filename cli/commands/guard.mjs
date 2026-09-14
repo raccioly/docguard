@@ -1,6 +1,7 @@
 import { describeCheckCoverage, summarizeCheckCoverage } from '../validator-coverage.mjs';
 import { applyDocRoles } from '../shared-doc-roles.mjs';
 /**
+ * @implements docguard.evidence-scoped-verification#FR-010
  * Guard Command — Validate project against its canonical documentation
  * Runs all enabled validators and reports results.
  *

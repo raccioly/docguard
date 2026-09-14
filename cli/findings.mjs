@@ -1,4 +1,5 @@
 /**
+ * @implements docguard.evidence-scoped-verification#FR-010
  * Findings — the structured, LLM-addressable result unit (v0.27).
  *
  * Background (LLM field report #3): DocGuard's whole job is to tell an agent

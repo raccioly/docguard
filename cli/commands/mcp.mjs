@@ -1,4 +1,6 @@
 /**
+ * @implements docguard.evidence-scoped-verification#FR-009
+ * @implements docguard.evidence-scoped-verification#FR-012
  * MCP Command — DocGuard as a Model Context Protocol server (stdio).
  *
  * `docguard mcp` exposes the read-only core (guard / score / explain /

@@ -1,5 +1,6 @@
 import { applyDocRoles, remapDocPath, resolveDocRole } from '../shared-doc-roles.mjs';
 /**
+ * @implements docguard.evidence-scoped-verification#FR-012
  * Score Command — Calculate CDD maturity score (0-100)
  * Shows category breakdown with weighted scoring.
  */

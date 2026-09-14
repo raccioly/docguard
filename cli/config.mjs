@@ -1,6 +1,7 @@
 import { hasWorkerConfig } from './shared-source.mjs';
 import { applyDocRoles } from './shared-doc-roles.mjs';
 /**
+ * @implements docguard.evidence-scoped-verification#FR-010
  * DocGuard — configuration loading.
  *
  * Extracted from docguard.mjs (v0.23.0) to break the demo.mjs → docguard.mjs

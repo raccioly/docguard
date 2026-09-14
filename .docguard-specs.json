@@ -601,13 +601,33 @@
           },
           {
             "requirementId": "FR-009",
+            "file": "cli/commands/mcp.mjs",
+            "line": 2
+          },
+          {
+            "requirementId": "FR-009",
             "file": "cli/commands/verify.mjs",
             "line": 23
           },
           {
             "requirementId": "FR-010",
+            "file": "cli/commands/guard.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/config.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-010",
             "file": "cli/evidence/evaluate.mjs",
             "line": 5
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/findings.mjs",
+            "line": 2
           },
           {
             "requirementId": "FR-010",
@@ -621,8 +641,28 @@
           },
           {
             "requirementId": "FR-012",
+            "file": "cli/commands/agent.mjs",
+            "line": 2
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "cli/commands/mcp.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "cli/commands/score.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-012",
             "file": "cli/evidence/evaluate.mjs",
             "line": 7
+          },
+          {
+            "requirementId": "FR-013",
+            "file": "cli/commands/explain.mjs",
+            "line": 2
           }
         ],
         "testEvidence": [
@@ -725,6 +765,16 @@
             "requirementId": "SC-004",
             "file": "tests/evidence-integration.test.mjs",
             "line": 30
+          },
+          {
+            "requirementId": "SC-004",
+            "file": "tests/mcp-http.test.mjs",
+            "line": 2
+          },
+          {
+            "requirementId": "SC-004",
+            "file": "tests/mcp.test.mjs",
+            "line": 2
           },
           {
             "requirementId": "SC-005",

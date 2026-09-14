@@ -1,4 +1,5 @@
 /**
+ * @req docguard.evidence-scoped-verification#SC-004
  * MCP Server Tests — `docguard mcp` over stdio.
  *
  * Spawns the real server and drives the MCP handshake end-to-end:

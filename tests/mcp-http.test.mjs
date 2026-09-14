@@ -1,4 +1,5 @@
 /**
+ * @req docguard.evidence-scoped-verification#SC-004
  * MCP Streamable HTTP transport — `docguard mcp --transport http`.
  *
  * Spawns the real server on an ephemeral port and exercises the transport

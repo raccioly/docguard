@@ -1,4 +1,5 @@
 /**
+ * @implements docguard.evidence-scoped-verification#FR-013
  * Explain Command — v0.16-P6.
  *
  * Asked for by a user who'd spent 5-10 minutes per warning spelunking
