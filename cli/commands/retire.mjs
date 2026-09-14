@@ -4,6 +4,7 @@
  * Historical prose leaves the working tree so agents cannot mistake it for
  * current intent. Git remains the content store; a compact manifest records
  * why each path left and how to restore it.
+ * @implements docguard.document-lifecycle#FR-013
  */
 
 import {

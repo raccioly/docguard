@@ -1,4 +1,7 @@
-/** Shared changed-file to generated-section applicability rules. */
+/**
+ * Shared changed-file to generated-section applicability rules.
+ * @implements docguard.document-lifecycle#FR-010
+ */
 
 export const SECTION_FILE_MATCHERS = {
   'tech-stack':        (p) => /package\.json$|pyproject\.toml$|Cargo\.toml$|go\.mod$|pom\.xml$|Gemfile$/.test(p),

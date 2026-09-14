@@ -4,6 +4,8 @@
  * Specs own requirement prose. The registry owns reviewed lifecycle metadata
  * and regenerates only observable facts, so a refresh cannot silently rewrite
  * intent or declare work complete.
+ * @implements docguard.document-lifecycle#FR-013
+ * @implements docguard.document-lifecycle#FR-016
  */
 
 import { createHash } from 'node:crypto';

@@ -5,6 +5,8 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { commitFileTransaction } from '../cli/writers/file-transaction.mjs';
 
+/** @req docguard.document-lifecycle#FR-013 */
+
 describe('Lifecycle file transaction', () => {
   it('commits replacements, additions, and deletions as one set', t => {
     const dir = mkdtempSync(join(tmpdir(), 'docguard-transaction-'));

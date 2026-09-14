@@ -1,4 +1,8 @@
-/** Review code/spec changes before any documentation intent is changed. */
+/**
+ * Review code/spec changes before any documentation intent is changed.
+ * @implements docguard.document-lifecycle#FR-010
+ * @implements docguard.document-lifecycle#FR-012
+ */
 
 import { buildReconciliationPlan } from '../scanners/reconciliation.mjs';
 import { runSync } from './sync.mjs';

@@ -1,4 +1,8 @@
-/** Pure requirement-reference evidence shared by validators and registry projections. */
+/**
+ * Pure requirement-reference evidence shared by validators and registry projections.
+ * @implements docguard.document-lifecycle#FR-013
+ * @implements docguard.document-lifecycle#FR-016
+ */
 
 import { existsSync, readFileSync } from 'node:fs';
 import { extname, resolve } from 'node:path';

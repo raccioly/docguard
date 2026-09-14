@@ -30,6 +30,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   fail-closed migration through `docguard specs --write`.
 - Retirement and completion use one staged multi-file transaction that restores
   the prior set when mutation or post-write validation fails.
+- R2 source and test ownership is explicitly qualified in the lifecycle
+  registry, allowing DocGuard's own reconciliation gate to distinguish reviewed
+  implementation from unsupported files.
 
 ## [0.37.1] - 2026-09-14
 

@@ -13,6 +13,8 @@ import { assertDefaultDocWrites } from './shared-doc-roles.mjs';
  *   npx docguard-cli --help    — Show help
  * 
  * @see https://github.com/raccioly/docguard
+ * @implements docguard.document-lifecycle#FR-012
+ * @implements docguard.document-lifecycle#FR-020
  */
 
 import { readFileSync, existsSync } from 'node:fs';

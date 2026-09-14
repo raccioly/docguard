@@ -12,6 +12,7 @@ import { assertDefaultDocWrites } from '../shared-doc-roles.mjs';
  *
  * Default is a DRY RUN (preview); `--write` applies. `--since <ref>` adds the
  * git diff as context. Only edits docguard:generated docs unless `--force`.
+ * @implements docguard.document-lifecycle#FR-010
  */
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';

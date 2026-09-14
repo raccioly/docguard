@@ -1,4 +1,7 @@
-/** Append a bounded, machine-owned outcome index without rewriting spec intent. */
+/**
+ * Append a bounded, machine-owned outcome index without rewriting spec intent.
+ * @implements docguard.document-lifecycle#FR-016
+ */
 
 const START = '<!-- docguard:implementation-outcomes:start -->';
 const END = '<!-- docguard:implementation-outcomes:end -->';
