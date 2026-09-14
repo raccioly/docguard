@@ -75,6 +75,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Benchmark cleanup tests now isolate their temporary parent, so concurrent
   benchmark processes cannot be mistaken for leaked directories. The runner
   rejects missing or symlinked temporary parents before materialization.
+- Closeout passed all 1,708 tests independently on Node 18, 20, 22, and 24,
+  the 24-case external baseline with zero scoped FP/FN regressions, package
+  composition, and a zero-vulnerability production dependency audit. Three
+  low-confidence diff-suspicion prompts were reviewed as non-contradictions;
+  no detector or repository-wide suppression was added.
 
 ## [0.38.0] - 2026-09-14
 

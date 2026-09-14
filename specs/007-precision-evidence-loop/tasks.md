@@ -31,5 +31,5 @@
 ## Phase 4: Closeout
 
 - [x] T017 Update canonical architecture, test, security, CI, contribution, and validation documentation.
-- [ ] T018 Run full regression, guard, package, supported-runtime, and external-corpus checks.
-- [ ] T019 Complete the reviewed lifecycle transaction and keep this living benchmark specification current.
+- [x] T018 Run full regression, guard, package, supported-runtime, and external-corpus checks.
+- [x] T019 Complete the reviewed lifecycle transaction and keep this living benchmark specification current.
