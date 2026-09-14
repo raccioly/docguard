@@ -88,6 +88,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   composition, and a zero-vulnerability production dependency audit. Three
   low-confidence diff-suspicion prompts were reviewed as non-contradictions;
   no detector or repository-wide suppression was added.
+- The R3/R4 living specification is lifecycle-verified against the branch's
+  exact merge base. Its registry outcome records the reviewed implementation
+  and test evidence, and the task ledger no longer presents completed work as
+  active implementation.
 
 ## [0.38.0] - 2026-09-14
 

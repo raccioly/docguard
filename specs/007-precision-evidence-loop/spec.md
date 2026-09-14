@@ -185,3 +185,9 @@ invalid or equivalent mutants.
 - Executing third-party build, test, hook, or package scripts.
 - Automatically publishing issues, pull requests, fixtures, or private evidence.
 - Setting precision/recall targets before a reviewed baseline exists.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `f84c187626be0e1b6ab56ec7002c9c168ac290d6` — Reviewed precision corpus, feedback contribution workflow, four-version regression matrix, package composition, dependency audit, and external baseline passed; traceability and changed-evidence invalidation were verified. Evidence: `benchmarks/fixtures/generated-security-control/src/generated-client/config.js`, `benchmarks/fixtures/go-todo-control/app.go`, `benchmarks/fixtures/js-security-control/src/config.js`, `benchmarks/fixtures/monorepo-security-control/packages/auth/src/config.ts`, `benchmarks/fixtures/python-security-control/app.py`, `benchmarks/fixtures/python-unsupported/app.py`, `benchmarks/fixtures/ts-security-control/src/config.ts`, `benchmarks/lib/compare.mjs`, `benchmarks/lib/manifest.mjs`, `benchmarks/lib/metrics.mjs`, `benchmarks/lib/runner.mjs`, `benchmarks/run.mjs`, `cli/commands/feedback.mjs`, `cli/feedback-fixture.mjs`, `cli/validators/security.mjs`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/CI-RECIPES.md`, `docs-canonical/REQUIREMENTS.md`, `docs-canonical/SECURITY.md`, `docs-canonical/TEST-SPEC.md`, `tests/benchmark-manifest.test.mjs`, `tests/benchmark-metrics.test.mjs`, `tests/benchmark-runner.test.mjs`, `tests/feedback-contributions.test.mjs`, `tests/feedback-fixture.test.mjs`, `tests/field-context-precision.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->

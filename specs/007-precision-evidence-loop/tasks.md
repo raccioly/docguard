@@ -1,6 +1,6 @@
 # Tasks: Independent Precision Evidence Loop
 
-**Status**: Active
+**Status**: Verified — living benchmark maintenance continues
 **Spec**: `specs/007-precision-evidence-loop/spec.md`
 
 ## Phase 1: Contract and runner
