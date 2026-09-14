@@ -13,6 +13,9 @@
       `// DRIFT: reason` comment + `DRIFT-LOG.md` entry if the deviation is intentional)
 - [ ] New validator findings carry a stable code registered in `cli/findings.mjs`
       (see CONTRIBUTING — findings rule)
+- [ ] Detector changes include a synthetic reproduction, opposite control,
+      executable test, supported/unsupported scope, duplicate identity, and
+      benchmark delta against `benchmarks/baseline.json`
 - [ ] Counts in prose (commands, validators) untouched or re-verified — guard's
       `canonical-sync` will catch drift, but fixing it before CI is kinder
 

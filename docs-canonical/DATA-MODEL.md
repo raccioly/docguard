@@ -1,13 +1,13 @@
 # Data Model
 
-<!-- docguard:version 0.6.0 -->
+<!-- docguard:version 0.7.0 -->
 <!-- docguard:status active -->
 <!-- docguard:last-reviewed 2026-09-14 -->
 
 | Metadata | Value |
 |----------|-------|
 | **Status** | ![Status](https://img.shields.io/badge/status-active-brightgreen) |
-| **Version** | `0.6.0` |
+| **Version** | `0.7.0` |
 | **Database** | None — DocGuard is a stateless CLI tool |
 | **Storage** | File-system only (reads project files, writes generated docs) |
 
@@ -239,7 +239,13 @@ An `assurance` object accompanies score, diagnose, CI, and report output. It con
 
 ## Feedback contribution contract
 
-`feedback` defaults to uncertain findings. `--code <CODE>` selects a finding regardless of confidence; `--all` includes all active findings. `--preview` emits reviewable output and skips feedback-record writes. Unknown codes fail with a clear error. Shared issue URLs contain only allowlisted finding identity, tool version, and contribution instructions. Source-derived messages, paths, snippets, and suggestions stay in the local record. Each result includes a search URL covering existing issues and pull requests, including closed work, so contributors can check for duplicates before submitting. The user controls submission through the reviewed issue draft.
+`feedback` defaults to uncertain findings. `--code <CODE>` selects a finding regardless of confidence; `--all` includes all active findings. Classifications are `false_positive`, `false_negative`, `unsupported_syntax`, `ambiguous`, and `policy_disagreement`. False-negative and unsupported intake require a strict synthetic fixture manifest with an exact expected identity, explicit interestingness predicate, same-path opposite control, parser tier, bounded configuration, and synthetic/redaction attestations.
+
+`--fixture-manifest` verifies the reproduction and its control in separate temporary projects. `--reduce` removes fixture lines in deterministic order only while the declared predicate remains true. Duplicate identity hashes detector code, classification, parser tier, and normalized synthetic shape; preview returns all/open/closed GitHub searches and never submits. `--contribution tests/<name>.test.mjs` requires test-only, scope, and benchmark-delta evidence before writing a generated regression test. `--preview` skips every local write.
+
+## Precision benchmark contract
+
+`benchmarks/corpus.json` is a strict versioned manifest. Cases carry immutable ID, split, repository and causal groups, parser tier, classification, exact source revision or fixture digest, bounded config, scoped expected/forbidden identities, mutation preconditions, opposite control, and repair outcome. `benchmarks/baseline.json` stores the reviewed deterministic core, grouped metrics, Wilson 95% confidence bounds, and separately identified environment/timing observations. Zero denominators remain `null`. Baseline comparison fails on case removal, new false positives, new false negatives, or new supported-case abstention even when aggregate warning count improves.
 
 ## Check coverage and document roles
 

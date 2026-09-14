@@ -1,6 +1,6 @@
 # Implementation Plan: Independent Precision Evidence Loop
 
-**Status**: Active
+**Status**: Implemented — living benchmark
 **Spec**: `specs/007-precision-evidence-loop/spec.md`
 
 ## Summary

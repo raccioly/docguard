@@ -30,6 +30,7 @@ describe('feedback contribution workflow', () => {
     const r=run(['--all','--preview']);
     assert.equal(r.status,0,r.stderr);
     const data=JSON.parse(r.stdout);
+    assert.equal(data.classification, 'false_positive');
     assert.ok(data.reportable.length>0);
     assert.equal(data.preview,true);
     assert.equal(existsSync(join(dir,'.docguard/feedback')),false);
@@ -41,6 +42,18 @@ describe('feedback contribution workflow', () => {
     }
     const selected=run(['--code',data.reportable[0].code,'--preview']);
     assert.ok(JSON.parse(selected.stdout).reportable.every(f=>f.code===data.reportable[0].code));
+  });
+  it('keeps ambiguous and policy feedback distinct and requires fixtures for absent findings', () => {
+    for (const classification of ['ambiguous', 'policy-disagreement']) {
+      const r = run(['--all', '--classification', classification, '--preview']);
+      assert.equal(r.status, 0, r.stderr);
+      assert.equal(JSON.parse(r.stdout).classification, classification.replace('-', '_'));
+    }
+    for (const classification of ['false-negative', 'unsupported-syntax']) {
+      const r = run(['--classification', classification, '--code', 'SEC001', '--preview']);
+      assert.equal(r.status, 1);
+      assert.match(JSON.parse(r.stdout).error, /requires --fixture-manifest/);
+    }
   });
   it('rejects invalid and missing code values instead of silently selecting other findings', () => {
     for(const args of [['--code','NOTREAL'],['--code']]) {

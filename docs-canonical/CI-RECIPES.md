@@ -59,6 +59,22 @@ Use guard findings and declared verification evidence for enforcement. A high sc
 
 Run `ci --format json` per repository and retain project, revision, tool version, configuration, status, and assurance scope. Aggregate findings by code while preserving their repository ownership. Report unsupported and unclassified coverage alongside successful checks.
 
+## Recipe 4d — Detector precision regression
+
+Run the network-free synthetic corpus on ordinary pull requests:
+
+```sh
+node benchmarks/run.mjs --baseline benchmarks/baseline.json
+```
+
+Run the full pinned public corpus in a separate trusted, network-enabled job when detector or scanner behavior changes:
+
+```sh
+node benchmarks/run.mjs --external --baseline benchmarks/baseline.json
+```
+
+Treat a core comparison failure as a quality regression. Keep runtime advisory unless the environment matches the reviewed observation and the difference exceeds 20 percent. Updating the baseline is a reviewed change: inspect every added or removed case, label, unsupported result, and confidence limit before using `--replace-baseline`.
+
 ## Pre-commit hook (no GitHub Actions required)
 
 `docguard hooks --type pre-commit` installs a local gate that prefers the repository's installed DocGuard binary. The hook blocks an unavailable runtime. `--auto-fix` additionally applies mechanical fixes and stages their output; enable it only when that mutation is intended.
@@ -76,6 +92,7 @@ Regenerate installed hooks after upgrading to pick up changes in hook behavior. 
 | Guard, score, report | Repository read | Artifact storage if configured |
 | Mechanical repair | Read/write controlled checkout | Branch/PR publication only when enabled |
 | Feedback preview | Local analysis | User submits reviewed public metadata voluntarily |
+| External precision corpus | Public read-only Git fetch | Network access to exact pinned commits; no project script execution |
 | Scheduled review | Repository read | Notification or publication only when explicitly configured |
 
 ## Action inputs reference

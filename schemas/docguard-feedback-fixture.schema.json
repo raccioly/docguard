@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raccioly.github.io/docguard/schemas/docguard-feedback-fixture.schema.json",
+  "title": "DocGuard synthetic feedback fixture",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schemaVersion", "classification", "detector", "parserTier", "config", "expectedIdentity", "interestingness", "fixture", "oppositeControl", "provenance"],
+  "properties": {
+    "$schema": { "const": "https://raccioly.github.io/docguard/schemas/docguard-feedback-fixture.schema.json" },
+    "schemaVersion": { "const": 1 },
+    "classification": { "enum": ["false_positive", "false_negative", "unsupported_syntax", "ambiguous", "policy_disagreement"] },
+    "detector": {
+      "type": "object", "additionalProperties": false, "required": ["code", "validator"],
+      "properties": { "code": { "type": "string", "pattern": "^[A-Z]{3}[0-9]{3}$" }, "validator": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9]{1,63}$" } }
+    },
+    "parserTier": { "enum": ["js-ast", "py-ast", "regex-fallback", "fallback-language", "mixed", "not-applicable"] },
+    "config": { "type": "object" },
+    "expectedIdentity": { "type": "string", "pattern": "^[A-Z]{3}[0-9]{3}@.+$" },
+    "interestingness": {
+      "type": "object", "additionalProperties": false, "required": ["predicate"],
+      "properties": { "predicate": { "enum": ["finding_present", "finding_absent", "validator_unsupported"] } }
+    },
+    "fixture": { "$ref": "#/$defs/fileSet" },
+    "oppositeControl": { "$ref": "#/$defs/fileSet" },
+    "provenance": {
+      "type": "object", "additionalProperties": false, "required": ["synthetic", "redactionAttested"],
+      "properties": { "synthetic": { "const": true }, "redactionAttested": { "const": true } }
+    },
+    "contribution": {
+      "type": "object", "additionalProperties": false, "required": ["testOnly", "scopeDocumented", "benchmarkDelta"],
+      "properties": {
+        "testOnly": { "const": true }, "scopeDocumented": { "const": true },
+        "benchmarkDelta": {
+          "type": "object", "additionalProperties": false,
+          "required": ["falsePositives", "falseNegatives", "unsupportedCases", "abstainedSupportedCases"],
+          "properties": {
+            "falsePositives": { "type": "integer", "minimum": 0 }, "falseNegatives": { "type": "integer", "minimum": 0 },
+            "unsupportedCases": { "type": "integer", "minimum": 0 }, "abstainedSupportedCases": { "type": "integer", "minimum": 0 }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "fileSet": {
+      "type": "object", "additionalProperties": false, "required": ["files"],
+      "properties": { "files": { "type": "array", "minItems": 1, "maxItems": 16, "items": { "$ref": "#/$defs/file" } } }
+    },
+    "file": {
+      "type": "object", "additionalProperties": false, "required": ["path", "content"],
+      "properties": { "path": { "type": "string", "minLength": 1 }, "content": { "type": "string", "maxLength": 131072 } }
+    }
+  }
+}

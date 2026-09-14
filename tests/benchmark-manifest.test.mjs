@@ -10,6 +10,10 @@ import { resolve } from 'node:path';
  * @req docguard.precision-evidence-loop#FR-005
  * @req docguard.precision-evidence-loop#FR-008
  * @req docguard.precision-evidence-loop#SC-004
+ * @req docguard.precision-evidence-loop#SC-001
+ * @req docguard.precision-evidence-loop#SC-002
+ * @req docguard.precision-evidence-loop#SC-005
+ * @req docs-canonical/REQUIREMENTS.md#FR-004
  */
 
 import { loadBenchmarkManifest, parseBenchmarkManifest, safeRelativePath } from '../benchmarks/lib/manifest.mjs';
@@ -21,6 +25,31 @@ describe('benchmark manifest contract', () => {
   it('accepts the committed corpus and sorts immutable case IDs', () => {
     const manifest = loadBenchmarkManifest(manifestPath);
     assert.deepEqual(manifest.cases.map(item => item.id), [...manifest.cases.map(item => item.id)].sort());
+  });
+
+  it('keeps every required project shape and five independently pinned public repositories', () => {
+    const manifest = loadBenchmarkManifest(manifestPath);
+    const fixturePaths = new Set(manifest.cases.filter(item => item.source.kind === 'fixture').map(item => item.source.path));
+    for (const path of [
+      'fixtures/js-security-control', 'fixtures/ts-security-control', 'fixtures/python-security-control',
+      'fixtures/go-todo-control', 'fixtures/monorepo-security-control',
+      'fixtures/generated-security-control', 'fixtures/sparse-doc-control',
+    ]) assert.ok(fixturePaths.has(path), path);
+    const publicGroups = new Set(manifest.cases.filter(item => item.source.kind === 'git').map(item => item.repositoryGroup));
+    assert.equal(publicGroups.size, 5);
+    for (const item of manifest.cases.filter(candidate => candidate.source.kind === 'git')) {
+      assert.match(item.source.revision, /^[a-f0-9]{40}$/);
+    }
+  });
+
+  it('publishes a reviewed finite baseline with confidence limits and unsupported evidence', () => {
+    const baseline = JSON.parse(readFileSync(resolve('benchmarks/baseline.json'), 'utf8'));
+    assert.equal(baseline.review.status, 'reviewed');
+    assert.equal(baseline.core.metrics.aggregate.cases, 24);
+    assert.equal(baseline.core.metrics.aggregate.unsupportedCases, 1);
+    assert.ok(baseline.core.metrics.aggregate.confidence95.precision.lower < 1);
+    assert.ok(baseline.core.metrics.aggregate.confidence95.falsePositiveCaseRate.upper > 0);
+    assert.equal(baseline.observations.retainedRoot, null);
   });
 
   it('rejects unknown fields, duplicate IDs, and cross-split leakage', () => {

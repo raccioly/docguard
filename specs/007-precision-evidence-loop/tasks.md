@@ -22,14 +22,14 @@
 
 ## Phase 3: Contribution loop
 
-- [ ] T012 Extend feedback intake with false-negative, unsupported-syntax, ambiguous, and policy-disagreement classifications.
-- [ ] T013 Add fixture manifests with opposite controls and provenance-redaction attestations.
-- [ ] T014 Add local deterministic fixture reduction with an explicit interestingness predicate.
-- [ ] T015 Add duplicate identity and open-and-closed work search to preview without automatic submission.
-- [ ] T016 Add test-only contribution templates and enforce reproduction, control, test, scope, and benchmark delta.
+- [x] T012 Extend feedback intake with false-negative, unsupported-syntax, ambiguous, and policy-disagreement classifications.
+- [x] T013 Add fixture manifests with opposite controls and provenance-redaction attestations.
+- [x] T014 Add local deterministic fixture reduction with an explicit interestingness predicate.
+- [x] T015 Add duplicate identity and open-and-closed work search to preview without automatic submission.
+- [x] T016 Add test-only contribution templates and enforce reproduction, control, test, scope, and benchmark delta.
 
 ## Phase 4: Closeout
 
-- [ ] T017 Update canonical architecture, test, security, CI, contribution, and validation documentation.
+- [x] T017 Update canonical architecture, test, security, CI, contribution, and validation documentation.
 - [ ] T018 Run full regression, guard, package, supported-runtime, and external-corpus checks.
 - [ ] T019 Complete the reviewed lifecycle transaction and keep this living benchmark specification current.

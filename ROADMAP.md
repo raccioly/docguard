@@ -67,7 +67,7 @@ approved intent.
   bounded outcome record, refreshes mechanical facts, records the exact
   reconciliation revision, and regenerates active AI context.
 - [x] Add optional Spec Kit hooks that check archive readiness after convergence
-  or verification; CLI and CI remain the enforcement boundary.
+CLI and CI remain the enforcement boundary for lifecycle verification.
 
 Post-hoc implementation changes are classified without silently redefining
 approved intent. `docguard reconcile --since <ref>` reports affected material:
@@ -94,40 +94,42 @@ transaction rollback fixtures, and `after_implement`/`after_converge` evidence
 gates. Broader symbol inference remains intentionally unsupported until R3 can
 measure its false-positive cost.
 
-### R3 — Independent precision benchmark (in progress)
+### R3 — Independent precision benchmark (complete; living baseline)
 
 Governing spec: `specs/007-precision-evidence-loop/spec.md`.
 
-Build a reproducible corpus beyond the maintainer's projects. Sample JavaScript,
-TypeScript, Python, fallback-language, monorepo, generated-code, and sparse-doc
-repositories. Label clean controls, real defects, synthetic mutations, ambiguous
-cases, and unsupported syntax independently of DocGuard output.
+The reproducible corpus now covers JavaScript, TypeScript, Python,
+fallback-language, monorepo, generated-code, and sparse-doc shapes. Five pinned
+public projects supplement repository-owned fixtures. Labels and exact mutations
+are fixed before output review, and the evaluation split is isolated by
+repository and causal family.
 
-Report precision, recall, false positives per repository, abstention, unsupported
-coverage, cold/warm runtime, and accepted repairs by detector family and parser
-tier. Split development and evaluation by repository and causal bug family.
-Thresholds will be set after measuring baseline variance; lowering warnings by
-skipping supported cases does not qualify as an improvement.
+The reviewed baseline reports case-level and grouped TP/FP/FN, precision, recall,
+false positives per repository, abstention, unsupported coverage, cold/warm
+runtime, repair outcomes, and Wilson confidence limits. Comparisons fail on a
+new miss, false positive, removed case, or supported-case abstention even when
+the total warning count falls.
 
-Contribution slices: redistributable fixture snapshots, adjudication schema,
-corpus runner, result visualizer, and language-specific labeled cases.
+Maintained artifacts: `benchmarks/corpus.json`, `benchmarks/baseline.json`, the
+runner and comparison libraries, and `schemas/docguard-benchmark.schema.json`.
 
-### R4 — Contribution-to-regression loop (in progress)
+### R4 — Contribution-to-regression loop (complete; open to contributions)
 
 Governing spec: `specs/007-precision-evidence-loop/spec.md`.
 
-Turn disputed findings into safe public regression cases. Extend `feedback` with
-a fixture manifest that records detector family, configuration, expected result,
-and the opposite control. Classify false positive, false negative, unsupported
-syntax, and policy disagreement separately.
+`feedback` accepts redaction-attested synthetic fixture manifests with detector,
+configuration, expected identity, parser tier, explicit predicate, and opposite
+control. False positives, false negatives, unsupported syntax, ambiguity, and
+policy disagreements retain distinct classifications.
 
-Public payloads remain opt-in and use synthetic content. Search open and closed
-issues and pull requests before submission. An accepted detection change must
-include the reproduction, its neighboring control, and a regression test.
+Public payloads remain opt-in and use reviewed synthetic content. Preview exposes
+a deterministic duplicate identity and open/closed searches without submission.
+The reducer preserves explicit interestingness, and test-only generation enforces
+reproduction, neighboring control, scope, redaction, and benchmark-delta evidence.
 
-Contribution slices: false-negative intake, fixture reducer with an explicit
-interestingness predicate, duplicate identity, maintainer triage commands, and
-test-only contribution templates.
+Maintained artifacts: `templates/feedback-fixture.json`,
+`schemas/docguard-feedback-fixture.schema.json`, and the generated direct
+`tests/*.test.mjs` contribution path.
 
 ### R5 — Evidence-scoped verification (planned)
 

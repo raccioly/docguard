@@ -55,6 +55,17 @@ Automated weekly release — batches everything merged since `v0.37.1`.
   Wilson 95% bounds limit the observed precision/recall lower bound to 0.757499
   and the clean-control false-positive case-rate upper bound to 0.242501, so the
   evidence cannot be misread as a universal 100% accuracy claim.
+- Synthetic feedback fixtures now distinguish false positives, false negatives,
+  unsupported syntax, ambiguity, and policy disagreement. Strict manifests
+  require an exact expected identity, parser tier, explicit interestingness
+  predicate, same-path opposite control, bounded configuration, and reviewed
+  synthetic/redaction attestations.
+- `docguard feedback --fixture-manifest` verifies the reproduction and control
+  in isolated temporary projects. `--reduce` minimizes content deterministically;
+  preview returns stable duplicate identity plus all/open/closed searches; and
+  `--contribution tests/<name>.test.mjs` emits a test-only regression after
+  scope and benchmark-delta evidence passes validation. Submission remains
+  entirely opt-in.
 
 - `docguard reconcile --since <ref>` emits a deterministic JSON review graph
   that separates mechanical facts, approved intent, decisions, unrelated
@@ -72,6 +83,11 @@ Automated weekly release — batches everything merged since `v0.37.1`.
 
 ### Changed
 
+- Canonical architecture, data, test, security, CI, requirement, contribution,
+  issue, PR, and roadmap guidance now describes the delivered precision and
+  feedback contracts. Superseded “planned benchmark” and incomplete lifecycle
+  language was removed from active AI context while living specs retain their
+  current operational contract.
 - Spec registry schema v2 adds qualified source implementation evidence and up
   to 20 reviewed reconciliation outcomes. Version 1 remains readable for a
   fail-closed migration through `docguard specs --write`.

@@ -70,6 +70,9 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/writers/file-transaction.mjs` | `tests/file-transaction.test.mjs` | ✅ |
 | `cli/scanners/reconciliation.mjs`, `cli/commands/reconcile.mjs` | `tests/reconcile.test.mjs` | ✅ |
 | `cli/commands/specs.mjs` completion path | `tests/spec-completion.test.mjs` | ✅ |
+| `benchmarks/lib/manifest.mjs`, `benchmarks/lib/metrics.mjs`, `benchmarks/lib/compare.mjs` | `tests/benchmark-manifest.test.mjs`, `tests/benchmark-metrics.test.mjs` | ✅ |
+| `benchmarks/lib/runner.mjs`, `benchmarks/run.mjs` | `tests/benchmark-runner.test.mjs` | ✅ |
+| `cli/feedback-fixture.mjs`, `cli/commands/feedback.mjs` | `tests/feedback-fixture.test.mjs`, `tests/feedback-contributions.test.mjs` | ✅ |
 | `cli/validators/document-lifecycle.mjs` | `tests/document-lifecycle.test.mjs` | ✅ |
 | `cli/commands/specs.mjs`, `cli/scanners/spec-registry.mjs`, `cli/validators/spec-registry.mjs` | `tests/spec-registry.test.mjs` | ✅ |
 | `cli/validators/structure.mjs` | `tests/commands.test.mjs` | ✅ |
@@ -110,7 +113,7 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 
 `tests/score-assurance.test.mjs` checks that structural grades never claim factual verification and that CI, diagnose, and reports retain this boundary. `tests/feedback-contributions.test.mjs` checks confident-finding selection, preview behavior, and outbound metadata privacy. Cache tests must change source contents without changing a manifest or Git HEAD, including repeated edits and fresh-process reads. Hook tests execute generated scripts against controlled runtimes rather than merely matching shell text. Traceability tests pair synthetic fixture IDs with genuine requirement annotations.
 
-A detector fix should include a clean near-miss and a real defect. Held-out neighboring cases are required to evaluate generalization. The proposed external benchmark is specified in `ROADMAP.md`; its targets are acceptance criteria, not measured results.
+A detector fix should include a clean near-miss and a real defect. Held-out neighboring cases are required to evaluate generalization. `benchmarks/baseline.json` is the reviewed reference: 24 measured cases across 12 repository groups plus one explicit unsupported case. Its observed perfect point estimates retain Wilson confidence limits and do not establish exhaustive correctness.
 
 Retirement tests use disposable Git repositories and verify both sides of the boundary: completed planning material is reported for review, while active neighboring material stays clean. Write-path tests must prove retained-ref recovery metadata and refusal of source code, dirty, untracked, required, symlinked, private, protected, submodule, and out-of-root paths. Read-only plan and check modes must not modify repository state.
 
@@ -119,3 +122,5 @@ Retirement tests use disposable Git repositories and verify both sides of the bo
 Regression cases are synthetic and name no consumer repositories. Keep a valid near-neighbor beside every detected defect: formatting versus declaration deletion; negated versus current technology use; explained versus unexplained skips; mock expectations versus credentials; implemented versus omitted contract endpoints; Worker bindings versus local variables; historical versus active documents. Check coverage tests distinguish unsupported and missing inputs from executed checks. Document-role tests exercise mapped findings, raw/loaded configuration parity, unsafe paths, and read-only planning without writes.
 
 Independent review must challenge suppression paths, not only the original false-positive example. Cross-project runs use disposable snapshots and verify consumer content remains unchanged. Finding counts alone cannot establish precision or recall.
+
+Run `node benchmarks/run.mjs` for the network-free synthetic corpus. Run `node benchmarks/run.mjs --external --baseline benchmarks/baseline.json` explicitly for pinned public sources. The comparator gates new case-level false positives, false negatives, removals, and supported-case abstentions. Runtime observations are comparable only when Node, platform, and architecture match; performance claims require a greater-than-20-percent real-workload improvement.

@@ -108,11 +108,11 @@
           },
           {
             "path": "specs/006-document-lifecycle/plan.md",
-            "digest": "sha256:cbb46666fc2ccae79e0e83fb03b220c920b8bab34e9f05b5ab85960867123a77"
+            "digest": "sha256:22f6aa07bb3be96ef7b648c2b50a7ecd78993a8e28920572fbbc8f96eb83cca7"
           },
           {
             "path": "specs/006-document-lifecycle/tasks.md",
-            "digest": "sha256:cc9191b7aafd1bbcab99c2d050dafa7d40ccc1b883aeff81ae6cc58aaca4717a"
+            "digest": "sha256:66a553bdcd7fb5e2d3a21755d1f8ec16a5800450453b4dc188065541cdb3e2ca"
           }
         ],
         "taskCompletion": {
@@ -478,15 +478,15 @@
           },
           {
             "path": "specs/007-precision-evidence-loop/plan.md",
-            "digest": "sha256:b4d6b96aa5cab77474542e248997bad0446d211b3c4e70d19c75779342fff50e"
+            "digest": "sha256:4a0b380b1d28a6743cf95b3cc162421c2666c42582a0369ab498799a2223c9c3"
           },
           {
             "path": "specs/007-precision-evidence-loop/tasks.md",
-            "digest": "sha256:ff08e791614513f08a52667b5c84906091b51fc445bf55fba8682538dc389a4b"
+            "digest": "sha256:131b75f8c93dd1dbc70003c8b7b974c90a3f49792db13bc3a2addd6c90610aa4"
           }
         ],
         "taskCompletion": {
-          "checked": 11,
+          "checked": 17,
           "total": 19
         },
         "implementationEvidence": [
@@ -613,6 +613,16 @@
             "line": 11
           },
           {
+            "requirementId": "SC-001",
+            "file": "tests/benchmark-manifest.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/benchmark-manifest.test.mjs",
+            "line": 14
+          },
+          {
             "requirementId": "SC-003",
             "file": "tests/benchmark-runner.test.mjs",
             "line": 12
@@ -626,6 +636,11 @@
             "requirementId": "SC-004",
             "file": "tests/benchmark-runner.test.mjs",
             "line": 13
+          },
+          {
+            "requirementId": "SC-005",
+            "file": "tests/benchmark-manifest.test.mjs",
+            "line": 15
           }
         ]
       }

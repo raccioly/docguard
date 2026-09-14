@@ -1,13 +1,13 @@
 # Implementation Plan: Document Lifecycle and Reconciliation
 
-**Status**: Active
+**Status**: Verified — living specification
 **Spec**: `specs/006-document-lifecycle/spec.md`
 
 ## Summary
 
-Introduce fail-closed context archival first, then add a derived lifecycle and
-evidence registry, new-spec preflight, completion gates, and Spec Kit extension
-interoperability. Active approved prose remains the contract.
+DocGuard now provides fail-closed context retirement, a derived lifecycle and
+evidence registry, new-spec preflight, completion gates, reconciliation, and
+Spec Kit extension interoperability. Active approved prose remains the contract.
 
 ## Technical Context
 
@@ -28,7 +28,7 @@ tests/archive.test.mjs
 tests/document-lifecycle.test.mjs
 specs/006-document-lifecycle/
 
-# Increment 2 additions (planned)
+# Registry and reconciliation additions
 cli/commands/specs.mjs
 cli/scanners/spec-registry.mjs
 cli/validators/spec-registry.mjs
