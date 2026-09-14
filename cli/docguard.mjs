@@ -53,6 +53,7 @@ import { runAgent } from './commands/agent.mjs';
 import { runMcp } from './commands/mcp.mjs';
 import { runArchive } from './commands/retire.mjs';
 import { runSpecs } from './commands/specs.mjs';
+import { runReconcile } from './commands/reconcile.mjs';
 import { ensureSkills } from './ensure-skills.mjs';
 
 // ── Shared constants (imported to break circular dependencies) ──────────
@@ -101,6 +102,7 @@ ${c.bold}Tools (situational, but day-to-day useful)${c.reset}
   ${c.green}memory${c.reset}     Show what DocGuard remembers (${c.cyan}--diff${c.reset} drills into drift)
   ${c.green}retire${c.reset}     Remove reviewed docs from active AI context (${c.cyan}--plan${c.reset}; explicit ${c.cyan}--write --path${c.reset})
   ${c.green}specs${c.reset}      Track spec lifecycle and evidence (${c.cyan}--check|--write${c.reset}; ${c.cyan}preflight --path <spec>${c.reset})
+  ${c.green}reconcile${c.reset}  Classify code/spec changes since a Git ref before changing intent
   ${c.green}trace${c.reset}      Requirements traceability matrix (${c.cyan}--reverse${c.reset} for code→doc map, ${c.cyan}--features${c.reset} for per-feature adherence)
   ${c.green}upgrade${c.reset}    Migrate ${c.cyan}.docguard.json${c.reset} schema + CLI (${c.cyan}--apply --pr${c.reset} for team-wide PR)
   ${c.green}watch${c.reset}      Live mode: re-run guard on file changes
@@ -331,15 +333,32 @@ const COMMAND_HELP = {
   },
   specs: {
     summary: 'Maintain the deterministic spec lifecycle and evidence registry.',
-    usage: 'docguard specs [--check|--write] | docguard specs preflight [--path <spec>] [--format json]',
+    usage: 'docguard specs [--check|--write] | docguard specs preflight [--path <spec>] | docguard specs complete --id <spec-id> [--since <ref>] [--write --reason <text>]',
     flags: [
       ['--check', 'Exit 2 when the committed registry is missing, stale, or inconsistent'],
       ['--write', 'Refresh observed evidence while preserving reviewed lifecycle fields'],
       ['preflight', 'Brief prior specs, or gate a generated draft with --path'],
+      ['complete', 'Plan or apply the implemented→verified evidence transaction'],
+      ['--id <spec-id>', 'Immutable spec identity to complete'],
+      ['--since <ref>', 'First reconciliation baseline when none is recorded'],
+      ['--reason <text>', 'Reviewed implementation outcome required for completion writes'],
+      ['--deviation <text>', 'Accepted deviation to record; repeatable'],
+      ['--successor <id>', 'Approved current successor spec to record'],
       ['--path <spec>', 'Generated spec to compare against current lifecycle state'],
       ['--format json', 'Machine-readable registry or preflight result'],
     ],
-    examples: ['docguard specs --check', 'docguard specs --write', 'docguard specs preflight', 'docguard specs preflight --path specs/007-feature/spec.md'],
+    examples: ['docguard specs --check', 'docguard specs --write', 'docguard specs preflight --path specs/007-feature/spec.md', 'docguard specs complete --id acme.feature --since main --write --reason "Reviewed implementation"'],
+  },
+  reconcile: {
+    summary: 'Classify changed implementation facts, approved intent, decisions, and unsupported evidence.',
+    usage: 'docguard reconcile --since <ref> [--check|--write] [--format json]',
+    flags: [
+      ['--since <ref>', 'Required Git baseline for the review graph'],
+      ['--check', 'Exit 2 while reviewed reconciliation remains'],
+      ['--write', 'Apply only deterministic generated-section refreshes'],
+      ['--format json', 'Machine-readable nodes, edges, classifications, and write plan'],
+    ],
+    examples: ['docguard reconcile --since main --format json', 'docguard reconcile --since HEAD~1 --write'],
   },
 };
 
@@ -588,6 +607,16 @@ async function main() {
       i++;
     } else if (args[i] === '--retention-ref' && args[i + 1]) {
       flags.retentionRef = args[i + 1];
+      i++;
+    } else if (args[i] === '--id' && args[i + 1]) {
+      flags.id = args[i + 1];
+      i++;
+    } else if (args[i] === '--deviation' && args[i + 1]) {
+      flags.deviations = flags.deviations || [];
+      flags.deviations.push(args[i + 1]);
+      i++;
+    } else if (args[i] === '--successor' && args[i + 1]) {
+      flags.successor = args[i + 1];
       i++;
     } else if (args[i] === '--code') {
       flags.code = args[i + 1] && !args[i + 1].startsWith('--') ? args[++i] : '';
@@ -889,6 +918,9 @@ async function main() {
       break;
     case 'specs':
       runSpecs(projectDir, config, flags);
+      break;
+    case 'reconcile':
+      runReconcile(projectDir, config, flags);
       break;
     case 'demo':
       // v0.21: zero-install "ah-ha" moment — runs guard against a baked-in

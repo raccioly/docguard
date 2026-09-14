@@ -67,6 +67,9 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/shared-requirements.mjs` | `tests/traceability.test.mjs`, `tests/archive.test.mjs` | ✅ |
 | `cli/scanners/requirement-evidence.mjs` | `tests/traceability.test.mjs`, `tests/spec-registry.test.mjs` | ✅ |
 | `cli/commands/retire.mjs` | `tests/archive.test.mjs` | ✅ |
+| `cli/writers/file-transaction.mjs` | `tests/file-transaction.test.mjs` | ✅ |
+| `cli/scanners/reconciliation.mjs`, `cli/commands/reconcile.mjs` | `tests/reconcile.test.mjs` | ✅ |
+| `cli/commands/specs.mjs` completion path | `tests/spec-completion.test.mjs` | ✅ |
 | `cli/validators/document-lifecycle.mjs` | `tests/document-lifecycle.test.mjs` | ✅ |
 | `cli/commands/specs.mjs`, `cli/scanners/spec-registry.mjs`, `cli/validators/spec-registry.mjs` | `tests/spec-registry.test.mjs` | ✅ |
 | `cli/validators/structure.mjs` | `tests/commands.test.mjs` | ✅ |

@@ -69,13 +69,13 @@ DocGuard is an official [GitHub Spec Kit](https://github.com/github/spec-kit) co
 
 ```mermaid
 graph TD
-    CLI["CLI Entry<br/>docguard.mjs"] --> Commands["Commands (22)"]
+    CLI["CLI Entry<br/>docguard.mjs"] --> Commands["Commands (23)"]
     Commands --> guard["guard"]
     Commands --> generate["generate"]
     Commands --> score["score"]
     Commands --> diagnose["diagnose"]
     Commands --> setup["setup wizard"]
-    Commands --> other["diff · init · fix · trace · impact · sync · retire · specs<br/>explain · memory · upgrade · agents · hooks · badge · ci · watch"]
+    Commands --> other["diff · init · fix · trace · impact · sync · reconcile · retire · specs<br/>explain · memory · upgrade · agents · hooks · badge · ci · watch"]
 
     guard --> Validators["Validators (29)"]
     generate --> Scanners["Scanners (4)<br/>routes · schemas · doc-tools · speckit"]
@@ -268,7 +268,7 @@ This installs DocGuard's slash commands (`/docguard.init`, `/docguard.guard`, `/
 
 ## Usage
 
-DocGuard ships **22 commands** (the "Daily 5" + 17 situational tools, including lifecycle retirement and spec tracking, the zero-install `demo`, the `mcp` server, and the `ci` pipeline gate). Six additional one-shot scaffolders are accessed via `docguard init --with <name>`. Legacy command forms remain compatible until v1.0 and print their replacements.
+DocGuard ships **23 commands** (the "Daily 5" + 18 situational tools, including lifecycle reconciliation, retirement and spec tracking, the zero-install `demo`, the `mcp` server, and the `ci` pipeline gate). Six additional one-shot scaffolders are accessed via `docguard init --with <name>`. Legacy command forms remain compatible until v1.0 and print their replacements.
 
 **The Daily 5** — what you'll reach for 95% of the time:
 
@@ -296,6 +296,8 @@ DocGuard ships **22 commands** (the "Daily 5" + 17 situational tools, including 
 | `verify --instructions` | Audit AGENTS.md/CLAUDE.md themselves for drift: duplicate rules, never-vs-always contradictions, stale file pointers, unknown commands — plus clustered rule pairs as agent judgment tasks |
 | `feedback` | Report likely false positives back to DocGuard — local-first record + a 1-click prefilled, redacted GitHub issue (zero typing) |
 | `retire` | Find completed or superseded planning material (`--plan`/`--check`; `--fail-on-warning` gates advisory candidates) and explicitly remove clean tracked documentation from active AI context. `.docguard-archive.json` records recovery metadata and retired requirement identities, and `--retention-ref` proves the source revision remains reachable. This is separate from the Spec Kit Archive extension, which consolidates feature documents. |
+| `reconcile` | Build a read-only code↔spec review graph since a Git ref. Classifies mechanical facts, approved intent, decisions, unrelated changes, and unsupported evidence; `--write` applies only mechanical generated-section refreshes. |
+| `specs` | Maintain the versioned spec registry, preflight new specs, and apply evidence-gated completion transactions with bounded outcomes and active-context regeneration. |
 | `specs --check` / `specs --write` | Validate or refresh `.docguard-specs.json`, the byte-stable index of immutable spec IDs, reviewed lifecycle/lineage/scope, artifact digests, task state, explicitly scoped test evidence, and archive tombstones. Refreshes preserve the reviewed block. |
 | `specs preflight [--path <spec>]` | Before specification, print current spec lifecycle and evidence. Before planning, check the generated draft for structural blockers and report semantic overlap as review-only evidence. |
 | `mcp` | MCP server — exposes guard/score/explain/verify/report/diagnose as native tools for Claude, Cursor, and any MCP client. Stdio: `claude mcp add docguard -- npx docguard-cli mcp`. Team-shared HTTP: `docguard mcp --transport http --port 8585` (loopback by default; non-loopback binds require `--api-key`) |
@@ -333,7 +335,7 @@ Run them solo (`docguard init --with hooks`) or stacked (`docguard init --with a
 | `--dir <path>` | Project directory (default: `.`) | All |
 | `--verbose` | Show detailed output | All |
 | `--quiet` / `-q` | Suppress banner — for hooks, CI loops, scripts | All |
-| `--format json` | Machine-readable output (clean JSON, no ANSI bleed) | guard, score, diff, trace, diagnose, memory, impact, explain, retire, specs |
+| `--format json` | Machine-readable output (clean JSON, no ANSI bleed) | guard, score, diff, trace, diagnose, memory, impact, explain, reconcile, retire, specs |
 | `--format sarif` | SARIF 2.1.0 output — findings as rules/results for GitHub Code Scanning and SARIF dashboards | guard |
 | `--format junit` | JUnit XML output — one testcase per validator, for GitLab CI (`artifacts:reports:junit`), Jenkins, Azure DevOps, CircleCI | guard |
 | `--update-baseline` | Adopt DocGuard on a legacy repo without a red day one: freeze today's findings into a committed `.docguard.baseline.json`; guard/ci then gate only NEW drift. Suppression is always visible ("N pre-existing finding(s) suppressed"), and `--no-baseline` shows the full picture | guard |

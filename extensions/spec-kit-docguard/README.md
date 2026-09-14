@@ -53,6 +53,7 @@ docguard score
 | `speckit.docguard.generate` | — | Reverse-engineer canonical docs from codebase |
 | `speckit.docguard.brief` | — | Load current spec intent before specification |
 | `speckit.docguard.preflight` | — | Gate the generated spec before task generation |
+| `speckit.docguard.complete` | — | Plan reviewed completion and regenerate active context after verification |
 
 ## AI Skills
 
@@ -78,8 +79,11 @@ DocGuard integrates into the spec-kit workflow through hooks:
 hooks:
   before_specify:    # Mandatory — read current spec intent first
     command: speckit.docguard.brief
-  after_implement:   # Mandatory — quality gate after /speckit.implement
-    command: speckit.docguard.guard
+  after_implement:   # Guard is mandatory; completion review is optional
+    - command: speckit.docguard.guard
+    - command: speckit.docguard.complete
+  after_converge:    # Optional completion review after convergence
+    command: speckit.docguard.complete
   before_tasks:      # Mandatory — gate the generated spec
     command: speckit.docguard.preflight
   after_tasks:       # Optional — show score after tasks

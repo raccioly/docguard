@@ -30,12 +30,12 @@
 These tasks were not part of the v0.37.0 release contract. They implement the
 next roadmap priority and remain open until their evidence gates pass.
 
-- [ ] T016 Add staged registry/recovery transactions with rollback, status
+- [x] T016 Add staged registry/recovery transactions with rollback, status
   adapters, and monorepo fixtures before enabling completion writes.
-- [ ] T017 Specify the reconcile JSON graph and confidence model.
-- [ ] T018 Classify mechanical facts, approved intent, decisions, and unsupported evidence.
-- [ ] T019 Implement `reconcile --since <ref>` as a read-only plan.
-- [ ] T020 Add intentional-change, regression, unrelated-change, and ambiguity fixtures.
-- [ ] T021 Add opt-in reviewed writes for mechanical facts only.
-- [ ] T022 Implement `docguard specs complete` as the `implemented → verified` transaction and outcome record.
-- [ ] T023 Regenerate active AI context and add Spec Kit lifecycle hooks after verification.
+- [x] T017 Specify the reconcile JSON graph and confidence model.
+- [x] T018 Classify mechanical facts, approved intent, decisions, and unsupported evidence.
+- [x] T019 Implement `reconcile --since <ref>` as a read-only plan.
+- [x] T020 Add intentional-change, regression, unrelated-change, and ambiguity fixtures.
+- [x] T021 Add opt-in reviewed writes for mechanical facts only.
+- [x] T022 Implement `docguard specs complete` as the `implemented → verified` transaction and outcome record.
+- [x] T023 Regenerate active AI context and add Spec Kit lifecycle hooks after verification.

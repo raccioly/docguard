@@ -1,6 +1,6 @@
 {
   "$schema": "https://raccioly.github.io/docguard/schemas/docguard-specs.schema.json",
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "specs": [
     {
       "specId": "docguard.document-lifecycle",
@@ -30,7 +30,8 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null
+          "lastReviewedRevision": null,
+          "outcomes": []
         }
       },
       "intent": {
@@ -76,14 +77,60 @@
           },
           {
             "path": "specs/006-document-lifecycle/tasks.md",
-            "digest": "sha256:f1786145b4bb77eab2bfa9c8593186e890bf50ae56236d22d5c136ca7d5ec3b2"
+            "digest": "sha256:cc9191b7aafd1bbcab99c2d050dafa7d40ccc1b883aeff81ae6cc58aaca4717a"
           }
         ],
         "taskCompletion": {
-          "checked": 15,
+          "checked": 23,
           "total": 23
         },
-        "implementationEvidence": [],
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-010",
+            "file": "cli/scanners/reconciliation.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "cli/scanners/reconciliation.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "cli/scanners/reconciliation.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-013",
+            "file": "cli/writers/file-transaction.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-014",
+            "file": "cli/scanners/lifecycle-context.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-016",
+            "file": "cli/commands/specs.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-017",
+            "file": "cli/commands/specs.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-017",
+            "file": "cli/scanners/lifecycle-context.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-020",
+            "file": "cli/commands/specs.mjs",
+            "line": 5
+          }
+        ],
         "testEvidence": [
           {
             "requirementId": "FR-001",
@@ -146,6 +193,21 @@
             "line": 18
           },
           {
+            "requirementId": "FR-010",
+            "file": "tests/reconcile.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "tests/reconcile.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "tests/reconcile.test.mjs",
+            "line": 14
+          },
+          {
             "requirementId": "FR-012",
             "file": "tests/spec-registry.test.mjs",
             "line": 11
@@ -166,9 +228,34 @@
             "line": 13
           },
           {
+            "requirementId": "FR-016",
+            "file": "tests/spec-completion.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-017",
+            "file": "tests/spec-completion.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-018",
+            "file": "tests/hooks-contract.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-019",
+            "file": "tests/hooks-contract.test.mjs",
+            "line": 12
+          },
+          {
             "requirementId": "FR-020",
             "file": "tests/archive.test.mjs",
-            "line": 22
+            "line": 23
+          },
+          {
+            "requirementId": "FR-020",
+            "file": "tests/spec-completion.test.mjs",
+            "line": 13
           },
           {
             "requirementId": "SC-001",
@@ -189,6 +276,16 @@
             "requirementId": "SC-004",
             "file": "tests/document-lifecycle.test.mjs",
             "line": 12
+          },
+          {
+            "requirementId": "SC-005",
+            "file": "tests/archive.test.mjs",
+            "line": 22
+          },
+          {
+            "requirementId": "SC-006",
+            "file": "tests/reconcile.test.mjs",
+            "line": 15
           },
           {
             "requirementId": "SC-007",

@@ -26,6 +26,22 @@ hooks:
       description: "Validate documentation passes CDD standards after implementation"
       enabled: true
       optional: false
+      priority: 5
+    - extension: docguard
+      command: speckit.docguard.complete
+      description: "Plan reviewed lifecycle verification after implementation"
+      enabled: true
+      optional: true
+      priority: 10
+      prompt: "Review evidence and plan this spec's completion transaction?"
+
+  after_converge:
+    - extension: docguard
+      command: speckit.docguard.complete
+      description: "Plan reviewed lifecycle verification after convergence"
+      enabled: true
+      optional: true
+      prompt: "Review evidence and plan this converged spec's completion transaction?"
 
   # Gate the generated spec before /speckit.tasks creates implementation work.
   before_tasks:

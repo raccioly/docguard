@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `docguard reconcile --since <ref>` emits a deterministic JSON review graph
+  that separates mechanical facts, approved intent, decisions, unrelated
+  changes, and unsupported evidence. Its write mode delegates only mechanical
+  generated-section refreshes to `sync`; approved requirements remain unchanged.
+- `docguard specs complete` plans and applies the reviewed
+  `in_progress → implemented → verified` transaction. Completion requires a
+  clean revision, checked tasks, qualified implementation or test evidence for
+  every requirement, affected canonical docs, supported reconciliation, and a
+  guard result without errors. It records a bounded outcome and regenerates an
+  active-only context projection.
+- The Spec Kit extension includes optional completion review hooks after
+  implementation and convergence, using events supported by Spec Kit's current
+  extension contract.
+
+### Changed
+
+- Spec registry schema v2 adds qualified source implementation evidence and up
+  to 20 reviewed reconciliation outcomes. Version 1 remains readable for a
+  fail-closed migration through `docguard specs --write`.
+- Retirement and completion use one staged multi-file transaction that restores
+  the prior set when mutation or post-write validation fails.
+
 ## [0.37.1] - 2026-09-14
 
 Automated weekly release — batches everything merged since `v0.37.0`.

@@ -50,7 +50,8 @@ code-truth sections), `score` (CDD maturity 0-100).
 **Tools** — `demo` (zero-install tour), `diagnose` (guard → AI fix prompts),
 `fix` (AI fix instructions; `--doc <name>`), `generate` (reverse-engineer docs;
 `--plan`), `retire` (remove reviewed docs from active context),
-`specs` (check/refresh the spec lifecycle registry and preflight new specs),
+`specs` (check/refresh/preflight/complete the spec lifecycle registry),
+`reconcile` (classify code/spec changes since a Git ref without rewriting intent),
 `explain` (explain a validator/warning), `memory` (what DocGuard
 remembers), `trace` (requirements traceability; `--reverse`), `upgrade` (migrate
 config/CLI), `watch` (live re-guard).
@@ -87,6 +88,10 @@ returns `status` (PASS/WARN/FAIL, matches exit code 0/2/1), `findings[]`
   --path <spec>` before planning. Refresh `.docguard-specs.json` with `specs
   --write`; never edit generated intent/evidence fields or treat bare requirement
   IDs as completion proof.
+- Run `docguard reconcile --since <ref> --format json` before completing a
+  changed feature. Only its mechanical write plan may run automatically;
+  unsupported changes and possible regressions require review. `docguard specs
+  complete` records that review and regenerates the active context projection.
 
 ## AI Skills
 

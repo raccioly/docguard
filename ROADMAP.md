@@ -56,28 +56,28 @@ completion writes. Transaction rollback, status adapters, monorepo identity,
 restore/re-retire handling, and reviewed completion transitions remain R2 work;
 they are not part of the v0.37.0 contract.
 
-### R2 — Completion and post-hoc reconciliation (planned)
+### R2 — Completion and post-hoc reconciliation (implemented; release pending)
 
 Close the lifecycle loop without allowing current code to silently redefine
 approved intent.
 
-- [ ] Add staged registry/recovery transactions with rollback before any command
+- [x] Add staged registry/recovery transactions with rollback before any command
   can update both lifecycle ledgers.
-- [ ] Add an `implemented → verified` completion transaction that appends a
+- [x] Add an `implemented → verified` completion transaction that appends a
   bounded outcome record, refreshes mechanical facts, records the exact
   reconciliation revision, and regenerates active AI context.
-- [ ] Add optional Spec Kit hooks that check archive readiness after convergence
+- [x] Add optional Spec Kit hooks that check archive readiness after convergence
   or verification; CLI and CI remain the enforcement boundary.
 
-Detect post-hoc implementation changes without silently redefining approved
-intent. `docguard reconcile --since <ref>` will classify affected material:
+Post-hoc implementation changes are classified without silently redefining
+approved intent. `docguard reconcile --since <ref>` reports affected material:
 
 1. mechanical code facts that `sync` can safely refresh;
 2. approved requirements that may indicate a code regression;
 3. superseded decisions that need a replacement or archive action;
 4. unsupported or ambiguous evidence that needs human review.
 
-The command will produce a review plan before any write. It must never rewrite a
+The command produces a review plan before any write. It never rewrites a
 requirement merely because the current code differs. Acceptance requires seeded
 examples for intentional behavior changes, accidental regressions, and unrelated
 edits; each class must remain distinguishable in JSON output.
@@ -88,9 +88,11 @@ updates. DocGuard will validate and index those outcomes rather than duplicate
 their prompt workflows. A future upstream contribution should standardize only
 the generic lifecycle metadata or hook contract after interoperability is proven.
 
-Contribution slices: changed-symbol-to-spec impact mapping, replacement-spec
-links, decision record support, Archive/Reconcile extension fixtures, and
-`after_implement`/`after_converge` evidence gates.
+Delivered slices include explicit changed-file-to-spec evidence edges,
+replacement-spec fields in bounded outcomes, decision-record classification,
+transaction rollback fixtures, and `after_implement`/`after_converge` evidence
+gates. Broader symbol inference remains intentionally unsupported until R3 can
+measure its false-positive cost.
 
 ### R3 — Independent precision benchmark (planned)
 

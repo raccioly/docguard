@@ -14,10 +14,10 @@ import { detectSpecKit } from './speckit.mjs';
 import { readRetirementManifest } from './document-lifecycle.mjs';
 import { collectRequirementIdsFromContent, requirementPatterns } from '../shared-requirements.mjs';
 import { walkFiles } from '../shared-ignore.mjs';
-import { scanTestFilesForReferences } from './requirement-evidence.mjs';
+import { scanImplementationFilesForReferences, scanTestFilesForReferences } from './requirement-evidence.mjs';
 
 export const SPEC_REGISTRY_PATH = '.docguard-specs.json';
-export const SPEC_REGISTRY_SCHEMA_VERSION = 1;
+export const SPEC_REGISTRY_SCHEMA_VERSION = 2;
 export const SPEC_REGISTRY_SCHEMA_URL = 'https://raccioly.github.io/docguard/schemas/docguard-specs.schema.json';
 
 const SPEC_ID_RE = /^[a-z0-9][a-z0-9._-]{2,127}$/;
@@ -77,7 +77,7 @@ function defaultControl() {
         supersededBy: [],
       },
       scope: { canonicalDocs: [] },
-      reconciliation: { lastReviewedRevision: null },
+      reconciliation: { lastReviewedRevision: null, outcomes: [] },
     },
   };
 }
@@ -140,10 +140,25 @@ function validatedControl(entry, issues) {
   const reconciliation = reviewed.reconciliation || {};
   rejectUnknownKeys(relations, new Set(['extends', 'duplicates', 'conflictsWith', 'supersedes', 'supersededBy']), `${entry.specId}.reviewed.relations`, issues);
   rejectUnknownKeys(scope, new Set(['canonicalDocs']), `${entry.specId}.reviewed.scope`, issues);
-  rejectUnknownKeys(reconciliation, new Set(['lastReviewedRevision']), `${entry.specId}.reviewed.reconciliation`, issues);
+  rejectUnknownKeys(reconciliation, new Set(['lastReviewedRevision', 'outcomes']), `${entry.specId}.reviewed.reconciliation`, issues);
   const revision = reconciliation.lastReviewedRevision ?? null;
   if (revision !== null && (typeof revision !== 'string' || !/^[0-9a-f]{40}(?:[0-9a-f]{24})?$/.test(revision))) {
     issues.push({ code: 'SPR003', path: SPEC_REGISTRY_PATH, message: `Invalid reconciliation revision for ${entry.specId}.` });
+  }
+  const outcomes = reconciliation.outcomes ?? [];
+  if (!Array.isArray(outcomes) || outcomes.length > 20 || outcomes.some(outcome => {
+    if (!outcome || typeof outcome !== 'object' || Array.isArray(outcome)) return true;
+    const allowed = new Set(['revision', 'reason', 'evidence', 'deviations', 'successor']);
+    return Object.keys(outcome).some(key => !allowed.has(key))
+      || !/^[0-9a-f]{40}(?:[0-9a-f]{24})?$/.test(outcome.revision || '')
+      || typeof outcome.reason !== 'string' || !outcome.reason.trim() || outcome.reason.length > 500
+      || !Array.isArray(outcome.evidence) || outcome.evidence.length > 100
+      || outcome.evidence.some(path => typeof path !== 'string' || !path.trim())
+      || !Array.isArray(outcome.deviations) || outcome.deviations.length > 20
+      || outcome.deviations.some(item => typeof item !== 'string' || !item.trim() || item.length > 500)
+      || (outcome.successor !== null && outcome.successor !== undefined && !SPEC_ID_RE.test(outcome.successor));
+  })) {
+    issues.push({ code: 'SPR003', path: SPEC_REGISTRY_PATH, message: `Invalid or unbounded reconciliation outcomes for ${entry.specId}.` });
   }
   return {
     reviewed: {
@@ -165,7 +180,16 @@ function validatedControl(entry, issues) {
       scope: {
         canonicalDocs: validateCanonicalPaths(scope.canonicalDocs ?? [], `${entry.specId}.scope.canonicalDocs`, issues),
       },
-      reconciliation: { lastReviewedRevision: revision },
+      reconciliation: {
+        lastReviewedRevision: revision,
+        outcomes: Array.isArray(outcomes) ? outcomes.slice(-20).map(outcome => ({
+          revision: outcome.revision,
+          reason: outcome.reason,
+          evidence: sortedUnique(outcome.evidence || []),
+          deviations: sortedUnique(outcome.deviations || []),
+          successor: outcome.successor ?? null,
+        })) : [],
+      },
     },
   };
 }
@@ -174,9 +198,9 @@ export function readSpecRegistry(projectDir) {
   const loaded = readJson(resolve(projectDir, SPEC_REGISTRY_PATH), SPEC_REGISTRY_PATH);
   if (!loaded.exists || loaded.error) return loaded;
   const value = loaded.value;
-  if (value?.$schema !== SPEC_REGISTRY_SCHEMA_URL || value?.schemaVersion !== SPEC_REGISTRY_SCHEMA_VERSION
+  if (value?.$schema !== SPEC_REGISTRY_SCHEMA_URL || ![1, SPEC_REGISTRY_SCHEMA_VERSION].includes(value?.schemaVersion)
     || !Array.isArray(value?.specs) || !Array.isArray(value?.tombstones)) {
-    return { exists: true, value: null, error: `${SPEC_REGISTRY_PATH} does not use supported schema version 1.` };
+    return { exists: true, value: null, error: `${SPEC_REGISTRY_PATH} does not use a supported schema version.` };
   }
   const topKeys = new Set(['$schema', 'schemaVersion', 'specs', 'tombstones']);
   const unknownTop = Object.keys(value).filter(key => !topKeys.has(key));
@@ -328,6 +352,7 @@ export function projectSpecRegistry(projectDir, config = {}, options = {}) {
   const files = projectFiles(projectDir);
   const patterns = requirementPatterns(config);
   const testReferences = scanTestFilesForReferences(projectDir, files, patterns);
+  const implementationReferences = scanImplementationFilesForReferences(projectDir, files, patterns);
   const ids = new Map();
   const specs = [];
 
@@ -377,7 +402,7 @@ export function projectSpecRegistry(projectDir, config = {}, options = {}) {
       observed: {
         artifacts,
         taskCompletion: taskCompletion(feature.tasksPath),
-        implementationEvidence: [],
+        implementationEvidence: evidenceForSpec(specId, path, requirements, implementationReferences),
         testEvidence: evidenceForSpec(specId, path, requirements, testReferences),
       },
     });

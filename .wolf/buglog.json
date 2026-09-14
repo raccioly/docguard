@@ -5264,7 +5264,11 @@
       "file": "cli/commands/retire.mjs",
       "root_cause": "The write boundary validated Git state and path containment but never constrained selections to documentation",
       "fix": "Restrict retirement to known documentation extensions and reject Git submodules, source files, untracked leftovers, dirty evidence, and live Markdown backreferences",
-      "tags": ["lifecycle", "destructive-write", "safety"],
+      "tags": [
+        "lifecycle",
+        "destructive-write",
+        "safety"
+      ],
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-09-14T16:01:34.000Z"
@@ -5276,8 +5280,14 @@
       "file": "cli/scanners/document-lifecycle.mjs",
       "root_cause": "A substring status regex collapsed artifact maturity into retirement and the companion task reader did not require Git tracking",
       "fix": "Match exact retired states, keep Completed as review-only, require tracked task artifacts, honor DocGuard ignores, and expose incomplete scan coverage",
-      "tags": ["lifecycle", "false-positive", "coverage"],
-      "related_bugs": ["bug-320"],
+      "tags": [
+        "lifecycle",
+        "false-positive",
+        "coverage"
+      ],
+      "related_bugs": [
+        "bug-320"
+      ],
       "occurrences": 1,
       "last_seen": "2026-09-14T16:01:34.000Z"
     },
@@ -5288,8 +5298,14 @@
       "file": "cli/commands/retire.mjs",
       "root_cause": "Recording commit and blob hashes was mistaken for a retention guarantee",
       "fix": "Require HEAD to be an ancestor of a recorded retention ref and record object format plus verified recoverability for every new retirement event",
-      "tags": ["git", "recovery", "lifecycle"],
-      "related_bugs": ["bug-320"],
+      "tags": [
+        "git",
+        "recovery",
+        "lifecycle"
+      ],
+      "related_bugs": [
+        "bug-320"
+      ],
       "occurrences": 1,
       "last_seen": "2026-09-14T16:01:34.000Z"
     },
@@ -5300,8 +5316,15 @@
       "file": "cli/commands/trace.mjs",
       "root_cause": "Feature scoring accepted a currently unique bare ID even though uniqueness can change when lifecycle removes definitions",
       "fix": "Require document-qualified references for feature adherence now and specify immutable specId-qualified evidence plus retired identity tombstones for the registry",
-      "tags": ["traceability", "lifecycle", "false-assurance"],
-      "related_bugs": ["bug-315", "bug-319"],
+      "tags": [
+        "traceability",
+        "lifecycle",
+        "false-assurance"
+      ],
+      "related_bugs": [
+        "bug-315",
+        "bug-319"
+      ],
       "occurrences": 1,
       "last_seen": "2026-09-14T16:01:34.000Z"
     },
@@ -5312,8 +5335,14 @@
       "file": "cli/scanners/document-lifecycle.mjs",
       "root_cause": "The scanner enumerated tracked HEAD paths without reconciling retirement events in the working-tree manifest",
       "fix": "Treat manifest-backed missing paths as expected and report DLC004 when a path marked retired still exists",
-      "tags": ["lifecycle", "manifest", "working-tree"],
-      "related_bugs": ["bug-321"],
+      "tags": [
+        "lifecycle",
+        "manifest",
+        "working-tree"
+      ],
+      "related_bugs": [
+        "bug-321"
+      ],
       "occurrences": 1,
       "last_seen": "2026-09-14T16:01:34.000Z"
     },
@@ -5324,8 +5353,16 @@
       "file": "cli/validators/traceability.mjs",
       "root_cause": "The retirement ledger preserved content recovery but discarded requirement identity from active traceability",
       "fix": "Extract declaration-shaped IDs through one shared parser, store them on retirement entries, and include retired identities in ambiguity and orphan checks without treating them as active requirements",
-      "tags": ["traceability", "lifecycle", "tombstone", "false-assurance"],
-      "related_bugs": ["bug-319", "bug-323"],
+      "tags": [
+        "traceability",
+        "lifecycle",
+        "tombstone",
+        "false-assurance"
+      ],
+      "related_bugs": [
+        "bug-319",
+        "bug-323"
+      ],
       "occurrences": 1,
       "last_seen": "2026-09-14T17:00:00.000Z"
     },
@@ -5336,8 +5373,15 @@
       "file": "cli/validators/document-lifecycle.mjs",
       "root_cause": "The new validator treated a missing Git prerequisite as incomplete coverage and its public help catalog was not updated",
       "fix": "Return non-applicable outside a Git working tree, preserve warnings for malformed manifests and real Git failures, and add the validator key and display name to explain",
-      "tags": ["lifecycle", "applicability", "explain", "regression"],
-      "related_bugs": ["bug-324"],
+      "tags": [
+        "lifecycle",
+        "applicability",
+        "explain",
+        "regression"
+      ],
+      "related_bugs": [
+        "bug-324"
+      ],
       "occurrences": 1,
       "last_seen": "2026-09-14T17:00:00.000Z"
     },
@@ -5348,7 +5392,11 @@
       "file": "session shell commands",
       "root_cause": "Shell-sensitive text and a disallowed force-removal form were embedded in command strings",
       "fix": "Use single-quoted search patterns and exact Node filesystem cleanup for known generated backups",
-      "tags": ["shell", "tooling", "operator-error"],
+      "tags": [
+        "shell",
+        "tooling",
+        "operator-error"
+      ],
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-09-14T17:00:00.000Z"
@@ -5360,7 +5408,11 @@
       "file": "session OpenWolf commands",
       "root_cause": "The installed OpenWolf CLI supports scan but has no check subcommand",
       "fix": "Use openwolf scan for anatomy refresh and rely on the repository validation commands for correctness checks",
-      "tags": ["openwolf", "tooling", "operator-error"],
+      "tags": [
+        "openwolf",
+        "tooling",
+        "operator-error"
+      ],
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-09-14T17:15:00.000Z"
@@ -5372,7 +5424,11 @@
       "file": "specs/006-document-lifecycle/",
       "root_cause": "Markdown metadata lines used unnecessary hard-break spaces",
       "fix": "Remove the trailing spaces and rerun the staged diff check before commit",
-      "tags": ["formatting", "git", "pre-commit"],
+      "tags": [
+        "formatting",
+        "git",
+        "pre-commit"
+      ],
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-09-14T17:20:00.000Z"
@@ -5384,8 +5440,16 @@
       "file": "cli/scanners/spec-registry.mjs",
       "root_cause": "Requirement evidence lived inside the Traceability validator, so registry reuse required an inverted dependency and repeated project-wide work",
       "fix": "Extract the declaration parser and resolver into requirement-evidence.mjs, make both validators consume it, and scan tests once before partitioning evidence by immutable spec identity",
-      "tags": ["architecture", "performance", "spec-registry", "traceability"],
-      "related_bugs": ["bug-319", "bug-323"],
+      "tags": [
+        "architecture",
+        "performance",
+        "spec-registry",
+        "traceability"
+      ],
+      "related_bugs": [
+        "bug-319",
+        "bug-323"
+      ],
       "occurrences": 1,
       "last_seen": "2026-09-14T17:45:00.000Z"
     },
@@ -5396,7 +5460,11 @@
       "file": "extensions/spec-kit-docguard/extension.yml",
       "root_cause": "The extension description and agent table were updated independently from the bundled skills directory",
       "fix": "Restore the five-skill count, name docguard-sync in the extension README and AGENTS table, and validate the local v0.37.0 extension through Spec Kit's installer",
-      "tags": ["documentation-drift", "spec-kit", "release-metadata"],
+      "tags": [
+        "documentation-drift",
+        "spec-kit",
+        "release-metadata"
+      ],
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-09-14T17:55:00.000Z"
@@ -5408,7 +5476,12 @@
       "file": "ROADMAP.md; specs/006-document-lifecycle/tasks.md",
       "root_cause": "The active specification spans several increments, but release completion did not update the task ledger or separate the shipped lifecycle foundation from the next reconciliation milestone",
       "fix": "Mark the reviewed release task complete, preserve unfinished task identities, and move completion, rollback, and post-hoc reconciliation work under R2",
-      "tags": ["documentation-drift", "roadmap", "release", "lifecycle"],
+      "tags": [
+        "documentation-drift",
+        "roadmap",
+        "release",
+        "lifecycle"
+      ],
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-09-14T19:45:00.000Z"
@@ -5420,7 +5493,11 @@
       "file": ".wolf/buglog.json",
       "root_cause": "The script assumed the file root was an array, but the repository schema wraps entries in a versioned bugs array",
       "fix": "Inspect the envelope first and append through the bugs property while preserving the version field and existing formatting",
-      "tags": ["openwolf", "tooling", "operator-error"],
+      "tags": [
+        "openwolf",
+        "tooling",
+        "operator-error"
+      ],
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-09-14T19:45:00.000Z"
@@ -5432,7 +5509,11 @@
       "file": "session shell commands",
       "root_cause": "The shell wrapper reused zsh's reserved status parameter for an exit code",
       "fix": "Use a task-specific variable such as guard_exit for captured command status",
-      "tags": ["shell", "tooling", "operator-error"],
+      "tags": [
+        "shell",
+        "tooling",
+        "operator-error"
+      ],
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-09-14T19:45:00.000Z"
@@ -5444,8 +5525,14 @@
       "file": "session shell commands",
       "root_cause": "A compound ripgrep expression mixed shell quotes and a literal backtick in one command string",
       "fix": "Split the search into simple single-quoted patterns without shell-sensitive tokens",
-      "tags": ["shell", "tooling", "operator-error"],
-      "related_bugs": ["bug-327"],
+      "tags": [
+        "shell",
+        "tooling",
+        "operator-error"
+      ],
+      "related_bugs": [
+        "bug-327"
+      ],
       "occurrences": 1,
       "last_seen": "2026-09-14T20:05:00.000Z"
     },
@@ -5456,7 +5543,11 @@
       "file": "session apply_patch operation",
       "root_cause": "The patch coupled independent file edits into one context-sensitive operation",
       "fix": "Apply independent file changes separately and verify each exact context before continuing",
-      "tags": ["patching", "tooling", "operator-error"],
+      "tags": [
+        "patching",
+        "tooling",
+        "operator-error"
+      ],
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-09-14T20:05:00.000Z"
@@ -5468,8 +5559,18 @@
       "file": "cli/docguard.mjs; .github/workflows/scheduled-release.yml",
       "root_cause": "Read-only hooks --list and fix invocations could enter setup, while the release workflow updated extension skill versions without refreshing their checked-in agent copies",
       "fix": "Bypass setup for read-only inventory and fix commands, synchronize managed agent skills during release preparation, and enforce byte-identical copies with regression tests",
-      "tags": ["read-only", "release", "skills", "side-effect", "regression"],
-      "related_bugs": ["bug-317", "bug-318", "bug-331"],
+      "tags": [
+        "read-only",
+        "release",
+        "skills",
+        "side-effect",
+        "regression"
+      ],
+      "related_bugs": [
+        "bug-317",
+        "bug-318",
+        "bug-331"
+      ],
       "occurrences": 1,
       "last_seen": "2026-09-14T20:05:00.000Z"
     },
@@ -5480,10 +5581,36 @@
       "file": ".github/workflows/scheduled-release.yml; templates/ci/github-actions.yml; extensions/spec-kit-docguard/templates/github-workflows/docguard-guard.yml; pyproject.toml; server.json",
       "root_cause": "Release preparation delegated only Markdown and extension metadata to the general DocGuard fixer, leaving non-Markdown publication surfaces outside a single explicit release transaction",
       "fix": "Add a fail-closed release synchronizer with an explicit active-surface allowlist, validate field cardinality before the first write, refresh managed agent copies afterward, and regression-test successful and aborted synchronization",
-      "tags": ["release", "automation", "version-sync", "publication", "regression"],
-      "related_bugs": ["bug-331", "bug-337"],
+      "tags": [
+        "release",
+        "automation",
+        "version-sync",
+        "publication",
+        "regression"
+      ],
+      "related_bugs": [
+        "bug-331",
+        "bug-337"
+      ],
       "occurrences": 1,
       "last_seen": "2026-09-14T18:09:28.000Z"
+    },
+    {
+      "id": "bug-339",
+      "timestamp": "2026-09-14T19:25:00.000Z",
+      "error_message": "Multi-file transaction preparation could leave an earlier staged temp file when a later entry failed validation",
+      "file": "cli/writers/file-transaction.mjs",
+      "root_cause": "Staging used Array.map outside the transaction cleanup boundary, so an exception during a later map iteration bypassed cleanup",
+      "fix": "Prepare entries sequentially inside a guarded block, clean every accumulated stage on preparation failure, and verify no temp file remains with a duplicate-target regression test",
+      "tags": [
+        "lifecycle",
+        "transaction",
+        "cleanup",
+        "regression"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-14T19:25:00.000Z"
     }
   ]
 }

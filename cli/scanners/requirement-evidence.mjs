@@ -96,31 +96,60 @@ function testDeclarations(content, filename) {
   return declarations;
 }
 
-export function scanTestFilesForReferences(projectDir, projectFiles, patterns) {
-  const testRefs = new Map();
-  for (const relPath of projectFiles.filter(isTestSource)) {
+function implementationDeclarations(content, filename) {
+  const declarations = [];
+  const ext = extname(filename);
+  const hashComments = /\.(?:py|rb|php|sh)$/.test(ext);
+  const tokens = /\/\*[\s\S]*?(?:\*\/|$)|\/\/[^\n]*|\#[^\n]*/g;
+  for (const token of content.matchAll(tokens)) {
+    if (token[0].startsWith('#') && !hashComments) continue;
+    const line = content.slice(0, token.index).split('\n').length;
+    const text = token[0].replace(/^(?:\/\/|\/\*|#)/, '');
+    if (/@(?:req|implements)\s/i.test(text)) declarations.push({ text, line });
+  }
+  return declarations;
+}
+
+function collectReferences(projectDir, projectFiles, patterns, select, declarationsForFile) {
+  const refs = new Map();
+  for (const relPath of projectFiles.filter(select)) {
     const fullPath = resolve(projectDir, relPath);
     if (!existsSync(fullPath)) continue;
     let content;
     try { content = readFileSync(fullPath, 'utf8'); } catch { continue; }
     const hasMatch = patterns.some(pattern => { pattern.lastIndex = 0; return pattern.test(content); });
     if (!hasMatch) continue;
-    for (const declaration of testDeclarations(content, relPath)) {
+    for (const declaration of declarationsForFile(content, relPath)) {
       for (const pattern of patterns) {
         pattern.lastIndex = 0;
         let match;
         while ((match = pattern.exec(declaration.text)) !== null) {
           if (!match[0]) { pattern.lastIndex++; continue; }
           const reqId = match[0];
-          if (!testRefs.has(reqId)) testRefs.set(reqId, []);
+          if (!refs.has(reqId)) refs.set(reqId, []);
           const line = declaration.line + (declaration.text.slice(0, match.index).match(/\n/g) || []).length;
           const prefix = declaration.text.slice(0, match.index);
           const qualifier = prefix.match(/([^\s`"'<>()[\]{}]+)#$/);
           const scope = qualifier ? qualifier[1].replaceAll('\\', '/').replace(/^\.\//, '') : null;
-          testRefs.get(reqId).push({ file: relPath, line, scope });
+          refs.get(reqId).push({ file: relPath, line, scope });
         }
       }
     }
   }
-  return testRefs;
+  return refs;
+}
+
+export function scanTestFilesForReferences(projectDir, projectFiles, patterns) {
+  return collectReferences(projectDir, projectFiles, patterns, isTestSource, testDeclarations);
+}
+
+/** Source annotations are explicit implementation evidence, never inferred from names. */
+export function scanImplementationFilesForReferences(projectDir, projectFiles, patterns) {
+  return collectReferences(
+    projectDir,
+    projectFiles,
+    patterns,
+    path => !isTestSource(path) && /\.(?:[cm]?[jt]sx?|py|go|rs|java|kt|rb|php|sh|cs|swift)$/.test(path),
+    implementationDeclarations,
+  );
 }

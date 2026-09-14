@@ -8,7 +8,7 @@
   "required": ["$schema", "schemaVersion", "specs", "tombstones"],
   "properties": {
     "$schema": { "const": "https://raccioly.github.io/docguard/schemas/docguard-specs.schema.json" },
-    "schemaVersion": { "const": 1 },
+    "schemaVersion": { "const": 2 },
     "specs": {
       "type": "array",
       "items": { "$ref": "#/definitions/spec" }
@@ -75,13 +75,18 @@
         "reconciliation": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["lastReviewedRevision"],
+          "required": ["lastReviewedRevision", "outcomes"],
           "properties": {
             "lastReviewedRevision": {
               "anyOf": [
                 { "type": "null" },
                 { "type": "string", "pattern": "^[0-9a-f]{40}([0-9a-f]{24})?$" }
               ]
+            },
+            "outcomes": {
+              "type": "array",
+              "maxItems": 20,
+              "items": { "$ref": "#/definitions/outcome" }
             }
           }
         }
@@ -94,6 +99,18 @@
       "properties": {
         "path": { "type": "string", "minLength": 1 },
         "digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+      }
+    },
+    "outcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["revision", "reason", "evidence", "deviations", "successor"],
+      "properties": {
+        "revision": { "type": "string", "pattern": "^[0-9a-f]{40}([0-9a-f]{24})?$" },
+        "reason": { "type": "string", "minLength": 1, "maxLength": 500 },
+        "evidence": { "type": "array", "maxItems": 100, "items": { "type": "string", "minLength": 1 } },
+        "deviations": { "type": "array", "maxItems": 20, "items": { "type": "string", "minLength": 1, "maxLength": 500 } },
+        "successor": { "anyOf": [{ "type": "null" }, { "$ref": "#/definitions/specId" }] }
       }
     },
     "testEvidence": {
