@@ -4,6 +4,7 @@
  * Historical prose leaves the working tree so agents cannot mistake it for
  * current intent. Git remains the content store; a compact manifest records
  * why each path left and how to restore it.
+ * @implements docguard.document-lifecycle#FR-013
  */
 
 import {
@@ -12,11 +13,10 @@ import {
   readFileSync,
   realpathSync,
   rmSync,
-  unlinkSync,
 } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { basename, dirname, extname, relative, resolve, sep } from 'node:path';
-import { safeWrite } from '../writers/generate-io.mjs';
+import { commitFileTransaction } from '../writers/file-transaction.mjs';
 import { scanDocumentLifecycle } from '../scanners/document-lifecycle.mjs';
 import { parseSpecId, readSpecRegistry } from '../scanners/spec-registry.mjs';
 import {
@@ -279,19 +279,15 @@ function writeArchive(projectDir, config, flags) {
 
   const next = { ...manifest, entries: [...manifest.entries, ...entries] };
   assertArchivable(projectDir, files, config);
-  const removed = [];
-  try {
-    for (const file of files) {
-      unlinkSync(resolve(projectDir, file));
-      removed.push(file);
-    }
-    safeWrite(resolve(projectDir, MANIFEST_PATH), `${JSON.stringify(next, null, 2)}\n`);
-  } catch (error) {
-    if (removed.length > 0) {
-      spawnSync('git', ['restore', `--source=${commit}`, '--', ...removed], { cwd: projectDir });
-    }
-    throw error;
-  }
+  commitFileTransaction([
+    { path: resolve(projectDir, MANIFEST_PATH), content: `${JSON.stringify(next, null, 2)}\n` },
+    ...files.map(file => ({ path: resolve(projectDir, file), content: null })),
+  ], {
+    validate: () => {
+      const written = loadManifest(projectDir);
+      if (written.entries.length !== next.entries.length) throw new Error('recovery manifest did not commit completely');
+    },
+  });
 
   const directories = [...new Set(files.map(dirname))]
     .filter(path => path !== '.')

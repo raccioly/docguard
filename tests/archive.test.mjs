@@ -19,6 +19,7 @@ import { fileURLToPath } from 'node:url';
  * @req specs/006-document-lifecycle/spec.md#SC-001
  * @req specs/006-document-lifecycle/spec.md#SC-002
  * @req specs/006-document-lifecycle/spec.md#SC-003
+ * @req docguard.document-lifecycle#SC-005
  * @req docguard.document-lifecycle#FR-020
  */
 

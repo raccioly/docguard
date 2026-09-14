@@ -7,6 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `docguard reconcile --since <ref>` emits a deterministic JSON review graph
+  that separates mechanical facts, approved intent, decisions, unrelated
+  changes, and unsupported evidence. Its write mode delegates only mechanical
+  generated-section refreshes to `sync`; approved requirements remain unchanged.
+- `docguard specs complete` plans and applies the reviewed
+  `in_progress → implemented → verified` transaction. Completion requires a
+  clean revision, checked tasks, qualified implementation or test evidence for
+  every requirement, affected canonical docs, supported reconciliation, and a
+  guard result without errors. It records a bounded outcome and regenerates an
+  active-only context projection.
+- The Spec Kit extension includes optional completion review hooks after
+  implementation and convergence, using events supported by Spec Kit's current
+  extension contract.
+
+### Changed
+
+- Spec registry schema v2 adds qualified source implementation evidence and up
+  to 20 reviewed reconciliation outcomes. Version 1 remains readable for a
+  fail-closed migration through `docguard specs --write`.
+- Retirement and completion use one staged multi-file transaction that restores
+  the prior set when mutation or post-write validation fails.
+- R2 source and test ownership is explicitly qualified in the lifecycle
+  registry, allowing DocGuard's own reconciliation gate to distinguish reviewed
+  implementation from unsupported files.
+
+### Fixed
+
+- Completed tasks no longer produce a permanent retirement warning for an
+  exact-path spec whose reviewed registry state is current, living, and verified
+  or released. Missing, malformed, stale, and non-living registry state still
+  fails closed to the review signal.
+- Archive recovery validation now has an independent scanner boundary shared by
+  lifecycle, registry, and traceability checks, avoiding cyclic ownership while
+  preserving the same fail-closed tombstone contract.
+- Staged lifecycle replacements use a cross-platform overwrite operation, so
+  existing registry and Markdown targets do not rely on POSIX rename behavior.
+- Lifecycle documentation now states the transaction's exact durability scope:
+  staged writes and in-process rollback, without claiming crash consistency;
+  the checked-in registry projection retains the resulting source coordinates.
+- The R2 lifecycle spec now records its reviewed implementation outcome as
+  verified while remaining an active living specification. Governing agent,
+  architecture, CI, environment, requirements, security, and test documents
+  were reviewed against the delivered command and authority boundaries.
+
 ## [0.37.1] - 2026-09-14
 
 Automated weekly release — batches everything merged since `v0.37.0`.

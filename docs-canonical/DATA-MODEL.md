@@ -129,17 +129,19 @@ normative JSON Schema is `schemas/docguard-specs.schema.json`.
 
 | Field | Authority | Description |
 |-------|-----------|-------------|
-| `$schema`, `schemaVersion` | Contract | Exact schema URL and version `1` |
+| `$schema`, `schemaVersion` | Contract | Exact schema URL and version `2`; version 1 is read for migration and projects stale until refreshed |
 | `specs[].specId` | Spec metadata | Immutable lowercase namespaced identity; never generated or reused |
 | `specs[].path` | Projection | Current spec path or former path for a retired record |
 | `specs[].reviewed.lifecycle` | Human review | Orthogonal approval, delivery, context, retirement reason, storage, and persistence policy |
 | `specs[].reviewed.relations` | Human review | `extends`, `duplicates`, `conflictsWith`, `supersedes`, and `supersededBy` spec-ID edges |
 | `specs[].reviewed.scope.canonicalDocs` | Human review | Canonical documents affected by the specification |
 | `specs[].reviewed.reconciliation.lastReviewedRevision` | Human review | Exact Git revision whose doc impact was reviewed, or `null` |
+| `specs[].reviewed.reconciliation.outcomes` | Human review | Up to 20 reviewed implementation outcomes with revision, bounded rationale, evidence paths, deviations, and optional successor |
 | `specs[].intent.requirements` | Projection | `specId#requirementId` identities parsed from the active spec |
 | `specs[].observed.artifacts` | Projection | Paths and SHA-256 content identities for spec, plan, and tasks |
 | `specs[].observed.taskCompletion` | Projection | Checked and total Markdown task boxes; not proof of delivery |
 | `specs[].observed.testEvidence` | Projection | Explicitly spec-qualified test annotations or labels only |
+| `specs[].observed.implementationEvidence` | Projection | Explicit `@implements specId#requirementId` source annotations only; names and proximity do not earn completion credit |
 | `tombstones[]` | Recovery projection | Retired identities linked to source revision, blob, retention ref, object format, and recoverability |
 
 `docguard specs --write` regenerates only projected fields and preserves the
@@ -147,6 +149,14 @@ entire `reviewed` block. Unknown reviewed fields, invalid lifecycle values,
 duplicate identities, and archive/storage contradictions fail closed. The
 output omits timestamps and sorts unordered collections, so `specs --check`
 can compare a byte-stable result in CI.
+
+`docguard specs complete` requires a clean Git revision, checked tasks, coverage
+for every requirement through qualified implementation or test evidence,
+existing affected canonical documents, a supported reconciliation plan, and a
+guard result without errors. Its staged transaction updates the bounded outcome,
+registry, feature-spec outcome index, and `.docguard/current-context.json` as one
+validated set. The context file contains pointers and content hashes rather than
+copying governing prose, and excludes every retired spec.
 
 ## Document Metadata Headers
 

@@ -7,6 +7,11 @@ import { tmpdir } from 'node:os';
 import { runHooks } from '../cli/commands/hooks.mjs';
 import { safeWrite } from '../cli/writers/generate-io.mjs';
 
+/**
+ * @req docguard.document-lifecycle#FR-018
+ * @req docguard.document-lifecycle#FR-019
+ */
+
 // A closed PATH proves that hooks neither depend on the host's DocGuard nor
 // download anything. Only the JSON parser uses the real Node executable.
 describe('generated enforcement shell contracts', () => {
@@ -157,6 +162,7 @@ describe('Spec Kit hook registration contracts', () => {
       const source = readFileSync(new URL(`../extensions/spec-kit-docguard/${path}`, import.meta.url), 'utf8');
       const brief = source.match(/^  before_specify:\n([\s\S]*?)(?=^  after_implement:)/m)?.[1];
       const after = source.match(/^  after_implement:\n([\s\S]*?)(?=^  before_tasks:)/m)?.[1];
+      const converge = source.match(/^  after_converge:\n([\s\S]*?)(?=^  before_tasks:)/m)?.[1];
       const before = source.match(/^  before_tasks:\n([\s\S]*?)(?=^  after_tasks:)/m)?.[1];
       assert.ok(brief);
       assert.ok(after);
@@ -165,7 +171,10 @@ describe('Spec Kit hook registration contracts', () => {
       assert.match(brief, /optional: false/);
       assert.match(after, /command: "?speckit\.docguard\.guard"?/);
       assert.match(after, /optional: false/);
-      assert.doesNotMatch(after, /prompt:/);
+      assert.match(after, /command: "?speckit\.docguard\.complete"?/);
+      assert.ok(converge);
+      assert.match(converge, /command: "?speckit\.docguard\.complete"?/);
+      assert.match(converge, /optional: true/);
       assert.match(before, /command: "?speckit\.docguard\.preflight"?/);
       assert.match(before, /optional: false/);
       assert.match(source, /after_tasks:\n[\s\S]*optional: true/);

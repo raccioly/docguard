@@ -11,6 +11,7 @@
  *
  * Inspired by ISO/IEC/IEEE 29119, IEEE 1016, and V-Model methodology.
  * V-Model concepts informed by spec-kit-v-model (github.com/leocamello/spec-kit-v-model).
+ * @implements docguard.document-lifecycle#FR-013
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
@@ -30,7 +31,7 @@ import {
   collectRequirementIdsFromContent,
   requirementPatterns,
 } from '../shared-requirements.mjs';
-import { readRetirementManifest } from '../scanners/document-lifecycle.mjs';
+import { readRetirementManifest } from '../scanners/retirement-manifest.mjs';
 import { parseSpecId } from '../scanners/spec-registry.mjs';
 
 /**

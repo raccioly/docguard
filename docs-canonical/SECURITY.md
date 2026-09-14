@@ -3,7 +3,7 @@
 <!-- docguard:quality negation-load off — prohibitions define security boundaries -->
 <!-- docguard:version 0.7.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-09-11 -->
+<!-- docguard:last-reviewed 2026-09-14 -->
 
 ## Overview
 
@@ -50,6 +50,8 @@ Pass untrusted arguments through argv arrays and validate values for their inten
 | feedback | None | Saves local diagnostic records unless `--preview`; prints opt-in URLs |
 | memory --pack | None | Writes a generated context pack |
 | fix --write, sync --write | Targeted documentation edits | Backups and fix history where supported |
+| reconcile | None by default | `--write` delegates only mechanical generated-section refreshes to `sync` |
+| specs, specs preflight | None for check/plan modes | `specs --write` refreshes the registry; `specs complete --write` transactionally records a reviewed outcome and active context |
 | retire --write | Explicit clean tracked documentation only | Requires retained-ref recovery proof, clean replacement/evidence docs, and no live Markdown backreferences |
 | init, generate | Documentation and configuration scaffolding | Explicit force options may overwrite content |
 | hooks | Hook configuration and executable scripts | Auto-fix hooks may edit and stage documentation |
@@ -81,4 +83,5 @@ Exclude `node_modules`, environment values, generated build output, and private 
 
 | Version | Date | Changes |
 |---|---|---|
+| 0.8.0 | 2026-09-14 | Document reconciliation and transactional spec lifecycle authority |
 | 0.7.0 | 2026-09-11 | Document HTTP MCP, auxiliary writes, enforcement scope, and feedback privacy |

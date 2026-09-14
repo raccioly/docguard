@@ -12,6 +12,7 @@ import { assertDefaultDocWrites } from '../shared-doc-roles.mjs';
  *
  * Default is a DRY RUN (preview); `--write` applies. `--since <ref>` adds the
  * git diff as context. Only edits docguard:generated docs unless `--force`.
+ * @implements docguard.document-lifecycle#FR-010
  */
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
@@ -22,6 +23,7 @@ import { buildMemoryPlan } from '../scanners/memory-plan.mjs';
 import { getSection, replaceSection } from '../writers/sections.mjs';
 import { hasGeneratedMarker } from '../writers/api-reference.mjs';
 import { runSyncTests } from './sync-tests.mjs';
+import { sectionTouchedByChanges } from '../shared-sync-scope.mjs';
 
 function gitChangedFiles(projectDir, since) {
   const run = (args) => {
@@ -44,39 +46,6 @@ function gitChangedFiles(projectDir, since) {
  * The predicates are matched against project-relative POSIX paths (the form
  * `git diff --name-only` returns).
  */
-const SECTION_FILE_MATCHERS = {
-  'tech-stack':        (p) => /package\.json$|pyproject\.toml$|Cargo\.toml$|go\.mod$|pom\.xml$|Gemfile$/.test(p),
-  'frontend-modules':  (p) => /(^|\/)(src\/)?(stores|hooks|contexts|features)\//.test(p),
-  'endpoints-table':   (p) => /(^|\/)(routes|controllers|handlers|app\/api)\//.test(p)
-                              || /\.(yaml|yml|json)$/i.test(p) && /openapi|swagger/i.test(p),
-  'entities-table':    (p) => /(^|\/)(models|schemas|entities)\//.test(p)
-                              || /\.prisma$/.test(p),
-  'relationships':     (p) => /(^|\/)(models|schemas|entities)\//.test(p)
-                              || /\.prisma$/.test(p),
-  'screens-table':     (p) => /(^|\/)(screens|pages|app)\//.test(p)
-                              || /\.(tsx|jsx)$/.test(p),
-  'flows':             (p) => /(^|\/)(screens|pages|app|routes)\//.test(p),
-  'integrations-table':(p) => /package\.json$|pyproject\.toml$|requirements.*\.txt$|Cargo\.toml$/.test(p),
-  'features-table':    (p) => /(^|\/)(features|domains)\//.test(p),
-  'features':          (p) => /(^|\/)(features|domains)\//.test(p),
-  'env-vars-table':    (p) => /\.env(\..+)?$|(^|\/)config\//.test(p)
-                              || /\.(ts|tsx|js|jsx|mjs|py|go|rs|java|kt|rb)$/.test(p), // any code may use env
-  'setup':             (p) => /\.env(\..+)?$|(^|\/)config\//.test(p),
-};
-
-/**
- * Decide whether a given code-truth section should be re-synced based on the
- * set of changed files. Returns true when:
- *   - changedFiles is null/empty (no scope info → sync everything), OR
- *   - any changed file matches the section's known source patterns, OR
- *   - the section has no matcher registered (unknown → conservative: sync)
- */
-function sectionTouchedByChanges(sectionId, changedFiles) {
-  if (!changedFiles || changedFiles.length === 0) return true;
-  const matcher = SECTION_FILE_MATCHERS[sectionId];
-  if (!matcher) return true; // unknown section → don't accidentally skip it
-  return changedFiles.some(matcher);
-}
 
 export function runSync(projectDir, config, flags) {
   if (flags.write) assertDefaultDocWrites(config);
@@ -144,18 +113,20 @@ export function runSync(projectDir, config, flags) {
     if (apply && docChanged) writeFileSync(full, content, 'utf-8');
   }
 
+  const result = {
+    project: config.projectName,
+    since: flags.since || null,
+    changedFiles: changed,
+    applied: apply,
+    updates,
+    reviews,
+    skipped,
+    timestamp: new Date().toISOString(),
+  };
+  if (flags.silent) return result;
   if (isJson) {
-    console.log(JSON.stringify({
-      project: config.projectName,
-      since: flags.since || null,
-      changedFiles: changed,
-      applied: apply,
-      updates,
-      reviews,
-      skipped,
-      timestamp: new Date().toISOString(),
-    }, null, 2));
-    return;
+    console.log(JSON.stringify(result, null, 2));
+    return result;
   }
 
   console.log(`${c.bold}🔄 DocGuard Sync — ${config.projectName}${c.reset}`);
@@ -184,4 +155,5 @@ export function runSync(projectDir, config, flags) {
     for (const s of skipped) console.log(`     ${c.dim}- ${s.doc}: ${s.reason}${c.reset}`);
     console.log('');
   }
+  return result;
 }

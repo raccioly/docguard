@@ -57,6 +57,10 @@ provides:
       file: "commands/preflight.md"
       description: "Gate a generated specification against registry integrity and prior intent"
 
+    - name: "speckit.docguard.complete"
+      file: "commands/complete.md"
+      description: "Plan the reviewed implemented-to-verified lifecycle transaction"
+
   # GitHub Actions workflow starters — copyable templates users drop into
   # .github/workflows/ for guard/fix/sync/score integration.
   workflows:
@@ -88,9 +92,21 @@ hooks:
     description: "Load current spec intent and block specification on stale lifecycle state"
 
   after_implement:
-    command: "speckit.docguard.guard"
-    optional: false
-    description: "Quality gate — ensures docs stay in sync with code"
+    - command: "speckit.docguard.guard"
+      optional: false
+      priority: 5
+      description: "Quality gate — ensures docs stay in sync with code"
+    - command: "speckit.docguard.complete"
+      optional: true
+      priority: 10
+      prompt: "Review evidence and plan this spec's completion transaction?"
+      description: "Plan lifecycle verification after implementation"
+
+  after_converge:
+    command: "speckit.docguard.complete"
+    optional: true
+    prompt: "Review evidence and plan this converged spec's completion transaction?"
+    description: "Plan lifecycle verification after convergence"
 
   before_tasks:
     command: "speckit.docguard.preflight"

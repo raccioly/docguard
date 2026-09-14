@@ -1,4 +1,4 @@
-<!-- docguard:last-reviewed 2026-09-11 -->
+<!-- docguard:last-reviewed 2026-09-14 -->
 
 # OpenWolf
 

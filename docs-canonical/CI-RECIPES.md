@@ -1,6 +1,6 @@
 # CI Recipes
 
-<!-- docguard:last-reviewed 2026-09-11 -->
+<!-- docguard:last-reviewed 2026-09-14 -->
 <!-- docguard:status active -->
 
 ## Recipe 1 — Guard (mandatory CI gate)
@@ -28,6 +28,18 @@ The shipped auto-fix template and composite action expose optional commit/commen
 `sync --write` regenerates sections declared as code-derived. Human sections retain judgment and rationale. Cache identity reflects relevant inputs, so ordinary source edits invalidate a prior plan.
 
 On a schedule, produce a diff, check for an existing repair PR, and create a new proposal only when meaningful work remains. Keep clean runs quiet. Set an owner and response expectation for unresolved findings. Scheduled source scans cannot detect every external deployment or vendor change; operational checks need their own evidence.
+
+## Recipe 3b — Spec completion and post-hoc reconciliation
+
+Run `docguard reconcile --since <merge-base> --format json` when implementation
+may have changed approved behavior outside the original Spec Kit flow. Review
+unsupported files and intent-change classifications; write mode can refresh only
+DocGuard-owned mechanical sections. After tasks, source and test evidence, and
+affected canonical docs are reviewed, run `docguard specs complete --id <spec-id>
+--since <merge-base> --check` as the merge gate. Apply the same command with
+`--write --reason "<reviewed outcome>"` on a clean controlled checkout to record
+verification. Keep living specs current; archive only when the registry reports
+that the selected persistence model is ready.
 
 ## Recipe 4 — Score (track CDD maturity over time)
 

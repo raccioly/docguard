@@ -1,6 +1,6 @@
 {
   "$schema": "https://raccioly.github.io/docguard/schemas/docguard-specs.schema.json",
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "specs": [
     {
       "specId": "docguard.document-lifecycle",
@@ -8,7 +8,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "in_progress",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -30,7 +30,43 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null
+          "lastReviewedRevision": "834e0a2299402205f5bdca7a55e353bad71bab28",
+          "outcomes": [
+            {
+              "revision": "834e0a2299402205f5bdca7a55e353bad71bab28",
+              "reason": "Implemented and reviewed R2 lifecycle transactions, reconciliation classifications, qualified evidence gates, active-context regeneration, and Spec Kit completion hooks.",
+              "evidence": [
+                "cli/commands/reconcile.mjs",
+                "cli/commands/retire.mjs",
+                "cli/commands/specs.mjs",
+                "cli/commands/sync.mjs",
+                "cli/docguard.mjs",
+                "cli/scanners/document-lifecycle.mjs",
+                "cli/scanners/lifecycle-context.mjs",
+                "cli/scanners/reconciliation.mjs",
+                "cli/scanners/requirement-evidence.mjs",
+                "cli/scanners/retirement-manifest.mjs",
+                "cli/scanners/spec-registry.mjs",
+                "cli/shared-sync-scope.mjs",
+                "cli/validators/traceability.mjs",
+                "cli/writers/file-transaction.mjs",
+                "cli/writers/spec-outcomes.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/DATA-MODEL.md",
+                "docs-canonical/REQUIREMENTS.md",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/archive.test.mjs",
+                "tests/document-lifecycle.test.mjs",
+                "tests/file-transaction.test.mjs",
+                "tests/hooks-contract.test.mjs",
+                "tests/reconcile.test.mjs",
+                "tests/spec-completion.test.mjs",
+                "tests/spec-registry.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -68,7 +104,7 @@
         "artifacts": [
           {
             "path": "specs/006-document-lifecycle/spec.md",
-            "digest": "sha256:aa2c1bf75f10408a08deb6665f35c27468f037c58c630303a89443b97ced1d9e"
+            "digest": "sha256:4874baea0ec2439d9a5f6223eecb10ac53755c1e48c974d5cd42c9915d75e281"
           },
           {
             "path": "specs/006-document-lifecycle/plan.md",
@@ -76,14 +112,135 @@
           },
           {
             "path": "specs/006-document-lifecycle/tasks.md",
-            "digest": "sha256:f1786145b4bb77eab2bfa9c8593186e890bf50ae56236d22d5c136ca7d5ec3b2"
+            "digest": "sha256:cc9191b7aafd1bbcab99c2d050dafa7d40ccc1b883aeff81ae6cc58aaca4717a"
           }
         ],
         "taskCompletion": {
-          "checked": 15,
+          "checked": 23,
           "total": 23
         },
-        "implementationEvidence": [],
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-002",
+            "file": "cli/scanners/document-lifecycle.mjs",
+            "line": 22
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/scanners/retirement-manifest.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/commands/reconcile.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/commands/sync.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/scanners/reconciliation.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/shared-sync-scope.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "cli/scanners/reconciliation.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "cli/commands/reconcile.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "cli/docguard.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "cli/scanners/reconciliation.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-013",
+            "file": "cli/commands/retire.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-013",
+            "file": "cli/scanners/requirement-evidence.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-013",
+            "file": "cli/scanners/spec-registry.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-013",
+            "file": "cli/validators/traceability.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-013",
+            "file": "cli/writers/file-transaction.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-014",
+            "file": "cli/scanners/lifecycle-context.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-016",
+            "file": "cli/commands/specs.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-016",
+            "file": "cli/scanners/requirement-evidence.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-016",
+            "file": "cli/scanners/spec-registry.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-016",
+            "file": "cli/writers/spec-outcomes.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-017",
+            "file": "cli/commands/specs.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-017",
+            "file": "cli/scanners/lifecycle-context.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-020",
+            "file": "cli/commands/specs.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-020",
+            "file": "cli/docguard.mjs",
+            "line": 17
+          }
+        ],
         "testEvidence": [
           {
             "requirementId": "FR-001",
@@ -146,9 +303,29 @@
             "line": 18
           },
           {
+            "requirementId": "FR-010",
+            "file": "tests/reconcile.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "tests/reconcile.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "tests/reconcile.test.mjs",
+            "line": 14
+          },
+          {
             "requirementId": "FR-012",
             "file": "tests/spec-registry.test.mjs",
             "line": 11
+          },
+          {
+            "requirementId": "FR-013",
+            "file": "tests/file-transaction.test.mjs",
+            "line": 8
           },
           {
             "requirementId": "FR-013",
@@ -166,9 +343,34 @@
             "line": 13
           },
           {
+            "requirementId": "FR-016",
+            "file": "tests/spec-completion.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-017",
+            "file": "tests/spec-completion.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-018",
+            "file": "tests/hooks-contract.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-019",
+            "file": "tests/hooks-contract.test.mjs",
+            "line": 12
+          },
+          {
             "requirementId": "FR-020",
             "file": "tests/archive.test.mjs",
-            "line": 22
+            "line": 23
+          },
+          {
+            "requirementId": "FR-020",
+            "file": "tests/spec-completion.test.mjs",
+            "line": 13
           },
           {
             "requirementId": "SC-001",
@@ -189,6 +391,16 @@
             "requirementId": "SC-004",
             "file": "tests/document-lifecycle.test.mjs",
             "line": 12
+          },
+          {
+            "requirementId": "SC-005",
+            "file": "tests/archive.test.mjs",
+            "line": 22
+          },
+          {
+            "requirementId": "SC-006",
+            "file": "tests/reconcile.test.mjs",
+            "line": 15
           },
           {
             "requirementId": "SC-007",
