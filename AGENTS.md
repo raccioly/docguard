@@ -1,6 +1,6 @@
 # AI Agent Instructions — DocGuard
 
-<!-- docguard:last-reviewed 2026-09-11 -->
+<!-- docguard:last-reviewed 2026-09-14 -->
 
 > This project follows **Canonical-Driven Development (CDD)**.
 > Documentation is the source of truth. Read before coding.
@@ -140,7 +140,9 @@ extensions/spec-kit-docguard/
 - Security rules in SECURITY.md are mandatory
 - Test requirements in TEST-SPEC.md must be met
 - Run `docguard guard` before pushing — all checks must pass
-- All file writes use `safeWrite()` — backups before overwrite
+- Standalone file writes use `safeWrite()` with backups before overwrite.
+  Lifecycle operations spanning multiple files use `commitFileTransaction()` so
+  preparation, rollback, and post-write validation cover the complete set.
 
 
 ## Agent Rules

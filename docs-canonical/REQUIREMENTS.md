@@ -2,7 +2,7 @@
 
 <!-- docguard:version 0.2.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-09-11 -->
+<!-- docguard:last-reviewed 2026-09-14 -->
 
 ## Functional Requirements
 

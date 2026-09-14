@@ -8,7 +8,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "in_progress",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -30,8 +30,43 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "834e0a2299402205f5bdca7a55e353bad71bab28",
+          "outcomes": [
+            {
+              "revision": "834e0a2299402205f5bdca7a55e353bad71bab28",
+              "reason": "Implemented and reviewed R2 lifecycle transactions, reconciliation classifications, qualified evidence gates, active-context regeneration, and Spec Kit completion hooks.",
+              "evidence": [
+                "cli/commands/reconcile.mjs",
+                "cli/commands/retire.mjs",
+                "cli/commands/specs.mjs",
+                "cli/commands/sync.mjs",
+                "cli/docguard.mjs",
+                "cli/scanners/document-lifecycle.mjs",
+                "cli/scanners/lifecycle-context.mjs",
+                "cli/scanners/reconciliation.mjs",
+                "cli/scanners/requirement-evidence.mjs",
+                "cli/scanners/retirement-manifest.mjs",
+                "cli/scanners/spec-registry.mjs",
+                "cli/shared-sync-scope.mjs",
+                "cli/validators/traceability.mjs",
+                "cli/writers/file-transaction.mjs",
+                "cli/writers/spec-outcomes.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/DATA-MODEL.md",
+                "docs-canonical/REQUIREMENTS.md",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/archive.test.mjs",
+                "tests/document-lifecycle.test.mjs",
+                "tests/file-transaction.test.mjs",
+                "tests/hooks-contract.test.mjs",
+                "tests/reconcile.test.mjs",
+                "tests/spec-completion.test.mjs",
+                "tests/spec-registry.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -69,7 +104,7 @@
         "artifacts": [
           {
             "path": "specs/006-document-lifecycle/spec.md",
-            "digest": "sha256:aa2c1bf75f10408a08deb6665f35c27468f037c58c630303a89443b97ced1d9e"
+            "digest": "sha256:4874baea0ec2439d9a5f6223eecb10ac53755c1e48c974d5cd42c9915d75e281"
           },
           {
             "path": "specs/006-document-lifecycle/plan.md",
