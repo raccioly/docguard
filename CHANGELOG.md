@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Scheduled releases now grant the repository token the `pull-requests: write`
+  and `actions: write` scopes required by their existing PR creation and CI
+  dispatch steps. Their checkout and Node setup actions are pinned to reviewed
+  commit SHAs, so the next automated release can complete without the manual
+  recovery used for v0.38.0.
+
 ## [0.38.0] - 2026-09-14
 
 Automated weekly release — batches everything merged since `v0.37.1`.
