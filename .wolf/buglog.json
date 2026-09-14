@@ -5611,6 +5611,24 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-09-14T19:25:00.000Z"
+    },
+    {
+      "id": "bug-340",
+      "timestamp": "2026-09-14T23:20:00.000Z",
+      "error_message": "Agent-context promotion could remain eligible when a frozen trial exited before the agent performed any work",
+      "file": "benchmarks/agent-context/run.mjs",
+      "root_cause": "The first evaluator treated all failed Codex processes as task failures and compared aggregate quality without making infrastructure completeness a promotion prerequisite",
+      "fix": "Classify zero-step process exits as infrastructure failures, make any infrastructure failure produce an incomplete decision, retain bounded diagnostics, and bind observations to exact harness and analysis digests",
+      "tags": [
+        "benchmark",
+        "evaluation",
+        "infrastructure",
+        "promotion",
+        "regression"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-14T23:20:00.000Z"
     }
   ]
 }

@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.40.0] - 2026-09-14
+
 ### Added
 
 - Define the reviewed R7 task-specific agent-context contract and frozen
@@ -92,6 +94,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Mark all five maintained living specifications as released after their reviewed
+  implementations shipped across v0.38.0, v0.39.0, and v0.40.0; the roadmap
+  now records R1–R7 as delivered rather than leaving stale release-pending state.
 - Document the promoted task-context contract, schema, lifecycle exclusions,
   assurance boundary, benchmark reproduction path, measured tradeoffs, and
   contribution protocol across canonical, public, and agent guidance.

@@ -8,7 +8,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "verified",
+          "delivery": "released",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -484,7 +484,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "verified",
+          "delivery": "released",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -857,7 +857,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "verified",
+          "delivery": "released",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -1281,7 +1281,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "verified",
+          "delivery": "released",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -1720,7 +1720,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "verified",
+          "delivery": "released",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",

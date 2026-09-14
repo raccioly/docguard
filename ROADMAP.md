@@ -11,7 +11,11 @@ DocGuard's product goal is dependable, low-maintenance evidence that connects
 approved intent, implementation facts, tests, and operational reality. A clean
 structural score is useful, but it is not proof that arbitrary prose is true.
 
-## Current priorities
+## Delivered roadmap
+
+R1–R7 are implemented, evidence-reviewed, and released. The maintained living
+specifications remain current verification contracts; historical implementation
+plans are recoverable from Git and do not create a second source of truth.
 
 ### R1 — Document lifecycle foundation (released in v0.37.0)
 
@@ -131,7 +135,7 @@ Maintained artifacts: `templates/feedback-fixture.json`,
 `schemas/docguard-feedback-fixture.schema.json`, and the generated direct
 `tests/*.test.mjs` contribution path.
 
-### R5 — Evidence-scoped verification (verified; release pending)
+### R5 — Evidence-scoped verification (released in v0.40.0)
 
 Governing spec: `specs/008-evidence-scoped-verification/spec.md`.
 
@@ -151,7 +155,7 @@ Node 18, 20, 22, and 24, package extraction without the optional parser, Draft
 2020-12 schema validation, and the frozen 24-case public/synthetic corpus with
 no baseline regression.
 
-### R6 — Language and repository coverage (verified; release pending)
+### R6 — Language and repository coverage (released in v0.40.0)
 
 Governing spec: `specs/009-language-repository-coverage/spec.md`.
 
@@ -173,7 +177,7 @@ unsupported dynamic-Python case. Self-guard has no errors; its three DSP001
 warnings are low-confidence review prompts for canonical documents already
 updated in the same change set.
 
-### R7 — Task-specific agent context (verified; release pending)
+### R7 — Task-specific agent context (released in v0.40.0)
 
 Governing spec: `specs/010-task-specific-agent-context/spec.md`.
 
