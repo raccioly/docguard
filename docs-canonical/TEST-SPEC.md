@@ -72,6 +72,7 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/commands/specs.mjs` completion path | `tests/spec-completion.test.mjs` | ✅ |
 | `benchmarks/lib/manifest.mjs`, `benchmarks/lib/metrics.mjs`, `benchmarks/lib/compare.mjs` | `tests/benchmark-manifest.test.mjs`, `tests/benchmark-metrics.test.mjs` | ✅ |
 | `benchmarks/lib/runner.mjs`, `benchmarks/run.mjs` | `tests/benchmark-runner.test.mjs` | ✅ |
+| `cli/evidence/*.mjs`, `cli/validators/evidence.mjs` | `tests/evidence-manifest.test.mjs`, `tests/evidence-adapters.test.mjs`, `tests/evidence-integration.test.mjs` | ✅ |
 | `cli/feedback-fixture.mjs`, `cli/commands/feedback.mjs` | `tests/feedback-fixture.test.mjs`, `tests/feedback-contributions.test.mjs` | ✅ |
 | `cli/validators/document-lifecycle.mjs` | `tests/document-lifecycle.test.mjs` | ✅ |
 | `cli/commands/specs.mjs`, `cli/scanners/spec-registry.mjs`, `cli/validators/spec-registry.mjs` | `tests/spec-registry.test.mjs` | ✅ |
@@ -128,3 +129,12 @@ Regression cases are synthetic and name no consumer repositories. Keep a valid n
 Independent review must challenge suppression paths, not only the original false-positive example. Cross-project runs use disposable snapshots and verify consumer content remains unchanged. Finding counts alone cannot establish precision or recall.
 
 Run `node benchmarks/run.mjs` for the network-free synthetic corpus. Run `node benchmarks/run.mjs --external --baseline benchmarks/baseline.json` explicitly for pinned public sources. The comparator gates new case-level false positives, false negatives, removals, and supported-case abstentions. Persisted cold/warm timings are observational because matching Node and platform metadata cannot exclude host contention. Runtime regression claims require at least five controlled samples from the same paired comparison session and a greater-than-20-percent real-workload change.
+
+Evidence adapter tests use paired valid and invalid fixtures. They cover RFC
+6901 escaping and array indices, strict typed values, duplicate-free sets,
+bounded collections, saved clean and non-clean oasdiff/Buf reports, malformed
+reports, unknown adapter versions, input-digest staleness, missing and ambiguous
+Markdown targets, unsafe paths, and stable identity behavior. Integration tests
+confirm that guard, JSON, SARIF, JUnit, score assurance, and agent context retain
+the five-state boundary. No test invokes third-party project code or an external
+compatibility binary.

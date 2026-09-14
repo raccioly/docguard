@@ -542,19 +542,196 @@
           },
           {
             "path": "specs/008-evidence-scoped-verification/plan.md",
-            "digest": "sha256:380012735bbe5657dcfd09250c6d931806baaf0728df555da29e943050809f6d"
+            "digest": "sha256:dbdd049c2b167f59cce60c1097b43eccd74500d1d2bd4478d979accbad9be4c7"
           },
           {
             "path": "specs/008-evidence-scoped-verification/tasks.md",
-            "digest": "sha256:613dfcef276f0dcdb3c5c9213cd04d98f6003f856ff05352e1acecd95e64b43d"
+            "digest": "sha256:d37506288a967caa3b73fed9b5864d5c8bbc8bf2dc6c715f9ec2c5120858eb32"
           }
         ],
         "taskCompletion": {
-          "checked": 0,
+          "checked": 16,
           "total": 17
         },
-        "implementationEvidence": [],
-        "testEvidence": []
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/evidence/manifest.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/evidence/adapters.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/evidence/manifest.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/evidence/adapters.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/evidence/adapters.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/evidence/adapters.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/evidence/markdown.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/evidence/evaluate.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "cli/evidence/evaluate.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "cli/commands/verify.mjs",
+            "line": 23
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/evidence/evaluate.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/validators/evidence.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "cli/evidence/evaluate.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "cli/evidence/evaluate.mjs",
+            "line": 7
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/evidence-manifest.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/evidence-integration.test.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/evidence-manifest.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/evidence-adapters.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/evidence-adapters.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/evidence-integration.test.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/evidence-integration.test.mjs",
+            "line": 20
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/evidence-integration.test.mjs",
+            "line": 21
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/evidence-manifest.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/evidence-integration.test.mjs",
+            "line": 22
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "tests/evidence-integration.test.mjs",
+            "line": 23
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "tests/evidence-integration.test.mjs",
+            "line": 24
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "tests/evidence-integration.test.mjs",
+            "line": 25
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "tests/evidence-integration.test.mjs",
+            "line": 26
+          },
+          {
+            "requirementId": "FR-013",
+            "file": "tests/evidence-manifest.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/evidence-adapters.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/evidence-integration.test.mjs",
+            "line": 27
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/evidence-integration.test.mjs",
+            "line": 28
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/evidence-integration.test.mjs",
+            "line": 29
+          },
+          {
+            "requirementId": "SC-004",
+            "file": "tests/evidence-integration.test.mjs",
+            "line": 30
+          },
+          {
+            "requirementId": "SC-005",
+            "file": "tests/npm-pack-smoke.test.mjs",
+            "line": 21
+          }
+        ]
       }
     },
     {

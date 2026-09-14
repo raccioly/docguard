@@ -44,12 +44,12 @@ Execute DocGuard's full guard validator suite against the current project, parse
 Execute the guard command and capture full output:
 
 ```bash
-npx docguard-cli guard 2>&1
+npx docguard-cli guard --format json
 ```
 
 If in a DocGuard development environment (cli/docguard.mjs exists), use:
 ```bash
-node cli/docguard.mjs guard 2>&1
+node cli/docguard.mjs guard --format json
 ```
 
 ### Step 2: Parse Validator Results
@@ -75,6 +75,7 @@ Classify every non-passing check using this priority matrix:
 - Structure failures (missing canonical docs)
 - Security failures (hardcoded secrets, missing SECURITY.md)
 - Test-Spec failures (tests don't match spec)
+- Evidence contradictions or an invalid evidence manifest
 
 **HIGH (fix before commit)**:
 - Doc Sections failures (missing required sections)
@@ -139,7 +140,7 @@ For each finding, provide a **specific, actionable fix** — not "fix the issue"
 
 Based on the triage results:
 
-- **If all PASS**: "All validators passed. Project is CDD-compliant. Ready to commit."
+- **If all PASS**: "All configured validators passed. Report declared evidence coverage and any remaining heuristic claims; uncaptured prose is still unverified."
 - **If only MEDIUM/LOW warnings**: "Non-blocking warnings found. Safe to commit, but consider running `/docguard.fix` for automated remediation."
 - **If HIGH or CRITICAL failures**: "Blocking issues found. Fix these before committing. Suggest running `/docguard.fix --doc [most impactful doc]` next."
 
@@ -156,6 +157,16 @@ Present the user with options:
 - **Respect severity** — don't escalate LOW to CRITICAL or vice versa
 - **Track progress** — if user runs guard multiple times, compare before/after
 - If user provides `$ARGUMENTS` like "just structure" or "only security", filter report to those validators
+
+## Evidence State Rules
+
+When the JSON payload contains `evidence`, preserve its state names exactly.
+Treat `verified-within-scope` as a pass only for that declaration. Treat
+`contradicted` as a high-confidence failure. For `stale`, regenerate the saved
+upstream report and hashes before reviewing prose. For `inconclusive`, restore
+or narrow the missing/ambiguous input. For `unsupported`, keep the finding
+visible and request a paired synthetic fixture before expanding support. Never
+rewrite approved intent from current code automatically.
 
 ## Integration with Spec Kit (Extension-First)
 

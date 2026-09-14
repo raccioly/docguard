@@ -217,6 +217,15 @@ After all fixes are applied, output:
 - **Log deviations** — if you deviate from canonical expectations, add `// DRIFT: reason` in DRIFT-LOG.md
 - **Never include secrets** — document variable/secret NAMES only, never actual values
 
+## Evidence Findings
+
+Run `docguard verify --evidence --format json` when guard returns an `EVD` code.
+Repair invalid, missing, ambiguous, stale, or unsupported evidence at the named
+source. For `EVD002`, inspect the approved requirement and implementation before
+editing either side; current code does not automatically override canonical
+intent. Rerun evidence verification after the targeted change. Never broaden a
+statement template or remove an evidence declaration merely to make guard pass.
+
 ## Integration with Spec Kit
 
 If `.specify/` directory exists:

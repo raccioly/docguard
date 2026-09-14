@@ -240,6 +240,30 @@ The numeric CDD score estimates structural maturity. Factual accuracy and regula
 
 An `assurance` object accompanies score, diagnose, CI, and report output. It contains `status` (`unverified`), `factualAccuracy` (`null`), and `unverifiedClaims` (a count of extracted candidates, or null if extraction failed). Even zero extracted candidates leaves prose unverified. Claim discovery uses a bounded heuristic. These fields explain evidence limits while existing CI thresholds retain their numeric meaning.
 
+## Evidence verification contract: `.docguard-evidence.json`
+
+The optional version-1 manifest contains at most 128 declarations. Each immutable
+ID owns an `always` applicability declaration, one Markdown target, one source,
+and one compatible predicate. Unknown fields, duplicate IDs, unsafe paths, and
+ambiguous predicate combinations invalidate the manifest.
+
+| Source adapter | Required contract | Compatible predicate |
+|---|---|---|
+| `json-pointer` | Safe JSON file plus an RFC 6901 pointer | `equals` with an explicit JSON type, or `set-equals` for a duplicate-free string array |
+| `collection-count` | One bounded repository-relative glob and explicit `allowEmpty` policy | `count-equals` |
+| `oasdiff` | Saved bounded JSON array, adapter version, producer version, `breaking` or `changelog` command, and current input hashes | `no-findings` |
+| `buf` | Saved bounded JSON Lines, adapter version, producer version, `breaking` command, and current input hashes | `no-findings` |
+
+Every result contains the declaration ID, stable claim and evidence identities,
+document location, adapter, predicate, captured input hashes, evidence hash,
+reason code, and scope limitation. The state is exactly one of
+`verified-within-scope`, `contradicted`, `stale`, `inconclusive`, or
+`unsupported`. Line movement and unrelated file edits preserve identity;
+changes to the selected statement, declaration, source, report, producer
+metadata, or declared inputs invalidate it. A verified declaration removes a
+heuristic claim from the unverified count only through a unique same-line,
+same-value match.
+
 ## Feedback contribution contract
 
 `feedback` defaults to uncertain findings. `--code <CODE>` selects a finding regardless of confidence; `--all` includes all active findings. Classifications are `false_positive`, `false_negative`, `unsupported_syntax`, `ambiguous`, and `policy_disagreement`. False-negative and unsupported intake require a strict synthetic fixture manifest with an exact expected identity, explicit interestingness predicate, same-path opposite control, parser tier, bounded configuration, and synthetic/redaction attestations.

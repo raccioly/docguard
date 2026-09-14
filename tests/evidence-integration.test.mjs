@@ -7,6 +7,7 @@ import { tmpdir } from 'node:os';
 import { coverSemanticClaims, evaluateEvidence } from '../cli/evidence/evaluate.mjs';
 import { EVIDENCE_SCHEMA_URL } from '../cli/evidence/manifest.mjs';
 import { contentHash } from '../cli/scanners/semantic-claims.mjs';
+import { selectMarkdownStatement } from '../cli/evidence/markdown.mjs';
 import { validateEvidence } from '../cli/validators/evidence.mjs';
 import { extractSemanticClaims } from '../cli/scanners/semantic-claims.mjs';
 import { runGuardInternal } from '../cli/commands/guard.mjs';
@@ -27,6 +28,7 @@ import { toJUnit } from '../cli/writers/junit.mjs';
  * @req docguard.evidence-scoped-verification#SC-002
  * @req docguard.evidence-scoped-verification#SC-003
  * @req docguard.evidence-scoped-verification#SC-004
+ * @req docs-canonical/REQUIREMENTS.md#FR-006
  */
 
 function write(dir, path, content) {
@@ -95,6 +97,20 @@ function fixture(t) {
 }
 
 describe('evidence-scoped verification', () => {
+  it('selects statements under ATX and Setext headings while ignoring fenced examples', () => {
+    const setext = selectMarkdownStatement('Policy\n------\nRetention is 30 days.\n```\nRetention is 99 days.\n```\n', {
+      heading: 'Policy', statement: 'Retention is {{value}} days.',
+    }, 'equals');
+    assert.equal(setext.status, 'ok');
+    assert.equal(setext.value, '30');
+
+    const atx = selectMarkdownStatement('## Policy\nRetention is 45 days.\n', {
+      heading: 'Policy', statement: 'Retention is {{value}} days.',
+    }, 'equals');
+    assert.equal(atx.status, 'ok');
+    assert.equal(atx.value, '45');
+  });
+
   it('verifies scalar, set, collection, oasdiff, and Buf evidence within exact scope', t => {
     const dir = fixture(t);
     const result = evaluateEvidence(dir, { ignore: [] });
@@ -123,6 +139,18 @@ describe('evidence-scoped verification', () => {
     const coverage = coverSemanticClaims(claims, output);
     assert.equal(coverage.verifiedWithinScope, 2);
     assert.ok(coverage.remaining.length < coverage.total);
+  });
+
+  it('rejects conflicting verify modes with a stable machine error', t => {
+    const dir = fixture(t);
+    const cli = spawnSync(process.execPath, ['cli/docguard.mjs', 'verify', '--evidence', '--semantic', '--format', 'json', '--dir', dir], {
+      cwd: resolveRepo(), encoding: 'utf8', env: { ...process.env, NO_COLOR: '1' },
+    });
+    assert.equal(cli.status, 1);
+    assert.deepEqual(JSON.parse(cli.stdout).error, {
+      code: 'VERIFY_MODE_CONFLICT',
+      message: 'Choose exactly one verify mode; --semantic, --evidence cannot be combined.',
+    });
   });
 
   it('distinguishes contradiction, stale input, malformed report, and unsupported shape', t => {

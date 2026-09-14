@@ -77,7 +77,7 @@ graph TD
     Commands --> setup["setup wizard"]
     Commands --> other["diff · init · fix · trace · impact · sync · reconcile · retire · specs<br/>explain · memory · upgrade · agents · hooks · badge · ci · watch"]
 
-    guard --> Validators["Validators (29)"]
+    guard --> Validators["Validators (30)"]
     generate --> Scanners["Scanners (4)<br/>routes · schemas · doc-tools · speckit"]
     score --> Scoring["Weighted Scoring<br/>8 categories"]
     diagnose --> Validators
@@ -104,7 +104,7 @@ graph TD
 
 DocGuard checks declared documentation facts against repository evidence and gives agents structured repair tasks. Deterministic checks cover supported facts, references, and generated sections. Human-authored requirements and architectural decisions retain their authority when implementation diverges.
 
-A guard result describes the checks performed. The CDD grade measures structural maturity. Factual accuracy stays explicitly unverified until the relevant claims have supporting evidence. Coverage and unresolved claims remain visible, so teams can choose an appropriate enforcement policy.
+A guard result describes the checks performed. The CDD grade measures structural maturity. Exact declarations in `.docguard-evidence.json` can verify selected statements against current local evidence; every other statement remains unverified. Coverage and unresolved claims remain visible, so teams can choose an appropriate enforcement policy.
 
 Research motivates evaluation of this approach. A 2026 study found that repository context files did not generally improve task success and increased inference cost in its evaluated settings. It also found agents generally followed the instructions. These results support testing concise, relevant context and measuring actual task outcomes; they do not establish DocGuard's effectiveness. [Evaluating AGENTS.md, revised June 2026](https://arxiv.org/abs/2602.11988v2).
 
@@ -275,7 +275,7 @@ DocGuard ships **23 commands** (the "Daily 5" + 18 situational tools, including 
 | Command | What It Does |
 |:--------|:-------------|
 | `init`  | Bootstrap a project (`--wizard` for interactive · `--with <name>` for scaffolders) |
-| `guard` | Validate against canonical docs — 29 validators |
+| `guard` | Validate against canonical docs — 30 validators |
 | `diff`  | Show gaps between docs and code (`--since <ref>` for impact mode) |
 | `sync`  | Refresh code-truth doc sections — keeps memory always up to date |
 | `score` | CDD maturity score (0-100; `--diff` for delta between refs) |
@@ -292,6 +292,7 @@ DocGuard ships **23 commands** (the "Daily 5" + 18 situational tools, including 
 | `generate` | Reverse-engineer docs from existing codebase (`--plan` for AI scan) — includes auto-generated Mermaid ER diagrams from your detected schemas (Prisma/Drizzle/TypeORM/Sequelize/Django/Rails) in DATA-MODEL.md |
 | `agent` | One-shot agent task graph — ordered, pre-filled code-truth, per-task verify (`--format json`) |
 | `explain <warning\|CODE>` | Paste any warning — or a finding code like `SEC001` — to get the validator's docstring, fix path, and how to suppress |
+| `verify --evidence` | Evaluate strict statement-to-source declarations for typed JSON values, bounded collection counts, saved oasdiff JSON, and saved Buf JSON Lines. Results distinguish scoped verification, contradiction, stale inputs, inconclusive evidence, and unsupported formats. |
 | `verify --semantic` | Extract documented numbers/limits/enums (retention days, rate limits, GSI/role counts, status enums) as a task list for an agent to check against code — the semantic-drift class regex/AST can't see |
 | `verify --instructions` | Audit AGENTS.md/CLAUDE.md themselves for drift: duplicate rules, never-vs-always contradictions, stale file pointers, unknown commands — plus clustered rule pairs as agent judgment tasks |
 | `feedback` | Review any finding or a synthetic false-positive/false-negative/unsupported fixture; verify its opposite control, reduce it deterministically, search open and closed duplicates, and optionally emit a test-only contribution. Nothing is submitted automatically. |
@@ -326,6 +327,13 @@ DocGuard ships **23 commands** (the "Daily 5" + 18 situational tools, including 
 
 Run them solo (`docguard init --with hooks`) or stacked (`docguard init --with agents,hooks,badge,ci`).
 
+To declare an exact fact, copy `templates/evidence-manifest.json` to
+`.docguard-evidence.json`, point its literal Markdown template at one unique
+statement, and bind that value to a supported local source. Run
+`docguard verify --evidence --format json` before enabling the guard in CI.
+External compatibility declarations consume saved oasdiff or Buf output and
+require current SHA-256 identities for every declared repository input.
+
 **Deprecation aliases** — `setup` · `agents` · `hooks` · `badge` · `llms` · `publish` · `impact` remain compatible until v1.0 with a yellow stderr warning. `audit → guard` is permanent and silent; `ci` is a current first-class pipeline command.
 
 ### CLI Flags
@@ -335,7 +343,7 @@ Run them solo (`docguard init --with hooks`) or stacked (`docguard init --with a
 | `--dir <path>` | Project directory (default: `.`) | All |
 | `--verbose` | Show detailed output | All |
 | `--quiet` / `-q` | Suppress banner — for hooks, CI loops, scripts | All |
-| `--format json` | Machine-readable output (clean JSON, no ANSI bleed) | guard, score, diff, trace, diagnose, memory, impact, explain, reconcile, retire, specs |
+| `--format json` | Machine-readable output (clean JSON, no ANSI bleed) | guard, score, diff, trace, diagnose, memory, impact, explain, verify, reconcile, retire, specs |
 | `--format sarif` | SARIF 2.1.0 output — findings as rules/results for GitHub Code Scanning and SARIF dashboards | guard |
 | `--format junit` | JUnit XML output — one testcase per validator, for GitLab CI (`artifacts:reports:junit`), Jenkins, Azure DevOps, CircleCI | guard |
 | `--update-baseline` | Adopt DocGuard on a legacy repo without a red day one: freeze today's findings into a committed `.docguard.baseline.json`; guard/ci then gate only NEW drift. Suppression is always visible ("N pre-existing finding(s) suppressed"), and `--no-baseline` shows the full picture | guard |
@@ -347,7 +355,7 @@ Run them solo (`docguard init --with hooks`) or stacked (`docguard init --with a
 | `--force-redo` | Bypass ping-pong suppression in `.docguard/fixed.json` | fix --write |
 | `--profile <name>` | Starter / standard / enterprise | init |
 | `--no-spec-kit` | Skip auto-init of `.specify/` / `.agent/` scaffolding | init |
-| `--changed-only [--since <ref>]` | Pre-commit lite mode (5 fast validators on changed files only) | guard |
+| `--changed-only [--since <ref>]` | Pre-commit lite mode (6 fast validators on changed files only) | guard |
 | `--timings` | Per-validator wall-time profile (slowest first) | guard |
 | `--show-failing` | Show warnings/errors even when status is PASS | guard |
 | `--pin` | Record running CLI version into `.docguard.json` (reproducibility) | guard |
@@ -394,7 +402,7 @@ $ npx docguard-cli generate
 
 ## 🔍 Validators
 
-DocGuard runs **29 automated validators** on every `guard` check. Source-facing validators are language-aware where their evidence model applies; repository and document validators operate independently of source language.
+DocGuard runs **30 automated validators** on every `guard` check. Source-facing validators are language-aware where their evidence model applies; repository and document validators operate independently of source language.
 
 | # | Validator | What It Checks | Default |
 |:--|:----------|:--------------|:--------|
@@ -419,14 +427,15 @@ DocGuard runs **29 automated validators** on every `guard` check. Source-facing 
 | 19 | **Spec-Kit** | Spec quality validation (FR-IDs, mandatory sections, phased tasks) | ✅ On |
 | 20 | **Document-Lifecycle** | Exact terminal states, advisory completion signals, incomplete coverage, and manifest/working-tree inconsistencies | ✅ On |
 | 21 | **Spec-Registry** | Immutable spec identities, byte-stable evidence projection, reviewed lifecycle preservation, and archive/storage consistency | ✅ On |
-| 22 | **Cross-Reference** | Internal markdown links + anchors resolve (with "did you mean?" hints); Obsidian wikilinks validated when the repo uses them as file links (`.obsidian` present or a target resolves) | ✅ On |
-| 23 | **Generated-Staleness** | `source=code` sections match scanner output; `status: draft` doc age | ✅ On |
-| 24 | **Canonical-Sync** | DocGuard's own README count claims match code-truth (DocGuard repo only — N/A elsewhere) | ✅ On |
-| 25 | **Metrics-Consistency** | Hardcoded numbers match actual counts | ✅ On |
-| 26 | **Surface-Sync** | Item-level enumerable drift — names in doc tables/lists (commands, checks, etc.) match code-truth (opt-in via `surfaceSync.surfaces`; N/A unless configured) | ✅ On |
-| 27 | **Diff-Suspicion** | Change-driven: a doc/agent-instruction file that references code changed since the ref AND shares removed domain symbols is flagged for review (arXiv 2010.01625, F1 74.7) | ✅ On |
-| 28 | **Reference-Existence** | Two-revision check: a backticked code symbol present when the doc was last updated but gone at HEAD is flagged as outdated (arXiv 2212.01479) | ✅ On |
-| 29 | **API-Doc-Smells** | Bloated (≥300 words) / Lazy (≤6 prose words) API documentation units, keyed on signature-headed sections (F1 0.90/0.95) | ✅ On |
+| 22 | **Evidence** | Exact declared Markdown statements match current typed JSON, bounded collections, or saved compatibility reports; unsupported and missing evidence stays visible | ✅ On |
+| 23 | **Cross-Reference** | Internal markdown links + anchors resolve (with "did you mean?" hints); Obsidian wikilinks validated when the repo uses them as file links (`.obsidian` present or a target resolves) | ✅ On |
+| 24 | **Generated-Staleness** | `source=code` sections match scanner output; `status: draft` doc age | ✅ On |
+| 25 | **Canonical-Sync** | DocGuard's own README count claims match code-truth (DocGuard repo only — N/A elsewhere) | ✅ On |
+| 26 | **Metrics-Consistency** | Hardcoded numbers match actual counts | ✅ On |
+| 27 | **Surface-Sync** | Item-level enumerable drift — names in doc tables/lists (commands, checks, etc.) match code-truth (opt-in via `surfaceSync.surfaces`; N/A unless configured) | ✅ On |
+| 28 | **Diff-Suspicion** | Change-driven: a doc/agent-instruction file that references code changed since the ref AND shares removed domain symbols is flagged for review (arXiv 2010.01625, F1 74.7) | ✅ On |
+| 29 | **Reference-Existence** | Two-revision check: a backticked code symbol present when the doc was last updated but gone at HEAD is flagged as outdated (arXiv 2212.01479) | ✅ On |
+| 30 | **API-Doc-Smells** | Bloated (≥300 words) / Lazy (≤6 prose words) API documentation units, keyed on signature-headed sections (F1 0.90/0.95) | ✅ On |
 
 **Per-validator controls** (in `.docguard.json`):
 ```json
@@ -517,7 +526,7 @@ DocGuard provides AI agent slash commands for integrated workflows. Installed au
 | Command | What It Does |
 |:--------|:-------------|
 | `/docguard.init` | Initialize Canonical-Driven Development in a new or existing project |
-| `/docguard.guard` | Run quality validation — check all 29 validators |
+| `/docguard.guard` | Run quality validation — check all 30 validators |
 | `/docguard.review` | Analyze doc quality and suggest improvements |
 | `/docguard.fix` | Generate targeted fix prompts for specific issues |
 | `/docguard.update` | Update canonical docs after code changes — detect drift and sync documentation |
@@ -703,9 +712,9 @@ Highlights of the current line (v0.29 → v0.33):
   agent tools: `claude mcp add docguard -- npx docguard-cli mcp`.
 - **Agent-file family sync** — `agents --sync` treats AGENTS.md as canonical and regenerates
   CLAUDE.md / `.cursor/rules` / Copilot / Gemini variants with drift-proof source-hash markers.
-- **`verify --semantic` and `verify --instructions`** — extract documented numbers/limits/enums
-  as agent verification tasks; audit the agent-instruction files themselves for contradictions
-  and stale pointers.
+- **`verify --evidence`, `verify --semantic`, and `verify --instructions`** — check exact local
+  evidence declarations first, extract remaining numbers/limits/enums as agent tasks, and audit
+  agent-instruction files for contradictions and stale pointers.
 - **`docguard agent`** — one-shot ordered task graph with pre-filled code-truth, collapsing ~10
   agent round-trips into one call.
 

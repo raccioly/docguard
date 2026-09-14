@@ -22,6 +22,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   inconclusive, and unsupported states; stale external reports are invalidated
   by declared input hashes and no adapter executes project or third-party code.
 
+### Changed
+
+- Evidence selectors support ATX and Setext Markdown headings while ignoring
+  fenced examples, `verify` rejects conflicting modes with a stable JSON error,
+  and every Evidence finding is reachable through `docguard explain`.
+- MCP clients can call `docguard_verify_evidence` directly. The existing
+  `docguard_verify_claims` tool removes a semantic task only when a unique,
+  exact declaration already verified that same claim within scope.
+
 ### Fixed
 
 - Scheduled release pull requests now require a repository-scoped
@@ -37,6 +46,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   comments before matching. Malformed test fixtures containing literal
   `test.skip()` examples no longer become false warnings when Babel is absent;
   executable unexplained skips remain visible.
+
+- Canonical architecture, data, security, CI, test, requirements, README, agent
+  instructions, Spec Kit commands, and all five distributed AI skills now
+  preserve the evidence scope boundary. Agents inspect deterministic evidence
+  before heuristic claims and never rewrite approved intent merely because
+  current code differs.
 
 ## [0.39.0] - 2026-09-14
 

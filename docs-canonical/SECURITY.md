@@ -35,6 +35,15 @@ Git hooks provide local enforcement and can be bypassed by Git options. Protecte
 
 Core CLI analysis requires no API credential. Source scanners inspect usage patterns; environment values must not be included in generated public feedback. The optional HTTP MCP API key is supplied by its operator. Keep deployment credentials outside repository content and restrict access to process arguments and logs appropriately.
 
+Evidence verification reads only repository-relative regular files. It rejects
+absolute paths, traversal, backslashes, NUL, `.local`, `.env*`, and symlinks;
+per-file, aggregate byte, declaration, input, collection, and report limits
+bound work. The oasdiff and Buf adapters consume saved outputs and current input
+hashes. They never invoke those tools, execute project code, install packages,
+resolve remote references, or make network requests. A clean saved report is
+evidence only for its declared command, producer metadata, inputs, and selected
+statement.
+
 Feedback issue URLs contain allowlisted detector metadata, classification, parser tier, and a synthetic-shape duplicate identity. Full local finding records can include private paths and diagnostic text. Fixture manifests are accepted only with explicit synthetic-content and redaction-review attestations; they reject escaping paths, `.git`, `.local`, symlinked inputs, unsafe config values, and oversized content. Preview mode avoids all writes. Generated tests contain the attested synthetic fixture, so users must review it before contribution.
 
 The optional external benchmark accepts only credential-free public HTTPS Git URLs pinned to full commit hashes. It disables interactive Git authentication and global/system Git configuration, forbids the file protocol, never runs project scripts, copies no `.git` metadata into case projects, and removes its temporary root by default. External execution is absent from ordinary tests and package installation.
@@ -54,6 +63,7 @@ Pass untrusted arguments through argv arrays and validate values for their inten
 | fix --write, sync --write | Targeted documentation edits | Backups and fix history where supported |
 | reconcile | None by default | `--write` delegates only mechanical generated-section refreshes to `sync` |
 | specs, specs preflight | None for check/plan modes | `specs --write` refreshes the registry; `specs complete --write` transactionally records a reviewed outcome and active context |
+| verify --evidence | None | Reads the strict local manifest, selected Markdown, source files, and saved reports; guard consumes the same evaluator |
 | retire --write | Explicit clean tracked documentation only | Requires retained-ref recovery proof, clean replacement/evidence docs, and no live Markdown backreferences |
 | init, generate | Documentation and configuration scaffolding | Explicit force options may overwrite content |
 | hooks | Hook configuration and executable scripts | Auto-fix hooks may edit and stage documentation |

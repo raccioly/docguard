@@ -28,6 +28,7 @@ Read the JSON contract — do not parse prose:
 | `nextStep` | The single suggested follow-up command (`null` on PASS) |
 | `reportable[]` | Low-confidence findings (possible false positives) — verify before acting |
 | `coverage` | Markdown tier map: `canonical / tracked / ignored / unclassified[]` |
+| `evidence` | Exact declaration states and their explicit scope limitation |
 | `semanticClaims.count` | Documented counts/limits/enums NOT yet verified against code |
 | `validators[]` | Per-validator results, including `na` (nothing to validate ≠ pass) |
 
@@ -53,7 +54,10 @@ Read the JSON contract — do not parse prose:
    validator not-applicable in a doc:
    `<!-- docguard:validator <key> n/a — reason -->`. Always include the reason.
    Never suppress to silence a real issue.
-4. If `semanticClaims.count > 0`, offer to run `npx docguard-cli verify --semantic`
+4. If `evidence.configured`, resolve every contradiction/stale/inconclusive/
+   unsupported declaration with `npx docguard-cli verify --evidence --format json`.
+   A verified declaration covers only its selected statement.
+5. If `semanticClaims.count > 0`, run `npx docguard-cli verify --semantic`
    and check each extracted claim against the code — a green guard asserts
    structure, not the truth of documented numbers.
 

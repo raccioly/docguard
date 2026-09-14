@@ -27,10 +27,15 @@ Findings carry stable codes — `npx docguard-cli explain <CODE>` when unclear.
 ## Step 2: Verify Documented Claims Against Code
 
 ```bash
+npx docguard-cli verify --evidence --format json
 npx docguard-cli verify --semantic
 ```
 
-This extracts every checkable claim in the canonical docs — counts, limits,
+Review exact declaration states first. A contradiction may indicate a code
+regression from approved intent; stale evidence requires regenerating the saved
+upstream report. A scoped pass does not verify its containing document.
+
+The semantic command then extracts remaining checkable claims in the canonical docs — counts, limits,
 rate numbers, retention windows, status enums — as a task list with the nearest
 cited code path. **You perform each verification**: read the cited code, compare
 the value, and report every mismatch with both values. This is the highest-value

@@ -18,6 +18,7 @@
  * @req SC-PACK-003 — extracted package can run `docguard --version`
  * @req SC-PACK-004 — extracted package can run a full guard against a fixture
  * @req SC-PACK-005 — schemas/docguard-config.schema.json is in the package
+ * @req docguard.evidence-scoped-verification#SC-005
  */
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
@@ -69,6 +70,12 @@ describe('npm pack smoke', { skip: SKIP }, () => {
       'schemas/docguard-config.schema.json should ship');
     assert.ok(existsSync(join(pkgDir, 'schemas/docguard-specs.schema.json')),
       'schemas/docguard-specs.schema.json should ship');
+    assert.ok(existsSync(join(pkgDir, 'schemas/docguard-evidence.schema.json')),
+      'schemas/docguard-evidence.schema.json should ship');
+    assert.ok(existsSync(join(pkgDir, 'cli/evidence/evaluate.mjs')),
+      'evidence evaluator should ship');
+    assert.ok(existsSync(join(pkgDir, 'templates/evidence-manifest.json')),
+      'evidence manifest example should ship');
     assert.ok(existsSync(join(pkgDir, 'templates')), 'templates/ should be in the tarball');
     assert.ok(existsSync(join(pkgDir, 'commands')), 'commands/ should be in the tarball');
     assert.ok(existsSync(join(pkgDir, 'extensions')), 'extensions/ should be in the tarball');

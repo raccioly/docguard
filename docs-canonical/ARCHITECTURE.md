@@ -1,6 +1,6 @@
 # Architecture
 
-<!-- docguard:version 0.7.0 -->
+<!-- docguard:version 0.9.0 -->
 <!-- docguard:status active -->
 <!-- docguard:last-reviewed 2026-09-14 -->
 
@@ -30,6 +30,7 @@ It targets development teams and AI coding agents that need to maintain document
 | **Reconciliation graph** | Maps a Git diff to direct spec evidence and keeps mechanical facts, approved intent, decisions, unrelated changes, and unsupported evidence separate | `cli/scanners/reconciliation.mjs`, `cli/commands/reconcile.mjs` | Planning is read-only; `--write` delegates only generated-section refreshes to `sync` and never rewrites requirements |
 | **Precision evidence** | Runs labelled synthetic and exact-commit public cases, separates deterministic results from observations, calculates null-safe quality metrics and confidence bounds, and compares case-first baselines | `benchmarks/`, `schemas/docguard-benchmark.schema.json` | External runs are explicit; third-party project code is never executed and disposable checkouts are removed by default |
 | **Feedback fixtures** | Validates synthetic reproductions and opposite controls, reduces them under an explicit predicate, derives duplicate identities, and emits test-only contributions | `cli/feedback-fixture.mjs`, `cli/commands/feedback.mjs`, `schemas/docguard-feedback-fixture.schema.json` | Publication remains user-controlled; contribution generation requires reviewed redaction, scope, and benchmark-delta evidence |
+| **Evidence-scoped verification** | Binds one exact Markdown statement to a typed JSON Pointer value, bounded file collection, or saved upstream compatibility report and returns one of five explicit states | `cli/evidence/`, `cli/validators/evidence.mjs`, `schemas/docguard-evidence.schema.json` | Reads stay local, bounded, non-executable, and symlink/private-path safe; a pass covers only the selected statement and captured evidence |
 | **Lifecycle transactions and context** | Stages registry, recovery, spec outcome, and current-context changes before any visible mutation and rolls the set back on write or validation failure | `cli/writers/file-transaction.mjs`, `cli/writers/spec-outcomes.mjs`, `cli/scanners/lifecycle-context.mjs` | Active context includes approved current spec pointers and content hashes; retired prose is excluded |
 | **Validators** | Independent validation modules that check specific aspects of CDD compliance — all emitting structured findings with stable codes (the `CODES` registry in `findings.mjs`) | `cli/validators/` | `*.mjs` |
 | **Scanners** | Project file scanners for test discovery, route detection, schema mapping, CDK/IaC, doc-tools, integrations, frontend surface, spec-kit, memory-plan, semantic claims, agent readability | `cli/scanners/` | `*.mjs` |
@@ -76,6 +77,7 @@ The architecture separates command orchestration, validation, extraction, output
 | **Extension** (`extensions/spec-kit-docguard/`) | AI skills (SKILL.md), bash scripts, hooks, commands | CLI (via npx), Node.js built-ins | Isolated — spec-kit integration layer |
 | **Commands** (`cli/commands/`) | User-facing command logic | Validators, Config (via `docguard.mjs` exports) | Isolated — each command is self-contained |
 | **Validators** (`cli/validators/`) | Independent validation modules | Scanners, Shared utilities, Node.js built-ins | Cannot import from Commands or Writers |
+| **Evidence** (`cli/evidence/`) | Strict manifest loading, exact Markdown selection, file-only adapters, scoped identities | Safe scanner primitives, Shared utilities, Node.js built-ins | Cannot execute project code, external tools, package managers, or network requests |
 | **Scanners** (`cli/scanners/`) | Project intelligence — detect routes, schemas, IaC, frontend surface | Shared utilities, Node.js built-ins | Cannot import from Validators, Commands, Writers |
 | **Writers** (`cli/writers/`) | Mutate canonical docs surgically (section-addressable, no LLM) | Shared helpers, Scanners for generated content, Node.js built-ins | Cannot import from Commands or Validators |
 | **Shared** (`cli/shared-*.mjs`) | Cross-cutting utilities: ignore/glob filters, source-root resolution, git helpers, shared trace patterns | Node.js built-ins only | Cannot import from any other layer |
@@ -170,6 +172,7 @@ docguard guard → validates the newly written document
 | **Validators are independent** | Each validator is a self-contained module. Adding a validator keeps existing ones stable. |
 | **AI as author, CLI as orchestrator** | The CLI detects problems and generates structured prompts. Documentation writing is the AI's responsibility. |
 | **Exit codes for CI** | `0` (pass), `1` (fail), `2` (warn) enables `docguard ci` to gate deployments. |
+| **Scoped factual evidence** | `.docguard-evidence.json` declares narrow, typed source-to-statement predicates. Contradictions fail guard; stale, inconclusive, and unsupported evidence stays visible. A verified statement never exempts its document from freshness or semantic review. |
 
 ---
 
@@ -196,6 +199,7 @@ DocGuard declares one exact-pinned runtime dependency, `@babel/parser`. It loads
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 0.9.0 | 2026-09-14 | DocGuard Team | Added strict evidence manifests, typed local adapters, five-state evaluation, exact semantic-claim coverage, and guard/agent assurance integration |
 | 0.8.0 | 2026-09-14 | DocGuard Team | Added transactional retirement/completion writes, reconciliation review graphs, qualified implementation evidence, bounded outcomes, active-context regeneration, and Spec Kit completion hooks |
 | 0.7.0 | 2026-09-14 | DocGuard Team | Added the deterministic spec lifecycle registry, immutable spec-ID resolution, shared requirement evidence scanner, recovery tombstones, and two-stage preflight boundary |
 | 0.6.0 | 2026-05-31 | DocGuard Team | Refresh for v0.24.0: Python promoted to full support via a `python3` AST tier (`cli/scanners/py-ast.mjs`); JS/TS route extraction extended with cross-file mount-prefix resolution, object-form route declarations, and AST router-screen detection (`cli/scanners/js-ast.mjs`); removed the retired editor extension from the tech stack |

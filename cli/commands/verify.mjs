@@ -70,6 +70,17 @@ function taskTouchesChange(task, changedSet, changedBasenames) {
 }
 
 export function runVerify(projectDir, config, flags) {
+  const selectedModes = ['semantic', 'instructions', 'evidence'].filter(mode => flags[mode]);
+  if (selectedModes.length > 1) {
+    const message = `Choose exactly one verify mode; --${selectedModes.join(', --')} cannot be combined.`;
+    if (flags.format === 'json') {
+      console.log(JSON.stringify({ command: 'verify', status: 'error', error: { code: 'VERIFY_MODE_CONFLICT', message } }, null, 2));
+    } else {
+      console.error(`${c.red}Error: ${message}${c.reset}`);
+    }
+    process.exitCode = 1;
+    return;
+  }
   if (flags.instructions) {
     runInstructionAudit(projectDir, config, flags);
     return;

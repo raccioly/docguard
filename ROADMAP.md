@@ -56,7 +56,7 @@ completion writes. Transaction rollback, status adapters, monorepo identity,
 restore/re-retire handling, and reviewed completion transitions remain R2 work;
 they are not part of the v0.37.0 contract.
 
-### R2 — Completion and post-hoc reconciliation (implemented; release pending)
+### R2 — Completion and post-hoc reconciliation (released in v0.38.0)
 
 Close the lifecycle loop without allowing current code to silently redefine
 approved intent.
@@ -94,7 +94,7 @@ transaction rollback fixtures, and `after_implement`/`after_converge` evidence
 gates. Broader symbol inference remains intentionally unsupported until R3 can
 measure its false-positive cost.
 
-### R3 — Independent precision benchmark (complete; living baseline)
+### R3 — Independent precision benchmark (released in v0.39.0; living baseline)
 
 Governing spec: `specs/007-precision-evidence-loop/spec.md`.
 
@@ -113,7 +113,7 @@ the total warning count falls.
 Maintained artifacts: `benchmarks/corpus.json`, `benchmarks/baseline.json`, the
 runner and comparison libraries, and `schemas/docguard-benchmark.schema.json`.
 
-### R4 — Contribution-to-regression loop (complete; open to contributions)
+### R4 — Contribution-to-regression loop (released in v0.39.0; open to contributions)
 
 Governing spec: `specs/007-precision-evidence-loop/spec.md`.
 
@@ -131,7 +131,7 @@ Maintained artifacts: `templates/feedback-fixture.json`,
 `schemas/docguard-feedback-fixture.schema.json`, and the generated direct
 `tests/*.test.mjs` contribution path.
 
-### R5 — Evidence-scoped verification (in progress)
+### R5 — Evidence-scoped verification (verified; release pending)
 
 Governing spec: `specs/008-evidence-scoped-verification/spec.md`.
 
@@ -144,6 +144,12 @@ Contribution slices: dependency declarations, exact claim predicates, saved
 oasdiff/Buf evidence adapters, and review invalidation fixtures. Upstream tools
 retain ownership of their domain semantics; DocGuard links results to affected
 prose, examples, requirements, and migration guidance.
+
+The implementation exposes the same scoped result through CLI, guard, score,
+agent context, SARIF/JUnit findings, and MCP. Verification passed 1,733 tests on
+Node 18, 20, 22, and 24, package extraction without the optional parser, Draft
+2020-12 schema validation, and the frozen 24-case public/synthetic corpus with
+no baseline regression.
 
 ### R6 — Language and repository coverage (planned)
 

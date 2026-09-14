@@ -52,10 +52,15 @@ npx docguard fix --format prompt
 When working on this project, follow this workflow:
 
 1. **Before any work**: Run `npx docguard guard` to understand current compliance state
-2. **After making changes**: Run `npx docguard fix --format prompt` to find remaining issues
-3. **Fix what DocGuard reports**: Each issue includes an `ai_instruction` telling you exactly what to do
-4. **Run guard again**: Verify all issues are resolved before committing
-5. **Update CHANGELOG.md**: All changes need a changelog entry
+2. **Check declared facts**: If `.docguard-evidence.json` exists, run `npx docguard verify --evidence --format json`; a pass covers only its selected statement
+3. **After making changes**: Run `npx docguard fix --format prompt` to find remaining issues
+4. **Fix what DocGuard reports**: Each issue includes an `ai_instruction` telling you exactly what to do
+5. **Run guard again**: Verify all issues are resolved before committing
+6. **Update CHANGELOG.md**: All changes need a changelog entry
+
+Preserve the five evidence states. Review approved intent before changing either
+side of a contradiction. Undeclared prose and whole-document accuracy remain
+unverified.
 
 ### Auto-Fix Available Issues
 

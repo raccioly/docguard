@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { countEvidenceCollection, resolveJsonPointer } from '../cli/evidence/adapters.mjs';
@@ -38,6 +38,8 @@ describe('evidence source primitives', () => {
     write(dir, 'src/a.js');
     write(dir, 'src/b.js');
     write(dir, 'src/skip.test.js');
+    write(dir, 'outside/linked.js');
+    symlinkSync(join(dir, 'outside/linked.js'), join(dir, 'src/linked.js'));
     write(dir, 'node_modules/noise.js');
     const result = countEvidenceCollection(dir, 'src/*.js', { ignore: ['**/*.test.js'] });
     assert.equal(result.status, 'ok');

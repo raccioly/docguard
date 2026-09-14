@@ -51,7 +51,9 @@ Execute DocGuard's diagnostic and scoring tools:
 ```bash
 npx docguard-cli diagnose 2>&1
 npx docguard-cli score 2>&1
-npx docguard-cli guard 2>&1
+npx docguard-cli guard --format json
+npx docguard-cli verify --evidence --format json
+npx docguard-cli verify --semantic --format json
 ```
 
 Record:
@@ -59,6 +61,7 @@ Record:
 - CDD maturity score (0-100)
 - ALCOA+ compliance attributes
 - Category breakdown
+- Exact declared evidence states and the remaining heuristic claim tasks
 
 ### Step 3: Semantic Cross-Document Analysis
 
@@ -180,6 +183,8 @@ Ask: "Would you like me to fix the top N issues? (I'll show you what I plan to c
 - **Compare actual code vs docs** — don't just validate formatting
 - **Limit findings to 50** — aggregate overflow in a summary count
 - **Prioritize high-signal findings** — one CRITICAL finding is worth ten LOW findings
+- **Preserve evidence scope** — a verified declaration covers one selected statement, while undeclared prose and whole-document accuracy remain review work
+- **Preserve approved intent** — a contradiction can mean implementation regressed; determine which side owns truth before recommending an edit
 
 ## Context
 

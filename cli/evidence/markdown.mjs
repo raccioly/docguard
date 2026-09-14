@@ -28,9 +28,18 @@ function visibleLines(content) {
 
 function headings(lines) {
   const out = [];
-  for (const row of lines) {
+  for (let index = 0; index < lines.length; index++) {
+    const row = lines[index];
     const match = row.text.match(/^\s{0,3}(#{1,6})[ \t]+(.+?)[ \t]*#*[ \t]*$/);
-    if (match) out.push({ level: match[1].length, text: normalizeHorizontal(match[2]), line: row.line });
+    if (match) {
+      out.push({ level: match[1].length, text: normalizeHorizontal(match[2]), line: row.line, endLine: row.line });
+      continue;
+    }
+    const underline = lines[index + 1]?.text.match(/^\s{0,3}(=+|-+)[ \t]*$/);
+    if (!row.hidden && normalizeHorizontal(row.text) && underline) {
+      out.push({ level: underline[1][0] === '=' ? 1 : 2, text: normalizeHorizontal(row.text), line: row.line, endLine: lines[index + 1].line });
+      index++;
+    }
   }
   return out;
 }
@@ -43,7 +52,7 @@ export function selectMarkdownStatement(content, target, predicateKind) {
   const heading = foundHeadings[0];
   const allHeadings = headings(lines);
   const next = allHeadings.find(item => item.line > heading.line && item.level <= heading.level);
-  const section = lines.filter(row => row.line > heading.line && (!next || row.line < next.line));
+  const section = lines.filter(row => row.line > heading.endLine && (!next || row.line < next.line));
   const valueMode = predicateKind !== 'no-findings';
   const pieces = target.statement.split('{{value}}');
   const pattern = valueMode

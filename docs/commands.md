@@ -237,7 +237,8 @@ never touched without `--force`.
 
 **MCP server over stdio** — DocGuard's read-only core as native agent tools
 (`docguard_guard`, `docguard_score`, `docguard_explain`,
-`docguard_verify_claims`, `docguard_report`, `docguard_diagnose`).
+`docguard_verify_evidence`, `docguard_verify_claims`, `docguard_report`,
+`docguard_diagnose`).
 
 ```bash
 claude mcp add docguard -- npx docguard-cli mcp
@@ -247,6 +248,14 @@ claude mcp add docguard -- npx docguard-cli mcp
 
 **Extract documented claims** (counts, limits, enums) as a verification task
 list with cited code paths — the agent checks each value against the code.
+
+### `docguard verify --evidence`
+
+**Evaluate exact declared evidence** from `.docguard-evidence.json`. Supported
+sources are typed RFC 6901 JSON values, bounded repository collections, saved
+oasdiff JSON, and saved Buf JSON Lines. Output preserves
+`verified-within-scope`, `contradicted`, `stale`, `inconclusive`, and
+`unsupported`; a pass applies only to its selected Markdown statement.
 
 ### `docguard explain <CODE>`
 
