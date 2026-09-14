@@ -62,8 +62,8 @@ Fixtures contain synthetic data only. Hidden tests and scoring policy live
 outside copied repositories. Trial worktrees have no credentials, no dependencies,
 and no network requirement. The selector uses existing safe-reader controls for
 path traversal, symlinks, secret names, file size, and read budgets. Raw model
-traces are local observations; the committed result retains metrics, patches,
-and redacted final messages without credentials or private repository content.
+traces remain local; the committed result retains metrics, changed paths, patch
+digests, and bounded failure text without source patches or model prose.
 
 ## Rejected shortcuts
 
@@ -73,6 +73,21 @@ and redacted final messages without credentials or private repository content.
 - A selector that always returns something cannot distinguish evidence from
   lexical noise.
 - Real private repositories are unsuitable for a public reproducible benchmark.
+
+## Protocol v1 observation
+
+The frozen 27-run matrix completed on 2026-09-14 with Codex CLI
+0.154.0-alpha.6.2, `gpt-5.3-codex-spark`, low reasoning effort, and the declared
+workspace-write harness. All task-only, context-pack, and targeted-packet runs
+passed every hidden requirement, visible regression test, and changed-file
+policy. Targeted packets reduced median steps from 10 to 5 and median latency
+from 16,659 ms to 13,829 ms versus context packs, clearing the predeclared 15%
+efficiency criterion. Median uncached input rose from 9,823 to 17,640 tokens, so
+the evidence supports an opt-in workflow aid rather than a blanket cost claim.
+
+The reviewed aggregate and every trial observation are retained in
+`benchmarks/agent-context/results/observed-v1.json`; interpretation and
+limitations are in `benchmarks/agent-context/results/README.md`.
 
 ## Sources
 

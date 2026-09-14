@@ -22,6 +22,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   workspace-write selector. Codex CLI rejects that flag when an equivalent
   explicit `--sandbox workspace-write` is also present; the failed zero-step
   diagnostic matrix was discarded before product observations began.
+- Record all 27 frozen R7 trials and the resulting promotion decision. Every
+  condition passed nine of nine runs with no requirement or changed-file policy
+  violations; targeted packets reduced median steps by 50% and latency by 17%
+  against context packs while increasing uncached input tokens by 80%. The
+  retained report limits the claim and keeps the interface opt-in.
 - Define the reviewed R6 language and repository coverage contract, including
   explicit false-positive controls for Python imports, Cloudflare bindings,
   mapped document ownership, and monorepo-root guidance.

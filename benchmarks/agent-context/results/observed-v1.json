@@ -1,0 +1,825 @@
+{
+  "$schema": "https://raccioly.github.io/docguard/schemas/docguard-agent-context-result.schema.json",
+  "schemaVersion": 1,
+  "core": {
+    "protocolId": "docguard-agent-context-v1",
+    "manifestDigest": "sha256:93d608c9564fe75490c51f33929de031e39bada56b323062fff9080250565709",
+    "fixtureDigests": {
+      "status-alias": "sha256:215b12c33b17a4b42a3aee79fe6f090c1774a0539eb6557dbeee3ec8ffe4fdef",
+      "python-config": "sha256:0c5e5e4976948b8efb356dbfdbf95baeb1d1ccb4f8bc1637d106152cc6ac80aa",
+      "option-migration": "sha256:20939ded1205f0984367fe0a4d93fce75722ea4600565b329106d401e2abf2ce"
+    },
+    "trialOrder": [
+      "option-migration:context-pack:3",
+      "python-config:targeted-packet:1",
+      "status-alias:task-only:2",
+      "status-alias:targeted-packet:2",
+      "status-alias:task-only:3",
+      "python-config:context-pack:2",
+      "python-config:targeted-packet:3",
+      "option-migration:task-only:3",
+      "option-migration:targeted-packet:3",
+      "python-config:task-only:2",
+      "option-migration:task-only:1",
+      "option-migration:context-pack:1",
+      "status-alias:context-pack:3",
+      "status-alias:targeted-packet:3",
+      "python-config:context-pack:3",
+      "status-alias:context-pack:1",
+      "option-migration:task-only:2",
+      "python-config:targeted-packet:2",
+      "status-alias:task-only:1",
+      "python-config:context-pack:1",
+      "option-migration:targeted-packet:1",
+      "python-config:task-only:1",
+      "option-migration:context-pack:2",
+      "option-migration:targeted-packet:2",
+      "status-alias:targeted-packet:1",
+      "python-config:task-only:3",
+      "status-alias:context-pack:2"
+    ],
+    "aggregate": {
+      "task-only": {
+        "runs": 9,
+        "successes": 9,
+        "failures": 0,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "medianSteps": 8,
+        "medianUncachedInputTokens": 16197,
+        "medianLatencyMs": 14973
+      },
+      "context-pack": {
+        "runs": 9,
+        "successes": 9,
+        "failures": 0,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "medianSteps": 10,
+        "medianUncachedInputTokens": 9823,
+        "medianLatencyMs": 16659
+      },
+      "targeted-packet": {
+        "runs": 9,
+        "successes": 9,
+        "failures": 0,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "medianSteps": 5,
+        "medianUncachedInputTokens": 17640,
+        "medianLatencyMs": 13829
+      }
+    },
+    "decision": {
+      "status": "promote",
+      "reasons": [
+        "Targeted context met the frozen median cost-reduction threshold."
+      ],
+      "reductions": {
+        "uncachedInputTokens": -79.57854016084698,
+        "steps": 50,
+        "latency": 16.987814394621527
+      }
+    }
+  },
+  "observations": {
+    "generatedAt": "2026-09-14T23:04:20.607Z",
+    "environment": {
+      "platform": "darwin",
+      "arch": "arm64",
+      "node": "v26.7.0",
+      "codex": "codex-cli 0.154.0-alpha.6.2"
+    },
+    "trials": [
+      {
+        "id": "option-migration:context-pack:3",
+        "task": "option-migration",
+        "condition": "context-pack",
+        "repetition": 3,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 7,
+        "requirementsTotal": 7,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/options.mjs"
+        ],
+        "steps": 9,
+        "usage": {
+          "inputTokens": 169545,
+          "cachedInputTokens": 159872,
+          "uncachedInputTokens": 9673,
+          "outputTokens": 1995,
+          "reasoningTokens": null
+        },
+        "latencyMs": 13183,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:ded48dbcdd1c5668392beee60054362d1c8210695019a22a285af45514bad3bd",
+        "failure": null
+      },
+      {
+        "id": "python-config:targeted-packet:1",
+        "task": "python-config",
+        "condition": "targeted-packet",
+        "repetition": 1,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 8,
+        "requirementsTotal": 8,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "config_loader.py"
+        ],
+        "steps": 5,
+        "usage": {
+          "inputTokens": 151301,
+          "cachedInputTokens": 126720,
+          "uncachedInputTokens": 24581,
+          "outputTokens": 4350,
+          "reasoningTokens": null
+        },
+        "latencyMs": 17954,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:98467e50d9ae5bf7e8825ffff8a640e9b4461d15578fd9a0b7b1bb27ccab50ac",
+        "failure": null
+      },
+      {
+        "id": "status-alias:task-only:2",
+        "task": "status-alias",
+        "condition": "task-only",
+        "repetition": 2,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 7,
+        "requirementsTotal": 7,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/status.mjs"
+        ],
+        "steps": 8,
+        "usage": {
+          "inputTokens": 127557,
+          "cachedInputTokens": 111360,
+          "uncachedInputTokens": 16197,
+          "outputTokens": 1801,
+          "reasoningTokens": null
+        },
+        "latencyMs": 14973,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:df4366cbea6bd0192db0f706228c44fe312c04aac2f188cc26868516d47680a0",
+        "failure": null
+      },
+      {
+        "id": "status-alias:targeted-packet:2",
+        "task": "status-alias",
+        "condition": "targeted-packet",
+        "repetition": 2,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 7,
+        "requirementsTotal": 7,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/status.mjs"
+        ],
+        "steps": 13,
+        "usage": {
+          "inputTokens": 610080,
+          "cachedInputTokens": 571136,
+          "uncachedInputTokens": 38944,
+          "outputTokens": 3366,
+          "reasoningTokens": null
+        },
+        "latencyMs": 44509,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:0532419c4d570053d195f9a724bfd3b319fa431f64921b4c55891d029dd9e4b6",
+        "failure": null
+      },
+      {
+        "id": "status-alias:task-only:3",
+        "task": "status-alias",
+        "condition": "task-only",
+        "repetition": 3,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 7,
+        "requirementsTotal": 7,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/status.mjs"
+        ],
+        "steps": 8,
+        "usage": {
+          "inputTokens": 145315,
+          "cachedInputTokens": 129408,
+          "uncachedInputTokens": 15907,
+          "outputTokens": 1647,
+          "reasoningTokens": null
+        },
+        "latencyMs": 14556,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:30f5fca21531b10b1bafe6e82dc40ca16dc72924da986fed5fb1fd2a340ae306",
+        "failure": null
+      },
+      {
+        "id": "python-config:context-pack:2",
+        "task": "python-config",
+        "condition": "context-pack",
+        "repetition": 2,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 8,
+        "requirementsTotal": 8,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "config_loader.py"
+        ],
+        "steps": 10,
+        "usage": {
+          "inputTokens": 132660,
+          "cachedInputTokens": 115456,
+          "uncachedInputTokens": 17204,
+          "outputTokens": 2613,
+          "reasoningTokens": null
+        },
+        "latencyMs": 12586,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:a965b451bc93c2486f3d1c33338742a72e19b992b81037b37f7d2fc1abcfa9e6",
+        "failure": null
+      },
+      {
+        "id": "python-config:targeted-packet:3",
+        "task": "python-config",
+        "condition": "targeted-packet",
+        "repetition": 3,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 8,
+        "requirementsTotal": 8,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "config_loader.py"
+        ],
+        "steps": 5,
+        "usage": {
+          "inputTokens": 98920,
+          "cachedInputTokens": 81280,
+          "uncachedInputTokens": 17640,
+          "outputTokens": 2914,
+          "reasoningTokens": null
+        },
+        "latencyMs": 17461,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:742041918f85f1e695956ed988880493f2c9e30e1b0311aea29f25b61e14ae79",
+        "failure": null
+      },
+      {
+        "id": "option-migration:task-only:3",
+        "task": "option-migration",
+        "condition": "task-only",
+        "repetition": 3,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 7,
+        "requirementsTotal": 7,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/options.mjs"
+        ],
+        "steps": 9,
+        "usage": {
+          "inputTokens": 166559,
+          "cachedInputTokens": 149760,
+          "uncachedInputTokens": 16799,
+          "outputTokens": 2028,
+          "reasoningTokens": null
+        },
+        "latencyMs": 15209,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:9d6d2a8edde860fe68e6d9e25032fcb432475ecceee973ff0dd8c8d85b0b3c3f",
+        "failure": null
+      },
+      {
+        "id": "option-migration:targeted-packet:3",
+        "task": "option-migration",
+        "condition": "targeted-packet",
+        "repetition": 3,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 7,
+        "requirementsTotal": 7,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/options.mjs"
+        ],
+        "steps": 5,
+        "usage": {
+          "inputTokens": 98912,
+          "cachedInputTokens": 73856,
+          "uncachedInputTokens": 25056,
+          "outputTokens": 2410,
+          "reasoningTokens": null
+        },
+        "latencyMs": 11439,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:686faa18b879944eb1352aa5c9ef409a6e113957c37a66d6ef845f223d7a3687",
+        "failure": null
+      },
+      {
+        "id": "python-config:task-only:2",
+        "task": "python-config",
+        "condition": "task-only",
+        "repetition": 2,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 8,
+        "requirementsTotal": 8,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "config_loader.py"
+        ],
+        "steps": 6,
+        "usage": {
+          "inputTokens": 94231,
+          "cachedInputTokens": 70784,
+          "uncachedInputTokens": 23447,
+          "outputTokens": 2992,
+          "reasoningTokens": null
+        },
+        "latencyMs": 12865,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:dcfba27c4c85182dfeabff0ed32bcb859c835c49be9ab52f43713497c4f06811",
+        "failure": null
+      },
+      {
+        "id": "option-migration:task-only:1",
+        "task": "option-migration",
+        "condition": "task-only",
+        "repetition": 1,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 7,
+        "requirementsTotal": 7,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/options.mjs"
+        ],
+        "steps": 12,
+        "usage": {
+          "inputTokens": 167639,
+          "cachedInputTokens": 158848,
+          "uncachedInputTokens": 8791,
+          "outputTokens": 2147,
+          "reasoningTokens": null
+        },
+        "latencyMs": 13255,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:ded48dbcdd1c5668392beee60054362d1c8210695019a22a285af45514bad3bd",
+        "failure": null
+      },
+      {
+        "id": "option-migration:context-pack:1",
+        "task": "option-migration",
+        "condition": "context-pack",
+        "repetition": 1,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 7,
+        "requirementsTotal": 7,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/options.mjs"
+        ],
+        "steps": 13,
+        "usage": {
+          "inputTokens": 132363,
+          "cachedInputTokens": 123520,
+          "uncachedInputTokens": 8843,
+          "outputTokens": 1990,
+          "reasoningTokens": null
+        },
+        "latencyMs": 12573,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:e69075f725523ddd8d0469886eab949b76dfd2d62e7080616f0a0d580d49f082",
+        "failure": null
+      },
+      {
+        "id": "status-alias:context-pack:3",
+        "task": "status-alias",
+        "condition": "context-pack",
+        "repetition": 3,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 7,
+        "requirementsTotal": 7,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/status.mjs"
+        ],
+        "steps": 13,
+        "usage": {
+          "inputTokens": 191583,
+          "cachedInputTokens": 181760,
+          "uncachedInputTokens": 9823,
+          "outputTokens": 1918,
+          "reasoningTokens": null
+        },
+        "latencyMs": 21491,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:ff0cf7cb9968c3195e83f0de7c66f218566028c297596687f4fc4dfeaef11866",
+        "failure": null
+      },
+      {
+        "id": "status-alias:targeted-packet:3",
+        "task": "status-alias",
+        "condition": "targeted-packet",
+        "repetition": 3,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 7,
+        "requirementsTotal": 7,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/status.mjs"
+        ],
+        "steps": 6,
+        "usage": {
+          "inputTokens": 158323,
+          "cachedInputTokens": 148608,
+          "uncachedInputTokens": 9715,
+          "outputTokens": 2004,
+          "reasoningTokens": null
+        },
+        "latencyMs": 21757,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:45c980c5854bde86f28c3ca4e06e3e7a1dc88b8d5f4ebd17fbc299b0a222b324",
+        "failure": null
+      },
+      {
+        "id": "python-config:context-pack:3",
+        "task": "python-config",
+        "condition": "context-pack",
+        "repetition": 3,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 8,
+        "requirementsTotal": 8,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "config_loader.py"
+        ],
+        "steps": 11,
+        "usage": {
+          "inputTokens": 218629,
+          "cachedInputTokens": 199680,
+          "uncachedInputTokens": 18949,
+          "outputTokens": 3370,
+          "reasoningTokens": null
+        },
+        "latencyMs": 22269,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:a271152daf476737da164f5d3f4bed60af309ccf75c07de0627d5cf45c8d7b76",
+        "failure": null
+      },
+      {
+        "id": "status-alias:context-pack:1",
+        "task": "status-alias",
+        "condition": "context-pack",
+        "repetition": 1,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 7,
+        "requirementsTotal": 7,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/status.mjs"
+        ],
+        "steps": 9,
+        "usage": {
+          "inputTokens": 156873,
+          "cachedInputTokens": 147328,
+          "uncachedInputTokens": 9545,
+          "outputTokens": 2620,
+          "reasoningTokens": null
+        },
+        "latencyMs": 16659,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:048d9663dec600a7a11d467a0f0d278385fbfbf34ef4641b1c2ae2f9f267c63f",
+        "failure": null
+      },
+      {
+        "id": "option-migration:task-only:2",
+        "task": "option-migration",
+        "condition": "task-only",
+        "repetition": 2,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 7,
+        "requirementsTotal": 7,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/options.mjs"
+        ],
+        "steps": 14,
+        "usage": {
+          "inputTokens": 242083,
+          "cachedInputTokens": 224768,
+          "uncachedInputTokens": 17315,
+          "outputTokens": 2279,
+          "reasoningTokens": null
+        },
+        "latencyMs": 31977,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:5ee427d71766482b2a578fd97028287724b14fc4fc69c6db27d59d6c74d551ea",
+        "failure": null
+      },
+      {
+        "id": "python-config:targeted-packet:2",
+        "task": "python-config",
+        "condition": "targeted-packet",
+        "repetition": 2,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 8,
+        "requirementsTotal": 8,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "config_loader.py"
+        ],
+        "steps": 5,
+        "usage": {
+          "inputTokens": 100816,
+          "cachedInputTokens": 82944,
+          "uncachedInputTokens": 17872,
+          "outputTokens": 4109,
+          "reasoningTokens": null
+        },
+        "latencyMs": 13187,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:43a86d5893bc3ef98e29d8fce6c45ca6ce64dcaa4bae5f9f24a6f2fbe45244c8",
+        "failure": null
+      },
+      {
+        "id": "status-alias:task-only:1",
+        "task": "status-alias",
+        "condition": "task-only",
+        "repetition": 1,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 7,
+        "requirementsTotal": 7,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/status.mjs"
+        ],
+        "steps": 7,
+        "usage": {
+          "inputTokens": 127853,
+          "cachedInputTokens": 119808,
+          "uncachedInputTokens": 8045,
+          "outputTokens": 2048,
+          "reasoningTokens": null
+        },
+        "latencyMs": 13429,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:1ec478e8c67a42e0cc9b1cae35329ab09c167d89f659ee81c5dfaa2fd217acdc",
+        "failure": null
+      },
+      {
+        "id": "python-config:context-pack:1",
+        "task": "python-config",
+        "condition": "context-pack",
+        "repetition": 1,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 8,
+        "requirementsTotal": 8,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "config_loader.py"
+        ],
+        "steps": 10,
+        "usage": {
+          "inputTokens": 172946,
+          "cachedInputTokens": 147712,
+          "uncachedInputTokens": 25234,
+          "outputTokens": 2967,
+          "reasoningTokens": null
+        },
+        "latencyMs": 21762,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:7ded2d33ed5aa4ae6c5b0cfdf99f8130c73a4c6eae6bf85678fa0172c182aed4",
+        "failure": null
+      },
+      {
+        "id": "option-migration:targeted-packet:1",
+        "task": "option-migration",
+        "condition": "targeted-packet",
+        "repetition": 1,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 7,
+        "requirementsTotal": 7,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/options.mjs"
+        ],
+        "steps": 4,
+        "usage": {
+          "inputTokens": 96961,
+          "cachedInputTokens": 88704,
+          "uncachedInputTokens": 8257,
+          "outputTokens": 1425,
+          "reasoningTokens": null
+        },
+        "latencyMs": 11405,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:a83cbdded3bd929994845f174fef7e5885cca2d7271abc88ab773207415be0af",
+        "failure": null
+      },
+      {
+        "id": "python-config:task-only:1",
+        "task": "python-config",
+        "condition": "task-only",
+        "repetition": 1,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 8,
+        "requirementsTotal": 8,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "config_loader.py"
+        ],
+        "steps": 7,
+        "usage": {
+          "inputTokens": 146805,
+          "cachedInputTokens": 138368,
+          "uncachedInputTokens": 8437,
+          "outputTokens": 2461,
+          "reasoningTokens": null
+        },
+        "latencyMs": 17965,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:6c066dbfd270e95a97b65fe8ea441d5209ac4998222725e0bac3911d8425bb15",
+        "failure": null
+      },
+      {
+        "id": "option-migration:context-pack:2",
+        "task": "option-migration",
+        "condition": "context-pack",
+        "repetition": 2,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 7,
+        "requirementsTotal": 7,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/options.mjs"
+        ],
+        "steps": 9,
+        "usage": {
+          "inputTokens": 148857,
+          "cachedInputTokens": 140416,
+          "uncachedInputTokens": 8441,
+          "outputTokens": 1781,
+          "reasoningTokens": null
+        },
+        "latencyMs": 16057,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:95797f82ef5575de5624e98489003fd841d546a91afdd1e56774e6c5ba9307bd",
+        "failure": null
+      },
+      {
+        "id": "option-migration:targeted-packet:2",
+        "task": "option-migration",
+        "condition": "targeted-packet",
+        "repetition": 2,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 7,
+        "requirementsTotal": 7,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/options.mjs"
+        ],
+        "steps": 5,
+        "usage": {
+          "inputTokens": 97945,
+          "cachedInputTokens": 80896,
+          "uncachedInputTokens": 17049,
+          "outputTokens": 1825,
+          "reasoningTokens": null
+        },
+        "latencyMs": 13829,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:573142bb6d7e2fe3a9b5bedde5788d1aec27b4a3fa7ee6a2ed480abf0425b38d",
+        "failure": null
+      },
+      {
+        "id": "status-alias:targeted-packet:1",
+        "task": "status-alias",
+        "condition": "targeted-packet",
+        "repetition": 1,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 7,
+        "requirementsTotal": 7,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/status.mjs"
+        ],
+        "steps": 4,
+        "usage": {
+          "inputTokens": 108226,
+          "cachedInputTokens": 94720,
+          "uncachedInputTokens": 13506,
+          "outputTokens": 1626,
+          "reasoningTokens": null
+        },
+        "latencyMs": 9511,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:e3f192444f28e2ebfdc4fd5390c49eb143415d2b446c9c51766dd822cda46dbb",
+        "failure": null
+      },
+      {
+        "id": "python-config:task-only:3",
+        "task": "python-config",
+        "condition": "task-only",
+        "repetition": 3,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 8,
+        "requirementsTotal": 8,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "config_loader.py"
+        ],
+        "steps": 10,
+        "usage": {
+          "inputTokens": 203935,
+          "cachedInputTokens": 187264,
+          "uncachedInputTokens": 16671,
+          "outputTokens": 2900,
+          "reasoningTokens": null
+        },
+        "latencyMs": 20193,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:4828cae9fe14ddb064391866b1b7e72c80cd9b5354ba61c1d4621840eac1161f",
+        "failure": null
+      },
+      {
+        "id": "status-alias:context-pack:2",
+        "task": "status-alias",
+        "condition": "context-pack",
+        "repetition": 2,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 7,
+        "requirementsTotal": 7,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/status.mjs"
+        ],
+        "steps": 13,
+        "usage": {
+          "inputTokens": 211692,
+          "cachedInputTokens": 193664,
+          "uncachedInputTokens": 18028,
+          "outputTokens": 2622,
+          "reasoningTokens": null
+        },
+        "latencyMs": 34252,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:2094ced05ee0a4f31a25ae2e4066745e308db29a92daaec2230d5031a9a453ea",
+        "failure": null
+      }
+    ]
+  }
+}

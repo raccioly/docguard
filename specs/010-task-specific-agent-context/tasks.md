@@ -21,8 +21,8 @@
 
 - [x] T009 Implement fresh-repository materialization and hidden-test scoring.
 - [x] T010 Capture steps, tokens, latency, edits, violations, failures, and patches.
-- [ ] T011 Run and retain all 27 frozen trials or explicit infrastructure failures.
-- [ ] T012 Apply the immutable promotion decision and publish the research result.
+- [x] T011 Run and retain all 27 frozen trials or explicit infrastructure failures.
+- [x] T012 Apply the immutable promotion decision and publish the research result.
 
 ## Phase 4: Product decision and closeout
 

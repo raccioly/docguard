@@ -173,7 +173,7 @@ unsupported dynamic-Python case. Self-guard has no errors; its three DSP001
 warnings are low-confidence review prompts for canonical documents already
 updated in the same change set.
 
-### R7 — Task-specific agent context (evaluation in progress)
+### R7 — Task-specific agent context (promotion earned; integration in progress)
 
 Governing spec: `specs/010-task-specific-agent-context/spec.md`.
 
@@ -191,6 +191,14 @@ the model and harness identity, hidden regression tests, safety checks, metrics,
 and promotion threshold before any trial results. The experimental selector
 must abstain on weak evidence and remains outside the public CLI until all gates
 pass.
+
+All 27 frozen trials passed their hidden requirements, visible regressions, and
+changed-file policy. Against the existing context pack, targeted packets reduced
+median tool steps from 10 to 5 and median latency by 17%, while increasing
+median uncached input by 80%. The result clears the predeclared gate through
+steps and latency, supports an explicit opt-in interface, and does not support a
+general token-cost claim. The retained result and limitations live under
+`benchmarks/agent-context/results/`.
 
 ## Contribution standard
 
