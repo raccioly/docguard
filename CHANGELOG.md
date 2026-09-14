@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.38.0] - 2026-09-14
+
+Automated weekly release — batches everything merged since `v0.37.1`.
+
+### Changed
+
+- feat: close the spec lifecycle reconciliation loop (#357)
+
+
 ### Added
 
 - `docguard reconcile --since <ref>` emits a deterministic JSON review graph
