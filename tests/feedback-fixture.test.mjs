@@ -17,7 +17,7 @@ import { spawnSync } from 'node:child_process';
  */
 
 import {
-  assertContributionReady, buildTestOnlyContribution, feedbackDuplicateIdentity,
+  assertContributionReady, buildTestOnlyContribution, feedbackDuplicateIdentity, feedbackFindingIdentity,
   feedbackSearchUrls, parseFeedbackFixture, reduceFixtureDeterministically,
 } from '../cli/feedback-fixture.mjs';
 
@@ -54,6 +54,11 @@ describe('synthetic feedback fixture contract', () => {
     assert.match(decodeURIComponent(urls.open), /state:open/);
     assert.match(decodeURIComponent(urls.closed), /state:closed/);
     assert.doesNotMatch(decodeURIComponent(urls.all), /state:/);
+  });
+
+  it('normalizes string and structured finding locations identically', () => {
+    assert.equal(feedbackFindingIdentity({ code: 'DSP001', location: 'docs/a.md:12:4' }), 'DSP001@docs/a.md');
+    assert.equal(feedbackFindingIdentity({ code: 'DSP001', location: { file: 'docs\\a.md', line: 12 } }), 'DSP001@docs/a.md');
   });
 
   it('reduces in deterministic line order and refuses to claim an unreproduced predicate', () => {

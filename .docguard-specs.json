@@ -104,7 +104,7 @@
         "artifacts": [
           {
             "path": "specs/006-document-lifecycle/spec.md",
-            "digest": "sha256:4874baea0ec2439d9a5f6223eecb10ac53755c1e48c974d5cd42c9915d75e281"
+            "digest": "sha256:de7409f43d37095df5405f34adc44a0fa895e71ab3f2b36219d6aed280757b9a"
           },
           {
             "path": "specs/006-document-lifecycle/plan.md",

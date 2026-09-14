@@ -92,6 +92,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   exact merge base. Its registry outcome records the reviewed implementation
   and test evidence, and the task ledger no longer presents completed work as
   active implementation.
+- Generated regression contributions now share the same finding-identity
+  normalizer as feedback verification, including structured `{ file, line }`
+  locations. Validators that return object locations no longer generate tests
+  that compare against `[object Object]`.
+- Verified living specs can now record a new `verified → verified` maintenance
+  outcome. The gate requires a linked source, test, canonical-document, or
+  decision delta after the prior review and rejects empty repeats caused only by
+  generated registry, context, or outcome churn.
 
 ## [0.38.0] - 2026-09-14
 

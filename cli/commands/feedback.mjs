@@ -26,7 +26,7 @@ import { CODES } from '../findings.mjs';
 import { safeWrite } from '../writers/generate-io.mjs';
 import { runGuardInternal } from './guard.mjs';
 import {
-  buildTestOnlyContribution, feedbackSearchUrls, parseFeedbackFixture,
+  buildTestOnlyContribution, feedbackFindingIdentity, feedbackSearchUrls, parseFeedbackFixture,
   reduceFixtureDeterministically,
 } from '../feedback-fixture.mjs';
 
@@ -90,11 +90,6 @@ function projectFile(projectDir, value, label) {
   return path;
 }
 
-function findingIdentity(finding) {
-  const raw = typeof finding.location === 'string' ? finding.location : finding.location?.file || '<project>';
-  return `${finding.code}@${raw.replace(/:\d+(?::\d+)?$/, '').replaceAll('\\', '/')}`;
-}
-
 function evaluateFileSet(manifest, fileSet) {
   const root = mkdtempSync(join(tmpdir(), 'docguard-feedback-fixture-'));
   try {
@@ -106,7 +101,7 @@ function evaluateFileSet(manifest, fileSet) {
     const report = runGuardInternal(root, manifest.config);
     const validator = (report.validators || []).find(item => item.key === manifest.detector.validator);
     return {
-      identities: (report.findings || []).filter(item => item.code === manifest.detector.code).map(findingIdentity).sort(),
+      identities: (report.findings || []).filter(item => item.code === manifest.detector.code).map(feedbackFindingIdentity).sort(),
       applicability: validator?.applicability?.status || 'unknown',
     };
   } finally {

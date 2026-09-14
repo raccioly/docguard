@@ -156,7 +156,10 @@ existing affected canonical documents, a supported reconciliation plan, and a
 guard result without errors. Its staged transaction updates the bounded outcome,
 registry, feature-spec outcome index, and `.docguard/current-context.json` as one
 validated set. The context file contains pointers and content hashes rather than
-copying governing prose, and excludes every retired spec.
+copying governing prose, and excludes every retired spec. A verified living spec
+can append a maintenance outcome at `verified → verified` only when a new linked
+source, test, canonical document, or decision changed after the last reviewed
+revision. Generated registry and outcome updates do not satisfy that gate.
 
 ## Document Metadata Headers
 

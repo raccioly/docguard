@@ -78,6 +78,10 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/validators/structure.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/validators/docs-diff.mjs` | `tests/commands.test.mjs` | ✅ |
 
+Completion tests cover initial `implemented → verified` delivery, evidence and
+dirty-tree blockers, living-spec `verified → verified` maintenance, and refusal
+of empty repeats driven only by generated lifecycle artifacts.
+
 > **Note**: `watch.mjs` is an interactive file-watcher (uses `fs.watch` + process signals). It is
 > covered by automated lifecycle tests, including filesystem watcher error handling.
 > Manual checks supplement platform-specific event behavior.

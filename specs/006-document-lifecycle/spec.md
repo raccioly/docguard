@@ -110,7 +110,10 @@ The registry points to approved prose; it does not duplicate or replace it.
 - **FR-016**: Spec completion MUST verify task state, implementation/test
   evidence, affected canonical docs, and reconciliation revision before moving a
   spec from `implemented` to `verified` and then archive-ready. Checked tasks
-  alone MUST NOT prove completion.
+  alone MUST NOT prove completion. A verified `living` spec MUST accept a
+  `verified → verified` maintenance outcome only when reconciliation finds a new
+  linked source, test, canonical-document, or decision change since the prior
+  reviewed revision; generated outcome or registry churn alone MUST NOT qualify.
 - **FR-017**: Completion MUST refresh DocGuard-owned context outputs from current
   intent, or validate a compatible context extension's output, and MUST exclude
   retired prose. It MUST NOT rewrite agent-native instruction files as a hidden
