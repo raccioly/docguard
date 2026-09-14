@@ -49,6 +49,12 @@ Automated weekly release — batches everything merged since `v0.37.1`.
   revisions. Each public repository has an unmodified SEC005 control and an
   exact-precondition synthetic defect, providing JavaScript, TypeScript
   monorepo, Python, and Go evidence without executing third-party project code.
+- The first reviewed baseline records 24 measured cases across 12 independent
+  repository groups: 12/12 seeded defects detected, no observed scoped false
+  positives or supported-case abstentions, and one explicit unsupported case.
+  Wilson 95% bounds limit the observed precision/recall lower bound to 0.757499
+  and the clean-control false-positive case-rate upper bound to 0.242501, so the
+  evidence cannot be misread as a universal 100% accuracy claim.
 
 - `docguard reconcile --since <ref>` emits a deterministic JSON review graph
   that separates mechanical facts, approved intent, decisions, unrelated

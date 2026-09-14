@@ -1,0 +1,2045 @@
+{
+  "schemaVersion": 1,
+  "review": {
+    "status": "reviewed",
+    "reviewedAt": "2026-09-14",
+    "reviewer": "DocGuard maintainers",
+    "scope": "Twelve exact defect/control pairs across seven synthetic and five pinned public repository groups; one unsupported Python architecture case remains visible and excluded from accuracy ratios.",
+    "methodology": "Labels were authored from pinned source and seeded mutations before DocGuard output was reviewed.",
+    "limitations": "Finite scoped cases do not establish exhaustive documentation or detector correctness."
+  },
+  "core": {
+    "schemaVersion": 1,
+    "manifestDigest": "sha256:8290564a2b4a7217052393ccd932ee58d0847500190d1b5ba8275051237b9ed0",
+    "tool": {
+      "version": "0.38.0",
+      "revision": "405b9433bc55bc5ddcc6fbb1216f0c933a1a3a82"
+    },
+    "cases": [
+      {
+        "id": "dev-generated-security-control",
+        "split": "development",
+        "repositoryGroup": "synthetic-generated-security",
+        "causalFamily": "generated-directory-exclusion",
+        "parserTier": "js-ast",
+        "classification": "clean_control",
+        "repairOutcome": "not_evaluated",
+        "sourceRevision": "sha256:2fe2cb8025781e31b9c6e439e35360d6a110e553f7cd6a0f6c47598e4b785c03",
+        "configDigest": "sha256:09adbc023d8d015085e20316b9cff66f95f9069ed0b17c00ccd977ec0525c322",
+        "scope": {
+          "validatorKey": "security",
+          "codes": [
+            "SEC001"
+          ]
+        },
+        "expected": [],
+        "forbidden": [
+          "SEC001@src/generated-client/config.js"
+        ],
+        "actual": [],
+        "unexpected": [],
+        "missing": [],
+        "forbiddenObserved": [],
+        "abstained": false,
+        "applicability": {
+          "status": "checked",
+          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage."
+        },
+        "checkCoverage": {
+          "status": "warn",
+          "passed": 1,
+          "total": 1,
+          "quality": "MEDIUM"
+        },
+        "commandStatus": "FAIL",
+        "status": "PASS"
+      },
+      {
+        "id": "dev-generated-security-defect",
+        "split": "development",
+        "repositoryGroup": "synthetic-generated-security",
+        "causalFamily": "generated-directory-exclusion",
+        "parserTier": "js-ast",
+        "classification": "defect",
+        "repairOutcome": "not_evaluated",
+        "sourceRevision": "sha256:2fe2cb8025781e31b9c6e439e35360d6a110e553f7cd6a0f6c47598e4b785c03",
+        "configDigest": "sha256:09adbc023d8d015085e20316b9cff66f95f9069ed0b17c00ccd977ec0525c322",
+        "scope": {
+          "validatorKey": "security",
+          "codes": [
+            "SEC001"
+          ]
+        },
+        "expected": [
+          "SEC001@src/generated-client/config.js"
+        ],
+        "forbidden": [],
+        "actual": [
+          "SEC001@src/generated-client/config.js"
+        ],
+        "unexpected": [],
+        "missing": [],
+        "forbiddenObserved": [],
+        "abstained": false,
+        "applicability": {
+          "status": "checked",
+          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage."
+        },
+        "checkCoverage": {
+          "status": "fail",
+          "passed": 1,
+          "total": 2,
+          "quality": "LOW"
+        },
+        "commandStatus": "FAIL",
+        "status": "PASS"
+      },
+      {
+        "id": "dev-go-todo-control",
+        "split": "development",
+        "repositoryGroup": "synthetic-go-todo",
+        "causalFamily": "tracked-go-todo",
+        "parserTier": "fallback-language",
+        "classification": "clean_control",
+        "repairOutcome": "not_evaluated",
+        "sourceRevision": "sha256:85e69e184ab224111a35e80fe796e4777495176546fb213c96fa3f95b1d4a741",
+        "configDigest": "sha256:0c8b20776323b1022dfd7b9bf17f6a7132dd041ccea88ae2116d0586859a8462",
+        "scope": {
+          "validatorKey": "todoTracking",
+          "codes": [
+            "TDO002"
+          ]
+        },
+        "expected": [],
+        "forbidden": [
+          "TDO002@app.go"
+        ],
+        "actual": [],
+        "unexpected": [],
+        "missing": [],
+        "forbiddenObserved": [],
+        "abstained": false,
+        "applicability": {
+          "status": "checked",
+          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage."
+        },
+        "checkCoverage": {
+          "status": "pass",
+          "passed": 1,
+          "total": 1,
+          "quality": "HIGH"
+        },
+        "commandStatus": "FAIL",
+        "status": "PASS"
+      },
+      {
+        "id": "dev-go-todo-defect",
+        "split": "development",
+        "repositoryGroup": "synthetic-go-todo",
+        "causalFamily": "tracked-go-todo",
+        "parserTier": "fallback-language",
+        "classification": "defect",
+        "repairOutcome": "not_evaluated",
+        "sourceRevision": "sha256:85e69e184ab224111a35e80fe796e4777495176546fb213c96fa3f95b1d4a741",
+        "configDigest": "sha256:0c8b20776323b1022dfd7b9bf17f6a7132dd041ccea88ae2116d0586859a8462",
+        "scope": {
+          "validatorKey": "todoTracking",
+          "codes": [
+            "TDO002"
+          ]
+        },
+        "expected": [
+          "TDO002@app.go"
+        ],
+        "forbidden": [],
+        "actual": [
+          "TDO002@app.go"
+        ],
+        "unexpected": [],
+        "missing": [],
+        "forbiddenObserved": [],
+        "abstained": false,
+        "applicability": {
+          "status": "checked",
+          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage."
+        },
+        "checkCoverage": {
+          "status": "warn",
+          "passed": 0,
+          "total": 1,
+          "quality": "MEDIUM"
+        },
+        "commandStatus": "FAIL",
+        "status": "PASS"
+      },
+      {
+        "id": "dev-js-security-control",
+        "split": "development",
+        "repositoryGroup": "synthetic-js-security",
+        "causalFamily": "hardcoded-password-assignment",
+        "parserTier": "js-ast",
+        "classification": "clean_control",
+        "repairOutcome": "not_evaluated",
+        "sourceRevision": "sha256:f2040346735bb01927ba0ee5ee0574495691dbc9f62ab68f7cb3a22ef171e76a",
+        "configDigest": "sha256:09adbc023d8d015085e20316b9cff66f95f9069ed0b17c00ccd977ec0525c322",
+        "scope": {
+          "validatorKey": "security",
+          "codes": [
+            "SEC001"
+          ]
+        },
+        "expected": [],
+        "forbidden": [
+          "SEC001@src/config.js"
+        ],
+        "actual": [],
+        "unexpected": [],
+        "missing": [],
+        "forbiddenObserved": [],
+        "abstained": false,
+        "applicability": {
+          "status": "checked",
+          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage."
+        },
+        "checkCoverage": {
+          "status": "warn",
+          "passed": 1,
+          "total": 2,
+          "quality": "MEDIUM"
+        },
+        "commandStatus": "FAIL",
+        "status": "PASS"
+      },
+      {
+        "id": "dev-js-security-defect",
+        "split": "development",
+        "repositoryGroup": "synthetic-js-security",
+        "causalFamily": "hardcoded-password-assignment",
+        "parserTier": "js-ast",
+        "classification": "defect",
+        "repairOutcome": "not_evaluated",
+        "sourceRevision": "sha256:f2040346735bb01927ba0ee5ee0574495691dbc9f62ab68f7cb3a22ef171e76a",
+        "configDigest": "sha256:09adbc023d8d015085e20316b9cff66f95f9069ed0b17c00ccd977ec0525c322",
+        "scope": {
+          "validatorKey": "security",
+          "codes": [
+            "SEC001"
+          ]
+        },
+        "expected": [
+          "SEC001@src/config.js"
+        ],
+        "forbidden": [],
+        "actual": [
+          "SEC001@src/config.js"
+        ],
+        "unexpected": [],
+        "missing": [],
+        "forbiddenObserved": [],
+        "abstained": false,
+        "applicability": {
+          "status": "checked",
+          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage."
+        },
+        "checkCoverage": {
+          "status": "fail",
+          "passed": 0,
+          "total": 2,
+          "quality": "LOW"
+        },
+        "commandStatus": "FAIL",
+        "status": "PASS"
+      },
+      {
+        "id": "dev-monorepo-security-control",
+        "split": "development",
+        "repositoryGroup": "synthetic-monorepo-security",
+        "causalFamily": "nested-workspace-secret",
+        "parserTier": "js-ast",
+        "classification": "clean_control",
+        "repairOutcome": "not_evaluated",
+        "sourceRevision": "sha256:d0cb997e36ef3d5771e9ce1ddfe5e451fe861f6885464f6de2996fa82813875b",
+        "configDigest": "sha256:09adbc023d8d015085e20316b9cff66f95f9069ed0b17c00ccd977ec0525c322",
+        "scope": {
+          "validatorKey": "security",
+          "codes": [
+            "SEC003"
+          ]
+        },
+        "expected": [],
+        "forbidden": [
+          "SEC003@packages/auth/src/config.ts"
+        ],
+        "actual": [],
+        "unexpected": [],
+        "missing": [],
+        "forbiddenObserved": [],
+        "abstained": false,
+        "applicability": {
+          "status": "checked",
+          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage."
+        },
+        "checkCoverage": {
+          "status": "pass",
+          "passed": 2,
+          "total": 2,
+          "quality": "HIGH"
+        },
+        "commandStatus": "FAIL",
+        "status": "PASS"
+      },
+      {
+        "id": "dev-monorepo-security-defect",
+        "split": "development",
+        "repositoryGroup": "synthetic-monorepo-security",
+        "causalFamily": "nested-workspace-secret",
+        "parserTier": "js-ast",
+        "classification": "defect",
+        "repairOutcome": "not_evaluated",
+        "sourceRevision": "sha256:d0cb997e36ef3d5771e9ce1ddfe5e451fe861f6885464f6de2996fa82813875b",
+        "configDigest": "sha256:09adbc023d8d015085e20316b9cff66f95f9069ed0b17c00ccd977ec0525c322",
+        "scope": {
+          "validatorKey": "security",
+          "codes": [
+            "SEC003"
+          ]
+        },
+        "expected": [
+          "SEC003@packages/auth/src/config.ts"
+        ],
+        "forbidden": [],
+        "actual": [
+          "SEC003@packages/auth/src/config.ts"
+        ],
+        "unexpected": [],
+        "missing": [],
+        "forbiddenObserved": [],
+        "abstained": false,
+        "applicability": {
+          "status": "checked",
+          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage."
+        },
+        "checkCoverage": {
+          "status": "fail",
+          "passed": 1,
+          "total": 2,
+          "quality": "LOW"
+        },
+        "commandStatus": "FAIL",
+        "status": "PASS"
+      },
+      {
+        "id": "dev-python-security-control",
+        "split": "development",
+        "repositoryGroup": "synthetic-python-security",
+        "causalFamily": "python-api-key-assignment",
+        "parserTier": "regex-fallback",
+        "classification": "clean_control",
+        "repairOutcome": "not_evaluated",
+        "sourceRevision": "sha256:2f76ba983f436b0f7c08fdb17fee20eae8c9132b1a0ff8602d4b1d2dece7475e",
+        "configDigest": "sha256:09adbc023d8d015085e20316b9cff66f95f9069ed0b17c00ccd977ec0525c322",
+        "scope": {
+          "validatorKey": "security",
+          "codes": [
+            "SEC002"
+          ]
+        },
+        "expected": [],
+        "forbidden": [
+          "SEC002@app.py"
+        ],
+        "actual": [],
+        "unexpected": [],
+        "missing": [],
+        "forbiddenObserved": [],
+        "abstained": false,
+        "applicability": {
+          "status": "checked",
+          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage."
+        },
+        "checkCoverage": {
+          "status": "pass",
+          "passed": 2,
+          "total": 2,
+          "quality": "HIGH"
+        },
+        "commandStatus": "FAIL",
+        "status": "PASS"
+      },
+      {
+        "id": "dev-python-security-defect",
+        "split": "development",
+        "repositoryGroup": "synthetic-python-security",
+        "causalFamily": "python-api-key-assignment",
+        "parserTier": "regex-fallback",
+        "classification": "defect",
+        "repairOutcome": "not_evaluated",
+        "sourceRevision": "sha256:2f76ba983f436b0f7c08fdb17fee20eae8c9132b1a0ff8602d4b1d2dece7475e",
+        "configDigest": "sha256:09adbc023d8d015085e20316b9cff66f95f9069ed0b17c00ccd977ec0525c322",
+        "scope": {
+          "validatorKey": "security",
+          "codes": [
+            "SEC002"
+          ]
+        },
+        "expected": [
+          "SEC002@app.py"
+        ],
+        "forbidden": [],
+        "actual": [
+          "SEC002@app.py"
+        ],
+        "unexpected": [],
+        "missing": [],
+        "forbiddenObserved": [],
+        "abstained": false,
+        "applicability": {
+          "status": "checked",
+          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage."
+        },
+        "checkCoverage": {
+          "status": "fail",
+          "passed": 1,
+          "total": 2,
+          "quality": "LOW"
+        },
+        "commandStatus": "FAIL",
+        "status": "PASS"
+      },
+      {
+        "id": "dev-sparse-doc-control",
+        "split": "development",
+        "repositoryGroup": "synthetic-sparse-docs",
+        "causalFamily": "required-doc-presence",
+        "parserTier": "not-applicable",
+        "classification": "clean_control",
+        "repairOutcome": "not_evaluated",
+        "sourceRevision": "sha256:a2206a084650962d0d4500594ba2001f9dd4d343354e3e600c34592944d90030",
+        "configDigest": "sha256:22f35d06f4a8daee5b1a8378aa4c5f83d389a687efbd33db54f774a787bd9254",
+        "scope": {
+          "validatorKey": "structure",
+          "codes": [
+            "STR001"
+          ]
+        },
+        "expected": [],
+        "forbidden": [
+          "STR001@docs-canonical/SECURITY.md"
+        ],
+        "actual": [],
+        "unexpected": [],
+        "missing": [],
+        "forbiddenObserved": [],
+        "abstained": false,
+        "applicability": {
+          "status": "checked",
+          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage."
+        },
+        "checkCoverage": {
+          "status": "pass",
+          "passed": 2,
+          "total": 2,
+          "quality": "HIGH"
+        },
+        "commandStatus": "FAIL",
+        "status": "PASS"
+      },
+      {
+        "id": "dev-sparse-doc-defect",
+        "split": "development",
+        "repositoryGroup": "synthetic-sparse-docs",
+        "causalFamily": "required-doc-presence",
+        "parserTier": "not-applicable",
+        "classification": "defect",
+        "repairOutcome": "not_evaluated",
+        "sourceRevision": "sha256:a2206a084650962d0d4500594ba2001f9dd4d343354e3e600c34592944d90030",
+        "configDigest": "sha256:c1f6df3b28be42c7036ded70aefdd96980a1a3cb856d79f2e5189bb388f6f6fa",
+        "scope": {
+          "validatorKey": "structure",
+          "codes": [
+            "STR001"
+          ]
+        },
+        "expected": [
+          "STR001@docs-canonical/SECURITY.md"
+        ],
+        "forbidden": [],
+        "actual": [
+          "STR001@docs-canonical/SECURITY.md"
+        ],
+        "unexpected": [],
+        "missing": [],
+        "forbiddenObserved": [],
+        "abstained": false,
+        "applicability": {
+          "status": "checked",
+          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage."
+        },
+        "checkCoverage": {
+          "status": "fail",
+          "passed": 2,
+          "total": 3,
+          "quality": "LOW"
+        },
+        "commandStatus": "FAIL",
+        "status": "PASS"
+      },
+      {
+        "id": "eval-changesets-aws-control",
+        "split": "evaluation",
+        "repositoryGroup": "github-changesets-changesets",
+        "causalFamily": "changesets-typescript-aws-key",
+        "parserTier": "mixed",
+        "classification": "clean_control",
+        "repairOutcome": "not_evaluated",
+        "sourceRevision": "c9269c01af5f3f7463adc648890fc3a8a729dd18",
+        "configDigest": "sha256:09adbc023d8d015085e20316b9cff66f95f9069ed0b17c00ccd977ec0525c322",
+        "scope": {
+          "validatorKey": "security",
+          "codes": [
+            "SEC005"
+          ]
+        },
+        "expected": [],
+        "forbidden": [
+          "SEC005@packages/cli/src/index.ts"
+        ],
+        "actual": [],
+        "unexpected": [],
+        "missing": [],
+        "forbiddenObserved": [],
+        "abstained": false,
+        "applicability": {
+          "status": "checked",
+          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage."
+        },
+        "checkCoverage": {
+          "status": "fail",
+          "passed": 1,
+          "total": 2,
+          "quality": "LOW"
+        },
+        "commandStatus": "FAIL",
+        "status": "PASS"
+      },
+      {
+        "id": "eval-changesets-aws-defect",
+        "split": "evaluation",
+        "repositoryGroup": "github-changesets-changesets",
+        "causalFamily": "changesets-typescript-aws-key",
+        "parserTier": "mixed",
+        "classification": "defect",
+        "repairOutcome": "not_evaluated",
+        "sourceRevision": "c9269c01af5f3f7463adc648890fc3a8a729dd18",
+        "configDigest": "sha256:09adbc023d8d015085e20316b9cff66f95f9069ed0b17c00ccd977ec0525c322",
+        "scope": {
+          "validatorKey": "security",
+          "codes": [
+            "SEC005"
+          ]
+        },
+        "expected": [
+          "SEC005@packages/cli/src/index.ts"
+        ],
+        "forbidden": [],
+        "actual": [
+          "SEC005@packages/cli/src/index.ts"
+        ],
+        "unexpected": [],
+        "missing": [],
+        "forbiddenObserved": [],
+        "abstained": false,
+        "applicability": {
+          "status": "checked",
+          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage."
+        },
+        "checkCoverage": {
+          "status": "fail",
+          "passed": 1,
+          "total": 2,
+          "quality": "LOW"
+        },
+        "commandStatus": "FAIL",
+        "status": "PASS"
+      },
+      {
+        "id": "eval-chi-aws-control",
+        "split": "evaluation",
+        "repositoryGroup": "github-go-chi-chi",
+        "causalFamily": "chi-go-aws-key",
+        "parserTier": "fallback-language",
+        "classification": "clean_control",
+        "repairOutcome": "not_evaluated",
+        "sourceRevision": "b1c9ab47626cc46b34393ad4d35779c4363c4e1e",
+        "configDigest": "sha256:09adbc023d8d015085e20316b9cff66f95f9069ed0b17c00ccd977ec0525c322",
+        "scope": {
+          "validatorKey": "security",
+          "codes": [
+            "SEC005"
+          ]
+        },
+        "expected": [],
+        "forbidden": [
+          "SEC005@chi.go"
+        ],
+        "actual": [],
+        "unexpected": [],
+        "missing": [],
+        "forbiddenObserved": [],
+        "abstained": false,
+        "applicability": {
+          "status": "checked",
+          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage."
+        },
+        "checkCoverage": {
+          "status": "warn",
+          "passed": 1,
+          "total": 2,
+          "quality": "MEDIUM"
+        },
+        "commandStatus": "FAIL",
+        "status": "PASS"
+      },
+      {
+        "id": "eval-chi-aws-defect",
+        "split": "evaluation",
+        "repositoryGroup": "github-go-chi-chi",
+        "causalFamily": "chi-go-aws-key",
+        "parserTier": "fallback-language",
+        "classification": "defect",
+        "repairOutcome": "not_evaluated",
+        "sourceRevision": "b1c9ab47626cc46b34393ad4d35779c4363c4e1e",
+        "configDigest": "sha256:09adbc023d8d015085e20316b9cff66f95f9069ed0b17c00ccd977ec0525c322",
+        "scope": {
+          "validatorKey": "security",
+          "codes": [
+            "SEC005"
+          ]
+        },
+        "expected": [
+          "SEC005@chi.go"
+        ],
+        "forbidden": [],
+        "actual": [
+          "SEC005@chi.go"
+        ],
+        "unexpected": [],
+        "missing": [],
+        "forbiddenObserved": [],
+        "abstained": false,
+        "applicability": {
+          "status": "checked",
+          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage."
+        },
+        "checkCoverage": {
+          "status": "fail",
+          "passed": 0,
+          "total": 2,
+          "quality": "LOW"
+        },
+        "commandStatus": "FAIL",
+        "status": "PASS"
+      },
+      {
+        "id": "eval-express-aws-control",
+        "split": "evaluation",
+        "repositoryGroup": "github-expressjs-express",
+        "causalFamily": "express-javascript-aws-key",
+        "parserTier": "js-ast",
+        "classification": "clean_control",
+        "repairOutcome": "not_evaluated",
+        "sourceRevision": "3ce6d0eb86e9d93529ff3191c6bb5db8ce6e72c8",
+        "configDigest": "sha256:09adbc023d8d015085e20316b9cff66f95f9069ed0b17c00ccd977ec0525c322",
+        "scope": {
+          "validatorKey": "security",
+          "codes": [
+            "SEC005"
+          ]
+        },
+        "expected": [],
+        "forbidden": [
+          "SEC005@lib/application.js"
+        ],
+        "actual": [],
+        "unexpected": [],
+        "missing": [],
+        "forbiddenObserved": [],
+        "abstained": false,
+        "applicability": {
+          "status": "checked",
+          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage."
+        },
+        "checkCoverage": {
+          "status": "warn",
+          "passed": 1,
+          "total": 2,
+          "quality": "MEDIUM"
+        },
+        "commandStatus": "FAIL",
+        "status": "PASS"
+      },
+      {
+        "id": "eval-express-aws-defect",
+        "split": "evaluation",
+        "repositoryGroup": "github-expressjs-express",
+        "causalFamily": "express-javascript-aws-key",
+        "parserTier": "js-ast",
+        "classification": "defect",
+        "repairOutcome": "not_evaluated",
+        "sourceRevision": "3ce6d0eb86e9d93529ff3191c6bb5db8ce6e72c8",
+        "configDigest": "sha256:09adbc023d8d015085e20316b9cff66f95f9069ed0b17c00ccd977ec0525c322",
+        "scope": {
+          "validatorKey": "security",
+          "codes": [
+            "SEC005"
+          ]
+        },
+        "expected": [
+          "SEC005@lib/application.js"
+        ],
+        "forbidden": [],
+        "actual": [
+          "SEC005@lib/application.js"
+        ],
+        "unexpected": [],
+        "missing": [],
+        "forbiddenObserved": [],
+        "abstained": false,
+        "applicability": {
+          "status": "checked",
+          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage."
+        },
+        "checkCoverage": {
+          "status": "fail",
+          "passed": 0,
+          "total": 2,
+          "quality": "LOW"
+        },
+        "commandStatus": "FAIL",
+        "status": "PASS"
+      },
+      {
+        "id": "eval-fastify-aws-control",
+        "split": "evaluation",
+        "repositoryGroup": "github-fastify-fastify",
+        "causalFamily": "fastify-javascript-aws-key",
+        "parserTier": "js-ast",
+        "classification": "clean_control",
+        "repairOutcome": "not_evaluated",
+        "sourceRevision": "f1b1e1f3614d2665d941fc3da4d8e005ba9cbc82",
+        "configDigest": "sha256:09adbc023d8d015085e20316b9cff66f95f9069ed0b17c00ccd977ec0525c322",
+        "scope": {
+          "validatorKey": "security",
+          "codes": [
+            "SEC005"
+          ]
+        },
+        "expected": [],
+        "forbidden": [
+          "SEC005@fastify.js"
+        ],
+        "actual": [],
+        "unexpected": [],
+        "missing": [],
+        "forbiddenObserved": [],
+        "abstained": false,
+        "applicability": {
+          "status": "checked",
+          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage."
+        },
+        "checkCoverage": {
+          "status": "pass",
+          "passed": 2,
+          "total": 2,
+          "quality": "HIGH"
+        },
+        "commandStatus": "FAIL",
+        "status": "PASS"
+      },
+      {
+        "id": "eval-fastify-aws-defect",
+        "split": "evaluation",
+        "repositoryGroup": "github-fastify-fastify",
+        "causalFamily": "fastify-javascript-aws-key",
+        "parserTier": "js-ast",
+        "classification": "defect",
+        "repairOutcome": "not_evaluated",
+        "sourceRevision": "f1b1e1f3614d2665d941fc3da4d8e005ba9cbc82",
+        "configDigest": "sha256:09adbc023d8d015085e20316b9cff66f95f9069ed0b17c00ccd977ec0525c322",
+        "scope": {
+          "validatorKey": "security",
+          "codes": [
+            "SEC005"
+          ]
+        },
+        "expected": [
+          "SEC005@fastify.js"
+        ],
+        "forbidden": [],
+        "actual": [
+          "SEC005@fastify.js"
+        ],
+        "unexpected": [],
+        "missing": [],
+        "forbiddenObserved": [],
+        "abstained": false,
+        "applicability": {
+          "status": "checked",
+          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage."
+        },
+        "checkCoverage": {
+          "status": "fail",
+          "passed": 1,
+          "total": 2,
+          "quality": "LOW"
+        },
+        "commandStatus": "FAIL",
+        "status": "PASS"
+      },
+      {
+        "id": "eval-flask-aws-control",
+        "split": "evaluation",
+        "repositoryGroup": "github-pallets-flask",
+        "causalFamily": "flask-python-aws-key",
+        "parserTier": "regex-fallback",
+        "classification": "clean_control",
+        "repairOutcome": "not_evaluated",
+        "sourceRevision": "d73fa1cdcbd8b1465c151db8924ba58b1dd14e35",
+        "configDigest": "sha256:09adbc023d8d015085e20316b9cff66f95f9069ed0b17c00ccd977ec0525c322",
+        "scope": {
+          "validatorKey": "security",
+          "codes": [
+            "SEC005"
+          ]
+        },
+        "expected": [],
+        "forbidden": [
+          "SEC005@src/flask/app.py"
+        ],
+        "actual": [],
+        "unexpected": [],
+        "missing": [],
+        "forbiddenObserved": [],
+        "abstained": false,
+        "applicability": {
+          "status": "checked",
+          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage."
+        },
+        "checkCoverage": {
+          "status": "warn",
+          "passed": 1,
+          "total": 2,
+          "quality": "MEDIUM"
+        },
+        "commandStatus": "FAIL",
+        "status": "PASS"
+      },
+      {
+        "id": "eval-flask-aws-defect",
+        "split": "evaluation",
+        "repositoryGroup": "github-pallets-flask",
+        "causalFamily": "flask-python-aws-key",
+        "parserTier": "regex-fallback",
+        "classification": "defect",
+        "repairOutcome": "not_evaluated",
+        "sourceRevision": "d73fa1cdcbd8b1465c151db8924ba58b1dd14e35",
+        "configDigest": "sha256:09adbc023d8d015085e20316b9cff66f95f9069ed0b17c00ccd977ec0525c322",
+        "scope": {
+          "validatorKey": "security",
+          "codes": [
+            "SEC005"
+          ]
+        },
+        "expected": [
+          "SEC005@src/flask/app.py"
+        ],
+        "forbidden": [],
+        "actual": [
+          "SEC005@src/flask/app.py"
+        ],
+        "unexpected": [],
+        "missing": [],
+        "forbiddenObserved": [],
+        "abstained": false,
+        "applicability": {
+          "status": "checked",
+          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage."
+        },
+        "checkCoverage": {
+          "status": "fail",
+          "passed": 0,
+          "total": 2,
+          "quality": "LOW"
+        },
+        "commandStatus": "FAIL",
+        "status": "PASS"
+      },
+      {
+        "id": "eval-python-unsupported",
+        "split": "evaluation",
+        "repositoryGroup": "synthetic-python-unsupported",
+        "causalFamily": "dynamic-python-import",
+        "parserTier": "py-ast",
+        "classification": "unsupported_syntax",
+        "repairOutcome": "not_evaluated",
+        "sourceRevision": "sha256:3dd8fe78d4522ef981f983f7f0b5982505c3fb8d98e6244d2760cbb94bdd1e9a",
+        "configDigest": "sha256:496564b98cac616a48556523d1f474b19b469b8d367fd6c359d098d42263a3a6",
+        "scope": {
+          "validatorKey": "architecture",
+          "codes": [
+            "ARC001"
+          ]
+        },
+        "expected": [],
+        "forbidden": [],
+        "actual": [],
+        "unexpected": [],
+        "missing": [],
+        "forbiddenObserved": [],
+        "abstained": true,
+        "applicability": {
+          "status": "unsupported",
+          "reason": "Python import graph analysis is unsupported: relative imports, package paths, src-layout resolution and dynamic imports are not verified; JS/TS findings, when present, are retained"
+        },
+        "checkCoverage": {
+          "status": "na",
+          "passed": 0,
+          "total": 0,
+          "quality": null
+        },
+        "commandStatus": "FAIL",
+        "status": "UNSUPPORTED"
+      },
+      {
+        "id": "eval-ts-security-control",
+        "split": "evaluation",
+        "repositoryGroup": "synthetic-ts-security",
+        "causalFamily": "typescript-api-key-assignment",
+        "parserTier": "js-ast",
+        "classification": "clean_control",
+        "repairOutcome": "not_evaluated",
+        "sourceRevision": "sha256:c1a211e6310503920f822ca537cc89963ea5ae38f9fb986853e2836ce3b9ca78",
+        "configDigest": "sha256:09adbc023d8d015085e20316b9cff66f95f9069ed0b17c00ccd977ec0525c322",
+        "scope": {
+          "validatorKey": "security",
+          "codes": [
+            "SEC002"
+          ]
+        },
+        "expected": [],
+        "forbidden": [
+          "SEC002@src/config.ts"
+        ],
+        "actual": [],
+        "unexpected": [],
+        "missing": [],
+        "forbiddenObserved": [],
+        "abstained": false,
+        "applicability": {
+          "status": "checked",
+          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage."
+        },
+        "checkCoverage": {
+          "status": "pass",
+          "passed": 2,
+          "total": 2,
+          "quality": "HIGH"
+        },
+        "commandStatus": "FAIL",
+        "status": "PASS"
+      },
+      {
+        "id": "eval-ts-security-defect",
+        "split": "evaluation",
+        "repositoryGroup": "synthetic-ts-security",
+        "causalFamily": "typescript-api-key-assignment",
+        "parserTier": "js-ast",
+        "classification": "defect",
+        "repairOutcome": "not_evaluated",
+        "sourceRevision": "sha256:c1a211e6310503920f822ca537cc89963ea5ae38f9fb986853e2836ce3b9ca78",
+        "configDigest": "sha256:09adbc023d8d015085e20316b9cff66f95f9069ed0b17c00ccd977ec0525c322",
+        "scope": {
+          "validatorKey": "security",
+          "codes": [
+            "SEC002"
+          ]
+        },
+        "expected": [
+          "SEC002@src/config.ts"
+        ],
+        "forbidden": [],
+        "actual": [
+          "SEC002@src/config.ts"
+        ],
+        "unexpected": [],
+        "missing": [],
+        "forbiddenObserved": [],
+        "abstained": false,
+        "applicability": {
+          "status": "checked",
+          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage."
+        },
+        "checkCoverage": {
+          "status": "fail",
+          "passed": 1,
+          "total": 2,
+          "quality": "LOW"
+        },
+        "commandStatus": "FAIL",
+        "status": "PASS"
+      }
+    ],
+    "metrics": {
+      "aggregate": {
+        "cases": 24,
+        "repositories": 12,
+        "truePositives": 12,
+        "falsePositives": 0,
+        "falseNegatives": 0,
+        "abstainedSupportedCases": 0,
+        "unsupportedCases": 1,
+        "defectCases": 12,
+        "cleanControlCases": 12,
+        "cleanControlCasesWithFindings": 0,
+        "repairs": {
+          "accepted": 0,
+          "rejected": 0,
+          "notEvaluated": 24
+        },
+        "precision": 1,
+        "recall": 1,
+        "falsePositivesPerRepository": 0,
+        "abstentionRate": 0,
+        "unsupportedRate": 0.04,
+        "acceptedRepairRate": null,
+        "confidence95": {
+          "method": "Wilson score interval, z=1.96",
+          "precision": {
+            "lower": 0.757499,
+            "upper": 1
+          },
+          "recall": {
+            "lower": 0.757499,
+            "upper": 1
+          },
+          "falsePositiveCaseRate": {
+            "lower": 0,
+            "upper": 0.242501
+          },
+          "acceptedRepairRate": null
+        }
+      },
+      "byRepository": {
+        "github-changesets-changesets": {
+          "cases": 2,
+          "repositories": 1,
+          "truePositives": 1,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "abstainedSupportedCases": 0,
+          "unsupportedCases": 0,
+          "defectCases": 1,
+          "cleanControlCases": 1,
+          "cleanControlCasesWithFindings": 0,
+          "repairs": {
+            "accepted": 0,
+            "rejected": 0,
+            "notEvaluated": 2
+          },
+          "precision": 1,
+          "recall": 1,
+          "falsePositivesPerRepository": 0,
+          "abstentionRate": 0,
+          "unsupportedRate": 0,
+          "acceptedRepairRate": null,
+          "confidence95": {
+            "method": "Wilson score interval, z=1.96",
+            "precision": {
+              "lower": 0.206543,
+              "upper": 1
+            },
+            "recall": {
+              "lower": 0.206543,
+              "upper": 1
+            },
+            "falsePositiveCaseRate": {
+              "lower": 0,
+              "upper": 0.793457
+            },
+            "acceptedRepairRate": null
+          }
+        },
+        "github-expressjs-express": {
+          "cases": 2,
+          "repositories": 1,
+          "truePositives": 1,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "abstainedSupportedCases": 0,
+          "unsupportedCases": 0,
+          "defectCases": 1,
+          "cleanControlCases": 1,
+          "cleanControlCasesWithFindings": 0,
+          "repairs": {
+            "accepted": 0,
+            "rejected": 0,
+            "notEvaluated": 2
+          },
+          "precision": 1,
+          "recall": 1,
+          "falsePositivesPerRepository": 0,
+          "abstentionRate": 0,
+          "unsupportedRate": 0,
+          "acceptedRepairRate": null,
+          "confidence95": {
+            "method": "Wilson score interval, z=1.96",
+            "precision": {
+              "lower": 0.206543,
+              "upper": 1
+            },
+            "recall": {
+              "lower": 0.206543,
+              "upper": 1
+            },
+            "falsePositiveCaseRate": {
+              "lower": 0,
+              "upper": 0.793457
+            },
+            "acceptedRepairRate": null
+          }
+        },
+        "github-fastify-fastify": {
+          "cases": 2,
+          "repositories": 1,
+          "truePositives": 1,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "abstainedSupportedCases": 0,
+          "unsupportedCases": 0,
+          "defectCases": 1,
+          "cleanControlCases": 1,
+          "cleanControlCasesWithFindings": 0,
+          "repairs": {
+            "accepted": 0,
+            "rejected": 0,
+            "notEvaluated": 2
+          },
+          "precision": 1,
+          "recall": 1,
+          "falsePositivesPerRepository": 0,
+          "abstentionRate": 0,
+          "unsupportedRate": 0,
+          "acceptedRepairRate": null,
+          "confidence95": {
+            "method": "Wilson score interval, z=1.96",
+            "precision": {
+              "lower": 0.206543,
+              "upper": 1
+            },
+            "recall": {
+              "lower": 0.206543,
+              "upper": 1
+            },
+            "falsePositiveCaseRate": {
+              "lower": 0,
+              "upper": 0.793457
+            },
+            "acceptedRepairRate": null
+          }
+        },
+        "github-go-chi-chi": {
+          "cases": 2,
+          "repositories": 1,
+          "truePositives": 1,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "abstainedSupportedCases": 0,
+          "unsupportedCases": 0,
+          "defectCases": 1,
+          "cleanControlCases": 1,
+          "cleanControlCasesWithFindings": 0,
+          "repairs": {
+            "accepted": 0,
+            "rejected": 0,
+            "notEvaluated": 2
+          },
+          "precision": 1,
+          "recall": 1,
+          "falsePositivesPerRepository": 0,
+          "abstentionRate": 0,
+          "unsupportedRate": 0,
+          "acceptedRepairRate": null,
+          "confidence95": {
+            "method": "Wilson score interval, z=1.96",
+            "precision": {
+              "lower": 0.206543,
+              "upper": 1
+            },
+            "recall": {
+              "lower": 0.206543,
+              "upper": 1
+            },
+            "falsePositiveCaseRate": {
+              "lower": 0,
+              "upper": 0.793457
+            },
+            "acceptedRepairRate": null
+          }
+        },
+        "github-pallets-flask": {
+          "cases": 2,
+          "repositories": 1,
+          "truePositives": 1,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "abstainedSupportedCases": 0,
+          "unsupportedCases": 0,
+          "defectCases": 1,
+          "cleanControlCases": 1,
+          "cleanControlCasesWithFindings": 0,
+          "repairs": {
+            "accepted": 0,
+            "rejected": 0,
+            "notEvaluated": 2
+          },
+          "precision": 1,
+          "recall": 1,
+          "falsePositivesPerRepository": 0,
+          "abstentionRate": 0,
+          "unsupportedRate": 0,
+          "acceptedRepairRate": null,
+          "confidence95": {
+            "method": "Wilson score interval, z=1.96",
+            "precision": {
+              "lower": 0.206543,
+              "upper": 1
+            },
+            "recall": {
+              "lower": 0.206543,
+              "upper": 1
+            },
+            "falsePositiveCaseRate": {
+              "lower": 0,
+              "upper": 0.793457
+            },
+            "acceptedRepairRate": null
+          }
+        },
+        "synthetic-generated-security": {
+          "cases": 2,
+          "repositories": 1,
+          "truePositives": 1,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "abstainedSupportedCases": 0,
+          "unsupportedCases": 0,
+          "defectCases": 1,
+          "cleanControlCases": 1,
+          "cleanControlCasesWithFindings": 0,
+          "repairs": {
+            "accepted": 0,
+            "rejected": 0,
+            "notEvaluated": 2
+          },
+          "precision": 1,
+          "recall": 1,
+          "falsePositivesPerRepository": 0,
+          "abstentionRate": 0,
+          "unsupportedRate": 0,
+          "acceptedRepairRate": null,
+          "confidence95": {
+            "method": "Wilson score interval, z=1.96",
+            "precision": {
+              "lower": 0.206543,
+              "upper": 1
+            },
+            "recall": {
+              "lower": 0.206543,
+              "upper": 1
+            },
+            "falsePositiveCaseRate": {
+              "lower": 0,
+              "upper": 0.793457
+            },
+            "acceptedRepairRate": null
+          }
+        },
+        "synthetic-go-todo": {
+          "cases": 2,
+          "repositories": 1,
+          "truePositives": 1,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "abstainedSupportedCases": 0,
+          "unsupportedCases": 0,
+          "defectCases": 1,
+          "cleanControlCases": 1,
+          "cleanControlCasesWithFindings": 0,
+          "repairs": {
+            "accepted": 0,
+            "rejected": 0,
+            "notEvaluated": 2
+          },
+          "precision": 1,
+          "recall": 1,
+          "falsePositivesPerRepository": 0,
+          "abstentionRate": 0,
+          "unsupportedRate": 0,
+          "acceptedRepairRate": null,
+          "confidence95": {
+            "method": "Wilson score interval, z=1.96",
+            "precision": {
+              "lower": 0.206543,
+              "upper": 1
+            },
+            "recall": {
+              "lower": 0.206543,
+              "upper": 1
+            },
+            "falsePositiveCaseRate": {
+              "lower": 0,
+              "upper": 0.793457
+            },
+            "acceptedRepairRate": null
+          }
+        },
+        "synthetic-js-security": {
+          "cases": 2,
+          "repositories": 1,
+          "truePositives": 1,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "abstainedSupportedCases": 0,
+          "unsupportedCases": 0,
+          "defectCases": 1,
+          "cleanControlCases": 1,
+          "cleanControlCasesWithFindings": 0,
+          "repairs": {
+            "accepted": 0,
+            "rejected": 0,
+            "notEvaluated": 2
+          },
+          "precision": 1,
+          "recall": 1,
+          "falsePositivesPerRepository": 0,
+          "abstentionRate": 0,
+          "unsupportedRate": 0,
+          "acceptedRepairRate": null,
+          "confidence95": {
+            "method": "Wilson score interval, z=1.96",
+            "precision": {
+              "lower": 0.206543,
+              "upper": 1
+            },
+            "recall": {
+              "lower": 0.206543,
+              "upper": 1
+            },
+            "falsePositiveCaseRate": {
+              "lower": 0,
+              "upper": 0.793457
+            },
+            "acceptedRepairRate": null
+          }
+        },
+        "synthetic-monorepo-security": {
+          "cases": 2,
+          "repositories": 1,
+          "truePositives": 1,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "abstainedSupportedCases": 0,
+          "unsupportedCases": 0,
+          "defectCases": 1,
+          "cleanControlCases": 1,
+          "cleanControlCasesWithFindings": 0,
+          "repairs": {
+            "accepted": 0,
+            "rejected": 0,
+            "notEvaluated": 2
+          },
+          "precision": 1,
+          "recall": 1,
+          "falsePositivesPerRepository": 0,
+          "abstentionRate": 0,
+          "unsupportedRate": 0,
+          "acceptedRepairRate": null,
+          "confidence95": {
+            "method": "Wilson score interval, z=1.96",
+            "precision": {
+              "lower": 0.206543,
+              "upper": 1
+            },
+            "recall": {
+              "lower": 0.206543,
+              "upper": 1
+            },
+            "falsePositiveCaseRate": {
+              "lower": 0,
+              "upper": 0.793457
+            },
+            "acceptedRepairRate": null
+          }
+        },
+        "synthetic-python-security": {
+          "cases": 2,
+          "repositories": 1,
+          "truePositives": 1,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "abstainedSupportedCases": 0,
+          "unsupportedCases": 0,
+          "defectCases": 1,
+          "cleanControlCases": 1,
+          "cleanControlCasesWithFindings": 0,
+          "repairs": {
+            "accepted": 0,
+            "rejected": 0,
+            "notEvaluated": 2
+          },
+          "precision": 1,
+          "recall": 1,
+          "falsePositivesPerRepository": 0,
+          "abstentionRate": 0,
+          "unsupportedRate": 0,
+          "acceptedRepairRate": null,
+          "confidence95": {
+            "method": "Wilson score interval, z=1.96",
+            "precision": {
+              "lower": 0.206543,
+              "upper": 1
+            },
+            "recall": {
+              "lower": 0.206543,
+              "upper": 1
+            },
+            "falsePositiveCaseRate": {
+              "lower": 0,
+              "upper": 0.793457
+            },
+            "acceptedRepairRate": null
+          }
+        },
+        "synthetic-python-unsupported": {
+          "cases": 0,
+          "repositories": 0,
+          "truePositives": 0,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "abstainedSupportedCases": 0,
+          "unsupportedCases": 1,
+          "defectCases": 0,
+          "cleanControlCases": 0,
+          "cleanControlCasesWithFindings": 0,
+          "repairs": {
+            "accepted": 0,
+            "rejected": 0,
+            "notEvaluated": 0
+          },
+          "precision": null,
+          "recall": null,
+          "falsePositivesPerRepository": null,
+          "abstentionRate": null,
+          "unsupportedRate": 1,
+          "acceptedRepairRate": null,
+          "confidence95": {
+            "method": "Wilson score interval, z=1.96",
+            "precision": null,
+            "recall": null,
+            "falsePositiveCaseRate": null,
+            "acceptedRepairRate": null
+          }
+        },
+        "synthetic-sparse-docs": {
+          "cases": 2,
+          "repositories": 1,
+          "truePositives": 1,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "abstainedSupportedCases": 0,
+          "unsupportedCases": 0,
+          "defectCases": 1,
+          "cleanControlCases": 1,
+          "cleanControlCasesWithFindings": 0,
+          "repairs": {
+            "accepted": 0,
+            "rejected": 0,
+            "notEvaluated": 2
+          },
+          "precision": 1,
+          "recall": 1,
+          "falsePositivesPerRepository": 0,
+          "abstentionRate": 0,
+          "unsupportedRate": 0,
+          "acceptedRepairRate": null,
+          "confidence95": {
+            "method": "Wilson score interval, z=1.96",
+            "precision": {
+              "lower": 0.206543,
+              "upper": 1
+            },
+            "recall": {
+              "lower": 0.206543,
+              "upper": 1
+            },
+            "falsePositiveCaseRate": {
+              "lower": 0,
+              "upper": 0.793457
+            },
+            "acceptedRepairRate": null
+          }
+        },
+        "synthetic-ts-security": {
+          "cases": 2,
+          "repositories": 1,
+          "truePositives": 1,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "abstainedSupportedCases": 0,
+          "unsupportedCases": 0,
+          "defectCases": 1,
+          "cleanControlCases": 1,
+          "cleanControlCasesWithFindings": 0,
+          "repairs": {
+            "accepted": 0,
+            "rejected": 0,
+            "notEvaluated": 2
+          },
+          "precision": 1,
+          "recall": 1,
+          "falsePositivesPerRepository": 0,
+          "abstentionRate": 0,
+          "unsupportedRate": 0,
+          "acceptedRepairRate": null,
+          "confidence95": {
+            "method": "Wilson score interval, z=1.96",
+            "precision": {
+              "lower": 0.206543,
+              "upper": 1
+            },
+            "recall": {
+              "lower": 0.206543,
+              "upper": 1
+            },
+            "falsePositiveCaseRate": {
+              "lower": 0,
+              "upper": 0.793457
+            },
+            "acceptedRepairRate": null
+          }
+        }
+      },
+      "byDetector": {
+        "architecture": {
+          "cases": 0,
+          "repositories": 0,
+          "truePositives": 0,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "abstainedSupportedCases": 0,
+          "unsupportedCases": 1,
+          "defectCases": 0,
+          "cleanControlCases": 0,
+          "cleanControlCasesWithFindings": 0,
+          "repairs": {
+            "accepted": 0,
+            "rejected": 0,
+            "notEvaluated": 0
+          },
+          "precision": null,
+          "recall": null,
+          "falsePositivesPerRepository": null,
+          "abstentionRate": null,
+          "unsupportedRate": 1,
+          "acceptedRepairRate": null,
+          "confidence95": {
+            "method": "Wilson score interval, z=1.96",
+            "precision": null,
+            "recall": null,
+            "falsePositiveCaseRate": null,
+            "acceptedRepairRate": null
+          }
+        },
+        "security": {
+          "cases": 20,
+          "repositories": 10,
+          "truePositives": 10,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "abstainedSupportedCases": 0,
+          "unsupportedCases": 0,
+          "defectCases": 10,
+          "cleanControlCases": 10,
+          "cleanControlCasesWithFindings": 0,
+          "repairs": {
+            "accepted": 0,
+            "rejected": 0,
+            "notEvaluated": 20
+          },
+          "precision": 1,
+          "recall": 1,
+          "falsePositivesPerRepository": 0,
+          "abstentionRate": 0,
+          "unsupportedRate": 0,
+          "acceptedRepairRate": null,
+          "confidence95": {
+            "method": "Wilson score interval, z=1.96",
+            "precision": {
+              "lower": 0.72246,
+              "upper": 1
+            },
+            "recall": {
+              "lower": 0.72246,
+              "upper": 1
+            },
+            "falsePositiveCaseRate": {
+              "lower": 0,
+              "upper": 0.27754
+            },
+            "acceptedRepairRate": null
+          }
+        },
+        "structure": {
+          "cases": 2,
+          "repositories": 1,
+          "truePositives": 1,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "abstainedSupportedCases": 0,
+          "unsupportedCases": 0,
+          "defectCases": 1,
+          "cleanControlCases": 1,
+          "cleanControlCasesWithFindings": 0,
+          "repairs": {
+            "accepted": 0,
+            "rejected": 0,
+            "notEvaluated": 2
+          },
+          "precision": 1,
+          "recall": 1,
+          "falsePositivesPerRepository": 0,
+          "abstentionRate": 0,
+          "unsupportedRate": 0,
+          "acceptedRepairRate": null,
+          "confidence95": {
+            "method": "Wilson score interval, z=1.96",
+            "precision": {
+              "lower": 0.206543,
+              "upper": 1
+            },
+            "recall": {
+              "lower": 0.206543,
+              "upper": 1
+            },
+            "falsePositiveCaseRate": {
+              "lower": 0,
+              "upper": 0.793457
+            },
+            "acceptedRepairRate": null
+          }
+        },
+        "todoTracking": {
+          "cases": 2,
+          "repositories": 1,
+          "truePositives": 1,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "abstainedSupportedCases": 0,
+          "unsupportedCases": 0,
+          "defectCases": 1,
+          "cleanControlCases": 1,
+          "cleanControlCasesWithFindings": 0,
+          "repairs": {
+            "accepted": 0,
+            "rejected": 0,
+            "notEvaluated": 2
+          },
+          "precision": 1,
+          "recall": 1,
+          "falsePositivesPerRepository": 0,
+          "abstentionRate": 0,
+          "unsupportedRate": 0,
+          "acceptedRepairRate": null,
+          "confidence95": {
+            "method": "Wilson score interval, z=1.96",
+            "precision": {
+              "lower": 0.206543,
+              "upper": 1
+            },
+            "recall": {
+              "lower": 0.206543,
+              "upper": 1
+            },
+            "falsePositiveCaseRate": {
+              "lower": 0,
+              "upper": 0.793457
+            },
+            "acceptedRepairRate": null
+          }
+        }
+      },
+      "byParserTier": {
+        "fallback-language": {
+          "cases": 4,
+          "repositories": 2,
+          "truePositives": 2,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "abstainedSupportedCases": 0,
+          "unsupportedCases": 0,
+          "defectCases": 2,
+          "cleanControlCases": 2,
+          "cleanControlCasesWithFindings": 0,
+          "repairs": {
+            "accepted": 0,
+            "rejected": 0,
+            "notEvaluated": 4
+          },
+          "precision": 1,
+          "recall": 1,
+          "falsePositivesPerRepository": 0,
+          "abstentionRate": 0,
+          "unsupportedRate": 0,
+          "acceptedRepairRate": null,
+          "confidence95": {
+            "method": "Wilson score interval, z=1.96",
+            "precision": {
+              "lower": 0.342372,
+              "upper": 1
+            },
+            "recall": {
+              "lower": 0.342372,
+              "upper": 1
+            },
+            "falsePositiveCaseRate": {
+              "lower": 0,
+              "upper": 0.657628
+            },
+            "acceptedRepairRate": null
+          }
+        },
+        "js-ast": {
+          "cases": 12,
+          "repositories": 6,
+          "truePositives": 6,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "abstainedSupportedCases": 0,
+          "unsupportedCases": 0,
+          "defectCases": 6,
+          "cleanControlCases": 6,
+          "cleanControlCasesWithFindings": 0,
+          "repairs": {
+            "accepted": 0,
+            "rejected": 0,
+            "notEvaluated": 12
+          },
+          "precision": 1,
+          "recall": 1,
+          "falsePositivesPerRepository": 0,
+          "abstentionRate": 0,
+          "unsupportedRate": 0,
+          "acceptedRepairRate": null,
+          "confidence95": {
+            "method": "Wilson score interval, z=1.96",
+            "precision": {
+              "lower": 0.609657,
+              "upper": 1
+            },
+            "recall": {
+              "lower": 0.609657,
+              "upper": 1
+            },
+            "falsePositiveCaseRate": {
+              "lower": 0,
+              "upper": 0.390343
+            },
+            "acceptedRepairRate": null
+          }
+        },
+        "mixed": {
+          "cases": 2,
+          "repositories": 1,
+          "truePositives": 1,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "abstainedSupportedCases": 0,
+          "unsupportedCases": 0,
+          "defectCases": 1,
+          "cleanControlCases": 1,
+          "cleanControlCasesWithFindings": 0,
+          "repairs": {
+            "accepted": 0,
+            "rejected": 0,
+            "notEvaluated": 2
+          },
+          "precision": 1,
+          "recall": 1,
+          "falsePositivesPerRepository": 0,
+          "abstentionRate": 0,
+          "unsupportedRate": 0,
+          "acceptedRepairRate": null,
+          "confidence95": {
+            "method": "Wilson score interval, z=1.96",
+            "precision": {
+              "lower": 0.206543,
+              "upper": 1
+            },
+            "recall": {
+              "lower": 0.206543,
+              "upper": 1
+            },
+            "falsePositiveCaseRate": {
+              "lower": 0,
+              "upper": 0.793457
+            },
+            "acceptedRepairRate": null
+          }
+        },
+        "not-applicable": {
+          "cases": 2,
+          "repositories": 1,
+          "truePositives": 1,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "abstainedSupportedCases": 0,
+          "unsupportedCases": 0,
+          "defectCases": 1,
+          "cleanControlCases": 1,
+          "cleanControlCasesWithFindings": 0,
+          "repairs": {
+            "accepted": 0,
+            "rejected": 0,
+            "notEvaluated": 2
+          },
+          "precision": 1,
+          "recall": 1,
+          "falsePositivesPerRepository": 0,
+          "abstentionRate": 0,
+          "unsupportedRate": 0,
+          "acceptedRepairRate": null,
+          "confidence95": {
+            "method": "Wilson score interval, z=1.96",
+            "precision": {
+              "lower": 0.206543,
+              "upper": 1
+            },
+            "recall": {
+              "lower": 0.206543,
+              "upper": 1
+            },
+            "falsePositiveCaseRate": {
+              "lower": 0,
+              "upper": 0.793457
+            },
+            "acceptedRepairRate": null
+          }
+        },
+        "py-ast": {
+          "cases": 0,
+          "repositories": 0,
+          "truePositives": 0,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "abstainedSupportedCases": 0,
+          "unsupportedCases": 1,
+          "defectCases": 0,
+          "cleanControlCases": 0,
+          "cleanControlCasesWithFindings": 0,
+          "repairs": {
+            "accepted": 0,
+            "rejected": 0,
+            "notEvaluated": 0
+          },
+          "precision": null,
+          "recall": null,
+          "falsePositivesPerRepository": null,
+          "abstentionRate": null,
+          "unsupportedRate": 1,
+          "acceptedRepairRate": null,
+          "confidence95": {
+            "method": "Wilson score interval, z=1.96",
+            "precision": null,
+            "recall": null,
+            "falsePositiveCaseRate": null,
+            "acceptedRepairRate": null
+          }
+        },
+        "regex-fallback": {
+          "cases": 4,
+          "repositories": 2,
+          "truePositives": 2,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "abstainedSupportedCases": 0,
+          "unsupportedCases": 0,
+          "defectCases": 2,
+          "cleanControlCases": 2,
+          "cleanControlCasesWithFindings": 0,
+          "repairs": {
+            "accepted": 0,
+            "rejected": 0,
+            "notEvaluated": 4
+          },
+          "precision": 1,
+          "recall": 1,
+          "falsePositivesPerRepository": 0,
+          "abstentionRate": 0,
+          "unsupportedRate": 0,
+          "acceptedRepairRate": null,
+          "confidence95": {
+            "method": "Wilson score interval, z=1.96",
+            "precision": {
+              "lower": 0.342372,
+              "upper": 1
+            },
+            "recall": {
+              "lower": 0.342372,
+              "upper": 1
+            },
+            "falsePositiveCaseRate": {
+              "lower": 0,
+              "upper": 0.657628
+            },
+            "acceptedRepairRate": null
+          }
+        }
+      }
+    }
+  },
+  "observations": {
+    "environment": {
+      "node": "v26.7.0",
+      "platform": "darwin",
+      "arch": "arm64"
+    },
+    "cases": [
+      {
+        "id": "dev-generated-security-control",
+        "coldMs": 162.367,
+        "warmMs": 166.636
+      },
+      {
+        "id": "dev-generated-security-defect",
+        "coldMs": 169.48,
+        "warmMs": 169.463
+      },
+      {
+        "id": "dev-go-todo-control",
+        "coldMs": 160.886,
+        "warmMs": 164.71
+      },
+      {
+        "id": "dev-go-todo-defect",
+        "coldMs": 166.408,
+        "warmMs": 165.902
+      },
+      {
+        "id": "dev-js-security-control",
+        "coldMs": 166.601,
+        "warmMs": 154.519
+      },
+      {
+        "id": "dev-js-security-defect",
+        "coldMs": 167.097,
+        "warmMs": 161.112
+      },
+      {
+        "id": "dev-monorepo-security-control",
+        "coldMs": 163.718,
+        "warmMs": 168.705
+      },
+      {
+        "id": "dev-monorepo-security-defect",
+        "coldMs": 167.899,
+        "warmMs": 162.803
+      },
+      {
+        "id": "dev-python-security-control",
+        "coldMs": 153.896,
+        "warmMs": 162.625
+      },
+      {
+        "id": "dev-python-security-defect",
+        "coldMs": 160.323,
+        "warmMs": 163.581
+      },
+      {
+        "id": "dev-sparse-doc-control",
+        "coldMs": 173.345,
+        "warmMs": 171.837
+      },
+      {
+        "id": "dev-sparse-doc-defect",
+        "coldMs": 155.298,
+        "warmMs": 151.313
+      },
+      {
+        "id": "eval-changesets-aws-control",
+        "coldMs": 389.945,
+        "warmMs": 395.087
+      },
+      {
+        "id": "eval-changesets-aws-defect",
+        "coldMs": 403.373,
+        "warmMs": 383.719
+      },
+      {
+        "id": "eval-chi-aws-control",
+        "coldMs": 216.619,
+        "warmMs": 215.297
+      },
+      {
+        "id": "eval-chi-aws-defect",
+        "coldMs": 212.635,
+        "warmMs": 210.618
+      },
+      {
+        "id": "eval-express-aws-control",
+        "coldMs": 256.406,
+        "warmMs": 245.29
+      },
+      {
+        "id": "eval-express-aws-defect",
+        "coldMs": 264.481,
+        "warmMs": 242.893
+      },
+      {
+        "id": "eval-fastify-aws-control",
+        "coldMs": 330.367,
+        "warmMs": 333.262
+      },
+      {
+        "id": "eval-fastify-aws-defect",
+        "coldMs": 340.063,
+        "warmMs": 325.774
+      },
+      {
+        "id": "eval-flask-aws-control",
+        "coldMs": 230.267,
+        "warmMs": 225.937
+      },
+      {
+        "id": "eval-flask-aws-defect",
+        "coldMs": 211.526,
+        "warmMs": 229.894
+      },
+      {
+        "id": "eval-python-unsupported",
+        "coldMs": 151.297,
+        "warmMs": 146.084
+      },
+      {
+        "id": "eval-ts-security-control",
+        "coldMs": 150.893,
+        "warmMs": 158.252
+      },
+      {
+        "id": "eval-ts-security-defect",
+        "coldMs": 159.419,
+        "warmMs": 147.245
+      }
+    ],
+    "retainedRoot": null
+  }
+}
