@@ -72,9 +72,9 @@ tuning; the levers that mattered:
 ## Standing verification
 
 - Built-in `node:test`, with Node 18/20/22/24 in the supported CI matrix. Per-change validation records contain measured test totals.
-- **Self-guarded:** every push runs all 27 validators against DocGuard's own
+- **Self-guarded:** every push runs all 29 validators against DocGuard's own
   docs; count claims in this README family are machine-governed
-  (Canonical-Sync), so "27 validators" is checked, not remembered.
+  (Canonical-Sync), so the validator count is checked, not remembered.
 - **Deterministic core:** no LLM calls at validation time, one pinned
   dependency (`@babel/parser`, with a regex fallback), no network access.
 

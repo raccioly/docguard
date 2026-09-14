@@ -153,16 +153,21 @@ esac`);
 // hooks.<event>.optional is boolean; false emits an automatic hook.
 describe('Spec Kit hook registration contracts', () => {
   for (const path of ['extension.yml', 'templates/extensions.yml']) {
-    it(`requires after_implement and keeps task hooks optional in ${path}`, () => {
+    it(`requires lifecycle preflight and after_implement while keeping after_tasks optional in ${path}`, () => {
       const source = readFileSync(new URL(`../extensions/spec-kit-docguard/${path}`, import.meta.url), 'utf8');
+      const brief = source.match(/^  before_specify:\n([\s\S]*?)(?=^  after_implement:)/m)?.[1];
       const after = source.match(/^  after_implement:\n([\s\S]*?)(?=^  before_tasks:)/m)?.[1];
       const before = source.match(/^  before_tasks:\n([\s\S]*?)(?=^  after_tasks:)/m)?.[1];
+      assert.ok(brief);
       assert.ok(after);
       assert.ok(before);
+      assert.match(brief, /command: "?speckit\.docguard\.brief"?/);
+      assert.match(brief, /optional: false/);
       assert.match(after, /command: "?speckit\.docguard\.guard"?/);
       assert.match(after, /optional: false/);
       assert.doesNotMatch(after, /prompt:/);
-      assert.match(before, /optional: true/);
+      assert.match(before, /command: "?speckit\.docguard\.preflight"?/);
+      assert.match(before, /optional: false/);
       assert.match(source, /after_tasks:\n[\s\S]*optional: true/);
     });
   }

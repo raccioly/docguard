@@ -1,0 +1,162 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raccioly.github.io/docguard/schemas/docguard-specs.schema.json",
+  "title": "DocGuard Spec Lifecycle Registry",
+  "description": "Committed lifecycle controls and deterministic evidence for Spec Kit artifacts. Requirement prose remains in the authoritative spec.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schemaVersion", "specs", "tombstones"],
+  "properties": {
+    "$schema": { "const": "https://raccioly.github.io/docguard/schemas/docguard-specs.schema.json" },
+    "schemaVersion": { "const": 1 },
+    "specs": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/spec" }
+    },
+    "tombstones": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/tombstone" }
+    }
+  },
+  "definitions": {
+    "specId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{2,127}$"
+    },
+    "stringSet": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "specIdSet": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/specId" }
+    },
+    "lifecycle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["approval", "delivery", "context", "retirementReason", "storage", "persistenceModel"],
+      "properties": {
+        "approval": { "enum": ["draft", "approved", "rejected"] },
+        "delivery": { "enum": ["planned", "in_progress", "implemented", "verified", "released"] },
+        "context": { "enum": ["current", "retired"] },
+        "retirementReason": { "enum": [null, "completed", "superseded", "abandoned"] },
+        "storage": { "enum": ["working_tree", "git_history"] },
+        "persistenceModel": { "enum": [null, "flow_back", "flow_forward", "living"] }
+      }
+    },
+    "reviewed": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["lifecycle", "relations", "scope", "reconciliation"],
+      "properties": {
+        "lifecycle": { "$ref": "#/definitions/lifecycle" },
+        "relations": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["extends", "duplicates", "conflictsWith", "supersedes", "supersededBy"],
+          "properties": {
+            "extends": { "$ref": "#/definitions/specIdSet" },
+            "duplicates": { "$ref": "#/definitions/specIdSet" },
+            "conflictsWith": { "$ref": "#/definitions/specIdSet" },
+            "supersedes": { "$ref": "#/definitions/specIdSet" },
+            "supersededBy": { "$ref": "#/definitions/specIdSet" }
+          }
+        },
+        "scope": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["canonicalDocs"],
+          "properties": {
+            "canonicalDocs": { "$ref": "#/definitions/stringSet" }
+          }
+        },
+        "reconciliation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["lastReviewedRevision"],
+          "properties": {
+            "lastReviewedRevision": {
+              "anyOf": [
+                { "type": "null" },
+                { "type": "string", "pattern": "^[0-9a-f]{40}([0-9a-f]{24})?$" }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "digest"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+      }
+    },
+    "testEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requirementId", "file", "line"],
+      "properties": {
+        "requirementId": { "type": "string", "minLength": 1 },
+        "file": { "type": "string", "minLength": 1 },
+        "line": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["specId", "path", "reviewed", "intent", "observed"],
+      "properties": {
+        "specId": { "$ref": "#/definitions/specId" },
+        "path": { "type": "string", "minLength": 1 },
+        "reviewed": { "$ref": "#/definitions/reviewed" },
+        "intent": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["requirements"],
+          "properties": {
+            "requirements": { "$ref": "#/definitions/stringSet" }
+          }
+        },
+        "observed": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["artifacts", "taskCompletion", "implementationEvidence", "testEvidence"],
+          "properties": {
+            "artifacts": { "type": "array", "items": { "$ref": "#/definitions/artifact" } },
+            "taskCompletion": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["checked", "total"],
+              "properties": {
+                "checked": { "type": "integer", "minimum": 0 },
+                "total": { "type": "integer", "minimum": 0 }
+              }
+            },
+            "implementationEvidence": { "type": "array", "items": { "type": "object" } },
+            "testEvidence": { "type": "array", "items": { "$ref": "#/definitions/testEvidence" } }
+          }
+        }
+      }
+    },
+    "tombstone": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["specId", "path", "archivedFrom", "blob", "retentionRef", "objectFormat", "recoverability", "requirements"],
+      "properties": {
+        "specId": { "anyOf": [{ "type": "null" }, { "$ref": "#/definitions/specId" }] },
+        "path": { "type": "string", "minLength": 1 },
+        "archivedFrom": { "type": "string", "pattern": "^[0-9a-f]{40}([0-9a-f]{24})?$" },
+        "blob": { "type": "string", "pattern": "^[0-9a-f]{40}([0-9a-f]{24})?$" },
+        "retentionRef": { "anyOf": [{ "type": "null" }, { "type": "string", "minLength": 1 }] },
+        "objectFormat": { "enum": [null, "sha1", "sha256"] },
+        "recoverability": { "enum": [null, "verified"] },
+        "requirements": { "$ref": "#/definitions/stringSet" }
+      }
+    }
+  }
+}

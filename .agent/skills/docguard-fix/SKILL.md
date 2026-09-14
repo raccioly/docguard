@@ -6,10 +6,10 @@ description: AI-driven documentation repair with structured research workflow, t
 compatibility: Requires DocGuard CLI installed (npm i -g docguard-cli or npx docguard-cli)
 metadata:
   author: docguard
-  version: 0.35.0
+  version: 0.36.2
   source: extensions/spec-kit-docguard/skills/docguard-fix
 ---
-<!-- docguard:version: 0.35.0 -->
+<!-- docguard:version: 0.36.2 -->
 
 # DocGuard Fix Skill
 
@@ -25,7 +25,7 @@ If no arguments, fix ALL issues found by `docguard diagnose`.
 
 ## Goal
 
-Research the actual codebase to generate or repair canonical documentation that passes DocGuard's 19-validator guard suite. This skill replaces generic templates with real, project-specific content and iterates until quality checks pass.
+Research the actual codebase to generate or repair canonical documentation that passes DocGuard's configurable guard suite. This skill replaces generic templates with real, project-specific content and iterates until quality checks pass.
 
 ## Operating Constraints
 

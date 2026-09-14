@@ -155,6 +155,8 @@ import { validateSurfaceSync } from '../validators/surface-sync.mjs';
 import { validateDiffSuspicion } from '../validators/diff-suspicion.mjs';
 import { validateReferenceExistence } from '../validators/reference-existence.mjs';
 import { validateApiDocSmells } from '../validators/api-doc-smells.mjs';
+import { validateDocumentLifecycle } from '../validators/document-lifecycle.mjs';
+import { validateSpecRegistry } from '../validators/spec-registry.mjs';
 
 /**
  * Internal guard — returns structured data, no console output, no process.exit.
@@ -319,6 +321,8 @@ export function runGuardInternal(projectDir, config) {
     { key: 'todoTracking', name: 'TODO-Tracking', fn: () => validateTodoTracking(projectDir, config) },
     { key: 'schemaSync', name: 'Schema-Sync', fn: () => validateSchemaSync(projectDir, config) },
     { key: 'specKit', name: 'Spec-Kit', fn: () => validateSpecKitIntegration(projectDir, config) },
+    { key: 'documentLifecycle', name: 'Document-Lifecycle', fn: () => validateDocumentLifecycle(projectDir, config) },
+    { key: 'specRegistry', name: 'Spec-Registry', fn: () => validateSpecRegistry(projectDir, config) },
     { key: 'crossReference', name: 'Cross-Reference', fn: () => validateCrossReferences(projectDir, config) },
     { key: 'generatedStaleness', name: 'Generated-Staleness', fn: () => validateGeneratedStaleness(projectDir, config) },
     { key: 'surfaceSync', name: 'Surface-Sync', fn: () => validateSurfaceSync(projectDir, config) },

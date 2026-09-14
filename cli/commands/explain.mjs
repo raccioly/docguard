@@ -252,6 +252,32 @@ const EXPLAINERS = {
     example: 'plan.md has Summary, Technical Context, Constitution Check, Project Structure',
     standard: 'GitHub Spec Kit',
   },
+  documentLifecycle: {
+    title: 'Document-Lifecycle — retired documents leave active AI context safely',
+    what: 'Scans Git-tracked Markdown for exact terminal lifecycle metadata, completed specs that merit review, and disagreement between the working tree and .docguard-archive.json. It does not infer that completed work is safe to retire.',
+    why: 'Historical specs and plans can mislead people and agents when they remain mixed with current intent. Retirement must preserve recovery evidence and avoid deleting still-referenced context.',
+    triggers: [
+      ['declares terminal lifecycle status', 'Review the document, its backreferences, and its replacement or evidence, then retire the explicit clean tracked path with `docguard retire --write`.'],
+      ['artifact maturity is', 'Completion is only a review signal. Confirm the implemented outcome is represented in current documentation before considering retirement.'],
+      ['fully checked task list', 'Checked tasks do not prove delivery or documentation reconciliation. Verify code/test evidence and current docs.'],
+      ['Document lifecycle coverage is', 'Restore Git access, repair the retirement manifest, or make tracked Markdown readable before relying on the lifecycle result.'],
+      ['recorded as retired but remains', 'Complete the recorded retirement or correct the manifest so active context and recovery metadata agree.'],
+    ],
+    example: 'A superseded plan is absent from the working tree, recorded in .docguard-archive.json with a retained Git ref, and linked to its current replacement.',
+    standard: 'Canonical-Driven Development lifecycle and Git-backed recovery contract',
+  },
+  specRegistry: {
+    title: 'Spec-Registry — one lifecycle index for intent, delivery, and evidence',
+    what: 'Checks that every active spec has an immutable identity and that `.docguard-specs.json` exactly reflects spec artifacts, task counts, explicit test references, and archive tombstones while preserving reviewed lifecycle, lineage, and scope fields.',
+    why: 'Agents need to know which intent is current and what evidence exists before they create another spec. A deterministic registry makes stale state visible without copying or rewriting requirement prose.',
+    triggers: [
+      ['registry is missing or stale', 'Run `docguard specs --write`, review the projection, and commit it with the relevant change.'],
+      ['identity missing or reused', 'Add one unique namespaced Spec ID to the authoritative spec metadata; never recycle a retired ID.'],
+      ['lifecycle contradicts storage', 'Align current/retired context and working_tree/git_history storage with the recovery archive.'],
+    ],
+    example: '`docguard specs preflight --path specs/007-feature/spec.md` blocks reused IDs and reports prior lifecycle/evidence before planning.',
+    standard: 'Canonical-Driven Development lifecycle registry contract',
+  },
 
   // ── Backfilled in v0.24 (field report, Issue A) ─────────────────────────
   // These validators were registered in guard but had no explain entry, so
@@ -377,6 +403,8 @@ const DISPLAY_NAMES = {
   todoTracking: 'TODO-Tracking',
   schemaSync: 'Schema-Sync',
   specKit: 'Spec-Kit',
+  documentLifecycle: 'Document-Lifecycle',
+  specRegistry: 'Spec-Registry',
   crossReference: 'Cross-Reference',
   generatedStaleness: 'Generated-Staleness',
   surfaceSync: 'Surface-Sync',

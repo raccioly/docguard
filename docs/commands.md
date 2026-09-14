@@ -147,6 +147,51 @@ npx docguard-cli audit
 
 ---
 
+## Specification Lifecycle Commands
+
+### `docguard specs`
+
+**Maintain the committed spec lifecycle registry.** The registry keeps reviewed
+approval, delivery, context, lineage, and canonical-document scope separate from
+deterministically observed artifacts, task counts, and requirement-scoped test
+evidence.
+
+```bash
+npx docguard-cli specs --check                 # CI: registry must match the repository
+npx docguard-cli specs --write                 # Refresh observations; preserve reviewed fields
+npx docguard-cli specs preflight               # Brief prior intent before specification
+npx docguard-cli specs preflight --path specs/007-feature/spec.md
+```
+
+Every active spec needs a stable project-scoped metadata identity such as
+`Spec ID: acme.billing-export` near the top of the authoritative spec. Completion evidence uses
+`specId#requirementId`; bare `FR-001` references remain navigation hints because
+the same local ID commonly appears in several specs.
+
+The generated-spec preflight blocks missing or duplicate identity, stale
+registry state, unsafe paths, and broken lifecycle lineage. Text similarity is
+low-confidence review context and never blocks by itself. A future
+`specs complete` transaction will verify exact-revision implementation evidence,
+canonical outcomes, and context regeneration before marking a spec verified.
+
+### `docguard retire`
+
+**Remove reviewed stale documents from active AI context while preserving exact
+recovery metadata in Git.** Planning and checking are read-only; writing requires
+explicit paths and a reason.
+
+```bash
+npx docguard-cli retire --plan
+npx docguard-cli retire --check --format json
+npx docguard-cli retire --write --path docs/old-plan.md --reason "Superseded by current architecture"
+```
+
+Retirement fails closed for dirty, untracked, required, symlinked, private, or
+out-of-project content. Generic retirement also refuses active registered specs;
+their lifecycle must move through the dedicated `specs` control plane.
+
+---
+
 ## AI Integration Commands
 
 ### `docguard fix`

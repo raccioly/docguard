@@ -125,6 +125,19 @@ describe('Traceability Validator', () => {
     assert.deepEqual(result.warnings, []);
   });
 
+  it('resolves immutable spec ID qualifiers to the current spec path', () => {
+    const id = 'FR' + '-' + '777';
+    mkdirSync(join(tmpDir, 'specs', '001-feature'), { recursive: true });
+    writeFileSync(join(tmpDir, 'specs', '001-feature', 'spec.md'),
+      `# Feature\n\n**Spec ID**: \`acme.feature\`\n\n- **${id}**: The system MUST work.\n`);
+    mkdirSync(join(tmpDir, 'tests'), { recursive: true });
+    writeFileSync(join(tmpDir, 'tests', 'feature.test.js'), `// @req acme.feature#${id}\ntest('works', () => {});\n`);
+    const result = validateTraceability(tmpDir, { requiredFiles: { canonical: [] } });
+    assert.equal(result.total, 1);
+    assert.equal(result.passed, 1);
+    assert.deepEqual(result.warnings, []);
+  });
+
   it('warns when a requirement has no test coverage', () => {
     const ID2 = 'REQ' + '-' + '902';
     mkdirSync(join(tmpDir, 'docs-canonical'), { recursive: true });
@@ -163,6 +176,34 @@ describe('Traceability Validator', () => {
       w.includes(`Test references ${ID3}`) && w.includes('but no requirement with this ID exists')
     );
     assert.strictEqual(hasOrphanedWarning, true);
+  });
+
+  it('keeps retired identities as tombstones without rebinding bare coverage', () => {
+    const ID2 = 'REQ' + '-' + '904';
+    mkdirSync(join(tmpDir, 'docs-canonical'), { recursive: true });
+    writeFileSync(join(tmpDir, 'REQUIREMENTS.md'), `# Requirements\n${ID2}\n`);
+    writeFileSync(join(tmpDir, '.docguard-archive.json'), JSON.stringify({
+      schemaVersion: 1,
+      strategy: 'git-history',
+      retention: { ref: 'refs/heads/main', objectFormat: 'sha1', recoverability: 'verified' },
+      entries: [{
+        path: 'specs/retired/spec.md',
+        archivedFrom: '0'.repeat(40),
+        blob: '1'.repeat(40),
+        reason: 'Superseded',
+        requirementIds: [ID2],
+      }],
+    }));
+    mkdirSync(join(tmpDir, 'tests'), { recursive: true });
+    writeFileSync(join(tmpDir, 'tests', 'app.test.js'), `// @req ${ID2}\n`);
+
+    const config = { requiredFiles: { canonical: [] } };
+    const result = validateTraceability(tmpDir, config);
+
+    assert.equal(result.findings.some(finding => finding.code === 'TRC005'), false,
+      'the historical identity remains known');
+    assert.equal(result.findings.some(finding => finding.code === 'TRC004'), true,
+      'a bare reference shared with a tombstone must not certify the active requirement');
   });
 
   // Regression for hugocross Bug 5 (compound):

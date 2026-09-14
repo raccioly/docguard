@@ -50,6 +50,7 @@ Pass untrusted arguments through argv arrays and validate values for their inten
 | feedback | None | Saves local diagnostic records unless `--preview`; prints opt-in URLs |
 | memory --pack | None | Writes a generated context pack |
 | fix --write, sync --write | Targeted documentation edits | Backups and fix history where supported |
+| retire --write | Explicit clean tracked documentation only | Requires retained-ref recovery proof, clean replacement/evidence docs, and no live Markdown backreferences |
 | init, generate | Documentation and configuration scaffolding | Explicit force options may overwrite content |
 | hooks | Hook configuration and executable scripts | Auto-fix hooks may edit and stage documentation |
 | report | None by default | `--out` writes an artifact |

@@ -105,6 +105,8 @@
         "todoTracking":       { "type": "boolean" },
         "schemaSync":         { "type": "boolean" },
         "specKit":            { "type": "boolean" },
+        "documentLifecycle":  { "type": "boolean" },
+        "specRegistry":       { "type": "boolean" },
         "crossReference":    { "type": "boolean" },
         "generatedStaleness":{ "type": "boolean" },
         "canonicalSync":     { "type": "boolean" },

@@ -1,0 +1,47 @@
+import { mkFinding, resultFromFindings } from '../findings.mjs';
+import { projectSpecRegistry, SPEC_REGISTRY_PATH } from '../scanners/spec-registry.mjs';
+
+export function validateSpecRegistry(projectDir, config = {}) {
+  const projection = projectSpecRegistry(projectDir, config);
+  if (projection.detected === 0 && !projection.exists) {
+    return resultFromFindings([], { passed: 0, total: 0, applicable: false });
+  }
+  const findings = projection.issues.map(issue => mkFinding({
+    code: issue.code,
+    validator: 'specRegistry',
+    severity: 'warn',
+    confidence: 'high',
+    message: issue.message,
+    location: issue.path,
+    suggestion: {
+      kind: 'review',
+      text: issue.code === 'SPR002'
+        ? 'Assign a unique immutable Spec ID in the authoritative spec metadata.'
+        : 'Resolve the lifecycle or registry integrity conflict, then refresh the registry.',
+      command: 'docguard specs --write',
+    },
+  }));
+  if (!projection.current && projection.issues.length === 0) {
+    findings.push(mkFinding({
+      code: 'SPR001',
+      validator: 'specRegistry',
+      severity: 'warn',
+      confidence: 'high',
+      message: projection.exists
+        ? `${SPEC_REGISTRY_PATH} does not match the current deterministic spec evidence projection.`
+        : `${SPEC_REGISTRY_PATH} is missing while active specifications exist.`,
+      location: SPEC_REGISTRY_PATH,
+      suggestion: {
+        kind: 'fix',
+        text: 'Refresh derived evidence without changing reviewed lifecycle fields.',
+        command: 'docguard specs --write',
+      },
+    }));
+  }
+  const checks = Math.max(1, projection.registry.specs.length + projection.registry.tombstones.length);
+  return resultFromFindings(findings, {
+    passed: Math.max(0, checks - findings.length),
+    total: checks,
+    applicable: true,
+  });
+}

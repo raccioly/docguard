@@ -3,13 +3,21 @@
 # to integrate DocGuard into the spec-kit workflow.
 #
 # DocGuard will automatically run as a quality gate after implementation
-# and optionally before task generation.
+# and preflight lifecycle state before specification and task generation.
 
 schema_version: "1.0"
 
 extension: docguard
 
 hooks:
+  # Brief current and retired spec intent before /speckit.specify starts.
+  before_specify:
+    - extension: docguard
+      command: speckit.docguard.brief
+      description: "Load current spec intent and block specification on stale lifecycle state"
+      enabled: true
+      optional: false
+
   # Run DocGuard guard after /speckit.implement completes
   # This ensures documentation stays in sync with code changes
   after_implement:
@@ -19,14 +27,13 @@ hooks:
       enabled: true
       optional: false
 
-  # Run DocGuard review before /speckit.tasks to catch doc drift early
+  # Gate the generated spec before /speckit.tasks creates implementation work.
   before_tasks:
     - extension: docguard
-      command: speckit.docguard.review
-      description: "Review documentation consistency before generating tasks"
+      command: speckit.docguard.preflight
+      description: "Gate the generated spec against registry integrity and prior intent"
       enabled: true
-      optional: true  # Optional — user can skip
-      prompt: "Run DocGuard review to check documentation health before task generation?"
+      optional: false
 
   # Run DocGuard guard after /speckit.tasks to validate doc coverage
   after_tasks:

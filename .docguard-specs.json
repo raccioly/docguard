@@ -1,0 +1,351 @@
+{
+  "$schema": "https://raccioly.github.io/docguard/schemas/docguard-specs.schema.json",
+  "schemaVersion": 1,
+  "specs": [
+    {
+      "specId": "docguard.document-lifecycle",
+      "path": "specs/006-document-lifecycle/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "approved",
+          "delivery": "in_progress",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": "living"
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md",
+            "docs-canonical/DATA-MODEL.md",
+            "docs-canonical/REQUIREMENTS.md",
+            "docs-canonical/TEST-SPEC.md"
+          ]
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.document-lifecycle#FR-001",
+          "docguard.document-lifecycle#FR-002",
+          "docguard.document-lifecycle#FR-003",
+          "docguard.document-lifecycle#FR-004",
+          "docguard.document-lifecycle#FR-005",
+          "docguard.document-lifecycle#FR-006",
+          "docguard.document-lifecycle#FR-007",
+          "docguard.document-lifecycle#FR-008",
+          "docguard.document-lifecycle#FR-009",
+          "docguard.document-lifecycle#FR-010",
+          "docguard.document-lifecycle#FR-011",
+          "docguard.document-lifecycle#FR-012",
+          "docguard.document-lifecycle#FR-013",
+          "docguard.document-lifecycle#FR-014",
+          "docguard.document-lifecycle#FR-015",
+          "docguard.document-lifecycle#FR-016",
+          "docguard.document-lifecycle#FR-017",
+          "docguard.document-lifecycle#FR-018",
+          "docguard.document-lifecycle#FR-019",
+          "docguard.document-lifecycle#FR-020",
+          "docguard.document-lifecycle#SC-001",
+          "docguard.document-lifecycle#SC-002",
+          "docguard.document-lifecycle#SC-003",
+          "docguard.document-lifecycle#SC-004",
+          "docguard.document-lifecycle#SC-005",
+          "docguard.document-lifecycle#SC-006",
+          "docguard.document-lifecycle#SC-007"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/006-document-lifecycle/spec.md",
+            "digest": "sha256:aa2c1bf75f10408a08deb6665f35c27468f037c58c630303a89443b97ced1d9e"
+          },
+          {
+            "path": "specs/006-document-lifecycle/plan.md",
+            "digest": "sha256:cbb46666fc2ccae79e0e83fb03b220c920b8bab34e9f05b5ab85960867123a77"
+          },
+          {
+            "path": "specs/006-document-lifecycle/tasks.md",
+            "digest": "sha256:9bd8203ad8e666f7f71d6302c61ff1cfd1c1e75379da89b84cc790a69aff6a2b"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 14,
+          "total": 23
+        },
+        "implementationEvidence": [],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/archive.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-001",
+            "file": "tests/document-lifecycle.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/archive.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/document-lifecycle.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/archive.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/archive.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/archive.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/archive.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/archive.test.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/archive.test.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/document-lifecycle.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "tests/archive.test.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "tests/spec-registry.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-013",
+            "file": "tests/spec-registry.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-014",
+            "file": "tests/spec-registry.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-015",
+            "file": "tests/spec-registry.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-020",
+            "file": "tests/archive.test.mjs",
+            "line": 22
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/archive.test.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/archive.test.mjs",
+            "line": 20
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/archive.test.mjs",
+            "line": 21
+          },
+          {
+            "requirementId": "SC-004",
+            "file": "tests/document-lifecycle.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "SC-007",
+            "file": "tests/spec-registry.test.mjs",
+            "line": 14
+          }
+        ]
+      }
+    }
+  ],
+  "tombstones": [
+    {
+      "specId": null,
+      "path": "specs/001-fix-ignore-validators/spec.md",
+      "archivedFrom": "b921dcbd0cc3476594100a414e3f8e9d4daa39c8",
+      "blob": "1bd554afadfb95c014a4510946ce70b8c80a8a55",
+      "retentionRef": "refs/remotes/origin/main",
+      "objectFormat": "sha1",
+      "recoverability": "verified",
+      "requirements": [
+        "specs/001-fix-ignore-validators/spec.md#FR-001",
+        "specs/001-fix-ignore-validators/spec.md#FR-002",
+        "specs/001-fix-ignore-validators/spec.md#FR-003",
+        "specs/001-fix-ignore-validators/spec.md#FR-004",
+        "specs/001-fix-ignore-validators/spec.md#FR-005",
+        "specs/001-fix-ignore-validators/spec.md#FR-006",
+        "specs/001-fix-ignore-validators/spec.md#FR-007",
+        "specs/001-fix-ignore-validators/spec.md#FR-008",
+        "specs/001-fix-ignore-validators/spec.md#FR-009",
+        "specs/001-fix-ignore-validators/spec.md#FR-010",
+        "specs/001-fix-ignore-validators/spec.md#FR-011",
+        "specs/001-fix-ignore-validators/spec.md#FR-012",
+        "specs/001-fix-ignore-validators/spec.md#FR-013",
+        "specs/001-fix-ignore-validators/spec.md#FR-014",
+        "specs/001-fix-ignore-validators/spec.md#SC-001",
+        "specs/001-fix-ignore-validators/spec.md#SC-002",
+        "specs/001-fix-ignore-validators/spec.md#SC-003",
+        "specs/001-fix-ignore-validators/spec.md#SC-004",
+        "specs/001-fix-ignore-validators/spec.md#SC-005",
+        "specs/001-fix-ignore-validators/spec.md#SC-006"
+      ]
+    },
+    {
+      "specId": null,
+      "path": "specs/001-fix-ignore-validators/tasks.md",
+      "archivedFrom": "b921dcbd0cc3476594100a414e3f8e9d4daa39c8",
+      "blob": "db1030e5d20e67ab905e9a25bad92d24cfd9fe8e",
+      "retentionRef": "refs/remotes/origin/main",
+      "objectFormat": "sha1",
+      "recoverability": "verified",
+      "requirements": [
+        "specs/001-fix-ignore-validators/tasks.md#T001",
+        "specs/001-fix-ignore-validators/tasks.md#T002",
+        "specs/001-fix-ignore-validators/tasks.md#T003",
+        "specs/001-fix-ignore-validators/tasks.md#T004",
+        "specs/001-fix-ignore-validators/tasks.md#T005",
+        "specs/001-fix-ignore-validators/tasks.md#T006",
+        "specs/001-fix-ignore-validators/tasks.md#T007",
+        "specs/001-fix-ignore-validators/tasks.md#T008",
+        "specs/001-fix-ignore-validators/tasks.md#T009",
+        "specs/001-fix-ignore-validators/tasks.md#T010",
+        "specs/001-fix-ignore-validators/tasks.md#T011",
+        "specs/001-fix-ignore-validators/tasks.md#T012",
+        "specs/001-fix-ignore-validators/tasks.md#T013",
+        "specs/001-fix-ignore-validators/tasks.md#T014",
+        "specs/001-fix-ignore-validators/tasks.md#T015",
+        "specs/001-fix-ignore-validators/tasks.md#T016",
+        "specs/001-fix-ignore-validators/tasks.md#T017",
+        "specs/001-fix-ignore-validators/tasks.md#T018",
+        "specs/001-fix-ignore-validators/tasks.md#T019"
+      ]
+    },
+    {
+      "specId": null,
+      "path": "specs/002-fix-test-discovery/spec.md",
+      "archivedFrom": "b921dcbd0cc3476594100a414e3f8e9d4daa39c8",
+      "blob": "93f087a13b3fca5a03f237cfb7909f71f15da9b2",
+      "retentionRef": "refs/remotes/origin/main",
+      "objectFormat": "sha1",
+      "recoverability": "verified",
+      "requirements": [
+        "specs/002-fix-test-discovery/spec.md#FR-001",
+        "specs/002-fix-test-discovery/spec.md#FR-002",
+        "specs/002-fix-test-discovery/spec.md#FR-003",
+        "specs/002-fix-test-discovery/spec.md#FR-004",
+        "specs/002-fix-test-discovery/spec.md#FR-005",
+        "specs/002-fix-test-discovery/spec.md#FR-006",
+        "specs/002-fix-test-discovery/spec.md#FR-007",
+        "specs/002-fix-test-discovery/spec.md#FR-008",
+        "specs/002-fix-test-discovery/spec.md#SC-001",
+        "specs/002-fix-test-discovery/spec.md#SC-002",
+        "specs/002-fix-test-discovery/spec.md#SC-003",
+        "specs/002-fix-test-discovery/spec.md#SC-004",
+        "specs/002-fix-test-discovery/spec.md#SC-005"
+      ]
+    },
+    {
+      "specId": null,
+      "path": "specs/002-fix-test-discovery/tasks.md",
+      "archivedFrom": "b921dcbd0cc3476594100a414e3f8e9d4daa39c8",
+      "blob": "dbf69eac7f5c5113c5a1034fb01ebcf5275f9857",
+      "retentionRef": "refs/remotes/origin/main",
+      "objectFormat": "sha1",
+      "recoverability": "verified",
+      "requirements": [
+        "specs/002-fix-test-discovery/tasks.md#T001",
+        "specs/002-fix-test-discovery/tasks.md#T002",
+        "specs/002-fix-test-discovery/tasks.md#T003",
+        "specs/002-fix-test-discovery/tasks.md#T004",
+        "specs/002-fix-test-discovery/tasks.md#T005",
+        "specs/002-fix-test-discovery/tasks.md#T006",
+        "specs/002-fix-test-discovery/tasks.md#T007",
+        "specs/002-fix-test-discovery/tasks.md#T008",
+        "specs/002-fix-test-discovery/tasks.md#T009",
+        "specs/002-fix-test-discovery/tasks.md#T010",
+        "specs/002-fix-test-discovery/tasks.md#T011",
+        "specs/002-fix-test-discovery/tasks.md#T012",
+        "specs/002-fix-test-discovery/tasks.md#T013",
+        "specs/002-fix-test-discovery/tasks.md#T014"
+      ]
+    },
+    {
+      "specId": null,
+      "path": "specs/003-v011-false-positives/spec.md",
+      "archivedFrom": "b921dcbd0cc3476594100a414e3f8e9d4daa39c8",
+      "blob": "99c99ab6ad8e83398eafaee4a8605eb1481d2bef",
+      "retentionRef": "refs/remotes/origin/main",
+      "objectFormat": "sha1",
+      "recoverability": "verified",
+      "requirements": [
+        "specs/003-v011-false-positives/spec.md#FR-001",
+        "specs/003-v011-false-positives/spec.md#FR-002",
+        "specs/003-v011-false-positives/spec.md#FR-003",
+        "specs/003-v011-false-positives/spec.md#FR-004",
+        "specs/003-v011-false-positives/spec.md#FR-005",
+        "specs/003-v011-false-positives/spec.md#FR-006",
+        "specs/003-v011-false-positives/spec.md#FR-007",
+        "specs/003-v011-false-positives/spec.md#FR-008",
+        "specs/003-v011-false-positives/spec.md#FR-009",
+        "specs/003-v011-false-positives/spec.md#FR-010",
+        "specs/003-v011-false-positives/spec.md#FR-011",
+        "specs/003-v011-false-positives/spec.md#FR-012",
+        "specs/003-v011-false-positives/spec.md#FR-013",
+        "specs/003-v011-false-positives/spec.md#FR-014",
+        "specs/003-v011-false-positives/spec.md#FR-015",
+        "specs/003-v011-false-positives/spec.md#FR-016",
+        "specs/003-v011-false-positives/spec.md#SC-001",
+        "specs/003-v011-false-positives/spec.md#SC-002",
+        "specs/003-v011-false-positives/spec.md#SC-003",
+        "specs/003-v011-false-positives/spec.md#SC-004",
+        "specs/003-v011-false-positives/spec.md#SC-005",
+        "specs/003-v011-false-positives/spec.md#SC-006",
+        "specs/003-v011-false-positives/spec.md#SC-007",
+        "specs/003-v011-false-positives/spec.md#SC-008",
+        "specs/003-v011-false-positives/spec.md#SC-009",
+        "specs/003-v011-false-positives/spec.md#SC-010"
+      ]
+    }
+  ]
+}

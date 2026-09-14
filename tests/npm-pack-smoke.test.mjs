@@ -67,6 +67,8 @@ describe('npm pack smoke', { skip: SKIP }, () => {
     assert.ok(existsSync(join(pkgDir, 'schemas')), 'schemas/ should be in the tarball (v0.15-P4)');
     assert.ok(existsSync(join(pkgDir, 'schemas/docguard-config.schema.json')),
       'schemas/docguard-config.schema.json should ship');
+    assert.ok(existsSync(join(pkgDir, 'schemas/docguard-specs.schema.json')),
+      'schemas/docguard-specs.schema.json should ship');
     assert.ok(existsSync(join(pkgDir, 'templates')), 'templates/ should be in the tarball');
     assert.ok(existsSync(join(pkgDir, 'commands')), 'commands/ should be in the tarball');
     assert.ok(existsSync(join(pkgDir, 'extensions')), 'extensions/ should be in the tarball');

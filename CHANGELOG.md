@@ -7,6 +7,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.37.0] - 2026-09-14
+
+### Added
+
+- Mandatory Spec Kit lifecycle hooks: `before_specify` loads the committed
+  prior-intent briefing and `before_tasks` gates the generated spec through the
+  same deterministic `docguard specs preflight` contract used outside Spec Kit.
+
+- `docguard retire` introduces a document-lifecycle boundary for specs, plans,
+  migrations, and historical audits. Plan mode is read-only; `--check` can gate
+  remaining candidates; writes require explicit clean tracked paths and a
+  reason. Retired prose stays recoverable from a verified retention ref while
+  `.docguard-archive.json` records source commits, blob identities, rationale,
+  replacements, evidence documents, retired requirement identities, Git object
+  format, and restore commands. Traceability recognizes those identities as
+  tombstones, preventing historical test annotations from becoming orphans or
+  silently rebinding to a later spec. Incomplete recovery entries cannot supply
+  tombstones or suppress lifecycle findings.
+- Guard includes a Document-Lifecycle validator with stable `DLC001`–`DLC004`
+  findings. Exact terminal status is high-confidence; `Completed` maturity and a
+  fully checked task list remain low-confidence review signals. Incomplete scan
+  coverage and manifest/working-tree disagreement cannot produce a false clean.
+  Projects outside a Git working tree report the validator as non-applicable,
+  and every lifecycle result is discoverable through `docguard explain`.
+- `docguard specs --check|--write` maintains a committed, byte-stable
+  `.docguard-specs.json` lifecycle registry. Immutable IDs originate in spec
+  metadata; a JSON Schema defines the reviewed lifecycle/lineage/scope boundary,
+  derived artifact and task facts, explicitly scoped test evidence, and
+  Git-backed retirement tombstones. Invalid or unknown reviewed state fails
+  closed instead of being overwritten.
+- `docguard specs preflight` provides the pre-specification lifecycle briefing;
+  `--path <spec>` gates a generated draft on registry freshness and unique
+  identity while keeping lexical overlap advisory. Guard adds `SPR001`–`SPR005`
+  through the Spec-Registry validator. Generic `retire` refuses active registered
+  specs so it cannot create a second lifecycle writer.
+
+### Changed
+
+- Spec lineage validation now rejects unknown or one-sided relationships and
+  requires a superseding target to be approved and current. Empty projects can
+  begin their first specification without manufacturing an empty registry.
+
+- The roadmap now contains current intent and contribution-ready work only.
+  Released specs and historical implementation documents are retired from the
+  active tree so AI agents cannot interpret them as current requirements.
+- The active lifecycle specification separates safe mechanical fact refreshes
+  from requirement reconciliation: implementation drift never authorizes
+  silently rewriting approved intent.
+- The llms.txt generators now use the shared backup-before-write path, including
+  when active context indexes are regenerated after archival.
+- Feature completion evidence now requires document-qualified requirement
+  annotations. Bare IDs remain available in the repository-wide matrix but
+  cannot rebind to a different feature after retirement.
+- Requirement annotations may use immutable `specId#requirementId` identities;
+  path-qualified references remain compatible. Traceability and registry
+  projection consume one shared evidence scanner, preserving the architecture
+  boundary and preventing old bare IDs from certifying a current feature.
+
 ## [0.36.2] - 2026-09-14
 
 ### Fixed
@@ -1573,8 +1631,8 @@ See docs-implementation/MIGRATION-v0.20.md for the full list.
 - **v1.0.0**: deprecated commands removed. At least 2-3 months out.
 - **forever**: `audit → guard` stays.
 
-See **[MIGRATION-v0.20.md](docs-implementation/MIGRATION-v0.20.md)** for
-the full guide.
+The v0.20 migration guide is preserved through `.docguard-archive.json` and Git
+history.
 
 ## [0.19.0] - 2026-05-26
 

@@ -1,0 +1,170 @@
+{
+  "schemaVersion": 1,
+  "strategy": "git-history",
+  "retention": {
+    "ref": "refs/remotes/origin/main",
+    "objectFormat": "sha1",
+    "recoverability": "verified"
+  },
+  "entries": [
+    {
+      "path": "docs-canonical/SURFACE-AUDIT.md",
+      "archivedAt": "2026-09-14T15:26:57.257Z",
+      "archivedFrom": "b921dcbd0cc3476594100a414e3f8e9d4daa39c8",
+      "blob": "a2ba5ab7e6fc4cd6f5893b4584f57a6146749550",
+      "reason": "Released or superseded work; current behavior is represented by canonical docs, tests, and CHANGELOG.md",
+      "restore": "git restore --source=b921dcbd0cc3476594100a414e3f8e9d4daa39c8 -- docs-canonical/SURFACE-AUDIT.md"
+    },
+    {
+      "path": "docs-implementation/MIGRATION-v0.20.md",
+      "archivedAt": "2026-09-14T15:26:57.257Z",
+      "archivedFrom": "b921dcbd0cc3476594100a414e3f8e9d4daa39c8",
+      "blob": "400a4a62adc0a9d63b968635811ab5e59369c8d6",
+      "reason": "Released or superseded work; current behavior is represented by canonical docs, tests, and CHANGELOG.md",
+      "restore": "git restore --source=b921dcbd0cc3476594100a414e3f8e9d4daa39c8 -- docs-implementation/MIGRATION-v0.20.md"
+    },
+    {
+      "path": "docs-implementation/OSS-PRECISION-ASSESSMENT.md",
+      "archivedAt": "2026-09-14T15:26:57.257Z",
+      "archivedFrom": "b921dcbd0cc3476594100a414e3f8e9d4daa39c8",
+      "blob": "d08f940514deeb2db0aa4c06519c2a7d5c2dd4fc",
+      "reason": "Released or superseded work; current behavior is represented by canonical docs, tests, and CHANGELOG.md",
+      "restore": "git restore --source=b921dcbd0cc3476594100a414e3f8e9d4daa39c8 -- docs-implementation/OSS-PRECISION-ASSESSMENT.md"
+    },
+    {
+      "path": "docs-implementation/PRECISION-VALIDATION.md",
+      "archivedAt": "2026-09-14T15:26:57.257Z",
+      "archivedFrom": "b921dcbd0cc3476594100a414e3f8e9d4daa39c8",
+      "blob": "af0b34a37834be34669d5d4a1398820f2f75575f",
+      "reason": "Released or superseded work; current behavior is represented by canonical docs, tests, and CHANGELOG.md",
+      "restore": "git restore --source=b921dcbd0cc3476594100a414e3f8e9d4daa39c8 -- docs-implementation/PRECISION-VALIDATION.md"
+    },
+    {
+      "path": "docs-implementation/TRUST-ROADMAP.md",
+      "archivedAt": "2026-09-14T15:26:57.257Z",
+      "archivedFrom": "b921dcbd0cc3476594100a414e3f8e9d4daa39c8",
+      "blob": "3bae2edd854413283b99074ae024f187b29ec263",
+      "reason": "Released or superseded work; current behavior is represented by canonical docs, tests, and CHANGELOG.md",
+      "restore": "git restore --source=b921dcbd0cc3476594100a414e3f8e9d4daa39c8 -- docs-implementation/TRUST-ROADMAP.md"
+    },
+    {
+      "path": "docs-implementation/TRUST-VALIDATION.md",
+      "archivedAt": "2026-09-14T15:26:57.257Z",
+      "archivedFrom": "b921dcbd0cc3476594100a414e3f8e9d4daa39c8",
+      "blob": "e5df37fcd648f7d6ae86a1e6941371bf0319882d",
+      "reason": "Released or superseded work; current behavior is represented by canonical docs, tests, and CHANGELOG.md",
+      "restore": "git restore --source=b921dcbd0cc3476594100a414e3f8e9d4daa39c8 -- docs-implementation/TRUST-VALIDATION.md"
+    },
+    {
+      "path": "specs/001-fix-ignore-validators/plan.md",
+      "archivedAt": "2026-09-14T15:26:57.257Z",
+      "archivedFrom": "b921dcbd0cc3476594100a414e3f8e9d4daa39c8",
+      "blob": "83ad7c749e4847a9d922403836e37ec4e93904c6",
+      "reason": "Released or superseded work; current behavior is represented by canonical docs, tests, and CHANGELOG.md",
+      "restore": "git restore --source=b921dcbd0cc3476594100a414e3f8e9d4daa39c8 -- specs/001-fix-ignore-validators/plan.md"
+    },
+    {
+      "path": "specs/001-fix-ignore-validators/spec.md",
+      "archivedAt": "2026-09-14T15:26:57.257Z",
+      "archivedFrom": "b921dcbd0cc3476594100a414e3f8e9d4daa39c8",
+      "blob": "1bd554afadfb95c014a4510946ce70b8c80a8a55",
+      "reason": "Released or superseded work; current behavior is represented by canonical docs, tests, and CHANGELOG.md",
+      "requirementIds": [
+        "FR-001", "FR-002", "FR-003", "FR-004", "FR-005", "FR-006", "FR-007",
+        "FR-008", "FR-009", "FR-010", "FR-011", "FR-012", "FR-013", "FR-014",
+        "SC-001", "SC-002", "SC-003", "SC-004", "SC-005", "SC-006"
+      ],
+      "restore": "git restore --source=b921dcbd0cc3476594100a414e3f8e9d4daa39c8 -- specs/001-fix-ignore-validators/spec.md"
+    },
+    {
+      "path": "specs/001-fix-ignore-validators/tasks.md",
+      "archivedAt": "2026-09-14T15:26:57.257Z",
+      "archivedFrom": "b921dcbd0cc3476594100a414e3f8e9d4daa39c8",
+      "blob": "db1030e5d20e67ab905e9a25bad92d24cfd9fe8e",
+      "reason": "Released or superseded work; current behavior is represented by canonical docs, tests, and CHANGELOG.md",
+      "requirementIds": [
+        "T001", "T002", "T003", "T004", "T005", "T006", "T007", "T008", "T009",
+        "T010", "T011", "T012", "T013", "T014", "T015", "T016", "T017", "T018", "T019"
+      ],
+      "restore": "git restore --source=b921dcbd0cc3476594100a414e3f8e9d4daa39c8 -- specs/001-fix-ignore-validators/tasks.md"
+    },
+    {
+      "path": "specs/002-fix-test-discovery/plan.md",
+      "archivedAt": "2026-09-14T15:26:57.257Z",
+      "archivedFrom": "b921dcbd0cc3476594100a414e3f8e9d4daa39c8",
+      "blob": "5f8d5ff9a49ec3be89c6a1b5432410696ef85d6d",
+      "reason": "Released or superseded work; current behavior is represented by canonical docs, tests, and CHANGELOG.md",
+      "restore": "git restore --source=b921dcbd0cc3476594100a414e3f8e9d4daa39c8 -- specs/002-fix-test-discovery/plan.md"
+    },
+    {
+      "path": "specs/002-fix-test-discovery/spec.md",
+      "archivedAt": "2026-09-14T15:26:57.257Z",
+      "archivedFrom": "b921dcbd0cc3476594100a414e3f8e9d4daa39c8",
+      "blob": "93f087a13b3fca5a03f237cfb7909f71f15da9b2",
+      "reason": "Released or superseded work; current behavior is represented by canonical docs, tests, and CHANGELOG.md",
+      "requirementIds": [
+        "FR-001", "FR-002", "FR-003", "FR-004", "FR-005", "FR-006", "FR-007", "FR-008",
+        "SC-001", "SC-002", "SC-003", "SC-004", "SC-005"
+      ],
+      "restore": "git restore --source=b921dcbd0cc3476594100a414e3f8e9d4daa39c8 -- specs/002-fix-test-discovery/spec.md"
+    },
+    {
+      "path": "specs/002-fix-test-discovery/tasks.md",
+      "archivedAt": "2026-09-14T15:26:57.257Z",
+      "archivedFrom": "b921dcbd0cc3476594100a414e3f8e9d4daa39c8",
+      "blob": "dbf69eac7f5c5113c5a1034fb01ebcf5275f9857",
+      "reason": "Released or superseded work; current behavior is represented by canonical docs, tests, and CHANGELOG.md",
+      "requirementIds": [
+        "T001", "T002", "T003", "T004", "T005", "T006", "T007",
+        "T008", "T009", "T010", "T011", "T012", "T013", "T014"
+      ],
+      "restore": "git restore --source=b921dcbd0cc3476594100a414e3f8e9d4daa39c8 -- specs/002-fix-test-discovery/tasks.md"
+    },
+    {
+      "path": "specs/003-v011-false-positives/plan.md",
+      "archivedAt": "2026-09-14T15:26:57.257Z",
+      "archivedFrom": "b921dcbd0cc3476594100a414e3f8e9d4daa39c8",
+      "blob": "ffbc773ffca6bd889cb342b048093cf2a9bebde6",
+      "reason": "Released or superseded work; current behavior is represented by canonical docs, tests, and CHANGELOG.md",
+      "restore": "git restore --source=b921dcbd0cc3476594100a414e3f8e9d4daa39c8 -- specs/003-v011-false-positives/plan.md"
+    },
+    {
+      "path": "specs/003-v011-false-positives/spec.md",
+      "archivedAt": "2026-09-14T15:26:57.257Z",
+      "archivedFrom": "b921dcbd0cc3476594100a414e3f8e9d4daa39c8",
+      "blob": "99c99ab6ad8e83398eafaee4a8605eb1481d2bef",
+      "reason": "Released or superseded work; current behavior is represented by canonical docs, tests, and CHANGELOG.md",
+      "requirementIds": [
+        "FR-001", "FR-002", "FR-003", "FR-004", "FR-005", "FR-006", "FR-007", "FR-008",
+        "FR-009", "FR-010", "FR-011", "FR-012", "FR-013", "FR-014", "FR-015", "FR-016",
+        "SC-001", "SC-002", "SC-003", "SC-004", "SC-005", "SC-006", "SC-007", "SC-008",
+        "SC-009", "SC-010"
+      ],
+      "restore": "git restore --source=b921dcbd0cc3476594100a414e3f8e9d4daa39c8 -- specs/003-v011-false-positives/spec.md"
+    },
+    {
+      "path": "specs/003-v011-false-positives/tasks.md",
+      "archivedAt": "2026-09-14T15:26:57.257Z",
+      "archivedFrom": "b921dcbd0cc3476594100a414e3f8e9d4daa39c8",
+      "blob": "9ac9f4931e360d81756891140ef0bf72ce7b15c0",
+      "reason": "Released or superseded work; current behavior is represented by canonical docs, tests, and CHANGELOG.md",
+      "restore": "git restore --source=b921dcbd0cc3476594100a414e3f8e9d4daa39c8 -- specs/003-v011-false-positives/tasks.md"
+    },
+    {
+      "path": "specs/004-v020-env-var-false-negative/spec.md",
+      "archivedAt": "2026-09-14T15:26:57.257Z",
+      "archivedFrom": "b921dcbd0cc3476594100a414e3f8e9d4daa39c8",
+      "blob": "36d1fa4855fa68c33f9d73765206d85d7d2268df",
+      "reason": "Released or superseded work; current behavior is represented by canonical docs, tests, and CHANGELOG.md",
+      "restore": "git restore --source=b921dcbd0cc3476594100a414e3f8e9d4daa39c8 -- specs/004-v020-env-var-false-negative/spec.md"
+    },
+    {
+      "path": "specs/005-hugocross-next-bugs/spec.md",
+      "archivedAt": "2026-09-14T15:26:57.257Z",
+      "archivedFrom": "b921dcbd0cc3476594100a414e3f8e9d4daa39c8",
+      "blob": "ef774e226a55710a95f49d2ee3e066db86dedf2d",
+      "reason": "Released or superseded work; current behavior is represented by canonical docs, tests, and CHANGELOG.md",
+      "restore": "git restore --source=b921dcbd0cc3476594100a414e3f8e9d4daa39c8 -- specs/005-hugocross-next-bugs/spec.md"
+    }
+  ]
+}

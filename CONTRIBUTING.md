@@ -50,7 +50,10 @@ machine-governed by the `canonical-sync` validator.)
 - **Minimal dependencies**: exactly one runtime dep (`@babel/parser`, exact-pinned, optional-load). New deps require constitution-level justification + exact pinning + supply-chain vetting. Default to Node.js built-ins.
 - **Validators are pure**: Each validator receives `(projectDir, config)` and returns results. No side effects.
 - **Commands don't cross-import**: Commands import from validators, never from other commands.
-- **AI is the author**: The CLI flags problems and generates prompts. It never writes doc content.
+- **Writes are explicit and bounded**: The CLI previews first. Deterministic
+  writes require a write flag, preserve recovery evidence, and fail closed on
+  ambiguous ownership. Human-authored intent is never rewritten to match code
+  automatically.
 
 ## Adding a New Command
 
@@ -66,8 +69,17 @@ machine-governed by the `canonical-sync` validator.)
 2. Import it in `cli/docguard.mjs`
 3. Add it to the help text, command routing switch, and argument parsing
 4. Update the README commands table + count (Canonical-Sync/Surface-Sync enforce these)
-5. Add tests in `tests/commands.test.mjs`
+5. Add focused tests in `tests/<command>.test.mjs` or the nearest existing suite
 6. Update `CHANGELOG.md`
+
+## Contributing a detection case
+
+Search open and closed issues and pull requests before filing. Include a minimal
+synthetic reproduction, a neighboring valid control, the expected and actual
+finding codes, and the smallest relevant configuration. Classify the report as a
+suspected false positive, false negative, unsupported syntax, or policy
+disagreement. Test-only contributions are welcome; maintainers can own the
+detector change after the behavior is reproduced.
 
 ## Adding a New Validator
 

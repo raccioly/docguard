@@ -107,6 +107,7 @@ and degrade gracefully on fork tokens and shallow clones.
 | `llms.txt` | `docguard llms` | Link index of the canonical docs ([llms.txt standard](https://llmstxt.org)) |
 | `llms-full.txt` | `docguard llms --full` | Full doc bodies inlined — one fetch, per-doc 400-line cap |
 | `.docguard/context-pack.md` | `docguard memory --pack` | Compact session-start context: guard status, scanner-derived surface counts, doc index with review dates, your AGENTS.md rules verbatim, known drift. Everything derived from code — regenerable, hallucination-free |
+| `.docguard-specs.json` | `docguard specs --check` / `--write` | Committed spec lifecycle index: reviewed status and lineage plus deterministic artifact, task, and requirement-scoped test evidence. Requirement prose stays in each authoritative spec. |
 
 Load the context pack at agent session start; regenerate any time — it is
 never hand-edited.
@@ -134,15 +135,18 @@ is the canonical source.
 ## The agent workflow
 
 ```
-diagnose → fix (research + write) → guard → verify --semantic → done
+specs preflight → diagnose → fix (research + write) → guard → verify --semantic → done
 ```
 
-1. **`docguard diagnose`** — one command that identifies everything, with
+1. **`docguard specs preflight`** — before specification, load the current intent
+   briefing. After a draft exists, rerun with `--path <spec.md>` and stop planning
+   on deterministic blockers. Review semantic overlap manually.
+2. **`docguard diagnose`** — one command that identifies everything, with
    AI-ready fix prompts (add `--format json` for structure).
-2. **`docguard fix --doc <name>`** — emits research steps + expected structure
+3. **`docguard fix --doc <name>`** — emits research steps + expected structure
    for one doc. Execute the research, write real content, no placeholders.
-3. **`docguard guard`** — verify. Loop until PASS.
-4. **`docguard verify --semantic`** — extract every checkable documented claim
+4. **`docguard guard`** — verify. Loop until PASS.
+5. **`docguard verify --semantic`** — extract every checkable documented claim
    (counts, limits, enums) with the nearest cited code path. **You** compare
    each value against the code: a green guard asserts structure, not the truth
    of documented numbers. This is the highest-value step an agent can run.
@@ -164,6 +168,15 @@ addressability, structured-content density, machine markers, llms.txt, link
 integrity. Each failing metric names its fix.
 
 ## Best practices for AI agents
+
+- Read `.docguard-specs.json` before opening prior planning documents. Follow
+  only entries whose reviewed context is `current`; tombstones preserve identity
+  and recovery without putting retired prose back into normal context.
+- Require `specId#requirementId` references for lifecycle evidence. A bare local
+  ID or a checked task cannot establish completion across a multi-spec project.
+- Run `docguard specs preflight` before drafting and
+  `docguard specs preflight --path <spec.md>` before planning. Treat deterministic
+  blockers as gates and similarity as review-only context.
 
 1. **MCP first** — native tools beat parsing CLI output.
 2. **Trust the codes** — every finding has a stable code; `explain` it before
