@@ -1,0 +1,169 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raccioly.github.io/docguard/schemas/docguard-evidence.schema.json",
+  "title": "DocGuard evidence-scoped verification manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schemaVersion", "declarations"],
+  "properties": {
+    "$schema": { "const": "https://raccioly.github.io/docguard/schemas/docguard-evidence.schema.json" },
+    "schemaVersion": { "const": 1 },
+    "declarations": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 128,
+      "items": { "$ref": "#/$defs/declaration" }
+    }
+  },
+  "$defs": {
+    "safePath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*(?:^|/)\\.local(?:/|$))(?!.*(?:^|/)\\.env(?:\\.|/|$))[^\\\\\\u0000:]+$"
+    },
+    "declaration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "applicability", "target", "source", "predicate"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{2,127}$" },
+        "applicability": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["mode"],
+          "properties": { "mode": { "const": "always" } }
+        },
+        "target": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["document", "heading", "statement"],
+          "properties": {
+            "document": { "$ref": "#/$defs/safePath" },
+            "heading": { "type": "string", "minLength": 1, "maxLength": 200 },
+            "statement": { "type": "string", "minLength": 1, "maxLength": 1000 }
+          }
+        },
+        "source": {
+          "oneOf": [
+            { "$ref": "#/$defs/jsonSource" },
+            { "$ref": "#/$defs/collectionSource" },
+            { "$ref": "#/$defs/oasdiffSource" },
+            { "$ref": "#/$defs/bufSource" }
+          ]
+        },
+        "predicate": {
+          "oneOf": [
+            { "$ref": "#/$defs/equalsPredicate" },
+            { "$ref": "#/$defs/setPredicate" },
+            { "$ref": "#/$defs/countPredicate" },
+            { "$ref": "#/$defs/noFindingsPredicate" }
+          ]
+        }
+      }
+    },
+    "jsonSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["adapter", "path", "pointer"],
+      "properties": {
+        "adapter": { "const": "json-pointer" },
+        "path": { "$ref": "#/$defs/safePath" },
+        "pointer": { "type": "string", "maxLength": 512, "pattern": "^(?:$|/)" }
+      }
+    },
+    "collectionSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["adapter", "glob", "allowEmpty"],
+      "properties": {
+        "adapter": { "const": "collection-count" },
+        "glob": { "$ref": "#/$defs/safePath" },
+        "allowEmpty": { "type": "boolean" }
+      }
+    },
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": { "$ref": "#/$defs/safePath" },
+        "sha256": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+      }
+    },
+    "reportBase": {
+      "type": "object",
+      "required": ["adapter", "adapterVersion", "path", "producerVersion", "command", "inputs"],
+      "properties": {
+        "adapterVersion": { "type": "integer", "minimum": 1, "maximum": 100 },
+        "path": { "$ref": "#/$defs/safePath" },
+        "producerVersion": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "inputs": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": { "$ref": "#/$defs/input" }
+        }
+      }
+    },
+    "oasdiffSource": {
+      "allOf": [
+        { "$ref": "#/$defs/reportBase" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "adapter": { "const": "oasdiff" },
+            "adapterVersion": {}, "path": {}, "producerVersion": {}, "inputs": {},
+            "command": { "type": "string", "minLength": 1, "maxLength": 40 }
+          }
+        }
+      ]
+    },
+    "bufSource": {
+      "allOf": [
+        { "$ref": "#/$defs/reportBase" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "adapter": { "const": "buf" },
+            "adapterVersion": {}, "path": {}, "producerVersion": {}, "inputs": {},
+            "command": { "type": "string", "minLength": 1, "maxLength": 40 }
+          }
+        }
+      ]
+    },
+    "equalsPredicate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "valueType"],
+      "properties": {
+        "kind": { "const": "equals" },
+        "valueType": { "enum": ["string", "number", "boolean", "null"] }
+      }
+    },
+    "setPredicate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "itemType", "separator"],
+      "properties": {
+        "kind": { "const": "set-equals" },
+        "itemType": { "const": "string" },
+        "separator": { "type": "string", "minLength": 1, "maxLength": 16 }
+      }
+    },
+    "countPredicate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": { "kind": { "const": "count-equals" } }
+    },
+    "noFindingsPredicate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": { "kind": { "const": "no-findings" } }
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://raccioly.github.io/docguard/schemas/docguard-evidence.schema.json",
+  "schemaVersion": 1,
+  "declarations": [
+    {
+      "id": "policy.retention-days",
+      "applicability": { "mode": "always" },
+      "target": {
+        "document": "docs-canonical/SECURITY.md",
+        "heading": "Data retention",
+        "statement": "Audit records are retained for {{value}} days."
+      },
+      "source": {
+        "adapter": "json-pointer",
+        "path": "config/policy.json",
+        "pointer": "/retentionDays"
+      },
+      "predicate": { "kind": "equals", "valueType": "number" }
+    }
+  ]
+}

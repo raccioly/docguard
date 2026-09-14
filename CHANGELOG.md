@@ -15,6 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Its five-state contract distinguishes scoped verification, contradiction,
   stale inputs, inconclusive evidence, and unsupported formats without
   claiming whole-document factual accuracy.
+- `.docguard-evidence.json` can now bind one exact Markdown statement to a
+  typed RFC 6901 JSON value, a bounded repository collection, saved oasdiff
+  JSON, or saved Buf JSON Lines. `verify --evidence`, guard, score assurance,
+  agent context, SARIF, and JUnit preserve scoped verified, contradicted, stale,
+  inconclusive, and unsupported states; stale external reports are invalidated
+  by declared input hashes and no adapter executes project or third-party code.
 
 ### Fixed
 

@@ -14,6 +14,7 @@ import { extractSemanticClaims } from '../scanners/semantic-claims.mjs';
 import { assessAgentReadability } from '../scanners/agent-readability.mjs';
 import { loadHistory, sparkline } from '../writers/history.mjs';
 import { listCanonicalDocs } from '../shared-ignore.mjs';
+import { coverSemanticClaims, evaluateEvidence } from '../evidence/evaluate.mjs';
 
 /**
  * Detect whether the project configures a test runner (the "Check 3" of the
@@ -415,11 +416,21 @@ export function runScoreInternal(projectDir, config) {
 /** Evidence boundary shared by human, CI, report, and MCP score consumers. */
 export function buildScoreAssurance(projectDir, config) {
   let unverifiedClaims = null;
-  try { unverifiedClaims = extractSemanticClaims(projectDir, config).length; } catch { /* unknown, never zero on failure */ }
+  let declaredEvidence = null;
+  try {
+    const claims = extractSemanticClaims(projectDir, config);
+    const evaluated = evaluateEvidence(projectDir, config);
+    unverifiedClaims = coverSemanticClaims(claims, evaluated).unverified;
+  } catch { /* unknown, never zero on failure */ }
+  try {
+    const evaluated = evaluateEvidence(projectDir, config);
+    declaredEvidence = { configured: evaluated.exists, status: evaluated.status, summary: evaluated.summary };
+  } catch { /* unknown, never clean on failure */ }
   return {
     status: 'unverified',
     factualAccuracy: null,
     unverifiedClaims,
+    declaredEvidence,
     limitation: 'Structural maturity is not factual accuracy. Claim discovery is heuristic; uncaptured prose remains unverified.',
   };
 }

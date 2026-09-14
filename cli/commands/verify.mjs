@@ -20,6 +20,7 @@
  * text is the human summary.
  *
  *   docguard verify [--semantic | --instructions] [--format json]
+ * @implements docguard.evidence-scoped-verification#FR-009
  */
 
 import { basename } from 'node:path';
@@ -29,6 +30,7 @@ import { extractSemanticClaims, buildSemanticVerifyTasks } from '../scanners/sem
 import { auditInstructions } from '../scanners/instruction-audit.mjs';
 import { isGitRepo, getDiffText } from '../shared-git.mjs';
 import { parseUnifiedDiff, activityLabeledDiff } from '../shared-diff.mjs';
+import { coverSemanticClaims, evaluateEvidence } from '../evidence/evaluate.mjs';
 
 const CHANGE_CODE_EXT = /\.(ts|tsx|js|jsx|mjs|cjs|py|go|rs|java|kt|rb|php|cs|swift|scala|dart)$/;
 
@@ -72,10 +74,15 @@ export function runVerify(projectDir, config, flags) {
     runInstructionAudit(projectDir, config, flags);
     return;
   }
+  if (flags.evidence) {
+    runEvidenceVerification(projectDir, config, flags);
+    return;
+  }
 
   const isJson = flags.format === 'json';
   const claims = extractSemanticClaims(projectDir, config);
-  const tasks = buildSemanticVerifyTasks(claims);
+  const evidenceCoverage = coverSemanticClaims(claims, evaluateEvidence(projectDir, config));
+  const tasks = buildSemanticVerifyTasks(evidenceCoverage.remaining);
 
   // Change-aware staging (feat 6): if --since given, attach the structured diff
   // and flag which claims are about just-changed code (verify those first).
@@ -92,6 +99,9 @@ export function runVerify(projectDir, config, flags) {
     console.log(JSON.stringify({
       command: 'verify --semantic',
       project: config.projectName,
+      discoveredClaimCount: evidenceCoverage.total,
+      verifiedWithinScope: evidenceCoverage.verifiedWithinScope,
+      coveredClaimIds: evidenceCoverage.covered,
       claimCount: tasks.length,
       // How to act on this: each task is a claim to confirm against the code.
       howToVerify: changeContext
@@ -107,7 +117,10 @@ export function runVerify(projectDir, config, flags) {
   console.log(`${c.dim}   ${config.projectName} · documented numbers / limits / enums to check against code${c.reset}\n`);
 
   if (tasks.length === 0) {
-    console.log(`  ${c.green}✅ No semantic claims found in the canonical docs.${c.reset}`);
+    const message = evidenceCoverage.total > 0
+      ? `${evidenceCoverage.verifiedWithinScope} discovered claim(s) are already covered by unique current evidence declarations.`
+      : 'No semantic claims found in the canonical docs.';
+    console.log(`  ${c.green}✅ ${message}${c.reset}`);
     console.log(`  ${c.dim}(Looks for numbers with units — days/ms/req-s/GSIs/roles/… — and status/enum lists.)${c.reset}\n`);
     return;
   }
@@ -120,6 +133,9 @@ export function runVerify(projectDir, config, flags) {
   }
 
   console.log(`  ${c.yellow}${tasks.length} claim(s) to verify against the code:${c.reset}\n`);
+  if (evidenceCoverage.verifiedWithinScope > 0) {
+    console.log(`  ${c.green}✓ ${evidenceCoverage.verifiedWithinScope} additional discovered claim(s) have unique verified-within-scope declarations.${c.reset}\n`);
+  }
   if (changeContext) {
     const nChanged = tasks.filter(t => t.aboutChangedCode).length;
     console.log(`  ${c.cyan}⚡ ${nChanged} claim(s) are about code changed since ${flags.since}${c.reset} ${c.dim}— verify these first (structured diff in --format json).${c.reset}\n`);
@@ -138,6 +154,42 @@ export function runVerify(projectDir, config, flags) {
   const cmd = mode === 'llm' ? '/docguard.verify' : 'docguard verify --semantic --format json';
   console.log(`  ${c.dim}This is the highest-value bug class and DocGuard can't judge it — an agent must.${c.reset}`);
   console.log(`  ${c.dim}Get the machine task list: ${c.cyan}${cmd}${c.dim}, then read each cited file and confirm the value.${c.reset}\n`);
+}
+
+function runEvidenceVerification(projectDir, config, flags) {
+  const evaluation = evaluateEvidence(projectDir, config);
+  if (flags.format === 'json') {
+    console.log(JSON.stringify(evaluation, null, 2));
+    return;
+  }
+  console.log(`${c.bold}🔬 DocGuard Verify — declared evidence${c.reset}`);
+  console.log(`${c.dim}   ${config.projectName} · exact statement-to-source checks${c.reset}\n`);
+  if (!evaluation.exists) {
+    console.log(`  ${c.dim}No .docguard-evidence.json manifest is configured.${c.reset}`);
+    console.log(`  ${c.dim}Start from templates/evidence-manifest.json; heuristic discovery remains available with docguard verify --semantic.${c.reset}\n`);
+    return;
+  }
+  if (evaluation.errors.length) {
+    console.log(`  ${c.red}Invalid evidence manifest:${c.reset}`);
+    for (const error of evaluation.errors) console.log(`    ${c.red}✗${c.reset} ${error.message}`);
+    console.log('');
+    return;
+  }
+  const symbols = {
+    'verified-within-scope': `${c.green}✓${c.reset}`,
+    contradicted: `${c.red}✗${c.reset}`,
+    stale: `${c.yellow}↻${c.reset}`,
+    inconclusive: `${c.yellow}?${c.reset}`,
+    unsupported: `${c.yellow}◇${c.reset}`,
+  };
+  for (const state of ['contradicted', 'stale', 'inconclusive', 'unsupported', 'verified-within-scope']) {
+    const results = evaluation.results.filter(result => result.state === state);
+    if (!results.length) continue;
+    console.log(`  ${c.bold}${state}${c.reset} (${results.length})`);
+    for (const result of results) console.log(`    ${symbols[state]} ${result.declarationId} · ${result.location} · ${result.message}`);
+    console.log('');
+  }
+  console.log(`  ${c.dim}${evaluation.scopeLimitation}${c.reset}\n`);
 }
 
 // ── verify --instructions: agent-instruction drift/conflict audit ───────────
