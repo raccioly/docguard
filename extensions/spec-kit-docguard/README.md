@@ -45,12 +45,15 @@ docguard score
 
 | Command | Alias | Purpose |
 |---------|-------|---------|
+| `speckit.docguard.init` | `docguard.init` | Initialize CDD in a project |
 | `speckit.docguard.guard` | `docguard.guard` | Run configurable quality gate with severity triage |
 | `speckit.docguard.fix` | `docguard.fix` | AI-driven documentation repair with codebase research |
 | `speckit.docguard.review` | `docguard.review` | Cross-document semantic consistency analysis (read-only) |
 | `speckit.docguard.score` | `docguard.score` | CDD maturity score with ROI improvement roadmap |
 | `speckit.docguard.diagnose` | — | Diagnose issues + generate multi-perspective AI prompts |
 | `speckit.docguard.generate` | — | Reverse-engineer canonical docs from codebase |
+| `speckit.docguard.sync` | — | Refresh code-truth sections and flag prose for review |
+| `speckit.docguard.trace` | — | Generate requirements traceability matrix |
 | `speckit.docguard.brief` | — | Load current spec intent before specification |
 | `speckit.docguard.preflight` | — | Gate the generated spec before task generation |
 | `speckit.docguard.complete` | — | Plan reviewed completion and regenerate active context after verification |

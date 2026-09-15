@@ -423,12 +423,12 @@
           {
             "requirementId": "FR-018",
             "file": "tests/hooks-contract.test.mjs",
-            "line": 11
+            "line": 13
           },
           {
             "requirementId": "FR-019",
             "file": "tests/hooks-contract.test.mjs",
-            "line": 12
+            "line": 14
           },
           {
             "requirementId": "FR-020",

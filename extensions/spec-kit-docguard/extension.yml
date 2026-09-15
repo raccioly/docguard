@@ -4,7 +4,7 @@ extension:
   id: "docguard"
   name: "DocGuard — CDD Enforcement"
   version: "0.40.4"
-  description: "Canonical-Driven Development enforcement as a true spec-kit extension. LLM-first design with automated validators, 5 AI behavior skills, spec-kit skill chaining, and workflow hooks. One pinned runtime dependency (@babel/parser); pure Node.js otherwise."
+  description: "Documentation integrity for AI-assisted repositories: lifecycle registry, drift validation, traceability, safe archival, SARIF/JUnit, MCP, GitHub Actions, and Spec Kit hooks."
   author: "Ricardo Accioly"
   repository: "https://github.com/raccioly/docguard"
   license: "MIT"
@@ -25,16 +25,20 @@ requires:
 
 provides:
   commands:
+    - name: "speckit.docguard.init"
+      file: "commands/init.md"
+      description: "Initialize Canonical-Driven Development in a project"
+
     - name: "speckit.docguard.guard"
       file: "commands/guard.md"
       description: "Run configurable quality gate with severity triage and remediation plan"
 
     - name: "speckit.docguard.fix"
-      file: "commands/generate.md"
+      file: "commands/fix.md"
       description: "AI-driven documentation repair with codebase research and validation loops"
 
     - name: "speckit.docguard.review"
-      file: "commands/diagnose.md"
+      file: "commands/review.md"
       description: "Cross-document semantic consistency analysis (read-only)"
 
     - name: "speckit.docguard.score"
@@ -48,6 +52,14 @@ provides:
     - name: "speckit.docguard.generate"
       file: "commands/generate.md"
       description: "Reverse-engineer canonical docs from existing codebase"
+
+    - name: "speckit.docguard.sync"
+      file: "commands/sync.md"
+      description: "Refresh generated code-truth sections while preserving human prose"
+
+    - name: "speckit.docguard.trace"
+      file: "commands/trace.md"
+      description: "Generate the requirements traceability matrix"
 
     - name: "speckit.docguard.brief"
       file: "commands/brief.md"

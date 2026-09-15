@@ -5781,6 +5781,48 @@
       "related_bugs": [],
       "occurrences": 5,
       "last_seen": "2026-09-15T03:05:00.000Z"
+    },
+    {
+      "id": "bug-349",
+      "timestamp": "2026-09-15T03:45:00.000Z",
+      "error_message": "The published Spec Kit extension installed successfully while fix and review resolved to the wrong command files and three shipped commands were undeclared",
+      "file": "extensions/spec-kit-docguard/extension.yml",
+      "root_cause": "The installer validated manifest syntax and file existence but the repository had no contract test for one-to-one command identity or completeness against the shipped commands directory",
+      "fix": "Map each namespaced command to its same-named file, declare init/sync/trace, add a read-only review command, and enforce unique complete name-to-file registration in tests",
+      "tags": [
+        "release",
+        "spec-kit",
+        "manifest",
+        "command-routing",
+        "packaging"
+      ],
+      "related_bugs": [
+        "bug-311",
+        "bug-331"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-09-15T03:45:00.000Z"
+    },
+    {
+      "id": "bug-350",
+      "timestamp": "2026-09-15T03:52:00.000Z",
+      "error_message": "The published extension manifest description exceeded Spec Kit's documented 200-character limit and differed from the catalog description",
+      "file": "extensions/spec-kit-docguard/extension.yml; .github/scripts/speckit-submission.py",
+      "root_cause": "The installer accepted the overlong value and the manifest and catalog generator maintained independent untested descriptions",
+      "fix": "Use one bounded description on both surfaces and test exact parity plus the upstream length limit",
+      "tags": [
+        "release",
+        "spec-kit",
+        "manifest",
+        "catalog",
+        "metadata"
+      ],
+      "related_bugs": [
+        "bug-311",
+        "bug-349"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-09-15T03:52:00.000Z"
     }
   ]
 }

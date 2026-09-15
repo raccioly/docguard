@@ -58,6 +58,7 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/commands/agents.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/commands/agent.mjs`, `cli/scanners/task-context.mjs` | `tests/agent.test.mjs`, `tests/task-context.test.mjs` | ✅ |
 | `cli/commands/hooks.mjs` | `tests/commands.test.mjs` | ✅ |
+| `extensions/spec-kit-docguard/extension.yml`, `extensions/spec-kit-docguard/commands/*.md` | `tests/hooks-contract.test.mjs` | ✅ |
 | `cli/commands/diagnose.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/commands/badge.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/commands/ci.mjs` | `tests/commands.test.mjs` | ✅ |
