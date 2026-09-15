@@ -2004,6 +2004,180 @@
           }
         ]
       }
+    },
+    {
+      "specId": "docguard.tokenless-scheduled-releases",
+      "path": "specs/011-tokenless-scheduled-releases/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "approved",
+          "delivery": "implemented",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": "living"
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": [
+            "docs-canonical/CI-RECIPES.md"
+          ]
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.tokenless-scheduled-releases#FR-001",
+          "docguard.tokenless-scheduled-releases#FR-002",
+          "docguard.tokenless-scheduled-releases#FR-003",
+          "docguard.tokenless-scheduled-releases#FR-004",
+          "docguard.tokenless-scheduled-releases#FR-005",
+          "docguard.tokenless-scheduled-releases#FR-006",
+          "docguard.tokenless-scheduled-releases#FR-007",
+          "docguard.tokenless-scheduled-releases#FR-008",
+          "docguard.tokenless-scheduled-releases#FR-009",
+          "docguard.tokenless-scheduled-releases#FR-010",
+          "docguard.tokenless-scheduled-releases#FR-011",
+          "docguard.tokenless-scheduled-releases#FR-012",
+          "docguard.tokenless-scheduled-releases#SC-001",
+          "docguard.tokenless-scheduled-releases#SC-002",
+          "docguard.tokenless-scheduled-releases#SC-003",
+          "docguard.tokenless-scheduled-releases#SC-004"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/011-tokenless-scheduled-releases/spec.md",
+            "digest": "sha256:fa86a0813c2d8ecd6e9205caeb491ff9591ef5d3bec9af5b317487809f6969c0"
+          },
+          {
+            "path": "specs/011-tokenless-scheduled-releases/plan.md",
+            "digest": "sha256:9d07bc138352e975be505f7eeb27b9cf55c44f09f49e96c1ece33456f5cce491"
+          },
+          {
+            "path": "specs/011-tokenless-scheduled-releases/tasks.md",
+            "digest": "sha256:a65b5d1ad245a3198fc9337aee3b5fa635fbcae44366d782b55c2ca2095e1372"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 9,
+          "total": 11
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-005",
+            "file": "cli/release-pr-policy.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/release-pr-policy.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/release-pr-policy.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "cli/release-pr-policy.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "cli/release-pr-policy.mjs",
+            "line": 8
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/scheduled-release.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/scheduled-release.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/scheduled-release.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/scheduled-release.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/scheduled-release.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/scheduled-release.test.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/scheduled-release.test.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/scheduled-release.test.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "tests/scheduled-release.test.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "tests/scheduled-release.test.mjs",
+            "line": 20
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "tests/scheduled-release.test.mjs",
+            "line": 21
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "tests/scheduled-release.test.mjs",
+            "line": 22
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/scheduled-release.test.mjs",
+            "line": 23
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/scheduled-release.test.mjs",
+            "line": 24
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/scheduled-release.test.mjs",
+            "line": 25
+          }
+        ]
+      }
     }
   ],
   "tombstones": [

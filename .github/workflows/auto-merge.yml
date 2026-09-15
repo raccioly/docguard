@@ -10,15 +10,17 @@ name: Auto-merge (green bot PRs)
 # the head SHA, re-verifies every matrix leg via the API, and merges itself.
 # No repo settings required, and it is fail-closed: anything unexpected → skip.
 #
-# SECURITY: workflow_run runs in the BASE repo context with write scope, so it
-# NEVER checks out or executes PR code. It reads PR metadata + check results
-# via the API only. (Same rule as jules-triage.yml / AGENTS.md CI rule.)
+# SECURITY: workflow_run runs in the BASE repo context with write scope. It
+# checks out only the default branch policy with persisted credentials disabled,
+# then reads PR metadata and candidate files as inert API data. It never checks
+# out or executes PR code.
 #
 # WHAT AUTO-MERGES:
 #   - dependabot: patch + minor only. Majors NEVER (v0.34.1 shipped a Node-18
 #     break from an auto-accepted @babel/parser major; bug-255).
 #   - jules: test-only and docs-only changes. Anything touching cli/ logic,
 #     .github/, or package.json is labeled and left for a human.
+#   - release: exact scheduler-owned next-version surfaces after dispatched CI.
 
 on:
   workflow_run:
@@ -26,20 +28,28 @@ on:
     types: [completed]
 
 permissions:
+  actions: write
   contents: write
   pull-requests: write
   checks: read
-  actions: read
 
 jobs:
   auto-merge:
-    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'pull_request'
+    if: github.event.workflow_run.conclusion == 'success' && (github.event.workflow_run.event == 'pull_request' || github.event.workflow_run.event == 'workflow_dispatch')
     runs-on: ubuntu-latest
     steps:
+      - name: Check out trusted release policy
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+
       - name: Evaluate and merge if safe
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
+            const policyPath = process.env.GITHUB_WORKSPACE + '/cli/release-pr-policy.mjs';
+            const { evaluateReleaseCandidate, evaluateReleaseJobs } = await import(policyPath);
             const owner = context.repo.owner;
             const repo = context.repo.repo;
             const run = context.payload.workflow_run;
@@ -56,10 +66,14 @@ jobs:
 
             const BOT_DEPENDABOT = 'dependabot[bot]';
             const BOT_JULES = 'google-labs-jules[bot]';
-            const releasePr = pr.head.repo.full_name === `${owner}/${repo}` &&
+            const releaseShape = pr.head.repo.full_name === `${owner}/${repo}` &&
               /^release\/v\d+\.\d+\.\d+$/.test(pr.head.ref || '') &&
               /^release: v\d+\.\d+\.\d+ — automated weekly batch$/.test(pr.title || '');
-            if (![BOT_DEPENDABOT, BOT_JULES].includes(author) && !releasePr) {
+            if (run.event === 'workflow_dispatch' && !releaseShape) {
+              core.info(`#${num} is not a release PR — dispatched recovery CI cannot auto-merge it.`);
+              return;
+            }
+            if (![BOT_DEPENDABOT, BOT_JULES].includes(author) && !releaseShape) {
               core.info(`#${num} authored by ${author} (not a handled bot) — leaving alone.`);
               return;
             }
@@ -75,21 +89,17 @@ jobs:
               core.notice(`#${num} held: ${why}`);
             };
 
-            // ── Re-verify EVERY matrix leg independently ─────────────────
-            // workflow_run.conclusion=success covers this run, but be explicit:
-            // all four Node legs must be present AND successful. Fail closed.
-            const { data: checks } = await github.rest.checks.listForRef({
-              owner, repo, ref: headSha, per_page: 100,
-            });
-            const REQUIRED = ['test (18)', 'test (20)', 'test (22)', 'test (24)'];
-            const bad = [];
-            for (const name of REQUIRED) {
-              const c = checks.check_runs.find((r) => r.name === name);
-              if (!c) bad.push(`${name}: missing`);
-              else if (c.conclusion !== 'success') bad.push(`${name}: ${c.conclusion}`);
+            // ── Re-verify this exact workflow run independently ───────────
+            if (headSha !== pr.head.sha || run.head_branch !== pr.head.ref) {
+              core.info(`#${num} not merging — triggering run does not match the current PR head.`);
+              return;
             }
-            if (bad.length) {
-              core.info(`#${num} not merging — checks not all green: ${bad.join(', ')}`);
+            const { data: runJobs } = await github.rest.actions.listJobsForWorkflowRun({
+              owner, repo, run_id: run.id, filter: 'latest', per_page: 100,
+            });
+            const jobPolicy = evaluateReleaseJobs(runJobs.jobs);
+            if (!jobPolicy.ok) {
+              core.info(`#${num} not merging — exact-run checks failed: ${jobPolicy.errors.join(', ')}`);
               return;
             }
 
@@ -99,17 +109,54 @@ jobs:
             });
             const paths = files.map((f) => f.filename);
 
-            if (releasePr) {
-              // Release PRs cut by scheduled-release.yml. Tightly constrained:
-              // must come from a release/ branch and touch ONLY the exact
-              // version, changelog, extension and generated skill surfaces.
-              const ALLOWED = /^(package(-lock)?\.json|pyproject\.toml|server\.json|CHANGELOG\.md|templates\/ci\/github-actions\.yml|extensions\/spec-kit-docguard\/(extension\.yml|templates\/github-workflows\/(docguard-guard|docguard-autofix)\.yml|skills\/docguard-(fix|guard|review|score|sync)\/SKILL\.md)|\.agent\/skills\/docguard-(fix|guard|review|score|sync)\/SKILL\.md)$/;
-              const unexpected = paths.filter((p) => !ALLOWED.test(p));
-              if (unexpected.length) {
-                await hold('needs-review', `a release PR touching unexpected files:\n${unexpected.map((p) => `- \`${p}\``).join('\n')}`);
+            if (releaseShape) {
+              const textAt = async (path, ref) => {
+                const { data } = await github.rest.repos.getContent({ owner, repo, path, ref });
+                if (Array.isArray(data) || !data.content) throw new Error(`${path}: expected a file`);
+                return Buffer.from(data.content, 'base64').toString('utf8');
+              };
+              try {
+                const candidateFiles = {
+                  packageJson: await textAt('package.json', headSha),
+                  packageLock: await textAt('package-lock.json', headSha),
+                  pyproject: await textAt('pyproject.toml', headSha),
+                  server: await textAt('server.json', headSha),
+                  extension: await textAt('extensions/spec-kit-docguard/extension.yml', headSha),
+                };
+                const baseVersion = JSON.parse(await textAt('package.json', pr.base.sha)).version;
+                const policyInput = {
+                  repository: `${owner}/${repo}`,
+                  headRepo: pr.head.repo.full_name,
+                  defaultBranch: context.payload.repository.default_branch,
+                  baseRef: pr.base.ref,
+                  headRef: pr.head.ref,
+                  title: pr.title,
+                  author,
+                  baseVersion,
+                  paths,
+                  files: candidateFiles,
+                  tagExists: false,
+                };
+                const preliminary = evaluateReleaseCandidate(policyInput);
+                let tagExists = false;
+                if (preliminary.version && /^\d+\.\d+\.\d+$/.test(preliminary.version)) {
+                  try {
+                    await github.rest.git.getRef({ owner, repo, ref: `tags/v${preliminary.version}` });
+                    tagExists = true;
+                  } catch (e) {
+                    if (e.status !== 404) throw e;
+                  }
+                }
+                const candidatePolicy = evaluateReleaseCandidate({ ...policyInput, tagExists });
+                if (!candidatePolicy.ok) {
+                  await hold('needs-review', `release policy rejected the candidate:\n${candidatePolicy.errors.map((error) => `- ${error}`).join('\n')}`);
+                  return;
+                }
+                core.info(`#${num} authenticated tokenless release PR (${pr.head.ref}) — eligible.`);
+              } catch (e) {
+                await hold('needs-review', `release metadata could not be verified: ${e.message}`);
                 return;
               }
-              core.info(`#${num} authenticated release PR (${pr.head.ref}, author ${author}) — eligible.`);
             } else if (author === BOT_DEPENDABOT) {
               // Version delta from the title: "bump X from 1.2.3 to 1.2.4"
               const m = /from (\d+)\.(\d+)\.(\d+)\S* to (\d+)\.(\d+)\.(\d+)/.exec(pr.title || '');
@@ -135,12 +182,32 @@ jobs:
 
             // ── Merge ────────────────────────────────────────────────────
             try {
-              await github.rest.pulls.merge({
+              const { data: merge } = await github.rest.pulls.merge({
                 owner, repo, pull_number: num, merge_method: 'squash',
               });
+              if (!merge.merged) throw new Error(merge.message || 'GitHub declined the merge');
+              if (releaseShape) {
+                try {
+                  await github.rest.actions.createWorkflowDispatch({
+                    owner,
+                    repo,
+                    workflow_id: 'release.yml',
+                    ref: context.payload.repository.default_branch,
+                  });
+                } catch (dispatchError) {
+                  await github.rest.issues.createComment({
+                    owner,
+                    repo,
+                    issue_number: num,
+                    body: `⚠️ **Merged, publication dispatch failed** — ${dispatchError.message}. The next scheduled release run will retry the untagged package version.`,
+                  });
+                  core.setFailed(`Merged #${num}, but release dispatch failed: ${dispatchError.message}`);
+                  return;
+                }
+              }
               await github.rest.issues.createComment({
                 owner, repo, issue_number: num,
-                body: `🤖 **Auto-merged** — all four Node legs (18/20/22/24) green, within the test-runtime budget, and inside the auto-merge policy in \`.github/workflows/auto-merge.yml\`.`,
+                body: `🤖 **Auto-merged** — the exact CI run passed all four Node legs (18/20/22/24), stayed within the test-runtime budget, and satisfied the policy in \`.github/workflows/auto-merge.yml\`.${releaseShape ? ' Publication was dispatched on main.' : ''}`,
               });
               core.notice(`Merged #${num}.`);
             } catch (e) {

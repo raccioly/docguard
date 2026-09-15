@@ -49,17 +49,21 @@ On a schedule, produce a diff, check for an existing repair PR, and create a new
 The repository's scheduled release workflow opens a reviewable `release/vX.Y.Z`
 pull request because `main` requires pull requests and four runtime checks. GitHub
 places pull-request workflows created with the repository `GITHUB_TOKEN` into an
-approval-required state. A separately dispatched workflow does not satisfy the
-auto-merge gate because that gate accepts successful `pull_request` runs only.
+approval-required state, but explicitly created `workflow_dispatch` events always
+run. The scheduler therefore uses only the job-scoped repository token: it pushes
+the release branch, opens or reuses its PR, and dispatches read-only CI on that
+exact branch.
 
-Configure `RELEASE_PR_TOKEN` as either a repository-scoped GitHub App token or a
-fine-grained user token with **Contents: write** and **Pull requests: write**.
-The workflow fails before creating a branch when the credential is absent. The
-token creates the pull request; the release workflow retains the repository
-token for its own checkout and branch push. Auto-merge independently verifies
-the repository, release-branch/version shape, allowed file set, and all four
-required Node checks before merging. Rotate the credential through repository
-secret management and never expose it to pull-request jobs.
+The privileged `workflow_run` gate checks out policy code only from the default
+branch with persisted credentials disabled. It binds the decision to the
+triggering run ID and current PR head, requires all four Node jobs, and validates
+the base repository, bot author, branch/title/version agreement, next-version
+increment, missing release tag, synchronized package surfaces, and changed-file
+allowlist. It never checks out or executes candidate code. After merge it
+dispatches the idempotent release workflow. If that dispatch is interrupted, the
+next schedule sees the current package version without a tag and retries
+publication before considering another bump. An orphaned release branch fails
+closed; an existing open release PR is reused.
 
 ## Recipe 3b — Spec completion and post-hoc reconciliation
 

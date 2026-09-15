@@ -11,6 +11,10 @@ on:
 permissions:
   contents: write # Needed to create tags and releases
 
+concurrency:
+  group: docguard-release
+  cancel-in-progress: false
+
 jobs:
   # ── Step 1: Detect if version changed ──────────────────────────────────
   detect-version:

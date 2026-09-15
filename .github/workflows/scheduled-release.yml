@@ -8,10 +8,10 @@ name: Scheduled Release
 # patch and publish constantly. Weekly batching keeps releases hands-off
 # without turning the registry into a changelog.
 #
-# HOW IT TRIGGERS THE ACTUAL RELEASE: this workflow only bumps package.json
-# and pushes. release.yml is triggered by pushes that touch package.json, so
-# it picks up from there and does tag → GitHub Release → npm → PyPI → catalog
-# reminder. Keeping the publish logic in one place (release.yml) on purpose.
+# HOW IT TRIGGERS THE ACTUAL RELEASE: the repository token opens a protected PR
+# and explicitly dispatches CI on its branch. The metadata-only auto-merge gate
+# dispatches release.yml after merge. A later schedule retries publication when
+# package.json has no corresponding tag.
 #
 # NO-OP WHEN NOTHING CHANGED: if there are no commits since the last release
 # tag, this exits without bumping — no empty releases.
@@ -29,8 +29,13 @@ on:
         options: [patch, minor]
 
 permissions:
+  actions: write
   contents: write
   pull-requests: write
+
+concurrency:
+  group: scheduled-release
+  cancel-in-progress: false
 
 jobs:
   cut-release:
@@ -46,10 +51,19 @@ jobs:
 
       - name: Check for unreleased changes
         id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           CURRENT=$(node -p "require('./package.json').version")
           LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
           echo "current=$CURRENT" >> "$GITHUB_OUTPUT"
+
+          if ! git ls-remote --tags origin "refs/tags/v$CURRENT" | grep -q "refs/tags/v$CURRENT$"; then
+            echo "v$CURRENT is not published — dispatching idempotent release recovery."
+            gh workflow run release.yml --ref main
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
 
           if [ -z "$LAST_TAG" ]; then
             echo "No tags yet — nothing to compare against, skipping."
@@ -129,36 +143,34 @@ jobs:
           npm test
           node cli/docguard.mjs guard || [ $? -eq 2 ]
 
-      # Two stacked constraints make a direct `git push origin HEAD:main`
-      # impossible here, so this opens a PR instead:
+      # Main requires a PR and four runtime checks. A repository-token PR leaves
+      # pull_request runs approval-gated, so dispatch CI explicitly against the
+      # release branch. workflow_dispatch is the documented GITHUB_TOKEN
+      # recursion exception; auto-merge verifies the exact completed run.
       #
       #   1. main requires a pull request. github-actions[bot] is not an admin
       #      and has no bypass, so a direct push is rejected outright.
-      #   2. A PR opened with GITHUB_TOKEN starts pull_request workflows in an
-      #      approval-required state. A separately dispatched CI run is not a
-      #      pull_request run, so it cannot activate the fail-closed auto-merge
-      #      workflow even when its checks pass.
-      #
-      # RELEASE_PR_TOKEN must be a repository-scoped GitHub App token or a
-      # fine-grained user token with Contents and Pull requests write access.
-      # Using that token to create the PR produces an ordinary pull_request run;
-      # auto-merge.yml then merges only after all four required legs pass.
-      - name: Require release PR credential
-        if: steps.check.outputs.changed == 'true'
-        env:
-          RELEASE_PR_TOKEN: ${{ secrets.RELEASE_PR_TOKEN }}
-        run: |
-          if [ -z "$RELEASE_PR_TOKEN" ]; then
-            echo "::error::RELEASE_PR_TOKEN is required. Configure a repository-scoped GitHub App or fine-grained token with Contents and Pull requests write access."
-            exit 1
-          fi
-
       - name: Open release PR
         if: steps.check.outputs.changed == 'true'
         env:
-          GH_TOKEN: ${{ secrets.RELEASE_PR_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           BRANCH="release/v${NEW_VERSION}"
+          EXISTING=$(gh pr list --base main --head "$BRANCH" --state open --json url --jq '.[0].url // ""')
+          if [ -n "$EXISTING" ]; then
+            echo "Reusing existing release PR: $EXISTING"
+            git fetch origin "$BRANCH"
+            if ! git merge-base --is-ancestor HEAD "origin/$BRANCH"; then
+              echo "::error::Existing $BRANCH does not contain current main; refusing to validate a stale release."
+              exit 1
+            fi
+            gh workflow run ci.yml --ref "$BRANCH"
+            exit 0
+          fi
+          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+            echo "::error::Remote branch $BRANCH exists without an open PR; refusing to overwrite it."
+            exit 1
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -b "$BRANCH"
@@ -166,7 +178,7 @@ jobs:
           git commit -m "release: v${NEW_VERSION} — automated weekly batch
 
           Cut by .github/workflows/scheduled-release.yml. Publishing itself is
-          handled by release.yml, which triggers once this lands on main."
+          handled by release.yml, which the merge gate dispatches on main."
           git push origin "$BRANCH"
 
           gh pr create \
@@ -175,8 +187,9 @@ jobs:
             --title "release: v${NEW_VERSION} — automated weekly batch" \
             --body "Automated weekly release cut by \`scheduled-release.yml\`.
 
-          Batches everything merged since \`${{ steps.check.outputs.last_tag }}\`. Tests and \`guard\` already passed on this tree before the PR was opened. The release credential creates a normal pull request so required CI checks can run and the fail-closed auto-merge policy can evaluate them.
+          Batches everything merged since \`${{ steps.check.outputs.last_tag }}\`. Tests and \`guard\` already passed on this tree before the PR was opened. CI is explicitly dispatched on this branch so the fail-closed auto-merge policy can evaluate the exact run.
 
-          Once green, \`auto-merge.yml\` merges this, and the \`package.json\` change triggers \`release.yml\` to tag and publish."
+          Once green, \`auto-merge.yml\` merges this and dispatches \`release.yml\` to tag and publish."
 
-          echo "Opened $BRANCH; pull-request CI will report on its merge revision."
+          gh workflow run ci.yml --ref "$BRANCH"
+          echo "Opened $BRANCH and dispatched CI; the metadata-only gate will evaluate its exact run."
