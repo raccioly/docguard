@@ -2,7 +2,6 @@
  * @implements docguard.language-repository-coverage#FR-010
  * @implements docguard.language-repository-coverage#FR-011
  */
-import { assertMappedFullDocumentWrites, docRolePath, isMappedDocPath, resolveDocRole } from '../shared-doc-roles.mjs';
 /**
  * Fix Command — The AI Orchestrator
  * 
@@ -24,61 +23,31 @@ import { execSync, execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { c } from '../shared.mjs';
 import { computeApiSurfaceDrift } from '../validators/api-surface.mjs';
-import { removeEndpoints, hasGeneratedMarker } from '../writers/api-reference.mjs';
 import { applyMechanicalFixes } from '../writers/mechanical.mjs';
 import { loadFixMemory } from '../writers/fix-memory.mjs';
 import { safeWrite } from '../writers/generate-io.mjs';
 import { runGuardInternal } from './guard.mjs';
 
 /**
- * Apply DETERMINISTIC, no-LLM API-surface fixes: remove endpoints documented in
- * API-REFERENCE.md that the OpenAPI spec confirms no longer exist. Removes the
- * summary-table row and the detail block. Never rewrites prose.
+ * Compatibility entry point for the former API deletion writer.
  *
- * Safety: only edits a doc carrying the `<!-- docguard:generated true -->`
- * marker, unless `force` is set. Idempotent.
+ * OpenAPI can prove a contract omission, while bounded route discovery cannot
+ * prove runtime absence and canonical documentation may represent intended
+ * behavior. Contract mismatches therefore require review and this entry point
+ * is deliberately read-only, including under `--force`.
  *
  * @returns {{ applied: boolean, removed: Array<{method,path}>, skipped?: string }}
  */
-export function applyApiSurfaceWrites(projectDir, config, { force = false } = {}) {
+export function applyApiSurfaceWrites(projectDir, config) {
   const drift = computeApiSurfaceDrift(projectDir, config);
-  // Only spec-confirmed absences are safe to delete deterministically.
-  const removable = drift.confidence === 'spec' ? drift.documentedButAbsent : [];
-  if (removable.length === 0) return { applied: false, removed: [] };
-
-  const apiDoc = docRolePath(config, 'apiReference');
-  const apiDocPath = resolveDocRole(projectDir, config, 'apiReference');
-  if (!existsSync(apiDocPath)) return { applied: false, removed: [] };
-
-  const content = readFileSync(apiDocPath, 'utf-8');
-  if (!hasGeneratedMarker(content) && !force) {
-    return {
-      applied: false,
-      removed: [],
-      skipped: `${apiDoc} is not marked '<!-- docguard:generated true -->'. ` +
-        `Re-run with --force to edit it, or fix it via an AI agent (/docguard.fix --doc api-reference).`,
-    };
-  }
-  if (isMappedDocPath(config, apiDoc)) assertMappedFullDocumentWrites(projectDir, config, ['apiReference']);
-
-  const { content: newContent, removed } = removeEndpoints(content, removable);
-  if (removed.length === 0 || newContent === content) {
-    return { applied: false, removed: [] }; // idempotent no-op
-  }
-
-  safeWrite(apiDocPath, newContent);
-  // Map removed keys back to {method,path} for reporting.
-  const removedEndpoints = removable.filter(e => removed.includes(`${e.method.toUpperCase()} ${normalizeForKey(e.path)}`));
-  return { applied: true, removed: removedEndpoints.length ? removedEndpoints : removable };
-}
-
-// Local mirror of api-doc normalizePath for matching removed keys (avoids an
-// extra import cycle); only used for display reconciliation.
-function normalizeForKey(p) {
-  let s = String(p).trim().replace(/^[|`'"\s]+/, '').replace(/[|`'"\s]+$/, '').split(/[?#]/)[0];
-  s = s.replace(/\{[^}/]+\}/g, '{}').replace(/:[^/]+/g, '{}');
-  if (s.length > 1) s = s.replace(/\/+$/, '');
-  return s;
+  const reviewCount = drift.confidence === 'spec' ? drift.contractMismatches.length : 0;
+  return {
+    applied: false,
+    removed: [],
+    ...(reviewCount > 0 ? {
+      skipped: `${reviewCount} endpoint contract mismatch(es) require review; negative route-scan evidence cannot authorize documentation deletion.`,
+    } : {}),
+  };
 }
 
 // ── Document Quality Definitions ───────────────────────────────────────────

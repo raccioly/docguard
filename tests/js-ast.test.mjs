@@ -95,8 +95,9 @@ describe('extractJsSchemaBodies — balanced bodies (the brace-truncation fix)',
 });
 
 describe('extractJsRouteCalls — AST route registration (the routes migration)', () => {
-  it('matches ANY router receiver, not just app/router/server', () => {
+  it('matches receivers proven to be router instances', () => {
     const got = extractJsRouteCalls(
+      "const userRouter = Router(); const v1 = Router(); const r = Router();\n" +
       "userRouter.get('/users', list);\n" +
       "v1.post('/users', create);\n" +
       "r.delete('/users/:id', del);\n",
@@ -145,6 +146,16 @@ describe('extractJsRouteCalls — AST route registration (the routes migration)'
     assert.strictEqual(byPath['/a'], 'router');
     assert.strictEqual(byPath['/health'], 'app');
   });
+
+  it('does not treat chained HTTP client calls as route registrations', () => {
+    const got = extractJsRouteCalls(
+      "request(app).get('/api/items');\n" +
+      "createClient().post('/api/items');\n" +
+      "router.get('/api/items', list);\n",
+      'r.ts'
+    );
+    assert.deepEqual(got.map(x => `${x.method} ${x.path}`), ['GET /api/items']);
+  });
 });
 
 describe('extractJsMountsAndImports — mount-prefix resolution inputs', () => {
@@ -161,6 +172,7 @@ describe('extractJsMountsAndImports — mount-prefix resolution inputs', () => {
     assert.strictEqual(got.imports.tagRoutes, './routes/tags');
     const mounts = got.mounts.map(m => `${m.prefix}=${m.ident}`).sort();
     assert.deepEqual(mounts, ['/api/tags=tagRoutes', '/api/users=userRoutes']);
+    assert.ok(got.mounts.every(m => m.receiver === 'app'));
   });
 
   it('ignores non-string-literal (dynamic) mount prefixes', () => {

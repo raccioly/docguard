@@ -405,9 +405,7 @@ export function validateApiSurface(projectDir, config) {
           confidence: 'high', // certain contract omission, NOT certain code absence
           message: `Documented endpoint missing from OpenAPI contract (${source}): ${e.method} ${e.path} (${API_DOC}). ${codeDescription}`,
           location: API_DOC,
-          suggestion: e.codeEvidence.status === 'not-found'
-            ? { kind: 'fix', text: 'Remove the endpoint omitted from the contract and not found by the code scan; verify scanner coverage before applying', command: 'docguard fix --write' }
-            : { kind: 'review', text: e.codeEvidence.status === 'present'
+          suggestion: { kind: 'review', text: e.codeEvidence.status === 'present'
             ? 'Reconcile the implementation with the intended contract; update OpenAPI if the route is intended. Preserve the documented endpoint during review.'
             : 'Reconcile the contract and documentation with the intended API. Verify implementation coverage and whether the endpoint was removed before editing documentation.' },
         }),
@@ -424,12 +422,9 @@ export function validateApiSurface(projectDir, config) {
     }
   }
 
-  // Only the contract-and-code corroborated subset reaches mechanical writes.
-  if (confidence === 'spec') {
-    for (const e of documentedButAbsent) {
-      fixes.push({ type: 'remove-endpoint', method: e.method, path: e.path, doc: API_DOC });
-    }
-  }
+  // A route scanner can prove presence, but unsupported syntax means it cannot
+  // prove absence. Contract omissions therefore remain review-only and never
+  // become mechanical deletion candidates, even when no route was extracted.
 
   // Without a spec, a negative scan remains a low-confidence review candidate.
   if (confidence !== 'spec' && documentedButAbsent.length) {

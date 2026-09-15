@@ -1,3 +1,4 @@
+// @req docguard.adoption-workflow-integrity#FR-014
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, rmSync, symlinkSync } from 'node:fs';
@@ -62,16 +63,17 @@ function invoke(dir, args) {
 
 for (const mode of ['raw', 'loaded']) {
   /** @req docguard.language-repository-coverage#FR-010 */
-  test('permits a generated mapped API writer and leaves the legacy path untouched: ' + mode, t => {
+  test('keeps mapped API contract mismatches review-only: ' + mode, t => {
     const { dir, raw } = mappedFixture(t);
     const config = mode === 'raw' ? raw : loadConfig(dir);
     const candidates = validateApiSurface(dir, config).fixes;
-    assert.ok(candidates.some(f => f.type === 'remove-endpoint' && f.doc === 'reference/http.md'), 'fixture must exercise a real pending write');
+    assert.deepEqual(candidates, []);
+    const before = snapshot(dir);
     const result = applyApiSurfaceWrites(dir, config);
-    assert.equal(result.applied, true);
-    assert.doesNotMatch(readFileSync(join(dir, 'reference/http.md'), 'utf8'), /removed/);
-    assert.match(readFileSync(join(dir, 'docs-canonical/API-REFERENCE.md'), 'utf8'), /removed/);
-    assert.equal(existsSync(join(dir, 'reference/http.md.bak')), true);
+    assert.equal(result.applied, false);
+    assert.deepEqual(result.removed, []);
+    assert.match(result.skipped, /require review/);
+    assert.deepEqual(snapshot(dir), before);
   });
 }
 
@@ -86,12 +88,12 @@ for (const args of [['diagnose', '--auto'], ['diagnose', '--auto', '--force'], [
   });
 }
 
-test('CLI fix writes a fully generated mapped document', t => {
+test('CLI fix preserves generated mapped API docs when intent requires review', t => {
   const { dir } = mappedFixture(t);
+  const before = snapshot(dir);
   const result = invoke(dir, ['fix', '--write']);
   assert.equal(result.status, 0, result.stderr);
-  assert.doesNotMatch(readFileSync(join(dir, 'reference/http.md'), 'utf8'), /removed/);
-  assert.match(readFileSync(join(dir, 'docs-canonical/API-REFERENCE.md'), 'utf8'), /removed/);
+  assert.deepEqual(snapshot(dir), before);
 });
 
 test('generate plan updates only owned mapped code sections', t => {
@@ -193,12 +195,14 @@ test('full generation preflights shared mapped targets before creating anything'
 });
 
 /** @req docguard.language-repository-coverage#FR-011 */
-test('force cannot overwrite an existing mapped human API document', t => {
+test('force cannot turn uncertain API absence into a documentation deletion', t => {
   const { dir, raw } = mappedFixture(t);
   const path = join(dir, 'reference/http.md');
   safeWrite(path, 'Human introduction\n#### GET /api/removed\n');
   const before = snapshot(dir);
-  assert.throws(() => applyApiSurfaceWrites(dir, raw, { force: true }), /not fully owned|--force cannot/);
+  const result = applyApiSurfaceWrites(dir, raw, { force: true });
+  assert.equal(result.applied, false);
+  assert.deepEqual(result.removed, []);
   assert.deepEqual(snapshot(dir), before);
 });
 

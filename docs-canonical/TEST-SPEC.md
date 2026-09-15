@@ -183,3 +183,18 @@ executed. The packed adopter workflow starts with a foreign hook and a
 specification missing immutable metadata, runs the installed CLI, validates
 every rendered suggestion, follows the proposed remediation, and requires the
 post-action registry check to pass.
+
+Express route fixtures pair real registrations with chained HTTP-client calls,
+same-path test requests, conventional test-helper trees, single-level mounts,
+and nested imported mounts. They also cover static path constants, pathless
+mounts, aliased router exports, trailing middleware, and multiple router symbols
+in one module. Non-product evidence is rejected before route-key deduplication
+so a discarded test call cannot hide a later product route.
+
+API omission tests preserve documented endpoints across generated and human
+documents, mapped roles, and forced writes whenever the only runtime-absence
+evidence is a bounded scan. Field-replay controls pair historical and current
+metrics, multiline and disconnected skip reasons, repeated and unrepeated test
+credentials, package-local and ignored environment templates, authoritative and
+stale OpenAPI copies, parameter-equivalent and different routes, frontend
+utilities and real services, and known versus unknown validator schema keys.

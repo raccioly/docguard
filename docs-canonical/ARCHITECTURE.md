@@ -204,8 +204,9 @@ DocGuard declares one exact-pinned runtime dependency, `@babel/parser`. It loads
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 1.2.0 | 2026-09-15 | DocGuard Team | Made router mounts symbol-aware and statically composable, retained negative scan evidence as review-only, and aligned monorepo/config/design-sync discovery boundaries |
 | 1.0.0 | 2026-09-14 | DocGuard Team | Added deterministic task-specific context selection, lifecycle and safe-reader boundaries, strict packet schema, and the frozen promotion benchmark |
-| 1.1.0 | 2026-09-15 | DocGuard Team | Added packed adoption qualification, independent diff inventory, exact finding-code policy, combined readiness assessment, lifecycle-aware traceability, and static Python literal evidence |
+| 1.1.0 | 2026-09-15 | DocGuard Team | Added packed adoption qualification, independent diff inventory, exact finding-code policy, combined readiness assessment, lifecycle-aware traceability, static Python literal evidence, and transitive static router-mount resolution with test-client exclusion |
 | 0.9.0 | 2026-09-14 | DocGuard Team | Added strict evidence manifests, typed local adapters, five-state evaluation, exact semantic-claim coverage, and guard/agent assurance integration |
 | 0.8.0 | 2026-09-14 | DocGuard Team | Added transactional retirement/completion writes, reconciliation review graphs, qualified implementation evidence, bounded outcomes, active-context regeneration, and Spec Kit completion hooks |
 | 0.7.0 | 2026-09-14 | DocGuard Team | Added the deterministic spec lifecycle registry, immutable spec-ID resolution, shared requirement evidence scanner, recovery tombstones, and two-stage preflight boundary |

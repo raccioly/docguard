@@ -112,6 +112,9 @@
         "generatedStaleness":{ "type": "boolean" },
         "canonicalSync":     { "type": "boolean" },
         "surfaceSync":       { "type": "boolean" },
+        "diffSuspicion":     { "type": "boolean" },
+        "referenceExistence":{ "type": "boolean" },
+        "apiDocSmells":      { "type": "boolean" },
         "metricsConsistency":{ "type": "boolean" }
       },
       "additionalProperties": false

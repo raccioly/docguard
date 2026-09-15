@@ -5857,6 +5857,294 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-09-15T04:15:00.000Z"
+    },
+    {
+      "id": "bug-353",
+      "timestamp": "2026-09-15T15:30:00.000Z",
+      "error_message": "Guard rendered → undefined for structured findings",
+      "file": "cli/findings.mjs; cli/validators/diff-suspicion.mjs; cli/validators/reference-existence.mjs; cli/validators/api-doc-smells.mjs",
+      "root_cause": "Several validators emitted suggestion.summary while every renderer required suggestion.text",
+      "fix": "Normalize the suggestion contract centrally, correct every emitter, drop malformed suggestions fail-closed, and cover packed rendering",
+      "tags": [
+        "findings",
+        "rendering",
+        "adoption"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-15T15:30:00.000Z"
+    },
+    {
+      "id": "bug-354",
+      "timestamp": "2026-09-15T15:30:00.000Z",
+      "error_message": "Foreign hooks were reported as DocGuard-installed and init --with hooks --list entered onboarding",
+      "file": "cli/commands/hooks.mjs; cli/commands/init.mjs; cli/docguard.mjs",
+      "root_cause": "Hook state used file existence as ownership proof and nested list flags passed through mutating init dispatch",
+      "fix": "Classify managed, legacy, foreign, unreadable, and missing hooks by content and route nested list directly to read-only inspection",
+      "tags": [
+        "hooks",
+        "ownership",
+        "read-only"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-15T15:30:00.000Z"
+    },
+    {
+      "id": "bug-355",
+      "timestamp": "2026-09-15T15:30:00.000Z",
+      "error_message": "SPR002 recommended docguard specs --write even though that command refuses missing or duplicate spec IDs",
+      "file": "cli/validators/spec-registry.mjs",
+      "root_cause": "One generic executable remediation was attached to registry projection defects that require metadata repair first",
+      "fix": "Give missing and duplicate IDs explicit review instructions and reserve specs --write for refreshable registry drift",
+      "tags": [
+        "specs",
+        "remediation",
+        "suggestions"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-15T15:30:00.000Z"
+    },
+    {
+      "id": "bug-356",
+      "timestamp": "2026-09-15T15:30:00.000Z",
+      "error_message": "The published npm package omitted CHANGELOG.md and shipped broken relative README links",
+      "file": "package.json; README.md; tests/npm-pack-smoke.test.mjs",
+      "root_cause": "Package smoke tests checked selected files but not every README-relative target in the actual tarball",
+      "fix": "Ship CHANGELOG, convert repository-only links to durable URLs, and validate every relative link after npm pack",
+      "tags": [
+        "packaging",
+        "npm",
+        "documentation"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-15T15:30:00.000Z"
+    },
+    {
+      "id": "bug-357",
+      "timestamp": "2026-09-15T15:30:00.000Z",
+      "error_message": "A diff larger than the patch cap became an empty range and reconciliation reported READY",
+      "file": "cli/shared-git.mjs; cli/scanners/reconciliation.mjs",
+      "root_cause": "The string-only diff helper collapsed overflow and Git errors to an empty string, indistinguishable from no changes",
+      "fix": "Inventory changed paths independently, retain typed timeout/overflow/error states, and block readiness on partial coverage",
+      "tags": [
+        "reconciliation",
+        "false-green",
+        "git"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-15T15:30:00.000Z"
+    },
+    {
+      "id": "bug-358",
+      "timestamp": "2026-09-15T15:30:00.000Z",
+      "error_message": "Bare instruction filenames produced false stale pointers and unsafe paths could probe outside the repository",
+      "file": "cli/scanners/instruction-audit.mjs; cli/shared-repository-files.mjs",
+      "root_cause": "Resolution checked only the repository root and lacked bounded uniqueness, containment, and symlink states",
+      "fix": "Resolve exact safe paths or one unique basename and disclose ambiguity, unsafe input, symlinks, and incomplete indexing",
+      "tags": [
+        "instructions",
+        "paths",
+        "security"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-15T15:30:00.000Z"
+    },
+    {
+      "id": "bug-359",
+      "timestamp": "2026-09-15T15:30:00.000Z",
+      "error_message": "Newly planned requirements produced TRC004 warnings before implementation began",
+      "file": "cli/validators/traceability.mjs; cli/scanners/spec-registry.mjs",
+      "root_cause": "Traceability treated all active requirement declarations as immediately applicable without trusted lifecycle context",
+      "fix": "Defer only digest-current planned requirements proven by a clean committed schema-v2 registry and fail closed otherwise",
+      "tags": [
+        "traceability",
+        "lifecycle",
+        "false-positive"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-15T15:30:00.000Z"
+    },
+    {
+      "id": "bug-360",
+      "timestamp": "2026-09-15T15:30:00.000Z",
+      "error_message": "Changed-only guard omitted validators promoted through exact finding-code severity",
+      "file": "cli/commands/guard.mjs",
+      "root_cause": "Lite-mode validator selection considered validator-level severity but not findingSeverity ownership",
+      "fix": "Force-enable the owner validator for exact high-severity codes while preserving explicit disables",
+      "tags": [
+        "severity",
+        "ci",
+        "changed-only"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-15T15:30:00.000Z"
+    },
+    {
+      "id": "bug-361",
+      "timestamp": "2026-09-15T15:30:00.000Z",
+      "error_message": "Express test clients, dedupe order, static constants, and nested mounts hid or invented API routes",
+      "file": "cli/scanners/js-ast.mjs; cli/scanners/routes.mjs",
+      "root_cause": "Route extraction accepted chained clients, deduped before filtering, and modeled mount paths only as literal file-level prefixes",
+      "fix": "Require stable/proven receivers, filter before dedupe, resolve bounded static constants, and compose symbol-aware pathless/imported mounts",
+      "tags": [
+        "routes",
+        "express",
+        "precision"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-15T15:30:00.000Z"
+    },
+    {
+      "id": "bug-362",
+      "timestamp": "2026-09-15T15:30:00.000Z",
+      "error_message": "API004 could offer automatic deletion of an implemented endpoint when route extraction was incomplete",
+      "file": "cli/validators/api-surface.mjs; cli/commands/fix.mjs; cli/findings.mjs",
+      "root_cause": "A certain OpenAPI contract omission was combined with low-confidence negative route evidence and promoted into a mechanical removal",
+      "fix": "Keep contract mismatch severity high while separating code evidence, make all omissions review-only, and disable deletion even under force",
+      "tags": [
+        "api",
+        "destructive-fix",
+        "evidence"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-15T15:30:00.000Z"
+    },
+    {
+      "id": "bug-363",
+      "timestamp": "2026-09-15T15:30:00.000Z",
+      "error_message": "A repeated password test fixture blocked WhatsApp adoption as a hardcoded production credential",
+      "file": "cli/validators/security.mjs",
+      "root_cause": "Fixture recognition covered only explicit mock-password vocabulary in call assertions and missed repeated input/output assertions",
+      "fix": "Recognize repeated redacted values in test assertions as low-confidence fixture evidence while retaining blocking controls",
+      "tags": [
+        "security",
+        "test-fixture",
+        "false-positive"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-15T15:30:00.000Z"
+    },
+    {
+      "id": "bug-364",
+      "timestamp": "2026-09-15T15:30:00.000Z",
+      "error_message": "DSY003 used a stale root OpenAPI copy and treated :param and {param} as different paths",
+      "file": "cli/validators/docs-sync.mjs",
+      "root_cause": "Design sync bypassed the shared authoritative-spec selector and used incompatible path normalization",
+      "fix": "Use the source-root-aware authoritative contract and shared parameter normalization with neighboring mismatch controls",
+      "tags": [
+        "design-sync",
+        "openapi",
+        "monorepo"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-15T15:30:00.000Z"
+    },
+    {
+      "id": "bug-365",
+      "timestamp": "2026-09-15T15:30:00.000Z",
+      "error_message": "DSY002 classified a generic frontend src/lib helper as a service",
+      "file": "cli/validators/docs-sync.mjs",
+      "root_cause": "Service discovery treated every generic lib module as a service without filename or explicit service-root evidence",
+      "fix": "Keep explicit service roots and require service-identifying evidence for generic lib modules",
+      "tags": [
+        "design-sync",
+        "services",
+        "false-positive"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-15T15:30:00.000Z"
+    },
+    {
+      "id": "bug-366",
+      "timestamp": "2026-09-15T15:30:00.000Z",
+      "error_message": "ENV003 ignored package-local environment templates in monorepos",
+      "file": "cli/validators/environment.mjs",
+      "root_cause": "The validator read only root .env.example/.env.template files",
+      "fix": "Discover deduplicated root, source-root, and workspace templates while honoring ignores, containment, and symlink boundaries",
+      "tags": [
+        "environment",
+        "monorepo",
+        "coverage"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-15T15:30:00.000Z"
+    },
+    {
+      "id": "bug-367",
+      "timestamp": "2026-09-15T15:30:00.000Z",
+      "error_message": "The published config schema rejected three validator keys accepted by runtime",
+      "file": "schemas/docguard-config.schema.json",
+      "root_cause": "Runtime validator registration and the additionalProperties:false schema evolved independently",
+      "fix": "Declare diffSuspicion, referenceExistence, and apiDocSmells and test schema parity against runtime keys",
+      "tags": [
+        "schema",
+        "configuration",
+        "drift"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-15T15:30:00.000Z"
+    },
+    {
+      "id": "bug-368",
+      "timestamp": "2026-09-15T15:30:00.000Z",
+      "error_message": "MET001 proposed rewriting a historical 182 to 203 checks transition as a current metric",
+      "file": "cli/validators/metrics-consistency.mjs",
+      "root_cause": "Metric extraction lacked temporal and release-history context and treated history as a current assertion",
+      "fix": "Exclude explicit transitions and historical sections; keep mixed uncertain cases review-only with no mechanical fix",
+      "tags": [
+        "metrics",
+        "history",
+        "destructive-fix"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-15T15:30:00.000Z"
+    },
+    {
+      "id": "bug-369",
+      "timestamp": "2026-09-15T15:30:00.000Z",
+      "error_message": "TDO001 rejected a valid multiline REASON comment immediately above a skipped test",
+      "file": "cli/validators/todo-tracking.mjs",
+      "root_cause": "The lookback allowed lines above the skip but required all content after the REASON marker to be whitespace",
+      "fix": "Accept contiguous comment continuations while retaining blank, disconnected, empty, and intervening-code controls",
+      "tags": [
+        "todo",
+        "tests",
+        "false-positive"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-15T15:30:00.000Z"
+    },
+    {
+      "id": "bug-370",
+      "timestamp": "2026-09-15T15:30:00.000Z",
+      "error_message": "Watch output lost the project name when package metadata was absent",
+      "file": "cli/commands/watch.mjs",
+      "root_cause": "The display path assumed project metadata always supplied a name",
+      "fix": "Fall back to the repository directory basename and cover metadata-free projects",
+      "tags": [
+        "watch",
+        "display",
+        "adoption"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-15T15:30:00.000Z"
     }
   ]
 }

@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   intrinsic and effective severity in guard JSON, SARIF, and JUnit.
 - Add trusted lifecycle-aware traceability deferral for requirements that remain
   planned in a committed, clean schema-v2 specification registry.
+- Add bounded static route resolution for local constants, pathless router
+  mounts, import aliases, middleware lists, and multi-router modules.
 
 ### Changed
 
@@ -24,15 +26,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   foreign commands when removing a managed block.
 - Make npm README links resolve from the published package and identify the
   current v0.40 release line accurately.
+- Keep API contract omissions review-only: negative route-scan evidence can no
+  longer authorize endpoint deletion, including under `--force`.
 
 ### Fixed
 
 - Prevent malformed finding suggestions from rendering `undefined` and replace
   invalid remediation commands with reviewable actions.
+- Prevent chained HTTP-client calls and test-helper routes from contaminating
+  Express API discovery, preserve product routes during deduplication, and
+  compose static imported-router mount prefixes transitively.
 - Route `init --with hooks --list` to read-only hook inspection instead of the
   interactive initialization workflow.
 - Fall back to the repository directory name in watch output when project
   metadata does not provide a name.
+- Classify repeated test-input password assertions as low-confidence fixture
+  evidence while retaining blocking detection for ordinary credentials.
+- Use the selected authoritative OpenAPI contract and normalized path parameters
+  for design-sync checks, and exclude generic frontend utilities from services.
+- Discover package-local environment templates in monorepos and align the
+  published config schema with every runtime validator key.
+- Preserve historical metric statements and accept contiguous multiline skip
+  reasons instead of proposing changes that would falsify project history.
 
 ## [0.40.5] - 2026-09-15
 

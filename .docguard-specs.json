@@ -52,19 +52,25 @@
           "docguard.adoption-workflow-integrity#FR-010",
           "docguard.adoption-workflow-integrity#FR-011",
           "docguard.adoption-workflow-integrity#FR-012",
+          "docguard.adoption-workflow-integrity#FR-013",
+          "docguard.adoption-workflow-integrity#FR-014",
+          "docguard.adoption-workflow-integrity#FR-015",
           "docguard.adoption-workflow-integrity#SC-001",
           "docguard.adoption-workflow-integrity#SC-002",
           "docguard.adoption-workflow-integrity#SC-003",
           "docguard.adoption-workflow-integrity#SC-004",
           "docguard.adoption-workflow-integrity#SC-005",
-          "docguard.adoption-workflow-integrity#SC-006"
+          "docguard.adoption-workflow-integrity#SC-006",
+          "docguard.adoption-workflow-integrity#SC-007",
+          "docguard.adoption-workflow-integrity#SC-008",
+          "docguard.adoption-workflow-integrity#SC-009"
         ]
       },
       "observed": {
         "artifacts": [
           {
             "path": "specs/012-adoption-workflow-integrity/spec.md",
-            "digest": "sha256:1ca279258508029b46f38f0bd32130fd8f0629d841c3b85ae6f2a38824a193b8"
+            "digest": "sha256:4e593b9e603496cb12ff0a06a740a607f2a01a05166ef7ff06e6746ea9692595"
           }
         ],
         "taskCompletion": {
@@ -106,9 +112,39 @@
             "requirementId": "FR-008",
             "file": "cli/shared.mjs",
             "line": 6
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "cli/assessment.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "cli/evidence/python-literal.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-013",
+            "file": "cli/scanners/routes.mjs",
+            "line": 3
           }
         ],
         "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/adoption-workflow.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/adoption-workflow.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/adoption-workflow.test.mjs",
+            "line": 9
+          },
           {
             "requirementId": "FR-004",
             "file": "tests/reconcile.test.mjs",
@@ -120,14 +156,89 @@
             "line": 1
           },
           {
+            "requirementId": "FR-006",
+            "file": "tests/traceability-lifecycle.test.mjs",
+            "line": 1
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/finding-severity-config.test.mjs",
+            "line": 2
+          },
+          {
             "requirementId": "FR-008",
             "file": "tests/severity.test.mjs",
             "line": 14
           },
           {
+            "requirementId": "FR-009",
+            "file": "tests/assessment.test.mjs",
+            "line": 1
+          },
+          {
             "requirementId": "FR-010",
             "file": "tests/npm-pack-smoke.test.mjs",
             "line": 25
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "tests/evidence-python-literal.test.mjs",
+            "line": 1
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "tests/adoption-workflow.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-013",
+            "file": "tests/routes-express-mounts.test.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-014",
+            "file": "tests/api-authority-precision.test.mjs",
+            "line": 1
+          },
+          {
+            "requirementId": "FR-014",
+            "file": "tests/api-write.test.mjs",
+            "line": 1
+          },
+          {
+            "requirementId": "FR-014",
+            "file": "tests/doc-role-boundaries.test.mjs",
+            "line": 1
+          },
+          {
+            "requirementId": "FR-015",
+            "file": "tests/docs-sync.test.mjs",
+            "line": 1
+          },
+          {
+            "requirementId": "FR-015",
+            "file": "tests/environment.test.mjs",
+            "line": 1
+          },
+          {
+            "requirementId": "FR-015",
+            "file": "tests/field-context-precision.test.mjs",
+            "line": 1
+          },
+          {
+            "requirementId": "FR-015",
+            "file": "tests/metrics-consistency.test.mjs",
+            "line": 1
+          },
+          {
+            "requirementId": "FR-015",
+            "file": "tests/todo-tracking.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/adoption-workflow.test.mjs",
+            "line": 11
           },
           {
             "requirementId": "SC-002",
@@ -140,9 +251,34 @@
             "line": 2
           },
           {
+            "requirementId": "SC-004",
+            "file": "tests/traceability-lifecycle.test.mjs",
+            "line": 2
+          },
+          {
             "requirementId": "SC-005",
             "file": "tests/severity.test.mjs",
             "line": 15
+          },
+          {
+            "requirementId": "SC-006",
+            "file": "tests/adoption-workflow.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "SC-007",
+            "file": "tests/routes-express-mounts.test.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "SC-008",
+            "file": "tests/api-authority-precision.test.mjs",
+            "line": 2
+          },
+          {
+            "requirementId": "SC-009",
+            "file": "tests/field-context-precision.test.mjs",
+            "line": 2
           }
         ]
       }
@@ -782,6 +918,11 @@
             "line": 4
           },
           {
+            "requirementId": "FR-002",
+            "file": "cli/evidence/python-literal.mjs",
+            "line": 4
+          },
+          {
             "requirementId": "FR-003",
             "file": "cli/evidence/adapters.mjs",
             "line": 4
@@ -894,6 +1035,11 @@
             "line": 9
           },
           {
+            "requirementId": "FR-002",
+            "file": "tests/evidence-python-literal.test.mjs",
+            "line": 13
+          },
+          {
             "requirementId": "FR-003",
             "file": "tests/evidence-adapters.test.mjs",
             "line": 10
@@ -902,6 +1048,11 @@
             "requirementId": "FR-004",
             "file": "tests/evidence-adapters.test.mjs",
             "line": 11
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/evidence-python-literal.test.mjs",
+            "line": 14
           },
           {
             "requirementId": "FR-005",
@@ -962,6 +1113,11 @@
             "requirementId": "SC-001",
             "file": "tests/evidence-integration.test.mjs",
             "line": 27
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/evidence-python-literal.test.mjs",
+            "line": 15
           },
           {
             "requirementId": "SC-002",
@@ -1325,7 +1481,7 @@
           {
             "requirementId": "FR-010",
             "file": "tests/doc-role-boundaries.test.mjs",
-            "line": 64
+            "line": 65
           },
           {
             "requirementId": "FR-010",
@@ -1340,7 +1496,7 @@
           {
             "requirementId": "FR-011",
             "file": "tests/doc-role-boundaries.test.mjs",
-            "line": 195
+            "line": 197
           },
           {
             "requirementId": "FR-011",
@@ -1734,7 +1890,7 @@
           {
             "requirementId": "FR-003",
             "file": "tests/field-context-precision.test.mjs",
-            "line": 10
+            "line": 13
           },
           {
             "requirementId": "FR-004",

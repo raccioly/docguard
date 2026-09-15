@@ -75,6 +75,20 @@ completely. A structural maturity grade is labeled separately from readiness.
 - **FR-012**: A release candidate MUST be replayed read-only against the reported
   JavaScript/web and Python adopter repositories, with disposable artifacts
   removed, before publication.
+- **FR-013**: JavaScript route discovery MUST reject chained HTTP-client calls,
+  filter non-product evidence before deduplication, resolve bounded static path
+  constants, and compose pathless or prefixed Express mounts across imported
+  router symbols. Unsupported dynamic mounts MUST remain uncertain rather than
+  manufacturing a route.
+- **FR-014**: An authoritative-contract omission MAY establish that prose and
+  OpenAPI disagree, but negative route-scan evidence MUST NOT establish runtime
+  absence or authorize documentation deletion. Force flags MUST preserve this
+  evidence boundary.
+- **FR-015**: Release qualification MUST replay known warning classes and retain
+  their evidence context: historical metrics, multiline skip reasons, repeated
+  test fixtures, package-local environment templates, configured OpenAPI
+  authority, normalized route parameters, service roots, and config-schema
+  parity.
 
 ## Success Criteria
 
@@ -91,6 +105,16 @@ completely. A structural maturity grade is labeled separately from readiness.
   JSON, human output, SARIF, and JUnit.
 - **SC-006**: Full tests, frozen precision benchmark, self-guard, package smoke,
   and read-only adopter replays pass without a new supported-case regression.
+- **SC-007**: Paired fixtures prove test requests cannot hide or invent a product
+  route, conventional test-helper trees are excluded, and nested imported
+  routers resolve to their complete static path.
+- **SC-008**: API004 never emits or applies a deletion from negative code-scan
+  evidence; implemented, unknown, and not-extracted neighboring cases remain
+  distinct and redacted.
+- **SC-009**: Paired synthetic replicas contain none of the confirmed MET001,
+  TDO001, DSY002, DSY003, SEC001-blocker, schema-parity, or package-local
+  environment false positives; disposable Websec and WhatsApp replays confirm
+  the same boundaries before release.
 
 ## Non-Goals
 

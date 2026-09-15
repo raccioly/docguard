@@ -12,6 +12,7 @@ import { resolve, join, extname, basename } from 'node:path';
 import { resolveSourceRoots } from '../shared-source.mjs';
 import { relPosix, walkFiles as sharedWalkFiles, listCanonicalDocs } from '../shared-ignore.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
+import { findAllOpenApiSpecs } from './api-surface.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', '.nuxt', 'dist', 'build', 'out',
@@ -44,6 +45,38 @@ function isValidRouteFile(relPath) {
     return NEXTJS_ROUTE_FILE_RE.test(relPath);
   }
   return true;
+}
+
+/**
+ * `src/lib` is a generic utility convention in frontend and full-stack repos,
+ * not evidence that every file beneath it is an architectural service. Keep
+ * explicit service directories exhaustive; require a service-shaped filename
+ * for the ambiguous `src/lib` fallback.
+ */
+function isServiceCandidate(file, serviceDir) {
+  const normalizedDir = serviceDir.replace(/\\/g, '/').replace(/\/$/, '');
+  if (!normalizedDir.endsWith('/src/lib')) return true;
+
+  const name = basename(file, extname(file));
+  return /(?:^|[-_.])services?$/i.test(name) || /Service$/i.test(name);
+}
+
+function normalizeApiPath(path) {
+  const normalized = String(path || '')
+    .trim()
+    .toLowerCase()
+    .replace(/:[a-z_][a-z0-9_]*/gi, '{}')
+    .replace(/\{[^/{}]+\}/g, '{}')
+    .replace(/\/+$/g, '');
+  return normalized || '/';
+}
+
+function routeMatchesOpenApi(routePath, specPaths) {
+  const route = normalizeApiPath(routePath);
+  return specPaths.some(specPath => {
+    const spec = normalizeApiPath(specPath);
+    return spec === route || (route !== '/' && spec.endsWith(route));
+  });
 }
 
 /**
@@ -146,6 +179,7 @@ export function validateDocsSync(projectDir, config) {
 
       const relPath = relPosix(projectDir, file);
       if (isTestFile(relPath)) continue;
+      if (!isServiceCandidate(file, serviceDir)) continue;
       // N-1: skip files outside the --changed-only scope.
       if (!inScope(relPath)) continue;
 
@@ -169,27 +203,11 @@ export function validateDocsSync(projectDir, config) {
 
   // ── Cross-check route files against OpenAPI spec ──
   // If an OpenAPI spec exists AND route files exist, verify routes have matching paths
-  const openapiPatterns = [
-    'openapi.yaml', 'openapi.yml', 'openapi.json',
-    'swagger.yaml', 'swagger.yml', 'swagger.json',
-    'api/openapi.yaml', 'api/openapi.yml', 'api/openapi.json',
-    'docs/openapi.yaml', 'docs/openapi.yml',
-  ];
+  const authoritativeSpec = findAllOpenApiSpecs(projectDir, config)[0] || null;
+  const openapiPaths = authoritativeSpec?.endpoints.map(endpoint => endpoint.path) || [];
+  const openapiFile = authoritativeSpec?.relPath || null;
 
-  let openapiContent = '';
-  let openapiFile = null;
-  for (const pattern of openapiPatterns) {
-    const specPath = resolve(projectDir, pattern);
-    if (existsSync(specPath)) {
-      try {
-        openapiContent = readFileSync(specPath, 'utf-8').toLowerCase();
-        openapiFile = pattern;
-      } catch { /* ignore */ }
-      break;
-    }
-  }
-
-  if (openapiContent && openapiFile) {
+  if (openapiPaths.length > 0 && openapiFile) {
     // Check that route files have corresponding paths in OpenAPI spec (monorepo-aware)
     for (const routeDir of expandDirs(projectDir, config, ['src/routes', 'src/app/api', 'routes', 'app/api'])) {
       const files = getFilesRecursive(routeDir);
@@ -222,12 +240,11 @@ export function validateDocsSync(projectDir, config) {
         let matched = false;
 
         if (actualRoutes.length > 0) {
-          // Check if ANY of the actual route paths appear in the OpenAPI spec
-          matched = actualRoutes.some(route => {
-            // Normalize: /api/conversations/:id → /api/conversations
-            const basePath = route.replace(/\/:[^/]+/g, '').replace(/\/{[^}]+}/g, '');
-            return openapiContent.includes(basePath) || openapiContent.includes(route);
-          });
+          // Express :param and OpenAPI {param} are equivalent. Compare whole
+          // path segments so `/users` cannot accidentally match `/superusers`.
+          // A route-local path may omit an application mount prefix, so an
+          // exact segment suffix is also accepted.
+          matched = actualRoutes.some(route => routeMatchesOpenApi(route, openapiPaths));
         } else {
           // Strategy 2 (fallback): Strip common suffixes and check filename
           // userRoutes.ts → 'user', conversationRoutes.ts → 'conversation'
@@ -238,9 +255,8 @@ export function validateDocsSync(projectDir, config) {
             .replace(/router$/i, '');
 
           if (cleanName.length > 0) {
-            matched = openapiContent.includes(`/${cleanName}`) ||
-                      openapiContent.includes(`"${cleanName}"`) ||
-                      openapiContent.includes(`'${cleanName}'`);
+            matched = openapiPaths.some(path =>
+              normalizeApiPath(path).split('/').some(segment => segment === cleanName));
           }
         }
 

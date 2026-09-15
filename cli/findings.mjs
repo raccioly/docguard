@@ -598,8 +598,8 @@ export const CODES = {
   },
   API004: {
     validator: 'apiSurface',
-    title: 'Documented endpoint not found in code',
-    help: 'docs-canonical/API-REFERENCE.md documents an endpoint absent from the actual surface. Spec-confirmed absences are errors and `docguard fix --write` removes them; code-scan-only absences are low-confidence warnings ([code-scan — verify]) — verify before pruning.',
+    title: 'Documented endpoint missing from authoritative contract',
+    help: 'docs-canonical/API-REFERENCE.md documents an endpoint absent from the authoritative OpenAPI contract. The contract mismatch is certain; route presence or absence is separate, low-confidence evidence. Reconcile intent, contract, implementation, and documentation manually. DocGuard never deletes an endpoint from negative route-scan evidence.',
     suppress: null,
   },
   API005: {

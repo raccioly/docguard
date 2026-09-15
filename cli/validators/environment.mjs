@@ -14,10 +14,70 @@ import { docRolePath, resolveDocRole } from '../shared-doc-roles.mjs';
  * existing tests are unaffected; guard just renders richer output.
  */
 
-import { existsSync, readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-import { grepEnvUsage } from '../shared-source.mjs';
+import { existsSync, lstatSync, readFileSync } from 'node:fs';
+import { dirname, isAbsolute, relative, resolve, sep } from 'node:path';
+import { grepEnvUsage, resolveSourceRoots } from '../shared-source.mjs';
+import { shouldIgnore } from '../shared-ignore.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
+
+const ENV_TEMPLATE_NAMES = ['.env.example', '.env.template'];
+
+function isWithin(projectRoot, path) {
+  const rel = relative(projectRoot, path);
+  return rel === '' || (rel !== '..' && !rel.startsWith(`..${sep}`) && !isAbsolute(rel));
+}
+
+/**
+ * Discover repository-owned env templates at the root and package boundaries.
+ * Source roots may point inside a package (for example `backend/src`), so every
+ * ancestor up to the repository root is considered. `resolveSourceRoots()` also
+ * contributes declared npm/pnpm workspace packages. Candidates are de-duplicated
+ * before reading and rejected when ignored, outside the repository, or reached
+ * through a symlink.
+ */
+function discoverEnvTemplates(projectDir, config) {
+  const projectRoot = resolve(projectDir);
+  const candidateDirs = new Set([projectRoot]);
+
+  for (const sourceRoot of resolveSourceRoots(projectRoot, config)) {
+    let current = resolve(sourceRoot);
+    while (isWithin(projectRoot, current)) {
+      candidateDirs.add(current);
+      if (current === projectRoot) break;
+      const parent = dirname(current);
+      if (parent === current) break;
+      current = parent;
+    }
+  }
+
+  const templates = new Set();
+  for (const dir of candidateDirs) {
+    for (const name of ENV_TEMPLATE_NAMES) {
+      const abs = resolve(dir, name);
+      const rel = relative(projectRoot, abs);
+      if (!rel || !isWithin(projectRoot, abs)) continue;
+      const relPosix = rel.split(sep).join('/');
+      if (shouldIgnore(relPosix, config)) continue;
+
+      let current = projectRoot;
+      let safe = true;
+      for (const segment of rel.split(sep)) {
+        current = resolve(current, segment);
+        try {
+          const stat = lstatSync(current);
+          if (stat.isSymbolicLink()) { safe = false; break; }
+          if (current === abs && !stat.isFile()) { safe = false; break; }
+        } catch {
+          safe = false;
+          break;
+        }
+      }
+      if (safe) templates.add(abs);
+    }
+  }
+
+  return [...templates].sort();
+}
 
 export function validateEnvironment(projectDir, config) {
   const findings = [];
@@ -109,9 +169,7 @@ export function validateEnvironment(projectDir, config) {
       if (SYSTEM.has(m[1])) continue;
       documented.add(m[1]);
     }
-    for (const envFile of ['.env.example', '.env.template']) {
-      const p = resolve(projectDir, envFile);
-      if (!existsSync(p)) continue;
+    for (const p of discoverEnvTemplates(projectDir, config)) {
       const re = /^([A-Z][A-Z0-9_]*[A-Z0-9])\s*=/gm;
       const ex = readFileSync(p, 'utf-8');
       let em;

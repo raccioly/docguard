@@ -1,5 +1,6 @@
 /**
  * Deep Route Scanner
+ * @req docguard.adoption-workflow-integrity#FR-013
  * Parses actual route definitions from source code across frameworks.
  * Supports: Next.js (App Router + Pages), Express, Fastify, Hono, Django, FastAPI
  * 
@@ -87,13 +88,16 @@ export function scanRoutesDeep(dir, stack, docTools, opts = {}) {
   const seen = new Set();
   return routes.filter(r => {
     const key = `${r.method}:${r.path}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
     if (r.file) {
       const rel = relPosix(dir, resolve(dir, r.file));
       if (isNonProductPath(rel, cfg)) return false;
       if (shouldIgnore(rel, cfg)) return false;
     }
+    // Filter non-product and ignored evidence before deduplication. Otherwise a
+    // test request can reserve the same method/path key as a real route, get
+    // filtered out, and silently remove the product route that appears later.
+    if (seen.has(key)) return false;
+    seen.add(key);
     return true;
   });
 }
@@ -292,10 +296,10 @@ function scanExpressRoutes(dir, roots = null) {
  *   - router is a LOCAL identifier    → the prefix applies only to that file's
  *     routes whose receiver matches (receiver: ident).
  *
- * Known limitations (documented, not silently wrong): transitive composition
- * (`app.use('/api', api)` then `api.use('/x', x)` does NOT yield `/api/x`), and
- * dynamic mount paths (non-string-literal prefixes) are skipped. Unmounted
- * files keep their bare paths — exactly the pre-mount-map behavior.
+ * Imported-router mounts are composed transitively, so
+ * `app.use('/api', api)` plus `api.use('/x', x)` yields `/api/x`. Dynamic mount
+ * paths (non-string-literal prefixes) are skipped. Unmounted files keep their
+ * bare paths — exactly the pre-mount-map behavior.
  */
 function buildExpressMountMap(files) {
   const map = new Map();
@@ -303,18 +307,89 @@ function buildExpressMountMap(files) {
     if (!map.has(absFile)) map.set(absFile, []);
     map.get(absFile).push({ receiver, prefix });
   };
+  const metadata = new Map();
   for (const { content, filePath } of files) {
     const mi = extractJsMountsAndImports(content, filePath);
+    if (mi) metadata.set(filePath, mi);
+  }
+
+  const edges = [];
+  for (const { filePath } of files) {
+    const mi = metadata.get(filePath);
     if (!mi) continue;
-    for (const { prefix, ident } of mi.mounts) {
+    for (const { prefix, ident, receiver } of mi.mounts) {
       const spec = mi.imports[ident];
       if (spec) {
         const target = resolveLocalImport(filePath, spec);
-        if (target) add(target, null, prefix);
+        const targetMeta = target ? metadata.get(target) : null;
+        if (!targetMeta) continue;
+        const importedSymbol = mi.importSymbols?.[ident];
+        const targetReceiver = importedSymbol === 'default'
+          ? (targetMeta.exports?.default ?? null)
+          : importedSymbol && importedSymbol !== '*'
+            ? (targetMeta.exports?.[importedSymbol] ?? importedSymbol)
+            : null;
+        const targetRouteReceivers = new Set(targetMeta.routeReceivers || []);
+        const targetMountReceivers = new Set((targetMeta.mounts || []).map(mount => mount.receiver));
+        if (targetReceiver !== null &&
+            !targetRouteReceivers.has(targetReceiver) &&
+            !targetMountReceivers.has(targetReceiver)) continue;
+        if (targetReceiver === null && targetRouteReceivers.size === 0 && targetMountReceivers.size === 0) continue;
+        edges.push({
+          from: { file: filePath, receiver },
+          to: { file: target, receiver: targetReceiver },
+          prefix,
+        });
       } else {
-        add(filePath, ident, prefix);
+        const routeReceivers = new Set(mi.routeReceivers || []);
+        const mountReceivers = new Set((mi.mounts || []).map(mount => mount.receiver));
+        if (!routeReceivers.has(ident) && !mountReceivers.has(ident)) continue;
+        edges.push({
+          from: { file: filePath, receiver },
+          to: { file: filePath, receiver: ident },
+          prefix,
+        });
       }
     }
+  }
+
+  const nodeKey = node => `${node.file}\0${node.receiver ?? '*'}`;
+  const incoming = new Map();
+  const nodes = new Map();
+  for (const edge of edges) {
+    const key = nodeKey(edge.to);
+    nodes.set(key, edge.to);
+    if (!incoming.has(key)) incoming.set(key, []);
+    incoming.get(key).push(edge);
+  }
+  const memo = new Map();
+  const effectivePrefixes = (node, visiting = new Set(), depth = 0) => {
+    const key = nodeKey(node);
+    if (memo.has(key)) return memo.get(key);
+    if (visiting.has(key) || depth > 32) return [];
+    const nodeEdges = incoming.get(key) || [];
+    if (nodeEdges.length === 0) return [];
+    const nextVisiting = new Set(visiting).add(key);
+    const prefixes = new Set();
+    for (const edge of nodeEdges) {
+      const parentKey = nodeKey(edge.from);
+      const parentHasIncoming = (incoming.get(parentKey) || []).length > 0;
+      const parentPrefixes = parentHasIncoming
+        ? effectivePrefixes(edge.from, nextVisiting, depth + 1)
+        : [''];
+      for (const parentPrefix of parentPrefixes) {
+        prefixes.add(joinRoutePath(parentPrefix, edge.prefix));
+        if (prefixes.size >= 256) break;
+      }
+      if (prefixes.size >= 256) break;
+    }
+    const resolved = [...prefixes];
+    memo.set(key, resolved);
+    return resolved;
+  };
+
+  for (const node of nodes.values()) {
+    for (const prefix of effectivePrefixes(node)) add(node.file, node.receiver, prefix);
   }
   return map;
 }
