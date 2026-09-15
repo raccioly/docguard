@@ -2030,7 +2030,7 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "f4bb00638da2d1a53ad1a67928e35e1dfe1b401d",
+          "lastReviewedRevision": "9e4a68f5a79d3439806396e7dcf4e5729b90bb57",
           "outcomes": [
             {
               "revision": "46531e4918f9479b81ffb52e6e27c24b533575da",
@@ -2046,6 +2046,18 @@
             {
               "revision": "f4bb00638da2d1a53ad1a67928e35e1dfe1b401d",
               "reason": "Verified v0.40.3 repository-token release PR #386: scheduled run 34922506777 armed native auto-merge; approved CI 34922605581 and supply-chain 34922605917 passed; merge e27d6bf triggered publication run 34922784629; npm, PyPI, GHCR, GitHub Release, extension ZIP, MCPB, and catalog reminder completed with no accepted deviations.",
+              "evidence": [
+                ".github/scripts/validate-release-candidate.mjs",
+                "cli/release-pr-policy.mjs",
+                "docs-canonical/CI-RECIPES.md",
+                "tests/scheduled-release.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            },
+            {
+              "revision": "9e4a68f5a79d3439806396e7dcf4e5729b90bb57",
+              "reason": "Finalized the v0.40.3 tokenless release evidence at durable main revision 9e4a68f: scheduled run 34922506777 created release PR #386; approved CI 34922605581 and supply-chain 34922605917 passed; native auto-merge produced e27d6bf; publication run 34922784629 completed npm, PyPI, GHCR, GitHub Release, extension ZIP, MCPB, and catalog reminder with no accepted deviations.",
               "evidence": [
                 ".github/scripts/validate-release-candidate.mjs",
                 "cli/release-pr-policy.mjs",
@@ -2082,7 +2094,7 @@
         "artifacts": [
           {
             "path": "specs/011-tokenless-scheduled-releases/spec.md",
-            "digest": "sha256:8f5365ed8943948e7baef8c6a973047b1ee716768fa3aa532d0296b5127438aa"
+            "digest": "sha256:a69909db1d7c93b320eb330e2fc23336eb31029c2a17aa6db09337078ac0d45a"
           },
           {
             "path": "specs/011-tokenless-scheduled-releases/plan.md",
