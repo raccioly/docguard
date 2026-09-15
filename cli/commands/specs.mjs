@@ -57,7 +57,10 @@ function archiveReadiness(spec, targetVerified = false) {
 }
 
 function completionTransition(spec) {
-  if (spec?.reviewed.lifecycle.delivery === 'verified') return 'verified→verified';
+  if (spec?.reviewed.lifecycle.persistenceModel === 'living'
+    && ['verified', 'released'].includes(spec.reviewed.lifecycle.delivery)) {
+    return `${spec.reviewed.lifecycle.delivery}→${spec.reviewed.lifecycle.delivery}`;
+  }
   return spec?.reviewed.lifecycle.delivery === 'in_progress'
     ? 'in_progress→implemented→verified'
     : 'implemented→verified';
@@ -77,14 +80,22 @@ export function planSpecCompletion(projectDir, config, flags, options = {}) {
 
   let reconcile = null;
   if (spec) {
-    const maintenance = spec.reviewed.lifecycle.delivery === 'verified'
+    const maintenance = ['verified', 'released'].includes(spec.reviewed.lifecycle.delivery)
       && spec.reviewed.lifecycle.persistenceModel === 'living';
     if (spec.reviewed.lifecycle.approval !== 'approved') blockers.push({ code: 'SPC002', message: 'Only an approved spec can become verified.' });
     if (!['in_progress', 'implemented'].includes(spec.reviewed.lifecycle.delivery) && !maintenance) {
       blockers.push({ code: 'SPC002', message: `Expected delivery=in_progress, implemented, or verified with persistenceModel=living; found ${spec.reviewed.lifecycle.delivery}/${spec.reviewed.lifecycle.persistenceModel || 'unset'}.` });
     }
     const tasks = spec.observed.taskCompletion;
-    if (!tasks.total || tasks.checked !== tasks.total) blockers.push({ code: 'SPC003', message: `All tasks must be checked (${tasks.checked}/${tasks.total}).` });
+    const hasTaskLedger = spec.observed.artifacts.some(artifact => /(?:^|\/)tasks\.md$/i.test(artifact.path));
+    if (hasTaskLedger && (!tasks.total || tasks.checked !== tasks.total)) {
+      blockers.push({ code: 'SPC003', message: `All declared tasks must be checked (${tasks.checked}/${tasks.total}).` });
+    } else if (!hasTaskLedger && spec.reviewed.lifecycle.persistenceModel !== 'living') {
+      blockers.push({
+        code: 'SPC003',
+        message: 'Completion requires a task ledger unless the approved spec is a living verification contract with qualified evidence for every requirement.',
+      });
+    }
     if (spec.observed.implementationEvidence.length === 0) blockers.push({ code: 'SPC004', message: 'At least one qualified source implementation annotation is required.' });
     if (spec.observed.testEvidence.length === 0) blockers.push({ code: 'SPC004', message: 'At least one qualified test annotation is required.' });
     const covered = new Set([...spec.observed.implementationEvidence, ...spec.observed.testEvidence].map(item => item.requirementId));
@@ -162,7 +173,7 @@ export function completeSpec(projectDir, config, flags, options = {}) {
     successor: flags.successor || null,
   };
   const specContent = appendImplementationOutcome(readFileSync(specPath, 'utf8'), outcome);
-  spec.reviewed.lifecycle.delivery = 'verified';
+  if (spec.reviewed.lifecycle.delivery !== 'released') spec.reviewed.lifecycle.delivery = 'verified';
   spec.reviewed.reconciliation.lastReviewedRevision = plan.revision;
   spec.reviewed.reconciliation.outcomes = [...spec.reviewed.reconciliation.outcomes, outcome].slice(-20);
   const artifact = spec.observed.artifacts.find(item => item.path === spec.path);

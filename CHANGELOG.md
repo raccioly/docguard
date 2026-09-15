@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Allow an evidence-complete living specification to finish without creating a
+  stale `tasks.md` solely for lifecycle bookkeeping, while continuing to reject
+  missing task ledgers for other persistence models and empty or incomplete
+  ledgers wherever they are declared. Released living contracts can record later
+  maintenance without downgrading their release state.
+- Record the reviewed document-lifecycle maintenance outcome against its exact
+  source revision and qualified implementation/test evidence.
+- Close roadmap milestone R9 after independently verifying every v0.41.0
+  publication target and record the adoption workflow's reviewed outcome without
+  creating a stale task ledger.
+
 ## [0.41.0] - 2026-09-15
 
 Automated weekly release — batches everything merged since `v0.40.5`.

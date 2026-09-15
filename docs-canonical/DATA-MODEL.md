@@ -151,16 +151,20 @@ duplicate identities, and archive/storage contradictions fail closed. The
 output omits timestamps and sorts unordered collections, so `specs --check`
 can compare a byte-stable result in CI.
 
-`docguard specs complete` requires a clean Git revision, checked tasks, coverage
-for every requirement through qualified implementation or test evidence,
-existing affected canonical documents, a supported reconciliation plan, and a
-guard result without errors. Its staged transaction updates the bounded outcome,
+`docguard specs complete` requires a clean Git revision, coverage for every
+requirement through qualified implementation or test evidence, existing affected
+canonical documents, a supported reconciliation plan, and a guard result without
+errors. Declared task ledgers must be non-empty and fully checked. An approved
+`living` verification contract may omit the task ledger because its qualified
+requirement evidence is the durable completion proof; other persistence models
+still require one. Its staged transaction updates the bounded outcome,
 registry, feature-spec outcome index, and `.docguard/current-context.json` as one
 validated set. The context file contains pointers and content hashes rather than
-copying governing prose, and excludes every retired spec. A verified living spec
-can append a maintenance outcome at `verified → verified` only when a new linked
-source, test, canonical document, or decision changed after the last reviewed
-revision. Generated registry and outcome updates do not satisfy that gate.
+copying governing prose, and excludes every retired spec. A verified or released
+living spec can append a status-preserving maintenance outcome only when a new
+linked source, test, canonical document, or decision changed after the last
+reviewed revision. Generated registry and outcome updates do not satisfy that
+gate.
 
 ## Task Context Packet
 

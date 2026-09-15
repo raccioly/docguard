@@ -13,27 +13,41 @@ structural score is useful, but it is not proof that arbitrary prose is true.
 
 ## Active roadmap
 
-### R9 — Adoption workflow integrity (in progress)
-
-Governing spec: `specs/012-adoption-workflow-integrity/spec.md`.
-
-Qualify the same installed journey that an adopter or AI agent follows, including
-existing repository state, rendered remediation, post-action verification, and
-the packed documentation surface. Fail closed when diff coverage, lifecycle
-evidence, or path resolution is incomplete. Add exact finding-code policy while
-preserving intrinsic detector severity, and label structural maturity separately
-from the combined readiness verdict.
-
-Release evidence requires the complete test suite, frozen precision benchmark,
-packed-package workflow, self-guard, and read-only replay against the reported
-web and Python adopter repositories. The milestone moves to Delivered only after
-those results are reviewed and the release artifacts are published.
+No unreleased milestone is currently committed. New work starts with a reviewed
+specification and measurable acceptance criteria rather than an evergreen task
+list that can become stale.
 
 ## Delivered roadmap
 
-R1–R8 are implemented, evidence-reviewed, and released. The maintained living
+R1–R9 are implemented, evidence-reviewed, and released. The maintained living
 specifications remain current verification contracts; historical implementation
 plans are recoverable from Git and do not create a second source of truth.
+
+### R9 — Adoption workflow integrity (released in v0.41.0)
+
+Governing spec: `specs/012-adoption-workflow-integrity/spec.md`.
+
+The installed journey now covers existing repository state, rendered
+remediation, post-action verification, and the packed documentation surface.
+Incomplete diff coverage, lifecycle evidence, and path resolution fail closed.
+Exact finding-code policy preserves intrinsic detector severity, and structural
+maturity is reported separately from the combined readiness verdict.
+
+- [x] Merge the reviewed implementation in PR #395 at `f925e40`.
+- [x] Pass the complete 1,864-test release suite, frozen precision benchmark,
+  packed-package workflow, self-guard, and read-only web/Python adopter replays.
+- [x] Pass the approved CI run `34989354122` and supply-chain run `34989355584`
+  for release PR #396.
+- [x] Merge and tag v0.41.0 at `7ec6356`.
+- [x] Complete publication run `34989969217` for npm, PyPI, GHCR, GitHub
+  Release, the Spec Kit extension ZIP, MCPB, and catalog sync.
+- [x] Re-run the expanded 1,866-test suite while finalizing the living lifecycle
+  evidence, with no failures or accepted deviations.
+
+This milestone intentionally has no `plan.md` or `tasks.md`. Its living spec and
+qualified implementation/test links are the maintained verification contract;
+the release history is retained in Git and `CHANGELOG.md` without leaving a
+one-time plan in active AI context.
 
 ### R1 — Document lifecycle foundation (released in v0.37.0)
 

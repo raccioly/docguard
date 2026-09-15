@@ -8,7 +8,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "in_progress",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -34,8 +34,50 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "c283d1b70985858db2468667e60a9f772642b1a2",
+          "outcomes": [
+            {
+              "revision": "c283d1b70985858db2468667e60a9f772642b1a2",
+              "reason": "Verified v0.41.0 adoption workflow integrity: PR #395 merged at f925e40; release PR #396 passed approved CI and supply-chain checks, merged at 7ec6356, and publication run 34989969217 completed npm, PyPI, GHCR, GitHub Release, extension ZIP, MCPB, and catalog sync with no accepted deviations.",
+              "evidence": [
+                "cli/assessment.mjs",
+                "cli/commands/hooks.mjs",
+                "cli/evidence/python-literal.mjs",
+                "cli/findings.mjs",
+                "cli/scanners/instruction-audit.mjs",
+                "cli/scanners/routes.mjs",
+                "cli/shared-git.mjs",
+                "cli/shared.mjs",
+                "cli/validators/traceability.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/DATA-MODEL.md",
+                "docs-canonical/REQUIREMENTS.md",
+                "docs-canonical/SECURITY.md",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/adoption-workflow.test.mjs",
+                "tests/api-authority-precision.test.mjs",
+                "tests/api-write.test.mjs",
+                "tests/assessment.test.mjs",
+                "tests/doc-role-boundaries.test.mjs",
+                "tests/docguard-config-schema.test.mjs",
+                "tests/docs-sync.test.mjs",
+                "tests/environment.test.mjs",
+                "tests/evidence-python-literal.test.mjs",
+                "tests/field-context-precision.test.mjs",
+                "tests/finding-severity-config.test.mjs",
+                "tests/instruction-audit.test.mjs",
+                "tests/metrics-consistency.test.mjs",
+                "tests/npm-pack-smoke.test.mjs",
+                "tests/reconcile.test.mjs",
+                "tests/routes-express-mounts.test.mjs",
+                "tests/severity.test.mjs",
+                "tests/todo-tracking.test.mjs",
+                "tests/traceability-lifecycle.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -70,7 +112,7 @@
         "artifacts": [
           {
             "path": "specs/012-adoption-workflow-integrity/spec.md",
-            "digest": "sha256:4e593b9e603496cb12ff0a06a740a607f2a01a05166ef7ff06e6746ea9692595"
+            "digest": "sha256:055d9572d688daf9ee601002181598ec858e47cf238c1d276e8cd788458f3fe9"
           }
         ],
         "taskCompletion": {
@@ -212,6 +254,11 @@
           },
           {
             "requirementId": "FR-015",
+            "file": "tests/docguard-config-schema.test.mjs",
+            "line": 1
+          },
+          {
+            "requirementId": "FR-015",
             "file": "tests/docs-sync.test.mjs",
             "line": 1
           },
@@ -311,7 +358,7 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "a384a04479103b43587a2f79470b3b4a1031d242",
+          "lastReviewedRevision": "7374d8c35deb68e77541525082fd94643494d802",
           "outcomes": [
             {
               "revision": "834e0a2299402205f5bdca7a55e353bad71bab28",
@@ -414,6 +461,40 @@
               ],
               "deviations": [],
               "successor": null
+            },
+            {
+              "revision": "7374d8c35deb68e77541525082fd94643494d802",
+              "reason": "Reviewed taskless living-contract completion and status-preserving released maintenance with paired controls; all 1,866 tests and self-guard passed with no accepted deviations.",
+              "evidence": [
+                "cli/commands/reconcile.mjs",
+                "cli/commands/retire.mjs",
+                "cli/commands/specs.mjs",
+                "cli/commands/sync.mjs",
+                "cli/docguard.mjs",
+                "cli/scanners/document-lifecycle.mjs",
+                "cli/scanners/lifecycle-context.mjs",
+                "cli/scanners/reconciliation.mjs",
+                "cli/scanners/requirement-evidence.mjs",
+                "cli/scanners/retirement-manifest.mjs",
+                "cli/scanners/spec-registry.mjs",
+                "cli/shared-sync-scope.mjs",
+                "cli/validators/traceability.mjs",
+                "cli/writers/file-transaction.mjs",
+                "cli/writers/spec-outcomes.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/DATA-MODEL.md",
+                "docs-canonical/REQUIREMENTS.md",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/archive.test.mjs",
+                "tests/document-lifecycle.test.mjs",
+                "tests/file-transaction.test.mjs",
+                "tests/hooks-contract.test.mjs",
+                "tests/reconcile.test.mjs",
+                "tests/spec-completion.test.mjs",
+                "tests/spec-registry.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
             }
           ]
         }
@@ -453,7 +534,7 @@
         "artifacts": [
           {
             "path": "specs/006-document-lifecycle/spec.md",
-            "digest": "sha256:35989fea62cfd2ce2d8022ca695ecd19d6bb466b5bc9e1ac7283b272cf67643a"
+            "digest": "sha256:469bb2ab5dfa94824ba349a8ef03c6a262e8d98c8ddb4360df7ab740578338ea"
           },
           {
             "path": "specs/006-document-lifecycle/plan.md",
