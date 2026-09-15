@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Temporary R8 dispatch-chain probe. This branch must be closed without merge.
+
 ### Added
 
 - Add a pure release-candidate policy that verifies repository, default branch,
