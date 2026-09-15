@@ -222,9 +222,9 @@ Governing spec: `specs/011-tokenless-scheduled-releases/spec.md`.
 
 Replace the long-lived release PR credential with an ephemeral repository token
 and one explicit maintainer approval for the generated PR's workflows. The
-implementation keeps the privileged merge gate metadata-only, validates exact
-candidate and CI identity, dispatches publication after merge, and recovers a
-missing tag before another version increment.
+implementation validates the generated candidate before push, arms protected
+native auto-merge, starts publication from the merged version push, and recovers
+a missing tag before another version increment.
 
 - [x] Freeze the security and recovery contract before implementation.
 - [x] Add pure release-candidate and exact-run policy tests.
@@ -233,12 +233,22 @@ missing tag before another version increment.
 - [x] Preserve Dependabot/Jules policy and pinned-action controls.
 - [x] Record the reviewed lifecycle outcome at durable revision `46531e4` with
   no accepted deviations.
+- [x] Publish v0.40.1 through release PR #380 and verify npm, PyPI, GHCR, GitHub
+  release assets, and the Spec Kit catalog reminder.
+- [ ] Verify the corrected repository-token native auto-merge continuation on
+  the next release and retain exact evidence.
 
 The retained live probe used CI run `34912654565` and privileged gate run
 `34912788971`. All Node 18, 20, 22, and 24 jobs passed. The trusted gate
 identified pull request #372 as a non-release candidate and refused to merge it;
 the temporary pull request and branch were then removed. The complete reviewed
 evidence landed through pull requests #371, #373, and #374.
+
+Release PR #380 passed CI run `34920481989` and supply-chain run `34920482409`,
+merged at `5b2dfe4`, and published v0.40.1 in run `34920702346`. That run also
+proved the final GitHub boundary: approving the held workflow does not emit a
+second `workflow_run` completion. Native auto-merge is now the continuation;
+its repository-token provenance proof remains the only open R8 evidence item.
 
 ## Contribution standard
 

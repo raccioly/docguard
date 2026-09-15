@@ -58,16 +58,22 @@ explicit maintainer action: select **Approve workflows to run** on the generated
 PR. No release credential is stored.
 
 After approval, ordinary pull-request CI supplies the four required contexts.
-The privileged `workflow_run` gate checks out policy code only from the default
-branch with persisted credentials disabled. It binds the triggering run ID to
-the current PR head, requires all four Node jobs, and validates the base
-repository, bot author, branch/title/version agreement, next-version increment,
-missing release tag, synchronized package surfaces, and changed-file allowlist.
-It reads candidate files as inert API data and never executes release-branch code
-in the privileged gate. After merge it dispatches the idempotent release workflow.
-If that dispatch is interrupted, the next schedule sees the current package
-version without a tag and retries publication before considering another bump.
-An orphaned release branch fails closed; an existing open release PR is reused.
+Before the branch is pushed, the trusted scheduler validates the base repository,
+bot author, branch/title/version agreement, next-version increment, synchronized
+package surfaces, and changed-file allowlist. It then arms GitHub's native squash
+auto-merge. Native auto-merge remains blocked by the four required checks, binds
+eligibility to the current PR head, and resets when that head changes. The merged
+`package.json` push starts the idempotent release workflow. If publication is
+interrupted, the next schedule sees the current package version without a tag and
+retries publication before considering another bump. An orphaned release branch
+fails closed; an existing open release PR is reused and has auto-merge re-armed.
+
+Do not use a post-approval `workflow_run` listener as the release continuation.
+The approval-required completion is the event that listener observes; approving
+the held run executes its jobs without producing a second completion event for
+the listener. Release PR #380 demonstrated this boundary while publishing
+v0.40.1. Repository native auto-merge avoids polling and another credential while
+leaving the required checks as the merge authority.
 
 ## Recipe 3b — Spec completion and post-hoc reconciliation
 

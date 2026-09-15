@@ -18,8 +18,11 @@ GitHub places workflows for a pull request created by the ephemeral repository
 but do not satisfy the protected branch's required pull-request contexts, and a
 bot-authored dispatch does not produce the downstream `workflow_run` needed by
 the merge gate. DocGuard therefore requires one maintainer workflow approval per
-generated release PR. The change must fail closed when branch, author, version,
-changed files, CI provenance, approval state, or publication state is unexpected.
+generated release PR. GitHub does not emit a second `workflow_run` completion
+after that approval, so the release continuation must use protected native
+auto-merge rather than wait for a callback that never arrives. The change must
+fail closed when branch, author, version, changed files, CI state, approval state,
+or publication state is unexpected.
 
 ## User Scenarios & Testing
 
@@ -31,9 +34,9 @@ key needs to remain in repository secrets.
 
 ### US2 — Preserve the protected review boundary
 
-As a security reviewer, I can see that the privileged merge workflow reads PR
-metadata and files through the API, executes policy code only from the default
-branch, and never checks out or executes the release branch.
+As a security reviewer, I can see that the trusted scheduler validates the exact
+candidate before push and GitHub branch protection applies all required checks to
+the current release head before native auto-merge can proceed.
 
 ### US3 — Recover interrupted publication
 
@@ -66,15 +69,16 @@ considers another version bump.
   package entry, Python package, MCP server, and Spec Kit extension versions MUST
   agree exactly. The version MUST be the next patch or next minor from the base
   package version, and its release tag MUST not exist.
-- **FR-008**: Auto-merge MUST accept only maintainer-approved pull-request CI for
-  a qualifying release candidate and MUST verify the exact triggering run ID,
-  current PR head SHA, and successful Node 18, 20, 22, and 24 jobs.
-- **FR-009**: The privileged `workflow_run` gate MUST NOT execute code from the
-  PR. It MUST restore imported release policy from the repository default branch
-  with persisted credentials disabled and read candidate files through the API.
-- **FR-010**: After a successful release PR merge, the gate MUST dispatch the
-  existing idempotent release workflow on the default branch. Dispatch failure
-  MUST fail visibly, and missing-tag recovery MUST provide a later retry path.
+- **FR-008**: The scheduler MUST arm native squash auto-merge for the release PR.
+  Auto-merge MUST remain blocked until maintainer-approved pull-request CI reports
+  successful Node 18, 20, 22, and 24 required checks for the current head.
+- **FR-009**: The trusted scheduler MUST run the pure release-candidate policy
+  before pushing the branch. Candidate identity, synchronized version surfaces,
+  and the changed-file allowlist MUST fail closed without executing code supplied
+  by a previously opened release branch.
+- **FR-010**: A successful native release-PR merge MUST trigger the existing
+  idempotent release workflow through the default branch `package.json` push.
+  Missing-tag recovery MUST provide a later retry path.
 - **FR-011**: Existing Dependabot and Jules auto-merge policies MUST preserve
   their current pull-request-only behavior and file/version restrictions.
 - **FR-012**: All executable third-party actions MUST remain pinned to reviewed
@@ -86,12 +90,13 @@ considers another version bump.
   reject wrong authors, repositories, bases, versions, tags, paths, and CI jobs.
 - **SC-002**: Workflow contract tests prove the explicit maintainer-approval
   boundary, absence of a stored release credential, missing-tag recovery,
-  stale-branch refusal, default-branch policy checkout, and publication dispatch.
+  stale-branch refusal, pre-push candidate validation, protected native
+  auto-merge, and push-triggered publication.
 - **SC-003**: The complete Node 18, 20, 22, and 24 CI matrix, supply-chain scan,
   self-guard, and action-pin checks pass.
 - **SC-004**: A live repository-token-generated release PR proves that one
-  maintainer approval starts required CI, after which the trusted gate validates
-  and merges the candidate and starts publication without a stored credential.
+  maintainer approval starts required CI, after which protected native auto-merge
+  merges the exact green head and starts publication without a stored credential.
 
 ## Non-Goals
 

@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Prevalidate scheduler-generated release identity, synchronized versions, and
+  changed paths before push, then arm GitHub's protected native squash
+  auto-merge for both new and reused release PRs.
+- Keep the privileged `workflow_run` auto-merge gate scoped to Dependabot and
+  Jules; release publication continues from the merged `package.json` push.
+
+### Fixed
+
+- Replace the missing post-approval `workflow_run` continuation discovered by
+  release PR #380. GitHub executes an approved `action_required` run without
+  emitting a second completion event, so the old listener could not merge an
+  otherwise green release PR.
+
 ## [0.40.1] - 2026-09-15
 
 Automated weekly release — batches everything merged since `v0.40.0`.

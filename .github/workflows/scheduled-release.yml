@@ -8,11 +8,12 @@ name: Scheduled Release
 # patch and publish constantly. Weekly batching keeps releases hands-off
 # without turning the registry into a changelog.
 #
-# HOW IT TRIGGERS THE ACTUAL RELEASE: the repository token opens a protected PR.
-# GitHub intentionally holds that PR's workflows for one maintainer approval.
-# Once approved, ordinary PR CI satisfies branch protection and the metadata-only
-# auto-merge gate dispatches release.yml. A later schedule retries publication
-# when package.json has no corresponding tag.
+# HOW IT TRIGGERS THE ACTUAL RELEASE: the repository token validates and opens a
+# protected PR, then arms GitHub's native squash auto-merge. GitHub intentionally
+# holds that PR's workflows for one maintainer approval. Once approved, ordinary
+# PR CI satisfies the required checks, native auto-merge updates main, and the
+# package.json push starts release.yml. A later schedule retries publication when
+# package.json has no corresponding tag.
 #
 # NO-OP WHEN NOTHING CHANGED: if there are no commits since the last release
 # tag, this exits without bumping — no empty releases.
@@ -148,7 +149,8 @@ jobs:
       # workflows for PRs opened by GITHUB_TOKEN until a maintainer approves them;
       # workflow_dispatch jobs do not satisfy those required PR contexts. The
       # approval is the deliberate human boundary that avoids a stored PAT or App
-      # private key. After approval, auto-merge validates the exact PR run.
+      # private key. Native auto-merge remains blocked until all required checks
+      # succeed and resets if the candidate head changes.
       #
       #   1. main requires a pull request. github-actions[bot] is not an admin
       #      and has no bypass, so a direct push is rejected outright.
@@ -158,6 +160,9 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           BRANCH="release/v${NEW_VERSION}"
+          node .github/scripts/validate-release-candidate.mjs \
+            --base-version "${{ steps.check.outputs.current }}" \
+            --branch "$BRANCH"
           EXISTING=$(gh pr list --base main --head "$BRANCH" --state open --json url --jq '.[0].url // ""')
           if [ -n "$EXISTING" ]; then
             echo "Reusing existing release PR: $EXISTING"
@@ -166,7 +171,8 @@ jobs:
               echo "::error::Existing $BRANCH does not contain current main; refusing to validate a stale release."
               exit 1
             fi
-            echo "Maintainer action required: approve the PR workflows in GitHub."
+            gh pr merge --auto --squash "$EXISTING"
+            echo "Auto-merge armed. Maintainer action required: approve the PR workflows in GitHub."
             exit 0
           fi
           if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
@@ -180,10 +186,10 @@ jobs:
           git commit -m "release: v${NEW_VERSION} — automated weekly batch
 
           Cut by .github/workflows/scheduled-release.yml. Publishing itself is
-          handled by release.yml, which the merge gate dispatches on main."
+          handled by release.yml after protected native auto-merge updates main."
           git push origin "$BRANCH"
 
-          gh pr create \
+          PR_URL=$(gh pr create \
             --base main \
             --head "$BRANCH" \
             --title "release: v${NEW_VERSION} — automated weekly batch" \
@@ -191,6 +197,7 @@ jobs:
 
           Batches everything merged since \`${{ steps.check.outputs.last_tag }}\`. Tests and \`guard\` already passed on this tree before the PR was opened.
 
-          **Maintainer action required:** select **Approve workflows to run** in GitHub. The ordinary pull-request CI then satisfies branch protection; once green, \`auto-merge.yml\` validates the exact run, merges this PR, and dispatches \`release.yml\` to tag and publish."
+          **Maintainer action required:** select **Approve workflows to run** in GitHub. The ordinary pull-request CI then satisfies branch protection; GitHub's protected native auto-merge merges the exact green head, and the resulting \`package.json\` push starts \`release.yml\` to tag and publish.")
 
-          echo "Opened $BRANCH. Approve its workflows in GitHub to continue the release."
+          gh pr merge --auto --squash "$PR_URL"
+          echo "Opened $BRANCH with auto-merge armed. Approve its workflows in GitHub to continue the release."

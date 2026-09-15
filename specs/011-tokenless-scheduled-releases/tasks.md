@@ -32,5 +32,14 @@
 - [x] T012 Prove that bot-dispatched jobs neither emit the required downstream
   gate nor satisfy protected pull-request checks, then adopt one explicit
   maintainer workflow approval without weakening branch protection.
-- [ ] T013 Execute the live v0.40.1 release through the approved pull-request
-  checks and retain its merge and publication evidence.
+- [x] T013 Execute the live v0.40.1 release through approved pull-request checks
+  and retain release PR #380, CI run `34920481989`, supply-chain run
+  `34920482409`, merge `5b2dfe4`, and publication run `34920702346`.
+
+## Phase 5: Native continuation correction
+
+- [x] T014 Replace the missing post-approval `workflow_run` callback with
+  pre-push candidate validation and GitHub protected native auto-merge while
+  preserving the separate Dependabot/Jules gate.
+- [ ] T015 Prove the repository-token auto-merge arm and end-to-end publication
+  on the next live release, then record the exact merge and registry evidence.
