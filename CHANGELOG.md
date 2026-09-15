@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.40.2] - 2026-09-15
+
+Automated weekly release — batches everything merged since `v0.40.1`.
+
+### Changed
+
+- fix: use protected native release auto-merge (#382)
+
+
 ### Changed
 
 - Prevalidate scheduler-generated release identity, synchronized versions, and
