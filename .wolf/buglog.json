@@ -5839,6 +5839,24 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-09-15T04:00:00.000Z"
+    },
+    {
+      "id": "bug-352",
+      "timestamp": "2026-09-15T04:15:00.000Z",
+      "error_message": "A passing freshness assertion failed the v0.40.5 release gate when temporary Git repository cleanup raised ENOTEMPTY",
+      "file": "tests/freshness.test.mjs",
+      "root_cause": "The suite removed Git object directories with a single rmSync attempt even though filesystem and antivirus activity can transiently repopulate or retain entries during recursive deletion",
+      "fix": "Use Node's bounded maxRetries and retryDelay options for recursive cleanup, matching the repository's established Git-fixture cleanup pattern",
+      "tags": [
+        "tests",
+        "release",
+        "filesystem",
+        "flaky-test",
+        "cleanup"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-15T04:15:00.000Z"
     }
   ]
 }

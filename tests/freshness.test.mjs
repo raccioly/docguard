@@ -15,7 +15,14 @@ const runGit = (args, cwd) => {
 describe('readLastReviewedDate — future dates cannot mask staleness', () => {
   let dir;
   beforeEach(() => { dir = mkdtempSync(join(tmpdir(), 'fresh-review-')); });
-  afterEach(() => { if (dir) rmSync(dir, { recursive: true, force: true }); });
+  afterEach(() => {
+    if (dir) rmSync(dir, {
+      recursive: true,
+      force: true,
+      maxRetries: 5,
+      retryDelay: 50,
+    });
+  });
 
   it('reads a valid past-dated header', () => {
     const f = join(dir, 'A.md');
@@ -47,7 +54,12 @@ describe('Freshness Validator', () => {
   });
 
   afterEach(() => {
-    rmSync(tmpDir, { recursive: true, force: true });
+    rmSync(tmpDir, {
+      recursive: true,
+      force: true,
+      maxRetries: 5,
+      retryDelay: 50,
+    });
   });
 
   it('skips when the directory is not a git repository', () => {
