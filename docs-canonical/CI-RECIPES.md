@@ -1,6 +1,6 @@
 # CI Recipes
 
-<!-- docguard:last-reviewed 2026-09-14 -->
+<!-- docguard:last-reviewed 2026-09-15 -->
 <!-- docguard:status active -->
 
 ## Recipe 1 — Guard (mandatory CI gate)
@@ -80,6 +80,14 @@ also proving that its resulting push is recursion-suppressed and cannot be the
 sole publication trigger. The bounded wait handles the normal approval path; the
 hourly tag sweep supplies durable recovery without continuous polling or another
 credential.
+
+The v0.40.3 release is the retained end-to-end proof. Scheduled run
+`34922506777` opened repository-token PR #386 and armed native auto-merge. After
+one maintainer workflow approval, CI run `34922605581` and supply-chain run
+`34922605917` passed, GitHub merged
+`e27d6bf0203708ee8206a1434eb292520f4c4494`, and the bounded wait dispatched
+publication run `34922784629`. That run published npm, PyPI, GHCR, the GitHub
+Release, extension ZIP, and MCPB and refreshed the catalog reminder.
 
 ## Recipe 3b — Spec completion and post-hoc reconciliation
 

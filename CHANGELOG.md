@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Close the R8 living release contract with exact v0.40.3 evidence: the
+  repository-token release PR armed protected native auto-merge, passed the
+  approved CI and supply-chain checks, merged automatically, and triggered the
+  complete npm, PyPI, GHCR, GitHub Release, extension, MCPB, and catalog flow
+  through the scheduler's bounded continuation.
+
 ## [0.40.3] - 2026-09-15
 
 Automated weekly release — batches everything merged since `v0.40.2`.
