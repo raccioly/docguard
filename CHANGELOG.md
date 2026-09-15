@@ -29,6 +29,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Upgrade the installable Python example from the vulnerable open range
+  `flask>=3.0` to exact-pinned `flask==3.1.3`, the upstream security-fix release
+  for GHSA-68rp-wp8r-4726, and prevent regression to the affected fixture.
 - Remove stale pre-release status text from the delivered R1, R6, and R7 living
   plans and task lists so agents see verified maintenance contracts instead of
   completed work described as held or in progress.

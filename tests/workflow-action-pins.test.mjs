@@ -47,4 +47,12 @@ describe('GitHub action supply-chain pins', () => {
     );
     assert.match(template, new RegExp(`uses: raccioly/docguard@v${version.replaceAll('.', '\\.')}(?:\\s|$)`));
   });
+
+  it('keeps the installable Flask example on the reviewed security-fix release', () => {
+    const requirements = readFileSync(
+      join(root, 'examples/02-python-flask/requirements.txt'),
+      'utf8',
+    ).trim();
+    assert.equal(requirements, 'flask==3.1.3');
+  });
 });

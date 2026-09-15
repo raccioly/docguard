@@ -5648,6 +5648,23 @@
       ],
       "occurrences": 1,
       "last_seen": "2026-09-15T00:22:47.000Z"
+    },
+    {
+      "id": "bug-342",
+      "timestamp": "2026-09-15T00:32:27.000Z",
+      "error_message": "Supply-chain CI found the installable Flask example affected by PYSEC-2026-2151 / GHSA-68rp-wp8r-4726",
+      "file": "examples/02-python-flask/requirements.txt",
+      "root_cause": "The example used the open range flask>=3.0, allowing an affected Flask release and violating the repository's exact-pin policy",
+      "fix": "Pin Flask 3.1.3, the upstream security-fix release, and add a regression assertion for the installable example",
+      "tags": [
+        "dependency",
+        "security",
+        "example",
+        "supply-chain"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-15T00:32:27.000Z"
     }
   ]
 }
