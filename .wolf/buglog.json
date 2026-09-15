@@ -6145,6 +6145,60 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-09-15T15:30:00.000Z"
+    },
+    {
+      "id": "bug-371",
+      "timestamp": "2026-09-15T16:19:00.847Z",
+      "error_message": "An evidence-complete living verification spec could not complete without a tasks.md ledger",
+      "file": "cli/commands/specs.mjs",
+      "root_cause": "Completion treated every persistence model as a one-time implementation plan and required task boxes even when a living contract had qualified evidence for every requirement",
+      "fix": "Allow taskless completion only for living specs with complete qualified requirement evidence; retain strict non-empty complete ledgers for every declared task file and every other persistence model",
+      "tags": [
+        "spec-lifecycle",
+        "living-spec",
+        "stale-docs",
+        "false-blocker"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-15T16:19:00.847Z"
+    },
+    {
+      "id": "bug-372",
+      "timestamp": "2026-09-15T16:19:00.847Z",
+      "error_message": "Released living specs could not record maintenance and completion would downgrade released to verified",
+      "file": "cli/commands/specs.mjs",
+      "root_cause": "The maintenance gate recognized only verified living specs and completeSpec unconditionally assigned verified after every transaction",
+      "fix": "Accept verified and released living maintenance, emit status-preserving transitions, and preserve released delivery after a reviewed outcome",
+      "tags": [
+        "spec-lifecycle",
+        "released",
+        "maintenance",
+        "status-regression"
+      ],
+      "related_bugs": [
+        "bug-371"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-09-15T16:19:00.847Z"
+    },
+    {
+      "id": "bug-373",
+      "timestamp": "2026-09-15T16:21:14.288Z",
+      "error_message": "The packed CLI version smoke test accepted any semantic version instead of the package version",
+      "file": "tests/npm-pack-smoke.test.mjs",
+      "root_cause": "The assertion used a generic docguard vX.Y.Z regular expression and could not detect a stale but well-formed version",
+      "fix": "Read package.json from the extracted tarball and require exact equality with the extracted CLI --version output",
+      "tags": [
+        "release",
+        "npm-pack",
+        "version",
+        "false-green",
+        "test-quality"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-15T16:21:14.288Z"
     }
   ]
 }

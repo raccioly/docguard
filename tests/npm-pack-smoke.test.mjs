@@ -102,7 +102,7 @@ describe('npm pack smoke', { skip: SKIP }, () => {
     assert.deepEqual(missing, [], `relative README links missing from npm package: ${missing.join(', ')}`);
   });
 
-  it('extracted package runs --version (CLI loads end-to-end)', () => {
+  it('extracted package reports its exact packed version (CLI loads end-to-end)', () => {
     packDir = tmp('pack');
     extractDir = tmp('extract');
     spawnSync('npm', ['pack', '--pack-destination', packDir], { cwd: process.cwd() });
@@ -115,8 +115,9 @@ describe('npm pack smoke', { skip: SKIP }, () => {
     const cli = join(extractDir, 'package/cli/docguard.mjs');
     const r = spawnSync('node', [cli, '--version'], { encoding: 'utf-8' });
     assert.equal(r.status, 0, `--version should exit 0; got ${r.status}\nstderr: ${r.stderr}`);
-    assert.match(r.stdout, /docguard v\d+\.\d+\.\d+/,
-      `--version should print docguard vX.Y.Z; got: ${r.stdout}`);
+    const packed = JSON.parse(readFileSync(join(extractDir, 'package/package.json'), 'utf8'));
+    assert.equal(r.stdout.trim(), `docguard v${packed.version}`,
+      `--version must equal packed package.json ${packed.version}; got: ${r.stdout.trim()}`);
   });
 
   it('extracted package can run guard against a minimal fixture', () => {
