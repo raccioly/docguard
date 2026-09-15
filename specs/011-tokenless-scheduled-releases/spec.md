@@ -13,14 +13,13 @@ long-lived personal or GitHub App credential can make the pull-request event run
 normally, but it also adds secret storage, rotation, revocation, and account
 ownership risk to an otherwise repository-local process.
 
-GitHub guarantees that `workflow_dispatch` events created with the ephemeral
-repository `GITHUB_TOKEN` start workflow runs. GitHub's recursion prevention
-still suppresses a later `workflow_run` event when that dispatch was authored by
-the repository token. DocGuard must therefore keep the privileged controller
-inside the trusted scheduled run, wait for the exact dispatched runs, and
-validate them as metadata. The change must fail closed when branch, author,
-version, changed files, CI or supply-chain provenance, or publication state is
-unexpected.
+GitHub places workflows for a pull request created by the ephemeral repository
+`GITHUB_TOKEN` into an approval-required state. Separately dispatched jobs run,
+but do not satisfy the protected branch's required pull-request contexts, and a
+bot-authored dispatch does not produce the downstream `workflow_run` needed by
+the merge gate. DocGuard therefore requires one maintainer workflow approval per
+generated release PR. The change must fail closed when branch, author, version,
+changed files, CI provenance, approval state, or publication state is unexpected.
 
 ## User Scenarios & Testing
 
@@ -48,14 +47,15 @@ considers another version bump.
   `GITHUB_TOKEN`; the workflow MUST NOT require a personal token, app private key,
   or other long-lived release credential.
 - **FR-002**: The scheduler MUST retain explicit `contents`, `pull-requests`, and
-  `actions` write scopes only, and MUST dispatch the existing read-only CI
-  workflow against the pushed release branch.
+  `actions` write scopes only. It MUST expose GitHub's maintainer workflow
+  approval as an explicit release step and MUST NOT substitute dispatched jobs
+  that do not satisfy required pull-request checks.
 - **FR-003**: A current package version without a matching remote tag MUST trigger
   publication recovery and MUST NOT be incremented again by the scheduler.
 - **FR-004**: Re-running the scheduler MUST reuse an open release PR for the same
-  branch and dispatch fresh CI only when that branch contains current `main`.
-  A stale branch or same-name remote branch without an open PR MUST fail closed
-  instead of being overwritten or omitting newly merged work.
+  branch only when that branch contains current `main`. A stale branch or
+  same-name remote branch without an open PR MUST fail closed instead of being
+  overwritten or omitting newly merged work.
 - **FR-005**: A release candidate MUST come from the base repository, target the
   default branch, use an exact `release/vX.Y.Z` branch and matching title, and be
   authored by `github-actions[bot]`.
@@ -66,17 +66,15 @@ considers another version bump.
   package entry, Python package, MCP server, and Spec Kit extension versions MUST
   agree exactly. The version MUST be the next patch or next minor from the base
   package version, and its release tag MUST not exist.
-- **FR-008**: The scheduler MUST accept dispatched verification only for a
-  qualifying release candidate and MUST verify the exact CI and supply-chain run
-  IDs, workflow identities, bot actor, current PR head SHA, and successful Node
-  18, 20, 22, and 24 jobs.
-- **FR-009**: The privileged scheduler controller MUST NOT execute code from the
+- **FR-008**: Auto-merge MUST accept only maintainer-approved pull-request CI for
+  a qualifying release candidate and MUST verify the exact triggering run ID,
+  current PR head SHA, and successful Node 18, 20, 22, and 24 jobs.
+- **FR-009**: The privileged `workflow_run` gate MUST NOT execute code from the
   PR. It MUST restore imported release policy from the repository default branch
   with persisted credentials disabled and read candidate files through the API.
-- **FR-010**: After a successful release PR merge, the scheduler controller MUST
-  dispatch the existing idempotent release workflow on the default branch.
-  Dispatch failure MUST fail visibly, and missing-tag recovery MUST provide a
-  later retry path.
+- **FR-010**: After a successful release PR merge, the gate MUST dispatch the
+  existing idempotent release workflow on the default branch. Dispatch failure
+  MUST fail visibly, and missing-tag recovery MUST provide a later retry path.
 - **FR-011**: Existing Dependabot and Jules auto-merge policies MUST preserve
   their current pull-request-only behavior and file/version restrictions.
 - **FR-012**: All executable third-party actions MUST remain pinned to reviewed
@@ -86,14 +84,14 @@ considers another version bump.
 
 - **SC-001**: Pure policy tests accept one exact patch and minor candidate and
   reject wrong authors, repositories, bases, versions, tags, paths, and CI jobs.
-- **SC-002**: Workflow contract tests prove tokenless dispatch, exact bot-authored
-  run provenance, missing-tag recovery, stale-branch refusal, default-branch
-  policy checkout, and publication dispatch.
+- **SC-002**: Workflow contract tests prove the explicit maintainer-approval
+  boundary, absence of a stored release credential, missing-tag recovery,
+  stale-branch refusal, default-branch policy checkout, and publication dispatch.
 - **SC-003**: The complete Node 18, 20, 22, and 24 CI matrix, supply-chain scan,
   self-guard, and action-pin checks pass.
-- **SC-004**: A live repository-token-generated release PR proves the scheduler
-  can dispatch exact CI and supply-chain runs, validate and merge the candidate,
-  and start publication without a long-lived credential.
+- **SC-004**: A live repository-token-generated release PR proves that one
+  maintainer approval starts required CI, after which the trusted gate validates
+  and merges the candidate and starts publication without a stored credential.
 
 ## Non-Goals
 

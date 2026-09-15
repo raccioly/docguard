@@ -8,11 +8,11 @@ name: Scheduled Release
 # patch and publish constantly. Weekly batching keeps releases hands-off
 # without turning the registry into a changelog.
 #
-# HOW IT TRIGGERS THE ACTUAL RELEASE: the repository token opens a protected PR,
-# dispatches CI and supply-chain scans on its branch, and waits for those exact
-# runs. The same trusted scheduler then restores policy from main, validates the
-# candidate and run provenance as metadata, merges, and dispatches release.yml.
-# A later schedule retries publication when package.json has no corresponding tag.
+# HOW IT TRIGGERS THE ACTUAL RELEASE: the repository token opens a protected PR.
+# GitHub intentionally holds that PR's workflows for one maintainer approval.
+# Once approved, ordinary PR CI satisfies branch protection and the metadata-only
+# auto-merge gate dispatches release.yml. A later schedule retries publication
+# when package.json has no corresponding tag.
 #
 # NO-OP WHEN NOTHING CHANGED: if there are no commits since the last release
 # tag, this exits without bumping — no empty releases.
@@ -144,17 +144,15 @@ jobs:
           npm test
           node cli/docguard.mjs guard || [ $? -eq 2 ]
 
-      # Main requires a PR and four runtime checks. A repository-token PR leaves
-      # pull_request runs approval-gated, so dispatch CI and supply-chain checks
-      # explicitly against the release branch. workflow_dispatch is the
-      # documented GITHUB_TOKEN recursion exception. GitHub suppresses the later
-      # workflow_run event for a bot-authored dispatch, so this trusted scheduler
-      # waits for and verifies the exact runs before it merges.
+      # Main requires a PR and four pull-request runtime checks. GitHub holds
+      # workflows for PRs opened by GITHUB_TOKEN until a maintainer approves them;
+      # workflow_dispatch jobs do not satisfy those required PR contexts. The
+      # approval is the deliberate human boundary that avoids a stored PAT or App
+      # private key. After approval, auto-merge validates the exact PR run.
       #
       #   1. main requires a pull request. github-actions[bot] is not an admin
       #      and has no bypass, so a direct push is rejected outright.
-      - name: Open release PR and dispatch verification
-        id: candidate
+      - name: Open release PR
         if: steps.check.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -168,220 +166,31 @@ jobs:
               echo "::error::Existing $BRANCH does not contain current main; refusing to validate a stale release."
               exit 1
             fi
-            PR_NUMBER=$(gh pr view "$EXISTING" --json number --jq .number)
-            HEAD_SHA=$(gh pr view "$EXISTING" --json headRefOid --jq .headRefOid)
-          else
-            if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
-              echo "::error::Remote branch $BRANCH exists without an open PR; refusing to overwrite it."
-              exit 1
-            fi
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git checkout -b "$BRANCH"
-            git add package.json package-lock.json pyproject.toml server.json CHANGELOG.md templates/ extensions/ .agent/ 2>/dev/null || true
-            git commit -m "release: v${NEW_VERSION} — automated weekly batch
-
-            Cut by .github/workflows/scheduled-release.yml. Publishing itself is
-            handled by release.yml after exact-run policy verification."
-            git push origin "$BRANCH"
-
-            PR_URL=$(gh pr create \
-              --base main \
-              --head "$BRANCH" \
-              --title "release: v${NEW_VERSION} — automated weekly batch" \
-              --body "Automated weekly release cut by \`scheduled-release.yml\`.
-
-            Batches everything merged since \`${{ steps.check.outputs.last_tag }}\`. Tests and \`guard\` already passed on this tree before the PR was opened. CI and supply-chain verification are explicitly dispatched on this branch.
-
-            Once both exact runs pass, the trusted scheduler validates release metadata, merges this PR, and dispatches \`release.yml\` to tag and publish.")
-            PR_NUMBER=$(gh pr view "$PR_URL" --json number --jq .number)
-            HEAD_SHA=$(git rev-parse HEAD)
+            echo "Maintainer action required: approve the PR workflows in GitHub."
+            exit 0
           fi
+          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+            echo "::error::Remote branch $BRANCH exists without an open PR; refusing to overwrite it."
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add package.json package-lock.json pyproject.toml server.json CHANGELOG.md templates/ extensions/ .agent/ 2>/dev/null || true
+          git commit -m "release: v${NEW_VERSION} — automated weekly batch
 
-          latest_run_id() {
-            gh run list --workflow "$1" --branch "$BRANCH" --event workflow_dispatch --limit 20 \
-              --json databaseId,headSha | jq --arg sha "$HEAD_SHA" \
-              '[.[] | select(.headSha == $sha) | .databaseId] | max // 0'
-          }
-          wait_for_new_run() {
-            WORKFLOW="$1"
-            BEFORE="$2"
-            for _ in $(seq 1 30); do
-              RUN_ID=$(latest_run_id "$WORKFLOW")
-              if [ "$RUN_ID" -gt "$BEFORE" ]; then
-                echo "$RUN_ID"
-                return 0
-              fi
-              sleep 2
-            done
-            echo "::error::$WORKFLOW dispatch was not observable within 60 seconds." >&2
-            return 1
-          }
+          Cut by .github/workflows/scheduled-release.yml. Publishing itself is
+          handled by release.yml, which the merge gate dispatches on main."
+          git push origin "$BRANCH"
 
-          wait_for_pr_registration() {
-            WORKFLOW="$1"
-            for _ in $(seq 1 30); do
-              REGISTERED=$(gh run list --workflow "$WORKFLOW" --branch "$BRANCH" --event pull_request --limit 20 \
-                --json databaseId,headSha | jq --arg sha "$HEAD_SHA" \
-                '[.[] | select(.headSha == $sha)] | length')
-              if [ "$REGISTERED" -gt 0 ]; then
-                return 0
-              fi
-              sleep 2
-            done
-            echo "::error::$WORKFLOW pull-request check registration was not observable within 60 seconds." >&2
-            return 1
-          }
+          gh pr create \
+            --base main \
+            --head "$BRANCH" \
+            --title "release: v${NEW_VERSION} — automated weekly batch" \
+            --body "Automated weekly release cut by \`scheduled-release.yml\`.
 
-          # GitHub creates approval-required placeholder runs for a PR opened by
-          # GITHUB_TOKEN. Wait until those check contexts exist, then dispatch the
-          # trusted runs so their successful checks are the newest contexts used
-          # by branch protection.
-          wait_for_pr_registration ci.yml
-          wait_for_pr_registration supply-chain.yml
-          CI_BEFORE=$(latest_run_id ci.yml)
-          SUPPLY_BEFORE=$(latest_run_id supply-chain.yml)
-          gh workflow run ci.yml --ref "$BRANCH"
-          gh workflow run supply-chain.yml --ref "$BRANCH"
-          CI_RUN_ID=$(wait_for_new_run ci.yml "$CI_BEFORE")
-          SUPPLY_RUN_ID=$(wait_for_new_run supply-chain.yml "$SUPPLY_BEFORE")
+          Batches everything merged since \`${{ steps.check.outputs.last_tag }}\`. Tests and \`guard\` already passed on this tree before the PR was opened.
 
-          echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
-          echo "head_sha=$HEAD_SHA" >> "$GITHUB_OUTPUT"
-          echo "head_branch=$BRANCH" >> "$GITHUB_OUTPUT"
-          echo "ci_run_id=$CI_RUN_ID" >> "$GITHUB_OUTPUT"
-          echo "supply_run_id=$SUPPLY_RUN_ID" >> "$GITHUB_OUTPUT"
-          echo "Opened $BRANCH and dispatched exact CI ($CI_RUN_ID) and supply-chain ($SUPPLY_RUN_ID) runs."
+          **Maintainer action required:** select **Approve workflows to run** in GitHub. The ordinary pull-request CI then satisfies branch protection; once green, \`auto-merge.yml\` validates the exact run, merges this PR, and dispatches \`release.yml\` to tag and publish."
 
-      - name: Wait for exact CI
-        if: steps.check.outputs.changed == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh run watch "${{ steps.candidate.outputs.ci_run_id }}" --exit-status
-
-      - name: Wait for exact supply-chain scan
-        if: steps.check.outputs.changed == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh run watch "${{ steps.candidate.outputs.supply_run_id }}" --exit-status
-
-      - name: Check out trusted release controller
-        if: steps.check.outputs.changed == 'true'
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ github.event.repository.default_branch }}
-          persist-credentials: false
-
-      - name: Validate, merge, and dispatch publication
-        if: steps.check.outputs.changed == 'true'
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
-        env:
-          RELEASE_PR_NUMBER: ${{ steps.candidate.outputs.pr_number }}
-          RELEASE_HEAD_SHA: ${{ steps.candidate.outputs.head_sha }}
-          RELEASE_HEAD_BRANCH: ${{ steps.candidate.outputs.head_branch }}
-          RELEASE_CI_RUN_ID: ${{ steps.candidate.outputs.ci_run_id }}
-          RELEASE_SUPPLY_RUN_ID: ${{ steps.candidate.outputs.supply_run_id }}
-        with:
-          script: |
-            const policyPath = process.env.GITHUB_WORKSPACE + '/cli/release-pr-policy.mjs';
-            const { evaluateReleaseCandidate, evaluateReleaseJobs, evaluateReleaseRun } = await import(policyPath);
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
-            const repository = `${owner}/${repo}`;
-            const prNumber = Number(process.env.RELEASE_PR_NUMBER);
-            const ciRunId = Number(process.env.RELEASE_CI_RUN_ID);
-            const supplyRunId = Number(process.env.RELEASE_SUPPLY_RUN_ID);
-            if (![prNumber, ciRunId, supplyRunId].every(Number.isSafeInteger)) {
-              throw new Error('Release controller received invalid numeric identifiers.');
-            }
-
-            const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
-            if (pr.state !== 'open') throw new Error(`#${prNumber} is not open.`);
-            if (pr.head.sha !== process.env.RELEASE_HEAD_SHA || pr.head.ref !== process.env.RELEASE_HEAD_BRANCH) {
-              throw new Error(`#${prNumber} head changed after dispatch.`);
-            }
-
-            const runExpectations = [
-              [ciRunId, 'DocGuard CI', '.github/workflows/ci.yml'],
-              [supplyRunId, 'Supply-Chain Security', '.github/workflows/supply-chain.yml'],
-            ];
-            for (const [runId, workflowName, workflowPath] of runExpectations) {
-              const { data: run } = await github.rest.actions.getWorkflowRun({ owner, repo, run_id: runId });
-              const result = evaluateReleaseRun(run, {
-                runId, workflowName, workflowPath, repository,
-                headSha: pr.head.sha, headBranch: pr.head.ref,
-              });
-              if (!result.ok) throw new Error(`${workflowName} provenance rejected: ${result.errors.join(', ')}`);
-            }
-
-            const { data: runJobs } = await github.rest.actions.listJobsForWorkflowRun({
-              owner, repo, run_id: ciRunId, filter: 'latest', per_page: 100,
-            });
-            const jobPolicy = evaluateReleaseJobs(runJobs.jobs);
-            if (!jobPolicy.ok) throw new Error(`Exact CI jobs rejected: ${jobPolicy.errors.join(', ')}`);
-
-            const files = await github.paginate(github.rest.pulls.listFiles, {
-              owner, repo, pull_number: prNumber, per_page: 100,
-            });
-            const paths = files.map((file) => file.filename);
-            const textAt = async (path, ref) => {
-              const { data } = await github.rest.repos.getContent({ owner, repo, path, ref });
-              if (Array.isArray(data) || !data.content) throw new Error(`${path}: expected a file`);
-              return Buffer.from(data.content, 'base64').toString('utf8');
-            };
-            const candidateFiles = {
-              packageJson: await textAt('package.json', pr.head.sha),
-              packageLock: await textAt('package-lock.json', pr.head.sha),
-              pyproject: await textAt('pyproject.toml', pr.head.sha),
-              server: await textAt('server.json', pr.head.sha),
-              extension: await textAt('extensions/spec-kit-docguard/extension.yml', pr.head.sha),
-            };
-            const baseVersion = JSON.parse(await textAt('package.json', pr.base.sha)).version;
-            const preliminary = evaluateReleaseCandidate({
-              repository, headRepo: pr.head.repo.full_name,
-              defaultBranch: context.payload.repository.default_branch,
-              baseRef: pr.base.ref, headRef: pr.head.ref, title: pr.title,
-              author: pr.user.login, baseVersion, paths, files: candidateFiles,
-              tagExists: false,
-            });
-            let tagExists = false;
-            if (preliminary.version && /^\d+\.\d+\.\d+$/.test(preliminary.version)) {
-              try {
-                await github.rest.git.getRef({ owner, repo, ref: `tags/v${preliminary.version}` });
-                tagExists = true;
-              } catch (error) {
-                if (error.status !== 404) throw error;
-              }
-            }
-            const candidatePolicy = evaluateReleaseCandidate({
-              repository, headRepo: pr.head.repo.full_name,
-              defaultBranch: context.payload.repository.default_branch,
-              baseRef: pr.base.ref, headRef: pr.head.ref, title: pr.title,
-              author: pr.user.login, baseVersion, paths, files: candidateFiles,
-              tagExists,
-            });
-            if (!candidatePolicy.ok) {
-              throw new Error(`Release candidate rejected: ${candidatePolicy.errors.join(', ')}`);
-            }
-
-            const { data: merge } = await github.rest.pulls.merge({
-              owner, repo, pull_number: prNumber, merge_method: 'squash',
-            });
-            if (!merge.merged) throw new Error(merge.message || 'GitHub declined the merge.');
-            try {
-              await github.rest.actions.createWorkflowDispatch({
-                owner, repo, workflow_id: 'release.yml',
-                ref: context.payload.repository.default_branch,
-              });
-            } catch (error) {
-              await github.rest.issues.createComment({
-                owner, repo, issue_number: prNumber,
-                body: `⚠️ **Merged, publication dispatch failed** — ${error.message}. The next scheduled run will retry the untagged version.`,
-              });
-              throw error;
-            }
-            await github.rest.issues.createComment({
-              owner, repo, issue_number: prNumber,
-              body: `🤖 **Auto-merged by the trusted scheduler** — exact CI run ${ciRunId} and supply-chain run ${supplyRunId} passed for ${pr.head.sha}. Publication was dispatched on main.`,
-            });
-            core.notice(`Merged #${prNumber} and dispatched publication.`);
+          echo "Opened $BRANCH. Approve its workflows in GitHub to continue the release."

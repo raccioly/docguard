@@ -11,8 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add a pure release-candidate policy that verifies repository, default branch,
   bot author, branch/title/version agreement, next-version increment, missing
-  tag, synchronized release surfaces, changed paths, exact CI and supply-chain
-  run identity, and one successful Node 18/20/22/24 job before privileged merge.
+  tag, synchronized release surfaces, changed paths, exact pull-request CI run
+  identity, and one successful Node 18/20/22/24 job before privileged merge.
 - Retain a machine-checked live probe for the user-authored `workflow_dispatch`
   fallback. The four-version CI matrix passed, the trusted `workflow_run` gate
   refused the non-release candidate, and the disposable pull request was closed
@@ -21,19 +21,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Scheduled releases now use only the ephemeral repository `GITHUB_TOKEN`.
-  The scheduler opens or reuses a release PR, refuses orphaned same-name branches,
-  waits for exact dispatched CI and supply-chain runs, restores trusted policy
-  from `main`, and dispatches publication after a metadata-only merge decision.
+  The scheduler opens or reuses a release PR and refuses orphaned same-name
+  branches. A maintainer approves GitHub's held pull-request workflows; the
+  metadata-only gate then validates CI, merges, and dispatches publication.
 - A scheduled run now recovers an untagged current package version through the
   idempotent release workflow before considering another version increment.
 
 ### Fixed
 
-- Keep tokenless scheduled releases inside one trusted controller after GitHub
-  suppressed the downstream `workflow_run` event for a repository-token-authored
-  CI dispatch. The scheduler now waits for exact CI and supply-chain run IDs,
-  restores policy from `main`, validates bot/run/candidate provenance, merges the
-  generated PR, and dispatches publication without a long-lived credential.
+- Correct the release contract after live PRs #376 and #378 proved that a
+  repository-token dispatch neither emits the required downstream gate nor
+  satisfies protected pull-request checks. The final flow exposes GitHub's one
+  maintainer workflow approval instead of weakening branch protection or storing
+  a personal or App credential.
 - Retry bounded removal of ephemeral Git repositories in `shared-git` tests so
   Node 18 does not fail an otherwise passing matrix on a transient `.git`
   `ENOTEMPTY` cleanup race.

@@ -4,7 +4,6 @@ import { readFileSync } from 'node:fs';
 import {
   evaluateReleaseCandidate,
   evaluateReleaseJobs,
-  evaluateReleaseRun,
   RELEASE_PATH_ALLOWLIST,
 } from '../cli/release-pr-policy.mjs';
 
@@ -34,30 +33,18 @@ const ci = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url),
 const liveProbe = JSON.parse(readFileSync(new URL('./fixtures/release-workflow-probe.json', import.meta.url), 'utf8'));
 
 describe('scheduled release workflow', () => {
-  it('uses only the ephemeral repository token and controls exact dispatched runs', () => {
+  it('uses only the ephemeral repository token and exposes the approval boundary', () => {
     assert.match(workflow, /permissions:\n  actions: write\n  contents: write\n  pull-requests: write\n/);
     assert.match(workflow, /gh pr create/);
     assert.match(workflow, /GH_TOKEN: \$\{\{ secrets\.GITHUB_TOKEN \}\}/);
-    assert.doesNotMatch(workflow, /RELEASE_PR_TOKEN|personal access token|private key/i);
-    assert.match(workflow, /gh workflow run ci\.yml --ref "\$BRANCH"/);
-    assert.match(workflow, /gh workflow run supply-chain\.yml --ref "\$BRANCH"/);
-    assert.match(workflow, /wait_for_pr_registration ci\.yml/);
-    assert.match(workflow, /--event pull_request/);
-    assert.ok(
-      workflow.indexOf('wait_for_pr_registration ci.yml') < workflow.indexOf('gh workflow run ci.yml'),
-      'approval-required check registration must precede the trusted dispatch',
-    );
-    assert.match(workflow, /gh run watch "\$\{\{ steps\.candidate\.outputs\.ci_run_id \}\}" --exit-status/);
-    assert.match(workflow, /gh run watch "\$\{\{ steps\.candidate\.outputs\.supply_run_id \}\}" --exit-status/);
+    assert.doesNotMatch(workflow, /secrets\.(RELEASE_PR_TOKEN|APP_PRIVATE_KEY|GH_PAT)/);
+    assert.doesNotMatch(workflow, /gh workflow run ci\.yml --ref "\$BRANCH"/);
+    assert.match(workflow, /Approve workflows to run/);
+    assert.match(workflow, /ordinary pull-request CI then satisfies branch protection/);
     assert.match(workflow, /gh workflow run release\.yml --ref main/);
     assert.match(workflow, /gh pr list[\s\S]*--head "\$BRANCH"[\s\S]*--state open/);
     assert.match(workflow, /git merge-base --is-ancestor HEAD "origin\/\$BRANCH"/);
     assert.match(workflow, /git ls-remote --exit-code --heads origin "\$BRANCH"/);
-    assert.match(workflow, /release-pr-policy\.mjs/);
-    assert.match(workflow, /github\.rest\.actions\.getWorkflowRun/);
-    assert.match(workflow, /github\.rest\.actions\.createWorkflowDispatch/);
-    assert.match(workflow, /ref: \$\{\{ github\.event\.repository\.default_branch \}\}/);
-    assert.match(workflow, /persist-credentials: false/);
     assert.match(workflow, /concurrency:\n  group: scheduled-release\n  cancel-in-progress: false/);
     assert.match(release, /concurrency:\n  group: docguard-release\n  cancel-in-progress: false/);
   });
@@ -146,45 +133,6 @@ describe('scheduled release workflow', () => {
     assert.equal(evaluateReleaseJobs(jobs.map((job, index) => index ? job : { ...job, conclusion: 'failure' })).ok, false);
   });
 
-  it('binds scheduler decisions to bot-authored exact-head dispatches', () => {
-    const expected = {
-      runId: 42,
-      workflowName: 'DocGuard CI',
-      workflowPath: '.github/workflows/ci.yml',
-      repository: 'raccioly/docguard',
-      headSha: 'a'.repeat(40),
-      headBranch: 'release/v0.40.1',
-    };
-    const run = {
-      id: 42,
-      name: 'DocGuard CI',
-      path: '.github/workflows/ci.yml',
-      event: 'workflow_dispatch',
-      actor: { login: 'github-actions[bot]' },
-      repository: { full_name: 'raccioly/docguard' },
-      head_sha: 'a'.repeat(40),
-      head_branch: 'release/v0.40.1',
-      status: 'completed',
-      conclusion: 'success',
-    };
-    assert.deepEqual(evaluateReleaseRun(run, expected), { ok: true, errors: [] });
-    for (const mutate of [
-      value => { value.id = 43; },
-      value => { value.event = 'pull_request'; },
-      value => { value.actor.login = 'raccioly'; },
-      value => { value.name = 'Release'; },
-      value => { value.repository.full_name = 'attacker/docguard'; },
-      value => { value.head_sha = 'b'.repeat(40); },
-      value => { value.head_branch = 'release/v0.40.2'; },
-      value => { value.conclusion = 'failure'; },
-      value => { value.path = '.github/workflows/release.yml'; },
-    ]) {
-      const candidate = structuredClone(run);
-      mutate(candidate);
-      assert.equal(evaluateReleaseRun(candidate, expected).ok, false);
-    }
-  });
-
   it('retains the release matrix, tests, self-guard, and supply-chain workflow', () => {
     assert.match(ci, /node-version: \[18, 20, 22, 24\]/);
     assert.match(ci, /node --test --test-reporter=tap tests\/\*\.test\.mjs/);
@@ -195,20 +143,13 @@ describe('scheduled release workflow', () => {
 
   it('pins third-party actions to reviewed commit SHAs', () => {
     const uses = [...workflow.matchAll(/uses:\s*([^@\s]+)@([^\s]+)/g)];
-    assert.deepEqual(uses.map(([, action]) => action), [
-      'actions/checkout',
-      'actions/setup-node',
-      'actions/checkout',
-      'actions/github-script',
-    ]);
+    assert.deepEqual(uses.map(([, action]) => action), ['actions/checkout', 'actions/setup-node']);
     for (const [, , revision] of uses) assert.match(revision, /^[a-f0-9]{40}$/);
     assert.equal(uses[0][2], '3d3c42e5aac5ba805825da76410c181273ba90b1');
     assert.equal(uses[1][2], '820762786026740c76f36085b0efc47a31fe5020');
-    assert.equal(uses[2][2], '3d3c42e5aac5ba805825da76410c181273ba90b1');
-    assert.equal(uses[3][2], '3a2844b7e9c422d3c10d287c895573f7108da1b3');
   });
 
-  it('retains evidence that the live dispatch gate fails closed for a non-release PR', () => {
+  it('retains evidence that the user-dispatched fallback gate fails closed for a non-release PR', () => {
     assert.equal(liveProbe.schemaVersion, 1);
     assert.equal(liveProbe.repository, 'raccioly/docguard');
     assert.equal(liveProbe.pullRequest.number, 372);
