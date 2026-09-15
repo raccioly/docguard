@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.41.1] - 2026-09-15
+
+Automated weekly release — batches everything merged since `v0.41.0`.
+
+### Changed
+
+- Anchor lifecycle evidence to main (#400)
+- Anchor R9 lifecycle evidence to main (#399)
+- Fix living spec finalization and close R9 (#398)
+
+
 ### Fixed
 
 - Allow an evidence-complete living specification to finish without creating a
