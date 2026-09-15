@@ -11,24 +11,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add a pure release-candidate policy that verifies repository, default branch,
   bot author, branch/title/version agreement, next-version increment, missing
-  tag, synchronized release surfaces, changed paths, exact CI run identity, and
-  one successful Node 18/20/22/24 job before privileged merge.
-- Retain a machine-checked live probe for the tokenless
-  `workflow_dispatch → workflow_run` chain. The four-version CI matrix passed,
-  the trusted gate refused the non-release candidate, and the disposable pull
-  request was closed without merge.
+  tag, synchronized release surfaces, changed paths, exact CI and supply-chain
+  run identity, and one successful Node 18/20/22/24 job before privileged merge.
+- Retain a machine-checked live probe for the user-authored `workflow_dispatch`
+  fallback. The four-version CI matrix passed, the trusted `workflow_run` gate
+  refused the non-release candidate, and the disposable pull request was closed
+  without merge. The probe does not claim repository-token provenance.
 
 ### Changed
 
 - Scheduled releases now use only the ephemeral repository `GITHUB_TOKEN`.
-  The scheduler opens or reuses a release PR, explicitly dispatches read-only CI,
-  and refuses orphaned same-name branches; the metadata-only gate dispatches
-  publication after merge.
+  The scheduler opens or reuses a release PR, refuses orphaned same-name branches,
+  waits for exact dispatched CI and supply-chain runs, restores trusted policy
+  from `main`, and dispatches publication after a metadata-only merge decision.
 - A scheduled run now recovers an untagged current package version through the
   idempotent release workflow before considering another version increment.
 
 ### Fixed
 
+- Keep tokenless scheduled releases inside one trusted controller after GitHub
+  suppressed the downstream `workflow_run` event for a repository-token-authored
+  CI dispatch. The scheduler now waits for exact CI and supply-chain run IDs,
+  restores policy from `main`, validates bot/run/candidate provenance, merges the
+  generated PR, and dispatches publication without a long-lived credential.
 - Retry bounded removal of ephemeral Git repositories in `shared-git` tests so
   Node 18 does not fail an otherwise passing matrix on a transient `.git`
   `ENOTEMPTY` cleanup race.

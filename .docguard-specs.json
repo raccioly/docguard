@@ -2070,20 +2070,20 @@
         "artifacts": [
           {
             "path": "specs/011-tokenless-scheduled-releases/spec.md",
-            "digest": "sha256:4f4a15815249b38b1e4c1e3e395d40ca283bf2ab48f1c5b95a4604c4bd32e3b7"
+            "digest": "sha256:484c71d2c8f581e6b990f158dbbb32fd51a2cab2f254e926ad517ee5896412ae"
           },
           {
             "path": "specs/011-tokenless-scheduled-releases/plan.md",
-            "digest": "sha256:0c6615f3247885848d618e1803ca9d18217f3fe489bc940f73faba8980294d6f"
+            "digest": "sha256:ca5f87a82c541982c7ba994512a7adeb35aab02215b4f1a6cbeab0f4b987d1e3"
           },
           {
             "path": "specs/011-tokenless-scheduled-releases/tasks.md",
-            "digest": "sha256:bb53c0dbaf54e46ea91d8678da6eea779f8002812198e1ed3313dfdbac8ea52d"
+            "digest": "sha256:94a5ca238347e71f339ced29390e2db71bd9430c148e28741554f66a43e8bc2d"
           }
         ],
         "taskCompletion": {
-          "checked": 11,
-          "total": 11
+          "checked": 12,
+          "total": 13
         },
         "implementationEvidence": [
           {
@@ -2116,82 +2116,82 @@
           {
             "requirementId": "FR-001",
             "file": "tests/scheduled-release.test.mjs",
-            "line": 11
+            "line": 12
           },
           {
             "requirementId": "FR-002",
             "file": "tests/scheduled-release.test.mjs",
-            "line": 12
+            "line": 13
           },
           {
             "requirementId": "FR-003",
             "file": "tests/scheduled-release.test.mjs",
-            "line": 13
+            "line": 14
           },
           {
             "requirementId": "FR-004",
             "file": "tests/scheduled-release.test.mjs",
-            "line": 14
+            "line": 15
           },
           {
             "requirementId": "FR-005",
             "file": "tests/scheduled-release.test.mjs",
-            "line": 15
+            "line": 16
           },
           {
             "requirementId": "FR-006",
             "file": "tests/scheduled-release.test.mjs",
-            "line": 16
+            "line": 17
           },
           {
             "requirementId": "FR-007",
             "file": "tests/scheduled-release.test.mjs",
-            "line": 17
+            "line": 18
           },
           {
             "requirementId": "FR-008",
             "file": "tests/scheduled-release.test.mjs",
-            "line": 18
+            "line": 19
           },
           {
             "requirementId": "FR-009",
             "file": "tests/scheduled-release.test.mjs",
-            "line": 19
+            "line": 20
           },
           {
             "requirementId": "FR-010",
             "file": "tests/scheduled-release.test.mjs",
-            "line": 20
+            "line": 21
           },
           {
             "requirementId": "FR-011",
             "file": "tests/scheduled-release.test.mjs",
-            "line": 21
+            "line": 22
           },
           {
             "requirementId": "FR-012",
             "file": "tests/scheduled-release.test.mjs",
-            "line": 22
+            "line": 23
           },
           {
             "requirementId": "SC-001",
             "file": "tests/scheduled-release.test.mjs",
-            "line": 23
+            "line": 24
           },
           {
             "requirementId": "SC-002",
             "file": "tests/scheduled-release.test.mjs",
-            "line": 24
+            "line": 25
           },
           {
             "requirementId": "SC-003",
             "file": "tests/scheduled-release.test.mjs",
-            "line": 25
+            "line": 26
           },
           {
             "requirementId": "SC-004",
             "file": "tests/scheduled-release.test.mjs",
-            "line": 26
+            "line": 27
           }
         ]
       }
