@@ -4,6 +4,8 @@
  * Validate the scheduler-generated release diff before it leaves the trusted
  * default-branch checkout. GitHub's native auto-merge then enforces the
  * repository's required pull-request checks on every candidate revision.
+ *
+ * @implements docguard.tokenless-scheduled-releases#FR-009
  */
 
 import { execFileSync } from 'node:child_process';

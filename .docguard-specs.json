@@ -2107,6 +2107,11 @@
             "line": 7
           },
           {
+            "requirementId": "FR-009",
+            "file": ".github/scripts/validate-release-candidate.mjs",
+            "line": 8
+          },
+          {
             "requirementId": "FR-011",
             "file": "cli/release-pr-policy.mjs",
             "line": 8
