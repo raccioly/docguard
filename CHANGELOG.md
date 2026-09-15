@@ -29,6 +29,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Retry bounded removal of ephemeral Git repositories in `shared-git` tests so
+  Node 18 does not fail an otherwise passing matrix on a transient `.git`
+  `ENOTEMPTY` cleanup race.
 - Upgrade the installable Python example from the vulnerable open range
   `flask>=3.0` to exact-pinned `flask==3.1.3`, the upstream security-fix release
   for GHSA-68rp-wp8r-4726, and prevent regression to the affected fixture.
@@ -38,6 +41,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update the R8 roadmap and task ledgers with exact GitHub run evidence while
   keeping lifecycle completion open until the probe evidence has a durable
   squash-merged revision.
+- Approve the complete R8 evidence set with no accepted deviations after the
+  probe fixture landed at durable revision `66d5766`, making the reviewed
+  lifecycle transaction ready without referencing a disposable PR commit.
 
 ## [0.40.0] - 2026-09-14
 

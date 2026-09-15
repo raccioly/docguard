@@ -5665,6 +5665,23 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-09-15T00:32:27.000Z"
+    },
+    {
+      "id": "bug-343",
+      "timestamp": "2026-09-15T00:41:32.000Z",
+      "error_message": "Node 18 CI intermittently failed after a passing shared-git test with ENOTEMPTY while removing .git",
+      "file": "tests/shared-git.test.mjs",
+      "root_cause": "Ephemeral Git repository cleanup used a single recursive rmSync attempt even though directory entries can remain briefly busy on CI filesystems",
+      "fix": "Route shared-git fixture cleanup through bounded rmSync retries using maxRetries and retryDelay",
+      "tags": [
+        "tests",
+        "git",
+        "node18",
+        "flaky-cleanup"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-15T00:41:32.000Z"
     }
   ]
 }

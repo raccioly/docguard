@@ -29,6 +29,10 @@ function tmp() {
   return mkdtempSync(join(tmpdir(), 'docguard-git-'));
 }
 
+function cleanup(dir) {
+  if (dir) rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+}
+
 function git(dir, ...args) {
   const env = { ...process.env };
   return spawnSync('git', ['-c', 'user.email=t@t', '-c', 'user.name=t'].concat(args), {
@@ -47,7 +51,7 @@ describe('isGitRepo', () => {
     try {
       assert.equal(isGitRepo(dir), false);
     } finally {
-      rmSync(dir, { recursive: true, force: true });
+      cleanup(dir);
     }
   });
 
@@ -57,14 +61,14 @@ describe('isGitRepo', () => {
       git(dir, 'init', '-q');
       assert.equal(isGitRepo(dir), true);
     } finally {
-      rmSync(dir, { recursive: true, force: true });
+      cleanup(dir);
     }
   });
 });
 
 describe('getLastCommitDate (follows renames)', () => {
   let dir;
-  afterEach(() => { if (dir) rmSync(dir, { recursive: true, force: true }); });
+  afterEach(() => cleanup(dir));
 
   it('returns null when file is untracked', () => {
     dir = tmp();
@@ -106,7 +110,7 @@ describe('getLastCommitDate (follows renames)', () => {
 
 describe('getFileHistory (follows renames)', () => {
   let dir;
-  afterEach(() => { if (dir) rmSync(dir, { recursive: true, force: true }); });
+  afterEach(() => cleanup(dir));
 
   it('returns commits that touched the file under both old and new names', () => {
     dir = tmp();
@@ -147,7 +151,7 @@ describe('getFileHistory (follows renames)', () => {
 
 describe('getRenameHistory', () => {
   let dir;
-  afterEach(() => { if (dir) rmSync(dir, { recursive: true, force: true }); });
+  afterEach(() => cleanup(dir));
 
   it('returns [path] for files that have not been renamed', () => {
     dir = tmp();
@@ -180,7 +184,7 @@ describe('getRenameHistory', () => {
 
 describe('changedFilesSince', () => {
   let dir;
-  afterEach(() => { if (dir) rmSync(dir, { recursive: true, force: true }); });
+  afterEach(() => cleanup(dir));
 
   it('returns files modified between a ref and HEAD', () => {
     dir = tmp();

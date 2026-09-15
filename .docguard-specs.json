@@ -2062,15 +2062,15 @@
           },
           {
             "path": "specs/011-tokenless-scheduled-releases/plan.md",
-            "digest": "sha256:7b8a6b88ac63b89ded00f6fdc55027dd0e87fa09be37b5c6259de84f7199e4e4"
+            "digest": "sha256:96ecbf0deddcf2153131cfa67d7d6196d082d91cea528bbf4e0969d7c203add3"
           },
           {
             "path": "specs/011-tokenless-scheduled-releases/tasks.md",
-            "digest": "sha256:3f9b2061b8d3d9dc3a1a593eb361cf54470117ad8fcaa209dd0a4b871dd1a101"
+            "digest": "sha256:3c75c3e305214a710b2ad421c0e27b39044f2adb6ab5f8b7899b57e297072e63"
           }
         ],
         "taskCompletion": {
-          "checked": 10,
+          "checked": 11,
           "total": 11
         },
         "implementationEvidence": [
