@@ -6313,6 +6313,64 @@
       "related_bugs": [],
       "occurrences": 2,
       "last_seen": "2026-09-15T17:02:00.000Z"
+    },
+    {
+      "id": "bug-380",
+      "timestamp": "2026-09-15T20:22:00.000Z",
+      "error_message": "Validator-count findings changed when a consumer disabled validators, and Canonical-Sync disagreed with Metrics-Consistency by counting an inlined guard sub-check as another validator",
+      "file": "cli/validators/metrics-consistency.mjs; cli/validators/canonical-sync.mjs",
+      "root_cause": "Package capability was derived from enabled guard orchestration rather than the installed validator-module surface, with two validators maintaining incompatible counting rules",
+      "fix": "Count shipped cli/validators modules through cli/shared-validator-surface.mjs, retain run-specific guard results only for check counts, and align CSY003 wording and all self-documentation",
+      "tags": [
+        "metrics",
+        "canonical-sync",
+        "false-positive",
+        "package-surface",
+        "field-report"
+      ],
+      "related_bugs": [
+        "bug-378"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-09-15T20:22:00.000Z"
+    },
+    {
+      "id": "bug-381",
+      "timestamp": "2026-09-15T20:22:00.000Z",
+      "error_message": "Instruction pointer basename resolution treated ignored disposable worktree copies as primary repository files and reported false ambiguity",
+      "file": "cli/shared-ignore.mjs; cli/scanners/instruction-audit.mjs",
+      "root_cause": "The custom basename walk used only DocGuard ignore rules and continued through nested Git roots, bypassing Git's authoritative ignore semantics",
+      "fix": "Use one bounded Git ignored-path filter for pointer indexing and prune nested .git file or directory boundaries before their descendants are read",
+      "tags": [
+        "instruction-audit",
+        "gitignore",
+        "worktree",
+        "false-positive",
+        "field-report"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-15T20:22:00.000Z"
+    },
+    {
+      "id": "bug-382",
+      "timestamp": "2026-09-15T20:22:00.000Z",
+      "error_message": "TRC004 correctly rejected a planned lifecycle registry that was new, removed from the Git index, or awaiting commit but suggested adding a test marker, obscuring the actual Git-state prerequisite",
+      "file": "cli/scanners/spec-registry.mjs; cli/validators/traceability.mjs",
+      "root_cause": "Trusted lifecycle loading discarded all non-clean Git state, leaving traceability with no safe way to distinguish a structurally current planned registry from ordinary missing lifecycle evidence",
+      "fix": "Expose structurally current planned entries from every non-clean Git state only as advisory context; preserve enforcement, explain restore-or-commit remediation, and prohibit marker-only remediation",
+      "tags": [
+        "traceability",
+        "spec-registry",
+        "lifecycle",
+        "remediation",
+        "field-report"
+      ],
+      "related_bugs": [
+        "bug-377"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-09-15T20:22:00.000Z"
     }
   ]
 }

@@ -34,7 +34,13 @@
 import { readFileSync, readdirSync, lstatSync, realpathSync } from 'node:fs';
 import { resolve, join, dirname, relative, isAbsolute, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildIgnoreFilter, loadDocguardIgnore, DEFAULT_IGNORE_DIRS, relPosix } from '../shared-ignore.mjs';
+import {
+  buildIgnoreFilter,
+  loadDocguardIgnore,
+  loadGitIgnoredFilter,
+  DEFAULT_IGNORE_DIRS,
+  relPosix,
+} from '../shared-ignore.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -165,6 +171,7 @@ function basenameIndex(projectDir, wanted, config = {}) {
   let root;
   try { root = realpathSync(projectDir); }
   catch { return { matches, complete: false, visited: 0, reason: 'repository-unavailable' }; }
+  const gitIgnored = loadGitIgnoredFilter(root);
   let visited = 0;
   let complete = true;
   let reason = null;
@@ -177,12 +184,22 @@ function basenameIndex(projectDir, wanted, config = {}) {
       if (DEFAULT_IGNORE_DIRS.has(entry.name) || entry.name === '.local' || /^\.env(?:\.|$)/i.test(entry.name)) continue;
       const full = resolve(dir, entry.name);
       const rel = relPosix(root, full);
-      if (ignored(rel)) continue;
+      if (ignored(rel) || (gitIgnored && gitIgnored(rel))) continue;
       let stat;
       try { stat = lstatSync(full); }
       catch { complete = false; reason ||= 'unreadable-entry'; continue; }
       if (stat.isSymbolicLink()) continue;
-      if (stat.isDirectory()) { walk(full); if (reason === 'entry-budget') return; }
+      if (stat.isDirectory()) {
+        // A linked Git worktree has a `.git` FILE; a nested checkout has a
+        // `.git` directory. Neither is part of this repository's primary
+        // instruction-pointer namespace, even when its parent was not added
+        // to .gitignore. Stop before reading duplicate checkout contents.
+        try {
+          if (lstatSync(join(full, '.git')).isFile() || lstatSync(join(full, '.git')).isDirectory()) continue;
+        } catch { /* ordinary directory: keep walking */ }
+        walk(full);
+        if (reason === 'entry-budget') return;
+      }
       else if (stat.isFile() && matches.has(entry.name)) matches.get(entry.name).push(rel);
     }
   };

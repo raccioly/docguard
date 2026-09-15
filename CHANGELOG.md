@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Count DocGuard validator claims from one shared source of truth: the
+  validator modules shipped in the installed package. A consumer's intentionally
+  disabled validators and extra guard checks cannot create a false MET001 or
+  CSY003 finding, or an unsafe count rewrite.
+- Keep instruction-pointer basename resolution out of Git-ignored directories
+  and nested Git checkouts, including linked worktree copies.
+- Keep planned lifecycle registries that are new, removed from the Git index,
+  or modified pending commit non-authoritative for TRC004 while explaining how
+  to restore or commit the registry and current spec artifacts; the remediation
+  no longer suggests adding an artificial `@req` marker.
+
 ## [0.41.3] - 2026-09-15
 
 Automated weekly release — batches everything merged since `v0.41.2`.

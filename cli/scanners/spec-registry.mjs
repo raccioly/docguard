@@ -288,6 +288,32 @@ export function trustedSpecLifecycleIndex(projectDir) {
   return trusted;
 }
 
+/**
+ * Planned lifecycle entries that are structurally current but cannot defer
+ * traceability because the registry is not a clean, tracked Git artifact.
+ * This includes a new registry, a registry removed from the index, and a
+ * modified registry awaiting a commit. It is advisory-only: callers may
+ * explain the state, never use it as evidence.
+ */
+export function uncommittedPlannedSpecLifecycleIndex(projectDir) {
+  const candidates = new Map();
+  const loaded = readSpecRegistry(projectDir);
+  if (loaded.error || loaded.value?.schemaVersion !== SPEC_REGISTRY_SCHEMA_VERSION) return candidates;
+  if (trackedAndClean(projectDir, SPEC_REGISTRY_PATH)) return candidates;
+  for (const entry of loaded.value.specs) {
+    if (entry?.reviewed?.lifecycle?.delivery !== 'planned' || !entry.specId || !entry.path) continue;
+    if (!trackedAndClean(projectDir, entry.path)) continue;
+    let content;
+    try { content = readFileSync(resolve(projectDir, entry.path), 'utf8'); } catch { continue; }
+    if (parseSpecId(content) !== entry.specId) continue;
+    const artifact = entry.observed?.artifacts?.find(item => item.path === entry.path);
+    if (!artifact || artifact.digest !== digest(content)) continue;
+    if (entry.reviewed.lifecycle.context !== 'current' || entry.reviewed.lifecycle.storage !== 'working_tree') continue;
+    candidates.set(`${entry.specId}\0${entry.path}`, entry.reviewed.lifecycle);
+  }
+  return candidates;
+}
+
 function taskCompletion(path) {
   if (!path || !existsSync(path)) return { checked: 0, total: 0 };
   const content = readFileSync(path, 'utf8');

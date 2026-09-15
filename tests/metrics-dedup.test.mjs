@@ -28,7 +28,8 @@ function makeRepo(files) {
   return dir;
 }
 
-// Simulate guard results so Metrics-Consistency knows what the "actual" count is.
+// Simulate guard results for the configuration-dependent checks count. Validator
+// capability is read from the shipped package modules, not this reduced run.
 function fakeGuardResults(validatorCount, checkTotal) {
   // Build N validators with checkTotal/N checks each (approx) so totals add up.
   const validators = [];
@@ -79,15 +80,16 @@ describe('Metrics-Consistency — dedup per (file, label, found)', () => {
   });
 
   it('same number mentioned twice in correct form → ONE passed credit, not two', () => {
-    // The validator counts itself (+1) so 21 fake guards → "actual = 22 validators".
+    // A matching shipped-validator claim must still earn only one pass credit
+    // when repeated in the same file.
     dir = makeRepo({
       'README.md':
         '# Project\n\n' +
-        'DocGuard ships 22 validators in total.\n' +
-        'See the DocGuard 22 validators table.\n',
+        'DocGuard ships 29 validators in total.\n' +
+        'See the DocGuard 29 validators table.\n',
     });
     const r = validateMetricsConsistency(dir, { projectName: 't' }, fakeGuardResults(21, 100));
-    // README has TWO "22 validators" occurrences but only one pass should be credited.
+    // README has TWO "29 validators" occurrences but only one pass should be credited.
     assert.equal(r.warnings.filter(w => /README\.md/.test(w)).length, 0,
       'matching number should not produce a warning');
     // Validators-pattern contribution should be exactly 1 pass for README (not 2).

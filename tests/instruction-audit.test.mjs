@@ -11,6 +11,7 @@
 
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
+import { execFileSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync, symlinkSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -103,6 +104,40 @@ describe('Instruction Audit scanner', () => {
     assert.deepEqual(deterministic.resolvedPointers.map(item => item.resolvedPath), ['src/websec_validator/scanners.py']);
     assert.equal(deterministic.ambiguousPointers.length, 1);
     assert.equal(deterministic.ambiguousPointers[0].matchCount, 2);
+  });
+
+  it('does not index a Git-ignored disposable worktree when resolving a bare pointer', () => {
+    execFileSync('git', ['init', '-q'], { cwd: tmpDir });
+    mkdirSync(join(tmpDir, 'src', 'websec_validator'), { recursive: true });
+    mkdirSync(join(tmpDir, '.claude', 'worktrees', 'discarded', 'src', 'websec_validator'), { recursive: true });
+    write(join('src', 'websec_validator', 'scanners.py'), 'SCANNERS = []\n');
+    write(join('.claude', 'worktrees', 'discarded', 'src', 'websec_validator', 'scanners.py'), 'SCANNERS = []\n');
+    write('.gitignore', '.claude/\n');
+    write('AGENTS.md', '# Rules\n\n- You must review `scanners.py` before changing scanner registration.\n');
+
+    const { deterministic } = auditInstructions(tmpDir, {});
+    assert.deepEqual(deterministic.ambiguousPointers, []);
+    assert.deepEqual(
+      deterministic.resolvedPointers.map(item => item.resolvedPath),
+      ['src/websec_validator/scanners.py'],
+    );
+  });
+
+  it('does not cross a nested Git checkout even when its parent is not ignored', () => {
+    mkdirSync(join(tmpDir, 'src', 'websec_validator'), { recursive: true });
+    mkdirSync(join(tmpDir, 'scratch-copy', 'src', 'websec_validator'), { recursive: true });
+    write(join('src', 'websec_validator', 'scanners.py'), 'SCANNERS = []\n');
+    write(join('scratch-copy', 'src', 'websec_validator', 'scanners.py'), 'SCANNERS = []\n');
+    // Linked worktrees use a .git file; full nested checkouts use a directory.
+    write(join('scratch-copy', '.git'), 'gitdir: /tmp/irrelevant\n');
+    write('AGENTS.md', '# Rules\n\n- You must review `scanners.py` before changing scanner registration.\n');
+
+    const { deterministic } = auditInstructions(tmpDir, {});
+    assert.deepEqual(deterministic.ambiguousPointers, []);
+    assert.deepEqual(
+      deterministic.resolvedPointers.map(item => item.resolvedPath),
+      ['src/websec_validator/scanners.py'],
+    );
   });
 
   it('rejects unsafe and symlinked pointers without accepting outside-repository evidence', () => {

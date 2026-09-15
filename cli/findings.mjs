@@ -425,7 +425,7 @@ export const CODES = {
   CSY003: {
     validator: 'canonicalSync',
     title: 'Stale "N validators" claim',
-    help: "A surface doc (README.md/AGENTS.md) states a validator count that does not match guard's actual count (validator files + the inlined Doc Sections validator). Update the claim.",
+    help: 'A surface doc (README.md/AGENTS.md) states a validator count that does not match the validator modules shipped in the package. Guard can emit multiple check results from one module; those do not increase the public validator count. Update the claim.',
     suppress: null,
   },
   CSY004: {

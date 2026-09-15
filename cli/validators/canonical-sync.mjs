@@ -15,9 +15,9 @@
  *
  * What it checks:
  *   1. README "ships N commands" matches `cli/commands/*.mjs` file count
- *   2. README "N validators" matches `runGuardInternal()` output length
- *      (or, if no guardResults passed, falls back to file count + the 2
- *      inlined validators: Doc Sections in structure.mjs + Spec-Kit)
+ *   2. README "N validators" matches the shipped `cli/validators/*.mjs`
+ *      module count. Guard may emit multiple check results from one module;
+ *      those are not extra public validator modules.
  *   3. Validator names enumerated inline in README appear in guard output
  *
  * What it explicitly skips:
@@ -41,6 +41,7 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
+import { countValidatorModules } from '../shared-validator-surface.mjs';
 
 /**
  * Validate that README count claims about DocGuard's surface match code-truth.
@@ -118,19 +119,13 @@ export function validateCanonicalSync(projectDir, config, guardResults) {
   }
   const actualCommandCount = actualUserFacingCount;
 
-  // Validator count: always use the file-count truth source. It's run-order
-  // independent (canonical-sync runs BEFORE metrics-consistency at guard time,
-  // so guardResults.length would undercount by 1). File count + 1 for the
-  // single inlined validator (Doc Sections, exported alongside Structure from
-  // structure.mjs).
-  const validatorFiles = readdirSync(validatorsDir).filter(f => f.endsWith('.mjs'));
-  const actualValidatorCount = validatorFiles.length + 1; // +1 for Doc Sections inlined in structure.mjs
-
-  // Names list (currently unused for warnings, but kept for future Check 3
-  // where the README enumerates validator names inline).
-  let actualValidatorNames = [];
-  if (Array.isArray(guardResults) && guardResults.length > 0) {
-    actualValidatorNames = guardResults.map(r => r.name).filter(Boolean);
+  // Validator count is the package capability count used by
+  // Metrics-Consistency too. It is run-order independent and excludes extra
+  // sub-check results emitted by a validator module (for example, Doc Sections
+  // from structure.mjs), which are checks rather than shipped validators.
+  const actualValidatorCount = countValidatorModules(validatorsDir);
+  if (actualValidatorCount === null) {
+    return compose({ na: true, naReason: 'cli/validators could not be read' });
   }
 
   // ── Read surface docs (README.md + AGENTS.md) ──────────────────────
@@ -204,9 +199,9 @@ export function validateCanonicalSync(projectDir, config, guardResults) {
         code: 'CSY003',
         validator: 'canonicalSync',
         severity: 'warn',
-        message: `A surface doc (README.md/AGENTS.md) claims ${uniqueWrong.map(n => `"${n} validators"`).join(' / ')} but guard reports ${actualValidatorCount}. Update it.`,
+        message: `A surface doc (README.md/AGENTS.md) claims ${uniqueWrong.map(n => `"${n} validators"`).join(' / ')} but DocGuard ships ${actualValidatorCount} validator modules. Update it.`,
         location: null,
-        suggestion: { kind: 'fix', text: 'Update the "N validators" claim in README.md/AGENTS.md to match guard\'s count' },
+        suggestion: { kind: 'fix', text: 'Update the "N validators" claim in README.md/AGENTS.md to match DocGuard\'s shipped validator modules' },
       }));
     }
   } else {
