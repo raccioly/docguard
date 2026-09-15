@@ -101,5 +101,5 @@ considers another version bump.
 <!-- docguard:implementation-outcomes:start -->
 ## Implementation Outcomes
 
-- `c5088fd83eab0d921ee066b45736ceb01ab2e31d` — Reviewed tokenless scheduled-release policy, exact-run gates, missing-tag recovery, Node 18/20/22/24 CI, supply-chain scan, and live dispatch-chain refusal probe with no accepted deviations. Evidence: `cli/release-pr-policy.mjs`, `docs-canonical/CI-RECIPES.md`, `tests/scheduled-release.test.mjs`. Accepted deviations: none. Successor: none.
+No reviewed implementation outcome has been recorded yet.
 <!-- docguard:implementation-outcomes:end -->

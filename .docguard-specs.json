@@ -2011,7 +2011,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "verified",
+          "delivery": "implemented",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -2030,20 +2030,8 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "c5088fd83eab0d921ee066b45736ceb01ab2e31d",
-          "outcomes": [
-            {
-              "revision": "c5088fd83eab0d921ee066b45736ceb01ab2e31d",
-              "reason": "Reviewed tokenless scheduled-release policy, exact-run gates, missing-tag recovery, Node 18/20/22/24 CI, supply-chain scan, and live dispatch-chain refusal probe with no accepted deviations.",
-              "evidence": [
-                "cli/release-pr-policy.mjs",
-                "docs-canonical/CI-RECIPES.md",
-                "tests/scheduled-release.test.mjs"
-              ],
-              "deviations": [],
-              "successor": null
-            }
-          ]
+          "lastReviewedRevision": null,
+          "outcomes": []
         }
       },
       "intent": {
@@ -2070,19 +2058,19 @@
         "artifacts": [
           {
             "path": "specs/011-tokenless-scheduled-releases/spec.md",
-            "digest": "sha256:87d0eb11d2eb8d4a64fb64bf2be9697c6e6e092bd6cd8ea77a88fbe66e63f7ee"
+            "digest": "sha256:fa86a0813c2d8ecd6e9205caeb491ff9591ef5d3bec9af5b317487809f6969c0"
           },
           {
             "path": "specs/011-tokenless-scheduled-releases/plan.md",
-            "digest": "sha256:0c6615f3247885848d618e1803ca9d18217f3fe489bc940f73faba8980294d6f"
+            "digest": "sha256:7b8a6b88ac63b89ded00f6fdc55027dd0e87fa09be37b5c6259de84f7199e4e4"
           },
           {
             "path": "specs/011-tokenless-scheduled-releases/tasks.md",
-            "digest": "sha256:959a276588e8e34b67425b3ca6578ab4591002288d2cac9589612d55d9da0ac5"
+            "digest": "sha256:3f9b2061b8d3d9dc3a1a593eb361cf54470117ad8fcaa209dd0a4b871dd1a101"
           }
         ],
         "taskCompletion": {
-          "checked": 11,
+          "checked": 10,
           "total": 11
         },
         "implementationEvidence": [

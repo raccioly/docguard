@@ -13,14 +13,26 @@ structural score is useful, but it is not proof that arbitrary prose is true.
 
 ## Active roadmap
 
-No active milestone remains. New work enters this section only after a reviewed
-problem statement, scope, false-positive controls, and measurable acceptance
-criteria exist.
+### R8 — Tokenless scheduled releases
+
+Governing spec: `specs/011-tokenless-scheduled-releases/spec.md`.
+
+Replace the long-lived release PR credential with GitHub's documented
+`workflow_dispatch` path for ephemeral repository tokens. The implementation
+keeps the privileged merge gate metadata-only, validates exact candidate and CI
+identity, dispatches publication after merge, and recovers a missing tag before
+another version increment.
+
+- [x] Freeze the security and recovery contract before implementation.
+- [x] Add pure release-candidate and exact-run policy tests.
+- [x] Dispatch CI and publication without a stored personal or app credential.
+- [x] Preserve Dependabot/Jules policy and pinned-action controls.
+- [ ] Record the reviewed lifecycle outcome against the durable probe-evidence
+  revision after squash merge.
 
 ## Delivered roadmap
 
-R1–R8 are implemented and evidence-reviewed. R1–R7 are released; R8 is verified
-on `main` and will ship with the next substantive release. The maintained living
+R1–R7 are implemented, evidence-reviewed, and released. The maintained living
 specifications remain current verification contracts; historical implementation
 plans are recoverable from Git and do not create a second source of truth.
 
@@ -215,31 +227,6 @@ The promoted CLI, selector, schemas, docs, and evaluator pass 1,784 tests on
 Node 18, 20, 22, and 24. Packed-package tests run task context without the
 optional parser, and the independent detector corpus remains regression-free
 across 24 evaluable cases plus one explicit unsupported case.
-
-### R8 — Tokenless scheduled releases (verified on main)
-
-Governing spec: `specs/011-tokenless-scheduled-releases/spec.md`.
-
-Scheduled releases now use the ephemeral repository `GITHUB_TOKEN` to open or
-reuse a release pull request and explicitly dispatch CI. The privileged
-`workflow_run` gate checks out policy only from the default branch and verifies
-the exact run, candidate SHA, bot identity, release paths, synchronized version
-surfaces, and next-version increment before merge. It dispatches idempotent
-publication after merge, while the scheduler recovers a missing tag before any
-new increment.
-
-- [x] Freeze the security and recovery contract before implementation.
-- [x] Add pure release-candidate and exact-run policy tests.
-- [x] Dispatch CI and publication without a stored personal or app credential.
-- [x] Preserve Dependabot/Jules policy and pinned-action controls.
-- [x] Prove the live dispatch-to-gate chain and record the reviewed lifecycle
-  outcome.
-
-The live negative probe passed all four Node jobs in CI run `34912654565`.
-Trusted gate run `34912788971` executed from `main`, refused to merge non-release
-pull request #372, and completed successfully. The probe pull request was closed
-unmerged and its branch deleted; the retained fixture keeps this operational
-evidence machine-checkable without leaving disposable repository state.
 
 ## Contribution standard
 

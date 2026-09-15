@@ -1,6 +1,6 @@
 # Implementation Plan: Tokenless Scheduled Releases
 
-**Status**: Implemented and verified; retained as a living release contract
+**Status**: Implemented and live-probed; lifecycle outcome pending
 **Spec**: `specs/011-tokenless-scheduled-releases/spec.md`
 
 ## Summary

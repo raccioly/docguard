@@ -32,11 +32,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Remove stale pre-release status text from the delivered R1, R6, and R7 living
   plans and task lists so agents see verified maintenance contracts instead of
   completed work described as held or in progress.
-- Close the R8 roadmap and task ledgers with exact GitHub run evidence instead
-  of leaving the merged release-hardening work described as active.
-- Complete the reviewed R8 lifecycle transaction at revision `c5088fd`, binding
-  the tokenless policy, canonical CI contract, regression tests, and live refusal
-  probe with no accepted deviations.
+- Update the R8 roadmap and task ledgers with exact GitHub run evidence while
+  keeping lifecycle completion open until the probe evidence has a durable
+  squash-merged revision.
 
 ## [0.40.0] - 2026-09-14
 
