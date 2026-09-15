@@ -1,6 +1,6 @@
 # Implementation Plan: Tokenless Scheduled Releases
 
-**Status**: In progress
+**Status**: Implemented and verified; retained as a living release contract
 **Spec**: `specs/011-tokenless-scheduled-releases/spec.md`
 
 ## Summary
@@ -51,3 +51,8 @@ dispatch `release.yml` after a successful merge.
 Dispatch publication when the package version lacks a tag, update canonical
 guidance, run the complete matrix, and prove the live dispatch chain with a
 temporary non-release PR that the gate must refuse to merge.
+
+The retained probe records CI run `34912654565` and privileged gate run
+`34912788971`. All four Node jobs passed; the trusted gate identified pull
+request #372 as a non-release candidate, refused to merge it, and the disposable
+pull request and branch were then closed and deleted.
