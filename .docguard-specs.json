@@ -2011,7 +2011,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "implemented",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -2030,8 +2030,20 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "c5088fd83eab0d921ee066b45736ceb01ab2e31d",
+          "outcomes": [
+            {
+              "revision": "c5088fd83eab0d921ee066b45736ceb01ab2e31d",
+              "reason": "Reviewed tokenless scheduled-release policy, exact-run gates, missing-tag recovery, Node 18/20/22/24 CI, supply-chain scan, and live dispatch-chain refusal probe with no accepted deviations.",
+              "evidence": [
+                "cli/release-pr-policy.mjs",
+                "docs-canonical/CI-RECIPES.md",
+                "tests/scheduled-release.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -2058,7 +2070,7 @@
         "artifacts": [
           {
             "path": "specs/011-tokenless-scheduled-releases/spec.md",
-            "digest": "sha256:fa86a0813c2d8ecd6e9205caeb491ff9591ef5d3bec9af5b317487809f6969c0"
+            "digest": "sha256:87d0eb11d2eb8d4a64fb64bf2be9697c6e6e092bd6cd8ea77a88fbe66e63f7ee"
           },
           {
             "path": "specs/011-tokenless-scheduled-releases/plan.md",

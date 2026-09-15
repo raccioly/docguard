@@ -34,6 +34,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   completed work described as held or in progress.
 - Close the R8 roadmap and task ledgers with exact GitHub run evidence instead
   of leaving the merged release-hardening work described as active.
+- Complete the reviewed R8 lifecycle transaction at revision `c5088fd`, binding
+  the tokenless policy, canonical CI contract, regression tests, and live refusal
+  probe with no accepted deviations.
 
 ## [0.40.0] - 2026-09-14
 
