@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.40.4] - 2026-09-15
+
+Automated weekly release — batches everything merged since `v0.40.3`.
+
+### Changed
+
+- fix: consolidate catalog reminders (#390)
+- docs: finalize durable R8 outcome (#389)
+- docs: close R8 release verification (#388)
+
+
 ### Changed
 
 - Reuse one open Spec Kit catalog reminder across releases and close older
