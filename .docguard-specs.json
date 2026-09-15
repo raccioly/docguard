@@ -2011,7 +2011,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "implemented",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -2030,8 +2030,20 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "46531e4918f9479b81ffb52e6e27c24b533575da",
+          "outcomes": [
+            {
+              "revision": "46531e4918f9479b81ffb52e6e27c24b533575da",
+              "reason": "Reviewed tokenless scheduled-release policy, exact-run gates, missing-tag recovery, Node 18/20/22/24 CI, supply-chain scan, live dispatch-chain refusal probe, and durable evidence approval with no accepted deviations.",
+              "evidence": [
+                "cli/release-pr-policy.mjs",
+                "docs-canonical/CI-RECIPES.md",
+                "tests/scheduled-release.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -2058,15 +2070,15 @@
         "artifacts": [
           {
             "path": "specs/011-tokenless-scheduled-releases/spec.md",
-            "digest": "sha256:fa86a0813c2d8ecd6e9205caeb491ff9591ef5d3bec9af5b317487809f6969c0"
+            "digest": "sha256:4f4a15815249b38b1e4c1e3e395d40ca283bf2ab48f1c5b95a4604c4bd32e3b7"
           },
           {
             "path": "specs/011-tokenless-scheduled-releases/plan.md",
-            "digest": "sha256:96ecbf0deddcf2153131cfa67d7d6196d082d91cea528bbf4e0969d7c203add3"
+            "digest": "sha256:0c6615f3247885848d618e1803ca9d18217f3fe489bc940f73faba8980294d6f"
           },
           {
             "path": "specs/011-tokenless-scheduled-releases/tasks.md",
-            "digest": "sha256:3c75c3e305214a710b2ad421c0e27b39044f2adb6ab5f8b7899b57e297072e63"
+            "digest": "sha256:bb53c0dbaf54e46ea91d8678da6eea779f8002812198e1ed3313dfdbac8ea52d"
           }
         ],
         "taskCompletion": {

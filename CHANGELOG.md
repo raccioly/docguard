@@ -44,6 +44,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Approve the complete R8 evidence set with no accepted deviations after the
   probe fixture landed at durable revision `66d5766`, making the reviewed
   lifecycle transaction ready without referencing a disposable PR commit.
+- Record the R8 implementation outcome at durable approval revision `46531e4`,
+  move the completed milestone out of the active roadmap, and retain its spec as
+  a living release-verification contract.
 
 ## [0.40.0] - 2026-09-14
 
