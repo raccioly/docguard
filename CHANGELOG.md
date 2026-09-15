@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   missing task ledgers for other persistence models and empty or incomplete
   ledgers wherever they are declared. Released living contracts can record later
   maintenance without downgrading their release state.
+- Record the reviewed document-lifecycle maintenance outcome against its exact
+  source revision and qualified implementation/test evidence.
 
 ## [0.41.0] - 2026-09-15
 

@@ -316,7 +316,7 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "a384a04479103b43587a2f79470b3b4a1031d242",
+          "lastReviewedRevision": "7374d8c35deb68e77541525082fd94643494d802",
           "outcomes": [
             {
               "revision": "834e0a2299402205f5bdca7a55e353bad71bab28",
@@ -419,6 +419,40 @@
               ],
               "deviations": [],
               "successor": null
+            },
+            {
+              "revision": "7374d8c35deb68e77541525082fd94643494d802",
+              "reason": "Reviewed taskless living-contract completion and status-preserving released maintenance with paired controls; all 1,866 tests and self-guard passed with no accepted deviations.",
+              "evidence": [
+                "cli/commands/reconcile.mjs",
+                "cli/commands/retire.mjs",
+                "cli/commands/specs.mjs",
+                "cli/commands/sync.mjs",
+                "cli/docguard.mjs",
+                "cli/scanners/document-lifecycle.mjs",
+                "cli/scanners/lifecycle-context.mjs",
+                "cli/scanners/reconciliation.mjs",
+                "cli/scanners/requirement-evidence.mjs",
+                "cli/scanners/retirement-manifest.mjs",
+                "cli/scanners/spec-registry.mjs",
+                "cli/shared-sync-scope.mjs",
+                "cli/validators/traceability.mjs",
+                "cli/writers/file-transaction.mjs",
+                "cli/writers/spec-outcomes.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/DATA-MODEL.md",
+                "docs-canonical/REQUIREMENTS.md",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/archive.test.mjs",
+                "tests/document-lifecycle.test.mjs",
+                "tests/file-transaction.test.mjs",
+                "tests/hooks-contract.test.mjs",
+                "tests/reconcile.test.mjs",
+                "tests/spec-completion.test.mjs",
+                "tests/spec-registry.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
             }
           ]
         }
@@ -458,7 +492,7 @@
         "artifacts": [
           {
             "path": "specs/006-document-lifecycle/spec.md",
-            "digest": "sha256:54fc050729c30152225af4eedd92469e7443ab288706c8d319ab677b0b34bfe7"
+            "digest": "sha256:469bb2ab5dfa94824ba349a8ef03c6a262e8d98c8ddb4360df7ab740578338ea"
           },
           {
             "path": "specs/006-document-lifecycle/plan.md",
