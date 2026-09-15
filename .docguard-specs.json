@@ -399,7 +399,7 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "7374d8c35deb68e77541525082fd94643494d802",
+          "lastReviewedRevision": "2a47de58f155f847b318f75267c43c2ee2828fd9",
           "outcomes": [
             {
               "revision": "834e0a2299402205f5bdca7a55e353bad71bab28",
@@ -536,6 +536,40 @@
               ],
               "deviations": [],
               "successor": null
+            },
+            {
+              "revision": "2a47de58f155f847b318f75267c43c2ee2828fd9",
+              "reason": "Durable post-merge review at 2a47de5: living-contract completion and released-maintenance behavior are anchored to main after R9's durable outcome; complete reconciliation and self-guard passed with no accepted deviations.",
+              "evidence": [
+                "cli/commands/reconcile.mjs",
+                "cli/commands/retire.mjs",
+                "cli/commands/specs.mjs",
+                "cli/commands/sync.mjs",
+                "cli/docguard.mjs",
+                "cli/scanners/document-lifecycle.mjs",
+                "cli/scanners/lifecycle-context.mjs",
+                "cli/scanners/reconciliation.mjs",
+                "cli/scanners/requirement-evidence.mjs",
+                "cli/scanners/retirement-manifest.mjs",
+                "cli/scanners/spec-registry.mjs",
+                "cli/shared-sync-scope.mjs",
+                "cli/validators/traceability.mjs",
+                "cli/writers/file-transaction.mjs",
+                "cli/writers/spec-outcomes.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/DATA-MODEL.md",
+                "docs-canonical/REQUIREMENTS.md",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/archive.test.mjs",
+                "tests/document-lifecycle.test.mjs",
+                "tests/file-transaction.test.mjs",
+                "tests/hooks-contract.test.mjs",
+                "tests/reconcile.test.mjs",
+                "tests/spec-completion.test.mjs",
+                "tests/spec-registry.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
             }
           ]
         }
@@ -575,7 +609,7 @@
         "artifacts": [
           {
             "path": "specs/006-document-lifecycle/spec.md",
-            "digest": "sha256:469bb2ab5dfa94824ba349a8ef03c6a262e8d98c8ddb4360df7ab740578338ea"
+            "digest": "sha256:d87fabd012d9e5e336cae6b80b4037ec429b5d9d826674c77fa036f65ed899f6"
           },
           {
             "path": "specs/006-document-lifecycle/plan.md",

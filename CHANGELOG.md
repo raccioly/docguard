@@ -21,6 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   creating a stale task ledger.
 - Anchor the adoption workflow's final maintenance outcome to durable main commit
   `2ff1baa` after the protected merge checks completed.
+- Anchor the document-lifecycle maintenance outcome to durable main commit
+  `2a47de5`, completing the post-merge evidence chain.
 
 ## [0.41.0] - 2026-09-15
 
