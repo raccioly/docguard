@@ -1,6 +1,6 @@
 # Implementation Plan: Tokenless Scheduled Releases
 
-**Status**: Implemented and live-probed; lifecycle outcome pending
+**Status**: Implemented and evidence-reviewed; lifecycle transaction ready
 **Spec**: `specs/011-tokenless-scheduled-releases/spec.md`
 
 ## Summary
