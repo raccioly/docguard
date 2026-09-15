@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `review` to their matching command files, keep the manifest description inside
   Spec Kit's 200-character limit, and add release-contract tests that reject
   missing, duplicate, mismatched, undeclared, or divergent metadata.
+- Record the supported `git diff --check` and `gh pr diff --patch` split in the
+  project learning log so release self-review does not repeat an invalid CLI call.
 
 ## [0.40.4] - 2026-09-15
 

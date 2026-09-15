@@ -5823,6 +5823,22 @@
       ],
       "occurrences": 1,
       "last_seen": "2026-09-15T03:52:00.000Z"
+    },
+    {
+      "id": "bug-351",
+      "timestamp": "2026-09-15T04:00:00.000Z",
+      "error_message": "gh pr diff rejected the unsupported --check flag during self-review",
+      "file": "session GitHub CLI commands",
+      "root_cause": "The whitespace-check flag belongs to git diff, not gh pr diff",
+      "fix": "Use git diff --check for whitespace validation and gh pr diff --patch or --name-only for pull-request review",
+      "tags": [
+        "tooling",
+        "github-cli",
+        "self-review"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-15T04:00:00.000Z"
     }
   ]
 }
