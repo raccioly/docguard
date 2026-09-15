@@ -5689,7 +5689,7 @@
       "error_message": "Repository-token-dispatched CI passed for release PR #376 but did not emit the workflow_run event required to merge and publish",
       "file": ".github/workflows/scheduled-release.yml",
       "root_cause": "The design applied GitHub's workflow_dispatch recursion exception to the dispatched CI run but incorrectly assumed that the later workflow_run event was also exempt; the live probe used a user token and did not reproduce github-actions[bot] provenance",
-      "fix": "Keep the privileged release controller inside the trusted scheduled run, wait for exact bot-authored CI and supply-chain runs, restore policy from main, validate metadata, merge, and dispatch publication directly",
+      "fix": "Expose GitHub's required maintainer approval for repository-token-created PR workflows, then let the existing trusted workflow_run gate validate, merge, and publish",
       "tags": [
         "release",
         "github-actions",
@@ -5702,6 +5702,26 @@
       ],
       "occurrences": 1,
       "last_seen": "2026-09-15T01:48:00.000Z"
+    },
+    {
+      "id": "bug-345",
+      "timestamp": "2026-09-15T02:05:05.000Z",
+      "error_message": "Release PR #378 had successful exact-head workflow_dispatch jobs but branch protection still reported all four required pull-request checks as expected",
+      "file": ".github/workflows/scheduled-release.yml",
+      "root_cause": "GitHub associates required checks with the protected pull-request workflow context; separately dispatched jobs on the same SHA are visible check runs but do not satisfy those required PR checks",
+      "fix": "Remove the dispatched-check substitution and require one maintainer approval so ordinary pull-request CI supplies the branch-protection contexts",
+      "tags": [
+        "release",
+        "branch-protection",
+        "required-checks",
+        "workflow-dispatch",
+        "provenance"
+      ],
+      "related_bugs": [
+        "bug-344"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-09-15T02:05:05.000Z"
     }
   ]
 }

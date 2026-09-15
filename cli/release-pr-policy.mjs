@@ -105,19 +105,3 @@ export function evaluateReleaseJobs(jobs) {
   }
   return { ok: errors.length === 0, errors };
 }
-
-export function evaluateReleaseRun(run, expected) {
-  const errors = [];
-  if (run?.id !== expected.runId) errors.push('run id: mismatch');
-  if (run?.name !== expected.workflowName) errors.push('workflow name: mismatch');
-  if (run?.path !== expected.workflowPath) errors.push('workflow path: mismatch');
-  if (run?.event !== 'workflow_dispatch') errors.push('event: must be workflow_dispatch');
-  if (run?.actor?.login !== 'github-actions[bot]') errors.push('actor: must be github-actions[bot]');
-  if (run?.repository?.full_name !== expected.repository) errors.push('repository: mismatch');
-  if (run?.head_sha !== expected.headSha) errors.push('head SHA: mismatch');
-  if (run?.head_branch !== expected.headBranch) errors.push('head branch: mismatch');
-  if (run?.status !== 'completed' || run?.conclusion !== 'success') {
-    errors.push(`result: ${run?.status || 'unknown'}/${run?.conclusion || 'unknown'}`);
-  }
-  return { ok: errors.length === 0, errors };
-}

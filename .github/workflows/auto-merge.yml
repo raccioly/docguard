@@ -20,9 +20,8 @@ name: Auto-merge (green bot PRs)
 #     break from an auto-accepted @babel/parser major; bug-255).
 #   - jules: test-only and docs-only changes. Anything touching cli/ logic,
 #     .github/, or package.json is labeled and left for a human.
-#   - release fallback: exact scheduler-owned next-version surfaces after a
-#     user-authored/manual CI dispatch. Repository-token dispatches are completed
-#     inside scheduled-release.yml because GitHub suppresses their workflow_run.
+#   - release: exact scheduler-owned next-version surfaces after a maintainer
+#     approves the repository-token PR's ordinary pull-request CI.
 
 on:
   workflow_run:

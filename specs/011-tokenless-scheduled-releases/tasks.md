@@ -12,9 +12,11 @@
 
 ## Phase 2: Workflow orchestration
 
-- [x] T004 Replace the long-lived credential with job-scoped `GITHUB_TOKEN` and dispatch CI.
+- [x] T004 Replace the long-lived credential with a job-scoped `GITHUB_TOKEN`
+  release PR and an explicit maintainer workflow approval.
 - [x] T005 Reuse matching open PRs and fail on orphaned remote release branches.
-- [x] T006 Gate dispatched CI by exact run, head SHA, author, version, and paths.
+- [x] T006 Gate approved pull-request CI by exact run, head SHA, author, version,
+  and paths.
 - [x] T007 Dispatch idempotent publication after merge and recover missing tags.
 
 ## Phase 3: Documentation and verification
@@ -27,7 +29,8 @@
 
 ## Phase 4: Repository-token provenance correction
 
-- [x] T012 Replace the suppressed bot `workflow_dispatch → workflow_run` handoff
-  with scheduler-owned exact CI and supply-chain run verification.
-- [ ] T013 Execute the live v0.40.1 release through the corrected controller and
-  retain its merge and publication evidence.
+- [x] T012 Prove that bot-dispatched jobs neither emit the required downstream
+  gate nor satisfy protected pull-request checks, then adopt one explicit
+  maintainer workflow approval without weakening branch protection.
+- [ ] T013 Execute the live v0.40.1 release through the approved pull-request
+  checks and retain its merge and publication evidence.

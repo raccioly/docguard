@@ -220,15 +220,16 @@ across 24 evaluable cases plus one explicit unsupported case.
 
 Governing spec: `specs/011-tokenless-scheduled-releases/spec.md`.
 
-Replace the long-lived release PR credential with GitHub's documented
-`workflow_dispatch` path for ephemeral repository tokens. The implementation
-keeps the privileged merge gate metadata-only, validates exact candidate and CI
-identity, dispatches publication after merge, and recovers a missing tag before
-another version increment.
+Replace the long-lived release PR credential with an ephemeral repository token
+and one explicit maintainer approval for the generated PR's workflows. The
+implementation keeps the privileged merge gate metadata-only, validates exact
+candidate and CI identity, dispatches publication after merge, and recovers a
+missing tag before another version increment.
 
 - [x] Freeze the security and recovery contract before implementation.
 - [x] Add pure release-candidate and exact-run policy tests.
-- [x] Dispatch CI and publication without a stored personal or app credential.
+- [x] Publish without a stored personal or app credential while preserving the
+  maintainer workflow approval required by protected pull-request checks.
 - [x] Preserve Dependabot/Jules policy and pinned-action controls.
 - [x] Record the reviewed lifecycle outcome at durable revision `46531e4` with
   no accepted deviations.
