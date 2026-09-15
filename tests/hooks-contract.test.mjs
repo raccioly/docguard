@@ -1,6 +1,8 @@
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, symlinkSync, chmodSync, readFileSync } from 'node:fs';
+import {
+  mkdtempSync, mkdirSync, rmSync, symlinkSync, chmodSync, readFileSync, readdirSync,
+} from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -180,4 +182,43 @@ describe('Spec Kit hook registration contracts', () => {
       assert.match(source, /after_tasks:\n[\s\S]*optional: true/);
     });
   }
+});
+
+describe('Spec Kit command registration contracts', () => {
+  it('declares every shipped command with a unique matching file', () => {
+    const manifest = readFileSync(
+      new URL('../extensions/spec-kit-docguard/extension.yml', import.meta.url),
+      'utf8',
+    );
+    const block = manifest.match(/^  commands:\n([\s\S]*?)(?=^  #|^  workflows:)/m)?.[1];
+    assert.ok(block, 'provides.commands block is missing');
+
+    const entries = [...block.matchAll(
+      /^    - name: "([^"]+)"\n      file: "([^"]+)"\n      description: "([^"]+)"/gm,
+    )].map(([, name, file, description]) => ({ name, file, description }));
+    assert.ok(entries.length > 0, 'no commands were parsed from the manifest');
+    assert.equal(new Set(entries.map(({ name }) => name)).size, entries.length, 'command names must be unique');
+    assert.equal(new Set(entries.map(({ file }) => file)).size, entries.length, 'command files must be unique');
+
+    for (const { name, file, description } of entries) {
+      const verb = name.replace(/^speckit\.docguard\./, '');
+      assert.notEqual(verb, name, `command is outside the docguard namespace: ${name}`);
+      assert.equal(file, `commands/${verb}.md`, `${name} must map to its matching command file`);
+      assert.ok(description.trim(), `${name} must have a description`);
+      const command = readFileSync(
+        new URL(`../extensions/spec-kit-docguard/${file}`, import.meta.url),
+        'utf8',
+      );
+      assert.match(command, /^---\ndescription:/, `${file} must have command frontmatter`);
+    }
+
+    const shipped = readdirSync(
+      new URL('../extensions/spec-kit-docguard/commands/', import.meta.url),
+      { withFileTypes: true },
+    )
+      .filter(entry => entry.isFile() && entry.name.endsWith('.md'))
+      .map(entry => `commands/${entry.name}`)
+      .sort();
+    assert.deepEqual(entries.map(({ file }) => file).sort(), shipped);
+  });
 });
