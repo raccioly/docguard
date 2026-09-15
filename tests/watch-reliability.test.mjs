@@ -30,6 +30,8 @@ describe('watch reliability', () => {
     return emitter;
   }
   it('reports asynchronous EMFILE and closes every watcher and pending timer', async t => {
+    const logs = [];
+    t.mock.method(console, 'log', message => logs.push(String(message)));
     const errors = [];
     t.mock.method(console, 'error', message => errors.push(message));
     mkdirSync(join(dir, 'src'));
@@ -38,6 +40,8 @@ describe('watch reliability', () => {
     callbacks.get(dir)('change', 'file.js');
     watchers.get(join(dir, 'src')).emit('error', Object.assign(new Error('limit'), { code: 'EMFILE' }));
     assert.equal(process.exitCode, 1);
+    assert.ok(logs.some(line => line.includes(`DocGuard Watch — ${dir.split('/').at(-1)}`)));
+    assert.ok(logs.every(line => !line.includes('undefined')));
     assert.match(errors.join('\n'), /EMFILE.*Watch stopped/);
     assert.ok([...watchers.values()].every(watcher => watcher.closed));
     await delay(600);

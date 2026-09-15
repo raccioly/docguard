@@ -34,6 +34,8 @@ describe('validateReferenceExistence', () => {
     const ref = r.findings.filter(f => f.code === 'REF001');
     assert.ok(ref.some(f => /validateToken/.test(f.message)), `expected validateToken flagged; got ${JSON.stringify(ref.map(f=>f.message))}`);
     assert.ok(ref.every(f => f.confidence === 'low'));
+    assert.ok(ref.every(f => f.suggestion?.kind === 'review' && f.suggestion?.text));
+    assert.ok(ref.every(f => !Object.hasOwn(f.suggestion, 'summary')));
   });
 
   it('does NOT flag a ref that still exists (getUserById)', () => {

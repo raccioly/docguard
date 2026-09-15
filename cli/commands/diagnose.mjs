@@ -23,6 +23,7 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execSync, execFileSync } from 'node:child_process';
 import { applyAllMechanicalFixes } from './fix.mjs';
+import { buildReadinessAssessment } from '../assessment.mjs';
 
 // Map validator failures to the right fix --doc target
 const VALIDATOR_TO_DOC = {
@@ -186,7 +187,7 @@ export function runDiagnose(projectDir, config, flags) {
 
   // ── Step 1: Run guard internally ──
   let guardData = runGuardInternal(projectDir, config);
-  const scoreData = runScoreInternal(projectDir, config);
+  let scoreData = runScoreInternal(projectDir, config);
 
   // ── Step 2: Collect issues ──
   let issues = collectIssues(guardData);
@@ -223,6 +224,7 @@ export function runDiagnose(projectDir, config, flags) {
 
       // Re-run guard to see what's still broken
       guardData = runGuardInternal(projectDir, config);
+      scoreData = runScoreInternal(projectDir, config);
       issues = collectIssues(guardData);
 
       if (!flags.format || flags.format === 'text') {
@@ -256,12 +258,13 @@ export function runDiagnose(projectDir, config, flags) {
   }
 
   // ── Step 4: Output ──
+  const assessment = buildReadinessAssessment(guardData, scoreData);
   if (flags.format === 'json') {
-    outputJSON(guardData, scoreData, issues);
+    outputJSON(guardData, scoreData, issues, assessment);
   } else if (flags.format === 'prompt') {
-    outputPrompt(projectDir, guardData, scoreData, issues, flags, agentMode);
+    outputPrompt(projectDir, guardData, scoreData, issues, flags, agentMode, assessment);
   } else {
-    outputText(projectDir, guardData, scoreData, issues, flags, agentMode);
+    outputText(projectDir, guardData, scoreData, issues, flags, agentMode, assessment);
   }
 }
 
@@ -315,7 +318,7 @@ function collectIssues(guardData) {
   return issues;
 }
 
-function outputJSON(guardData, scoreData, issues) {
+function outputJSON(guardData, scoreData, issues, assessment) {
   // Structured, deterministic fix actions an agent or `--write` can apply directly.
   const mechanicalFixes = [];
   for (const v of guardData.validators) {
@@ -332,6 +335,7 @@ function outputJSON(guardData, scoreData, issues) {
     grade: scoreData.grade,
     scoreKind: scoreData.scoreKind,
     assurance: scoreData.assurance,
+    assessment,
     checkCoverage: guardData.checkCoverage,
     issueCount: issues.length,
     issues: issues.map(i => ({
@@ -354,10 +358,12 @@ function outputJSON(guardData, scoreData, issues) {
   console.log(JSON.stringify(result, null, 2));
 }
 
-function outputText(projectDir, guardData, scoreData, issues, flags, agentMode = 'llm') {
+function outputText(projectDir, guardData, scoreData, issues, flags, agentMode = 'llm', assessment) {
   console.log(`${c.bold}🔍 DocGuard Diagnose — ${guardData.project}${c.reset}`);
-  console.log(`${c.dim}   Profile: ${guardData.profile} | Score: ${scoreData.score}/100 (${scoreData.grade}) | Mode: ${agentMode.toUpperCase()}${c.reset}`);
+  console.log(`${c.dim}   Profile: ${guardData.profile} | Structural Maturity: ${scoreData.score}/100 (${scoreData.grade}) | Mode: ${agentMode.toUpperCase()}${c.reset}`);
   console.log(`${c.dim}   Guard:   ${guardData.passed}/${guardData.total} passed | Status: ${guardData.status}${c.reset}\n`);
+  const readinessColor = assessment.status === 'READY' ? c.green : assessment.status === 'ATTENTION' ? c.yellow : c.red;
+  console.log(`  ${c.bold}Readiness:${c.reset} ${readinessColor}${c.bold}${assessment.status}${c.reset} ${c.dim}— ${assessment.summary}${c.reset}\n`);
 
   if (issues.length === 0) {
     console.log(`  ${c.green}${c.bold}✅ All clear!${c.reset} No issues found.\n`);
@@ -410,15 +416,15 @@ function outputText(projectDir, guardData, scoreData, issues, flags, agentMode =
     // Multi-perspective debate prompts (AITPG/TRACE-inspired)
     console.log(`  ${c.bold}🤖 Multi-Perspective AI Debate Prompt:${c.reset}`);
     console.log(`  ${c.dim}Copy everything below and paste to your AI agent:${c.reset}\n`);
-    outputDebatePrompt(projectDir, guardData, scoreData, issues, agentMode);
+    outputDebatePrompt(projectDir, guardData, scoreData, issues, agentMode, assessment);
   } else {
     console.log(`  ${c.bold}🤖 AI-Ready Prompt:${c.reset}`);
     console.log(`  ${c.dim}Copy everything below and paste to your AI agent:${c.reset}\n`);
-    outputPrompt(undefined, guardData, scoreData, issues, flags, agentMode);
+    outputPrompt(undefined, guardData, scoreData, issues, flags, agentMode, assessment);
   }
 }
 
-function outputPrompt(projectDir, guardData, scoreData, issues, flags, agentMode = 'llm') {
+function outputPrompt(projectDir, guardData, scoreData, issues, flags, agentMode = 'llm', assessment) {
   if (issues.length === 0) {
     console.log('No issues to fix. Documentation is healthy.');
     return;
@@ -429,7 +435,8 @@ function outputPrompt(projectDir, guardData, scoreData, issues, flags, agentMode
 
   const lines = [];
   lines.push(`TASK: Fix ${issues.length} documentation issue(s) in project "${guardData.project}"`);
-  lines.push(`Profile: ${guardData.profile} | Score: ${scoreData.score}/100 | Guard: ${guardData.status}`);
+  lines.push(`Readiness: ${assessment.status} | Guard: ${guardData.status} | Structural Maturity: ${scoreData.score}/100 (${scoreData.grade})`);
+  lines.push(assessment.summary);
   lines.push('');
   lines.push('ISSUES FOUND:');
 
@@ -507,12 +514,12 @@ function outputPrompt(projectDir, guardData, scoreData, issues, flags, agentMode
  * and TRACE adversarial debate (Advocate/Challenger/Mediator/Explainer).
  * Lopez et al., IEEE TSE/TMLCN 2026.
  */
-function outputDebatePrompt(projectDir, guardData, scoreData, issues, agentMode = 'llm') {
+function outputDebatePrompt(projectDir, guardData, scoreData, issues, agentMode = 'llm', assessment) {
   const lines = [];
 
   lines.push('═══════════════════════════════════════════════════════');
   lines.push('MULTI-PERSPECTIVE DOCUMENTATION ANALYSIS');
-  lines.push(`Project: "${guardData.project}" | Score: ${scoreData.score}/100 | Issues: ${issues.length}`);
+  lines.push(`Project: "${guardData.project}" | Readiness: ${assessment.status} | Guard: ${guardData.status} | Structural Maturity: ${scoreData.score}/100 (${scoreData.grade}) | Issues: ${issues.length}`);
   lines.push('Methodology: Multi-agent debate (Lopez et al., AITPG/TRACE, IEEE 2026)');
   lines.push('═══════════════════════════════════════════════════════');
   lines.push('');

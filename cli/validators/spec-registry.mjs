@@ -13,13 +13,16 @@ export function validateSpecRegistry(projectDir, config = {}) {
     confidence: 'high',
     message: issue.message,
     location: issue.path,
-    suggestion: {
-      kind: 'review',
-      text: issue.code === 'SPR002'
-        ? 'Assign a unique immutable Spec ID in the authoritative spec metadata.'
-        : 'Resolve the lifecycle or registry integrity conflict, then refresh the registry.',
-      command: 'docguard specs --write',
-    },
+    suggestion: issue.code === 'SPR002'
+      ? {
+          kind: 'review',
+          text: 'Add a unique immutable Spec ID to the authoritative spec using the `**Spec ID**: <unique-id>` or `<!-- docguard:spec-id <unique-id> -->` form; then run `docguard specs --write`.',
+        }
+      : {
+          kind: 'review',
+          text: 'Resolve the lifecycle or registry integrity conflict, then refresh the registry.',
+          command: 'docguard specs --write',
+        },
   }));
   if (!projection.current && projection.issues.length === 0) {
     findings.push(mkFinding({

@@ -1,9 +1,9 @@
 # Security
 
 <!-- docguard:quality negation-load off — prohibitions define security boundaries -->
-<!-- docguard:version 0.7.0 -->
+<!-- docguard:version 0.8.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-09-14 -->
+<!-- docguard:last-reviewed 2026-09-15 -->
 
 ## Overview
 
@@ -46,6 +46,19 @@ statement. Machine output omits raw source values so a mistaken JSON Pointer
 cannot copy a secret into CI logs or an agent transcript. Values remain in
 process only for typed comparison and non-reversible identities.
 
+The `python-literal-count` adapter tokenizes one bounded Python source file in
+JavaScript. It never starts Python or imports the target module. It accepts one
+direct module-level static container assignment and returns unsupported or
+inconclusive for comprehensions, unpacking, aliases, concatenation, conditionals,
+duplicate assignments, malformed syntax, and parser-budget exhaustion.
+
+Reconciliation invokes Git with argument arrays and disables text conversion.
+Changed-path inventory and patch text have separate budgets. Any timeout,
+overflow, parse failure, or path-limit breach returns partial coverage and cannot
+produce a ready claim. Instruction-pointer indexing rejects traversal, private
+paths, symlinks, and ambiguous basenames and never follows a match outside the
+selected repository.
+
 Task-context selection reuses the same bounded safe reader. It accepts at most
 2,000 normalized task characters, stores only the task digest in output, and
 does not execute project code, hooks, package managers, an LLM, or network
@@ -77,7 +90,7 @@ Pass untrusted arguments through argv arrays and validate values for their inten
 | verify --evidence | None | Reads the strict local manifest, selected Markdown, source files, and saved reports; guard consumes the same evaluator |
 | retire --write | Explicit clean tracked documentation only | Requires retained-ref recovery proof, clean replacement/evidence docs, and no live Markdown backreferences |
 | init, generate | Documentation and configuration scaffolding | Explicit force options may overwrite content |
-| hooks | Hook configuration and executable scripts | Auto-fix hooks may edit and stage documentation |
+| hooks | Hook configuration and executable scripts | Inventory distinguishes managed, legacy, foreign, missing, and unreadable hooks; removal preserves foreign commands around a managed block; auto-fix hooks may edit and stage documentation |
 | report | None by default | `--out` writes an artifact |
 
 Review the exact command and flags before assigning privileges. CLI help is the authoritative command inventory.

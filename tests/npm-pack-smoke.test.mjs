@@ -22,11 +22,13 @@
  * @req docguard.evidence-scoped-verification#SC-005
  * @req docguard.language-repository-coverage#FR-008
  * @req docguard.task-specific-agent-context#FR-010
+ * @req docguard.adoption-workflow-integrity#FR-010
+ * @req docs-canonical/REQUIREMENTS.md#NFR-004
  */
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, existsSync, readdirSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync, existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -85,6 +87,19 @@ describe('npm pack smoke', { skip: SKIP }, () => {
     assert.ok(existsSync(join(pkgDir, 'commands')), 'commands/ should be in the tarball');
     assert.ok(existsSync(join(pkgDir, 'extensions')), 'extensions/ should be in the tarball');
     assert.ok(existsSync(join(pkgDir, 'package.json')), 'package.json should be in the tarball');
+    assert.ok(existsSync(join(pkgDir, 'CHANGELOG.md')),
+      'README links CHANGELOG.md, so the package must ship that linked document');
+
+    // npm renders the packaged README. Every relative link in that README must
+    // resolve inside the tarball; repository-only material must use an absolute
+    // GitHub URL. This catches attractive but broken post-install documentation.
+    const readme = readFileSync(join(pkgDir, 'README.md'), 'utf8');
+    const targets = [...readme.matchAll(/!?\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g)]
+      .map(match => match[1].replace(/^<|>$/g, ''))
+      .filter(target => !target.startsWith('#') && !/^[a-z][a-z0-9+.-]*:/i.test(target))
+      .map(target => decodeURI(target.split('#')[0]).replace(/^\.\//, ''));
+    const missing = [...new Set(targets)].filter(target => !existsSync(join(pkgDir, target)));
+    assert.deepEqual(missing, [], `relative README links missing from npm package: ${missing.join(', ')}`);
   });
 
   it('extracted package runs --version (CLI loads end-to-end)', () => {
@@ -121,7 +136,7 @@ describe('npm pack smoke', { skip: SKIP }, () => {
     writeFileSync(join(fixtureDir, 'CHANGELOG.md'), '# Changelog\n## [Unreleased]\n');
     writeFileSync(join(fixtureDir, 'DRIFT-LOG.md'), '# Drift\n');
     writeFileSync(join(fixtureDir, '.docguard.json'),
-      JSON.stringify({ projectName: 'smoke', profile: 'starter', version: '0.5' }));
+      JSON.stringify({ projectName: 'smoke', profile: 'starter', version: '0.6' }));
     spawnSync('git', ['init', '-q'], { cwd: fixtureDir });
     spawnSync('git', ['-c', 'user.email=t@t', '-c', 'user.name=t', 'add', '-A'], { cwd: fixtureDir });
     spawnSync('git', ['-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q', '-m', 'init'], { cwd: fixtureDir });
@@ -173,7 +188,7 @@ describe('npm pack smoke', { skip: SKIP }, () => {
     mkdirSync(join(fixtureDir, 'docs-canonical'));
     mkdirSync(join(fixtureDir, 'src'));
     writeFileSync(join(fixtureDir, 'package.json'), JSON.stringify({ name: 'task-smoke', version: '1.0.0', type: 'module' }));
-    writeFileSync(join(fixtureDir, '.docguard.json'), JSON.stringify({ projectName: 'task-smoke', profile: 'starter', version: '0.5', requiredFiles: { canonical: ['docs-canonical/REQUIREMENTS.md'] } }));
+    writeFileSync(join(fixtureDir, '.docguard.json'), JSON.stringify({ projectName: 'task-smoke', profile: 'starter', version: '0.6', requiredFiles: { canonical: ['docs-canonical/REQUIREMENTS.md'] } }));
     writeFileSync(join(fixtureDir, 'docs-canonical/REQUIREMENTS.md'), '# Requirements\n\nUpdate `normalizeThing` in `src/tool.mjs` without changing its public return type.\n');
     writeFileSync(join(fixtureDir, 'src/tool.mjs'), 'export const normalizeThing = value => value;\n');
     const cli = join(extractDir, 'package/cli/docguard.mjs');

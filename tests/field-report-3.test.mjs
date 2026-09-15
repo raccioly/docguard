@@ -232,6 +232,11 @@ describe('field report #3 — score recognises modern test-runner config', () =>
 });
 
 describe('field report #3 — stable guard contract', () => {
+  it('drops malformed suggestions instead of rendering undefined remediation', () => {
+    const finding = mkFinding({ code: 'X1', severity: 'warn', message: 'x', suggestion: { summary: 'wrong shape' } });
+    assert.equal(finding.suggestion, null);
+  });
+
   it('runGuardInternal returns findings, reportable, and nextStep', () => {
     const dir = tmp();
     write(dir, {

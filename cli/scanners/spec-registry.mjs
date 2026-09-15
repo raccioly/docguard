@@ -214,6 +214,35 @@ export function readSpecRegistry(projectDir) {
   return loaded;
 }
 
+function trackedAndClean(projectDir, path) {
+  const tracked = spawnSync('git', ['ls-files', '--error-unmatch', '--', path], {
+    cwd: projectDir, stdio: 'ignore',
+  });
+  if (tracked.status !== 0) return false;
+  const working = spawnSync('git', ['diff', '--quiet', '--', path], { cwd: projectDir, stdio: 'ignore' });
+  const staged = spawnSync('git', ['diff', '--cached', '--quiet', '--', path], { cwd: projectDir, stdio: 'ignore' });
+  return working.status === 0 && staged.status === 0;
+}
+
+/** Reviewed lifecycle that may defer implementation-time traceability. */
+export function trustedSpecLifecycleIndex(projectDir) {
+  const trusted = new Map();
+  const loaded = readSpecRegistry(projectDir);
+  if (loaded.error || loaded.value?.schemaVersion !== SPEC_REGISTRY_SCHEMA_VERSION) return trusted;
+  if (!trackedAndClean(projectDir, SPEC_REGISTRY_PATH)) return trusted;
+  for (const entry of loaded.value.specs) {
+    if (!entry?.specId || !entry?.path || !trackedAndClean(projectDir, entry.path)) continue;
+    let content;
+    try { content = readFileSync(resolve(projectDir, entry.path), 'utf8'); } catch { continue; }
+    if (parseSpecId(content) !== entry.specId) continue;
+    const artifact = entry.observed?.artifacts?.find(item => item.path === entry.path);
+    if (!artifact || artifact.digest !== digest(content)) continue;
+    if (entry.reviewed?.lifecycle?.context !== 'current' || entry.reviewed.lifecycle.storage !== 'working_tree') continue;
+    trusted.set(`${entry.specId}\0${entry.path}`, entry.reviewed.lifecycle);
+  }
+  return trusted;
+}
+
 function taskCompletion(path) {
   if (!path || !existsSync(path)) return { checked: 0, total: 0 };
   const content = readFileSync(path, 'utf8');

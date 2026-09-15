@@ -252,7 +252,8 @@ export function validateReferenceExistence(projectDir, config = {}) {
         message: `${doc.name} references \`${sym}\`, which existed in the code when the doc was last updated but has ZERO matches at HEAD — likely renamed or removed.`,
         location: { file: doc.name },
         suggestion: {
-          summary: `Update or remove the \`${sym}\` reference in ${doc.name} (or suppress if it is a still-relevant user-facing name).`,
+          kind: 'review',
+          text: `Update or remove the \`${sym}\` reference in ${doc.name} (or suppress if it is a still-relevant user-facing name).`,
         },
       }));
     }
@@ -287,7 +288,8 @@ export function validateReferenceExistence(projectDir, config = {}) {
         message,
         location: { file: first.file, line: first.line },
         suggestion: {
-          summary: known.size > 0
+          kind: 'review',
+          text: known.size > 0
             ? `Fix the number or write the missing ADR entry (or suppress with // docguard:ignore REF002 on the citation line).`
             : `Create an ADR doc (docguard init writes templates/ADR.md) or suppress with // docguard:ignore REF002.`,
         },

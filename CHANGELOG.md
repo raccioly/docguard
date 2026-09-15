@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add exact finding-code enforcement through `findingSeverity`, retaining both
+  intrinsic and effective severity in guard JSON, SARIF, and JUnit.
+- Add trusted lifecycle-aware traceability deferral for requirements that remain
+  planned in a committed, clean schema-v2 specification registry.
+
+### Changed
+
+- Make reconciliation inventory independent of bounded patch text and disclose
+  partial coverage instead of treating diff overflow or failure as no change.
+- Resolve safe instruction pointers by exact path or one unique basename, while
+  surfacing ambiguous, unsafe, symlinked, and incomplete-index cases.
+- Distinguish DocGuard-managed hooks from unrelated existing hooks and preserve
+  foreign commands when removing a managed block.
+- Make npm README links resolve from the published package and identify the
+  current v0.40 release line accurately.
+
+### Fixed
+
+- Prevent malformed finding suggestions from rendering `undefined` and replace
+  invalid remediation commands with reviewable actions.
+- Route `init --with hooks --list` to read-only hook inspection instead of the
+  interactive initialization workflow.
+- Fall back to the repository directory name in watch output when project
+  metadata does not provide a name.
+
 ## [0.40.5] - 2026-09-15
 
 Automated weekly release — batches everything merged since `v0.40.4`.

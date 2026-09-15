@@ -1,3 +1,6 @@
+// @req docguard.adoption-workflow-integrity#FR-004
+// @req docguard.adoption-workflow-integrity#SC-002
+// @req docs-canonical/REQUIREMENTS.md#FR-009
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { execFileSync, spawnSync } from 'node:child_process';
@@ -110,5 +113,51 @@ describe('Reconciliation review graph', () => {
     const plan = buildReconciliationPlan(dir, {}, 'missing-ref');
     assert.equal(plan.status, 'UNSUPPORTED');
     assert.equal(plan.coverage.status, 'unsupported');
+  });
+
+  it('passes only the verified full base revision to diff collection', t => {
+    const { dir, base } = fixture(t);
+    let receivedRef = null;
+    const plan = buildReconciliationPlan(dir, {}, 'HEAD', {
+      getDiffSnapshot: (_dir, ref) => {
+        receivedRef = ref;
+        return {
+          status: 'ok', commitCount: 0, changedFiles: [], patch: '', patchBytes: 0,
+          limits: { maxChangedFiles: 5000 }, reason: null,
+        };
+      },
+    });
+    assert.equal(receivedRef, git(dir, ['rev-parse', 'HEAD']));
+    assert.equal(plan.baseRevision, receivedRef);
+    assert.notEqual(receivedRef, 'HEAD');
+    assert.ok(base, 'fixture base remains available');
+  });
+
+  it('blocks when Git patch evidence is incomplete instead of reporting an empty READY range', t => {
+    const { dir, base } = fixture(t);
+    const plan = buildReconciliationPlan(dir, {}, base, {
+      getDiffSnapshot: () => ({
+        status: 'too-large', commitCount: 73, changedFiles: [{ status: 'M', oldPath: null, newPath: 'src/auth.js' }],
+        patch: '', patchBytes: 0, limits: { maxPatchBytes: 128 },
+        reason: 'Patch exceeded its byte budget; use a newer --since revision.',
+      }),
+    });
+    assert.equal(plan.status, 'BLOCKED');
+    assert.equal(plan.coverage.status, 'partial');
+    assert.match(plan.coverage.reason, /newer --since revision/);
+    assert.equal(plan.range.changedFileCount, 1);
+    assert.deepEqual(plan.classifications, []);
+  });
+
+  it('summarizes normal ranges and uses the resolved base revision in write guidance', t => {
+    const { dir, base } = fixture(t);
+    write(dir, 'src/config.js', 'export const timeout = process.env.TIMEOUT;\n');
+    commit(dir, 'config source');
+    const plan = buildReconciliationPlan(dir, {}, base);
+    assert.equal(plan.coverage.status, 'complete');
+    assert.equal(plan.range.commitCount, 1);
+    assert.equal(plan.range.changedFileCount, 1);
+    assert.equal(plan.summary.total, plan.classifications.length);
+    assert.match(plan.writes[0].command, new RegExp(base));
   });
 });

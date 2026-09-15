@@ -11,7 +11,7 @@
     },
     "version": {
       "type": "string",
-      "description": "Schema version (0.1, 0.2, ... 0.5). Bumped when fields are added or behavior changes. Migrate with `docguard upgrade --apply`.",
+      "description": "Schema version (0.1, 0.2, ... 0.6). Bumped when fields are added or behavior changes. Migrate with `docguard upgrade --apply`.",
       "pattern": "^\\d+\\.\\d+(\\.\\d+)?$"
     },
     "projectName": {
@@ -123,6 +123,17 @@
         "type": "string",
         "enum": ["high", "medium", "low"]
       }
+    },
+    "findingSeverity": {
+      "type": "object",
+      "description": "Per-finding-code enforcement overrides. Exact codes take precedence over validator severity. high = blocking error, medium = warning, low = informational. Intrinsic errors can only be demoted with an explicit code entry.",
+      "patternProperties": {
+        "^[A-Z]{3}[0-9]{3}$": {
+          "type": "string",
+          "enum": ["high", "medium", "low"]
+        }
+      },
+      "additionalProperties": false
     },
     "draftStalenessDays": {
       "type": "integer",

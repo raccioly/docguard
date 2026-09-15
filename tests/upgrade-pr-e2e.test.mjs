@@ -54,7 +54,7 @@ function makeProjectWithBareRemote() {
   spawnSync('git', ['config', 'user.email', 't@t'], { cwd: dir });
   spawnSync('git', ['config', 'user.name', 't'], { cwd: dir });
   // No `version` field + uses legacy `project` (pre-0.4 schema) so the
-  // upgrade migration chain (0.0 → 0.4 → 0.5) actually fires end-to-end.
+  // upgrade migration chain (0.0 → 0.4 → 0.5 → 0.6) actually fires end-to-end.
   writeFileSync(join(dir, '.docguard.json'), JSON.stringify({
     project: 'legacy-name', profile: 'starter',
   }, null, 2));
@@ -134,7 +134,8 @@ describe('upgrade --apply --pr — end-to-end with bare remote + stub gh', () =>
 
     // 2. The migrated .docguard.json was committed (project field renamed to projectName)
     const cfg = JSON.parse(readFileSync(join(dir, '.docguard.json'), 'utf-8'));
-    assert.equal(cfg.version, '0.5', 'schema should have migrated to 0.5');
+    assert.equal(cfg.version, '0.6', 'schema should have migrated to 0.6');
+    assert.deepEqual(cfg.findingSeverity, {});
     assert.ok(!cfg.project, 'legacy `project` field should be renamed');
 
     // 3. The commit landed on the bare remote (verify ref exists)

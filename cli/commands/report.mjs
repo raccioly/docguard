@@ -29,6 +29,7 @@ import { runGuardInternal } from './guard.mjs';
 import { runScoreInternal, computeAlcoaCompliance } from './score.mjs';
 import { getHeadInfo, isGitRepo } from '../shared-git.mjs';
 import { loadFixMemory } from '../writers/fix-memory.mjs';
+import { buildReadinessAssessment } from '../assessment.mjs';
 
 const _PKG = JSON.parse(readFileSync(resolvePath(dirname(fileURLToPath(import.meta.url)), '..', '..', 'package.json'), 'utf-8'));
 const CLI_VERSION = _PKG.version;
@@ -44,6 +45,7 @@ export function buildReport(projectDir, config) {
   const alcoa = computeAlcoaCompliance(projectDir, config, scoreData.categories);
   const git = isGitRepo(projectDir) ? getHeadInfo(projectDir) : null;
   const fixMemory = loadFixMemory(projectDir);
+  const assessment = buildReadinessAssessment(guardData, scoreData);
 
   // Findings grouped by stable code — auditors care about "how many of
   // which class", not the per-file noise. Codeless findings group as OTHER.
@@ -65,6 +67,7 @@ export function buildReport(projectDir, config) {
       type: config.projectType || 'unknown',
     },
     git: git ? { commit: git.commit, branch: git.branch, dirty: git.dirty } : null,
+    assessment,
     guard: {
       status: guardData.status,
       passed: guardData.passed,
@@ -126,7 +129,8 @@ export function toMarkdown(r) {
   lines.push('');
   lines.push('| Metric | Value |');
   lines.push('|--------|-------|');
-  lines.push(`| CDD Score (structural maturity) | ${r.score.score}/100 (${r.score.grade}) |`);
+  lines.push(`| Readiness | **${r.assessment.status}** — ${r.assessment.summary} |`);
+  lines.push(`| Structural Maturity | ${r.score.score}/100 (${r.score.grade}); this is not a guard verdict |`);
   lines.push(`| Factual accuracy | Unverified — ${r.score.assurance.unverifiedClaims ?? 'unknown number of'} extracted claim(s); discovery is heuristic |`);
   lines.push(`| Guard | ${r.guard.status.toUpperCase()} — ${r.guard.passed}/${r.guard.total} checks, ${r.guard.errors} error(s), ${r.guard.warnings} warning(s) |`);
   if (r.guard.baselineSuppressed > 0) {

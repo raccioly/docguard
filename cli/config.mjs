@@ -14,6 +14,7 @@ import { applyDocRoles } from './shared-doc-roles.mjs';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve, basename } from 'node:path';
 import { c, PROFILES, SEVERITY_LEVELS } from './shared.mjs';
+import { CODES } from './findings.mjs';
 import { mergeIgnoreFile } from './shared-ignore.mjs';
 import { detectProjectName } from './scanners/project-type.mjs';
 
@@ -91,6 +92,7 @@ export function loadConfig(projectDir) {
       referenceExistence: true,
       apiDocSmells: true,
     },
+    findingSeverity: {},
   };
 
   if (existsSync(configPath)) {
@@ -120,6 +122,16 @@ export function loadConfig(projectDir) {
         for (const [key, val] of Object.entries(merged.severity)) {
           if (typeof val === 'string' && !SEVERITY_LEVELS.has(val.toLowerCase())) {
             console.error(`${c.yellow}⚠ .docguard.json: severity.${key} = "${val}" is not a valid level${c.reset} ${c.dim}(use high | medium | low). To silence a validator entirely, set ${c.reset}${c.cyan}validators.${key}: false${c.dim}.${c.reset}`);
+          }
+        }
+      }
+      if (merged.findingSeverity && typeof merged.findingSeverity === 'object') {
+        for (const [code, val] of Object.entries(merged.findingSeverity)) {
+          if (!Object.hasOwn(CODES, code)) {
+            throw new Error(`findingSeverity.${code} is not a known finding code`);
+          }
+          if (typeof val !== 'string' || !SEVERITY_LEVELS.has(val.toLowerCase())) {
+            throw new Error(`findingSeverity.${code} must be high, medium, or low`);
           }
         }
       }
@@ -249,6 +261,17 @@ function normalizeConfig(cfg) {
   const out = { ...cfg };
   if (out.validators) out.validators = _normalizeValidatorKeys(out.validators);
   if (out.severity)   out.severity   = _normalizeValidatorKeys(out.severity);
+  if (out.findingSeverity && typeof out.findingSeverity === 'object' && !Array.isArray(out.findingSeverity)) {
+    const normalized = {};
+    for (const [rawCode, value] of Object.entries(out.findingSeverity)) {
+      const code = rawCode.toUpperCase();
+      if (Object.hasOwn(normalized, code)) {
+        throw new Error(`findingSeverity contains duplicate code ${code}`);
+      }
+      normalized[code] = typeof value === 'string' ? value.toLowerCase() : value;
+    }
+    out.findingSeverity = normalized;
+  }
   return out;
 }
 

@@ -3,6 +3,151 @@
   "schemaVersion": 2,
   "specs": [
     {
+      "specId": "docguard.adoption-workflow-integrity",
+      "path": "specs/012-adoption-workflow-integrity/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "approved",
+          "delivery": "in_progress",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": "living"
+        },
+        "relations": {
+          "extends": [
+            "docguard.document-lifecycle",
+            "docguard.evidence-scoped-verification"
+          ],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md",
+            "docs-canonical/DATA-MODEL.md",
+            "docs-canonical/REQUIREMENTS.md",
+            "docs-canonical/SECURITY.md",
+            "docs-canonical/TEST-SPEC.md"
+          ]
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.adoption-workflow-integrity#FR-001",
+          "docguard.adoption-workflow-integrity#FR-002",
+          "docguard.adoption-workflow-integrity#FR-003",
+          "docguard.adoption-workflow-integrity#FR-004",
+          "docguard.adoption-workflow-integrity#FR-005",
+          "docguard.adoption-workflow-integrity#FR-006",
+          "docguard.adoption-workflow-integrity#FR-007",
+          "docguard.adoption-workflow-integrity#FR-008",
+          "docguard.adoption-workflow-integrity#FR-009",
+          "docguard.adoption-workflow-integrity#FR-010",
+          "docguard.adoption-workflow-integrity#FR-011",
+          "docguard.adoption-workflow-integrity#FR-012",
+          "docguard.adoption-workflow-integrity#SC-001",
+          "docguard.adoption-workflow-integrity#SC-002",
+          "docguard.adoption-workflow-integrity#SC-003",
+          "docguard.adoption-workflow-integrity#SC-004",
+          "docguard.adoption-workflow-integrity#SC-005",
+          "docguard.adoption-workflow-integrity#SC-006"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/012-adoption-workflow-integrity/spec.md",
+            "digest": "sha256:1ca279258508029b46f38f0bd32130fd8f0629d841c3b85ae6f2a38824a193b8"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 0,
+          "total": 0
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-002",
+            "file": "cli/findings.mjs",
+            "line": 20
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/commands/hooks.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/shared-git.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/scanners/instruction-audit.mjs",
+            "line": 31
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/validators/traceability.mjs",
+            "line": 21
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/shared.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "cli/shared.mjs",
+            "line": 6
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-004",
+            "file": "tests/reconcile.test.mjs",
+            "line": 1
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/instruction-audit.test.mjs",
+            "line": 1
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/severity.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "tests/npm-pack-smoke.test.mjs",
+            "line": 25
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/reconcile.test.mjs",
+            "line": 2
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/instruction-audit.test.mjs",
+            "line": 2
+          },
+          {
+            "requirementId": "SC-005",
+            "file": "tests/severity.test.mjs",
+            "line": 15
+          }
+        ]
+      }
+    },
+    {
       "specId": "docguard.document-lifecycle",
       "path": "specs/006-document-lifecycle/spec.md",
       "reviewed": {
@@ -373,17 +518,17 @@
           {
             "requirementId": "FR-010",
             "file": "tests/reconcile.test.mjs",
-            "line": 12
+            "line": 15
           },
           {
             "requirementId": "FR-011",
             "file": "tests/reconcile.test.mjs",
-            "line": 13
+            "line": 16
           },
           {
             "requirementId": "FR-012",
             "file": "tests/reconcile.test.mjs",
-            "line": 14
+            "line": 17
           },
           {
             "requirementId": "FR-012",
@@ -468,7 +613,7 @@
           {
             "requirementId": "SC-006",
             "file": "tests/reconcile.test.mjs",
-            "line": 15
+            "line": 18
           },
           {
             "requirementId": "SC-007",
@@ -751,12 +896,12 @@
           {
             "requirementId": "FR-003",
             "file": "tests/evidence-adapters.test.mjs",
-            "line": 9
+            "line": 10
           },
           {
             "requirementId": "FR-004",
             "file": "tests/evidence-adapters.test.mjs",
-            "line": 10
+            "line": 11
           },
           {
             "requirementId": "FR-005",
@@ -811,7 +956,7 @@
           {
             "requirementId": "SC-001",
             "file": "tests/evidence-adapters.test.mjs",
-            "line": 11
+            "line": 12
           },
           {
             "requirementId": "SC-001",

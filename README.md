@@ -24,7 +24,7 @@
 > ```
 > Runs against a baked-in sample project with intentional drift and shows you the findings + a clear path to fixing them.
 
-![DocGuard demo](assets/demo.gif)
+![DocGuard demo](https://raw.githubusercontent.com/raccioly/docguard/main/assets/demo.gif)
 
 ---
 
@@ -63,7 +63,7 @@ DocGuard enforces **Canonical-Driven Development (CDD)** — a methodology where
 
 DocGuard is an official [GitHub Spec Kit](https://github.com/github/spec-kit) community extension. It validates the artifacts that Spec Kit creates, ensuring your specs stay high-quality throughout the development lifecycle.
 
-📖 **[Philosophy](PHILOSOPHY.md)** · 📋 **[CDD Standard](STANDARD.md)** · ⚖️ **[Comparisons](COMPARISONS.md)** · 🔬 **[Validation](VALIDATION.md)** · 🗺️ **[Roadmap](ROADMAP.md)**
+📖 **[Philosophy](PHILOSOPHY.md)** · 📋 **[CDD Standard](STANDARD.md)** · ⚖️ **[Comparisons](https://github.com/raccioly/docguard/blob/main/COMPARISONS.md)** · 🔬 **[Validation](https://github.com/raccioly/docguard/blob/main/VALIDATION.md)** · 🗺️ **[Roadmap](https://github.com/raccioly/docguard/blob/main/ROADMAP.md)**
 
 ### Architecture
 
@@ -108,7 +108,7 @@ A guard result describes the checks performed. The CDD grade measures structural
 
 Research motivates evaluation of this approach. A 2026 study found that repository context files did not generally improve task success and increased inference cost in its evaluated settings. It also found agents generally followed the instructions. These results support testing concise, relevant context and measuring actual task outcomes; they do not establish DocGuard's effectiveness. [Evaluating AGENTS.md, revised June 2026](https://arxiv.org/abs/2602.11988v2).
 
-The [current roadmap](ROADMAP.md) prioritizes accurate detection, reproducible evidence, document lifecycle management, and contributor-supplied regression cases. Released plans and superseded specifications are removed from active AI context and remain recoverable from Git.
+The [current roadmap](https://github.com/raccioly/docguard/blob/main/ROADMAP.md) prioritizes accurate detection, reproducible evidence, document lifecycle management, and contributor-supplied regression cases. Released plans and superseded specifications are removed from active AI context and remain recoverable from Git.
 
 ---
 
@@ -166,7 +166,7 @@ The server is **read-only** — it never writes to the mounted project.
   ```
 - **MCP** (Claude, Cursor, any MCP client) — `claude mcp add docguard -- npx -y docguard-cli mcp`; 5 read-only tools (guard, score, explain, verify-claims, diagnose). Registry manifest ships in-repo (`server.json`, Smithery-ready).
 - **GitLab CI** — component staged at [`templates/ci/gitlab-component.yml`](templates/ci/gitlab-component.yml) (guard/score/ci job with a SARIF artifact).
-- **Homebrew** — `brew install raccioly/tap/docguard` (formula in [`packaging/homebrew/`](packaging/homebrew/)).
+- **Homebrew** — `brew install raccioly/tap/docguard` (formula in [`packaging/homebrew/`](https://github.com/raccioly/docguard/tree/main/packaging/homebrew)).
 
 ### Core Workflow
 
@@ -278,7 +278,7 @@ DocGuard ships **23 commands** (the "Daily 5" + 18 situational tools, including 
 | `guard` | Validate against canonical docs — 30 validators |
 | `diff`  | Show gaps between docs and code (`--since <ref>` for impact mode) |
 | `sync`  | Refresh code-truth doc sections — keeps memory always up to date |
-| `score` | CDD maturity score (0-100; `--diff` for delta between refs) |
+| `score` | Structural CDD maturity score (0-100; not a guard verdict; `--diff` for delta between refs) |
 
 **Tools (situational, but day-to-day useful):**
 
@@ -302,8 +302,8 @@ DocGuard ships **23 commands** (the "Daily 5" + 18 situational tools, including 
 | `specs --check` / `specs --write` | Validate or refresh `.docguard-specs.json`, the byte-stable index of immutable spec IDs, reviewed lifecycle/lineage/scope, artifact digests, task state, explicitly scoped test evidence, and archive tombstones. Refreshes preserve the reviewed block. |
 | `specs preflight [--path <spec>]` | Before specification, print current spec lifecycle and evidence. Before planning, check the generated draft for structural blockers and report semantic overlap as review-only evidence. |
 | `mcp` | MCP server — exposes guard/score/explain/verify/report/diagnose as native tools for Claude, Cursor, and any MCP client. Stdio: `claude mcp add docguard -- npx docguard-cli mcp`. Team-shared HTTP: `docguard mcp --transport http --port 8585` (loopback by default; non-loopback binds require `--api-key`) |
-| `report` | Compliance-evidence bundle for audits — guard verdict + CDD score + ALCOA+ attributes + fix history, stamped with git commit and a tamper-evident sha256 integrity hash (`--format json`, `--out <file>`). Evidence, not a gate: always exits 0 |
-| `ci` | Pipeline gate: guard + score in one command — never scaffolds or touches source; its only write is its own `.docguard/history.jsonl` (opt out: `--no-history`). `--threshold <n>` fails below a score, `--fail-on-warning` for strict mode, `--format json` for parsers |
+| `report` | Compliance-evidence bundle for audits — combined readiness, guard verdict, structural maturity, ALCOA+ attributes, and fix history, stamped with git commit and a tamper-evident sha256 integrity hash (`--format json`, `--out <file>`). Evidence, not a gate: always exits 0 |
+| `ci` | Pipeline gate: guard + structural maturity in one command with READY/ATTENTION/BLOCKED assessment — never scaffolds or touches source; its only write is its own `.docguard/history.jsonl` (opt out: `--no-history`). `--threshold <n>` fails below a score, `--fail-on-warning` for strict mode, `--format json` for parsers |
 | `score --trend` | Score trajectory from recorded `ci` runs — sparkline, delta, and the last 10 runs with commit stamps |
 | `memory` | Per-domain accuracy headline (endpoints / entities / env / tech) |
 | `memory --diff` | Drill into which specific claims don't match code |
@@ -456,9 +456,18 @@ DocGuard runs **30 automated validators** on every `guard` check. Source-facing 
   "severity": {
     "todoTracking": "high",             // warnings fail CI
     "freshness": "low"                  // warnings ignored for exit code
+  },
+  "findingSeverity": {
+    "TRC004": "low",                    // only this finding becomes informational
+    "SEC001": "high"                    // this exact code always blocks
   }
 }
 ```
+
+Exact `findingSeverity` entries take precedence over validator severity. Guard
+JSON, SARIF, and JUnit retain the detector's intrinsic severity and add the
+effective severity plus the policy source. Intrinsic errors stay blocking unless
+their exact stable code is explicitly configured.
 
 ---
 
@@ -591,11 +600,11 @@ Three real-world projects to see DocGuard in action:
 
 | Example | Scenario | What You'll See |
 |---------|----------|----------------|
-| [01-express-api](examples/01-express-api/) | Node.js API with **zero docs** | Cold-start: `generate` → instant coverage |
-| [02-python-flask](examples/02-python-flask/) | Python app with **drifted docs** | Drift detection: catch when docs lie |
-| [03-spec-kit-project](examples/03-spec-kit-project/) | Full CDD + Spec Kit | Gold standard: what maturity looks like |
+| [01-express-api](https://github.com/raccioly/docguard/tree/main/examples/01-express-api) | Node.js API with **zero docs** | Cold-start: `generate` → instant coverage |
+| [02-python-flask](https://github.com/raccioly/docguard/tree/main/examples/02-python-flask) | Python app with **drifted docs** | Drift detection: catch when docs lie |
+| [03-spec-kit-project](https://github.com/raccioly/docguard/tree/main/examples/03-spec-kit-project) | Full CDD + Spec Kit | Gold standard: what maturity looks like |
 
-See [examples/README.md](examples/README.md) for step-by-step instructions.
+See [examples/README.md](https://github.com/raccioly/docguard/blob/main/examples/README.md) for step-by-step instructions.
 
 ---
 
@@ -639,7 +648,7 @@ The pieces that matter at company scale:
 
 ## ⚙️ CI/CD Integration
 
-> **Full recipes:** see [`docs-canonical/CI-RECIPES.md`](./docs-canonical/CI-RECIPES.md) for guard, auto-fix (commits mechanical fixes back to PRs), nightly sync, score-on-PR, and pre-commit configs.
+> **Full recipes:** see [`docs-canonical/CI-RECIPES.md`](https://github.com/raccioly/docguard/blob/main/docs-canonical/CI-RECIPES.md) for guard, auto-fix (commits mechanical fixes back to PRs), nightly sync, score-on-PR, and pre-commit configs.
 
 ### GitHub Actions — Guard (most common)
 
@@ -705,7 +714,7 @@ Two ready-to-use templates ship with the Spec Kit extension and as standalone fi
 
 ## ✨ What's New
 
-Highlights of the current line (v0.29 → v0.33):
+Highlights through the current v0.40 release line:
 
 - **Adoption baseline** — `guard --update-baseline` freezes a legacy repo's existing findings
   into a committed `.docguard.baseline.json`; guard/ci then gate only NEW drift, with suppression
@@ -805,12 +814,12 @@ See [Configuration Guide](docs/configuration.md) for all options.
 
 DocGuard's quality evaluation and documentation generation patterns are informed by peer-reviewed research from the University of Arizona and the Joint Interoperability Test Command (JITC), U.S. Department of Defense:
 
-- **AITPG** — AI-driven Test Plan Generator using Multi-Agent Debate and RAG ([Lopez et al., IEEE TSE 2026](Research/AITPG.pdf))
-- **TRACE** — Telecom Root Cause Analysis through Calibrated Explainability ([Lopez et al., IEEE TMLCN 2026](Research/TRACE.pdf))
+- **AITPG** — AI-driven Test Plan Generator using Multi-Agent Debate and RAG ([Lopez et al., IEEE TSE 2026](https://github.com/raccioly/docguard/blob/main/Research/AITPG.pdf))
+- **TRACE** — Telecom Root Cause Analysis through Calibrated Explainability ([Lopez et al., IEEE TMLCN 2026](https://github.com/raccioly/docguard/blob/main/Research/TRACE.pdf))
 
 Lead researcher: **[Martin Manuel Lopez](https://github.com/martinmanuel9)** · [ORCID 0009-0002-7652-2385](https://orcid.org/0009-0002-7652-2385)
 
-See [CONTRIBUTING.md](CONTRIBUTING.md#research--academic-credits) for full citations.
+See [CONTRIBUTING.md](https://github.com/raccioly/docguard/blob/main/CONTRIBUTING.md#research--academic-credits) for full citations.
 
 ---
 

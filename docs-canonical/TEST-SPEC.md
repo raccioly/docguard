@@ -1,8 +1,8 @@
 # Test Specification
 
-<!-- docguard:version 0.8.0 -->
+<!-- docguard:version 0.9.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-09-14 -->
+<!-- docguard:last-reviewed 2026-09-15 -->
 
 > DocGuard has a single optional-load npm dependency (`@babel/parser`) and an optional `python3` AST tier. CLI integration tests cover the full stack with `node:test` (zero dev dependencies) and exercise both AST extractors (`js-ast`, `py-ast`) plus their regex fallbacks. The Python AST tests skip themselves automatically on a machine that lacks `python3`.
 
@@ -30,8 +30,10 @@ Test names follow the pattern: "verb + expected behavior" (e.g., "runs and shows
 | Unit | node:test | tests/ | `npm test` |
 | CLI Integration | node:test | tests/ | `npm test` |
 
-> **CLI integration tests cover the full stack** — this is a CLI tool with zero UI surface.
-> Commands are validated end-to-end via Node.js subprocess execution, making separate E2E tests redundant.
+> **CLI integration tests cover command routing; packed adoption tests cover the
+> release boundary.** Source-tree subprocess success does not prove that npm
+> contains every linked or imported file, that remediation is actionable, or
+> that an existing repository remains unchanged during inspection.
 
 All test files live in `tests/` and match the glob `tests/*.test.mjs` — the test runner supplies the current inventory as the suite grows; see the Source-to-Test Map below for the source→test traceability that matters.
 
@@ -72,6 +74,11 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/writers/file-transaction.mjs` | `tests/file-transaction.test.mjs` | ✅ |
 | `cli/scanners/reconciliation.mjs`, `cli/commands/reconcile.mjs` | `tests/reconcile.test.mjs` | ✅ |
 | `cli/commands/specs.mjs` completion path | `tests/spec-completion.test.mjs` | ✅ |
+| Packed install adoption journey | `tests/adoption-workflow.test.mjs`, `tests/npm-pack-smoke.test.mjs` | ✅ |
+| `cli/shared-git.mjs`, reconciliation coverage | `tests/shared-git.test.mjs`, `tests/reconcile.test.mjs` | ✅ |
+| `cli/scanners/instruction-audit.mjs` | `tests/instruction-audit.test.mjs` | ✅ |
+| Finding-code enforcement and machine writers | `tests/severity.test.mjs`, `tests/sarif.test.mjs`, `tests/junit.test.mjs` | ✅ |
+| Combined readiness assessment | `tests/assessment.test.mjs` | ✅ |
 | `benchmarks/lib/manifest.mjs`, `benchmarks/lib/metrics.mjs`, `benchmarks/lib/compare.mjs` | `tests/benchmark-manifest.test.mjs`, `tests/benchmark-metrics.test.mjs` | ✅ |
 | `benchmarks/lib/runner.mjs`, `benchmarks/run.mjs` | `tests/benchmark-runner.test.mjs` | ✅ |
 | `benchmarks/agent-context/run.mjs`, task-context schemas and fixtures | `tests/agent-context-benchmark.test.mjs` | ✅ |
@@ -168,3 +175,11 @@ Markdown targets, unsafe paths, and stable identity behavior. Integration tests
 confirm that guard, JSON, SARIF, JUnit, score assurance, and agent context retain
 the five-state boundary. No test invokes third-party project code or an external
 compatibility binary.
+
+Python literal evidence adds paired list, tuple, set, dictionary, annotated,
+multiline, string/comment, dynamic, duplicate-assignment, malicious, symlink,
+and explicit-budget fixtures. Tests assert that project Python is never
+executed. The packed adopter workflow starts with a foreign hook and a
+specification missing immutable metadata, runs the installed CLI, validates
+every rendered suggestion, follows the proposed remediation, and requires the
+post-action registry check to pass.

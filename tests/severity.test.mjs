@@ -11,6 +11,8 @@
  * @req SC-K4-004 — high-severity warnings count as effectiveErrors
  * @req SC-K4-005 — low-severity warnings drop out of effective counts
  * @req SC-K4-006 — medium-severity warnings stay in effectiveWarnings
+ * @req docguard.adoption-workflow-integrity#FR-008
+ * @req docguard.adoption-workflow-integrity#SC-005
  */
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
@@ -18,7 +20,7 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
-import { resolveSeverity, SEVERITY_LEVELS } from '../cli/shared.mjs';
+import { resolveSeverity, resolveFindingEnforcement, SEVERITY_LEVELS } from '../cli/shared.mjs';
 import { runGuardInternal } from '../cli/commands/guard.mjs';
 
 function make(files) {
@@ -62,6 +64,23 @@ describe('resolveSeverity — the per-validator severity lookup', () => {
     assert.ok(SEVERITY_LEVELS.has('medium'));
     assert.ok(SEVERITY_LEVELS.has('low'));
     assert.equal(SEVERITY_LEVELS.size, 3);
+  });
+});
+
+describe('resolveFindingEnforcement — exact code policy', () => {
+  it('keeps intrinsic errors blocking unless the exact code is configured', () => {
+    const finding = { code: 'STR001', severity: 'error' };
+    assert.equal(resolveFindingEnforcement({ severity: { structure: 'low' } }, finding, 'structure').level, 'error');
+    assert.equal(resolveFindingEnforcement({ findingSeverity: { STR001: 'low' } }, finding, 'structure').level, 'info');
+  });
+
+  it('lets exact code policy override validator policy', () => {
+    const finding = { code: 'DCV001', severity: 'warn' };
+    const result = resolveFindingEnforcement({
+      severity: { docsCoverage: 'low' },
+      findingSeverity: { DCV001: 'high' },
+    }, finding, 'docsCoverage');
+    assert.deepEqual(result, { level: 'error', source: 'finding', key: 'DCV001' });
   });
 });
 
@@ -175,6 +194,31 @@ describe('runGuardInternal — severity-aware effective counts', () => {
     const st = r.validators.find(v => v.key === 'structure');
     if (dc) assert.equal(dc.severity, 'low');
     if (st) assert.equal(st.severity, 'high');
+  });
+
+  it('annotates structured findings with original and effective severity', () => {
+    dir = make(projectWithFreshnessWarn());
+    const config = {
+      projectName: 'test', profile: 'starter',
+      validators: {
+        structure: false, docsSync: false, drift: false, changelog: false,
+        testSpec: false, environment: false, security: false, freshness: false,
+        traceability: false, docsDiff: false, apiSurface: false,
+        metadataSync: false, docsCoverage: true, docQuality: false,
+        todoTracking: false, schemaSync: false, specKit: false,
+        metricsConsistency: false, architecture: false,
+      },
+      findingSeverity: { DCV001: 'low', DCV002: 'low', DCV003: 'low', DCV004: 'low', DCV005: 'low', DCV006: 'low' },
+    };
+    const r = runGuardInternal(dir, config);
+    for (const finding of r.findings) {
+      assert.equal(finding.severity, 'warn');
+      assert.equal(finding.effectiveSeverity, 'info');
+      assert.equal(finding.enforcement.source, 'finding');
+    }
+    assert.equal(r.effectiveErrors, 0);
+    assert.equal(r.effectiveWarnings, 0);
+    assert.equal(r.effectiveInfos, r.findings.length);
   });
 });
 

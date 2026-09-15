@@ -1,6 +1,7 @@
 /**
  * Hooks Command — Generate pre-commit/pre-push hooks for DocGuard
  * Creates git hooks that run guard/score before commits.
+ * @implements docguard.adoption-workflow-integrity#FR-003
  */
 
 import { existsSync, mkdirSync, chmodSync, readFileSync, unlinkSync } from 'node:fs';
@@ -53,6 +54,29 @@ function spliceManagedBlock(existing, newBody) {
   // middle of an existing file (which already has one).
   const bodyNoShebang = newBody.replace(/^#!.*\n/, '');
   return `${before}${BEGIN_MARKER}\n${bodyNoShebang.replace(/\n+$/, '')}\n${END_MARKER}${after}`;
+}
+
+function hookState(name, hooksDir) {
+  const path = resolve(hooksDir, name);
+  if (!existsSync(path)) return { kind: 'missing', path, content: '' };
+  let content;
+  try { content = readFileSync(path, 'utf-8'); }
+  catch { return { kind: 'unreadable', path, content: '' }; }
+  if (content.includes(BEGIN_MARKER) && content.includes(END_MARKER)) {
+    return { kind: 'managed', path, content };
+  }
+  const legacySignature = new RegExp(`^# DocGuard ${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} hook(?: \\(auto-fix mode\\))?$`, 'm');
+  if (legacySignature.test(content)) return { kind: 'legacy', path, content };
+  return { kind: 'foreign', path, content };
+}
+
+function removeManagedBlock(content) {
+  const start = content.indexOf(BEGIN_MARKER);
+  const end = content.indexOf(END_MARKER);
+  if (start === -1 || end === -1 || end < start) return null;
+  const remaining = `${content.slice(0, start)}${content.slice(end + END_MARKER.length)}`
+    .replace(/\n{3,}/g, '\n\n');
+  return remaining;
 }
 import { resolve, relative, basename } from 'node:path';
 import { c } from '../shared.mjs';
@@ -278,8 +302,16 @@ export function runHooks(projectDir, config, flags) {
   if (flags.list) {
     console.log(`  ${c.bold}Available hooks:${c.reset}\n`);
     for (const [name, hook] of Object.entries(HOOKS)) {
-      const installed = existsSync(resolve(hooksDir, name));
-      const status = installed ? `${c.green}✅ installed${c.reset}` : `${c.dim}not installed${c.reset}`;
+      const state = hookState(name, hooksDir);
+      const status = state.kind === 'managed'
+        ? `${c.green}✅ DocGuard installed${c.reset}`
+        : state.kind === 'legacy'
+          ? `${c.yellow}⚠ legacy DocGuard hook — upgrade with --force${c.reset}`
+          : state.kind === 'foreign'
+            ? `${c.yellow}existing non-DocGuard hook${c.reset}`
+            : state.kind === 'unreadable'
+              ? `${c.red}unreadable hook${c.reset}`
+              : `${c.dim}not installed${c.reset}`;
       console.log(`    ${c.cyan}${name}${c.reset}: ${hook.description} [${status}]`);
     }
     console.log(`\n  ${c.dim}Install: docguard hooks --type <name>${c.reset}`);
@@ -291,16 +323,25 @@ export function runHooks(projectDir, config, flags) {
   if (flags.remove) {
     let removed = 0;
     for (const name of hookTypes) {
-      const hookPath = resolve(hooksDir, name);
-      if (existsSync(hookPath)) {
-        const content = readFileSync(hookPath, 'utf-8');
-        if (content.includes('DocGuard')) {
-          unlinkSync(hookPath);
-          console.log(`  ${c.yellow}🗑️  Removed: ${name}${c.reset}`);
-          removed++;
+      const state = hookState(name, hooksDir);
+      if (state.kind === 'managed') {
+        const remaining = removeManagedBlock(state.content);
+        const meaningful = remaining.replace(/^#!.*(?:\n|$)/, '').trim();
+        if (meaningful) {
+          safeWrite(state.path, remaining);
+          chmodSync(state.path, 0o755);
+          console.log(`  ${c.yellow}🗑️  Removed DocGuard block from ${name}; preserved other hook commands${c.reset}`);
         } else {
-          console.log(`  ${c.dim}⏭️  ${name}: not a DocGuard hook (skipped)${c.reset}`);
+          unlinkSync(state.path);
+          console.log(`  ${c.yellow}🗑️  Removed: ${name}${c.reset}`);
         }
+        removed++;
+      } else if (state.kind === 'legacy') {
+        unlinkSync(state.path);
+        console.log(`  ${c.yellow}🗑️  Removed legacy DocGuard hook: ${name}${c.reset}`);
+        removed++;
+      } else if (state.kind !== 'missing') {
+        console.log(`  ${c.dim}⏭️  ${name}: not a recognized DocGuard hook (skipped)${c.reset}`);
       }
     }
     console.log(`\n  Removed: ${removed}\n`);

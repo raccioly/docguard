@@ -59,6 +59,18 @@ describe('toJUnit — mapping', () => {
       'must not render as a bare passing testcase');
   });
 
+  it('uses effective severity while retaining demoted findings in system-out', () => {
+    const xml = toJUnit({
+      project: 'fixture', timestamp: 't', findings: [],
+      validators: [{ name: 'Structure', key: 'structure', status: 'fail', findings: [
+        { code: 'STR001', severity: 'error', effectiveSeverity: 'info', message: 'Accepted exception' },
+      ] }],
+    });
+    assert.match(xml, /failures="0"/);
+    assert.match(xml, /<system-out>\[STR001\] Accepted exception<\/system-out>/);
+    assert.doesNotMatch(xml, /<error |<failure /);
+  });
+
   it('escapes XML special characters in attributes and bodies', () => {
     const xml = toJUnit({
       project: 'fix<ture> & "co"',

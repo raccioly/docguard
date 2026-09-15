@@ -199,6 +199,18 @@ function shouldRunGenerate(projectDir, flags) {
 }
 
 export async function runInit(projectDir, config, flags) {
+  // `--list` is read-only inventory owned by the hooks scaffolder. Routing it
+  // through normal init can start prompts or create documentation before the
+  // requested inventory is shown, which violates the command's read-only intent.
+  if (flags.list && Array.isArray(flags.with)) {
+    if (flags.with.length !== 1 || flags.with[0] !== 'hooks') {
+      console.error(`${c.red}--list is supported only with \`docguard init --with hooks\`.${c.reset}`);
+      process.exitCode = 1;
+      return;
+    }
+    const { runHooks } = await import('./hooks.mjs');
+    return runHooks(projectDir, config, flags);
+  }
   if (true) assertDefaultDocWrites(config);
   // v0.20: `--wizard` dispatches to the full interactive onboarding (formerly
   // `docguard setup`). Done before profile validation so the wizard can ask
@@ -381,6 +393,9 @@ export async function runInit(projectDir, config, flags) {
       // Empty by default — every validator uses 'medium'. Add entries to dial
       // strictness up (CI-critical checks) or down (experimental validators).
       severity: {},
+      // Exact stable-code overrides. Use this when one rule needs a different
+      // policy without weakening or escalating every finding in its validator.
+      findingSeverity: {},
     };
 
     writeFileSync(configPath, JSON.stringify(defaultConfig, null, 2) + '\n', 'utf-8');

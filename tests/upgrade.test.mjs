@@ -119,7 +119,7 @@ describe('checkUpgradeStatus — the post-guard nudge driver', () => {
   it('returns a nudge when .docguard.json has no `version` field (pre-0.4 schema)', () => {
     // Real-world case from wu-whatsappinbox: a 2024-era config has fields
     // like `project` (not `projectName`) and no `version`. We want the
-    // migration nudge to fire so users get upgraded to v0.5 cleanly.
+    // migration nudge to fire so users get upgraded cleanly.
     dir = make({
       'package.json': '{}',
       '.docguard.json': JSON.stringify({ project: 't' }),  // pre-0.4 — no version
@@ -145,6 +145,7 @@ describe('migrateSchema — requiredFiles is preserved and shape-normalized', ()
     assert.deepEqual(newConfig.requiredFiles, rf, 'requiredFiles must survive the migration byte-for-byte');
     assert.strictEqual(newConfig.version, CURRENT_SCHEMA_VERSION);
     assert.deepEqual(newConfig.severity, {}, 'v0.5 additive field still applied');
+    assert.deepEqual(newConfig.findingSeverity, {}, 'v0.6 additive field still applied');
   });
 
   it('normalizes a legacy ARRAY requiredFiles to { canonical: [...] }', () => {

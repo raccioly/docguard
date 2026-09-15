@@ -59,6 +59,10 @@ describe('Spec registry projection', () => {
     const projection = projectSpecRegistry(dir);
     assert.equal(projection.registry.specs.length, 0);
     assert.equal(projection.issues[0].code, 'SPR002');
+    const finding = validateSpecRegistry(dir).findings.find(item => item.code === 'SPR002');
+    assert.match(finding.suggestion.text, /\*\*Spec ID\*\*/);
+    assert.equal(finding.suggestion.command, undefined,
+      'specs --write cannot invent the immutable ID required by SPR002');
   });
 
   it('rejects duplicate spec IDs across active specs', t => {

@@ -1,9 +1,9 @@
 # Requirements
 
 <!-- docguard:quality negation-load off — requirements define explicit failure and non-disclosure boundaries -->
-<!-- docguard:version 0.2.0 -->
+<!-- docguard:version 0.3.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-09-14 -->
+<!-- docguard:last-reviewed 2026-09-15 -->
 
 ## Functional Requirements
 
@@ -16,6 +16,13 @@
 | FR-005 | P1 | Users can turn a false positive, false negative, unsupported syntax case, ambiguity, or policy dispute into a redaction-attested synthetic fixture with an opposite control, deterministic reduction, duplicate search, and optional test-only contribution. | tests/feedback-fixture.test.mjs, tests/feedback-contributions.test.mjs |
 | FR-006 | P1 | Teams can bind an exact Markdown statement to safe, local, typed evidence and receive scoped verified, contradicted, stale, inconclusive, or unsupported results through verify, guard, and agent assurance without granting whole-document accuracy. | tests/evidence-manifest.test.mjs, tests/evidence-adapters.test.mjs, tests/evidence-integration.test.mjs |
 | FR-007 | P1 | An agent can request a deterministic bounded task-context packet that prioritizes exact current evidence, excludes retired and unsafe material, preserves retrieval-only assurance, and abstains rather than returning weak matches. Existing task-graph behavior remains compatible. | tests/task-context.test.mjs, tests/agent-context-benchmark.test.mjs |
+| FR-008 | P1 | The packed-package adoption journey distinguishes foreign hooks, emits complete remediation text, follows proposed actions, and verifies the resulting state. | tests/adoption-workflow.test.mjs, tests/npm-pack-smoke.test.mjs |
+| FR-009 | P1 | Reconciliation keeps changed-path inventory independent from bounded patch text and reports partial coverage instead of a ready result after timeout, overflow, or Git failure. | tests/shared-git.test.mjs, tests/reconcile.test.mjs |
+| FR-010 | P1 | Instruction pointers resolve only safe exact paths or one unique basename; ambiguity, symlinks, unsafe paths, and incomplete indexes remain explicit. | tests/instruction-audit.test.mjs |
+| FR-011 | P1 | Planned requirements defer test traceability only when committed, clean, digest-current schema-v2 lifecycle evidence proves they remain planned. | tests/traceability-lifecycle.test.mjs |
+| FR-012 | P1 | Exact finding-code policy can promote or demote one finding without weakening its validator, while intrinsic and effective severity remain visible in machine formats. | tests/severity.test.mjs, tests/sarif.test.mjs, tests/junit.test.mjs |
+| FR-013 | P1 | CI, diagnose, and report expose combined READY, ATTENTION, or BLOCKED assessment while standalone score remains structural maturity rather than a guard verdict. | tests/assessment.test.mjs |
+| FR-014 | P1 | Python collection-size evidence uses bounded non-executable static literal parsing and abstains on dynamic or ambiguous syntax. | tests/evidence-python-literal.test.mjs, tests/evidence-integration.test.mjs |
 
 ## Non-Functional Requirements
 
@@ -24,6 +31,7 @@
 | NFR-001 | Security | Untrusted input passed to subprocesses uses argv-based invocation and validation appropriate to the command. | tests/security-init-injection.test.mjs |
 | NFR-002 | Portability | The distributed CLI runs on supported Node versions. Babel supplies the full JS/TS tier; the CLI retains a regex fallback when the parser is absent. | tests/npm-pack-smoke.test.mjs |
 | NFR-003 | Correctness | Cached memory plans invalidate when relevant working-tree inputs, configuration, or scanner implementation change. Unreadable or unsupported cache inputs cause a miss. | tests/plan-disk-cache.test.mjs |
+| NFR-004 | Distribution integrity | Every relative README link in the npm artifact resolves inside that artifact; repository-only material uses an absolute URL. | tests/npm-pack-smoke.test.mjs |
 
 ## Success Criteria
 
@@ -31,7 +39,7 @@ The full supported-runtime test matrix and guard determine local release readine
 
 ## User Scenarios
 
-A developer edits a source file without committing. The next memory plan reflects that change. An agent requests context for one qualified requirement and receives current hashed excerpts and linked tests, or an explicit abstention. The agent inspects a high structural grade and sees that factual accuracy remains unverified. A contributor challenges a confident finding, previews a metadata-only report, checks existing work, and supplies a synthetic regression example voluntarily.
+A developer edits a source file without committing. The next memory plan reflects that change. An adopter upgrades DocGuard in an existing repository and can inspect hooks, follow every proposed remediation, and verify the result without hidden initialization. An agent requests context for one qualified requirement and receives current hashed excerpts and linked tests, or an explicit abstention. The agent inspects a high structural grade and sees the separate readiness verdict and that factual accuracy remains unverified. A contributor challenges a confident finding, previews a metadata-only report, checks existing work, and supplies a synthetic regression example voluntarily.
 
 ## Traceability Matrix
 
@@ -41,4 +49,5 @@ The verification column above links each requirement to executable tests. The te
 
 | Version | Date | Changes |
 |---|---|---|
+| 0.3.0 | 2026-09-15 | Add packed adoption, fail-closed reconciliation and pointers, lifecycle-aware traceability, exact-code policy, combined assessment, and Python literal evidence contracts |
 | 0.2.0 | 2026-09-11 | Replace template requirements with implemented trust, feedback, and cache contracts |

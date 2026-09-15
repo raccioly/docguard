@@ -185,7 +185,8 @@ export function validateDiffSuspicion(projectDir, config = {}) {
         message: `${docName} describes ${h.path} (${h.kind} ref), and overlaps old-side diff tokens: ${h.shared.slice(0, 5).join(', ')}${h.shared.length > 5 ? '…' : ''} or removed declaration names (${ref}..HEAD) — possible drift; review whether the documentation is affected.`,
         location: { file: docName },
         suggestion: {
-          summary: `Re-read ${docName} against the current ${h.path}; the old-side tokens (${h.shared.slice(0, 8).join(', ')}) do not establish a semantic contradiction.`,
+          kind: 'review',
+          text: `Re-read ${docName} against the current ${h.path}; the old-side tokens (${h.shared.slice(0, 8).join(', ')}) do not establish a semantic contradiction.`,
         },
       }));
     }
@@ -197,7 +198,7 @@ export function validateDiffSuspicion(projectDir, config = {}) {
         confidence: 'low',
         message: `${docName} references ${hits.length - maxPerDoc} more changed file(s) with old-side token overlap (${ref}..HEAD) — a broad change; review ${docName} as a whole.`,
         location: { file: docName },
-        suggestion: { summary: `${docName} looks broadly affected by this change set — review it end-to-end rather than line by line.` },
+        suggestion: { kind: 'review', text: `${docName} looks broadly affected by this change set — review it end-to-end rather than line by line.` },
       }));
     }
   }

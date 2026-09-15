@@ -28,11 +28,13 @@
  * against its source would flag every rule as a duplicate.
  *
  * Zero npm dependencies — pure Node.js built-ins.
+ * @implements docguard.adoption-workflow-integrity#FR-005
  */
 
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
-import { resolve, join, dirname } from 'node:path';
+import { readFileSync, readdirSync, lstatSync, realpathSync } from 'node:fs';
+import { resolve, join, dirname, relative, isAbsolute, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { buildIgnoreFilter, loadDocguardIgnore, DEFAULT_IGNORE_DIRS, relPosix } from '../shared-ignore.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -44,6 +46,7 @@ const SIGNAL_RE = /\b(must|never|always|do not|don't|should|require[sd]?|forbid|
 
 const MAX_RULES = 400;
 const MAX_TASKS = 40;
+const MAX_POINTER_ENTRIES = 20_000;
 
 // ── Normalization ───────────────────────────────────────────────────────────
 
@@ -111,7 +114,7 @@ export function extractInstructionRules(projectDir) {
 
 const PATH_EXTS = 'md|mjs|cjs|js|ts|tsx|jsx|json|ya?ml|py|sh|toml|txt|rs|go|css|html';
 // Backticked token: no spaces, lexes as a relative path with a known extension.
-const PATH_LIKE_RE = new RegExp(`^[\\w.-][\\w./-]*\\.(?:${PATH_EXTS})$`, 'i');
+const PATH_LIKE_RE = new RegExp(`\\.(?:${PATH_EXTS})$`, 'i');
 // Bare (unbackticked) token: requires a directory separator for precision.
 const BARE_PATH_RE = new RegExp(`(?:^|[\\s("'])([\\w.-]+\\/[\\w./-]+\\.(?:${PATH_EXTS}))\\b`, 'gi');
 const BACKTICK_RE = /`([^`]+)`/g;
@@ -123,12 +126,69 @@ function pathCandidates(text) {
   BACKTICK_RE.lastIndex = 0;
   let m;
   while ((m = BACKTICK_RE.exec(text)) !== null) {
-    const tok = m[1].replace(/[#:].*$/, '').trim();
+    // Remove only a Markdown anchor or numeric line suffix. Preserve drive
+    // colons, backslashes, traversal, and absolute prefixes so the caller can
+    // report them as unsafe instead of silently dropping the evidence.
+    const tok = m[1].replace(/#.*$/, '').replace(/:\d+$/, '').trim();
+    if (/^https?:\/\//i.test(tok)) continue;
     if (!tok.includes(' ') && PATH_LIKE_RE.test(tok)) found.add(tok);
   }
   BARE_PATH_RE.lastIndex = 0;
   while ((m = BARE_PATH_RE.exec(text)) !== null) found.add(m[1].replace(/[#:].*$/, ''));
   return [...found];
+}
+
+function safePointerPath(path) {
+  if (typeof path !== 'string' || !path || isAbsolute(path) || /[\\:\0]/.test(path)) return false;
+  return !path.split('/').some(part => part === '..' || part.toLowerCase() === '.local' || /^\.env(?:\.|$)/i.test(part));
+}
+
+function exactRegularFile(projectDir, path) {
+  if (!safePointerPath(path)) return false;
+  let root;
+  try { root = realpathSync(projectDir); } catch { return false; }
+  let cursor = root;
+  try {
+    for (const part of path.split('/').filter(Boolean)) {
+      cursor = resolve(cursor, part);
+      if (lstatSync(cursor).isSymbolicLink()) return false;
+    }
+    const rel = relative(root, realpathSync(cursor));
+    return !isAbsolute(rel) && rel !== '..' && !rel.startsWith(`..${sep}`) && lstatSync(cursor).isFile();
+  } catch { return false; }
+}
+
+function basenameIndex(projectDir, wanted, config = {}) {
+  const matches = new Map([...wanted].map(name => [name, []]));
+  if (wanted.size === 0) return { matches, complete: true, visited: 0, reason: null };
+  const ignored = buildIgnoreFilter([...(config.ignore || []), ...loadDocguardIgnore(projectDir)]);
+  let root;
+  try { root = realpathSync(projectDir); }
+  catch { return { matches, complete: false, visited: 0, reason: 'repository-unavailable' }; }
+  let visited = 0;
+  let complete = true;
+  let reason = null;
+  const walk = dir => {
+    let entries;
+    try { entries = readdirSync(dir, { withFileTypes: true }); }
+    catch { complete = false; reason ||= 'unreadable-directory'; return; }
+    for (const entry of entries) {
+      if (++visited > MAX_POINTER_ENTRIES) { complete = false; reason = 'entry-budget'; return; }
+      if (DEFAULT_IGNORE_DIRS.has(entry.name) || entry.name === '.local' || /^\.env(?:\.|$)/i.test(entry.name)) continue;
+      const full = resolve(dir, entry.name);
+      const rel = relPosix(root, full);
+      if (ignored(rel)) continue;
+      let stat;
+      try { stat = lstatSync(full); }
+      catch { complete = false; reason ||= 'unreadable-entry'; continue; }
+      if (stat.isSymbolicLink()) continue;
+      if (stat.isDirectory()) { walk(full); if (reason === 'entry-budget') return; }
+      else if (stat.isFile() && matches.has(entry.name)) matches.get(entry.name).push(rel);
+    }
+  };
+  walk(root);
+  for (const paths of matches.values()) paths.sort();
+  return { matches, complete, visited, reason };
 }
 
 /**
@@ -150,7 +210,7 @@ function knownDocguardCommands() {
  * The findings string logic can prove — no LLM involved.
  * @returns {{ duplicates, negations, stalePointers, staleCommands }}
  */
-export function findDeterministicFindings(rules, projectDir) {
+export function findDeterministicFindings(rules, projectDir, config = {}) {
   // duplicates: exact-normalized matches, within or across files.
   const byNorm = new Map();
   for (const r of rules) {
@@ -187,16 +247,30 @@ export function findDeterministicFindings(rules, projectDir) {
 
   // stale pointers: referenced file paths that don't exist in the repo.
   const stalePointers = [];
+  const ambiguousPointers = [];
+  const unsafePointers = [];
+  const resolvedPointers = [];
   const seenPtr = new Set();
-  for (const r of rules) {
-    for (const p of pathCandidates(r.text)) {
+  const candidates = rules.flatMap(r => pathCandidates(r.text).map(path => ({ rule: r, path })));
+  const bareNames = new Set(candidates.filter(item => !item.path.includes('/') && safePointerPath(item.path)).map(item => item.path));
+  const index = basenameIndex(projectDir, bareNames, config);
+  for (const { rule: r, path: p } of candidates) {
       const key = `${r.file}:${r.line}:${p}`;
       if (seenPtr.has(key)) continue;
       seenPtr.add(key);
-      if (!existsSync(resolve(projectDir, p))) {
+      const finding = { file: r.file, line: r.line, section: r.section, text: r.text, path: p };
+      if (!safePointerPath(p)) {
+        unsafePointers.push({ ...finding, reason: 'unsafe-relative-path' });
+      } else if (exactRegularFile(projectDir, p)) {
+        resolvedPointers.push({ ...finding, resolvedPath: p, resolution: 'exact' });
+      } else if (!p.includes('/')) {
+        const matches = index.matches.get(p) || [];
+        if (matches.length === 1) resolvedPointers.push({ ...finding, resolvedPath: matches[0], resolution: 'unique-basename' });
+        else if (matches.length > 1) ambiguousPointers.push({ ...finding, matches: matches.slice(0, 10), matchCount: matches.length });
+        else if (index.complete) stalePointers.push(finding);
+      } else {
         stalePointers.push({ file: r.file, line: r.line, section: r.section, text: r.text, path: p });
       }
-    }
   }
 
   // stale commands: `docguard <cmd>` (backticked — an invocation, not prose)
@@ -222,7 +296,10 @@ export function findDeterministicFindings(rules, projectDir) {
     }
   }
 
-  return { duplicates, negations, stalePointers, staleCommands };
+  return {
+    duplicates, negations, stalePointers, ambiguousPointers, unsafePointers, resolvedPointers, staleCommands,
+    pointerCoverage: { status: index.complete ? 'complete' : 'partial', visited: index.visited, reason: index.reason },
+  };
 }
 
 // ── LLM tasks (topical-cluster pairs) ───────────────────────────────────────
@@ -314,7 +391,7 @@ export function buildInstructionAuditTasks(rules) {
  */
 export function auditInstructions(projectDir, config = {}) {
   const rules = extractInstructionRules(projectDir);
-  const deterministic = findDeterministicFindings(rules, projectDir);
+  const deterministic = findDeterministicFindings(rules, projectDir, config);
   const tasks = buildInstructionAuditTasks(rules);
   return { rules, deterministic, tasks };
 }

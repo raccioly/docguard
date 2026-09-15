@@ -44,6 +44,8 @@ describe('validateDiffSuspicion', () => {
     assert.match(dsp[0].message, /validatetoken/i);
     // all findings are low-confidence / soft
     assert.ok(dsp.every(f => f.confidence === 'low' && f.severity === 'warn'));
+    assert.ok(dsp.every(f => f.suggestion?.kind === 'review' && f.suggestion?.text));
+    assert.ok(dsp.every(f => !Object.hasOwn(f.suggestion, 'summary')));
   });
 
   it('does NOT flag an unrelated doc', () => {

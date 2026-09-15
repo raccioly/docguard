@@ -1,6 +1,6 @@
 {
   "projectName": "docguard",
-  "version": "0.5",
+  "version": "0.6",
   "profile": "enterprise",
   "projectType": "cli",
   "requiredFiles": {
@@ -43,6 +43,7 @@
     "specRegistry": true
   },
   "severity": {},
+  "findingSeverity": {},
   "surfaceSync": {
     "surfaces": [
       {
