@@ -107,10 +107,13 @@ The registry points to approved prose; it does not duplicate or replace it.
   before planning. It MUST compare declared assumptions with active and prior
   lineage plus current code evidence and report relationship, intent state,
   implementation state, and provenance independently.
-- **FR-016**: Spec completion MUST verify task state, implementation/test
+- **FR-016**: Spec completion MUST verify declared task state, implementation/test
   evidence, affected canonical docs, and reconciliation revision before moving a
-  spec from `implemented` to `verified` and then archive-ready. Checked tasks
-  alone MUST NOT prove completion. A verified `living` spec MUST accept a
+  spec from `implemented` to `verified` and then archive-ready. A taskless
+  `living` verification contract MAY complete only when every requirement has
+  qualified evidence; other persistence models require a non-empty, fully
+  checked task ledger. Checked tasks alone MUST NOT prove completion. A verified
+  `living` spec MUST accept a
   `verified → verified` maintenance outcome only when reconciliation finds a new
   linked source, test, canonical-document, or decision change since the prior
   reviewed revision; generated outcome or registry churn alone MUST NOT qualify.

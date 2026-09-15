@@ -212,6 +212,11 @@
           },
           {
             "requirementId": "FR-015",
+            "file": "tests/docguard-config-schema.test.mjs",
+            "line": 1
+          },
+          {
+            "requirementId": "FR-015",
             "file": "tests/docs-sync.test.mjs",
             "line": 1
           },
@@ -453,7 +458,7 @@
         "artifacts": [
           {
             "path": "specs/006-document-lifecycle/spec.md",
-            "digest": "sha256:35989fea62cfd2ce2d8022ca695ecd19d6bb466b5bc9e1ac7283b272cf67643a"
+            "digest": "sha256:c37997a7d04a784221550d748fc96a0833fc7a2e578e90c498b7164df69fa005"
           },
           {
             "path": "specs/006-document-lifecycle/plan.md",

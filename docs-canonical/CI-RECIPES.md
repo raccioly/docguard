@@ -99,11 +99,12 @@ matching reminders as superseded.
 Run `docguard reconcile --since <merge-base> --format json` when implementation
 may have changed approved behavior outside the original Spec Kit flow. Review
 unsupported files and intent-change classifications; write mode can refresh only
-DocGuard-owned mechanical sections. After tasks, source and test evidence, and
-affected canonical docs are reviewed, run `docguard specs complete --id <spec-id>
+DocGuard-owned mechanical sections. After declared tasks, source and test
+evidence, and affected canonical docs are reviewed, run `docguard specs complete --id <spec-id>
 --since <merge-base> --check` as the merge gate. Apply the same command with
 `--write --reason "<reviewed outcome>"` on a clean controlled checkout to record
-verification. Keep living specs current; archive only when the registry reports
+verification. A taskless living verification contract is eligible only when every
+requirement has qualified evidence. Keep living specs current; archive only when the registry reports
 that the selected persistence model is ready.
 
 ## Recipe 4 — Score (track CDD maturity over time)

@@ -84,7 +84,15 @@ export function planSpecCompletion(projectDir, config, flags, options = {}) {
       blockers.push({ code: 'SPC002', message: `Expected delivery=in_progress, implemented, or verified with persistenceModel=living; found ${spec.reviewed.lifecycle.delivery}/${spec.reviewed.lifecycle.persistenceModel || 'unset'}.` });
     }
     const tasks = spec.observed.taskCompletion;
-    if (!tasks.total || tasks.checked !== tasks.total) blockers.push({ code: 'SPC003', message: `All tasks must be checked (${tasks.checked}/${tasks.total}).` });
+    const hasTaskLedger = spec.observed.artifacts.some(artifact => /(?:^|\/)tasks\.md$/i.test(artifact.path));
+    if (hasTaskLedger && (!tasks.total || tasks.checked !== tasks.total)) {
+      blockers.push({ code: 'SPC003', message: `All declared tasks must be checked (${tasks.checked}/${tasks.total}).` });
+    } else if (!hasTaskLedger && spec.reviewed.lifecycle.persistenceModel !== 'living') {
+      blockers.push({
+        code: 'SPC003',
+        message: 'Completion requires a task ledger unless the approved spec is a living verification contract with qualified evidence for every requirement.',
+      });
+    }
     if (spec.observed.implementationEvidence.length === 0) blockers.push({ code: 'SPC004', message: 'At least one qualified source implementation annotation is required.' });
     if (spec.observed.testEvidence.length === 0) blockers.push({ code: 'SPC004', message: 'At least one qualified test annotation is required.' });
     const covered = new Set([...spec.observed.implementationEvidence, ...spec.observed.testEvidence].map(item => item.requirementId));

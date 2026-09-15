@@ -25,7 +25,7 @@ function git(dir, args) {
   return execFileSync('git', args, { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 }
 
-function fixture(t, { checked = true, implementation = true, test = true } = {}) {
+function fixture(t, { checked = true, implementation = true, test = true, tasks = true, persistenceModel = null } = {}) {
   const dir = mkdtempSync(join(tmpdir(), 'docguard-complete-'));
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   git(dir, ['init', '-q']);
@@ -33,7 +33,7 @@ function fixture(t, { checked = true, implementation = true, test = true } = {})
   git(dir, ['config', 'user.name', 'Test']);
   write(dir, '.docguard.json', JSON.stringify({ projectName: 'fixture', profile: 'starter' }));
   write(dir, 'specs/001-feature/spec.md', '# Feature\n\n**Spec ID**: `acme.feature`\n\n- **FR-001**: The system MUST work.\n');
-  write(dir, 'specs/001-feature/tasks.md', `# Tasks\n\n- [${checked ? 'x' : ' '}] T001 Build.\n`);
+  if (tasks) write(dir, 'specs/001-feature/tasks.md', `# Tasks\n\n- [${checked ? 'x' : ' '}] T001 Build.\n`);
   write(dir, 'packages/api/src/feature.js', `${implementation ? '/** @implements acme.feature#FR-001 */\n' : ''}export const feature = true;\n`);
   write(dir, 'packages/api/tests/feature.test.js', `${test ? '/** @req acme.feature#FR-001 */\n' : ''}test("feature", () => {});\n`);
   write(dir, 'docs-canonical/ARCHITECTURE.md', '# Architecture\n');
@@ -43,6 +43,7 @@ function fixture(t, { checked = true, implementation = true, test = true } = {})
   const registry = projectSpecRegistry(dir).registry;
   registry.specs[0].reviewed.lifecycle.approval = 'approved';
   registry.specs[0].reviewed.lifecycle.delivery = 'implemented';
+  registry.specs[0].reviewed.lifecycle.persistenceModel = persistenceModel;
   registry.specs[0].reviewed.scope.canonicalDocs = ['docs-canonical/ARCHITECTURE.md'];
   write(dir, SPEC_REGISTRY_PATH, `${JSON.stringify(registry, null, 2)}\n`);
   git(dir, ['add', '.']);
@@ -140,6 +141,22 @@ describe('Spec completion transaction', () => {
     assert.equal(result.status, 'BLOCKED');
     assert.ok(result.blockers.some(issue => issue.code === 'SPC004'));
     assert.equal(existsSync(join(dir, '.docguard/current-context.json')), false);
+  });
+
+  it('accepts an evidence-complete living spec without manufacturing a stale task ledger', t => {
+    const living = fixture(t, { tasks: false, persistenceModel: 'living' });
+    const livingResult = planSpecCompletion(living, {}, {
+      id: 'acme.feature', since: 'HEAD',
+    }, { guardResult: passingGuard });
+    assert.equal(livingResult.status, 'READY');
+    assert.ok(!livingResult.blockers.some(issue => issue.code === 'SPC003'));
+
+    const flowBack = fixture(t, { tasks: false, persistenceModel: 'flow_back' });
+    const flowBackResult = planSpecCompletion(flowBack, {}, {
+      id: 'acme.feature', since: 'HEAD',
+    }, { guardResult: passingGuard });
+    assert.equal(flowBackResult.status, 'BLOCKED');
+    assert.ok(flowBackResult.blockers.some(issue => issue.code === 'SPC003' && /task ledger/.test(issue.message)));
   });
 
   it('requires both implementation and test evidence in a monorepo', t => {
