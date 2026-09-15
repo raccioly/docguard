@@ -2030,12 +2030,24 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "46531e4918f9479b81ffb52e6e27c24b533575da",
+          "lastReviewedRevision": "f4bb00638da2d1a53ad1a67928e35e1dfe1b401d",
           "outcomes": [
             {
               "revision": "46531e4918f9479b81ffb52e6e27c24b533575da",
               "reason": "Reviewed tokenless scheduled-release policy, exact-run gates, missing-tag recovery, Node 18/20/22/24 CI, supply-chain scan, live dispatch-chain refusal probe, and durable evidence approval with no accepted deviations.",
               "evidence": [
+                "cli/release-pr-policy.mjs",
+                "docs-canonical/CI-RECIPES.md",
+                "tests/scheduled-release.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            },
+            {
+              "revision": "f4bb00638da2d1a53ad1a67928e35e1dfe1b401d",
+              "reason": "Verified v0.40.3 repository-token release PR #386: scheduled run 34922506777 armed native auto-merge; approved CI 34922605581 and supply-chain 34922605917 passed; merge e27d6bf triggered publication run 34922784629; npm, PyPI, GHCR, GitHub Release, extension ZIP, MCPB, and catalog reminder completed with no accepted deviations.",
+              "evidence": [
+                ".github/scripts/validate-release-candidate.mjs",
                 "cli/release-pr-policy.mjs",
                 "docs-canonical/CI-RECIPES.md",
                 "tests/scheduled-release.test.mjs"
@@ -2070,19 +2082,19 @@
         "artifacts": [
           {
             "path": "specs/011-tokenless-scheduled-releases/spec.md",
-            "digest": "sha256:507528b6a9e43ae748a000fa8b6bf166d1408e271ee1e9c6348729eda172e30c"
+            "digest": "sha256:8f5365ed8943948e7baef8c6a973047b1ee716768fa3aa532d0296b5127438aa"
           },
           {
             "path": "specs/011-tokenless-scheduled-releases/plan.md",
-            "digest": "sha256:f902658d4173718522335f70ec436040db5a7a8ee7677975d38d4984c832d30a"
+            "digest": "sha256:c28be466978c5e7ba99229ab0c0a6c58614dc1f649039d068be3219278c9be8b"
           },
           {
             "path": "specs/011-tokenless-scheduled-releases/tasks.md",
-            "digest": "sha256:1af12c52080eaa54711646ced72490094d17383b157510c98e7df7012e9ace22"
+            "digest": "sha256:2930c32b2128cb0dbfaa98a1cf84ddce037e0639fcdcb49bafdef74e2d500361"
           }
         ],
         "taskCompletion": {
-          "checked": 14,
+          "checked": 15,
           "total": 15
         },
         "implementationEvidence": [
@@ -2105,6 +2117,11 @@
             "requirementId": "FR-008",
             "file": "cli/release-pr-policy.mjs",
             "line": 7
+          },
+          {
+            "requirementId": "FR-009",
+            "file": ".github/scripts/validate-release-candidate.mjs",
+            "line": 8
           },
           {
             "requirementId": "FR-011",

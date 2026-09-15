@@ -1,6 +1,6 @@
 # Tasks: Tokenless Scheduled Releases
 
-**Status**: Corrective live verification pending
+**Status**: Verified; living release contract
 **Spec**: `specs/011-tokenless-scheduled-releases/spec.md`
 
 ## Phase 1: Contract and policy
@@ -41,6 +41,8 @@
 - [x] T014 Replace the missing post-approval `workflow_run` callback with
   pre-push candidate validation and GitHub protected native auto-merge while
   preserving the separate Dependabot/Jules gate.
-- [ ] T015 Prove the repository-token auto-merge arm, bounded publication
-  continuation, and end-to-end registries on the next live release, then record
-  the exact merge and publication evidence.
+- [x] T015 Prove the repository-token auto-merge arm, bounded publication
+  continuation, and end-to-end registries on v0.40.3: scheduled run
+  `34922506777`, release PR #386, CI run `34922605581`, supply-chain run
+  `34922605917`, merge `e27d6bf0203708ee8206a1434eb292520f4c4494`, and
+  publication run `34922784629`.

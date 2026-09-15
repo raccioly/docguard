@@ -1,6 +1,6 @@
 # DocGuard Roadmap
 
-<!-- docguard:last-reviewed 2026-09-14 -->
+<!-- docguard:last-reviewed 2026-09-15 -->
 
 This file contains current product intent only. Released work belongs in
 `CHANGELOG.md`; implementation history remains recoverable from Git. Completed or
@@ -19,8 +19,7 @@ ideas below are research candidates rather than unfinished commitments.
 
 ## Delivered roadmap
 
-R1–R8 are implemented and evidence-reviewed. R1–R7 are released; R8 is verified
-on `main` and will ship with the next substantive release. The maintained living
+R1–R8 are implemented, evidence-reviewed, and released. The maintained living
 specifications remain current verification contracts; historical implementation
 plans are recoverable from Git and do not create a second source of truth.
 
@@ -216,7 +215,7 @@ Node 18, 20, 22, and 24. Packed-package tests run task context without the
 optional parser, and the independent detector corpus remains regression-free
 across 24 evaluable cases plus one explicit unsupported case.
 
-### R8 — Tokenless scheduled releases (verified on `main`)
+### R8 — Tokenless scheduled releases (released in v0.40.3)
 
 Governing spec: `specs/011-tokenless-scheduled-releases/spec.md`.
 
@@ -235,8 +234,8 @@ a missing tag before another version increment.
   no accepted deviations.
 - [x] Publish v0.40.1 through release PR #380 and verify npm, PyPI, GHCR, GitHub
   release assets, and the Spec Kit catalog reminder.
-- [ ] Verify the corrected repository-token native auto-merge continuation on
-  the next release and retain exact evidence.
+- [x] Verify the corrected repository-token native auto-merge continuation on
+  v0.40.3 and retain exact evidence.
 
 The retained live probe used CI run `34912654565` and privileged gate run
 `34912788971`. All Node 18, 20, 22, and 24 jobs passed. The trusted gate
@@ -247,12 +246,18 @@ evidence landed through pull requests #371, #373, and #374.
 Release PR #380 passed CI run `34920481989` and supply-chain run `34920482409`,
 merged at `5b2dfe4`, and published v0.40.1 in run `34920702346`. That run also
 proved the final GitHub boundary: approving the held workflow does not emit a
-second `workflow_run` completion. Native auto-merge is now the continuation;
-release PR #383 proved the repository token can arm it and GitHub can merge after
-approved checks. That merge also proved its bot-originated push does not trigger
-publication. A bounded scheduler wait plus hourly tag-driven recovery is the
-final continuation under verification; exact publication evidence remains the
-only open R8 item.
+second `workflow_run` completion. Release PR #383 proved the repository token
+can arm native auto-merge and GitHub can merge after approved checks, while its
+bot-originated push proved publication needs an explicit continuation.
+
+Scheduled run `34922506777` created repository-token release PR #386 and armed
+native auto-merge. After one maintainer approval, CI run `34922605581` and
+supply-chain run `34922605917` passed; GitHub merged the exact head at
+`e27d6bf0203708ee8206a1434eb292520f4c4494`. The bounded scheduler wait then
+dispatched publication run `34922784629`, which passed the four-runtime matrix,
+self-guard, npm, PyPI, GHCR, GitHub Release, extension ZIP, MCPB, and catalog
+reminder jobs. The published npm and PyPI versions and GitHub tag all resolve to
+v0.40.3, completing R8 without a stored release credential.
 
 ## Contribution standard
 

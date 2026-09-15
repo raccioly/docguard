@@ -110,4 +110,5 @@ considers another version bump.
 ## Implementation Outcomes
 
 - `46531e4918f9479b81ffb52e6e27c24b533575da` — Reviewed tokenless scheduled-release policy, exact-run gates, missing-tag recovery, Node 18/20/22/24 CI, supply-chain scan, live dispatch-chain refusal probe, and durable evidence approval with no accepted deviations. Evidence: `cli/release-pr-policy.mjs`, `docs-canonical/CI-RECIPES.md`, `tests/scheduled-release.test.mjs`. Accepted deviations: none. Successor: none.
+- `f4bb00638da2d1a53ad1a67928e35e1dfe1b401d` — Verified v0.40.3 repository-token release PR #386: scheduled run 34922506777 armed native auto-merge; approved CI 34922605581 and supply-chain 34922605917 passed; merge e27d6bf triggered publication run 34922784629; npm, PyPI, GHCR, GitHub Release, extension ZIP, MCPB, and catalog reminder completed with no accepted deviations. Evidence: `.github/scripts/validate-release-candidate.mjs`, `cli/release-pr-policy.mjs`, `docs-canonical/CI-RECIPES.md`, `tests/scheduled-release.test.mjs`. Accepted deviations: none. Successor: none.
 <!-- docguard:implementation-outcomes:end -->

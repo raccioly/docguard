@@ -1,6 +1,6 @@
 # Implementation Plan: Tokenless Scheduled Releases
 
-**Status**: Corrective live verification pending
+**Status**: Verified; living release contract
 **Spec**: `specs/011-tokenless-scheduled-releases/spec.md`
 
 ## Summary
@@ -83,3 +83,11 @@ GitHub merges after approved required checks. It also showed that the resulting
 bot-originated push does not trigger publication. Add a ten-minute bounded wait
 to dispatch the normal path and an hourly idempotent sweep for later approvals;
 prove both continuation and publication on the next live release.
+
+Release PR #386 completed that proof. Scheduled run `34922506777` created the
+repository-token candidate and armed native auto-merge. After one maintainer
+workflow approval, CI run `34922605581` and supply-chain run `34922605917`
+passed, GitHub merged `e27d6bf0203708ee8206a1434eb292520f4c4494`, and the
+still-running scheduler dispatched publication run `34922784629`. Every test,
+registry, container, release-asset, and catalog-reminder job passed; npm, PyPI,
+and the GitHub tag all report v0.40.3.
