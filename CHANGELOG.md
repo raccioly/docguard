@@ -29,6 +29,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Retry bounded removal of ephemeral Git repositories in `shared-git` tests so
+  Node 18 does not fail an otherwise passing matrix on a transient `.git`
+  `ENOTEMPTY` cleanup race.
 - Upgrade the installable Python example from the vulnerable open range
   `flask>=3.0` to exact-pinned `flask==3.1.3`, the upstream security-fix release
   for GHSA-68rp-wp8r-4726, and prevent regression to the affected fixture.
