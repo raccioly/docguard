@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-09-15T00:22:47Z",
+  "repository": "raccioly/docguard",
+  "candidateHeadSha": "894087acdb1510bdb7d1c1913d19df65a7bd3460",
+  "pullRequest": {
+    "number": 372,
+    "url": "https://github.com/raccioly/docguard/pull/372",
+    "state": "CLOSED",
+    "merged": false,
+    "branch": "codex/tokenless-dispatch-probe",
+    "branchDeleted": true
+  },
+  "ci": {
+    "runId": 34912654565,
+    "url": "https://github.com/raccioly/docguard/actions/runs/34912654565",
+    "event": "workflow_dispatch",
+    "conclusion": "success",
+    "headSha": "894087acdb1510bdb7d1c1913d19df65a7bd3460",
+    "nodeVersions": [18, 20, 22, 24]
+  },
+  "gate": {
+    "runId": 34912788971,
+    "url": "https://github.com/raccioly/docguard/actions/runs/34912788971",
+    "event": "workflow_run",
+    "conclusion": "success",
+    "triggeringRunId": 34912654565,
+    "trustedPolicySha": "9d5cee75f9c288d213aea025815ee24648ea1435",
+    "decision": "refused_non_release",
+    "logEvidence": "#372 is not a release PR — dispatched recovery CI cannot auto-merge it."
+  }
+}

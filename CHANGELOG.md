@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   bot author, branch/title/version agreement, next-version increment, missing
   tag, synchronized release surfaces, changed paths, exact CI run identity, and
   one successful Node 18/20/22/24 job before privileged merge.
+- Retain a machine-checked live probe for the tokenless
+  `workflow_dispatch → workflow_run` chain. The four-version CI matrix passed,
+  the trusted gate refused the non-release candidate, and the disposable pull
+  request was closed without merge.
 
 ### Changed
 
@@ -25,9 +29,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Upgrade the installable Python example from the vulnerable open range
+  `flask>=3.0` to exact-pinned `flask==3.1.3`, the upstream security-fix release
+  for GHSA-68rp-wp8r-4726, and prevent regression to the affected fixture.
 - Remove stale pre-release status text from the delivered R1, R6, and R7 living
   plans and task lists so agents see verified maintenance contracts instead of
   completed work described as held or in progress.
+- Update the R8 roadmap and task ledgers with exact GitHub run evidence while
+  keeping lifecycle completion open until the probe evidence has a durable
+  squash-merged revision.
 
 ## [0.40.0] - 2026-09-14
 

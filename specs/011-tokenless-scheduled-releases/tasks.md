@@ -1,6 +1,6 @@
 # Tasks: Tokenless Scheduled Releases
 
-**Status**: Active
+**Status**: Implementation verified; lifecycle outcome pending
 **Spec**: `specs/011-tokenless-scheduled-releases/spec.md`
 
 ## Phase 1: Contract and policy
@@ -21,5 +21,5 @@
 
 - [x] T008 Update canonical CI guidance, changelog, and roadmap.
 - [x] T009 Run policy, workflow, action-pin, full-suite, and self-guard checks.
-- [ ] T010 Merge through reviewed CI and execute the live negative wiring probe.
+- [x] T010 Merge through reviewed CI and execute the live negative wiring probe.
 - [ ] T011 Record the exact reviewed lifecycle outcome and remove all active R8 tasks.

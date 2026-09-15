@@ -5629,6 +5629,42 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-09-14T23:20:00.000Z"
+    },
+    {
+      "id": "bug-341",
+      "timestamp": "2026-09-15T00:22:47.000Z",
+      "error_message": "Scheduled releases depended on a long-lived credential and could increment past an unpublished package version",
+      "file": ".github/workflows/scheduled-release.yml; .github/workflows/auto-merge.yml; .github/workflows/release.yml",
+      "root_cause": "Pull-request CI relied on an external credential to create triggerable events, while the scheduler treated package-version bumps and publication as separate one-way steps",
+      "fix": "Use GITHUB_TOKEN to dispatch CI explicitly, verify the exact workflow run from trusted default-branch policy, dispatch publication after merge, and recover a missing tag before another increment",
+      "tags": [
+        "release",
+        "credentials",
+        "recovery",
+        "supply-chain"
+      ],
+      "related_bugs": [
+        "bug-338"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-09-15T00:22:47.000Z"
+    },
+    {
+      "id": "bug-342",
+      "timestamp": "2026-09-15T00:32:27.000Z",
+      "error_message": "Supply-chain CI found the installable Flask example affected by PYSEC-2026-2151 / GHSA-68rp-wp8r-4726",
+      "file": "examples/02-python-flask/requirements.txt",
+      "root_cause": "The example used the open range flask>=3.0, allowing an affected Flask release and violating the repository's exact-pin policy",
+      "fix": "Pin Flask 3.1.3, the upstream security-fix release, and add a regression assertion for the installable example",
+      "tags": [
+        "dependency",
+        "security",
+        "example",
+        "supply-chain"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-15T00:32:27.000Z"
     }
   ]
 }

@@ -27,8 +27,8 @@ another version increment.
 - [x] Add pure release-candidate and exact-run policy tests.
 - [x] Dispatch CI and publication without a stored personal or app credential.
 - [x] Preserve Dependabot/Jules policy and pinned-action controls.
-- [ ] Prove the live dispatch-to-gate chain and record the reviewed lifecycle
-  outcome.
+- [ ] Record the reviewed lifecycle outcome against the durable probe-evidence
+  revision after squash merge.
 
 ## Delivered roadmap
 

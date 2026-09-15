@@ -2062,15 +2062,15 @@
           },
           {
             "path": "specs/011-tokenless-scheduled-releases/plan.md",
-            "digest": "sha256:9d07bc138352e975be505f7eeb27b9cf55c44f09f49e96c1ece33456f5cce491"
+            "digest": "sha256:7b8a6b88ac63b89ded00f6fdc55027dd0e87fa09be37b5c6259de84f7199e4e4"
           },
           {
             "path": "specs/011-tokenless-scheduled-releases/tasks.md",
-            "digest": "sha256:a65b5d1ad245a3198fc9337aee3b5fa635fbcae44366d782b55c2ca2095e1372"
+            "digest": "sha256:3f9b2061b8d3d9dc3a1a593eb361cf54470117ad8fcaa209dd0a4b871dd1a101"
           }
         ],
         "taskCompletion": {
-          "checked": 9,
+          "checked": 10,
           "total": 11
         },
         "implementationEvidence": [
@@ -2175,6 +2175,11 @@
             "requirementId": "SC-003",
             "file": "tests/scheduled-release.test.mjs",
             "line": 25
+          },
+          {
+            "requirementId": "SC-004",
+            "file": "tests/scheduled-release.test.mjs",
+            "line": 26
           }
         ]
       }

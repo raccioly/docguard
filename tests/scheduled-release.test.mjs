@@ -23,12 +23,14 @@ import {
  * @req docguard.tokenless-scheduled-releases#SC-001
  * @req docguard.tokenless-scheduled-releases#SC-002
  * @req docguard.tokenless-scheduled-releases#SC-003
+ * @req docguard.tokenless-scheduled-releases#SC-004
  */
 
 const workflow = readFileSync(new URL('../.github/workflows/scheduled-release.yml', import.meta.url), 'utf8');
 const autoMerge = readFileSync(new URL('../.github/workflows/auto-merge.yml', import.meta.url), 'utf8');
 const release = readFileSync(new URL('../.github/workflows/release.yml', import.meta.url), 'utf8');
 const ci = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
+const liveProbe = JSON.parse(readFileSync(new URL('./fixtures/release-workflow-probe.json', import.meta.url), 'utf8'));
 
 describe('scheduled release workflow', () => {
   it('uses only the ephemeral repository token and explicitly dispatches CI', () => {
@@ -143,5 +145,29 @@ describe('scheduled release workflow', () => {
     for (const [, , revision] of uses) assert.match(revision, /^[a-f0-9]{40}$/);
     assert.equal(uses[0][2], '3d3c42e5aac5ba805825da76410c181273ba90b1');
     assert.equal(uses[1][2], '820762786026740c76f36085b0efc47a31fe5020');
+  });
+
+  it('retains evidence that the live dispatch gate fails closed for a non-release PR', () => {
+    assert.equal(liveProbe.schemaVersion, 1);
+    assert.equal(liveProbe.repository, 'raccioly/docguard');
+    assert.equal(liveProbe.pullRequest.number, 372);
+    assert.equal(liveProbe.pullRequest.state, 'CLOSED');
+    assert.equal(liveProbe.pullRequest.merged, false);
+    assert.equal(liveProbe.pullRequest.branchDeleted, true);
+    assert.match(liveProbe.candidateHeadSha, /^[a-f0-9]{40}$/);
+
+    assert.equal(liveProbe.ci.event, 'workflow_dispatch');
+    assert.equal(liveProbe.ci.conclusion, 'success');
+    assert.equal(liveProbe.ci.headSha, liveProbe.candidateHeadSha);
+    assert.deepEqual(liveProbe.ci.nodeVersions, [18, 20, 22, 24]);
+    assert.equal(liveProbe.ci.url, `https://github.com/raccioly/docguard/actions/runs/${liveProbe.ci.runId}`);
+
+    assert.equal(liveProbe.gate.event, 'workflow_run');
+    assert.equal(liveProbe.gate.conclusion, 'success');
+    assert.equal(liveProbe.gate.decision, 'refused_non_release');
+    assert.equal(liveProbe.gate.triggeringRunId, liveProbe.ci.runId);
+    assert.match(liveProbe.gate.trustedPolicySha, /^[a-f0-9]{40}$/);
+    assert.equal(liveProbe.gate.url, `https://github.com/raccioly/docguard/actions/runs/${liveProbe.gate.runId}`);
+    assert.match(liveProbe.gate.logEvidence, /not a release PR.+cannot auto-merge it/);
   });
 });
