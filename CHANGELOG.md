@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   maintenance without downgrading their release state.
 - Record the reviewed document-lifecycle maintenance outcome against its exact
   source revision and qualified implementation/test evidence.
+- Close roadmap milestone R9 after independently verifying every v0.41.0
+  publication target and record the adoption workflow's reviewed outcome without
+  creating a stale task ledger.
 
 ## [0.41.0] - 2026-09-15
 
