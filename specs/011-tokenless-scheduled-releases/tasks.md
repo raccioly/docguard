@@ -41,5 +41,6 @@
 - [x] T014 Replace the missing post-approval `workflow_run` callback with
   pre-push candidate validation and GitHub protected native auto-merge while
   preserving the separate Dependabot/Jules gate.
-- [ ] T015 Prove the repository-token auto-merge arm and end-to-end publication
-  on the next live release, then record the exact merge and registry evidence.
+- [ ] T015 Prove the repository-token auto-merge arm, bounded publication
+  continuation, and end-to-end registries on the next live release, then record
+  the exact merge and publication evidence.

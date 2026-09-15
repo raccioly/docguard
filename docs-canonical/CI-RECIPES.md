@@ -62,18 +62,24 @@ Before the branch is pushed, the trusted scheduler validates the base repository
 bot author, branch/title/version agreement, next-version increment, synchronized
 package surfaces, and changed-file allowlist. It then arms GitHub's native squash
 auto-merge. Native auto-merge remains blocked by the four required checks, binds
-eligibility to the current PR head, and resets when that head changes. The merged
-`package.json` push starts the idempotent release workflow. If publication is
-interrupted, the next schedule sees the current package version without a tag and
-retries publication before considering another bump. An orphaned release branch
-fails closed; an existing open release PR is reused and has auto-merge re-armed.
+eligibility to the current PR head, and resets when that head changes. The
+scheduler waits up to ten minutes for the merge and then dispatches the
+idempotent release workflow. An hourly tag-driven release sweep covers approvals
+that happen after this bounded wait; tagged versions exit after the small detect
+job. If publication is interrupted, either the hourly sweep or the next release
+schedule sees the current package version without a tag and retries publication
+before considering another bump. An orphaned release branch fails closed; an
+existing open release PR is reused and has auto-merge re-armed.
 
 Do not use a post-approval `workflow_run` listener as the release continuation.
 The approval-required completion is the event that listener observes; approving
 the held run executes its jobs without producing a second completion event for
 the listener. Release PR #380 demonstrated this boundary while publishing
-v0.40.1. Repository native auto-merge avoids polling and another credential while
-leaving the required checks as the merge authority.
+v0.40.1. Release PR #383 then proved repository-token native auto-merge, while
+also proving that its resulting push is recursion-suppressed and cannot be the
+sole publication trigger. The bounded wait handles the normal approval path; the
+hourly tag sweep supplies durable recovery without continuous polling or another
+credential.
 
 ## Recipe 3b — Spec completion and post-hoc reconciliation
 

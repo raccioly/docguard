@@ -2070,15 +2070,15 @@
         "artifacts": [
           {
             "path": "specs/011-tokenless-scheduled-releases/spec.md",
-            "digest": "sha256:b5e9f78c62a085b06c30a1ef2a67c45df9a2177aa75f25049c42c7c71e99e543"
+            "digest": "sha256:507528b6a9e43ae748a000fa8b6bf166d1408e271ee1e9c6348729eda172e30c"
           },
           {
             "path": "specs/011-tokenless-scheduled-releases/plan.md",
-            "digest": "sha256:f833cdcbe825ab6a75ab484ac586ef3e36a984b7856f196730bb6ca5cdd0393e"
+            "digest": "sha256:f902658d4173718522335f70ec436040db5a7a8ee7677975d38d4984c832d30a"
           },
           {
             "path": "specs/011-tokenless-scheduled-releases/tasks.md",
-            "digest": "sha256:9b49cf5672efd0bea5ccca4e1c83239c77854e5733630ab64e800185e1fa44a9"
+            "digest": "sha256:1af12c52080eaa54711646ced72490094d17383b157510c98e7df7012e9ace22"
           }
         ],
         "taskCompletion": {

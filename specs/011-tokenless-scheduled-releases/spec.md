@@ -76,9 +76,10 @@ considers another version bump.
   before pushing the branch. Candidate identity, synchronized version surfaces,
   and the changed-file allowlist MUST fail closed without executing code supplied
   by a previously opened release branch.
-- **FR-010**: A successful native release-PR merge MUST trigger the existing
-  idempotent release workflow through the default branch `package.json` push.
-  Missing-tag recovery MUST provide a later retry path.
+- **FR-010**: After arming native auto-merge, the scheduler MUST wait for a
+  bounded interval and dispatch the existing idempotent release workflow when
+  the PR merges. An hourly tag-driven sweep MUST recover later approvals and
+  interrupted publication before another version increment.
 - **FR-011**: Existing Dependabot and Jules auto-merge policies MUST preserve
   their current pull-request-only behavior and file/version restrictions.
 - **FR-012**: All executable third-party actions MUST remain pinned to reviewed
@@ -91,7 +92,7 @@ considers another version bump.
 - **SC-002**: Workflow contract tests prove the explicit maintainer-approval
   boundary, absence of a stored release credential, missing-tag recovery,
   stale-branch refusal, pre-push candidate validation, protected native
-  auto-merge, and push-triggered publication.
+  auto-merge, bounded publication dispatch, and hourly missing-tag recovery.
 - **SC-003**: The complete Node 18, 20, 22, and 24 CI matrix, supply-chain scan,
   self-guard, and action-pin checks pass.
 - **SC-004**: A live repository-token-generated release PR proves that one

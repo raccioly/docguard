@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add an hourly tag-driven release recovery sweep. Already tagged versions stop
+  after detection, while a merged but unpublished package version enters the
+  existing serialized test, tag, and registry publication transaction.
+
+### Fixed
+
+- Keep the scheduled release job alive for a bounded ten-minute approval window
+  and dispatch publication once native auto-merge completes. This covers the
+  normal operator flow without a persistent credential or an always-on poller.
+- Stop relying on the `package.json` push from a native auto-merge armed by
+  `GITHUB_TOKEN`; GitHub suppresses downstream push workflows for that merge.
+
 ## [0.40.2] - 2026-09-15
 
 Automated weekly release — batches everything merged since `v0.40.1`.

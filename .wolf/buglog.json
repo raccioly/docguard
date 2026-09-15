@@ -5743,6 +5743,26 @@
       ],
       "occurrences": 1,
       "last_seen": "2026-09-15T02:18:57.000Z"
+    },
+    {
+      "id": "bug-347",
+      "timestamp": "2026-09-15T02:37:35.000Z",
+      "error_message": "Repository-token native auto-merge completed release PR #383 but its package.json push did not start release.yml",
+      "file": ".github/workflows/scheduled-release.yml; .github/workflows/release.yml",
+      "root_cause": "GitHub treated the native merge armed by GITHUB_TOKEN as repository-token-originated activity and suppressed the downstream push workflow",
+      "fix": "Keep the scheduler alive for a bounded merge wait and dispatch publication explicitly, with an hourly tag-driven release sweep for approvals after that window and interrupted publication",
+      "tags": [
+        "release",
+        "github-token",
+        "native-auto-merge",
+        "workflow-recursion",
+        "recovery"
+      ],
+      "related_bugs": [
+        "bug-346"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-09-15T02:37:35.000Z"
     }
   ]
 }

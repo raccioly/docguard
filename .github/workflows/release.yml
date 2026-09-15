@@ -3,6 +3,11 @@ name: Auto Release — Tag, GitHub Release, npm, PyPI
 # Triggers on push to main — detects version bumps automatically
 on:
   workflow_dispatch: # Allow manual trigger for recovery
+  schedule:
+    # GitHub suppresses push workflows when native auto-merge was armed by
+    # GITHUB_TOKEN. This cheap tag-driven sweep makes late approvals recover
+    # within an hour without a PAT, App key, or continuously polling runner.
+    - cron: '17 * * * *'
   push:
     branches: [main]
     paths:

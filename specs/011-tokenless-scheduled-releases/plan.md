@@ -20,7 +20,7 @@ recovery before any new bump.
 - Permissions: the scheduler receives `contents`, `pull-requests`, and `actions`
   write. No release-specific workflow receives a persistent credential.
 - Recovery: `release.yml` remains tag-driven and idempotent. A missing current
-  tag is dispatched before the scheduler considers another version.
+  tag is checked hourly and before the scheduler considers another version.
 
 ## Project Structure
 
@@ -46,7 +46,8 @@ Use `GITHUB_TOKEN` to push and open the release PR. Reuse an existing open relea
 PR and reject an orphaned same-name branch. Require a maintainer to approve the
 held pull-request workflows in GitHub. Validate the generated diff before push
 and arm GitHub native auto-merge. Once ordinary CI passes all required checks,
-native auto-merge updates `main` and its version push starts `release.yml`.
+native auto-merge updates `main`; the waiting scheduler dispatches `release.yml`.
+An hourly tag-driven sweep covers approvals after the bounded wait.
 
 ## Phase 3 — Recovery, verification, and closeout
 
@@ -76,3 +77,9 @@ runtime checks. Prevalidate the release diff in the trusted scheduler, arm squas
 auto-merge on both new and reused release PRs, and remove release handling from
 the Dependabot/Jules `workflow_run` gate. Prove repository-token provenance with
 the next live release before closing corrective verification.
+
+Release PR #383 proved the repository token can arm native auto-merge and that
+GitHub merges after approved required checks. It also showed that the resulting
+bot-originated push does not trigger publication. Add a ten-minute bounded wait
+to dispatch the normal path and an hourly idempotent sweep for later approvals;
+prove both continuation and publication on the next live release.
