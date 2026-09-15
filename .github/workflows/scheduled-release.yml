@@ -11,9 +11,9 @@ name: Scheduled Release
 # HOW IT TRIGGERS THE ACTUAL RELEASE: the repository token validates and opens a
 # protected PR, then arms GitHub's native squash auto-merge. GitHub intentionally
 # holds that PR's workflows for one maintainer approval. Once approved, ordinary
-# PR CI satisfies the required checks, native auto-merge updates main, and the
-# package.json push starts release.yml. A later schedule retries publication when
-# package.json has no corresponding tag.
+# PR CI satisfies the required checks and native auto-merge updates main. The
+# scheduler waits briefly and dispatches release.yml after that merge; an hourly
+# tag-driven sweep recovers approvals that happen after the wait ends.
 #
 # NO-OP WHEN NOTHING CHANGED: if there are no commits since the last release
 # tag, this exits without bumping — no empty releases.
@@ -159,6 +159,24 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          wait_for_merge_and_publish() {
+            PR_URL="$1"
+            for ATTEMPT in $(seq 1 40); do
+              STATE=$(gh pr view "$PR_URL" --json state --jq '.state')
+              if [ "$STATE" = "MERGED" ]; then
+                echo "Release PR merged; dispatching tag-driven publication."
+                gh workflow run release.yml --ref main
+                return 0
+              fi
+              if [ "$STATE" = "CLOSED" ]; then
+                echo "::error::Release PR closed without merge."
+                return 1
+              fi
+              sleep 15
+            done
+            echo "::notice::Release PR remains open after 10 minutes. The hourly tag-driven release sweep will publish after later approval and merge."
+          }
+
           BRANCH="release/v${NEW_VERSION}"
           node .github/scripts/validate-release-candidate.mjs \
             --base-version "${{ steps.check.outputs.current }}" \
@@ -173,6 +191,7 @@ jobs:
             fi
             gh pr merge --auto --squash "$EXISTING"
             echo "Auto-merge armed. Maintainer action required: approve the PR workflows in GitHub."
+            wait_for_merge_and_publish "$EXISTING"
             exit 0
           fi
           if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
@@ -186,7 +205,7 @@ jobs:
           git commit -m "release: v${NEW_VERSION} — automated weekly batch
 
           Cut by .github/workflows/scheduled-release.yml. Publishing itself is
-          handled by release.yml after protected native auto-merge updates main."
+          dispatched after protected native auto-merge updates main."
           git push origin "$BRANCH"
 
           PR_URL=$(gh pr create \
@@ -197,7 +216,8 @@ jobs:
 
           Batches everything merged since \`${{ steps.check.outputs.last_tag }}\`. Tests and \`guard\` already passed on this tree before the PR was opened.
 
-          **Maintainer action required:** select **Approve workflows to run** in GitHub. The ordinary pull-request CI then satisfies branch protection; GitHub's protected native auto-merge merges the exact green head, and the resulting \`package.json\` push starts \`release.yml\` to tag and publish.")
+          **Maintainer action required:** select **Approve workflows to run** in GitHub. The ordinary pull-request CI then satisfies branch protection; GitHub's protected native auto-merge merges the exact green head, and the waiting scheduler dispatches \`release.yml\`. An hourly tag-driven sweep recovers later approvals.")
 
           gh pr merge --auto --squash "$PR_URL"
           echo "Opened $BRANCH with auto-merge armed. Approve its workflows in GitHub to continue the release."
+          wait_for_merge_and_publish "$PR_URL"

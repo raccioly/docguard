@@ -248,7 +248,11 @@ Release PR #380 passed CI run `34920481989` and supply-chain run `34920482409`,
 merged at `5b2dfe4`, and published v0.40.1 in run `34920702346`. That run also
 proved the final GitHub boundary: approving the held workflow does not emit a
 second `workflow_run` completion. Native auto-merge is now the continuation;
-its repository-token provenance proof remains the only open R8 evidence item.
+release PR #383 proved the repository token can arm it and GitHub can merge after
+approved checks. That merge also proved its bot-originated push does not trigger
+publication. A bounded scheduler wait plus hourly tag-driven recovery is the
+final continuation under verification; exact publication evidence remains the
+only open R8 item.
 
 ## Contribution standard
 

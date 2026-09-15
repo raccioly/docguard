@@ -49,11 +49,15 @@ describe('scheduled release workflow', () => {
     assert.match(workflow, /gh pr merge --auto --squash "\$EXISTING"/);
     assert.match(workflow, /validate-release-candidate\.mjs/);
     assert.match(workflow, /gh workflow run release\.yml --ref main/);
+    assert.match(workflow, /wait_for_merge_and_publish/);
+    assert.match(workflow, /seq 1 40/);
+    assert.match(workflow, /hourly tag-driven release sweep/);
     assert.match(workflow, /gh pr list[\s\S]*--head "\$BRANCH"[\s\S]*--state open/);
     assert.match(workflow, /git merge-base --is-ancestor HEAD "origin\/\$BRANCH"/);
     assert.match(workflow, /git ls-remote --exit-code --heads origin "\$BRANCH"/);
     assert.match(workflow, /concurrency:\n  group: scheduled-release\n  cancel-in-progress: false/);
     assert.match(release, /concurrency:\n  group: docguard-release\n  cancel-in-progress: false/);
+    assert.match(release, /schedule:\n[\s\S]*cron: '17 \* \* \* \*'/);
   });
 
   it('prevalidates release identity, synchronized versions, and changed paths before push', () => {
