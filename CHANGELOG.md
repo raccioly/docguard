@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Close roadmap milestone R9 after independently verifying every v0.41.0
   publication target and record the adoption workflow's reviewed outcome without
   creating a stale task ledger.
+- Anchor the adoption workflow's final maintenance outcome to durable main commit
+  `2ff1baa` after the protected merge checks completed.
 
 ## [0.41.0] - 2026-09-15
 
