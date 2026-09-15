@@ -35,7 +35,7 @@ jobs:
           node-version: '20'
 
       - name: Install DocGuard
-        run: npm install --global --ignore-scripts docguard-cli@0.40.5
+        run: npm install --global --ignore-scripts docguard-cli@0.41.0
 
       - name: Run DocGuard
         shell: bash

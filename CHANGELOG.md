@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.41.0] - 2026-09-15
+
+Automated weekly release — batches everything merged since `v0.40.5`.
+
+### Changed
+
+- fix: harden packed adoption and field precision (#395)
+
+
 ### Added
 
 - Add exact finding-code enforcement through `findingSeverity`, retaining both
