@@ -1,11 +1,15 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import {
   evaluateReleaseCandidate,
   evaluateReleaseJobs,
   RELEASE_PATH_ALLOWLIST,
 } from '../cli/release-pr-policy.mjs';
+import { validateReleaseWorkspace } from '../.github/scripts/validate-release-candidate.mjs';
 
 /**
  * @req docguard.tokenless-scheduled-releases#FR-001
@@ -30,10 +34,10 @@ const workflow = readFileSync(new URL('../.github/workflows/scheduled-release.ym
 const autoMerge = readFileSync(new URL('../.github/workflows/auto-merge.yml', import.meta.url), 'utf8');
 const release = readFileSync(new URL('../.github/workflows/release.yml', import.meta.url), 'utf8');
 const ci = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
-const liveProbe = JSON.parse(readFileSync(new URL('./fixtures/release-workflow-probe.json', import.meta.url), 'utf8'));
+const validator = readFileSync(new URL('../.github/scripts/validate-release-candidate.mjs', import.meta.url), 'utf8');
 
 describe('scheduled release workflow', () => {
-  it('uses only the ephemeral repository token and exposes the approval boundary', () => {
+  it('uses only the ephemeral repository token and arms protected native auto-merge', () => {
     assert.match(workflow, /permissions:\n  actions: write\n  contents: write\n  pull-requests: write\n/);
     assert.match(workflow, /gh pr create/);
     assert.match(workflow, /GH_TOKEN: \$\{\{ secrets\.GITHUB_TOKEN \}\}/);
@@ -41,6 +45,9 @@ describe('scheduled release workflow', () => {
     assert.doesNotMatch(workflow, /gh workflow run ci\.yml --ref "\$BRANCH"/);
     assert.match(workflow, /Approve workflows to run/);
     assert.match(workflow, /ordinary pull-request CI then satisfies branch protection/);
+    assert.match(workflow, /gh pr merge --auto --squash "\$PR_URL"/);
+    assert.match(workflow, /gh pr merge --auto --squash "\$EXISTING"/);
+    assert.match(workflow, /validate-release-candidate\.mjs/);
     assert.match(workflow, /gh workflow run release\.yml --ref main/);
     assert.match(workflow, /gh pr list[\s\S]*--head "\$BRANCH"[\s\S]*--state open/);
     assert.match(workflow, /git merge-base --is-ancestor HEAD "origin\/\$BRANCH"/);
@@ -49,10 +56,7 @@ describe('scheduled release workflow', () => {
     assert.match(release, /concurrency:\n  group: docguard-release\n  cancel-in-progress: false/);
   });
 
-  it('recognizes authenticated release PRs by constrained branch, title, repository, and files', () => {
-    assert.match(autoMerge, /pr\.head\.repo\.full_name === `\$\{owner\}\/\$\{repo\}`/);
-    assert.match(autoMerge, /\^release\\\/v\\d\+\\\.\\d\+\\\.\\d\+\$/);
-    assert.match(autoMerge, /\^release: v\\d\+\\\.\\d\+\\\.\\d\+ — automated weekly batch\$/);
+  it('prevalidates release identity, synchronized versions, and changed paths before push', () => {
     for (const path of [
       'package.json', 'package-lock.json', 'pyproject.toml', 'server.json', 'CHANGELOG.md',
       'templates/ci/github-actions.yml',
@@ -69,12 +73,11 @@ describe('scheduled release workflow', () => {
       'templates/SECURITY.md.template',
       '.github/workflows/release.yml',
     ]) assert.equal(RELEASE_PATH_ALLOWLIST.test(path), false, `release allowlist admitted ${path}`);
-    assert.match(autoMerge, /release-pr-policy\.mjs/);
-    assert.match(autoMerge, /ref: \$\{\{ github\.event\.repository\.default_branch \}\}/);
-    assert.match(autoMerge, /persist-credentials: false/);
-    assert.match(autoMerge, /run\.event === 'workflow_dispatch'/);
-    assert.match(autoMerge, /run_id: run\.id/);
-    assert.match(autoMerge, /workflow_id: 'release\.yml'/);
+    assert.match(validator, /evaluateReleaseCandidate/);
+    assert.match(validator, /execFileSync\('git', \['diff', '--name-only', 'HEAD', '--'\]/);
+    assert.match(validator, /author: 'github-actions\[bot\]'/);
+    assert.match(validator, /tagExists: false/);
+    assert.match(release, /push:\n    branches: \[main\][\s\S]*package\.json/);
   });
 
   it('accepts only exact next-version release metadata', () => {
@@ -125,6 +128,48 @@ describe('scheduled release workflow', () => {
     }
   });
 
+  it('validates the real workspace diff and rejects an unexpected path', () => {
+    const root = mkdtempSync(join(tmpdir(), 'docguard-release-candidate-'));
+    const writeVersion = version => {
+      writeFileSync(join(root, 'package.json'), JSON.stringify({ version }));
+      writeFileSync(join(root, 'package-lock.json'), JSON.stringify({ version, packages: { '': { version } } }));
+      writeFileSync(join(root, 'pyproject.toml'), `[project]\nversion = "${version}"\n`);
+      writeFileSync(join(root, 'server.json'), JSON.stringify({ version }));
+      writeFileSync(join(root, 'extensions/spec-kit-docguard/extension.yml'), `extension:\n  version: "${version}"\n`);
+      writeFileSync(join(root, 'CHANGELOG.md'), `## [${version}]\n`);
+    };
+    try {
+      mkdirSync(join(root, 'extensions/spec-kit-docguard'), { recursive: true });
+      execFileSync('git', ['init', '-q'], { cwd: root });
+      execFileSync('git', ['config', 'user.name', 'DocGuard Test'], { cwd: root });
+      execFileSync('git', ['config', 'user.email', 'test@docguard.local'], { cwd: root });
+      writeVersion('0.40.0');
+      execFileSync('git', ['add', '.'], { cwd: root });
+      execFileSync('git', ['commit', '-qm', 'base'], { cwd: root });
+      writeVersion('0.40.1');
+
+      const result = validateReleaseWorkspace({
+        root,
+        baseVersion: '0.40.0',
+        branch: 'release/v0.40.1',
+        repository: 'raccioly/docguard',
+      });
+      assert.equal(result.version, '0.40.1');
+      assert.ok(result.paths.includes('package.json'));
+
+      writeFileSync(join(root, 'cli.mjs'), 'unexpected');
+      execFileSync('git', ['add', 'cli.mjs'], { cwd: root });
+      assert.throws(() => validateReleaseWorkspace({
+        root,
+        baseVersion: '0.40.0',
+        branch: 'release/v0.40.1',
+        repository: 'raccioly/docguard',
+      }), /paths: unexpected cli\.mjs/);
+    } finally {
+      rmSync(root, { recursive: true, force: true, maxRetries: 3, retryDelay: 50 });
+    }
+  });
+
   it('binds the merge decision to one successful job for every required runtime', () => {
     const jobs = [18, 20, 22, 24].map(version => ({ name: `test (${version})`, status: 'completed', conclusion: 'success' }));
     assert.deepEqual(evaluateReleaseJobs(jobs), { ok: true, errors: [] });
@@ -141,6 +186,14 @@ describe('scheduled release workflow', () => {
     assert.match(readFileSync(new URL('../.github/workflows/supply-chain.yml', import.meta.url), 'utf8'), /osv-scanner/);
   });
 
+  it('keeps the privileged workflow-run gate scoped to Dependabot and Jules', () => {
+    assert.match(autoMerge, /github\.event\.workflow_run\.event == 'pull_request'/);
+    assert.match(autoMerge, /dependabot\[bot\]/);
+    assert.match(autoMerge, /google-labs-jules\[bot\]/);
+    assert.match(autoMerge, /persist-credentials: false/);
+    assert.doesNotMatch(autoMerge, /releaseShape|release\\\/v|createWorkflowDispatch/);
+  });
+
   it('pins third-party actions to reviewed commit SHAs', () => {
     const uses = [...workflow.matchAll(/uses:\s*([^@\s]+)@([^\s]+)/g)];
     assert.deepEqual(uses.map(([, action]) => action), ['actions/checkout', 'actions/setup-node']);
@@ -149,27 +202,4 @@ describe('scheduled release workflow', () => {
     assert.equal(uses[1][2], '820762786026740c76f36085b0efc47a31fe5020');
   });
 
-  it('retains evidence that the user-dispatched fallback gate fails closed for a non-release PR', () => {
-    assert.equal(liveProbe.schemaVersion, 1);
-    assert.equal(liveProbe.repository, 'raccioly/docguard');
-    assert.equal(liveProbe.pullRequest.number, 372);
-    assert.equal(liveProbe.pullRequest.state, 'CLOSED');
-    assert.equal(liveProbe.pullRequest.merged, false);
-    assert.equal(liveProbe.pullRequest.branchDeleted, true);
-    assert.match(liveProbe.candidateHeadSha, /^[a-f0-9]{40}$/);
-
-    assert.equal(liveProbe.ci.event, 'workflow_dispatch');
-    assert.equal(liveProbe.ci.conclusion, 'success');
-    assert.equal(liveProbe.ci.headSha, liveProbe.candidateHeadSha);
-    assert.deepEqual(liveProbe.ci.nodeVersions, [18, 20, 22, 24]);
-    assert.equal(liveProbe.ci.url, `https://github.com/raccioly/docguard/actions/runs/${liveProbe.ci.runId}`);
-
-    assert.equal(liveProbe.gate.event, 'workflow_run');
-    assert.equal(liveProbe.gate.conclusion, 'success');
-    assert.equal(liveProbe.gate.decision, 'refused_non_release');
-    assert.equal(liveProbe.gate.triggeringRunId, liveProbe.ci.runId);
-    assert.match(liveProbe.gate.trustedPolicySha, /^[a-f0-9]{40}$/);
-    assert.equal(liveProbe.gate.url, `https://github.com/raccioly/docguard/actions/runs/${liveProbe.gate.runId}`);
-    assert.match(liveProbe.gate.logEvidence, /not a release PR.+cannot auto-merge it/);
-  });
 });

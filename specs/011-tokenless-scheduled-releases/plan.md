@@ -6,19 +6,19 @@
 ## Summary
 
 Replace the long-lived release PR credential with a repository-token PR and one
-explicit maintainer workflow approval. Keep the privileged merge step
-metadata-only, move release identity checks into a pure default-branch policy
-module, and add missing-tag recovery before any new bump.
+explicit maintainer workflow approval. Validate release identity in the trusted
+scheduler before push, arm protected native auto-merge, and add missing-tag
+recovery before any new bump.
 
 ## Technical Context
 
 - Runtime: GitHub-hosted Ubuntu runners, Node.js 20 for scheduled preparation,
   and `actions/github-script` for privileged API operations.
-- Trust boundary: the `workflow_run` gate restores code from `main`; release
-  branch content is fetched as bytes and parsed, never executed by the
-  privileged gate.
+- Trust boundary: candidate policy executes in the scheduler's clean default-
+  branch checkout before the release branch exists. GitHub branch protection
+  owns the later current-head check and merge decision.
 - Permissions: the scheduler receives `contents`, `pull-requests`, and `actions`
-  write; the merge gate retains those scopes plus check metadata.
+  write. No release-specific workflow receives a persistent credential.
 - Recovery: `release.yml` remains tag-driven and idempotent. A missing current
   tag is dispatched before the scheduler considers another version.
 
@@ -26,8 +26,9 @@ module, and add missing-tag recovery before any new bump.
 
 ```text
 cli/release-pr-policy.mjs                pure candidate and CI-run policy
+.github/scripts/validate-release-candidate.mjs  trusted pre-push adapter
 .github/workflows/scheduled-release.yml  tokenless PR and dispatch orchestration
-.github/workflows/auto-merge.yml         metadata-only privileged merge gate
+.github/workflows/auto-merge.yml         Dependabot/Jules merge policy only
 .github/workflows/release.yml            serialized idempotent publication
 tests/scheduled-release.test.mjs          policy and workflow contracts
 docs-canonical/CI-RECIPES.md              operator trust and recovery model
@@ -43,9 +44,9 @@ rejection independently.
 
 Use `GITHUB_TOKEN` to push and open the release PR. Reuse an existing open release
 PR and reject an orphaned same-name branch. Require a maintainer to approve the
-held pull-request workflows in GitHub. Once ordinary CI passes, let
-`auto-merge.yml` restore policy from `main`, validate the candidate as inert
-metadata, merge, and dispatch `release.yml`.
+held pull-request workflows in GitHub. Validate the generated diff before push
+and arm GitHub native auto-merge. Once ordinary CI passes all required checks,
+native auto-merge updates `main` and its version push starts `release.yml`.
 
 ## Phase 3 — Recovery, verification, and closeout
 
@@ -61,5 +62,17 @@ validated the fallback gate but did not reproduce repository-token provenance;
 release PR #376 exposed the missing scheduler-to-controller handoff and was
 closed without merge before publication. Release PR #378 then proved that
 successful dispatched jobs do not satisfy required pull-request checks and was
-also closed without merge. The final design retains one explicit maintainer
-workflow approval instead of weakening branch protection or storing a credential.
+also closed without merge. Release PR #380 proved that approving an
+`action_required` run does not emit a second `workflow_run` completion, then
+published v0.40.1 through the protected checks and release workflow. The final
+design retains one explicit maintainer workflow approval, uses native auto-merge
+as the continuation, and avoids weakening branch protection or storing a
+credential.
+
+## Phase 4 — Native continuation correction
+
+Enable repository auto-merge only after confirming that `main` requires all four
+runtime checks. Prevalidate the release diff in the trusted scheduler, arm squash
+auto-merge on both new and reused release PRs, and remove release handling from
+the Dependabot/Jules `workflow_run` gate. Prove repository-token provenance with
+the next live release before closing corrective verification.

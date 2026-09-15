@@ -5689,7 +5689,7 @@
       "error_message": "Repository-token-dispatched CI passed for release PR #376 but did not emit the workflow_run event required to merge and publish",
       "file": ".github/workflows/scheduled-release.yml",
       "root_cause": "The design applied GitHub's workflow_dispatch recursion exception to the dispatched CI run but incorrectly assumed that the later workflow_run event was also exempt; the live probe used a user token and did not reproduce github-actions[bot] provenance",
-      "fix": "Expose GitHub's required maintainer approval for repository-token-created PR workflows, then let the existing trusted workflow_run gate validate, merge, and publish",
+      "fix": "Expose GitHub's required maintainer approval for repository-token-created PR workflows, prevalidate the candidate in the trusted scheduler, and arm protected native auto-merge instead of relying on a downstream callback",
       "tags": [
         "release",
         "github-actions",
@@ -5722,6 +5722,27 @@
       ],
       "occurrences": 1,
       "last_seen": "2026-09-15T02:05:05.000Z"
+    },
+    {
+      "id": "bug-346",
+      "timestamp": "2026-09-15T02:18:57.000Z",
+      "error_message": "Release PR #380 passed approved pull-request CI but the workflow_run auto-merge listener did not wake again",
+      "file": ".github/workflows/scheduled-release.yml; .github/workflows/auto-merge.yml",
+      "root_cause": "GitHub emitted the workflow_run completion when the repository-token PR entered action_required; approving that run executed its jobs without emitting a second completion event for the listener",
+      "fix": "Validate the generated release diff before push, enable repository native auto-merge with all four runtime checks required, arm squash auto-merge when opening or reusing the PR, and leave the workflow_run gate scoped to Dependabot and Jules",
+      "tags": [
+        "release",
+        "github-actions",
+        "workflow-run",
+        "native-auto-merge",
+        "branch-protection"
+      ],
+      "related_bugs": [
+        "bug-344",
+        "bug-345"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-09-15T02:18:57.000Z"
     }
   ]
 }

@@ -2,26 +2,19 @@ name: Auto-merge (green bot PRs)
 
 # Hands-off merging for bot PRs that have ALREADY passed the full CI matrix.
 #
-# WHY workflow_run AND NOT `gh pr merge --auto`: GitHub's native auto-merge
-# requires the repo-level `allow_auto_merge` setting plus REQUIRED status
-# checks in branch protection. Without required checks configured, `--auto`
-# merges IMMEDIATELY without waiting for CI — worse than merging by hand.
-# This workflow instead fires only after "DocGuard CI" reports success for
-# the head SHA, re-verifies every matrix leg via the API, and merges itself.
-# No repo settings required, and it is fail-closed: anything unexpected → skip.
+# Release PRs use GitHub's native auto-merge because main now has four required
+# runtime checks. This workflow remains the stricter policy gate for Dependabot
+# and Jules PRs, which have separate version and changed-file restrictions.
 #
 # SECURITY: workflow_run runs in the BASE repo context with write scope. It
 # checks out only the default branch policy with persisted credentials disabled,
-# then reads PR metadata and candidate files as inert API data. It never checks
-# out or executes PR code.
+# reads PR metadata through the API, and never checks out or executes PR code.
 #
 # WHAT AUTO-MERGES:
 #   - dependabot: patch + minor only. Majors NEVER (v0.34.1 shipped a Node-18
 #     break from an auto-accepted @babel/parser major; bug-255).
 #   - jules: test-only and docs-only changes. Anything touching cli/ logic,
 #     .github/, or package.json is labeled and left for a human.
-#   - release: exact scheduler-owned next-version surfaces after a maintainer
-#     approves the repository-token PR's ordinary pull-request CI.
 
 on:
   workflow_run:
@@ -29,17 +22,16 @@ on:
     types: [completed]
 
 permissions:
-  actions: write
   contents: write
   pull-requests: write
   checks: read
 
 jobs:
   auto-merge:
-    if: github.event.workflow_run.conclusion == 'success' && (github.event.workflow_run.event == 'pull_request' || github.event.workflow_run.event == 'workflow_dispatch')
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'pull_request'
     runs-on: ubuntu-latest
     steps:
-      - name: Check out trusted release policy
+      - name: Check out trusted auto-merge policy
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event.repository.default_branch }}
@@ -50,7 +42,7 @@ jobs:
         with:
           script: |
             const policyPath = process.env.GITHUB_WORKSPACE + '/cli/release-pr-policy.mjs';
-            const { evaluateReleaseCandidate, evaluateReleaseJobs } = await import(policyPath);
+            const { evaluateReleaseJobs } = await import(policyPath);
             const owner = context.repo.owner;
             const repo = context.repo.repo;
             const run = context.payload.workflow_run;
@@ -67,14 +59,7 @@ jobs:
 
             const BOT_DEPENDABOT = 'dependabot[bot]';
             const BOT_JULES = 'google-labs-jules[bot]';
-            const releaseShape = pr.head.repo.full_name === `${owner}/${repo}` &&
-              /^release\/v\d+\.\d+\.\d+$/.test(pr.head.ref || '') &&
-              /^release: v\d+\.\d+\.\d+ — automated weekly batch$/.test(pr.title || '');
-            if (run.event === 'workflow_dispatch' && !releaseShape) {
-              core.info(`#${num} is not a release PR — dispatched recovery CI cannot auto-merge it.`);
-              return;
-            }
-            if (![BOT_DEPENDABOT, BOT_JULES].includes(author) && !releaseShape) {
+            if (![BOT_DEPENDABOT, BOT_JULES].includes(author)) {
               core.info(`#${num} authored by ${author} (not a handled bot) — leaving alone.`);
               return;
             }
@@ -110,55 +95,7 @@ jobs:
             });
             const paths = files.map((f) => f.filename);
 
-            if (releaseShape) {
-              const textAt = async (path, ref) => {
-                const { data } = await github.rest.repos.getContent({ owner, repo, path, ref });
-                if (Array.isArray(data) || !data.content) throw new Error(`${path}: expected a file`);
-                return Buffer.from(data.content, 'base64').toString('utf8');
-              };
-              try {
-                const candidateFiles = {
-                  packageJson: await textAt('package.json', headSha),
-                  packageLock: await textAt('package-lock.json', headSha),
-                  pyproject: await textAt('pyproject.toml', headSha),
-                  server: await textAt('server.json', headSha),
-                  extension: await textAt('extensions/spec-kit-docguard/extension.yml', headSha),
-                };
-                const baseVersion = JSON.parse(await textAt('package.json', pr.base.sha)).version;
-                const policyInput = {
-                  repository: `${owner}/${repo}`,
-                  headRepo: pr.head.repo.full_name,
-                  defaultBranch: context.payload.repository.default_branch,
-                  baseRef: pr.base.ref,
-                  headRef: pr.head.ref,
-                  title: pr.title,
-                  author,
-                  baseVersion,
-                  paths,
-                  files: candidateFiles,
-                  tagExists: false,
-                };
-                const preliminary = evaluateReleaseCandidate(policyInput);
-                let tagExists = false;
-                if (preliminary.version && /^\d+\.\d+\.\d+$/.test(preliminary.version)) {
-                  try {
-                    await github.rest.git.getRef({ owner, repo, ref: `tags/v${preliminary.version}` });
-                    tagExists = true;
-                  } catch (e) {
-                    if (e.status !== 404) throw e;
-                  }
-                }
-                const candidatePolicy = evaluateReleaseCandidate({ ...policyInput, tagExists });
-                if (!candidatePolicy.ok) {
-                  await hold('needs-review', `release policy rejected the candidate:\n${candidatePolicy.errors.map((error) => `- ${error}`).join('\n')}`);
-                  return;
-                }
-                core.info(`#${num} authenticated tokenless release PR (${pr.head.ref}) — eligible.`);
-              } catch (e) {
-                await hold('needs-review', `release metadata could not be verified: ${e.message}`);
-                return;
-              }
-            } else if (author === BOT_DEPENDABOT) {
+            if (author === BOT_DEPENDABOT) {
               // Version delta from the title: "bump X from 1.2.3 to 1.2.4"
               const m = /from (\d+)\.(\d+)\.(\d+)\S* to (\d+)\.(\d+)\.(\d+)/.exec(pr.title || '');
               if (!m) { await hold('needs-review', 'could not parse the version delta from the PR title.'); return; }
@@ -187,28 +124,9 @@ jobs:
                 owner, repo, pull_number: num, merge_method: 'squash',
               });
               if (!merge.merged) throw new Error(merge.message || 'GitHub declined the merge');
-              if (releaseShape) {
-                try {
-                  await github.rest.actions.createWorkflowDispatch({
-                    owner,
-                    repo,
-                    workflow_id: 'release.yml',
-                    ref: context.payload.repository.default_branch,
-                  });
-                } catch (dispatchError) {
-                  await github.rest.issues.createComment({
-                    owner,
-                    repo,
-                    issue_number: num,
-                    body: `⚠️ **Merged, publication dispatch failed** — ${dispatchError.message}. The next scheduled release run will retry the untagged package version.`,
-                  });
-                  core.setFailed(`Merged #${num}, but release dispatch failed: ${dispatchError.message}`);
-                  return;
-                }
-              }
               await github.rest.issues.createComment({
                 owner, repo, issue_number: num,
-                body: `🤖 **Auto-merged** — the exact CI run passed all four Node legs (18/20/22/24), stayed within the test-runtime budget, and satisfied the policy in \`.github/workflows/auto-merge.yml\`.${releaseShape ? ' Publication was dispatched on main.' : ''}`,
+                body: `🤖 **Auto-merged** — the exact CI run passed all four Node legs (18/20/22/24), stayed within the test-runtime budget, and satisfied the policy in \`.github/workflows/auto-merge.yml\`.`,
               });
               core.notice(`Merged #${num}.`);
             } catch (e) {
