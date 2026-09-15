@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.40.3] - 2026-09-15
+
+Automated weekly release — batches everything merged since `v0.40.2`.
+
+### Changed
+
+- fix: recover tokenless release publication (#385)
+
+
 ### Added
 
 - Add an hourly tag-driven release recovery sweep. Already tagged versions stop
