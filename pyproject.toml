@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "docguard-cli"
-version = "0.40.3"
+version = "0.40.4"
 description = "The enforcement tool for Canonical-Driven Development (CDD). Audit, generate, and guard your project documentation. No Python dependencies (requires Node.js 18+)."
 readme = "README.md"
 license = { text = "MIT" }
