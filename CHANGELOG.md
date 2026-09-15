@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.40.1] - 2026-09-15
+
+Automated weekly release — batches everything merged since `v0.40.0`.
+
+### Changed
+
+- docs: complete R8 lifecycle (#375)
+- docs: approve R8 evidence and stabilize Git cleanup (#374)
+- docs: retain release evidence and fix Flask advisory (#373)
+- ci: remove persistent release credential
+- docs: close stale roadmap status text
+
+
 ### Added
 
 - Add a pure release-candidate policy that verifies repository, default branch,
