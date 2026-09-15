@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Retry removal of temporary Git repositories when the operating system reports
+  a transient `ENOTEMPTY`, preventing a completed freshness test from randomly
+  blocking the release gate during teardown.
 - Register every command shipped by the Spec Kit extension, route `fix` and
   `review` to their matching command files, keep the manifest description inside
   Spec Kit's 200-character limit, and add release-contract tests that reject
