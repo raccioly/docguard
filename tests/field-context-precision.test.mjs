@@ -1,3 +1,6 @@
+// @req docguard.adoption-workflow-integrity#FR-015
+// @req docguard.adoption-workflow-integrity#SC-009
+// @req docs-canonical/REQUIREMENTS.md#FR-017
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync } from 'node:fs';
@@ -81,6 +84,25 @@ for (const [name, source, filename] of [
 test('retains later real password after safe mock fixture', t => {
   const findings = scan(t, 'expect(client).toHaveBeenCalledWith({ password: "TestPassword42!" });\nconst password = "actualsecret";', validateSecurity);
   assert.equal(findings.find(f => f.code === 'SEC001')?.location, 'sample.test.tsx:2');
+});
+
+test('downgrades a repeated password used as test input and expected output', t => {
+  const source = [
+    "await user.type(passwordInput, 'correct-horse-9');",
+    "expect(payload).toMatchObject({ password: 'correct-horse-9' });",
+  ].join('\n');
+  const finding = scan(t, source, validateSecurity).find(f => f.code === 'SEC001');
+  assert.equal(finding?.severity, 'warn');
+  assert.equal(finding?.confidence, 'low');
+  assert.equal(finding?.reportable, true);
+  assert.ok(!JSON.stringify(finding).includes('correct-horse-9'));
+});
+
+test('retains an unrepeated password in a test assertion as blocking', t => {
+  const source = "expect(payload).toMatchObject({ password: 'correct-horse-9' });";
+  const finding = scan(t, source, validateSecurity).find(f => f.code === 'SEC001');
+  assert.equal(finding?.severity, 'error');
+  assert.equal(finding?.confidence, 'high');
 });
 
 test('retains later real password after prose warning', t => {

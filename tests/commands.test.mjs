@@ -415,6 +415,30 @@ describe('docguard hooks', () => {
     assert.match(output, /commit-msg/);
     assert.equal(existsSync(join(tmpDir, '.agent')), false, 'listing hooks must not install agent skills');
   });
+
+  it('distinguishes an existing foreign hook from a DocGuard installation', t => {
+    const tmpDir = mkdtempSync(join(tmpdir(), 'sg-hooks-foreign-'));
+    t.after(() => rmSync(tmpDir, { recursive: true, force: true }));
+    execSync('git init -q', { cwd: tmpDir });
+    writeFileSync(join(tmpDir, 'package.json'), '{"name":"hooks-foreign","version":"1.0.0"}');
+    writeFileSync(join(tmpDir, '.git/hooks/pre-commit'), '#!/bin/sh\nnpm test\n');
+
+    const output = run(`hooks --list --dir ${tmpDir}`);
+    assert.match(output, /pre-commit.*existing non-DocGuard hook/);
+    assert.doesNotMatch(output, /pre-commit.*DocGuard installed/);
+  });
+
+  it('routes init --with hooks --list directly to read-only inventory', t => {
+    const tmpDir = mkdtempSync(join(tmpdir(), 'sg-init-hooks-list-'));
+    t.after(() => rmSync(tmpDir, { recursive: true, force: true }));
+    execSync('git init -q', { cwd: tmpDir });
+    writeFileSync(join(tmpDir, 'package.json'), '{"name":"hooks-nested-list","version":"1.0.0"}');
+
+    const output = run(`init --with hooks --list --dir ${tmpDir}`);
+    assert.match(output, /Available hooks/);
+    assert.equal(existsSync(join(tmpDir, 'docs-canonical')), false);
+    assert.equal(existsSync(join(tmpDir, '.agent')), false);
+  });
 });
 
 describe('docguard guard', () => {

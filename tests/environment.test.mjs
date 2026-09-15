@@ -1,3 +1,4 @@
+// @req docguard.adoption-workflow-integrity#FR-015
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import fs from 'node:fs';
@@ -131,6 +132,63 @@ describe('validateEnvironment', () => {
       !results.warnings.some(w => w.includes('DOCUMENTED_VAR')),
       'documented var should not be flagged'
     );
+  });
+
+  it('counts a package-local .env.example for an explicit monorepo source root', () => {
+    fs.writeFileSync(envDocPath, '## Prerequisites\n## Environment Variables', 'utf-8');
+    fs.mkdirSync(join(tempDir, 'backend', 'src'), { recursive: true });
+    fs.writeFileSync(join(tempDir, 'backend', 'src', 'config.ts'),
+      'export const url = process.env.DATABASE_URL;');
+    fs.writeFileSync(join(tempDir, 'backend', '.env.example'), 'DATABASE_URL=postgres://localhost\n');
+
+    const results = validateEnvironment(tempDir, {
+      sourceRoot: ['backend/src', './backend/src'],
+      projectTypeConfig: { needsEnvVars: true },
+    });
+
+    assert.ok(!results.warnings.some(w => w.includes('DATABASE_URL')),
+      'the package template should document env usage even when source roots overlap');
+  });
+
+  it('counts .env templates in declared workspace packages', () => {
+    fs.writeFileSync(envDocPath, '## Prerequisites\n## Environment Variables', 'utf-8');
+    fs.writeFileSync(join(tempDir, 'package.json'), JSON.stringify({ workspaces: ['packages/*'] }));
+    fs.mkdirSync(join(tempDir, 'packages', 'api', 'src'), { recursive: true });
+    fs.writeFileSync(join(tempDir, 'packages', 'api', 'package.json'), JSON.stringify({ name: 'api' }));
+    fs.writeFileSync(join(tempDir, 'packages', 'api', 'src', 'config.ts'),
+      'export const token = process.env.API_TOKEN;');
+    fs.writeFileSync(join(tempDir, 'packages', 'api', '.env.template'), 'API_TOKEN=replace-me\n');
+
+    const results = validateEnvironment(tempDir, { projectTypeConfig: { needsEnvVars: true } });
+
+    assert.ok(!results.warnings.some(w => w.includes('API_TOKEN')),
+      'a declared workspace template should count as environment documentation');
+  });
+
+  it('does not read ignored or symlinked package-local env templates', () => {
+    fs.writeFileSync(envDocPath, '## Prerequisites\n## Environment Variables', 'utf-8');
+    fs.mkdirSync(join(tempDir, 'backend', 'src'), { recursive: true });
+    fs.writeFileSync(join(tempDir, 'backend', 'src', 'config.ts'), [
+      'export const ignored = process.env.IGNORED_TOKEN;',
+      'export const linked = process.env.LINKED_TOKEN;',
+    ].join('\n'));
+    fs.writeFileSync(join(tempDir, 'backend', '.env.example'), 'IGNORED_TOKEN=replace-me\n');
+    const outside = fs.mkdtempSync(join(tmpdir(), 'docguard-env-outside-'));
+    try {
+      fs.writeFileSync(join(outside, '.env.template'), 'LINKED_TOKEN=replace-me\n');
+      fs.symlinkSync(join(outside, '.env.template'), join(tempDir, 'backend', '.env.template'));
+
+      const results = validateEnvironment(tempDir, {
+        sourceRoot: 'backend/src',
+        ignore: ['backend/.env.example'],
+        projectTypeConfig: { needsEnvVars: true },
+      });
+      const warning = results.warnings.find(w => w.includes('not documented')) || '';
+      assert.match(warning, /IGNORED_TOKEN/);
+      assert.match(warning, /LINKED_TOKEN/);
+    } finally {
+      fs.rmSync(outside, { recursive: true, force: true });
+    }
   });
 
   it('bypasses .env.example checks if needsEnvVars is false', () => {

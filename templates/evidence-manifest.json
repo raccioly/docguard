@@ -16,6 +16,22 @@
         "pointer": "/retentionDays"
       },
       "predicate": { "kind": "equals", "valueType": "number" }
+    },
+    {
+      "id": "surface.python-scanners",
+      "applicability": { "mode": "always" },
+      "target": {
+        "document": "docs-canonical/ARCHITECTURE.md",
+        "heading": "Scanner registry",
+        "statement": "The registry contains {{value}} scanners."
+      },
+      "source": {
+        "adapter": "python-literal-count",
+        "path": "src/package/scanners.py",
+        "symbol": "SCANNERS",
+        "allowEmpty": false
+      },
+      "predicate": { "kind": "count-equals" }
     }
   ]
 }

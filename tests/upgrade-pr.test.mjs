@@ -72,8 +72,8 @@ describe('upgrade --pr', () => {
       '.docguard.json': JSON.stringify({ projectName: 't', version: '0.4', profile: 'starter' }),
     });
     const r = spawnSync('node', [CLI, 'upgrade', '--apply'], { cwd: dir, encoding: 'utf-8' });
-    // The 0.4 → 0.5 migration is real and should print the version arrow.
-    assert.match(r.stdout, /Schema migrated 0\.4 → 0\.5/,
+    // The migration chain reaches the current schema and prints the full arrow.
+    assert.match(r.stdout, /Schema migrated 0\.4 → 0\.6/,
       `expected migration banner, got: ${r.stdout.slice(0, 400)}`);
   });
 });

@@ -10,9 +10,9 @@ import { applyDocRoles } from '../shared-doc-roles.mjs';
  *   runGuardInternal() → returns data, no side effects (for diagnose, ci)
  */
 
-import { c, resolveSeverity, loadIgnorePatterns, resolveDocDirs } from '../shared.mjs';
+import { c, resolveSeverity, resolveFindingEnforcement, loadIgnorePatterns, resolveDocDirs } from '../shared.mjs';
 import { walkFiles, buildIgnoreFilter } from '../shared-ignore.mjs';
-import { mkFinding, resultFromFindings } from '../findings.mjs';
+import { CODES, mkFinding, resultFromFindings } from '../findings.mjs';
 import { loadValidatorSuppressions } from '../validator-markers.mjs';
 import { detectAgentMode, isSpecKitInitialized } from '../ensure-skills.mjs';
 import { checkUpgradeStatus } from './upgrade.mjs';
@@ -206,6 +206,7 @@ function renderableItems(v) {
   if (Array.isArray(v.findings) && v.findings.length > 0) {
     return v.findings.map((f) => ({
       severity: f.severity,
+      effectiveSeverity: f.effectiveSeverity || f.severity,
       message: f.message,
       code: f.code,
       confidence: f.confidence,
@@ -453,24 +454,35 @@ export function runGuardInternal(projectDir, config) {
   const totalPassed = activeResults.reduce((sum, r) => sum + r.passed, 0);
   const totalChecks = activeResults.reduce((sum, r) => sum + r.total, 0);
 
-  // Per-validator severity overrides (v0.5 schema). Affects EXIT-CODE only,
-  // not display. Annotate each validator with its resolved severity and roll
-  // up effective error/warning counts:
-  //   - high  → validator's warnings get promoted to "effective errors"
-  //   - low   → validator's warnings are demoted (ignored for exit code)
-  //   - medium (default) → warnings stay as-is
+  // Compute enforcement after baseline suppression. Structured findings can
+  // be reweighted by exact stable code; legacy validators retain the existing
+  // per-validator behavior. Preserve intrinsic severity for auditability.
   for (const v of activeResults) {
     v.severity = resolveSeverity(config, v.key);
+    let errors = 0, warnings = 0, infos = 0;
+    if (Array.isArray(v.findings) && v.findings.length > 0) {
+      for (const finding of v.findings) {
+        const enforcement = resolveFindingEnforcement(config, finding, v.key);
+        finding.effectiveSeverity = enforcement.level;
+        finding.enforcement = enforcement;
+        if (enforcement.level === 'error') errors++;
+        else if (enforcement.level === 'warn') warnings++;
+        else infos++;
+      }
+    } else {
+      errors = v.errors.length;
+      if (v.severity === 'high') errors += v.warnings.length;
+      else if (v.severity === 'medium') warnings = v.warnings.length;
+      else infos = v.warnings.length;
+    }
+    v.effectiveErrors = errors;
+    v.effectiveWarnings = warnings;
+    v.effectiveInfos = infos;
+    v.effectiveStatus = errors > 0 ? 'fail' : warnings > 0 ? 'warn' : v.status === 'na' ? 'na' : 'pass';
   }
-  let effectiveErrors = totalErrors;
-  let effectiveWarnings = 0;
-  for (const v of activeResults) {
-    const wCount = v.warnings.length;
-    if (wCount === 0) continue;
-    if (v.severity === 'high') effectiveErrors += wCount;
-    else if (v.severity === 'low') { /* ignored for exit */ }
-    else effectiveWarnings += wCount;
-  }
+  const effectiveErrors = activeResults.reduce((sum, v) => sum + v.effectiveErrors, 0);
+  const effectiveWarnings = activeResults.reduce((sum, v) => sum + v.effectiveWarnings, 0);
+  const effectiveInfos = activeResults.reduce((sum, v) => sum + v.effectiveInfos, 0);
 
   // The headline status word MUST agree with the exit code, which is
   // severity-aware (effectiveErrors/effectiveWarnings, computed above).
@@ -523,6 +535,7 @@ export function runGuardInternal(projectDir, config) {
     // things they've marked as high-severity.
     effectiveErrors,
     effectiveWarnings,
+    effectiveInfos,
     baselineSuppressed,
     coverage,
     checkCoverage,
@@ -569,14 +582,21 @@ export function liteValidatorsConfig(config = {}) {
     'security', 'architecture', 'freshness', 'traceability', 'docsDiff',
     'apiSurface', 'metadataSync', 'docsCoverage', 'docQuality', 'todoTracking',
     'schemaSync', 'specKit', 'crossReference', 'generatedStaleness',
-    'canonicalSync', 'metricsConsistency',
+    'canonicalSync', 'surfaceSync', 'metricsConsistency', 'documentLifecycle',
+    'specRegistry', 'diffSuspicion', 'referenceExistence', 'apiDocSmells',
     'evidence',
   ];
   const userValidators = (config && config.validators) || {};
+  const exactHighValidators = new Set(
+    Object.entries(config.findingSeverity || {})
+      .filter(([, level]) => typeof level === 'string' && level.toLowerCase() === 'high')
+      .map(([code]) => CODES[code.toUpperCase()]?.validator)
+      .filter(Boolean)
+  );
   const out = {};
   for (const k of all) {
     let enabled = CHANGED_ONLY_VALIDATORS.includes(k);
-    if (!enabled && resolveSeverity(config, k) === 'high' && userValidators[k] !== false) {
+    if (!enabled && (resolveSeverity(config, k) === 'high' || exactHighValidators.has(k)) && userValidators[k] !== false) {
       enabled = true;
     }
     out[k] = enabled;
@@ -712,6 +732,9 @@ export function runGuard(projectDir, config, flags) {
     } else {
       console.log(`  ${c.yellow}⚠️  ${v.name}${c.reset} ${qBadge}${c.dim}  ${v.passed}/${v.total} checks passed${c.reset}`);
     }
+    if (v.requirementCoverage?.deferred > 0) {
+      console.log(`     ${c.dim}${v.requirementCoverage.deferred} planned requirement(s) deferred by reviewed lifecycle${c.reset}`);
+    }
 
     // --show-failing forces enumeration of every error/warning regardless of
     // overall validator status — useful when a validator passes overall
@@ -725,12 +748,13 @@ export function runGuard(projectDir, config, flags) {
     for (const item of renderableItems(v)) {
       if (item.severity === 'error' && !showErr) continue;
       if (item.severity === 'warn' && !showWarn) continue;
-      const mark = item.severity === 'error' ? `${c.red}✗` : `${c.yellow}⚠`;
+      const effective = item.effectiveSeverity || item.severity;
+      const mark = effective === 'error' ? `${c.red}✗` : effective === 'info' ? `${c.cyan}•` : `${c.yellow}⚠`;
       const codeTag = item.code ? `${c.dim}[${item.code}]${c.reset} ` : '';
       const conf = item.confidence === 'low'
         ? ` ${c.dim}(low confidence — possible false positive)${c.reset}` : '';
       console.log(`     ${mark} ${codeTag}${item.message}${c.reset}${conf}`);
-      if (item.suggestion) {
+      if (item.suggestion?.text) {
         console.log(`       ${c.cyan}→${c.reset} ${c.dim}${item.suggestion.text}${c.reset}`);
         if (item.suggestion.command) {
           console.log(`         ${c.cyan}${item.suggestion.command}${c.reset}`);
@@ -927,13 +951,17 @@ export function runGuard(projectDir, config, flags) {
   // "high"), show a one-line note so the user knows the exit code may not
   // match what they expected from reading the warning count.
   const severityShifted =
-    data.effectiveErrors !== data.errors || data.effectiveWarnings !== data.warnings;
+    data.effectiveErrors !== data.errors || data.effectiveWarnings !== data.warnings || data.effectiveInfos > 0;
   if (severityShifted) {
-    const upgraded = data.effectiveErrors - data.errors;
-    const ignored = data.warnings - data.effectiveWarnings - upgraded;
+    const upgraded = data.findings.filter(f => f.severity === 'warn' && f.effectiveSeverity === 'error').length
+      + data.validators.filter(v => !Array.isArray(v.findings) || v.findings.length === 0)
+        .reduce((sum, v) => sum + (v.severity === 'high' ? v.warnings.length : 0), 0);
+    const demotedErrors = data.findings.filter(f => f.severity === 'error' && f.effectiveSeverity !== 'error').length;
+    const informational = data.effectiveInfos;
     const parts = [];
     if (upgraded > 0) parts.push(`${upgraded} warning(s) escalated to fail (severity=high)`);
-    if (ignored > 0) parts.push(`${ignored} warning(s) ignored for exit code (severity=low)`);
+    if (demotedErrors > 0) parts.push(`${demotedErrors} intrinsic error(s) explicitly demoted by finding code`);
+    if (informational > 0) parts.push(`${informational} finding(s) informational for exit code (severity=low)`);
     if (parts.length > 0) {
       console.log(`\n  ${c.dim}Severity override: ${parts.join('; ')}.${c.reset}`);
     }

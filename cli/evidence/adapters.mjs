@@ -9,6 +9,7 @@
 import { lstatSync, readdirSync, realpathSync } from 'node:fs';
 import { isAbsolute, relative, resolve, sep } from 'node:path';
 import { buildIgnoreFilter, compileGlob, DEFAULT_IGNORE_DIRS, relPosix } from '../shared-ignore.mjs';
+import { countPythonLiteralEntries } from './python-literal.mjs';
 
 const MAX_COLLECTION_FILES = 20_000;
 const MAX_REPORT_FINDINGS = 10_000;
@@ -193,6 +194,19 @@ export function readEvidenceSource(projectDir, declaration, read, config = {}) {
       return answer('inconclusive', 'empty-collection-not-allowed', 'Collection matched no files and allowEmpty is false.', result);
     }
     return result;
+  }
+  if (source.adapter === 'python-literal-count') {
+    const snapshot = read(source.path);
+    if (snapshot.content === null) {
+      return answer('inconclusive', `source-${snapshot.evidence.reason}`, `Cannot safely read Python source ${source.path}.`);
+    }
+    const parsed = countPythonLiteralEntries(snapshot.content, source.symbol);
+    const extra = { sourceEvidence: snapshot.evidence, inputHashes: [] };
+    if (Object.hasOwn(parsed, 'value')) extra.value = parsed.value;
+    if (parsed.status === 'ok' && parsed.value === 0 && !source.allowEmpty) {
+      return answer('inconclusive', 'empty-python-literal-not-allowed', 'Python literal has no entries and allowEmpty is false.', extra);
+    }
+    return answer(parsed.status, parsed.reasonCode, parsed.message, extra);
   }
   if (source.adapter === 'oasdiff') return oasdiffReport(source, read);
   if (source.adapter === 'buf') return bufReport(source, read);

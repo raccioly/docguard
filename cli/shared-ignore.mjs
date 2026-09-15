@@ -61,7 +61,7 @@ const ALWAYS_REJECT_PATH_RE =
  */
 export const DEFAULT_DETECTION_IGNORE_DIRS = new Set([
   'fixtures', '__fixtures__', 'test-fixtures', 'testfixtures', 'testdata',
-  'test', 'tests', '__tests__', 'spec', 'specs', '__mocks__', 'mocks',
+  'test', 'tests', '__tests__', 'test-helpers', 'spec', 'specs', '__mocks__', 'mocks',
   'examples', 'example', 'sample', 'samples',
 ]);
 

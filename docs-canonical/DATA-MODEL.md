@@ -1,13 +1,13 @@
 # Data Model
 
-<!-- docguard:version 0.7.0 -->
+<!-- docguard:version 0.8.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-09-14 -->
+<!-- docguard:last-reviewed 2026-09-15 -->
 
 | Metadata | Value |
 |----------|-------|
 | **Status** | ![Status](https://img.shields.io/badge/status-active-brightgreen) |
-| **Version** | `0.7.0` |
+| **Version** | `0.8.0` |
 | **Database** | None — DocGuard is a stateless CLI tool |
 | **Storage** | File-system only (reads project files, writes generated docs) |
 
@@ -52,6 +52,7 @@ The primary data structure. Controls all CLI behavior.
 | `collections.*` | `string` (glob) | No | — | Binds a documentation noun to a code collection: `"extractors": "src/extractors/*.py"` lets Metrics-Consistency flag a documented count that disagrees with the file count |
 | `docs.dirs` | `string[]` | No | Auto-detected | EXTENDS the auto-detected documentation homes (docs/, documentation/, guides/, …) with non-standard dirs; exclude via `.docguardignore` |
 | `severity.*` | `"high" \| "medium" \| "low"` | No | `"medium"` | Per-validator exit-code weight — `high` promotes warnings to blocking, `low` demotes them (display unchanged) |
+| `findingSeverity.<CODE>` | `"high" \| "medium" \| "low"` | No | — | Exact stable-code enforcement; takes precedence over validator policy. Intrinsic errors require an exact code entry to be demoted. |
 
 ### Example Configuration
 
@@ -211,10 +212,12 @@ Validators emit findings and aggregate counts. The guard adapter adds names and 
 |-------|------|-------------|
 | `name` | `string` | Validator name (e.g., `"structure"`, `"changelog"`) |
 | `status` | `string` | `"pass"`, `"warn"`, or `"fail"` |
-| `findings` | `object[]` | Stable code, validator, severity, confidence, location, message, suggestion |
+| `findings` | `object[]` | Stable code, validator, intrinsic `severity`, `effectiveSeverity`, enforcement source/key, confidence, location, message, and normalized suggestion |
 | `passed`, `total` | `number` | Applicable check counts |
 | `errors`, `warnings` | `string[]` | Compatibility message arrays |
 | `applicable` | `boolean` | Optional applicability indicator; false becomes N/A |
+| `effectiveErrors`, `effectiveWarnings`, `effectiveInfos` | `number` | Exit-code counts after exact-code and validator policy |
+| `effectiveStatus` | `string` | Per-validator `pass`, `warn`, or `fail` after policy; intrinsic `status` remains available |
 
 ## Fix Command Issue Format
 
@@ -274,6 +277,7 @@ ambiguous predicate combinations invalidate the manifest.
 |---|---|---|
 | `json-pointer` | Safe JSON file plus an RFC 6901 pointer | `equals` with an explicit JSON type, or `set-equals` for a duplicate-free string array |
 | `collection-count` | One bounded repository-relative glob and explicit `allowEmpty` policy | `count-equals` |
+| `python-literal-count` | Safe `.py` path, one ASCII module-level symbol, one uniquely assigned static list/tuple/set/dict literal, and explicit `allowEmpty` policy | `count-equals` |
 | `oasdiff` | Saved bounded JSON array, adapter version, producer version, `breaking` or `changelog` command, and current input hashes | `no-findings` |
 | `buf` | Saved bounded JSON Lines, adapter version, producer version, `breaking` command, and current input hashes | `no-findings` |
 
@@ -310,3 +314,13 @@ project configuration. Its machine shape is
 `automaticScopeChange` is always false. Machine modes wrap it with type
 `docguard.repository-root-guidance` on stderr so their primary stdout schema is
 unchanged.
+
+## Readiness assessment contract
+
+CI, diagnose, and report include `assessment`. Its status is `BLOCKED` when
+guard enforcement fails, a configured structural threshold fails, or CI is set
+to block warnings; `ATTENTION` means advisory guard warnings remain; `READY`
+means guard and configured gates pass. The object carries reason codes, raw
+guard status, effective finding counts, structural maturity, and threshold
+state. It does not replace legacy status, score, grade, assurance, or exit-code
+fields.

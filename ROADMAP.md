@@ -13,9 +13,21 @@ structural score is useful, but it is not proof that arbitrary prose is true.
 
 ## Active roadmap
 
-No active milestone remains. New work enters this section only after its failure
-mode, supported scope, controls, and evidence threshold are explicit. Deferred
-ideas below are research candidates rather than unfinished commitments.
+### R9 — Adoption workflow integrity (in progress)
+
+Governing spec: `specs/012-adoption-workflow-integrity/spec.md`.
+
+Qualify the same installed journey that an adopter or AI agent follows, including
+existing repository state, rendered remediation, post-action verification, and
+the packed documentation surface. Fail closed when diff coverage, lifecycle
+evidence, or path resolution is incomplete. Add exact finding-code policy while
+preserving intrinsic detector severity, and label structural maturity separately
+from the combined readiness verdict.
+
+Release evidence requires the complete test suite, frozen precision benchmark,
+packed-package workflow, self-guard, and read-only replay against the reported
+web and Python adopter repositories. The milestone moves to Delivered only after
+those results are reviewed and the release artifacts are published.
 
 ## Delivered roadmap
 

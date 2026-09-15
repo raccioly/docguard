@@ -48,8 +48,8 @@ export function toJUnit(data) {
     const vFindings = Array.isArray(v.findings)
       ? v.findings
       : (data.findings || []).filter(f => f.validator === v.key || f.validator === v.name);
-    const errors = vFindings.filter(f => f.severity === 'error');
-    const warns = vFindings.filter(f => f.severity !== 'error');
+    const errors = vFindings.filter(f => (f.effectiveSeverity || f.severity) === 'error');
+    const warns = vFindings.filter(f => (f.effectiveSeverity || f.severity) !== 'error');
     const attrs = `name="${esc(v.name)}" classname="docguard.guard"`;
 
     if (v.status === 'skipped' || v.status === 'na') {
@@ -63,7 +63,7 @@ export function toJUnit(data) {
         `      <failure message="${esc(errors[0].message)}" type="${esc(errors[0].code || 'docguard')}">${esc(body)}</failure>\n` +
         `    </testcase>`
       );
-    } else if (v.status === 'fail') {
+    } else if (v.status === 'fail' && vFindings.length === 0) {
       // A validator that failed WITHOUT structured error findings — the
       // crash path (guard catches the throw and records string errors only).
       // This must go red in CI, not render as a passing testcase (M1).

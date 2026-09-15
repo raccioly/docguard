@@ -1,3 +1,6 @@
+// @req docguard.adoption-workflow-integrity#FR-014
+// @req docguard.adoption-workflow-integrity#SC-008
+// @req docs-canonical/REQUIREMENTS.md#FR-016
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
@@ -58,7 +61,7 @@ describe('API authority precision', () => {
     assertNoDeletion();
   });
 
-  it('removes only the endpoint omitted from both contract and scanned code', () => {
+  it('never deletes an endpoint from negative route-scan evidence', () => {
     fixture();
     const result = validateApiSurface(dir, {});
     const removed = result.findings.find(f => f.code === 'API004' && f.message.includes('/export'));
@@ -66,14 +69,10 @@ describe('API authority precision', () => {
     assert.equal(removed.evidence.code.status, 'not-found');
     assert.equal(removed.evidence.code.confidence, 'low');
     assert.match(removed.message, /coverage may be incomplete/);
-    assert.equal(removed.suggestion.kind, 'fix');
-    assert.deepEqual(result.fixes, [{ type: 'remove-endpoint', method: 'GET', path: '/api/items/{}/export', doc: defaultDoc }]);
-    const written = applyApiSurfaceWrites(dir, {});
-    assert.equal(written.applied, true);
-    assert.deepEqual(written.removed, [{ method: 'GET', path: '/api/items/{}/export' }]);
-    const after = readFileSync(join(dir, defaultDoc), 'utf8');
-    assert.ok(after.includes('/api/items/{id}'));
-    assert.ok(!after.includes('/export'));
+    assert.equal(removed.suggestion.kind, 'review');
+    assert.ok(!removed.suggestion.command);
+    assert.deepEqual(result.fixes, []);
+    assertNoDeletion();
   });
 
   it('reports unknown code coverage conservatively for unsupported registrations', () => {

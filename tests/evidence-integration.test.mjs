@@ -46,7 +46,7 @@ function fixture(t) {
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   write(dir, 'docs-canonical/FACTS.md', [
     '# Facts', '', '## Policy', 'Retention is 30 days.', 'Roles are admin, editor, viewer.', '',
-    '## Surface', 'There are 2 handlers.', '',
+    '## Surface', 'There are 2 handlers.', 'There are 3 Python scanners.', '',
     '## API compatibility', 'No OpenAPI breaking changes were detected.', '',
     '## Protobuf compatibility', 'No Protobuf breaking changes were detected.', '',
     '```', 'Retention is 999 days.', '```', '',
@@ -54,6 +54,7 @@ function fixture(t) {
   write(dir, 'config/policy.json', JSON.stringify({ retentionDays: 30, roles: ['admin', 'editor', 'viewer'] }));
   write(dir, 'src/handlers/a.js', 'export default 1;');
   write(dir, 'src/handlers/b.js', 'export default 2;');
+  write(dir, 'src/scanners.py', 'SCANNERS = [HeadersScanner(), TLSScanner(), CookieScanner()]\n');
   write(dir, 'api/base.yaml', 'openapi: 3.0.0\n');
   write(dir, 'api/current.yaml', 'openapi: 3.0.0\n');
   write(dir, 'proto/current.proto', 'syntax = "proto3";\n');
@@ -77,6 +78,12 @@ function fixture(t) {
       id: 'surface.handlers', applicability: { mode: 'always' },
       target: { document: 'docs-canonical/FACTS.md', heading: 'Surface', statement: 'There are {{value}} handlers.' },
       source: { adapter: 'collection-count', glob: 'src/handlers/*.js', allowEmpty: false },
+      predicate: { kind: 'count-equals' },
+    },
+    {
+      id: 'surface.python-scanners', applicability: { mode: 'always' },
+      target: { document: 'docs-canonical/FACTS.md', heading: 'Surface', statement: 'There are {{value}} Python scanners.' },
+      source: { adapter: 'python-literal-count', path: 'src/scanners.py', symbol: 'SCANNERS', allowEmpty: false },
       predicate: { kind: 'count-equals' },
     },
     {
@@ -111,13 +118,13 @@ describe('evidence-scoped verification', () => {
     assert.equal(atx.value, '45');
   });
 
-  it('verifies scalar, set, collection, oasdiff, and Buf evidence within exact scope', t => {
+  it('verifies scalar, set, collection, Python literal, oasdiff, and Buf evidence within exact scope', t => {
     const dir = fixture(t);
     const result = evaluateEvidence(dir, { ignore: [] });
     assert.equal(result.status, 'verified-within-scope');
-    assert.equal(result.summary['verified-within-scope'], 5);
+    assert.equal(result.summary['verified-within-scope'], 6);
     assert.ok(result.results.every(item => item.scopeLimitation.includes('declared Markdown statement')));
-    assert.equal(validateEvidence(dir, {}).passed, 5);
+    assert.equal(validateEvidence(dir, {}).passed, 6);
   });
 
   it('exposes evidence through verify, guard, SARIF/JUnit, and exact semantic coverage', t => {
@@ -128,10 +135,10 @@ describe('evidence-scoped verification', () => {
     });
     assert.equal(cli.status, 0, cli.stderr);
     const output = JSON.parse(cli.stdout);
-    assert.equal(output.summary['verified-within-scope'], 5);
+    assert.equal(output.summary['verified-within-scope'], 6);
 
     const guard = runGuardInternal(dir, { projectName: 'evidence-fixture', profile: 'starter', requiredFiles: { canonical: [] }, validators: onlyEvidence() });
-    assert.equal(guard.evidence.summary['verified-within-scope'], 5);
+    assert.equal(guard.evidence.summary['verified-within-scope'], 6);
     assert.match(JSON.stringify(toSarif(guard, { projectDir: dir })), /DocGuard/);
     assert.match(toJUnit(guard), /testsuite/);
 
@@ -161,6 +168,13 @@ describe('evidence-scoped verification', () => {
     assert.equal(contradiction.state, 'contradicted');
     assert.equal(Object.hasOwn(contradiction, 'sourceValue'), false, 'public results must not expose raw source values');
     assert.equal(contradiction.documentValue, 30, 'the already-public document value remains available for exact claim coverage');
+
+    write(dir, 'docs-canonical/FACTS.md', read(dir, 'docs-canonical/FACTS.md').replace('There are 3 Python scanners.', 'There are 4 Python scanners.'));
+    result = evaluateEvidence(dir, {});
+    const pythonContradiction = result.results.find(item => item.declarationId === 'surface.python-scanners');
+    assert.equal(pythonContradiction.state, 'contradicted');
+    assert.equal(Object.hasOwn(pythonContradiction, 'sourceValue'), false);
+    assert.match(pythonContradiction.evidenceHash, /^sha256:[0-9a-f]{64}$/);
 
     write(dir, 'api/current.yaml', 'openapi: 3.1.0\n');
     result = evaluateEvidence(dir, {});

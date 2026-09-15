@@ -48,6 +48,7 @@
           "oneOf": [
             { "$ref": "#/$defs/jsonSource" },
             { "$ref": "#/$defs/collectionSource" },
+            { "$ref": "#/$defs/pythonLiteralSource" },
             { "$ref": "#/$defs/oasdiffSource" },
             { "$ref": "#/$defs/bufSource" }
           ]
@@ -79,6 +80,17 @@
       "properties": {
         "adapter": { "const": "collection-count" },
         "glob": { "$ref": "#/$defs/safePath" },
+        "allowEmpty": { "type": "boolean" }
+      }
+    },
+    "pythonLiteralSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["adapter", "path", "symbol", "allowEmpty"],
+      "properties": {
+        "adapter": { "const": "python-literal-count" },
+        "path": { "allOf": [{ "$ref": "#/$defs/safePath" }, { "pattern": "\\.py$" }] },
+        "symbol": { "type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,127}$" },
         "allowEmpty": { "type": "boolean" }
       }
     },

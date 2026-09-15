@@ -8,7 +8,7 @@
  */
 
 import { watch as fsWatch, readdirSync, lstatSync } from 'node:fs';
-import { resolve, extname } from 'node:path';
+import { resolve, extname, basename } from 'node:path';
 import { c } from '../shared.mjs';
 import { runGuardInternal } from './guard.mjs';
 import { clearMemoryPlanCache } from '../scanners/memory-plan.mjs';
@@ -24,7 +24,8 @@ export function runWatch(projectDir, config, flags = {}, runtime = {}) {
   const watch = runtime.watch || fsWatch;
   const guard = runtime.guard || runGuardInternal;
   const clearCache = runtime.clearCache || clearMemoryPlanCache;
-  console.log(`${c.bold}👁️  DocGuard Watch — ${config.projectName}${c.reset}`);
+  const projectName = config.projectName || basename(resolve(projectDir)) || 'project';
+  console.log(`${c.bold}👁️  DocGuard Watch — ${projectName}${c.reset}`);
   console.log(`${c.dim}   Directory: ${projectDir}${c.reset}`);
   if (flags.autoFix) {
     console.log(`${c.cyan}   Mode: auto-fix (will output AI prompts on failures)${c.reset}`);

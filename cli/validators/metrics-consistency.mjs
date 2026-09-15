@@ -131,7 +131,7 @@ export function validateMetricsConsistency(projectDir, config, guardResults) {
       // then emit ONE warning per distinct value. A file that says "20" on
       // line 5 and "20" on line 50 is the same drift; "20" on line 5 and
       // "19" on line 50 are two distinct drifts.
-      const distinctFoundInFile = new Set();
+      const occurrencesByValue = new Map();
       while ((match = regex.exec(content)) !== null) {
         // Bug #2 (subject-binding): for the built-in meta-counts, only validate a
         // number BOUND to DocGuard. An unbound "N checks" (a proof harness, a CI
@@ -140,11 +140,17 @@ export function validateMetricsConsistency(projectDir, config, guardResults) {
         // correct number. Project-declared collections (requireBind:false) skip
         // this: naming the noun in `config.collections` IS the explicit binding.
         if (requireBind && !isDocguardBound(content, match.index)) continue;
-        distinctFoundInFile.add(parseInt(match[1], 10));
+        const found = parseInt(match[1], 10);
+        const occurrences = occurrencesByValue.get(found) || { current: 0, historical: 0 };
+        occurrences[isHistoricalMetricContext(content, match.index) ? 'historical' : 'current']++;
+        occurrencesByValue.set(found, occurrences);
       }
-      if (distinctFoundInFile.size === 0) continue;
+      if (occurrencesByValue.size === 0) continue;
 
-      for (const found of distinctFoundInFile) {
+      for (const [found, occurrences] of occurrencesByValue) {
+        // Historical transitions are evidence about an earlier release, not an
+        // assertion of the current count. Rewriting them would falsify history.
+        if (occurrences.current === 0) continue;
         if (found > 0 && found !== actuals[key]) {
           const driftKey = `${relPath}|${label}|${found}`;
           if (reportedDrift.has(driftKey)) continue;
@@ -153,24 +159,33 @@ export function validateMetricsConsistency(projectDir, config, guardResults) {
           const phrase = isCollection
             ? `the code has ${actuals[key]} (${glob})`
             : `${subject} ${label} count is ${actuals[key]}`;
+          const safeToRewrite = occurrences.historical === 0;
           findings.push(mkFinding({
             code: isCollection ? 'MET002' : 'MET001',
             validator: 'metricsConsistency',
             severity: 'warn',
-            message: `${relPath} says "${found} ${label}" but ${phrase}. Fix with \`docguard fix --write\``,
+            confidence: safeToRewrite ? 'high' : 'low',
+            reportable: !safeToRewrite,
+            message: `${relPath} says "${found} ${label}" but ${phrase}. ${safeToRewrite
+              ? 'Fix with `docguard fix --write`'
+              : 'Review manually because the same count also appears in historical context'}`,
             location: relPath,
             suggestion: {
-              kind: 'fix',
-              text: isCollection
-                ? `Confirm which side is right, then rewrite the stale count (${found} → ${actuals[key]})`
-                : `Rewrite the stale docguard-bound count (${found} → ${actuals[key]})`,
-              command: 'docguard fix --write',
+              kind: safeToRewrite ? 'fix' : 'review',
+              text: safeToRewrite
+                ? (isCollection
+                  ? `Confirm which side is right, then rewrite the stale count (${found} → ${actuals[key]})`
+                  : `Rewrite the stale docguard-bound count (${found} → ${actuals[key]})`)
+                : `Review the current assertion without changing historical ${found} ${label} statements`,
+              ...(safeToRewrite ? { command: 'docguard fix --write' } : {}),
             },
           }));
           // actualSource records WHAT the actual count describes, so the applier
           // (and a human) can confirm both sides are the same subject before any
           // overwrite. Without it the fix is refused (fail-closed). See Bug #2.
-          fixes.push({ type: 'replace-count', file: relPath, label, found, actual: actuals[key], actualSource });
+          if (safeToRewrite) {
+            fixes.push({ type: 'replace-count', file: relPath, label, found, actual: actuals[key], actualSource });
+          }
         } else {
           // Matches the actual count — one pass per (file, label), not per occurrence.
           const passKey = `${relPath}|${label}`;
@@ -202,6 +217,32 @@ function isDocguardBound(content, index) {
   let lineEnd = content.indexOf('\n', index);
   if (lineEnd === -1) lineEnd = content.length;
   return /docguard/i.test(content.slice(lineStart, lineEnd));
+}
+
+/**
+ * Return true when a metric occurrence describes history rather than current
+ * state. The classifier deliberately recognizes only explicit historical
+ * evidence: transition arrows/from-to wording, historical metadata, and
+ * release-history headings. Ambiguous prose remains visible, but a count that
+ * appears in both contexts is never handed to the mechanical replace-all fix.
+ */
+function isHistoricalMetricContext(content, index) {
+  const lineStart = content.lastIndexOf('\n', index) + 1;
+  let lineEnd = content.indexOf('\n', index);
+  if (lineEnd === -1) lineEnd = content.length;
+  const line = content.slice(lineStart, lineEnd);
+
+  if (/\d[\d,]*\s*(?:→|->|=>)\s*\d[\d,]*/.test(line)) return true;
+  if (/\b(?:increased|grew|rose|decreased|dropped|fell|expanded|reduced|changed|moved|went|bumped|upgraded)\s+from\s+\d[\d,]*\s+to\s+\d[\d,]*/i.test(line)) return true;
+  if (/\b(?:previously|formerly|historically|back then|at launch|in (?:release|version|v)\s*\d|during (?:the )?(?:release|upgrade|migration))\b/i.test(line)) return true;
+
+  const before = content.slice(0, lineStart);
+  const headings = [...before.matchAll(/^#{1,6}\s+(.+)$/gm)];
+  const heading = headings.at(-1)?.[1] || '';
+  if (/\b(?:change\s*log|release (?:notes|history)|version history|migration history|what changed)\b/i.test(heading)) return true;
+
+  const prefix = content.slice(0, Math.min(content.length, 4096));
+  return /<!--\s*docguard:status\s+(?:historical|superseded|deprecated|archived)\s*-->/i.test(prefix);
 }
 
 function findTestFiles(dir) {

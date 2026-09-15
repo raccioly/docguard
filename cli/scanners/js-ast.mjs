@@ -185,16 +185,104 @@ export function extractJsSchemaBodies(content, filename = 'file.ts') {
 // are middleware-ish; `all` is included (it IS a route), `use` is not.
 const HTTP_METHOD_NAMES = new Set(['get', 'post', 'put', 'delete', 'patch', 'head', 'options', 'all']);
 
-/** Extract a string path from a call's first arg: StringLiteral or TemplateLiteral. */
-function pathArgValue(node) {
+function topLevelStaticStrings(ast) {
+  const declarations = new Map();
+  const body = ast?.program?.body || [];
+  for (const statement of body) {
+    const declaration = statement.type === 'ExportNamedDeclaration' ? statement.declaration : statement;
+    if (declaration?.type !== 'VariableDeclaration' || declaration.kind !== 'const') continue;
+    for (const item of declaration.declarations || []) {
+      if (item.id?.type !== 'Identifier' || !item.init) continue;
+      if (declarations.has(item.id.name)) declarations.set(item.id.name, null);
+      else declarations.set(item.id.name, item.init);
+    }
+  }
+  const resolved = new Map();
+  const resolveNode = (node, visiting = new Set()) => {
+    if (!node) return null;
+    if (node.type === 'StringLiteral') return node.value;
+    if (node.type === 'Identifier') {
+      if (resolved.has(node.name)) return resolved.get(node.name);
+      const init = declarations.get(node.name);
+      if (!init || visiting.has(node.name)) return null;
+      const value = resolveNode(init, new Set(visiting).add(node.name));
+      if (value !== null) resolved.set(node.name, value);
+      return value;
+    }
+    if (node.type === 'TemplateLiteral') {
+      let value = '';
+      for (let i = 0; i < node.quasis.length; i++) {
+        value += node.quasis[i]?.value?.cooked ?? '';
+        if (i < node.expressions.length) {
+          const expression = resolveNode(node.expressions[i], visiting);
+          if (expression === null) return null;
+          value += expression;
+        }
+      }
+      return value;
+    }
+    if (node.type === 'BinaryExpression' && node.operator === '+') {
+      const left = resolveNode(node.left, visiting);
+      const right = resolveNode(node.right, visiting);
+      return left === null || right === null ? null : left + right;
+    }
+    return null;
+  };
+  for (const name of declarations.keys()) resolveNode({ type: 'Identifier', name });
+  return resolved;
+}
+
+function expressRouteBindings(ast) {
+  const bindings = new Set(['app', 'router', 'server', 'fastify', 'hono']);
+  const factories = new Set(['express', 'express.Router', 'Router', 'createRouter', 'Fastify', 'Hono']);
+  walk(ast, node => {
+    if (node.type !== 'ImportDeclaration' || node.source?.value !== 'express') return;
+    for (const spec of node.specifiers || []) {
+      if (spec.type === 'ImportDefaultSpecifier') factories.add(spec.local.name);
+      if (spec.type === 'ImportSpecifier' && (spec.imported?.name || spec.imported?.value) === 'Router') {
+        factories.add(spec.local.name);
+      }
+    }
+  });
+  walk(ast, node => {
+    if (node.type !== 'VariableDeclarator' || node.id?.type !== 'Identifier' || node.init?.type !== 'CallExpression') return;
+    const factory = calleeName(node.init.callee);
+    if (factories.has(factory)) bindings.add(node.id.name);
+  });
+  return bindings;
+}
+
+function looksLikeRouteReceiver(name, bindings) {
+  return bindings.has(name) || /(?:app|server|router|routes)$/i.test(name);
+}
+
+/** Extract a statically knowable string path from a call argument. */
+function pathArgValue(node, constants = new Map(), dynamicPlaceholder = true) {
   if (!node) return null;
   if (node.type === 'StringLiteral') return node.value;
+  if (node.type === 'Identifier') return constants.get(node.name) ?? null;
   if (node.type === 'TemplateLiteral') {
     if (node.expressions.length === 0) return node.quasis[0]?.value?.cooked ?? null;
-    // `/users/${id}` → `/users/:param` so a dynamic segment still looks like a path.
-    return node.quasis
-      .map((q, i) => (q.value.cooked ?? '') + (i < node.expressions.length ? ':param' : ''))
-      .join('');
+    let value = '';
+    for (let i = 0; i < node.quasis.length; i++) {
+      value += node.quasis[i]?.value?.cooked ?? '';
+      if (i < node.expressions.length) {
+        const expression = node.expressions[i];
+        const staticValue = expression.type === 'Identifier' ? constants.get(expression.name) : null;
+        if (staticValue === undefined || staticValue === null) {
+          if (!dynamicPlaceholder) return null;
+          value += ':param';
+        } else {
+          value += staticValue;
+        }
+      }
+    }
+    return value;
+  }
+  if (node.type === 'BinaryExpression' && node.operator === '+') {
+    const left = pathArgValue(node.left, constants, false);
+    const right = pathArgValue(node.right, constants, false);
+    return left === null || right === null ? null : left + right;
   }
   return null;
 }
@@ -216,6 +304,8 @@ export function extractJsRouteCalls(content, filename = 'file.ts') {
   if (!ok || !ast) return null;
 
   const out = [];
+  const constants = topLevelStaticStrings(ast);
+  const routeBindings = expressRouteBindings(ast);
   walk(ast, (node) => {
     if (node.type !== 'CallExpression') return;
     const callee = node.callee;
@@ -224,13 +314,20 @@ export function extractJsRouteCalls(content, filename = 'file.ts') {
     if (!prop || prop.type !== 'Identifier') return;
     const method = prop.name.toLowerCase();
     if (!HTTP_METHOD_NAMES.has(method)) return;
-    const path = pathArgValue(node.arguments && node.arguments[0]);
+    // A route receiver must be a stable binding (`app.get`, `router.post`, …).
+    // Chained HTTP clients such as `request(app).get('/api/items')` also accept
+    // URL-shaped first arguments, but they issue requests rather than register
+    // routes. Treating their CallExpression receiver as a route used to let test
+    // calls contaminate the product API inventory.
+    if (!callee.object || callee.object.type !== 'Identifier') return;
+    if (!looksLikeRouteReceiver(callee.object.name, routeBindings)) return;
+    const path = pathArgValue(node.arguments && node.arguments[0], constants);
     if (!path || !(path.startsWith('/') || path === '*')) return;
     // `receiver` is the object the method was called on (`router` in
     // `router.get(...)`, `app` in `app.get(...)`). Mount-prefix resolution uses
     // it to apply a same-file `app.use('/api', router)` prefix ONLY to that
     // router's routes — never to sibling `app.get(...)` calls in the same file.
-    const receiver = callee.object && callee.object.type === 'Identifier' ? callee.object.name : null;
+    const receiver = callee.object.name;
     out.push({ method: method.toUpperCase(), path, start: node.start ?? 0, receiver });
   });
   return out;
@@ -394,13 +491,24 @@ export function extractJsMountsAndImports(content, filename = 'file.ts') {
   if (!ok || !ast) return null;
 
   const imports = {};
+  const importSymbols = {};
+  const exports = {};
   const mounts = [];
+  const constants = topLevelStaticStrings(ast);
+  const routeBindings = expressRouteBindings(ast);
 
   walk(ast, (node) => {
     // import X from 'spec' | import { X } from 'spec' | import * as X from 'spec'
     if (node.type === 'ImportDeclaration' && node.source && node.source.type === 'StringLiteral') {
       for (const spec of node.specifiers || []) {
-        if (spec.local && spec.local.name) imports[spec.local.name] = node.source.value;
+        if (spec.local && spec.local.name) {
+          imports[spec.local.name] = node.source.value;
+          importSymbols[spec.local.name] = spec.type === 'ImportDefaultSpecifier'
+            ? 'default'
+            : spec.type === 'ImportNamespaceSpecifier'
+              ? '*'
+              : (spec.imported?.name || spec.imported?.value || spec.local.name);
+        }
       }
       return;
     }
@@ -410,23 +518,53 @@ export function extractJsMountsAndImports(content, filename = 'file.ts') {
         && calleeName(node.init.callee) === 'require'
         && node.init.arguments[0] && node.init.arguments[0].type === 'StringLiteral') {
       imports[node.id.name] = node.init.arguments[0].value;
+      importSymbols[node.id.name] = 'default';
       return;
     }
-    // <x>.use('/prefix', …, <routerIdent>) — the prefix is the first string-literal
-    // arg; the mounted router is the LAST identifier arg (skips middleware).
+    if (node.type === 'ExportDefaultDeclaration' && node.declaration?.type === 'Identifier') {
+      exports.default = node.declaration.name;
+      return;
+    }
+    if (node.type === 'ExportNamedDeclaration') {
+      if (node.declaration?.type === 'VariableDeclaration') {
+        for (const item of node.declaration.declarations || []) {
+          if (item.id?.type === 'Identifier') {
+            exports[item.id.name] = item.init?.type === 'Identifier' ? item.init.name : item.id.name;
+          }
+        }
+      }
+      for (const spec of node.specifiers || []) {
+        const exported = spec.exported?.name || spec.exported?.value;
+        const local = spec.local?.name || spec.local?.value;
+        if (exported && local) exports[exported] = local;
+      }
+      return;
+    }
+    // <x>.use('/prefix', middleware, router) and pathless <x>.use(router).
+    // Return every identifier candidate; the filesystem-aware caller keeps
+    // only candidates whose target contains router registrations or mounts.
     if (node.type === 'CallExpression' && node.callee && node.callee.type === 'MemberExpression'
         && !node.callee.computed && node.callee.property && node.callee.property.name === 'use') {
       const args = node.arguments || [];
       const first = args[0];
-      const prefix = first && first.type === 'StringLiteral' ? first.value : null;
-      if (!prefix || !prefix.startsWith('/')) return;
-      let ident = null;
-      for (let i = args.length - 1; i >= 1; i--) {
-        if (args[i] && args[i].type === 'Identifier') { ident = args[i].name; break; }
+      const receiver = node.callee.object?.type === 'Identifier'
+        ? node.callee.object.name
+        : null;
+      if (!receiver || !looksLikeRouteReceiver(receiver, routeBindings)) return;
+      const explicitPrefix = pathArgValue(first, constants, false);
+      const hasPrefix = typeof explicitPrefix === 'string' && explicitPrefix.startsWith('/');
+      if (!hasPrefix && (first?.type !== 'Identifier' || args.length !== 1)) return;
+      const prefix = hasPrefix ? explicitPrefix : '';
+      const start = hasPrefix ? 1 : 0;
+      for (let i = start; i < args.length; i++) {
+        if (args[i]?.type === 'Identifier' && args[i].name !== receiver &&
+            (imports[args[i].name] || looksLikeRouteReceiver(args[i].name, routeBindings))) {
+          mounts.push({ prefix, ident: args[i].name, receiver });
+        }
       }
-      if (ident) mounts.push({ prefix, ident });
     }
   });
 
-  return { imports, mounts };
+  const routeReceivers = new Set(extractJsRouteCalls(content, filename)?.map(route => route.receiver) || []);
+  return { imports, importSymbols, exports, mounts, routeReceivers: [...routeReceivers] };
 }

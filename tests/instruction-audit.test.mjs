@@ -1,3 +1,6 @@
+// @req docguard.adoption-workflow-integrity#FR-005
+// @req docguard.adoption-workflow-integrity#SC-003
+// @req docs-canonical/REQUIREMENTS.md#FR-010
 /**
  * Instruction Audit scanner tests (field report #11 — MemoryLint-inspired).
  *
@@ -8,7 +11,7 @@
 
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync, symlinkSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -82,6 +85,49 @@ describe('Instruction Audit scanner', () => {
     assert.equal(deterministic.staleCommands.length, 1);
     assert.equal(deterministic.staleCommands[0].command, 'frobnicate');
     assert.equal(deterministic.staleCommands[0].line, 5);
+  });
+
+  it('resolves one nested bare filename and reports duplicate basenames as ambiguous', () => {
+    mkdirSync(join(tmpDir, 'src', 'websec_validator'), { recursive: true });
+    mkdirSync(join(tmpDir, 'other'), { recursive: true });
+    write(join('src', 'websec_validator', 'scanners.py'), 'SCANNERS = []\n');
+    write(join('src', 'websec_validator', 'config.py'), 'VALUE = 1\n');
+    write(join('other', 'config.py'), 'VALUE = 2\n');
+    write('AGENTS.md', [
+      '# Rules', '',
+      '- You must review `scanners.py` before changing scanner registration.',
+      '- You must review `config.py` before changing configuration.',
+    ].join('\n'));
+    const { deterministic } = auditInstructions(tmpDir, {});
+    assert.equal(deterministic.stalePointers.length, 0);
+    assert.deepEqual(deterministic.resolvedPointers.map(item => item.resolvedPath), ['src/websec_validator/scanners.py']);
+    assert.equal(deterministic.ambiguousPointers.length, 1);
+    assert.equal(deterministic.ambiguousPointers[0].matchCount, 2);
+  });
+
+  it('rejects unsafe and symlinked pointers without accepting outside-repository evidence', () => {
+    const outside = mkdtempSync(join(tmpdir(), 'docguard-pointer-outside-'));
+    try {
+      writeFileSync(join(outside, 'outside.md'), '# Outside\n');
+      const link = join(tmpDir, 'linked.md');
+      symlinkSync(join(outside, 'outside.md'), link);
+      write('AGENTS.md', '# Rules\n\n- You must read `../outside.md`, `/etc/policy.md`, `C:\\policy.md`, `https://example.com/policy.md`, and `linked.md` before editing.\n');
+      const { deterministic } = auditInstructions(tmpDir, {});
+      assert.ok(deterministic.unsafePointers.some(item => item.path === '../outside.md'));
+      assert.ok(deterministic.unsafePointers.some(item => item.path === '/etc/policy.md'));
+      assert.ok(deterministic.unsafePointers.some(item => item.path === 'C:\\policy.md'));
+      assert.equal(deterministic.unsafePointers.some(item => item.path.startsWith('https://')), false);
+      assert.ok(deterministic.stalePointers.some(item => item.path === 'linked.md'));
+    } finally { rmSync(outside, { recursive: true, force: true }); }
+  });
+
+  it('indexes a unique bare pointer inside a supported hidden directory', () => {
+    mkdirSync(join(tmpDir, '.github'), { recursive: true });
+    write(join('.github', 'CONTRIBUTOR_POLICY.md'), '# Policy\n');
+    write('AGENTS.md', '# Rules\n\n- You must read `CONTRIBUTOR_POLICY.md` before contributing.\n');
+    const { deterministic } = auditInstructions(tmpDir, {});
+    assert.equal(deterministic.stalePointers.length, 0);
+    assert.equal(deterministic.resolvedPointers[0].resolvedPath, '.github/CONTRIBUTOR_POLICY.md');
   });
 
   it('(e) generated CLAUDE.md (docguard:agents-sync marker) is skipped', () => {

@@ -18,6 +18,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, relative, basename, extname } from 'node:path';
 import { TRACE_MAP, isTraceableSource } from '../shared-trace-patterns.mjs';
 import { walkFiles as sharedWalkFiles, listCanonicalDocs } from '../shared-ignore.mjs';
+/** @implements docguard.adoption-workflow-integrity#FR-006 */
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { tokenize } from '../shared-diff.mjs';
 import { rankBySimilarity } from '../shared-ir.mjs';
@@ -32,7 +33,7 @@ import {
   requirementPatterns,
 } from '../shared-requirements.mjs';
 import { readRetirementManifest } from '../scanners/retirement-manifest.mjs';
-import { parseSpecId } from '../scanners/spec-registry.mjs';
+import { parseSpecId, trustedSpecLifecycleIndex } from '../scanners/spec-registry.mjs';
 
 /**
  * Optional graphify interop (github.com/Graphify-Labs/graphify, MIT).
@@ -250,7 +251,9 @@ export function validateTraceability(projectDir, config) {
   passed += reqResult.passed;
   total += reqResult.total;
 
-  return resultFromFindings(findings, { passed, total });
+  const result = resultFromFindings(findings, { passed, total });
+  result.requirementCoverage = reqResult.requirementCoverage;
+  return result;
 }
 
 // ──── Requirement ID Traceability ────────────────────────────────────────────
@@ -274,6 +277,7 @@ function validateRequirementTraceability(projectDir, config, projectFiles) {
   // ── Step 1: Collect requirement IDs from documentation ──
   const reqIds = collectRequirementIds(projectDir, config, patterns);
   const retiredReqIds = loadRetiredRequirementIds(projectDir);
+  const lifecycleIndex = trustedSpecLifecycleIndex(projectDir);
 
   // ── Step 2: Scan test files for requirement ID references ──
   const testRefs = scanTestFilesForReferences(projectDir, projectFiles, patterns);
@@ -295,9 +299,18 @@ function validateRequirementTraceability(projectDir, config, projectFiles) {
   const softThreshold = config.traceability?.irSoftThreshold ?? 0.10;
   let testCorpus = null;
 
-  // Check each documented requirement has at least one test reference
+  let deferred = 0;
+  let lifecycleUnknown = 0;
+  // Planned specs are intent awaiting implementation. Only committed,
+  // digest-current reviewed lifecycle can defer their test linkage.
   for (const [key, location] of reqIds) {
     const reqId = location.id;
+    const lifecycle = location.specId ? lifecycleIndex.get(`${location.specId}\0${location.file}`) : null;
+    if (lifecycle?.delivery === 'planned') {
+      deferred++;
+      continue;
+    }
+    if (location.specId && !lifecycle) lifecycleUnknown++;
     total++;
     if (resolvedRefs.has(key)) {
       passed++;
@@ -326,6 +339,8 @@ function validateRequirementTraceability(projectDir, config, projectFiles) {
       }));
     }
   }
+  const applicableRequirements = total;
+  const tracedRequirements = passed;
 
   // Check for orphaned test refs (tests referencing non-existent requirements)
   for (const [reqId, refs] of testRefs) {
@@ -346,7 +361,17 @@ function validateRequirementTraceability(projectDir, config, projectFiles) {
     }
   }
 
-  return { findings, passed, total };
+  return {
+    findings, passed, total,
+    requirementCoverage: {
+      discovered: reqIds.size,
+      applicable: applicableRequirements,
+      traced: tracedRequirements,
+      missing: findings.filter(finding => finding.code === 'TRC004').length,
+      deferred,
+      lifecycleUnknown,
+    },
+  };
 }
 
 /**

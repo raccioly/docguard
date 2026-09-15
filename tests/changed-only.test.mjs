@@ -63,6 +63,19 @@ describe('liteValidatorsConfig — never silently drops severity=high validators
       'security=high must run under --changed-only — it is an explicit "always block" signal');
   });
 
+  it('force-enables the owner of an exact high-severity finding code', () => {
+    const v = liteValidatorsConfig({ findingSeverity: { SEC001: 'high' } });
+    assert.equal(v.security, true,
+      'SEC001=high must run the security validator under --changed-only');
+  });
+
+  it('explicitly disables newer non-lite validators by default', () => {
+    const v = liteValidatorsConfig({});
+    for (const key of ['documentLifecycle', 'specRegistry', 'diffSuspicion', 'referenceExistence', 'apiDocSmells', 'surfaceSync']) {
+      assert.equal(v[key], false, `${key} must not leak into the lite profile`);
+    }
+  });
+
   it('respects an explicit validator disable over a high-severity override', () => {
     const v = liteValidatorsConfig({
       severity: { security: 'high' },

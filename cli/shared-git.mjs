@@ -8,6 +8,7 @@
  * "X commits since last doc update" counter — silently hiding drift.
  *
  * Zero NPM dependencies. Pure Node.js built-ins.
+ * @implements docguard.adoption-workflow-integrity#FR-004
  */
 
 import { execFileSync, execSync } from 'node:child_process';
@@ -170,6 +171,103 @@ export function getDiffText(dir, ref = 'HEAD~1', pathspec = null) {
   } catch {
     return '';
   }
+}
+
+const DEFAULT_DIFF_LIMITS = Object.freeze({
+  maxPatchBytes: 5 * 1024 * 1024,
+  maxInventoryBytes: 5 * 1024 * 1024,
+  maxChangedFiles: 5_000,
+  timeoutMs: 30_000,
+});
+
+function diffFailure(error) {
+  if (error?.code === 'ENOBUFS' || /maxBuffer/i.test(error?.message || '')) return 'too-large';
+  if (error?.code === 'ETIMEDOUT' || error?.signal === 'SIGTERM') return 'timeout';
+  return 'error';
+}
+
+function parseNameStatus(raw) {
+  const tokens = raw.toString('utf8').split('\0');
+  if (tokens.at(-1) === '') tokens.pop();
+  const files = [];
+  for (let i = 0; i < tokens.length;) {
+    const status = tokens[i++];
+    if (!status) continue;
+    if (/^[RC]/.test(status)) {
+      const oldPath = tokens[i++];
+      const newPath = tokens[i++];
+      if (oldPath && newPath) files.push({ status, oldPath, newPath });
+    } else {
+      const path = tokens[i++];
+      if (path) files.push({ status, oldPath: status.startsWith('D') ? path : null, newPath: status.startsWith('D') ? null : path });
+    }
+  }
+  return files;
+}
+
+/**
+ * Read a reconciliation diff without converting overflow, timeout, or Git
+ * failure into an empty successful range. The path inventory is independent
+ * from patch text so binary files, deletes, and renames remain visible.
+ */
+export function getDiffSnapshot(dir, ref = 'HEAD~1', options = {}) {
+  const limits = { ...DEFAULT_DIFF_LIMITS, ...options };
+  const base = {
+    status: 'error', ref, commitCount: null, changedFiles: [], patch: '',
+    patchBytes: 0, limits, reason: null,
+  };
+  let inventory;
+  try {
+    inventory = execFileSync('git', [
+      'diff', '--name-status', '-z', '--no-color', '--no-ext-diff', '--no-textconv', ref, 'HEAD',
+    ], {
+      cwd: dir, encoding: 'buffer', stdio: ['pipe', 'pipe', 'pipe'],
+      maxBuffer: limits.maxInventoryBytes, timeout: limits.timeoutMs,
+    });
+  } catch (error) {
+    const status = diffFailure(error);
+    return { ...base, status, reason: status === 'too-large'
+      ? 'Changed-file inventory exceeded its byte budget.'
+      : status === 'timeout' ? 'Changed-file inventory timed out.' : 'Changed-file inventory could not be read.' };
+  }
+  const changedFiles = parseNameStatus(inventory);
+  if (changedFiles.length > limits.maxChangedFiles) {
+    return { ...base, status: 'too-large', changedFiles: changedFiles.slice(0, limits.maxChangedFiles),
+      reason: `Changed-file inventory exceeded the ${limits.maxChangedFiles}-path budget.` };
+  }
+  let commitCount;
+  try {
+    commitCount = Number(execFileSync('git', ['rev-list', '--count', `${ref}..HEAD`], {
+      cwd: dir, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'], timeout: limits.timeoutMs,
+    }).trim());
+    if (!Number.isSafeInteger(commitCount) || commitCount < 0) throw new Error('invalid commit count');
+  } catch (error) {
+    const status = diffFailure(error);
+    return { ...base, status, changedFiles, reason: status === 'timeout'
+      ? 'Commit-range inspection timed out.' : 'Commit range could not be inspected.' };
+  }
+  let patch;
+  try {
+    patch = execFileSync('git', [
+      'diff', '--no-color', '--no-ext-diff', '--no-textconv', ref, 'HEAD',
+    ], {
+      cwd: dir, encoding: 'buffer', stdio: ['pipe', 'pipe', 'pipe'],
+      maxBuffer: limits.maxPatchBytes, timeout: limits.timeoutMs,
+    });
+  } catch (error) {
+    const status = diffFailure(error);
+    return { ...base, status, commitCount, changedFiles, reason: status === 'too-large'
+      ? 'Patch exceeded its byte budget; use a newer --since revision.'
+      : status === 'timeout' ? 'Patch generation timed out; use a newer --since revision.' : 'Patch could not be read.' };
+  }
+  return {
+    ...base,
+    status: 'ok',
+    commitCount,
+    changedFiles,
+    patch: patch.toString('utf8'),
+    patchBytes: patch.length,
+  };
 }
 
 /**

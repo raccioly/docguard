@@ -2,6 +2,8 @@
  * Shared constants for DocGuard CLI — colors, profiles, version.
  * Extracted from docguard.mjs to break circular dependencies.
  * All commands import from here instead of docguard.mjs.
+ * @implements docguard.adoption-workflow-integrity#FR-007
+ * @implements docguard.adoption-workflow-integrity#FR-008
  */
 
 /**
@@ -13,7 +15,7 @@
  * `.docguard.json.version` is BEHIND this constant — pointing users at
  * `docguard upgrade` to migrate.
  */
-export const CURRENT_SCHEMA_VERSION = '0.5';
+export const CURRENT_SCHEMA_VERSION = '0.6';
 
 /**
  * Allowed severity values for per-validator `severity` overrides in
@@ -37,6 +39,33 @@ export function resolveSeverity(config, validatorKey) {
     return s.toLowerCase();
   }
   return 'medium';
+}
+
+/**
+ * Resolve the enforcement level for one structured finding. Exact finding-code
+ * policy wins over validator policy. Without an exact override, intrinsic
+ * errors remain blocking and validator severity only reweights warnings.
+ */
+export function resolveFindingEnforcement(config, finding, validatorKey) {
+  const code = typeof finding?.code === 'string' ? finding.code.toUpperCase() : null;
+  const exact = code && config?.findingSeverity?.[code];
+  const normalizedExact = typeof exact === 'string' ? exact.toLowerCase() : null;
+  if (normalizedExact && SEVERITY_LEVELS.has(normalizedExact)) {
+    return {
+      level: normalizedExact === 'high' ? 'error' : normalizedExact === 'medium' ? 'warn' : 'info',
+      source: 'finding',
+      key: code,
+    };
+  }
+  if (finding?.severity === 'error') {
+    return { level: 'error', source: 'intrinsic', key: code };
+  }
+  const validatorSeverity = resolveSeverity(config, validatorKey);
+  return {
+    level: validatorSeverity === 'high' ? 'error' : validatorSeverity === 'low' ? 'info' : 'warn',
+    source: 'validator',
+    key: validatorKey,
+  };
 }
 
 // ── Canonical section heading matching ─────────────────────────────────────

@@ -18,6 +18,7 @@ import { runGuardInternal } from './guard.mjs';
 import { runScoreInternal } from './score.mjs';
 import { appendHistory } from '../writers/history.mjs';
 import { getHeadInfo, isGitRepo } from '../shared-git.mjs';
+import { buildReadinessAssessment } from '../assessment.mjs';
 
 export function runCI(projectDir, config, flags) {
   const threshold = parseInt(flags.threshold || '0', 10);
@@ -46,10 +47,14 @@ export function runCI(projectDir, config, flags) {
   // --fail-on-warning failure exits 1 and must not be recorded as PASS in
   // history or the JSON consumers parse.
   const thresholdMet = threshold <= 0 || scoreData.score >= threshold;
-  const status =
-    hasErrors || !thresholdMet || (failOnWarning && hasWarnings) ? 'FAIL'
-    : hasWarnings ? 'WARN'
-    : 'PASS';
+  const assessment = buildReadinessAssessment(guardData, scoreData, {
+    threshold,
+    thresholdMet,
+    failOnWarning,
+  });
+  const status = assessment.status === 'BLOCKED'
+    ? 'FAIL'
+    : assessment.status === 'ATTENTION' ? 'WARN' : 'PASS';
 
   // ── Record history (unless opted out) ──
   if (!flags.noHistory) {
@@ -89,6 +94,7 @@ export function runCI(projectDir, config, flags) {
       threshold,
       thresholdMet,
       status,
+      assessment,
       timestamp: new Date().toISOString(),
     };
     // Machine output must survive a pipe: stdout.write + natural exit, never
@@ -107,11 +113,15 @@ export function runCI(projectDir, config, flags) {
     if (guardData.baselineSuppressed > 0) {
       console.log(`  ${c.dim}📋 ${guardData.baselineSuppressed} pre-existing finding(s) suppressed by the committed baseline${c.reset}`);
     }
-    console.log(`  ${c.bold}Score:${c.reset}  ${scoreData.score}/100 (${scoreData.grade})`);
+    console.log(`  ${c.bold}Structural Maturity:${c.reset}  ${scoreData.score}/100 (${scoreData.grade})`);
 
     if (threshold > 0) {
       console.log(`  ${c.bold}Threshold:${c.reset}  ${thresholdMet ? `${c.green}✅ ≥${threshold}` : `${c.red}❌ <${threshold}`}${c.reset}`);
     }
+
+    const readinessColor = assessment.status === 'READY' ? c.green : assessment.status === 'ATTENTION' ? c.yellow : c.red;
+    console.log(`  ${c.bold}Readiness:${c.reset}  ${readinessColor}${c.bold}${assessment.status}${c.reset}`);
+    console.log(`  ${c.dim}${assessment.summary}${c.reset}`);
 
     console.log('');
   }

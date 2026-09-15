@@ -18,6 +18,7 @@ describe('SARIF writer — toSarif()', () => {
     findings: [
       {
         code: 'STR001', validator: 'structure', severity: 'error',
+        effectiveSeverity: 'info', enforcement: { level: 'info', source: 'finding', key: 'STR001' },
         message: 'docs-canonical/ARCHITECTURE.md is required but missing',
         location: 'docs-canonical/ARCHITECTURE.md',
         suggestion: { kind: 'fix', text: 'Create it from the template', command: 'docguard init' },
@@ -69,14 +70,18 @@ describe('SARIF writer — toSarif()', () => {
   it('maps severity→level, path:line→region, suggestion→message suffix, low confidence→properties', () => {
     const sarif = toSarif(guardData);
     const [a, b] = sarif.runs[0].results;
-    assert.equal(a.level, 'error');
+    assert.equal(a.level, 'note');
     assert.ok(a.message.text.includes('→ Create it from the template'));
     assert.equal(a.locations[0].physicalLocation.artifactLocation.uri, 'docs-canonical/ARCHITECTURE.md');
     assert.equal(a.locations[0].physicalLocation.region, undefined, 'bare path has no region');
     assert.equal(b.level, 'warning');
     assert.equal(b.locations[0].physicalLocation.artifactLocation.uri, 'src/app.js');
     assert.equal(b.locations[0].physicalLocation.region.startLine, 42);
-    assert.deepEqual(b.properties, { confidence: 'low', reportable: true });
+    assert.deepEqual(a.properties, {
+      originalSeverity: 'error', effectiveSeverity: 'info',
+      enforcement: { level: 'info', source: 'finding', key: 'STR001' },
+    });
+    assert.deepEqual(b.properties, { originalSeverity: 'warn', effectiveSeverity: 'warn', confidence: 'low', reportable: true });
   });
 
   it('synthesizes results for validator crash strings that have no findings', () => {

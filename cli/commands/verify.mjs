@@ -208,8 +208,8 @@ function runEvidenceVerification(projectDir, config, flags) {
 function runInstructionAudit(projectDir, config, flags) {
   const isJson = flags.format === 'json';
   const { rules, deterministic, tasks } = auditInstructions(projectDir, config);
-  const { duplicates, negations, stalePointers, staleCommands } = deterministic;
-  const findingCount = duplicates.length + negations.length + stalePointers.length + staleCommands.length;
+  const { duplicates, negations, stalePointers, ambiguousPointers = [], unsafePointers = [], staleCommands } = deterministic;
+  const findingCount = duplicates.length + negations.length + stalePointers.length + ambiguousPointers.length + unsafePointers.length + staleCommands.length;
   // Structured change context helps the agent judge whether a rule about code
   // has been invalidated by a recent change (feat 6).
   const changeContext = buildChangeContext(projectDir, flags.since);
@@ -253,6 +253,13 @@ function runInstructionAudit(projectDir, config, flags) {
     }
     for (const s of stalePointers) {
       console.log(`    ${c.yellow}⚠${c.reset} stale pointer — ${s.file}:${s.line}: ${c.cyan}${s.path}${c.reset} does not exist`);
+    }
+    for (const pointer of ambiguousPointers) {
+      console.log(`    ${c.yellow}AMBIGUOUS POINTER${c.reset} ${pointer.file}:${pointer.line} — ${pointer.path}`);
+      console.log(`      ${c.dim}${pointer.matchCount} matches: ${pointer.matches.join(', ')}${c.reset}`);
+    }
+    for (const pointer of unsafePointers) {
+      console.log(`    ${c.yellow}UNSAFE POINTER${c.reset} ${pointer.file}:${pointer.line} — ${pointer.path}`);
     }
     for (const s of staleCommands) {
       console.log(`    ${c.yellow}⚠${c.reset} stale command — ${s.file}:${s.line}: ${c.cyan}docguard ${s.command}${c.reset} is not a docguard command`);

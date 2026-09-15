@@ -7,6 +7,7 @@
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createEvidenceReader } from '../scanners/semantic-claims.mjs';
+import { PYTHON_SYMBOL_RE } from './python-literal.mjs';
 
 export const EVIDENCE_MANIFEST_PATH = '.docguard-evidence.json';
 export const EVIDENCE_SCHEMA_URL = 'https://raccioly.github.io/docguard/schemas/docguard-evidence.schema.json';
@@ -90,6 +91,17 @@ function validateSource(source, errors, id) {
     if (typeof source.allowEmpty !== 'boolean') errors.push(issue(`${id}.source.allowEmpty must be boolean.`, id));
     return;
   }
+  if (source.adapter === 'python-literal-count') {
+    exactKeys(source, ['adapter', 'path', 'symbol', 'allowEmpty'], `${id}.source`, errors, id);
+    if (!isSafeEvidencePath(source.path) || !source.path.endsWith('.py')) {
+      errors.push(issue(`${id}.source.path must be a safe repository-relative Python path.`, id));
+    }
+    if (!PYTHON_SYMBOL_RE.test(source.symbol || '')) {
+      errors.push(issue(`${id}.source.symbol must be an ASCII Python identifier containing at most 128 characters.`, id));
+    }
+    if (typeof source.allowEmpty !== 'boolean') errors.push(issue(`${id}.source.allowEmpty must be boolean.`, id));
+    return;
+  }
   if (REPORT_ADAPTERS.has(source.adapter)) {
     exactKeys(source, ['adapter', 'adapterVersion', 'path', 'producerVersion', 'command', 'inputs'], `${id}.source`, errors, id);
     if (!Number.isInteger(source.adapterVersion) || source.adapterVersion < 1 || source.adapterVersion > 100) {
@@ -142,6 +154,9 @@ function validatePredicate(predicate, source, statement, errors, id) {
   }
   if (source?.adapter === 'collection-count' && predicate.kind !== 'count-equals') {
     errors.push(issue(`${id} must combine collection-count with count-equals.`, id));
+  }
+  if (source?.adapter === 'python-literal-count' && predicate.kind !== 'count-equals') {
+    errors.push(issue(`${id} must combine python-literal-count with count-equals.`, id));
   }
   if (REPORT_ADAPTERS.has(source?.adapter) && predicate.kind !== 'no-findings') {
     errors.push(issue(`${id} must combine ${source.adapter} with no-findings.`, id));

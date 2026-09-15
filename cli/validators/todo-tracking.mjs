@@ -74,21 +74,38 @@ const SKIP_PATTERNS = [
   /\bit\.todo\s*\(/,
 ];
 
-// Reasons must contain text and belong to this call, not a neighboring test.
-const SKIP_REASON_PATTERN = /(?:REASON|SKIP|TODO|FIXME|NOTE|WHY)\s*:\s*\S/i;
+function hasReasonText(value) {
+  return /(?:REASON|SKIP|TODO|FIXME|NOTE|WHY)\s*:[\s\S]*\S/i.test(value);
+}
 
 function hasAdjacentReason(content, call, comments) {
-  return comments.some(comment => {
-    if (!SKIP_REASON_PATTERN.test(comment.value)) return false;
+  const ordered = [...comments].sort((a, b) => a.start - b.start);
+  return ordered.some((comment, index) => {
     if (comment.end <= call.start) {
       // A trailing comment belongs to the preceding statement.
       const lineStart = content.lastIndexOf('\n', comment.start - 1) + 1;
       if (!/^\s*$/.test(content.slice(lineStart, comment.start))) return false;
       const gap = content.slice(comment.end, call.start);
-      return call.loc.start.line - comment.loc.end.line <= 3 && /^\s*$/.test(gap);
+      if (call.loc.start.line - comment.loc.end.line !== 1 || !/^\s*$/.test(gap)) return false;
+
+      // Babel represents adjacent // lines as separate comments. Walk backward
+      // across only contiguous, full-line comments so `// REASON:` can introduce
+      // a multiline explanation without borrowing a disconnected annotation.
+      let first = index;
+      while (first > 0) {
+        const previous = ordered[first - 1];
+        const current = ordered[first];
+        if (previous.type !== 'CommentLine' || current.type !== 'CommentLine') break;
+        if (current.loc.start.line - previous.loc.end.line !== 1) break;
+        const previousLineStart = content.lastIndexOf('\n', previous.start - 1) + 1;
+        if (!/^\s*$/.test(content.slice(previousLineStart, previous.start))) break;
+        if (!/^\s*$/.test(content.slice(previous.end, current.start))) break;
+        first--;
+      }
+      return hasReasonText(ordered.slice(first, index + 1).map(item => item.value).join('\n'));
     }
     if (comment.start >= call.end && comment.loc.start.line === call.loc.end.line) {
-      return /^[\s;]*$/.test(content.slice(call.end, comment.start));
+      return hasReasonText(comment.value) && /^[\s;]*$/.test(content.slice(call.end, comment.start));
     }
     return false;
   });
@@ -123,10 +140,13 @@ function fallbackSkippedCalls(content) {
   const calls = [];
   for (let i = 0; i < codeLines.length; i++) {
     if (!SKIP_PATTERNS.some(p => p.test(codeLines[i]))) continue;
-    // Only a directly preceding comment is unambiguous without a parser.
-    const previous = lines[i - 1] || '';
-    calls.push({ line: i + 1, hasReason: /^\s*\/\//.test(previous) &&
-      SKIP_REASON_PATTERN.test(previous) });
+    // Only a contiguous block of directly preceding line comments is
+    // unambiguous without a parser. Blank lines and code sever ownership.
+    const commentBlock = [];
+    for (let cursor = i - 1; cursor >= 0 && /^\s*\/\//.test(lines[cursor] || ''); cursor--) {
+      commentBlock.unshift(lines[cursor].replace(/^\s*\/\//, ''));
+    }
+    calls.push({ line: i + 1, hasReason: hasReasonText(commentBlock.join('\n')) });
   }
   return calls;
 }
@@ -251,7 +271,7 @@ function checkSkippedTests(projectDir, config) {
           location: `${relPath}:${line}`,
           suggestion: {
             kind: 'fix',
-            text: 'Add a // REASON: comment on or up to 3 lines above the skip explaining why',
+            text: 'Add a // REASON: comment immediately above the skip explaining why',
             pragma: '// REASON: <why this test is skipped>',
           },
         }));

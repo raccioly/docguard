@@ -7,7 +7,7 @@
 
 import { execFileSync } from 'node:child_process';
 import { extname } from 'node:path';
-import { getDiffText, getHeadInfo } from '../shared-git.mjs';
+import { getDiffSnapshot, getHeadInfo } from '../shared-git.mjs';
 import { parseUnifiedDiff } from '../shared-diff.mjs';
 import { mechanicalSectionsForChanges } from '../shared-sync-scope.mjs';
 import { projectSpecRegistry } from './spec-registry.mjs';
@@ -64,7 +64,21 @@ function disposition(kind, linked, companionKinds, currentSpecs) {
   return { evidenceClass: 'unrelated', disposition: 'unrelated_change', confidence: 'high' };
 }
 
-export function buildReconciliationPlan(projectDir, config = {}, since) {
+function summarize(classifications) {
+  const count = key => Object.fromEntries([...classifications.reduce((map, item) => {
+    const value = item[key] || 'unknown';
+    map.set(value, (map.get(value) || 0) + 1);
+    return map;
+  }, new Map()).entries()].sort(([a], [b]) => a.localeCompare(b)));
+  return {
+    total: classifications.length,
+    byKind: count('kind'),
+    byDisposition: count('disposition'),
+    byConfidence: count('confidence'),
+  };
+}
+
+export function buildReconciliationPlan(projectDir, config = {}, since, runtime = {}) {
   if (!since) throw new Error('Reconcile requires --since <git-ref>.');
   const baseRevision = resolveRevision(projectDir, since);
   const head = getHeadInfo(projectDir);
@@ -80,14 +94,40 @@ export function buildReconciliationPlan(projectDir, config = {}, since) {
     };
   }
   const projection = projectSpecRegistry(projectDir, config);
-  const diff = parseUnifiedDiff(getDiffText(projectDir, since))
+  const readDiff = runtime.getDiffSnapshot || getDiffSnapshot;
+  // Use the already verified full commit ID for every subsequent Git call.
+  // This removes revision-option ambiguity from user-supplied `--since` text.
+  const snapshot = readDiff(projectDir, baseRevision);
+  if (snapshot.status !== 'ok') {
+    return {
+      schemaVersion: 1,
+      status: 'BLOCKED',
+      since,
+      baseRevision,
+      revision: head.commit,
+      dirty: head.dirty,
+      range: {
+        status: snapshot.status,
+        commitCount: snapshot.commitCount,
+        changedFileCount: snapshot.changedFiles.length,
+        patchBytes: snapshot.patchBytes,
+        limits: snapshot.limits,
+      },
+      coverage: { status: 'partial', reason: snapshot.reason },
+      summary: { total: 0, byKind: {}, byDisposition: {}, byConfidence: {} },
+      nodes: [], edges: [], classifications: [], writes: [], issues: projection.issues,
+    };
+  }
+  const diff = parseUnifiedDiff(snapshot.patch)
     .filter(file => ![file.oldPath, file.newPath].some(path => path?.split('/').includes('.local')));
-  const changed = diff.map(file => file.newPath || file.oldPath).filter(Boolean);
+  const changed = snapshot.changedFiles
+    .map(file => file.newPath || file.oldPath)
+    .filter(path => path && !path.split('/').includes('.local'));
   const textByPath = new Map(diff.map(file => [
     file.newPath || file.oldPath,
     file.hunks.flatMap(hunk => hunk.lines.filter(line => line.op !== ' ').map(line => line.text)).join('\n'),
   ]));
-  const preliminary = changed.map(path => ({
+  const preliminary = [...new Set(changed)].sort().map(path => ({
     path,
     kind: fileKind(path, projection.registry),
     specs: directSpecLinks(path, textByPath.get(path) || '', projection.registry),
@@ -124,6 +164,7 @@ export function buildReconciliationPlan(projectDir, config = {}, since) {
     confidence: 'high',
   })));
   const review = classifications.some(item => !['mechanical_fact_refresh', 'unrelated_change'].includes(item.disposition));
+  const summary = summarize(classifications);
   return {
     schemaVersion: 1,
     status: projection.issues.length ? 'BLOCKED' : review ? 'REVIEW' : 'READY',
@@ -131,11 +172,20 @@ export function buildReconciliationPlan(projectDir, config = {}, since) {
     baseRevision,
     revision: head.commit,
     dirty: head.dirty,
+    range: {
+      status: 'ok',
+      commitCount: snapshot.commitCount,
+      changedFileCount: changed.length,
+      patchBytes: snapshot.patchBytes,
+      limits: snapshot.limits,
+      aggregated: snapshot.commitCount > 50 || changed.length > 100,
+    },
     coverage: { status: 'complete', reason: null },
+    summary,
     nodes,
     edges,
     classifications,
-    writes: mechanicalSections.length ? [{ command: `docguard sync --since ${since} --write`, scope: 'mechanical_fact' }] : [],
+    writes: mechanicalSections.length ? [{ command: `docguard sync --since ${baseRevision} --write`, scope: 'mechanical_fact' }] : [],
     issues: projection.issues,
   };
 }

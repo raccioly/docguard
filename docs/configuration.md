@@ -7,7 +7,7 @@ DocGuard is configured via `.docguard.json` in the project root. If no config fi
 ```json
 {
   "projectName": "my-project",
-  "version": "0.5",
+  "version": "0.6",
   "profile": "standard",
   "projectType": "webapp",
 
@@ -57,6 +57,10 @@ DocGuard is configured via `.docguard.json` in the project root. If no config fi
 
   "docs": {
     "dirs": ["reference", "website/docs"]
+  },
+  "findingSeverity": {
+    "TRC004": "low",
+    "SEC001": "high"
   }
 }
 ```
@@ -93,6 +97,13 @@ See [Profiles](./profiles.md) for details.
 anything from display: `"high"` promotes its warnings to blocking (CI fails),
 `"low"` demotes them (shown, but never fail the build). Valid values:
 `high | medium | low`. To silence a validator entirely, use `validators.<key>: false`.
+
+`findingSeverity.<CODE>` applies the same enforcement levels to one stable
+finding code and takes precedence over the validator setting. This is the
+preferred control for a noisy rule because neighboring findings retain their
+policy. Intrinsic errors remain blocking unless their exact code is configured.
+Machine outputs preserve `severity` and add `effectiveSeverity` plus the
+enforcement source so audit consumers can distinguish detection from policy.
 
 ## Collections — verify documented counts against code
 

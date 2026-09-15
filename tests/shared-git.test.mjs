@@ -23,6 +23,7 @@ import {
   getRenameHistory,
   changedFilesSince,
   countCommitsSince,
+  getDiffSnapshot,
 } from '../cli/shared-git.mjs';
 
 function tmp() {
@@ -207,5 +208,44 @@ describe('changedFilesSince', () => {
     // HEAD~5 doesn't exist
     const changed = changedFilesSince(dir, 'HEAD~5');
     assert.deepEqual(changed, []);
+  });
+});
+
+describe('getDiffSnapshot', () => {
+  let dir;
+  afterEach(() => cleanup(dir));
+
+  it('keeps rename, deletion, and patch evidence in one bounded snapshot', () => {
+    dir = tmp();
+    git(dir, 'init', '-q');
+    writeFileSync(join(dir, 'old.ts'), 'export const oldValue = 1;\n');
+    writeFileSync(join(dir, 'deleted.ts'), 'export const removed = true;\n');
+    commit(dir, 'base');
+    const base = git(dir, 'rev-parse', 'HEAD').stdout.trim();
+    renameSync(join(dir, 'old.ts'), join(dir, 'new.ts'));
+    rmSync(join(dir, 'deleted.ts'));
+    commit(dir, 'change paths');
+
+    const snapshot = getDiffSnapshot(dir, base);
+    assert.equal(snapshot.status, 'ok');
+    assert.equal(snapshot.commitCount, 1);
+    assert.ok(snapshot.changedFiles.some(file => file.oldPath === 'old.ts' && file.newPath === 'new.ts'));
+    assert.ok(snapshot.changedFiles.some(file => file.oldPath === 'deleted.ts' && file.newPath === null));
+    assert.ok(snapshot.patchBytes > 0);
+  });
+
+  it('returns explicit too-large status instead of an empty successful diff', () => {
+    dir = tmp();
+    git(dir, 'init', '-q');
+    writeFileSync(join(dir, 'large.ts'), 'base\n');
+    commit(dir, 'base');
+    const base = git(dir, 'rev-parse', 'HEAD').stdout.trim();
+    writeFileSync(join(dir, 'large.ts'), 'x'.repeat(4096));
+    commit(dir, 'large patch');
+
+    const snapshot = getDiffSnapshot(dir, base, { maxPatchBytes: 128 });
+    assert.equal(snapshot.status, 'too-large');
+    assert.match(snapshot.reason, /newer --since revision/);
+    assert.equal(snapshot.changedFiles.length, 1);
   });
 });

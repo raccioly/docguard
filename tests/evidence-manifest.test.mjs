@@ -12,6 +12,7 @@ import { EVIDENCE_SCHEMA_URL, validateEvidenceManifest } from '../cli/evidence/m
  */
 
 const base = () => JSON.parse(readFileSync(resolve('templates/evidence-manifest.json'), 'utf8'));
+const schema = () => JSON.parse(readFileSync(resolve('schemas/docguard-evidence.schema.json'), 'utf8'));
 
 describe('evidence manifest contract', () => {
   it('accepts the shipped strict example', () => {
@@ -52,5 +53,33 @@ describe('evidence manifest contract', () => {
       predicate: { kind: 'no-findings' },
     };
     assert.match(validateEvidenceManifest(manifest).map(error => error.message).join('\n'), /inputs must contain 1-32/);
+  });
+
+  it('accepts only bounded Python literal count declarations', () => {
+    const manifest = base();
+    manifest.declarations[0] = {
+      id: 'surface.scanners', applicability: { mode: 'always' },
+      target: { document: 'docs/architecture.md', heading: 'Scanners', statement: 'There are {{value}} scanners.' },
+      source: { adapter: 'python-literal-count', path: 'src/package/scanners.py', symbol: 'SCANNERS', allowEmpty: false },
+      predicate: { kind: 'count-equals' },
+    };
+    assert.deepEqual(validateEvidenceManifest(manifest), []);
+
+    manifest.declarations[0].source.symbol = 'registry.SCANNERS';
+    manifest.declarations[0].source.path = 'src/package/scanners.js';
+    manifest.declarations[0].predicate = { kind: 'equals', valueType: 'number' };
+    const messages = validateEvidenceManifest(manifest).map(error => error.message).join('\n');
+    assert.match(messages, /safe repository-relative Python path/);
+    assert.match(messages, /ASCII Python identifier/);
+    assert.match(messages, /must combine python-literal-count with count-equals/);
+  });
+
+  it('keeps the distributed schema aligned with the Python adapter contract', () => {
+    const contract = schema().$defs.pythonLiteralSource;
+    assert.deepEqual(contract.required, ['adapter', 'path', 'symbol', 'allowEmpty']);
+    assert.equal(contract.additionalProperties, false);
+    assert.equal(contract.properties.adapter.const, 'python-literal-count');
+    assert.equal(contract.properties.symbol.pattern, '^[A-Za-z_][A-Za-z0-9_]{0,127}$');
+    assert.ok(schema().$defs.declaration.properties.source.oneOf.some(item => item.$ref === '#/$defs/pythonLiteralSource'));
   });
 });

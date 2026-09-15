@@ -76,10 +76,10 @@ describe('runHooks function', () => {
     it('removes hooks', () => {
         mkdirSync(join(tmpDir, '.git'));
         mkdirSync(join(tmpDir, '.git', 'hooks'));
-        writeFileSync(join(tmpDir, '.git', 'hooks', 'pre-commit'), 'DocGuard hook');
+        writeFileSync(join(tmpDir, '.git', 'hooks', 'pre-commit'), '#!/bin/sh\n# DocGuard pre-commit hook\n');
         runHooks(tmpDir, { projectName: 'Test' }, { remove: true });
         assert.ok(!existsSync(join(tmpDir, '.git', 'hooks', 'pre-commit')));
-        assert.ok(logs.some(log => log.includes('Removed: pre-commit')));
+        assert.ok(logs.some(log => /Removed legacy DocGuard hook: pre-commit/.test(log)));
     });
 
     it('skips non-DocGuard hooks when removing', () => {
@@ -88,7 +88,7 @@ describe('runHooks function', () => {
         writeFileSync(join(tmpDir, '.git', 'hooks', 'pre-commit'), 'other hook');
         runHooks(tmpDir, { projectName: 'Test' }, { remove: true });
         assert.ok(existsSync(join(tmpDir, '.git', 'hooks', 'pre-commit')));
-        assert.ok(logs.some(log => log.includes('not a DocGuard hook')));
+        assert.ok(logs.some(log => log.includes('not a recognized DocGuard hook')));
     });
 
     it('skips existing non-DocGuard hooks when installing without force', () => {
@@ -152,6 +152,21 @@ describe('runHooks function', () => {
         assert.match(afterReinstall, /END DOCGUARD MANAGED/);
         assert.ok(logs.some(log => /updated DocGuard managed block|preserved user content/i.test(log)),
           `expected managed-block update message; got: ${logs.join(' | ')}`);
+    });
+
+    it('removes only the managed block and preserves surrounding hook commands', () => {
+        mkdirSync(join(tmpDir, '.git'));
+        mkdirSync(join(tmpDir, '.git', 'hooks'));
+        runHooks(tmpDir, { projectName: 'Test' }, { type: 'pre-commit' });
+        const path = join(tmpDir, '.git', 'hooks', 'pre-commit');
+        const managed = readFileSync(path, 'utf8');
+        writeFileSync(path, managed.replace('# BEGIN DOCGUARD MANAGED', 'echo "before"\n# BEGIN DOCGUARD MANAGED') + 'echo "after"\n');
+
+        runHooks(tmpDir, { projectName: 'Test' }, { type: 'pre-commit', remove: true });
+        const remaining = readFileSync(path, 'utf8');
+        assert.match(remaining, /echo "before"/);
+        assert.match(remaining, /echo "after"/);
+        assert.doesNotMatch(remaining, /DOCGUARD MANAGED|DocGuard guard/);
     });
 });
 

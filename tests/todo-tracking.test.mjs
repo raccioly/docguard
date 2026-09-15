@@ -4,6 +4,7 @@
  *   with explanation" test and the broader checkUntrackedTodos pipeline
  *   exercise the tracking-source matching (ROADMAP / TODO-LOG / similar).
  */
+// @req docguard.adoption-workflow-integrity#FR-015
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
@@ -54,6 +55,57 @@ describe('Todo-Tracking Validator', () => {
     const result = validateTodoTracking(tmpDir, {});
     assert.equal(result.warnings.length, 0);
     assert.equal(result.passed, 3);
+  });
+
+  it('accepts a contiguous multiline REASON comment block', () => {
+    const SKIP = 's' + 'kip';
+    writeFileSync(join(tmpDir, 'multiline.test.mjs'), [
+      '// REASON:',
+      '// The platform reports a transient unsupported state while',
+      '// the upstream compatibility fix is pending.',
+      `test.${SKIP}('compatibility case', () => {});`,
+    ].join('\n'));
+
+    const result = validateTodoTracking(tmpDir, {});
+    assert.equal(result.warnings.length, 0);
+  });
+
+  it('retains a multiline REASON block disconnected by a blank line', () => {
+    const SKIP = 's' + 'kip';
+    writeFileSync(join(tmpDir, 'disconnected.test.mjs'), [
+      '// REASON:',
+      '// Waiting for the upstream compatibility fix.',
+      '',
+      `test.${SKIP}('compatibility case', () => {});`,
+    ].join('\n'));
+
+    const result = validateTodoTracking(tmpDir, {});
+    assert.equal(result.warnings.filter(w => /Skipped test without explanation/.test(w)).length, 1);
+  });
+
+  it('retains a multiline REASON block disconnected by code', () => {
+    const SKIP = 's' + 'kip';
+    writeFileSync(join(tmpDir, 'intervening-code.test.mjs'), [
+      '// REASON:',
+      '// Waiting for the upstream compatibility fix.',
+      'prepareFixture();',
+      `test.${SKIP}('compatibility case', () => {});`,
+    ].join('\n'));
+
+    const result = validateTodoTracking(tmpDir, {});
+    assert.equal(result.warnings.filter(w => /Skipped test without explanation/.test(w)).length, 1);
+  });
+
+  it('retains an empty multiline REASON header', () => {
+    const SKIP = 's' + 'kip';
+    writeFileSync(join(tmpDir, 'empty-reason.test.mjs'), [
+      '// REASON:',
+      '//   ',
+      `test.${SKIP}('compatibility case', () => {});`,
+    ].join('\n'));
+
+    const result = validateTodoTracking(tmpDir, {});
+    assert.equal(result.warnings.filter(w => /Skipped test without explanation/.test(w)).length, 1);
   });
 
   it('warns about untracked TODOs', () => {

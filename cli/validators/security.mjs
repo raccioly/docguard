@@ -98,16 +98,21 @@ function quotedValue(matchStr) {
  * are insufficient. Provider key signatures remain independently scanned.
  * Unknown syntax/parser failure supplies no exemptions.
  */
-function fixturePasswordRanges(content, filename) {
+function fixturePasswordEvidence(content, filename) {
   if (!/(?:^|\/)__tests?__\/|\.(?:test|spec)\.[cm]?[jt]sx?$/.test(filename)) return [];
   const { ast, ok } = parseJsTs(content, filename);
   if (!ok || ast.errors?.length) return [];
-  const ranges = [];
+  const evidence = [];
+  const literalCounts = new Map();
+  walk(ast, node => {
+    if (node.type !== 'StringLiteral') return;
+    literalCounts.set(node.value, (literalCounts.get(node.value) || 0) + 1);
+  });
   walk(ast, node => {
     if (node.type !== 'CallExpression') return;
     const callee = node.callee;
     if (callee.type !== 'MemberExpression' || callee.computed ||
-        !/^(?:toHaveBeenCalledWith|toHaveBeenLastCalledWith|toHaveBeenNthCalledWith)$/.test(callee.property.name)) return;
+        !/^(?:toHaveBeenCalledWith|toHaveBeenLastCalledWith|toHaveBeenNthCalledWith|toMatchObject|toEqual|toStrictEqual)$/.test(callee.property.name)) return;
     const expectation = callee.object;
     if (expectation.type !== 'CallExpression' || expectation.callee.type !== 'Identifier' ||
         expectation.callee.name !== 'expect') return;
@@ -119,13 +124,17 @@ function fixturePasswordRanges(content, filename) {
         if (prop.type !== 'ObjectProperty' || prop.computed ||
             !/^(?:password|passwd|pwd)$/i.test(prop.key.name || prop.key.value || '') ||
             prop.value.type !== 'StringLiteral') continue;
-        if (/^(?:test|mock|dummy|fixture)[_-]?(?:password|passwd|pwd)[0-9!@#$%_*.-]*$/i.test(prop.value.value)) {
-          ranges.push([prop.start, prop.end]);
-        }
+        const explicitSynthetic = /^(?:test|mock|dummy|fixture)[_-]?(?:password|passwd|pwd)[0-9!@#$%_*.-]*$/i.test(prop.value.value);
+        const repeatedFixtureValue = (literalCounts.get(prop.value.value) || 0) > 1;
+        if (explicitSynthetic || repeatedFixtureValue) evidence.push({
+          start: prop.start,
+          end: prop.end,
+          classification: explicitSynthetic ? 'safe' : 'probable',
+        });
       }
     }
   });
-  return ranges;
+  return evidence;
 }
 
 export function validateSecurity(projectDir, config) {
@@ -153,7 +162,7 @@ export function validateSecurity(projectDir, config) {
     scanned++;
     const content = readFileSync(filePath, 'utf-8');
     let lines = null;
-    let fixtureRanges = null;
+    let passwordFixtureEvidence = null;
 
     for (const { pattern, label } of SECRET_PATTERNS) {
       pattern.lastIndex = 0;
@@ -176,10 +185,27 @@ export function validateSecurity(projectDir, config) {
         if (isSafePlaceholder(matchLine, match[0], label)) continue;
 
         const code = LABEL_TO_CODE[label];
+        const location = `${relPath}:${lineNo}`;
         if (code === 'SEC001') {
-          fixtureRanges ??= fixturePasswordRanges(content, relPath);
-          if (fixtureRanges.some(([start, end]) => match.index >= start &&
-              match.index + match[0].length <= end)) continue;
+          passwordFixtureEvidence ??= fixturePasswordEvidence(content, relPath);
+          const fixture = passwordFixtureEvidence.find(({ start, end }) => match.index >= start &&
+              match.index + match[0].length <= end);
+          if (fixture?.classification === 'safe') continue;
+          if (fixture?.classification === 'probable') {
+            findings.push(mkFinding({
+              code, validator: 'security', severity: 'warn', confidence: 'low',
+              message: `${location}: possible ${label}, but the same redacted value is used as test input and expected output`,
+              location,
+              suggestion: {
+                kind: 'review',
+                text: 'Confirm this repeated test value is synthetic. Use a clearly named fixture password or suppress this line with a reason.',
+                pragma: `// docguard:ignore ${code} — repeated synthetic test fixture`,
+              },
+              reportable: true,
+              redactedContext: `${label} pattern fired inside a test assertion and the same literal appears elsewhere in the test. Literal omitted.`,
+            }));
+            continue;
+          }
         }
 
         // v0.27 (#8): honour an inline `// docguard:ignore SEC00x` pragma on the
@@ -187,7 +213,6 @@ export function validateSecurity(projectDir, config) {
         // whole file via `securityIgnore`.
         if (code && lineSuppresses(code, matchLine, prevLine)) continue;
 
-        const location = `${relPath}:${lineNo}`;
         const value = quotedValue(match[0]);
         const isProse = looksLikeProse(value);
 

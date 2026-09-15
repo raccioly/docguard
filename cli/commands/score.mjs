@@ -160,7 +160,7 @@ export function runScore(projectDir, config, flags) {
   // mixed ANSI escapes with JSON.
   const isJson = flags.format === 'json';
   if (!isJson) {
-    console.log(`${c.bold}📊 DocGuard Score — ${config.projectName}${c.reset}`);
+    console.log(`${c.bold}📊 DocGuard Structural Maturity — ${config.projectName}${c.reset}`);
     console.log(`${c.dim}   Directory: ${projectDir}${c.reset}\n`);
   }
 
@@ -222,6 +222,7 @@ export function runScore(projectDir, config, flags) {
 
   const gradeColor = totalScore >= 80 ? c.green : totalScore >= 60 ? c.yellow : c.red;
   console.log(`  ${gradeColor}${c.bold}CDD Maturity Score: ${totalScore}/100 (${grade})${c.reset}`);
+  console.log(`  ${c.dim}Structural Maturity only — this score is not a guard verdict. Run ${c.cyan}docguard guard${c.dim} for PASS/WARN/FAIL.${c.reset}`);
   // Memory framing: is the documentation memory COMPLETE and ACCURATE?
   const memColor = (s) => s >= 80 ? c.green : s >= 60 ? c.yellow : c.red;
   console.log(`  ${c.dim}Memory:${c.reset} ${memColor(memory.completeness)}Completeness ${memory.completeness}%${c.reset} ${c.dim}·${c.reset} ${c.cyan}Factual accuracy: unverified${c.reset}`);

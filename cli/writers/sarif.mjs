@@ -25,9 +25,9 @@ function pkgInfo() {
   }
 }
 
-/** severity 'error' → SARIF 'error'; everything else (warn) → 'warning'. */
+/** Effective severity → SARIF level. */
 function toLevel(severity) {
-  return severity === 'error' ? 'error' : 'warning';
+  return severity === 'error' ? 'error' : severity === 'info' ? 'note' : 'warning';
 }
 
 /**
@@ -62,10 +62,11 @@ export function toSarif(guardData, opts = {}) {
     if (v.status === 'skipped' || v.status === 'na') continue;
     if (Array.isArray(v.findings) && v.findings.length > 0) continue;
     for (const msg of v.errors || []) {
-      synthetic.push({ code: `DOCGUARD-${String(v.key || v.name || 'unknown').toUpperCase()}`, severity: 'error', message: msg, location: null, suggestion: null });
+      synthetic.push({ code: `DOCGUARD-${String(v.key || v.name || 'unknown').toUpperCase()}`, severity: 'error', effectiveSeverity: 'error', message: msg, location: null, suggestion: null });
     }
     for (const msg of v.warnings || []) {
-      synthetic.push({ code: `DOCGUARD-${String(v.key || v.name || 'unknown').toUpperCase()}`, severity: 'warn', message: msg, location: null, suggestion: null });
+      const effectiveSeverity = v.severity === 'high' ? 'error' : v.severity === 'low' ? 'info' : 'warn';
+      synthetic.push({ code: `DOCGUARD-${String(v.key || v.name || 'unknown').toUpperCase()}`, severity: 'warn', effectiveSeverity, message: msg, location: null, suggestion: null });
     }
   }
   const all = [...findings, ...synthetic];
@@ -83,7 +84,7 @@ export function toSarif(guardData, opts = {}) {
       rule.fullDescription = { text: meta.help };
     }
     rule.helpUri = HELP_URI;
-    rule.defaultConfiguration = { level: toLevel(f.severity) };
+    rule.defaultConfiguration = { level: toLevel(f.effectiveSeverity || f.severity) };
     ruleIndexByCode.set(f.code, rules.length);
     rules.push(rule);
   }
@@ -92,7 +93,7 @@ export function toSarif(guardData, opts = {}) {
     const result = {
       ruleId: f.code,
       ruleIndex: ruleIndexByCode.get(f.code),
-      level: toLevel(f.severity),
+      level: toLevel(f.effectiveSeverity || f.severity),
       message: { text: f.suggestion && f.suggestion.text ? `${f.message}\n→ ${f.suggestion.text}` : f.message },
     };
     const loc = parseLocation(f.location);
@@ -101,9 +102,12 @@ export function toSarif(guardData, opts = {}) {
       if (loc.line) physicalLocation.region = { startLine: loc.line };
       result.locations = [{ physicalLocation }];
     }
-    if (f.confidence === 'low') {
-      result.properties = { confidence: 'low', reportable: !!f.reportable };
-    }
+    result.properties = {
+      originalSeverity: f.severity,
+      effectiveSeverity: f.effectiveSeverity || f.severity,
+      ...(f.enforcement ? { enforcement: f.enforcement } : {}),
+      ...(f.confidence === 'low' ? { confidence: 'low', reportable: !!f.reportable } : {}),
+    };
     return result;
   });
 

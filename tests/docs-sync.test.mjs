@@ -1,3 +1,4 @@
+// @req docguard.adoption-workflow-integrity#FR-015
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
@@ -102,6 +103,33 @@ describe('Docs-Sync Validator', () => {
     assert.strictEqual(result.warnings.length, 0);
   });
 
+  it('does not treat an arbitrary src/lib frontend utility as a service', () => {
+    mkdirSync(join(tmpDir, 'docs-canonical'), { recursive: true });
+    writeFileSync(join(tmpDir, 'docs-canonical', 'services.md'), 'Canonical services.');
+
+    mkdirSync(join(tmpDir, 'src/lib'), { recursive: true });
+    writeFileSync(join(tmpDir, 'src/lib/secretFieldProps.ts'), 'export const secretFieldProps = {};');
+
+    const result = validateDocsSync(tmpDir, {});
+
+    assert.ok(!result.warnings.some(warning => warning.includes('secretFieldProps.ts')));
+  });
+
+  it('still checks service-shaped modules in src/lib and all modules in src/services', () => {
+    mkdirSync(join(tmpDir, 'docs-canonical'), { recursive: true });
+    writeFileSync(join(tmpDir, 'docs-canonical', 'services.md'), 'Canonical services.');
+
+    mkdirSync(join(tmpDir, 'src/lib'), { recursive: true });
+    mkdirSync(join(tmpDir, 'src/services'), { recursive: true });
+    writeFileSync(join(tmpDir, 'src/lib/paymentService.ts'), 'export class PaymentService {}');
+    writeFileSync(join(tmpDir, 'src/services/auth.ts'), 'export const authenticate = () => true;');
+
+    const result = validateDocsSync(tmpDir, {});
+
+    assert.ok(result.warnings.some(warning => warning.includes('src/lib/paymentService.ts')));
+    assert.ok(result.warnings.some(warning => warning.includes('src/services/auth.ts')));
+  });
+
   it('cross-checks route files against OpenAPI spec and passes when route path matches', () => {
     // Both canonical doc and OpenAPI spec exist to pass the first and second checks
     mkdirSync(join(tmpDir, 'docs-canonical'), { recursive: true });
@@ -143,6 +171,55 @@ describe('Docs-Sync Validator', () => {
     assert.strictEqual(result.passed, 1); // canonical doc check passed
     assert.strictEqual(result.warnings.length, 1); // openapi check warned
     assert.ok(result.warnings[0].includes('no matching paths found in openapi.yaml'));
+  });
+
+  it('uses the sourceRoot-nearest OpenAPI spec as the DSY003 authority', () => {
+    mkdirSync(join(tmpDir, 'docs-canonical'), { recursive: true });
+    writeFileSync(join(tmpDir, 'docs-canonical', 'api.md'), 'Mentions backend/src/routes/userRoutes.ts');
+    mkdirSync(join(tmpDir, 'docs'), { recursive: true });
+    writeFileSync(join(tmpDir, 'docs/openapi.yaml'), 'paths:\n  /api/stale:\n    get:\n');
+    mkdirSync(join(tmpDir, 'backend/docs'), { recursive: true });
+    writeFileSync(join(tmpDir, 'backend/docs/openapi.yaml'), 'paths:\n  /api/users/{userId}:\n    get:\n');
+    writeFileSync(join(tmpDir, 'backend/package.json'), '{"name":"backend"}');
+    mkdirSync(join(tmpDir, 'backend/src/routes'), { recursive: true });
+    writeFileSync(join(tmpDir, 'backend/src/routes/userRoutes.ts'),
+      "router.get('/users/:userId', () => {});");
+
+    const result = validateDocsSync(tmpDir, { sourceRoot: 'backend/src' });
+
+    assert.ok(!result.findings.some(finding => finding.code === 'DSY003'));
+  });
+
+  it('does not let a matching stale root spec override the authoritative spec', () => {
+    mkdirSync(join(tmpDir, 'docs-canonical'), { recursive: true });
+    writeFileSync(join(tmpDir, 'docs-canonical', 'api.md'), 'Mentions backend/src/routes/userRoutes.ts');
+    mkdirSync(join(tmpDir, 'docs'), { recursive: true });
+    writeFileSync(join(tmpDir, 'docs/openapi.yaml'), 'paths:\n  /api/users/{userId}:\n    get:\n');
+    mkdirSync(join(tmpDir, 'backend/docs'), { recursive: true });
+    writeFileSync(join(tmpDir, 'backend/docs/openapi.yaml'), 'paths:\n  /api/orders/{orderId}:\n    get:\n');
+    writeFileSync(join(tmpDir, 'backend/package.json'), '{"name":"backend"}');
+    mkdirSync(join(tmpDir, 'backend/src/routes'), { recursive: true });
+    writeFileSync(join(tmpDir, 'backend/src/routes/userRoutes.ts'),
+      "router.get('/users/:userId', () => {});");
+
+    const result = validateDocsSync(tmpDir, { sourceRoot: 'backend/src' });
+    const finding = result.findings.find(item => item.code === 'DSY003');
+
+    assert.ok(finding);
+    assert.match(finding.message, /backend\/docs\/openapi\.yaml/);
+  });
+
+  it('preserves path structure when normalizing route parameters', () => {
+    mkdirSync(join(tmpDir, 'docs-canonical'), { recursive: true });
+    writeFileSync(join(tmpDir, 'docs-canonical', 'api.md'), 'Mentions groupRoutes.');
+    writeFileSync(join(tmpDir, 'openapi.yaml'), 'paths:\n  /groups/{groupId}:\n    get:\n');
+    mkdirSync(join(tmpDir, 'src/routes'), { recursive: true });
+    writeFileSync(join(tmpDir, 'src/routes/groupRoutes.ts'),
+      "router.get('/groups/:groupId/details', () => {});");
+
+    const result = validateDocsSync(tmpDir, {});
+
+    assert.ok(result.findings.some(finding => finding.code === 'DSY003'));
   });
 
   it('falls back to filename check for OpenAPI spec when no actual routes match', () => {

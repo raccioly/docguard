@@ -1,3 +1,4 @@
+// @req docguard.adoption-workflow-integrity#FR-015
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
@@ -168,6 +169,46 @@ describe('Metrics-Consistency Validator', () => {
     const fix = (result.fixes || []).find(f => f.type === 'replace-count');
     assert.ok(fix, 'a bound mismatch should still produce a fix');
     assert.equal(fix.actualSource, 'docguard.guard.checks', 'fix must carry provenance for the applier');
+  });
+
+  it('does not rewrite a historical metric transition', () => {
+    writeFileSync(join(tmpDir, 'AGENTS.md'),
+      "DocGuard's defaults changed across releases (182 → 203 checks on one upgrade).\n");
+    const result = validateMetricsConsistency(tmpDir, {}, [{ status: 'passed', total: 211 }]);
+
+    assert.deepEqual(result.warnings, []);
+    assert.deepEqual(result.fixes, []);
+  });
+
+  it('does not treat counts under a release-history heading as current assertions', () => {
+    writeFileSync(join(tmpDir, 'README.md'),
+      '# Project\n\n## Release history\n\nDocGuard shipped 182 checks in v0.39.\n');
+    const result = validateMetricsConsistency(tmpDir, {}, [{ status: 'passed', total: 211 }]);
+
+    assert.deepEqual(result.warnings, []);
+    assert.deepEqual(result.fixes, []);
+  });
+
+  it('retains a current metric mismatch and its mechanical fix', () => {
+    writeFileSync(join(tmpDir, 'README.md'), 'DocGuard currently runs 182 checks.\n');
+    const result = validateMetricsConsistency(tmpDir, {}, [{ status: 'passed', total: 211 }]);
+
+    assert.equal(result.findings?.[0]?.confidence, 'high');
+    assert.equal(result.findings?.[0]?.suggestion?.kind, 'fix');
+    assert.equal(result.fixes.length, 1);
+  });
+
+  it('makes a repeated current count review-only when it also occurs historically', () => {
+    writeFileSync(join(tmpDir, 'README.md'), [
+      'DocGuard currently runs 182 checks.',
+      'Previously, DocGuard ran 182 checks.',
+    ].join('\n'));
+    const result = validateMetricsConsistency(tmpDir, {}, [{ status: 'passed', total: 211 }]);
+
+    assert.equal(result.warnings.length, 1);
+    assert.equal(result.findings?.[0]?.confidence, 'low');
+    assert.equal(result.findings?.[0]?.suggestion?.kind, 'review');
+    assert.deepEqual(result.fixes, []);
   });
 });
 
