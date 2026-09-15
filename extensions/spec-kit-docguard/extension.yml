@@ -3,7 +3,7 @@ schema_version: "1.0"
 extension:
   id: "docguard"
   name: "DocGuard — CDD Enforcement"
-  version: "0.40.5"
+  version: "0.41.0"
   description: "Documentation integrity for AI-assisted repositories: lifecycle registry, drift validation, traceability, safe archival, SARIF/JUnit, MCP, GitHub Actions, and Spec Kit hooks."
   author: "Ricardo Accioly"
   repository: "https://github.com/raccioly/docguard"
