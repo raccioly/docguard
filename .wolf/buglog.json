@@ -5682,6 +5682,26 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-09-15T00:41:32.000Z"
+    },
+    {
+      "id": "bug-344",
+      "timestamp": "2026-09-15T01:48:00.000Z",
+      "error_message": "Repository-token-dispatched CI passed for release PR #376 but did not emit the workflow_run event required to merge and publish",
+      "file": ".github/workflows/scheduled-release.yml",
+      "root_cause": "The design applied GitHub's workflow_dispatch recursion exception to the dispatched CI run but incorrectly assumed that the later workflow_run event was also exempt; the live probe used a user token and did not reproduce github-actions[bot] provenance",
+      "fix": "Keep the privileged release controller inside the trusted scheduled run, wait for exact bot-authored CI and supply-chain runs, restore policy from main, validate metadata, merge, and dispatch publication directly",
+      "tags": [
+        "release",
+        "github-actions",
+        "github-token",
+        "workflow-run",
+        "provenance"
+      ],
+      "related_bugs": [
+        "bug-341"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-09-15T01:48:00.000Z"
     }
   ]
 }

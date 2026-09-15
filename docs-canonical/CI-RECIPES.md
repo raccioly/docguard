@@ -50,20 +50,25 @@ The repository's scheduled release workflow opens a reviewable `release/vX.Y.Z`
 pull request because `main` requires pull requests and four runtime checks. GitHub
 places pull-request workflows created with the repository `GITHUB_TOKEN` into an
 approval-required state, but explicitly created `workflow_dispatch` events always
-run. The scheduler therefore uses only the job-scoped repository token: it pushes
-the release branch, opens or reuses its PR, and dispatches read-only CI on that
-exact branch.
+run. GitHub does not extend that exception to a later `workflow_run` event from a
+bot-authored dispatch. The scheduler therefore uses only its job-scoped token: it
+pushes the release branch, opens or reuses its PR, dispatches read-only CI and
+supply-chain workflows on that exact branch, and waits for both exact run IDs.
+It dispatches only after GitHub has registered the approval-required placeholder
+runs, ensuring the successful checks are the newest contexts evaluated by branch
+protection.
 
-The privileged `workflow_run` gate checks out policy code only from the default
-branch with persisted credentials disabled. It binds the decision to the
-triggering run ID and current PR head, requires all four Node jobs, and validates
-the base repository, bot author, branch/title/version agreement, next-version
-increment, missing release tag, synchronized package surfaces, and changed-file
-allowlist. It never checks out or executes candidate code. After merge it
-dispatches the idempotent release workflow. If that dispatch is interrupted, the
-next schedule sees the current package version without a tag and retries
-publication before considering another bump. An orphaned release branch fails
-closed; an existing open release PR is reused.
+Before making a privileged decision, the scheduler restores policy code from the
+default branch with persisted credentials disabled. It binds both run IDs to the
+current PR head, repository, branch, workflow identity, bot actor, and successful
+result; requires all four Node jobs; and validates the base repository, bot
+author, branch/title/version agreement, next-version increment, missing release
+tag, synchronized package surfaces, and changed-file allowlist. It reads candidate
+files as inert API data and never executes release-branch code in the privileged
+controller. After merge it dispatches the idempotent release workflow. If that
+dispatch is interrupted, the next schedule sees the current package version
+without a tag and retries publication before considering another bump. An
+orphaned release branch fails closed; an existing open release PR is reused.
 
 ## Recipe 3b — Spec completion and post-hoc reconciliation
 

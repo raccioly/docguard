@@ -1,6 +1,6 @@
 # Tasks: Tokenless Scheduled Releases
 
-**Status**: Verified; retained as a living release contract
+**Status**: Corrective live verification pending
 **Spec**: `specs/011-tokenless-scheduled-releases/spec.md`
 
 ## Phase 1: Contract and policy
@@ -24,3 +24,10 @@
 - [x] T010 Merge through reviewed CI and execute the live negative wiring probe.
 - [x] T011 Review the complete R8 evidence set and approve lifecycle completion
   with no accepted deviations.
+
+## Phase 4: Repository-token provenance correction
+
+- [x] T012 Replace the suppressed bot `workflow_dispatch → workflow_run` handoff
+  with scheduler-owned exact CI and supply-chain run verification.
+- [ ] T013 Execute the live v0.40.1 release through the corrected controller and
+  retain its merge and publication evidence.

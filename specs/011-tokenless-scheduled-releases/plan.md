@@ -1,6 +1,6 @@
 # Implementation Plan: Tokenless Scheduled Releases
 
-**Status**: Implemented and verified; retained as a living release contract
+**Status**: Corrective live verification pending
 **Spec**: `specs/011-tokenless-scheduled-releases/spec.md`
 
 ## Summary
@@ -14,11 +14,12 @@ default-branch policy module, and add missing-tag recovery before any new bump.
 
 - Runtime: GitHub-hosted Ubuntu runners, Node.js 20 for scheduled preparation,
   and `actions/github-script` for privileged API operations.
-- Trust boundary: scheduled and `workflow_run` definitions from `main`; release
+- Trust boundary: the scheduled controller restores code from `main`; release
   branch content is fetched as bytes and parsed, never executed by the
-  privileged job.
-- Permissions: scheduled workflow receives `contents`, `pull-requests`, and
-  `actions` write; the merge workflow receives those scopes plus check metadata.
+  privileged controller.
+- Permissions: the scheduled controller receives `contents`, `pull-requests`,
+  and `actions` write; the fallback merge workflow retains those scopes plus
+  check metadata.
 - Recovery: `release.yml` remains tag-driven and idempotent. A missing current
   tag is dispatched before the scheduler considers another version.
 
@@ -27,7 +28,7 @@ default-branch policy module, and add missing-tag recovery before any new bump.
 ```text
 cli/release-pr-policy.mjs                pure candidate and CI-run policy
 .github/workflows/scheduled-release.yml  tokenless PR and dispatch orchestration
-.github/workflows/auto-merge.yml         metadata-only privileged gate
+.github/workflows/auto-merge.yml         Dependabot/Jules and manual fallback gate
 .github/workflows/release.yml            serialized idempotent publication
 tests/scheduled-release.test.mjs          policy and workflow contracts
 docs-canonical/CI-RECIPES.md              operator trust and recovery model
@@ -41,10 +42,13 @@ rejection independently.
 
 ## Phase 2 — Tokenless orchestration
 
-Use `GITHUB_TOKEN` to push and open the release PR, then dispatch `ci.yml` on its
-branch. Reuse an existing open release PR and reject an orphaned same-name branch.
-Let `auto-merge.yml` accept `workflow_dispatch` only for release candidates and
-dispatch `release.yml` after a successful merge.
+Use `GITHUB_TOKEN` to push and open the release PR, then dispatch `ci.yml` and
+`supply-chain.yml` on its branch. Reuse an existing open release PR and reject an
+orphaned same-name branch. Wait for GitHub to register approval-required PR
+checks, then start both exact bot-authored runs so their successful contexts are
+newest. Restore policy from `main`, validate the candidate as inert metadata,
+merge, and dispatch `release.yml` without relying on a suppressed downstream
+event.
 
 ## Phase 3 — Recovery, verification, and closeout
 
@@ -55,4 +59,7 @@ temporary non-release PR that the gate must refuse to merge.
 The retained probe records CI run `34912654565` and privileged gate run
 `34912788971`. All four Node jobs passed; the trusted gate identified pull
 request #372 as a non-release candidate, refused to merge it, and the disposable
-pull request and branch were then closed and deleted.
+pull request and branch were then closed and deleted. That user-authored probe
+validated the fallback gate but did not reproduce repository-token provenance;
+release PR #376 exposed the missing scheduler-to-controller handoff and was
+closed without merge before publication.
