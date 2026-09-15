@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.41.3] - 2026-09-15
+
+Automated weekly release — batches everything merged since `v0.41.2`.
+
+### Changed
+
+- fix: preserve hook composition and evidence gates (#404)
+
+
 ### Fixed
 
 - Increased the bounded subprocess deadlines in the hook and Spec Kit helper contract suites so parallel CI load does not misreport healthy integrations as `ETIMEDOUT` failures.
