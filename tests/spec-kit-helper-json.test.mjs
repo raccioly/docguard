@@ -10,6 +10,9 @@ import { safeWrite } from '../cli/writers/generate-io.mjs';
 const helper = fileURLToPath(new URL('../extensions/spec-kit-docguard/scripts/bash/docguard-check-docs.sh', import.meta.url));
 const scoreJSON = JSON.stringify({ score: 73 }, null, 2);
 const guardJSON = (status = 'PASS', passed = 4, total = 5) => JSON.stringify({ status, passed, total }, null, 2);
+// This integration fixture launches Bash and multiple Node processes. Preserve
+// a finite deadline without treating full-suite scheduler contention as failure.
+const PROCESS_TIMEOUT_MS = 20000;
 
 // Execute a real Node CLI fixture through the shipped Bash helper. A closed PATH
 // excludes host installs and turns any attempted npx download into a local trap.
@@ -47,7 +50,7 @@ function withProject(options, check) {
     const result = spawnSync('/bin/bash', [helper, '--json', '--verbose'], {
       cwd: root,
       encoding: 'utf8',
-      timeout: 10000,
+      timeout: PROCESS_TIMEOUT_MS,
       env: {
         PATH: bin, HOME: temp, TMPDIR: temp, CALLS: calls, TRAPS: join(temp, 'traps'),
         SCORE_JSON: scoreJSON, SCORE_EXIT: '0', GUARD_JSON: guardJSON(), GUARD_EXIT: '0',

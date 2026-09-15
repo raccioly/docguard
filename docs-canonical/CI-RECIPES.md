@@ -24,6 +24,11 @@ visible warnings. Inspect the complete contract with:
 npx docguard-cli verify --evidence --format json
 ```
 
+This direct command exits 0 when every configured declaration is verified, 2
+when evidence is stale, inconclusive, or unsupported, and 1 when a declaration
+is contradicted or the manifest is invalid. CI that permits unresolved evidence
+must explicitly allow only status 2; a contradiction is always a failed gate.
+
 Generate oasdiff or Buf reports in an earlier pinned CI step, save their machine
 output, and declare SHA-256 identities for every repository input. DocGuard
 consumes those artifacts; it does not install or invoke either producer. Keep

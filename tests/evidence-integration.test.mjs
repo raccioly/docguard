@@ -148,6 +148,36 @@ describe('evidence-scoped verification', () => {
     assert.ok(coverage.remaining.length < coverage.total);
   });
 
+  it('maps direct evidence verification states to CI-safe exit codes', t => {
+    const dir = fixture(t);
+    const runEvidence = () => spawnSync(process.execPath,
+      ['cli/docguard.mjs', 'verify', '--evidence', '--format', 'json', '--dir', dir], {
+        cwd: resolveRepo(), encoding: 'utf8', env: { ...process.env, NO_COLOR: '1' },
+      });
+
+    let cli = runEvidence();
+    assert.equal(cli.status, 0, cli.stderr);
+    assert.equal(JSON.parse(cli.stdout).status, 'verified-within-scope');
+
+    write(dir, 'config/policy.json', JSON.stringify({ retentionDays: 31, roles: ['admin', 'editor', 'viewer'] }));
+    cli = runEvidence();
+    assert.equal(cli.status, 1, cli.stderr);
+    assert.equal(JSON.parse(cli.stdout).status, 'contradicted');
+
+    write(dir, 'config/policy.json', JSON.stringify({ retentionDays: 30, roles: ['admin', 'editor', 'viewer'] }));
+    write(dir, 'api/current.yaml', 'openapi: 3.1.0\n');
+    cli = runEvidence();
+    assert.equal(cli.status, 2, cli.stderr);
+    assert.equal(JSON.parse(cli.stdout).status, 'attention-required');
+
+    const manifest = JSON.parse(read(dir, '.docguard-evidence.json'));
+    manifest.declarations.push(structuredClone(manifest.declarations[0]));
+    write(dir, '.docguard-evidence.json', `${JSON.stringify(manifest, null, 2)}\n`);
+    cli = runEvidence();
+    assert.equal(cli.status, 1, cli.stderr);
+    assert.equal(JSON.parse(cli.stdout).status, 'invalid');
+  });
+
   it('rejects conflicting verify modes with a stable machine error', t => {
     const dir = fixture(t);
     const cli = spawnSync(process.execPath, ['cli/docguard.mjs', 'verify', '--evidence', '--semantic', '--format', 'json', '--dir', dir], {

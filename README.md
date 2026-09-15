@@ -714,7 +714,7 @@ Two ready-to-use templates ship with the Spec Kit extension and as standalone fi
 
 ## ✨ What's New
 
-Highlights through the current v0.40 release line:
+Highlights from recent releases:
 
 - **Adoption baseline** — `guard --update-baseline` freezes a legacy repo's existing findings
   into a committed `.docguard.baseline.json`; guard/ci then gate only NEW drift, with suppression

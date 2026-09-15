@@ -1,6 +1,6 @@
 # Test Specification
 
-<!-- docguard:version 0.9.0 -->
+<!-- docguard:version 1.0.0 -->
 <!-- docguard:status active -->
 <!-- docguard:last-reviewed 2026-09-15 -->
 
@@ -59,7 +59,7 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/commands/generate.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/commands/agents.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/commands/agent.mjs`, `cli/scanners/task-context.mjs` | `tests/agent.test.mjs`, `tests/task-context.test.mjs` | ✅ |
-| `cli/commands/hooks.mjs` | `tests/commands.test.mjs` | ✅ |
+| `cli/commands/hooks.mjs` | `tests/hooks.test.mjs`, `tests/hooks-contract.test.mjs` | ✅ |
 | `extensions/spec-kit-docguard/extension.yml`, `extensions/spec-kit-docguard/commands/*.md` | `tests/hooks-contract.test.mjs` | ✅ |
 | `cli/commands/diagnose.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/commands/badge.mjs` | `tests/commands.test.mjs` | ✅ |
@@ -119,6 +119,7 @@ of empty repeats driven only by generated lifecycle artifacts.
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 1.0.0 | 2026-09-15 | DocGuard Team | Add executable hook-composition, direct evidence exit-code, and field-level registry-difference regressions |
 | 0.7.0 | 2026-03-13 | @raccioly | Added trace, publish; watch.mjs coverage justified (ISO 29119); 15 commands |
 | 0.5.0 | 2026-03-13 | @raccioly | Added diagnose, guard JSON, profile, tax tests (24→30) |
 | 0.3.0 | 2026-03-12 | @raccioly | Real tests, project-type-aware spec |
@@ -172,9 +173,11 @@ Evidence adapter tests use paired valid and invalid fixtures. They cover RFC
 bounded collections, saved clean and non-clean oasdiff/Buf reports, malformed
 reports, unknown adapter versions, input-digest staleness, missing and ambiguous
 Markdown targets, unsafe paths, and stable identity behavior. Integration tests
-confirm that guard, JSON, SARIF, JUnit, score assurance, and agent context retain
-the five-state boundary. No test invokes third-party project code or an external
-compatibility binary.
+confirm that guard, JSON, SARIF, JUnit, score assurance, agent context, and direct
+CLI exit codes retain the five-state boundary. Contradicted and invalid direct
+verification exits 1; stale, inconclusive, and unsupported evidence exits 2;
+verified evidence exits 0. No test invokes third-party project code or an
+external compatibility binary.
 
 Python literal evidence adds paired list, tuple, set, dictionary, annotated,
 multiline, string/comment, dynamic, duplicate-assignment, malicious, symlink,
@@ -183,6 +186,11 @@ executed. The packed adopter workflow starts with a foreign hook and a
 specification missing immutable metadata, runs the installed CLI, validates
 every rendered suggestion, follows the proposed remediation, and requires the
 post-action registry check to pass.
+Managed-hook tests reinstall into a hook with commands on both sides, require
+exactly one marker pair, repair nested markers emitted by affected releases,
+execute every successful postlude, and retain fail-closed exits. Spec-registry
+tests require stale JSON and text output to identify bounded field paths,
+including order-only canonicalization.
 
 Express route fixtures pair real registrations with chained HTTP-client calls,
 same-path test requests, conventional test-helper trees, single-level mounts,

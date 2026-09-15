@@ -5,6 +5,7 @@
 
 ## User Preferences
 
+- **2026-09-15** — Batch improvements and wait between public releases. Publish only after a materially significant set is ready or a critical correctness defect requires a release; avoid creating a visible release for each small merged change.
 - **2026-07-03** — **NO VS Code extension. Ever (until Ricardo says otherwise).** He built one before, it was deeply problematic ("a shit show"), and he removed it. Do not propose, scaffold, or build a VS Code extension for DocGuard. SARIF + Problems-panel via existing SARIF viewers is the sanctioned path to editor visibility. All OTHER distribution channels approved 2026-07-03: pre-commit, MCP registries (official/Smithery/mcp.so/Glama), awesome lists, Homebrew tap, GitLab CI component, Actions Marketplace (his click). #286 catalog submission SENT as-is — sharpened description goes into release.yml sync-catalog for the NEXT release, don't touch the submitted issue.
 - **2026-07-03** — Keep the LOCAL main tree (`/Users/ricardoaccioly/Repo_claude/canonical-spec-kit`) always up to date with origin/main. After any merge/push to main (releases especially), sync it in the same session: `git -C <main> status --short` first (never clobber unrecognized work — stash leftovers with a message, surface real WIP), then `git -C <main> pull --ff-only`. Sessions run in auto-worktrees, so the main tree silently falls behind otherwise (it sat at v0.25 while origin hit v0.29).
 
@@ -14,6 +15,7 @@
 
 ## Key Learnings
 
+- **2026-09-15 — Composition and process status are public contracts.** A hook test that preserves postlude text does not prove the postlude executes, and an evaluator-state test does not prove a direct CLI command gates CI. Execute generated hooks with commands on both sides, assert exact marker cardinality after reinstall, and spawn every machine command to verify its exit status agrees with its JSON status.
 - **2026-09-15 — A successful Spec Kit install does not prove manifest correctness.** The v0.40.4 ZIP passed validation and installed, yet `fix` resolved to `generate`, `review` resolved to `diagnose`, three shipped command files were absent from `provides.commands`, and its description exceeded the documented 200-character limit. Treat the manifest as an executable public API: require unique names and files, match every `speckit.docguard.<verb>` to `commands/<verb>.md`, compare declarations with the complete shipped directory, keep catalog metadata byte-aligned, and inspect the installed inventory before catalog submission.
 
 - **2026-09-14 — Release-generated skill parity:** The scheduled release updates extension skill metadata through `fix --write`, whose headless mode correctly skips setup. It must then run an explicit managed-agent sync before tests and staging; otherwise `.agent/skills` remains one release behind. A repository parity test should compare every managed copy byte-for-byte with its extension source.
@@ -76,6 +78,7 @@
 
 ## Do-Not-Repeat
 
+- **2026-09-15** — Never treat preserved hook text as proof of composition or a correct evaluator object as proof of CI behavior. Run the resulting script and spawn the CLI process; assertions must cover externally observable control flow and exit codes.
 - **2026-09-14** — Never put Markdown backticks inside a double-quoted shell command passed to `zsh -lc`; command substitution executes the text. Use single-quoted search patterns, and perform exact cleanup through a bounded script when destructive shell forms are rejected.
 - **2026-09-14** — Never treat a Git object ID as durable recovery by itself; unreachable commits and blobs can be garbage-collected after squash merges or branch deletion. Require the source revision to be an ancestor of a recorded retention ref and report recoverability explicitly.
 - **2026-09-14** — Never count a bare requirement ID as feature-completion evidence. Once the original spec is retired, a formerly ambiguous `FR-012` can become unique and silently rebind to another feature. Feature gates require a qualified stable identity; retired identities remain tombstoned.

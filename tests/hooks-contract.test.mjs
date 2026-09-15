@@ -9,6 +9,10 @@ import { tmpdir } from 'node:os';
 import { runHooks } from '../cli/commands/hooks.mjs';
 import { safeWrite } from '../cli/writers/generate-io.mjs';
 
+// Full-suite runs execute several subprocess-heavy files in parallel. Keep this
+// deadline bounded while allowing for scheduler contention on slower CI hosts.
+const PROCESS_TIMEOUT_MS = 15000;
+
 /**
  * @req docguard.document-lifecycle#FR-018
  * @req docguard.document-lifecycle#FR-019
@@ -50,10 +54,14 @@ esac`);
 
   function run(type, env = {}, autoFix = false) {
     runHooks(dir, { projectName: 'contract' }, { type, autoFix });
-    return spawnSync('/bin/sh', [join(dir, '.git/hooks', type)], {
+    return execute(type, env);
+  }
+
+  function execute(type, env = {}, args = []) {
+    return spawnSync('/bin/sh', [join(dir, '.git/hooks', type), ...args], {
       cwd: dir,
       encoding: 'utf8',
-      timeout: 5000,
+      timeout: PROCESS_TIMEOUT_MS,
       env: {
         PATH: bin, CALLS: join(dir, 'calls'), SCORE_JSON: '{"score":80}',
         SCORE_EXIT: '0', GUARD_EXIT: '0', FIX_EXIT: '0', GIT_EXIT: '0', ...env,
@@ -135,6 +143,25 @@ esac`);
       executable('bin/docguard', 'echo "wrong PATH executable" >&2; exit 99');
       expect(run(type, {}, autoFix), 0);
       assert.doesNotMatch(readFileSync(join(dir, 'calls'), 'utf8'), /npx/);
+    });
+  }
+
+  for (const [type, autoFix] of [['pre-push', false], ['pre-commit', false], ['pre-commit', true], ['commit-msg', false]]) {
+    it(`runs a user postlude after successful ${type}, auto-fix=${autoFix}`, () => {
+      fixture();
+      runHooks(dir, { projectName: 'contract' }, { type, autoFix });
+      const path = join(dir, '.git/hooks', type);
+      safeWrite(path, `${readFileSync(path, 'utf8')}\nprintf 'ran' > "$POSTLUDE"\n`);
+      chmodSync(path, 0o755);
+      const postlude = join(dir, `postlude-${type}-${autoFix}`);
+      const args = type === 'commit-msg' ? [join(dir, 'commit-message')] : [];
+      if (type === 'commit-msg') safeWrite(args[0], 'fix: valid message\n');
+      const result = execute(type, {
+        POSTLUDE: postlude,
+        ...(type === 'commit-msg' ? { PATH: process.env.PATH } : {}),
+      }, args);
+      expect(result, 0);
+      assert.equal(readFileSync(postlude, 'utf8'), 'ran');
     });
   }
 

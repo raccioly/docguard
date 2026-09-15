@@ -245,6 +245,39 @@ describe('Spec registry projection', () => {
     assert.equal(JSON.parse(current.stdout).status, 'CURRENT');
   });
 
+  it('explains order-only registry drift and canonicalizes it on write', t => {
+    const dir = fixture(t, { 'specs/001-feature/spec.md': spec('acme.feature') });
+    const registry = projectSpecRegistry(dir).registry;
+    registry.specs[0].reviewed.scope.canonicalDocs = [
+      'docs-canonical/Z.md',
+      'docs-canonical/A.md',
+    ];
+    write(dir, SPEC_REGISTRY_PATH, `${JSON.stringify(registry, null, 2)}\n`);
+
+    const checked = run(dir, ['--check', '--format', 'json']);
+    assert.equal(checked.status, 2, checked.stderr);
+    const stale = JSON.parse(checked.stdout);
+    assert.equal(stale.status, 'STALE');
+    assert.deepEqual(stale.differences, [{
+      path: '$.specs[0].reviewed.scope.canonicalDocs',
+      kind: 'order',
+      message: 'Unordered values are not in canonical sort order.',
+    }]);
+    const text = run(dir, ['--check']);
+    assert.equal(text.status, 2, text.stderr);
+    assert.match(text.stdout, /\$\.specs\[0\]\.reviewed\.scope\.canonicalDocs: Unordered values are not in canonical sort order\./);
+    assert.match(validateSpecRegistry(dir).findings[0].message,
+      /\$\.specs\[0\]\.reviewed\.scope\.canonicalDocs/);
+
+    const written = run(dir, ['--write', '--format', 'json']);
+    assert.equal(written.status, 0, written.stderr);
+    assert.deepEqual(JSON.parse(readFileSync(join(dir, SPEC_REGISTRY_PATH), 'utf8'))
+      .specs[0].reviewed.scope.canonicalDocs, [
+        'docs-canonical/A.md',
+        'docs-canonical/Z.md',
+      ]);
+  });
+
   it('emits the pre-specification briefing without a draft path', t => {
     const dir = fixture(t, { 'specs/001-feature/spec.md': spec('acme.feature') });
     write(dir, SPEC_REGISTRY_PATH, projectSpecRegistry(dir).serialized);

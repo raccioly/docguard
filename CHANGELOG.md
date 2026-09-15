@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Increased the bounded subprocess deadlines in the hook and Spec Kit helper contract suites so parallel CI load does not misreport healthy integrations as `ETIMEDOUT` failures.
+- Make managed Git hook reinstall idempotent, repair nested marker pairs written
+  by affected releases, and allow successful DocGuard blocks to continue into
+  user-owned postlude commands.
+- Make direct `verify --evidence` suitable for CI by exiting 1 for contradictions
+  and invalid manifests, 2 for unresolved evidence, and 0 for verified or
+  unconfigured evidence.
+- Explain deterministic spec-registry drift with bounded field paths and identify
+  order-only canonicalization instead of returning an unexplained `STALE` state.
+- Replace the README's release-line label with version-independent wording so it
+  cannot become stale on the next automated release.
+
 ## [0.41.2] - 2026-09-15
 
 Automated weekly release — batches everything merged since `v0.41.1`.
