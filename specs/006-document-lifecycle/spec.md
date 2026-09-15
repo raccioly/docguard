@@ -113,8 +113,9 @@ The registry points to approved prose; it does not duplicate or replace it.
   `living` verification contract MAY complete only when every requirement has
   qualified evidence; other persistence models require a non-empty, fully
   checked task ledger. Checked tasks alone MUST NOT prove completion. A verified
-  `living` spec MUST accept a
-  `verified → verified` maintenance outcome only when reconciliation finds a new
+  or released `living` spec MUST accept a status-preserving
+  `verified → verified` or `released → released` maintenance outcome only when
+  reconciliation finds a new
   linked source, test, canonical-document, or decision change since the prior
   reviewed revision; generated outcome or registry churn alone MUST NOT qualify.
 - **FR-017**: Completion MUST refresh DocGuard-owned context outputs from current

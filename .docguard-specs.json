@@ -458,7 +458,7 @@
         "artifacts": [
           {
             "path": "specs/006-document-lifecycle/spec.md",
-            "digest": "sha256:c37997a7d04a784221550d748fc96a0833fc7a2e578e90c498b7164df69fa005"
+            "digest": "sha256:54fc050729c30152225af4eedd92469e7443ab288706c8d319ab677b0b34bfe7"
           },
           {
             "path": "specs/006-document-lifecycle/plan.md",

@@ -160,10 +160,11 @@ requirement evidence is the durable completion proof; other persistence models
 still require one. Its staged transaction updates the bounded outcome,
 registry, feature-spec outcome index, and `.docguard/current-context.json` as one
 validated set. The context file contains pointers and content hashes rather than
-copying governing prose, and excludes every retired spec. A verified living spec
-can append a maintenance outcome at `verified → verified` only when a new linked
-source, test, canonical document, or decision changed after the last reviewed
-revision. Generated registry and outcome updates do not satisfy that gate.
+copying governing prose, and excludes every retired spec. A verified or released
+living spec can append a status-preserving maintenance outcome only when a new
+linked source, test, canonical document, or decision changed after the last
+reviewed revision. Generated registry and outcome updates do not satisfy that
+gate.
 
 ## Task Context Packet
 

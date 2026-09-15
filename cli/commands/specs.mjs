@@ -57,7 +57,10 @@ function archiveReadiness(spec, targetVerified = false) {
 }
 
 function completionTransition(spec) {
-  if (spec?.reviewed.lifecycle.delivery === 'verified') return 'verified→verified';
+  if (spec?.reviewed.lifecycle.persistenceModel === 'living'
+    && ['verified', 'released'].includes(spec.reviewed.lifecycle.delivery)) {
+    return `${spec.reviewed.lifecycle.delivery}→${spec.reviewed.lifecycle.delivery}`;
+  }
   return spec?.reviewed.lifecycle.delivery === 'in_progress'
     ? 'in_progress→implemented→verified'
     : 'implemented→verified';
@@ -77,7 +80,7 @@ export function planSpecCompletion(projectDir, config, flags, options = {}) {
 
   let reconcile = null;
   if (spec) {
-    const maintenance = spec.reviewed.lifecycle.delivery === 'verified'
+    const maintenance = ['verified', 'released'].includes(spec.reviewed.lifecycle.delivery)
       && spec.reviewed.lifecycle.persistenceModel === 'living';
     if (spec.reviewed.lifecycle.approval !== 'approved') blockers.push({ code: 'SPC002', message: 'Only an approved spec can become verified.' });
     if (!['in_progress', 'implemented'].includes(spec.reviewed.lifecycle.delivery) && !maintenance) {
@@ -170,7 +173,7 @@ export function completeSpec(projectDir, config, flags, options = {}) {
     successor: flags.successor || null,
   };
   const specContent = appendImplementationOutcome(readFileSync(specPath, 'utf8'), outcome);
-  spec.reviewed.lifecycle.delivery = 'verified';
+  if (spec.reviewed.lifecycle.delivery !== 'released') spec.reviewed.lifecycle.delivery = 'verified';
   spec.reviewed.reconciliation.lastReviewedRevision = plan.revision;
   spec.reviewed.reconciliation.outcomes = [...spec.reviewed.reconciliation.outcomes, outcome].slice(-20);
   const artifact = spec.observed.artifacts.find(item => item.path === spec.path);

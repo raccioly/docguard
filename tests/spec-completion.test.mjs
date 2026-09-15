@@ -133,6 +133,27 @@ describe('Spec completion transaction', () => {
     assert.ok(duplicate.blockers.some(issue => issue.code === 'SPC006' && /new linked/.test(issue.message)));
   });
 
+  it('records released living-spec maintenance without downgrading release state', t => {
+    const dir = fixture(t, { persistenceModel: 'living' });
+    let registry = JSON.parse(readFileSync(join(dir, SPEC_REGISTRY_PATH), 'utf8'));
+    registry.specs[0].reviewed.lifecycle.delivery = 'released';
+    registry.specs[0].reviewed.reconciliation.lastReviewedRevision = git(dir, ['rev-parse', 'HEAD']);
+    write(dir, SPEC_REGISTRY_PATH, `${JSON.stringify(registry, null, 2)}\n`);
+    git(dir, ['add', '.']);
+    git(dir, ['commit', '-qm', 'released policy']);
+    write(dir, 'packages/api/src/feature.js', '/** @implements acme.feature#FR-001 */\nexport const feature = false;\n');
+    git(dir, ['add', '.']);
+    git(dir, ['commit', '-qm', 'maintain released feature']);
+
+    const result = completeSpec(dir, {}, {
+      id: 'acme.feature', write: true, reason: 'Reviewed released maintenance.',
+    }, { guardResult: passingGuard });
+    assert.equal(result.status, 'VERIFIED');
+    assert.equal(result.transition, 'released→released');
+    registry = JSON.parse(readFileSync(join(dir, SPEC_REGISTRY_PATH), 'utf8'));
+    assert.equal(registry.specs[0].reviewed.lifecycle.delivery, 'released');
+  });
+
   it('blocks checked-task false assurance when qualified evidence is absent', t => {
     const dir = fixture(t, { implementation: false, test: false });
     const result = planSpecCompletion(dir, {}, {

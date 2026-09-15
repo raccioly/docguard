@@ -12,7 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Allow an evidence-complete living specification to finish without creating a
   stale `tasks.md` solely for lifecycle bookkeeping, while continuing to reject
   missing task ledgers for other persistence models and empty or incomplete
-  ledgers wherever they are declared.
+  ledgers wherever they are declared. Released living contracts can record later
+  maintenance without downgrading their release state.
 
 ## [0.41.0] - 2026-09-15
 
