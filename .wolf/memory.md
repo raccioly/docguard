@@ -1333,3 +1333,4 @@
 | 14:36 | Session end: 32 writes across 9 files (dependabot.yml, CHANGELOG.md, package.json, release.yml, ci.yml) | 12 reads | ~71601 tok |
 | 14:56 | Edited .github/workflows/release.yml | expanded (+53 lines) | ~845 |
 | 14:56 | Edited README.md | expanded (+19 lines) | ~245 |
+| 12:18 | Fixed living-spec completion and released maintenance; merged PRs #398–#400; published and independently verified v0.41.1; removed 348 temp artifacts | specs lifecycle, registry, roadmap, release | 1,866 tests + Node 18/20/22/24 + OSV + all publication targets passed | ~43000 tok |

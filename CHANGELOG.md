@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Require the extracted npm package's `--version` output to equal its exact
+  packed `package.json` version, preventing a plausible but stale semantic
+  version from passing release smoke tests.
+
 ## [0.41.1] - 2026-09-15
 
 Automated weekly release — batches everything merged since `v0.41.0`.
