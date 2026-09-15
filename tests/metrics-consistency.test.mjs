@@ -21,7 +21,7 @@ describe('Metrics-Consistency Validator', () => {
   it('passes when metrics correctly match actual actuals', () => {
     // DocGuard-bound (Bug #2): the line references DocGuard, so the numbers are
     // DocGuard's to govern.
-    writeFileSync(join(tmpDir, 'README.md'), 'DocGuard runs 15 checks across 12 validators.');
+    writeFileSync(join(tmpDir, 'README.md'), 'DocGuard runs 15 checks across 29 validators.');
 
     const guardResults = [];
     for(let i=0; i<11; i++) {
@@ -37,7 +37,7 @@ describe('Metrics-Consistency Validator', () => {
   });
 
   it('returns warnings when numbers mismatch actuals', () => {
-    writeFileSync(join(tmpDir, 'README.md'), 'DocGuard runs 20 checks across 12 validators.');
+    writeFileSync(join(tmpDir, 'README.md'), 'DocGuard runs 20 checks across 29 validators.');
 
     const guardResults = [];
     for(let i=0; i<11; i++) {
@@ -171,6 +171,26 @@ describe('Metrics-Consistency Validator', () => {
     assert.equal(fix.actualSource, 'docguard.guard.checks', 'fix must carry provenance for the applier');
   });
 
+  it('uses the shipped validator surface when a project disables validators (adoption regression)', () => {
+    // A consumer can intentionally disable validators, but that does not change
+    // the truthful sentence "DocGuard ships 29 validators." The old code
+    // derived 28 from this reduced run (27 enabled + Metrics-Consistency).
+    const enabledResults = Array.from({ length: 27 }, () => ({ status: 'passed', total: 1 }));
+    writeFileSync(join(tmpDir, 'README.md'), 'DocGuard ships 29 validators.');
+    const clean = validateMetricsConsistency(tmpDir, {}, enabledResults);
+    assert.deepEqual(clean.warnings, [], clean.warnings.join(' | '));
+
+    writeFileSync(join(tmpDir, 'README.md'), 'DocGuard ships 28 validators.');
+    const stale = validateMetricsConsistency(tmpDir, {}, enabledResults);
+    const fix = stale.fixes.find(item => item.type === 'replace-count');
+    assert.equal(stale.warnings.length, 1, stale.warnings.join(' | '));
+    assert.ok(stale.warnings[0].includes("DocGuard's shipped validators count is 29"));
+    assert.deepEqual(
+      { found: fix?.found, actual: fix?.actual, actualSource: fix?.actualSource },
+      { found: 28, actual: 29, actualSource: 'docguard.package.validators' },
+    );
+  });
+
   it('does not rewrite a historical metric transition', () => {
     writeFileSync(join(tmpDir, 'AGENTS.md'),
       "DocGuard's defaults changed across releases (182 → 203 checks on one upgrade).\n");
@@ -275,8 +295,8 @@ describe('Metrics-Consistency — project collections (field report #6)', () => 
       { collections: { validators: 'src/extractors/*.py' } }, // 19 files — must be ignored for the reserved noun
       [{ status: 'passed', total: 5 }],
     );
-    // The built-in validators count is 2 (1 guard validator + the +1 self-count),
-    // not 19; "12 validators" is bound to docguard so it's compared to the built-in.
+    // The built-in validator count comes from the shipped package modules, not
+    // the collection override; "12 validators" remains DocGuard-bound.
     assert.ok(!result.warnings.some(w => w.includes('the code has 19')),
       `reserved noun must not use the collection glob: ${result.warnings.join(' | ')}`);
   });

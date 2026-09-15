@@ -1,7 +1,7 @@
 # Requirements
 
 <!-- docguard:quality negation-load off — requirements define explicit failure and non-disclosure boundaries -->
-<!-- docguard:version 0.5.0 -->
+<!-- docguard:version 0.6.0 -->
 <!-- docguard:status active -->
 <!-- docguard:last-reviewed 2026-09-15 -->
 
@@ -18,14 +18,14 @@
 | FR-007 | P1 | An agent can request a deterministic bounded task-context packet that prioritizes exact current evidence, excludes retired and unsafe material, preserves retrieval-only assurance, and abstains rather than returning weak matches. Existing task-graph behavior remains compatible. | tests/task-context.test.mjs, tests/agent-context-benchmark.test.mjs |
 | FR-008 | P1 | The packed-package adoption journey distinguishes foreign hooks, composes one self-repairing managed block with user hook commands, emits complete remediation text, explains deterministic registry drift by field, follows proposed actions, and verifies the resulting state. | tests/adoption-workflow.test.mjs, tests/hooks.test.mjs, tests/hooks-contract.test.mjs, tests/spec-registry.test.mjs, tests/npm-pack-smoke.test.mjs |
 | FR-009 | P1 | Reconciliation keeps changed-path inventory independent from bounded patch text and reports partial coverage instead of a ready result after timeout, overflow, or Git failure. | tests/shared-git.test.mjs, tests/reconcile.test.mjs |
-| FR-010 | P1 | Instruction pointers resolve only safe exact paths or one unique basename; ambiguity, symlinks, unsafe paths, and incomplete indexes remain explicit. | tests/instruction-audit.test.mjs |
-| FR-011 | P1 | Planned requirements defer test traceability only when committed, clean, digest-current schema-v2 lifecycle evidence proves they remain planned. | tests/traceability-lifecycle.test.mjs |
+| FR-010 | P1 | Instruction pointers resolve only safe exact paths or one unique basename; Git-ignored paths and nested Git checkouts are excluded from basename evidence, while ambiguity, symlinks, unsafe paths, and incomplete indexes remain explicit. | tests/instruction-audit.test.mjs |
+| FR-011 | P1 | Planned requirements defer test traceability only when committed, clean, digest-current schema-v2 lifecycle evidence proves they remain planned. A structurally current registry that is new, removed from the Git index, or modified pending commit remains non-authoritative and explains restore-or-commit remediation without recommending artificial test markers. | tests/traceability-lifecycle.test.mjs |
 | FR-012 | P1 | Exact finding-code policy can promote or demote one finding without weakening its validator, while intrinsic and effective severity remain visible in machine formats. | tests/severity.test.mjs, tests/sarif.test.mjs, tests/junit.test.mjs |
 | FR-013 | P1 | CI, diagnose, and report expose combined READY, ATTENTION, or BLOCKED assessment while standalone score remains structural maturity rather than a guard verdict. | tests/assessment.test.mjs |
 | FR-014 | P1 | Python collection-size evidence uses bounded non-executable static literal parsing and abstains on dynamic or ambiguous syntax. | tests/evidence-python-literal.test.mjs, tests/evidence-integration.test.mjs |
 | FR-015 | P1 | JavaScript route discovery excludes HTTP-client calls and non-product helpers before deduplication, and composes static Express mounts across imported routers. | tests/js-ast.test.mjs, tests/routes-express-mounts.test.mjs |
 | FR-016 | P1 | API contract omissions remain review-only because negative route extraction cannot prove runtime absence or authorize deletion. | tests/api-authority-precision.test.mjs, tests/api-write.test.mjs, tests/doc-role-boundaries.test.mjs |
-| FR-017 | P1 | Field warning precision preserves historical prose, multiline skip reasons, test-fixture context, package-local env templates, authoritative OpenAPI selection, route-parameter equivalence, service boundaries, and runtime/schema parity. | tests/metrics-consistency.test.mjs, tests/todo-tracking.test.mjs, tests/field-context-precision.test.mjs, tests/environment.test.mjs, tests/docs-sync.test.mjs, tests/docguard-config-schema.test.mjs |
+| FR-017 | P1 | Field warning precision preserves historical prose, multiline skip reasons, test-fixture context, package-local capability counts, package-local env templates, authoritative OpenAPI selection, route-parameter equivalence, service boundaries, and runtime/schema parity. | tests/metrics-consistency.test.mjs, tests/todo-tracking.test.mjs, tests/field-context-precision.test.mjs, tests/environment.test.mjs, tests/docs-sync.test.mjs, tests/docguard-config-schema.test.mjs |
 
 ## Non-Functional Requirements
 
@@ -52,6 +52,7 @@ The verification column above links each requirement to executable tests. The te
 
 | Version | Date | Changes |
 |---|---|---|
+| 0.6.0 | 2026-09-15 | Exclude disposable checkout copies from pointer evidence, distinguish shipped capability counts from enabled configuration, and explain non-clean planned registries without weakening traceability |
 | 0.5.0 | 2026-09-15 | Require composable managed hooks, CI-safe evidence exits, and field-level registry drift explanations |
 | 0.4.0 | 2026-09-15 | Make API omission remediation review-only and add field-replay precision contracts for routes, fixtures, histories, monorepos, design sync, and config schemas |
 | 0.3.0 | 2026-09-15 | Add packed adoption, fail-closed reconciliation and pointers, lifecycle-aware traceability, exact-code policy, combined assessment, Python literal evidence, and route-discovery precision contracts |

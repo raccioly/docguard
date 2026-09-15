@@ -7,8 +7,10 @@
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { resolve, join, relative } from 'node:path';
+import { resolve, join, relative, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { loadIgnorePatterns, resolveDocDirs } from '../shared.mjs';
+import { countValidatorModules } from '../shared-validator-surface.mjs';
 // v0.29 consolidation: walker + glob counting live in shared-ignore.mjs (the
 // single implementations) — this file previously carried private copies.
 import { walkFiles, countGlobFiles } from '../shared-ignore.mjs';
@@ -33,18 +35,19 @@ export function validateMetricsConsistency(projectDir, config, guardResults) {
   // ── Collect actual metrics ──
   const actuals = {};
 
-  // Guard check count (from guard results if available)
+  // Guard check count is configuration-dependent, so it comes from this run.
+  // Validator count is a package capability: it must not shrink when a project
+  // disables a validator. Resolve this module's installed directory rather
+  // than projectDir, which points at the consumer repository.
   if (guardResults && Array.isArray(guardResults)) {
     const totalChecks = guardResults.reduce((sum, r) => {
       if (r.status === 'skipped') return sum;
       return sum + (r.total || 0);
     }, 0);
-    // +1 because Metrics-Consistency itself hasn't been added to results yet
-    const validatorCount = guardResults.filter(r => r.status !== 'skipped').length + 1;
-
     actuals.checks = totalChecks;
-    actuals.validators = validatorCount;
   }
+  const shippedValidatorCount = countShippedValidators();
+  if (shippedValidatorCount !== null) actuals.validators = shippedValidatorCount;
 
   // Test count — count test files on disk
   const testFiles = findTestFiles(projectDir);
@@ -68,7 +71,7 @@ export function validateMetricsConsistency(projectDir, config, guardResults) {
   // subject before overwriting.
   const patterns = [
     { key: 'checks', regex: /(?<!\d\/)\b(\d{2,})\s+(?:automated\s+)?checks?\b/gi, label: 'checks', requireBind: true, subject: "DocGuard's own", actualSource: 'docguard.guard.checks' },
-    { key: 'validators', regex: /(?<!\d\/)\b(\d{2,})\s+validators?\b/gi, label: 'validators', requireBind: true, subject: "DocGuard's own", actualSource: 'docguard.guard.validators' },
+    { key: 'validators', regex: /(?<!\d\/)\b(\d{2,})\s+validators?\b/gi, label: 'validators', requireBind: true, subject: "DocGuard's shipped", actualSource: 'docguard.package.validators' },
   ];
 
   // v0.29 (field report #6): project-declared collections. `config.collections`
@@ -243,6 +246,15 @@ function isHistoricalMetricContext(content, index) {
 
   const prefix = content.slice(0, Math.min(content.length, 4096));
   return /<!--\s*docguard:status\s+(?:historical|superseded|deprecated|archived)\s*-->/i.test(prefix);
+}
+
+/**
+ * Count validator modules shipped beside this file. This is deliberately
+ * package-local: a consumer's disabled validators or repository layout cannot
+ * alter a statement about DocGuard's own capability surface.
+ */
+function countShippedValidators() {
+  return countValidatorModules(dirname(fileURLToPath(import.meta.url)));
 }
 
 function findTestFiles(dir) {

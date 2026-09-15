@@ -19,7 +19,7 @@ function git(dir, ...args) {
   return execFileSync('git', args, { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 }
 
-function fixture(t) {
+function fixture(t, { commitRegistry = true } = {}) {
   const dir = mkdtempSync(join(tmpdir(), 'docguard-trace-lifecycle-'));
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   git(dir, 'init', '-q');
@@ -31,8 +31,10 @@ function fixture(t) {
   git(dir, 'commit', '-qm', 'spec');
   const registry = projectSpecRegistry(dir).registry;
   write(dir, SPEC_REGISTRY_PATH, `${JSON.stringify(registry, null, 2)}\n`);
-  git(dir, 'add', '.');
-  git(dir, 'commit', '-qm', 'review lifecycle');
+  if (commitRegistry) {
+    git(dir, 'add', '.');
+    git(dir, 'commit', '-qm', 'review lifecycle');
+  }
   return dir;
 }
 
@@ -68,5 +70,43 @@ describe('Traceability reviewed lifecycle', () => {
     const result = validateTraceability(dir, { requiredFiles: { canonical: [] } });
     assert.ok(result.findings.some(finding => finding.code === 'TRC004'));
     assert.equal(result.requirementCoverage.applicable, 1);
+  });
+
+  it('explains a newly written uncommitted registry without granting it lifecycle authority', t => {
+    const dir = fixture(t, { commitRegistry: false });
+    const beforeCommit = validateTraceability(dir, { requiredFiles: { canonical: [] } });
+    const finding = beforeCommit.findings.find(item => item.code === 'TRC004');
+
+    assert.ok(finding, 'an uncommitted lifecycle registry must remain non-authoritative');
+    assert.match(finding.suggestion.text, /\.docguard-specs\.json is not a clean tracked Git artifact/);
+    assert.equal(beforeCommit.requirementCoverage.deferred, 0);
+
+    git(dir, 'add', '.');
+    git(dir, 'commit', '-qm', 'commit reviewed lifecycle');
+    const afterCommit = validateTraceability(dir, { requiredFiles: { canonical: [] } });
+    assert.ok(!afterCommit.findings.some(item => item.code === 'TRC004'));
+    assert.equal(afterCommit.requirementCoverage.deferred, 1);
+  });
+
+  it('explains a registry removed from Git tracking without granting it lifecycle authority', t => {
+    const dir = fixture(t);
+    // This is the adoption report's exact state: the file is still present on
+    // disk (and in HEAD), but `git rm --cached` makes it non-authoritative.
+    git(dir, 'rm', '--cached', '-q', SPEC_REGISTRY_PATH);
+    const beforeCommit = validateTraceability(dir, { requiredFiles: { canonical: [] } });
+    const finding = beforeCommit.findings.find(item => item.code === 'TRC004');
+
+    assert.ok(finding, 'uncommitted lifecycle evidence must remain non-authoritative');
+    assert.match(finding.suggestion.text, /\.docguard-specs\.json is not a clean tracked Git artifact/);
+    assert.match(finding.suggestion.text, /do not add an @req marker merely to silence this warning/);
+    assert.equal(beforeCommit.requirementCoverage.deferred, 0);
+    assert.equal(beforeCommit.requirementCoverage.lifecycleUnknown, 1);
+
+    // Re-adding this unchanged file restores the committed index state. A new
+    // or changed registry instead needs its own commit before it becomes trusted.
+    git(dir, 'add', SPEC_REGISTRY_PATH);
+    const afterRestore = validateTraceability(dir, { requiredFiles: { canonical: [] } });
+    assert.ok(!afterRestore.findings.some(item => item.code === 'TRC004'));
+    assert.equal(afterRestore.requirementCoverage.deferred, 1);
   });
 });

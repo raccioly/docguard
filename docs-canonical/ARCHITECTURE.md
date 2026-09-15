@@ -1,13 +1,13 @@
 # Architecture
 
-<!-- docguard:version 1.3.0 -->
+<!-- docguard:version 1.4.0 -->
 <!-- docguard:status active -->
 <!-- docguard:last-reviewed 2026-09-15 -->
 
 | Metadata | Value |
 |----------|-------|
 | **Status** | ![Status](https://img.shields.io/badge/status-active-brightgreen) |
-| **Version** | `1.3.0` |
+| **Version** | `1.4.0` |
 | **Last Updated** | 2026-09-15 |
 | **Project Size** | ~24K lines across `cli/` |
 
@@ -26,7 +26,7 @@ It targets development teams and AI coding agents that need to maintain document
 | **CLI Entry Point** | Argument parsing, config loading, command routing | `cli/` | `docguard.mjs` |
 | **Commands** | User-facing commands (the Daily 5 — init/guard/diff/sync/score — plus situational tools including reconcile, retire, specs, and `init --with` scaffolders) | `cli/commands/` | `*.mjs` |
 | **Document lifecycle** | Finds exact terminal-status docs and completed-task review candidates; explicit retirement removes documentation from active context only after its source revision is reachable from a retained Git ref | `cli/scanners/document-lifecycle.mjs`, `cli/validators/document-lifecycle.mjs`, `cli/commands/retire.mjs` | Scanner is read-only; retirement uses the shared multi-file transaction and remains explicit |
-| **Spec lifecycle registry** | Projects immutable spec identities, reviewed lifecycle/lineage/scope, artifact digests, task state, qualified implementation/test evidence, bounded outcomes, and recovery tombstones into one byte-stable control file | `cli/scanners/spec-registry.mjs`, `cli/scanners/requirement-evidence.mjs`, `cli/validators/spec-registry.mjs`, `cli/commands/specs.mjs` | `specs --write` preserves reviewed fields; stale checks identify bounded field paths and distinguish canonical ordering from changed content; `specs complete` is the only verified-delivery writer |
+| **Spec lifecycle registry** | Projects immutable spec identities, reviewed lifecycle/lineage/scope, artifact digests, task state, qualified implementation/test evidence, bounded outcomes, and recovery tombstones into one byte-stable control file | `cli/scanners/spec-registry.mjs`, `cli/scanners/requirement-evidence.mjs`, `cli/validators/spec-registry.mjs`, `cli/commands/specs.mjs` | `specs --write` preserves reviewed fields; stale checks identify bounded field paths and distinguish canonical ordering from changed content; only committed, clean, digest-current lifecycle entries can defer traceability, while a current planned entry that is new, removed from the index, or modified pending commit remains advisory; `specs complete` is the only verified-delivery writer |
 | **Reconciliation graph** | Inventories changed paths independently from bounded patch text, maps them to direct spec evidence, and keeps mechanical facts, approved intent, decisions, unrelated changes, and unsupported evidence separate | `cli/shared-git.mjs`, `cli/scanners/reconciliation.mjs`, `cli/commands/reconcile.mjs` | Timeout, overflow, parse failure, or incomplete inventory blocks a ready result; planning is read-only and `--write` never rewrites requirements |
 | **Precision evidence** | Runs labelled synthetic and exact-commit public cases, separates deterministic results from observations, calculates null-safe quality metrics and confidence bounds, and compares case-first baselines | `benchmarks/`, `schemas/docguard-benchmark.schema.json` | External runs are explicit; third-party project code is never executed and disposable checkouts are removed by default |
 | **Feedback fixtures** | Validates synthetic reproductions and opposite controls, reduces them under an explicit predicate, derives duplicate identities, and emits test-only contributions | `cli/feedback-fixture.mjs`, `cli/commands/feedback.mjs`, `schemas/docguard-feedback-fixture.schema.json` | Publication remains user-controlled; contribution generation requires reviewed redaction, scope, and benchmark-delta evidence |
@@ -41,7 +41,7 @@ It targets development teams and AI coding agents that need to maintain document
 | **Scanners** | Project file scanners for test discovery, route detection, schema mapping, CDK/IaC, doc-tools, integrations, frontend surface, spec-kit, memory-plan, semantic claims, agent readability | `cli/scanners/` | `*.mjs` |
 | **Writers** | Deterministic doc-mutation and output modules — section-addressable edits, mapped-role ownership authorization, mechanical fix registry, API-Reference writer, generate I/O + doc builders (split from generate.mjs), SARIF emitter (no LLM) | `cli/writers/`, `cli/shared-doc-roles.mjs` | Mapped human docs expose only unique `source=code` sections; new or explicitly generated single-role targets permit whole-document writes; all replacements use backups and `--force` cannot grant ownership |
 | **Config** | Configuration loading, schema migration, validator policy, and exact finding-code policy | `cli/` | `config.mjs`, `shared.mjs` |
-| **Shared** | Cross-cutting utilities — ignore/glob filters, source-root resolution, Git helpers, declaration-shaped requirement identity parsing, and the shared doc→code trace patterns used by both `trace` and the Traceability validator | `cli/` | `shared-ignore.mjs`, `shared-source.mjs`, `shared-git.mjs`, `shared-requirements.mjs`, `shared-trace-patterns.mjs`, `shared.mjs` |
+| **Shared** | Cross-cutting utilities — ignore/glob filters, Git-ignore-aware bounded indexing, package capability counts, source-root resolution, Git helpers, declaration-shaped requirement identity parsing, and the shared doc→code trace patterns used by both `trace` and the Traceability validator | `cli/` | `shared-ignore.mjs`, `shared-validator-surface.mjs`, `shared-source.mjs`, `shared-git.mjs`, `shared-requirements.mjs`, `shared-trace-patterns.mjs`, `shared.mjs` |
 | **Templates** | Document skeletons (ARCHITECTURE, SECURITY, etc.) and slash command files for AI agents | `templates/` | `*.template`, `commands/*.md` |
 | **Extension** | Spec Kit extension with 5 AI skills, 4 bash scripts, workflow hooks | `extensions/spec-kit-docguard/` | `skills/*/SKILL.md`, `scripts/bash/*.sh` |
 | **Tests** | Per-validator unit tests + command-level integration tests using `node:test` | `tests/` | `*.test.mjs` |
@@ -205,6 +205,7 @@ DocGuard declares one exact-pinned runtime dependency, `@babel/parser`. It loads
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 1.4.0 | 2026-09-15 | DocGuard Team | Bound package capability claims to shipped modules, pruned ignored and nested checkout copies from instruction pointers, and made non-clean planned lifecycle state advisory only |
 | 1.3.0 | 2026-09-15 | DocGuard Team | Made managed hooks composable and self-repairing, aligned direct evidence exit codes with guard severity, and exposed field-level registry drift |
 | 1.2.0 | 2026-09-15 | DocGuard Team | Made router mounts symbol-aware and statically composable, retained negative scan evidence as review-only, and aligned monorepo/config/design-sync discovery boundaries |
 | 1.1.0 | 2026-09-15 | DocGuard Team | Added packed adoption qualification, independent diff inventory, exact finding-code policy, combined readiness assessment, lifecycle-aware traceability, static Python literal evidence, and transitive static router-mount resolution with test-client exclusion |

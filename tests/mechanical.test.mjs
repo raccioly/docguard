@@ -15,11 +15,11 @@ describe('mechanical writers', () => {
 
   it('replace-count: rewrites the stale number and is idempotent', () => {
     write('R.md', 'DocGuard ships 19 validators. (also: 9/10 checks passed)\n');
-    const r1 = applyMechanicalFix(dir, { type: 'replace-count', file: 'R.md', label: 'validators', found: 19, actual: 20, actualSource: 'docguard.guard.validators' });
+    const r1 = applyMechanicalFix(dir, { type: 'replace-count', file: 'R.md', label: 'validators', found: 19, actual: 20, actualSource: 'docguard.package.validators' });
     assert.equal(r1.applied, true);
     assert.ok(read('R.md').includes('20 validators'));
     assert.ok(read('R.md').includes('9/10 checks'), 'ratio-style "9/10" not touched');
-    const r2 = applyMechanicalFix(dir, { type: 'replace-count', file: 'R.md', label: 'validators', found: 19, actual: 20, actualSource: 'docguard.guard.validators' });
+    const r2 = applyMechanicalFix(dir, { type: 'replace-count', file: 'R.md', label: 'validators', found: 19, actual: 20, actualSource: 'docguard.package.validators' });
     assert.equal(r2.applied, false, 'idempotent re-run');
   });
 

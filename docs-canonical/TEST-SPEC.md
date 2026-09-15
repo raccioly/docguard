@@ -1,6 +1,6 @@
 # Test Specification
 
-<!-- docguard:version 1.0.0 -->
+<!-- docguard:version 1.1.0 -->
 <!-- docguard:status active -->
 <!-- docguard:last-reviewed 2026-09-15 -->
 
@@ -76,7 +76,9 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/commands/specs.mjs` completion path | `tests/spec-completion.test.mjs` | ✅ |
 | Packed install adoption journey | `tests/adoption-workflow.test.mjs`, `tests/npm-pack-smoke.test.mjs` | ✅ |
 | `cli/shared-git.mjs`, reconciliation coverage | `tests/shared-git.test.mjs`, `tests/reconcile.test.mjs` | ✅ |
-| `cli/scanners/instruction-audit.mjs` | `tests/instruction-audit.test.mjs` | ✅ |
+| `cli/shared-ignore.mjs`, `cli/scanners/instruction-audit.mjs` | `tests/docguardignore.test.mjs`, `tests/instruction-audit.test.mjs` | ✅ |
+| `cli/shared-validator-surface.mjs`, `cli/validators/metrics-consistency.mjs`, `cli/validators/canonical-sync.mjs` | `tests/metrics-consistency.test.mjs`, `tests/canonical-sync.test.mjs`, `tests/mechanical.test.mjs` | ✅ |
+| `cli/validators/traceability.mjs`, lifecycle trust in `cli/scanners/spec-registry.mjs` | `tests/traceability-lifecycle.test.mjs` | ✅ |
 | Finding-code enforcement and machine writers | `tests/severity.test.mjs`, `tests/sarif.test.mjs`, `tests/junit.test.mjs` | ✅ |
 | Combined readiness assessment | `tests/assessment.test.mjs` | ✅ |
 | `benchmarks/lib/manifest.mjs`, `benchmarks/lib/metrics.mjs`, `benchmarks/lib/compare.mjs` | `tests/benchmark-manifest.test.mjs`, `tests/benchmark-metrics.test.mjs` | ✅ |
@@ -119,6 +121,7 @@ of empty repeats driven only by generated lifecycle artifacts.
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 1.1.0 | 2026-09-15 | DocGuard Team | Add field-replay controls for shipped validator counts, ignored checkout pointer copies, and non-clean planned lifecycle advice |
 | 1.0.0 | 2026-09-15 | DocGuard Team | Add executable hook-composition, direct evidence exit-code, and field-level registry-difference regressions |
 | 0.7.0 | 2026-03-13 | @raccioly | Added trace, publish; watch.mjs coverage justified (ISO 29119); 15 commands |
 | 0.5.0 | 2026-03-13 | @raccioly | Added diagnose, guard JSON, profile, tax tests (24→30) |
@@ -202,7 +205,10 @@ so a discarded test call cannot hide a later product route.
 API omission tests preserve documented endpoints across generated and human
 documents, mapped roles, and forced writes whenever the only runtime-absence
 evidence is a bounded scan. Field-replay controls pair historical and current
-metrics, multiline and disconnected skip reasons, repeated and unrepeated test
-credentials, package-local and ignored environment templates, authoritative and
-stale OpenAPI copies, parameter-equivalent and different routes, frontend
-utilities and real services, and known versus unknown validator schema keys.
+metrics, package capability and enabled-project validator counts, multiline and
+disconnected skip reasons, repeated and unrepeated test credentials,
+package-local and ignored environment templates, ignored and nested-checkout
+pointer copies, committed and non-clean planned lifecycle registries,
+authoritative and stale OpenAPI copies, parameter-equivalent and different
+routes, frontend utilities and real services, and known versus unknown validator
+schema keys.

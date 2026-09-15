@@ -3,7 +3,7 @@
  *
  * Verifies the self-policing rules from SURFACE-AUDIT §7:
  *   - "ships N commands" claim must match cli/commands/ file count
- *   - "N validators" claims in surface contexts must match guard output
+ *   - "N validators" claims in surface contexts must match shipped modules
  *   - architecture-diagram counts must match
  *   - Validator returns N/A for non-DocGuard repos (gated by package.json name)
  *
@@ -57,17 +57,17 @@ describe('canonical-sync validator', () => {
   });
 
   it('passes when README counts match code-truth (all checks)', () => {
-    // 3 command files + 3 validator files → validator count = 4 (3 files + 1 for Doc Sections inlined)
+    // 3 command files + 3 validator modules → public validator count = 3.
     const readme = [
       '# DocGuard',
       '',
       'DocGuard ships **3 commands**:',
       '',
-      'Runs all 4 validators.',
+      'Runs all 3 validators.',
       '',
       '```mermaid',
       'Commands (3)',
-      'Validators (4)',
+      'Validators (3)',
       '```',
       '',
     ].join('\n');
@@ -90,10 +90,10 @@ describe('canonical-sync validator', () => {
 
   it('warns when "N validators" claim in surface context is wrong', () => {
     const readme = 'Runs all 99 validators.\n';
-    // 3 validator files → real count = 4 (3 + 1 for Doc Sections inlined)
+    // 3 validator modules → real public count = 3.
     dir = makeFixture({ commandFiles: 0, validatorFiles: 3, readme });
     const r = validateCanonicalSync(dir, {}, []);
-    assert.ok(r.warnings.some(w => /"99 validators"/.test(w) && /reports 4/.test(w)),
+    assert.ok(r.warnings.some(w => /"99 validators"/.test(w) && /ships 3 validator modules/.test(w)),
       `expected validator-count warning; got: ${r.warnings.join(' / ')}`);
   });
 
@@ -104,30 +104,30 @@ describe('canonical-sync validator', () => {
       'Validators (19)',
       '```',
     ].join('\n');
-    // 21 commands + 22 validator files → claimed Validators(N) should be 23 (22 + 1 for Doc Sections)
+    // 21 commands + 22 validator modules → claimed Validators(N) should be 22.
     dir = makeFixture({ commandFiles: 21, validatorFiles: 22, readme });
     const r = validateCanonicalSync(dir, {}, []);
     const w = r.warnings.join(' / ');
     assert.match(w, /Commands \(15\) → should be \(21\)/);
-    assert.match(w, /Validators \(19\) → should be \(23\)/);
+    assert.match(w, /Validators \(19\) → should be \(22\)/);
   });
 
-  it('counts itself per §8.5 — validator count claim includes canonical-sync', () => {
-    // 22 validator files (canonical-sync among them) + 1 inlined Doc Sections = 23.
-    // README claiming "22" must warn; "23" must pass.
+  it('counts each shipped validator module once even when guard emits extra checks', () => {
+    // canonical-sync is one of these 22 modules. An inlined check inside a
+    // module must not inflate the public module count to 23.
+    const readme21 = 'Runs all 21 validators.\n';
     const readme22 = 'Runs all 22 validators.\n';
-    const readme23 = 'Runs all 23 validators.\n';
 
-    dir = makeFixture({ validatorFiles: 22, readme: readme22 });
-    const r22 = validateCanonicalSync(dir, {}, []);
-    assert.ok(r22.warnings.some(w => /"22 validators"/.test(w)),
-      `claim of 22 must warn (real count is 23 including Doc Sections); got: ${r22.warnings.join(' / ')}`);
+    dir = makeFixture({ validatorFiles: 22, readme: readme21 });
+    const r21 = validateCanonicalSync(dir, {}, []);
+    assert.ok(r21.warnings.some(w => /"21 validators"/.test(w)),
+      `claim of 21 must warn (real count is 22 shipped modules); got: ${r21.warnings.join(' / ')}`);
 
     rmSync(dir, { recursive: true, force: true });
-    dir = makeFixture({ validatorFiles: 22, readme: readme23 });
-    const r23 = validateCanonicalSync(dir, {}, []);
-    assert.ok(!r23.warnings.some(w => /validators/.test(w)),
-      `claim of 23 must pass; got: ${r23.warnings.join(' / ')}`);
+    dir = makeFixture({ validatorFiles: 22, readme: readme22 });
+    const r22 = validateCanonicalSync(dir, {}, []);
+    assert.ok(!r22.warnings.some(w => /validators/.test(w)),
+      `claim of 22 must pass; got: ${r22.warnings.join(' / ')}`);
   });
 
   it('ignores irrelevant numbers (e.g. "9 tests", "5 fixtures")', () => {

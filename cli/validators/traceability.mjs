@@ -33,7 +33,11 @@ import {
   requirementPatterns,
 } from '../shared-requirements.mjs';
 import { readRetirementManifest } from '../scanners/retirement-manifest.mjs';
-import { parseSpecId, trustedSpecLifecycleIndex } from '../scanners/spec-registry.mjs';
+import {
+  parseSpecId,
+  trustedSpecLifecycleIndex,
+  uncommittedPlannedSpecLifecycleIndex,
+} from '../scanners/spec-registry.mjs';
 
 /**
  * Optional graphify interop (github.com/Graphify-Labs/graphify, MIT).
@@ -278,6 +282,7 @@ function validateRequirementTraceability(projectDir, config, projectFiles) {
   const reqIds = collectRequirementIds(projectDir, config, patterns);
   const retiredReqIds = loadRetiredRequirementIds(projectDir);
   const lifecycleIndex = trustedSpecLifecycleIndex(projectDir);
+  const uncommittedPlannedIndex = uncommittedPlannedSpecLifecycleIndex(projectDir);
 
   // ── Step 2: Scan test files for requirement ID references ──
   const testRefs = scanTestFilesForReferences(projectDir, projectFiles, patterns);
@@ -305,11 +310,13 @@ function validateRequirementTraceability(projectDir, config, projectFiles) {
   // digest-current reviewed lifecycle can defer their test linkage.
   for (const [key, location] of reqIds) {
     const reqId = location.id;
-    const lifecycle = location.specId ? lifecycleIndex.get(`${location.specId}\0${location.file}`) : null;
+    const lifecycleKey = location.specId ? `${location.specId}\0${location.file}` : null;
+    const lifecycle = lifecycleKey ? lifecycleIndex.get(lifecycleKey) : null;
     if (lifecycle?.delivery === 'planned') {
       deferred++;
       continue;
     }
+    const uncommittedPlanned = lifecycleKey && uncommittedPlannedIndex.has(lifecycleKey);
     if (location.specId && !lifecycle) lifecycleUnknown++;
     total++;
     if (resolvedRefs.has(key)) {
@@ -317,10 +324,12 @@ function validateRequirementTraceability(projectDir, config, projectFiles) {
     } else {
       // Try to recover a likely-but-unannotated test via TF-IDF cosine.
       let softHint = '';
-      let softText = `Review existing tests for this requirement. If a test verifies it, add an @req ${key} annotation or requirement ID test label; write a test only if behavioral coverage is actually missing.`;
+      let softText = uncommittedPlanned
+        ? 'The on-disk lifecycle registry says this requirement is planned, but .docguard-specs.json is not a clean tracked Git artifact. Restore it to its committed state, or commit the registry and its current spec artifacts, before treating the requirement as deferred; do not add an @req marker merely to silence this warning.'
+        : `Review existing tests for this requirement. If a test verifies it, add an @req ${key} annotation or requirement ID test label; write a test only if behavioral coverage is actually missing.`;
       const queryText = location.text && location.text.length > reqId.length ? location.text : reqId;
-      if (testCorpus === null) testCorpus = buildTestCorpus(projectDir, projectFiles);
-      if (testCorpus.length > 0) {
+      if (!uncommittedPlanned && testCorpus === null) testCorpus = buildTestCorpus(projectDir, projectFiles);
+      if (!uncommittedPlanned && testCorpus.length > 0) {
         const ranked = rankBySimilarity(tokenize(queryText), testCorpus);
         const top = ranked[0];
         if (top && top.score >= softThreshold) {

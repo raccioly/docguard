@@ -91,6 +91,7 @@ export function isNonProductPath(relPath, config = {}) {
  * Returns [] if the file is missing or unreadable — never throws.
  */
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import { resolve as resolvePath, relative as relativePath, join as joinPath, sep } from 'node:path';
 
 /**
@@ -120,6 +121,54 @@ export function loadDocguardIgnore(projectDir) {
   } catch {
     return [];
   }
+}
+
+/**
+ * Return a predicate for paths Git currently classifies as ignored.
+ *
+ * This deliberately delegates pattern semantics (including nested
+ * `.gitignore` files and negation) to Git instead of maintaining a second,
+ * incomplete gitignore parser. `--directory` lets callers prune a wholly
+ * ignored directory before reading its descendants. A missing Git repository
+ * or an unreadable/overflowing result returns null so callers can retain their
+ * existing conservative traversal behavior.
+ *
+ * Only untracked ignored paths are returned by Git, which is intentional:
+ * tracked source remains part of the repository even if a later ignore rule
+ * happens to mention its name.
+ *
+ * @param {string} projectDir
+ * @returns {((relPath: string) => boolean)|null}
+ */
+export function loadGitIgnoredFilter(projectDir) {
+  let result;
+  try {
+    result = spawnSync('git', [
+      'ls-files', '--others', '--ignored', '--exclude-standard', '--directory', '-z',
+    ], {
+      cwd: projectDir,
+      encoding: 'utf8',
+      maxBuffer: 8 * 1024 * 1024,
+      windowsHide: true,
+    });
+  } catch {
+    return null;
+  }
+  if (result.status !== 0 || result.error || typeof result.stdout !== 'string') return null;
+
+  const exact = new Set();
+  const directories = [];
+  for (const raw of result.stdout.split('\0')) {
+    const path = raw.replace(/\\/g, '/').replace(/^\.\//, '');
+    if (!path) continue;
+    if (path.endsWith('/')) directories.push(path);
+    else exact.add(path);
+  }
+  if (exact.size === 0 && directories.length === 0) return () => false;
+  return relPath => {
+    const path = String(relPath || '').replace(/\\/g, '/').replace(/^\.\//, '');
+    return exact.has(path) || directories.some(directory => path.startsWith(directory));
+  };
 }
 
 /**

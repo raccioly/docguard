@@ -341,7 +341,7 @@ const COMMAND_HELP = {
     summary: 'Maintain the deterministic spec lifecycle and evidence registry.',
     usage: 'docguard specs [--check|--write] | docguard specs preflight [--path <spec>] | docguard specs complete --id <spec-id> [--since <ref>] [--write --reason <text>]',
     flags: [
-      ['--check', 'Exit 2 when the committed registry is missing, stale, or inconsistent'],
+      ['--check', 'Exit 2 when the committed registry is missing, stale, or inconsistent; planned lifecycle deferral requires a clean tracked registry'],
       ['--write', 'Refresh observed evidence while preserving reviewed lifecycle fields'],
       ['preflight', 'Brief prior specs, or gate a generated draft with --path'],
       ['complete', 'Plan or apply the implemented→verified evidence transaction'],
