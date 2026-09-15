@@ -25,13 +25,16 @@ export function validateSpecRegistry(projectDir, config = {}) {
         },
   }));
   if (!projection.current && projection.issues.length === 0) {
+    const detail = projection.differences.slice(0, 3)
+      .map(difference => `${difference.path}: ${difference.message}`)
+      .join(' ');
     findings.push(mkFinding({
       code: 'SPR001',
       validator: 'specRegistry',
       severity: 'warn',
       confidence: 'high',
       message: projection.exists
-        ? `${SPEC_REGISTRY_PATH} does not match the current deterministic spec evidence projection.`
+        ? `${SPEC_REGISTRY_PATH} does not match the current deterministic spec evidence projection.${detail ? ` ${detail}` : ''}`
         : `${SPEC_REGISTRY_PATH} is missing while active specifications exist.`,
       location: SPEC_REGISTRY_PATH,
       suggestion: {

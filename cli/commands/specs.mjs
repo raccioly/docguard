@@ -226,6 +226,12 @@ function printResult(result) {
   console.log(`Spec registry: ${result.status}`);
   console.log(`Registry: ${SPEC_REGISTRY_PATH}`);
   console.log(`Specs: ${result.specs}; tombstones: ${result.tombstones}`);
+  if (result.differences?.length) {
+    console.log('Differences:');
+    for (const difference of result.differences) {
+      console.log(`  ${difference.path}: ${difference.message}`);
+    }
+  }
   if (result.issues.length) printIssues(result.issues);
 }
 
@@ -268,6 +274,7 @@ export function runSpecs(projectDir, config, flags = {}) {
       specs: projection.registry.specs.length,
       tombstones: projection.registry.tombstones.length,
       issues: projection.issues,
+      differences: projection.differences,
     };
     if (flags.format === 'json') console.log(JSON.stringify(result, null, 2));
     else printResult(result);

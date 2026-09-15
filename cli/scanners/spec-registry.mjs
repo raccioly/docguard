@@ -35,6 +35,51 @@ const posix = path => path.split(sep).join('/').replace(/^\.\//, '');
 const digest = content => `sha256:${createHash('sha256').update(content).digest('hex')}`;
 const sortedUnique = values => [...new Set(values)].sort((a, b) => a.localeCompare(b));
 
+function registryDifferences(left, right) {
+  const differences = [];
+  let omitted = false;
+  const add = difference => {
+    if (differences.length < 25) differences.push(difference);
+    else omitted = true;
+  };
+  const memberKeys = values => values.map(value => JSON.stringify(value)).sort();
+  const visit = (actual, projected, path) => {
+    if (omitted) return;
+    if (Object.is(actual, projected)) return;
+    if (Array.isArray(actual) && Array.isArray(projected)) {
+      if (JSON.stringify(actual) === JSON.stringify(projected)) return;
+      const actualMembers = memberKeys(actual);
+      const projectedMembers = memberKeys(projected);
+      if (actualMembers.length === projectedMembers.length
+        && actualMembers.every((value, index) => value === projectedMembers[index])) {
+        add({ path, kind: 'order', message: 'Unordered values are not in canonical sort order.' });
+        return;
+      }
+      const length = Math.max(actual.length, projected.length);
+      for (let index = 0; index < length; index++) visit(actual[index], projected[index], `${path}[${index}]`);
+      return;
+    }
+    const actualObject = actual !== null && typeof actual === 'object' && !Array.isArray(actual);
+    const projectedObject = projected !== null && typeof projected === 'object' && !Array.isArray(projected);
+    if (actualObject && projectedObject) {
+      for (const key of [...new Set([...Object.keys(actual), ...Object.keys(projected)])].sort()) {
+        visit(actual[key], projected[key], `${path}.${key}`);
+      }
+      return;
+    }
+    const kind = actual === undefined ? 'missing'
+      : projected === undefined ? 'unexpected'
+        : 'value';
+    const message = kind === 'missing' ? 'Field is missing from the registry.'
+      : kind === 'unexpected' ? 'Field is not part of the deterministic projection.'
+        : 'Field value differs from the deterministic projection.';
+    add({ path, kind, message });
+  };
+  visit(left, right, '$');
+  if (omitted) differences.push({ path: '$', kind: 'truncated', message: 'Additional differences were omitted.' });
+  return differences;
+}
+
 function isSafeFile(projectDir, path) {
   try {
     const root = realpathSync(projectDir);
@@ -472,10 +517,14 @@ export function projectSpecRegistry(projectDir, config = {}, options = {}) {
   const current = existing.exists && !existing.error
     ? `${JSON.stringify(existing.value, null, 2)}\n` === serialized
     : false;
+  const differences = existing.exists && !existing.error
+    ? registryDifferences(existing.value, projected)
+    : [];
   return {
     registry: projected,
     serialized,
     current,
+    differences,
     exists: existing.exists,
     issues,
     detected: detected.specs.length,

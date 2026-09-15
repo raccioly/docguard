@@ -169,6 +169,14 @@ export function runVerify(projectDir, config, flags) {
 
 function runEvidenceVerification(projectDir, config, flags) {
   const evaluation = evaluateEvidence(projectDir, config);
+  // Match guard's severity contract so this command is safe as a direct CI
+  // gate: contradictions and invalid manifests fail, while unresolved evidence
+  // uses the warning-only status shared by the rest of the CLI.
+  process.exitCode = evaluation.status === 'contradicted' || evaluation.status === 'invalid'
+    ? 1
+    : evaluation.status === 'attention-required'
+      ? 2
+      : 0;
   if (flags.format === 'json') {
     console.log(JSON.stringify(evaluation, null, 2));
     return;

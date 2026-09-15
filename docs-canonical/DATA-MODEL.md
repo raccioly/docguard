@@ -1,13 +1,13 @@
 # Data Model
 
-<!-- docguard:version 0.8.0 -->
+<!-- docguard:version 0.9.0 -->
 <!-- docguard:status active -->
 <!-- docguard:last-reviewed 2026-09-15 -->
 
 | Metadata | Value |
 |----------|-------|
 | **Status** | ![Status](https://img.shields.io/badge/status-active-brightgreen) |
-| **Version** | `0.8.0` |
+| **Version** | `0.9.0` |
 | **Database** | None — DocGuard is a stateless CLI tool |
 | **Storage** | File-system only (reads project files, writes generated docs) |
 
@@ -149,7 +149,10 @@ normative JSON Schema is `schemas/docguard-specs.schema.json`.
 entire `reviewed` block. Unknown reviewed fields, invalid lifecycle values,
 duplicate identities, and archive/storage contradictions fail closed. The
 output omits timestamps and sorts unordered collections, so `specs --check`
-can compare a byte-stable result in CI.
+can compare a byte-stable result in CI. A non-current projection exposes up to
+25 bounded `differences` with a JSON-style field path, kind, and explanation.
+Order-only differences use kind `order`; changed, missing, and unexpected
+content remain distinct. Additional differences are reported as truncated.
 
 `docguard specs complete` requires a clean Git revision, coverage for every
 requirement through qualified implementation or test evidence, existing affected
@@ -260,6 +263,7 @@ The `score --format json` output:
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 0.9.0 | 2026-09-15 | DocGuard Team | Add bounded field-level spec-registry differences and direct evidence verification exit semantics |
 | 0.6.0 | 2026-09-14 | DocGuard Team | Add the document-retirement recovery manifest, retained-ref proof, and retired requirement tombstones |
 | 0.4.0 | 2026-03-13 | DocGuard Team | Complete rewrite — documented all config formats, output schemas, metadata headers |
 | 0.1.0 | 2026-03-13 | DocGuard Generate | Auto-generated skeleton |
@@ -294,6 +298,11 @@ changes to the selected statement, declaration, source, report, producer
 metadata, or declared inputs invalidate it. A verified declaration removes a
 heuristic claim from the unverified count only through a unique same-line,
 same-value match.
+
+`docguard verify --evidence` exits `0` for `verified-within-scope` and for an
+unconfigured manifest, `2` for `attention-required` (stale, inconclusive, or
+unsupported evidence), and `1` for `contradicted` or `invalid`. The JSON status
+and process status therefore carry the same enforcement meaning in direct CI use.
 
 ## Feedback contribution contract
 

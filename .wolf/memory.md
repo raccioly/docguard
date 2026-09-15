@@ -1334,3 +1334,4 @@
 | 14:56 | Edited .github/workflows/release.yml | expanded (+53 lines) | ~845 |
 | 14:56 | Edited README.md | expanded (+19 lines) | ~245 |
 | 12:18 | Fixed living-spec completion and released maintenance; merged PRs #398–#400; published and independently verified v0.41.1; removed 348 temp artifacts | specs lifecycle, registry, roadmap, release | 1,866 tests + Node 18/20/22/24 + OSV + all publication targets passed | ~43000 tok |
+| 12:39 | Reproduced and fixed field-report hook composition, evidence exit, registry explanation, and README drift defects; classified four other v0.40.5 items as already fixed | hooks, verify, spec registry, canonical docs, tests | focused behavioral regressions added; v0.41.2 publication completed before release-cadence correction | ~18000 tok |

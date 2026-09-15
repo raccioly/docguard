@@ -24,6 +24,19 @@ import { existsSync, mkdirSync, chmodSync, readFileSync, unlinkSync } from 'node
 // pre-existing hooks), behavior falls back to the existing --force flow.
 const BEGIN_MARKER = '# BEGIN DOCGUARD MANAGED — do not edit between these markers';
 const END_MARKER   = '# END DOCGUARD MANAGED';
+const escapeRegExp = value => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+function managedBounds(content) {
+  const starts = [...content.matchAll(new RegExp(`^${escapeRegExp(BEGIN_MARKER)}\\r?$`, 'gm'))]
+    .map(match => match.index);
+  const ends = [...content.matchAll(new RegExp(`^${escapeRegExp(END_MARKER)}\\r?$`, 'gm'))]
+    .map(match => match.index);
+  const start = starts[0];
+  const end = ends.at(-1);
+  return Number.isInteger(start) && Number.isInteger(end) && end > start
+    ? { start, end }
+    : null;
+}
 
 /**
  * Wrap a hook body in BEGIN/END markers so future re-installs can splice
@@ -44,15 +57,18 @@ function wrapManaged(body) {
  * the BEGIN/END markers. Returns the new file content (string) or null
  * when the markers aren't found (caller falls back to legacy behavior).
  */
-function spliceManagedBlock(existing, newBody) {
-  const startIdx = existing.indexOf(BEGIN_MARKER);
-  const endIdx   = existing.indexOf(END_MARKER);
-  if (startIdx === -1 || endIdx === -1 || endIdx < startIdx) return null;
+function spliceManagedBlock(existing, rawBody) {
+  const bounds = managedBounds(existing);
+  if (!bounds) return null;
+  const startIdx = bounds.start;
+  // Use the outermost end marker so one reinstall also repairs hooks written
+  // by v0.40.5-v0.41.2, which accidentally nested a second managed block.
+  const endIdx = bounds.end;
   const before = existing.slice(0, startIdx);
   const after  = existing.slice(endIdx + END_MARKER.length);
-  // newBody has its own shebang — strip it since we're splicing into the
+  // rawBody has its own shebang — strip it since we're splicing into the
   // middle of an existing file (which already has one).
-  const bodyNoShebang = newBody.replace(/^#!.*\n/, '');
+  const bodyNoShebang = rawBody.replace(/^#!.*\n/, '');
   return `${before}${BEGIN_MARKER}\n${bodyNoShebang.replace(/\n+$/, '')}\n${END_MARKER}${after}`;
 }
 
@@ -62,18 +78,21 @@ function hookState(name, hooksDir) {
   let content;
   try { content = readFileSync(path, 'utf-8'); }
   catch { return { kind: 'unreadable', path, content: '' }; }
-  if (content.includes(BEGIN_MARKER) && content.includes(END_MARKER)) {
+  if (managedBounds(content)) {
     return { kind: 'managed', path, content };
   }
-  const legacySignature = new RegExp(`^# DocGuard ${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} hook(?: \\(auto-fix mode\\))?$`, 'm');
+  const legacySignature = new RegExp(`^# DocGuard ${escapeRegExp(name)} hook(?: \\(auto-fix mode\\))?$`, 'm');
   if (legacySignature.test(content)) return { kind: 'legacy', path, content };
   return { kind: 'foreign', path, content };
 }
 
 function removeManagedBlock(content) {
-  const start = content.indexOf(BEGIN_MARKER);
-  const end = content.indexOf(END_MARKER);
-  if (start === -1 || end === -1 || end < start) return null;
+  const bounds = managedBounds(content);
+  if (!bounds) return null;
+  const start = bounds.start;
+  // Match spliceManagedBlock's outermost recovery boundary so removal also
+  // cleans up already-nested blocks from affected releases.
+  const end = bounds.end;
   const remaining = `${content.slice(0, start)}${content.slice(end + END_MARKER.length)}`
     .replace(/\n{3,}/g, '\n\n');
   return remaining;
@@ -128,7 +147,7 @@ elif [ $EXIT_CODE -eq 2 ]; then
   echo "⚠️  DocGuard guard found warnings — commit allowed"
 fi
 
-exit 0
+:
 `,
   },
 
@@ -179,7 +198,7 @@ if [ "$SCORE" -lt "$MIN_SCORE" ]; then
 fi
 
 echo "   ✅ Score meets minimum threshold"
-exit 0
+:
 `,
   },
 
@@ -215,7 +234,7 @@ if ! echo "$COMMIT_MSG" | head -1 | grep -qE "$PATTERN"; then
   exit 1
 fi
 
-exit 0
+:
 `,
   },
 };
@@ -256,7 +275,7 @@ if [ "$EXIT_CODE" -ne 0 ] && [ "$EXIT_CODE" -ne 2 ]; then
 elif [ $EXIT_CODE -eq 2 ]; then
   echo "⚠️  DocGuard guard found warnings — commit allowed"
 fi
-exit 0
+:
 `;
 
 export function runHooks(projectDir, config, flags) {
@@ -356,7 +375,8 @@ export function runHooks(projectDir, config, flags) {
   for (const name of hookTypes) {
     const hookPath = resolve(hooksDir, name);
     const useAutofix = name === 'pre-commit' && flags.autoFix;
-    const newContent = wrapManaged(useAutofix ? PRE_COMMIT_AUTOFIX : HOOKS[name].content);
+    const rawContent = useAutofix ? PRE_COMMIT_AUTOFIX : HOOKS[name].content;
+    const newContent = wrapManaged(rawContent);
     const desc = useAutofix ? 'Apply mechanical fixes (fix --write) then guard' : HOOKS[name].description;
 
     if (existsSync(hookPath)) {
@@ -366,7 +386,7 @@ export function runHooks(projectDir, config, flags) {
       // preserve everything outside it. The user can extend the hook with
       // their own commands above/below the markers without losing them on
       // re-install.
-      const spliced = spliceManagedBlock(existing, newContent);
+      const spliced = spliceManagedBlock(existing, rawContent);
       if (spliced !== null) {
         safeWrite(hookPath, spliced);
         chmodSync(hookPath, 0o755);

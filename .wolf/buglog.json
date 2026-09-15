@@ -6199,6 +6199,120 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-09-15T16:21:14.288Z"
+    },
+    {
+      "id": "bug-374",
+      "timestamp": "2026-09-15T16:39:17.000Z",
+      "error_message": "Reinstalling a managed hook nested a second BEGIN/END marker pair",
+      "file": "cli/commands/hooks.mjs",
+      "root_cause": "The install path wrapped the raw hook body before passing it to a splice helper that also added managed markers",
+      "fix": "Pass raw hook content to the splice boundary, replace the outermost marker range, and repair already-nested hooks on reinstall or removal",
+      "tags": [
+        "hooks",
+        "managed-block",
+        "idempotency",
+        "field-report"
+      ],
+      "related_bugs": [
+        "bug-354"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-09-15T16:39:17.000Z"
+    },
+    {
+      "id": "bug-375",
+      "timestamp": "2026-09-15T16:39:17.000Z",
+      "error_message": "A successful DocGuard managed hook exited before user-owned postlude commands could run",
+      "file": "cli/commands/hooks.mjs",
+      "root_cause": "Generated hook bodies ended in exit 0 even though managed blocks are designed to compose inside a larger hook file",
+      "fix": "Retain explicit blocking exits and end successful managed bodies with the no-op command so execution falls through to the surrounding hook",
+      "tags": [
+        "hooks",
+        "composition",
+        "postlude",
+        "field-report"
+      ],
+      "related_bugs": [
+        "bug-374"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-09-15T16:39:17.000Z"
+    },
+    {
+      "id": "bug-376",
+      "timestamp": "2026-09-15T16:39:17.000Z",
+      "error_message": "docguard verify --evidence exited 0 when its JSON status was contradicted",
+      "file": "cli/commands/verify.mjs",
+      "root_cause": "The direct evidence command rendered evaluator states but never mapped them to the CLI process-status contract",
+      "fix": "Exit 1 for contradicted or invalid, 2 for attention-required, and 0 for verified or unconfigured evidence, with subprocess regressions for every class",
+      "tags": [
+        "evidence",
+        "exit-code",
+        "ci",
+        "false-green",
+        "field-report"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-15T16:39:17.000Z"
+    },
+    {
+      "id": "bug-377",
+      "timestamp": "2026-09-15T16:39:17.000Z",
+      "error_message": "docguard specs --check reported STALE for array ordering without identifying the changed field",
+      "file": "cli/scanners/spec-registry.mjs; cli/commands/specs.mjs; cli/validators/spec-registry.mjs",
+      "root_cause": "Registry currency used an all-or-nothing serialized comparison and discarded the reason for a mismatch",
+      "fix": "Expose bounded value-safe field paths and difference kinds, including an explicit order-only canonicalization reason",
+      "tags": [
+        "spec-registry",
+        "diagnostics",
+        "ordering",
+        "clarity",
+        "field-report"
+      ],
+      "related_bugs": [
+        "bug-355"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-09-15T16:39:17.000Z"
+    },
+    {
+      "id": "bug-378",
+      "timestamp": "2026-09-15T16:39:17.000Z",
+      "error_message": "README What’s New still described the current v0.40 release line after v0.41 shipped",
+      "file": "README.md",
+      "root_cause": "A hand-maintained release-line label was coupled to automated package releases",
+      "fix": "Use version-independent recent-release wording while leaving exact release history in CHANGELOG",
+      "tags": [
+        "documentation",
+        "version-drift",
+        "readme",
+        "field-report"
+      ],
+      "related_bugs": [
+        "bug-356",
+        "bug-373"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-09-15T16:39:17.000Z"
+    },
+    {
+      "id": "bug-379",
+      "timestamp": "2026-09-15T17:02:00.000Z",
+      "error_message": "Subprocess-heavy contract tests intermittently failed with ETIMEDOUT during parallel full-suite execution",
+      "file": "tests/hooks-contract.test.mjs; tests/spec-kit-helper-json.test.mjs",
+      "root_cause": "Five- and ten-second process deadlines left no scheduler-contention margin when Node ran many integration suites concurrently",
+      "fix": "Retain finite process deadlines but raise them to 15 and 20 seconds for the shell-hook and Spec Kit helper integration fixtures",
+      "tags": [
+        "tests",
+        "timeout",
+        "parallel-ci",
+        "false-failure",
+        "reliability"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-09-15T17:02:00.000Z"
     }
   ]
 }

@@ -1,7 +1,7 @@
 # Requirements
 
 <!-- docguard:quality negation-load off — requirements define explicit failure and non-disclosure boundaries -->
-<!-- docguard:version 0.4.0 -->
+<!-- docguard:version 0.5.0 -->
 <!-- docguard:status active -->
 <!-- docguard:last-reviewed 2026-09-15 -->
 
@@ -14,9 +14,9 @@
 | FR-003 | P1 | CI, diagnose, and report preserve score assurance limits in machine output. Existing score thresholds keep their numeric meaning. | tests/score-assurance.test.mjs |
 | FR-004 | P1 | Detector quality is measured with independently labelled defect/control pairs, split-safe repository groups, explicit unsupported coverage, null-safe metrics, confidence limits, and case-first baseline comparison. | tests/benchmark-manifest.test.mjs, tests/benchmark-metrics.test.mjs, tests/benchmark-runner.test.mjs |
 | FR-005 | P1 | Users can turn a false positive, false negative, unsupported syntax case, ambiguity, or policy dispute into a redaction-attested synthetic fixture with an opposite control, deterministic reduction, duplicate search, and optional test-only contribution. | tests/feedback-fixture.test.mjs, tests/feedback-contributions.test.mjs |
-| FR-006 | P1 | Teams can bind an exact Markdown statement to safe, local, typed evidence and receive scoped verified, contradicted, stale, inconclusive, or unsupported results through verify, guard, and agent assurance without granting whole-document accuracy. | tests/evidence-manifest.test.mjs, tests/evidence-adapters.test.mjs, tests/evidence-integration.test.mjs |
+| FR-006 | P1 | Teams can bind an exact Markdown statement to safe, local, typed evidence and receive scoped verified, contradicted, stale, inconclusive, or unsupported results through verify, guard, and agent assurance without granting whole-document accuracy. Direct verification must fail CI on contradiction or invalid input and distinguish unresolved evidence with the warning exit status. | tests/evidence-manifest.test.mjs, tests/evidence-adapters.test.mjs, tests/evidence-integration.test.mjs |
 | FR-007 | P1 | An agent can request a deterministic bounded task-context packet that prioritizes exact current evidence, excludes retired and unsafe material, preserves retrieval-only assurance, and abstains rather than returning weak matches. Existing task-graph behavior remains compatible. | tests/task-context.test.mjs, tests/agent-context-benchmark.test.mjs |
-| FR-008 | P1 | The packed-package adoption journey distinguishes foreign hooks, emits complete remediation text, follows proposed actions, and verifies the resulting state. | tests/adoption-workflow.test.mjs, tests/npm-pack-smoke.test.mjs |
+| FR-008 | P1 | The packed-package adoption journey distinguishes foreign hooks, composes one self-repairing managed block with user hook commands, emits complete remediation text, explains deterministic registry drift by field, follows proposed actions, and verifies the resulting state. | tests/adoption-workflow.test.mjs, tests/hooks.test.mjs, tests/hooks-contract.test.mjs, tests/spec-registry.test.mjs, tests/npm-pack-smoke.test.mjs |
 | FR-009 | P1 | Reconciliation keeps changed-path inventory independent from bounded patch text and reports partial coverage instead of a ready result after timeout, overflow, or Git failure. | tests/shared-git.test.mjs, tests/reconcile.test.mjs |
 | FR-010 | P1 | Instruction pointers resolve only safe exact paths or one unique basename; ambiguity, symlinks, unsafe paths, and incomplete indexes remain explicit. | tests/instruction-audit.test.mjs |
 | FR-011 | P1 | Planned requirements defer test traceability only when committed, clean, digest-current schema-v2 lifecycle evidence proves they remain planned. | tests/traceability-lifecycle.test.mjs |
@@ -52,6 +52,7 @@ The verification column above links each requirement to executable tests. The te
 
 | Version | Date | Changes |
 |---|---|---|
+| 0.5.0 | 2026-09-15 | Require composable managed hooks, CI-safe evidence exits, and field-level registry drift explanations |
 | 0.4.0 | 2026-09-15 | Make API omission remediation review-only and add field-replay precision contracts for routes, fixtures, histories, monorepos, design sync, and config schemas |
 | 0.3.0 | 2026-09-15 | Add packed adoption, fail-closed reconciliation and pointers, lifecycle-aware traceability, exact-code policy, combined assessment, Python literal evidence, and route-discovery precision contracts |
 | 0.2.0 | 2026-09-11 | Replace template requirements with implemented trust, feedback, and cache contracts |
