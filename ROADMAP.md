@@ -13,26 +13,14 @@ structural score is useful, but it is not proof that arbitrary prose is true.
 
 ## Active roadmap
 
-### R8 — Tokenless scheduled releases
-
-Governing spec: `specs/011-tokenless-scheduled-releases/spec.md`.
-
-Replace the long-lived release PR credential with GitHub's documented
-`workflow_dispatch` path for ephemeral repository tokens. The implementation
-keeps the privileged merge gate metadata-only, validates exact candidate and CI
-identity, dispatches publication after merge, and recovers a missing tag before
-another version increment.
-
-- [x] Freeze the security and recovery contract before implementation.
-- [x] Add pure release-candidate and exact-run policy tests.
-- [x] Dispatch CI and publication without a stored personal or app credential.
-- [x] Preserve Dependabot/Jules policy and pinned-action controls.
-- [ ] Record the reviewed lifecycle outcome against the durable probe-evidence
-  revision after squash merge.
+No active milestone remains. New work enters this section only after its failure
+mode, supported scope, controls, and evidence threshold are explicit. Deferred
+ideas below are research candidates rather than unfinished commitments.
 
 ## Delivered roadmap
 
-R1–R7 are implemented, evidence-reviewed, and released. The maintained living
+R1–R8 are implemented and evidence-reviewed. R1–R7 are released; R8 is verified
+on `main` and will ship with the next substantive release. The maintained living
 specifications remain current verification contracts; historical implementation
 plans are recoverable from Git and do not create a second source of truth.
 
@@ -227,6 +215,29 @@ The promoted CLI, selector, schemas, docs, and evaluator pass 1,784 tests on
 Node 18, 20, 22, and 24. Packed-package tests run task context without the
 optional parser, and the independent detector corpus remains regression-free
 across 24 evaluable cases plus one explicit unsupported case.
+
+### R8 — Tokenless scheduled releases (verified on `main`)
+
+Governing spec: `specs/011-tokenless-scheduled-releases/spec.md`.
+
+Replace the long-lived release PR credential with GitHub's documented
+`workflow_dispatch` path for ephemeral repository tokens. The implementation
+keeps the privileged merge gate metadata-only, validates exact candidate and CI
+identity, dispatches publication after merge, and recovers a missing tag before
+another version increment.
+
+- [x] Freeze the security and recovery contract before implementation.
+- [x] Add pure release-candidate and exact-run policy tests.
+- [x] Dispatch CI and publication without a stored personal or app credential.
+- [x] Preserve Dependabot/Jules policy and pinned-action controls.
+- [x] Record the reviewed lifecycle outcome at durable revision `46531e4` with
+  no accepted deviations.
+
+The retained live probe used CI run `34912654565` and privileged gate run
+`34912788971`. All Node 18, 20, 22, and 24 jobs passed. The trusted gate
+identified pull request #372 as a non-release candidate and refused to merge it;
+the temporary pull request and branch were then removed. The complete reviewed
+evidence landed through pull requests #371, #373, and #374.
 
 ## Contribution standard
 

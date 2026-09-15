@@ -1,6 +1,6 @@
 # Tasks: Tokenless Scheduled Releases
 
-**Status**: Evidence reviewed; lifecycle transaction ready
+**Status**: Verified; retained as a living release contract
 **Spec**: `specs/011-tokenless-scheduled-releases/spec.md`
 
 ## Phase 1: Contract and policy
