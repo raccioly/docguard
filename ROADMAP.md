@@ -11,6 +11,25 @@ DocGuard's product goal is dependable, low-maintenance evidence that connects
 approved intent, implementation facts, tests, and operational reality. A clean
 structural score is useful, but it is not proof that arbitrary prose is true.
 
+## Active roadmap
+
+### R8 — Tokenless scheduled releases
+
+Governing spec: `specs/011-tokenless-scheduled-releases/spec.md`.
+
+Replace the long-lived release PR credential with GitHub's documented
+`workflow_dispatch` path for ephemeral repository tokens. The implementation
+keeps the privileged merge gate metadata-only, validates exact candidate and CI
+identity, dispatches publication after merge, and recovers a missing tag before
+another version increment.
+
+- [x] Freeze the security and recovery contract before implementation.
+- [x] Add pure release-candidate and exact-run policy tests.
+- [x] Dispatch CI and publication without a stored personal or app credential.
+- [x] Preserve Dependabot/Jules policy and pinned-action controls.
+- [ ] Prove the live dispatch-to-gate chain and record the reviewed lifecycle
+  outcome.
+
 ## Delivered roadmap
 
 R1–R7 are implemented, evidence-reviewed, and released. The maintained living

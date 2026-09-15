@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add a pure release-candidate policy that verifies repository, default branch,
+  bot author, branch/title/version agreement, next-version increment, missing
+  tag, synchronized release surfaces, changed paths, exact CI run identity, and
+  one successful Node 18/20/22/24 job before privileged merge.
+
+### Changed
+
+- Scheduled releases now use only the ephemeral repository `GITHUB_TOKEN`.
+  The scheduler opens or reuses a release PR, explicitly dispatches read-only CI,
+  and refuses orphaned same-name branches; the metadata-only gate dispatches
+  publication after merge.
+- A scheduled run now recovers an untagged current package version through the
+  idempotent release workflow before considering another version increment.
+
 ### Fixed
 
 - Remove stale pre-release status text from the delivered R1, R6, and R7 living
