@@ -459,7 +459,6 @@ jobs:
         run: |
           VERSION="${{ steps.meta.outputs.version }}"
           SUBMIT_URL=$(cat /tmp/submit-url.txt)
-          TITLE="📦 Submit DocGuard v${VERSION} to the spec-kit community catalog"
 
           # Compose the reminder body: one-click prefilled form link + the full
           # field-by-field body as a paste fallback (URL prefill can truncate).
@@ -485,21 +484,7 @@ jobs:
             echo "</details>"
           } > /tmp/reminder.md
 
-          # Idempotent per-version: refresh the existing reminder, else open one.
-          EXISTING=$(gh issue list \
-            --repo "$GITHUB_REPOSITORY" \
-            --state open \
-            --search "in:title \"DocGuard v${VERSION}\" spec-kit catalog" \
-            --json number,title \
-            --jq "[.[] | select(.title | contains(\"v${VERSION}\"))][0].number" 2>/dev/null || echo "")
-
-          if [ -n "$EXISTING" ] && [ "$EXISTING" != "null" ]; then
-            gh issue edit "$EXISTING" --repo "$GITHUB_REPOSITORY" --body-file /tmp/reminder.md
-            echo "✅ Refreshed reminder issue #${EXISTING}"
-          else
-            gh issue create --repo "$GITHUB_REPOSITORY" --title "$TITLE" --body-file /tmp/reminder.md
-            echo "✅ Opened catalog-submission reminder issue"
-          fi
+          bash .github/scripts/upsert-catalog-reminder.sh "$VERSION" /tmp/reminder.md
 
       - name: Write run summary
         run: |

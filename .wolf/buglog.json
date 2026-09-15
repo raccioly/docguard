@@ -5763,6 +5763,24 @@
       ],
       "occurrences": 1,
       "last_seen": "2026-09-15T02:37:35.000Z"
+    },
+    {
+      "id": "bug-348",
+      "timestamp": "2026-09-15T03:05:00.000Z",
+      "error_message": "Each successful release opened another version-specific Spec Kit catalog reminder and left all prior reminders open",
+      "file": ".github/workflows/release.yml; .github/workflows/sync-speckit-catalog.yml; .github/scripts/upsert-catalog-reminder.sh",
+      "root_cause": "Both workflows searched only for an open issue containing the current release version, so the documented refresh path could never find a reminder from an earlier version",
+      "fix": "Route both workflows through one tested helper that refreshes the newest open DocGuard catalog reminder and closes every older matching reminder as superseded",
+      "tags": [
+        "release",
+        "catalog",
+        "github-issues",
+        "idempotency",
+        "cleanup"
+      ],
+      "related_bugs": [],
+      "occurrences": 5,
+      "last_seen": "2026-09-15T03:05:00.000Z"
     }
   ]
 }
