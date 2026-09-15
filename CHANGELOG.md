@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Reuse one open Spec Kit catalog reminder across releases and close older
+  reminders as superseded, preventing the release workflow from accumulating a
+  stale version-specific issue queue.
 - Close the R8 living release contract with exact v0.40.3 evidence: the
   repository-token release PR armed protected native auto-merge, passed the
   approved CI and supply-chain checks, merged automatically, and triggered the

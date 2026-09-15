@@ -89,6 +89,11 @@ one maintainer workflow approval, CI run `34922605581` and supply-chain run
 publication run `34922784629`. That run published npm, PyPI, GHCR, the GitHub
 Release, extension ZIP, and MCPB and refreshed the catalog reminder.
 
+Catalog submission remains an explicit human action. The release and manual
+catalog workflows maintain one open reminder in this repository: each run
+refreshes the newest matching issue to the current version and closes older
+matching reminders as superseded.
+
 ## Recipe 3b — Spec completion and post-hoc reconciliation
 
 Run `docguard reconcile --since <merge-base> --format json` when implementation
