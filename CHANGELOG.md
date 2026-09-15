@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.40.5] - 2026-09-15
+
+Automated weekly release — batches everything merged since `v0.40.4`.
+
+### Changed
+
+- test: retry transient freshness cleanup (#393)
+- fix: make Spec Kit command manifest complete (#392)
+
+
 ### Fixed
 
 - Retry removal of temporary Git repositories when the operating system reports
