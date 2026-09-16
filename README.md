@@ -77,7 +77,7 @@ graph TD
     Commands --> setup["setup wizard"]
     Commands --> other["diff · init · fix · trace · impact · sync · reconcile · retire · specs<br/>explain · memory · upgrade · agents · hooks · badge · ci · watch"]
 
-    guard --> Validators["Validators (29)"]
+    guard --> Validators["Validators (30)"]
     generate --> Scanners["Scanners (4)<br/>routes · schemas · doc-tools · speckit"]
     score --> Scoring["Weighted Scoring<br/>8 categories"]
     diagnose --> Validators
@@ -275,7 +275,7 @@ DocGuard ships **23 commands** (the "Daily 5" + 18 situational tools, including 
 | Command | What It Does |
 |:--------|:-------------|
 | `init`  | Bootstrap a project (`--wizard` for interactive · `--with <name>` for scaffolders) |
-| `guard` | Validate against canonical docs — 29 validators |
+| `guard` | Validate against canonical docs — 30 validators |
 | `diff`  | Show gaps between docs and code (`--since <ref>` for impact mode) |
 | `sync`  | Refresh code-truth doc sections — keeps memory always up to date |
 | `score` | Structural CDD maturity score (0-100; not a guard verdict; `--diff` for delta between refs) |
@@ -411,7 +411,7 @@ $ npx docguard-cli generate
 
 ## 🔍 Validators
 
-DocGuard runs **29 automated validators** on every `guard` check. Source-facing validators are language-aware where their evidence model applies; repository and document validators operate independently of source language.
+DocGuard runs **30 automated validators** on every `guard` check. Source-facing validators are language-aware where their evidence model applies; repository and document validators operate independently of source language.
 
 | # | Validator | What It Checks | Default |
 |:--|:----------|:--------------|:--------|
@@ -544,7 +544,7 @@ DocGuard provides AI agent slash commands for integrated workflows. Installed au
 | Command | What It Does |
 |:--------|:-------------|
 | `/docguard.init` | Initialize Canonical-Driven Development in a new or existing project |
-| `/docguard.guard` | Run quality validation — check all 29 validators |
+| `/docguard.guard` | Run quality validation — check all 30 validators |
 | `/docguard.review` | Analyze doc quality and suggest improvements |
 | `/docguard.fix` | Generate targeted fix prompts for specific issues |
 | `/docguard.update` | Update canonical docs after code changes — detect drift and sync documentation |
