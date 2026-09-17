@@ -289,7 +289,7 @@ import { resolve, relative } from 'node:path';
  * Conventional documentation-home directory names. A folder named one of these
  * is unambiguously "docs DocGuard governs" — distinct from arbitrary markdown
  * buried in a non-doc subdir (security/wolf-archive/, vendored toolkits), which
- * the wu-whatsappinbox scoping fix deliberately excludes. We auto-track the
+ * the downstream-project scoping fix deliberately excludes. We auto-track the
  * former and never blanket-walk the latter.
  */
 export const DEFAULT_DOC_DIRS = [

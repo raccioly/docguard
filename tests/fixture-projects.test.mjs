@@ -8,7 +8,7 @@
  * error (B-5 class), this test catches it before release.
  *
  * Why we need this: single-fixture tests can mask env-specific bugs. The
- * wu-whatsappinbox B-5 regression slipped past 434 tests because the
+ * downstream-project B-5 regression slipped past 434 tests because the
  * specific combination of OS + node version + .docguard.json shape wasn't
  * covered. Multi-fixture testing is a low-cost insurance policy.
  *

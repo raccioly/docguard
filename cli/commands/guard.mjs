@@ -224,7 +224,7 @@ function renderableItems(v) {
 // .md could drift forever while guard stayed green — the human had to REMEMBER to
 // enroll each doc, which is exactly the step that fails silently. We deliberately
 // do NOT deep-scan every doc for claims (that floods false positives — see the
-// wu-whatsappinbox scar in metrics-consistency). Instead we cheaply report what's
+// downstream-project scar in metrics-consistency). Instead we cheaply report what's
 // under a validation tier and what isn't, turning silent non-coverage into a
 // visible nudge. Pure visibility — never gates the build.
 //

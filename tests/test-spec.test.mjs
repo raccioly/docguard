@@ -151,7 +151,7 @@ describe('validateTestSpec', () => {
 
 | # | Journey | Test File | Status |
 |---|---------|-----------|--------|
-| 1 | Receive WhatsApp message | \`backend/src/__tests__/integration/message-a.test.ts\`, \`backend/src/__tests__/integration/message-b.test.ts\` | ✅ |
+| 1 | Receive inbound message | \`backend/src/__tests__/integration/message-a.test.ts\`, \`backend/src/__tests__/integration/message-b.test.ts\` | ✅ |
 `);
 
     const results = validateTestSpec(tempDir, {});

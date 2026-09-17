@@ -213,7 +213,7 @@ describe('validateCrossReferences — end-to-end', () => {
   });
 
   it('S-12: suggests the closest anchor when a near-miss is detected', () => {
-    // Heading renamed but the link wasn't updated — most common wu case.
+    // Heading renamed but the link wasn't updated — most common downstream case.
     dir = makeRepo({
       'docs-canonical/ARCHITECTURE.md':
         '# Architecture\n\nSee [setup](#athena-setup) for details.\n\n' +
@@ -239,14 +239,14 @@ describe('validateCrossReferences — end-to-end', () => {
   });
 
   it('B-6: resolves URL-encoded paths (e.g. %20 for spaces)', () => {
-    // Real-world case from wu-whatsappinbox: a doc directory has a space in
-    // its name ("WU Documentation"), CommonMark allows the URL-encoded form,
+    // Real-world case from downstream-project: a doc directory has a space in
+    // its name ("Client Documentation"), CommonMark allows the URL-encoded form,
     // but the filesystem stores the decoded form. The validator should try
     // both.
     dir = makeRepo({
       'docs-canonical/ARCHITECTURE.md':
-        '# Architecture\nSee [external](./../WU%20Documentation/foo.md) for the WU spec.\n',
-      'WU Documentation/foo.md': '# Foo\nstub\n',
+        '# Architecture\nSee [external](./../Client%20Documentation/foo.md) for the client spec.\n',
+      'Client Documentation/foo.md': '# Foo\nstub\n',
     });
     const r = validateCrossReferences(dir, {});
     assert.ok(

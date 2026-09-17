@@ -104,7 +104,7 @@ describe('Metrics-Consistency Validator', () => {
     assert.strictEqual(result.total, 0);
   });
 
-  // Field test (wu-whatsappinbox): the recursive root walk swept in OpenWolf
+  // Field test (downstream-project): the recursive root walk swept in OpenWolf
   // session archives and vendored toolkit READMEs deep under security/, then
   // reported their unrelated "N validators / N checks" prose as the user's
   // drift (~39 false warnings). Markdown buried in arbitrary subdirectories is

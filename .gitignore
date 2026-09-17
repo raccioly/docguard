@@ -45,3 +45,4 @@ websec-out/
 
 # OpenWolf private session memory (machine-local, not shared)
 .claude/openwolf-memory/
+.wolf/
