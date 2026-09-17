@@ -33,6 +33,22 @@ const STOP_TERMS = new Set(['must', 'should', 'with', 'from', 'that', 'this', 'h
 
 const posix = path => path.split(sep).join('/').replace(/^\.\//, '');
 const digest = content => `sha256:${createHash('sha256').update(content).digest('hex')}`;
+
+// A review stamp is not a content change. `docguard:last-reviewed` is written by
+// reviewing a document — the very thing Freshness (FRS002) asks for — so letting
+// it reach the digest made every review a registry change: review the doc, then
+// `specs --write` to settle the registry the review just invalidated. Strip only
+// that marker; `docguard:version` and `docguard:status` are substantive lifecycle
+// edits and must keep re-digesting.
+const REVIEW_STAMP_RE = /^[ \t]*<!--[ \t]*docguard:last-reviewed[^>]*-->[ \t]*\r?\n?/gim;
+export const digestSource = content => content.replace(REVIEW_STAMP_RE, '');
+const contentDigest = content => digest(digestSource(content));
+
+// Registries written before the review stamp was excluded carry a digest over the
+// raw bytes. Accept either so upgrading does not silently drop trust in an
+// otherwise untouched spec; the next `specs --write` migrates the entry.
+const digestMatches = (recorded, content) =>
+  recorded === contentDigest(content) || recorded === digest(content);
 const sortedUnique = values => [...new Set(values)].sort((a, b) => a.localeCompare(b));
 
 function registryDifferences(left, right) {
@@ -281,7 +297,7 @@ export function trustedSpecLifecycleIndex(projectDir) {
     try { content = readFileSync(resolve(projectDir, entry.path), 'utf8'); } catch { continue; }
     if (parseSpecId(content) !== entry.specId) continue;
     const artifact = entry.observed?.artifacts?.find(item => item.path === entry.path);
-    if (!artifact || artifact.digest !== digest(content)) continue;
+    if (!artifact || !digestMatches(artifact.digest, content)) continue;
     if (entry.reviewed?.lifecycle?.context !== 'current' || entry.reviewed.lifecycle.storage !== 'working_tree') continue;
     trusted.set(`${entry.specId}\0${entry.path}`, entry.reviewed.lifecycle);
   }
@@ -307,7 +323,7 @@ export function uncommittedPlannedSpecLifecycleIndex(projectDir) {
     try { content = readFileSync(resolve(projectDir, entry.path), 'utf8'); } catch { continue; }
     if (parseSpecId(content) !== entry.specId) continue;
     const artifact = entry.observed?.artifacts?.find(item => item.path === entry.path);
-    if (!artifact || artifact.digest !== digest(content)) continue;
+    if (!artifact || !digestMatches(artifact.digest, content)) continue;
     if (entry.reviewed.lifecycle.context !== 'current' || entry.reviewed.lifecycle.storage !== 'working_tree') continue;
     candidates.set(`${entry.specId}\0${entry.path}`, entry.reviewed.lifecycle);
   }
@@ -494,7 +510,7 @@ export function projectSpecRegistry(projectDir, config = {}, options = {}) {
     const artifacts = artifactsForFeature
       .map(artifact => ({
         path: posix(relative(projectDir, artifact)),
-        digest: digest(readFileSync(artifact, 'utf8')),
+        digest: contentDigest(readFileSync(artifact, 'utf8')),
       }));
     specs.push({
       specId,

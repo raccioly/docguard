@@ -7,9 +7,8 @@
 
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { safeWrite } from '../writers/generate-io.mjs';
 import { commitFileTransaction } from '../writers/file-transaction.mjs';
 import { appendImplementationOutcome } from '../writers/spec-outcomes.mjs';
 import { serializeLifecycleContext } from '../scanners/lifecycle-context.mjs';
@@ -227,7 +226,9 @@ function printResult(result) {
   console.log(`Registry: ${SPEC_REGISTRY_PATH}`);
   console.log(`Specs: ${result.specs}; tombstones: ${result.tombstones}`);
   if (result.differences?.length) {
-    console.log('Differences:');
+    // After --write the registry already matches; listing the pre-write diff
+    // under "Differences" read as though the drift were still outstanding.
+    console.log(result.status === 'WRITTEN' ? 'Resolved by this write:' : 'Differences:');
     for (const difference of result.differences) {
       console.log(`  ${difference.path}: ${difference.message}`);
     }
@@ -264,7 +265,10 @@ export function runSpecs(projectDir, config, flags = {}) {
     }
     let status = projection.current ? 'CURRENT' : projection.exists ? 'STALE' : 'MISSING';
     if (flags.write && !projection.current) {
-      safeWrite(resolve(projectDir, SPEC_REGISTRY_PATH), projection.serialized);
+      // Deliberately not safeWrite: that keeps a .bak, and the registry is
+      // generated and Git-tracked, so the backup is noise DocGuard then reports
+      // as an undocumented config file.
+      writeFileSync(resolve(projectDir, SPEC_REGISTRY_PATH), projection.serialized, 'utf-8');
       status = 'WRITTEN';
     }
     const result = {

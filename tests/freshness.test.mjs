@@ -394,19 +394,26 @@ describe('freshness coverage and history reliability', () => {
       '<!-- docguard:last-reviewed 2020-01-01 -->');
     const original = childProcess.execFileSync;
     let queries = 0;
+    let stagedQueries = 0;
     t.mock.method(childProcess, 'execFileSync', (binary, args, options) => {
-      if (binary === 'git' && args.includes('--name-only')) queries++;
+      // Match `git log … --name-only` specifically: the staged-path lookup also
+      // passes --name-only, and it is a different query with its own budget.
+      if (binary === 'git' && args[0] === 'log' && args.includes('--name-only')) queries++;
+      if (binary === 'git' && args[0] === 'diff' && args.includes('--cached')) stagedQueries++;
       return original(binary, args, options);
     });
     syncBuiltinESMExports();
     try {
       assert.ok(validateFreshness(dir, {}).every(result => result.status === 'pass'));
       assert.equal(queries, 1);
+      // The staged lookup is also once per validation, not once per document.
+      assert.equal(stagedQueries, 1);
       writeFileSync(join(dir, 'new.go'), 'package main');
       runGit('add new.go', dir);
       runGit('commit -m source', dir);
       assert.ok(validateFreshness(dir, {}).every(result => result.status === 'warn'));
       assert.equal(queries, 2);
+      assert.equal(stagedQueries, 2);
     } finally {
       t.mock.restoreAll();
       syncBuiltinESMExports();

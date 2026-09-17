@@ -189,6 +189,24 @@ function getCodeHistory(dir, ignored) {
 }
 
 /**
+ * Documents staged in the commit currently being checked.
+ *
+ * A pre-commit hook runs guard against the very change being made, so a doc the
+ * author is updating right now was still being reported "review due" — the work
+ * the finding asks for is in the index (field report: AGENTS.md flagged while
+ * staged). Returns POSIX-relative paths; empty when git is unavailable.
+ */
+function getStagedPaths(dir) {
+  try {
+    const out = execFileSync('git', ['diff', '--cached', '--name-only', '-z'],
+      { cwd: dir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] });
+    return new Set(out.split('\0').filter(Boolean));
+  } catch {
+    return new Set();
+  }
+}
+
+/**
  * Check if git is available in this project.
  */
 function isGitRepo(dir) {
@@ -256,9 +274,18 @@ export function validateFreshness(dir, config) {
   const REVIEW_THRESHOLD_DAYS = 30; // Repository-wide trigger, not proof of drift
   const WARNING_THRESHOLD_COMMITS = 10; // Repository-wide review trigger
 
+  const stagedPaths = getStagedPaths(dir);
+
   for (const docFile of docFiles) {
     const docPath = resolve(dir, docFile);
     if (!existsSync(docPath)) continue;
+    // Being edited in this very commit is the strongest possible freshness
+    // signal; a repository-wide commit count cannot override it.
+    if (stagedPaths.has(relPosix(dir, docPath))) {
+      results.push({ status: 'skip', doc: docFile,
+        message: `${docFile} is staged in this change — review not due; the document is being updated now` });
+      continue;
+    }
     const docStatus = readDocStatus(docPath);
     if (['historical', 'superseded', 'deprecated'].includes(docStatus)) {
       results.push({ status: 'skip', doc: docFile,
