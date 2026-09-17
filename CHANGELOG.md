@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Document `DOCGUARD_API_KEY` in the canonical environment doc. `ENVIRONMENT.md`
+  claimed DocGuard uses "no API keys" and needs no environment variables, which
+  contradicted `SECURITY.md` and the HTTP MCP server, where the variable is
+  required to bind a non-loopback host. Core CLI commands still need no credential.
+- Enforce the published validator count in `npm test`. Canonical-Sync and
+  Metrics-Consistency already detect a stale "N validators" claim, but they emit
+  warnings and the CI self-scan deliberately tolerates guard's warnings-only exit,
+  so a wrong count could reach `main` with every check green. The count is now
+  asserted against the shipped `cli/validators/*.mjs` modules, and README explains
+  why guard prints 30 result rows for 29 validators.
 - Count DocGuard validator claims from one shared source of truth: the
   validator modules shipped in the installed package. A consumer's intentionally
   disabled validators and extra guard checks cannot create a false MET001 or

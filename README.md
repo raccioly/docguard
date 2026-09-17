@@ -413,6 +413,12 @@ $ npx docguard-cli generate
 
 DocGuard runs **29 automated validators** on every `guard` check. Source-facing validators are language-aware where their evidence model applies; repository and document validators operate independently of source language.
 
+> **Counting note:** `guard` prints 30 result rows, not 29. `Structure` emits a
+> second check result (`Doc Sections`) under the same validator key, so rows are
+> checks, not validators. The published number is the count of shipped
+> `cli/validators/*.mjs` modules and is enforced by tests — don't derive it by
+> counting output rows.
+
 | # | Validator | What It Checks | Default |
 |:--|:----------|:--------------|:--------|
 | 1 | **Structure** | Required CDD files exist | ✅ On |

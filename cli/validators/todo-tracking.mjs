@@ -1,8 +1,9 @@
 /**
  * TODO/FIXME Tracking Validator — Ensures code annotations are documented
  *
- * Scans source files for TODO:, FIXME:, HACK:, XXX: annotations and checks
- * if they are tracked in documentation (ROADMAP.md, CURRENT-STATE.md, etc.).
+ * Scans source files for debt tags (todo / fixme / hack / xxx, with a
+ * trailing colon or paren) and checks if they are tracked in documentation
+ * (ROADMAP.md, CURRENT-STATE.md, etc.).
  *
  * Also detects skipped tests without explanation.
  *
