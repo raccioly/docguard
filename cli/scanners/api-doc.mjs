@@ -32,7 +32,7 @@ const HTTP_METHODS = new Set(['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', '
  *   optional c-all  `/shop/[[...filters]]`  → `/shop/{}`
  * Without the bracket rule, a doc written in Next.js `[id]` syntax never matched
  * the code-scan's `:id`, so every dynamic route double-fired as both
- * "documented-but-absent" and "undocumented" (field test: hugocross_revamp).
+ * "documented-but-absent" and "undocumented" (field test: a downstream project).
  * @param {string} raw
  * @returns {string} normalized path (e.g. "/api/users/{}") or '' if not a path
  */

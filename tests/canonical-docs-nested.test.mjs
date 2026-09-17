@@ -96,7 +96,7 @@ describe('listCanonicalDocs — recursive canonical enumeration', () => {
 
 describe('nested canonical docs — consumer regressions', () => {
   it('docs-sync: a service documented only in a nested doc is not flagged', () => {
-    // The MergerSync shape: a top-level doc EXISTS (so canonicalContent is
+    // The nested-canonical shape: a top-level doc EXISTS (so canonicalContent is
     // non-empty and there is no early return), but the module map is nested.
     put('docs-canonical/ARCHITECTURE.md', '# Architecture\n\nDetails in the module map.\n');
     put('docs-canonical/01-architecture/MODULE-MAP.md', '- src/services/billing.ts — billing\n');

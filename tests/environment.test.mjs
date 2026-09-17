@@ -202,13 +202,13 @@ describe('validateEnvironment', () => {
     assert.equal(results.warnings.length, 0);
   });
 
-  // Regression for hugocross Bug 3: variables documented in a markdown pipe
+  // Regression for a downstream project Bug 3: variables documented in a markdown pipe
   // table WITHOUT backticks around the name were silently treated as
   // undocumented, even though they were clearly present in the doc. Both
   // forms (`| `VAR` | desc |` and `| VAR | desc |`) must now count as
   // documented; the suffix-strip alternative theory from the original report
   // turned out NOT to be the actual root cause.
-  it('recognises env vars in markdown table rows without backticks (hugocross bug 3)', () => {
+  it('recognises env vars in markdown table rows without backticks (a downstream project bug 3)', () => {
     fs.writeFileSync(envDocPath, [
       '## Prerequisites',
       '## Environment Variables',

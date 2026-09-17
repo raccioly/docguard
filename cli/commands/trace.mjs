@@ -26,7 +26,7 @@ const CODE_EXTENSIONS = new Set([
 
 // v0.16-P2: language-aware patterns. The original JS/TS-only sets created
 // false-negative warnings on Python/Rust/Go/Java projects (reported by the
-// quick-recon-tool Python user: TEST-SPEC.md was flagged unlinked even
+// a downstream project Python user: TEST-SPEC.md was flagged unlinked even
 // though Python tests existed because `.test.mjs` didn't match `test_*.py`).
 import { TEST_PATTERNS, TRACE_MAP, isTraceableSource } from '../shared-trace-patterns.mjs';
 
