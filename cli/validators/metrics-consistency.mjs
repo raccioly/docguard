@@ -308,7 +308,7 @@ function findMarkdownFiles(dir, config = {}) {
   // The old code recursively walked the WHOLE repo from the root, so it swept in
   // OpenWolf session archives (security/wolf-archive/**/memory.md) and vendored
   // toolkit READMEs whose unrelated "N checks" prose was then reported as the
-  // USER's drift (field test: wu-whatsappinbox, ~39 false warnings the author
+  // USER's drift (field test: downstream-project, ~39 false warnings the author
   // could not act on). Scoping to the docs DocGuard actually governs fixes it.
   try {
     for (const entry of readdirSync(dir)) {
@@ -323,7 +323,7 @@ function findMarkdownFiles(dir, config = {}) {
   // conventional doc dirs (docs/, documentation/, guides/, …) or honors an
   // explicit config.docs.dirs. NAMED dirs only — code/tooling dirs (security/,
   // backend/, src/, …) and arbitrary subdirs are still NEVER walked (the
-  // wu-whatsappinbox false-positive flood the scoping fix removed).
+  // downstream-project false-positive flood the scoping fix removed).
   const canonical = config && config.requiredFiles && Array.isArray(config.requiredFiles.canonical)
     ? config.requiredFiles.canonical : [];
   for (const rel of canonical) {

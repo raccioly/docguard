@@ -117,7 +117,7 @@ describe('checkUpgradeStatus — the post-guard nudge driver', () => {
   });
 
   it('returns a nudge when .docguard.json has no `version` field (pre-0.4 schema)', () => {
-    // Real-world case from wu-whatsappinbox: a 2024-era config has fields
+    // Real-world case from downstream-project: a 2024-era config has fields
     // like `project` (not `projectName`) and no `version`. We want the
     // migration nudge to fire so users get upgraded cleanly.
     dir = make({

@@ -1,7 +1,7 @@
 /**
  * v0.17.1-B7 — regression: NODE_ENV documented in BOTH ENVIRONMENT.md AND
  * .env.example should NOT appear in `docguard diff`'s "in code but not
- * documented" list. The wu repo reported asymmetry between guard (PASS)
+ * documented" list. The downstream repo reported asymmetry between guard (PASS)
  * and diff (warning) because my v0.16-P4 SYSTEM_ENV_VARS denylist
  * incorrectly included NODE_ENV / CI / GITHUB_*.
  *

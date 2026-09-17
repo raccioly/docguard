@@ -203,7 +203,7 @@ export function diffEntities(dir, config = {}) {
 
 // v0.16-P4 (revised in v0.17.1): conservative denylist of system env vars
 // that appear in prose ("the venv `PATH`") but are never user-set app env
-// vars. v0.17.1-B7: trimmed to TRULY-system-only after wu feedback —
+// vars. v0.17.1-B7: trimmed to TRULY-system-only after downstream feedback —
 // NODE_ENV / CI / GITHUB_* are legitimately app env vars when read via
 // process.env. Including them caused diff to falsely flag `NODE_ENV` as
 // "in code but not docs" even when ENVIRONMENT.md documented it.

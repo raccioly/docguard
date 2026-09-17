@@ -283,7 +283,7 @@ describe('DEFAULT_IGNORE_DIRS shared constant', () => {
     assert.ok(DEFAULT_IGNORE_DIRS.has('.turbo'));
   });
 
-  // @req FR-008 — entries added in v0.11.1 follow-up per wu-whatsappinbox feedback
+  // @req FR-008 — entries added in v0.11.1 follow-up per downstream-project feedback
   it('includes Rust, Java, and SvelteKit build outputs', () => {
     assert.ok(DEFAULT_IGNORE_DIRS.has('target'), 'Rust + Java build dir');
     assert.ok(DEFAULT_IGNORE_DIRS.has('.gradle'), 'Gradle cache');

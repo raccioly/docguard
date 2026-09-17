@@ -295,9 +295,9 @@ function editDistance(a, b) {
 function resolveTarget(sourcePath, targetRel, projectDir) {
   if (!targetRel) return null;
   // B-6: try BOTH the literal path and the URL-decoded form. CommonMark
-  // accepts `[name](../WU%20Documentation/foo.md)` for paths with spaces,
-  // and the decoded form (`../WU Documentation/foo.md`) is what hits the
-  // filesystem. The angle-bracket form `<../WU Documentation/foo.md>` is
+  // accepts `[name](../Client%20Documentation/foo.md)` for paths with spaces,
+  // and the decoded form (`../Client Documentation/foo.md`) is what hits the
+  // filesystem. The angle-bracket form `<../Client Documentation/foo.md>` is
   // already non-URL-encoded by the time it reaches us. Try literal first
   // (handles paths that legitimately contain `%`), then decoded.
   const candidates = [targetRel];

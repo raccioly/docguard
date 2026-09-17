@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Replaced named third-party project references in source comments, tests and
+  changelog history with generic terms. Field-test provenance is still recorded;
+  the projects are no longer identified by name. Stopped tracking `.wolf/`
+  (local agent working notes, never part of the published package).
+
+
 ## [0.41.4] - 2026-09-17
 
 Automated weekly release — batches everything merged since `v0.41.3`.
@@ -1233,7 +1241,7 @@ Context7 identified in the platform review).
   `website/docs/`) are now claim-scanned and counted as "tracked" **without being
   enrolled** in `requiredFiles.canonical`. A folder literally named `documentation/`
   is unambiguously a doc home DocGuard governs; this stays distinct from the
-  arbitrary-subdir walk the wu-whatsappinbox scoping fix removed (a number buried
+  arbitrary-subdir walk the downstream-project scoping fix removed (a number buried
   in `security/wolf-archive/` is still never scanned). `config.docs.dirs` EXTENDS
   the set with non-standard homes (it never replaces auto-detection); use
   `.docguardignore` to exclude a conventional dir. The doc-home set is now a single
@@ -1401,7 +1409,7 @@ dogfooding.
 ## [0.27.0] - 2026-06-19
 
 Acting on a third end-to-end LLM field report (a coding agent ran DocGuard on a
-Vite+Vitest WhatsApp-inbox repo). The headline is architectural: DocGuard is a
+Vite+Vitest downstream repo). The headline is architectural: DocGuard is a
 tool *for LLMs*, so every run should end with a suggested next action and every
 finding it surfaces should be addressable, suppressible, and — when uncertain —
 reportable. This release introduces structured **findings** (stable codes +
@@ -2691,7 +2699,7 @@ and adds a cross-cutting "no validator throws" safety net. **22 validators,
 ### Fixed
 
 - **B-5: Freshness validator crashed with `getLastCommitDate is not defined`.** A an enterprise client project install of v0.13.0 produced this ReferenceError despite all the imports being correct in source — we couldn't reproduce locally, but the user's report was clear. Fix: defensive dynamic import in `freshness.mjs` that falls back to the pre-v0.13 inline implementation if `../shared-git.mjs` ever fails to load. Worst-case behavior is now "rename detection silently disabled" instead of "validator crashes with useless message". Also added an inline fallback for the same defensive layering. Reported by an enterprise client project.
-- **B-6: Cross-Reference didn't URL-decode link target paths.** A markdown link like `[name](../WU%20Documentation/foo.md)` (where the directory has a space) was looked up with `existsSync('../WU%20Documentation/foo.md')` literally — the filesystem stores the decoded form. Now: `resolveTarget` tries BOTH the literal path (for paths that legitimately contain `%`) and the URL-decoded form. **Effect on an enterprise client project: Cross-Reference went from 28/28 to 101/101 checks — 73 previously-broken refs now resolve correctly.** Reported by an enterprise client project.
+- **B-6: Cross-Reference didn't URL-decode link target paths.** A markdown link like `[name](../Client%20Documentation/foo.md)` (where the directory has a space) was looked up with `existsSync('../Client%20Documentation/foo.md')` literally — the filesystem stores the decoded form. Now: `resolveTarget` tries BOTH the literal path (for paths that legitimately contain `%`) and the URL-decoded form. **Effect on an enterprise client project: Cross-Reference went from 28/28 to 101/101 checks — 73 previously-broken refs now resolve correctly.** Reported by an enterprise client project.
 - **Cross-cutting safety net**: new `tests/guard-no-throw.test.mjs` runs guard against a fixture repo and asserts no validator leaks a ReferenceError / TypeError / "is not defined" / "is not a function" / "Cannot read properties of undefined" pattern into user-facing output. Found a *second* lurking bug while writing the test: Structure validator threw `Cannot read properties of undefined (reading 'some')` when `config.requiredFiles.agentFile` was missing — fixed with defensive array-or-string coercion + skip-when-missing for `changelog` too. This safety net runs in CI, catching the entire class of developer-error-leaks before release.
 
 ### Added
