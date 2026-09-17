@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.41.4] - 2026-09-17
+
+Automated weekly release — batches everything merged since `v0.41.3`.
+
+### Changed
+
+- fix: correct the validator-surface claim and document DOCGUARD_API_KEY (#408)
+- fix: harden adoption precision boundaries (#406)
+
+
 ### Fixed
 
 - Document `DOCGUARD_API_KEY` in the canonical environment doc. `ENVIRONMENT.md`
