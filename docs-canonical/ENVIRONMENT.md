@@ -1,17 +1,17 @@
 # Environment
 
-<!-- docguard:quality negation-load off — an environment doc precisely describes the ABSENCE of requirements (no env vars, no install step, no API keys, no database); the prohibitive phrasing is accurate and intentional, not sloppy writing -->
+<!-- docguard:quality negation-load off — an environment doc precisely describes the ABSENCE of requirements (no install step, no database, no credential for the CLI); the prohibitive phrasing is accurate and intentional, not sloppy writing -->
 
-<!-- docguard:version 0.6.0 -->
+<!-- docguard:version 0.7.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-09-15 -->
+<!-- docguard:last-reviewed 2026-09-17 -->
 
-> DocGuard needs no environment variables. It has a single optional-load npm dependency (`@babel/parser`) and optionally uses the developer's own `python3`; everything else is Node.js built-ins.
+> The DocGuard CLI needs no environment variables. One optional variable, `DOCGUARD_API_KEY`, applies only to the HTTP MCP server. DocGuard has a single optional-load npm dependency (`@babel/parser`) and optionally uses the developer's own `python3`; everything else is Node.js built-ins.
 
 | Metadata | Value |
 |----------|-------|
 | **Status** | ![Status](https://img.shields.io/badge/status-active-brightgreen) |
-| **Version** | `0.6.0` |
+| **Version** | `0.7.0` |
 
 ---
 
@@ -26,9 +26,22 @@
 
 ## Environment Variables
 
-> **None required.** DocGuard reads project files directly. No `.env` file,
-> no API keys, no database connections. (Its one npm dependency, `@babel/parser`,
-> needs no configuration.)
+> **None required.** Every CLI command (`guard`, `score`, `diff`, `trace`, …)
+> reads project files directly — no `.env` file, no database connections, no
+> credential of any kind. (Its one npm dependency, `@babel/parser`, needs no
+> configuration.)
+
+One **optional** variable applies to the HTTP MCP server only
+(`docguard mcp --transport http`):
+
+| Variable | When it applies | Purpose |
+|----------|-----------------|---------|
+| `DOCGUARD_API_KEY` | Optional on loopback; **required to bind a non-loopback host** | Shared secret for the HTTP MCP server. Equivalent to `--api-key <key>`, which takes precedence. When set, every request must carry `Authorization: Bearer <key>` or `X-API-Key: <key>`, else `401`. |
+
+The server binds `127.0.0.1` by default and **refuses to start** on a
+non-loopback host without a key, rather than exposing project read access to
+the network. The stdio transport (`docguard mcp`, the default) never reads it.
+See [SECURITY.md](SECURITY.md) for the full posture.
 
 ## Setup Steps
 
@@ -69,6 +82,7 @@ node cli/docguard.mjs ci --threshold 70 --format json
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 0.7.0 | 2026-09-17 | @raccioly | Documented `DOCGUARD_API_KEY` (HTTP MCP server); corrected the blanket "no API keys" claim that contradicted SECURITY.md |
 | 0.6.0 | 2026-05-31 | DocGuard Team | v0.24.0: documented Python 3 as an optional prerequisite (enables the AST Python tier; regex fallback when absent); de-bristled the test-count example |
 | 0.5.0 | 2026-03-13 | @raccioly | Added diagnose, CI template, development examples |
 | 0.3.0 | 2026-03-12 | @raccioly | Proper CLI environment docs, no env vars |
