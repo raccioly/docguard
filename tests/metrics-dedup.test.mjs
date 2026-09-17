@@ -1,7 +1,7 @@
 /**
  * v0.14.1-N1 — Metrics-Consistency dedup.
  *
- * Reported by wu-whatsappinbox: a file that mentions a stale validator/check
+ * Reported by downstream-project: a file that mentions a stale validator/check
  * count multiple times (e.g. once in a heading, once in a body table) was
  * producing one warning per occurrence — "4 warnings for 2 files".
  *

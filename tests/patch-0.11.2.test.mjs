@@ -1,12 +1,12 @@
 /**
- * v0.11.2 patch coverage — locks in the bug fixes from the wu-whatsappinbox feedback.
+ * v0.11.2 patch coverage — locks in the bug fixes from the downstream-project feedback.
  *
  *  B-1: Vite intrinsics (DEV/PROD/MODE/BASE_URL/SSR) on `import.meta.env.*`
  *       must NOT be reported as user env vars.
  *  B-2: diff Data Entities uses real exported names (not file basenames).
  *  B-3: literal env-var-prefix tokens like `VITE_` must not be captured.
  *
- * @req SC-008 — On the wu-whatsappinbox project, re-running guard after
+ * @req SC-008 — On the downstream-project project, re-running guard after
  *   these fixes drops warnings substantially. Each test below targets one
  *   of the false-positive classes contributing to the warning reduction.
  */
@@ -30,7 +30,7 @@ function make(files) {
   return dir;
 }
 
-describe('v0.11.2 — bug fixes from wu-whatsappinbox feedback', () => {
+describe('v0.11.2 — bug fixes from downstream-project feedback', () => {
   let dir;
   afterEach(() => { if (dir) rmSync(dir, { recursive: true, force: true }); });
 

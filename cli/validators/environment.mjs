@@ -139,7 +139,7 @@ export function validateEnvironment(projectDir, config) {
     const varRe = /`([A-Z][A-Z0-9_]*[A-Z0-9])`/g;
     // v0.16-P4 (revised in v0.17.1-B7): skip backticked SYSTEM env vars
     // (PATH, HOME, USER, etc.) that appear in ENVIRONMENT.md prose. Trimmed
-    // to TRULY-system-only after wu feedback — NODE_ENV / CI / GITHUB_* were
+    // to TRULY-system-only after downstream feedback — NODE_ENV / CI / GITHUB_* were
     // causing asymmetric flagging between diff and this validator. Apps
     // legitimately treat NODE_ENV as app config; keep the list to vars that
     // no sane application would read as runtime config.

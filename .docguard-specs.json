@@ -153,7 +153,7 @@
         "artifacts": [
           {
             "path": "specs/012-adoption-workflow-integrity/spec.md",
-            "digest": "sha256:6f007a67be27b07599e058bd2dadc97031bc0753649ae296f95c4ea3b87ea821"
+            "digest": "sha256:b019d4b6af2f991d6bba8cef3a1c1f9a1bcf5c3cbfd4f65d900942d0a2f097d5"
           }
         ],
         "taskCompletion": {

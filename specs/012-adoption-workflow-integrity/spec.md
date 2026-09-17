@@ -113,7 +113,7 @@ completely. A structural maturity grade is labeled separately from readiness.
   distinct and redacted.
 - **SC-009**: Paired synthetic replicas contain none of the confirmed MET001,
   TDO001, DSY002, DSY003, SEC001-blocker, schema-parity, or package-local
-  environment false positives; disposable Websec and WhatsApp replays confirm
+  environment false positives; disposable downstream-project replays confirm
   the same boundaries before release.
 
 ## Non-Goals

@@ -78,7 +78,7 @@ export function validateTestSpec(projectDir, config) {
     // different shapes (Controllers, Services, an "Integration Tests" inventory
     // like `| test-file | what it covers |`). Without this guard a prose
     // "what it covers" cell — "Health endpoint with real dependencies" — gets
-    // checked as a missing test file (false positive; field test: wu-whatsappinbox).
+    // checked as a missing test file (false positive; field test: downstream-project).
     const isPathLike = (v) => !!v && !/\s/.test(v) && (/[\\/]/.test(v) || /\.[A-Za-z0-9]{1,6}$/.test(v));
 
     for (const row of pipeRows.slice(1)) { // skip the header row

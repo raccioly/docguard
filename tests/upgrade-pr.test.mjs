@@ -2,7 +2,7 @@
  * v0.14-P4 — `docguard upgrade --apply --pr` opens a migration PR.
  *
  * Full PR creation requires a real git remote + gh authentication, so the
- * deep test is manual (and validated in the dry-run on wu-whatsappinbox).
+ * deep test is manual (and validated in the dry-run on downstream-project).
  * Here we verify the structural pieces:
  *   - --pr flag is parsed
  *   - upgrade.mjs exports work when --pr is set
