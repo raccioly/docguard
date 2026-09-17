@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.41.5] - 2026-09-17
+
+Automated weekly release — batches everything merged since `v0.41.4`.
+
+### Changed
+
+- fix: four tool defects from a downstream field report (#410)
+- chore: use generic project references and stop tracking .wolf/ (#411)
+
+
 ### Changed
 
 - Replaced named third-party project references in source comments, tests and
