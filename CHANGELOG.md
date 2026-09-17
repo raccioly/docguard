@@ -14,6 +14,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the projects are no longer identified by name. Stopped tracking `.wolf/`
   (local agent working notes, never part of the published package).
 
+### Fixed
+
+- Stop counting a review stamp as a content change. Adding or updating
+  `<!-- docguard:last-reviewed -->` in a spec artifact changed its registry
+  digest, so the review that Freshness (FRS002) asks for immediately made the
+  spec registry `STALE` and demanded `specs --write` — the tool created the work
+  it then reported. That marker is now excluded from the digest source;
+  `docguard:version` and `docguard:status` still re-digest, because those are
+  substantive lifecycle edits. Registries written by earlier releases keep their
+  trust (both digest forms are accepted); a project whose specs already carry a
+  review stamp needs one `docguard specs --write` to settle.
+- Stop reporting a document as "review due" while it is staged in the commit
+  being checked. A pre-commit hook runs `guard` against the very change being
+  made, so an author updating `AGENTS.md` was told to review `AGENTS.md`. Being
+  edited in this commit is now treated as the strongest freshness signal and
+  outranks the repository-wide commit-count heuristic.
+- Stop leaving `.docguard-specs.json.bak` behind. `specs --write` regenerates a
+  Git-tracked, fully derived file, so the backup was noise that DocGuard then
+  reported as an undocumented config file (DCV001). DocGuard also no longer
+  raises DCV001 for any `.bak` it wrote itself.
+- Report what `specs --write` actually did. It printed the pre-write differences
+  under a "Differences:" heading after reporting `WRITTEN`, reading as though the
+  drift were still outstanding; resolved differences are now labelled as resolved.
+
 
 ## [0.41.4] - 2026-09-17
 

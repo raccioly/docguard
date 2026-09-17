@@ -60,6 +60,11 @@ const COMMON_DOTFILES = new Set([
 // exact name OR prefix (`.coverage.<host>.<pid>` is coverage.py's parallel form).
 const GENERATED_DOTFILE_PREFIXES = ['.coverage', '.eslintcache', '.stylelintcache', '.tsbuildinfo'];
 function isGeneratedArtifact(name) {
+  // `.bak` is written by DocGuard's own safeWrite before it overwrites a file.
+  // Reporting it as an undocumented config file made the tool flag its own
+  // backup (field report: `specs --write` -> DCV001 on
+  // `.docguard-specs.json.bak`).
+  if (name.endsWith('.bak')) return true;
   return GENERATED_DOTFILE_PREFIXES.some(p => name === p || name.startsWith(p + '.'));
 }
 
