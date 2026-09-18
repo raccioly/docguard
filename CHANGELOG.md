@@ -37,39 +37,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `cli/precision-evidence-data.mjs`, which ships with the package because
   `benchmarks/` deliberately does not. A test fails on drift.
 
-### Fixed
-
-- **`init` no longer adopts a Spec Kit feature folder as the project's canonical
-  root, then refuses to proceed from the config it just wrote.** A repository
-  with `specs/002-some-feature/spec.md` and `data-model.md` had that single
-  feature directory adopted, a two-key `.docguard.json` written, and init then
-  threw from its own mapped-layout guard. Every re-run repeated it, by a second
-  code path, so the project could not be initialized without editing the config
-  by hand. Three things were wrong and all three are fixed:
-  - A numbered feature directory (`specs/003-slug/`) is no longer an adoption
-    candidate. It holds one feature's paperwork, not the project's documentation.
-  - Adopting a layout no longer aborts init. The guard that forbids generating
-    INTO a mapped document stays, but init now simply scaffolds the roles the
-    mapping has not placed, so it neither writes into a mapped document nor
-    creates a duplicate beside it. `setup`, `init --wizard` and `diagnose --auto`
-    still generate whole documents and still honour the guard.
-  - Adoption no longer writes `.docguard.json` itself. init owns the single
-    write, so a failed run leaves nothing behind and an adopted layout gets a
-    complete config with its profile, project type and validators, instead of a
-    two-key fragment that short-circuited the real one.
-  The guard's message now names the mapped roles and says how to leave the state.
-- **A Cloudflare Worker is typed `api` again, not `library`.** `init` and `setup`
-  each carried a private copy of project-type detection, and neither had learned
-  about Workers, so `needsEnvVars`, `needsEnvExample`, `needsE2E` and
-  `needsDatabase` were all set wrong and the validators that matter most for a
-  Worker were silently disabled. All three copies are now one exported function
-  (`wrangler.toml`, `wrangler.json` and `wrangler.jsonc` were already all
-  recognised there), and a test fails if a private copy reappears.
-- A detected Playwright or Cypress config, or an `e2e`/`tests/e2e` directory, now
-  sets `needsE2E` regardless of the project type's default. A suite on disk is
-  evidence; the type default is only a guess.
-
-
 ### Changed
 
 - **Published benchmark aggregates moved**, because two labelled cases entered
@@ -173,6 +140,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   is refused with instructions to regenerate it after review.
 
 ### Fixed
+
+- **`init` no longer adopts a Spec Kit feature folder as the project's canonical
+  root, then refuses to proceed from the config it just wrote.** A repository
+  with `specs/002-some-feature/spec.md` and `data-model.md` had that single
+  feature directory adopted, a two-key `.docguard.json` written, and init then
+  threw from its own mapped-layout guard. Every re-run repeated it, by a second
+  code path, so the project could not be initialized without editing the config
+  by hand. Three things were wrong and all three are fixed:
+  - A numbered feature directory (`specs/003-slug/`) is no longer an adoption
+    candidate. It holds one feature's paperwork, not the project's documentation.
+  - Adopting a layout no longer aborts init. The guard that forbids generating
+    INTO a mapped document stays, but init now simply scaffolds the roles the
+    mapping has not placed, so it neither writes into a mapped document nor
+    creates a duplicate beside it. `setup`, `init --wizard` and `diagnose --auto`
+    still generate whole documents and still honour the guard.
+  - Adoption no longer writes `.docguard.json` itself. init owns the single
+    write, so a failed run leaves nothing behind and an adopted layout gets a
+    complete config with its profile, project type and validators, instead of a
+    two-key fragment that short-circuited the real one.
+  The guard's message now names the mapped roles and says how to leave the state.
+- **A Cloudflare Worker is typed `api` again, not `library`.** `init` and `setup`
+  each carried a private copy of project-type detection, and neither had learned
+  about Workers, so `needsEnvVars`, `needsEnvExample`, `needsE2E` and
+  `needsDatabase` were all set wrong and the validators that matter most for a
+  Worker were silently disabled. All three copies are now one exported function
+  (`wrangler.toml`, `wrangler.json` and `wrangler.jsonc` were already all
+  recognised there), and a test fails if a private copy reappears.
+- A detected Playwright or Cypress config, or an `e2e`/`tests/e2e` directory, now
+  sets `needsE2E` regardless of the project type's default. A suite on disk is
+  evidence; the type default is only a guess.
+
+
 
 - The documented network-free recipe `node benchmarks/run.mjs --baseline
   benchmarks/baseline.json` failed with ten spurious `case-removed` regressions
