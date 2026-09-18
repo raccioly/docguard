@@ -9,6 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **`llms.txt` and `llms-full.txt` are regenerated, and stay that way.** Both
+  bundles ship inside the npm and PyPI tarballs, so an agent reads them as this
+  project's own account of itself — and neither had been regenerated since
+  v0.37.0. The full form was still describing a `guard --format json` contract
+  that predated `evidence`, `specs preflight`, `reconcile` and `agent --task`.
+  Every inlined section was verified byte-for-byte against its source doc.
+  Three things now keep them current: `npm run llms` (`tools/generate-llms.mjs`),
+  a regeneration step in the weekly release workflow — run after the changelog
+  splice, so a published bundle describes the version being released — and
+  `tests/llms-bundle-drift.test.mjs`, which fails CI when a canonical or
+  optional doc changes without the bundles being rebuilt.
+  The drift test deliberately exempts the inlined `CHANGELOG.md` body: it is
+  capped at 400 lines from the top and this repo requires a changelog entry on
+  every commit, so gating it byte-exact would fail every pull request. Release-
+  time regeneration covers that body instead.
+- `generateLlmsTxt` and `generateLlmsFullTxt` now share one exported
+  `llmsDocSet()` instead of duplicating doc discovery, so the index form and the
+  full form cannot disagree about which docs a project has. Output is unchanged,
+  byte-for-byte.
 - **The benchmark now says what its numbers are.** `benchmarks/baseline.json`
   is a strict provenance envelope (`schemas/docguard-benchmark-baseline.schema.json`,
   envelope `schemaVersion` 2): `review.measures` is `benchmark-precision` and
