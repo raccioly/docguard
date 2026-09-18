@@ -111,6 +111,72 @@
           }
         }
       ]
+    },
+    {
+      "id": "PRECISION-EVIDENCE-NO-INHERITANCE",
+      "statement": "A finding code the reviewed corpus never exercised reports that it is unmeasured and quotes no rate: it never inherits the measured precision of other codes in its validator, and a measured code below the published floor never has its point estimate quoted on its own.",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/007-precision-evidence-loop/spec.md#FR-019"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "human",
+        "by": "Claude Opus 5 with maintainer review, 2026-09-18"
+      },
+      "defendedBy": [
+        "tests/precision-evidence.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "P1",
+          "description": "Unmeasured codes fall through to their validator cell, inventing evidence for 97 of 104 codes.",
+          "faultClass": "statement-deleted",
+          "file": "cli/precision-evidence.mjs",
+          "find": "  return PRECISION_EVIDENCE.byCode[code] || NOT_MEASURED;",
+          "replace": "  return PRECISION_EVIDENCE.byCode[code] || PRECISION_EVIDENCE.byValidator.security || NOT_MEASURED;",
+          "producedBy": {
+            "producer": "human",
+            "by": "Claude Opus 5 with maintainer review, 2026-09-18"
+          }
+        },
+        {
+          "id": "P2",
+          "description": "The minN floor is removed: a rate from a single labelled finding becomes quotable.",
+          "faultClass": "condition-forced",
+          "file": "benchmarks/lib/precision-evidence.mjs",
+          "find": "  const quotable = precisionDenominator >= minN;",
+          "replace": "  const quotable = true;",
+          "producedBy": {
+            "producer": "human",
+            "by": "Claude Opus 5 with maintainer review, 2026-09-18"
+          }
+        },
+        {
+          "id": "P3",
+          "description": "Backoff is offered to every code, not only measured ones below the floor.",
+          "faultClass": "condition-forced",
+          "file": "benchmarks/lib/precision-evidence.mjs",
+          "find": "      if (!finalized.quotable) {",
+          "replace": "      if (true) {",
+          "producedBy": {
+            "producer": "human",
+            "by": "Claude Opus 5 with maintainer review, 2026-09-18"
+          }
+        },
+        {
+          "id": "P4",
+          "description": "False positives are attributed to every code in a case scope instead of the code named by the finding identity.",
+          "faultClass": "statement-deleted",
+          "file": "benchmarks/lib/precision-evidence.mjs",
+          "find": "        const code = codeOf(identity);",
+          "replace": "        const code = item.scope.codes[0];",
+          "producedBy": {
+            "producer": "human",
+            "by": "Claude Opus 5 with maintainer review, 2026-09-18"
+          }
+        }
+      ]
     }
   ]
 }

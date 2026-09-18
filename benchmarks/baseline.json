@@ -3,11 +3,11 @@
   "schemaVersion": 2,
   "review": {
     "status": "reviewed",
-    "reviewedAt": "2026-09-14",
+    "reviewedAt": "2026-09-18",
     "reviewer": "DocGuard maintainers",
-    "scope": "Twelve exact defect/control pairs across seven synthetic and five pinned public repository groups; one unsupported Python architecture case remains visible and excluded from accuracy ratios.",
-    "methodology": "Labels were authored from pinned source and seeded mutations before DocGuard output was reviewed. Traceability-only fixture comments were re-adjudicated on 2026-09-14; expected findings and controls were unchanged.",
-    "limitations": "Finite scoped cases do not establish exhaustive documentation or detector correctness.",
+    "scope": "Twelve exact defect/control pairs across seven synthetic and five pinned public repository groups; one Python architecture case is now checked by the analyzer and remains classified unsupported_syntax, excluded from accuracy ratios: its fixture is a dynamic import (import_module(get_plugin_name())), which the analyzer's own applicability reason places outside scope, and it has no paired defect, so scoring it as a clean control would credit a blind spot as evidence.",
+    "methodology": "Labels were authored from pinned source and seeded mutations before DocGuard output was reviewed. Traceability-only fixture comments were re-adjudicated on 2026-09-14; expected findings and controls were unchanged. Re-run in full, including the pinned public sources, on tool version 0.41.7 on 2026-09-18: comparison PASS with zero regressions and byte-identical metrics. The only case-level change was the Python architecture case moving from applicability unsupported to checked, because the analyzer gained Python import-graph support after 0.38.0; its classification and its exclusion from ratios are unchanged.",
+    "limitations": "Finite scoped cases do not establish exhaustive documentation or detector correctness. Seven of the tool’s finding codes are measured here; the rest carry no benchmark evidence.",
     "measures": "benchmark-precision",
     "caveat": "Benchmark precision on a deliberately balanced corpus of 12 defect and 12 clean-control cases across 12 repository groups and 12 causal families. This is DocGuard's precision on labelled cases, not the probability that a finding in your repository is real; quote every ratio with its n and Wilson 95% bound."
   },
@@ -15,8 +15,8 @@
     "schemaVersion": 1,
     "manifestDigest": "sha256:8290564a2b4a7217052393ccd932ee58d0847500190d1b5ba8275051237b9ed0",
     "tool": {
-      "version": "0.38.0",
-      "revision": "6de3edb841139a6f264ac18ecb30361256774eb1"
+      "version": "0.41.7",
+      "revision": "e5d192e5f396be06455814ac692df2f4f461859a"
     },
     "cases": [
       {
@@ -899,10 +899,10 @@
         "unexpected": [],
         "missing": [],
         "forbiddenObserved": [],
-        "abstained": true,
+        "abstained": false,
         "applicability": {
-          "status": "unsupported",
-          "reason": "Python import graph analysis is unsupported: relative imports, package paths, src-layout resolution and dynamic imports are not verified; JS/TS findings, when present, are retained"
+          "status": "checked",
+          "reason": "Repository-local JS/TS and Python static import graphs inspected; runtime dependency resolution is outside scope"
         },
         "checkCoverage": {
           "status": "na",
@@ -1912,135 +1912,135 @@
   },
   "observations": {
     "environment": {
-      "node": "v26.7.0",
+      "node": "v24.18.0",
       "platform": "darwin",
       "arch": "arm64"
     },
     "cases": [
       {
         "id": "dev-generated-security-control",
-        "coldMs": 198.768,
-        "warmMs": 204.239
+        "coldMs": 157.237,
+        "warmMs": 142.55
       },
       {
         "id": "dev-generated-security-defect",
-        "coldMs": 203.85,
-        "warmMs": 198.581
+        "coldMs": 138.919,
+        "warmMs": 153.068
       },
       {
         "id": "dev-go-todo-control",
-        "coldMs": 201.078,
-        "warmMs": 187.764
+        "coldMs": 134.801,
+        "warmMs": 142.615
       },
       {
         "id": "dev-go-todo-defect",
-        "coldMs": 196.788,
-        "warmMs": 193.239
+        "coldMs": 136.599,
+        "warmMs": 133.596
       },
       {
         "id": "dev-js-security-control",
-        "coldMs": 188.209,
-        "warmMs": 194.361
+        "coldMs": 134.69,
+        "warmMs": 141.367
       },
       {
         "id": "dev-js-security-defect",
-        "coldMs": 196.928,
-        "warmMs": 206.282
+        "coldMs": 130.26,
+        "warmMs": 138.188
       },
       {
         "id": "dev-monorepo-security-control",
-        "coldMs": 201.364,
-        "warmMs": 210.521
+        "coldMs": 133.528,
+        "warmMs": 132.625
       },
       {
         "id": "dev-monorepo-security-defect",
-        "coldMs": 211.968,
-        "warmMs": 202.787
+        "coldMs": 132.092,
+        "warmMs": 129.52
       },
       {
         "id": "dev-python-security-control",
-        "coldMs": 199.239,
-        "warmMs": 205.922
+        "coldMs": 130.404,
+        "warmMs": 130.046
       },
       {
         "id": "dev-python-security-defect",
-        "coldMs": 210.367,
-        "warmMs": 218.474
+        "coldMs": 130.849,
+        "warmMs": 129.709
       },
       {
         "id": "dev-sparse-doc-control",
-        "coldMs": 209.315,
-        "warmMs": 206.74
+        "coldMs": 135.375,
+        "warmMs": 132.27
       },
       {
         "id": "dev-sparse-doc-defect",
-        "coldMs": 203.855,
-        "warmMs": 201.097
+        "coldMs": 139.029,
+        "warmMs": 132.569
       },
       {
         "id": "eval-changesets-aws-control",
-        "coldMs": 475.206,
-        "warmMs": 507.798
+        "coldMs": 310.791,
+        "warmMs": 320.083
       },
       {
         "id": "eval-changesets-aws-defect",
-        "coldMs": 517.57,
-        "warmMs": 492.799
+        "coldMs": 333.109,
+        "warmMs": 355.015
       },
       {
         "id": "eval-chi-aws-control",
-        "coldMs": 266.557,
-        "warmMs": 254.532
+        "coldMs": 212.622,
+        "warmMs": 212.06
       },
       {
         "id": "eval-chi-aws-defect",
-        "coldMs": 265.248,
-        "warmMs": 262.865
+        "coldMs": 208.589,
+        "warmMs": 194.916
       },
       {
         "id": "eval-express-aws-control",
-        "coldMs": 297.556,
-        "warmMs": 301.383
+        "coldMs": 243.771,
+        "warmMs": 237.835
       },
       {
         "id": "eval-express-aws-defect",
-        "coldMs": 292.545,
-        "warmMs": 295.784
+        "coldMs": 236.202,
+        "warmMs": 249.686
       },
       {
         "id": "eval-fastify-aws-control",
-        "coldMs": 395.284,
-        "warmMs": 386.435
+        "coldMs": 290.623,
+        "warmMs": 298.65
       },
       {
         "id": "eval-fastify-aws-defect",
-        "coldMs": 377.286,
-        "warmMs": 391.196
+        "coldMs": 287.329,
+        "warmMs": 295.26
       },
       {
         "id": "eval-flask-aws-control",
-        "coldMs": 263.507,
-        "warmMs": 259.618
+        "coldMs": 177.863,
+        "warmMs": 174.095
       },
       {
         "id": "eval-flask-aws-defect",
-        "coldMs": 256.964,
-        "warmMs": 264.27
+        "coldMs": 182.093,
+        "warmMs": 193.114
       },
       {
         "id": "eval-python-unsupported",
-        "coldMs": 186.371,
-        "warmMs": 194.362
+        "coldMs": 334.097,
+        "warmMs": 325.564
       },
       {
         "id": "eval-ts-security-control",
-        "coldMs": 188.776,
-        "warmMs": 185.606
+        "coldMs": 142.749,
+        "warmMs": 142.568
       },
       {
         "id": "eval-ts-security-defect",
-        "coldMs": 188.758,
-        "warmMs": 190.41
+        "coldMs": 142.375,
+        "warmMs": 139.114
       }
     ],
     "retainedRoot": null

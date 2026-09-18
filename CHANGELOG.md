@@ -7,7 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Findings now say whether they have ever been benchmarked.** `guard`
+  results carry a `precisionEvidence` block scoped to the finding codes that
+  run emitted, `guard`'s summary reports how many of them have measured
+  precision, and `docguard explain <CODE>` prints the evidence in prose.
+  DocGuard defines 104 finding codes and its reviewed corpus measures 7, so for
+  most codes the honest answer is "never benchmarked" — and that is now stated
+  rather than left for a reader to discover. A code never inherits the measured
+  precision of other codes in its validator; a measured code with fewer than
+  five labelled findings behind it quotes no point estimate on its own and may
+  fall back to a named coarser tier. Contract:
+  `schemas/docguard-precision-evidence.schema.json`. Findings themselves are
+  unchanged, so SARIF, JUnit, baselines and feedback records are unaffected.
+- `npm run generate:precision-evidence` projects the reviewed baseline into
+  `cli/precision-evidence-data.mjs`, which ships with the package because
+  `benchmarks/` deliberately does not. A test fails on drift.
+
 ### Changed
+
+- **The reviewed benchmark was re-run in full on the current release.** It had
+  last run on 0.38.0 while the tool was at 0.41.7, so the evidence now quoted
+  at finding time would have been four releases stale. The re-run, including
+  the five pinned public repositories, compares PASS with zero regressions and
+  byte-identical metrics. One case moved: the Python architecture case is now
+  `checked` rather than `unsupported`, because the analyzer gained Python
+  import-graph support after 0.38.0. It stays classified `unsupported_syntax`
+  and excluded from every ratio pending re-adjudication.
 
 - **The benchmark now says what its numbers are.** `benchmarks/baseline.json`
   is a strict provenance envelope (`schemas/docguard-benchmark-baseline.schema.json`,

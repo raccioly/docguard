@@ -21,6 +21,7 @@ import { extractSemanticClaims } from '../scanners/semantic-claims.mjs';
 import { toSarif } from '../writers/sarif.mjs';
 import { toJUnit } from '../writers/junit.mjs';
 import { loadBaseline, saveBaseline, fingerprintFinding, BASELINE_FILE } from '../writers/baseline.mjs';
+import { precisionEvidenceBlock } from '../precision-evidence.mjs';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve as resolvePath, relative as relativePath } from 'node:path';
 import { fileURLToPath as fp } from 'node:url';
@@ -541,6 +542,9 @@ export function runGuardInternal(projectDir, config) {
     checkCoverage,
     semanticClaims,
     evidence,
+    // Benchmark evidence for the codes this run actually emitted. Codes the
+    // corpus never exercised say so; none inherits another code's measurement.
+    precisionEvidence: precisionEvidenceBlock(allFindings.map(f => f.code), CLI_VERSION),
     validators: results,
     // Unknown keys in `docguard:validator … n/a` markers — typo protection so
     // a mistyped key doesn't silently fail to suppress. Surfaced by runGuard.
@@ -872,6 +876,21 @@ export function runGuard(projectDir, config, flags) {
     console.log(`\n  ${c.cyan}🔍 ${data.semanticClaims.count} documented claim(s) (counts/limits/enums) are unverified against code.${c.reset}`);
     console.log(`     ${c.dim}A passing guard means configured gates passed; these values remain unverified.${c.reset}`);
     console.log(`     ${c.dim}Confirm them: ${c.cyan}${skill('verify')} --semantic${c.reset}`);
+  }
+
+  // How much of what this run reported has ever been benchmarked. Silent when
+  // there is nothing to report, so a clean run stays clean.
+  const pe = data.precisionEvidence;
+  if (pe && pe.coverage.codesInRun > 0) {
+    const { measured, codesInRun, notMeasured } = pe.coverage;
+    console.log(`\n  ${c.cyan}🔬 Benchmark evidence: ${measured} of ${codesInRun} finding code(s) in this run ${measured === 1 ? 'has' : 'have'} measured precision.${c.reset}`);
+    if (notMeasured > 0) {
+      console.log(`     ${c.dim}${notMeasured} ${notMeasured === 1 ? 'has' : 'have'} never been benchmarked; a finding from those may still be correct.${c.reset}`);
+    }
+    if (!pe.source.matchesRunningVersion) {
+      console.log(`     ${c.dim}Measured on DocGuard ${pe.source.toolVersion}; you are running ${pe.source.runningVersion}.${c.reset}`);
+    }
+    console.log(`     ${c.dim}Per code: ${c.cyan}${skill('explain')} <CODE>${c.reset}`);
   }
 
   // Badge snippet
