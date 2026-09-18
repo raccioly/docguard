@@ -15,7 +15,7 @@ export const REQUIRED_RELEASE_JOBS = Object.freeze([
   'test (24)',
 ]);
 
-export const RELEASE_PATH_ALLOWLIST = /^(package(-lock)?\.json|pyproject\.toml|server\.json|CHANGELOG\.md|templates\/ci\/github-actions\.yml|extensions\/spec-kit-docguard\/(extension\.yml|templates\/github-workflows\/(docguard-guard|docguard-autofix)\.yml|skills\/docguard-(fix|guard|review|score|sync)\/SKILL\.md)|\.agent\/skills\/docguard-(fix|guard|review|score|sync)\/SKILL\.md)$/;
+export const RELEASE_PATH_ALLOWLIST = /^(package(-lock)?\.json|pyproject\.toml|server\.json|CHANGELOG\.md|templates\/ci\/github-actions\.yml|extensions\/spec-kit-docguard\/(extension\.yml|templates\/github-workflows\/(docguard-guard|docguard-autofix)\.yml|skills\/docguard-(fix|guard|review|score|sync)\/SKILL\.md)|\.agent\/skills\/docguard-(fix|guard|review|score|sync)\/SKILL\.md|llms(-full)?\.txt)$/;
 
 const VERSION_PATTERN = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
 

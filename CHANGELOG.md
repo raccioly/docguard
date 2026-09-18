@@ -141,6 +141,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **The release cut was rejected by its own path allowlist.** `scheduled-release.yml`
+  regenerates `llms.txt` and `llms-full.txt` inside the release job, but the
+  privileged-PR allowlist in `cli/release-pr-policy.mjs` did not admit them, so
+  validation failed with `paths: unexpected llms-full.txt, llms.txt` and no
+  release could be cut. Both are deterministic output of the repository, like the
+  other generated artifacts already on the list.
+
 - **`init` no longer adopts a Spec Kit feature folder as the project's canonical
   root, then refuses to proceed from the config it just wrote.** A repository
   with `specs/002-some-feature/spec.md` and `data-model.md` had that single
