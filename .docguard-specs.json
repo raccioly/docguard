@@ -1455,7 +1455,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/shared-source.mjs",
-            "line": 356
+            "line": 375
           },
           {
             "requirementId": "FR-006",
@@ -1465,7 +1465,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/shared-source.mjs",
-            "line": 357
+            "line": 376
           },
           {
             "requirementId": "FR-007",
@@ -1975,6 +1975,11 @@
           },
           {
             "requirementId": "FR-009",
+            "file": "benchmarks/lib/baseline.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-009",
             "file": "benchmarks/lib/compare.mjs",
             "line": 4
           },
@@ -2027,6 +2032,11 @@
             "requirementId": "FR-017",
             "file": "benchmarks/lib/runner.mjs",
             "line": 6
+          },
+          {
+            "requirementId": "FR-018",
+            "file": "benchmarks/lib/baseline.mjs",
+            "line": 7
           }
         ],
         "testEvidence": [
@@ -2079,6 +2089,11 @@
             "requirementId": "FR-008",
             "file": "tests/benchmark-manifest.test.mjs",
             "line": 11
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "tests/benchmark-baseline.test.mjs",
+            "line": 9
           },
           {
             "requirementId": "FR-009",
@@ -2136,6 +2151,11 @@
             "line": 11
           },
           {
+            "requirementId": "FR-018",
+            "file": "tests/benchmark-baseline.test.mjs",
+            "line": 10
+          },
+          {
             "requirementId": "SC-001",
             "file": "tests/benchmark-manifest.test.mjs",
             "line": 13
@@ -2162,6 +2182,11 @@
           },
           {
             "requirementId": "SC-005",
+            "file": "tests/benchmark-baseline.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "SC-005",
             "file": "tests/benchmark-manifest.test.mjs",
             "line": 15
           },
@@ -2169,6 +2194,11 @@
             "requirementId": "SC-006",
             "file": "tests/feedback-fixture.test.mjs",
             "line": 15
+          },
+          {
+            "requirementId": "SC-007",
+            "file": "tests/benchmark-baseline.test.mjs",
+            "line": 12
           }
         ]
       }
@@ -2327,7 +2357,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/docguard.mjs",
-            "line": 862
+            "line": 865
           },
           {
             "requirementId": "FR-011",

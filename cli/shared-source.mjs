@@ -320,6 +320,25 @@ export function isRunnerEnvVar(name) {
 
 
 /** Wrangler is static evidence only: never load or execute project config. */
+/**
+ * Does the project ship an end-to-end suite? Project-type defaults are a guess;
+ * a Playwright/Cypress config or an e2e test directory is direct evidence, and
+ * an API that has one should not have its E2E checks silently disabled.
+ */
+export function hasE2ESuite(dir) {
+  const files = [
+    'playwright.config.ts', 'playwright.config.js', 'playwright.config.mjs',
+    'cypress.config.ts', 'cypress.config.js', 'cypress.config.mjs', 'cypress.json',
+  ];
+  for (const name of files) {
+    try { if (statSync(join(dir, name)).isFile()) return true; } catch { /* absent */ }
+  }
+  for (const name of ['e2e', join('tests', 'e2e'), join('test', 'e2e'), join('src', 'e2e')]) {
+    try { if (statSync(join(dir, name)).isDirectory()) return true; } catch { /* absent */ }
+  }
+  return false;
+}
+
 export function hasWorkerConfig(dir) {
   return ['wrangler.toml', 'wrangler.json', 'wrangler.jsonc'].some(name => {
     try { return statSync(join(dir, name)).isFile(); } catch { return false; }
