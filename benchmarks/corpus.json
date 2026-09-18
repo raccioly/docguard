@@ -444,6 +444,113 @@
       "oppositeControl": "eval-flask-aws-control"
     },
     {
+      "id": "eval-python-layers-control",
+      "split": "evaluation",
+      "repositoryGroup": "synthetic-python-layers",
+      "causalFamily": "python-layer-boundary-bypass",
+      "parserTier": "py-ast",
+      "classification": "clean_control",
+      "repairOutcome": "not_evaluated",
+      "source": {
+        "kind": "fixture",
+        "path": "fixtures/python-layered-control"
+      },
+      "scope": {
+        "validatorKey": "architecture",
+        "codes": [
+          "ARC001"
+        ]
+      },
+      "config": {
+        "profile": "starter",
+        "diskCache": false,
+        "validators": {
+          "architecture": true
+        },
+        "layers": {
+          "routes": {
+            "dir": "src/routes",
+            "canImport": [
+              "services"
+            ]
+          },
+          "services": {
+            "dir": "src/services",
+            "canImport": [
+              "models"
+            ]
+          },
+          "models": {
+            "dir": "src/models",
+            "canImport": []
+          }
+        }
+      },
+      "mutations": [],
+      "expected": [],
+      "forbidden": [
+        "ARC001@src/routes/orders.py"
+      ],
+      "oppositeControl": null
+    },
+    {
+      "id": "eval-python-layers-defect",
+      "split": "evaluation",
+      "repositoryGroup": "synthetic-python-layers",
+      "causalFamily": "python-layer-boundary-bypass",
+      "parserTier": "py-ast",
+      "classification": "defect",
+      "repairOutcome": "not_evaluated",
+      "source": {
+        "kind": "fixture",
+        "path": "fixtures/python-layered-control"
+      },
+      "scope": {
+        "validatorKey": "architecture",
+        "codes": [
+          "ARC001"
+        ]
+      },
+      "config": {
+        "profile": "starter",
+        "diskCache": false,
+        "validators": {
+          "architecture": true
+        },
+        "layers": {
+          "routes": {
+            "dir": "src/routes",
+            "canImport": [
+              "services"
+            ]
+          },
+          "services": {
+            "dir": "src/services",
+            "canImport": [
+              "models"
+            ]
+          },
+          "models": {
+            "dir": "src/models",
+            "canImport": []
+          }
+        }
+      },
+      "mutations": [
+        {
+          "path": "src/routes/orders.py",
+          "find": "from services.order_service import load_order\n\n\ndef get_order(order_id):\n    return load_order(order_id)",
+          "replace": "from models.order import Order\n\n\ndef get_order(order_id):\n    return Order(order_id)",
+          "expectedOccurrences": 1
+        }
+      ],
+      "expected": [
+        "ARC001@src/routes/orders.py"
+      ],
+      "forbidden": [],
+      "oppositeControl": "eval-python-layers-control"
+    },
+    {
       "id": "eval-python-unsupported",
       "split": "evaluation",
       "repositoryGroup": "synthetic-python-unsupported",

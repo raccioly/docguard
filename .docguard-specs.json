@@ -1455,7 +1455,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/shared-source.mjs",
-            "line": 356
+            "line": 375
           },
           {
             "requirementId": "FR-006",
@@ -1465,7 +1465,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/shared-source.mjs",
-            "line": 357
+            "line": 376
           },
           {
             "requirementId": "FR-007",
@@ -1854,20 +1854,22 @@
           "docguard.precision-evidence-loop#FR-016",
           "docguard.precision-evidence-loop#FR-017",
           "docguard.precision-evidence-loop#FR-018",
+          "docguard.precision-evidence-loop#FR-019",
           "docguard.precision-evidence-loop#SC-001",
           "docguard.precision-evidence-loop#SC-002",
           "docguard.precision-evidence-loop#SC-003",
           "docguard.precision-evidence-loop#SC-004",
           "docguard.precision-evidence-loop#SC-005",
           "docguard.precision-evidence-loop#SC-006",
-          "docguard.precision-evidence-loop#SC-007"
+          "docguard.precision-evidence-loop#SC-007",
+          "docguard.precision-evidence-loop#SC-008"
         ]
       },
       "observed": {
         "artifacts": [
           {
             "path": "specs/007-precision-evidence-loop/spec.md",
-            "digest": "sha256:9419b717254de6bbc142d9fa446507b36b9160eb1f53043827edc487e3c06174"
+            "digest": "sha256:2e8c5343cf9ead82f3e5d663da9ba1015e36f9956584edf16d3cc2e0b73fb298"
           },
           {
             "path": "specs/007-precision-evidence-loop/plan.md",
@@ -1875,12 +1877,12 @@
           },
           {
             "path": "specs/007-precision-evidence-loop/tasks.md",
-            "digest": "sha256:b25578336aa8512ca10ea583ded6c4c83eb1a8e433f1812277f420d074430c69"
+            "digest": "sha256:f94be4b5d9bb746685a4b832ec6d1d3389b4236b37eb717d92b6cb62d2a6f327"
           }
         ],
         "taskCompletion": {
-          "checked": 22,
-          "total": 22
+          "checked": 28,
+          "total": 28
         },
         "implementationEvidence": [
           {
@@ -1935,8 +1937,23 @@
           },
           {
             "requirementId": "FR-004",
+            "file": "benchmarks/fixtures/python-layered-control/src/models/order.py",
+            "line": 1
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "benchmarks/fixtures/python-layered-control/src/services/order_service.py",
+            "line": 1
+          },
+          {
+            "requirementId": "FR-004",
             "file": "benchmarks/lib/manifest.mjs",
             "line": 6
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "benchmarks/fixtures/python-layered-control/src/routes/orders.py",
+            "line": 1
           },
           {
             "requirementId": "FR-005",
@@ -2037,6 +2054,21 @@
             "requirementId": "FR-018",
             "file": "benchmarks/lib/baseline.mjs",
             "line": 7
+          },
+          {
+            "requirementId": "FR-019",
+            "file": "benchmarks/generate-precision-evidence.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-019",
+            "file": "benchmarks/lib/precision-evidence.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-019",
+            "file": "cli/precision-evidence.mjs",
+            "line": 11
           }
         ],
         "testEvidence": [
@@ -2156,6 +2188,11 @@
             "line": 10
           },
           {
+            "requirementId": "FR-019",
+            "file": "tests/precision-evidence.test.mjs",
+            "line": 8
+          },
+          {
             "requirementId": "SC-001",
             "file": "tests/benchmark-manifest.test.mjs",
             "line": 13
@@ -2199,6 +2236,11 @@
             "requirementId": "SC-007",
             "file": "tests/benchmark-baseline.test.mjs",
             "line": 12
+          },
+          {
+            "requirementId": "SC-008",
+            "file": "tests/precision-evidence.test.mjs",
+            "line": 9
           }
         ]
       }
@@ -2357,7 +2399,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/docguard.mjs",
-            "line": 862
+            "line": 865
           },
           {
             "requirementId": "FR-011",

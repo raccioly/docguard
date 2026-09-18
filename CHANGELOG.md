@@ -7,7 +7,91 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **The architecture validator has benchmark evidence for the first time.** A
+  new `synthetic-python-layers` pair measures ARC001 on a statically analysable
+  three-layer Python package: the clean control routes every call
+  `routes -> services -> models`, and the defect makes the route layer import
+  the model layer directly, bypassing the declared service boundary. This is
+  what the static Python import-graph support added after 0.38.0 made possible;
+  before it, the only architecture case in the corpus was a dynamic import the
+  analyzer cannot see. `docguard explain ARC001` now reports measured evidence
+  instead of `not-measured`. Its denominator is 1, below the reporting floor of
+  5, so it publishes counts and a Wilson interval (20.7%-100%) and backs off to
+  the whole-corpus tier rather than quoting a rate of its own.
+
+- **Findings now say whether they have ever been benchmarked.** `guard`
+  results carry a `precisionEvidence` block scoped to the finding codes that
+  run emitted, `guard`'s summary reports how many of them have measured
+  precision, and `docguard explain <CODE>` prints the evidence in prose.
+  DocGuard defines 104 finding codes and its reviewed corpus measures 7, so for
+  most codes the honest answer is "never benchmarked" — and that is now stated
+  rather than left for a reader to discover. A code never inherits the measured
+  precision of other codes in its validator; a measured code with fewer than
+  five labelled findings behind it quotes no point estimate on its own and may
+  fall back to a named coarser tier. Contract:
+  `schemas/docguard-precision-evidence.schema.json`. Findings themselves are
+  unchanged, so SARIF, JUnit, baselines and feedback records are unaffected.
+- `npm run generate:precision-evidence` projects the reviewed baseline into
+  `cli/precision-evidence-data.mjs`, which ships with the package because
+  `benchmarks/` deliberately does not. A test fails on drift.
+
+### Fixed
+
+- **`init` no longer adopts a Spec Kit feature folder as the project's canonical
+  root, then refuses to proceed from the config it just wrote.** A repository
+  with `specs/002-some-feature/spec.md` and `data-model.md` had that single
+  feature directory adopted, a two-key `.docguard.json` written, and init then
+  threw from its own mapped-layout guard. Every re-run repeated it, by a second
+  code path, so the project could not be initialized without editing the config
+  by hand. Three things were wrong and all three are fixed:
+  - A numbered feature directory (`specs/003-slug/`) is no longer an adoption
+    candidate. It holds one feature's paperwork, not the project's documentation.
+  - Adopting a layout no longer aborts init. The guard that forbids generating
+    INTO a mapped document stays, but init now simply scaffolds the roles the
+    mapping has not placed, so it neither writes into a mapped document nor
+    creates a duplicate beside it. `setup`, `init --wizard` and `diagnose --auto`
+    still generate whole documents and still honour the guard.
+  - Adoption no longer writes `.docguard.json` itself. init owns the single
+    write, so a failed run leaves nothing behind and an adopted layout gets a
+    complete config with its profile, project type and validators, instead of a
+    two-key fragment that short-circuited the real one.
+  The guard's message now names the mapped roles and says how to leave the state.
+- **A Cloudflare Worker is typed `api` again, not `library`.** `init` and `setup`
+  each carried a private copy of project-type detection, and neither had learned
+  about Workers, so `needsEnvVars`, `needsEnvExample`, `needsE2E` and
+  `needsDatabase` were all set wrong and the validators that matter most for a
+  Worker were silently disabled. All three copies are now one exported function
+  (`wrangler.toml`, `wrangler.json` and `wrangler.jsonc` were already all
+  recognised there), and a test fails if a private copy reappears.
+- A detected Playwright or Cypress config, or an `e2e`/`tests/e2e` directory, now
+  sets `needsE2E` regardless of the project type's default. A suite on disk is
+  evidence; the type default is only a guess.
+
+
 ### Changed
+
+- **Published benchmark aggregates moved**, because two labelled cases entered
+  the corpus: 12 defect/12 control pairs across 12 repository groups became
+  13/13 across 13. Precision and recall stay 1.0 with zero false positives; the
+  Wilson 95% lower bound on precision rises from 75.7% to 77.2% on the larger
+  denominator, and the unsupported rate falls from 4.0% to 3.7%. The
+  `architecture` detector and the `py-ast` parser tier move from a null
+  precision (no measured cases) to 1.0 with a 20.7% lower bound. The reviewed
+  baseline and `cli/precision-evidence-data.mjs` were regenerated together.
+  Note that `review.limitations` already claimed seven measured finding codes
+  while `byCode` carried six; it counted ARC001, which the data reported as
+  `not-measured`. The count is now accurate rather than aspirational.
+
+- **The reviewed benchmark was re-run in full on the current release.** It had
+  last run on 0.38.0 while the tool was at 0.41.7, so the evidence now quoted
+  at finding time would have been four releases stale. The re-run, including
+  the five pinned public repositories, compares PASS with zero regressions and
+  byte-identical metrics. One case moved: the Python architecture case is now
+  `checked` rather than `unsupported`, because the analyzer gained Python
+  import-graph support after 0.38.0. It stays classified `unsupported_syntax`
+  and excluded from every ratio pending re-adjudication.
 
 - **Canonical docs reviewed against the code, not just re-stamped.** All nine
   documents carrying a `last-reviewed 2026-09-15` marker were read against the 14
@@ -39,6 +123,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `benchmarks/baseline.json` exactly; the validator count (29) is right. The
   "15 commands" that `verify --semantic` flags in `TEST-SPEC.md` sits in a
   historical revision row from 2026-03-13 and is deliberately left alone.
+
 
 - **The benchmark now says what its numbers are.** `benchmarks/baseline.json`
   is a strict provenance envelope (`schemas/docguard-benchmark-baseline.schema.json`,

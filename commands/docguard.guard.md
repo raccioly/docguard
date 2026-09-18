@@ -30,6 +30,7 @@ Read the JSON contract — do not parse prose:
 | `coverage` | Markdown tier map: `canonical / tracked / ignored / unclassified[]` |
 | `semanticClaims.count` | Documented counts/limits/enums NOT yet verified against code |
 | `validators[]` | Per-validator results, including `na` (nothing to validate ≠ pass) |
+| `precisionEvidence` | Benchmark evidence for the finding codes in this run: `coverage` counts how many have ever been measured, `codes[CODE]` is `measured` or `not-measured`, and `caveat` must accompany any quoted rate |
 
 ## Step 2: Understand each finding before fixing
 

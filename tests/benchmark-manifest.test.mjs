@@ -34,7 +34,7 @@ describe('benchmark manifest contract', () => {
     for (const path of [
       'fixtures/js-security-control', 'fixtures/ts-security-control', 'fixtures/python-security-control',
       'fixtures/go-todo-control', 'fixtures/monorepo-security-control',
-      'fixtures/generated-security-control', 'fixtures/sparse-doc-control',
+      'fixtures/generated-security-control', 'fixtures/sparse-doc-control', 'fixtures/python-layered-control',
     ]) assert.ok(fixturePaths.has(path), path);
     const publicGroups = new Set(manifest.cases.filter(item => item.source.kind === 'git').map(item => item.repositoryGroup));
     assert.equal(publicGroups.size, 5);
@@ -46,7 +46,7 @@ describe('benchmark manifest contract', () => {
   it('publishes a reviewed finite baseline with confidence limits and unsupported evidence', () => {
     const baseline = JSON.parse(readFileSync(resolve('benchmarks/baseline.json'), 'utf8'));
     assert.equal(baseline.review.status, 'reviewed');
-    assert.equal(baseline.core.metrics.aggregate.cases, 24);
+    assert.equal(baseline.core.metrics.aggregate.cases, 26);
     assert.equal(baseline.core.metrics.aggregate.unsupportedCases, 1);
     assert.ok(baseline.core.metrics.aggregate.confidence95.precision.lower < 1);
     assert.ok(baseline.core.metrics.aggregate.confidence95.falsePositiveCaseRate.upper > 0);

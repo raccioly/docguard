@@ -226,6 +226,12 @@ Validators emit findings and aggregate counts. The guard adapter adds names and 
 | `effectiveErrors`, `effectiveWarnings`, `effectiveInfos` | `number` | Exit-code counts after exact-code and validator policy |
 | `effectiveStatus` | `string` | Per-validator `pass`, `warn`, or `fail` after policy; intrinsic `status` remains available |
 
+## Precision evidence contract
+
+`guard` results carry `precisionEvidence`, scoped to the finding codes that run emitted (`schemas/docguard-precision-evidence.schema.json`). The unit of evidence is the finding code. DocGuard defines many more codes than the reviewed corpus measures, so a code the corpus never exercised reports `status: "not-measured"`, carries no ratio, and never inherits the measured precision of another code in the same validator. A measured code whose own precision denominator is below `minN` is marked `quotable: false` with a reason, and may carry a `backoff` to a coarser measured tier that names that tier (`validator` or `aggregate`). `measures` is always `benchmark-precision`; `caveat` is the sentence a consumer must show beside any quoted ratio; `source.matchesRunningVersion` is false when the numbers were measured on a different build than the one reporting them. `coverage` counts codes in the run by measurement status.
+
+The block is served from `cli/precision-evidence-data.mjs`, a generated module derived from `benchmarks/baseline.json` by `npm run generate:precision-evidence`, because `benchmarks/` is not part of the published package. A test compares the committed module against that projection, so a stale number fails the suite rather than shipping. Findings themselves are unchanged: they are written verbatim into feedback records, so their shape stays fixed.
+
 ## Fix Command Issue Format
 
 The `fix --format json` output follows this structure:

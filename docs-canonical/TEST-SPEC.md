@@ -84,6 +84,7 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `benchmarks/lib/manifest.mjs`, `benchmarks/lib/metrics.mjs`, `benchmarks/lib/compare.mjs` | `tests/benchmark-manifest.test.mjs`, `tests/benchmark-metrics.test.mjs` | ✅ |
 | `benchmarks/lib/runner.mjs`, `benchmarks/run.mjs` | `tests/benchmark-runner.test.mjs` | ✅ |
 | `benchmarks/lib/baseline.mjs`, `schemas/docguard-benchmark-baseline.schema.json`, `benchmarks/baseline.json` | `tests/benchmark-baseline.test.mjs` | ✅ |
+| `benchmarks/lib/precision-evidence.mjs`, `benchmarks/generate-precision-evidence.mjs`, `cli/precision-evidence.mjs`, `cli/precision-evidence-data.mjs`, `schemas/docguard-precision-evidence.schema.json` | `tests/precision-evidence.test.mjs` | ✅ |
 | `benchmarks/agent-context/run.mjs`, task-context schemas and fixtures | `tests/agent-context-benchmark.test.mjs` | ✅ |
 | `cli/evidence/*.mjs`, `cli/validators/evidence.mjs` | `tests/evidence-manifest.test.mjs`, `tests/evidence-adapters.test.mjs`, `tests/evidence-integration.test.mjs` | ✅ |
 | `cli/feedback-fixture.mjs`, `cli/commands/feedback.mjs` | `tests/feedback-fixture.test.mjs`, `tests/feedback-contributions.test.mjs` | ✅ |
