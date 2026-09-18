@@ -717,7 +717,10 @@ async function main() {
   // Init and diagnose --auto can scaffold several unrelated files and retain
   // their legacy default-layout contract. Generate, sync, and fix perform their
   // own target/section authorization so mapped layouts can use bounded writers.
-  if (['init', 'setup'].includes(command) || command === 'diagnose' && flags.auto) assertDefaultDocWrites(config);
+  // `init` is deliberately absent: it configures a mapped layout and scaffolds
+  // only the roles the mapping has not placed, so it never generates into a mapped
+  // document. `setup` and `diagnose --auto` do generate and repair whole documents.
+  if (command === 'setup' || command === 'diagnose' && flags.auto) assertDefaultDocWrites(config);
 
   // `--no-baseline` disables the committed adoption baseline for this run —
   // threaded through config so guard, ci, report, and mcp all honor it the

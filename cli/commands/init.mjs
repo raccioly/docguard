@@ -17,7 +17,9 @@ import { fileURLToPath } from 'node:url';
 import { createInterface } from 'node:readline';
 import { execSync } from 'node:child_process';
 import { c, PROFILES, CURRENT_SCHEMA_VERSION } from '../shared.mjs';
-import { detectCanonicalLayout, applyDocRoles } from '../shared-doc-roles.mjs';
+import { detectCanonicalLayout, applyDocRoles, mappedDefaultPaths } from '../shared-doc-roles.mjs';
+import { autoDetectProjectType, getProjectTypeDefaults } from '../config.mjs';
+import { hasE2ESuite } from '../shared-source.mjs';
 import { ensureSkills, detectAgentMode, detectAIAgent, isSpecKitAvailable, isSpecKitInitialized, getDetectedAgent, safeSpawnSpecify } from '../ensure-skills.mjs';
 import { safeWrite } from '../writers/generate-io.mjs';
 
@@ -60,23 +62,9 @@ async function runScaffolders(projectDir, config, flags, names) {
   }
 }
 
-function detectProjectType(dir) {
-  const pkgPath = resolve(dir, 'package.json');
-  if (existsSync(pkgPath)) {
-    try {
-      const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
-      const allDeps = { ...(pkg.dependencies || {}), ...(pkg.devDependencies || {}) };
-      if (pkg.bin) return 'cli';
-      if (allDeps.next || allDeps.react || allDeps.vue || allDeps['@angular/core'] ||
-          allDeps.svelte || allDeps.nuxt) return 'webapp';
-      if (allDeps.express || allDeps.fastify || allDeps.hono || allDeps.koa) return 'api';
-      if (pkg.main || pkg.exports || pkg.module) return 'library';
-    } catch { /* fall through */ }
-  }
-  if (existsSync(resolve(dir, 'manage.py'))) return 'webapp';
-  if (existsSync(resolve(dir, 'setup.py')) || existsSync(resolve(dir, 'pyproject.toml'))) return 'library';
-  return 'unknown';
-}
+// Project-type detection lives in config.mjs. This file used to carry its own
+// copy, which never learned about Cloudflare Workers, so `init` typed a Worker as
+// a library and disabled the env/database/E2E checks that matter most for it.
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -193,14 +181,11 @@ async function confirmCanonicalLocation(projectDir, flags) {
     console.log(`${c.dim}   Adopting ${best.dir}/ (non-interactive).${c.reset}`);
   }
 
-  const next = { ...existing };
-  next.docs = { ...(next.docs || {}), roles: { ...best.roles } };
-  next.requiredFiles = {
-    ...(next.requiredFiles || {}),
-    canonical: Object.values(best.roles).sort(),
-  };
-  writeFileSync(configPath, JSON.stringify(next, null, 2) + '\n');
-  console.log(`  ${c.green}✅${c.reset} .docguard.json now points at ${c.cyan}${best.dir}/${c.reset}\n`);
+  // Deliberately no write here. init owns the single .docguard.json write, so a
+  // run that fails later leaves no half-configured project behind, and the
+  // adopted mapping reaches the full generated config instead of short-circuiting
+  // it with a two-key file that has no profile, projectType or validators.
+  console.log(`  ${c.green}✅${c.reset} Canonical documents will be read from ${c.cyan}${best.dir}/${c.reset}\n`);
   return best.roles;
 }
 
@@ -293,11 +278,18 @@ export async function runInit(projectDir, configArg, flags) {
     };
     config = applyDocRoles(projectDir, config);
   }
-  if (true) assertDefaultDocWrites(config);
+  // Deliberately NOT assertDefaultDocWrites here. That guard forbids generating
+  // INTO a mapped document, which is right, but init's job on a mapped layout is to
+  // configure it and scaffold the roles the mapping has not placed. Those documents
+  // are filtered out of the scaffold list below, so nothing is generated into them
+  // and no duplicate is created beside them.
   // v0.20: `--wizard` dispatches to the full interactive onboarding (formerly
   // `docguard setup`). Done before profile validation so the wizard can ask
   // for the profile itself if needed.
   if (flags.wizard) {
+    // The wizard generates whole documents, so the mapped-layout guard still
+    // applies here even though plain init no longer trips it.
+    assertDefaultDocWrites(config);
     const { runSetup } = await import('./setup.mjs');
     return runSetup(projectDir, config, flags);
   }
@@ -335,7 +327,7 @@ export async function runInit(projectDir, configArg, flags) {
   console.log(`${c.dim}   Profile:   ${profileName} — ${profile.description}${c.reset}\n`);
 
   // Detect project type
-  const detectedType = detectProjectType(projectDir);
+  const detectedType = autoDetectProjectType(projectDir);
   console.log(`  ${c.dim}Auto-detected project type: ${c.cyan}${detectedType}${c.reset}\n`);
 
   // ── Doc catalog ────────────────────────────────────────────────────────
@@ -348,6 +340,16 @@ export async function runInit(projectDir, configArg, flags) {
     { key: 'REQUIREMENTS', file: 'docs-canonical/REQUIREMENTS.md', template: 'REQUIREMENTS.md.template', desc: 'Functional requirements, user stories (spec-kit aligned)', defaultYes: true },
   ];
 
+  // Default paths of roles an adopted or configured mapping already places
+  // elsewhere. Scaffolding these would create the duplicate directory that
+  // adoption exists to avoid.
+  const mappedDefaults = mappedDefaultPaths(config);
+  // Roles this run adopted, plus any the loaded config already mapped.
+  const adoptedOrConfiguredRoles = { ...(config.docs?.roles || {}) };
+  if (mappedDefaults.size) {
+    console.log(`  ${c.dim}Mapped documents are read in place; skipping ${mappedDefaults.size} default template(s).${c.reset}\n`);
+  }
+
   let selectedDocs;
 
   if (flags.skipPrompts || flags.force || flags.fix) {
@@ -356,7 +358,7 @@ export async function runInit(projectDir, configArg, flags) {
     // must never block on prompts (CI / headless / agent use). The create-loop
     // below already skips existing files, so --fix only fills gaps.
     const profileCanonical = profile.requiredFiles?.canonical || allDocs.map(d => d.file);
-    selectedDocs = allDocs.filter(d => profileCanonical.includes(d.file));
+    selectedDocs = allDocs.filter(d => profileCanonical.includes(d.file) && !mappedDefaults.has(d.file));
     console.log(`  ${c.dim}Non-interactive mode — using ${profileName} profile defaults${c.reset}\n`);
   } else {
     // Interactive — ask about each doc
@@ -364,7 +366,7 @@ export async function runInit(projectDir, configArg, flags) {
     console.log(`  ${c.dim}(press Enter for default, type y or n)${c.reset}\n`);
 
     selectedDocs = [];
-    for (const doc of allDocs) {
+    for (const doc of allDocs.filter(d => !mappedDefaults.has(d.file))) {
       const defaultLabel = doc.defaultYes ? 'Y/n' : 'y/N';
       const answer = await askQuestion(`    ${doc.key} — ${doc.desc} [${defaultLabel}]: `);
       const trimmed = answer.trim().toLowerCase();
@@ -434,15 +436,16 @@ export async function runInit(projectDir, configArg, flags) {
   // ── Create .docguard.json ──────────────────────────────────────────────
   const configPath = resolve(projectDir, '.docguard.json');
   if (!existsSync(configPath)) {
-    const typeDefaults = {
-      cli:     { needsEnvVars: false, needsEnvExample: false, needsE2E: false, needsDatabase: false },
-      library: { needsEnvVars: false, needsEnvExample: false, needsE2E: false, needsDatabase: false },
-      webapp:  { needsEnvVars: true,  needsEnvExample: true,  needsE2E: true,  needsDatabase: true },
-      api:     { needsEnvVars: true,  needsEnvExample: true,  needsE2E: false, needsDatabase: true },
-      unknown: { needsEnvVars: true,  needsEnvExample: true,  needsE2E: false, needsDatabase: true },
+    // Shared with runtime config loading, so a type means the same thing wherever
+    // it is decided. Only the four documented booleans are written.
+    const shared = getProjectTypeDefaults(detectedType);
+    const ptc = {
+      needsEnvVars: shared.needsEnvVars,
+      needsEnvExample: shared.needsEnvExample,
+      // A detected suite outranks the type default, which is only a guess.
+      needsE2E: shared.needsE2E || hasE2ESuite(projectDir),
+      needsDatabase: shared.needsDatabase,
     };
-
-    const ptc = typeDefaults[detectedType] || typeDefaults.unknown;
 
     const defaultConfig = {
       // v0.15-P4: $schema reference enables VS Code / IDE autocomplete +
@@ -454,8 +457,14 @@ export async function runInit(projectDir, configArg, flags) {
       profile: profileName,
       projectType: detectedType,
       projectTypeConfig: ptc,
+      // Present only for a mapped layout; a default layout needs no docs.roles.
+      ...(Object.keys(adoptedOrConfiguredRoles).length
+        ? { docs: { ...(config.docs || {}), roles: { ...adoptedOrConfiguredRoles } } }
+        : {}),
+      // Mapped documents are canonical too: list them beside the scaffolded ones,
+      // or adoption silently drops them from every check.
       requiredFiles: {
-        canonical: selectedDocs.map(d => d.file),
+        canonical: [...selectedDocs.map(d => d.file), ...Object.values(adoptedOrConfiguredRoles)].sort(),
       },
       validators: profile.validators || {
         structure: true,
@@ -483,6 +492,20 @@ export async function runInit(projectDir, configArg, flags) {
     writeFileSync(configPath, JSON.stringify(defaultConfig, null, 2) + '\n', 'utf-8');
     created.push('.docguard.json');
     console.log(`  ${c.green}✅${c.reset} Created: ${c.cyan}.docguard.json${c.reset} ${c.dim}(${selectedDocs.length} docs selected, type: ${detectedType})${c.reset}`);
+  } else if (adoptedRoles) {
+    // An adoption decided in this run must survive even when the config file
+    // already exists, otherwise the mapping is announced and then thrown away.
+    const existing = JSON.parse(readFileSync(configPath, 'utf-8'));
+    existing.docs = { ...(existing.docs || {}), roles: { ...adoptedRoles } };
+    existing.requiredFiles = {
+      ...(existing.requiredFiles || {}),
+      canonical: [...new Set([
+        ...(existing.requiredFiles?.canonical || []).filter(p => !mappedDefaults.has(p)),
+        ...Object.values(adoptedRoles),
+      ])].sort(),
+    };
+    writeFileSync(configPath, JSON.stringify(existing, null, 2) + '\n', 'utf-8');
+    console.log(`  ${c.green}✅${c.reset} .docguard.json now reads documents from their mapped locations`);
   } else {
     skipped.push('.docguard.json');
     console.log(`  ${c.yellow}⏭️${c.reset}  .docguard.json ${c.dim}(already exists)${c.reset}`);
