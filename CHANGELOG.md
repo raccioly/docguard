@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.42.0] - 2026-09-18
+
+Automated weekly release — batches everything merged since `v0.41.7`.
+
+### Changed
+
+- fix: let the release cut include the llms bundles it regenerates (#430)
+- chore: consolidate the Unreleased changelog into one section per kind (#429)
+- chore: regenerate llms.txt / llms-full.txt and keep them from rotting (#424)
+- docs: freshness review of the nine docs stamped 2026-09-15 (#426)
+- fix: init no longer adopts a feature folder and then refuses its own config (#427)
+- test(benchmark): measure ARC001 — the architecture validator's first evidence (#428)
+- feat: tell the reader whether a finding's detector has ever been benchmarked (#423)
+- feat: say what the benchmark measures — provenance envelope, honest wording, CI-run recipe (#422)
+- test: add missing tests for shared-git.mjs functions (#421)
+
+
 ### Added
 
 - **The architecture validator has benchmark evidence for the first time.** A
