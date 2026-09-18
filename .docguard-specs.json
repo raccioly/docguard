@@ -1853,19 +1853,21 @@
           "docguard.precision-evidence-loop#FR-015",
           "docguard.precision-evidence-loop#FR-016",
           "docguard.precision-evidence-loop#FR-017",
+          "docguard.precision-evidence-loop#FR-018",
           "docguard.precision-evidence-loop#SC-001",
           "docguard.precision-evidence-loop#SC-002",
           "docguard.precision-evidence-loop#SC-003",
           "docguard.precision-evidence-loop#SC-004",
           "docguard.precision-evidence-loop#SC-005",
-          "docguard.precision-evidence-loop#SC-006"
+          "docguard.precision-evidence-loop#SC-006",
+          "docguard.precision-evidence-loop#SC-007"
         ]
       },
       "observed": {
         "artifacts": [
           {
             "path": "specs/007-precision-evidence-loop/spec.md",
-            "digest": "sha256:5ee5b2e1653b7196ec19755ce2506a79bb8eedc8ccdc72aa8c8672f13912fd8d"
+            "digest": "sha256:9419b717254de6bbc142d9fa446507b36b9160eb1f53043827edc487e3c06174"
           },
           {
             "path": "specs/007-precision-evidence-loop/plan.md",
@@ -1873,12 +1875,12 @@
           },
           {
             "path": "specs/007-precision-evidence-loop/tasks.md",
-            "digest": "sha256:f712d9c80309b9a73a3ccdcfad90e3f972810ebbb8c9336e9af951308ece3ec4"
+            "digest": "sha256:b25578336aa8512ca10ea583ded6c4c83eb1a8e433f1812277f420d074430c69"
           }
         ],
         "taskCompletion": {
-          "checked": 19,
-          "total": 19
+          "checked": 22,
+          "total": 22
         },
         "implementationEvidence": [
           {

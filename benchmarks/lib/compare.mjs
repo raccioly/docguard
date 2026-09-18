@@ -10,14 +10,30 @@ function difference(current = [], baseline = []) {
   return current.filter(value => !before.has(value));
 }
 
-export function compareBenchmarkCores(baseline, candidate) {
+/**
+ * @param {object} baseline reviewed core
+ * @param {object} candidate current core
+ * @param {{ selectedIds?: string[] }} [options] IDs the candidate run selected (split / external filters).
+ *   A baseline case outside the selection was not run, so it is listed as `outOfSelection` rather than
+ *   reported as removed; a case inside the selection that is absent from the candidate is still a removal.
+ */
+export function compareBenchmarkCores(baseline, candidate, { selectedIds = null } = {}) {
   if (!baseline || !candidate || baseline.schemaVersion !== candidate.schemaVersion) {
     throw new Error('Benchmark cores must use the same schema version.');
   }
+  if (selectedIds !== null && (!Array.isArray(selectedIds) || selectedIds.some(id => typeof id !== 'string'))) {
+    throw new Error('selectedIds must be an array of case IDs.');
+  }
+  const selected = selectedIds === null ? null : new Set(selectedIds);
   const previous = new Map((baseline.cases || []).map(item => [item.id, item]));
   const current = new Map((candidate.cases || []).map(item => [item.id, item]));
   const regressions = [];
+  const outOfSelection = [];
   for (const [id, before] of previous) {
+    if (selected && !selected.has(id)) {
+      outOfSelection.push(id);
+      continue;
+    }
     const after = current.get(id);
     if (!after) {
       regressions.push({ id, kind: 'case-removed', detail: 'A baseline case is absent from the candidate.' });
@@ -50,6 +66,7 @@ export function compareBenchmarkCores(baseline, candidate) {
     status: regressions.length ? 'FAIL' : 'PASS',
     regressions: regressions.sort((a, b) => `${a.id}:${a.kind}:${a.identity || ''}`.localeCompare(`${b.id}:${b.kind}:${b.identity || ''}`)),
     addedCases: [...current.keys()].filter(id => !previous.has(id)).sort(),
+    outOfSelection: outOfSelection.sort(),
   };
 }
 

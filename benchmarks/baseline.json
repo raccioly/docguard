@@ -1,12 +1,15 @@
 {
-  "schemaVersion": 1,
+  "$schema": "https://raccioly.github.io/docguard/schemas/docguard-benchmark-baseline.schema.json",
+  "schemaVersion": 2,
   "review": {
     "status": "reviewed",
     "reviewedAt": "2026-09-14",
     "reviewer": "DocGuard maintainers",
     "scope": "Twelve exact defect/control pairs across seven synthetic and five pinned public repository groups; one unsupported Python architecture case remains visible and excluded from accuracy ratios.",
     "methodology": "Labels were authored from pinned source and seeded mutations before DocGuard output was reviewed. Traceability-only fixture comments were re-adjudicated on 2026-09-14; expected findings and controls were unchanged.",
-    "limitations": "Finite scoped cases do not establish exhaustive documentation or detector correctness."
+    "limitations": "Finite scoped cases do not establish exhaustive documentation or detector correctness.",
+    "measures": "benchmark-precision",
+    "caveat": "Benchmark precision on a deliberately balanced corpus of 12 defect and 12 clean-control cases across 12 repository groups and 12 causal families. This is DocGuard's precision on labelled cases, not the probability that a finding in your repository is real; quote every ratio with its n and Wilson 95% bound."
   },
   "core": {
     "schemaVersion": 1,

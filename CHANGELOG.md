@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **The benchmark now says what its numbers are.** `benchmarks/baseline.json`
+  is a strict provenance envelope (`schemas/docguard-benchmark-baseline.schema.json`,
+  envelope `schemaVersion` 2): `review.measures` is `benchmark-precision` and
+  `review.caveat` is the sentence that must accompany any quoted ratio — both
+  derived from the retained cases, and re-verified on load together with every
+  metric, so a hand-edited precision figure or a stale caveat is rejected instead
+  of published. Every `benchmarks/run.mjs` report carries the same
+  `provenance` block whether or not it is persisted. The baseline is validated
+  *before* the run starts.
+- **Wording.** PHILOSOPHY, README, CONTRIBUTING, and the `diagnose` command no
+  longer call the HIGH/MEDIUM/LOW labels "calibrated": they are deterministic
+  strata that borrow TRACE's vocabulary. What is measured — detector precision
+  on a balanced labelled corpus, with n and Wilson bounds — is now linked from
+  each of those places, and VALIDATION.md quotes the numbers with their caveat.
+  DocGuard deliberately does not emit a calibration document: a balanced corpus
+  has no base rate to calibrate against.
+- **Breaking for the benchmark tool only** (the CLI is unaffected): a baseline
+  written by `--write-baseline` before this release (envelope `schemaVersion` 1)
+  is refused with instructions to regenerate it after review.
+
+### Fixed
+
+- The documented network-free recipe `node benchmarks/run.mjs --baseline
+  benchmarks/baseline.json` failed with ten spurious `case-removed` regressions
+  because the comparator did not know the run had not selected the pinned
+  public cases. The runner now reports its `selection`, the comparator lists
+  unselected baseline cases under `outOfSelection`, and CI runs the recipe on
+  every push.
+
 ## [0.41.7] - 2026-09-18
 
 Automated weekly release — batches everything merged since `v0.41.6`.

@@ -147,7 +147,12 @@ new miss, false positive, removed case, or supported-case abstention even when
 the total warning count falls.
 
 Maintained artifacts: `benchmarks/corpus.json`, `benchmarks/baseline.json`, the
-runner and comparison libraries, and `schemas/docguard-benchmark.schema.json`.
+runner, comparison, and baseline-envelope libraries,
+`schemas/docguard-benchmark.schema.json`, and
+`schemas/docguard-benchmark-baseline.schema.json`. The baseline states what its
+ratios measure (`benchmark-precision`) and carries a derived caveat; it is not,
+and will not become, a calibration document — a balanced corpus has no base
+rate to calibrate against.
 
 ### R4 — Contribution-to-regression loop (released in v0.39.0; open to contributions)
 

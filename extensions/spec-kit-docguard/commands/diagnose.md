@@ -40,4 +40,4 @@ npx --yes docguard-cli@latest diagnose $ARGUMENTS
 
 ## Research
 
-Inspired by AITPG (IEEE TSE 2026) multi-agent prompting and TRACE (IEEE TMLCN 2026) calibrated quality evaluation.
+Inspired by AITPG (IEEE TSE 2026) multi-agent prompting and the quality-label stratification of TRACE (IEEE TMLCN 2026); DocGuard's labels are deterministic strata, not calibrated probabilities.

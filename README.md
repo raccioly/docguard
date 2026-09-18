@@ -827,6 +827,8 @@ Lead researcher: **[Martin Manuel Lopez](https://github.com/martinmanuel9)** · 
 
 See [CONTRIBUTING.md](https://github.com/raccioly/docguard/blob/main/CONTRIBUTING.md#research--academic-credits) for full citations.
 
+**What the labels measure.** DocGuard borrows TRACE's HIGH/MEDIUM/LOW vocabulary as deterministic strata (a validator's check pass-ratio). Detector precision is the quantity DocGuard actually measures: on a labelled, deliberately balanced benchmark corpus, published with sample sizes and Wilson 95% bounds in [`benchmarks/baseline.json`](https://github.com/raccioly/docguard/blob/main/benchmarks/baseline.json) (contract: [`schemas/docguard-benchmark-baseline.schema.json`](https://github.com/raccioly/docguard/blob/main/schemas/docguard-benchmark-baseline.schema.json)). Every number there carries a caveat explaining that benchmark precision on a balanced corpus differs from the base rate of stale claims in your repository. See [VALIDATION.md](https://github.com/raccioly/docguard/blob/main/VALIDATION.md).
+
 ---
 
 ## ⭐ Star History

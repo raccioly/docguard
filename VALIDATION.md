@@ -35,6 +35,33 @@ supported-case abstentions, or removed evidence. Persisted runtime observations
 remain non-comparable by policy; performance claims require five controlled
 same-session samples.
 
+### Reviewed baseline numbers (`benchmarks/baseline.json`, reviewed 2026-09-14)
+
+| Metric | Point estimate | n | Wilson 95% |
+|--------|----------------|---|------------|
+| Finding precision | 1.000 | 12 expected findings, 0 unexpected | 0.757 – 1.000 |
+| Finding recall | 1.000 | 12 expected findings, 0 missed | 0.757 – 1.000 |
+| Clean-control false-positive case rate | 0.000 | 12 clean controls | 0.000 – 0.243 |
+| Accepted repair rate | null | 0 repairs evaluated | null |
+
+Per-detector cells are small: security n=20, structure n=2, todoTracking n=2,
+architecture n=0 (`null`). A cell that small says almost nothing on its own.
+
+**Caveat, verbatim from the envelope:** *Benchmark precision on a deliberately
+balanced corpus of 12 defect and 12 clean-control cases across 12 repository
+groups and 12 causal families. This is DocGuard's precision on labelled cases,
+not the probability that a finding in your repository is real; quote every
+ratio with its n and Wilson 95% bound.*
+
+The envelope's `review.measures` is `benchmark-precision`. DocGuard does not
+publish a calibration document (P(finding is real) under a base rate): the real
+base rate of a stale documented claim is nowhere near the corpus's 50/50 split,
+so a probability read off this corpus would mislead. The HIGH/MEDIUM/LOW labels
+in `guard` output are deterministic strata — a validator's check pass-ratio —
+and were never calibrated against outcomes. The loader
+(`benchmarks/lib/baseline.mjs`) recomputes every ratio from the retained cases
+and rejects an envelope whose numbers or caveat have been edited by hand.
+
 The corpus is six production repositories spanning TypeScript/Next.js SaaS
 applications, a Python data pipeline, a financial research lab, and a
 messaging-platform integration — different sizes, doc cultures, and stacks.
