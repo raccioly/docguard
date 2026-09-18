@@ -2,7 +2,7 @@
 
 <!-- docguard:version 0.9.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-09-15 -->
+<!-- docguard:last-reviewed 2026-09-18 -->
 
 | Metadata | Value |
 |----------|-------|
@@ -323,6 +323,18 @@ and process status therefore carry the same enforcement meaning in direct CI use
 ## Check coverage and document roles
 
 Each guard validator adds applicability with status and reason. checkCoverage contains counts by status, limitations naming checks that were not fully performed, and an explanatory limitation. These fields describe coverage independently from legacy status, totals, findings, and exit codes. CI/report consumers preserve them, including disabled-check counts.
+
+Document discovery does not depend on the default filenames alone. A filename is
+normalised to letters and digits — separators, case and Markdown extension are
+noise — and matched against an alias table per role, so `data_model.md`,
+`datamodel.md`, `Data Model.md` and `DATA-MODEL.md` all resolve to the same
+role, and `API.md` resolves to the API-Reference role. Directory detection is
+deliberately tight: a directory must hold at least two distinct roles before it
+counts as a canonical home, so a lone root-level `SECURITY.md` — GitHub's
+security policy, not a design document — never triggers a match on its own.
+This also removes an accidental platform dependency: literal-path probing was
+case-insensitive only on case-insensitive filesystems, so the same repository
+was judged differently on macOS and Linux.
 
 Optional docs.roles maps canonical roles to safe project-relative Markdown paths. Configuration normalization replaces each mapped default in requiredFiles.canonical and documentTypes. A mapped write is authorized either for a unique `source=code` section in an existing human file or for a missing/explicitly generated single-role whole document. Marker shape, role cardinality, and ownership are validated before mutation; `--force` does not alter that model. The configuration schema and docs/configuration.md define the role names and operation-specific contract.
 

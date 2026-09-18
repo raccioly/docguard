@@ -93,6 +93,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   import-graph support after 0.38.0. It stays classified `unsupported_syntax`
   and excluded from every ratio pending re-adjudication.
 
+- **Canonical docs reviewed against the code, not just re-stamped.** All nine
+  documents carrying a `last-reviewed 2026-09-15` marker were read against the 14
+  commits that landed since, and four carried real drift:
+  - `ARCHITECTURE.md` stated the project as `~24K lines across cli/`. That figure
+    was written on 2026-05-29, when `cli/` held 21.7K lines; it is 39.4K today, so
+    it had survived several reviews. It now states the measurement date and the
+    command to reproduce it.
+  - Guard's exit code `3` (errors in a project with no `.docguard.json`) shipped
+    with the hook fail-open fix and was documented nowhere. `ARCHITECTURE.md` had
+    `0 | 1 | 2` in two places, and `AGENTS.md` told agents `status` "matches exit
+    code 0/2/1" — which silently misleads any agent branching on `1` for FAIL.
+    Both now record `3`, and `CI-RECIPES.md` explains why a repo-wide hook lets an
+    unadopted working tree commit.
+  - `SECURITY.md`'s command-safety table gained the foreign-hook backup boundary:
+    `--force` skips a foreign hook and writes no `.bak`, so overwriting one takes
+    `--force` twice, not a plain re-install.
+  - `DATA-MODEL.md` now describes name-based document discovery — normalised
+    filenames matched against per-role aliases, a two-role minimum before a
+    directory counts as canonical, and the removal of the accidental
+    macOS/Linux difference that literal-path probing produced.
+  - New `FR-018` records the uninitialised-project hook boundary, which shipped
+    with `tests/hook-fail-open.test.mjs` but no stated requirement.
+
+  `TEST-SPEC.md`, `REQUIREMENTS.md`, `ROADMAP.md` and `CLAUDE.md` were verified
+  accurate and carry a marker bump only. Checked and found correct: every test
+  file cited across the canonical set exists; the benchmark claim of "24 measured
+  cases across 12 repository groups plus one explicit unsupported case" matches
+  `benchmarks/baseline.json` exactly; the validator count (29) is right. The
+  "15 commands" that `verify --semantic` flags in `TEST-SPEC.md` sits in a
+  historical revision row from 2026-03-13 and is deliberately left alone.
+
+
 - **The benchmark now says what its numbers are.** `benchmarks/baseline.json`
   is a strict provenance envelope (`schemas/docguard-benchmark-baseline.schema.json`,
   envelope `schemaVersion` 2): `review.measures` is `benchmark-precision` and
