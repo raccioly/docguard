@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `ENVIRONMENT.md` now lists `npm run llms` under Development and the shipped
+  GitLab CI component under CI/CD. Both were missing: the drift test added with
+  the llms bundles names `npm run llms` in its failure message, so a contributor
+  who edits a canonical document meets that command with nothing in the
+  environment doc to explain it, and `templates/ci/gitlab-component.yml` ships
+  beside the Actions workflow but only the latter was shown.
+
 - **The architecture validator has benchmark evidence for the first time.** A
   new `synthetic-python-layers` pair measures ARC001 on a statically analysable
   three-layer Python package: the clean control routes every call
@@ -38,6 +45,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `benchmarks/` deliberately does not. A test fails on drift.
 
 ### Changed
+
+- **`ENVIRONMENT.md` reviewed against the code, completing the freshness pass.**
+  It was the one canonical document still on an older marker, and it crossed the
+  10-commit review threshold. Every claim was checked against
+  `cli/commands/mcp.mjs` and holds: the HTTP MCP server binds `127.0.0.1` by
+  default, refuses a non-loopback host without a key, lets `--api-key` take
+  precedence over `DOCGUARD_API_KEY`, and answers `401` without a matching
+  `Authorization: Bearer` or `X-API-Key` header. No correction was needed, so the
+  marker bump is the review record rather than a cosmetic refresh.
 
 - **Published benchmark aggregates moved**, because two labelled cases entered
   the corpus: 12 defect/12 control pairs across 12 repository groups became
