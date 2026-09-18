@@ -60,12 +60,12 @@ describe('Docs-Diff Validator', () => {
     assert.ok(!result.onlyInDocs.includes('Docker'), 'Docker should be detected via Dockerfile');
   });
 
-  // Regression for hugocross Bug 4: the docs-diff warning used to emit only
+  // Regression for a downstream project Bug 4: the docs-diff warning used to emit only
   // the COUNT ("1 documented but not found in code") and not the file path,
   // which made it completely unactionable — the user couldn't tell which of
   // 52 documented tests was the offender. The warning must now name the
   // file (capped at 5 inline + "(+N more)" for long lists).
-  describe('warning includes the offending file path (hugocross bug 4)', () => {
+  describe('warning includes the offending file path (a downstream project bug 4)', () => {
     it('names a missing tech-stack entry', async () => {
       const { validateDocsDiff } = await import('../cli/validators/docs-diff.mjs');
       // Doc declares Redis; package.json declares NONE → "Redis documented but not found"

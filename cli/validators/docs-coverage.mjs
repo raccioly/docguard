@@ -56,7 +56,7 @@ const COMMON_DOTFILES = new Set([
 // Generated tool artifacts (caches, coverage data, lock-data) that land at the
 // repo root but are NOT configuration a human authors or documents. Treating
 // them as "undocumented config files" is a false positive (field test:
-// quick-recon-tool flagged pytest's `.coverage` SQLite data file). Matched by
+// a downstream project flagged pytest's `.coverage` SQLite data file). Matched by
 // exact name OR prefix (`.coverage.<host>.<pid>` is coverage.py's parallel form).
 const GENERATED_DOTFILE_PREFIXES = ['.coverage', '.eslintcache', '.stylelintcache', '.tsbuildinfo'];
 function isGeneratedArtifact(name) {

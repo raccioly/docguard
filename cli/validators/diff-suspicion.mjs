@@ -47,7 +47,7 @@ const GENERIC_TOKENS = new Set([
   'font', 'color', 'colors', 'tracking', 'surface', 'auto', 'full', 'next',
   'body', 'sans', 'blue', 'accent', 'size', 'spacing', 'margin', 'padding',
   'width', 'height', 'flex', 'grid', 'bold', 'bg', 'rounded',
-  // HTTP / REST / handler plumbing — generic across any API route (globalshares
+  // HTTP / REST / handler plumbing — generic across any API route (a downstream project
   // corpus: a route-inventory doc + heavy rewrites flooded findings with these)
   'code', 'json', 'err', 'error', 'message', 'auth', 'get', 'put', 'post',
   'patch', 'delete', 'req', 'res', 'route', 'routes', 'handler', 'endpoint',
