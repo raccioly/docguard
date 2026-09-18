@@ -118,7 +118,7 @@ describe('normalizePath — unifies ALL dynamic-segment syntaxes (field-test fix
     assert.equal(normalizePath('/api/auth/[...nextauth]'), '/api/auth/{}');
     assert.equal(normalizePath('/api/auth/:nextauth*'), '/api/auth/{}');
     assert.equal(normalizePath('/shop/[[...filters]]'), '/shop/{}');
-    // The doc-vs-code pair that double-fired on hugocross now matches:
+    // The doc-vs-code pair that double-fired on a downstream project now matches:
     assert.equal(
       endpointKey('GET', '/api/auth/[...nextauth]'),
       endpointKey('GET', '/api/auth/:nextauth*')

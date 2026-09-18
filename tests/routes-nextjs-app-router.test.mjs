@@ -1,7 +1,7 @@
 /**
  * Regression: Next.js App Router HTTP path emission.
  *
- * Bug (v0.20.0 field test, hugocross_revamp): for projects using the `src/`
+ * Bug (v0.20.0 field test, a downstream project): for projects using the `src/`
  * layout, the API-Surface code-scan emitted `GET /app/api/health` instead of
  * `GET /api/health`. Root cause: `appDir.split('/')[0]` stripped only the
  * first segment (`src/`) when computing the route's relative path, leaking
