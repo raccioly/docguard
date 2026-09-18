@@ -1,6 +1,6 @@
 {
   "name": "docguard-cli",
-  "version": "0.41.7",
+  "version": "0.42.0",
   "description": "The enforcement tool for Canonical-Driven Development (CDD). Audit, generate, and guard your project documentation.",
   "type": "module",
   "bin": {
@@ -18,7 +18,7 @@
     "diff": "node cli/docguard.mjs diff",
     "generate": "node cli/docguard.mjs generate",
     "hooks": "node cli/docguard.mjs hooks",
-  "llms": "node tools/generate-llms.mjs",
+    "llms": "node tools/generate-llms.mjs",
     "prepublishOnly": "node cli/docguard.mjs --version",
     "test": "node --test tests/*.test.mjs"
   },
