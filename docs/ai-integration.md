@@ -60,6 +60,7 @@ npx docguard-cli guard --format json
 | `coverage` | Markdown tier map: canonical / tracked / ignored / `unclassified[]` |
 | `semanticClaims.count` | Documented counts/limits/enums **not yet verified against code** |
 | `validators[]` | Per-validator results — `na` means "nothing to validate", which is not a pass |
+| `precisionEvidence` | Benchmark evidence for the finding codes in this run: `coverage` counts how many have ever been measured, `codes[CODE]` is `measured` or `not-measured`, and `caveat` must accompany any quoted rate |
 
 Working with findings:
 

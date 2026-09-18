@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **The architecture validator has benchmark evidence for the first time.** A
+  new `synthetic-python-layers` pair measures ARC001 on a statically analysable
+  three-layer Python package: the clean control routes every call
+  `routes -> services -> models`, and the defect makes the route layer import
+  the model layer directly, bypassing the declared service boundary. This is
+  what the static Python import-graph support added after 0.38.0 made possible;
+  before it, the only architecture case in the corpus was a dynamic import the
+  analyzer cannot see. `docguard explain ARC001` now reports measured evidence
+  instead of `not-measured`. Its denominator is 1, below the reporting floor of
+  5, so it publishes counts and a Wilson interval (20.7%-100%) and backs off to
+  the whole-corpus tier rather than quoting a rate of its own.
+
+- **Findings now say whether they have ever been benchmarked.** `guard`
+  results carry a `precisionEvidence` block scoped to the finding codes that
+  run emitted, `guard`'s summary reports how many of them have measured
+  precision, and `docguard explain <CODE>` prints the evidence in prose.
+  DocGuard defines 104 finding codes and its reviewed corpus measures 7, so for
+  most codes the honest answer is "never benchmarked" — and that is now stated
+  rather than left for a reader to discover. A code never inherits the measured
+  precision of other codes in its validator; a measured code with fewer than
+  five labelled findings behind it quotes no point estimate on its own and may
+  fall back to a named coarser tier. Contract:
+  `schemas/docguard-precision-evidence.schema.json`. Findings themselves are
+  unchanged, so SARIF, JUnit, baselines and feedback records are unaffected.
+- `npm run generate:precision-evidence` projects the reviewed baseline into
+  `cli/precision-evidence-data.mjs`, which ships with the package because
+  `benchmarks/` deliberately does not. A test fails on drift.
+
 ### Fixed
 
 - **`init` no longer adopts a Spec Kit feature folder as the project's canonical
@@ -39,7 +69,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   sets `needsE2E` regardless of the project type's default. A suite on disk is
   evidence; the type default is only a guess.
 
+
 ### Changed
+
+- **Published benchmark aggregates moved**, because two labelled cases entered
+  the corpus: 12 defect/12 control pairs across 12 repository groups became
+  13/13 across 13. Precision and recall stay 1.0 with zero false positives; the
+  Wilson 95% lower bound on precision rises from 75.7% to 77.2% on the larger
+  denominator, and the unsupported rate falls from 4.0% to 3.7%. The
+  `architecture` detector and the `py-ast` parser tier move from a null
+  precision (no measured cases) to 1.0 with a 20.7% lower bound. The reviewed
+  baseline and `cli/precision-evidence-data.mjs` were regenerated together.
+  Note that `review.limitations` already claimed seven measured finding codes
+  while `byCode` carried six; it counted ARC001, which the data reported as
+  `not-measured`. The count is now accurate rather than aspirational.
+
+- **The reviewed benchmark was re-run in full on the current release.** It had
+  last run on 0.38.0 while the tool was at 0.41.7, so the evidence now quoted
+  at finding time would have been four releases stale. The re-run, including
+  the five pinned public repositories, compares PASS with zero regressions and
+  byte-identical metrics. One case moved: the Python architecture case is now
+  `checked` rather than `unsupported`, because the analyzer gained Python
+  import-graph support after 0.38.0. It stays classified `unsupported_syntax`
+  and excluded from every ratio pending re-adjudication.
 
 - **The benchmark now says what its numbers are.** `benchmarks/baseline.json`
   is a strict provenance envelope (`schemas/docguard-benchmark-baseline.schema.json`,

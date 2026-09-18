@@ -17,8 +17,14 @@
  * Zero NPM dependencies. Pure lookup table.
  */
 
+import { readFileSync } from 'node:fs';
+import { resolve as resolvePath, dirname as dn } from 'node:path';
+import { fileURLToPath as fp } from 'node:url';
 import { c } from '../shared.mjs';
 import { CODES } from '../findings.mjs';
+import { describeEvidenceForCode, evidenceForCode } from '../precision-evidence.mjs';
+
+const CLI_VERSION = JSON.parse(readFileSync(resolvePath(dn(fp(import.meta.url)), '..', '..', 'package.json'), 'utf-8')).version;
 
 /**
  * Validator-key → human-readable explainer. Keyed by the same key DocGuard
@@ -507,12 +513,18 @@ export function runExplain(projectDir, _config, flags) {
   if (CODES[codeKey]) {
     const cd = CODES[codeKey];
     if (isJson) {
-      console.log(JSON.stringify({ query, code: codeKey, ...cd }, null, 2));
+      console.log(JSON.stringify({
+        query, code: codeKey, ...cd, precisionEvidence: evidenceForCode(codeKey),
+      }, null, 2));
       return;
     }
     console.log(`${c.bold}🧭 ${codeKey} — ${cd.title}${c.reset}`);
     console.log(`${c.dim}   validator: ${cd.validator}${c.reset}\n`);
     console.log(`${c.bold}What it means:${c.reset}\n  ${cd.help}\n`);
+    // What has actually been measured about this code, including "nothing".
+    console.log(`${c.bold}Benchmark evidence:${c.reset}`);
+    for (const line of describeEvidenceForCode(codeKey, CLI_VERSION)) console.log(`  ${c.dim}${line}${c.reset}`);
+    console.log('');
     if (cd.suppress) {
       console.log(`${c.bold}Suppress inline${c.reset} ${c.dim}(only if it's a confirmed false positive):${c.reset}`);
       console.log(`  ${c.cyan}${cd.suppress}${c.reset}\n`);
