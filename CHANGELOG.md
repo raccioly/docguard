@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.41.6] - 2026-09-18
+
+Automated weekly release — batches everything merged since `v0.41.5`.
+
+### Changed
+
+- test: make this suite probeable by TestGuard, and close the gap it found (#415)
+- fix: do not block projects that never adopted DocGuard; protect hook backups (#414)
+- chore: complete the pass to generic project references (#413)
+
+
 ### Added
 
 - TestGuard claim probing for this repository: `testguard.claims.json` plus

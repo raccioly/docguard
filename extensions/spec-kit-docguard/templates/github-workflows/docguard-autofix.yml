@@ -44,7 +44,7 @@ jobs:
           fetch-depth: 0
 
       - name: Run DocGuard fix --write + auto-commit + PR comment
-        uses: raccioly/docguard@v0.41.5
+        uses: raccioly/docguard@v0.41.6
         with:
           command: fix
           auto-commit: 'true'
