@@ -17,6 +17,7 @@ import { fileURLToPath } from 'node:url';
 import { createInterface } from 'node:readline';
 import { execSync } from 'node:child_process';
 import { c, PROFILES, CURRENT_SCHEMA_VERSION } from '../shared.mjs';
+import { detectCanonicalLayout, applyDocRoles } from '../shared-doc-roles.mjs';
 import { ensureSkills, detectAgentMode, detectAIAgent, isSpecKitAvailable, isSpecKitInitialized, getDetectedAgent, safeSpawnSpecify } from '../ensure-skills.mjs';
 import { safeWrite } from '../writers/generate-io.mjs';
 
@@ -144,7 +145,67 @@ function askQuestion(prompt) {
   });
 }
 
+/**
+ * Confirm where a project actually keeps its canonical documents.
+ *
+ * Runs before init creates anything. If the role filenames already exist
+ * somewhere other than the directory the config points at, say so and offer to
+ * adopt that location, instead of reporting "no canonical docs" and scaffolding
+ * a second copy next to the real one.
+ *
+ * Writes `docs.roles` (the mechanism every validator already resolves through)
+ * plus a matching `requiredFiles.canonical`. Declaring only the latter leaves
+ * the content validators walking the conventional directory, where they find
+ * nothing and report "no matches" — checks disappear without anyone saying so.
+ *
+ * @returns {Promise<Record<string,string>|null>} adopted roles, or null
+ */
+async function confirmCanonicalLocation(projectDir, flags) {
+  const configPath = resolve(projectDir, '.docguard.json');
+  let existing = {};
+  if (existsSync(configPath)) {
+    try { existing = JSON.parse(readFileSync(configPath, 'utf-8')); } catch { return false; }
+  }
+  // An explicit mapping is the user's answer already; do not second-guess it.
+  if (existing.docs?.roles) return null;
+
+  const hits = detectCanonicalLayout(projectDir).filter(h => h.count >= 2);
+  if (hits.length === 0) return null;
+  const best = hits[0];
+  if (best.dir === 'docs-canonical') return null; // already conventional
+
+  console.log(`\n${c.bold}📁 Found existing canonical documents${c.reset}`);
+  console.log(`${c.dim}   DocGuard defaults to docs-canonical/, but ${Object.keys(best.roles).length} of its documents${c.reset}`);
+  console.log(`${c.dim}   already live in ${c.reset}${c.cyan}${best.dir}/${c.reset}${c.dim}:${c.reset}`);
+  for (const [role, path] of Object.entries(best.roles)) {
+    console.log(`     ${c.green}•${c.reset} ${path} ${c.dim}(${role})${c.reset}`);
+  }
+
+  if (!flags.skipPrompts && !flags.force) {
+    const answer = (await askQuestion(`\n   Use ${best.dir}/ as the canonical location? [Y/n] `)).trim().toLowerCase();
+    if (answer === 'n' || answer === 'no') {
+      console.log(`${c.dim}   Keeping docs-canonical/. Map them later with docs.roles in .docguard.json.${c.reset}\n`);
+      return null;
+    }
+  } else {
+    // Non-interactive: adopting what is on disk is the safe default, because
+    // the alternative is scaffolding a duplicate the user never asked for.
+    console.log(`${c.dim}   Adopting ${best.dir}/ (non-interactive).${c.reset}`);
+  }
+
+  const next = { ...existing };
+  next.docs = { ...(next.docs || {}), roles: { ...best.roles } };
+  next.requiredFiles = {
+    ...(next.requiredFiles || {}),
+    canonical: Object.values(best.roles).sort(),
+  };
+  writeFileSync(configPath, JSON.stringify(next, null, 2) + '\n');
+  console.log(`  ${c.green}✅${c.reset} .docguard.json now points at ${c.cyan}${best.dir}/${c.reset}\n`);
+  return best.roles;
+}
+
 // ── Init Command ─────────────────────────────────────────────────────────
+
 
 /**
  * v0.21 — Smart first-run detection.
@@ -179,6 +240,13 @@ function shouldRunGenerate(projectDir, flags) {
   // detected as already-initialized, or the wizard re-triggers on every run.
   if (listCanonicalDocs(projectDir).length > 0) return false;
 
+  // listCanonicalDocs only walks the directories the config points at, so a
+  // project keeping the same documents somewhere else (docs/canonical/) read as
+  // EMPTY. Init then offered to reverse-engineer docs from code and would
+  // scaffold a second canonical directory beside the real one. Look for the
+  // role filenames anywhere before concluding a project has no documentation.
+  if (detectCanonicalLayout(projectDir).some(hit => hit.count >= 2)) return false;
+
   // Existing-code signals: any of cli/, src/, lib/, app/ as a directory.
   const codeDirs = ['cli', 'src', 'lib', 'app'];
   for (const d of codeDirs) {
@@ -198,7 +266,8 @@ function shouldRunGenerate(projectDir, flags) {
   return false;
 }
 
-export async function runInit(projectDir, config, flags) {
+export async function runInit(projectDir, configArg, flags) {
+  let config = configArg;
   // `--list` is read-only inventory owned by the hooks scaffolder. Routing it
   // through normal init can start prompts or create documentation before the
   // requested inventory is shown, which violates the command's read-only intent.
@@ -210,6 +279,19 @@ export async function runInit(projectDir, config, flags) {
     }
     const { runHooks } = await import('./hooks.mjs');
     return runHooks(projectDir, config, flags);
+  }
+  // Ask where the documents live before creating any. The adopted mapping has
+  // to reach the in-memory config as well: the skeleton path below reads it,
+  // and would otherwise create a second canonical directory it was just told
+  // not to use.
+  const adoptedRoles = await confirmCanonicalLocation(projectDir, flags);
+  if (adoptedRoles) {
+    config.docs = { ...(config.docs || {}), roles: { ...adoptedRoles } };
+    config.requiredFiles = {
+      ...(config.requiredFiles || {}),
+      canonical: Object.values(adoptedRoles).sort(),
+    };
+    config = applyDocRoles(projectDir, config);
   }
   if (true) assertDefaultDocWrites(config);
   // v0.20: `--wizard` dispatches to the full interactive onboarding (formerly

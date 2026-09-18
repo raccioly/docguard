@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Find the documents a project already has, instead of assuming where they are.
+  `init` now looks for canonical role filenames across the repository before
+  creating anything, reports what it found, and offers to adopt that location —
+  writing both `docs.roles` and a matching `requiredFiles.canonical`. Detection
+  recognises real-world spellings rather than one exact filename: separators and
+  case are ignored (`data_model.md`, `Data Model.md`), `.markdown` and `.mdx`
+  count, and each role has known aliases (`system-design.md`, `testing.md`,
+  `env.md`, `api.md`, `PRD.md`). A directory must hold at least two roles before
+  it qualifies, so a lone root `SECURITY.md` — GitHub's policy file — never
+  triggers relocation, and the conventional directory wins any tie.
+
+### Fixed
+
+- Judge the same repository the same way on every platform. Three detectors
+  probed for literal filenames — `existsSync(resolve(dir, 'ROADMAP.md'))` — which
+  matches `roadmap.md` on a case-insensitive filesystem (macOS) and not on a
+  case-sensitive one (Linux). CI and a laptop could therefore disagree about
+  whether the same TODO was tracked. Matching is now explicitly case- and
+  separator-insensitive, decided by DocGuard rather than by the filesystem.
+- Recognise work-tracking documents by name rather than by exact path. A TODO
+  recorded in `docs/ROADMAP.md`, `PLAN.md` or `TASKS.md` was reported as
+  untracked because only ten literal paths were consulted. Tracking documents
+  are now found by alias across the conventional documentation directories;
+  `README.md` and `NOTES.md` still do not count as work lists.
+- Recognise test directories beyond four exact names. `testing/`, `e2e/`,
+  `integration/`, `specs/` and `Tests/` now satisfy the same signal as `tests/`.
+- Stop scaffolding a second canonical directory next to an existing one.
+  A project keeping its documents in `docs/canonical/` read as empty, because
+  the first-run check only walked `docs-canonical/`. `init` then reported "no
+  canonical docs", offered to reverse-engineer them from code, and created a
+  duplicate set beside the real documents. Reported as #326.
+
+
 ## [0.41.6] - 2026-09-18
 
 Automated weekly release — batches everything merged since `v0.41.5`.

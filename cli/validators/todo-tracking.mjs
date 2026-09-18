@@ -20,6 +20,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, relative, extname } from 'node:path';
 import { shouldIgnore, walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
+import { findDocsByName } from '../shared-doc-roles.mjs';
 import { parseJsTs, walk } from '../scanners/js-ast.mjs';
 
 const IGNORE_DIRS = new Set([
@@ -391,13 +392,22 @@ function checkUntrackedTodos(projectDir, config) {
  */
 function loadTrackingDocs(projectDir, config) {
   const docs = [];
+  // Where a project tracks work, by name rather than by exact path. Probing for
+  // literal paths missed `docs/ROADMAP.md`, `PLAN.md` and `TASKS.md`, and was
+  // case-insensitive only by accident — `existsSync('ROADMAP.md')` matches
+  // `roadmap.md` on macOS but not on Linux, so CI and a laptop disagreed about
+  // whether the same TODO was tracked.
+  const TRACKING_ALIASES = [
+    'roadmap', 'currentstate', 'todo', 'todos', 'backlog',
+    'plan', 'plans', 'tasks', 'milestones', 'worklog', 'changelog',
+  ];
+  const TRACKING_DIRS = ['', 'docs', 'doc', 'documentation', 'docs-canonical', 'docs-implementation'];
+
   const trackingFiles = [
-    'ROADMAP.md', 'CURRENT-STATE.md', 'TODO.md', 'BACKLOG.md',
-    'docs-canonical/ARCHITECTURE.md', 'CHANGELOG.md',
-    // v0.27 (field report #6): many projects keep the roadmap/backlog under
-    // docs-canonical/ — a TODO tracked there was wrongly read as "untracked".
-    'docs-canonical/ROADMAP.md', 'docs-canonical/CURRENT-STATE.md',
-    'docs-canonical/BACKLOG.md', 'docs-canonical/TODO.md',
+    ...findDocsByName(projectDir, TRACKING_ALIASES, TRACKING_DIRS),
+    // ARCHITECTURE is a tracking home only in the canonical sense; it is not a
+    // work list, so it stays an explicit entry rather than joining the aliases.
+    'docs-canonical/ARCHITECTURE.md',
     ...(config.todoTracking?.trackingFiles || []),
   ];
 
