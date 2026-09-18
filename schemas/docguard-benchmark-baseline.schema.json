@@ -1,0 +1,242 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raccioly.github.io/docguard/schemas/docguard-benchmark-baseline.schema.json",
+  "title": "DocGuard benchmark baseline envelope",
+  "description": "A persisted precision-benchmark result. Every ratio is benchmark precision on a labelled, deliberately balanced corpus — the tool's accuracy on those cases, never the probability that a finding in a user's repository is real. `review.measures` names that meaning and `review.caveat` is the sentence a consumer must show beside any quoted ratio; both are derived from `core.cases` by the runner and the loader rejects an envelope whose caveat or metrics no longer match its cases.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schemaVersion", "review", "core", "observations"],
+  "properties": {
+    "$schema": { "const": "https://raccioly.github.io/docguard/schemas/docguard-benchmark-baseline.schema.json" },
+    "schemaVersion": { "const": 2 },
+    "review": { "$ref": "#/$defs/review" },
+    "core": { "$ref": "#/$defs/core" },
+    "observations": { "$ref": "#/$defs/observations" }
+  },
+  "$defs": {
+    "line": { "type": "string", "minLength": 1, "maxLength": 1024, "pattern": "^[^\\u0000\\r\\n]+$" },
+    "caseId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{2,127}$" },
+    "identity": { "type": "string", "pattern": "^[A-Z]{3}[0-9]{3}@[^/\\\\][^\\\\]*$" },
+    "sha256": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "ratio": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+    "interval": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["lower", "upper"],
+          "properties": {
+            "lower": { "type": "number", "minimum": 0, "maximum": 1 },
+            "upper": { "type": "number", "minimum": 0, "maximum": 1 }
+          }
+        }
+      ]
+    },
+    "review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "methodology", "limitations", "measures", "caveat"],
+      "properties": {
+        "status": {
+          "description": "`candidate` is what `--write-baseline` emits; `reviewed` requires `reviewedAt` and `reviewer` and is set by a human after adjudicating every case.",
+          "enum": ["candidate", "reviewed"]
+        },
+        "reviewedAt": { "description": "Date the labels and cases were adjudicated. Provenance-only edits to the envelope do not move it.", "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+        "reviewer": { "$ref": "#/$defs/line" },
+        "scope": { "$ref": "#/$defs/line" },
+        "methodology": { "$ref": "#/$defs/line" },
+        "limitations": { "$ref": "#/$defs/line" },
+        "measures": {
+          "description": "What every ratio in this envelope is. The only value DocGuard emits: precision on labelled benchmark cases. It is deliberately not a claimspec `calibration` kind, because that names P(event) under a real base rate and a balanced corpus has none.",
+          "const": "benchmark-precision"
+        },
+        "caveat": {
+          "description": "The one sentence a consumer must show beside any quoted number. Derived from `core.cases` (defect/control counts, repository groups, causal families); the loader rejects an envelope whose caveat does not match its cases.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "status": { "const": "reviewed" } } },
+          "then": { "required": ["reviewedAt", "reviewer"] },
+          "else": { "not": { "anyOf": [{ "required": ["reviewedAt"] }, { "required": ["reviewer"] }] } }
+        }
+      ]
+    },
+    "tool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "revision"],
+      "properties": {
+        "version": { "$ref": "#/$defs/line" },
+        "revision": { "type": ["string", "null"], "pattern": "^[0-9a-f]{40}([0-9a-f]{24})?$" }
+      }
+    },
+    "coverage": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "passed", "total", "quality"],
+          "properties": {
+            "status": { "type": "string" },
+            "passed": { "type": "integer", "minimum": 0 },
+            "total": { "type": "integer", "minimum": 0 },
+            "quality": { "type": ["string", "null"] }
+          }
+        }
+      ]
+    },
+    "case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "split", "repositoryGroup", "causalFamily", "parserTier", "classification", "repairOutcome", "sourceRevision", "configDigest", "scope", "expected", "forbidden", "actual", "unexpected", "missing", "forbiddenObserved", "abstained", "applicability", "checkCoverage", "commandStatus", "status"],
+      "properties": {
+        "id": { "$ref": "#/$defs/caseId" },
+        "split": { "enum": ["development", "evaluation"] },
+        "repositoryGroup": { "$ref": "#/$defs/line" },
+        "causalFamily": { "$ref": "#/$defs/line" },
+        "parserTier": { "enum": ["js-ast", "py-ast", "regex-fallback", "fallback-language", "mixed", "not-applicable"] },
+        "classification": { "enum": ["defect", "clean_control", "ambiguous", "unsupported_syntax", "policy_disagreement"] },
+        "repairOutcome": { "enum": ["accepted", "rejected", "not_evaluated"] },
+        "sourceRevision": { "type": "string", "pattern": "^(sha256:[0-9a-f]{64}|[0-9a-f]{40}([0-9a-f]{24})?)$" },
+        "configDigest": { "$ref": "#/$defs/sha256" },
+        "scope": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["validatorKey", "codes"],
+          "properties": {
+            "validatorKey": { "$ref": "#/$defs/line" },
+            "codes": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "pattern": "^[A-Z]{3}[0-9]{3}$" } }
+          }
+        },
+        "expected": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/identity" } },
+        "forbidden": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/identity" } },
+        "actual": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/identity" } },
+        "unexpected": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/identity" } },
+        "missing": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/identity" } },
+        "forbiddenObserved": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/identity" } },
+        "abstained": { "type": "boolean" },
+        "applicability": {
+          "type": "object",
+          "required": ["status"],
+          "properties": { "status": { "type": "string" }, "reason": { "type": "string" } }
+        },
+        "checkCoverage": { "$ref": "#/$defs/coverage" },
+        "commandStatus": { "type": "string" },
+        "status": { "enum": ["PASS", "FAIL", "UNSUPPORTED", "ADJUDICATION"] }
+      }
+    },
+    "metricGroup": {
+      "description": "Counts are facts; ratios are null when the corpus has no evidence for their denominator. Every ratio here is benchmark precision (see review.measures).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cases", "repositories", "truePositives", "falsePositives", "falseNegatives", "abstainedSupportedCases", "unsupportedCases", "defectCases", "cleanControlCases", "cleanControlCasesWithFindings", "repairs", "precision", "recall", "falsePositivesPerRepository", "abstentionRate", "unsupportedRate", "acceptedRepairRate", "confidence95"],
+      "properties": {
+        "cases": { "type": "integer", "minimum": 0 },
+        "repositories": { "type": "integer", "minimum": 0 },
+        "truePositives": { "type": "integer", "minimum": 0 },
+        "falsePositives": { "type": "integer", "minimum": 0 },
+        "falseNegatives": { "type": "integer", "minimum": 0 },
+        "abstainedSupportedCases": { "type": "integer", "minimum": 0 },
+        "unsupportedCases": { "type": "integer", "minimum": 0 },
+        "defectCases": { "type": "integer", "minimum": 0 },
+        "cleanControlCases": { "type": "integer", "minimum": 0 },
+        "cleanControlCasesWithFindings": { "type": "integer", "minimum": 0 },
+        "repairs": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["accepted", "rejected", "notEvaluated"],
+          "properties": {
+            "accepted": { "type": "integer", "minimum": 0 },
+            "rejected": { "type": "integer", "minimum": 0 },
+            "notEvaluated": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "precision": { "$ref": "#/$defs/ratio" },
+        "recall": { "$ref": "#/$defs/ratio" },
+        "falsePositivesPerRepository": { "type": ["number", "null"], "minimum": 0 },
+        "abstentionRate": { "$ref": "#/$defs/ratio" },
+        "unsupportedRate": { "$ref": "#/$defs/ratio" },
+        "acceptedRepairRate": { "$ref": "#/$defs/ratio" },
+        "confidence95": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["method", "precision", "recall", "falsePositiveCaseRate", "acceptedRepairRate"],
+          "properties": {
+            "method": { "const": "Wilson score interval, z=1.96" },
+            "precision": { "$ref": "#/$defs/interval" },
+            "recall": { "$ref": "#/$defs/interval" },
+            "falsePositiveCaseRate": { "$ref": "#/$defs/interval" },
+            "acceptedRepairRate": { "$ref": "#/$defs/interval" }
+          }
+        }
+      }
+    },
+    "metricGroups": {
+      "type": "object",
+      "propertyNames": { "type": "string", "minLength": 1, "maxLength": 128 },
+      "additionalProperties": { "$ref": "#/$defs/metricGroup" }
+    },
+    "core": {
+      "description": "Deterministic result: byte-identical across unchanged runs. `metrics` must equal what `benchmarks/lib/metrics.mjs` recomputes from `cases`.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "manifestDigest", "tool", "cases", "metrics"],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "manifestDigest": { "$ref": "#/$defs/sha256" },
+        "tool": { "$ref": "#/$defs/tool" },
+        "cases": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/case" } },
+        "metrics": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["aggregate", "byRepository", "byDetector", "byParserTier"],
+          "properties": {
+            "aggregate": { "$ref": "#/$defs/metricGroup" },
+            "byRepository": { "$ref": "#/$defs/metricGroups" },
+            "byDetector": { "$ref": "#/$defs/metricGroups" },
+            "byParserTier": { "$ref": "#/$defs/metricGroups" }
+          }
+        }
+      }
+    },
+    "observations": {
+      "description": "Environment and wall-clock timings. Observational only: matching labels do not establish an idle host.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["environment", "cases", "retainedRoot"],
+      "properties": {
+        "environment": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["node", "platform", "arch"],
+          "properties": {
+            "node": { "$ref": "#/$defs/line" },
+            "platform": { "$ref": "#/$defs/line" },
+            "arch": { "$ref": "#/$defs/line" }
+          }
+        },
+        "cases": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "coldMs", "warmMs"],
+            "properties": {
+              "id": { "$ref": "#/$defs/caseId" },
+              "coldMs": { "type": "number", "minimum": 0 },
+              "warmMs": { "type": "number", "minimum": 0 }
+            }
+          }
+        },
+        "retainedRoot": { "type": ["string", "null"] },
+        "comparisonProtocol": { "type": "object" }
+      }
+    }
+  }
+}

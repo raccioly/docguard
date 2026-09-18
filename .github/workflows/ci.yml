@@ -128,6 +128,11 @@ jobs:
           head -5 /tmp/report.md
           node cli/docguard.mjs report --format json | python3 -c "import json,sys; d=json.load(sys.stdin); assert d['integrity'].startswith('sha256:'), d; print('report json OK', d['integrity'][:20])"
 
+      - name: Precision benchmark (network-free corpus vs reviewed baseline)
+        run: |
+          node benchmarks/run.mjs --baseline benchmarks/baseline.json > /tmp/benchmark.json
+          node -e "const r=require('/tmp/benchmark.json'); console.log('benchmark', r.comparison.core.status, 'measures:', r.provenance.measures, '| out of selection:', r.comparison.core.outOfSelection.length); if (r.comparison.core.status !== 'PASS') process.exit(1)"
+
       - name: Guard JUnit output is valid XML
         run: |
           node cli/docguard.mjs guard --format junit > /tmp/guard-junit.xml || [ $? -eq 2 ]

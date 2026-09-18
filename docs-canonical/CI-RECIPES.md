@@ -144,7 +144,7 @@ Run the full pinned public corpus in a separate trusted, network-enabled job whe
 node benchmarks/run.mjs --external --baseline benchmarks/baseline.json
 ```
 
-Treat a core comparison failure as a quality regression. Persisted runtime snapshots stay advisory even when environment labels match. Apply the 20-percent gate only to at least five controlled samples from the same paired comparison session. Updating the baseline is a reviewed change: inspect every added or removed case, label, unsupported result, and confidence limit before using `--replace-baseline`.
+Treat a core comparison failure as a quality regression. In the network-free run the pinned public baseline cases were not selected; they appear under `comparison.core.outOfSelection` and are not regressions. The loader validates the baseline envelope before the run starts and refuses one whose metrics or caveat no longer match its cases. Persisted runtime snapshots stay advisory even when environment labels match. Apply the 20-percent gate only to at least five controlled samples from the same paired comparison session. Updating the baseline is a reviewed change: inspect every added or removed case, label, unsupported result, and confidence limit before using `--replace-baseline`.
 
 ## Pre-commit hook (no GitHub Actions required)
 

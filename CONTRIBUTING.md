@@ -166,7 +166,7 @@ The following papers directly influenced DocGuard's design:
 
 | DocGuard Feature | Research Origin | Paper |
 |-----------------|----------------|-------|
-| Quality labels (HIGH/MED/LOW) in `guard` output | CJE quality stratification | TRACE [2] |
+| Quality labels (HIGH/MED/LOW) in `guard` output — label vocabulary only; the labels are deterministic strata, not calibrated probabilities (see PHILOSOPHY.md) | CJE quality stratification | TRACE [2] |
 | Standards citations in generated docs | RAG-grounded standards alignment | AITPG [1] |
 | Multi-signal composite scoring in `score` | 5-signal weighted composite (Eq. 1) | TRACE [2] |
 | Traceability matrix (`trace` command) | Requirements traceability | AITPG [1] |
@@ -189,6 +189,7 @@ A report or a test-only contribution is useful even when you cannot fix the dete
 4. Set `provenance.synthetic` and `redactionAttested` only after reviewing every inline file. Record the parser tier, exact expected identity, explicit predicate, same-path opposite control, supported scope, and candidate benchmark delta. The command refuses incomplete contribution evidence.
 5. Generate a direct test with `--contribution tests/<name>.test.mjs`. A false-positive case should stay clean while its neighboring real defect still emits; a missed detection should emit while its clean control remains clean. Ambiguous and policy cases require adjudication before test generation.
 6. Run the focused test and `node benchmarks/run.mjs --external --baseline benchmarks/baseline.json` against the affected version. Describe the result honestly. A test that never exercised the intended parser path is not evidence of a fix.
+7. If the baseline must change, regenerate it with `--write-baseline benchmarks/baseline.json --replace-baseline` and set `review.status`, `reviewedAt`, and `reviewer` by hand after adjudicating every case. Never edit `review.caveat` or `core.metrics`: both are derived from `core.cases` and the loader rejects an envelope where they disagree. When quoting a benchmark number anywhere, quote it with its `n`, its Wilson bound, and the envelope's `review.caveat` — a precision figure without them reads as a calibrated probability, which DocGuard does not measure.
 7. Submit the reviewed example or a test-only PR. Include the duplicate identity so maintainers can find related open and closed work. Follow the repository's changelog and canonical-documentation rules when changing behavior.
 
 Maintainers should acknowledge reproducible reports, preserve contributor attribution with consent, and record the causal defect family in the regression test. Reproduction success and triage time matter more than issue volume. Do not execute arbitrary submitted scripts with repository credentials. Security-sensitive reports belong in the private channel described by SECURITY.md.

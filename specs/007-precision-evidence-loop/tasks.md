@@ -33,3 +33,9 @@
 - [x] T017 Update canonical architecture, test, security, CI, contribution, and validation documentation.
 - [x] T018 Run full regression, guard, package, supported-runtime, and external-corpus checks.
 - [x] T019 Complete the reviewed lifecycle transaction and keep this living benchmark specification current.
+
+## Phase 5: Provenance envelope
+
+- [x] T020 Publish the baseline envelope schema; derive `measures` and `caveat` from cases; recompute metrics on load and fail closed on drift.
+- [x] T021 Make the comparator selection-aware so the network-free run passes on CI, and run it there.
+- [x] T022 Replace the "calibrated" wording in PHILOSOPHY, README, CONTRIBUTING, and the diagnose command with what is measured.

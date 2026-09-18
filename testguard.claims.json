@@ -45,6 +45,72 @@
           }
         }
       ]
+    },
+    {
+      "id": "BENCHMARK-BASELINE-FAIL-CLOSED",
+      "statement": "A persisted benchmark baseline is quotable only when its metrics and caveat are recomputable from its retained cases: the loader rejects a hand-edited ratio, a stale caveat, a measure other than benchmark-precision, and the pre-provenance envelope, before any benchmark run starts.",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/007-precision-evidence-loop/spec.md#FR-018"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "human",
+        "by": "Claude Fable 5.1 with maintainer review, 2026-09-18"
+      },
+      "defendedBy": [
+        "tests/benchmark-baseline.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "B1",
+          "description": "Metrics integrity check removed: a hand-edited core.metrics is accepted.",
+          "faultClass": "condition-forced",
+          "file": "benchmarks/lib/baseline.mjs",
+          "find": "  if (JSON.stringify(core.metrics) !== JSON.stringify(recomputed)) {",
+          "replace": "  if (false) {",
+          "producedBy": {
+            "producer": "human",
+            "by": "Claude Fable 5.1 with maintainer review, 2026-09-18"
+          }
+        },
+        {
+          "id": "B2",
+          "description": "Caveat check removed: a stale or edited review.caveat is accepted.",
+          "faultClass": "condition-forced",
+          "file": "benchmarks/lib/baseline.mjs",
+          "find": "  if (review.caveat !== expectedCaveat) {",
+          "replace": "  if (false) {",
+          "producedBy": {
+            "producer": "human",
+            "by": "Claude Fable 5.1 with maintainer review, 2026-09-18"
+          }
+        },
+        {
+          "id": "B3",
+          "description": "Measure check removed: review.measures may claim calibration.",
+          "faultClass": "condition-forced",
+          "file": "benchmarks/lib/baseline.mjs",
+          "find": "  if (review.measures !== BASELINE_MEASURES) {",
+          "replace": "  if (false) {",
+          "producedBy": {
+            "producer": "human",
+            "by": "Claude Fable 5.1 with maintainer review, 2026-09-18"
+          }
+        },
+        {
+          "id": "B4",
+          "description": "Legacy envelope guard removed: a schemaVersion 1 baseline without provenance is no longer refused with the regeneration message.",
+          "faultClass": "statement-deleted",
+          "file": "benchmarks/lib/baseline.mjs",
+          "find": "  if (value.schemaVersion === 1 && value.$schema === undefined) {\n    throw new Error('Baseline envelope schemaVersion 1 predates the provenance contract (measures, caveat); '\n      + 'regenerate it with --write-baseline --replace-baseline after review.');\n  }\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "human",
+            "by": "Claude Fable 5.1 with maintainer review, 2026-09-18"
+          }
+        }
+      ]
     }
   ]
 }

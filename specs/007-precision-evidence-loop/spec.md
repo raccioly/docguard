@@ -105,6 +105,14 @@ regressions. A warning reduction caused by skipping supported inputs is visible.
 - **FR-017**: The benchmark and feedback tools MUST use Node.js built-ins,
   perform no implicit package installation, and keep ordinary `npm test` and
   consumer package contents independent from network availability.
+- **FR-018**: A persisted baseline MUST be a strict, schema-published envelope
+  that states what its ratios measure (`benchmark-precision`, never a
+  calibrated probability) and carries a caveat derived from its own cases. The
+  loader MUST recompute metrics and caveat from the retained cases and reject
+  an envelope where either disagrees, where fields are unknown, or where the
+  pre-provenance shape is used. Every run report MUST carry the same provenance
+  whether or not it is persisted, and a comparison MUST distinguish baseline
+  cases the run did not select from cases that were removed.
 
 ## Evidence Model
 
@@ -177,6 +185,10 @@ invalid or equivalent mutants.
   limits without a zero-false-positive or exhaustive-correctness claim.
 - **SC-006**: A feedback reproduction can travel from preview to a test-only
   contribution without exposing its originating repository.
+- **SC-007**: The committed baseline's metrics and caveat are recomputable from
+  its committed cases; a hand-edited ratio, a stale caveat, a missing measure,
+  and the pre-provenance envelope are each rejected before a benchmark run
+  starts, and the documented network-free comparison passes on CI.
 
 ## Non-Goals
 

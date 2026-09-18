@@ -227,6 +227,11 @@ export function runBenchmark({
     core.metrics = calculateMetrics(core.cases);
     return {
       core,
+      selection: {
+        split,
+        includeExternal,
+        caseIds: selected.map(item => item.id).sort((a, b) => a.localeCompare(b)),
+      },
       observations: {
         environment: { node: process.version, platform: process.platform, arch: process.arch },
         cases: observations.sort((a, b) => a.id.localeCompare(b.id)),

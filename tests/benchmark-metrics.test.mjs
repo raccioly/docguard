@@ -68,6 +68,28 @@ describe('benchmark comparison', () => {
     ]);
   });
 
+  it('reports baseline cases the run did not select instead of counting them as removed', () => {
+    const baselineCases = [result({ id: 'local-defect' }), result({ id: 'external-defect' })];
+    const scoped = compareBenchmarkCores(
+      { schemaVersion: 1, cases: baselineCases },
+      { schemaVersion: 1, cases: [result({ id: 'local-defect' })] },
+      { selectedIds: ['local-defect'] },
+    );
+    assert.equal(scoped.status, 'PASS');
+    assert.deepEqual(scoped.outOfSelection, ['external-defect']);
+    const unscoped = compareBenchmarkCores({ schemaVersion: 1, cases: baselineCases }, { schemaVersion: 1, cases: [result({ id: 'local-defect' })] });
+    assert.equal(unscoped.status, 'FAIL');
+    assert.deepEqual(unscoped.regressions.map(item => item.kind), ['case-removed']);
+    assert.deepEqual(unscoped.outOfSelection, []);
+    const stillRemoved = compareBenchmarkCores(
+      { schemaVersion: 1, cases: baselineCases },
+      { schemaVersion: 1, cases: [] },
+      { selectedIds: ['local-defect'] },
+    );
+    assert.deepEqual(stillRemoved.regressions.map(item => `${item.kind}:${item.id}`), ['case-removed:local-defect']);
+    assert.throws(() => compareBenchmarkCores({ schemaVersion: 1, cases: [] }, { schemaVersion: 1, cases: [] }, { selectedIds: 'x' }), /selectedIds/);
+  });
+
   it('invalidates reviewed evidence when fixture source or labels change', () => {
     const comparison = compareBenchmarkCores(
       { schemaVersion: 1, cases: [result()] },
