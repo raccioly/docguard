@@ -664,12 +664,23 @@ export function runGuard(projectDir, config, flags) {
 
   const data = runGuardInternal(projectDir, config);
 
+  // A project with no .docguard.json has not adopted DocGuard. Its "failures"
+  // are missing canonical docs, which is not the same fact as "this project
+  // failed its checks" — and consumers need to tell them apart. Exit 3 says
+  // "not initialised": still non-zero, so a CI gate that fails on any non-zero
+  // status is unchanged, but the generated Git hook can let the commit through
+  // instead of blocking a project that never adopted the tool.
+  const uninitialised = !existsSync(resolvePath(projectDir, '.docguard.json'));
+  const exitFor = d => (d.effectiveErrors > 0
+    ? (uninitialised ? 3 : 1)
+    : d.effectiveWarnings > 0 ? 2 : 0);
+
   // ── SARIF output (2.1.0) ──
   // Same flush discipline as the JSON branch below (bug-105): set exitCode and
   // write+return so a piped consumer never gets a truncated payload.
   if (flags.format === 'sarif') {
     const sarif = toSarif(data, { projectDir });
-    process.exitCode = data.effectiveErrors > 0 ? 1 : data.effectiveWarnings > 0 ? 2 : 0;
+    process.exitCode = exitFor(data);
     process.stdout.write(JSON.stringify(sarif, null, 2) + '\n');
     return;
   }
@@ -680,7 +691,7 @@ export function runGuard(projectDir, config, flags) {
   // Exit-code semantics identical to sarif/json.
   if (flags.format === 'junit') {
     const xml = toJUnit(data);
-    process.exitCode = data.effectiveErrors > 0 ? 1 : data.effectiveWarnings > 0 ? 2 : 0;
+    process.exitCode = exitFor(data);
     process.stdout.write(xml + '\n');
     return;
   }
@@ -689,7 +700,7 @@ export function runGuard(projectDir, config, flags) {
   if (flags.format === 'json') {
     // Use severity-aware effective counts for exit code; raw counts stay in the JSON
     // for display tools that want to show the full picture.
-    const code = data.effectiveErrors > 0 ? 1 : data.effectiveWarnings > 0 ? 2 : 0;
+    const code = exitFor(data);
     // v0.28: set exitCode + return instead of process.exit(). A large JSON
     // payload (>~8 KB) written to a PIPE flushes asynchronously; an immediate
     // process.exit() truncates it mid-string, so a CI consumer parsing stdout
@@ -991,5 +1002,5 @@ export function runGuard(projectDir, config, flags) {
   // v0.28: exitCode + return (not process.exit) so the buffered text output
   // flushes to a pipe before the process exits — same truncation fix as the
   // JSON path above.
-  process.exitCode = data.effectiveErrors > 0 ? 1 : data.effectiveWarnings > 0 ? 2 : 0;
+  process.exitCode = exitFor(data);
 }

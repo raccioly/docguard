@@ -1,7 +1,7 @@
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import {
-  mkdtempSync, mkdirSync, rmSync, symlinkSync, chmodSync, readFileSync, readdirSync,
+  chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync,
 } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
@@ -40,6 +40,10 @@ describe('generated enforcement shell contracts', () => {
   }
 
   function fixture() {
+    // These tests exercise the enforcement contract of an ADOPTED project.
+    // The hook deliberately fails open when .docguard.json is absent (a hook is
+    // repo-wide, the config is branch-local), so adoption must be explicit here.
+    writeFileSync(join(dir, '.docguard.json'), '{"projectName":"contract"}');
     executable('bin/docguard', `
 printf '%s\\n' "$*" >> "$CALLS"
 case "$1" in
@@ -106,8 +110,14 @@ esac`);
       it(`enforces guard exit ${code}, auto-fix=${autoFix}`, () => {
         fixture();
         const result = run('pre-commit', { GUARD_EXIT: String(code) }, autoFix);
-        expect(result, code === 0 || code === 2 ? 0 : 1);
+        // 0 = clean, 2 = warnings only, 3 = project not initialised. Everything
+        // else is a real failure and must block. 3 is NOT a lenient catch-all:
+        // it is set only when .docguard.json is absent, so a tool that was never
+        // adopted cannot stop a commit, while an adopted project still fails on 1.
+        const passes = code === 0 || code === 2 || code === 3;
+        expect(result, passes ? 0 : 1);
         if (code === 2) assert.match(result.stdout, /warnings — commit allowed/);
+        if (code === 3) assert.match(result.stdout, /not initialised/);
       });
     }
   }
@@ -172,13 +182,17 @@ esac`);
     expect(run('pre-push'), 1);
   });
 
-  it('backs up a managed hook before reinstalling it', () => {
+  it('does not back up a managed hook when the reinstall is byte-identical', () => {
     fixture();
     run('pre-push');
     const path = join(dir, '.git/hooks/pre-push');
     const original = readFileSync(path, 'utf8');
     run('pre-push');
-    assert.equal(readFileSync(path + '.bak', 'utf8'), original);
+    assert.equal(readFileSync(path, 'utf8'), original, 'the hook itself is unchanged');
+    // The backup slot is single and unversioned. Spending it on a no-op rewrite
+    // discards whatever it held — on a forced install, the user's own hook.
+    assert.equal(existsSync(path + '.bak'), false,
+      'an identical rewrite must not consume the backup slot');
   });
 });
 
