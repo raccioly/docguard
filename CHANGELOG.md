@@ -16,6 +16,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `git restore` command that recovers it, and renaming that string would point
   the restore at a path that never existed.
 
+### Fixed
+
+- Stop blocking commits in projects that never adopted DocGuard. A Git hook
+  lives in the common `.git/hooks` and governs every linked worktree, while
+  `.docguard.json` is a branch-local tracked file — during adoption the two
+  cannot be consistent, so a hook installed on one branch blocked commits on
+  every other branch and worktree, where `guard` exited 1 for missing canonical
+  docs. `guard` now exits **3** ("not initialised") instead of 1 when there is
+  no `.docguard.json`, and the generated hooks skip enforcement and allow the
+  operation. Exit 3 is still non-zero, so a CI gate that fails on any non-zero
+  status is unchanged, and an adopted project with real findings still exits 1
+  and still blocks. Existing installed hooks do not self-heal — re-run
+  `docguard hooks` to pick this up.
+- Stop spending the single backup slot on a no-op. Re-installing a byte-identical
+  managed hook wrote a redundant `.bak`; with `--force` a second install
+  overwrote the backup holding the user's own original hook, which is
+  unrecoverable because a `.git/hooks` file is not in version control. Identical
+  writes are now skipped, and a `.bak` DocGuard did not write is preserved
+  alongside a timestamped copy rather than replaced.
+
 
 ## [0.41.5] - 2026-09-17
 

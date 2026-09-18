@@ -14,15 +14,33 @@ import { resolve, dirname } from 'node:path';
  * Create a .bak backup of an existing file before --force overwrites it.
  * Only backs up if the file exists and has content.
  */
-export function backupFile(filePath) {
-  if (existsSync(filePath)) {
-    try {
-      const content = readFileSync(filePath, 'utf-8');
-      if (content.trim().length > 0) {
-        copyFileSync(filePath, filePath + '.bak');
+export function backupFile(filePath, nextContent = null) {
+  if (!existsSync(filePath)) return;
+  try {
+    const content = readFileSync(filePath, 'utf-8');
+    if (content.trim().length === 0) return;
+
+    // Nothing to preserve when the file is already what we are about to write.
+    // Backing it up anyway produced a redundant .bak and, worse, consumed the
+    // single backup slot that may still hold the user's own original.
+    if (nextContent !== null && content === nextContent) return;
+
+    // The backup slot is single and unversioned. Overwriting it destroys the
+    // previous backup, which on a second forced install is the user's ORIGINAL
+    // file — unrecoverable, because a .git/hooks file is not in version control.
+    // Only ever replace a .bak we wrote ourselves; otherwise keep it and write
+    // a timestamped sibling.
+    const bak = filePath + '.bak';
+    if (existsSync(bak)) {
+      const prior = readFileSync(bak, 'utf-8');
+      if (prior !== content) {
+        const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+        copyFileSync(filePath, `${filePath}.${stamp}.bak`);
+        return;
       }
-    } catch { /* backup failure is non-fatal */ }
-  }
+    }
+    copyFileSync(filePath, bak);
+  } catch { /* backup failure is non-fatal */ }
 }
 
 /**
@@ -31,7 +49,7 @@ export function backupFile(filePath) {
  */
 export function safeWrite(filePath, content) {
   mkdirSync(dirname(filePath), { recursive: true });
-  backupFile(filePath);
+  backupFile(filePath, content);
   writeFileSync(filePath, content, 'utf-8');
 }
 

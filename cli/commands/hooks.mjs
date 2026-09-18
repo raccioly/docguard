@@ -105,6 +105,17 @@ import { listCanonicalDocs } from '../shared-ignore.mjs';
 
 // Git enforcement is offline and fail-closed; agent nudges stay best-effort.
 const ENFORCEMENT_RUNTIME = `
+# A Git hook is repo-wide (it lives in the common .git/hooks and is shared by
+# every linked worktree), but .docguard.json is a branch-local tracked file.
+# During adoption the two cannot be consistent: the hook is already active
+# everywhere while the config exists on one branch only. A project that has not
+# adopted DocGuard must not be blocked by a hook installed from another branch.
+if [ ! -f ".docguard.json" ]; then
+  echo "DocGuard: not initialised here (no .docguard.json) — skipping."
+  echo "          Adopt it with: docguard init"
+  exit 0
+fi
+
 if ! command -v node >/dev/null 2>&1; then
   echo "❌ Node.js runtime not found — operation blocked" >&2
   exit 1
@@ -136,7 +147,10 @@ ${ENFORCEMENT_RUNTIME}
 "$DOCGUARD" guard
 EXIT_CODE=$?
 
-if [ "$EXIT_CODE" -ne 0 ] && [ "$EXIT_CODE" -ne 2 ]; then
+if [ "$EXIT_CODE" -eq 3 ]; then
+  echo ""
+  echo "DocGuard: project not initialised — commit allowed"
+elif [ "$EXIT_CODE" -ne 0 ] && [ "$EXIT_CODE" -ne 2 ]; then
   echo ""
   echo "❌ DocGuard guard FAILED — commit blocked"
   echo "   Fix the errors above, then try again."
@@ -265,7 +279,10 @@ fi
 "$DOCGUARD" guard
 EXIT_CODE=$?
 
-if [ "$EXIT_CODE" -ne 0 ] && [ "$EXIT_CODE" -ne 2 ]; then
+if [ "$EXIT_CODE" -eq 3 ]; then
+  echo ""
+  echo "DocGuard: project not initialised — commit allowed"
+elif [ "$EXIT_CODE" -ne 0 ] && [ "$EXIT_CODE" -ne 2 ]; then
   echo ""
   echo "❌ DocGuard guard FAILED — commit blocked."
   echo "   Remaining issues need an AI agent (content rewrites, not mechanical):"
