@@ -46,3 +46,8 @@
 - [x] T024 Ship the evidence as a generated module (the corpus stays out of the package) and fail the suite on drift.
 - [x] T025 Surface it in the guard result, the guard summary, and `explain <CODE>`, leaving the finding shape untouched.
 - [x] T026 Re-run the full external corpus on the current release so the shipped evidence is not measured on a stale build.
+
+## Phase 7: First architecture evidence
+
+- [x] T027 Author an ARC001 defect/clean-control pair on statically analysable Python imports, labels written from the fixture source before the corpus is run.
+- [x] T028 Re-adjudicate and regenerate the reviewed baseline and the shipped per-code evidence so ARC001 reports `measured` instead of `not-measured`.
