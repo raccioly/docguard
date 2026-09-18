@@ -156,6 +156,30 @@ baseline down at your own pace; `--no-baseline` shows the full picture anytime.
 
 ---
 
+## Document locations
+
+### DocGuard adopted the wrong directory as my canonical docs
+
+A Spec Kit feature folder (`specs/003-my-feature/`) is never adopted: one
+feature's spec and data model are not the project's documentation. If another
+directory was adopted and you did not want it, state the mapping yourself:
+
+```json
+{ "docs": { "roles": { "architecture": "docs/canonical/ARCHITECTURE.md" } } }
+```
+
+An explicit `docs.roles` is treated as your answer and is never second-guessed.
+To use DocGuard's own layout instead, remove `docs.roles` and create
+`docs-canonical/` before re-running `init`.
+
+### Why will DocGuard not generate into my mapped documents?
+
+On a mapped layout `init` configures the project and scaffolds only the roles
+your mapping has not placed, so it never writes into a document you maintain and
+never creates a duplicate beside it. Generating or repairing a mapped document is
+a separate matter: `setup`, `init --wizard` and `diagnose --auto` name the mapped
+roles and stop, because that prose is yours to edit.
+
 ## Technical
 
 ### Does DocGuard have dependencies?

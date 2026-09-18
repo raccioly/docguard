@@ -2,7 +2,7 @@
 
 <!-- docguard:version 0.9.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-09-15 -->
+<!-- docguard:last-reviewed 2026-09-18 -->
 
 | Metadata | Value |
 |----------|-------|
@@ -226,6 +226,12 @@ Validators emit findings and aggregate counts. The guard adapter adds names and 
 | `effectiveErrors`, `effectiveWarnings`, `effectiveInfos` | `number` | Exit-code counts after exact-code and validator policy |
 | `effectiveStatus` | `string` | Per-validator `pass`, `warn`, or `fail` after policy; intrinsic `status` remains available |
 
+## Precision evidence contract
+
+`guard` results carry `precisionEvidence`, scoped to the finding codes that run emitted (`schemas/docguard-precision-evidence.schema.json`). The unit of evidence is the finding code. DocGuard defines many more codes than the reviewed corpus measures, so a code the corpus never exercised reports `status: "not-measured"`, carries no ratio, and never inherits the measured precision of another code in the same validator. A measured code whose own precision denominator is below `minN` is marked `quotable: false` with a reason, and may carry a `backoff` to a coarser measured tier that names that tier (`validator` or `aggregate`). `measures` is always `benchmark-precision`; `caveat` is the sentence a consumer must show beside any quoted ratio; `source.matchesRunningVersion` is false when the numbers were measured on a different build than the one reporting them. `coverage` counts codes in the run by measurement status.
+
+The block is served from `cli/precision-evidence-data.mjs`, a generated module derived from `benchmarks/baseline.json` by `npm run generate:precision-evidence`, because `benchmarks/` is not part of the published package. A test compares the committed module against that projection, so a stale number fails the suite rather than shipping. Findings themselves are unchanged: they are written verbatim into feedback records, so their shape stays fixed.
+
 ## Fix Command Issue Format
 
 The `fix --format json` output follows this structure:
@@ -317,6 +323,18 @@ and process status therefore carry the same enforcement meaning in direct CI use
 ## Check coverage and document roles
 
 Each guard validator adds applicability with status and reason. checkCoverage contains counts by status, limitations naming checks that were not fully performed, and an explanatory limitation. These fields describe coverage independently from legacy status, totals, findings, and exit codes. CI/report consumers preserve them, including disabled-check counts.
+
+Document discovery does not depend on the default filenames alone. A filename is
+normalised to letters and digits — separators, case and Markdown extension are
+noise — and matched against an alias table per role, so `data_model.md`,
+`datamodel.md`, `Data Model.md` and `DATA-MODEL.md` all resolve to the same
+role, and `API.md` resolves to the API-Reference role. Directory detection is
+deliberately tight: a directory must hold at least two distinct roles before it
+counts as a canonical home, so a lone root-level `SECURITY.md` — GitHub's
+security policy, not a design document — never triggers a match on its own.
+This also removes an accidental platform dependency: literal-path probing was
+case-insensitive only on case-insensitive filesystems, so the same repository
+was judged differently on macOS and Linux.
 
 Optional docs.roles maps canonical roles to safe project-relative Markdown paths. Configuration normalization replaces each mapped default in requiredFiles.canonical and documentTypes. A mapped write is authorized either for a unique `source=code` section in an existing human file or for a missing/explicitly generated single-role whole document. Marker shape, role cardinality, and ownership are validated before mutation; `--force` does not alter that model. The configuration schema and docs/configuration.md define the role names and operation-specific contract.
 

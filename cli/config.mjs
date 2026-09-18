@@ -179,7 +179,7 @@ export function loadConfig(projectDir) {
  * Auto-detect project type from package.json and file structure.
  * Returns: 'cli' | 'library' | 'webapp' | 'api' | 'unknown'
  */
-function autoDetectProjectType(dir) {
+export function autoDetectProjectType(dir) {
   if (hasWorkerConfig(dir)) return 'api';
   const pkgPath = resolve(dir, 'package.json');
   if (existsSync(pkgPath)) {
@@ -212,7 +212,7 @@ function autoDetectProjectType(dir) {
 /**
  * Get default projectTypeConfig for a given project type.
  */
-function getProjectTypeDefaults(type) {
+export function getProjectTypeDefaults(type) {
   const defaults = {
     cli:     { needsEnvVars: false, needsEnvExample: false, needsE2E: false, needsDatabase: false, testFramework: 'node:test', runCommand: null },
     library: { needsEnvVars: false, needsEnvExample: false, needsE2E: false, needsDatabase: false, testFramework: 'vitest',    runCommand: null },

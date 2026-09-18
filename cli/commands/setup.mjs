@@ -22,6 +22,7 @@ import { resolve, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createInterface } from 'node:readline';
 import { c, CURRENT_SCHEMA_VERSION } from '../shared.mjs';
+import { autoDetectProjectType } from '../config.mjs';
 import { ensureSkills, detectAgentMode, isSpecKitInitialized, getDetectedAgent } from '../ensure-skills.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -51,23 +52,7 @@ async function askYesNo(prompt, defaultYes = true) {
 
 // ── Project Type Detection ──────────────────────────────────────────────
 
-function detectProjectType(dir) {
-  const pkgPath = resolve(dir, 'package.json');
-  if (existsSync(pkgPath)) {
-    try {
-      const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
-      const allDeps = { ...(pkg.dependencies || {}), ...(pkg.devDependencies || {}) };
-      if (pkg.bin) return 'cli';
-      if (allDeps.next || allDeps.react || allDeps.vue || allDeps['@angular/core'] ||
-          allDeps.svelte || allDeps.nuxt) return 'webapp';
-      if (allDeps.express || allDeps.fastify || allDeps.hono || allDeps.koa) return 'api';
-      if (pkg.main || pkg.exports || pkg.module) return 'library';
-    } catch { /* fall through */ }
-  }
-  if (existsSync(resolve(dir, 'manage.py'))) return 'webapp';
-  if (existsSync(resolve(dir, 'setup.py')) || existsSync(resolve(dir, 'pyproject.toml'))) return 'library';
-  return 'unknown';
-}
+// Project-type detection lives in config.mjs; this file used to carry a stale copy.
 
 function detectAgentDirs(projectDir) {
   const agentDirs = [
@@ -95,7 +80,7 @@ export async function runSetup(projectDir, config, flags) {
 
   console.log(`  ${c.bold}Step 1/7: Project Detection${c.reset}`);
 
-  const detectedType = detectProjectType(projectDir);
+  const detectedType = autoDetectProjectType(projectDir);
   console.log(`  ${c.green}✅${c.reset} Project type: ${c.cyan}${detectedType}${c.reset}`);
 
   const configPath = resolve(projectDir, '.docguard.json');

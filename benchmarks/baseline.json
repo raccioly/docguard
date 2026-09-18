@@ -3,20 +3,20 @@
   "schemaVersion": 2,
   "review": {
     "status": "reviewed",
-    "reviewedAt": "2026-09-14",
+    "reviewedAt": "2026-09-18",
     "reviewer": "DocGuard maintainers",
-    "scope": "Twelve exact defect/control pairs across seven synthetic and five pinned public repository groups; one unsupported Python architecture case remains visible and excluded from accuracy ratios.",
-    "methodology": "Labels were authored from pinned source and seeded mutations before DocGuard output was reviewed. Traceability-only fixture comments were re-adjudicated on 2026-09-14; expected findings and controls were unchanged.",
-    "limitations": "Finite scoped cases do not establish exhaustive documentation or detector correctness.",
+    "scope": "Thirteen exact defect/control pairs across eight synthetic and five pinned public repository groups. The architecture validator gains its first measured evidence: a three-layer Python package whose defect makes the route layer import the model layer directly, bypassing the declared service boundary. One Python architecture case is checked by the analyzer and remains classified unsupported_syntax, excluded from accuracy ratios: its fixture is a dynamic import (import_module(get_plugin_name())), which the analyzer’s own applicability reason places outside scope, and it has no paired defect, so scoring it as a clean control would credit a blind spot as evidence.",
+    "methodology": "Labels were authored from pinned source and seeded mutations before DocGuard output was reviewed. The ARC001 Python layer-boundary pair added on 2026-09-18 was authored labels-first: the fixture and its expected/forbidden identities were committed before the corpus was run, and both cases matched their authored labels on the first run.",
+    "limitations": "Finite scoped cases do not establish exhaustive documentation or detector correctness. Seven of the tool’s finding codes are measured here; the rest carry no benchmark evidence. ARC001 is measured by a single defect/control pair in one repository group, so its point estimate is below the reporting floor and it backs off to the whole-corpus tier.",
     "measures": "benchmark-precision",
-    "caveat": "Benchmark precision on a deliberately balanced corpus of 12 defect and 12 clean-control cases across 12 repository groups and 12 causal families. This is DocGuard's precision on labelled cases, not the probability that a finding in your repository is real; quote every ratio with its n and Wilson 95% bound."
+    "caveat": "Benchmark precision on a deliberately balanced corpus of 13 defect and 13 clean-control cases across 13 repository groups and 13 causal families. This is DocGuard's precision on labelled cases, not the probability that a finding in your repository is real; quote every ratio with its n and Wilson 95% bound."
   },
   "core": {
     "schemaVersion": 1,
-    "manifestDigest": "sha256:8290564a2b4a7217052393ccd932ee58d0847500190d1b5ba8275051237b9ed0",
+    "manifestDigest": "sha256:ac1b1677d3e570f5917ffa9c903a48a8ec5b88fbae5e99bd93b41836b282e6c7",
     "tool": {
-      "version": "0.38.0",
-      "revision": "6de3edb841139a6f264ac18ecb30361256774eb1"
+      "version": "0.41.7",
+      "revision": "ae9883c50a2ab432f220590fd6eb98b3d9a3def6"
     },
     "cases": [
       {
@@ -878,6 +878,84 @@
         "status": "PASS"
       },
       {
+        "id": "eval-python-layers-control",
+        "split": "evaluation",
+        "repositoryGroup": "synthetic-python-layers",
+        "causalFamily": "python-layer-boundary-bypass",
+        "parserTier": "py-ast",
+        "classification": "clean_control",
+        "repairOutcome": "not_evaluated",
+        "sourceRevision": "sha256:2083b967cc7351fe5cce35121c6979abb22b38d6ca5d18e26a44adb69f40d124",
+        "configDigest": "sha256:e9d621278770497e4250a020255cd3816fe59ce19a2925a3d63d637334ac328b",
+        "scope": {
+          "validatorKey": "architecture",
+          "codes": [
+            "ARC001"
+          ]
+        },
+        "expected": [],
+        "forbidden": [
+          "ARC001@src/routes/orders.py"
+        ],
+        "actual": [],
+        "unexpected": [],
+        "missing": [],
+        "forbiddenObserved": [],
+        "abstained": false,
+        "applicability": {
+          "status": "checked",
+          "reason": "Repository-local JS/TS and Python static import graphs inspected; runtime dependency resolution is outside scope"
+        },
+        "checkCoverage": {
+          "status": "na",
+          "passed": 0,
+          "total": 0,
+          "quality": null
+        },
+        "commandStatus": "FAIL",
+        "status": "PASS"
+      },
+      {
+        "id": "eval-python-layers-defect",
+        "split": "evaluation",
+        "repositoryGroup": "synthetic-python-layers",
+        "causalFamily": "python-layer-boundary-bypass",
+        "parserTier": "py-ast",
+        "classification": "defect",
+        "repairOutcome": "not_evaluated",
+        "sourceRevision": "sha256:2083b967cc7351fe5cce35121c6979abb22b38d6ca5d18e26a44adb69f40d124",
+        "configDigest": "sha256:e9d621278770497e4250a020255cd3816fe59ce19a2925a3d63d637334ac328b",
+        "scope": {
+          "validatorKey": "architecture",
+          "codes": [
+            "ARC001"
+          ]
+        },
+        "expected": [
+          "ARC001@src/routes/orders.py"
+        ],
+        "forbidden": [],
+        "actual": [
+          "ARC001@src/routes/orders.py"
+        ],
+        "unexpected": [],
+        "missing": [],
+        "forbiddenObserved": [],
+        "abstained": false,
+        "applicability": {
+          "status": "checked",
+          "reason": "Repository-local JS/TS and Python static import graphs inspected; runtime dependency resolution is outside scope"
+        },
+        "checkCoverage": {
+          "status": "fail",
+          "passed": 0,
+          "total": 1,
+          "quality": "LOW"
+        },
+        "commandStatus": "FAIL",
+        "status": "PASS"
+      },
+      {
         "id": "eval-python-unsupported",
         "split": "evaluation",
         "repositoryGroup": "synthetic-python-unsupported",
@@ -899,10 +977,10 @@
         "unexpected": [],
         "missing": [],
         "forbiddenObserved": [],
-        "abstained": true,
+        "abstained": false,
         "applicability": {
-          "status": "unsupported",
-          "reason": "Python import graph analysis is unsupported: relative imports, package paths, src-layout resolution and dynamic imports are not verified; JS/TS findings, when present, are retained"
+          "status": "checked",
+          "reason": "Repository-local JS/TS and Python static import graphs inspected; runtime dependency resolution is outside scope"
         },
         "checkCoverage": {
           "status": "na",
@@ -994,40 +1072,40 @@
     ],
     "metrics": {
       "aggregate": {
-        "cases": 24,
-        "repositories": 12,
-        "truePositives": 12,
+        "cases": 26,
+        "repositories": 13,
+        "truePositives": 13,
         "falsePositives": 0,
         "falseNegatives": 0,
         "abstainedSupportedCases": 0,
         "unsupportedCases": 1,
-        "defectCases": 12,
-        "cleanControlCases": 12,
+        "defectCases": 13,
+        "cleanControlCases": 13,
         "cleanControlCasesWithFindings": 0,
         "repairs": {
           "accepted": 0,
           "rejected": 0,
-          "notEvaluated": 24
+          "notEvaluated": 26
         },
         "precision": 1,
         "recall": 1,
         "falsePositivesPerRepository": 0,
         "abstentionRate": 0,
-        "unsupportedRate": 0.04,
+        "unsupportedRate": 0.037037,
         "acceptedRepairRate": null,
         "confidence95": {
           "method": "Wilson score interval, z=1.96",
           "precision": {
-            "lower": 0.757499,
+            "lower": 0.771898,
             "upper": 1
           },
           "recall": {
-            "lower": 0.757499,
+            "lower": 0.771898,
             "upper": 1
           },
           "falsePositiveCaseRate": {
             "lower": 0,
-            "upper": 0.242501
+            "upper": 0.228102
           },
           "acceptedRepairRate": null
         }
@@ -1384,6 +1462,45 @@
             "acceptedRepairRate": null
           }
         },
+        "synthetic-python-layers": {
+          "cases": 2,
+          "repositories": 1,
+          "truePositives": 1,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "abstainedSupportedCases": 0,
+          "unsupportedCases": 0,
+          "defectCases": 1,
+          "cleanControlCases": 1,
+          "cleanControlCasesWithFindings": 0,
+          "repairs": {
+            "accepted": 0,
+            "rejected": 0,
+            "notEvaluated": 2
+          },
+          "precision": 1,
+          "recall": 1,
+          "falsePositivesPerRepository": 0,
+          "abstentionRate": 0,
+          "unsupportedRate": 0,
+          "acceptedRepairRate": null,
+          "confidence95": {
+            "method": "Wilson score interval, z=1.96",
+            "precision": {
+              "lower": 0.206543,
+              "upper": 1
+            },
+            "recall": {
+              "lower": 0.206543,
+              "upper": 1
+            },
+            "falsePositiveCaseRate": {
+              "lower": 0,
+              "upper": 0.793457
+            },
+            "acceptedRepairRate": null
+          }
+        },
         "synthetic-python-security": {
           "cases": 2,
           "repositories": 1,
@@ -1534,32 +1651,41 @@
       },
       "byDetector": {
         "architecture": {
-          "cases": 0,
-          "repositories": 0,
-          "truePositives": 0,
+          "cases": 2,
+          "repositories": 1,
+          "truePositives": 1,
           "falsePositives": 0,
           "falseNegatives": 0,
           "abstainedSupportedCases": 0,
           "unsupportedCases": 1,
-          "defectCases": 0,
-          "cleanControlCases": 0,
+          "defectCases": 1,
+          "cleanControlCases": 1,
           "cleanControlCasesWithFindings": 0,
           "repairs": {
             "accepted": 0,
             "rejected": 0,
-            "notEvaluated": 0
+            "notEvaluated": 2
           },
-          "precision": null,
-          "recall": null,
-          "falsePositivesPerRepository": null,
-          "abstentionRate": null,
-          "unsupportedRate": 1,
+          "precision": 1,
+          "recall": 1,
+          "falsePositivesPerRepository": 0,
+          "abstentionRate": 0,
+          "unsupportedRate": 0.333333,
           "acceptedRepairRate": null,
           "confidence95": {
             "method": "Wilson score interval, z=1.96",
-            "precision": null,
-            "recall": null,
-            "falsePositiveCaseRate": null,
+            "precision": {
+              "lower": 0.206543,
+              "upper": 1
+            },
+            "recall": {
+              "lower": 0.206543,
+              "upper": 1
+            },
+            "falsePositiveCaseRate": {
+              "lower": 0,
+              "upper": 0.793457
+            },
             "acceptedRepairRate": null
           }
         },
@@ -1839,32 +1965,41 @@
           }
         },
         "py-ast": {
-          "cases": 0,
-          "repositories": 0,
-          "truePositives": 0,
+          "cases": 2,
+          "repositories": 1,
+          "truePositives": 1,
           "falsePositives": 0,
           "falseNegatives": 0,
           "abstainedSupportedCases": 0,
           "unsupportedCases": 1,
-          "defectCases": 0,
-          "cleanControlCases": 0,
+          "defectCases": 1,
+          "cleanControlCases": 1,
           "cleanControlCasesWithFindings": 0,
           "repairs": {
             "accepted": 0,
             "rejected": 0,
-            "notEvaluated": 0
+            "notEvaluated": 2
           },
-          "precision": null,
-          "recall": null,
-          "falsePositivesPerRepository": null,
-          "abstentionRate": null,
-          "unsupportedRate": 1,
+          "precision": 1,
+          "recall": 1,
+          "falsePositivesPerRepository": 0,
+          "abstentionRate": 0,
+          "unsupportedRate": 0.333333,
           "acceptedRepairRate": null,
           "confidence95": {
             "method": "Wilson score interval, z=1.96",
-            "precision": null,
-            "recall": null,
-            "falsePositiveCaseRate": null,
+            "precision": {
+              "lower": 0.206543,
+              "upper": 1
+            },
+            "recall": {
+              "lower": 0.206543,
+              "upper": 1
+            },
+            "falsePositiveCaseRate": {
+              "lower": 0,
+              "upper": 0.793457
+            },
             "acceptedRepairRate": null
           }
         },
@@ -1912,135 +2047,145 @@
   },
   "observations": {
     "environment": {
-      "node": "v26.7.0",
+      "node": "v24.18.0",
       "platform": "darwin",
       "arch": "arm64"
     },
     "cases": [
       {
         "id": "dev-generated-security-control",
-        "coldMs": 198.768,
-        "warmMs": 204.239
+        "coldMs": 173.141,
+        "warmMs": 154.57
       },
       {
         "id": "dev-generated-security-defect",
-        "coldMs": 203.85,
-        "warmMs": 198.581
+        "coldMs": 159.906,
+        "warmMs": 153.073
       },
       {
         "id": "dev-go-todo-control",
-        "coldMs": 201.078,
-        "warmMs": 187.764
+        "coldMs": 147.889,
+        "warmMs": 131.137
       },
       {
         "id": "dev-go-todo-defect",
-        "coldMs": 196.788,
-        "warmMs": 193.239
+        "coldMs": 134.937,
+        "warmMs": 131.901
       },
       {
         "id": "dev-js-security-control",
-        "coldMs": 188.209,
-        "warmMs": 194.361
+        "coldMs": 130.862,
+        "warmMs": 136.81
       },
       {
         "id": "dev-js-security-defect",
-        "coldMs": 196.928,
-        "warmMs": 206.282
+        "coldMs": 139.53,
+        "warmMs": 136.407
       },
       {
         "id": "dev-monorepo-security-control",
-        "coldMs": 201.364,
-        "warmMs": 210.521
+        "coldMs": 137.823,
+        "warmMs": 142.46
       },
       {
         "id": "dev-monorepo-security-defect",
-        "coldMs": 211.968,
-        "warmMs": 202.787
+        "coldMs": 148.954,
+        "warmMs": 154.96
       },
       {
         "id": "dev-python-security-control",
-        "coldMs": 199.239,
-        "warmMs": 205.922
+        "coldMs": 150.433,
+        "warmMs": 154.897
       },
       {
         "id": "dev-python-security-defect",
-        "coldMs": 210.367,
-        "warmMs": 218.474
+        "coldMs": 148.446,
+        "warmMs": 149.492
       },
       {
         "id": "dev-sparse-doc-control",
-        "coldMs": 209.315,
-        "warmMs": 206.74
+        "coldMs": 165.493,
+        "warmMs": 157.575
       },
       {
         "id": "dev-sparse-doc-defect",
-        "coldMs": 203.855,
-        "warmMs": 201.097
+        "coldMs": 152.774,
+        "warmMs": 149.465
       },
       {
         "id": "eval-changesets-aws-control",
-        "coldMs": 475.206,
-        "warmMs": 507.798
+        "coldMs": 333.003,
+        "warmMs": 331.6
       },
       {
         "id": "eval-changesets-aws-defect",
-        "coldMs": 517.57,
-        "warmMs": 492.799
+        "coldMs": 347.069,
+        "warmMs": 338.808
       },
       {
         "id": "eval-chi-aws-control",
-        "coldMs": 266.557,
-        "warmMs": 254.532
+        "coldMs": 196.987,
+        "warmMs": 195.8
       },
       {
         "id": "eval-chi-aws-defect",
-        "coldMs": 265.248,
-        "warmMs": 262.865
+        "coldMs": 208.465,
+        "warmMs": 194.909
       },
       {
         "id": "eval-express-aws-control",
-        "coldMs": 297.556,
-        "warmMs": 301.383
+        "coldMs": 228.959,
+        "warmMs": 233.369
       },
       {
         "id": "eval-express-aws-defect",
-        "coldMs": 292.545,
-        "warmMs": 295.784
+        "coldMs": 220.138,
+        "warmMs": 222.007
       },
       {
         "id": "eval-fastify-aws-control",
-        "coldMs": 395.284,
-        "warmMs": 386.435
+        "coldMs": 288.077,
+        "warmMs": 321.602
       },
       {
         "id": "eval-fastify-aws-defect",
-        "coldMs": 377.286,
-        "warmMs": 391.196
+        "coldMs": 309.07,
+        "warmMs": 289.537
       },
       {
         "id": "eval-flask-aws-control",
-        "coldMs": 263.507,
-        "warmMs": 259.618
+        "coldMs": 188.224,
+        "warmMs": 185.752
       },
       {
         "id": "eval-flask-aws-defect",
-        "coldMs": 256.964,
-        "warmMs": 264.27
+        "coldMs": 185.488,
+        "warmMs": 180.476
+      },
+      {
+        "id": "eval-python-layers-control",
+        "coldMs": 340.508,
+        "warmMs": 338.91
+      },
+      {
+        "id": "eval-python-layers-defect",
+        "coldMs": 362.79,
+        "warmMs": 357.195
       },
       {
         "id": "eval-python-unsupported",
-        "coldMs": 186.371,
-        "warmMs": 194.362
+        "coldMs": 340.692,
+        "warmMs": 331.85
       },
       {
         "id": "eval-ts-security-control",
-        "coldMs": 188.776,
-        "warmMs": 185.606
+        "coldMs": 143.421,
+        "warmMs": 134.982
       },
       {
         "id": "eval-ts-security-defect",
-        "coldMs": 188.758,
-        "warmMs": 190.41
+        "coldMs": 137.895,
+        "warmMs": 135.734
       }
     ],
     "retainedRoot": null

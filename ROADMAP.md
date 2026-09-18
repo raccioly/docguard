@@ -1,6 +1,6 @@
 # DocGuard Roadmap
 
-<!-- docguard:last-reviewed 2026-09-15 -->
+<!-- docguard:last-reviewed 2026-09-18 -->
 
 This file contains current product intent only. Released work belongs in
 `CHANGELOG.md`; implementation history remains recoverable from Git. Completed or
@@ -152,7 +152,9 @@ runner, comparison, and baseline-envelope libraries,
 `schemas/docguard-benchmark-baseline.schema.json`. The baseline states what its
 ratios measure (`benchmark-precision`) and carries a derived caveat; it is not,
 and will not become, a calibration document — a balanced corpus has no base
-rate to calibrate against.
+rate to calibrate against. Per-code evidence is projected from that baseline
+into a shipped module and quoted beside findings, where the dominant and honest
+answer is that a code has never been benchmarked.
 
 ### R4 — Contribution-to-regression loop (released in v0.39.0; open to contributions)
 

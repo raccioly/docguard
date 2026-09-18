@@ -95,9 +95,27 @@ export function assertMappedFullDocumentWrites(projectDir, config = {}, roles = 
   }
 }
 
+/** Roles whose document lives somewhere other than its default path. */
+export function mappedRoleNames(config = {}) {
+  return Object.entries(config.docs?.roles || {})
+    .filter(([role, path]) => path !== DOC_ROLES[role])
+    .map(([role]) => role)
+    .sort();
+}
+
+/** Default paths of the roles a mapped layout has moved. */
+export function mappedDefaultPaths(config = {}) {
+  return new Set(mappedRoleNames(config).map(role => DOC_ROLES[role]));
+}
+
 export function assertDefaultDocWrites(config) {
-  if (Object.entries(config.docs?.roles || {}).some(([role, path]) => path !== DOC_ROLES[role])) {
-    throw new Error('Custom docs.roles currently support validation and read-only planning. Automatic document generation/repair is unavailable for mapped layouts; review and edit the existing documents directly.');
+  const mapped = mappedRoleNames(config);
+  if (mapped.length) {
+    throw new Error('Custom docs.roles currently support validation and read-only planning. '
+      + `Automatic document generation/repair is unavailable for mapped layouts (${mapped.join(', ')}); `
+      + 'review and edit the existing documents directly. '
+      + 'To scaffold DocGuard\'s own layout instead, remove docs.roles from .docguard.json '
+      + 'and create docs-canonical/ before re-running.');
   }
 }
 
@@ -206,6 +224,20 @@ export function findDocsByName(projectDir, aliases, dirs) {
  * @param {{maxDepth?: number, skip?: Set<string>}} [opts]
  * @returns {Array<{dir: string, roles: Record<string,string>, count: number}>}
  */
+/**
+ * A Spec Kit feature directory: `specs/003-enhanced-transcripts/` and the like.
+ * These hold ONE feature's spec and data model, so a directory that happens to
+ * carry two role-named files is still that feature's folder, never the
+ * project's canonical documentation root. Adopting one would point every
+ * validator at a single versioned feature.
+ */
+export function isFeatureSpecDirectory(relDir) {
+  if (typeof relDir !== 'string' || !relDir) return false;
+  const segments = relDir.split('/');
+  return segments.some((segment, index) => /^\d{3,}[-_]/.test(segment)
+    && (index === 0 || ['specs', 'spec', 'features'].includes(segments[index - 1].toLowerCase())));
+}
+
 export function detectCanonicalLayout(projectDir, opts = {}) {
   const maxDepth = opts.maxDepth ?? 4;
   const skip = opts.skip ?? new Set([
@@ -239,6 +271,9 @@ export function detectCanonicalLayout(projectDir, opts = {}) {
 
   return [...found.entries()]
     .map(([dir, roles]) => ({ dir, roles, count: Object.keys(roles).length }))
+    // A Spec Kit feature folder is one feature's paperwork, not the project's
+    // canonical root, however many role-named files it happens to hold.
+    .filter(hit => !isFeatureSpecDirectory(hit.dir))
     // Strongest first; the conventional directory wins an exact tie so an
     // already-conventional project is never told to "relocate" to itself.
     .sort((a, b) => b.count - a.count

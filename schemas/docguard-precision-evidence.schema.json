@@ -1,0 +1,159 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raccioly.github.io/docguard/schemas/docguard-precision-evidence.schema.json",
+  "title": "DocGuard precision evidence",
+  "description": "Benchmark evidence for finding codes. The root describes the `precisionEvidence` block that `docguard guard --format json` attaches to its result, scoped to the codes that run emitted; `$defs.artifact` describes the generated module the block is served from. The unit of evidence is the finding code. DocGuard defines many more codes than its corpus measures, so a code the corpus never exercised reports `not-measured`, carries no number, and never inherits the measured precision of another code in the same validator. Only a measured code may fall back to a coarser measured tier, and the fallback names that tier. Every ratio is benchmark precision on a deliberately balanced labelled corpus — not the probability that a finding in a user's repository is real.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["measures", "caveat", "minN", "source", "coverage", "codes"],
+  "properties": {
+    "measures": { "$ref": "#/$defs/measures" },
+    "caveat": { "$ref": "#/$defs/caveat" },
+    "minN": { "$ref": "#/$defs/minN" },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["toolVersion", "toolRevision", "reviewStatus", "reviewedAt", "runningVersion", "matchesRunningVersion"],
+      "properties": {
+        "toolVersion": { "description": "The DocGuard version the benchmark ran on.", "type": "string", "minLength": 1, "maxLength": 64 },
+        "toolRevision": { "type": ["string", "null"], "pattern": "^[0-9a-f]{40}([0-9a-f]{24})?$" },
+        "reviewStatus": { "enum": ["candidate", "reviewed"] },
+        "reviewedAt": { "type": ["string", "null"], "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+        "runningVersion": { "description": "The version producing this report.", "type": ["string", "null"], "maxLength": 64 },
+        "matchesRunningVersion": { "description": "False means the numbers were measured on a different build than the one reporting them, which a reader must be told.", "type": "boolean" }
+      }
+    },
+    "coverage": {
+      "description": "How much of what this run reported has ever been benchmarked. `notMeasured` is expected to dominate and is the honest headline.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["codesInRun", "measured", "notMeasured", "quotable"],
+      "properties": {
+        "codesInRun": { "type": "integer", "minimum": 0 },
+        "measured": { "type": "integer", "minimum": 0 },
+        "notMeasured": { "type": "integer", "minimum": 0 },
+        "quotable": { "description": "Measured codes whose own precision denominator reaches minN.", "type": "integer", "minimum": 0 }
+      }
+    },
+    "codes": {
+      "type": "object",
+      "propertyNames": { "pattern": "^[A-Z]{3}[0-9]{3}$" },
+      "additionalProperties": { "$ref": "#/$defs/codeEvidence" }
+    }
+  },
+  "$defs": {
+    "measures": {
+      "description": "What every ratio is. Deliberately not a claimspec `calibration` kind: that names P(event) under a real base rate, and a balanced corpus has none.",
+      "const": "benchmark-precision"
+    },
+    "caveat": { "description": "The sentence a consumer must show beside any quoted ratio.", "type": "string", "minLength": 1, "maxLength": 512 },
+    "minN": { "description": "Smallest precision denominator a point estimate may be quoted from.", "type": "integer", "minimum": 1 },
+    "ratio": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+    "wilson": {
+      "description": "Wilson 95% interval as [lower, upper], or null when the denominator is zero.",
+      "oneOf": [
+        { "type": "null" },
+        { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number", "minimum": 0, "maximum": 1 } }
+      ]
+    },
+    "cell": {
+      "type": "object",
+      "required": ["cases", "repositoryGroups", "causalFamilies", "truePositives", "falsePositives", "falseNegatives", "cleanControls", "cleanControlsWithFindings", "precisionDenominator", "precision", "precisionInterval", "recall", "recallInterval", "quotable", "notQuotableReason"],
+      "properties": {
+        "cases": { "type": "integer", "minimum": 0 },
+        "repositoryGroups": { "type": "integer", "minimum": 0 },
+        "causalFamilies": { "type": "integer", "minimum": 0 },
+        "truePositives": { "type": "integer", "minimum": 0 },
+        "falsePositives": { "type": "integer", "minimum": 0 },
+        "falseNegatives": { "type": "integer", "minimum": 0 },
+        "cleanControls": { "type": "integer", "minimum": 0 },
+        "cleanControlsWithFindings": { "type": "integer", "minimum": 0 },
+        "precisionDenominator": { "description": "truePositives + falsePositives — the n behind `precision`.", "type": "integer", "minimum": 0 },
+        "precision": { "$ref": "#/$defs/ratio" },
+        "precisionInterval": { "$ref": "#/$defs/wilson" },
+        "recall": { "$ref": "#/$defs/ratio" },
+        "recallInterval": { "$ref": "#/$defs/wilson" },
+        "quotable": { "description": "True when `precisionDenominator` reaches minN. False means the point estimate must not be repeated on its own.", "type": "boolean" },
+        "notQuotableReason": { "type": ["string", "null"], "maxLength": 512 }
+      }
+    },
+    "codeEvidence": {
+      "oneOf": [
+        {
+          "title": "Not measured",
+          "description": "No benchmark case exercises this code. It carries no number and no backoff: inheriting its validator's measured precision would invent evidence.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "reason"],
+          "properties": {
+            "status": { "const": "not-measured" },
+            "reason": { "type": "string", "minLength": 1, "maxLength": 512 }
+          }
+        },
+        {
+          "title": "Measured",
+          "allOf": [
+            { "$ref": "#/$defs/cell" },
+            {
+              "type": "object",
+              "required": ["status", "validators", "backoff"],
+              "properties": {
+                "status": { "const": "measured" },
+                "validators": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1, "maxLength": 64 } },
+                "backoff": {
+                  "description": "A coarser measured tier, present only when this code's own denominator is below minN and the coarser tier reaches it. Null otherwise.",
+                  "oneOf": [
+                    { "type": "null" },
+                    {
+                      "allOf": [
+                        { "$ref": "#/$defs/cell" },
+                        {
+                          "type": "object",
+                          "required": ["tier", "key"],
+                          "properties": {
+                            "tier": { "enum": ["validator", "aggregate"] },
+                            "key": { "type": "string", "minLength": 1, "maxLength": 64 }
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "artifact": {
+      "description": "The generated module's object (cli/precision-evidence-data.mjs), derived from benchmarks/baseline.json. `byCode` holds only measured codes; absence is what `not-measured` is served from.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["$schema", "schemaVersion", "measures", "caveat", "minN", "source", "aggregate", "byValidator", "byCode"],
+      "properties": {
+        "$schema": { "const": "https://raccioly.github.io/docguard/schemas/docguard-precision-evidence.schema.json" },
+        "schemaVersion": { "const": 1 },
+        "measures": { "$ref": "#/$defs/measures" },
+        "caveat": { "$ref": "#/$defs/caveat" },
+        "minN": { "$ref": "#/$defs/minN" },
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["manifestDigest", "toolVersion", "toolRevision", "reviewStatus", "reviewedAt", "reviewer", "limitations"],
+          "properties": {
+            "manifestDigest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+            "toolVersion": { "type": "string", "minLength": 1, "maxLength": 64 },
+            "toolRevision": { "type": ["string", "null"], "pattern": "^[0-9a-f]{40}([0-9a-f]{24})?$" },
+            "reviewStatus": { "enum": ["candidate", "reviewed"] },
+            "reviewedAt": { "type": ["string", "null"], "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+            "reviewer": { "type": ["string", "null"], "maxLength": 128 },
+            "limitations": { "type": "string", "minLength": 1, "maxLength": 1024 }
+          }
+        },
+        "aggregate": { "$ref": "#/$defs/cell" },
+        "byValidator": { "type": "object", "additionalProperties": { "$ref": "#/$defs/cell" } },
+        "byCode": { "type": "object", "propertyNames": { "pattern": "^[A-Z]{3}[0-9]{3}$" }, "additionalProperties": { "$ref": "#/$defs/codeEvidence" } }
+      }
+    }
+  }
+}
