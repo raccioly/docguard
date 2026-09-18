@@ -206,13 +206,13 @@ describe('Traceability Validator', () => {
       'a bare reference shared with a tombstone must not certify the active requirement');
   });
 
-  // Regression for hugocross Bug 5 (compound):
+  // Regression for a downstream project Bug 5 (compound):
   //   (a) `// @doc API-REFERENCE.md` annotations were documented in templates
   //       but never actually scanned — they had zero effect on traceability.
   //   (b) Next.js App Router route files (`src/app/api/...`) did not match
   //       any TRACE_MAP pattern, so a fully-populated API tree was reported
   //       as "API-REFERENCE.md — unlinked doc".
-  describe('@doc annotations and Next.js App Router (hugocross bug 5)', () => {
+  describe('@doc annotations and Next.js App Router (a downstream project bug 5)', () => {
     it('@doc annotation links a source file to a canonical doc', () => {
       mkdirSync(join(tmpDir, 'docs-canonical'), { recursive: true });
       writeFileSync(join(tmpDir, 'docs-canonical', 'API-REFERENCE.md'), '# API');

@@ -16,6 +16,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   masked by another, so its fault survived while every test stayed green — and
   the missing case is now covered.
 
+### Changed
+
+- Completed the pass to generic project references: the earlier sweep matched a
+  narrower pattern than the one used to find them, so sixteen mentions survived
+  in source comments, tests and changelog prose. Two references are deliberately
+  kept: `.docguard-archive.json` records an archived spec path plus the
+  `git restore` command that recovers it, and renaming that string would point
+  the restore at a path that never existed.
 
 ### Fixed
 
@@ -1840,7 +1848,7 @@ Python, and AWS/AppSync projects.
   longer scans `commands/docguard.*.md` (DocGuard's slash-command docs, which it
   installs into the project) for count claims. A stale "N validators" baked into
   those shipped docs was being reported as the *user's* drift in every project
-  that had them (field test: quick-recon-tool, hugocross). A user's own
+  that had them (field test: a downstream project, a downstream project). A user's own
   `commands/<name>.md` is unaffected.
 - **Dogfooding closure** — Canonical-Sync now scans **AGENTS.md** in addition to
   README for "ships N commands"/"N validators" surface claims (it only checked
