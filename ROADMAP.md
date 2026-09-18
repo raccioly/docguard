@@ -1,6 +1,6 @@
 # DocGuard Roadmap
 
-<!-- docguard:last-reviewed 2026-09-15 -->
+<!-- docguard:last-reviewed 2026-09-18 -->
 
 This file contains current product intent only. Released work belongs in
 `CHANGELOG.md`; implementation history remains recoverable from Git. Completed or

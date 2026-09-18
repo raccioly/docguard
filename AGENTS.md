@@ -1,6 +1,6 @@
 # AI Agent Instructions — DocGuard
 
-<!-- docguard:last-reviewed 2026-09-15 -->
+<!-- docguard:last-reviewed 2026-09-18 -->
 
 > This project follows **Canonical-Driven Development (CDD)**.
 > Documentation is the source of truth. Read before coding.
@@ -66,7 +66,9 @@ config/CLI), `watch` (live re-guard).
 ## Consuming Guard Output (agents)
 
 Prefer the machine contract over parsing prose: `docguard guard --format json`
-returns `status` (PASS/WARN/FAIL, matches exit code 0/2/1), `findings[]`
+returns `status` (PASS/WARN/FAIL, matches exit code 0/2/1 — but FAIL exits `3`,
+not `1`, when the project has no `.docguard.json`, so branch on `status` rather
+than assuming `1`), `findings[]`
 (`{code, severity, confidence, message, location, suggestion}`), `nextStep`,
 `reportable[]` (low-confidence findings — verify before acting), `coverage`
 (Markdown tier map incl. `unclassified[]`), `evidence`, and `semanticClaims.count`

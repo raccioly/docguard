@@ -1,9 +1,9 @@
 # Security
 
 <!-- docguard:quality negation-load off — prohibitions define security boundaries -->
-<!-- docguard:version 0.8.0 -->
+<!-- docguard:version 0.9.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-09-15 -->
+<!-- docguard:last-reviewed 2026-09-18 -->
 
 ## Overview
 
@@ -90,7 +90,7 @@ Pass untrusted arguments through argv arrays and validate values for their inten
 | verify --evidence | None | Reads the strict local manifest, selected Markdown, source files, and saved reports; guard consumes the same evaluator |
 | retire --write | Explicit clean tracked documentation only | Requires retained-ref recovery proof, clean replacement/evidence docs, and no live Markdown backreferences |
 | init, generate | Documentation and configuration scaffolding | Explicit force options may overwrite content |
-| hooks | Hook configuration and executable scripts | Inventory distinguishes managed, legacy, foreign, missing, and unreadable hooks; removal preserves foreign commands around a managed block; auto-fix hooks may edit and stage documentation |
+| hooks | Hook configuration and executable scripts | Inventory distinguishes managed, legacy, foreign, missing, and unreadable hooks; removal preserves foreign commands around a managed block; auto-fix hooks may edit and stage documentation. A foreign hook is skipped under `--force` and no `.bak` is written, so overwriting one requires `--force` twice rather than a plain re-install. An installed hook skips a working tree with no `.docguard.json` and permits guard exit 3, so a branch or worktree that never adopted DocGuard is not blocked by a repo-wide hook |
 | report | None by default | `--out` writes an artifact |
 
 Review the exact command and flags before assigning privileges. CLI help is the authoritative command inventory.

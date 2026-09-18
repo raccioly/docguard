@@ -860,12 +860,12 @@
           {
             "requirementId": "FR-018",
             "file": "tests/hooks-contract.test.mjs",
-            "line": 17
+            "line": 18
           },
           {
             "requirementId": "FR-019",
             "file": "tests/hooks-contract.test.mjs",
-            "line": 18
+            "line": 19
           },
           {
             "requirementId": "FR-020",
@@ -1975,6 +1975,11 @@
           },
           {
             "requirementId": "FR-009",
+            "file": "benchmarks/lib/baseline.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-009",
             "file": "benchmarks/lib/compare.mjs",
             "line": 4
           },
@@ -2027,6 +2032,11 @@
             "requirementId": "FR-017",
             "file": "benchmarks/lib/runner.mjs",
             "line": 6
+          },
+          {
+            "requirementId": "FR-018",
+            "file": "benchmarks/lib/baseline.mjs",
+            "line": 7
           }
         ],
         "testEvidence": [
@@ -2079,6 +2089,11 @@
             "requirementId": "FR-008",
             "file": "tests/benchmark-manifest.test.mjs",
             "line": 11
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "tests/benchmark-baseline.test.mjs",
+            "line": 9
           },
           {
             "requirementId": "FR-009",
@@ -2136,6 +2151,11 @@
             "line": 11
           },
           {
+            "requirementId": "FR-018",
+            "file": "tests/benchmark-baseline.test.mjs",
+            "line": 10
+          },
+          {
             "requirementId": "SC-001",
             "file": "tests/benchmark-manifest.test.mjs",
             "line": 13
@@ -2162,6 +2182,11 @@
           },
           {
             "requirementId": "SC-005",
+            "file": "tests/benchmark-baseline.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "SC-005",
             "file": "tests/benchmark-manifest.test.mjs",
             "line": 15
           },
@@ -2169,6 +2194,11 @@
             "requirementId": "SC-006",
             "file": "tests/feedback-fixture.test.mjs",
             "line": 15
+          },
+          {
+            "requirementId": "SC-007",
+            "file": "tests/benchmark-baseline.test.mjs",
+            "line": 12
           }
         ]
       }
