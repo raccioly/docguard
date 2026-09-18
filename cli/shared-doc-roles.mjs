@@ -151,6 +151,42 @@ export function roleForFilename(filename) {
 }
 
 /**
+ * Resolve a set of known document names to the files that actually exist.
+ *
+ * The literal-path approach — `existsSync(resolve(dir, 'ROADMAP.md'))` for each
+ * name — fails two ways. It misses every spelling not in the list (`PLAN.md`,
+ * `TASKS.md`, `docs/ROADMAP.md`), and it is only case-insensitive by accident:
+ * on macOS the probe matches `roadmap.md`, on Linux it does not, so the same
+ * repository is judged differently by platform.
+ *
+ * Reading each directory and normalising what is there fixes both: matching is
+ * explicitly case- and separator-insensitive everywhere, and one alias table
+ * covers the spellings people use.
+ *
+ * @param {string} projectDir
+ * @param {string[]} aliases  normalised names to accept (see normaliseDocName)
+ * @param {string[]} dirs     project-relative directories to search ('' = root)
+ * @returns {string[]} project-relative POSIX paths, de-duplicated, existing
+ */
+export function findDocsByName(projectDir, aliases, dirs) {
+  const want = new Set(aliases);
+  const out = [];
+  for (const dir of dirs) {
+    const abs = dir ? resolve(projectDir, dir) : resolve(projectDir);
+    let entries;
+    try { entries = readdirSync(abs, { withFileTypes: true }); } catch { continue; }
+    for (const entry of entries) {
+      if (!entry.isFile()) continue;
+      const stem = normaliseDocName(entry.name);
+      if (!stem || !want.has(stem)) continue;
+      const rel = dir ? `${dir}/${entry.name}` : entry.name;
+      if (!out.includes(rel)) out.push(rel);
+    }
+  }
+  return out;
+}
+
+/**
  * Find directories that already hold canonical documents.
  *
  * DocGuard assumed `docs-canonical/` and asked afterwards. A project keeping the

@@ -22,6 +22,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Judge the same repository the same way on every platform. Three detectors
+  probed for literal filenames — `existsSync(resolve(dir, 'ROADMAP.md'))` — which
+  matches `roadmap.md` on a case-insensitive filesystem (macOS) and not on a
+  case-sensitive one (Linux). CI and a laptop could therefore disagree about
+  whether the same TODO was tracked. Matching is now explicitly case- and
+  separator-insensitive, decided by DocGuard rather than by the filesystem.
+- Recognise work-tracking documents by name rather than by exact path. A TODO
+  recorded in `docs/ROADMAP.md`, `PLAN.md` or `TASKS.md` was reported as
+  untracked because only ten literal paths were consulted. Tracking documents
+  are now found by alias across the conventional documentation directories;
+  `README.md` and `NOTES.md` still do not count as work lists.
+- Recognise test directories beyond four exact names. `testing/`, `e2e/`,
+  `integration/`, `specs/` and `Tests/` now satisfy the same signal as `tests/`.
 - Stop scaffolding a second canonical directory next to an existing one.
   A project keeping its documents in `docs/canonical/` read as empty, because
   the first-run check only walked `docs-canonical/`. `init` then reported "no
