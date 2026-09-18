@@ -5,7 +5,7 @@
     "status": "reviewed",
     "reviewedAt": "2026-09-18",
     "reviewer": "DocGuard maintainers",
-    "scope": "Twelve exact defect/control pairs across seven synthetic and five pinned public repository groups; one Python architecture case is now checked by the analyzer but remains classified unsupported_syntax and excluded from accuracy ratios pending re-adjudication.",
+    "scope": "Twelve exact defect/control pairs across seven synthetic and five pinned public repository groups; one Python architecture case is now checked by the analyzer and remains classified unsupported_syntax, excluded from accuracy ratios: its fixture is a dynamic import (import_module(get_plugin_name())), which the analyzer's own applicability reason places outside scope, and it has no paired defect, so scoring it as a clean control would credit a blind spot as evidence.",
     "methodology": "Labels were authored from pinned source and seeded mutations before DocGuard output was reviewed. Traceability-only fixture comments were re-adjudicated on 2026-09-14; expected findings and controls were unchanged. Re-run in full, including the pinned public sources, on tool version 0.41.7 on 2026-09-18: comparison PASS with zero regressions and byte-identical metrics. The only case-level change was the Python architecture case moving from applicability unsupported to checked, because the analyzer gained Python import-graph support after 0.38.0; its classification and its exclusion from ratios are unchanged.",
     "limitations": "Finite scoped cases do not establish exhaustive documentation or detector correctness. Seven of the tool’s finding codes are measured here; the rest carry no benchmark evidence.",
     "measures": "benchmark-precision",
