@@ -2,16 +2,16 @@
 
 <!-- docguard:quality negation-load off — an environment doc precisely describes the ABSENCE of requirements (no install step, no database, no credential for the CLI); the prohibitive phrasing is accurate and intentional, not sloppy writing -->
 
-<!-- docguard:version 0.7.0 -->
+<!-- docguard:version 0.8.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-09-17 -->
+<!-- docguard:last-reviewed 2026-09-18 -->
 
 > The DocGuard CLI needs no environment variables. One optional variable, `DOCGUARD_API_KEY`, applies only to the HTTP MCP server. DocGuard has a single optional-load npm dependency (`@babel/parser`) and optionally uses the developer's own `python3`; everything else is Node.js built-ins.
 
 | Metadata | Value |
 |----------|-------|
 | **Status** | ![Status](https://img.shields.io/badge/status-active-brightgreen) |
-| **Version** | `0.7.0` |
+| **Version** | `0.8.0` |
 
 ---
 
@@ -64,6 +64,10 @@ node cli/docguard.mjs diagnose --dir /path/to/project
 
 # Quick health check
 node cli/docguard.mjs guard --format json
+
+# Regenerate llms.txt / llms-full.txt after editing a canonical or optional doc
+# (tests/llms-bundle-drift.test.mjs fails and names this command)
+npm run llms
 ```
 
 ## CI/CD
@@ -71,6 +75,9 @@ node cli/docguard.mjs guard --format json
 ```bash
 # GitHub Actions — use the shipped template
 cp templates/ci/github-actions.yml .github/workflows/docguard.yml
+
+# GitLab CI — the shipped component (see CI-RECIPES.md, Recipe 1b)
+cp templates/ci/gitlab-component.yml .gitlab-ci.yml
 
 # Or run CI command directly
 node cli/docguard.mjs ci --threshold 70 --format json
@@ -82,6 +89,7 @@ node cli/docguard.mjs ci --threshold 70 --format json
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 0.8.0 | 2026-09-18 | DocGuard Team | Freshness review: verified the MCP key contract against `cli/commands/mcp.mjs`; added `npm run llms` and the shipped GitLab CI component, both of which were missing |
 | 0.7.0 | 2026-09-17 | @raccioly | Documented `DOCGUARD_API_KEY` (HTTP MCP server); corrected the blanket "no API keys" claim that contradicted SECURITY.md |
 | 0.6.0 | 2026-05-31 | DocGuard Team | v0.24.0: documented Python 3 as an optional prerequisite (enables the AST Python tier; regex fallback when absent); de-bristled the test-count example |
 | 0.5.0 | 2026-03-13 | @raccioly | Added diagnose, CI template, development examples |

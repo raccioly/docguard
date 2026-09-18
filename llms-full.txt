@@ -796,16 +796,16 @@ fields.
 
 <!-- docguard:quality negation-load off — an environment doc precisely describes the ABSENCE of requirements (no install step, no database, no credential for the CLI); the prohibitive phrasing is accurate and intentional, not sloppy writing -->
 
-<!-- docguard:version 0.7.0 -->
+<!-- docguard:version 0.8.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-09-17 -->
+<!-- docguard:last-reviewed 2026-09-18 -->
 
 > The DocGuard CLI needs no environment variables. One optional variable, `DOCGUARD_API_KEY`, applies only to the HTTP MCP server. DocGuard has a single optional-load npm dependency (`@babel/parser`) and optionally uses the developer's own `python3`; everything else is Node.js built-ins.
 
 | Metadata | Value |
 |----------|-------|
 | **Status** | ![Status](https://img.shields.io/badge/status-active-brightgreen) |
-| **Version** | `0.7.0` |
+| **Version** | `0.8.0` |
 
 ---
 
@@ -858,6 +858,10 @@ node cli/docguard.mjs diagnose --dir /path/to/project
 
 # Quick health check
 node cli/docguard.mjs guard --format json
+
+# Regenerate llms.txt / llms-full.txt after editing a canonical or optional doc
+# (tests/llms-bundle-drift.test.mjs fails and names this command)
+npm run llms
 ```
 
 ## CI/CD
@@ -865,6 +869,9 @@ node cli/docguard.mjs guard --format json
 ```bash
 # GitHub Actions — use the shipped template
 cp templates/ci/github-actions.yml .github/workflows/docguard.yml
+
+# GitLab CI — the shipped component (see CI-RECIPES.md, Recipe 1b)
+cp templates/ci/gitlab-component.yml .gitlab-ci.yml
 
 # Or run CI command directly
 node cli/docguard.mjs ci --threshold 70 --format json
@@ -876,6 +883,7 @@ node cli/docguard.mjs ci --threshold 70 --format json
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 0.8.0 | 2026-09-18 | DocGuard Team | Freshness review: verified the MCP key contract against `cli/commands/mcp.mjs`; added `npm run llms` and the shipped GitLab CI component, both of which were missing |
 | 0.7.0 | 2026-09-17 | @raccioly | Documented `DOCGUARD_API_KEY` (HTTP MCP server); corrected the blanket "no API keys" claim that contradicted SECURITY.md |
 | 0.6.0 | 2026-05-31 | DocGuard Team | v0.24.0: documented Python 3 as an optional prerequisite (enables the AST Python tier; regex fallback when absent); de-bristled the test-count example |
 | 0.5.0 | 2026-03-13 | @raccioly | Added diagnose, CI template, development examples |
@@ -1366,6 +1374,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `ENVIRONMENT.md` now lists `npm run llms` under Development and the shipped
+  GitLab CI component under CI/CD. Both were missing: the drift test added with
+  the llms bundles names `npm run llms` in its failure message, so a contributor
+  who edits a canonical document meets that command with nothing in the
+  environment doc to explain it, and `templates/ci/gitlab-component.yml` ships
+  beside the Actions workflow but only the latter was shown.
+
 - **The architecture validator has benchmark evidence for the first time.** A
   new `synthetic-python-layers` pair measures ARC001 on a statically analysable
   three-layer Python package: the clean control routes every call
@@ -1394,40 +1409,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `cli/precision-evidence-data.mjs`, which ships with the package because
   `benchmarks/` deliberately does not. A test fails on drift.
 
-### Fixed
-
-- **`init` no longer adopts a Spec Kit feature folder as the project's canonical
-  root, then refuses to proceed from the config it just wrote.** A repository
-  with `specs/002-some-feature/spec.md` and `data-model.md` had that single
-  feature directory adopted, a two-key `.docguard.json` written, and init then
-  threw from its own mapped-layout guard. Every re-run repeated it, by a second
-  code path, so the project could not be initialized without editing the config
-  by hand. Three things were wrong and all three are fixed:
-  - A numbered feature directory (`specs/003-slug/`) is no longer an adoption
-    candidate. It holds one feature's paperwork, not the project's documentation.
-  - Adopting a layout no longer aborts init. The guard that forbids generating
-    INTO a mapped document stays, but init now simply scaffolds the roles the
-    mapping has not placed, so it neither writes into a mapped document nor
-    creates a duplicate beside it. `setup`, `init --wizard` and `diagnose --auto`
-    still generate whole documents and still honour the guard.
-  - Adoption no longer writes `.docguard.json` itself. init owns the single
-    write, so a failed run leaves nothing behind and an adopted layout gets a
-    complete config with its profile, project type and validators, instead of a
-    two-key fragment that short-circuited the real one.
-  The guard's message now names the mapped roles and says how to leave the state.
-- **A Cloudflare Worker is typed `api` again, not `library`.** `init` and `setup`
-  each carried a private copy of project-type detection, and neither had learned
-  about Workers, so `needsEnvVars`, `needsEnvExample`, `needsE2E` and
-  `needsDatabase` were all set wrong and the validators that matter most for a
-  Worker were silently disabled. All three copies are now one exported function
-  (`wrangler.toml`, `wrangler.json` and `wrangler.jsonc` were already all
-  recognised there), and a test fails if a private copy reappears.
-- A detected Playwright or Cypress config, or an `e2e`/`tests/e2e` directory, now
-  sets `needsE2E` regardless of the project type's default. A suite on disk is
-  evidence; the type default is only a guess.
-
-
 ### Changed
+
+- **`ENVIRONMENT.md` reviewed against the code, completing the freshness pass.**
+  It was the one canonical document still on an older marker, and it crossed the
+  10-commit review threshold. Every claim was checked against
+  `cli/commands/mcp.mjs` and holds: the HTTP MCP server binds `127.0.0.1` by
+  default, refuses a non-loopback host without a key, lets `--api-key` take
+  precedence over `DOCGUARD_API_KEY`, and answers `401` without a matching
+  `Authorization: Bearer` or `X-API-Key` header. No correction was needed, so the
+  marker bump is the review record rather than a cosmetic refresh.
 
 - **Published benchmark aggregates moved**, because two labelled cases entered
   the corpus: 12 defect/12 control pairs across 12 repository groups became
@@ -1530,6 +1521,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   is refused with instructions to regenerate it after review.
 
 ### Fixed
+
+- **`init` no longer adopts a Spec Kit feature folder as the project's canonical
+  root, then refuses to proceed from the config it just wrote.** A repository
+  with `specs/002-some-feature/spec.md` and `data-model.md` had that single
+  feature directory adopted, a two-key `.docguard.json` written, and init then
+  threw from its own mapped-layout guard. Every re-run repeated it, by a second
+  code path, so the project could not be initialized without editing the config
+  by hand. Three things were wrong and all three are fixed:
+  - A numbered feature directory (`specs/003-slug/`) is no longer an adoption
+    candidate. It holds one feature's paperwork, not the project's documentation.
+  - Adopting a layout no longer aborts init. The guard that forbids generating
+    INTO a mapped document stays, but init now simply scaffolds the roles the
+    mapping has not placed, so it neither writes into a mapped document nor
+    creates a duplicate beside it. `setup`, `init --wizard` and `diagnose --auto`
+    still generate whole documents and still honour the guard.
+  - Adoption no longer writes `.docguard.json` itself. init owns the single
+    write, so a failed run leaves nothing behind and an adopted layout gets a
+    complete config with its profile, project type and validators, instead of a
+    two-key fragment that short-circuited the real one.
+  The guard's message now names the mapped roles and says how to leave the state.
+- **A Cloudflare Worker is typed `api` again, not `library`.** `init` and `setup`
+  each carried a private copy of project-type detection, and neither had learned
+  about Workers, so `needsEnvVars`, `needsEnvExample`, `needsE2E` and
+  `needsDatabase` were all set wrong and the validators that matter most for a
+  Worker were silently disabled. All three copies are now one exported function
+  (`wrangler.toml`, `wrangler.json` and `wrangler.jsonc` were already all
+  recognised there), and a test fails if a private copy reappears.
+- A detected Playwright or Cypress config, or an `e2e`/`tests/e2e` directory, now
+  sets `needsE2E` regardless of the project type's default. A suite on disk is
+  evidence; the type default is only a guess.
+
+
 
 - The documented network-free recipe `node benchmarks/run.mjs --baseline
   benchmarks/baseline.json` failed with ten spurious `case-removed` regressions
@@ -1741,22 +1764,7 @@ Automated weekly release — batches everything merged since `v0.41.1`.
 
 ### Fixed
 
-- Require the extracted npm package's `--version` output to equal its exact
-  packed `package.json` version, preventing a plausible but stale semantic
-  version from passing release smoke tests.
-
-## [0.41.1] - 2026-09-15
-
-Automated weekly release — batches everything merged since `v0.41.0`.
-
-### Changed
-
-- Anchor lifecycle evidence to main (#400)
-- Anchor R9 lifecycle evidence to main (#399)
-- Fix living spec finalization and close R9 (#398)
-
-
-<!-- truncated: 3228 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 3243 more lines — read CHANGELOG.md directly -->
 
 ---
 
