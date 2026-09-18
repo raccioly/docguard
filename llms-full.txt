@@ -11,16 +11,16 @@
 
 # Architecture
 
-<!-- docguard:version 1.4.0 -->
+<!-- docguard:version 1.5.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-09-15 -->
+<!-- docguard:last-reviewed 2026-09-18 -->
 
 | Metadata | Value |
 |----------|-------|
 | **Status** | ![Status](https://img.shields.io/badge/status-active-brightgreen) |
-| **Version** | `1.4.0` |
-| **Last Updated** | 2026-09-15 |
-| **Project Size** | ~24K lines across `cli/` |
+| **Version** | `1.5.0` |
+| **Last Updated** | 2026-09-18 |
+| **Project Size** | ~39K lines across `cli/` — measured 2026-09-18 with `wc -l` over `cli/**/*.mjs`; re-measure rather than trust this figure |
 
 ---
 
@@ -39,7 +39,7 @@ It targets development teams and AI coding agents that need to maintain document
 | **Document lifecycle** | Finds exact terminal-status docs and completed-task review candidates; explicit retirement removes documentation from active context only after its source revision is reachable from a retained Git ref | `cli/scanners/document-lifecycle.mjs`, `cli/validators/document-lifecycle.mjs`, `cli/commands/retire.mjs` | Scanner is read-only; retirement uses the shared multi-file transaction and remains explicit |
 | **Spec lifecycle registry** | Projects immutable spec identities, reviewed lifecycle/lineage/scope, artifact digests, task state, qualified implementation/test evidence, bounded outcomes, and recovery tombstones into one byte-stable control file | `cli/scanners/spec-registry.mjs`, `cli/scanners/requirement-evidence.mjs`, `cli/validators/spec-registry.mjs`, `cli/commands/specs.mjs` | `specs --write` preserves reviewed fields; stale checks identify bounded field paths and distinguish canonical ordering from changed content; only committed, clean, digest-current lifecycle entries can defer traceability, while a current planned entry that is new, removed from the index, or modified pending commit remains advisory; `specs complete` is the only verified-delivery writer |
 | **Reconciliation graph** | Inventories changed paths independently from bounded patch text, maps them to direct spec evidence, and keeps mechanical facts, approved intent, decisions, unrelated changes, and unsupported evidence separate | `cli/shared-git.mjs`, `cli/scanners/reconciliation.mjs`, `cli/commands/reconcile.mjs` | Timeout, overflow, parse failure, or incomplete inventory blocks a ready result; planning is read-only and `--write` never rewrites requirements |
-| **Precision evidence** | Runs labelled synthetic and exact-commit public cases, separates deterministic results from observations, calculates null-safe quality metrics and confidence bounds, compares case-first baselines, and persists them in a provenance envelope whose measure (`benchmark-precision`) and caveat are derived from the cases and re-verified on load | `benchmarks/`, `schemas/docguard-benchmark.schema.json`, `schemas/docguard-benchmark-baseline.schema.json` | External runs are explicit; third-party project code is never executed and disposable checkouts are removed by default |
+| **Precision evidence** | Runs labelled synthetic and exact-commit public cases, separates deterministic results from observations, calculates null-safe quality metrics and confidence bounds, compares case-first baselines, persists them in a provenance envelope whose measure (`benchmark-precision`) and caveat are derived from the cases and re-verified on load, and projects per-code evidence into a generated module the CLI quotes at finding time | `benchmarks/`, `cli/precision-evidence.mjs`, `schemas/docguard-benchmark.schema.json`, `schemas/docguard-benchmark-baseline.schema.json`, `schemas/docguard-precision-evidence.schema.json` | External runs are explicit; third-party project code is never executed and disposable checkouts are removed by default |
 | **Feedback fixtures** | Validates synthetic reproductions and opposite controls, reduces them under an explicit predicate, derives duplicate identities, and emits test-only contributions | `cli/feedback-fixture.mjs`, `cli/commands/feedback.mjs`, `schemas/docguard-feedback-fixture.schema.json` | Publication remains user-controlled; contribution generation requires reviewed redaction, scope, and benchmark-delta evidence |
 | **Evidence-scoped verification** | Binds one exact Markdown statement to a typed JSON Pointer value, bounded file collection, static Python container literal, or saved upstream compatibility report and returns one of five explicit states | `cli/evidence/`, `cli/validators/evidence.mjs`, `cli/commands/verify.mjs`, `schemas/docguard-evidence.schema.json` | Reads stay local, bounded, non-executable, and symlink/private-path safe; direct verification exits 1 for contradiction/invalid input, 2 for unresolved evidence, and 0 only for verified or unconfigured evidence |
 | **Managed Git hooks** | Installs bounded DocGuard blocks while preserving user-owned hook commands before and after them | `cli/commands/hooks.mjs` | Reinstall and removal use one outer marker pair, repair nested markers from affected releases, fail closed on enforcement errors, and fall through after success so user postludes execute |
@@ -157,7 +157,7 @@ guard.mjs
   │
   ▼
 Output (text | json)
-  └── Exit code: 0 (pass) | 1 (fail) | 2 (warn)
+  └── Exit code: 0 (pass) | 1 (fail) | 2 (warn) | 3 (errors, but project not initialised)
 ```
 
 ### AI Fix Flow: `docguard fix --doc architecture`
@@ -187,7 +187,7 @@ docguard guard → validates the newly written document
 | **Config-driven validation** | `.docguard.json` lets projects customize which validators run. A CLI project can skip database docs. |
 | **Validators are independent** | Each validator is a self-contained module. Adding a validator keeps existing ones stable. |
 | **AI as author, CLI as orchestrator** | The CLI detects problems and generates structured prompts. Documentation writing is the AI's responsibility. |
-| **Exit codes for CI** | `0` (pass), `1` (fail), `2` (warn) enables `docguard ci` to gate deployments. |
+| **Exit codes for CI** | `0` (pass), `1` (fail), `2` (warn), `3` (errors in a project with no `.docguard.json`) enables `docguard ci` to gate deployments. `3` stays non-zero so an any-non-zero gate is unchanged, but it lets the generated Git hook distinguish "never adopted DocGuard" from "failed its checks". |
 | **Scoped factual evidence** | `.docguard-evidence.json` declares narrow, typed source-to-statement predicates. Contradictions fail guard; stale, inconclusive, and unsupported evidence stays visible. A verified statement never exempts its document from freshness or semantic review. |
 | **Evidence before context volume** | `agent --task` returns a bounded retrieval packet only after the frozen evaluation showed equal hidden-test safety and lower steps/latency. It remains opt-in because uncached token use increased and the synthetic protocol does not establish universal benefit. |
 
@@ -216,6 +216,7 @@ DocGuard declares one exact-pinned runtime dependency, `@babel/parser`. It loads
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 1.5.0 | 2026-09-18 | DocGuard Team | Freshness review: corrected a project-size figure stale since 2026-05-29 and recorded guard exit code 3 for uninitialised projects |
 | 1.4.0 | 2026-09-15 | DocGuard Team | Bound package capability claims to shipped modules, pruned ignored and nested checkout copies from instruction pointers, and made non-clean planned lifecycle state advisory only |
 | 1.3.0 | 2026-09-15 | DocGuard Team | Made managed hooks composable and self-repairing, aligned direct evidence exit codes with guard severity, and exposed field-level registry drift |
 | 1.2.0 | 2026-09-15 | DocGuard Team | Made router mounts symbol-aware and statically composable, retained negative scan evidence as review-only, and aligned monorepo/config/design-sync discovery boundaries |
@@ -245,7 +246,7 @@ Completion also supports reviewed maintenance of a verified or released living s
 
 # CI Recipes
 
-<!-- docguard:last-reviewed 2026-09-15 -->
+<!-- docguard:last-reviewed 2026-09-18 -->
 <!-- docguard:status active -->
 
 ## Recipe 1 — Guard (mandatory CI gate)
@@ -395,6 +396,8 @@ Treat a core comparison failure as a quality regression. In the network-free run
 
 `docguard hooks --type pre-commit` installs a local gate that prefers the repository's installed DocGuard binary. The hook blocks an unavailable runtime. `--auto-fix` additionally applies mechanical fixes and stages their output; enable it only when that mutation is intended.
 
+A Git hook lives in the shared `.git/hooks` and is active on every branch and linked worktree, while `.docguard.json` is a branch-local tracked file. The installed hook therefore skips any working tree with no `.docguard.json` and lets the commit through, and treats guard exit `3` (errors in an uninitialised project) as allowed rather than blocking. A project that never adopted DocGuard is not blocked by a hook installed from another branch; adopted projects are gated exactly as before.
+
 Regenerate installed hooks after upgrading to pick up changes in hook behavior. The pre-push score hook parses real JSON and enforces its configured minimum; it complements the full CI gate. Local hooks can be bypassed, so protected merges remain necessary for shared enforcement.
 
 ## Recipe 5 — Pre-commit lite (changed files only)
@@ -429,7 +432,7 @@ Read the outputs declared in `action.yml` and the command's JSON schema before w
 
 <!-- docguard:version 0.9.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-09-15 -->
+<!-- docguard:last-reviewed 2026-09-18 -->
 
 | Metadata | Value |
 |----------|-------|
@@ -653,6 +656,12 @@ Validators emit findings and aggregate counts. The guard adapter adds names and 
 | `effectiveErrors`, `effectiveWarnings`, `effectiveInfos` | `number` | Exit-code counts after exact-code and validator policy |
 | `effectiveStatus` | `string` | Per-validator `pass`, `warn`, or `fail` after policy; intrinsic `status` remains available |
 
+## Precision evidence contract
+
+`guard` results carry `precisionEvidence`, scoped to the finding codes that run emitted (`schemas/docguard-precision-evidence.schema.json`). The unit of evidence is the finding code. DocGuard defines many more codes than the reviewed corpus measures, so a code the corpus never exercised reports `status: "not-measured"`, carries no ratio, and never inherits the measured precision of another code in the same validator. A measured code whose own precision denominator is below `minN` is marked `quotable: false` with a reason, and may carry a `backoff` to a coarser measured tier that names that tier (`validator` or `aggregate`). `measures` is always `benchmark-precision`; `caveat` is the sentence a consumer must show beside any quoted ratio; `source.matchesRunningVersion` is false when the numbers were measured on a different build than the one reporting them. `coverage` counts codes in the run by measurement status.
+
+The block is served from `cli/precision-evidence-data.mjs`, a generated module derived from `benchmarks/baseline.json` by `npm run generate:precision-evidence`, because `benchmarks/` is not part of the published package. A test compares the committed module against that projection, so a stale number fails the suite rather than shipping. Findings themselves are unchanged: they are written verbatim into feedback records, so their shape stays fixed.
+
 ## Fix Command Issue Format
 
 The `fix --format json` output follows this structure:
@@ -744,6 +753,18 @@ and process status therefore carry the same enforcement meaning in direct CI use
 ## Check coverage and document roles
 
 Each guard validator adds applicability with status and reason. checkCoverage contains counts by status, limitations naming checks that were not fully performed, and an explanatory limitation. These fields describe coverage independently from legacy status, totals, findings, and exit codes. CI/report consumers preserve them, including disabled-check counts.
+
+Document discovery does not depend on the default filenames alone. A filename is
+normalised to letters and digits — separators, case and Markdown extension are
+noise — and matched against an alias table per role, so `data_model.md`,
+`datamodel.md`, `Data Model.md` and `DATA-MODEL.md` all resolve to the same
+role, and `API.md` resolves to the API-Reference role. Directory detection is
+deliberately tight: a directory must hold at least two distinct roles before it
+counts as a canonical home, so a lone root-level `SECURITY.md` — GitHub's
+security policy, not a design document — never triggers a match on its own.
+This also removes an accidental platform dependency: literal-path probing was
+case-insensitive only on case-insensitive filesystems, so the same repository
+was judged differently on macOS and Linux.
 
 Optional docs.roles maps canonical roles to safe project-relative Markdown paths. Configuration normalization replaces each mapped default in requiredFiles.canonical and documentTypes. A mapped write is authorized either for a unique `source=code` section in an existing human file or for a missing/explicitly generated single-role whole document. Marker shape, role cardinality, and ownership are validated before mutation; `--force` does not alter that model. The configuration schema and docs/configuration.md define the role names and operation-specific contract.
 
@@ -869,9 +890,9 @@ node cli/docguard.mjs ci --threshold 70 --format json
 # Requirements
 
 <!-- docguard:quality negation-load off — requirements define explicit failure and non-disclosure boundaries -->
-<!-- docguard:version 0.6.0 -->
+<!-- docguard:version 0.7.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-09-15 -->
+<!-- docguard:last-reviewed 2026-09-18 -->
 
 ## Functional Requirements
 
@@ -894,6 +915,7 @@ node cli/docguard.mjs ci --threshold 70 --format json
 | FR-015 | P1 | JavaScript route discovery excludes HTTP-client calls and non-product helpers before deduplication, and composes static Express mounts across imported routers. | tests/js-ast.test.mjs, tests/routes-express-mounts.test.mjs |
 | FR-016 | P1 | API contract omissions remain review-only because negative route extraction cannot prove runtime absence or authorize deletion. | tests/api-authority-precision.test.mjs, tests/api-write.test.mjs, tests/doc-role-boundaries.test.mjs |
 | FR-017 | P1 | Field warning precision preserves historical prose, multiline skip reasons, test-fixture context, package-local capability counts, package-local env templates, authoritative OpenAPI selection, route-parameter equivalence, service boundaries, and runtime/schema parity. | tests/metrics-consistency.test.mjs, tests/todo-tracking.test.mjs, tests/field-context-precision.test.mjs, tests/environment.test.mjs, tests/docs-sync.test.mjs, tests/docguard-config-schema.test.mjs |
+| FR-018 | P1 | A repo-wide Git hook must not block a working tree that never adopted DocGuard: guard reports errors in a project without `.docguard.json` as exit 3 rather than 1, the installed hook skips such a tree and permits exit 3, and adopted projects stay gated. Overwriting a foreign hook requires explicit repeated `--force` and never silently discards its backup. | tests/hook-fail-open.test.mjs, tests/hooks-contract.test.mjs |
 
 ## Non-Functional Requirements
 
@@ -920,6 +942,7 @@ The verification column above links each requirement to executable tests. The te
 
 | Version | Date | Changes |
 |---|---|---|
+| 0.7.0 | 2026-09-18 | Record the uninitialised-project hook boundary (exit 3) and foreign-hook backup protection shipped without a stated requirement |
 | 0.6.0 | 2026-09-15 | Exclude disposable checkout copies from pointer evidence, distinguish shipped capability counts from enabled configuration, and explain non-clean planned registries without weakening traceability |
 | 0.5.0 | 2026-09-15 | Require composable managed hooks, CI-safe evidence exits, and field-level registry drift explanations |
 | 0.4.0 | 2026-09-15 | Make API omission remediation review-only and add field-replay precision contracts for routes, fixtures, histories, monorepos, design sync, and config schemas |
@@ -935,9 +958,9 @@ The verification column above links each requirement to executable tests. The te
 # Security
 
 <!-- docguard:quality negation-load off — prohibitions define security boundaries -->
-<!-- docguard:version 0.8.0 -->
+<!-- docguard:version 0.9.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-09-15 -->
+<!-- docguard:last-reviewed 2026-09-18 -->
 
 ## Overview
 
@@ -1024,7 +1047,7 @@ Pass untrusted arguments through argv arrays and validate values for their inten
 | verify --evidence | None | Reads the strict local manifest, selected Markdown, source files, and saved reports; guard consumes the same evaluator |
 | retire --write | Explicit clean tracked documentation only | Requires retained-ref recovery proof, clean replacement/evidence docs, and no live Markdown backreferences |
 | init, generate | Documentation and configuration scaffolding | Explicit force options may overwrite content |
-| hooks | Hook configuration and executable scripts | Inventory distinguishes managed, legacy, foreign, missing, and unreadable hooks; removal preserves foreign commands around a managed block; auto-fix hooks may edit and stage documentation |
+| hooks | Hook configuration and executable scripts | Inventory distinguishes managed, legacy, foreign, missing, and unreadable hooks; removal preserves foreign commands around a managed block; auto-fix hooks may edit and stage documentation. A foreign hook is skipped under `--force` and no `.bak` is written, so overwriting one requires `--force` twice rather than a plain re-install. An installed hook skips a working tree with no `.docguard.json` and permits guard exit 3, so a branch or worktree that never adopted DocGuard is not blocked by a repo-wide hook |
 | report | None by default | `--out` writes an artifact |
 
 Review the exact command and flags before assigning privileges. CLI help is the authoritative command inventory.
@@ -1087,7 +1110,7 @@ Exclude `node_modules`, environment values, generated build output, and private 
 
 <!-- docguard:version 1.1.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-09-15 -->
+<!-- docguard:last-reviewed 2026-09-18 -->
 
 > DocGuard has a single optional-load npm dependency (`@babel/parser`) and an optional `python3` AST tier. CLI integration tests cover the full stack with `node:test` (zero dev dependencies) and exercise both AST extractors (`js-ast`, `py-ast`) plus their regex fallbacks. The Python AST tests skip themselves automatically on a machine that lacks `python3`.
 
@@ -1169,6 +1192,7 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `benchmarks/lib/manifest.mjs`, `benchmarks/lib/metrics.mjs`, `benchmarks/lib/compare.mjs` | `tests/benchmark-manifest.test.mjs`, `tests/benchmark-metrics.test.mjs` | ✅ |
 | `benchmarks/lib/runner.mjs`, `benchmarks/run.mjs` | `tests/benchmark-runner.test.mjs` | ✅ |
 | `benchmarks/lib/baseline.mjs`, `schemas/docguard-benchmark-baseline.schema.json`, `benchmarks/baseline.json` | `tests/benchmark-baseline.test.mjs` | ✅ |
+| `benchmarks/lib/precision-evidence.mjs`, `benchmarks/generate-precision-evidence.mjs`, `cli/precision-evidence.mjs`, `cli/precision-evidence-data.mjs`, `schemas/docguard-precision-evidence.schema.json` | `tests/precision-evidence.test.mjs` | ✅ |
 | `benchmarks/agent-context/run.mjs`, task-context schemas and fixtures | `tests/agent-context-benchmark.test.mjs` | ✅ |
 | `cli/evidence/*.mjs`, `cli/validators/evidence.mjs` | `tests/evidence-manifest.test.mjs`, `tests/evidence-adapters.test.mjs`, `tests/evidence-integration.test.mjs` | ✅ |
 | `cli/feedback-fixture.mjs`, `cli/commands/feedback.mjs` | `tests/feedback-fixture.test.mjs`, `tests/feedback-contributions.test.mjs` | ✅ |
@@ -1340,7 +1364,122 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **The architecture validator has benchmark evidence for the first time.** A
+  new `synthetic-python-layers` pair measures ARC001 on a statically analysable
+  three-layer Python package: the clean control routes every call
+  `routes -> services -> models`, and the defect makes the route layer import
+  the model layer directly, bypassing the declared service boundary. This is
+  what the static Python import-graph support added after 0.38.0 made possible;
+  before it, the only architecture case in the corpus was a dynamic import the
+  analyzer cannot see. `docguard explain ARC001` now reports measured evidence
+  instead of `not-measured`. Its denominator is 1, below the reporting floor of
+  5, so it publishes counts and a Wilson interval (20.7%-100%) and backs off to
+  the whole-corpus tier rather than quoting a rate of its own.
+
+- **Findings now say whether they have ever been benchmarked.** `guard`
+  results carry a `precisionEvidence` block scoped to the finding codes that
+  run emitted, `guard`'s summary reports how many of them have measured
+  precision, and `docguard explain <CODE>` prints the evidence in prose.
+  DocGuard defines 104 finding codes and its reviewed corpus measures 7, so for
+  most codes the honest answer is "never benchmarked" — and that is now stated
+  rather than left for a reader to discover. A code never inherits the measured
+  precision of other codes in its validator; a measured code with fewer than
+  five labelled findings behind it quotes no point estimate on its own and may
+  fall back to a named coarser tier. Contract:
+  `schemas/docguard-precision-evidence.schema.json`. Findings themselves are
+  unchanged, so SARIF, JUnit, baselines and feedback records are unaffected.
+- `npm run generate:precision-evidence` projects the reviewed baseline into
+  `cli/precision-evidence-data.mjs`, which ships with the package because
+  `benchmarks/` deliberately does not. A test fails on drift.
+
+### Fixed
+
+- **`init` no longer adopts a Spec Kit feature folder as the project's canonical
+  root, then refuses to proceed from the config it just wrote.** A repository
+  with `specs/002-some-feature/spec.md` and `data-model.md` had that single
+  feature directory adopted, a two-key `.docguard.json` written, and init then
+  threw from its own mapped-layout guard. Every re-run repeated it, by a second
+  code path, so the project could not be initialized without editing the config
+  by hand. Three things were wrong and all three are fixed:
+  - A numbered feature directory (`specs/003-slug/`) is no longer an adoption
+    candidate. It holds one feature's paperwork, not the project's documentation.
+  - Adopting a layout no longer aborts init. The guard that forbids generating
+    INTO a mapped document stays, but init now simply scaffolds the roles the
+    mapping has not placed, so it neither writes into a mapped document nor
+    creates a duplicate beside it. `setup`, `init --wizard` and `diagnose --auto`
+    still generate whole documents and still honour the guard.
+  - Adoption no longer writes `.docguard.json` itself. init owns the single
+    write, so a failed run leaves nothing behind and an adopted layout gets a
+    complete config with its profile, project type and validators, instead of a
+    two-key fragment that short-circuited the real one.
+  The guard's message now names the mapped roles and says how to leave the state.
+- **A Cloudflare Worker is typed `api` again, not `library`.** `init` and `setup`
+  each carried a private copy of project-type detection, and neither had learned
+  about Workers, so `needsEnvVars`, `needsEnvExample`, `needsE2E` and
+  `needsDatabase` were all set wrong and the validators that matter most for a
+  Worker were silently disabled. All three copies are now one exported function
+  (`wrangler.toml`, `wrangler.json` and `wrangler.jsonc` were already all
+  recognised there), and a test fails if a private copy reappears.
+- A detected Playwright or Cypress config, or an `e2e`/`tests/e2e` directory, now
+  sets `needsE2E` regardless of the project type's default. A suite on disk is
+  evidence; the type default is only a guess.
+
+
 ### Changed
+
+- **Published benchmark aggregates moved**, because two labelled cases entered
+  the corpus: 12 defect/12 control pairs across 12 repository groups became
+  13/13 across 13. Precision and recall stay 1.0 with zero false positives; the
+  Wilson 95% lower bound on precision rises from 75.7% to 77.2% on the larger
+  denominator, and the unsupported rate falls from 4.0% to 3.7%. The
+  `architecture` detector and the `py-ast` parser tier move from a null
+  precision (no measured cases) to 1.0 with a 20.7% lower bound. The reviewed
+  baseline and `cli/precision-evidence-data.mjs` were regenerated together.
+  Note that `review.limitations` already claimed seven measured finding codes
+  while `byCode` carried six; it counted ARC001, which the data reported as
+  `not-measured`. The count is now accurate rather than aspirational.
+
+- **The reviewed benchmark was re-run in full on the current release.** It had
+  last run on 0.38.0 while the tool was at 0.41.7, so the evidence now quoted
+  at finding time would have been four releases stale. The re-run, including
+  the five pinned public repositories, compares PASS with zero regressions and
+  byte-identical metrics. One case moved: the Python architecture case is now
+  `checked` rather than `unsupported`, because the analyzer gained Python
+  import-graph support after 0.38.0. It stays classified `unsupported_syntax`
+  and excluded from every ratio pending re-adjudication.
+
+- **Canonical docs reviewed against the code, not just re-stamped.** All nine
+  documents carrying a `last-reviewed 2026-09-15` marker were read against the 14
+  commits that landed since, and four carried real drift:
+  - `ARCHITECTURE.md` stated the project as `~24K lines across cli/`. That figure
+    was written on 2026-05-29, when `cli/` held 21.7K lines; it is 39.4K today, so
+    it had survived several reviews. It now states the measurement date and the
+    command to reproduce it.
+  - Guard's exit code `3` (errors in a project with no `.docguard.json`) shipped
+    with the hook fail-open fix and was documented nowhere. `ARCHITECTURE.md` had
+    `0 | 1 | 2` in two places, and `AGENTS.md` told agents `status` "matches exit
+    code 0/2/1" — which silently misleads any agent branching on `1` for FAIL.
+    Both now record `3`, and `CI-RECIPES.md` explains why a repo-wide hook lets an
+    unadopted working tree commit.
+  - `SECURITY.md`'s command-safety table gained the foreign-hook backup boundary:
+    `--force` skips a foreign hook and writes no `.bak`, so overwriting one takes
+    `--force` twice, not a plain re-install.
+  - `DATA-MODEL.md` now describes name-based document discovery — normalised
+    filenames matched against per-role aliases, a two-role minimum before a
+    directory counts as canonical, and the removal of the accidental
+    macOS/Linux difference that literal-path probing produced.
+  - New `FR-018` records the uninitialised-project hook boundary, which shipped
+    with `tests/hook-fail-open.test.mjs` but no stated requirement.
+
+  `TEST-SPEC.md`, `REQUIREMENTS.md`, `ROADMAP.md` and `CLAUDE.md` were verified
+  accurate and carry a marker bump only. Checked and found correct: every test
+  file cited across the canonical set exists; the benchmark claim of "24 measured
+  cases across 12 repository groups plus one explicit unsupported case" matches
+  `benchmarks/baseline.json` exactly; the validator count (29) is right. The
+  "15 commands" that `verify --semantic` flags in `TEST-SPEC.md` sits in a
+  historical revision row from 2026-03-13 and is deliberately left alone.
 
 - **`llms.txt` stopped claiming DocGuard is "v0.6".** The footer quoted
   `config.version` — the `.docguard.json` *schema* version — so every generated
@@ -1369,6 +1508,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `llmsDocSet()` instead of duplicating doc discovery, so the index form and the
   full form cannot disagree about which docs a project has. Output is unchanged,
   byte-for-byte.
+
 - **The benchmark now says what its numbers are.** `benchmarks/baseline.json`
   is a strict provenance envelope (`schemas/docguard-benchmark-baseline.schema.json`,
   envelope `schemaVersion` 2): `review.measures` is `benchmark-precision` and
@@ -1616,123 +1756,7 @@ Automated weekly release — batches everything merged since `v0.41.0`.
 - Fix living spec finalization and close R9 (#398)
 
 
-### Fixed
-
-- Allow an evidence-complete living specification to finish without creating a
-  stale `tasks.md` solely for lifecycle bookkeeping, while continuing to reject
-  missing task ledgers for other persistence models and empty or incomplete
-  ledgers wherever they are declared. Released living contracts can record later
-  maintenance without downgrading their release state.
-- Record the reviewed document-lifecycle maintenance outcome against its exact
-  source revision and qualified implementation/test evidence.
-- Close roadmap milestone R9 after independently verifying every v0.41.0
-  publication target and record the adoption workflow's reviewed outcome without
-  creating a stale task ledger.
-- Anchor the adoption workflow's final maintenance outcome to durable main commit
-  `2ff1baa` after the protected merge checks completed.
-- Anchor the document-lifecycle maintenance outcome to durable main commit
-  `2a47de5`, completing the post-merge evidence chain.
-
-## [0.41.0] - 2026-09-15
-
-Automated weekly release — batches everything merged since `v0.40.5`.
-
-### Changed
-
-- fix: harden packed adoption and field precision (#395)
-
-
-### Added
-
-- Add exact finding-code enforcement through `findingSeverity`, retaining both
-  intrinsic and effective severity in guard JSON, SARIF, and JUnit.
-- Add trusted lifecycle-aware traceability deferral for requirements that remain
-  planned in a committed, clean schema-v2 specification registry.
-- Add bounded static route resolution for local constants, pathless router
-  mounts, import aliases, middleware lists, and multi-router modules.
-
-### Changed
-
-- Make reconciliation inventory independent of bounded patch text and disclose
-  partial coverage instead of treating diff overflow or failure as no change.
-- Resolve safe instruction pointers by exact path or one unique basename, while
-  surfacing ambiguous, unsafe, symlinked, and incomplete-index cases.
-- Distinguish DocGuard-managed hooks from unrelated existing hooks and preserve
-  foreign commands when removing a managed block.
-- Make npm README links resolve from the published package and identify the
-  current v0.40 release line accurately.
-- Keep API contract omissions review-only: negative route-scan evidence can no
-  longer authorize endpoint deletion, including under `--force`.
-
-### Fixed
-
-- Prevent malformed finding suggestions from rendering `undefined` and replace
-  invalid remediation commands with reviewable actions.
-- Prevent chained HTTP-client calls and test-helper routes from contaminating
-  Express API discovery, preserve product routes during deduplication, and
-  compose static imported-router mount prefixes transitively.
-- Route `init --with hooks --list` to read-only hook inspection instead of the
-  interactive initialization workflow.
-- Fall back to the repository directory name in watch output when project
-  metadata does not provide a name.
-- Classify repeated test-input password assertions as low-confidence fixture
-  evidence while retaining blocking detection for ordinary credentials.
-- Use the selected authoritative OpenAPI contract and normalized path parameters
-  for design-sync checks, and exclude generic frontend utilities from services.
-- Discover package-local environment templates in monorepos and align the
-  published config schema with every runtime validator key.
-- Preserve historical metric statements and accept contiguous multiline skip
-  reasons instead of proposing changes that would falsify project history.
-
-## [0.40.5] - 2026-09-15
-
-Automated weekly release — batches everything merged since `v0.40.4`.
-
-### Changed
-
-- test: retry transient freshness cleanup (#393)
-- fix: make Spec Kit command manifest complete (#392)
-
-
-### Fixed
-
-- Retry removal of temporary Git repositories when the operating system reports
-  a transient `ENOTEMPTY`, preventing a completed freshness test from randomly
-  blocking the release gate during teardown.
-- Register every command shipped by the Spec Kit extension, route `fix` and
-  `review` to their matching command files, keep the manifest description inside
-  Spec Kit's 200-character limit, and add release-contract tests that reject
-  missing, duplicate, mismatched, undeclared, or divergent metadata.
-- Record the supported `git diff --check` and `gh pr diff --patch` split in the
-  project learning log so release self-review does not repeat an invalid CLI call.
-
-## [0.40.4] - 2026-09-15
-
-Automated weekly release — batches everything merged since `v0.40.3`.
-
-### Changed
-
-- fix: consolidate catalog reminders (#390)
-- docs: finalize durable R8 outcome (#389)
-- docs: close R8 release verification (#388)
-
-
-### Changed
-
-- Reuse one open Spec Kit catalog reminder across releases and close older
-  reminders as superseded, preventing the release workflow from accumulating a
-  stale version-specific issue queue.
-- Close the R8 living release contract with exact v0.40.3 evidence: the
-  repository-token release PR armed protected native auto-merge, passed the
-  approved CI and supply-chain checks, merged automatically, and triggered the
-  complete npm, PyPI, GHCR, GitHub Release, extension, MCPB, and catalog flow
-  through the scheduler's bounded continuation.
-
-## [0.40.3] - 2026-09-15
-
-Automated weekly release — batches everything merged since `v0.40.2`.
-
-<!-- truncated: 3112 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 3228 more lines — read CHANGELOG.md directly -->
 
 ---
 
@@ -1741,7 +1765,7 @@ Automated weekly release — batches everything merged since `v0.40.2`.
 
 # DocGuard Roadmap
 
-<!-- docguard:last-reviewed 2026-09-15 -->
+<!-- docguard:last-reviewed 2026-09-18 -->
 
 This file contains current product intent only. Released work belongs in
 `CHANGELOG.md`; implementation history remains recoverable from Git. Completed or
@@ -1893,7 +1917,9 @@ runner, comparison, and baseline-envelope libraries,
 `schemas/docguard-benchmark-baseline.schema.json`. The baseline states what its
 ratios measure (`benchmark-precision`) and carries a derived caveat; it is not,
 and will not become, a calibration document — a balanced corpus has no base
-rate to calibrate against.
+rate to calibrate against. Per-code evidence is projected from that baseline
+into a shipped module and quoted beside findings, where the dominant and honest
+answer is that a code has never been benchmarked.
 
 ### R4 — Contribution-to-regression loop (released in v0.39.0; open to contributions)
 
@@ -2052,7 +2078,7 @@ systems cannot meet a concrete team need. They are not active commitments.
 
 # AI Agent Instructions — DocGuard
 
-<!-- docguard:last-reviewed 2026-09-15 -->
+<!-- docguard:last-reviewed 2026-09-18 -->
 
 > This project follows **Canonical-Driven Development (CDD)**.
 > Documentation is the source of truth. Read before coding.
@@ -2118,7 +2144,9 @@ config/CLI), `watch` (live re-guard).
 ## Consuming Guard Output (agents)
 
 Prefer the machine contract over parsing prose: `docguard guard --format json`
-returns `status` (PASS/WARN/FAIL, matches exit code 0/2/1), `findings[]`
+returns `status` (PASS/WARN/FAIL, matches exit code 0/2/1 — but FAIL exits `3`,
+not `1`, when the project has no `.docguard.json`, so branch on `status` rather
+than assuming `1`), `findings[]`
 (`{code, severity, confidence, message, location, suggestion}`), `nextStep`,
 `reportable[]` (low-confidence findings — verify before acting), `coverage`
 (Markdown tier map incl. `unclassified[]`), `evidence`, and `semanticClaims.count`
