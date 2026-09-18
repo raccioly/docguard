@@ -1,0 +1,121 @@
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+import { renderLlmsBundles } from '../tools/generate-llms.mjs';
+import { llmsDocSet } from '../cli/commands/llms.mjs';
+
+/**
+ * llms.txt and llms-full.txt are generated artifacts that ship in the npm and
+ * PyPI tarballs, so an AI consumer reads them as this project's own account of
+ * itself. Nothing regenerated them between v0.37.0 and v0.41.7 and nothing
+ * noticed — by then the bundles were describing a `guard --format json`
+ * contract several releases out of date. This file is here to stop that
+ * happening again.
+ *
+ * WHY llms-full.txt IS NOT COMPARED BYTE-FOR-BYTE:
+ *   The full form inlines CHANGELOG.md, capped at the first 400 lines, and this
+ *   repo requires a CHANGELOG entry on every commit. Newest entries go on top,
+ *   so a byte-exact gate would fail on literally every pull request and would
+ *   train contributors to regenerate reflexively instead of reading the diff.
+ *   Every OTHER section is compared byte-for-byte; the CHANGELOG section is
+ *   checked for presence and shape only. Release-time regeneration
+ *   (.github/workflows/scheduled-release.yml) is what keeps its body fresh.
+ *
+ * The index form (llms.txt) carries no doc bodies, so it IS compared exactly.
+ */
+
+const root = process.cwd();
+
+/** The one section whose body is allowed to lag between releases. */
+const CHURNING_SECTION = 'CHANGELOG.md';
+
+/**
+ * Split a rendered llms-full.txt into its header and per-doc sections.
+ *
+ * Boundaries are found by scanning FORWARD for each doc's exact
+ * `---\n\n## <path>\n` opener, in the generator's own emission order. A bare
+ * `---` rule followed by a `## Heading` inside a doc body (DATA-MODEL.md has
+ * several) cannot be mistaken for a boundary, because the scan only ever looks
+ * for the next expected path.
+ */
+function splitFull(text, docPaths) {
+  const found = [];
+  let cursor = 0;
+  let headerEnd = text.length;
+
+  for (const path of docPaths) {
+    const marker = `---\n\n## ${path}\n`;
+    const at = text.indexOf(marker, cursor);
+    assert.notEqual(at, -1, `llms-full.txt is missing the section for ${path}`);
+    if (found.length === 0) headerEnd = at;
+    found.push({ path, start: at, bodyStart: at + marker.length });
+    cursor = at + marker.length;
+  }
+
+  return {
+    header: text.slice(0, headerEnd),
+    sections: found.map((s, i) => ({
+      path: s.path,
+      body: text.slice(s.bodyStart, i + 1 < found.length ? found[i + 1].start : text.length),
+    })),
+  };
+}
+
+describe('checked-in llms bundles track the current docs', () => {
+  const fresh = renderLlmsBundles(root);
+  const docPaths = llmsDocSet(root).map(d => d.path);
+
+  it('llms.txt matches what the generator emits today', () => {
+    const committed = readFileSync(resolve(root, 'llms.txt'), 'utf-8');
+    assert.equal(committed, fresh['llms.txt'],
+      'llms.txt is out of date — run `npm run llms` and commit the result.');
+  });
+
+  it('covers a real doc set, and every doc it names is readable', () => {
+    assert.ok(docPaths.length >= 5, 'expected the generator to inline several docs');
+    assert.ok(docPaths.includes(CHURNING_SECTION),
+      `${CHURNING_SECTION} must stay in the full bundle`);
+    for (const path of docPaths) {
+      assert.doesNotThrow(() => readFileSync(resolve(root, path), 'utf-8'),
+        `llms-full.txt inlines ${path}, which is not readable from the repo root`);
+    }
+  });
+
+  it('llms-full.txt has the current header and the current doc set, in order', () => {
+    const committed = splitFull(readFileSync(resolve(root, 'llms-full.txt'), 'utf-8'), docPaths);
+    const generated = splitFull(fresh['llms-full.txt'], docPaths);
+
+    assert.equal(committed.header, generated.header,
+      'llms-full.txt header drifted — run `npm run llms` and commit the result.');
+    assert.deepEqual(committed.sections.map(s => s.path), generated.sections.map(s => s.path));
+  });
+
+  it('every non-churning llms-full.txt section still matches its source doc', () => {
+    const committed = splitFull(readFileSync(resolve(root, 'llms-full.txt'), 'utf-8'), docPaths);
+    const generated = splitFull(fresh['llms-full.txt'], docPaths);
+
+    for (let i = 0; i < generated.sections.length; i++) {
+      const { path } = generated.sections[i];
+      if (path === CHURNING_SECTION) continue;
+      assert.equal(committed.sections[i].body, generated.sections[i].body,
+        `llms-full.txt is stale for ${path} — run \`npm run llms\` and commit the result.`);
+    }
+  });
+
+  it('still inlines the changelog, capped, even though its body is not gated', () => {
+    const committed = splitFull(readFileSync(resolve(root, 'llms-full.txt'), 'utf-8'), docPaths);
+    const section = committed.sections.find(s => s.path === CHURNING_SECTION);
+    assert.ok(section.body.includes('<!-- truncated:'),
+      'the changelog is long enough that the 400-line cap must apply');
+    assert.ok(section.body.includes(`read ${CHURNING_SECTION} directly`),
+      'the truncation note must point at the real file');
+  });
+
+  it('both forms cover exactly the same docs, so neither can drift alone', () => {
+    const indexed = [...fresh['llms.txt'].matchAll(/^- \[[^\]]+\]\(([^)]+)\)/gm)].map(m => m[1]);
+    assert.deepEqual(indexed, docPaths,
+      'llms.txt and llms-full.txt must be generated from one doc set');
+  });
+});

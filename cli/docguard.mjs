@@ -21,10 +21,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import { resolve, basename, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// Read version from package.json (single source of truth)
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const PKG = JSON.parse(readFileSync(resolve(__dirname, '..', 'package.json'), 'utf-8'));
-const VERSION = PKG.version;
+// Version comes from shared.mjs, which reads package.json (single source of truth).
 // audit is now an alias for guard (old audit.mjs deleted — guard does everything it did + more)
 import { runInit } from './commands/init.mjs';
 import { runGuard } from './commands/guard.mjs';
@@ -60,7 +57,7 @@ import { ensureSkills } from './ensure-skills.mjs';
 import { detectRepositoryRootGuidance, renderRepositoryRootGuidance } from './repository-root.mjs';
 
 // ── Shared constants (imported to break circular dependencies) ──────────
-import { c, PROFILES } from './shared.mjs';
+import { c, PROFILES, TOOL_VERSION as VERSION } from './shared.mjs';
 import { loadConfig } from './config.mjs';
 export { c, PROFILES };
 

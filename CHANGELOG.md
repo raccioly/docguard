@@ -124,6 +124,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   "15 commands" that `verify --semantic` flags in `TEST-SPEC.md` sits in a
   historical revision row from 2026-03-13 and is deliberately left alone.
 
+- **`llms.txt` stopped claiming DocGuard is "v0.6".** The footer quoted
+  `config.version` — the `.docguard.json` *schema* version — so every generated
+  `llms.txt`, in every adopting project, announced the config format version as
+  though it were the tool version. Both forms now stamp the real release, and
+  `llms-full.txt` carries it too (it previously carried no version at all). The
+  tool version is now one exported `TOOL_VERSION` in `cli/shared.mjs`, read from
+  the package manifest, replacing the entrypoint's private copy — so a release
+  bump cannot leave a stale literal anywhere.
+- **`llms.txt` and `llms-full.txt` are regenerated, and stay that way.** Both
+  bundles ship inside the npm and PyPI tarballs, so an agent reads them as this
+  project's own account of itself — and neither had been regenerated since
+  v0.37.0. The full form was still describing a `guard --format json` contract
+  that predated `evidence`, `specs preflight`, `reconcile` and `agent --task`.
+  Every inlined section was verified byte-for-byte against its source doc.
+  Three things now keep them current: `npm run llms` (`tools/generate-llms.mjs`),
+  a regeneration step in the weekly release workflow — run after the changelog
+  splice, so a published bundle describes the version being released — and
+  `tests/llms-bundle-drift.test.mjs`, which fails CI when a canonical or
+  optional doc changes without the bundles being rebuilt.
+  The drift test deliberately exempts the inlined `CHANGELOG.md` body: it is
+  capped at 400 lines from the top and this repo requires a changelog entry on
+  every commit, so gating it byte-exact would fail every pull request. Release-
+  time regeneration covers that body instead.
+- `generateLlmsTxt` and `generateLlmsFullTxt` now share one exported
+  `llmsDocSet()` instead of duplicating doc discovery, so the index form and the
+  full form cannot disagree about which docs a project has. Output is unchanged,
+  byte-for-byte.
 
 - **The benchmark now says what its numbers are.** `benchmarks/baseline.json`
   is a strict provenance envelope (`schemas/docguard-benchmark-baseline.schema.json`,
