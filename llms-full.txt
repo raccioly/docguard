@@ -1372,6 +1372,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **The release cut no longer regenerates `llms.txt` / `llms-full.txt`.** Adding
+  that step bought a footer version stamp and the spliced release header, and
+  cost two outages in one evening. The paths were not in
+  `RELEASE_PATH_ALLOWLIST`, which failed the v0.42.0 cut outright before it
+  opened a PR; and because a wholesale-regenerated file has no line-level common
+  ancestor, any pull request merged while the release PR waits for its approval
+  conflicts hard and forces the release to be recut. `CHANGELOG.md` never had
+  this problem — it auto-merges — so the bundles introduced a genuinely new
+  conflict class rather than another instance of an old one.
+  `tests/llms-bundle-drift.test.mjs` already fails any pull request that changes
+  a canonical or optional document without running `npm run llms`, so every
+  section except the inlined changelog body is current on `main` at all times;
+  the release job was only ever covering that one exempted body.
+  The allowlist now refuses the two paths again, and the release job is asserted
+  neither to run the regeneration nor to stage the files, so the outage cannot
+  return by someone re-admitting them to make a failing cut pass.
+  Consequence, stated plainly: a published `llms-full.txt` carries its changelog
+  entries under `## [Unreleased]` rather than under the version header it ships
+  with. The entries are all present — only the header is not — and the footer
+  now truthfully records the version that generated the bundle instead of being
+  restamped by a job that regenerated nothing else.
+
+
 ## [0.42.0] - 2026-09-18
 
 Automated weekly release — batches everything merged since `v0.41.7`.
@@ -1738,33 +1763,8 @@ Automated weekly release — batches everything merged since `v0.41.3`.
   claimed DocGuard uses "no API keys" and needs no environment variables, which
   contradicted `SECURITY.md` and the HTTP MCP server, where the variable is
   required to bind a non-loopback host. Core CLI commands still need no credential.
-- Enforce the published validator count in `npm test`. Canonical-Sync and
-  Metrics-Consistency already detect a stale "N validators" claim, but they emit
-  warnings and the CI self-scan deliberately tolerates guard's warnings-only exit,
-  so a wrong count could reach `main` with every check green. The count is now
-  asserted against the shipped `cli/validators/*.mjs` modules, and README explains
-  why guard prints 30 result rows for 29 validators.
-- Count DocGuard validator claims from one shared source of truth: the
-  validator modules shipped in the installed package. A consumer's intentionally
-  disabled validators and extra guard checks cannot create a false MET001 or
-  CSY003 finding, or an unsafe count rewrite.
-- Keep instruction-pointer basename resolution out of Git-ignored directories
-  and nested Git checkouts, including linked worktree copies.
-- Keep planned lifecycle registries that are new, removed from the Git index,
-  or modified pending commit non-authoritative for TRC004 while explaining how
-  to restore or commit the registry and current spec artifacts; the remediation
-  no longer suggests adding an artificial `@req` marker.
 
-## [0.41.3] - 2026-09-15
-
-Automated weekly release — batches everything merged since `v0.41.2`.
-
-### Changed
-
-- fix: preserve hook composition and evidence gates (#404)
-
-
-<!-- truncated: 3268 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 3293 more lines — read CHANGELOG.md directly -->
 
 ---
 
