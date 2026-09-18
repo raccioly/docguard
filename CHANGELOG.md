@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **`llms.txt` stopped claiming DocGuard is "v0.6".** The footer quoted
+  `config.version` — the `.docguard.json` *schema* version — so every generated
+  `llms.txt`, in every adopting project, announced the config format version as
+  though it were the tool version. Both forms now stamp the real release, and
+  `llms-full.txt` carries it too (it previously carried no version at all). The
+  tool version is now one exported `TOOL_VERSION` in `cli/shared.mjs`, read from
+  the package manifest, replacing the entrypoint's private copy — so a release
+  bump cannot leave a stale literal anywhere.
 - **`llms.txt` and `llms-full.txt` are regenerated, and stay that way.** Both
   bundles ship inside the npm and PyPI tarballs, so an agent reads them as this
   project's own account of itself — and neither had been regenerated since

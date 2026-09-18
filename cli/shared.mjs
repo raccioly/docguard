@@ -6,6 +6,10 @@
  * @implements docguard.adoption-workflow-integrity#FR-008
  */
 
+import { existsSync, readFileSync, statSync } from 'node:fs';
+import { dirname, relative, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 /**
  * Current .docguard.json schema version that this CLI version writes via
  * `docguard init`. Bump this when adding fields that need migration (e.g.
@@ -16,6 +20,20 @@
  * `docguard upgrade` to migrate.
  */
 export const CURRENT_SCHEMA_VERSION = '0.6';
+
+/**
+ * The version of the DocGuard TOOL, read from the package manifest — the single
+ * source of truth, so a release bump cannot leave a stale literal behind.
+ *
+ * NOT to be confused with CURRENT_SCHEMA_VERSION above, or with a project's
+ * `.docguard.json.version`: those describe the CONFIG FILE FORMAT and move on
+ * their own, much slower, schedule. Anything user-facing that says "DocGuard
+ * vX" means this constant. (llms.txt quoted the config schema version for
+ * several releases and told every adopter the tool was "v0.6".)
+ */
+export const TOOL_VERSION = JSON.parse(
+  readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '..', 'package.json'), 'utf-8')
+).version;
 
 /**
  * Allowed severity values for per-validator `severity` overrides in
@@ -282,8 +300,6 @@ export const PROFILES = {
 };
 
 // ── .docguardignore Support ───────────────────────────────────────────────
-import { existsSync, readFileSync, statSync } from 'node:fs';
-import { resolve, relative } from 'node:path';
 
 /**
  * Conventional documentation-home directory names. A folder named one of these
