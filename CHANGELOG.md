@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- TestGuard claim probing for this repository: `testguard.claims.json` plus
+  `tools/node-test-json-reporter.mjs`, which translates `node --test` output into
+  the Jest-shape JSON TestGuard reads (node:test ships no `json` reporter). The
+  first claim covers `backupFile`; probing it found a real gap — one guard was
+  masked by another, so its fault survived while every test stayed green — and
+  the missing case is now covered.
+
+
 ### Fixed
 
 - Stop blocking commits in projects that never adopted DocGuard. A Git hook

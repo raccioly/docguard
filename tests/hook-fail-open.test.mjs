@@ -66,6 +66,30 @@ describe('the installer never destroys a user backup', () => {
       'an identical rewrite must not consume the single backup slot');
   });
 
+  it('preserves an existing foreign .bak instead of replacing it', () => {
+    // TestGuard found this gap: forcing `if (prior !== content)` to false left
+    // every other test green, because the identical-content guard returned
+    // first and the branch was never reached. Reaching it needs the live hook
+    // to DIFFER from both the backup and the incoming content.
+    const hookPath = join(dir, '.git/hooks/pre-commit');
+    mkdirSync(join(dir, '.git/hooks'), { recursive: true });
+    writeFileSync(hookPath, '#!/bin/sh\necho "ORIGINAL A"\n');
+    chmodSync(hookPath, 0o755);
+    run(['hooks', '--type', 'pre-commit', '--force'], dir);   // .bak := A
+
+    // The live hook now diverges from both the backup and what we will write.
+    writeFileSync(hookPath, '#!/bin/sh\necho "EDITED B"\n');
+    run(['hooks', '--type', 'pre-commit', '--force'], dir);   // must not lose A
+
+    const names = execSync('ls .git/hooks', { cwd: dir, encoding: 'utf-8' })
+      .split('\n').filter(n => n.includes('.bak'));
+    const bodies = names.map(n => readFileSync(join(dir, '.git/hooks', n), 'utf-8'));
+    assert.ok(bodies.some(b => b.includes('ORIGINAL A')),
+      `the pre-existing backup must survive; backups: ${names}`);
+    assert.ok(bodies.some(b => b.includes('EDITED B')),
+      `the replaced hook must also be recoverable; backups: ${names}`);
+  });
+
   it('keeps the user original recoverable across two --force installs', () => {
     const hookPath = join(dir, '.git/hooks/pre-commit');
     mkdirSync(join(dir, '.git/hooks'), { recursive: true });
