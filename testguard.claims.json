@@ -1,0 +1,50 @@
+{
+  "$schema": "./node_modules/testguard-cli/spec/schemas/claims.schema.json",
+  "schemaVersion": 1,
+  "claims": [
+    {
+      "id": "GENERATE-IO-BACKUPFILE",
+      "statement": "backupFile never destroys a recoverable file: it skips the write when the target already equals what is about to be written, and never replaces a .bak DocGuard did not write.",
+      "source": {
+        "kind": "manual",
+        "ref": "testguard scaffold cli/writers/generate-io.mjs"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "derived",
+        "by": "testguard scaffold 0.6.0"
+      },
+      "defendedBy": [
+        "tests/hook-fail-open.test.mjs",
+        "tests/hooks-contract.test.mjs",
+        "tests/generate-io.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "S4",
+          "description": "[line 26] Guard removed: `if (nextContent !== null && content === nextContent) return;` no longer runs.",
+          "faultClass": "statement-deleted",
+          "file": "cli/writers/generate-io.mjs",
+          "find": "    if (nextContent !== null && content === nextContent) return;",
+          "replace": "",
+          "producedBy": {
+            "producer": "derived",
+            "by": "testguard scaffold 0.6.0"
+          }
+        },
+        {
+          "id": "S5",
+          "description": "[line 36] Guard never triggers: `if (prior !== content)` becomes `if (false)`.",
+          "faultClass": "condition-forced",
+          "file": "cli/writers/generate-io.mjs",
+          "find": "      if (prior !== content) {",
+          "replace": "      if (false) {",
+          "producedBy": {
+            "producer": "derived",
+            "by": "testguard scaffold 0.6.0"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -187,6 +187,30 @@ extensions/spec-kit-docguard/
 - Never write a workflow using `pull_request_target` with checkout of PR-controlled refs.
 - Always pin third-party GitHub Actions to commit SHA, not @v1 or @main.
 
+## Claim probing (TestGuard)
+
+`testguard.claims.json` states what this codebase guarantees, as claims with
+mechanical faults. `testguard probe` injects each fault and reports the ones the
+suite fails to detect — a test that pins a *defect* stays green under coverage,
+so this is the check that catches it.
+
+This suite runs on `node --test`, which ships no `json` reporter, while TestGuard
+reads Jest-shape JSON. `tools/node-test-json-reporter.mjs` translates between
+them:
+
+```bash
+npx testguard-cli probe --confirm 3 --serial \
+  --node-modules "$PWD/node_modules" \
+  --runner-cmd "node --test --test-reporter=$PWD/tools/node-test-json-reporter.mjs --test-reporter-destination={out} {files}"
+```
+
+Pass an absolute reporter path: the probe runs in a scratch worktree built from
+a commit, so a relative path resolves there and untracked files do not exist.
+
+`testguard gate --changed origin/main` reports changed source files that carry no
+claim. It does not find bugs; it refuses to let a change land without stating
+what must be true, which is the step that surfaces them.
+
 ## Evidence and contributions
 
 A structural score is a maturity proxy. Preserve `assurance` and nullable factual accuracy in automation; a clean guard does not establish arbitrary prose correctness. Review human intent separately from generated code facts. To challenge any finding, run `docguard feedback --code <CODE> --preview`, inspect the metadata-only public draft, and check the supplied search link for existing open and closed work. Contribute a synthetic failing example paired with a neighboring valid case. Submission remains opt-in.
