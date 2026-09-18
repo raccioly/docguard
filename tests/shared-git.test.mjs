@@ -24,6 +24,9 @@ import {
   changedFilesSince,
   countCommitsSince,
   getDiffSnapshot,
+  getDiffText,
+  fileContentAtRev,
+  symbolExistsAtRev,
 } from '../cli/shared-git.mjs';
 
 function tmp() {
@@ -208,6 +211,93 @@ describe('changedFilesSince', () => {
     // HEAD~5 doesn't exist
     const changed = changedFilesSince(dir, 'HEAD~5');
     assert.deepEqual(changed, []);
+  });
+});
+
+describe('getDiffText', () => {
+  let dir;
+  afterEach(() => cleanup(dir));
+
+  it('returns diff patch text between refs', () => {
+    dir = tmp();
+    git(dir, 'init', '-q');
+    writeFileSync(join(dir, 'a.ts'), 'v1\n');
+    commit(dir, 'first');
+    const base = git(dir, 'rev-parse', 'HEAD').stdout.trim();
+    writeFileSync(join(dir, 'a.ts'), 'v2\n');
+    commit(dir, 'second');
+    const diff = getDiffText(dir, base);
+    assert.ok(diff.includes('-v1'));
+    assert.ok(diff.includes('+v2'));
+  });
+
+  it('filters by pathspec if provided', () => {
+    dir = tmp();
+    git(dir, 'init', '-q');
+    writeFileSync(join(dir, 'a.ts'), 'v1\n');
+    writeFileSync(join(dir, 'b.ts'), 'v1\n');
+    commit(dir, 'first');
+    const base = git(dir, 'rev-parse', 'HEAD').stdout.trim();
+    writeFileSync(join(dir, 'a.ts'), 'v2\n');
+    writeFileSync(join(dir, 'b.ts'), 'v2\n');
+    commit(dir, 'second');
+    const diff = getDiffText(dir, base, ['a.ts']);
+    assert.ok(diff.includes('a.ts'));
+    assert.ok(!diff.includes('b.ts'));
+  });
+});
+
+describe('fileContentAtRev', () => {
+  let dir;
+  afterEach(() => cleanup(dir));
+
+  it('returns file content at a specific revision', () => {
+    dir = tmp();
+    git(dir, 'init', '-q');
+    writeFileSync(join(dir, 'a.ts'), 'v1\n');
+    commit(dir, 'first');
+    const base = git(dir, 'rev-parse', 'HEAD').stdout.trim();
+    writeFileSync(join(dir, 'a.ts'), 'v2\n');
+    commit(dir, 'second');
+    const content = fileContentAtRev(dir, base, 'a.ts');
+    assert.equal(content, 'v1\n');
+  });
+
+  it('returns null if file did not exist at revision', () => {
+    dir = tmp();
+    git(dir, 'init', '-q');
+    writeFileSync(join(dir, 'a.ts'), 'v1\n');
+    commit(dir, 'first');
+    const base = git(dir, 'rev-parse', 'HEAD').stdout.trim();
+    writeFileSync(join(dir, 'b.ts'), 'v1\n');
+    commit(dir, 'second');
+    const content = fileContentAtRev(dir, base, 'b.ts');
+    assert.equal(content, null);
+  });
+});
+
+describe('symbolExistsAtRev', () => {
+  let dir;
+  afterEach(() => cleanup(dir));
+
+  it('returns true if symbol exists at revision', () => {
+    dir = tmp();
+    git(dir, 'init', '-q');
+    writeFileSync(join(dir, 'a.ts'), 'export function testSymbol() {}\n');
+    commit(dir, 'first');
+    const base = git(dir, 'rev-parse', 'HEAD').stdout.trim();
+    writeFileSync(join(dir, 'a.ts'), 'export function renamedSymbol() {}\n');
+    commit(dir, 'second');
+    assert.equal(symbolExistsAtRev(dir, 'testSymbol', base), true);
+  });
+
+  it('returns false if symbol does not exist at revision', () => {
+    dir = tmp();
+    git(dir, 'init', '-q');
+    writeFileSync(join(dir, 'a.ts'), 'export function otherSymbol() {}\n');
+    commit(dir, 'first');
+    const base = git(dir, 'rev-parse', 'HEAD').stdout.trim();
+    assert.equal(symbolExistsAtRev(dir, 'testSymbol', base), false);
   });
 });
 
