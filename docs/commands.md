@@ -73,9 +73,25 @@ When issues are found, guard outputs: `Run docguard diagnose to get AI fix promp
   "semanticClaims": { "count": 12 },
   "validators": [
     { "name": "Structure", "status": "pass", "passed": 8, "total": 8, "errors": [], "warnings": [] }
-  ]
+  ],
+  "precisionEvidence": {
+    "measures": "benchmark-precision",
+    "caveat": "Benchmark precision on a deliberately balanced corpus …",
+    "minN": 5,
+    "source": { "toolVersion": "0.41.7", "runningVersion": "0.41.7", "matchesRunningVersion": true, "reviewStatus": "reviewed", "reviewedAt": "2026-09-18" },
+    "coverage": { "codesInRun": 3, "measured": 1, "notMeasured": 2, "quotable": 1 },
+    "codes": {
+      "SEC005": { "status": "measured", "precision": 1, "precisionDenominator": 5, "precisionInterval": [0.565509, 1], "quotable": true },
+      "ENV003": { "status": "not-measured", "reason": "No benchmark case exercises this finding code, …" }
+    }
+  }
 }
 ```
+
+Most codes report `not-measured`: DocGuard defines far more finding codes than
+its corpus measures, and a code never inherits another code's precision just
+because they share a validator. `docguard explain <CODE>` prints the same
+evidence in prose.
 
 Every finding carries a stable code — `docguard explain <CODE>` for its
 contract, `// docguard:ignore <CODE>` to suppress a false positive at the site.

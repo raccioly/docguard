@@ -39,3 +39,10 @@
 - [x] T020 Publish the baseline envelope schema; derive `measures` and `caveat` from cases; recompute metrics on load and fail closed on drift.
 - [x] T021 Make the comparator selection-aware so the network-free run passes on CI, and run it there.
 - [x] T022 Replace the "calibrated" wording in PHILOSOPHY, README, CONTRIBUTING, and the diagnose command with what is measured.
+
+## Phase 6: Evidence at finding time
+
+- [x] T023 Derive per-code evidence by finding identity; refuse to let an unmeasured code inherit a validator's measurement.
+- [x] T024 Ship the evidence as a generated module (the corpus stays out of the package) and fail the suite on drift.
+- [x] T025 Surface it in the guard result, the guard summary, and `explain <CODE>`, leaving the finding shape untouched.
+- [x] T026 Re-run the full external corpus on the current release so the shipped evidence is not measured on a stale build.

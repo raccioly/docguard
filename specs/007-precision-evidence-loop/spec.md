@@ -105,6 +105,15 @@ regressions. A warning reduction caused by skipping supported inputs is visible.
 - **FR-017**: The benchmark and feedback tools MUST use Node.js built-ins,
   perform no implicit package installation, and keep ordinary `npm test` and
   consumer package contents independent from network availability.
+- **FR-019**: Evidence quoted beside a finding MUST be keyed on the finding
+  code. A code no reviewed case exercises MUST report that it is unmeasured and
+  MUST NOT inherit another code's measurement, including that of other codes in
+  its own validator. A measured code whose precision denominator is below the
+  published floor MUST NOT have its point estimate quoted alone; it MAY fall
+  back to a coarser measured tier that is named. Quoted evidence MUST carry the
+  measure, the caveat, and whether it was measured on the running build, and it
+  MUST be derived from the reviewed baseline by a checked projection rather than
+  maintained by hand.
 - **FR-018**: A persisted baseline MUST be a strict, schema-published envelope
   that states what its ratios measure (`benchmark-precision`, never a
   calibrated probability) and carries a caveat derived from its own cases. The
@@ -189,6 +198,10 @@ invalid or equivalent mutants.
   its committed cases; a hand-edited ratio, a stale caveat, a missing measure,
   and the pre-provenance envelope are each rejected before a benchmark run
   starts, and the documented network-free comparison passes on CI.
+- **SC-008**: An unmeasured finding code reports no rate in any surface, a thin
+  measured code quotes no point estimate on its own, the shipped evidence
+  module is byte-equal to the projection from the reviewed baseline, and the
+  shape of a finding is unchanged.
 
 ## Non-Goals
 

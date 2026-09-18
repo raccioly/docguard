@@ -1854,20 +1854,22 @@
           "docguard.precision-evidence-loop#FR-016",
           "docguard.precision-evidence-loop#FR-017",
           "docguard.precision-evidence-loop#FR-018",
+          "docguard.precision-evidence-loop#FR-019",
           "docguard.precision-evidence-loop#SC-001",
           "docguard.precision-evidence-loop#SC-002",
           "docguard.precision-evidence-loop#SC-003",
           "docguard.precision-evidence-loop#SC-004",
           "docguard.precision-evidence-loop#SC-005",
           "docguard.precision-evidence-loop#SC-006",
-          "docguard.precision-evidence-loop#SC-007"
+          "docguard.precision-evidence-loop#SC-007",
+          "docguard.precision-evidence-loop#SC-008"
         ]
       },
       "observed": {
         "artifacts": [
           {
             "path": "specs/007-precision-evidence-loop/spec.md",
-            "digest": "sha256:9419b717254de6bbc142d9fa446507b36b9160eb1f53043827edc487e3c06174"
+            "digest": "sha256:2e8c5343cf9ead82f3e5d663da9ba1015e36f9956584edf16d3cc2e0b73fb298"
           },
           {
             "path": "specs/007-precision-evidence-loop/plan.md",
@@ -1875,12 +1877,12 @@
           },
           {
             "path": "specs/007-precision-evidence-loop/tasks.md",
-            "digest": "sha256:b25578336aa8512ca10ea583ded6c4c83eb1a8e433f1812277f420d074430c69"
+            "digest": "sha256:fb8825df070efdfea762878f293057313fc414206ed8d0ed2991acced74bb40b"
           }
         ],
         "taskCompletion": {
-          "checked": 22,
-          "total": 22
+          "checked": 26,
+          "total": 26
         },
         "implementationEvidence": [
           {
@@ -1975,6 +1977,11 @@
           },
           {
             "requirementId": "FR-009",
+            "file": "benchmarks/lib/baseline.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-009",
             "file": "benchmarks/lib/compare.mjs",
             "line": 4
           },
@@ -2027,6 +2034,11 @@
             "requirementId": "FR-017",
             "file": "benchmarks/lib/runner.mjs",
             "line": 6
+          },
+          {
+            "requirementId": "FR-018",
+            "file": "benchmarks/lib/baseline.mjs",
+            "line": 7
           }
         ],
         "testEvidence": [
@@ -2079,6 +2091,11 @@
             "requirementId": "FR-008",
             "file": "tests/benchmark-manifest.test.mjs",
             "line": 11
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "tests/benchmark-baseline.test.mjs",
+            "line": 9
           },
           {
             "requirementId": "FR-009",
@@ -2136,6 +2153,11 @@
             "line": 11
           },
           {
+            "requirementId": "FR-018",
+            "file": "tests/benchmark-baseline.test.mjs",
+            "line": 10
+          },
+          {
             "requirementId": "SC-001",
             "file": "tests/benchmark-manifest.test.mjs",
             "line": 13
@@ -2162,6 +2184,11 @@
           },
           {
             "requirementId": "SC-005",
+            "file": "tests/benchmark-baseline.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "SC-005",
             "file": "tests/benchmark-manifest.test.mjs",
             "line": 15
           },
@@ -2169,6 +2196,11 @@
             "requirementId": "SC-006",
             "file": "tests/feedback-fixture.test.mjs",
             "line": 15
+          },
+          {
+            "requirementId": "SC-007",
+            "file": "tests/benchmark-baseline.test.mjs",
+            "line": 12
           }
         ]
       }
