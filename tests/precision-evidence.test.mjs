@@ -175,6 +175,41 @@ describe('shipped evidence artifact', () => {
   });
 });
 
+describe('architecture evidence', () => {
+  it('measures ARC001 from the Python layer-boundary pair instead of reporting not-measured', () => {
+    const cell = PRECISION_EVIDENCE.byCode.ARC001;
+    assert.ok(cell, 'ARC001 must carry a per-code cell once the corpus measures it');
+    assert.equal(cell.status, 'measured');
+    assert.equal(isMeasured('ARC001'), true);
+    assert.deepEqual(cell.validators, ['architecture']);
+    assert.equal(cell.cases, 2, 'one defect and its opposite clean control');
+    assert.equal(cell.truePositives, 1);
+    assert.equal(cell.falsePositives, 0);
+    assert.equal(cell.cleanControls, 1);
+    assert.equal(cell.cleanControlsWithFindings, 0, 'the control must stay quiet');
+  });
+
+  it('refuses to quote ARC001 on its own below the reporting floor and names the tier it falls back to', () => {
+    const cell = PRECISION_EVIDENCE.byCode.ARC001;
+    assert.ok(cell.precisionDenominator < DEFAULT_MIN_N);
+    assert.equal(cell.quotable, false, 'a single labelled finding cannot publish a rate');
+    assert.ok(cell.precisionInterval[0] < 1, 'the Wilson lower bound is the honest read');
+    assert.ok(cell.backoff, 'a measured cell below the floor names a coarser measured tier');
+    assert.ok(['validator', 'aggregate'].includes(cell.backoff.tier));
+    assert.match(describeEvidenceForCode('ARC001').join(' '), /Measured on 2 labelled case/);
+  });
+
+  it('still reports the other architecture codes as never benchmarked', () => {
+    for (const code of ['ARC002', 'ARC003']) {
+      assert.ok(CODES[code], `${code} must still be a defined finding code`);
+      assert.equal(PRECISION_EVIDENCE.byCode[code], undefined, `${code} has no case and must not appear`);
+      assert.equal(isMeasured(code), false);
+      assert.equal(evidenceForCode(code).status, 'not-measured',
+        `${code} must not inherit ARC001's measurement just because they share the architecture validator`);
+    }
+  });
+});
+
 describe('precision evidence schema', () => {
   it('is a strict draft 2020-12 contract that forbids a number on an unmeasured code', () => {
     const contract = schema();

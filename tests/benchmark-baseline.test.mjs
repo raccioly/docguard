@@ -33,14 +33,14 @@ describe('reviewed baseline envelope', () => {
     assert.equal(baseline.review.measures, 'benchmark-precision');
     assert.equal(baseline.review.caveat, benchmarkCaveat(baseline.core.cases));
     assert.match(baseline.review.caveat, /not the probability that a finding in your repository is real/);
-    assert.match(baseline.review.caveat, /12 defect and 12 clean-control cases/);
+    assert.match(baseline.review.caveat, /13 defect and 13 clean-control cases/);
   });
 
   it('keeps its published metrics recomputable from its retained cases', () => {
     const baseline = committed();
     assert.deepEqual(baseline.core.metrics, calculateMetrics(baseline.core.cases));
     assert.equal(baseline.core.metrics.aggregate.precision, 1);
-    assert.deepEqual(baseline.core.metrics.aggregate.confidence95.precision, { lower: 0.757499, upper: 1 });
+    assert.deepEqual(baseline.core.metrics.aggregate.confidence95.precision, { lower: 0.771898, upper: 1 });
   });
 
   it('rejects a hand-edited ratio, a stale caveat, a missing measure, and the pre-provenance envelope', () => {
