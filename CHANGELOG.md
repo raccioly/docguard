@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.41.7] - 2026-09-18
+
+Automated weekly release — batches everything merged since `v0.41.6`.
+
+### Changed
+
+- feat: detect documents by name across the codebase, not by exact path (#418)
+
+
 ### Added
 
 - Find the documents a project already has, instead of assuming where they are.
