@@ -1,5 +1,5 @@
 /** Explicit document roles let existing repository layouts serve as canonical input. */
-import { existsSync, lstatSync, readFileSync } from 'node:fs';
+import { existsSync, lstatSync, readFileSync, readdirSync } from 'node:fs';
 import { resolve, isAbsolute, join } from 'node:path';
 export const DOC_ROLES = Object.freeze({
   architecture: 'docs-canonical/ARCHITECTURE.md', dataModel: 'docs-canonical/DATA-MODEL.md',
@@ -99,4 +99,112 @@ export function assertDefaultDocWrites(config) {
   if (Object.entries(config.docs?.roles || {}).some(([role, path]) => path !== DOC_ROLES[role])) {
     throw new Error('Custom docs.roles currently support validation and read-only planning. Automatic document generation/repair is unavailable for mapped layouts; review and edit the existing documents directly.');
   }
+}
+
+/** Markdown extensions a canonical document realistically uses. */
+const DOC_EXTENSIONS = new Set(['.md', '.markdown', '.mdx']);
+
+/**
+ * Names a role is known by in the wild, normalised.
+ *
+ * Matching the exact default filename only (`DATA-MODEL.md`) missed every real
+ * project: the same document ships as `data_model.md`, `datamodel.md`,
+ * `Data Model.md`, or `API.md` instead of `API-REFERENCE.md`. Separators, case
+ * and extension are all noise, so names are normalised to letters and digits
+ * before comparison and every plausible spelling collapses to one key.
+ *
+ * Kept deliberately tight. A directory has to hold at least two roles before it
+ * counts as canonical, so a lone root-level `SECURITY.md` — GitHub's security
+ * policy, not a design document — never triggers a match on its own.
+ */
+const ROLE_SYNONYMS = Object.freeze({
+  architecture: ['architecture', 'arch', 'systemdesign', 'design', 'systemarchitecture', 'technicaldesign', 'hld'],
+  dataModel:    ['datamodel', 'data', 'schema', 'dataschema', 'entities', 'erd', 'domainmodel', 'database'],
+  security:     ['security', 'threatmodel', 'securitymodel', 'securitydesign'],
+  testSpec:     ['testspec', 'tests', 'testing', 'testplan', 'teststrategy', 'qa', 'testcases'],
+  environment:  ['environment', 'env', 'setup', 'configuration', 'config', 'installation', 'install'],
+  apiReference: ['apireference', 'api', 'apidocs', 'apispec', 'endpoints', 'rest', 'openapi'],
+  requirements: ['requirements', 'reqs', 'prd', 'spec', 'functionalrequirements', 'userstories'],
+});
+
+const NORMALISED_ROLE = new Map();
+for (const [role, names] of Object.entries(ROLE_SYNONYMS)) {
+  for (const name of names) {
+    // First writer wins, so an earlier role keeps an ambiguous name.
+    if (!NORMALISED_ROLE.has(name)) NORMALISED_ROLE.set(name, role);
+  }
+}
+
+/** Normalise a filename to comparable letters and digits, or null if not a doc. */
+export function normaliseDocName(filename) {
+  const dot = filename.lastIndexOf('.');
+  if (dot <= 0) return null;
+  if (!DOC_EXTENSIONS.has(filename.slice(dot).toLowerCase())) return null;
+  const stem = filename.slice(0, dot).toLowerCase().replace(/[^a-z0-9]/g, '');
+  return stem || null;
+}
+
+/** The canonical role a filename denotes, or null. */
+export function roleForFilename(filename) {
+  const stem = normaliseDocName(filename);
+  return stem ? (NORMALISED_ROLE.get(stem) ?? null) : null;
+}
+
+/**
+ * Find directories that already hold canonical documents.
+ *
+ * DocGuard assumed `docs-canonical/` and asked afterwards. A project keeping the
+ * same documents in `docs/canonical/` therefore looked EMPTY: `init` reported
+ * "no canonical docs", offered to reverse-engineer them from code, and would
+ * scaffold a second canonical directory beside the real one. The documents were
+ * there the whole time; nothing ever looked.
+ *
+ * Detection is by role BASENAME, because the filenames are the convention that
+ * survives relocation — the directory is the part people change.
+ *
+ * Returns candidates ranked by how many roles each directory holds, so a caller
+ * can confirm the strongest one rather than guess. Never throws: an unreadable
+ * subtree simply contributes nothing.
+ *
+ * @param {string} projectDir
+ * @param {{maxDepth?: number, skip?: Set<string>}} [opts]
+ * @returns {Array<{dir: string, roles: Record<string,string>, count: number}>}
+ */
+export function detectCanonicalLayout(projectDir, opts = {}) {
+  const maxDepth = opts.maxDepth ?? 4;
+  const skip = opts.skip ?? new Set([
+    'node_modules', '.git', '.local', 'dist', 'build', 'coverage',
+    'vendor', '__pycache__', '.venv', 'venv', '.next', 'target', '.testguard',
+  ]);
+
+  const byBasename = roleForFilename;
+
+  const found = new Map(); // dir -> { role -> relative path }
+
+  const walk = (absDir, relDir, depth) => {
+    if (depth > maxDepth) return;
+    let entries;
+    try { entries = readdirSync(absDir, { withFileTypes: true }); } catch { return; }
+    for (const entry of entries) {
+      const name = entry.name;
+      if (entry.isDirectory()) {
+        if (skip.has(name) || name.startsWith('.')) continue;
+        walk(join(absDir, name), relDir ? `${relDir}/${name}` : name, depth + 1);
+        continue;
+      }
+      const role = byBasename(name);
+      if (!role) continue;
+      const key = relDir || '.';
+      if (!found.has(key)) found.set(key, {});
+      found.get(key)[role] = relDir ? `${relDir}/${name}` : name;
+    }
+  };
+  walk(resolve(projectDir), '', 0);
+
+  return [...found.entries()]
+    .map(([dir, roles]) => ({ dir, roles, count: Object.keys(roles).length }))
+    // Strongest first; the conventional directory wins an exact tie so an
+    // already-conventional project is never told to "relocate" to itself.
+    .sort((a, b) => b.count - a.count
+      || (a.dir === 'docs-canonical' ? -1 : b.dir === 'docs-canonical' ? 1 : a.dir.localeCompare(b.dir)));
 }
