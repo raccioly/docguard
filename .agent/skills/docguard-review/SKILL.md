@@ -63,6 +63,25 @@ Record:
 - Category breakdown
 - Exact declared evidence states and the remaining heuristic claim tasks
 
+#### Read the channels before you rank anything
+
+Every finding in `guard --format json` answers four independent questions. This
+skill produces a severity-ranked report, so conflating them puts a signal DocGuard
+never adjudicated at the top of a CRITICAL list.
+
+| Field | Question | Values |
+|-------|----------|--------|
+| `severity` / `effectiveSeverity` | Does CI block? | `error`, `warn`, `info` |
+| `disposition` | Who decides — the tool or a human? | `act`, `escalate` |
+| `confidence` | How sure is the detector of its **observation**? | `high`, `low` |
+| `evidence.status` | Has the reviewed corpus ever measured this code? | `measured`, `not-measured` |
+| `parserTier` | Which analyzer produced it? | `js-ast`, `py-ast`, `regex-fallback`, `fallback-language`, `mixed`, `not-applicable` |
+
+- **`act`** — DocGuard asserts a defect and names the correction. A recommendation may say "change this".
+- **`escalate`** — DocGuard observed a signal; the judgement is the reader's. A recommendation must say "decide this, from this source" — never "change this". FRS002 is the canonical case: the commit count is exact (`confidence: high`) and it establishes only that a review is DUE, never that the document is stale.
+- `not-measured` means the reviewed corpus has never scored this code, so its confidence label is a maintainer's prior. Most codes are unmeasured. Say it once in the report; it is a fact about DocGuard's benchmark coverage, not about these findings being wrong.
+- `regex-fallback` / `fallback-language` means no syntax tree was available for that file. **Absence** of a finding there is weak evidence — never write "no gaps found" over a degraded tier. `diagnose --format json` repeats the same channels per issue, plus a `dispositionCounts` summary.
+
 ### Step 3: Semantic Cross-Document Analysis
 
 This is the **unique value** of the review skill — analysis that CLI validators cannot do.
@@ -124,6 +143,11 @@ Classify every finding using this matrix:
 - **MEDIUM**: Missing cross-reference, minor coverage gap, readability issue
 - **LOW**: Formatting inconsistency, optional section missing, minor terminology drift
 
+Severity is orthogonal to disposition. A CRITICAL finding can still be an
+`escalate` — rank it by impact as usual, then write its recommendation as a
+decision rather than an edit. Carry the disposition into the findings table so a
+reader never has to infer it from the severity column.
+
 ### Step 6: Produce Analysis Report
 
 Output a structured markdown report (do NOT write to disk):
@@ -139,10 +163,11 @@ Output a structured markdown report (do NOT write to disk):
 
 ### Findings Table
 
-| ID | Category | Severity | Location | Summary | Recommendation |
-|----|----------|----------|----------|---------|----------------|
-| R01 | Terminology | HIGH | ARCH:L15, SEC:L22 | "validator" vs "checker" | Standardize on "validator" |
-| R02 | Coverage | MEDIUM | DATA-MODEL.md | Schema X undocumented | Add Schema X to Data Model |
+| ID | Category | Severity | Disposition | Location | Summary | Recommendation |
+|----|----------|----------|-------------|----------|---------|----------------|
+| R01 | Terminology | HIGH | act | ARCH:L15, SEC:L22 | "validator" vs "checker" | Standardize on "validator" |
+| R02 | Coverage | MEDIUM | act | DATA-MODEL.md | Schema X undocumented | Add Schema X to Data Model |
+| R03 | Currency | HIGH | escalate | ARCHITECTURE.md | 13 commits since last review | **Decide**: read `src/` since that date; say whether the component map is now wrong |
 
 ### Per-Document Health
 
@@ -183,6 +208,8 @@ Ask: "Would you like me to fix the top N issues? (I'll show you what I plan to c
 - **Compare actual code vs docs** — don't just validate formatting
 - **Limit findings to 50** — aggregate overflow in a summary count
 - **Prioritize high-signal findings** — one CRITICAL finding is worth ten LOW findings
+- **Respect disposition** — never write an `escalate` finding up as something to change. Severity says whether CI blocks; disposition says who owns the decision. Recommending an edit for a signal DocGuard did not adjudicate destroys the signal and fixes nothing
+- **Never read absence as proof** — a `partial` validator could not check everything it was asked to, and a `regex-fallback` tier could not see the whole syntax. Report the gap instead of summarizing it as clean
 - **Preserve evidence scope** — a verified declaration covers one selected statement, while undeclared prose and whole-document accuracy remain review work
 - **Preserve approved intent** — a contradiction can mean implementation regressed; determine which side owns truth before recommending an edit
 

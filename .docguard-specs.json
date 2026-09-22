@@ -444,12 +444,12 @@
           },
           {
             "path": "specs/013-calibrated-finding-channels/tasks.md",
-            "digest": "sha256:d4f942d85f8935be14dddf61be70d2389f83348e0c899bf4d1e5b8f7691e0816"
+            "digest": "sha256:677235f7492f6a7121e71edb272581f2b455f002c331976a1d7f555bbb781def"
           }
         ],
         "taskCompletion": {
-          "checked": 35,
-          "total": 36
+          "checked": 39,
+          "total": 40
         },
         "implementationEvidence": [
           {
@@ -505,7 +505,7 @@
           {
             "requirementId": "FR-016",
             "file": "cli/precision-evidence.mjs",
-            "line": 37
+            "line": 36
           },
           {
             "requirementId": "FR-017",
@@ -515,12 +515,12 @@
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 586
+            "line": 571
           },
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 613
+            "line": 598
           },
           {
             "requirementId": "FR-021",
@@ -2380,11 +2380,6 @@
             "requirementId": "FR-019",
             "file": "benchmarks/lib/precision-evidence.mjs",
             "line": 12
-          },
-          {
-            "requirementId": "FR-019",
-            "file": "cli/detector-digest.mjs",
-            "line": 21
           },
           {
             "requirementId": "FR-019",

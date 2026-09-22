@@ -82,6 +82,18 @@ npx --yes docguard-cli@latest verify --evidence
 Confirm there are no errors. If the API surface drifted (`API-Surface` failures),
 combine with `docguard fix --write` (the mechanical removal of stale endpoints).
 
+**Read the disposition on whatever guard still reports.** Each finding carries
+`disposition: act | escalate` (plus `confidence`, `evidence.status` and
+`parserTier` — see `guard --format json`):
+
+- **`act`** — DocGuard asserts a defect and names the correction. Sync or `fix --write` may clear it.
+- **`escalate`** — DocGuard observed a signal; the judgement is yours. **A sync is not an answer to one.** Rewriting prose, or re-running `sync --write` to move a timestamp, makes the message stop printing without anyone deciding anything. Read the code and the document, decide which side is wrong, and record that decision.
+
+FRS002 is the one you will hit most: "N code commits since the document was
+reviewed" counts commits exactly via `git log`, so it is `confidence: high`, yet
+it establishes only that a review is DUE. Recording a review date you did not
+earn is the failure mode; the timestamp is meant to attest that someone looked.
+
 ### Step 5 — Loop
 
 The intended flow is `sync → guard → (fix if needed) → guard → commit`. Run sync
@@ -106,6 +118,7 @@ that ref. Use that diff to:
 | `Skipped … not marked docguard:generated` | A default-path doc lacks whole-document ownership. Review before using `--force`; a mapped human doc still requires a unique `source=code` section. |
 | `malformed or duplicate docguard:section markers` | Stop. Repair ownership markers explicitly; `--force` cannot authorize the write. |
 | `Documentation memory is up to date` | Done — no drift. |
+| A guard finding with `disposition: escalate` survives the sync | Expected. Judge it and say what you decided; do not sync again to clear it. |
 
 ## Anti-patterns (do NOT do these)
 
@@ -113,3 +126,5 @@ that ref. Use that diff to:
 - ❌ Removing the markers to "make the doc look cleaner" — that breaks future sync/regeneration.
 - ❌ Skipping `sync --write` and editing the code section by hand — let DocGuard do it.
 - ❌ Rewriting an evidence-bound human statement from generated code alone — rerun the declared predicate and review approved intent first.
+- ❌ Treating a `disposition: escalate` finding as drift to sync away — it is a decision someone owes, not a section that is out of date.
+- ❌ Stamping `<!-- docguard:last-reviewed -->` to silence a freshness escalation — the date attests that a human reviewed; writing it without reviewing makes the attestation false.

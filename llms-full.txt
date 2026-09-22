@@ -1471,6 +1471,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   a document to silence an escalation — stamping a fresh review date to clear a
   freshness signal destroys the signal without doing the review.
 
+  `docguard-review`, `docguard-score` and `docguard-sync` now carry the same
+  channels. Each had its own way of losing them: `review` ranks findings by
+  severity into a CRITICAL list, which put an unadjudicated signal at the top
+  with an edit beside it; `score` promised point gains for clearing guard
+  warnings, which prices an escalation and turns "reach grade A" into an
+  instruction to edit documents until messages stop printing; `sync` refreshes
+  code-truth sections, and a re-sync that moves a timestamp is the fastest way
+  to make a freshness escalation disappear without anyone reviewing anything.
+
+- **`diagnose`, `ci` and `report` surface the disposition split.** They consume
+  the same guard run as `guard` but showed the pre-channel view, so an agent
+  reading them got back the flat list the channels exist to break up.
+  `diagnose` matters most — it turns guard output into AI fix prompts, and the
+  prompt said `TASK: Fix N documentation issue(s)` over a list that mixed
+  defects with signals. An escalation handed to an agent under that heading
+  produces a document edited until the message stops printing.
+
+  The prompt now splits `DEFECTS TO FIX` from `SIGNALS TO REVIEW`, gives each
+  signal the detector's own decision text rather than the validator's fix verb,
+  excludes escalations from the remediation steps and `fixCommands`, and states
+  that a judged signal will still print — an agent that reads a non-zero count
+  as failure otherwise keeps editing. `diagnose --format json` adds
+  `dispositionCounts` and the five channels per issue, with `fixKind: 'review'`
+  for escalations. `ci` reports the split beside the verdict, because an exit
+  code cannot distinguish a green-and-silent run from a green-but-escalating
+  one. `report` adds a disposition/confidence/evidence/parser column per code
+  and a per-run summary row, so an auditor reading "3 × FRS002, severity warn"
+  can tell DocGuard never asserted those documents were wrong.
+
 - **SPK010 — a completed task that names a file the feature never changed.**
   The phantom check (SPK008) asks whether a checked task's deliverable EXISTS,
   which a task naming already-existing files satisfies immediately, whether or
@@ -1493,6 +1522,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   tasks; seven were real gaps in this very feature, now closed.
 
 ### Fixed
+
+- **Guard's per-finding "review" annotation never printed.** The summary counted
+  `N to fix · M to review` correctly, but the line under each finding that says
+  `(review — signal, not a verdict)` was unreachable: the renderer builds its
+  items from `findings` and did not copy `disposition` into them, so the check
+  tested `undefined` for every structured finding — which is all of them. A
+  reader scanning the enumerated list, which is where the decision about a
+  specific document actually gets made, saw no distinction at all.
 
 - **API-surface checking never ran on Python, Go, Rust, Java or Ruby projects.**
   `detectFramework` read `package.json` and nothing else, so it returned an
@@ -1767,45 +1804,8 @@ Automated weekly release — batches everything merged since `v0.41.7`.
   `needsDatabase` were all set wrong and the validators that matter most for a
   Worker were silently disabled. All three copies are now one exported function
   (`wrangler.toml`, `wrangler.json` and `wrangler.jsonc` were already all
-  recognised there), and a test fails if a private copy reappears.
-- A detected Playwright or Cypress config, or an `e2e`/`tests/e2e` directory, now
-  sets `needsE2E` regardless of the project type's default. A suite on disk is
-  evidence; the type default is only a guess.
 
-
-
-- The documented network-free recipe `node benchmarks/run.mjs --baseline
-  benchmarks/baseline.json` failed with ten spurious `case-removed` regressions
-  because the comparator did not know the run had not selected the pinned
-  public cases. The runner now reports its `selection`, the comparator lists
-  unselected baseline cases under `outOfSelection`, and CI runs the recipe on
-  every push.
-
-## [0.41.7] - 2026-09-18
-
-Automated weekly release — batches everything merged since `v0.41.6`.
-
-### Changed
-
-- feat: detect documents by name across the codebase, not by exact path (#418)
-
-
-### Added
-
-- Find the documents a project already has, instead of assuming where they are.
-  `init` now looks for canonical role filenames across the repository before
-  creating anything, reports what it found, and offers to adopt that location —
-  writing both `docs.roles` and a matching `requiredFiles.canonical`. Detection
-  recognises real-world spellings rather than one exact filename: separators and
-  case are ignored (`data_model.md`, `Data Model.md`), `.markdown` and `.mdx`
-  count, and each role has known aliases (`system-design.md`, `testing.md`,
-  `env.md`, `api.md`, `PRD.md`). A directory must hold at least two roles before
-  it qualifies, so a lone root `SECURITY.md` — GitHub's policy file — never
-  triggers relocation, and the conventional directory wins any tie.
-
-### Fixed
-
-<!-- truncated: 3422 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 3459 more lines — read CHANGELOG.md directly -->
 
 ---
 
