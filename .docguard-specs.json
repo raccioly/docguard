@@ -543,9 +543,24 @@
             "line": 19
           },
           {
+            "requirementId": "FR-005",
+            "file": "tests/calibrated-channels-acceptance.test.mjs",
+            "line": 10
+          },
+          {
             "requirementId": "FR-006",
             "file": "tests/findings-channels.test.mjs",
             "line": 20
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/calibrated-channels-acceptance.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/calibrated-channels-acceptance.test.mjs",
+            "line": 12
           },
           {
             "requirementId": "FR-009",
@@ -611,6 +626,46 @@
             "requirementId": "FR-020",
             "file": "tests/coverage-headline.test.mjs",
             "line": 21
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/calibrated-channels-acceptance.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/calibrated-channels-acceptance.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/calibrated-channels-acceptance.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "SC-004",
+            "file": "tests/calibrated-channels-acceptance.test.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "SC-005",
+            "file": "tests/calibrated-channels-acceptance.test.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "SC-006",
+            "file": "tests/calibrated-channels-acceptance.test.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "SC-007",
+            "file": "tests/calibrated-channels-acceptance.test.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "SC-008",
+            "file": "tests/calibrated-channels-acceptance.test.mjs",
+            "line": 20
           }
         ]
       }
