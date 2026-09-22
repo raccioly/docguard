@@ -27,12 +27,13 @@
       "description": "How much of what this run reported has ever been benchmarked. `notMeasured` is expected to dominate and is the honest headline.",
       "type": "object",
       "additionalProperties": false,
-      "required": ["codesInRun", "measured", "notMeasured", "quotable"],
+      "required": ["codesInRun", "measured", "notMeasured", "quotable", "adjudicated"],
       "properties": {
         "codesInRun": { "type": "integer", "minimum": 0 },
         "measured": { "type": "integer", "minimum": 0 },
         "notMeasured": { "type": "integer", "minimum": 0 },
-        "quotable": { "description": "Measured codes whose own precision denominator reaches minN.", "type": "integer", "minimum": 0 }
+        "quotable": { "description": "Measured codes whose own precision denominator reaches minN.", "type": "integer", "minimum": 0 },
+        "adjudicated": { "description": "Reviewed disagreements on record across the codes in this run. Visible beside the rates and counted inside none of them.", "type": "integer", "minimum": 0 }
       }
     },
     "codes": {
@@ -55,6 +56,16 @@
         { "type": "null" },
         { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number", "minimum": 0, "maximum": 1 } }
       ]
+    },
+    "adjudicated": {
+      "description": "Reviewed disagreements on record for this scope. Counted beside every rate and inside none of them: a case where the detector fired as designed and a user disagreed belongs in neither a numerator nor a denominator.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["policyDisagreements", "ambiguous"],
+      "properties": {
+        "policyDisagreements": { "type": "integer", "minimum": 0 },
+        "ambiguous": { "type": "integer", "minimum": 0 }
+      }
     },
     "cell": {
       "type": "object",
@@ -84,10 +95,11 @@
           "description": "No benchmark case exercises this code. It carries no number and no backoff: inheriting its validator's measured precision would invent evidence.",
           "type": "object",
           "additionalProperties": false,
-          "required": ["status", "reason"],
+          "required": ["status"],
           "properties": {
             "status": { "const": "not-measured" },
-            "reason": { "type": "string", "minLength": 1, "maxLength": 512 }
+            "reason": { "type": "string", "minLength": 1, "maxLength": 512 },
+            "adjudicated": { "$ref": "#/$defs/adjudicated" }
           }
         },
         {
@@ -129,7 +141,7 @@
       "description": "The generated module's object (cli/precision-evidence-data.mjs), derived from benchmarks/baseline.json. `byCode` holds only measured codes; absence is what `not-measured` is served from.",
       "type": "object",
       "additionalProperties": false,
-      "required": ["$schema", "schemaVersion", "measures", "caveat", "minN", "source", "aggregate", "byValidator", "byCode"],
+      "required": ["$schema", "schemaVersion", "measures", "caveat", "minN", "source", "aggregate", "adjudicated", "byValidator", "byCode"],
       "properties": {
         "$schema": { "const": "https://raccioly.github.io/docguard/schemas/docguard-precision-evidence.schema.json" },
         "schemaVersion": { "const": 1 },
@@ -151,6 +163,7 @@
           }
         },
         "aggregate": { "$ref": "#/$defs/cell" },
+        "adjudicated": { "$ref": "#/$defs/adjudicated" },
         "byValidator": { "type": "object", "additionalProperties": { "$ref": "#/$defs/cell" } },
         "byCode": { "type": "object", "propertyNames": { "pattern": "^[A-Z]{3}[0-9]{3}$" }, "additionalProperties": { "$ref": "#/$defs/codeEvidence" } }
       }

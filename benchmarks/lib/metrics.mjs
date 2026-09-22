@@ -12,6 +12,18 @@ function emptyCounts() {
     falseNegatives: 0, abstainedSupportedCases: 0, unsupportedCases: 0,
     defectCases: 0, cleanControlCases: 0, cleanControlCasesWithFindings: 0,
     repairs: { accepted: 0, rejected: 0, notEvaluated: 0 },
+    // Adjudicated disagreements: a user challenged a finding, the maintainers
+    // reviewed it, and the detector was left as designed. Counted, never
+    // folded into a ratio (FR-003 keeps them out of every denominator).
+    //
+    // Both directions would be dishonest. Scoring one as a false positive
+    // would let a user who dislikes a rule drive its measured precision down;
+    // scoring it as a true positive would let a maintainer launder
+    // disagreement into validation. Neither is a measurement. What was wrong
+    // before is that the disagreement simply VANISHED — the corpus could only
+    // ever record a false positive that had already been fixed, so precision
+    // 1.0 was the pipeline's fixed point rather than an observation.
+    adjudicated: { policyDisagreements: 0, ambiguous: 0 },
   };
 }
 
@@ -64,6 +76,8 @@ function summarize(cases) {
   const repositories = new Set();
   for (const item of cases) {
     if (item.classification === 'unsupported_syntax') counts.unsupportedCases++;
+    if (item.classification === 'policy_disagreement') counts.adjudicated.policyDisagreements++;
+    if (item.classification === 'ambiguous') counts.adjudicated.ambiguous++;
     if (!measured(item)) continue;
     counts.cases++;
     repositories.add(item.repositoryGroup);

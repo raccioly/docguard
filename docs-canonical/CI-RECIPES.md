@@ -120,6 +120,8 @@ Use guard findings and declared verification evidence for enforcement. A high sc
 
 ## Recipe 1b — GitLab CI / Jenkins (JUnit output)
 
+`guard --format sarif` emits SARIF 2.1.0 for GitHub Code Scanning and enterprise dashboards. Every result carries the finding's channels in `properties`: `disposition` (`act` when DocGuard names the correction, `escalate` when the judgement is the reader's), `confidence`, `evidence` (`measured` or `not-measured`), `parserTier`, `reportable`, `suggestionKind`, and the intrinsic and effective severities. Gate automation on `disposition` rather than severity alone — a blocking result can still be an escalation, and applying an automated fix to one silences a signal without resolving it. `parserTier` of `regex-fallback` or `fallback-language` means no syntax tree was available for that file, so absence of a result there is weak evidence.
+
 `guard --format junit` emits a test report suitable for GitLab/Jenkins ingestion. Install a fixed DocGuard version in the job, capture the exit status, and upload the report even on failures. Permitting exit 2 is an explicit warning policy; other nonzero statuses remain failures.
 
 ## Recipe 4b — Score history across ephemeral CI runs

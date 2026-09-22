@@ -135,7 +135,7 @@
       "description": "Counts are facts; ratios are null when the corpus has no evidence for their denominator. Every ratio here is benchmark precision (see review.measures).",
       "type": "object",
       "additionalProperties": false,
-      "required": ["cases", "repositories", "truePositives", "falsePositives", "falseNegatives", "abstainedSupportedCases", "unsupportedCases", "defectCases", "cleanControlCases", "cleanControlCasesWithFindings", "repairs", "precision", "recall", "falsePositivesPerRepository", "abstentionRate", "unsupportedRate", "acceptedRepairRate", "confidence95"],
+      "required": ["cases", "repositories", "truePositives", "falsePositives", "falseNegatives", "abstainedSupportedCases", "unsupportedCases", "defectCases", "cleanControlCases", "cleanControlCasesWithFindings", "repairs", "adjudicated", "precision", "recall", "falsePositivesPerRepository", "abstentionRate", "unsupportedRate", "acceptedRepairRate", "confidence95"],
       "properties": {
         "cases": { "type": "integer", "minimum": 0 },
         "repositories": { "type": "integer", "minimum": 0 },
@@ -155,6 +155,16 @@
             "accepted": { "type": "integer", "minimum": 0 },
             "rejected": { "type": "integer", "minimum": 0 },
             "notEvaluated": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "adjudicated": {
+          "description": "Reviewed disagreements: a user challenged a finding and the maintainers left the detector as designed. Counts only — these cases enter no precision or recall denominator, because scoring them either way would let a disputed policy move a measurement. They exist so a disagreement the maintainers decline to act on leaves a record instead of vanishing.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["policyDisagreements", "ambiguous"],
+          "properties": {
+            "policyDisagreements": { "type": "integer", "minimum": 0 },
+            "ambiguous": { "type": "integer", "minimum": 0 }
           }
         },
         "precision": { "$ref": "#/$defs/ratio" },

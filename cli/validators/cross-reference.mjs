@@ -238,6 +238,9 @@ export function suggestAnchor(broken, candidates) {
   // Pass 1: substring containment — high-confidence match. Both sides must
   // be at least 4 chars to avoid spurious matches against very short anchors
   // (e.g. `#a` would otherwise match any broken slug containing the letter a).
+  // Hand-set matching floor, not a fitted value. Deriving it from observed
+  // feedback requires a strictly proper scoring rule —
+  // docguard.calibrated-finding-channels#FR-018.
   const MIN_SUBSTRING = 4;
   for (const c of candidates) {
     if (c.length < MIN_SUBSTRING || broken.length < MIN_SUBSTRING) continue;

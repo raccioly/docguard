@@ -372,6 +372,312 @@
       }
     },
     {
+      "specId": "docguard.calibrated-finding-channels",
+      "path": "specs/013-calibrated-finding-channels/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.calibrated-finding-channels#FR-001",
+          "docguard.calibrated-finding-channels#FR-002",
+          "docguard.calibrated-finding-channels#FR-003",
+          "docguard.calibrated-finding-channels#FR-004",
+          "docguard.calibrated-finding-channels#FR-005",
+          "docguard.calibrated-finding-channels#FR-006",
+          "docguard.calibrated-finding-channels#FR-007",
+          "docguard.calibrated-finding-channels#FR-008",
+          "docguard.calibrated-finding-channels#FR-009",
+          "docguard.calibrated-finding-channels#FR-010",
+          "docguard.calibrated-finding-channels#FR-011",
+          "docguard.calibrated-finding-channels#FR-012",
+          "docguard.calibrated-finding-channels#FR-013",
+          "docguard.calibrated-finding-channels#FR-014",
+          "docguard.calibrated-finding-channels#FR-015",
+          "docguard.calibrated-finding-channels#FR-016",
+          "docguard.calibrated-finding-channels#FR-017",
+          "docguard.calibrated-finding-channels#FR-018",
+          "docguard.calibrated-finding-channels#FR-019",
+          "docguard.calibrated-finding-channels#FR-020",
+          "docguard.calibrated-finding-channels#FR-021",
+          "docguard.calibrated-finding-channels#SC-001",
+          "docguard.calibrated-finding-channels#SC-002",
+          "docguard.calibrated-finding-channels#SC-003",
+          "docguard.calibrated-finding-channels#SC-004",
+          "docguard.calibrated-finding-channels#SC-005",
+          "docguard.calibrated-finding-channels#SC-006",
+          "docguard.calibrated-finding-channels#SC-007",
+          "docguard.calibrated-finding-channels#SC-008",
+          "docguard.calibrated-finding-channels#SC-009"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/013-calibrated-finding-channels/spec.md",
+            "digest": "sha256:fe9dac22ee605dab3e6262fc79598b9923bd2c1085e4d54b77d0cc77f34b0444"
+          },
+          {
+            "path": "specs/013-calibrated-finding-channels/plan.md",
+            "digest": "sha256:27806af62a52e41e9fe66237ffd76a3b03d3277a6fe7c0e4aaa9ae3321181efa"
+          },
+          {
+            "path": "specs/013-calibrated-finding-channels/tasks.md",
+            "digest": "sha256:d4f942d85f8935be14dddf61be70d2389f83348e0c899bf4d1e5b8f7691e0816"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 35,
+          "total": 36
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/findings.mjs",
+            "line": 21
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/findings.mjs",
+            "line": 22
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/findings.mjs",
+            "line": 23
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/findings.mjs",
+            "line": 24
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/findings.mjs",
+            "line": 25
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/writers/sarif.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "cli/findings.mjs",
+            "line": 26
+          },
+          {
+            "requirementId": "FR-014",
+            "file": "cli/findings.mjs",
+            "line": 27
+          },
+          {
+            "requirementId": "FR-015",
+            "file": "cli/feedback-fixture.mjs",
+            "line": 213
+          },
+          {
+            "requirementId": "FR-016",
+            "file": "benchmarks/lib/precision-evidence.mjs",
+            "line": 43
+          },
+          {
+            "requirementId": "FR-016",
+            "file": "cli/precision-evidence.mjs",
+            "line": 36
+          },
+          {
+            "requirementId": "FR-017",
+            "file": "cli/feedback-fixture.mjs",
+            "line": 214
+          },
+          {
+            "requirementId": "FR-020",
+            "file": "cli/commands/guard.mjs",
+            "line": 565
+          },
+          {
+            "requirementId": "FR-020",
+            "file": "cli/commands/guard.mjs",
+            "line": 592
+          },
+          {
+            "requirementId": "FR-021",
+            "file": "cli/scanners/speckit.mjs",
+            "line": 1026
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/findings-channels.test.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/findings-channels.test.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/findings-channels.test.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/findings-channels.test.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/calibrated-channels-acceptance.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/findings-channels.test.mjs",
+            "line": 20
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/calibrated-channels-acceptance.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/calibrated-channels-acceptance.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "tests/findings-channels.test.mjs",
+            "line": 21
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "tests/parser-tier.test.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "tests/parser-tier.test.mjs",
+            "line": 20
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "tests/parser-tier.test.mjs",
+            "line": 21
+          },
+          {
+            "requirementId": "FR-013",
+            "file": "tests/parser-tier.test.mjs",
+            "line": 22
+          },
+          {
+            "requirementId": "FR-014",
+            "file": "tests/feedback-sampling.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-014",
+            "file": "tests/findings-channels.test.mjs",
+            "line": 22
+          },
+          {
+            "requirementId": "FR-015",
+            "file": "tests/adjudication-record.test.mjs",
+            "line": 22
+          },
+          {
+            "requirementId": "FR-016",
+            "file": "tests/adjudication-record.test.mjs",
+            "line": 23
+          },
+          {
+            "requirementId": "FR-017",
+            "file": "tests/adjudication-record.test.mjs",
+            "line": 24
+          },
+          {
+            "requirementId": "FR-018",
+            "file": "tests/threshold-constraint.test.mjs",
+            "line": 20
+          },
+          {
+            "requirementId": "FR-019",
+            "file": "tests/threshold-constraint.test.mjs",
+            "line": 21
+          },
+          {
+            "requirementId": "FR-020",
+            "file": "tests/coverage-headline.test.mjs",
+            "line": 21
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/calibrated-channels-acceptance.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/calibrated-channels-acceptance.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/calibrated-channels-acceptance.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "SC-004",
+            "file": "tests/calibrated-channels-acceptance.test.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "SC-005",
+            "file": "tests/calibrated-channels-acceptance.test.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "SC-006",
+            "file": "tests/calibrated-channels-acceptance.test.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "SC-007",
+            "file": "tests/calibrated-channels-acceptance.test.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "SC-008",
+            "file": "tests/calibrated-channels-acceptance.test.mjs",
+            "line": 20
+          }
+        ]
+      }
+    },
+    {
       "specId": "docguard.document-lifecycle",
       "path": "specs/006-document-lifecycle/spec.md",
       "reviewed": {

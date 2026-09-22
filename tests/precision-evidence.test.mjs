@@ -97,7 +97,7 @@ describe('per-code precision evidence', () => {
 describe('guard precision evidence block', () => {
   it('is scoped to the codes in the run and counts what was never benchmarked', () => {
     const block = precisionEvidenceBlock(['SEC005', 'SEC005', 'SEC003', 'DQ007', 'SPR001'], '0.41.7');
-    assert.deepEqual(block.coverage, { codesInRun: 4, measured: 2, notMeasured: 2, quotable: 1 });
+    assert.deepEqual(block.coverage, { codesInRun: 4, measured: 2, notMeasured: 2, quotable: 1, adjudicated: 0 });
     assert.equal(block.codes.DQ007.status, 'not-measured');
     assert.equal(block.codes.SEC005.status, 'measured');
     assert.equal(block.measures, 'benchmark-precision');
@@ -114,7 +114,7 @@ describe('guard precision evidence block', () => {
 
   it('survives an empty run and junk input without inventing a code', () => {
     const empty = precisionEvidenceBlock([], '0.41.7');
-    assert.deepEqual(empty.coverage, { codesInRun: 0, measured: 0, notMeasured: 0, quotable: 0 });
+    assert.deepEqual(empty.coverage, { codesInRun: 0, measured: 0, notMeasured: 0, quotable: 0, adjudicated: 0 });
     assert.deepEqual(empty.codes, {});
     assert.deepEqual(precisionEvidenceBlock([null, undefined, ''], '0.41.7').codes, {});
     assert.equal(evidenceForCode(undefined).status, 'not-measured');
@@ -129,10 +129,19 @@ describe('guard precision evidence block', () => {
     assert.equal(report.precisionEvidence.measures, 'benchmark-precision');
     assert.equal(report.precisionEvidence.coverage.codesInRun, new Set(report.findings.map(f => f.code)).size);
     for (const finding of report.findings) {
+      // Findings are written verbatim into shareable feedback records, so the
+      // shape is a contract: it may only grow, and only with a spec. The three
+      // channels added by docguard.calibrated-finding-channels are listed here
+      // so an accidental field can never slip in unreviewed.
       assert.deepEqual(Object.keys(finding).sort(), [
-        'code', 'confidence', 'effectiveSeverity', 'enforcement', 'location',
-        'message', 'redactedContext', 'reportable', 'severity', 'suggestion', 'validator',
-      ], 'findings are written verbatim into shareable feedback records; their shape must not change');
+        'code', 'confidence', 'disposition', 'effectiveSeverity', 'enforcement',
+        'evidence', 'location', 'message', 'parserTier', 'redactedContext',
+        'reportable', 'severity', 'suggestion', 'validator',
+      ], 'findings are written verbatim into shareable feedback records; their shape changes only by spec');
+      assert.ok(['act', 'escalate'].includes(finding.disposition));
+      assert.ok(['measured', 'not-measured'].includes(finding.evidence.status));
+      assert.equal(finding.location === null || typeof finding.location === 'string', true,
+        'location is a string or null, never an object (FR-009)');
     }
   });
 
@@ -218,7 +227,12 @@ describe('precision evidence schema', () => {
     assert.equal(contract.$defs.measures.const, 'benchmark-precision');
     const notMeasured = contract.$defs.codeEvidence.oneOf.find(item => item.title === 'Not measured');
     assert.equal(notMeasured.additionalProperties, false);
-    assert.deepEqual(Object.keys(notMeasured.properties).sort(), ['reason', 'status']);
+    // `adjudicated` is the one thing an unmeasured code MAY carry: a count of
+    // reviewed disagreements. It is not a rate and cannot become one — the
+    // schema still admits no numeric evidence field here.
+    assert.deepEqual(Object.keys(notMeasured.properties).sort(), ['adjudicated', 'reason', 'status']);
+    assert.deepEqual(Object.keys(notMeasured.properties.adjudicated.$ref ? { ref: 1 } : notMeasured.properties.adjudicated), ['ref'],
+      'the unmeasured shape references the shared adjudicated counter rather than inlining a number');
   });
 
   it('names every field the derivation emits on a cell and on the artifact', () => {

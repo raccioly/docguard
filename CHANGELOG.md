@@ -7,6 +7,135 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Three channels on every finding, replacing one field that answered three
+  questions.** `confidence` described the detector's certainty, decided whether
+  a human should look, AND gated which findings the feedback loop sampled.
+  Collapsed together, a certain observation read as an uncertain one, and —
+  because `reportable` derived from `confidence` — the channel that would
+  validate the label sampled only findings the label already doubted. On a
+  repository with 17 high-confidence findings across never-benchmarked codes,
+  `docguard feedback` selected zero.
+
+  Every finding now carries `disposition` (`act` when DocGuard asserts a defect
+  and names the correction, `escalate` when the judgement is the reader's),
+  `evidence` (whether the reviewed corpus has measured this code, with `n` and
+  a Wilson interval when it has), and `parserTier` (which analyzer produced it).
+  All additive: no existing field changed meaning, and `guard --format json`,
+  SARIF `properties` and feedback records carry all of them.
+
+  Guard now prints `N to fix · M to review` under the verdict. Across fourteen
+  real repositories, 671 findings split 234 act / 437 escalate — and 5 of 671
+  (0.7%) carry any benchmark evidence at all.
+
+- **`docguard feedback` samples the labels nobody has validated.** Selection is
+  now "unmeasured code OR low confidence", and the command states what it left
+  out (`excluded.findings`, `excluded.codes`) instead of hiding it.
+
+- **Reviewed disagreements leave a record.** A reported false positive the
+  maintainers reviewed and declined to act on previously vanished: the corpus
+  could only absorb one that had already been repaired, which made "precision
+  1.0" a property of the contribution pipeline rather than of the detectors.
+  `buildAdjudicationRow()` produces a corpus case carrying the same opposite
+  control and attestations as a measured case plus a rationale and date.
+  Reported as `adjudicated: { policyDisagreements, ambiguous }` beside every
+  rate and inside none of them — scoring such a case either way would let a
+  disputed policy move a measurement.
+
+- **A design constraint for any future threshold fitted from data**
+  (`docguard.calibrated-finding-channels#FR-018`): it must be fitted against a
+  strictly proper scoring rule (Brier or logarithmic). Accuracy, F1 and "fewest
+  reported false positives" are all maximised by a detector that abstains, or
+  that asserts high confidence on whatever it still emits; none of them
+  penalises a confidently wrong label. Nothing tunes from data today, which is
+  why the constraint is recorded now — a test pins the pointer comment at all
+  six hand-set threshold sites.
+
+### Changed
+
+- **The agent skills triage on `disposition`, not severity alone.** `docguard-guard`
+  told agents to sort findings by severity and, for warnings, to "consider
+  running `/docguard.fix` for automated remediation" — which would have an agent
+  auto-fixing findings whose judgement belongs to a human. The skill now leads
+  with the act/escalate split, documents all five finding channels, reports work
+  as `N to fix · M to review`, and states that absence of a finding under a
+  `partial` validator or a `regex-fallback` tier is weak evidence.
+  `docguard-fix` now declares `act` findings its only scope and refuses to edit
+  a document to silence an escalation — stamping a fresh review date to clear a
+  freshness signal destroys the signal without doing the review.
+
+- **SPK010 — a completed task that names a file the feature never changed.**
+  The phantom check (SPK008) asks whether a checked task's deliverable EXISTS,
+  which a task naming already-existing files satisfies immediately, whether or
+  not the work happened. That hole is not hypothetical: in this repository a
+  documentation task listed six contract files, was marked `[x]`, and shipped
+  with one of them — a SKILL.md — unmodified, still telling agents to auto-fix
+  findings a human was supposed to judge.
+
+  SPK010 asks the other question: did this feature's history ever touch it? The
+  window is the commit that introduced the spec directory through HEAD, plus
+  the working tree, so uncommitted work counts. Only falsifiable slashed paths
+  convict; a non-existent path stays SPK008's business, a path inside the
+  spec's own directory is never its own deliverable, and the check is silent
+  when git is unavailable or the spec has no introducing commit. Suppress one
+  task with `<!-- docguard:ignore SPK010 — reason -->`, or disable with
+  `"specKit": { "untouchedClaimCheck": false }`.
+
+  Reported `confidence: high` and `disposition: escalate` — the git fact is
+  exact, the conclusion is the reader's. Run against this branch it found eight
+  tasks; seven were real gaps in this very feature, now closed.
+
+### Fixed
+
+- **API-surface checking never ran on Python, Go, Rust, Java or Ruby projects.**
+  `detectFramework` read `package.json` and nothing else, so it returned an
+  empty framework for every non-JS project, and `scanRoutesDeep` gates its
+  Flask, FastAPI, Django, Gin, Axum, Spring and Rails walkers on that name.
+  The scanners worked; nothing reached them. A Flask service reported
+  `no-matches` — "no checkable inputs matched this detector" — and its entire
+  API surface went unchecked. Detection now comes from `detectEcosystems`,
+  which already reads pyproject/requirements/Cargo/go.mod/pom. On one real
+  repository this surfaces six genuinely undocumented endpoints.
+
+- **The analyzer tier was invisible, so degraded scans looked like clean ones.**
+  Both AST tiers are optional by design (`@babel/parser`; the developer's own
+  `python3`), and the regex fallback cannot see a multi-line decorator. A Flask
+  route written across several lines is read by the AST tier and missed
+  entirely by the pattern tier — and both produced identical-looking output.
+  A validator whose inputs fell back now reports `partial` naming the cause,
+  and every finding carries the tier that produced it. Findings are retained;
+  only coverage is downgraded.
+
+- **Freshness called its own arithmetic uncertain.** FRS002–FRS005 count
+  commits, days and added DRIFT lines with `git log`, and the adapter labelled
+  every one of them `confidence: low` — telling readers DocGuard might have
+  miscounted, which was never the claim. They are now high-confidence
+  escalations: the count is a fact, the inference to staleness is the reader's.
+  FRS001 stays low-confidence, because it fires on the ABSENCE of a dated
+  signal, which an uncommitted file or a shallow clone can produce. Across the
+  sample this relabels 196 findings.
+
+- **Five finding codes reached SARIF with no file location.** APS001, APS002,
+  DSP001, REF001 and REF002 emitted `location` as an object, which rendered as
+  `[object Object]` and which SARIF's location parser dropped entirely, so
+  GitHub Code Scanning could not annotate them. `location` is now normalized to
+  a string at construction. Verified against the pre-change build on real
+  repositories: every SARIF result now resolves to a file.
+
+- **A malformed `suggestion.kind` was silently coerced to `review`**, turning a
+  typo into an escalation. It is now omitted, per
+  `adoption-workflow-integrity#FR-002`.
+
+- **The badge claimed full coverage on a partial run.** `passed/total` counts
+  checks and its denominator excludes every validator that could not run, so a
+  repository could print `628/628` and brightgreen while the same run reported
+  a partial validator and a missing prerequisite. The colour is now capped at
+  `green` in that case — green rather than yellow, because everything that ran
+  did pass. `no-matches` keeps the top grade: a validator that ran and found
+  nothing applicable did its job. The coverage line leads with
+  `N of M validator(s) checked`.
+
 ### Changed
 
 - **The release cut no longer regenerates `llms.txt` / `llms-full.txt`.** Adding

@@ -219,7 +219,7 @@ Validators emit findings and aggregate counts. The guard adapter adds names and 
 |-------|------|-------------|
 | `name` | `string` | Validator name (e.g., `"structure"`, `"changelog"`) |
 | `status` | `string` | `"pass"`, `"warn"`, or `"fail"` |
-| `findings` | `object[]` | Stable code, validator, intrinsic `severity`, `effectiveSeverity`, enforcement source/key, confidence, location, message, and normalized suggestion |
+| `findings` | `object[]` | Stable code, validator, intrinsic `severity`, `effectiveSeverity`, enforcement source/key, `confidence`, `disposition`, `evidence`, `parserTier`, location, message, and normalized suggestion |
 | `passed`, `total` | `number` | Applicable check counts |
 | `errors`, `warnings` | `string[]` | Compatibility message arrays |
 | `applicable` | `boolean` | Optional applicability indicator; false becomes N/A |
@@ -230,7 +230,27 @@ Validators emit findings and aggregate counts. The guard adapter adds names and 
 
 `guard` results carry `precisionEvidence`, scoped to the finding codes that run emitted (`schemas/docguard-precision-evidence.schema.json`). The unit of evidence is the finding code. DocGuard defines many more codes than the reviewed corpus measures, so a code the corpus never exercised reports `status: "not-measured"`, carries no ratio, and never inherits the measured precision of another code in the same validator. A measured code whose own precision denominator is below `minN` is marked `quotable: false` with a reason, and may carry a `backoff` to a coarser measured tier that names that tier (`validator` or `aggregate`). `measures` is always `benchmark-precision`; `caveat` is the sentence a consumer must show beside any quoted ratio; `source.matchesRunningVersion` is false when the numbers were measured on a different build than the one reporting them. `coverage` counts codes in the run by measurement status.
 
-The block is served from `cli/precision-evidence-data.mjs`, a generated module derived from `benchmarks/baseline.json` by `npm run generate:precision-evidence`, because `benchmarks/` is not part of the published package. A test compares the committed module against that projection, so a stale number fails the suite rather than shipping. Findings themselves are unchanged: they are written verbatim into feedback records, so their shape stays fixed.
+The block is served from `cli/precision-evidence-data.mjs`, a generated module derived from `benchmarks/baseline.json` by `npm run generate:precision-evidence`, because `benchmarks/` is not part of the published package. A test compares the committed module against that projection, so a stale number fails the suite rather than shipping. Findings are written verbatim into feedback records, so their shape is a contract: it grows only by specification, and a test pins the exact key set.
+
+## Finding channels
+
+A finding answers three independent questions, one field each. A single `confidence` field had to serve all three, so a certain observation read as an uncertain one, and the feedback loop sampled only the findings its own label already doubted.
+
+| Field | Question | Values |
+|-------|----------|--------|
+| `severity` / `effectiveSeverity` | Does CI block? | `error`, `warn`, `info` (effective only) |
+| `disposition` | Who decides — the tool or the reader? | `act`, `escalate` |
+| `confidence` | How sure is the detector of its **observation**? | `high`, `low` |
+| `evidence` | Has the reviewed corpus ever measured this code? | `{ status: 'measured' \| 'not-measured', … }` |
+| `parserTier` | Which analyzer produced it? | `js-ast`, `py-ast`, `regex-fallback`, `fallback-language`, `mixed`, `not-applicable` |
+
+`disposition` is `act` when DocGuard asserts a defect and names the correction, `escalate` when it reports a signal whose judgement belongs to the reader. A detector may set it explicitly; otherwise it derives from `suggestion.kind` (`fix`/`suppress` → `act`; `review`/`report` → `escalate`), and falls back to `escalate` when the suggestion is absent or malformed — a finding DocGuard can describe but can only describe is one a human should read. The three channels vary independently: FRS002 counts commits read directly from Git, so it is `confidence: high` and `disposition: escalate`. The count is a fact; the inference to staleness remains the reader's call.
+
+`evidence` is projected per finding code from the reviewed baseline by the same checked projection that serves `precisionEvidence` (`docguard.precision-evidence-loop#FR-019`). A `measured` entry carries `n`, its Wilson 95% interval, and a point estimate once `n` meets the published floor; an unmeasured code reports `not-measured` and always stands alone, inheriting no sibling's number. The object is frozen and shared per code, so a large run allocates one evidence object per code rather than one per finding.
+
+`reportable` is true when `evidence.status` is `not-measured` **or** `confidence` is `low`. Under the previous rule, which read confidence alone, the default feedback sample omitted the population where a wrong label costs most: a confident label on a code the corpus has yet to measure.
+
+`location` is always a string (`path` or `path:line`) or `null`. A detector that supplies `{ file, line }` is normalized at construction. Under the previous contract such findings rendered as `[object Object]`, and the SARIF location parser dropped them, so six codes reached GitHub Code Scanning with no file annotation at all.
 
 ## Fix Command Issue Format
 
@@ -312,7 +332,15 @@ and process status therefore carry the same enforcement meaning in direct CI use
 
 ## Feedback contribution contract
 
-`feedback` defaults to uncertain findings. `--code <CODE>` selects a finding regardless of confidence; `--all` includes all active findings. Classifications are `false_positive`, `false_negative`, `unsupported_syntax`, `ambiguous`, and `policy_disagreement`. False-negative and unsupported intake require a strict synthetic fixture manifest with an exact expected identity, explicit interestingness predicate, same-path opposite control, parser tier, bounded configuration, and synthetic/redaction attestations.
+## Adjudicated disagreements
+
+A reported false positive the maintainers review and decline to act on used to leave no trace. `assertContributionReady` refuses `ambiguous` and `policy_disagreement` — correctly, since a detector behaving as designed has a "this no longer fires" test it can never satisfy — and every other contribution path produces exactly that test. The corpus could therefore only ever absorb a false positive that had already been repaired, which made the measured precision a property of the contribution pipeline rather than of the detectors.
+
+`buildAdjudicationRow()` produces the missing artifact: a corpus case classified `ambiguous` or `policy_disagreement`, carrying the same synthetic and redaction attestations and the same opposite control as a measured case, plus an `adjudication` record (`rationale`, `adjudicatedAt`) so a later reviewer can audit the decision. Such a case declares an empty `expected` and `forbidden` set, because it asserts nothing about what the detector should emit.
+
+These rows are counted and kept outside every ratio. Scoring one as a false positive would let a user who dislikes a rule move its measured precision; scoring it as a true positive would let a maintainer turn disagreement into validation. Both would misreport, so `metrics.mjs` and the per-code derivation report `adjudicated: { policyDisagreements, ambiguous }` beside every rate and inside none of them, at corpus, per-code and run scope (`precisionEvidence.coverage.adjudicated`). A code appearing only in adjudication rows reports `not-measured` with its counts, standing alone as any unmeasured code does. Removing such a row fails baseline comparison as `case-removed`, which keeps a recorded disagreement auditable.
+
+`feedback` defaults to findings whose code is unmeasured or whose confidence is low, and reports what that leaves out (`excluded.findings`, `excluded.codes`). Selecting on confidence alone meant the channel that would validate the confidence label sampled only findings that label already doubted: on a repository with 17 confident findings across never-benchmarked codes, the default selected zero. `--code <CODE>` selects a finding regardless of confidence; `--all` includes all active findings. Classifications are `false_positive`, `false_negative`, `unsupported_syntax`, `ambiguous`, and `policy_disagreement`. False-negative and unsupported intake require a strict synthetic fixture manifest with an exact expected identity, explicit interestingness predicate, same-path opposite control, parser tier, bounded configuration, and synthetic/redaction attestations.
 
 `--fixture-manifest` verifies the reproduction and its control in separate temporary projects. `--reduce` removes fixture lines in deterministic order only while the declared predicate remains true. Duplicate identity hashes detector code, classification, parser tier, and normalized synthetic shape; preview returns all/open/closed GitHub searches and never submits. `--contribution tests/<name>.test.mjs` requires test-only, scope, and benchmark-delta evidence before writing a generated regression test. `--preview` skips every local write.
 

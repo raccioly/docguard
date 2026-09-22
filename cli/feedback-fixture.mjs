@@ -12,6 +12,9 @@ import { extname, isAbsolute } from 'node:path';
 
 export const FEEDBACK_SCHEMA_URL = 'https://raccioly.github.io/docguard/schemas/docguard-feedback-fixture.schema.json';
 const CLASSIFICATIONS = new Set(['false_positive', 'false_negative', 'unsupported_syntax', 'ambiguous', 'policy_disagreement']);
+// Reports that can never ship a "this no longer fires" regression test, because
+// the detector is behaving as designed. They become corpus rows instead.
+export const ADJUDICATED_CLASSIFICATIONS = new Set(['ambiguous', 'policy_disagreement']);
 const PARSER_TIERS = new Set(['js-ast', 'py-ast', 'regex-fallback', 'fallback-language', 'mixed', 'not-applicable']);
 const PREDICATES = new Set(['finding_present', 'finding_absent', 'validator_unsupported']);
 const ROOT_KEYS = new Set(['$schema', 'schemaVersion', 'classification', 'detector', 'parserTier', 'config', 'expectedIdentity', 'interestingness', 'fixture', 'oppositeControl', 'provenance', 'contribution']);
@@ -185,4 +188,68 @@ export function buildTestOnlyContribution(manifest) {
   assertContributionReady(manifest);
   const encoded = JSON.stringify(manifest);
   return `import { test } from 'node:test';\nimport assert from 'node:assert/strict';\nimport { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';\nimport { dirname, join } from 'node:path';\nimport { tmpdir } from 'node:os';\nimport { runGuardInternal } from '../cli/commands/guard.mjs';\nimport { feedbackFindingIdentity } from '../cli/feedback-fixture.mjs';\n\nconst manifest = ${encoded};\nfunction run(files) {\n  const root = mkdtempSync(join(tmpdir(), 'docguard-contribution-'));\n  try {\n    for (const file of files) { const target = join(root, file.path); mkdirSync(dirname(target), { recursive: true }); writeFileSync(target, file.content); }\n    return runGuardInternal(root, manifest.config);\n  } finally { rmSync(root, { recursive: true, force: true }); }\n}\n\ntest('${manifest.detector.code} ${manifest.classification} synthetic reproduction (${feedbackDuplicateIdentity(manifest)})', () => {\n  const fixture = run(manifest.fixture.files);\n  const control = run(manifest.oppositeControl.files);\n  const fixtureHas = fixture.findings.some(finding => feedbackFindingIdentity(finding) === manifest.expectedIdentity);\n  const controlHas = control.findings.some(finding => feedbackFindingIdentity(finding) === manifest.expectedIdentity);\n  const fixtureApplicability = fixture.validators.find(item => item.key === manifest.detector.validator)?.applicability?.status;\n  const controlApplicability = control.validators.find(item => item.key === manifest.detector.validator)?.applicability?.status;\n  ${manifest.classification === 'false_positive' ? 'assert.equal(fixtureHas, false); assert.equal(controlHas, true);' : manifest.classification === 'false_negative' ? 'assert.equal(fixtureHas, true); assert.equal(controlHas, false);' : `assert.notEqual(fixtureApplicability, 'unsupported'); assert.equal(controlApplicability, 'checked'); assert.equal(controlHas, false);`}\n});\n`;
+}
+
+/**
+ * Turn an adjudicated disagreement into a corpus row.
+ *
+ * `assertContributionReady` refuses `ambiguous` and `policy_disagreement`
+ * because neither can produce the regression test the other classes ship: a
+ * policy disagreement is a case where the detector behaved exactly as designed
+ * and the user disagreed with the design, so there is nothing to assert as
+ * fixed. That refusal is right, and it left those reports with nowhere to go.
+ *
+ * The consequence was structural. The corpus could only ever absorb a false
+ * positive that had already been repaired, so "precision 1.0" described the
+ * contribution pipeline rather than the detectors, and a disagreement the
+ * maintainers declined to act on left no trace at all.
+ *
+ * This builds the missing artifact: a row carrying the same provenance and
+ * redaction guarantees as a measured case, which `metrics.mjs` counts and
+ * every denominator ignores (precision-evidence-loop#FR-003).
+ *
+ * @param {object} manifest a validated feedback fixture manifest
+ * @param {{rationale: string, adjudicatedAt: string, repositoryGroup?: string, causalFamily?: string}} decision
+ * @implements docguard.calibrated-finding-channels#FR-015
+ * @implements docguard.calibrated-finding-channels#FR-017
+ */
+export function buildAdjudicationRow(manifest, decision = {}) {
+  if (!ADJUDICATED_CLASSIFICATIONS.has(manifest.classification)) {
+    throw new Error('An adjudication row records an ambiguous or policy_disagreement report; other classifications ship a regression test instead.');
+  }
+  const rationale = typeof decision.rationale === 'string' ? decision.rationale.trim() : '';
+  if (rationale.length < 16) {
+    throw new Error('An adjudication row requires a rationale: why the detector stands as designed, in the maintainers’ own words.');
+  }
+  if (rationale.length > 1024) throw new Error('Adjudication rationale must stay under 1024 characters.');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(decision.adjudicatedAt || '')) {
+    throw new Error('An adjudication row requires adjudicatedAt (YYYY-MM-DD).');
+  }
+  if (!manifest.oppositeControl) {
+    throw new Error('An adjudication row still requires its opposite control; a disputed finding without a neighbouring clean case proves nothing either way.');
+  }
+  if (!manifest.provenance?.synthetic || !manifest.provenance?.redacted) {
+    throw new Error('An adjudication row carries the same synthetic and redaction attestations as a measured case.');
+  }
+  const slug = `${manifest.detector.code}-${feedbackDuplicateIdentity(manifest)}`.toLowerCase();
+  return {
+    id: `adj-${slug}`,
+    split: 'development',
+    repositoryGroup: decision.repositoryGroup || `adjudicated-${manifest.detector.validator}`,
+    causalFamily: decision.causalFamily || `adjudicated-${manifest.classification}`,
+    parserTier: manifest.parserTier,
+    classification: manifest.classification,
+    repairOutcome: 'not_evaluated',
+    source: { kind: 'fixture', path: `fixtures/${slug}` },
+    scope: { validatorKey: manifest.detector.validator, codes: [manifest.detector.code] },
+    config: manifest.config,
+    mutations: [],
+    // No expected and no forbidden identity: this row asserts nothing about
+    // what the detector should emit. It records that the question was asked
+    // and answered, which is the whole point.
+    expected: [],
+    forbidden: [],
+    oppositeControl: null,
+    adjudication: { rationale, adjudicatedAt: decision.adjudicatedAt },
+  };
 }

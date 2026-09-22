@@ -19,7 +19,7 @@ const CLASSIFICATIONS = new Set(['defect', 'clean_control', 'ambiguous', 'unsupp
 const SPLITS = new Set(['development', 'evaluation']);
 const TIERS = new Set(['js-ast', 'py-ast', 'regex-fallback', 'fallback-language', 'mixed', 'not-applicable']);
 const REPAIR_OUTCOMES = new Set(['accepted', 'rejected', 'not_evaluated']);
-const CASE_KEYS = new Set(['id', 'split', 'repositoryGroup', 'causalFamily', 'parserTier', 'classification', 'source', 'scope', 'config', 'mutations', 'expected', 'forbidden', 'oppositeControl', 'repairOutcome']);
+const CASE_KEYS = new Set(['id', 'split', 'repositoryGroup', 'causalFamily', 'parserTier', 'classification', 'source', 'scope', 'config', 'mutations', 'expected', 'forbidden', 'oppositeControl', 'repairOutcome', 'adjudication']);
 const SOURCE_KEYS = new Set(['kind', 'path', 'url', 'revision', 'license']);
 const SCOPE_KEYS = new Set(['validatorKey', 'codes']);
 const MUTATION_KEYS = new Set(['path', 'find', 'replace', 'expectedOccurrences']);
@@ -162,6 +162,20 @@ function validateCase(value, index, manifestDir) {
     throw new Error(`${label} defects require expected findings and an oppositeControl.`);
   }
   if (value.classification === 'clean_control' && expected.length) throw new Error(`${label} clean controls cannot declare expected findings.`);
+  // An adjudicated disagreement asserts nothing about what the detector should
+  // emit — it records that the question was asked and answered — so it must
+  // declare no expected or forbidden identity. What it MUST carry is the
+  // reasoning and the date, or it is an unexplained row that no later reviewer
+  // can audit. (calibrated-finding-channels#FR-015/FR-017)
+  const adjudicated = ['ambiguous', 'policy_disagreement'].includes(value.classification);
+  if (adjudicated) {
+    if (expected.length || forbidden.length) {
+      throw new Error(`${label} adjudicated cases cannot declare expected or forbidden identities; they enter no denominator.`);
+    }
+    if (!value.adjudication) throw new Error(`${label} adjudicated cases require an adjudication record (rationale + adjudicatedAt).`);
+  } else if (value.adjudication !== undefined) {
+    throw new Error(`${label} only ambiguous and policy_disagreement cases may carry an adjudication record.`);
+  }
   if (value.config !== undefined) validateConfigValue(value.config, `${label}.config`);
   return {
     id,
@@ -178,7 +192,18 @@ function validateCase(value, index, manifestDir) {
     forbidden,
     oppositeControl: value.oppositeControl || null,
     repairOutcome: value.repairOutcome,
+    ...(adjudicated ? { adjudication: validateAdjudication(value.adjudication, `${label}.adjudication`) } : {}),
   };
+}
+
+/** Why the detector stands as designed, and when that was decided. */
+function validateAdjudication(value, label) {
+  object(value, label);
+  exactKeys(value, new Set(['rationale', 'adjudicatedAt']), label);
+  const rationale = string(value.rationale, `${label}.rationale`, 1024);
+  if (rationale.trim().length < 16) throw new Error(`${label}.rationale must explain the decision.`);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value.adjudicatedAt || '')) throw new Error(`${label}.adjudicatedAt must be YYYY-MM-DD.`);
+  return { rationale, adjudicatedAt: value.adjudicatedAt };
 }
 
 function validateRelationships(cases) {

@@ -309,6 +309,7 @@ export function runGuardInternal(projectDir, config) {
           validator: 'freshness',
           severity: r.status === 'fail' ? 'error' : 'warn',
           confidence: r.confidence || 'low',
+          disposition: r.disposition || 'escalate',
           message: r.message,
           location: r.doc || null,
           suggestion: r.suggestion || { kind: 'review', text: 'Review the document against its intended scope. A history signal does not establish which side should change.' },
@@ -556,6 +557,47 @@ export function runGuardInternal(projectDir, config) {
 }
 
 /**
+ * Validator states that mean DocGuard could NOT check what it was asked to.
+ *
+ * `no-matches` is deliberately absent: a validator that ran and found nothing
+ * applicable did its job completely. `disabled` and `not-applicable` are
+ * choices the project made, not gaps.
+ * @implements docguard.calibrated-finding-channels#FR-020
+ */
+export const INCOMPLETE_COVERAGE_STATES = Object.freeze(['partial', 'missing-prerequisite', 'unsupported', 'error']);
+
+/** How many active validators could not complete their checks. */
+export function incompleteCoverage(checkCoverage) {
+  if (!checkCoverage || !checkCoverage.counts) return 0;
+  return INCOMPLETE_COVERAGE_STATES.reduce((sum, key) => sum + (checkCoverage.counts[key] || 0), 0);
+}
+
+/**
+ * Badge colour for a run.
+ *
+ * `passed/total` counts CHECKS, and its denominator excludes every validator
+ * that could not run — so a run can print 100% while part of the project went
+ * unexamined. The summary says so in prose, but the badge is the artifact that
+ * travels into a README without the prose.
+ *
+ * The cap is `green`, not `yellow`, and the distinction matters: a partial run
+ * is not a failing run, since everything that ran passed. `yellow` would be
+ * wrong, and would train readers to ignore the badge on any project that
+ * legitimately has no API reference. `brightgreen` claims everything is fine,
+ * which a run that could not read its Python imports cannot support.
+ * `green` says: passed, with a caveat.
+ *
+ * @param {number} pct passed/total as a percentage
+ * @param {number} incomplete active validators that could not complete
+ * @implements docguard.calibrated-finding-channels#FR-020
+ */
+export function badgeColor(pct, incomplete = 0) {
+  if (pct >= 90) return incomplete > 0 ? 'green' : 'brightgreen';
+  if (pct >= 70) return 'green';
+  return pct >= 50 ? 'yellow' : 'red';
+}
+
+/**
  * The "pre-commit lite" validator set — fast checks suitable for running
  * on every commit/save. Tuned for <2s wall-clock on average repos.
  *
@@ -766,9 +808,15 @@ export function runGuard(projectDir, config, flags) {
       const effective = item.effectiveSeverity || item.severity;
       const mark = effective === 'error' ? `${c.red}✗` : effective === 'info' ? `${c.cyan}•` : `${c.yellow}⚠`;
       const codeTag = item.code ? `${c.dim}[${item.code}]${c.reset} ` : '';
+      // Two distinct annotations, because they answer different questions.
+      // `low confidence` = the detector may have misread its input.
+      // `review` = the detector read its input correctly and the judgement is
+      // yours. A finding can be neither, either, or both.
       const conf = item.confidence === 'low'
         ? ` ${c.dim}(low confidence — possible false positive)${c.reset}` : '';
-      console.log(`     ${mark} ${codeTag}${item.message}${c.reset}${conf}`);
+      const disp = item.disposition === 'escalate' && item.confidence !== 'low'
+        ? ` ${c.dim}(review — signal, not a verdict)${c.reset}` : '';
+      console.log(`     ${mark} ${codeTag}${item.message}${c.reset}${conf}${disp}`);
       if (item.suggestion?.text) {
         console.log(`       ${c.cyan}→${c.reset} ${c.dim}${item.suggestion.text}${c.reset}`);
         if (item.suggestion.command) {
@@ -815,6 +863,18 @@ export function runGuard(projectDir, config, flags) {
     console.log(`  ${c.dim}📋 ${data.baselineSuppressed} pre-existing finding(s) suppressed by ${BASELINE_FILE} (--no-baseline to show)${c.reset}`);
   }
 
+  // Act vs escalate, immediately under the verdict: the verdict says whether
+  // CI blocks, this says what the work actually is. Severity alone cannot
+  // express it — a blocking error can still be an escalation.
+  if (Array.isArray(data.findings) && data.findings.length > 0) {
+    const act = data.findings.filter(f => f.disposition === 'act').length;
+    const escalate = data.findings.length - act;
+    const parts = [];
+    if (act > 0) parts.push(`${c.cyan}${act} to fix${c.reset}${c.dim}`);
+    if (escalate > 0) parts.push(`${c.yellow}${escalate} to review${c.reset}${c.dim}`);
+    console.log(`  ${c.dim}${parts.join(' · ')} ${c.reset}${c.dim}(fix = DocGuard names the correction; review = the judgement is yours)${c.reset}`);
+  }
+
   // ── Next steps — every run ends with a suggested action (v0.27) ──
   // The field-report principle: whenever DocGuard calls out an issue it must
   // suggest what to do next; on a clean run it points at the next workflow step
@@ -829,13 +889,31 @@ export function runGuard(projectDir, config, flags) {
     console.log(`  ${c.dim}Next: ${c.cyan}${skill('score')}${c.dim} for your CDD maturity score, or commit with confidence.${c.reset}`);
   }
 
-  // Low-confidence findings (possible false positives) → offer the local-first
-  // feedback path. Broader than secrets: anything DocGuard flagged uncertainly.
-  if (Array.isArray(data.reportable) && data.reportable.length > 0) {
-    const n = data.reportable.length;
-    console.log(`  ${c.dim}↪ ${n} finding(s) look uncertain (possible false positives). Review or report: ${c.cyan}${skill('feedback')}${c.reset}`);
-  } else if (Array.isArray(data.findings) && data.findings.length > 0) {
-    console.log(`  ${c.dim}Disagree with a finding? Review a contribution: ${c.cyan}docguard feedback --code <CODE> --preview${c.reset}`);
+  // Analyzer tiers, whenever any evidence came from the pattern fallback.
+  // Silent on a fully-parsed run so a clean report stays clean.
+  if (Array.isArray(data.findings) && data.findings.length > 0) {
+    const degraded = data.findings.filter(f => f.parserTier === 'regex-fallback' || f.parserTier === 'mixed');
+    if (degraded.length > 0) {
+      console.log(`  ${c.dim}↪ ${degraded.length} finding(s) came from the pattern fallback rather than a syntax tree — absence of a finding in those files is weak evidence.${c.reset}`);
+    }
+  }
+
+  // Low-confidence findings → the feedback path. Scoped to CODES, not
+  // findings: `reportable` now includes every unmeasured code, which on a real
+  // repository runs to hundreds of entries (666 of 671 findings across
+  // fourteen projects), and a contribution is filed against a code once, not
+  // against each occurrence.
+  //
+  // "Never measured" belongs to the benchmark-evidence block below, which
+  // already reports it per code with the version skew and the per-code
+  // command. Saying it twice in one summary just teaches the reader to skip
+  // both. This line stays about the distinct claim: DocGuard suspects it
+  // misread THIS input.
+  if (Array.isArray(data.findings) && data.findings.length > 0) {
+    const uncertain = new Set(data.findings.filter(f => f.confidence === 'low').map(f => f.code));
+    if (uncertain.size > 0) {
+      console.log(`  ${c.dim}↪ ${uncertain.size} code(s) flagged uncertain here (possible false positives). Review or report: ${c.cyan}${skill('feedback')}${c.reset}`);
+    }
   }
 
   // Read-only skills nudge (never writes — that's `init`'s job). If the agent
@@ -869,7 +947,18 @@ export function runGuard(projectDir, config, flags) {
   }
   if (data.checkCoverage) {
     const counts = data.checkCoverage.counts;
-    console.log('  Check coverage: ' + Object.entries(counts).filter(([, count]) => count > 0).map(([status, count]) => count + ' ' + status.replaceAll('-', ' ')).join(' · '));
+    // Lead with how many validators actually checked. The passed/total figure
+    // counts CHECKS, and its denominator excludes every validator that could
+    // not run — so "628/628 passed" and "seven validators found nothing to
+    // check" were both true of the same run, with only the first travelling
+    // into a badge. (calibrated-finding-channels#FR-020)
+    const active = Object.entries(counts).filter(([status]) => status !== 'disabled')
+      .reduce((sum, [, n]) => sum + n, 0);
+    const rest = Object.entries(counts)
+      .filter(([status, count]) => count > 0 && status !== 'checked')
+      .map(([status, count]) => count + ' ' + status.replaceAll('-', ' '));
+    console.log(`  Check coverage: ${counts.checked} of ${active} validator(s) checked`
+      + (rest.length ? ' · ' + rest.join(' · ') : ''));
     console.log('  Document inventory and passing checks do not establish factual accuracy.');
   }
   if (data.semanticClaims && data.semanticClaims.count > 0) {
@@ -886,6 +975,7 @@ export function runGuard(projectDir, config, flags) {
     console.log(`\n  ${c.cyan}🔬 Benchmark evidence: ${measured} of ${codesInRun} finding code(s) in this run ${measured === 1 ? 'has' : 'have'} measured precision.${c.reset}`);
     if (notMeasured > 0) {
       console.log(`     ${c.dim}${notMeasured} ${notMeasured === 1 ? 'has' : 'have'} never been benchmarked; a finding from those may still be correct.${c.reset}`);
+      console.log(`     ${c.dim}Disagree with one? ${c.cyan}docguard feedback --code <CODE> --preview${c.reset}`);
     }
     if (!pe.source.matchesRunningVersion) {
       console.log(`     ${c.dim}Measured on DocGuard ${pe.source.toolVersion}; you are running ${pe.source.runningVersion}.${c.reset}`);
@@ -893,9 +983,9 @@ export function runGuard(projectDir, config, flags) {
     console.log(`     ${c.dim}Per code: ${c.cyan}${skill('explain')} <CODE>${c.reset}`);
   }
 
-  // Badge snippet
+  // Badge snippet.
   const pct = data.total > 0 ? Math.round((data.passed / data.total) * 100) : 0;
-  const bColor = pct >= 90 ? 'brightgreen' : pct >= 70 ? 'green' : pct >= 50 ? 'yellow' : 'red';
+  const bColor = badgeColor(pct, incompleteCoverage(data.checkCoverage));
   const badgeUrl = `https://img.shields.io/badge/CDD_Guard-${data.passed}%2F${data.total}_passed-${bColor}`;
   console.log(`\n  ${c.dim}📎 Badge: ![CDD Guard](${badgeUrl})${c.reset}`);
 

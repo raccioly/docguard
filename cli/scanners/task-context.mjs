@@ -25,6 +25,9 @@ const LIMITS = Object.freeze({
   totalChars: 6000,
   pointers: 8,
 });
+// Hand-set selection floor, not a fitted value. Deriving it from observed
+// feedback requires a strictly proper scoring rule —
+// docguard.calibrated-finding-channels#FR-018.
 const SCORE_THRESHOLD = 12;
 const STOP = new Set('a an and are as at be by can change cli create do docguard for from has have how i improve in into is it make mjs of on or preserve should that the this to update use want when with you your'.split(' '));
 const FINDING_RE = /\b[A-Z]{2,5}\d{3}\b/g;

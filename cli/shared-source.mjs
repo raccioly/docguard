@@ -737,3 +737,102 @@ export function grepEnvUsage(projectDir, config = {}) {
   for (const root of roots) walk(root);
   return names;
 }
+
+// ─── Analyzer tier (docguard.calibrated-finding-channels#FR-010/011/012) ────
+//
+// Which analyzer actually produced a piece of evidence, decided where the
+// analyzer runs rather than guessed afterwards.
+//
+// DocGuard has two AST tiers and both are OPTIONAL by design (constitution II):
+// `@babel/parser` for JS/TS and the developer's own `python3` for Python. When
+// either is unavailable — or when a specific file fails to parse — the scanners
+// fall back to regex, which cannot see a multi-line decorator or a nested
+// object literal. That fallback is correct: DocGuard keeps working. What was
+// missing is that it was INVISIBLE. A finding produced by the regex tier looked
+// exactly like one produced from a real syntax tree, in every output channel,
+// so a reader had no way to know that "no findings" meant "nothing found by a
+// parser that cannot see half the syntax".
+//
+// A confidence score cannot warn you about this, because the detector is not
+// uncertain — it is reading a different, smaller input than it appears to be.
+// The only honest answer is to report the tier structurally, which is what
+// these helpers exist to carry.
+
+/** Parser tiers, matching the benchmark and feedback fixture vocabulary. */
+export const PARSER_TIERS = Object.freeze(['js-ast', 'py-ast', 'regex-fallback', 'fallback-language', 'mixed', 'not-applicable']);
+
+/** Tiers that mean an AST was available and used. */
+const FULL_TIERS = new Set(['js-ast', 'py-ast']);
+
+/** Extensions that have an AST tier at all. Anything else is fallback-language. */
+const AST_EXTENSIONS = new Set(['.js', '.mjs', '.cjs', '.jsx', '.ts', '.tsx', '.mts', '.cts', '.py']);
+
+/**
+ * The tier for one file, from the parse result the analyzer just produced.
+ *
+ * @param {string} filePath
+ * @param {{ok?: boolean, error?: string}|null|undefined} parsed
+ *   `null`/`undefined` — the tier was unavailable for the whole batch
+ *   (`@babel/parser` absent, or no usable `python3`).
+ *   `{ok: false}` — this particular file failed to parse.
+ *   `{ok: true}` — a real syntax tree.
+ * @param {string} [batchReason] why the whole batch fell back, when it did
+ * @returns {{tier: string, tierReason: string|null}}
+ */
+export function tierFor(filePath, parsed, batchReason = null) {
+  const ext = (String(filePath).match(/\.[^./\\]+$/) || [''])[0].toLowerCase();
+  if (!AST_EXTENSIONS.has(ext)) {
+    return { tier: 'fallback-language', tierReason: `No AST tier exists for ${ext || 'this file type'}; matched by pattern.` };
+  }
+  const full = ext === '.py' ? 'py-ast' : 'js-ast';
+  if (parsed && parsed.ok === true) return { tier: full, tierReason: null };
+  if (parsed && parsed.ok === false) {
+    return { tier: 'regex-fallback', tierReason: parsed.error ? `Parse failed: ${parsed.error}` : 'Parse failed for this file; matched by pattern.' };
+  }
+  return { tier: 'regex-fallback', tierReason: batchReason || (ext === '.py'
+    ? 'No usable python3 interpreter; matched by pattern.'
+    : 'JavaScript/TypeScript parser unavailable; matched by pattern.') };
+}
+
+/**
+ * Roll a set of tiered items up into one tier for a finding or a validator.
+ *
+ * `mixed` is reported whenever items disagree, and the reason names the
+ * WEAKEST tier present — the strength of a conclusion drawn from several
+ * files is the strength of its weakest input, never the average.
+ *
+ * @param {Array<{tier?: string, tierReason?: string|null}>} items
+ * @returns {{tier: string, tierReason: string|null, degraded: number}}
+ */
+export function summarizeTiers(items) {
+  const list = (items || []).filter(item => item && typeof item.tier === 'string' && PARSER_TIERS.includes(item.tier));
+  if (list.length === 0) return { tier: 'not-applicable', tierReason: null, degraded: 0 };
+  const tiers = new Set(list.map(item => item.tier));
+  const degraded = list.filter(item => !FULL_TIERS.has(item.tier) && item.tier !== 'not-applicable').length;
+  if (tiers.size === 1) {
+    const [only] = tiers;
+    return { tier: only, tierReason: list.find(item => item.tierReason)?.tierReason || null, degraded };
+  }
+  const weakest = list.find(item => item.tier === 'regex-fallback') || list.find(item => item.tier === 'fallback-language');
+  return { tier: 'mixed', tierReason: weakest?.tierReason || null, degraded };
+}
+
+/**
+ * The `applicability` a validator should report when some of its inputs were
+ * read by a weaker analyzer than the language supports.
+ *
+ * Findings are always RETAINED — what the regex tier did find is still real.
+ * Only coverage is downgraded, exactly as the architecture and environment
+ * validators already do for their own limitations.
+ *
+ * @returns {{status: string, reason: string}|null} null when coverage is full
+ */
+export function tierApplicability(summary, noun = 'input') {
+  if (!summary || summary.degraded === 0) return null;
+  if (summary.tier === 'fallback-language') return null; // no AST tier exists; not a gap
+  const reason = summary.tierReason ? ` ${summary.tierReason}` : '';
+  return {
+    status: 'partial',
+    reason: `Findings are retained; ${summary.degraded} ${noun}${summary.degraded === 1 ? '' : 's'} read by the pattern fallback rather than a syntax tree, so absence of a finding there is weak evidence.${reason}`,
+  };
+}

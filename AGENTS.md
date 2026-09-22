@@ -69,8 +69,9 @@ Prefer the machine contract over parsing prose: `docguard guard --format json`
 returns `status` (PASS/WARN/FAIL, matches exit code 0/2/1 — but FAIL exits `3`,
 not `1`, when the project has no `.docguard.json`, so branch on `status` rather
 than assuming `1`), `findings[]`
-(`{code, severity, confidence, message, location, suggestion}`), `nextStep`,
-`reportable[]` (low-confidence findings — verify before acting), `coverage`
+(`{code, severity, confidence, disposition, evidence, parserTier, message, location, suggestion}`),
+`nextStep`, `reportable[]` (findings whose code is unmeasured or whose
+confidence is low — verify before acting), `coverage`
 (Markdown tier map incl. `unclassified[]`), `evidence`, and `semanticClaims.count`
 (documented numbers not yet verified against code).
 
@@ -82,6 +83,19 @@ checks only the selected package unless it is explicitly rerun with `--dir`.
 
 - Every structured finding has a stable code (`STR001`, `ENV003`, `XRF002`, …).
   `docguard explain <CODE>` gives the contract and fix.
+- Triage on `disposition`, not on severity alone. `act` means DocGuard asserts a
+  defect and names the correction — apply it. `escalate` means DocGuard observed
+  a signal and the judgement is yours; read the source before changing anything.
+  A high-confidence finding can still be an escalation: FRS002 counts commits
+  exactly and still does not establish that the document is stale.
+- Read `evidence.status` before trusting a confidence label. `measured` quotes
+  the reviewed corpus with `n` and a Wilson interval; `not-measured` means the
+  label is a maintainer's prior that has never been checked against labelled
+  cases. Most codes are unmeasured — that does not make their findings wrong,
+  only unverified.
+- Read `parserTier` when a finding concerns source code. `regex-fallback` or
+  `fallback-language` means an AST was unavailable for that file, so absence of
+  a finding is weak evidence; the owning validator also reports `partial`.
 - When `evidence.configured` is true, inspect `docguard verify --evidence
   --format json` first. A `verified-within-scope` result covers only its selected
   statement. Contradictions can indicate code regressions from approved intent;

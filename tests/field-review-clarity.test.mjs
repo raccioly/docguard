@@ -33,16 +33,26 @@ const oldReview = '<!-- docguard:last-reviewed 2020-01-01 -->\n';
 const reqFindings = config => validateTraceability(dir, config || {}).findings.filter(f => /^TRC00[45]$/.test(f.code));
 
 describe('Field review clarity: freshness', () => {
-  it('keeps real review triggers low-confidence and preserves design intent', () => {
+  it('keeps real review triggers an escalation and preserves design intent', () => {
     history(10);
     put('docs-canonical/guide.md', oldReview + '# Operating guide');
     const result = validateFreshness(dir, {}).find(r => r.doc === 'docs-canonical/guide.md');
     assert.equal(result.code, 'FRS002');
-    assert.equal(result.confidence, 'low');
+
+    // The design intent this test protects: DocGuard must NOT claim the
+    // document is stale, and must NOT offer a mechanical fix. Both still hold.
     assert.match(result.message, /review due.*10 code commits.*repository-wide heuristic/);
     assert.equal(result.suggestion.kind, 'review');
     assert.match(result.suggestion.text, /documentation or code needs a change/);
     assert.equal(result.suggestion.command, undefined);
+
+    // That intent is now carried by `disposition`, which is what it always
+    // meant. `confidence: 'low'` used to stand in for it and said something
+    // different and wrong: that DocGuard might have miscounted the commits.
+    // It counted them with `git log`. The count is certain; the inference to
+    // staleness is the reader's. (calibrated-finding-channels#FR-005)
+    assert.equal(result.disposition, 'escalate');
+    assert.equal(result.confidence, 'high');
   });
 
   it('skips explicit historical statuses but retains active and unmarked ADR review tasks', () => {
@@ -60,7 +70,8 @@ describe('Field review clarity: freshness', () => {
     for (const name of ['active', 'ADR']) {
       const item = results.find(r => r.doc === `docs-canonical/${name}.md`);
       assert.equal(item.code, 'FRS003');
-      assert.equal(item.confidence, 'low');
+      assert.equal(item.disposition, 'escalate');
+      assert.equal(item.confidence, 'high', 'the elapsed-days count is read from git, not guessed');
       assert.match(item.message, /review due/);
     }
   });
@@ -119,7 +130,8 @@ describe('Field review clarity: freshness', () => {
       documentTypes: { 'release-notes.md': { category: 'tracking' }, 'deviations.md': { category: 'tracking' } } };
     const results = validateFreshness(dir, config);
     assert.deepEqual(results.map(r => r.code).sort(), ['FRS004', 'FRS005']);
-    assert.ok(results.every(r => r.confidence === 'low' && r.suggestion.kind === 'review'));
+    assert.ok(results.every(r => r.disposition === 'escalate' && r.suggestion.kind === 'review'));
+    assert.ok(results.every(r => r.confidence === 'high'), 'changelog age and DRIFT line counts come from git');
     assert.ok(results.every(r => /review due/.test(r.message)));
     put('release-notes.md', '<!-- docguard:status historical -->\n' + oldReview);
     put('deviations.md', '<!-- docguard:status superseded -->\n' + oldReview);

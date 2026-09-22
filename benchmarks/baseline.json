@@ -1087,6 +1087,10 @@
           "rejected": 0,
           "notEvaluated": 26
         },
+        "adjudicated": {
+          "policyDisagreements": 0,
+          "ambiguous": 0
+        },
         "precision": 1,
         "recall": 1,
         "falsePositivesPerRepository": 0,
@@ -1127,6 +1131,10 @@
             "rejected": 0,
             "notEvaluated": 2
           },
+          "adjudicated": {
+            "policyDisagreements": 0,
+            "ambiguous": 0
+          },
           "precision": 1,
           "recall": 1,
           "falsePositivesPerRepository": 0,
@@ -1165,6 +1173,10 @@
             "accepted": 0,
             "rejected": 0,
             "notEvaluated": 2
+          },
+          "adjudicated": {
+            "policyDisagreements": 0,
+            "ambiguous": 0
           },
           "precision": 1,
           "recall": 1,
@@ -1205,6 +1217,10 @@
             "rejected": 0,
             "notEvaluated": 2
           },
+          "adjudicated": {
+            "policyDisagreements": 0,
+            "ambiguous": 0
+          },
           "precision": 1,
           "recall": 1,
           "falsePositivesPerRepository": 0,
@@ -1243,6 +1259,10 @@
             "accepted": 0,
             "rejected": 0,
             "notEvaluated": 2
+          },
+          "adjudicated": {
+            "policyDisagreements": 0,
+            "ambiguous": 0
           },
           "precision": 1,
           "recall": 1,
@@ -1283,6 +1303,10 @@
             "rejected": 0,
             "notEvaluated": 2
           },
+          "adjudicated": {
+            "policyDisagreements": 0,
+            "ambiguous": 0
+          },
           "precision": 1,
           "recall": 1,
           "falsePositivesPerRepository": 0,
@@ -1321,6 +1345,10 @@
             "accepted": 0,
             "rejected": 0,
             "notEvaluated": 2
+          },
+          "adjudicated": {
+            "policyDisagreements": 0,
+            "ambiguous": 0
           },
           "precision": 1,
           "recall": 1,
@@ -1361,6 +1389,10 @@
             "rejected": 0,
             "notEvaluated": 2
           },
+          "adjudicated": {
+            "policyDisagreements": 0,
+            "ambiguous": 0
+          },
           "precision": 1,
           "recall": 1,
           "falsePositivesPerRepository": 0,
@@ -1399,6 +1431,10 @@
             "accepted": 0,
             "rejected": 0,
             "notEvaluated": 2
+          },
+          "adjudicated": {
+            "policyDisagreements": 0,
+            "ambiguous": 0
           },
           "precision": 1,
           "recall": 1,
@@ -1439,6 +1475,10 @@
             "rejected": 0,
             "notEvaluated": 2
           },
+          "adjudicated": {
+            "policyDisagreements": 0,
+            "ambiguous": 0
+          },
           "precision": 1,
           "recall": 1,
           "falsePositivesPerRepository": 0,
@@ -1477,6 +1517,10 @@
             "accepted": 0,
             "rejected": 0,
             "notEvaluated": 2
+          },
+          "adjudicated": {
+            "policyDisagreements": 0,
+            "ambiguous": 0
           },
           "precision": 1,
           "recall": 1,
@@ -1517,6 +1561,10 @@
             "rejected": 0,
             "notEvaluated": 2
           },
+          "adjudicated": {
+            "policyDisagreements": 0,
+            "ambiguous": 0
+          },
           "precision": 1,
           "recall": 1,
           "falsePositivesPerRepository": 0,
@@ -1556,6 +1604,10 @@
             "rejected": 0,
             "notEvaluated": 0
           },
+          "adjudicated": {
+            "policyDisagreements": 0,
+            "ambiguous": 0
+          },
           "precision": null,
           "recall": null,
           "falsePositivesPerRepository": null,
@@ -1585,6 +1637,10 @@
             "accepted": 0,
             "rejected": 0,
             "notEvaluated": 2
+          },
+          "adjudicated": {
+            "policyDisagreements": 0,
+            "ambiguous": 0
           },
           "precision": 1,
           "recall": 1,
@@ -1624,6 +1680,10 @@
             "accepted": 0,
             "rejected": 0,
             "notEvaluated": 2
+          },
+          "adjudicated": {
+            "policyDisagreements": 0,
+            "ambiguous": 0
           },
           "precision": 1,
           "recall": 1,
@@ -1666,6 +1726,10 @@
             "rejected": 0,
             "notEvaluated": 2
           },
+          "adjudicated": {
+            "policyDisagreements": 0,
+            "ambiguous": 0
+          },
           "precision": 1,
           "recall": 1,
           "falsePositivesPerRepository": 0,
@@ -1704,6 +1768,10 @@
             "accepted": 0,
             "rejected": 0,
             "notEvaluated": 20
+          },
+          "adjudicated": {
+            "policyDisagreements": 0,
+            "ambiguous": 0
           },
           "precision": 1,
           "recall": 1,
@@ -1744,6 +1812,10 @@
             "rejected": 0,
             "notEvaluated": 2
           },
+          "adjudicated": {
+            "policyDisagreements": 0,
+            "ambiguous": 0
+          },
           "precision": 1,
           "recall": 1,
           "falsePositivesPerRepository": 0,
@@ -1782,6 +1854,10 @@
             "accepted": 0,
             "rejected": 0,
             "notEvaluated": 2
+          },
+          "adjudicated": {
+            "policyDisagreements": 0,
+            "ambiguous": 0
           },
           "precision": 1,
           "recall": 1,
@@ -1824,6 +1900,10 @@
             "rejected": 0,
             "notEvaluated": 4
           },
+          "adjudicated": {
+            "policyDisagreements": 0,
+            "ambiguous": 0
+          },
           "precision": 1,
           "recall": 1,
           "falsePositivesPerRepository": 0,
@@ -1862,6 +1942,10 @@
             "accepted": 0,
             "rejected": 0,
             "notEvaluated": 12
+          },
+          "adjudicated": {
+            "policyDisagreements": 0,
+            "ambiguous": 0
           },
           "precision": 1,
           "recall": 1,
@@ -1902,6 +1986,10 @@
             "rejected": 0,
             "notEvaluated": 2
           },
+          "adjudicated": {
+            "policyDisagreements": 0,
+            "ambiguous": 0
+          },
           "precision": 1,
           "recall": 1,
           "falsePositivesPerRepository": 0,
@@ -1940,6 +2028,10 @@
             "accepted": 0,
             "rejected": 0,
             "notEvaluated": 2
+          },
+          "adjudicated": {
+            "policyDisagreements": 0,
+            "ambiguous": 0
           },
           "precision": 1,
           "recall": 1,
@@ -1980,6 +2072,10 @@
             "rejected": 0,
             "notEvaluated": 2
           },
+          "adjudicated": {
+            "policyDisagreements": 0,
+            "ambiguous": 0
+          },
           "precision": 1,
           "recall": 1,
           "falsePositivesPerRepository": 0,
@@ -2018,6 +2114,10 @@
             "accepted": 0,
             "rejected": 0,
             "notEvaluated": 4
+          },
+          "adjudicated": {
+            "policyDisagreements": 0,
+            "ambiguous": 0
           },
           "precision": 1,
           "recall": 1,

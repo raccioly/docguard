@@ -22,9 +22,28 @@ export const PRECISION_EVIDENCE_SCHEMA_VERSION = 1;
  * Matches the floor websec-validator publishes; below it a cell still carries
  * its counts and interval, marked not quotable.
  */
+// Reporting floor for a quotable point estimate — a judgement about how few
+// labelled findings may carry a headline rate, NOT a value fitted to data.
+// Any data-derived replacement MUST be fitted against a strictly proper
+// scoring rule — docguard.calibrated-finding-channels#FR-018.
 export const DEFAULT_MIN_N = 5;
 
 const MEASURED = new Set(['defect', 'clean_control']);
+
+/**
+ * Classifications that record a reviewed DISAGREEMENT rather than a measurement.
+ *
+ * A `policy_disagreement` is a case where the detector fired as designed and a
+ * user disagreed with the design; `ambiguous` is one the maintainers could not
+ * adjudicate either way. Neither may touch a precision or recall denominator
+ * (precision-evidence-loop#FR-003) — but both must be VISIBLE, because the
+ * previous pipeline could only absorb a false positive that had already been
+ * fixed, which made "precision 1.0" a property of the process rather than an
+ * observation about the detectors.
+ * @implements docguard.calibrated-finding-channels#FR-016
+ */
+const ADJUDICATED = Object.freeze({ policy_disagreement: 'policyDisagreements', ambiguous: 'ambiguous' });
+const emptyAdjudicated = () => ({ policyDisagreements: 0, ambiguous: 0 });
 const codeOf = identity => identity.split('@')[0];
 const ratio = (numerator, denominator) => (denominator === 0 ? null : Number((numerator / denominator).toFixed(6)));
 const interval = value => (value === null ? null : [value.lower, value.upper]);
@@ -91,6 +110,20 @@ export function derivePrecisionEvidence(baseline, { minN = DEFAULT_MIN_N } = {})
     if (!byCode.has(code)) byCode.set(code, { cell: emptyCell(), validators: new Set() });
     return byCode.get(code);
   };
+  // Adjudications are tracked for EVERY code in the corpus, including codes
+  // that no measured case exercises — "never measured, three disagreements on
+  // record" is a more useful answer than either half alone.
+  const adjudicatedByCode = new Map();
+  const adjudicatedTotals = emptyAdjudicated();
+  for (const item of cases) {
+    const field = ADJUDICATED[item.classification];
+    if (!field) continue;
+    adjudicatedTotals[field]++;
+    for (const code of item.scope.codes) {
+      if (!adjudicatedByCode.has(code)) adjudicatedByCode.set(code, emptyAdjudicated());
+      adjudicatedByCode.get(code)[field]++;
+    }
+  }
   const validatorCell = key => {
     if (!byValidator.has(key)) byValidator.set(key, emptyCell());
     return byValidator.get(key);
@@ -139,8 +172,17 @@ export function derivePrecisionEvidence(baseline, { minN = DEFAULT_MIN_N } = {})
         validators: [...keys].sort(),
         ...finalized,
         backoff,
+        adjudicated: adjudicatedByCode.get(code) || emptyAdjudicated(),
       }];
     }));
+
+  // A code that appears ONLY in adjudication rows still earns an entry: it has
+  // no measurement, and saying so beside the disagreement count is the honest
+  // report. It never inherits a number from anywhere.
+  for (const [code, adjudicated] of [...adjudicatedByCode].sort(([a], [b]) => a.localeCompare(b))) {
+    if (codes[code]) continue;
+    codes[code] = { status: 'not-measured', adjudicated };
+  }
 
   return {
     $schema: PRECISION_EVIDENCE_SCHEMA_URL,
@@ -158,6 +200,10 @@ export function derivePrecisionEvidence(baseline, { minN = DEFAULT_MIN_N } = {})
       limitations: baseline.review.limitations,
     },
     aggregate: aggregateCell,
+    // Corpus-wide adjudicated disagreements. Deliberately a sibling of
+    // `aggregate` rather than a field inside it: these counts share none of
+    // that object's denominators and must never be mistaken for one.
+    adjudicated: adjudicatedTotals,
     byValidator: validators,
     byCode: codes,
   };
