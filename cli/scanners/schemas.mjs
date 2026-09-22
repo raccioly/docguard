@@ -10,7 +10,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { resolve, join, relative, basename, extname } from 'node:path';
 import { extractJsSchemaBodies } from './js-ast.mjs';
 import { extractPythonFiles } from './py-ast.mjs';
-import { readScannable } from '../shared-source.mjs';
+import { readScannable, tierFor, summarizeTiers } from '../shared-source.mjs';
 import { DEFAULT_IGNORE_DIRS as IGNORE_DIRS, shouldIgnore, relPosix } from '../shared-ignore.mjs';
 
 /**
@@ -531,20 +531,36 @@ function scanPythonModels(dir) {
   const pyFiles = [];
   walkDir(dir, (filePath) => { if (filePath.endsWith('.py')) pyFiles.push(filePath); });
   const astByFile = extractPythonFiles(pyFiles);
+  // `null` means the whole batch fell back — no usable interpreter. Name it
+  // once so every entity from this scan carries the same accurate reason.
+  // (calibrated-finding-channels#FR-011)
+  const batchReason = astByFile === null ? 'No usable python3 interpreter; models matched by pattern.' : null;
+  const tiers = [];
 
   for (const filePath of pyFiles) {
     const parsed = astByFile && astByFile[filePath];
+    const { tier, tierReason } = tierFor(filePath, parsed, batchReason);
+    tiers.push({ tier, tierReason });
     if (parsed && parsed.ok) {
       for (const s of parsed.schemas || []) {
         const fields = (s.fields || []).map(f => ({
           name: f.name, type: f.type || '', required: f.required !== false, description: '',
         }));
-        if (fields.length > 0) entities.push({ name: s.name, fields, file: filePath, source: s.kind });
+        if (fields.length > 0) entities.push({ name: s.name, fields, file: filePath, source: s.kind, tier, tierReason });
         for (const to of s.rels || []) relationships.push({ from: s.name, to, type: 'related' });
       }
       continue;
     }
+    // The pattern tier undercounts fields on multi-base classes and truncates
+    // captured bodies — which is precisely how a stale DATA-MODEL.md passes.
+    // An entity found here carries that fact with it.
+    const before = entities.length;
     scanPythonModelsRegex(filePath, entities, relationships);
+    for (let i = before; i < entities.length; i++) Object.assign(entities[i], { tier, tierReason });
+  }
+  if (tiers.length > 0) {
+    const summary = summarizeTiers(tiers);
+    Object.defineProperty(entities, 'scanTier', { value: summary, enumerable: false, configurable: true });
   }
   return { entities, relationships };
 }

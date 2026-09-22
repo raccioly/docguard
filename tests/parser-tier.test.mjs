@@ -20,6 +20,7 @@
  * @req docguard.calibrated-finding-channels#FR-011
  * @req docguard.calibrated-finding-channels#FR-012
  * @req docguard.calibrated-finding-channels#FR-013
+ * @req FR-019 — analyzer tier computed at run time; degraded coverage disclosed
  */
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
@@ -86,6 +87,7 @@ const FLASK_PROJECT = {
 };
 
 describe('tierFor (FR-010)', () => {
+  // @req docs-canonical/REQUIREMENTS.md#FR-019 — the analyzer tier is computed at run time, not assumed
   test('a real syntax tree reports the full tier for its language', () => {
     assert.deepEqual(tierFor('a.py', { ok: true }), { tier: 'py-ast', tierReason: null });
     for (const f of ['a.js', 'a.mjs', 'a.cjs', 'a.jsx', 'a.ts', 'a.tsx', 'a.mts', 'a.cts']) {

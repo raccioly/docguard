@@ -420,6 +420,7 @@
           "docguard.calibrated-finding-channels#FR-018",
           "docguard.calibrated-finding-channels#FR-019",
           "docguard.calibrated-finding-channels#FR-020",
+          "docguard.calibrated-finding-channels#FR-021",
           "docguard.calibrated-finding-channels#SC-001",
           "docguard.calibrated-finding-channels#SC-002",
           "docguard.calibrated-finding-channels#SC-003",
@@ -427,14 +428,15 @@
           "docguard.calibrated-finding-channels#SC-005",
           "docguard.calibrated-finding-channels#SC-006",
           "docguard.calibrated-finding-channels#SC-007",
-          "docguard.calibrated-finding-channels#SC-008"
+          "docguard.calibrated-finding-channels#SC-008",
+          "docguard.calibrated-finding-channels#SC-009"
         ]
       },
       "observed": {
         "artifacts": [
           {
             "path": "specs/013-calibrated-finding-channels/spec.md",
-            "digest": "sha256:13648573c00270ddceb20798fd4b5dc8f0111fc73f2cb672bb6ca54903684903"
+            "digest": "sha256:fe9dac22ee605dab3e6262fc79598b9923bd2c1085e4d54b77d0cc77f34b0444"
           },
           {
             "path": "specs/013-calibrated-finding-channels/plan.md",
@@ -442,7 +444,7 @@
           },
           {
             "path": "specs/013-calibrated-finding-channels/tasks.md",
-            "digest": "sha256:f8786f3b283c801c064a4f6591026bc2d47923f3e4a672edaeed6a5474588d7c"
+            "digest": "sha256:d4f942d85f8935be14dddf61be70d2389f83348e0c899bf4d1e5b8f7691e0816"
           }
         ],
         "taskCompletion": {
@@ -519,6 +521,11 @@
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
             "line": 592
+          },
+          {
+            "requirementId": "FR-021",
+            "file": "cli/scanners/speckit.mjs",
+            "line": 1026
           }
         ],
         "testEvidence": [

@@ -12,6 +12,7 @@
  *
  * @implements docguard.calibrated-finding-channels#FR-014
  * @req docguard.calibrated-finding-channels#FR-014
+ * @req FR-017 — feedback samples every unmeasured or low-confidence finding
  */
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';

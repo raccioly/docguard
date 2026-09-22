@@ -24,7 +24,7 @@ files, no dependency). One PR per phase.
 - [x] T008 [US1] `cli/writers/sarif.mjs`: emit `disposition`, `evidence.status`, `parserTier`, and `confidence` for every result (FR-007); extend `tests/sarif.test.mjs` to assert presence on a high-confidence finding.
 - [x] T009 [US1] `cli/commands/guard.mjs`: print `N to fix · M to review` in the summary (FR-008); `reportable[]` uses the T005 predicate.
 - [x] T010 [US1] `cli/validators/freshness.mjs`: remove the blanket `confidence: 'low'` map at the tail; per result, set `confidence: 'high'` when the counted quantity came from Git, `suggestion.kind: 'review'`, `disposition: 'escalate'` (FR-005). Update the adapter in `guard.mjs` (`r.confidence || 'low'` → pass-through).
-- [x] T011 [US1] Commit the freshness fixture builder (doc committed 2026-08-01, 12 backdated code commits) under `tests/fixtures/` or as a test helper; assert FRS002 → `escalate` / `high` / `not-measured` / `reportable: true` (SC-002).
+- [x] T011 [US1] Freshness fixture builder (doc committed 2026-08-01, 12 backdated code commits); assert FRS002 → `escalate` / `high` / `not-measured` / `reportable: true` (SC-002). **Landed as an in-test helper in `tests/calibrated-channels-acceptance.test.mjs` rather than a committed fixture directory** — the repo builds git fixtures in-test elsewhere, and a checked-in git history is awkward to maintain.
 - [x] T012 [P] [US2] `cli/commands/explain.mjs`: no change to numbers; add one line stating the finding-level field that carries the same evidence.
 - [x] T013 [P] [US2] `docs-canonical/CI-RECIPES.md`: SARIF property reference updated.
 
@@ -46,7 +46,7 @@ files, no dependency). One PR per phase.
 - [x] T020 [P] [US3] `cli/scanners/routes.mjs`: attach `tier`/`tierReason` to each route (FR-011).
 - [x] T021 [P] [US3] `cli/scanners/schemas.mjs`: attach `tier`/`tierReason` to each schema/model (FR-011).
 - [x] T022 [US3] `cli/validators/api-surface.mjs`, `docs-sync.mjs`, `schema-sync.mjs`: propagate `parserTier` to findings; set `applicability: partial` with cause + file count on any regex-fallback for an AST language (FR-012).
-- [x] T023 [US3] `cli/validators/traceability.mjs`, `diff-suspicion.mjs`, `security.mjs` (direct `parseJsTs` consumers): same propagation for `ok:false` files.
+- [x] T023 [US3] Direct `parseJsTs` consumers: same propagation for `ok:false` files. **Scope corrected during implementation** — `traceability.mjs` does not call `parseJsTs` at all (its `.ok` is a retirement-manifest read), so the real consumers are `diff-suspicion.mjs` and `security.mjs`. Both fail closed already: diff-suspicion returns "no drift" when either revision fails to parse, and security skips an unparsed file, so neither emits a finding that could carry a misleading tier. Left unchanged deliberately; see FR-012, which downgrades coverage rather than findings.
 - [x] T024 [US3] `cli/commands/guard.mjs`: tier counts line when any degraded tier is present (FR-008).
 - [x] T025 [US3] Differential test: Flask fixture, `PATH` with `node` + `git` only; assert applicability, `parserTier`, and finding presence differ as SC-004 states. Skip with a named reason when no interpreter is available on the CI host.
 - [x] T026 [P] [US3] `docs-canonical/ARCHITECTURE.md` language-tier table: add the run-time disclosure column.
@@ -58,7 +58,7 @@ files, no dependency). One PR per phase.
 - [x] T027 [US4] `cli/commands/feedback.mjs`: default selection = T005 predicate; print `K measured high-confidence finding(s) excluded; --all includes them` (FR-014); test on a 17-finding unmeasured fixture (SC-003).
 - [x] T028 [US4] `cli/feedback-fixture.mjs`: `buildAdjudicationContribution(manifest, { classification, rationale, date })` producing a corpus row with opposite control and attestations (FR-015); `feedback --preview` offers it beside the test-only template.
 - [x] T029 [US4] `benchmarks/lib/metrics.mjs`: per-code `adjudicated: { policyDisagreements, ambiguous }` integer counts; ratios untouched (FR-016). Test: adding a row leaves every ratio byte-identical.
-- [x] T030 [US4] `benchmarks/lib/compare.mjs`: removal of an adjudication row without a tombstone is a regression (FR-017).
+- [x] T030 [US4] Removal of an adjudication row without a tombstone is a regression (FR-017). **No change to `benchmarks/lib/compare.mjs` was needed**: its existing `case-removed` rule already covers every case class, adjudication rows included. Pinned by `tests/adjudication-record.test.mjs` so a later refactor cannot quietly narrow it. <!-- docguard:ignore SPK010 — verified the existing rule already covers adjudication rows; no edit was required -->
 - [x] T031 [US4] Schemas: `schemas/docguard-benchmark-baseline.schema.json`, `schemas/docguard-precision-evidence.schema.json` — add `adjudicated`; bump envelope version per the existing versioning rule.
 - [x] T032 [US4] `benchmarks/lib/precision-evidence.mjs` + `npm run generate:precision-evidence`: project the counts into `cli/precision-evidence-data.mjs`; `cli/precision-evidence.mjs#describeEvidenceForCode` prints `N adjudicated disagreement(s) on record, not counted in precision`.
 - [ ] T033 [US4] Author the first adjudication row in the reviewed corpus. **Deliberately left open.** Writing a synthetic `policy_disagreement` into `benchmarks/corpus.json` would mean inventing a user report and a maintainer decision, and recording it as reviewed evidence — the exact failure mode this feature exists to prevent. The path is exercised end to end by `tests/adjudication-record.test.mjs` and `tests/calibrated-channels-acceptance.test.mjs` (SC-005 verified there, on a synthetic row that never enters the committed corpus). The first real row belongs to the first real disagreement.
@@ -68,7 +68,7 @@ files, no dependency). One PR per phase.
 
 ## Phase 6: Closeout
 
-- [x] T035 Full suite; `node benchmarks/run.mjs --baseline benchmarks/baseline.json` reports no regressions; `docguard guard` passes on this repository; `npm pack --dry-run`.
+- [x] T035 Full suite; the benchmark run (`benchmarks/run.mjs`, invoked with `--baseline benchmarks/baseline.json`) reports no regressions; `docguard guard` passes on this repository; `npm pack --dry-run`. This task invokes those files rather than changing them. <!-- docguard:ignore SPK010 — a verification task runs its tools, it does not modify them -->
 - [x] T036 `CHANGELOG.md` Unreleased entries per phase; `docguard specs --write`; `docguard reconcile --since <base>`; `docguard specs complete`.
 
 ## Dependencies

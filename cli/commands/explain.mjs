@@ -524,6 +524,7 @@ export function runExplain(projectDir, _config, flags) {
     // What has actually been measured about this code, including "nothing".
     console.log(`${c.bold}Benchmark evidence:${c.reset}`);
     for (const line of describeEvidenceForCode(codeKey, CLI_VERSION)) console.log(`  ${c.dim}${line}${c.reset}`);
+    console.log(`  ${c.dim}Every finding carries the same answer as ${c.cyan}evidence.status${c.reset}${c.dim} in ${c.cyan}guard --format json${c.reset}${c.dim}, beside ${c.cyan}disposition${c.reset}${c.dim} (act or escalate) and ${c.cyan}parserTier${c.reset}${c.dim} (which analyzer produced it).${c.reset}`);
     console.log('');
     if (cd.suppress) {
       console.log(`${c.bold}Suppress inline${c.reset} ${c.dim}(only if it's a confirmed false positive):${c.reset}`);

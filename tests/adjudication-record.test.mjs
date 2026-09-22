@@ -22,6 +22,7 @@
  * @req docguard.calibrated-finding-channels#FR-015
  * @req docguard.calibrated-finding-channels#FR-016
  * @req docguard.calibrated-finding-channels#FR-017
+ * @req FR-018 — a reviewed disagreement is recorded and excluded from every rate
  */
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';

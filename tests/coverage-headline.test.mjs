@@ -19,6 +19,7 @@
  *
  * @implements docguard.calibrated-finding-channels#FR-020
  * @req docguard.calibrated-finding-channels#FR-020
+ * @req FR-020 — the badge withholds its top grade from an incomplete run
  */
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
@@ -53,6 +54,7 @@ const BASE = {
 };
 
 describe('headline coverage (FR-020)', () => {
+  // @req docs-canonical/REQUIREMENTS.md#FR-020 — the badge withholds its top grade from a run that could not check everything
   let dirs = [];
   const make = (files) => { const d = project(files); dirs.push(d); return d; };
   test.afterEach?.(() => {});

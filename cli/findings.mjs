@@ -520,6 +520,18 @@ export const CODES = {
     help: 'A tasks.md task marked [x] names a deliverable path that does not exist, and no evidence tier confirms the work landed: no matching basename anywhere in the repo (moved file), no named code symbol in source, no plan.md/spec.md tie to an existing artifact, no task-ID annotation in source, and no task-ID in the git log. A checked task with no artifact corrupts agent memory — later sessions trust the checkbox and skip the work. Uncheck the task or land the implementation. Flagged low-confidence — report a false positive if the deliverable was renamed beyond recognition. Opt out with `"specKit": { "phantomCheck": false }` in .docguard.json.',
     suppress: null,
   },
+  SPK010: {
+    validator: 'specKit',
+    title: 'Completed task names a file the feature never changed',
+    suppress: '<!-- docguard:ignore SPK010 — task invokes this file rather than changing it -->',
+    help: 'A tasks.md task marked [x] names a deliverable path that EXISTS but that no commit since this feature began — and no uncommitted change — ever touched. SPK008 asks whether the artifact exists; a task naming files that already existed passes that check whether or not the work happened, which is how a skill file listed in a completed documentation task shipped unmodified in this repository. The git fact is exact, so this is high-confidence, but it is an ESCALATION, not a verdict: a task may legitimately name a file as context, invoke it rather than change it, or the work may have landed under a different path. Read the task, then either do the work, correct the task text, or uncheck it. Suppress one task with `<!-- docguard:ignore SPK010 — reason -->` on its line; opt out entirely with `"specKit": { "untouchedClaimCheck": false }` in .docguard.json.',
+  },
+  SPK011: {
+    validator: 'specKit',
+    title: 'Additional untouched claims elided',
+    help: 'Guard reports at most 10 untouched-claim findings (SPK010) per run to avoid noise; this line counts the remainder. Resolve the reported tasks and re-run guard to surface more, or set `"specKit": { "untouchedClaimCheck": false }` in .docguard.json to disable the check.',
+    suppress: null,
+  },
   SPK009: {
     validator: 'specKit',
     title: 'Additional phantom completions elided',

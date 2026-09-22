@@ -65,6 +65,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   a document to silence an escalation — stamping a fresh review date to clear a
   freshness signal destroys the signal without doing the review.
 
+- **SPK010 — a completed task that names a file the feature never changed.**
+  The phantom check (SPK008) asks whether a checked task's deliverable EXISTS,
+  which a task naming already-existing files satisfies immediately, whether or
+  not the work happened. That hole is not hypothetical: in this repository a
+  documentation task listed six contract files, was marked `[x]`, and shipped
+  with one of them — a SKILL.md — unmodified, still telling agents to auto-fix
+  findings a human was supposed to judge.
+
+  SPK010 asks the other question: did this feature's history ever touch it? The
+  window is the commit that introduced the spec directory through HEAD, plus
+  the working tree, so uncommitted work counts. Only falsifiable slashed paths
+  convict; a non-existent path stays SPK008's business, a path inside the
+  spec's own directory is never its own deliverable, and the check is silent
+  when git is unavailable or the spec has no introducing commit. Suppress one
+  task with `<!-- docguard:ignore SPK010 — reason -->`, or disable with
+  `"specKit": { "untouchedClaimCheck": false }`.
+
+  Reported `confidence: high` and `disposition: escalate` — the git fact is
+  exact, the conclusion is the reader's. Run against this branch it found eight
+  tasks; seven were real gaps in this very feature, now closed.
+
 ### Fixed
 
 - **API-surface checking never ran on Python, Go, Rust, Java or Ruby projects.**

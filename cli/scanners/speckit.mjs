@@ -25,9 +25,9 @@
 import { existsSync, readFileSync, readdirSync, statSync, copyFileSync, writeFileSync } from 'node:fs';
 import { resolve, join, relative, dirname, basename, extname } from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { mkFinding, resultFromFindings } from '../findings.mjs';
+import { mkFinding, resultFromFindings, lineSuppresses } from '../findings.mjs';
 import { isGitRepo } from '../shared-git.mjs';
-import { walkFiles } from '../shared-ignore.mjs';
+import { walkFiles, relPosix } from '../shared-ignore.mjs';
 import { readScannable } from '../shared-source.mjs';
 
 // ──── Spec Kit Mandatory Sections ────
@@ -860,6 +860,49 @@ export function validateSpecKitIntegration(projectDir, config) {
         suggestion: { kind: 'review', text: 'Uncheck the task or land the implementation it claims — a checked task with no artifact is memory corruption for agents' },
       }));
     }
+    // ── Check 2e: Untouched claims — checked tasks naming existing files the
+    // feature never changed. Complements 2d: that one asks whether the artifact
+    // exists, this one asks whether the work happened.
+    if (config?.specKit?.untouchedClaimCheck !== false) {
+      const untouchedResults = detectUntouchedClaims(projectDir, speckit.specs);
+      const claims = [];
+      for (const r of untouchedResults) {
+        if (r.checkedCount === 0) continue;
+        total++;
+        if (r.untouched.length === 0) { passed++; continue; }
+        for (const u of r.untouched) claims.push({ r, u });
+      }
+      for (const { r, u } of claims.slice(0, MAX_UNTOUCHED_FINDINGS)) {
+        const text = u.text.length > 70 ? u.text.slice(0, 67) + '...' : u.text;
+        const label = u.id ? `${u.id} marked [x]` : 'task marked [x]';
+        const paths = u.paths.length > 3 ? `${u.paths.slice(0, 3).join(', ')} (+${u.paths.length - 3} more)` : u.paths.join(', ');
+        findings.push(mkFinding({
+          code: 'SPK010',
+          validator: 'specKit',
+          severity: 'warn',
+          // The git history is exact; what it means for the task is the
+          // reader's call. (calibrated-finding-channels#FR-021)
+          confidence: 'high',
+          disposition: 'escalate',
+          message: `specs/${r.spec.name}/tasks.md: ${label} names ${u.paths.length === 1 ? 'a file' : 'files'} this feature never changed — ${paths} — "${text}"`,
+          location: `${r.relPath}:${u.line}`,
+          suggestion: { kind: 'review', text: 'Do the work, correct the task text if it landed elsewhere, or uncheck the task — an existing file is not evidence that this task touched it' },
+        }));
+      }
+      if (claims.length > MAX_UNTOUCHED_FINDINGS) {
+        findings.push(mkFinding({
+          code: 'SPK011',
+          validator: 'specKit',
+          severity: 'warn',
+          confidence: 'high',
+          disposition: 'escalate',
+          message: `...and ${claims.length - MAX_UNTOUCHED_FINDINGS} more checked tasks naming files this feature never changed`,
+          location: null,
+          suggestion: { kind: 'review', text: 'Resolve the tasks above and re-run guard to surface the rest — or set specKit.untouchedClaimCheck=false in .docguard.json to disable' },
+        }));
+      }
+    }
+
     if (flagged.length > MAX_PHANTOM_FINDINGS) {
       findings.push(mkFinding({
         code: 'SPK009',
@@ -892,3 +935,130 @@ export function validateSpecKitIntegration(projectDir, config) {
 
   return resultFromFindings(findings, { passed, total });
 }
+
+// ──── Untouched-Claim Detection (SPK010/SPK011) ────
+//
+// The phantom check (SPK008) asks whether a checked task's named deliverable
+// EXISTS. That leaves a hole big enough to walk a whole feature through: a task
+// that names files which already existed passes tier (a) immediately, whether
+// or not the work touched them.
+//
+// This is not hypothetical. In this repository, T007 of the calibrated-finding-
+// channels feature listed six contract documents including a SKILL.md, was
+// marked [x], and the branch changed five of them. Every named path existed, so
+// SPK008 was satisfied, and the untouched file shipped a skill that told agents
+// to auto-fix findings a human was supposed to judge. The checkbox was the only
+// record, and it was wrong.
+//
+// So: for a checked task naming a path that EXISTS, ask a different question —
+// did this feature's own history ever touch it? The feature's history is the
+// set of commits that touched its spec directory, plus the working tree.
+//
+// PRECISION-FIRST, same discipline as SPK008:
+//   • Only `claims` paths (slashed, with an extension or explicit `dir/`)
+//     convict; bare filenames and prose slashes never do.
+//   • A path that does NOT exist is SPK008's business, never this check's.
+//   • Silent when git is unavailable, when the spec directory has no commits
+//     yet (nothing to compare against), or when the task names no claim.
+//   • The git fact is exact, so these are reported `confidence: 'high'` — and
+//     `disposition: 'escalate'`, because "this file was never touched" does
+//     NOT establish that the task is falsely checked. A task may legitimately
+//     name a file as context, or the work may have landed under a different
+//     path. The reader decides; DocGuard only reports what git knows.
+
+const MAX_UNTOUCHED_FINDINGS = 10;
+
+/**
+ * Every repo-relative path changed since this feature began, plus everything
+ * currently modified in the working tree.
+ *
+ * "Since this feature began" is the commit that first ADDED the spec
+ * directory, through HEAD. An earlier draft scoped this to commits that
+ * touched the spec directory itself, which was wrong in the ordinary case: a
+ * feature commits its spec once and then lands five phases of code without
+ * editing tasks.md again, so nearly every real deliverable looked untouched.
+ * The window has to be the feature's whole life, not the moments it happened
+ * to edit its own task list.
+ *
+ * A wide window costs recall and buys precision, which is the correct trade
+ * for a check that accuses a task of lying: unrelated work inside the window
+ * can only ever SUPPRESS a finding.
+ *
+ * Returns null when the answer is unknowable (no git, spec never committed)
+ * so the caller can stay silent rather than guess.
+ */
+export function featureTouchedPaths(projectDir, specDirRel) {
+  if (!isGitRepo(projectDir)) return null;
+  const run = (args) => {
+    try {
+      return execFileSync('git', args, { cwd: projectDir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'], maxBuffer: 32 * 1024 * 1024 });
+    } catch { return null; }
+  };
+  const history = run(['log', '--format=%H', '--diff-filter=A', '--', `:(literal)${specDirRel}`]);
+  if (history === null) return null;
+  const adds = history.split('\n').map(s => s.trim()).filter(Boolean);
+  const first = adds[adds.length - 1];
+  if (!first) return null; // spec never committed — nothing to compare against
+
+  const touched = new Set();
+  // Everything the feature's window changed, the introducing commit included.
+  const names = run(['log', '--name-only', '--format=', `${first}^..HEAD`])
+    ?? run(['log', '--name-only', '--format=', 'HEAD']); // root commit has no parent
+  for (const line of (names || '').split('\n')) {
+    const p = line.trim();
+    if (p) touched.add(p);
+  }
+  // Uncommitted work counts as touched: a task can be genuinely complete in
+  // the working tree before its commit lands.
+  for (const args of [['diff', '--name-only', 'HEAD'], ['ls-files', '--others', '--exclude-standard']]) {
+    for (const line of (run(args) || '').split('\n')) {
+      const p = line.trim();
+      if (p) touched.add(p);
+    }
+  }
+  return touched;
+}
+
+/**
+ * Checked tasks whose named, existing deliverables this feature never changed.
+ *
+ * @returns {Array<{spec, relPath, checkedCount, untouched: Array<{id, text, line, paths: string[]}>}>}
+ * @implements docguard.calibrated-finding-channels#FR-021
+ */
+export function detectUntouchedClaims(projectDir, specs) {
+  const results = [];
+  for (const spec of specs) {
+    if (!spec.hasTasks || !spec.tasksPath) continue;
+    let content;
+    try { content = readFileSync(spec.tasksPath, 'utf-8'); } catch { continue; }
+    const tasks = parseCheckedTasks(content);
+    if (tasks.length === 0) continue;
+
+    const specDirRel = relPosix(projectDir, resolve(spec.tasksPath, '..'));
+    const touched = featureTouchedPaths(projectDir, specDirRel);
+    if (touched === null) continue; // unknowable — stay silent
+
+    const untouched = [];
+    for (const task of tasks) {
+      const { claims } = extractPathTokens(task.text);
+      const missed = [];
+      // A task that documents WHY a named file went untouched — work landed
+      // elsewhere, or the task invokes the file rather than changing it — uses
+      // DocGuard's ordinary inline-suppression form, reason required.
+      if (lineSuppresses('SPK010', task.text)) continue;
+      for (const claim of claims) {
+        // Paths inside the spec's own directory are the task list itself, not
+        // a deliverable the task promised to change.
+        if (claim === specDirRel || claim.startsWith(`${specDirRel}/`)) continue;
+        // A path that does not exist is SPK008's finding, never this one.
+        if (!existsSync(resolve(projectDir, claim))) continue;
+        if (!touched.has(claim)) missed.push(claim);
+      }
+      if (missed.length > 0) untouched.push({ id: task.id, text: task.text, line: task.line, paths: missed.sort() });
+    }
+    results.push({ spec, relPath: relPosix(projectDir, spec.tasksPath), checkedCount: tasks.length, untouched });
+  }
+  return results;
+}
+
+export { MAX_UNTOUCHED_FINDINGS };

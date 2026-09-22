@@ -20,6 +20,7 @@
  * @req docguard.calibrated-finding-channels#FR-006
  * @req docguard.calibrated-finding-channels#FR-009
  * @req docguard.calibrated-finding-channels#FR-014
+ * @req FR-016 — three independent channels on every finding
  */
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';

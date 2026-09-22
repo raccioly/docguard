@@ -214,6 +214,18 @@ the summary prints `21 of 30 validators checked` and the badge colour is
   one-line comment referencing FR-018, and a repository test MUST assert the
   comment is present at each listed site.
 
+### Completed-task evidence
+
+- **FR-021**: A checked task naming a deliverable path that EXISTS but that no
+  commit since the feature began — and no uncommitted change — ever touched
+  MUST be reported, distinctly from a task whose deliverable is absent. The
+  git fact is exact, so the finding is high-confidence; the conclusion is the
+  reader's, so its disposition is `escalate`. Only falsifiable slashed paths
+  may convict; a path inside the spec's own directory, a non-existent path,
+  and a task carrying an inline suppression with a reason MUST NOT. The check
+  MUST stay silent when git is unavailable or the spec has no introducing
+  commit.
+
 ### Headline coverage
 
 - **FR-020**: The guard summary MUST print `checked` validator count beside the
@@ -251,6 +263,9 @@ the summary prints `21 of 30 validators checked` and the badge colour is
   checked` and the badge is `green`.
 - **SC-008**: Full suite passes; no new runtime dependency; `docguard guard`
   passes on this repository.
+- **SC-009**: Run against this repository's own history, the untouched-claim
+  check reports every completed task that named a file the feature never
+  changed, and reports nothing for a task whose files it did change.
 
 ## Non-Goals
 

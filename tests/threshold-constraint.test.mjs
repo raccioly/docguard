@@ -19,6 +19,7 @@
  * @implements docguard.calibrated-finding-channels#FR-019
  * @req docguard.calibrated-finding-channels#FR-018
  * @req docguard.calibrated-finding-channels#FR-019
+ * @req FR-020 — data-derived thresholds bound to a strictly proper scoring rule
  */
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
@@ -49,6 +50,7 @@ function preamble(file, anchor) {
 }
 
 describe('data-derived thresholds (FR-018/FR-019)', () => {
+  // @req docs-canonical/REQUIREMENTS.md#FR-020 — a data-derived threshold is bound to a strictly proper scoring rule
   for (const { file, anchor } of SITES) {
     test(`${file} — ${anchor} carries the scoring-rule constraint`, () => {
       assert.match(preamble(file, anchor), new RegExp(REFERENCE.replace(/[.#]/g, '\\$&')),
