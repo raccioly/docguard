@@ -90,12 +90,14 @@ describe('Metrics-Consistency Validator', () => {
     assert.strictEqual(result.total, 0);
   });
 
-  it('checks for test count if test files exist', () => {
+  it('asserts nothing about tests when test files declare no recognisable cases', () => {
     mkdirSync(join(tmpDir, 'tests'), { recursive: true });
     writeFileSync(join(tmpDir, 'tests', 'a.test.mjs'), '...');
     writeFileSync(join(tmpDir, 'tests', 'b.test.mjs'), '...');
+    writeFileSync(join(tmpDir, 'README.md'), 'npm test    # 33 tests\n');
 
-    // we don't have pattern for tests in the current implementation, but it shouldn't crash
+    // Two files, zero declared cases: a "0" floor proves nothing, so no claim
+    // is made (fail-safe, same rule as an unresolved collection glob).
     const result = validateMetricsConsistency(tmpDir, {});
 
     assert.deepEqual(result.errors, []);
@@ -229,6 +231,109 @@ describe('Metrics-Consistency Validator', () => {
     assert.equal(result.findings?.[0]?.confidence, 'low');
     assert.equal(result.findings?.[0]?.suggestion?.kind, 'review');
     assert.deepEqual(result.fixes, []);
+  });
+});
+
+// ── "N tests" (MET003) ────────────────────────────────────────────────────────
+// The README said "33 tests across 18 describe blocks" from 2026-03-15 for 92
+// releases while the suite grew past 2,000 cases. The validator's header
+// promised an "N tests" check, `actuals.tests` was computed from v0.8.2 on,
+// and no pattern ever read it — a dead path a green self-guard could not see.
+// These cases pin the finished check: the exact README sentence is the CONTROL.
+describe('Metrics-Consistency — "N tests" is a lower-bound check (MET003)', () => {
+  let tmpDir;
+  beforeEach(() => { tmpDir = mkdtempSync(join(tmpdir(), 'docguard-test-metrics-tests-')); });
+  afterEach(() => { rmSync(tmpDir, { recursive: true, force: true }); });
+
+  const CASE = (name) => `  it('${name}', () => { assert.ok(true); });\n`;
+  function suite(file, n, extra = '') {
+    mkdirSync(join(tmpDir, 'tests'), { recursive: true });
+    let src = "import { describe, it } from 'node:test';\nimport assert from 'node:assert';\n" + extra + "describe('s', () => {\n";
+    for (let i = 0; i < n; i++) src += CASE(`case ${i}`);
+    writeFileSync(join(tmpDir, 'tests', file), src + '});\n');
+  }
+
+  it('flags the exact README sentence that slipped through (33 tests vs 40 declared)', () => {
+    suite('a.test.mjs', 40);
+    writeFileSync(join(tmpDir, 'README.md'), [
+      '## 🧪 Testing', '', '```bash', 'npm test    # 33 tests across 18 describe blocks', '```', '',
+    ].join('\n'));
+    const result = validateMetricsConsistency(tmpDir, {}, []);
+    const f = result.findings.find(x => x.code === 'MET003');
+    assert.ok(f, `expected MET003; got: ${result.warnings.join(' | ')}`);
+    assert.match(f.message, /"33 tests"/);
+    assert.match(f.message, /at least 40 test cases/);
+    assert.match(f.message, /1 test files/);
+    assert.equal(f.confidence, 'high');
+    assert.equal(f.disposition, 'escalate', 'the true number is unknowable statically — never auto-written');
+    assert.equal(f.suggestion.kind, 'review');
+    assert.equal(f.parserTier, 'js-ast');
+    assert.deepEqual(result.fixes, [], 'MET003 must never emit a replace-count fix');
+  });
+
+  it('passes a documented count AT OR ABOVE the declared floor (loop-generated cases run more than once)', () => {
+    suite('a.test.mjs', 40);
+    writeFileSync(join(tmpDir, 'README.md'), 'npm test    # 40 tests\n\nThe suite has 2,085 tests passing on CI.\n');
+    const result = validateMetricsConsistency(tmpDir, {}, []);
+    assert.deepEqual(result.warnings, [], `counts >= floor cannot be disproven; got: ${result.warnings.join(' | ')}`);
+    assert.equal(result.passed, 2, 'one pass per distinct documented value');
+  });
+
+  it('parses a thousands separator as one number, never as its last group', () => {
+    suite('a.test.mjs', 40);
+    // "1,733 tests" must read as 1733 (>= 40 → pass), not as "733 tests" nor "33 tests"
+    writeFileSync(join(tmpDir, 'README.md'), 'Verification passed 1,733 tests on every Node release.\n');
+    const result = validateMetricsConsistency(tmpDir, {}, []);
+    assert.deepEqual(result.warnings, [], `got: ${result.warnings.join(' | ')}`);
+    assert.equal(result.passed, 1);
+  });
+
+  it('does NOT bind a number about somebody else\'s tests (subject binding)', () => {
+    suite('a.test.mjs', 40);
+    writeFileSync(join(tmpDir, 'README.md'), [
+      'The 2026 study ran 12 tests per repository.',           // research, not our suite
+      '✅ TEST-SPEC.md (12 tests, 8/10 services mapped)',      // sample tool output
+      'Each PR gets 12 tests of patience from the reviewer.',  // prose
+    ].join('\n'));
+    const result = validateMetricsConsistency(tmpDir, {}, []);
+    assert.deepEqual(result.warnings, [], `unbound "12 tests" must be ignored; got: ${result.warnings.join(' | ')}`);
+    assert.equal(result.total, 0);
+  });
+
+  it('binds on runner invocations, "suite", and pass verbs', () => {
+    suite('a.test.mjs', 40);
+    for (const line of [
+      'pytest    # 12 tests',
+      'go test ./...   # 12 tests',
+      'The test suite (12 tests) runs in CI.',
+      '12 tests passing',
+      'node --test runs 12 tests',
+    ]) {
+      writeFileSync(join(tmpDir, 'README.md'), line + '\n');
+      const result = validateMetricsConsistency(tmpDir, {}, []);
+      assert.ok(result.findings.some(f => f.code === 'MET003'), `expected MET003 for: ${line}`);
+    }
+  });
+
+  it('treats a count under a version-pinned heading as history, not a current assertion', () => {
+    suite('a.test.mjs', 40);
+    writeFileSync(join(tmpDir, 'VALIDATION.md'), [
+      '# Validation', '',
+      '## Results — v0.31.0 (research-backed batch)', '',
+      'The candidate passed 12 tests on each supported Node release.', '',
+      '### R5 — Evidence-scoped verification (released in v0.40.0)', '',
+      'Verification passed 12 tests on Node 18, 20, 22, and 24.', '',
+    ].join('\n'));
+    const result = validateMetricsConsistency(tmpDir, { requiredFiles: { canonical: ['VALIDATION.md'] } }, []);
+    assert.deepEqual(result.warnings, [], `version-pinned sections describe that version; got: ${result.warnings.join(' | ')}`);
+  });
+
+  it('is unaffected by a `tests` collection override (reserved noun)', () => {
+    suite('a.test.mjs', 40);
+    writeFileSync(join(tmpDir, 'README.md'), 'npm test    # 33 tests\n');
+    const result = validateMetricsConsistency(tmpDir, { collections: { tests: 'does/not/exist/*.py' } }, []);
+    assert.ok(result.findings.some(f => f.code === 'MET003' && /at least 40/.test(f.message)),
+      `reserved noun keeps the built-in declared-case floor; got: ${result.warnings.join(' | ')}`);
   });
 });
 

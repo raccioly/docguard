@@ -178,6 +178,12 @@ export const CODES = {
     help: 'A doc states "N <noun>" for a noun declared in `config.collections`, but the collection glob matches a different number of files. Either the doc is stale (fix with `docguard fix --write`) or the code lost/gained members unintentionally — check which side is wrong before fixing.',
     suppress: null,
   },
+  MET003: {
+    validator: 'metricsConsistency',
+    title: 'Documented test count is below the declared test cases',
+    help: 'A line about the project\'s own test suite ("npm test # N tests", "N tests passing") states fewer tests than the test files declare. The declared count is a static lower bound of what the runner reports (cases generated in loops are not expanded), so a smaller documented number is stale for certain, but the true number is only known by running the suite. Run it and update the count by hand; there is no mechanical fix.',
+    suppress: null,
+  },
   FRS001: {
     validator: 'freshness',
     title: 'Document review signal unavailable',
