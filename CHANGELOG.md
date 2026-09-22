@@ -82,11 +82,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   signal, which an uncommitted file or a shallow clone can produce. Across the
   sample this relabels 196 findings.
 
-- **Six finding codes reached SARIF with no file location.** APS001/APS002,
-  DDF001/DDF002 and REF001/REF002 emitted `location` as an object, which
-  rendered as `[object Object]` and which SARIF's location parser dropped
-  entirely, so GitHub Code Scanning could not annotate them. `location` is now
-  normalized to a string at construction.
+- **Five finding codes reached SARIF with no file location.** APS001, APS002,
+  DSP001, REF001 and REF002 emitted `location` as an object, which rendered as
+  `[object Object]` and which SARIF's location parser dropped entirely, so
+  GitHub Code Scanning could not annotate them. `location` is now normalized to
+  a string at construction. Verified against the pre-change build on real
+  repositories: every SARIF result now resolves to a file.
 
 - **A malformed `suggestion.kind` was silently coerced to `review`**, turning a
   typo into an escalation. It is now omitted, per
