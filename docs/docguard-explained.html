@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DocGuard — Technical Brief</title>
+<meta name="description" content="How DocGuard decides whether a claim in your documentation has earned the right to be believed: the two-tier model, the 29 detectors, the research they implement, and the measurement discipline behind every number.">
+<style>
+  :root {
+    --paper:      #faf9f5;
+    --card:       #ffffff;
+    --ink:        #191917;
+    --ink-soft:   #565550;
+    --ink-faint:  #918d83;
+    --rule:       #e6e2d8;
+    --rule-soft:  #f0ede4;
+    --clay:       #d97757;   /* drift — the bad news */
+    --clay-deep:  #b85636;
+    --clay-wash:  #fbf1ec;
+    --sage:       #3f6b5f;   /* verified — the good news */
+    --sage-wash:  #eef4f1;
+    --indigo:     #2a5b9b;   /* DocGuard's own mark: structure, code-truth */
+    --indigo-deep:#1f4677;
+    --indigo-wash:#eef2f8;
+    --amber:      #9a6b12;   /* escalate — the judgement is yours */
+    --amber-wash: #fbf5e6;
+    --sans: "Helvetica Neue", Helvetica, "Inter", "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+    --mono: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace;
+  }
+
+  @page { size: Letter; margin: 0; }
+  * { box-sizing: border-box; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { margin: 0; background: var(--paper); color: var(--ink);
+         font-family: var(--sans); font-size: 9.5pt; line-height: 1.5; letter-spacing: -0.005em; }
+
+  .page { page-break-after: always; display: flex; flex-direction: column;
+          min-height: 279.4mm; padding: 14mm 15mm 11mm; background: var(--paper); }
+  .page:last-child { page-break-after: auto; }
+
+  .masthead { display: flex; align-items: baseline; justify-content: space-between;
+              border-bottom: 2px solid var(--ink); padding-bottom: 7px; }
+  .wordmark { font-size: 12.5pt; font-weight: 700; letter-spacing: -0.025em; }
+  .wordmark .mark { color: var(--indigo); }
+  .meta { font-family: var(--mono); font-size: 6.8pt; color: var(--ink-faint);
+          letter-spacing: 0.07em; text-transform: uppercase; }
+
+  h1 { font-size: 25pt; line-height: 1.08; font-weight: 700; letter-spacing: -0.032em;
+       margin: 18px 0 0; max-width: 22ch; }
+  .standfirst { font-size: 11.2pt; line-height: 1.45; color: var(--ink-soft);
+                margin: 12px 0 0; max-width: 62ch; }
+
+  h2 { font-size: 7.8pt; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+       color: var(--indigo-deep); margin: 0 0 9px; }
+  h3 { font-size: 10pt; font-weight: 700; margin: 0 0 5px; letter-spacing: -0.012em; }
+
+  p { margin: 0 0 9px; }
+  .lede { font-size: 10.3pt; }
+  code { font-family: var(--mono); font-size: 0.88em; background: var(--rule-soft);
+         padding: 1px 4px; border-radius: 3px; }
+  .note { font-size: 8.4pt; color: var(--ink-soft); }
+  a { color: inherit; text-decoration: none; border-bottom: 1px solid var(--rule); }
+
+  section { margin-top: 19px; }
+  .rule-top { border-top: 1px solid var(--rule); padding-top: 13px; }
+  .cols-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+  .cols-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+
+  .exhibit { border: 1px solid var(--rule); border-left: 3px solid var(--indigo);
+             background: var(--card); padding: 11px 13px; margin: 0 0 9px; }
+  .exhibit.drift { border-left-color: var(--clay); }
+  .exhibit pre { font-family: var(--mono); font-size: 8pt; line-height: 1.5; margin: 0;
+                 white-space: pre-wrap; color: #23221e; }
+  .exhibit .cap { font-family: var(--mono); font-size: 6.6pt; letter-spacing: 0.09em;
+                  text-transform: uppercase; color: var(--ink-faint); margin-bottom: 7px; }
+  .kw { color: #7a4fbf; } .str { color: #2f6f4f; } .num { color: #2a5b9b; }
+  .cm { color: var(--ink-faint); font-style: italic; } .bad { color: var(--clay-deep); font-weight: 700; }
+
+  .verdict { border: 1px solid var(--rule); padding: 11px 13px; background: var(--card); }
+  .verdict.bad   { border-left: 3px solid var(--clay); background: var(--clay-wash); }
+  .verdict.good  { border-left: 3px solid var(--sage); background: var(--sage-wash); }
+  .verdict.judge { border-left: 3px solid var(--amber); background: var(--amber-wash); }
+  .verdict .tag { font-family: var(--mono); font-size: 8.3pt; font-weight: 700;
+                  letter-spacing: 0.04em; display: block; margin-bottom: 4px; }
+  .verdict.bad .tag   { color: var(--clay-deep); }
+  .verdict.good .tag  { color: var(--sage); }
+  .verdict.judge .tag { color: var(--amber); }
+  .verdict p { margin: 0; font-size: 9pt; }
+
+  .pull { border-top: 2px solid var(--ink); border-bottom: 1px solid var(--rule);
+          padding: 13px 0 12px; margin-top: 20px; }
+  .pull p { font-size: 12.4pt; line-height: 1.36; font-weight: 500;
+            letter-spacing: -0.018em; margin: 0; max-width: 64ch; }
+  .pull .attrib { font-family: var(--mono); font-size: 6.6pt; letter-spacing: 0.09em;
+                  text-transform: uppercase; color: var(--ink-faint); margin-top: 8px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 8.8pt; }
+  th { text-align: left; font-size: 6.9pt; letter-spacing: 0.1em; text-transform: uppercase;
+       color: var(--ink-faint); font-weight: 700; padding: 0 9px 6px 0;
+       border-bottom: 1.5px solid var(--ink); }
+  td { padding: 7px 9px 7px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  td:first-child { font-family: var(--mono); font-weight: 700; white-space: nowrap; width: 21%; }
+  tr:last-child td { border-bottom: none; }
+  table.tight td { padding: 5px 8px 5px 0; font-size: 8.3pt; }
+  table.tight td:first-child { width: 16%; }
+  .v-bad { color: var(--clay-deep); } .v-good { color: var(--sage); } .v-judge { color: var(--amber); }
+
+  ul.ticks { list-style: none; margin: 0; padding: 0; }
+  ul.ticks li { position: relative; padding-left: 14px; margin-bottom: 6px; font-size: 8.7pt; }
+  ul.ticks li::before { content: "—"; position: absolute; left: 0; color: var(--indigo); font-weight: 700; }
+
+  .versus { display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+            border: 1px solid var(--rule); background: var(--card); }
+  .versus > div { padding: 13px 15px; }
+  .versus > div:first-child { border-right: 1px solid var(--rule); background: #fbfaf7; }
+  .versus .q { font-family: var(--mono); font-size: 8.4pt; color: var(--ink-soft);
+               display: block; margin: 7px 0 8px; }
+  .versus .out { font-size: 9.1pt; font-weight: 600; }
+
+  .kicker { font-family: var(--mono); font-size: 6.7pt; letter-spacing: 0.11em;
+            text-transform: uppercase; color: var(--ink-faint); margin-bottom: 6px; }
+  .figcap { font-family: var(--mono); font-size: 6.6pt; letter-spacing: 0.08em;
+            text-transform: uppercase; color: var(--ink-faint); margin: 7px 0 0; }
+  figure { margin: 0; }
+  svg { display: block; width: 100%; height: auto; }
+
+  .footer { margin-top: auto; display: flex; justify-content: space-between;
+            font-family: var(--mono); font-size: 6.4pt; color: var(--ink-faint);
+            letter-spacing: 0.07em; text-transform: uppercase;
+            border-top: 1px solid var(--rule); padding-top: 5px; }
+
+  .statband { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0;
+              border: 1px solid var(--rule); background: var(--card); margin-top: 13px; }
+  .statband.four { grid-template-columns: repeat(4, 1fr); }
+  .statband > div { padding: 13px 15px; border-right: 1px solid var(--rule); }
+  .statband > div:last-child { border-right: none; }
+  .statband .fig { font-size: 23pt; font-weight: 700; letter-spacing: -0.035em; line-height: 1; }
+  .statband .fig.clay { color: var(--clay-deep); }
+  .statband .fig.sage { color: var(--sage); }
+  .statband .fig.indigo { color: var(--indigo); }
+  .statband .cap { font-size: 7.9pt; color: var(--ink-soft); margin-top: 6px; line-height: 1.35; }
+  .statband .src { font-family: var(--mono); font-size: 6.2pt; letter-spacing: 0.07em;
+                   text-transform: uppercase; color: var(--ink-faint); margin-top: 7px; }
+
+  /* svg type */
+  .s-lbl  { font-family: var(--mono); font-size: 7px; letter-spacing: 0.06em;
+            text-transform: uppercase; fill: var(--ink); font-weight: 700; }
+  .s-sub  { font-family: var(--sans); font-size: 7.4px; fill: var(--ink-soft); }
+  .s-tiny { font-family: var(--mono); font-size: 6.2px; letter-spacing: 0.07em;
+            text-transform: uppercase; fill: var(--ink-faint); }
+  .s-q    { font-family: var(--sans); font-size: 8.2px; fill: var(--ink); }
+  .s-v    { font-family: var(--mono); font-size: 7.4px; font-weight: 700; letter-spacing: 0.04em; }
+  .s-md   { font-family: var(--mono); font-size: 6.8px; fill: #23221e; }
+
+  @media screen and (max-width: 760px) {
+    .page { min-height: auto; padding: 18px 16px; }
+    .cols-2, .cols-3, .versus, .statband, .statband.four { grid-template-columns: 1fr; }
+    .versus > div:first-child, .statband > div { border-right: none; border-bottom: 1px solid var(--rule); }
+    h1 { font-size: 20pt; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ PAGE 1 — THE IDEA ═══════════════ -->
+<div class="page">
+  <div class="masthead">
+    <div class="wordmark">Doc<span class="mark">Guard</span></div>
+    <div class="meta">Technical Brief · v0.42.0 · Ricardo Accioly · MIT</div>
+  </div>
+
+  <h1>Your docs are green. That is not the same as your docs being true.</h1>
+  <p class="standfirst">DocGuard reads what your documentation claims about your code, reads the code,
+  and reports every claim the two no longer agree on — saying which it is sure about, and which it is not.</p>
+
+  <section class="rule-top">
+    <h2>The problem</h2>
+    <p class="lede"><strong>The faster AI writes code, the faster everyone loses the map of what was built.</strong>
+    Every agent session starts from zero and re-derives how the system works. The docs are the map.
+    Nothing checks whether the map still matches the territory.</p>
+
+    <div class="exhibit drift">
+      <div class="cap">A real finding, from DocGuard's own demo fixture — a 4-service payments API with deliberate drift</div>
+<pre><span class="num">4.</span> [MED] Traceability
+   DATA-MODEL.md — exists but no matching source code found (unlinked doc)
+   <span class="cm">→ Doc lives in canonical/ but isn't in the manifest — guard skips it, drift accumulates silently.</span></pre>
+    </div>
+
+    <p><code>npx docguard-cli demo</code> returns seventeen of these in half a second, against a project whose
+    documentation <em>looks</em> complete. Each names the file, the claim, and what trusting it would cost.</p>
+
+    <figure style="margin-top:11px">
+      <svg viewBox="0 0 760 112" role="img" aria-label="A score of 100 out of 100 for structure beside seventeen warnings for truth">
+        <rect x="0" y="0" width="368" height="112" rx="5" fill="#ffffff" stroke="#e6e2d8"/>
+        <text class="s-tiny" x="20" y="22">A maturity score asks</text>
+        <text x="20" y="41" style="font-family:var(--sans);font-size:10px;font-weight:700;fill:#191917">“Is the map whole?”</text>
+        <text x="20" y="79" style="font-family:var(--sans);font-size:30px;font-weight:700;letter-spacing:-0.035em;fill:#3f6b5f">100/100</text>
+        <text class="s-sub" x="20" y="95" style="font-size:8px">every required chapter present — and that is true</text>
+        <rect x="20" y="102" width="328" height="5" rx="2.5" fill="#3f6b5f"/>
+
+        <rect x="392" y="0" width="368" height="112" rx="5" fill="#fbf1ec" stroke="#d97757"/>
+        <text class="s-tiny" x="412" y="22" style="fill:#b85636">DocGuard's guard asks</text>
+        <text x="412" y="41" style="font-family:var(--sans);font-size:10px;font-weight:700;fill:#191917">“Does the map match the territory?”</text>
+        <text x="412" y="79" style="font-family:var(--sans);font-size:30px;font-weight:700;letter-spacing:-0.035em;fill:#b85636">17</text>
+        <text class="s-sub" x="412" y="95" style="font-size:8px">claims that no longer match the code</text>
+        <rect x="412" y="102" width="328" height="5" rx="2.5" fill="#f0ded5"/>
+      </svg>
+      <p class="figcap">Fig. 1 — The same documentation, under two different questions. DocGuard reports both, and never lets one stand in for the other.</p>
+    </figure>
+  </section>
+
+  <section class="rule-top">
+    <h2>The method, in one sentence each — the third column is the one most tools do not have</h2>
+    <div class="cols-3">
+      <div class="verdict good">
+        <span class="tag">verified</span>
+        <p>The doc says it; the code agrees. <strong>Believe it.</strong></p>
+      </div>
+      <div class="verdict bad">
+        <span class="tag">drift</span>
+        <p>The doc says it; the code says otherwise. <strong>DocGuard names the fix.</strong></p>
+      </div>
+      <div class="verdict judge">
+        <span class="tag">escalate</span>
+        <p>Something changed near this claim. <strong>The judgement is yours</strong> — the tool says so, rather than guessing.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="pull">
+    <p>A document can be beautifully formatted and completely wrong. A green check is worth exactly
+    as much as the question it answered.</p>
+    <div class="attrib">The design constraint everything else follows from · PHILOSOPHY.md</div>
+  </div>
+
+  <div class="footer"><span>DocGuard — Technical Brief</span><span>Page 1 of 8 · The idea</span></div>
+</div>
+
+<!-- ═══════════════ PAGE 2 — TWO TIERS ═══════════════ -->
+<div class="page">
+  <div class="masthead">
+    <div class="wordmark">Doc<span class="mark">Guard</span></div>
+    <div class="meta">02 — Two tiers</div>
+  </div>
+
+  <section style="margin-top:17px">
+    <h2>Two tiers, or the tool would overwrite your thinking</h2>
+    <p class="lede">A canonical document holds two kinds of sentence. <strong>Some are derived from code</strong>
+    — endpoints, entities, environment variables. <strong>Some are human reasoning</strong> — why the queue is
+    idempotent, which trade-off was rejected, the gotcha nobody would guess. A tool that regenerates the whole
+    file destroys the second kind every time it refreshes the first.</p>
+    <p>DocGuard keeps both in one readable markdown file, separated by HTML-comment markers. It owns the bytes
+    inside a <code>source=code</code> block and may rewrite them when the code changes. It never touches anything else.</p>
+
+    <div class="exhibit">
+      <div class="cap">The marker, as it appears in a real ARCHITECTURE.md</div>
+<pre><span class="cm">&lt;!-- docguard:section id=api-endpoints source=code --&gt;</span>
+| <span class="str">GET</span>  | <span class="str">/api/orders/:id</span>   | orders.controller.ts |
+| <span class="str">POST</span> | <span class="str">/api/orders</span>       | orders.controller.ts |
+<span class="cm">&lt;!-- /docguard:section --&gt;</span>
+The orders service is idempotent on client-supplied keys because the mobile
+client retries on any 5xx; see ADR-007 for the rejected alternative.   <span class="cm">← never regenerated</span></pre>
+    </div>
+
+    <figure style="margin-top:11px">
+      <svg viewBox="0 0 760 150" role="img" aria-label="A document with three bands: a code-owned table band, a human-owned prose band, and another code-owned band">
+        <rect x="0" y="0" width="760" height="150" rx="5" fill="#ffffff" stroke="#e6e2d8"/>
+        <text class="s-tiny" x="16" y="18">docs-canonical/ARCHITECTURE.md</text>
+        <!-- band 1: code -->
+        <rect x="16" y="28" width="500" height="30" rx="3" fill="#eef2f8" stroke="#2a5b9b"/>
+        <text class="s-md" x="24" y="40">## Component Map        &lt;!-- source=code --&gt;</text>
+        <text class="s-md" x="24" y="52">| service | file | routes |   ...   (regenerated by docguard sync)</text>
+        <text class="s-lbl" x="530" y="40" style="fill:#2a5b9b">code-derived</text>
+        <text class="s-sub" x="530" y="52">DocGuard owns it. Rewritten surgically.</text>
+        <!-- band 2: human -->
+        <rect x="16" y="64" width="500" height="44" rx="3" fill="#fbfaf7" stroke="#918d83" stroke-dasharray="3 2"/>
+        <text class="s-md" x="24" y="77">## Key Design Decisions</text>
+        <text class="s-md" x="24" y="89">We chose event sourcing over CRUD because the audit trail is a</text>
+        <text class="s-md" x="24" y="101">regulatory requirement, not a feature. Rejected: soft-delete flags.</text>
+        <text class="s-lbl" x="530" y="80">human reasoning</text>
+        <text class="s-sub" x="530" y="92">Preserved byte for byte. Guarded,</text>
+        <text class="s-sub" x="530" y="103">never generated.</text>
+        <!-- band 3: code -->
+        <rect x="16" y="114" width="500" height="26" rx="3" fill="#eef2f8" stroke="#2a5b9b"/>
+        <text class="s-md" x="24" y="126">## Tech Stack           &lt;!-- source=code --&gt;</text>
+        <text class="s-md" x="24" y="137">Node 18+ · @babel/parser (pinned) · zero test dependencies</text>
+        <text class="s-lbl" x="530" y="126" style="fill:#2a5b9b">code-derived</text>
+        <text class="s-sub" x="530" y="137">Fails Generated-Staleness if the scan disagrees.</text>
+      </svg>
+      <p class="figcap">Fig. 2 — One file, two owners. The tool refreshes the blue bands and validates the grey one; it never has permission to do the reverse.</p>
+    </figure>
+  </section>
+
+  <section class="rule-top">
+    <h2>Three verbs, one memory</h2>
+    <table>
+      <thead><tr><th>Direction</th><th>Verb</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr><td>code → docs</td><td><strong>generate</strong></td><td>Reverse-engineer a canonical memory from any codebase. Twenty-four scanners build the code-truth skeleton (routes, schemas, screens, env vars, IaC); an agent writes the prose around it.</td></tr>
+        <tr><td>code ↔ docs</td><td><strong>sync</strong></td><td>When code changes, refresh only the affected <code>source=code</code> sections. Mechanical where deterministic; a structured agent task where not.</td></tr>
+        <tr><td>docs ↔ code</td><td><strong>guard</strong></td><td>Validate that the memory still matches reality: deleted endpoints still documented, routes never documented, env vars nobody reads, requirement IDs no test traces to.</td></tr>
+      </tbody>
+    </table>
+    <p class="note" style="margin-top:8px">Any language: JavaScript/TypeScript and Python get a syntax tree; Rust, Go, Java/Kotlin, Ruby, PHP and C# get a
+    shape-aware fallback, and every finding says which produced it — silence on a fallback file is weak evidence, not a pass.</p>
+  </section>
+
+  <div class="pull" style="margin-top:14px">
+    <p>The tool is allowed to be wrong about the table. It is never allowed to be wrong about your paragraph — so it is not allowed to touch it.</p>
+    <div class="attrib">Pillar 2 of Canonical-Driven Development</div>
+  </div>
+
+  <div class="footer"><span>DocGuard — Technical Brief</span><span>Page 2 of 8 · Two tiers</span></div>
+</div>
+
+<!-- ═══════════════ PAGE 3 — ONE CLAIM, DOC TO VERDICT ═══════════════ -->
+<div class="page">
+  <div class="masthead">
+    <div class="wordmark">Doc<span class="mark">Guard</span></div>
+    <div class="meta">03 — Anatomy of a finding</div>
+  </div>
+
+  <section style="margin-top:17px">
+    <h2>One claim, from document to verdict</h2>
+    <p class="lede">Every run is the same five steps, and none of them calls a language model. The whole
+    pipeline is deterministic, offline, and reproducible — the same tree produces the same findings on
+    every machine, which is what lets a finding be a CI gate rather than an opinion.</p>
+
+    <figure>
+      <svg viewBox="0 0 760 118" role="img" aria-label="Pipeline: scan the code, read the docs, compare, classify, report">
+        <defs><marker id="arr" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#918d83"/></marker></defs>
+        <g>
+          <rect x="0" y="14" width="136" height="70" rx="5" fill="#eef2f8" stroke="#2a5b9b"/>
+          <text class="s-lbl" x="12" y="32" style="fill:#2a5b9b">1 · scan code</text>
+          <text class="s-sub" x="12" y="47">AST for JS/TS and Python;</text>
+          <text class="s-sub" x="12" y="58">routes, schemas, env reads,</text>
+          <text class="s-sub" x="12" y="69">imports, test IDs, IaC.</text>
+        </g>
+        <line x1="138" y1="49" x2="154" y2="49" stroke="#918d83" stroke-width="1.2" marker-end="url(#arr)"/>
+        <g>
+          <rect x="156" y="14" width="136" height="70" rx="5" fill="#ffffff" stroke="#e6e2d8"/>
+          <text class="s-lbl" x="168" y="32">2 · read docs</text>
+          <text class="s-sub" x="168" y="47">Canonical docs, README,</text>
+          <text class="s-sub" x="168" y="58">AGENTS.md, specs — nested</text>
+          <text class="s-sub" x="168" y="69">folders included.</text>
+        </g>
+        <line x1="294" y1="49" x2="310" y2="49" stroke="#918d83" stroke-width="1.2" marker-end="url(#arr)"/>
+        <g>
+          <rect x="312" y="14" width="136" height="70" rx="5" fill="#ffffff" stroke="#e6e2d8"/>
+          <text class="s-lbl" x="324" y="32">3 · compare</text>
+          <text class="s-sub" x="324" y="47">29 validators, each one</text>
+          <text class="s-sub" x="324" y="58">claim family against one</text>
+          <text class="s-sub" x="324" y="69">evidence source.</text>
+        </g>
+        <line x1="450" y1="49" x2="466" y2="49" stroke="#918d83" stroke-width="1.2" marker-end="url(#arr)"/>
+        <g>
+          <rect x="468" y="14" width="136" height="70" rx="5" fill="#fbf5e6" stroke="#9a6b12"/>
+          <text class="s-lbl" x="480" y="32" style="fill:#9a6b12">4 · classify</text>
+          <text class="s-sub" x="480" y="47">Five channels per finding:</text>
+          <text class="s-sub" x="480" y="58">who decides, how sure,</text>
+          <text class="s-sub" x="480" y="69">was it ever measured.</text>
+        </g>
+        <line x1="606" y1="49" x2="622" y2="49" stroke="#918d83" stroke-width="1.2" marker-end="url(#arr)"/>
+        <g>
+          <rect x="624" y="14" width="136" height="70" rx="5" fill="#ffffff" stroke="#e6e2d8"/>
+          <text class="s-lbl" x="636" y="32">5 · report</text>
+          <text class="s-sub" x="636" y="47">Terminal, JSON, SARIF,</text>
+          <text class="s-sub" x="636" y="58">JUnit, badge; exit 0/1/2;</text>
+          <text class="s-sub" x="636" y="69">an agent-ready fix prompt.</text>
+        </g>
+        <text class="s-tiny" x="0" y="106">no network · no LLM at validation time · one pinned dependency (@babel/parser, with a regex fallback) · Node 18, 20, 22, 24</text>
+      </svg>
+      <p class="figcap">Fig. 3 — The pipeline. Step 4 is where DocGuard differs from a linter: a finding is not one number, it is five independent answers.</p>
+    </figure>
+  </section>
+
+  <section class="rule-top">
+    <h2>What a finding carries</h2>
+    <p>A finding used to answer one question — <em>how worried should you be?</em> — with one field. That
+    field was doing three jobs: how certain the detector was, whether a human had to look, and whether the
+    number had ever been checked against reality. DocGuard split it into five channels that are
+    <strong>independent</strong>: a blocking error can still be an escalation, and a high-confidence
+    observation can still be one only you can judge.</p>
+    <table class="tight">
+      <thead><tr><th>Channel</th><th>The question it answers</th><th>Values</th></tr></thead>
+      <tbody>
+        <tr><td>severity</td><td>Does CI block?</td><td><code>error</code> · <code>warn</code> · <code>info</code></td></tr>
+        <tr><td>disposition</td><td>Who decides — the tool or you?</td><td><span class="v-good"><code>act</code></span> DocGuard asserts a defect and names the correction · <span class="v-judge"><code>escalate</code></span> the judgement is yours</td></tr>
+        <tr><td>confidence</td><td>How sure is the detector of its <em>observation</em>?</td><td><code>high</code> · <code>low</code></td></tr>
+        <tr><td>evidence</td><td>Has the reviewed corpus ever measured this code?</td><td><code>measured</code> with <em>n</em> and a Wilson bound · <code>not-measured</code> (a maintainer's prior, nothing more)</td></tr>
+        <tr><td>parserTier</td><td>Which analyzer could see this file?</td><td><code>js-ast</code> · <code>py-ast</code> · <code>regex-fallback</code> · <code>fallback-language</code> · <code>mixed</code></td></tr>
+      </tbody>
+    </table>
+    <div class="cols-2" style="margin-top:12px">
+      <div class="verdict judge">
+        <span class="tag">escalate · confidence: high</span>
+        <p><em>“13 code commits since ARCHITECTURE.md was reviewed.”</em> The count comes from <code>git log</code>, so it is exact — and it proves only that a review is <strong>due</strong>, never that the document is wrong. Editing until it stops printing fixes nothing.</p>
+      </div>
+      <div class="verdict good">
+        <span class="tag">act · confidence: high</span>
+        <p><em>“README says 15 validators; the package ships 29.”</em> Both sides are counted from disk, so the tool may rewrite the number — and it stamps the provenance of the count it used, so a later reader can see the fix was about the same subject.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="pull">
+    <p>Across fourteen real repositories, 671 findings split 234 the tool would fix and 437 it handed to a human. It says which is which on every line.</p>
+    <div class="attrib">CHANGELOG · calibrated finding channels, September 2026</div>
+  </div>
+
+  <div class="footer"><span>DocGuard — Technical Brief</span><span>Page 3 of 8 · Anatomy of a finding</span></div>
+</div>
+
+<!-- ═══════════════ PAGE 4 — THE DETECTORS ═══════════════ -->
+<div class="page">
+  <div class="masthead">
+    <div class="wordmark">Doc<span class="mark">Guard</span></div>
+    <div class="meta">04 — The detectors</div>
+  </div>
+
+  <section style="margin-top:17px">
+    <h2>Twenty-nine detectors, and every one had to earn default-on</h2>
+    <p class="lede">Each validator compares one family of documented claims against one source of evidence.
+    They are grouped here by what they read, because that is what decides how much a finding is worth.</p>
+
+    <div class="statband four">
+      <div><div class="fig indigo">29</div><div class="cap">validator modules, all on by default</div><div class="src">cli/validators/</div></div>
+      <div><div class="fig indigo">24</div><div class="cap">code scanners feeding them, two full AST parsers</div><div class="src">cli/scanners/</div></div>
+      <div><div class="fig sage">1</div><div class="cap">pinned runtime dependency, with a regex fallback</div><div class="src">@babel/parser</div></div>
+      <div><div class="fig sage">0</div><div class="cap">model, network or telemetry calls at validation time</div><div class="src">PRIVACY.md</div></div>
+    </div>
+  </section>
+
+  <section class="rule-top">
+    <table class="tight">
+      <thead><tr><th>Family</th><th>Reads</th><th>Validators</th><th>The claim it tests</th></tr></thead>
+      <tbody>
+        <tr><td>Code truth <span class="v-good">· 9</span></td><td>AST: routes, schemas, env reads, imports</td><td>Docs-Sync · Docs-Diff · API-Surface · Schema-Sync · Environment · Architecture · Surface-Sync · Docs-Coverage · Generated-Staleness</td><td>“This endpoint / entity / variable / layer rule exists and looks like this.” Both sides read from disk: the findings the tool fixes itself.</td></tr>
+        <tr><td>Structure <span class="v-good">· 6</span></td><td>File tree, headings, manifests</td><td>Structure (with Doc Sections) · Changelog · Document-Lifecycle · Spec-Registry · Spec-Kit · Metadata-Sync</td><td>“Required chapters exist, specs have FR-IDs and phases, versions agree, retired plans left the tree.” Completeness, not correctness — and it says so.</td></tr>
+        <tr><td>References <span class="v-good">· 4</span></td><td>Links, symbols, IDs across two revisions</td><td>Cross-Reference · Reference-Existence · Traceability · Test-Spec</td><td>“This link resolves; this symbol still exists; this requirement ID has a test; tests live where TEST-SPEC says.”</td></tr>
+        <tr><td>Change &amp; time <span class="v-judge">· 3</span></td><td><code>git log</code>, the diff since a ref</td><td>Freshness · Diff-Suspicion · Drift-Comments</td><td>“Something changed near this claim.” Exact observations, escalated judgements: a review is <em>due</em>, the doc is not declared wrong.</td></tr>
+        <tr><td>Numbers &amp; self <span class="v-good">· 3</span></td><td>Counts on disk, typed JSON, its own package</td><td>Metrics-Consistency · Canonical-Sync · Evidence</td><td>“The number in this sentence equals the number on disk.” Includes the tool's own README, so its count claims are checked, not remembered.</td></tr>
+        <tr><td>Quality &amp; hygiene <span class="v-judge">· 4</span></td><td>Prose metrics, secret patterns, TODOs</td><td>Doc-Quality · API-Doc-Smells · TODO-Tracking · Security</td><td>“Readable, not bloated, not documented in name only; no secret committed; no TODO untracked.” Soft by design.</td></tr>
+      </tbody>
+    </table>
+    <p class="note" style="margin-top:8px">A validator with nothing to validate returns <strong>N/A with a reason</strong>, never a pass: Canonical-Sync is N/A
+    on every repository but DocGuard's own; Diff-Suspicion is N/A without git history. A green line always says what it looked at.</p>
+  </section>
+
+  <section class="rule-top">
+    <h2>The bar for shipping one</h2>
+    <div class="cols-3">
+      <div><h3>Built from a method</h3><p class="note">Where a published method exists, the detector implements it (page 5). Where none does, the finding's own help text calls the heuristic a heuristic.</p></div>
+      <div><h3>Run read-only on real repos</h3><p class="note">First-run conditions on production codebases; every finding hand-classified as true, false, or inert (page 6).</p></div>
+      <div><h3>Kept, tuned, or cut</h3><p class="note">A detector that floods gets precision levers and is re-measured. One that adds nothing is removed — not shipped default-off.</p></div>
+    </div>
+  </section>
+
+  <div class="footer"><span>DocGuard — Technical Brief</span><span>Page 4 of 8 · The detectors</span></div>
+</div>
+
+<!-- ═══════════════ PAGE 5 — THE RESEARCH ═══════════════ -->
+<div class="page">
+  <div class="masthead">
+    <div class="wordmark">Doc<span class="mark">Guard</span></div>
+    <div class="meta">05 — The research</div>
+  </div>
+
+  <section style="margin-top:17px">
+    <h2>Built from papers, then measured on real repositories</h2>
+    <p class="lede">The change-aware detectors are not inventions. Each implements a published result, and each needed
+    a precision lever the paper never had to worry about before it could run unattended in someone else's CI.</p>
+    <table class="tight">
+      <thead><tr><th>Detector</th><th>Published basis</th><th>What was taken</th><th>What had to be added before default-on</th></tr></thead>
+      <tbody>
+        <tr><td>Diff-Suspicion</td><td>Outdated-comment detection, arXiv 2010.01625</td><td>A deterministic rule — prose whose tokens overlap a deleted span of the diff is suspect — reached F1 74.7, beating every post-hoc neural model. Applied to docs instead of comments.</td><td>Two signals must <em>both</em> hold (the doc references the changed file <em>and</em> shares its removed symbols); a generic-token filter; a per-doc cap. See Fig. 4.</td></tr>
+        <tr><td>Reference-Existence</td><td>Two-revision symbol check, arXiv 2212.01479</td><td>A backticked symbol present when the doc was last updated but gone at HEAD is outdated; field-tested at roughly 50% maintainer acceptance.</td><td>CLI flags excluded and the two-revision gate made mandatory — the two documented false-positive modes of the source method.</td></tr>
+        <tr><td>API-Doc-Smells</td><td>API-documentation smell taxonomy, 1,000-unit benchmark</td><td>The two smells with strong deterministic detectors: Bloated (F1 0.90) and Lazy (F1 0.95), keyed on documentation length per signature-headed section.</td><td>The three semantic smells that need a BERT model were left out on purpose and routed to staged agent judgement instead.</td></tr>
+        <tr><td>Finding labels</td><td>TRACE — calibrated explainability, IEEE TMLCN 2026</td><td>The HIGH / MEDIUM / LOW vocabulary, used as deterministic strata (a validator's check pass-ratio).</td><td>An explicit statement that the strata were never calibrated against outcomes — precision is the quantity DocGuard actually measures (page 6).</td></tr>
+        <tr><td>Doc generation</td><td>AITPG — multi-agent debate + RAG, IEEE TSE 2026</td><td>The staged prose pattern behind <code>generate</code> and <code>diagnose</code>: the CLI structures, the agent writes, the validators check.</td><td>Nothing generated is trusted: every <code>source=code</code> section is re-validated on the next run.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="rule-top">
+    <h2>And the paper that argues against the whole idea</h2>
+    <div class="cols-2">
+      <div>
+        <p><em>Evaluating AGENTS.md</em> (arXiv 2602.11988, revised June 2026) found that repository context files
+        did not generally improve agent task success in its evaluated settings, and increased inference cost. It also
+        found agents generally followed the instructions they were given.</p>
+        <p>DocGuard's README cites this study in its own “Why” section and says plainly that the results
+        <strong>do not establish DocGuard's effectiveness</strong>. They motivate two things the tool now does: keep
+        context concise (retired plans leave the tree; <code>memory</code> packs task-specific context, not everything),
+        and measure outcomes rather than assume them.</p>
+      </div>
+      <div>
+        <figure>
+          <svg viewBox="0 0 360 132" role="img" aria-label="Diff-Suspicion raw findings versus after precision levers">
+            <text class="s-tiny" x="0" y="10">Diff-Suspicion on one real route-inventory doc · v0.31 sweep</text>
+            <text class="s-lbl" x="0" y="38">raw rule</text>
+            <rect x="80" y="26" width="270" height="16" rx="3" fill="#f0ded5" stroke="#d97757"/>
+            <text class="s-v" x="86" y="38" style="fill:#b85636">45 findings — unreviewable</text>
+            <text class="s-lbl" x="0" y="72">+ subject binding</text>
+            <rect x="80" y="60" width="126" height="16" rx="3" fill="#fbf1ec" stroke="#d97757"/>
+            <text class="s-v" x="86" y="72" style="fill:#b85636">path/module refs only</text>
+            <text class="s-lbl" x="0" y="106">+ filter + cap</text>
+            <rect x="80" y="94" width="54" height="16" rx="3" fill="#eef4f1" stroke="#3f6b5f"/>
+            <text class="s-v" x="86" y="106" style="fill:#3f6b5f">capped</text>
+            <text class="s-sub" x="142" y="106">a reviewable set, zero verified false positives</text>
+            <line x1="80" y1="18" x2="80" y2="118" stroke="#e6e2d8"/>
+          </svg>
+          <p class="figcap">Fig. 4 — Why a paper's F1 is the start, not the end. The same rule, three levers later.</p>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <div class="pull">
+    <p>The recall-maximizing variants of these detectors were built, tested, and rejected: a false-positive flood destroys trust faster than a miss does.</p>
+    <div class="attrib">VALIDATION.md · “What we do not claim”</div>
+  </div>
+
+  <div class="footer"><span>DocGuard — Technical Brief</span><span>Page 5 of 8 · The research</span></div>
+</div>
+
+<!-- ═══════════════ PAGE 6 — THE MEASUREMENT ═══════════════ -->
+<div class="page">
+  <div class="masthead">
+    <div class="wordmark">Doc<span class="mark">Guard</span></div>
+    <div class="meta">06 — The measurement</div>
+  </div>
+
+  <section style="margin-top:17px">
+    <h2>The number comes with its n, or it does not ship</h2>
+    <p class="lede">Most tools publish an accuracy figure. DocGuard publishes a frozen benchmark, the cases behind it,
+    the confidence interval, the caveat, and a loader that refuses to quote the number if any of those
+    have been edited by hand.</p>
+
+    <div class="statband">
+      <div><div class="fig sage">1.000</div><div class="cap">finding precision · 12 expected findings, 0 unexpected</div><div class="src">Wilson 95% · 0.757 – 1.000</div></div>
+      <div><div class="fig sage">0.000</div><div class="cap">false-positive rate on 12 clean controls</div><div class="src">Wilson 95% · 0.000 – 0.243</div></div>
+      <div><div class="fig clay">0.7%</div><div class="cap">of 671 real-world findings carry any benchmark evidence at all (5 of 671)</div><div class="src">14 repositories · disclosed, not hidden</div></div>
+    </div>
+
+    <div class="cols-2" style="margin-top:14px">
+      <div>
+        <figure>
+          <svg viewBox="0 0 360 96" role="img" aria-label="Twenty-four benchmark cases: twelve defects all caught, twelve clean controls all quiet">
+            <text class="s-tiny" x="0" y="10">12 defect cases · 12 clean controls · 12 repository groups · 12 causal families</text>
+            <g>
+              <text class="s-lbl" x="0" y="40">defect</text>
+              <circle cx="60" cy="36" r="6" fill="#3f6b5f"/><circle cx="78" cy="36" r="6" fill="#3f6b5f"/><circle cx="96" cy="36" r="6" fill="#3f6b5f"/><circle cx="114" cy="36" r="6" fill="#3f6b5f"/><circle cx="132" cy="36" r="6" fill="#3f6b5f"/><circle cx="150" cy="36" r="6" fill="#3f6b5f"/><circle cx="168" cy="36" r="6" fill="#3f6b5f"/><circle cx="186" cy="36" r="6" fill="#3f6b5f"/><circle cx="204" cy="36" r="6" fill="#3f6b5f"/><circle cx="222" cy="36" r="6" fill="#3f6b5f"/><circle cx="240" cy="36" r="6" fill="#3f6b5f"/><circle cx="258" cy="36" r="6" fill="#3f6b5f"/>
+              <text class="s-sub" x="276" y="39">12 found</text>
+            </g>
+            <g>
+              <text class="s-lbl" x="0" y="70">control</text>
+              <circle cx="60" cy="66" r="6" fill="#ffffff" stroke="#3f6b5f" stroke-width="1.4"/><circle cx="78" cy="66" r="6" fill="#ffffff" stroke="#3f6b5f" stroke-width="1.4"/><circle cx="96" cy="66" r="6" fill="#ffffff" stroke="#3f6b5f" stroke-width="1.4"/><circle cx="114" cy="66" r="6" fill="#ffffff" stroke="#3f6b5f" stroke-width="1.4"/><circle cx="132" cy="66" r="6" fill="#ffffff" stroke="#3f6b5f" stroke-width="1.4"/><circle cx="150" cy="66" r="6" fill="#ffffff" stroke="#3f6b5f" stroke-width="1.4"/><circle cx="168" cy="66" r="6" fill="#ffffff" stroke="#3f6b5f" stroke-width="1.4"/><circle cx="186" cy="66" r="6" fill="#ffffff" stroke="#3f6b5f" stroke-width="1.4"/><circle cx="204" cy="66" r="6" fill="#ffffff" stroke="#3f6b5f" stroke-width="1.4"/><circle cx="222" cy="66" r="6" fill="#ffffff" stroke="#3f6b5f" stroke-width="1.4"/><circle cx="240" cy="66" r="6" fill="#ffffff" stroke="#3f6b5f" stroke-width="1.4"/><circle cx="258" cy="66" r="6" fill="#ffffff" stroke="#3f6b5f" stroke-width="1.4"/>
+              <text class="s-sub" x="276" y="69">12 quiet</text>
+            </g>
+            <text class="s-tiny" x="0" y="92">per-detector cells are small: security n=20 · structure n=2 · architecture n=0 (null)</text>
+          </svg>
+          <p class="figcap">Fig. 5 — The frozen corpus, benchmarks/baseline.json. Every dot is a retained case the loader recomputes from.</p>
+        </figure>
+      </div>
+      <div>
+        <div class="exhibit">
+          <div class="cap">The caveat, verbatim from the envelope — the loader rejects the file if this text is changed</div>
+<pre>Benchmark precision on a deliberately balanced corpus of 12 defect and 12 clean-control cases … This is DocGuard's precision on labelled cases, <span class="bad">not the probability that a finding in your repository is real</span>; quote every ratio with its n and Wilson 95% bound.</pre>
+        </div>
+        <p class="note">DocGuard does not publish a calibration document. The real base rate of a stale claim is
+        nowhere near the corpus's 50/50 split, so a probability read off this corpus would mislead — and the
+        README says so in the same paragraph that cites the number.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="rule-top">
+    <h2>Three mechanisms that keep the number honest</h2>
+    <div class="cols-3">
+      <div>
+        <h3>Fail-closed loader</h3>
+        <p class="note">The baseline is an envelope of retained cases plus derived ratios. The loader recomputes every ratio
+        from the cases and refuses an envelope whose numbers, caveat, or measure have been hand-edited. A test asserts each
+        rejection path; TestGuard probes that the guard cannot be silently removed.</p>
+      </div>
+      <div>
+        <h3>Adjudication record</h3>
+        <p class="note">The corpus could only absorb a false positive that had already been repaired — so a disagreement the
+        maintainers reviewed and declined to act on left no trace, and “precision 1.0” described the contribution pipeline
+        rather than the detectors. An adjudication row now records the disagreement without corrupting the measurement.</p>
+      </div>
+      <div>
+        <h3>Feedback samples the unmeasured</h3>
+        <p class="note"><code>docguard feedback</code> used to sample only findings the confidence label already doubted — the
+        channel that would validate the label sampled nothing it could learn from. Selection is now “unmeasured code, or low
+        confidence”, and the command states what it left out.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="pull">
+    <p>“Precision 1.000” is true, and it is a claim about twelve labelled cases. The tool is built to stop that sentence from ever being shortened.</p>
+    <div class="attrib">specs/007 · Independent Precision Evidence Loop</div>
+  </div>
+
+  <div class="footer"><span>DocGuard — Technical Brief</span><span>Page 6 of 8 · The measurement</span></div>
+</div>
+
+<!-- ═══════════════ PAGE 7 — FIELD REPORTS AND DOGFOODING ═══════════════ -->
+<div class="page">
+  <div class="masthead">
+    <div class="wordmark">Doc<span class="mark">Guard</span></div>
+    <div class="meta">07 — Field reports</div>
+  </div>
+
+  <section style="margin-top:17px">
+    <h2>Field reports become tests, not tickets</h2>
+    <p class="lede">Ninety-two releases in six months. The cadence is not the point; what fed it is. Each report
+    from a real working session — most of them written by an AI agent that hit friction on a real tree —
+    was reproduced as a regression test <em>with a control</em>: the pre-fix behaviour, asserted, so a
+    future change cannot silently re-break it.</p>
+
+    <figure>
+      <svg viewBox="0 0 760 150" role="img" aria-label="Timeline from March to September 2026 with release milestones and field reports">
+        <line x1="30" y1="60" x2="740" y2="60" stroke="#191917" stroke-width="1.2"/>
+        <!-- month ticks: Mar12=0 Apr1=20 May1=50 Jun1=81 Jul1=111 Aug1=142 Sep1=173 ; x = 30 + d*3.66 -->
+        <g class="s-tiny">
+          <text x="30" y="76">Mar</text><text x="103" y="76">Apr</text><text x="213" y="76">May</text><text x="326" y="76">Jun</text><text x="436" y="76">Jul</text><text x="550" y="76">Aug</text><text x="663" y="76">Sep</text>
+        </g>
+        <!-- milestones above -->
+        <g>
+          <circle cx="30" cy="60" r="4" fill="#2a5b9b"/><text class="s-lbl" x="30" y="30" style="fill:#2a5b9b">v0.1.0</text><text class="s-sub" x="30" y="41">first release</text>
+          <circle cx="304" cy="60" r="4" fill="#2a5b9b"/><text class="s-lbl" x="270" y="30" style="fill:#2a5b9b">v0.19 · May 26</text><text class="s-sub" x="270" y="41">Canonical-Sync: the tool</text><text class="s-sub" x="270" y="51">starts auditing its own README</text>
+          <circle cx="458" cy="60" r="4" fill="#2a5b9b"/><text class="s-lbl" x="440" y="30" style="fill:#2a5b9b">v0.31–0.32 · July</text><text class="s-sub" x="440" y="41">research batch; six-repo</text><text class="s-sub" x="440" y="51">read-only sweeps</text>
+          <circle cx="711" cy="60" r="4" fill="#2a5b9b"/><text class="s-lbl" x="620" y="30" style="fill:#2a5b9b">v0.37–0.42 · Sep 14–18</text><text class="s-sub" x="620" y="41">R1–R9: lifecycle, benchmark,</text><text class="s-sub" x="620" y="51">evidence, channels — 4 in a day</text>
+        </g>
+        <!-- field reports below -->
+        <g>
+          <circle cx="392" cy="60" r="4" fill="#d97757"/><text class="s-lbl" x="360" y="98" style="fill:#b85636">v0.27 · Jun 19</text><text class="s-sub" x="360" y="109">LLM field report #3:</text><text class="s-sub" x="360" y="119">findings architecture, group-A FPs</text>
+          <circle cx="443" cy="60" r="4" fill="#d97757"/><text class="s-lbl" x="480" y="98" style="fill:#b85636">v0.29 · Jul 3</text><text class="s-sub" x="480" y="109">report #6: a wrong “16 extractors”</text><text class="s-sub" x="480" y="119">shipped past a green guard</text>
+          <circle cx="722" cy="60" r="4" fill="#d97757"/><text class="s-lbl" x="620" y="98" style="fill:#b85636">Sep 17–22</text><text class="s-sub" x="620" y="109">reports 0415 / 0420; and the</text><text class="s-sub" x="620" y="119">tool's own README (below)</text>
+        </g>
+        <text class="s-tiny" x="30" y="143">8 field-report test files · 195 test files · 2,085 tests at v0.42.0 · Node 18 / 20 / 22 / 24 on every push</text>
+      </svg>
+      <p class="figcap">Fig. 6 — Blue above the line: capability. Clay below: something real broke, and became a test.</p>
+    </figure>
+  </section>
+
+  <section class="rule-top">
+    <h2>Dogfooding, including the part that is embarrassing</h2>
+    <p>DocGuard guards its own repository on every push: <code>guard</code>, <code>score</code>, <code>diff</code>, <code>badge</code>,
+    and the packed npm tarball run without installed dependencies. Its README count claims are machine-governed. Its own claims are
+    fault-probed by its sibling, TestGuard. Three things that discipline found:</p>
+    <div class="cols-3">
+      <div class="verdict good">
+        <span class="tag">found · v0.32</span>
+        <p>The semantic-claim extractor ignored <code>.docguardignore</code>; an excluded audit contributed 28 of 39 “unverified claims”. Fixed; the count fell to 12 — and one of those 12 was <strong>real drift</strong>, a stale suite-runtime claim in TEST-SPEC.md.</p>
+      </div>
+      <div class="verdict good">
+        <span class="tag">found · v0.32</span>
+        <p>REF002 flagged DocGuard's own source: doc comments used realistic <code>ADR-012</code> examples and fixtures cited ADRs. Non-product scoping and digit-free placeholders; shipped with zero self-findings.</p>
+      </div>
+      <div class="verdict bad">
+        <span class="tag">missed · Sep 22</span>
+        <p>The README said <strong>“33 tests”</strong> from March 15 through all 92 releases while the suite grew past 2,000 — and every self-guard was green. Metrics-Consistency had computed the test count since v0.8.2 and never compared it to anything. A human found it, not the tool.</p>
+      </div>
+    </div>
+    <div class="exhibit drift" style="margin-top:12px">
+      <div class="cap">What the fix could and could not do — PR #448</div>
+<pre>declared test cases (static, AST)   <span class="num">1,721</span>     reported by node:test   <span class="num">2,085</span>
+<span class="cm">// loops generate cases a static count cannot see — so the static number is a FLOOR.</span>
+MET003 flags a documented count <span class="bad">below</span> the floor (stale for certain) and passes anything above it.
+It carries <span class="bad">no mechanical fix</span>: writing the floor would replace a stale number with a wrong one.</pre>
+    </div>
+    <p class="note">A green self-guard proves the checks that exist passed, not that the right checks exist.
+    The honest version of this story — a half-built check, a human reader, a lower-bound design that refuses to
+    guess — is the loop this page is about, and it is why the tool's limitations page comes next.</p>
+  </section>
+
+  <div class="footer"><span>DocGuard — Technical Brief</span><span>Page 7 of 8 · Field reports</span></div>
+</div>
+
+<!-- ═══════════════ PAGE 8 — WHAT IT DOES NOT CLAIM ═══════════════ -->
+<div class="page">
+  <div class="masthead">
+    <div class="wordmark">Doc<span class="mark">Guard</span></div>
+    <div class="meta">08 — Limits and fit</div>
+  </div>
+
+  <section style="margin-top:17px">
+    <h2>What it does not claim</h2>
+    <div class="cols-2">
+      <div><ul class="ticks">
+        <li><strong>No recall guarantee.</strong> Precision-first means some real drift is missed by design. The variants that caught more were tested and rejected because they also flooded.</li>
+        <li><strong>No judgement of prose.</strong> Whether a paragraph is <em>true</em> is never auto-decided. Exact declarations in <code>.docguard-evidence.json</code> can verify selected statements against typed local evidence; every other statement stays marked unverified, and the count of unverified claims is printed on the badge.</li>
+        <li><strong>No calibrated probabilities.</strong> HIGH / MEDIUM / LOW are deterministic strata. The one number DocGuard measures is precision on labelled cases, with n and a bound, and a caveat that cannot be deleted.</li>
+      </ul></div>
+      <div><ul class="ticks">
+        <li><strong>Not proof that context helps.</strong> The AGENTS.md study on page 5 is cited in the README precisely because it cuts the other way. What DocGuard offers is a way to find out on your repository, with outcomes measured.</li>
+        <li><strong>Soft by default.</strong> The research-backed detectors ship as low-confidence warnings. Exit code 2 still fails an ordinary shell step; the severity policy is yours.</li>
+        <li><strong>A maturity score is not a verdict.</strong> 100/100 means the map is whole. Only <code>guard</code> says whether it is true, and the two are printed apart on purpose.</li>
+      </ul></div>
+    </div>
+  </section>
+
+  <section class="rule-top">
+    <h2>Where it fits</h2>
+    <table class="tight">
+      <thead><tr><th>Alongside</th><th>What that does</th><th>What DocGuard adds</th></tr></thead>
+      <tbody>
+        <tr><td>GitHub Spec Kit</td><td>Generates feature specs, plans, tasks — spec → code, once.</td><td>Governance after generation: drift tracking, lifecycle (retire what shipped), spec-quality validation. DocGuard is an official Spec Kit community extension.</td></tr>
+        <tr><td>AGENTS.md</td><td>One instruction file: build, test, style.</td><td>AGENTS.md is one of the required files. DocGuard validates it, packs task-specific context from the canonical docs, and keeps every agent on the same map.</td></tr>
+        <tr><td>Kiro · Cursor rules</td><td>IDE-bound spec or rule files.</td><td>Portable across any IDE and any agent; enforced in CI rather than read by one editor.</td></tr>
+        <tr><td>TestGuard</td><td>Breaks a promise on purpose and asks whether a test noticed.</td><td>The other half of the same question: whether the <em>documentation</em> of that promise is still true. They share an evidence format, and TestGuard fault-probes DocGuard's own claims in CI.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="rule-top">
+    <h2>Three more things that follow from it</h2>
+    <div class="cols-3">
+      <div>
+        <h3>Ships everywhere, phones nowhere</h3>
+        <p class="note">npm and PyPI packages with provenance attestation, a GitHub Action, a Docker image, an MCP server for Claude, Cursor and any MCP client, a Spec Kit extension. No telemetry, no analytics, no network at validation time.</p>
+      </div>
+      <div>
+        <h3>Evidence, not output</h3>
+        <p class="note">JSON, SARIF and JUnit with all five channels on every finding; a badge that prints the unverified-claim count next to the check count; a benchmark envelope with its cases attached.</p>
+      </div>
+      <div>
+        <h3>Built for AI-written code</h3>
+        <p class="note">When an agent writes both the code and the docs, the failure mode is not “no docs”. It is confident, plausible documentation of a system that no longer exists. That is exactly what a deterministic comparison against the tree can see.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="pull">
+    <p>A score tells you the map is complete. DocGuard tells you which parts of the map still match the territory — and which parts it cannot tell.</p>
+    <div class="attrib">github.com/raccioly/docguard · npm docguard-cli · MIT · Ricardo Accioly</div>
+  </div>
+
+  <div class="footer"><span>DocGuard — Technical Brief</span><span>Page 8 of 8 · Limits and fit</span></div>
+</div>
+
+</body>
+</html>
