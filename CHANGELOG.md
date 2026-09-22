@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.42.1] - 2026-09-22
+
+Automated weekly release — batches everything merged since `v0.42.0`.
+
+### Changed
+
+- fix: stop the release cut failing on its own version stamp (#445)
+- chore: scan this repo with the validator it ships alongside (#444)
+- fix: untrack a generated module's stale backup and ignore *.bak (#443)
+- fix: carry the finding channels to every surface that reads a guard run (#442)
+- fix: stop a version bump from flipping the verdict on an unchanged tree (#441)
+- fix: untrack .codex/hooks.json and ignore local agent tooling (#440)
+- feat: separate the three channels a finding conflates (#439)
+
+
 ### Added
 - **Three channels on every finding, replacing one field that answered three
   questions.** `confidence` described the detector's certainty, decided whether
