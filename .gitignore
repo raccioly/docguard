@@ -46,4 +46,9 @@ websec-out/
 # OpenWolf private session memory (machine-local, not shared)
 .claude/openwolf-memory/
 .wolf/
+# Local agent tooling: .codex/hooks.json points at .wolf/hooks/*.js, which this
+# repository ignores, so shipping it hands contributors a config referencing
+# scripts they do not have. Committed by mistake in f1fef7a; ignored here so a
+# future `git add -A` cannot repeat it.
+.codex/
 .testguard/
