@@ -26,6 +26,8 @@ import { existsSync, readFileSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { detectOpenAPI } from '../scanners/doc-tools.mjs';
 import { scanRoutesDeep } from '../scanners/routes.mjs';
+import { detectEcosystems } from '../scanners/project-type.mjs';
+import { summarizeTiers, tierApplicability } from '../shared-source.mjs';
 import { parseApiReferenceDoc, compareEndpoints, endpointKey } from '../scanners/api-doc.mjs';
 import { collectPackageJsons, getWorkspaceDirs } from '../shared-source.mjs';
 import { relPosix } from '../shared-ignore.mjs';
@@ -134,7 +136,32 @@ export function detectSpecDivergence(projectDir, config) {
   return { specs, divergent, authoritative: specs[0].relPath };
 }
 
+/**
+ * Which framework's routes should the scanner look for?
+ *
+ * This read used to consider `package.json` alone, so it returned '' for every
+ * Python, Go, Rust, Java and Ruby project. `scanRoutesDeep` gates its Flask,
+ * FastAPI, Django, Gin, Axum, Spring and Rails walkers on the framework name,
+ * so none of them could ever run from here: a Flask service with undocumented
+ * endpoints reported `no-matches` — "no checkable inputs matched this
+ * detector" — and the API surface went silently unchecked. The scanners
+ * themselves worked; nothing reached them.
+ *
+ * `detectEcosystems` already reads pyproject/requirements/Cargo/go.mod/pom and
+ * classifies the framework, honours `.docguardignore`, and skips fixture and
+ * test directories, so the whole polyglot surface comes from one place. The
+ * package.json read stays as the fallback for a JS project whose manifest sits
+ * outside the ecosystem walk (a workspace member reached through config).
+ */
 function detectFramework(projectDir, config) {
+  const names = [];
+  try {
+    for (const eco of detectEcosystems(projectDir, config)) {
+      if (eco.framework) names.push(eco.framework);
+    }
+  } catch { /* fall through to the package.json read */ }
+  if (names.length > 0) return [...new Set(names)].join(' ');
+
   const deps = {};
   for (const { pkg } of collectPackageJsons(projectDir, config)) {
     Object.assign(deps, pkg.dependencies || {}, pkg.devDependencies || {});
@@ -164,15 +191,22 @@ export function resolveApiSurface(projectDir, config) {
   // Fallback: monorepo-aware code route scan
   const framework = detectFramework(projectDir, config);
   const routes = scanRoutesDeep(projectDir, { framework }, { openapi: { found: false } }, { config });
+  // The scan's analyzer tier travels with the surface, INCLUDING when the scan
+  // found nothing. A Flask project read without a `python3` interpreter yields
+  // zero routes — the pattern fallback cannot match `@app.route(...)` at all —
+  // and an empty surface is indistinguishable from a project with no routes
+  // unless the tier says which one this is.
+  const scanTier = routes.scanTier || null;
   if (routes.length) {
     return {
       endpoints: routes.map(r => ({ method: r.method, path: r.path })),
       confidence: 'code',
       source: 'code-scan',
+      tier: summarizeTiers(routes),
     };
   }
 
-  return { endpoints: [], confidence: 'none', source: null };
+  return { endpoints: [], confidence: 'none', source: null, tier: scanTier };
 }
 
 /**
@@ -194,9 +228,10 @@ export function computeApiSurfaceDrift(projectDir, config) {
 
   if (surface.confidence === 'none' || documented.length === 0) {
     return { applicable: false, confidence: surface.confidence, source: surface.source,
-      documented, documentedButAbsent: [], presentButUndocumented: [], matched: [] };
+      documented, documentedButAbsent: [], presentButUndocumented: [], matched: [], tier: surface.tier || null };
   }
 
+  const tier = surface.tier || null;
   const cmp = compareEndpoints(documented, surface.endpoints);
   // The legacy writer treats spec-confidence documentedButAbsent as deletable.
   // Keep contract omissions separate from their removable subset. An omission
@@ -228,6 +263,7 @@ export function computeApiSurfaceDrift(projectDir, config) {
     contractMismatches,
     presentButUndocumented: cmp.presentButUndocumented,
     matched: cmp.matched,
+    tier,
   };
 }
 
@@ -319,6 +355,16 @@ export function validateApiSurface(projectDir, config) {
   }
 
   const drift = computeApiSurfaceDrift(projectDir, config);
+  // Disclose a degraded analyzer tier as reduced COVERAGE, never as a reduced
+  // finding. What the pattern tier did find is real; what it could not see is
+  // the part a reader has to know about — and an empty surface from a degraded
+  // tier is exactly the case that used to look like a clean "no routes".
+  // (calibrated-finding-channels#FR-012)
+  const tierGap = tierApplicability(drift.tier, 'source file');
+  // Findings drawn from the code scan carry the tier that produced them, so a
+  // reader can tell a conclusion built on a syntax tree from one built on a
+  // pattern match without going back to the validator's coverage line.
+  const codeTier = (drift.tier && drift.tier.tier) || 'not-applicable';
 
   // ── Multi-spec divergence (independent of the API-REFERENCE doc) ──
   const divergence = detectSpecDivergence(projectDir, config);
@@ -379,10 +425,18 @@ export function validateApiSurface(projectDir, config) {
   if (!drift.applicable) {
     // Nothing to validate against the API-REFERENCE doc — but the spec-vs-route
     // check above may still have produced findings.
+    //
+    // This is the branch that most needed the tier. "No surface found" and
+    // "no surface VISIBLE to the analyzer that ran" are different facts, and
+    // this path reported both as `no-matches`: a Flask service scanned without
+    // a python3 interpreter yields zero routes, because the pattern fallback
+    // cannot match `@app.route(...)` at all, and the result was indistinguishable
+    // from a project that genuinely registers none.
     return {
       ...resultFromFindings(findings, { passed: specRoutePassed, total: specRouteTotal }),
       fixes,
       authoritativeSpec: drift.source || specRoute.specPath,
+      ...(tierGap ? { applicability: tierGap } : {}),
     };
   }
 
@@ -401,7 +455,7 @@ export function validateApiSurface(projectDir, config) {
           : 'Code presence is unknown: no routes were extracted.';
       findings.push({
         ...mkFinding({
-          code: 'API004', validator: 'apiSurface', severity: 'error',
+          code: 'API004', validator: 'apiSurface', parserTier: codeTier, severity: 'error',
           confidence: 'high', // certain contract omission, NOT certain code absence
           message: `Documented endpoint missing from OpenAPI contract (${source}): ${e.method} ${e.path} (${API_DOC}). ${codeDescription}`,
           location: API_DOC,
@@ -414,7 +468,7 @@ export function validateApiSurface(projectDir, config) {
     }
     if (extra > 0) {
       findings.push(mkFinding({
-        code: 'API004', validator: 'apiSurface', severity: 'error',
+        code: 'API004', validator: 'apiSurface', parserTier: codeTier, severity: 'error',
         message: `…and ${extra} more documented endpoint(s) missing from OpenAPI contract (${source}); code presence requires individual review`,
         location: API_DOC,
         suggestion: { kind: 'review', text: 'Reconcile each contract omission with code and intended behavior before editing documentation' },
@@ -431,7 +485,7 @@ export function validateApiSurface(projectDir, config) {
     const { shown, extra } = trim(documentedButAbsent);
     for (const e of shown) {
       findings.push(mkFinding({
-        code: 'API004', validator: 'apiSurface', severity: 'warn', confidence: 'low',
+        code: 'API004', validator: 'apiSurface', parserTier: codeTier, severity: 'warn', confidence: 'low',
         message: `Documented endpoint not found in code: ${e.method} ${e.path} (${API_DOC}) [code-scan — verify]`,
         location: API_DOC,
         suggestion: { kind: 'review', text: 'Verify the endpoint really is gone from the code, then remove it from the doc' },
@@ -439,7 +493,7 @@ export function validateApiSurface(projectDir, config) {
     }
     if (extra > 0) {
       findings.push(mkFinding({
-        code: 'API004', validator: 'apiSurface', severity: 'warn', confidence: 'low',
+        code: 'API004', validator: 'apiSurface', parserTier: codeTier, severity: 'warn', confidence: 'low',
         message: `…and ${extra} more documented endpoint(s) not found by the code scanner`,
         location: API_DOC,
         suggestion: { kind: 'review', text: 'Verify each documented endpoint against the code before editing documentation' },
@@ -454,6 +508,7 @@ export function validateApiSurface(projectDir, config) {
       findings.push(mkFinding({
         code: 'API005',
         validator: 'apiSurface',
+        parserTier: codeTier,
         severity: 'warn',
         message: `Undocumented endpoint in ${confidence === 'spec' ? `OpenAPI contract (${source})` : 'code'}: ${e.method} ${e.path} — add it to ${API_DOC}`,
         location: API_DOC,
@@ -464,6 +519,7 @@ export function validateApiSurface(projectDir, config) {
       findings.push(mkFinding({
         code: 'API005',
         validator: 'apiSurface',
+        parserTier: codeTier,
         severity: 'warn',
         message: `…and ${extra} more undocumented endpoint(s) in ${confidence === 'spec' ? `OpenAPI contract (${source})` : 'code'}`,
         location: API_DOC,
@@ -472,5 +528,10 @@ export function validateApiSurface(projectDir, config) {
     }
   }
 
-  return { ...resultFromFindings(findings, { passed, total }), fixes, authoritativeSpec: source };
+  return {
+    ...resultFromFindings(findings, { passed, total }),
+    fixes,
+    authoritativeSpec: source,
+    ...(tierGap ? { applicability: tierGap } : {}),
+  };
 }

@@ -889,6 +889,15 @@ export function runGuard(projectDir, config, flags) {
     console.log(`  ${c.dim}Next: ${c.cyan}${skill('score')}${c.dim} for your CDD maturity score, or commit with confidence.${c.reset}`);
   }
 
+  // Analyzer tiers, whenever any evidence came from the pattern fallback.
+  // Silent on a fully-parsed run so a clean report stays clean.
+  if (Array.isArray(data.findings) && data.findings.length > 0) {
+    const degraded = data.findings.filter(f => f.parserTier === 'regex-fallback' || f.parserTier === 'mixed');
+    if (degraded.length > 0) {
+      console.log(`  ${c.dim}↪ ${degraded.length} finding(s) came from the pattern fallback rather than a syntax tree — absence of a finding in those files is weak evidence.${c.reset}`);
+    }
+  }
+
   // Low-confidence findings → the feedback path. Scoped to CODES, not
   // findings: `reportable` now includes every unmeasured code, which on a real
   // repository runs to hundreds of entries (666 of 671 findings across

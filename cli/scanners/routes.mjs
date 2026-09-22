@@ -9,7 +9,7 @@
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, relative, basename, extname, dirname } from 'node:path';
-import { resolveSourceRoots, readScannable } from '../shared-source.mjs';
+import { resolveSourceRoots, readScannable, tierFor, summarizeTiers } from '../shared-source.mjs';
 import { DEFAULT_IGNORE_DIRS as IGNORE_DIRS, shouldIgnore, relPosix, isNonProductPath } from '../shared-ignore.mjs';
 import { extractJsRouteCalls, extractJsRouteObjects, extractJsMountsAndImports } from './js-ast.mjs';
 import { extractPythonFiles } from './py-ast.mjs';
@@ -75,8 +75,11 @@ export function scanRoutesDeep(dir, stack, docTools, opts = {}) {
     routes.push(...scanRustWebRoutes(dir));
   }
 
+  let scanTier = null;
   if (framework.includes('FastAPI') || framework.includes('Flask')) {
-    routes.push(...scanFastAPIRoutes(dir));
+    const py = scanFastAPIRoutes(dir);
+    scanTier = py.scanTier || null;
+    routes.push(...py);
   }
 
   // Deduplicate by method+path, and drop routes that live in non-product dirs
@@ -86,7 +89,7 @@ export function scanRoutesDeep(dir, stack, docTools, opts = {}) {
   // DEFAULT (no .docguardignore needed); shouldIgnore honors explicit config.
   const cfg = opts.config || {};
   const seen = new Set();
-  return routes.filter(r => {
+  const kept = routes.filter(r => {
     const key = `${r.method}:${r.path}`;
     if (r.file) {
       const rel = relPosix(dir, resolve(dir, r.file));
@@ -100,6 +103,12 @@ export function scanRoutesDeep(dir, stack, docTools, opts = {}) {
     seen.add(key);
     return true;
   });
+  // Carry the scan's analyzer tier past the filter. It describes the SCAN, not
+  // any single route, so it must survive even when the filter empties the list
+  // — an empty result from a degraded tier is precisely the case a caller has
+  // to know about. (calibrated-finding-channels#FR-011)
+  if (scanTier) Object.defineProperty(kept, 'scanTier', { value: scanTier, enumerable: false });
+  return kept;
 }
 
 // ── Next.js App Router ──────────────────────────────────────────────────────
@@ -545,12 +554,17 @@ function scanFastAPIRoutes(dir) {
   // per-file `ok:false` falls back for just that file. The AST form also reads
   // multi-line decorators and Flask `methods=[...]` arrays the regex misses.
   const astByFile = extractPythonFiles(pyFiles);
+  // `null` means the whole batch fell back — no usable interpreter. Name that
+  // once here so every route from this scan carries the same accurate reason
+  // rather than a per-file guess. (calibrated-finding-channels#FR-010/011)
+  const batchReason = astByFile === null ? 'No usable python3 interpreter; routes matched by pattern.' : null;
 
   for (const filePath of pyFiles) {
     const content = readFileSafe(filePath);
     if (!content) continue;
 
     const parsed = astByFile && astByFile[filePath];
+    const { tier, tierReason } = tierFor(filePath, parsed, batchReason);
     const fileAuth = content.includes('Depends(') && content.includes('auth');
     if (parsed && parsed.ok) {
       for (const r of parsed.routes || []) {
@@ -562,11 +576,17 @@ function scanFastAPIRoutes(dir) {
           source: 'fastapi',
           auth: fileAuth,
           description: r.desc || '',
+          tier,
+          tierReason,
         });
       }
       continue;
     }
 
+    // The pattern tier. It cannot see a multi-line decorator or a Flask
+    // `methods=[...]` array, so a route may be missing entirely here — which
+    // is exactly why the tier travels with the result instead of staying a
+    // silent implementation detail.
     let match;
     const regex = new RegExp(pattern.source, 'gi');
     while ((match = regex.exec(content)) !== null) {
@@ -578,10 +598,17 @@ function scanFastAPIRoutes(dir) {
         source: 'fastapi',
         auth: fileAuth,
         description: extractPythonDocstring(content, match.index),
+        tier,
+        tierReason,
       });
     }
   }
 
+  // A Python file that yielded no route still carries coverage information:
+  // if it was read by the pattern tier, the absence of a route from it is
+  // weak evidence. Report the scan's tier alongside the routes so a caller
+  // can downgrade applicability even when the result list is empty.
+  routes.scanTier = summarizeTiers(pyFiles.map(f => tierFor(f, astByFile && astByFile[f], batchReason)));
   return routes;
 }
 
