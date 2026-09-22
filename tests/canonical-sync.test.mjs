@@ -146,6 +146,24 @@ describe('canonical-sync validator', () => {
       `expected missing-surface-docs warning; got: ${r.warnings.join(' / ')}`);
   });
 
+  it('catches every phrasing of the command total, not only "ships N commands"', () => {
+    // "Covers all 15 CLI commands" sat in the README's Testing section for 92
+    // releases (2026-03-15 → 2026-09-22) because only "ships N" was matched.
+    dir = makeFixture({ commandFiles: 23, readme: [
+      'DocGuard ships **23 commands** (the "Daily 5" + 18 situational tools).',
+      '',
+      'Covers all 15 CLI commands, project type detection, compliance profiles.',
+      'Supports 15 commands today. All 15 commands are documented below.',
+    ].join('\n') });
+    const r = validateCanonicalSync(dir, {}, []);
+    const csy002 = r.findings.filter(f => f.code === 'CSY002');
+    assert.equal(csy002.length, 1, `one finding per file, listing each stale phrase; got: ${r.warnings.join(' / ')}`);
+    assert.match(csy002[0].message, /"Covers all 15 CLI commands"/);
+    assert.match(csy002[0].message, /"Supports 15 commands"/);
+    assert.match(csy002[0].message, /"All 15 commands"/);
+    assert.doesNotMatch(csy002[0].message, /23 commands"/, 'the correct claim is not listed as stale');
+  });
+
   it('also scans AGENTS.md for surface-count claims (closes the AGENTS.md drift gap)', () => {
     // README is accurate; AGENTS.md carries a STALE "ships N commands" claim.
     // canonical-sync must catch it now that it scans both files.

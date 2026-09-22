@@ -8,6 +8,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Metrics-Consistency finishes the "N tests" check it has promised since
+  v0.8.2 (MET003).** The validator's header listed "N tests" among the numbers
+  it governs, `actuals.tests` was computed on every run, and no pattern ever
+  read it — so the README's Testing section said `33 tests across 18 describe
+  blocks` from 2026-03-15 through 92 releases while the suite grew past 2,000
+  cases, and every self-guard was green. A dead path a passing check cannot
+  see.
+
+  The actual is now the number of test cases *declared* in the test files
+  (`it`/`test` call sites via the AST tier, `def test_`, `func Test`), which is
+  a lower bound of what the runner reports: cases generated in loops run more
+  than once. Measured on this repository, 1,721 declared against 2,085
+  reported. So MET003 flags a documented count only when it is *below* the
+  declared floor — stale for certain — and passes anything at or above it,
+  because a static count cannot disprove it. The true number is only known by
+  running the suite, so MET003 is review-only and never carries a mechanical
+  fix; a `docguard fix --write` that wrote the floor would replace a stale
+  number with a wrong one. The claim is bound to the project's own suite by
+  the line's vocabulary (`npm test`, `pytest`, `go test`, "suite", "passing"),
+  not by the word "docguard": a number about a study's tests or a sample
+  output line is out of scope. Thousands separators parse as one number
+  ("1,733 tests" is 1733, not 733), and a count under a version-pinned
+  heading ("Results — v0.31.0", "released in v0.40.0") is history, not a
+  current assertion.
+
 - **Three channels on every finding, replacing one field that answered three
   questions.** `confidence` described the detector's certainty, decided whether
   a human should look, AND gated which findings the feedback loop sampled.
@@ -102,6 +127,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   trains users to ignore the line.
 
 ### Changed
+- **Canonical-Sync reads every phrasing of the command total.** Only
+  `ships N commands` was matched, so `Covers all 15 CLI commands` sat in the
+  README's Testing section beside a correct `ships 23 commands` for the same
+  92 releases. `covers all N`, `supports N`, `all N` and the `CLI` qualifier
+  now count, and CSY002 quotes the stale phrase it found instead of
+  paraphrasing it as "ships N".
+
 - **The agent skills triage on `disposition`, not severity alone.** `docguard-guard`
   told agents to sort findings by severity and, for warnings, to "consider
   running `/docguard.fix` for automated remediation" — which would have an agent
@@ -164,6 +196,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   tasks; seven were real gaps in this very feature, now closed.
 
 ### Fixed
+- The README's Testing section: the test count, the command count, and the CI
+  matrix (Node 24 has been in the matrix since the R5 release). Both stale
+  numbers are the ones the two validator changes above now catch, and the
+  exact sentences are their regression controls.
+
 - Cut a release again. The release job bumps the version, deliberately does not
   regenerate `llms.txt` / `llms-full.txt`, and then runs the full suite — which
   compared the bundles' footer against a generator run on the freshly bumped
