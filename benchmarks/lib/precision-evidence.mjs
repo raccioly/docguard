@@ -194,6 +194,11 @@ export function derivePrecisionEvidence(baseline, { minN = DEFAULT_MIN_N } = {})
       manifestDigest: baseline.core.manifestDigest,
       toolVersion: baseline.core.tool.version,
       toolRevision: baseline.core.tool.revision,
+      // Digest of the detector sources the corpus was actually run against.
+      // Reviewed input, never recomputed from the working tree: re-stamping it
+      // at generation time would let an edited detector claim a calibration it
+      // was never measured under.
+      detectorsDigest: baseline.core.tool.detectorsDigest ?? null,
       reviewStatus: baseline.review.status,
       reviewedAt: baseline.review.reviewedAt ?? null,
       reviewer: baseline.review.reviewer ?? null,

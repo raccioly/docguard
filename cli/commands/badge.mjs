@@ -37,18 +37,37 @@ export function runBadge(projectDir, config, flags) {
   const sgBadgeUrl = `https://img.shields.io/badge/guarded_by-DocGuard-cyan`;
   const sgBadgeMarkdown = `![DocGuard](${sgBadgeUrl})`;
 
+  // ── Unverified-claims badge ─────────────────────────────────────────────
+  // A green score next to N unverified claims was the last misleading surface:
+  // the CDD score measures structural maturity, which is NOT factual accuracy,
+  // and the badge said nothing about the gap. runScoreInternal already computes
+  // this number (buildScoreAssurance) and it was being discarded here, so this
+  // costs no extra scanning.
+  //
+  // Three states, not two. buildScoreAssurance returns null -- deliberately,
+  // "unknown, never zero on failure" -- when claim extraction throws. Rendering
+  // that as 0 would print "0 unverified" precisely when DocGuard checked
+  // nothing, which is the false-green this tool exists to prevent.
+  const unverifiedClaims = scoreData.assurance?.unverifiedClaims ?? null;
+  const claimsLabel = unverifiedClaims === null ? 'unknown' : String(unverifiedClaims);
+  const claimsColor = unverifiedClaims === null ? 'lightgrey' : unverifiedClaims > 0 ? 'orange' : 'brightgreen';
+  const claimsBadgeUrl = `https://img.shields.io/badge/claims_unverified-${encodeURIComponent(claimsLabel)}-${claimsColor}`;
+  const claimsBadgeMarkdown = `![Claims unverified](${claimsBadgeUrl})`;
+
   if (flags.format === 'json') {
     const result = {
       score,
       grade,
       color,
       projectType,
+      unverifiedClaims,
       badges: {
         score: { url: badgeUrl, markdown: badgeMarkdown },
         type: { url: typeBadgeUrl, markdown: typeBadgeMarkdown },
         docguard: { url: sgBadgeUrl, markdown: sgBadgeMarkdown },
+        claims: { url: claimsBadgeUrl, markdown: claimsBadgeMarkdown },
       },
-      readmeSnippet: `${badgeMarkdown} ${typeBadgeMarkdown} ${sgBadgeMarkdown}`,
+      readmeSnippet: `${badgeMarkdown} ${claimsBadgeMarkdown} ${typeBadgeMarkdown} ${sgBadgeMarkdown}`,
     };
     console.log(JSON.stringify(result, null, 2));
     return;
@@ -61,12 +80,18 @@ export function runBadge(projectDir, config, flags) {
   console.log(`  ${c.bold}Type Badge:${c.reset}`);
   console.log(`    ${c.cyan}${typeBadgeMarkdown}${c.reset}\n`);
 
+  console.log(`  ${c.bold}Unverified Claims Badge:${c.reset}`);
+  console.log(`    ${c.cyan}${claimsBadgeMarkdown}${c.reset}`);
+  console.log(`    ${c.dim}${unverifiedClaims === null
+    ? 'Claim extraction did not complete — reported as unknown, not as zero.'
+    : `${unverifiedClaims} documented claim(s) unverified against code. The score badge measures structure, not accuracy.`}${c.reset}\n`);
+
   console.log(`  ${c.bold}DocGuard Badge:${c.reset}`);
   console.log(`    ${c.cyan}${sgBadgeMarkdown}${c.reset}\n`);
 
   console.log(`  ${c.bold}README snippet:${c.reset}`);
   console.log(`    ${c.dim}Add this to the top of your README.md:${c.reset}\n`);
-  console.log(`    ${badgeMarkdown} ${typeBadgeMarkdown} ${sgBadgeMarkdown}`);
+  console.log(`    ${badgeMarkdown} ${claimsBadgeMarkdown} ${typeBadgeMarkdown} ${sgBadgeMarkdown}`);
 
   console.log('');
 }

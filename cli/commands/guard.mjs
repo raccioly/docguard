@@ -20,7 +20,7 @@ import { changedFilesSince, isGitRepo } from '../shared-git.mjs';
 import { extractSemanticClaims } from '../scanners/semantic-claims.mjs';
 import { toSarif } from '../writers/sarif.mjs';
 import { toJUnit } from '../writers/junit.mjs';
-import { loadBaseline, saveBaseline, fingerprintFinding, BASELINE_FILE } from '../writers/baseline.mjs';
+import { loadBaseline, saveBaseline, fingerprintFinding, baselineAgeDays, BASELINE_FILE } from '../writers/baseline.mjs';
 import { precisionEvidenceBlock } from '../precision-evidence.mjs';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve as resolvePath, relative as relativePath } from 'node:path';
@@ -233,6 +233,11 @@ function renderableItems(v) {
 // docs — counting them as "untracked drift" is noise the user can't act on.
 const DOCGUARD_OWN_DOC_RE = /(^|\/)commands\/docguard\.[a-z-]+\.md$/i;
 
+// At or below this many untiered files, print the names instead of a count: a
+// nag you cannot act on from the run that printed it is a nag users learn to
+// skip. Above it, the count plus `--verbose` stays calmer than a wall of paths.
+const INLINE_UNCLASSIFIED = 3;
+
 function collectMarkdown(projectDir) {
   const out = [];
   // Shared canonical walker (v0.29 consolidation) — same ignore set and dot-entry
@@ -418,6 +423,9 @@ export function runGuardInternal(projectDir, config) {
   // errors/warnings can't be fingerprinted), and `--no-baseline`
   // (config.baseline === false) turns it off.
   let baselineSuppressed = 0;
+  let baselineStillFiring = 0;
+  let baselineStale = 0;
+  let baselineAge = null;
   const baselineMap = config.baseline === false ? null : loadBaseline(projectDir);
   if (baselineMap) {
     // Occurrence budget: each fingerprint suppresses at most its frozen
@@ -443,6 +451,16 @@ export function runGuardInternal(projectDir, config) {
       r.total = r.passed + kept.length;
       Object.assign(r, classifyResult(r));
     }
+    // Both numbers fall out of the loop above at no extra cost. A fingerprint
+    // whose budget was consumed still fires today (frozen, never resolved); one
+    // whose budget is untouched no longer matches anything, so the baseline can
+    // shrink. Reporting only the suppression total let a baseline quietly become
+    // permanent amnesty and never get smaller.
+    for (const [fp, frozen] of baselineMap) {
+      if ((remaining.get(fp) || 0) < frozen) baselineStillFiring++;
+      else baselineStale++;
+    }
+    baselineAge = baselineAgeDays(baselineMap.generatedAt);
   }
 
   for (const key of ['canonicalSync', 'metricsConsistency']) {
@@ -539,6 +557,9 @@ export function runGuardInternal(projectDir, config) {
     effectiveWarnings,
     effectiveInfos,
     baselineSuppressed,
+    baselineStillFiring,
+    baselineStale,
+    baselineAgeDays: baselineAge,
     coverage,
     checkCoverage,
     semanticClaims,
@@ -861,6 +882,22 @@ export function runGuard(projectDir, config, flags) {
   // silently is the false-green failure mode this tool exists to prevent.
   if (data.baselineSuppressed > 0) {
     console.log(`  ${c.dim}📋 ${data.baselineSuppressed} pre-existing finding(s) suppressed by ${BASELINE_FILE} (--no-baseline to show)${c.reset}`);
+    // Age the amnesty. Wording stays inside what the file can prove: entries
+    // carry occurrence counts, not per-entry timestamps, so "still suppressed"
+    // is demonstrable while "never triaged" would be a guess -- someone may have
+    // fixed and re-frozen. The stale count is the one that lets it shrink.
+    const parts = [];
+    if (data.baselineAgeDays !== null && data.baselineAgeDays !== undefined) {
+      parts.push(`baseline is ${data.baselineAgeDays} day(s) old`);
+    }
+    if (data.baselineStillFiring > 0) parts.push(`${data.baselineStillFiring} still suppressed`);
+    if (data.baselineStale > 0) parts.push(`${data.baselineStale} no longer occur — safe to drop`);
+    if (parts.length) {
+      // Bare flags, not skill(): that helper is declared further down this
+      // function, and the suppression line above already uses the same style.
+      const action = data.baselineStale > 0 ? ' Re-freeze to drop them: --update-baseline' : '';
+      console.log(`  ${c.dim}   ${parts.join('; ')}.${action}${c.reset}`);
+    }
   }
 
   // Act vs escalate, immediately under the verdict: the verdict says whether
@@ -936,10 +973,16 @@ export function runGuard(projectDir, config, flags) {
     if (unclassN > 0) {
       // Calm by default — surface the COUNT every run (so non-coverage is never
       // silent), but don't enumerate or cry "invisible drift": much of this is
-      // legitimately untracked (fixtures, templates, specs). The file list is one
-      // `--verbose` away. Loud-by-default here would just train users to ignore it.
-      console.log(`  ${c.dim}↪ ${unclassN} file(s) in no validation tier — add to requiredFiles.canonical, a docs/ home, or .docguardignore${flags.verbose ? ':' : ` (${skill('guard')} --verbose to list)`}${c.reset}`);
-      if (flags.verbose) {
+      // legitimately untracked (fixtures, templates, specs). Loud-by-default
+      // here would just train users to ignore it.
+      //
+      // The exception is a handful of files: hiding three strings behind
+      // `--verbose` makes a permanent nag that cannot be acted on from the run
+      // that printed it. At or below INLINE_UNCLASSIFIED the list IS the message,
+      // so print it; above that the count plus a `--verbose` pointer still wins.
+      const inline = flags.verbose || unclassN <= INLINE_UNCLASSIFIED;
+      console.log(`  ${c.dim}↪ ${unclassN} file(s) in no validation tier — add to requiredFiles.canonical, a docs/ home, or .docguardignore${inline ? ':' : ` (${skill('guard')} --verbose to list)`}${c.reset}`);
+      if (inline) {
         for (const f of cov.unclassified.slice(0, 10)) console.log(`     ${c.dim}• ${f}${c.reset}`);
         if (unclassN > 10) console.log(`     ${c.dim}... and ${unclassN - 10} more${c.reset}`);
       }
@@ -987,7 +1030,17 @@ export function runGuard(projectDir, config, flags) {
   const pct = data.total > 0 ? Math.round((data.passed / data.total) * 100) : 0;
   const bColor = badgeColor(pct, incompleteCoverage(data.checkCoverage));
   const badgeUrl = `https://img.shields.io/badge/CDD_Guard-${data.passed}%2F${data.total}_passed-${bColor}`;
-  console.log(`\n  ${c.dim}📎 Badge: ![CDD Guard](${badgeUrl})${c.reset}`);
+  // This badge is the one a reader actually sees pasted into a README, printed
+  // here a few lines under "N documented claim(s) are unverified". A green
+  // "628/628 passed" standing alone next to that count is the last misleading
+  // surface, so the claims badge travels WITH it. The pass badge keeps its own
+  // colour: it reports gates that passed, which is true, and folding factual
+  // verification into it would overload one number with two meanings.
+  const claims = data.semanticClaims?.count;
+  const claimsBadge = claims === undefined || claims === null
+    ? ''
+    : ` ![Claims unverified](https://img.shields.io/badge/claims_unverified-${claims}-${claims > 0 ? 'orange' : 'brightgreen'})`;
+  console.log(`\n  ${c.dim}📎 Badge: ![CDD Guard](${badgeUrl})${claimsBadge}${c.reset}`);
 
   // v0.14-Q2: --timings prints per-validator timing, sorted slowest-first.
   // Designed for self-diagnosis on slow repos: shows exactly which validator

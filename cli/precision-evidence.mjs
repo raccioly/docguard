@@ -12,6 +12,7 @@
  */
 
 import { PRECISION_EVIDENCE } from './precision-evidence-data.mjs';
+import { computeDetectorsDigest } from './detector-digest.mjs';
 
 export { PRECISION_EVIDENCE };
 
@@ -42,6 +43,24 @@ export function describeAdjudications(code) {
   if (ambiguous > 0) parts.push(`${ambiguous} case(s) the maintainers could not adjudicate`);
   if (parts.length === 0) return null;
   return `${parts.join(' and ')} on record for this code; counted separately and excluded from every rate above.`;
+}
+
+/**
+ * Whether the detectors that just ran are the ones the corpus measured.
+ *
+ * Returns 'unchanged' | 'changed' | 'unknown'. Only consulted when the version
+ * strings already disagree, so a matching build pays nothing; when they do
+ * disagree it costs one pass over the shipped detector sources (~1.2ms), which
+ * is the difference between "these numbers still apply" and a false alarm that
+ * makes every new release look uncalibrated.
+ *
+ * 'unknown' (no recorded digest, or an unreadable install) falls back to the
+ * plain version-skew wording -- never to a claim the detectors are unchanged.
+ */
+export function detectorCalibration(computed = computeDetectorsDigest()) {
+  const recorded = PRECISION_EVIDENCE.source.detectorsDigest;
+  if (!recorded || !computed) return 'unknown';
+  return recorded === computed ? 'unchanged' : 'changed';
 }
 
 /** The reviewed evidence for one code, or an explicit not-measured answer. */
@@ -76,6 +95,11 @@ export function precisionEvidenceBlock(codes, runningVersion) {
       runningVersion: runningVersion ?? null,
       // False means the numbers were measured on a different build than this one.
       matchesRunningVersion: Boolean(runningVersion) && runningVersion === PRECISION_EVIDENCE.source.toolVersion,
+      // The question a version string cannot answer: do these numbers describe
+      // the code that just ran? A docs-only or CLI-shell release leaves every
+      // detector byte-identical and every measurement exactly as valid.
+      detectorsDigest: PRECISION_EVIDENCE.source.detectorsDigest ?? null,
+      detectorCalibration: detectorCalibration(),
     },
     coverage: {
       codesInRun: present.length,
@@ -129,7 +153,13 @@ export function describeEvidenceForCode(code, runningVersion) {
   const adjudications = describeAdjudications(code);
   if (adjudications) lines.push(adjudications);
   if (runningVersion && runningVersion !== PRECISION_EVIDENCE.source.toolVersion) {
-    lines.push(`Measured on DocGuard ${PRECISION_EVIDENCE.source.toolVersion}; you are running ${runningVersion}.`);
+    const calibration = detectorCalibration();
+    const measured = `Measured on DocGuard ${PRECISION_EVIDENCE.source.toolVersion}; you are running ${runningVersion}`;
+    lines.push(calibration === 'unchanged'
+      ? `${measured} — the detectors are byte-identical to the measured build, so this number still applies.`
+      : calibration === 'changed'
+        ? `${measured}, and the detectors changed since that measurement, so this number may no longer hold.`
+        : `${measured}.`);
   }
   lines.push(PRECISION_EVIDENCE.caveat);
   return lines;

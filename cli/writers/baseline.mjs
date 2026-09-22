@@ -52,7 +52,17 @@ export function loadBaseline(projectDir) {
       const count = Number.isInteger(n) && n > 0 ? n : 0;
       if (count > 0) map.set(fp, count);
     }
-    return map.size > 0 ? map : null;
+    if (map.size === 0) return null;
+    // `generatedAt` is written by saveBaseline and was previously dropped on
+    // read, so a baseline had no age: 233 frozen findings looked the same on
+    // day 1 and day 400, and silent permanent amnesty is the failure mode a
+    // suppression list is most prone to. Carried as a non-enumerable property
+    // so every existing `Map` consumer (iteration, spread, size) is untouched.
+    Object.defineProperty(map, 'generatedAt', {
+      value: typeof data.generatedAt === 'string' ? data.generatedAt : null,
+      enumerable: false,
+    });
+    return map;
   } catch {
     // A malformed baseline must not silently un-gate CI: treat as absent so
     // every finding surfaces (fail-open on visibility, fail-closed on hiding).
@@ -65,6 +75,18 @@ export function loadBaseline(projectDir) {
  * count, keys sorted so the committed file diffs cleanly. Returns the number
  * of distinct fingerprints.
  */
+/**
+ * Whole days since an ISO timestamp, or null when it is absent or unparseable.
+ * Age is reported, never enforced: an old baseline is a prompt to re-triage,
+ * not a gate.
+ */
+export function baselineAgeDays(generatedAt, now = Date.now()) {
+  if (typeof generatedAt !== 'string') return null;
+  const at = Date.parse(generatedAt);
+  if (!Number.isFinite(at)) return null;
+  return Math.max(0, Math.floor((now - at) / 86400000));
+}
+
 export function saveBaseline(projectDir, findings) {
   const counts = {};
   for (const f of findings) {

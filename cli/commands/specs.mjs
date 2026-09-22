@@ -233,6 +233,13 @@ function printResult(result) {
       console.log(`  ${difference.path}: ${difference.message}`);
     }
   }
+  if (result.legacyForms?.length && result.status !== 'WRITTEN') {
+    // Informational, never a finding: an older encoding is not drift, so it must
+    // not flip the verdict -- but it must not be silent either, or it never gets
+    // migrated.
+    console.log(`Note: registry uses an older encoding (${result.legacyForms.join(', ')}); content is unchanged. `
+      + 'Run `docguard specs --write` to migrate it.');
+  }
   if (result.issues.length) printIssues(result.issues);
 }
 
@@ -264,7 +271,11 @@ export function runSpecs(projectDir, config, flags = {}) {
       throw new Error(`Registry refresh refused: ${projection.issues.map(issue => issue.message).join(' ')}`);
     }
     let status = projection.current ? 'CURRENT' : projection.exists ? 'STALE' : 'MISSING';
-    if (flags.write && !projection.current) {
+    // A legacy-but-equivalent registry reports CURRENT (its content is provably
+    // unchanged), so `--write` must still migrate it explicitly -- otherwise the
+    // compatibility shim would be load-bearing forever and the next format
+    // change would stack on top of it.
+    if (flags.write && (!projection.current || projection.legacyForms.length > 0)) {
       // Deliberately not safeWrite: that keeps a .bak, and the registry is
       // generated and Git-tracked, so the backup is noise DocGuard then reports
       // as an undocumented config file.
@@ -279,6 +290,7 @@ export function runSpecs(projectDir, config, flags = {}) {
       tombstones: projection.registry.tombstones.length,
       issues: projection.issues,
       differences: projection.differences,
+      legacyForms: projection.legacyForms,
     };
     if (flags.format === 'json') console.log(JSON.stringify(result, null, 2));
     else printResult(result);

@@ -168,7 +168,11 @@ describe('SC-007 — the headline cannot read non-coverage as success', () => {
     const data = guard(dir, 'json');
     const incomplete = ['partial', 'missing-prerequisite', 'unsupported', 'error']
       .reduce((s, k) => s + (data.checkCoverage.counts[k] || 0), 0);
-    const badge = out.split('\n').find(l => l.includes('img.shields.io'));
+    const line = out.split('\n').find(l => l.includes('img.shields.io'));
+    // Scope to the pass badge. The line also carries the unverified-claims
+    // badge, whose colour reports a different measurement and is legitimately
+    // green at zero; a line-wide match would read that as coverage success.
+    const badge = line.match(/CDD_Guard-[^)\s]*/)[0];
     if (incomplete > 0) assert.doesNotMatch(badge, /brightgreen/);
   });
 });
