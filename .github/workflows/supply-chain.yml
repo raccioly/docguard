@@ -22,3 +22,47 @@ jobs:
   osv-scan-scheduled:
     if: github.event_name != 'pull_request'
     uses: "google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@6e4298ebc4db23e847df9b2e2de2939d6f066c67" # v2.5.1
+
+  websec:
+    # Dogfoods raccioly/websec-validator: SCA + secrets + IaC misconfig in one
+    # pass, normalized and deduplicated across tools, with SARIF into the
+    # Security tab.
+    #
+    # The scanner binaries are installed HERE, not by the action. websec skips
+    # any scanner whose binary is absent (`shutil.which` → continue), so a
+    # failed install would otherwise yield a green "0 findings" from a scan that
+    # never ran. `scanners:` names the two this job depends on and
+    # `require-complete:` turns a missing or incomplete one into exit 2 —
+    # distinct from fail-on's exit 1, so "gate broken" never reads as "repo clean".
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Trivy
+        uses: aquasecurity/setup-trivy@81e514348e19b6112ce2a7e3ecbafe19c1e1f567 # v0.3.1
+
+      - name: Install OSV-Scanner
+        env:
+          OSV_VERSION: v2.6.0
+        run: |
+          base="https://github.com/google/osv-scanner/releases/download/${OSV_VERSION}"
+          curl -sSfL -o osv-scanner "${base}/osv-scanner_linux_amd64"
+          curl -sSfL -o SHA256SUMS "${base}/osv-scanner_SHA256SUMS"
+          grep ' osv-scanner_linux_amd64$' SHA256SUMS \
+            | sed 's/osv-scanner_linux_amd64/osv-scanner/' \
+            | sha256sum -c -
+          sudo install -m 0755 osv-scanner /usr/local/bin/osv-scanner
+
+      - name: websec-validator
+        uses: raccioly/websec-validator@7b2f945e40f6de79cc078acb137ccfe22bd1e8aa # v0.16.0
+        with:
+          scan: "true"
+          scanners: "trivy,osv-scanner"
+          require-complete: "true"
+          # Report-only until the noise floor is known. Raise to "high" (or add a
+          # committed findings-ledger.json baseline and gate only on NEW findings)
+          # once a few runs have been read.
+          fail-on: ""
+          upload-sarif: "true"
