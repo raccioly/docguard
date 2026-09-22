@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Stopped publishing private project identifiers and local developer state.**
+  A retired bug-spec's directory name carried the slug of a private downstream
+  project, and it survived the generic-references pass in #411/#413 in two
+  places: the `.docguard-archive.json` tombstone for that spec, and the v0.22.0
+  CHANGELOG entry that cited the spec directory. Both are redacted. The archive
+  entry keeps its recoverability: `path` is documented as the *former* path and
+  `restore` as a *convenience* command derived from it (DATA-MODEL.md), while the
+  recovery contract is `archivedFrom` + `blob`, so the entry now restores by
+  content identity — `git cat-file blob <sha> > <path>` — which was verified to
+  reproduce the retired document byte for byte.
+
+- **`assets/demo.tape` is reproducible on any machine.** It pinned an absolute
+  `Env PATH` naming one developer's home directory, a since-deleted worktree and
+  a since-upgraded Node version, so the recording was broken for its own author.
+  It now derives the wrapper path from `$PWD` inside a `Hide`/`Show` block, which
+  keeps the setup out of the frame. Record from the repository root.
+
+- **Untracked generated and machine-local state that a `git add -A` had swept in.**
+  `.specify/extensions/.cache/` is a Spec Kit HTTP cache that is re-downloaded
+  from the `catalog_url` it records, so the committed copy was a frozen snapshot
+  (2026-03-17) that aged while looking authoritative; it entered in 96e2dd8. All
+  of `.claude/` was OpenWolf-local and unusable in a fresh clone — `settings.json`
+  registered five hooks running `.wolf/hooks/*.js`, which this repository ignores,
+  and `rules/openwolf.md` told agents to consult `.wolf/` files a clone does not
+  have; both entered in fc73116, a validator-fix commit that also captured all of
+  `.wolf/`. This is the same defect as `.codex/hooks.json` (#440) and the stray
+  `*.bak` (#443). `CLAUDE.md` now states that OpenWolf is optional local tooling
+  instead of instructing every agent to read files that are not there. The rest of
+  `.specify/` — templates, scripts, constitution — is source and stays tracked.
+
+### Added
+
+- **`tests/repository-hygiene.test.mjs` fails the build if any of it returns.**
+  `.gitignore` stops known paths; these assertions stop the *content*, which is
+  what survives a rename or a newly adopted tool: no tracked file may contain a
+  private project identifier (held base64-encoded so the guard is not itself the
+  leak) or an absolute `/Users/<name>/` or `/home/<name>/` path, and generated or
+  machine-local agent state may not be tracked. All three fail against v0.42.1.
+
 ## [0.42.1] - 2026-09-22
 
 Automated weekly release — batches everything merged since `v0.42.0`.
@@ -2657,7 +2698,7 @@ validators, slash-commands) so the project polices its own README on every
 Confirmed running v0.20.0 against two real projects (a Python codebase for
 the v0.20.0 cycle and a Next.js 15 App Router codebase). All eight were
 reproduced in the source, fixed surgically, and pinned with regression
-tests. Specs: `specs/004-v020-env-var-false-negative/`, `specs/005-hugocross-next-bugs/`.
+tests. Specs: `specs/004-v020-env-var-false-negative/`, `specs/005-field-test-bugs/`.
 
 - **API-Surface emits wrong path for Next.js App Router with `src/` layout**
   — `src/app/api/health/route.ts` was reported as `GET /app/api/health`

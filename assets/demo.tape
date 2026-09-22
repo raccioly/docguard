@@ -13,9 +13,16 @@ Set PlaybackSpeed 1.0
 Set Padding 20
 Set Shell "bash"
 
-# Add the local wrapper to PATH so the GIF shows `docguard demo`
-# (what users type after `npm i -g docguard-cli`) but runs the local CLI.
-Env PATH "/Users/ricardoaccioly/.gemini/canonical-spec-kit/.claude/worktrees/zealous-ardinghelli-facf7d/assets/bin:/Users/ricardoaccioly/.nvm/versions/node/v22.22.0/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+# Prepend the local wrapper to PATH so the GIF shows `docguard demo`
+# (what users type after `npm i -g docguard-cli`) but runs this checkout's CLI.
+# Resolved from $PWD at record time and hidden from the frame, so any clone
+# reproduces this tape. Record from the repository root: `vhs assets/demo.tape`.
+Hide
+Type `export PATH="$PWD/assets/bin:$PATH"`
+Enter
+Type "clear"
+Enter
+Show
 
 Sleep 500ms
 
