@@ -635,6 +635,11 @@
             "line": 21
           },
           {
+            "requirementId": "FR-021",
+            "file": "tests/untouched-claims.test.mjs",
+            "line": 20
+          },
+          {
             "requirementId": "SC-001",
             "file": "tests/calibrated-channels-acceptance.test.mjs",
             "line": 13
@@ -673,6 +678,11 @@
             "requirementId": "SC-008",
             "file": "tests/calibrated-channels-acceptance.test.mjs",
             "line": 20
+          },
+          {
+            "requirementId": "SC-009",
+            "file": "tests/untouched-claims.test.mjs",
+            "line": 74
           }
         ]
       }
