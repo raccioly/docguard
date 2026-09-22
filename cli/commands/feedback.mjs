@@ -217,9 +217,23 @@ export function runFeedback(projectDir, config, flags) {
   const reportable = (data.findings || []).filter(f => selectedCode ? f.code === selectedCode : flags.all || f.reportable);
   const isJson = flags.format === 'json';
 
+  // What the default selection LEAVES OUT, stated plainly. `reportable` now
+  // covers unmeasured codes as well as low-confidence ones, so the remainder
+  // is exactly the set DocGuard has measured and is confident about — the one
+  // population a user might still want to challenge, and the one they would
+  // otherwise have no idea was hidden.
+  const excluded = selectedCode || flags.all
+    ? []
+    : (data.findings || []).filter(f => !f.reportable);
+  const excludedCodes = [...new Set(excluded.map(f => f.code))];
+
   if (reportable.length === 0) {
     if (isJson) {
-      console.log(JSON.stringify({ reportable: [], message: 'no matching findings; use --code <CODE> or --all to challenge confident findings' }, null, 2));
+      console.log(JSON.stringify({
+        reportable: [],
+        excluded: { findings: excluded.length, codes: excludedCodes },
+        message: 'no matching findings; use --code <CODE> or --all to challenge confident findings',
+      }, null, 2));
       return;
     }
     console.log(`${c.bold}📮 DocGuard Feedback${c.reset}`);
@@ -273,12 +287,17 @@ export function runFeedback(projectDir, config, flags) {
         saved: it.saved,
         error: it.error,
       })),
+      excluded: { findings: excluded.length, codes: excludedCodes },
     }, null, 2));
     return;
   }
 
   console.log(`${c.bold}📮 DocGuard Feedback${c.reset}`);
-  console.log(`${c.dim}   ${items.length} selected finding(s). ${flags.preview ? 'Preview only; no feedback records saved.' : `${wrote} local record(s) saved to .docguard/feedback/`}\n`);
+  console.log(`${c.dim}   ${items.length} selected finding(s). ${flags.preview ? 'Preview only; no feedback records saved.' : `${wrote} local record(s) saved to .docguard/feedback/`}${c.reset}`);
+  if (excluded.length > 0) {
+    console.log(`${c.dim}   ${excluded.length} finding(s) across ${excludedCodes.length} measured code(s) excluded — DocGuard has benchmark evidence for those and is confident. Challenge one anyway with --code <CODE>, or see everything with --all.${c.reset}`);
+  }
+  console.log('');
 
   for (const it of items) {
     const f = it.finding;

@@ -46,10 +46,6 @@ export const PRECISION_EVIDENCE = Object.freeze({
     "quotable": true,
     "notQuotableReason": null
   },
-  "adjudicated": {
-    "policyDisagreements": 0,
-    "ambiguous": 0
-  },
   "byValidator": {
     "architecture": {
       "cases": 2,
@@ -195,10 +191,6 @@ export const PRECISION_EVIDENCE = Object.freeze({
         ],
         "quotable": true,
         "notQuotableReason": null
-      },
-      "adjudicated": {
-        "policyDisagreements": 0,
-        "ambiguous": 0
       }
     },
     "SEC001": {
@@ -251,10 +243,6 @@ export const PRECISION_EVIDENCE = Object.freeze({
         ],
         "quotable": true,
         "notQuotableReason": null
-      },
-      "adjudicated": {
-        "policyDisagreements": 0,
-        "ambiguous": 0
       }
     },
     "SEC002": {
@@ -307,10 +295,6 @@ export const PRECISION_EVIDENCE = Object.freeze({
         ],
         "quotable": true,
         "notQuotableReason": null
-      },
-      "adjudicated": {
-        "policyDisagreements": 0,
-        "ambiguous": 0
       }
     },
     "SEC003": {
@@ -363,10 +347,6 @@ export const PRECISION_EVIDENCE = Object.freeze({
         ],
         "quotable": true,
         "notQuotableReason": null
-      },
-      "adjudicated": {
-        "policyDisagreements": 0,
-        "ambiguous": 0
       }
     },
     "SEC005": {
@@ -395,11 +375,7 @@ export const PRECISION_EVIDENCE = Object.freeze({
       ],
       "quotable": true,
       "notQuotableReason": null,
-      "backoff": null,
-      "adjudicated": {
-        "policyDisagreements": 0,
-        "ambiguous": 0
-      }
+      "backoff": null
     },
     "STR001": {
       "status": "measured",
@@ -451,10 +427,6 @@ export const PRECISION_EVIDENCE = Object.freeze({
         ],
         "quotable": true,
         "notQuotableReason": null
-      },
-      "adjudicated": {
-        "policyDisagreements": 0,
-        "ambiguous": 0
       }
     },
     "TDO002": {
@@ -507,10 +479,6 @@ export const PRECISION_EVIDENCE = Object.freeze({
         ],
         "quotable": true,
         "notQuotableReason": null
-      },
-      "adjudicated": {
-        "policyDisagreements": 0,
-        "ambiguous": 0
       }
     }
   }

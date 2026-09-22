@@ -97,7 +97,7 @@ describe('per-code precision evidence', () => {
 describe('guard precision evidence block', () => {
   it('is scoped to the codes in the run and counts what was never benchmarked', () => {
     const block = precisionEvidenceBlock(['SEC005', 'SEC005', 'SEC003', 'DQ007', 'SPR001'], '0.41.7');
-    assert.deepEqual(block.coverage, { codesInRun: 4, measured: 2, notMeasured: 2, quotable: 1 });
+    assert.deepEqual(block.coverage, { codesInRun: 4, measured: 2, notMeasured: 2, quotable: 1, adjudicated: 0 });
     assert.equal(block.codes.DQ007.status, 'not-measured');
     assert.equal(block.codes.SEC005.status, 'measured');
     assert.equal(block.measures, 'benchmark-precision');
@@ -114,7 +114,7 @@ describe('guard precision evidence block', () => {
 
   it('survives an empty run and junk input without inventing a code', () => {
     const empty = precisionEvidenceBlock([], '0.41.7');
-    assert.deepEqual(empty.coverage, { codesInRun: 0, measured: 0, notMeasured: 0, quotable: 0 });
+    assert.deepEqual(empty.coverage, { codesInRun: 0, measured: 0, notMeasured: 0, quotable: 0, adjudicated: 0 });
     assert.deepEqual(empty.codes, {});
     assert.deepEqual(precisionEvidenceBlock([null, undefined, ''], '0.41.7').codes, {});
     assert.equal(evidenceForCode(undefined).status, 'not-measured');
@@ -227,7 +227,12 @@ describe('precision evidence schema', () => {
     assert.equal(contract.$defs.measures.const, 'benchmark-precision');
     const notMeasured = contract.$defs.codeEvidence.oneOf.find(item => item.title === 'Not measured');
     assert.equal(notMeasured.additionalProperties, false);
-    assert.deepEqual(Object.keys(notMeasured.properties).sort(), ['reason', 'status']);
+    // `adjudicated` is the one thing an unmeasured code MAY carry: a count of
+    // reviewed disagreements. It is not a rate and cannot become one — the
+    // schema still admits no numeric evidence field here.
+    assert.deepEqual(Object.keys(notMeasured.properties).sort(), ['adjudicated', 'reason', 'status']);
+    assert.deepEqual(Object.keys(notMeasured.properties.adjudicated.$ref ? { ref: 1 } : notMeasured.properties.adjudicated), ['ref'],
+      'the unmeasured shape references the shared adjudicated counter rather than inlining a number');
   });
 
   it('names every field the derivation emits on a cell and on the artifact', () => {

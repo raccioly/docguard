@@ -491,6 +491,26 @@
             "line": 27
           },
           {
+            "requirementId": "FR-015",
+            "file": "cli/feedback-fixture.mjs",
+            "line": 213
+          },
+          {
+            "requirementId": "FR-016",
+            "file": "benchmarks/lib/precision-evidence.mjs",
+            "line": 43
+          },
+          {
+            "requirementId": "FR-016",
+            "file": "cli/precision-evidence.mjs",
+            "line": 36
+          },
+          {
+            "requirementId": "FR-017",
+            "file": "cli/feedback-fixture.mjs",
+            "line": 214
+          },
+          {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
             "line": 565

@@ -63,6 +63,16 @@
         "parserTier": { "enum": ["js-ast", "py-ast", "regex-fallback", "fallback-language", "mixed", "not-applicable"] },
         "classification": { "enum": ["defect", "clean_control", "ambiguous", "unsupported_syntax", "policy_disagreement"] },
         "repairOutcome": { "enum": ["accepted", "rejected", "not_evaluated"] },
+        "adjudication": {
+          "description": "Only on ambiguous and policy_disagreement cases: why the detector stands as designed, and when that was decided. Such a case declares no expected or forbidden identity and enters no precision or recall denominator; it exists so a reviewed disagreement leaves a record rather than vanishing.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["rationale", "adjudicatedAt"],
+          "properties": {
+            "rationale": { "type": "string", "minLength": 16, "maxLength": 1024 },
+            "adjudicatedAt": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" }
+          }
+        },
         "source": { "$ref": "#/$defs/source" },
         "scope": {
           "type": "object",

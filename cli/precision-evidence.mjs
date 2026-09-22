@@ -18,7 +18,31 @@ export { PRECISION_EVIDENCE };
 const NOT_MEASURED = Object.freeze({
   status: 'not-measured',
   reason: 'No benchmark case exercises this finding code, so DocGuard has measured no precision for it.',
+  adjudicated: Object.freeze({ policyDisagreements: 0, ambiguous: 0 }),
 });
+
+/** Adjudicated disagreements on record for a code; zeros when there are none. */
+export function adjudicatedForCode(code) {
+  const entry = evidenceForCode(code);
+  return entry.adjudicated || { policyDisagreements: 0, ambiguous: 0 };
+}
+
+/**
+ * One line describing reviewed disagreements, or null when there are none.
+ *
+ * These are deliberately reported as counts beside a rate, never inside it:
+ * a case where the detector fired as designed and a user disagreed belongs in
+ * neither the numerator nor the denominator of precision.
+ * @implements docguard.calibrated-finding-channels#FR-016
+ */
+export function describeAdjudications(code) {
+  const { policyDisagreements, ambiguous } = adjudicatedForCode(code);
+  const parts = [];
+  if (policyDisagreements > 0) parts.push(`${policyDisagreements} reviewed policy disagreement(s)`);
+  if (ambiguous > 0) parts.push(`${ambiguous} case(s) the maintainers could not adjudicate`);
+  if (parts.length === 0) return null;
+  return `${parts.join(' and ')} on record for this code; counted separately and excluded from every rate above.`;
+}
 
 /** The reviewed evidence for one code, or an explicit not-measured answer. */
 export function evidenceForCode(code) {
@@ -58,6 +82,10 @@ export function precisionEvidenceBlock(codes, runningVersion) {
       measured: measured.length,
       notMeasured: present.length - measured.length,
       quotable: measured.filter(([, value]) => value.quotable).length,
+      // Reviewed disagreements touching the codes in THIS run — visible
+      // without ever entering a precision denominator.
+      adjudicated: entries.reduce((sum, [, value]) => sum
+        + ((value.adjudicated?.policyDisagreements || 0) + (value.adjudicated?.ambiguous || 0)), 0),
     },
     codes: Object.fromEntries(entries),
   };
@@ -74,10 +102,13 @@ const bounds = pair => `${percent(pair[0])}–${percent(pair[1])}`;
 export function describeEvidenceForCode(code, runningVersion) {
   const evidence = evidenceForCode(code);
   if (evidence.status !== 'measured') {
-    return [
+    const lines = [
       'This code carries no benchmark evidence: no case in the reviewed corpus exercises it.',
       'A finding from it may still be correct; DocGuard has simply never measured how often it is.',
     ];
+    const adjudications = describeAdjudications(code);
+    if (adjudications) lines.push(adjudications);
+    return lines;
   }
   const lines = [];
   const controls = evidence.cleanControls - evidence.cleanControlsWithFindings;
@@ -95,6 +126,8 @@ export function describeEvidenceForCode(code, runningVersion) {
         + `over ${evidence.backoff.precisionDenominator} labelled finding(s).`);
     }
   }
+  const adjudications = describeAdjudications(code);
+  if (adjudications) lines.push(adjudications);
   if (runningVersion && runningVersion !== PRECISION_EVIDENCE.source.toolVersion) {
     lines.push(`Measured on DocGuard ${PRECISION_EVIDENCE.source.toolVersion}; you are running ${runningVersion}.`);
   }
