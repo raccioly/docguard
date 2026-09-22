@@ -24,7 +24,28 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 ## Goal
 
-Execute DocGuard's full guard validator suite against the current project, parse structured results, triage findings by severity and impact, and produce an actionable remediation plan. This skill transforms raw CLI output into an AI-digestible quality assessment.
+Execute DocGuard's full guard validator suite against the current project, parse structured results, triage findings by **disposition and severity**, and produce an actionable remediation plan. This skill transforms raw CLI output into an AI-digestible quality assessment.
+
+### Triage on `disposition` first, severity second
+
+Every finding answers three independent questions. Reading only `severity` conflates them and leads to auto-fixing judgement calls.
+
+| Field | Question | Values |
+|-------|----------|--------|
+| `disposition` | Who decides — the tool or a human? | `act`, `escalate` |
+| `severity` / `effectiveSeverity` | Does CI block? | `error`, `warn`, `info` |
+| `confidence` | How sure is the detector of its **observation**? | `high`, `low` |
+| `evidence.status` | Has the reviewed corpus ever measured this code? | `measured`, `not-measured` |
+| `parserTier` | Which analyzer produced it? | `js-ast`, `py-ast`, `regex-fallback`, `fallback-language`, `mixed`, `not-applicable` |
+
+- **`act`** — DocGuard asserts a defect and names the correction. Safe to apply, including through `/docguard.fix`.
+- **`escalate`** — DocGuard observed a signal; the judgement belongs to the reader. **Never auto-fix these.** Read the source, decide which side is wrong, and say so. FRS002 is the canonical example: the commit count is exact and the finding is `confidence: high`, yet it establishes only that a review is DUE, never that the document is stale.
+
+These axes vary independently. A blocking `error` can be an `escalate`; a `high`-confidence finding can still need a human.
+
+- Read `evidence.status` before trusting a confidence label. `measured` quotes the reviewed corpus with `n` and a Wilson interval; `not-measured` means the label is a maintainer's prior. Most codes are unmeasured — that does not make their findings wrong, only unverified. Report it rather than inflating or discounting the finding.
+- Read `parserTier` when a finding concerns source code. `regex-fallback` or `fallback-language` means no syntax tree was available for that file, so **absence** of a finding there is weak evidence; the owning validator also reports `partial`.
+- Read `checkCoverage` before writing any "all clear". `passed/total` counts checks and its denominator excludes every validator that could not run.
 
 ## Pre-Execution Checks
 
@@ -106,16 +127,19 @@ Output a structured markdown report:
 **Score**: [X]/[Y] checks passed ([percentage]%)
 **Overall Status**: ✅ PASS | ⚠️ WARN | ❌ FAIL
 
+**Work**: [N] to fix · [M] to review
+**Coverage**: [C] of [V] validators checked[, D partial/missing-prerequisite]
+
 ### Summary by Priority
 
-| Priority | Count | Validators Affected |
-|----------|-------|-------------------|
-| CRITICAL | N | [list] |
-| HIGH | N | [list] |
-| MEDIUM | N | [list] |
-| LOW | N | [list] |
+| Priority | Count | To fix | To review | Validators Affected |
+|----------|-------|--------|-----------|-------------------|
+| CRITICAL | N | n | m | [list] |
+| HIGH | N | n | m | [list] |
+| MEDIUM | N | n | m | [list] |
+| LOW | N | n | m | [list] |
 
-### Findings
+### Findings to fix (`disposition: act`)
 
 #### CRITICAL
 1. [Validator]: [Specific issue] → **Fix**: [Exact action to take]
@@ -123,8 +147,16 @@ Output a structured markdown report:
 #### HIGH
 1. [Validator]: [Specific issue] → **Fix**: [Exact action to take]
 
+### Findings to review (`disposition: escalate`)
+
+These need a human judgement; do NOT apply a fix to them.
+
+1. [Validator]: [What DocGuard observed] → **Decide**: [what the reader must determine, and from which source]
+
 [... continue for MEDIUM/LOW only if user requests or total findings < 10]
 ```
+
+When a finding's code is `not-measured`, say so once in the report rather than per finding — it is a fact about DocGuard's benchmark coverage, not about that finding's correctness.
 
 ### Step 5: Remediation Recommendations
 
@@ -140,9 +172,10 @@ For each finding, provide a **specific, actionable fix** — not "fix the issue"
 
 Based on the triage results:
 
-- **If all PASS**: "All configured validators passed. Report declared evidence coverage and any remaining heuristic claims; uncaptured prose is still unverified."
-- **If only MEDIUM/LOW warnings**: "Non-blocking warnings found. Safe to commit, but consider running `/docguard.fix` for automated remediation."
-- **If HIGH or CRITICAL failures**: "Blocking issues found. Fix these before committing. Suggest running `/docguard.fix --doc [most impactful doc]` next."
+- **If all PASS**: "All configured validators passed. [C] of [V] validators were able to check; report declared evidence coverage and any remaining heuristic claims. Uncaptured prose is still unverified."
+- **If only `act` warnings**: "Non-blocking warnings found, all of them things DocGuard can name a correction for. Safe to commit; `/docguard.fix` can remediate them."
+- **If any `escalate` findings**: "[M] finding(s) need a human judgement — DocGuard observed a signal, it did not establish a defect. Review these against the source before changing anything; `/docguard.fix` will NOT resolve them."
+- **If HIGH or CRITICAL failures**: "Blocking issues found. Fix these before committing. Suggest running `/docguard.fix --doc [most impactful doc]` next — for the `act` findings only."
 
 Present the user with options:
 1. "Fix all automatically" → Suggest: `/docguard.fix`
@@ -155,6 +188,8 @@ Present the user with options:
 - **Parse real output** — don't hallucinate check counts or validator names
 - **Be specific** — every fix recommendation must reference an actual file path
 - **Respect severity** — don't escalate LOW to CRITICAL or vice versa
+- **Respect disposition** — never apply an automated fix to an `escalate` finding, and never present one as a defect DocGuard established. Severity says whether CI blocks; disposition says whether a human decides.
+- **Never read absence as proof** — a `no-matches` validator found nothing applicable, a `partial` one could not check everything it was asked to, and a `regex-fallback` tier could not see the whole syntax. Report the gap rather than summarizing it as clean.
 - **Track progress** — if user runs guard multiple times, compare before/after
 - If user provides `$ARGUMENTS` like "just structure" or "only security", filter report to those validators
 

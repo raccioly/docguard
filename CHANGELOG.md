@@ -52,6 +52,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   why the constraint is recorded now — a test pins the pointer comment at all
   six hand-set threshold sites.
 
+### Changed
+
+- **The agent skills triage on `disposition`, not severity alone.** `docguard-guard`
+  told agents to sort findings by severity and, for warnings, to "consider
+  running `/docguard.fix` for automated remediation" — which would have an agent
+  auto-fixing findings whose judgement belongs to a human. The skill now leads
+  with the act/escalate split, documents all five finding channels, reports work
+  as `N to fix · M to review`, and states that absence of a finding under a
+  `partial` validator or a `regex-fallback` tier is weak evidence.
+  `docguard-fix` now declares `act` findings its only scope and refuses to edit
+  a document to silence an escalation — stamping a fresh review date to clear a
+  freshness signal destroys the signal without doing the review.
+
 ### Fixed
 
 - **API-surface checking never ran on Python, Go, Rust, Java or Ruby projects.**

@@ -34,6 +34,15 @@ Research the actual codebase to generate or repair canonical documentation that 
 - **Maximum 3 validation iterations** — if still failing after 3 rounds, report remaining issues and stop
 - **Research before writing** — understand the codebase first, then generate documentation
 
+## Scope: `act` findings only
+
+Read `disposition` from `docguard guard --format json` before repairing anything.
+
+- **`act`** — DocGuard asserts a defect and names the correction. In scope.
+- **`escalate`** — DocGuard observed a signal and the judgement belongs to a human (freshness history, diff-overlap suspicion, documented-endpoint absence). **Out of scope for this skill.** Report them for review; never edit a document to silence one. A history heuristic saying a review is DUE is not evidence that the document is wrong, and stamping a new review date to clear it destroys the signal without doing the review.
+
+Also read `parserTier`: a finding produced by `regex-fallback` or `fallback-language` came from a pattern match rather than a syntax tree, so verify the underlying source before rewriting a document around it.
+
 ## Execution Flow
 
 ### Step 0: Apply Mechanical Fixes First (no AI needed)

@@ -15,7 +15,7 @@ files, no dependency). One PR per phase.
 - [x] T004 Normalize object `location` to `file:line` in `mkFinding`; fix the emitter in `cli/validators/api-doc-smells.mjs:119` (FR-009).
 - [x] T005 Replace the `reportable` predicate with `evidence.status === 'not-measured' || confidence === 'low'` (FR-014).
 - [x] T006 [P] Tests: `tests/findings-channels.test.mjs` — constructor matrix for every `confidence`/`kind`/`location` input; `reportable` matrix against measured and unmeasured codes.
-- [x] T007 [P] Contract docs: `docs-canonical/DATA-MODEL.md` (findings row + "shape stays fixed" sentence → "additive only"), `docs-canonical/ARCHITECTURE.md`, `docs-canonical/REQUIREMENTS.md`, `docs-canonical/TEST-SPEC.md`, `AGENTS.md` (Consuming Guard Output), `extensions/spec-kit-docguard/skills/docguard-guard/SKILL.md`.
+- [x] T007 [P] Contract docs (**skills initially missed — this task was marked complete before the skill files were touched; corrected in a follow-up commit**): `docs-canonical/DATA-MODEL.md` (findings row + "shape stays fixed" sentence → "additive only"), `docs-canonical/ARCHITECTURE.md`, `docs-canonical/REQUIREMENTS.md`, `docs-canonical/TEST-SPEC.md`, `AGENTS.md` (Consuming Guard Output), `extensions/spec-kit-docguard/skills/docguard-guard/SKILL.md`.
 
 **Checkpoint**: `npm test` green; `guard --format json` on this repo shows the three new fields on every finding; benchmark comparison reports no regressions.
 
