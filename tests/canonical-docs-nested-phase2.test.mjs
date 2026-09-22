@@ -49,7 +49,9 @@ describe('nested canonical docs — phase 2 consumer regressions', () => {
     const r = validateApiDocSmells(tmpDir, {});
 
     assert.match(r.findings[0].message, /^API\.md:/, 'flat-tree message must stay unprefixed, matching pre-fix format');
-    assert.equal(r.findings[0].location.file, 'API.md');
+    // location is a string ('file' or 'file:line') — calibrated-finding-channels#FR-009.
+    // It used to be an object here, which SARIF's parseLocation dropped entirely.
+    assert.equal(r.findings[0].location, 'API.md:1');
   });
 
   it('generated-staleness: the pre-flight scan must SEE a marker in a NESTED doc', () => {

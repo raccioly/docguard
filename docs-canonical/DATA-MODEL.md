@@ -219,7 +219,7 @@ Validators emit findings and aggregate counts. The guard adapter adds names and 
 |-------|------|-------------|
 | `name` | `string` | Validator name (e.g., `"structure"`, `"changelog"`) |
 | `status` | `string` | `"pass"`, `"warn"`, or `"fail"` |
-| `findings` | `object[]` | Stable code, validator, intrinsic `severity`, `effectiveSeverity`, enforcement source/key, confidence, location, message, and normalized suggestion |
+| `findings` | `object[]` | Stable code, validator, intrinsic `severity`, `effectiveSeverity`, enforcement source/key, `confidence`, `disposition`, `evidence`, `parserTier`, location, message, and normalized suggestion |
 | `passed`, `total` | `number` | Applicable check counts |
 | `errors`, `warnings` | `string[]` | Compatibility message arrays |
 | `applicable` | `boolean` | Optional applicability indicator; false becomes N/A |
@@ -230,7 +230,27 @@ Validators emit findings and aggregate counts. The guard adapter adds names and 
 
 `guard` results carry `precisionEvidence`, scoped to the finding codes that run emitted (`schemas/docguard-precision-evidence.schema.json`). The unit of evidence is the finding code. DocGuard defines many more codes than the reviewed corpus measures, so a code the corpus never exercised reports `status: "not-measured"`, carries no ratio, and never inherits the measured precision of another code in the same validator. A measured code whose own precision denominator is below `minN` is marked `quotable: false` with a reason, and may carry a `backoff` to a coarser measured tier that names that tier (`validator` or `aggregate`). `measures` is always `benchmark-precision`; `caveat` is the sentence a consumer must show beside any quoted ratio; `source.matchesRunningVersion` is false when the numbers were measured on a different build than the one reporting them. `coverage` counts codes in the run by measurement status.
 
-The block is served from `cli/precision-evidence-data.mjs`, a generated module derived from `benchmarks/baseline.json` by `npm run generate:precision-evidence`, because `benchmarks/` is not part of the published package. A test compares the committed module against that projection, so a stale number fails the suite rather than shipping. Findings themselves are unchanged: they are written verbatim into feedback records, so their shape stays fixed.
+The block is served from `cli/precision-evidence-data.mjs`, a generated module derived from `benchmarks/baseline.json` by `npm run generate:precision-evidence`, because `benchmarks/` is not part of the published package. A test compares the committed module against that projection, so a stale number fails the suite rather than shipping. Findings are written verbatim into feedback records, so their shape is a contract: it grows only by specification, and a test pins the exact key set.
+
+## Finding channels
+
+A finding answers three independent questions, one field each. A single `confidence` field had to serve all three, so a certain observation read as an uncertain one, and the feedback loop sampled only the findings its own label already doubted.
+
+| Field | Question | Values |
+|-------|----------|--------|
+| `severity` / `effectiveSeverity` | Does CI block? | `error`, `warn`, `info` (effective only) |
+| `disposition` | Who decides — the tool or the reader? | `act`, `escalate` |
+| `confidence` | How sure is the detector of its **observation**? | `high`, `low` |
+| `evidence` | Has the reviewed corpus ever measured this code? | `{ status: 'measured' \| 'not-measured', … }` |
+| `parserTier` | Which analyzer produced it? | `js-ast`, `py-ast`, `regex-fallback`, `fallback-language`, `mixed`, `not-applicable` |
+
+`disposition` is `act` when DocGuard asserts a defect and names the correction, `escalate` when it reports a signal whose judgement belongs to the reader. A detector may set it explicitly; otherwise it derives from `suggestion.kind` (`fix`/`suppress` → `act`; `review`/`report` → `escalate`), and falls back to `escalate` when the suggestion is absent or malformed — a finding DocGuard can describe but can only describe is one a human should read. The three channels vary independently: FRS002 counts commits read directly from Git, so it is `confidence: high` and `disposition: escalate`. The count is a fact; the inference to staleness remains the reader's call.
+
+`evidence` is projected per finding code from the reviewed baseline by the same checked projection that serves `precisionEvidence` (`docguard.precision-evidence-loop#FR-019`). A `measured` entry carries `n`, its Wilson 95% interval, and a point estimate once `n` meets the published floor; an unmeasured code reports `not-measured` and always stands alone, inheriting no sibling's number. The object is frozen and shared per code, so a large run allocates one evidence object per code rather than one per finding.
+
+`reportable` is true when `evidence.status` is `not-measured` **or** `confidence` is `low`. Under the previous rule, which read confidence alone, the default feedback sample omitted the population where a wrong label costs most: a confident label on a code the corpus has yet to measure.
+
+`location` is always a string (`path` or `path:line`) or `null`. A detector that supplies `{ file, line }` is normalized at construction. Under the previous contract such findings rendered as `[object Object]`, and the SARIF location parser dropped them, so six codes reached GitHub Code Scanning with no file annotation at all.
 
 ## Fix Command Issue Format
 

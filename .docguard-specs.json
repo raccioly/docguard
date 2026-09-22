@@ -372,6 +372,124 @@
       }
     },
     {
+      "specId": "docguard.calibrated-finding-channels",
+      "path": "specs/013-calibrated-finding-channels/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.calibrated-finding-channels#FR-001",
+          "docguard.calibrated-finding-channels#FR-002",
+          "docguard.calibrated-finding-channels#FR-003",
+          "docguard.calibrated-finding-channels#FR-004",
+          "docguard.calibrated-finding-channels#FR-005",
+          "docguard.calibrated-finding-channels#FR-006",
+          "docguard.calibrated-finding-channels#FR-007",
+          "docguard.calibrated-finding-channels#FR-008",
+          "docguard.calibrated-finding-channels#FR-009",
+          "docguard.calibrated-finding-channels#FR-010",
+          "docguard.calibrated-finding-channels#FR-011",
+          "docguard.calibrated-finding-channels#FR-012",
+          "docguard.calibrated-finding-channels#FR-013",
+          "docguard.calibrated-finding-channels#FR-014",
+          "docguard.calibrated-finding-channels#FR-015",
+          "docguard.calibrated-finding-channels#FR-016",
+          "docguard.calibrated-finding-channels#FR-017",
+          "docguard.calibrated-finding-channels#FR-018",
+          "docguard.calibrated-finding-channels#FR-019",
+          "docguard.calibrated-finding-channels#FR-020",
+          "docguard.calibrated-finding-channels#SC-001",
+          "docguard.calibrated-finding-channels#SC-002",
+          "docguard.calibrated-finding-channels#SC-003",
+          "docguard.calibrated-finding-channels#SC-004",
+          "docguard.calibrated-finding-channels#SC-005",
+          "docguard.calibrated-finding-channels#SC-006",
+          "docguard.calibrated-finding-channels#SC-007",
+          "docguard.calibrated-finding-channels#SC-008"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/013-calibrated-finding-channels/spec.md",
+            "digest": "sha256:91893fe83076b7edc8521a06e2f515d32514fd406e17daab1a49aa31130d63a4"
+          },
+          {
+            "path": "specs/013-calibrated-finding-channels/plan.md",
+            "digest": "sha256:959d88a2679a6196c74e1ca91c66b910ab50279a8fbb96921e1f4b7847d46803"
+          },
+          {
+            "path": "specs/013-calibrated-finding-channels/tasks.md",
+            "digest": "sha256:5b7f4b838a37de7ab1fcd607a079e35ec327951359b24849df9bcd7a33221eec"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 0,
+          "total": 36
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/findings.mjs",
+            "line": 21
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/findings.mjs",
+            "line": 22
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/findings.mjs",
+            "line": 23
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/findings.mjs",
+            "line": 24
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/findings.mjs",
+            "line": 25
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "cli/findings.mjs",
+            "line": 26
+          },
+          {
+            "requirementId": "FR-014",
+            "file": "cli/findings.mjs",
+            "line": 27
+          }
+        ],
+        "testEvidence": []
+      }
+    },
+    {
       "specId": "docguard.document-lifecycle",
       "path": "specs/006-document-lifecycle/spec.md",
       "reviewed": {

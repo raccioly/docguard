@@ -18,6 +18,13 @@
  *
  * Zero npm dependencies — pure Node.js built-ins.
  * @implements docguard.adoption-workflow-integrity#FR-002
+ * @implements docguard.calibrated-finding-channels#FR-001
+ * @implements docguard.calibrated-finding-channels#FR-002
+ * @implements docguard.calibrated-finding-channels#FR-003
+ * @implements docguard.calibrated-finding-channels#FR-004
+ * @implements docguard.calibrated-finding-channels#FR-006
+ * @implements docguard.calibrated-finding-channels#FR-009
+ * @implements docguard.calibrated-finding-channels#FR-014
  *
  * @typedef {Object} Suggestion
  * @property {'fix'|'suppress'|'review'|'report'} kind
@@ -28,14 +35,45 @@
  * @typedef {Object} Finding
  * @property {string}      code          Stable code, e.g. 'SEC001' (see CODES).
  * @property {string}      validator     Owning validator key.
- * @property {'error'|'warn'} severity
- * @property {'high'|'low'} confidence   'low' = candidate false positive.
+ * @property {'error'|'warn'} severity    Does CI block? (intrinsic; policy may reweight)
+ * @property {'high'|'low'} confidence   How sure the detector is of its OBSERVATION.
+ *                                       'low' = candidate false positive. NOT a triage
+ *                                       signal and NOT a measured rate — see the two
+ *                                       channels below (docguard.calibrated-finding-channels).
+ * @property {'act'|'escalate'} disposition  Who decides. 'act' = DocGuard asserts a
+ *                                       defect and names the correction; 'escalate' =
+ *                                       DocGuard reports a signal whose judgement belongs
+ *                                       to the reader. Orthogonal to severity and confidence:
+ *                                       a certain observation can still be an escalation
+ *                                       (FRS002: the commit count is a fact; staleness is not).
+ * @property {FindingEvidence} evidence  Whether the reviewed corpus has ever measured this
+ *                                       code. 'not-measured' is the honest answer for most
+ *                                       codes; it is never inherited from a sibling code.
+ * @property {ParserTier}  parserTier    Which analyzer tier produced the evidence. Computed
+ *                                       at run time; 'not-applicable' for doc-only findings.
  * @property {string}      message       Concise, NO ansi colour.
- * @property {string|null} location      'path:line' or 'path'.
+ * @property {string|null} location      'path:line' or 'path'. Always a string or null.
  * @property {Suggestion|null} suggestion
- * @property {boolean}     reportable    Surface in `docguard feedback`.
+ * @property {boolean}     reportable    Surface in `docguard feedback`: true when the code is
+ *                                       unmeasured OR confidence is low — so the feedback
+ *                                       loop samples exactly the findings whose label has
+ *                                       never been validated, not only the ones it doubts.
  * @property {string|null} redactedContext  Safe-to-share context for a report.
+ *
+ * @typedef {'js-ast'|'py-ast'|'regex-fallback'|'fallback-language'|'mixed'|'not-applicable'} ParserTier
+ *
+ * @typedef {Object} FindingEvidence
+ * @property {'measured'|'not-measured'} status
+ * @property {number}  [n]                Labelled findings behind the estimate.
+ * @property {number|null} [precision]    Point estimate ONLY when n meets the published floor.
+ * @property {number[]} [precisionInterval]  Wilson 95% [lower, upper].
+ * @property {boolean} [quotable]
+ * @property {string}  [measuredOnVersion]
+ * @property {boolean} [measuredOnRunningVersion]
  */
+
+import { readFileSync } from 'node:fs';
+import { evidenceForCode, PRECISION_EVIDENCE } from './precision-evidence.mjs';
 
 /**
  * Stable finding-code registry. `docguard explain <CODE>` reads this, and
@@ -720,9 +758,82 @@ export const CODES = {
   },
 };
 
+export const SUGGESTION_KINDS = Object.freeze(['fix', 'suppress', 'review', 'report']);
+export const DISPOSITIONS = Object.freeze(['act', 'escalate']);
+export const PARSER_TIERS = Object.freeze(['js-ast', 'py-ast', 'regex-fallback', 'fallback-language', 'mixed', 'not-applicable']);
+// Kinds where DocGuard names the correction itself. Everything else is a
+// signal for the reader to judge.
+const ACT_KINDS = new Set(['fix', 'suppress']);
+
+const RUNNING_VERSION = (() => {
+  try {
+    return JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf-8')).version || null;
+  } catch { return null; }
+})();
+
+// Per-code evidence is identical for every finding of that code in a run, so
+// project it once. A run with 249 findings (a real monorepo) must not build
+// 249 copies of the same object.
+const evidenceCache = new Map();
+function findingEvidence(code) {
+  const key = typeof code === 'string' ? code : '';
+  let cached = evidenceCache.get(key);
+  if (cached) return cached;
+  const e = evidenceForCode(key);
+  cached = e.status !== 'measured'
+    ? Object.freeze({ status: 'not-measured' })
+    : Object.freeze({
+        status: 'measured',
+        n: e.precisionDenominator,
+        precision: e.quotable ? e.precision : null,
+        precisionInterval: e.precisionInterval,
+        quotable: e.quotable === true,
+        measuredOnVersion: PRECISION_EVIDENCE.source.toolVersion,
+        measuredOnRunningVersion: PRECISION_EVIDENCE.source.toolVersion === RUNNING_VERSION,
+      });
+  evidenceCache.set(key, cached);
+  return cached;
+}
+
 /**
- * Build a Finding with sane defaults. `reportable` defaults to true for
- * low-confidence findings — low confidence IS the feedback signal.
+ * A location is a string or null — never an object. An emitter that passes
+ * `{ file, line }` (api-doc-smells did) used to render as `[object Object]`
+ * and defeat SARIF's location parser; normalize it here so the contract holds
+ * regardless of the call site.
+ */
+function normalizeLocation(loc) {
+  if (loc == null) return null;
+  if (typeof loc === 'string') return loc || null;
+  if (typeof loc === 'object') {
+    const file = typeof loc.file === 'string' ? loc.file : typeof loc.path === 'string' ? loc.path : '';
+    if (!file) return null;
+    return Number.isInteger(loc.line) && loc.line > 0 ? `${file}:${loc.line}` : file;
+  }
+  return null;
+}
+
+/**
+ * Build a Finding with sane defaults.
+ *
+ * Three orthogonal channels (docguard.calibrated-finding-channels):
+ *   severity    — does CI block?
+ *   disposition — who decides, tool or reader? Derived from suggestion.kind
+ *                 unless set explicitly; defaults to 'escalate' when there is
+ *                 no valid suggestion (fail closed on triage: a finding DocGuard
+ *                 cannot say how to fix is one a human should look at).
+ *   evidence    — has the reviewed corpus measured this code? Attached per
+ *                 finding so a reader never mistakes an asserted prior for a
+ *                 measured rate.
+ *
+ * A suggestion whose `kind` is not a supported value is malformed and is
+ * omitted (adoption-workflow-integrity#FR-002), never coerced: a typo must
+ * not silently turn 'fix' into 'review'. A suggestion with text but NO kind
+ * is the legacy shape and stays a 'review' nudge.
+ *
+ * `reportable` is true when the code is unmeasured or confidence is low.
+ * Deriving it from confidence alone made the feedback loop sample only the
+ * findings it already doubted — the population where a wrong label is most
+ * costly (confident, never measured) was excluded by default.
  *
  * @param {Partial<Finding>} f
  * @returns {Finding}
@@ -731,27 +842,37 @@ export function mkFinding(f) {
   const severity = f.severity === 'error' ? 'error' : 'warn';
   const confidence = f.confidence === 'low' ? 'low' : 'high';
   const rawSuggestion = f.suggestion;
-  const suggestion = rawSuggestion && typeof rawSuggestion === 'object'
-    && typeof rawSuggestion.text === 'string' && rawSuggestion.text.trim()
-    ? {
-        kind: ['fix', 'suppress', 'review', 'report'].includes(rawSuggestion.kind)
-          ? rawSuggestion.kind : 'review',
+  let suggestion = null;
+  if (rawSuggestion && typeof rawSuggestion === 'object'
+    && typeof rawSuggestion.text === 'string' && rawSuggestion.text.trim()) {
+    const kind = rawSuggestion.kind === undefined || rawSuggestion.kind === null ? 'review' : rawSuggestion.kind;
+    if (SUGGESTION_KINDS.includes(kind)) {
+      suggestion = {
+        kind,
         text: rawSuggestion.text.trim(),
         ...(typeof rawSuggestion.command === 'string' && rawSuggestion.command.trim()
           ? { command: rawSuggestion.command.trim() } : {}),
         ...(typeof rawSuggestion.pragma === 'string' && rawSuggestion.pragma.trim()
           ? { pragma: rawSuggestion.pragma.trim() } : {}),
-      }
-    : null;
+      };
+    }
+  }
+  const disposition = DISPOSITIONS.includes(f.disposition)
+    ? f.disposition
+    : suggestion && ACT_KINDS.has(suggestion.kind) ? 'act' : 'escalate';
+  const evidence = findingEvidence(f.code);
   return {
     code: f.code || null,
     validator: f.validator || null,
     severity,
     confidence,
+    disposition,
+    evidence,
+    parserTier: PARSER_TIERS.includes(f.parserTier) ? f.parserTier : 'not-applicable',
     message: f.message || '',
-    location: f.location || null,
+    location: normalizeLocation(f.location),
     suggestion,
-    reportable: f.reportable === true || confidence === 'low',
+    reportable: f.reportable === true || confidence === 'low' || evidence.status === 'not-measured',
     redactedContext: f.redactedContext || null,
   };
 }

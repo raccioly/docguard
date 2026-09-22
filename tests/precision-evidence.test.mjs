@@ -129,10 +129,19 @@ describe('guard precision evidence block', () => {
     assert.equal(report.precisionEvidence.measures, 'benchmark-precision');
     assert.equal(report.precisionEvidence.coverage.codesInRun, new Set(report.findings.map(f => f.code)).size);
     for (const finding of report.findings) {
+      // Findings are written verbatim into shareable feedback records, so the
+      // shape is a contract: it may only grow, and only with a spec. The three
+      // channels added by docguard.calibrated-finding-channels are listed here
+      // so an accidental field can never slip in unreviewed.
       assert.deepEqual(Object.keys(finding).sort(), [
-        'code', 'confidence', 'effectiveSeverity', 'enforcement', 'location',
-        'message', 'redactedContext', 'reportable', 'severity', 'suggestion', 'validator',
-      ], 'findings are written verbatim into shareable feedback records; their shape must not change');
+        'code', 'confidence', 'disposition', 'effectiveSeverity', 'enforcement',
+        'evidence', 'location', 'message', 'parserTier', 'redactedContext',
+        'reportable', 'severity', 'suggestion', 'validator',
+      ], 'findings are written verbatim into shareable feedback records; their shape changes only by spec');
+      assert.ok(['act', 'escalate'].includes(finding.disposition));
+      assert.ok(['measured', 'not-measured'].includes(finding.evidence.status));
+      assert.equal(finding.location === null || typeof finding.location === 'string', true,
+        'location is a string or null, never an object (FR-009)');
     }
   });
 

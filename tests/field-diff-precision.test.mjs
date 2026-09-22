@@ -51,7 +51,7 @@ it('quiets formatting-only JavaScript and still warns on a removed API', t => {
   const defect = revisions(t, 'src/session.js', before, 'export function issueCredential() {}\n', doc);
   const findings = validateDiffSuspicion(defect).findings;
   assert.equal(findings.length, 1);
-  assert.equal(findings[0].location.file, 'docs-canonical/API.md');
+  assert.equal(findings[0].location, 'docs-canonical/API.md');
   assert.match(findings[0].message, /possible drift/);
   assert.equal(findings[0].confidence, 'low');
 });
@@ -84,7 +84,7 @@ it('keeps nested documents with identical basenames separate', t => {
       'docs-canonical/one/API.md': 'src/session.js exposes refreshCredential().',
       'docs-canonical/two/API.md': 'src/session.js exposes refreshCredential().',
     });
-  const paths = validateDiffSuspicion(dir).findings.map(f => f.location.file).sort();
+  const paths = validateDiffSuspicion(dir).findings.map(f => f.location).sort();
   assert.deepEqual(paths, ['docs-canonical/one/API.md', 'docs-canonical/two/API.md']);
 });
 
