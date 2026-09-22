@@ -65,4 +65,10 @@ jobs:
           # committed findings-ledger.json baseline and gate only on NEW findings)
           # once a few runs have been read.
           fail-on: ""
-          upload-sarif: "true"
+          # Disabled pending a websec-validator fix: 6 of its 28 results carry no
+          # `locations` (4x websec/iac from Trivy's Dockerfile checks, plus
+          # websec/incomplete-hsts and websec/csrf, which are absence-of-header
+          # findings with nothing to anchor to). Code Scanning rejects the whole
+          # upload with "locationFromSarifResult: expected at least one location".
+          # Re-enable once every result carries a location.
+          upload-sarif: "false"
