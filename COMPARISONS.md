@@ -178,6 +178,26 @@ Even with a well-written AGENTS.md that says "research docs first," agents somet
 
 **Is this acceptable?** Yes. No governance system relies on 100% compliance. The combination of agent instructions + automated validation catches most issues.
 
+**6. Not every finding is a defect, and almost none of them are calibrated.**
+
+This is the limitation most tools hide. A linter's output is uniform — every line is a rule violation. DocGuard's is not. Some findings are defects it can name the correction for; others are signals that something is worth a human's attention. Reported as one undifferentiated list, the second kind gets "fixed", which means a document is edited until a message stops printing and nobody has actually decided anything.
+
+So a DocGuard finding carries the question it answers, not just a severity:
+
+| Field | Question | Values |
+|-------|----------|--------|
+| `severity` | Does CI block? | `error`, `warn`, `info` |
+| `disposition` | Who decides — tool or human? | `act`, `escalate` |
+| `confidence` | How sure is the detector of its observation? | `high`, `low` |
+| `evidence.status` | Has the reviewed corpus measured this code? | `measured`, `not-measured` |
+| `parserTier` | Which analyzer produced it? | `js-ast`, `py-ast`, `regex-fallback`, … |
+
+These are independent. Freshness FRS002 — "13 code commits since this document was reviewed" — is a **blocking-capable, high-confidence escalation**: the commit count comes from `git log` and is exact, and it still establishes only that a review is due, never that the document is wrong.
+
+**The honest part is `evidence.status`.** For most finding codes it reads `not-measured`: the reviewed precision corpus has never scored them, so the `confidence` label is a maintainer's prior, not a measurement. DocGuard says so on the finding rather than presenting a hand-set label as a statistic. The corpus is three orders of magnitude too small to derive confidence from measured precision honestly, and no threshold in the tool is fitted from data.
+
+**Is this enough?** It is honest, which is the part that was missing. It does not make DocGuard a probabilistic judge, and it is not meant to: a reader who knows which findings the tool adjudicated and which it merely surfaced can act on the first set and think about the second. A reader handed one flat list cannot.
+
 ---
 
 ## Part 3: When CDD Works and When It Doesn't

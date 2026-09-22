@@ -36,6 +36,7 @@
 - [Spec Kit Integration](#-spec-kit-integration)
 - [Usage](#usage)
 - [Validators](#-validators)
+- [Reading a finding](#-reading-a-finding)
 - [Templates](#-templates)
 - [AI Agent Support](#-ai-agent-support)
 - [Slash Commands](#-slash-commands)
@@ -477,6 +478,51 @@ their exact stable code is explicitly configured.
 
 ---
 
+## 🎚️ Reading a Finding
+
+A finding used to answer one question — "how worried should you be?" — with one
+`confidence` field, which meant the field was doing three incompatible jobs at
+once. DocGuard now separates them. **These axes are independent**: a blocking
+`error` can be an escalation, and a `high`-confidence finding can still be one a
+human must judge.
+
+| Field | The question it answers | Values |
+|:------|:------------------------|:-------|
+| `severity` / `effectiveSeverity` | Does CI block? | `error`, `warn`, `info` |
+| `disposition` | Who decides — the tool or you? | `act`, `escalate` |
+| `confidence` | How sure is the detector of its **observation**? | `high`, `low` |
+| `evidence.status` | Has the reviewed corpus ever measured this code? | `measured`, `not-measured` |
+| `parserTier` | Which analyzer produced it? | `js-ast`, `py-ast`, `regex-fallback`, `fallback-language`, `mixed`, `not-applicable` |
+
+**`act`** — DocGuard asserts a defect and names the correction. Safe to apply,
+including through `docguard fix` or an agent.
+
+**`escalate`** — DocGuard observed a signal; the judgement is yours. Freshness
+FRS002 ("13 code commits since the document was reviewed") is the canonical
+case: the count comes from `git log`, so it is exact and `confidence: high` —
+and it establishes only that a review is *due*, never that the document is
+wrong. Editing a document until an escalation stops printing destroys the signal
+and fixes nothing. A judged-and-left escalation is a correct outcome.
+
+**`evidence.status`** tells you what a confidence label is worth. `measured`
+quotes the reviewed precision corpus with `n` and a Wilson lower bound;
+`not-measured` means the label is a maintainer's prior and nothing more. Most
+codes are unmeasured — that does not make their findings wrong, only unverified,
+and `docguard feedback` samples them for exactly that reason.
+
+**`parserTier`** tells you what the detector could see. `regex-fallback` or
+`fallback-language` means no syntax tree was available for that file — so the
+*absence* of a finding there is weak evidence, and the owning validator reports
+`applicability: partial` with the reason.
+
+Every channel appears on every finding in `guard --format json`, in SARIF
+`result.properties`, and per-issue in `diagnose --format json` (which also emits
+a `dispositionCounts` summary). `guard`, `diagnose`, `ci` and `report` all print
+the act/escalate split beside the verdict; `report` adds a column per channel to
+its findings table. Run `docguard explain <CODE>` for one code's evidence.
+
+---
+
 ## 📄 Templates
 
 DocGuard ships **18 professional templates** with metadata, badges, and revision history:
@@ -722,6 +768,10 @@ Two ready-to-use templates ship with the Spec Kit extension and as standalone fi
 
 Highlights from recent releases:
 
+- **Calibrated finding channels** — `disposition`, `evidence.status` and `parserTier` now sit
+  beside `severity` and `confidence` on every finding, so "does CI block", "who decides",
+  "how sure is the detector", "has this code ever been measured" and "which analyzer saw it"
+  stop being one overloaded field. See [Reading a Finding](#-reading-a-finding).
 - **Adoption baseline** — `guard --update-baseline` freezes a legacy repo's existing findings
   into a committed `.docguard.baseline.json`; guard/ci then gate only NEW drift, with suppression
   always visible. Adopt today, burn down at your own pace.

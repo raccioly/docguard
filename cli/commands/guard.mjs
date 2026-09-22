@@ -211,6 +211,12 @@ function renderableItems(v) {
       message: f.message,
       code: f.code,
       confidence: f.confidence,
+      // Carried, not dropped. The renderer below annotates an `escalate`
+      // finding with "(review — signal, not a verdict)". Omitting the field
+      // here made that annotation unreachable for every structured finding —
+      // which is all of them — so the per-finding half of FR-008 printed
+      // nothing while the summary counts said escalations existed.
+      disposition: f.disposition,
       suggestion: f.suggestion,
     }));
   }

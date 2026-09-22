@@ -1,6 +1,8 @@
 # Tasks: Calibrated Finding Channels
 
-**Status**: Complete — all phases landed and verified
+**Status**: Complete — all phases landed and verified (Phase 7 added after the
+first six landed: the channels existed on the Finding and in `guard`, but four
+surfaces reading the same run still showed the pre-channel view)
 **Spec**: `specs/013-calibrated-finding-channels/spec.md`
 **Plan**: `specs/013-calibrated-finding-channels/plan.md`
 
@@ -70,6 +72,38 @@ files, no dependency). One PR per phase.
 
 - [x] T035 Full suite; the benchmark run (`benchmarks/run.mjs`, invoked with `--baseline benchmarks/baseline.json`) reports no regressions; `docguard guard` passes on this repository; `npm pack --dry-run`. This task invokes those files rather than changing them. <!-- docguard:ignore SPK010 — a verification task runs its tools, it does not modify them -->
 - [x] T036 `CHANGELOG.md` Unreleased entries per phase; `docguard specs --write`; `docguard reconcile --since <base>`; `docguard specs complete`.
+
+## Phase 7: Remaining consumer surfaces
+
+The channels were added to the Finding and to `guard`, but four surfaces that
+read the same guard run still presented the pre-channel view. Every one of them
+is consumed by an agent, and `diagnose` converts guard output into fix prompts —
+the one place where showing an escalation as a defect causes the edit-until-it-
+disappears failure directly.
+
+- [x] T037 `cli/commands/guard.mjs`: `renderableItems` drops `disposition`, so the
+  per-finding `(review — signal, not a verdict)` annotation is unreachable for
+  every structured finding. Carry the field. Regression-pinned, because the
+  summary counts were correct and nothing tested the enumerated list.
+- [x] T038 `cli/commands/diagnose.mjs`: collect issues from structured findings so
+  each carries `code`/`disposition`/`confidence`/`evidence.status`/`parserTier`
+  (count unchanged — `resultFromFindings` derives errors/warnings from the same
+  array). Split the AI prompt into `DEFECTS TO FIX` / `SIGNALS TO REVIEW`; use
+  the detector's own suggestion text for a signal instead of the validator-level
+  fix verb; exclude escalations from remediation steps and `fixCommands`; add
+  `dispositionCounts` and `fixKind: 'review'` to the JSON; tag the debate prompt
+  per issue.
+- [x] T039 `cli/commands/ci.mjs` and `cli/commands/report.mjs`: `ci` prints and
+  emits `guard.dispositionCounts`; `report` carries disposition/confidence/
+  evidence/parser per grouped code, a summary row, and a legend saying what each
+  column can and cannot support.
+- [x] T040 [P] Consumer docs: `extensions/spec-kit-docguard/skills/docguard-review/SKILL.md`,
+  `docguard-score/SKILL.md`, `docguard-sync/SKILL.md` (and their `.agent/skills/`
+  copies, which must stay byte-identical); `README.md` "Reading a Finding";
+  `COMPARISONS.md` honest-limitation #6; `STANDARD.md` §8 Finding Channels.
+  Tests in `tests/calibrated-channels-acceptance.test.mjs`.
+
+**Checkpoint**: every surface that reads a guard run reports the same split.
 
 ## Dependencies
 

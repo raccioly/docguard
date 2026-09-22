@@ -113,6 +113,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   a document to silence an escalation — stamping a fresh review date to clear a
   freshness signal destroys the signal without doing the review.
 
+  `docguard-review`, `docguard-score` and `docguard-sync` now carry the same
+  channels. Each had its own way of losing them: `review` ranks findings by
+  severity into a CRITICAL list, which put an unadjudicated signal at the top
+  with an edit beside it; `score` promised point gains for clearing guard
+  warnings, which prices an escalation and turns "reach grade A" into an
+  instruction to edit documents until messages stop printing; `sync` refreshes
+  code-truth sections, and a re-sync that moves a timestamp is the fastest way
+  to make a freshness escalation disappear without anyone reviewing anything.
+
+- **`diagnose`, `ci` and `report` surface the disposition split.** They consume
+  the same guard run as `guard` but showed the pre-channel view, so an agent
+  reading them got back the flat list the channels exist to break up.
+  `diagnose` matters most — it turns guard output into AI fix prompts, and the
+  prompt said `TASK: Fix N documentation issue(s)` over a list that mixed
+  defects with signals. An escalation handed to an agent under that heading
+  produces a document edited until the message stops printing.
+
+  The prompt now splits `DEFECTS TO FIX` from `SIGNALS TO REVIEW`, gives each
+  signal the detector's own decision text rather than the validator's fix verb,
+  excludes escalations from the remediation steps and `fixCommands`, and states
+  that a judged signal will still print — an agent that reads a non-zero count
+  as failure otherwise keeps editing. `diagnose --format json` adds
+  `dispositionCounts` and the five channels per issue, with `fixKind: 'review'`
+  for escalations. `ci` reports the split beside the verdict, because an exit
+  code cannot distinguish a green-and-silent run from a green-but-escalating
+  one. `report` adds a disposition/confidence/evidence/parser column per code
+  and a per-run summary row, so an auditor reading "3 × FRS002, severity warn"
+  can tell DocGuard never asserted those documents were wrong.
+
 - **SPK010 — a completed task that names a file the feature never changed.**
   The phantom check (SPK008) asks whether a checked task's deliverable EXISTS,
   which a task naming already-existing files satisfies immediately, whether or
@@ -135,6 +164,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   tasks; seven were real gaps in this very feature, now closed.
 
 ### Fixed
+
+- **Guard's per-finding "review" annotation never printed.** The summary counted
+  `N to fix · M to review` correctly, but the line under each finding that says
+  `(review — signal, not a verdict)` was unreachable: the renderer builds its
+  items from `findings` and did not copy `disposition` into them, so the check
+  tested `undefined` for every structured finding — which is all of them. A
+  reader scanning the enumerated list, which is where the decision about a
+  specific document actually gets made, saw no distinction at all.
+
 - **API-surface checking never ran on Python, Go, Rust, Java or Ruby projects.**
   `detectFramework` read `package.json` and nothing else, so it returned an
   empty framework for every non-JS project, and `scanRoutesDeep` gates its

@@ -62,6 +62,22 @@ const guard = (dir, fmt) => {
   return fmt === 'json' || fmt === 'sarif' ? JSON.parse(r.stdout) : r.stdout;
 };
 
+/** Run any command in `dir`; parse when a JSON format was asked for. */
+const run = (dir, args, { json = false } = {}) => {
+  const r = spawnSync(process.execPath, [CLI, ...args], { cwd: dir, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+  return json ? JSON.parse(r.stdout) : r.stdout;
+};
+
+/**
+ * A project whose guard run contains at least one `escalate` finding. Freshness
+ * is off in the starter profile, so it is enabled explicitly rather than
+ * relying on a default that could change.
+ */
+const escalatingProject = () => project(
+  { ...BASE, '.docguard.json': JSON.stringify({ projectName: 'accept', profile: 'starter', validators: { freshness: true } }) },
+  { git: true },
+);
+
 const BASE = {
   'package.json': JSON.stringify({ name: 'accept', version: '1.0.0' }),
   '.docguard.json': JSON.stringify({ projectName: 'accept', profile: 'starter' }),
@@ -184,6 +200,90 @@ describe('SC-008 — the dependency floor is unchanged', () => {
       'constitution II: exactly one runtime dependency');
     assert.match(pkg.dependencies['@babel/parser'], /^\d+\.\d+\.\d+$/, 'exact-pinned, no range');
     assert.deepEqual(pkg.devDependencies || {}, {}, 'tests use node:test');
+  });
+});
+
+describe('FR-008 — the enumerated findings, not just the summary', () => {
+  test('an escalate finding is annotated in the per-finding list', () => {
+    // Regression: `renderableItems` built its items from `findings` without
+    // copying `disposition`, so this annotation tested `undefined` for every
+    // structured finding and never rendered. The summary counts were right,
+    // which is why it went unnoticed — and the enumerated list is where a
+    // reader decides what to do about a specific document.
+    const out = guard(escalatingProject());
+    const frsLine = out.split('\n').find(l => l.includes('review due:'));
+    assert.ok(frsLine, 'fixture must produce a freshness escalation');
+    assert.match(frsLine, /review — signal, not a verdict/,
+      'an escalation must be marked where it is read, not only counted in the summary');
+  });
+});
+
+describe('FR-007 — every surface that reads a guard run reports the same split', () => {
+  test('diagnose JSON carries the channels per issue and a run-level split', () => {
+    const data = run(escalatingProject(), ['diagnose', '--format', 'json'], { json: true });
+    assert.ok(data.dispositionCounts, 'diagnose must publish the act/escalate split');
+    assert.ok(data.dispositionCounts.escalate > 0, 'fixture must produce an escalation');
+    assert.equal(
+      data.dispositionCounts.act + data.dispositionCounts.escalate + data.dispositionCounts.unclassified,
+      data.issueCount, 'every issue must land in exactly one bucket');
+
+    const frs = data.issues.find(i => i.code === 'FRS002');
+    assert.ok(frs, 'fixture must produce FRS002');
+    assert.equal(frs.disposition, 'escalate');
+    assert.equal(frs.confidence, 'high', 'the commit count came from git log');
+    assert.equal(frs.evidenceStatus, 'not-measured');
+    assert.equal(frs.fixKind, 'review', 'an escalation is not a fix of any kind');
+    for (const i of data.issues) {
+      assert.ok(['act', 'escalate', null].includes(i.disposition), `${i.validator}: ${i.disposition}`);
+    }
+  });
+
+  test('diagnose never puts an escalation in the fix path', () => {
+    const dir = escalatingProject();
+    const data = run(dir, ['diagnose', '--format', 'json'], { json: true });
+    const escalations = data.issues.filter(i => i.disposition === 'escalate');
+    assert.ok(escalations.length > 0);
+    for (const e of escalations) {
+      assert.ok(!data.fixCommands.includes(e.command) || e.command === null,
+        'a command that only an escalation asked for must not reach fixCommands');
+    }
+
+    const prompt = run(dir, ['diagnose', '--format', 'prompt']);
+    assert.match(prompt, /SIGNALS TO REVIEW/);
+    assert.match(prompt, /Do NOT edit a document to make one of these disappear/);
+    // The exact hazard: FRS002 must appear under the review heading and never
+    // in the defect list an agent is told to fix.
+    const reviewIdx = prompt.indexOf('SIGNALS TO REVIEW');
+    const frsIdx = prompt.indexOf('review due:');
+    assert.ok(frsIdx > reviewIdx, 'FRS002 must appear below the review heading, not in DEFECTS TO FIX');
+    const stepsIdx = prompt.indexOf('REMEDIATION STEPS');
+    assert.equal(prompt.slice(stepsIdx).includes('review due:'), false,
+      'a signal must not be listed as something to remediate');
+  });
+
+  test('ci publishes the split beside the verdict', () => {
+    const dir = escalatingProject();
+    const data = run(dir, ['ci', '--format', 'json', '--no-history'], { json: true });
+    assert.ok(data.guard.dispositionCounts, 'an exit code cannot distinguish green-and-silent from green-but-escalating');
+    assert.ok(data.guard.dispositionCounts.escalate > 0);
+    assert.match(run(dir, ['ci', '--no-history']), /to review/);
+  });
+
+  test('report carries the channels per code and says what they mean', () => {
+    const dir = escalatingProject();
+    const data = run(dir, ['report', '--format', 'json'], { json: true });
+    assert.ok(data.guard.dispositionCounts);
+    const frs = data.findings.find(f => f.code === 'FRS002');
+    assert.ok(frs, 'fixture must produce FRS002');
+    assert.equal(frs.disposition, 'escalate');
+    assert.equal(frs.evidenceStatus, 'not-measured');
+    assert.ok(typeof frs.parserTier === 'string');
+
+    const md = run(dir, ['report']);
+    assert.match(md, /Findings by disposition/);
+    assert.match(md, /\| Code \| Severity \| Disposition \|/);
+    // An auditor reading a column must be told what it can and cannot support.
+    assert.match(md, /the judgement belongs to the reader/);
   });
 });
 

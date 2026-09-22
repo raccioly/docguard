@@ -1414,7 +1414,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-
 - **Three channels on every finding, replacing one field that answered three
   questions.** `confidence` described the detector's certainty, decided whether
   a human should look, AND gated which findings the feedback loop sampled.
@@ -1458,8 +1457,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   why the constraint is recorded now — a test pins the pointer comment at all
   six hand-set threshold sites.
 
-### Changed
+- **The unverified-claims count travels with the badge.** A green
+  `628/628 passed` badge printed a few lines under "9 documented claim(s) are
+  unverified against code" was the last misleading surface: the two numbers were
+  adjacent and unlinked, and only one of them got pasted into READMEs. Both
+  `docguard badge` and the badge `guard` prints now carry a companion
+  `claims_unverified` badge, amber above zero. The score and pass badges keep
+  their own colour — they report structural gates that did pass, and folding
+  factual verification into them would overload one number with two meanings.
+  The count is rendered in three states, not two: `buildScoreAssurance` returns
+  null rather than zero when claim extraction fails, and that renders as
+  `unknown`, because "0 unverified" printed when DocGuard checked nothing is
+  precisely the false green this tool exists to prevent.
 
+- **An adoption baseline now reports its age and what it is still hiding.**
+  `saveBaseline` had always written `generatedAt` and `loadBaseline` had always
+  discarded it, so 233 frozen findings looked identical on day 1 and day 400 and
+  a baseline could silently become permanent amnesty. Runs now print
+  `baseline is N day(s) old; M still suppressed; K no longer occur — safe to
+  drop`. Both counts fall out of the existing suppression loop at no added cost,
+  and the stale count is the one that lets a baseline shrink instead of only
+  ever growing. The wording stays inside what the file can prove: entries carry
+  occurrence counts, not per-entry timestamps, so "still suppressed" is
+  demonstrable where "never triaged" would be a guess.
+
+- **Benchmark evidence says whether it still applies to the build that ran.**
+  `explain` reported "Measured on DocGuard 0.41.7; you are running 0.42.0" —
+  true, and useless: it compared version strings when the question is whether
+  the measured number still describes the code that just ran. It was also a
+  false alarm. The detectors shipped in 0.42.0 are byte-identical to the
+  benchmarked build, so every number remained exactly as valid. Comparing git
+  revisions could not answer it either, since `.npmignore` excludes `.git/` and
+  `benchmarks/` is unpublished, leaving an installed user with no repository to
+  diff. `benchmarks/baseline.json` now records a `detectorsDigest` over the
+  detector sources the corpus was actually run against — reviewed input, never
+  recomputed from the working tree, so an edited detector cannot re-stamp itself
+  as calibrated — and the runtime hashes the shipped `cli/validators` and
+  `cli/scanners` to compare. A release that changes only docs or the CLI shell
+  now says the detectors are unchanged and the number still applies. The hash is
+  only computed when the version strings already disagree, so the matching path
+  costs nothing and the mismatching path costs about 1.2ms. An unreadable
+  install reports `unknown` and falls back to the old wording, never to a false
+  all-clear.
+
+- **A short list of untiered files is printed instead of counted.** "3 file(s)
+  in no validation tier" with the names one `--verbose` away is a nag that
+  cannot be acted on from the run that printed it. At three files or fewer the
+  list is the message, so it is shown inline; above that the calm count and the
+  `--verbose` pointer still win, because a wall of paths every run is what
+  trains users to ignore the line.
+
+### Changed
 - **The agent skills triage on `disposition`, not severity alone.** `docguard-guard`
   told agents to sort findings by severity and, for warnings, to "consider
   running `/docguard.fix` for automated remediation" — which would have an agent
@@ -1470,6 +1518,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `docguard-fix` now declares `act` findings its only scope and refuses to edit
   a document to silence an escalation — stamping a fresh review date to clear a
   freshness signal destroys the signal without doing the review.
+
+  `docguard-review`, `docguard-score` and `docguard-sync` now carry the same
+  channels. Each had its own way of losing them: `review` ranks findings by
+  severity into a CRITICAL list, which put an unadjudicated signal at the top
+  with an edit beside it; `score` promised point gains for clearing guard
+  warnings, which prices an escalation and turns "reach grade A" into an
+  instruction to edit documents until messages stop printing; `sync` refreshes
+  code-truth sections, and a re-sync that moves a timestamp is the fastest way
+  to make a freshness escalation disappear without anyone reviewing anything.
+
+- **`diagnose`, `ci` and `report` surface the disposition split.** They consume
+  the same guard run as `guard` but showed the pre-channel view, so an agent
+  reading them got back the flat list the channels exist to break up.
+  `diagnose` matters most — it turns guard output into AI fix prompts, and the
+  prompt said `TASK: Fix N documentation issue(s)` over a list that mixed
+  defects with signals. An escalation handed to an agent under that heading
+  produces a document edited until the message stops printing.
+
+  The prompt now splits `DEFECTS TO FIX` from `SIGNALS TO REVIEW`, gives each
+  signal the detector's own decision text rather than the validator's fix verb,
+  excludes escalations from the remediation steps and `fixCommands`, and states
+  that a judged signal will still print — an agent that reads a non-zero count
+  as failure otherwise keeps editing. `diagnose --format json` adds
+  `dispositionCounts` and the five channels per issue, with `fixKind: 'review'`
+  for escalations. `ci` reports the split beside the verdict, because an exit
+  code cannot distinguish a green-and-silent run from a green-but-escalating
+  one. `report` adds a disposition/confidence/evidence/parser column per code
+  and a per-run summary row, so an auditor reading "3 × FRS002, severity warn"
+  can tell DocGuard never asserted those documents were wrong.
 
 - **SPK010 — a completed task that names a file the feature never changed.**
   The phantom check (SPK008) asks whether a checked task's deliverable EXISTS,
@@ -1493,6 +1570,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   tasks; seven were real gaps in this very feature, now closed.
 
 ### Fixed
+
+- **Guard's per-finding "review" annotation never printed.** The summary counted
+  `N to fix · M to review` correctly, but the line under each finding that says
+  `(review — signal, not a verdict)` was unreachable: the renderer builds its
+  items from `findings` and did not copy `disposition` into them, so the check
+  tested `undefined` for every structured finding — which is all of them. A
+  reader scanning the enumerated list, which is where the decision about a
+  specific document actually gets made, saw no distinction at all.
 
 - **API-surface checking never ran on Python, Go, Rust, Java or Ruby projects.**
   `detectFramework` read `package.json` and nothing else, so it returned an
@@ -1541,6 +1626,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   did pass. `no-matches` keeps the top grade: a validator that ran and found
   nothing applicable did its job. The coverage line leads with
   `N of M validator(s) checked`.
+
+- **A version bump no longer flips the verdict on an unchanged tree.** Upgrading
+  0.41.3 -> 0.42.0 turned `PASS 1870/1870` into `WARN` with `SPR001`
+  (`.docguard-specs.json` digest projection differs) with no code and no docs
+  changed. Registry currency was decided by byte-equality of the serialized
+  projection, which cannot tell "your registry is stale" from "my output format
+  changed", so every format change reached users as project drift. Two encodings
+  were already doing it: the pre-0.42 artifact digest (taken over raw bytes
+  before the `docguard:last-reviewed` stamp was excluded in #410), and
+  `schemaVersion: 1` — which `readSpecRegistry` explicitly accepts as supported
+  while the projection reported it stale forever, a state no content edit could
+  ever clear. The currency check now consults a declared table of older
+  encodings. This is not a weakening: a legacy digest is accepted only when it
+  equals the legacy digest OF THE CURRENT CONTENT, so edited content matches
+  neither form and still reports stale. `ACCEPTED_SCHEMA_VERSIONS` is derived
+  from that table, so a version cannot be accepted by the reader without the
+  currency check knowing how to treat it, and a new projection encoding without
+  a declared equivalence fails the suite. The older form is reported as a note
+  rather than a finding, and `docguard specs --write` still migrates it, so the
+  compatibility shim cannot quietly become load-bearing.
+  This is the failure mode that forces teams to pin, and pinning is what keeps
+  them on stale detectors.
+
+- **`docguard upgrade --apply` migrates the config schema even when the CLI
+  upgrade fails.** The global `npm install -g` ran first and exited 1 on
+  failure, before the schema block — so every user installed through npx, pnpm,
+  a devDependency or Docker saw a permanent "Schema vX is behind vY" nudge that
+  no command could clear, because the one command that clears it aborted first.
+  The schema migration is local and offline and no longer depends on it. A
+  failed CLI install is still reported and still exits 1, so CI cannot read a
+  partial upgrade as a complete one.
 
 ### Changed
 
@@ -1688,124 +1804,8 @@ Automated weekly release — batches everything merged since `v0.41.7`.
 - **`llms.txt` stopped claiming DocGuard is "v0.6".** The footer quoted
   `config.version` — the `.docguard.json` *schema* version — so every generated
   `llms.txt`, in every adopting project, announced the config format version as
-  though it were the tool version. Both forms now stamp the real release, and
-  `llms-full.txt` carries it too (it previously carried no version at all). The
-  tool version is now one exported `TOOL_VERSION` in `cli/shared.mjs`, read from
-  the package manifest, replacing the entrypoint's private copy — so a release
-  bump cannot leave a stale literal anywhere.
-- **`llms.txt` and `llms-full.txt` are regenerated, and stay that way.** Both
-  bundles ship inside the npm and PyPI tarballs, so an agent reads them as this
-  project's own account of itself — and neither had been regenerated since
-  v0.37.0. The full form was still describing a `guard --format json` contract
-  that predated `evidence`, `specs preflight`, `reconcile` and `agent --task`.
-  Every inlined section was verified byte-for-byte against its source doc.
-  Three things now keep them current: `npm run llms` (`tools/generate-llms.mjs`),
-  a regeneration step in the weekly release workflow — run after the changelog
-  splice, so a published bundle describes the version being released — and
-  `tests/llms-bundle-drift.test.mjs`, which fails CI when a canonical or
-  optional doc changes without the bundles being rebuilt.
-  The drift test deliberately exempts the inlined `CHANGELOG.md` body: it is
-  capped at 400 lines from the top and this repo requires a changelog entry on
-  every commit, so gating it byte-exact would fail every pull request. Release-
-  time regeneration covers that body instead.
-- `generateLlmsTxt` and `generateLlmsFullTxt` now share one exported
-  `llmsDocSet()` instead of duplicating doc discovery, so the index form and the
-  full form cannot disagree about which docs a project has. Output is unchanged,
-  byte-for-byte.
 
-- **The benchmark now says what its numbers are.** `benchmarks/baseline.json`
-  is a strict provenance envelope (`schemas/docguard-benchmark-baseline.schema.json`,
-  envelope `schemaVersion` 2): `review.measures` is `benchmark-precision` and
-  `review.caveat` is the sentence that must accompany any quoted ratio — both
-  derived from the retained cases, and re-verified on load together with every
-  metric, so a hand-edited precision figure or a stale caveat is rejected instead
-  of published. Every `benchmarks/run.mjs` report carries the same
-  `provenance` block whether or not it is persisted. The baseline is validated
-  *before* the run starts.
-- **Wording.** PHILOSOPHY, README, CONTRIBUTING, and the `diagnose` command no
-  longer call the HIGH/MEDIUM/LOW labels "calibrated": they are deterministic
-  strata that borrow TRACE's vocabulary. What is measured — detector precision
-  on a balanced labelled corpus, with n and Wilson bounds — is now linked from
-  each of those places, and VALIDATION.md quotes the numbers with their caveat.
-  DocGuard deliberately does not emit a calibration document: a balanced corpus
-  has no base rate to calibrate against.
-- **Breaking for the benchmark tool only** (the CLI is unaffected): a baseline
-  written by `--write-baseline` before this release (envelope `schemaVersion` 1)
-  is refused with instructions to regenerate it after review.
-
-### Fixed
-
-- **The release cut was rejected by its own path allowlist.** `scheduled-release.yml`
-  regenerates `llms.txt` and `llms-full.txt` inside the release job, but the
-  privileged-PR allowlist in `cli/release-pr-policy.mjs` did not admit them, so
-  validation failed with `paths: unexpected llms-full.txt, llms.txt` and no
-  release could be cut. Both are deterministic output of the repository, like the
-  other generated artifacts already on the list.
-
-- **`init` no longer adopts a Spec Kit feature folder as the project's canonical
-  root, then refuses to proceed from the config it just wrote.** A repository
-  with `specs/002-some-feature/spec.md` and `data-model.md` had that single
-  feature directory adopted, a two-key `.docguard.json` written, and init then
-  threw from its own mapped-layout guard. Every re-run repeated it, by a second
-  code path, so the project could not be initialized without editing the config
-  by hand. Three things were wrong and all three are fixed:
-  - A numbered feature directory (`specs/003-slug/`) is no longer an adoption
-    candidate. It holds one feature's paperwork, not the project's documentation.
-  - Adopting a layout no longer aborts init. The guard that forbids generating
-    INTO a mapped document stays, but init now simply scaffolds the roles the
-    mapping has not placed, so it neither writes into a mapped document nor
-    creates a duplicate beside it. `setup`, `init --wizard` and `diagnose --auto`
-    still generate whole documents and still honour the guard.
-  - Adoption no longer writes `.docguard.json` itself. init owns the single
-    write, so a failed run leaves nothing behind and an adopted layout gets a
-    complete config with its profile, project type and validators, instead of a
-    two-key fragment that short-circuited the real one.
-  The guard's message now names the mapped roles and says how to leave the state.
-- **A Cloudflare Worker is typed `api` again, not `library`.** `init` and `setup`
-  each carried a private copy of project-type detection, and neither had learned
-  about Workers, so `needsEnvVars`, `needsEnvExample`, `needsE2E` and
-  `needsDatabase` were all set wrong and the validators that matter most for a
-  Worker were silently disabled. All three copies are now one exported function
-  (`wrangler.toml`, `wrangler.json` and `wrangler.jsonc` were already all
-  recognised there), and a test fails if a private copy reappears.
-- A detected Playwright or Cypress config, or an `e2e`/`tests/e2e` directory, now
-  sets `needsE2E` regardless of the project type's default. A suite on disk is
-  evidence; the type default is only a guess.
-
-
-
-- The documented network-free recipe `node benchmarks/run.mjs --baseline
-  benchmarks/baseline.json` failed with ten spurious `case-removed` regressions
-  because the comparator did not know the run had not selected the pinned
-  public cases. The runner now reports its `selection`, the comparator lists
-  unselected baseline cases under `outOfSelection`, and CI runs the recipe on
-  every push.
-
-## [0.41.7] - 2026-09-18
-
-Automated weekly release — batches everything merged since `v0.41.6`.
-
-### Changed
-
-- feat: detect documents by name across the codebase, not by exact path (#418)
-
-
-### Added
-
-- Find the documents a project already has, instead of assuming where they are.
-  `init` now looks for canonical role filenames across the repository before
-  creating anything, reports what it found, and offers to adopt that location —
-  writing both `docs.roles` and a matching `requiredFiles.canonical`. Detection
-  recognises real-world spellings rather than one exact filename: separators and
-  case are ignored (`data_model.md`, `Data Model.md`), `.markdown` and `.mdx`
-  count, and each role has known aliases (`system-design.md`, `testing.md`,
-  `env.md`, `api.md`, `PRD.md`). A directory must hold at least two roles before
-  it qualifies, so a lone root `SECURITY.md` — GitHub's policy file — never
-  triggers relocation, and the conventional directory wins any tie.
-
-### Fixed
-
-<!-- truncated: 3422 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 3538 more lines — read CHANGELOG.md directly -->
 
 ---
 

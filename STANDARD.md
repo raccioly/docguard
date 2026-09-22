@@ -628,8 +628,38 @@ list:
 
 A conforming third-party CDD implementation MUST validate the structural rules
 of §4–§6 (required files, section presence, DRIFT markers ↔ DRIFT-LOG) and MAY
-implement any further checks; the exit-code contract below is the stable
-interface.
+implement any further checks; the finding channels and exit-code contract below
+are the stable interfaces.
+
+### Finding Channels
+
+A finding is not uniformly a rule violation. Some are defects the tool can name
+the correction for; others are observations whose judgement belongs to a human.
+Reported through a single severity field the two are indistinguishable, and the
+second kind gets "fixed" — a document edited until a message stops printing,
+with no decision made. An implementation that emits findings therefore SHOULD
+separate the questions it is answering:
+
+| Channel | Question | Values |
+|---------|----------|--------|
+| `severity` | Does the build fail? | `error`, `warn`, `info` |
+| `disposition` | Who decides — the tool or the reader? | `act`, `escalate` |
+| `confidence` | How sure is the detector of its **observation**? | `high`, `low` |
+| `evidence.status` | Has a reviewed corpus measured this check? | `measured`, `not-measured` |
+| `parserTier` | Which analyzer produced it? | implementation-defined; MUST distinguish a syntax-tree tier from a pattern fallback |
+
+These channels are **orthogonal**. A `severity: error` finding MAY be
+`disposition: escalate` — a check can be certain enough to block a pipeline and
+still leave the conclusion to a reader. `confidence` MUST describe the
+detector's certainty in what it observed, never the reader's need to act; a
+quantity counted exactly from version-control history is `high`-confidence even
+when nothing follows from it.
+
+An implementation that publishes a `confidence` label without a measurement
+behind it SHOULD say so (`evidence.status: not-measured`) rather than let a
+hand-set prior read as a statistic. A value derived from observed data MUST be
+fitted against a strictly proper scoring rule (Brier or logarithmic), never
+accuracy, F1, or a raw false-positive count.
 
 ### Exit Codes
 
@@ -738,7 +768,12 @@ $ docguard guard
   ⚠️ Test-Spec      6/8 services have tests (75%)
 
   Result: FAIL (1 error, 1 warning)
+  2 to fix · 1 to review  (fix = DocGuard names the correction; review = the judgement is yours)
 ```
+
+The verdict line and the disposition line answer different questions (§8,
+Finding Channels). `FAIL` says the pipeline stops; `1 to review` says one of
+those findings is an observation nobody has adjudicated yet.
 
 ---
 

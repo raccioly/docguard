@@ -95,11 +95,14 @@ Generate an improvement plan ordered by ROI:
 
 ### Step 5: Guard Check Correlation
 
-Cross-reference the score with guard results:
+Cross-reference the score with guard results. Run `guard --format json` (not the
+text output) so each finding's channels are available:
 
 - For each failing guard check, show which score category it impacts
-- Calculate: "If you fix these N guard warnings, score will increase from X to Y"
-- Show the **minimum set of fixes** needed to reach the next grade level
+- **Split the findings on `disposition` before you count points.** `act` findings are correctable and belong in the roadmap. `escalate` findings are signals a human must judge — list them separately, under "decisions pending", with no point value attached. Promising points for clearing an escalation is an instruction to edit a document until a message stops printing, which is exactly the behaviour the channel exists to prevent. Severity does not settle this: a blocking `error` can be an `escalate`.
+- Calculate: "If you fix these N `act` findings, score will increase from X to Y"
+- Show the **minimum set of fixes** needed to reach the next grade level, counting only `act` findings
+- Note any finding whose `parserTier` is `regex-fallback`, `fallback-language` or `mixed`: no syntax tree was available, so the projected gain rests on a pattern match rather than parsed code
 
 ```markdown
 ### Path to Next Grade
@@ -108,9 +111,14 @@ Cross-reference the score with guard results:
 **Next Grade**: A (85/100) — need +7 points
 
 **Minimum fixes for grade A**:
-1. Fix Structure (3 checks failing) → +5 points
-2. Fix Changelog (1 check failing) → +2 points
+1. Fix Structure (3 checks failing, all `act`) → +5 points
+2. Fix Changelog (1 check failing, `act`) → +2 points
 Total effort: ~30 minutes
+
+**Decisions pending (no point value)**:
+- Freshness FRS002 on ARCHITECTURE.md — `escalate`. Read `src/` since the last
+  review date and state whether the component map is now wrong. Leaving it in
+  place after a real review is a correct outcome; guard will still print it.
 ```
 
 ### Step 6: ALCOA+ Compliance Summary
@@ -173,7 +181,9 @@ If user has run score before (check git log for score badge changes):
 - **Be actionable** — every recommendation must have a specific action
 - **Compare before/after** — if user has previously run score in this session, show improvement
 - **Focus on ROI** — surface the cheapest fixes with the biggest score impact first
+- **Never price an escalation** — a finding with `disposition: escalate` gets no projected point gain and never appears in a "minimum fixes" list. It is a decision, not a task. Report it separately and say plainly that it will still print after a correct run
 - **Keep assurance separate** — report `assurance.declaredEvidence` and remaining `unverifiedClaims` beside the structural score; never convert a scoped evidence pass into an accuracy score for a document or project
+- **Score is not accuracy** — the channels make this explicit: a code whose `evidence.status` is `not-measured` has never been scored by the reviewed corpus, so neither its confidence label nor the points attached to clearing it are measured quantities
 
 ## Context
 
