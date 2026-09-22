@@ -16,6 +16,10 @@
  * @implements docguard.calibrated-finding-channels#FR-010
  * @implements docguard.calibrated-finding-channels#FR-011
  * @implements docguard.calibrated-finding-channels#FR-012
+ * @req docguard.calibrated-finding-channels#FR-010
+ * @req docguard.calibrated-finding-channels#FR-011
+ * @req docguard.calibrated-finding-channels#FR-012
+ * @req docguard.calibrated-finding-channels#FR-013
  */
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';

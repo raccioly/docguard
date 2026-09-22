@@ -17,6 +17,8 @@
  * changes a threshold reads the constraint before choosing an objective.
  *
  * @implements docguard.calibrated-finding-channels#FR-019
+ * @req docguard.calibrated-finding-channels#FR-018
+ * @req docguard.calibrated-finding-channels#FR-019
  */
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';

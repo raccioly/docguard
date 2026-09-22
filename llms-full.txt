@@ -1405,6 +1405,100 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Three channels on every finding, replacing one field that answered three
+  questions.** `confidence` described the detector's certainty, decided whether
+  a human should look, AND gated which findings the feedback loop sampled.
+  Collapsed together, a certain observation read as an uncertain one, and —
+  because `reportable` derived from `confidence` — the channel that would
+  validate the label sampled only findings the label already doubted. On a
+  repository with 17 high-confidence findings across never-benchmarked codes,
+  `docguard feedback` selected zero.
+
+  Every finding now carries `disposition` (`act` when DocGuard asserts a defect
+  and names the correction, `escalate` when the judgement is the reader's),
+  `evidence` (whether the reviewed corpus has measured this code, with `n` and
+  a Wilson interval when it has), and `parserTier` (which analyzer produced it).
+  All additive: no existing field changed meaning, and `guard --format json`,
+  SARIF `properties` and feedback records carry all of them.
+
+  Guard now prints `N to fix · M to review` under the verdict. Across fourteen
+  real repositories, 671 findings split 234 act / 437 escalate — and 5 of 671
+  (0.7%) carry any benchmark evidence at all.
+
+- **`docguard feedback` samples the labels nobody has validated.** Selection is
+  now "unmeasured code OR low confidence", and the command states what it left
+  out (`excluded.findings`, `excluded.codes`) instead of hiding it.
+
+- **Reviewed disagreements leave a record.** A reported false positive the
+  maintainers reviewed and declined to act on previously vanished: the corpus
+  could only absorb one that had already been repaired, which made "precision
+  1.0" a property of the contribution pipeline rather than of the detectors.
+  `buildAdjudicationRow()` produces a corpus case carrying the same opposite
+  control and attestations as a measured case plus a rationale and date.
+  Reported as `adjudicated: { policyDisagreements, ambiguous }` beside every
+  rate and inside none of them — scoring such a case either way would let a
+  disputed policy move a measurement.
+
+- **A design constraint for any future threshold fitted from data**
+  (`docguard.calibrated-finding-channels#FR-018`): it must be fitted against a
+  strictly proper scoring rule (Brier or logarithmic). Accuracy, F1 and "fewest
+  reported false positives" are all maximised by a detector that abstains, or
+  that asserts high confidence on whatever it still emits; none of them
+  penalises a confidently wrong label. Nothing tunes from data today, which is
+  why the constraint is recorded now — a test pins the pointer comment at all
+  six hand-set threshold sites.
+
+### Fixed
+
+- **API-surface checking never ran on Python, Go, Rust, Java or Ruby projects.**
+  `detectFramework` read `package.json` and nothing else, so it returned an
+  empty framework for every non-JS project, and `scanRoutesDeep` gates its
+  Flask, FastAPI, Django, Gin, Axum, Spring and Rails walkers on that name.
+  The scanners worked; nothing reached them. A Flask service reported
+  `no-matches` — "no checkable inputs matched this detector" — and its entire
+  API surface went unchecked. Detection now comes from `detectEcosystems`,
+  which already reads pyproject/requirements/Cargo/go.mod/pom. On one real
+  repository this surfaces six genuinely undocumented endpoints.
+
+- **The analyzer tier was invisible, so degraded scans looked like clean ones.**
+  Both AST tiers are optional by design (`@babel/parser`; the developer's own
+  `python3`), and the regex fallback cannot see a multi-line decorator. A Flask
+  route written across several lines is read by the AST tier and missed
+  entirely by the pattern tier — and both produced identical-looking output.
+  A validator whose inputs fell back now reports `partial` naming the cause,
+  and every finding carries the tier that produced it. Findings are retained;
+  only coverage is downgraded.
+
+- **Freshness called its own arithmetic uncertain.** FRS002–FRS005 count
+  commits, days and added DRIFT lines with `git log`, and the adapter labelled
+  every one of them `confidence: low` — telling readers DocGuard might have
+  miscounted, which was never the claim. They are now high-confidence
+  escalations: the count is a fact, the inference to staleness is the reader's.
+  FRS001 stays low-confidence, because it fires on the ABSENCE of a dated
+  signal, which an uncommitted file or a shallow clone can produce. Across the
+  sample this relabels 196 findings.
+
+- **Six finding codes reached SARIF with no file location.** APS001/APS002,
+  DDF001/DDF002 and REF001/REF002 emitted `location` as an object, which
+  rendered as `[object Object]` and which SARIF's location parser dropped
+  entirely, so GitHub Code Scanning could not annotate them. `location` is now
+  normalized to a string at construction.
+
+- **A malformed `suggestion.kind` was silently coerced to `review`**, turning a
+  typo into an escalation. It is now omitted, per
+  `adoption-workflow-integrity#FR-002`.
+
+- **The badge claimed full coverage on a partial run.** `passed/total` counts
+  checks and its denominator excludes every validator that could not run, so a
+  repository could print `628/628` and brightgreen while the same run reported
+  a partial validator and a missing prerequisite. The colour is now capped at
+  `green` in that case — green rather than yellow, because everything that ran
+  did pass. `no-matches` keeps the top grade: a validator that ran and found
+  nothing applicable did its job. The coverage line leads with
+  `N of M validator(s) checked`.
+
 ### Changed
 
 - **The release cut no longer regenerates `llms.txt` / `llms-full.txt`.** Adding
@@ -1702,102 +1796,8 @@ Automated weekly release — batches everything merged since `v0.41.5`.
 ### Added
 
 - TestGuard claim probing for this repository: `testguard.claims.json` plus
-  `tools/node-test-json-reporter.mjs`, which translates `node --test` output into
-  the Jest-shape JSON TestGuard reads (node:test ships no `json` reporter). The
-  first claim covers `backupFile`; probing it found a real gap — one guard was
-  masked by another, so its fault survived while every test stayed green — and
-  the missing case is now covered.
 
-### Changed
-
-- Completed the pass to generic project references: the earlier sweep matched a
-  narrower pattern than the one used to find them, so sixteen mentions survived
-  in source comments, tests and changelog prose. Two references are deliberately
-  kept: `.docguard-archive.json` records an archived spec path plus the
-  `git restore` command that recovers it, and renaming that string would point
-  the restore at a path that never existed.
-
-### Fixed
-
-- Stop blocking commits in projects that never adopted DocGuard. A Git hook
-  lives in the common `.git/hooks` and governs every linked worktree, while
-  `.docguard.json` is a branch-local tracked file — during adoption the two
-  cannot be consistent, so a hook installed on one branch blocked commits on
-  every other branch and worktree, where `guard` exited 1 for missing canonical
-  docs. `guard` now exits **3** ("not initialised") instead of 1 when there is
-  no `.docguard.json`, and the generated hooks skip enforcement and allow the
-  operation. Exit 3 is still non-zero, so a CI gate that fails on any non-zero
-  status is unchanged, and an adopted project with real findings still exits 1
-  and still blocks. Existing installed hooks do not self-heal — re-run
-  `docguard hooks` to pick this up.
-- Stop spending the single backup slot on a no-op. Re-installing a byte-identical
-  managed hook wrote a redundant `.bak`; with `--force` a second install
-  overwrote the backup holding the user's own original hook, which is
-  unrecoverable because a `.git/hooks` file is not in version control. Identical
-  writes are now skipped, and a `.bak` DocGuard did not write is preserved
-  alongside a timestamped copy rather than replaced.
-
-
-## [0.41.5] - 2026-09-17
-
-Automated weekly release — batches everything merged since `v0.41.4`.
-
-### Changed
-
-- fix: four tool defects from a downstream field report (#410)
-- chore: use generic project references and stop tracking .wolf/ (#411)
-
-
-### Changed
-
-- Replaced named third-party project references in source comments, tests and
-  changelog history with generic terms. Field-test provenance is still recorded;
-  the projects are no longer identified by name. Stopped tracking `.wolf/`
-  (local agent working notes, never part of the published package).
-
-### Fixed
-
-- Stop counting a review stamp as a content change. Adding or updating
-  `<!-- docguard:last-reviewed -->` in a spec artifact changed its registry
-  digest, so the review that Freshness (FRS002) asks for immediately made the
-  spec registry `STALE` and demanded `specs --write` — the tool created the work
-  it then reported. That marker is now excluded from the digest source;
-  `docguard:version` and `docguard:status` still re-digest, because those are
-  substantive lifecycle edits. Registries written by earlier releases keep their
-  trust (both digest forms are accepted); a project whose specs already carry a
-  review stamp needs one `docguard specs --write` to settle.
-- Stop reporting a document as "review due" while it is staged in the commit
-  being checked. A pre-commit hook runs `guard` against the very change being
-  made, so an author updating `AGENTS.md` was told to review `AGENTS.md`. Being
-  edited in this commit is now treated as the strongest freshness signal and
-  outranks the repository-wide commit-count heuristic.
-- Stop leaving `.docguard-specs.json.bak` behind. `specs --write` regenerates a
-  Git-tracked, fully derived file, so the backup was noise that DocGuard then
-  reported as an undocumented config file (DCV001). DocGuard also no longer
-  raises DCV001 for any `.bak` it wrote itself.
-- Report what `specs --write` actually did. It printed the pre-write differences
-  under a "Differences:" heading after reporting `WRITTEN`, reading as though the
-  drift were still outstanding; resolved differences are now labelled as resolved.
-
-
-## [0.41.4] - 2026-09-17
-
-Automated weekly release — batches everything merged since `v0.41.3`.
-
-### Changed
-
-- fix: correct the validator-surface claim and document DOCGUARD_API_KEY (#408)
-- fix: harden adoption precision boundaries (#406)
-
-
-### Fixed
-
-- Document `DOCGUARD_API_KEY` in the canonical environment doc. `ENVIRONMENT.md`
-  claimed DocGuard uses "no API keys" and needs no environment variables, which
-  contradicted `SECURITY.md` and the HTTP MCP server, where the variable is
-  required to bind a non-loopback host. Core CLI commands still need no credential.
-
-<!-- truncated: 3293 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 3387 more lines — read CHANGELOG.md directly -->
 
 ---
 

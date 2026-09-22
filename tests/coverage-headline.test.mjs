@@ -18,6 +18,7 @@
  * `unsupported` and `error` mean DocGuard could not check what it was asked to.
  *
  * @implements docguard.calibrated-finding-channels#FR-020
+ * @req docguard.calibrated-finding-channels#FR-020
  */
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';

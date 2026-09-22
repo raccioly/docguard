@@ -11,6 +11,7 @@
  * and whatever the default leaves out is stated rather than hidden.
  *
  * @implements docguard.calibrated-finding-channels#FR-014
+ * @req docguard.calibrated-finding-channels#FR-014
  */
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';

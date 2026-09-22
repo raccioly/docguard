@@ -1,6 +1,6 @@
 # Feature Specification: Calibrated Finding Channels
 
-**Status**: Draft
+**Status**: Active
 **Spec ID**: `docguard.calibrated-finding-channels`
 **Created**: 2026-09-21
 **Owner**: DocGuard maintainers

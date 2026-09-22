@@ -1,6 +1,6 @@
 # Implementation Plan: Calibrated Finding Channels
 
-**Status**: Draft — awaiting approval
+**Status**: Implemented
 **Spec**: `specs/013-calibrated-finding-channels/spec.md`
 **Branch**: `feat/calibrated-finding-channels` (one PR per phase; PR-first per AGENTS.md)
 
