@@ -159,12 +159,12 @@
       "restore": "git restore --source=b921dcbd0cc3476594100a414e3f8e9d4daa39c8 -- specs/004-v020-env-var-false-negative/spec.md"
     },
     {
-      "path": "specs/005-hugocross-next-bugs/spec.md",
+      "path": "specs/005-field-test-bugs/spec.md",
       "archivedAt": "2026-09-14T15:26:57.257Z",
       "archivedFrom": "b921dcbd0cc3476594100a414e3f8e9d4daa39c8",
       "blob": "ef774e226a55710a95f49d2ee3e066db86dedf2d",
-      "reason": "Released or superseded work; current behavior is represented by canonical docs, tests, and CHANGELOG.md",
-      "restore": "git restore --source=b921dcbd0cc3476594100a414e3f8e9d4daa39c8 -- specs/005-hugocross-next-bugs/spec.md"
+      "reason": "Released or superseded work; current behavior is represented by canonical docs, tests, and CHANGELOG.md. Former path slug named a private downstream project and was redacted; content identity is unchanged, so this entry is recovered by blob rather than by path.",
+      "restore": "git cat-file blob ef774e226a55710a95f49d2ee3e066db86dedf2d > specs/005-field-test-bugs/spec.md"
     }
   ]
 }

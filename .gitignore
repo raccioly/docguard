@@ -44,14 +44,30 @@ __pycache__/
 websec-out/
 
 # OpenWolf private session memory (machine-local, not shared)
-.claude/openwolf-memory/
 .wolf/
+# Everything this repository had under .claude/ was OpenWolf-local and useless in
+# a fresh clone: settings.json registered five hooks running .wolf/hooks/*.js, and
+# rules/openwolf.md told agents to consult .wolf/ files that a clone does not have
+# — the same defect as .codex/hooks.json below. Swept in by a `git add -A` in
+# fc73116, a validator-fix commit that also captured all of .wolf/. Ignored as a
+# directory so no future sweep can repeat it. OpenWolf is optional local tooling:
+# `openwolf init` regenerates .wolf/ and these files. Project instructions that
+# every contributor needs belong in AGENTS.md and CLAUDE.md, which stay tracked.
+.claude/
 # Local agent tooling: .codex/hooks.json points at .wolf/hooks/*.js, which this
 # repository ignores, so shipping it hands contributors a config referencing
 # scripts they do not have. Committed by mistake in f1fef7a; ignored here so a
 # future `git add -A` cannot repeat it.
 .codex/
 .testguard/
+
+# Spec Kit downloads the community extension catalog into this cache, keyed by
+# URL hash and stamped with a `cached_at` time. It is regenerated on demand from
+# the catalog_url each entry records, so committing it ships a frozen snapshot
+# (2026-03-17) that silently ages while looking authoritative. First swept in by
+# 96e2dd8. The rest of .specify/ (templates, scripts, constitution) is source and
+# stays tracked.
+.specify/extensions/.cache/
 
 # safeWrite leaves a `.bak` beside any file it overwrites. Those are local
 # recovery artifacts, never source. `cli/precision-evidence-data.mjs.bak` was
