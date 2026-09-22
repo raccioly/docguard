@@ -271,6 +271,9 @@ export function validateFreshness(dir, config) {
     return counts.get(key);
   };
 
+  // Hand-set review triggers, not fitted values. If either is ever derived
+  // from observed feedback, it MUST be fitted against a strictly proper
+  // scoring rule — see docguard.calibrated-finding-channels#FR-018.
   const REVIEW_THRESHOLD_DAYS = 30; // Repository-wide trigger, not proof of drift
   const WARNING_THRESHOLD_COMMITS = 10; // Repository-wide review trigger
 
@@ -430,9 +433,26 @@ export function validateFreshness(dir, config) {
     } catch { /* skip */ }
   }
 
+  // Every warning here is an ESCALATION: a history signal whose judgement
+  // belongs to the reader. That is a separate question from how sure the
+  // detector is of what it counted.
+  //
+  // FRS002-FRS005 count commits, days, and added DRIFT lines read directly
+  // from Git. Those quantities are facts, so the detector is certain of its
+  // observation and reports confidence 'high'; only the inference to
+  // staleness is uncertain, and `disposition: 'escalate'` is what carries
+  // that. Labelling the whole finding low-confidence — as this adapter did
+  // for every warning uniformly — told the reader DocGuard might have
+  // miscounted, which was never the claim, and made the finding reportable
+  // as a suspected false positive rather than as an unmeasured one.
+  //
+  // FRS001 is the exception: it fires on the ABSENCE of any dated signal,
+  // which an uncommitted file or a shallow clone can produce, so the
+  // observation itself is uncertain and stays 'low'.
   return results.map(result => result.status === 'warn' ? {
     ...result,
-    confidence: 'low',
+    confidence: result.code === 'FRS001' ? 'low' : 'high',
+    disposition: 'escalate',
     suggestion: { kind: 'review', text: 'Review this history signal against the document’s purpose and intended behavior. Confirm whether documentation or code needs a change; record a review date only after reviewing. Preserve intentional historical content.' },
   } : result);
 }

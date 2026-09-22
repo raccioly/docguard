@@ -476,6 +476,11 @@
             "line": 25
           },
           {
+            "requirementId": "FR-007",
+            "file": "cli/writers/sarif.mjs",
+            "line": 11
+          },
+          {
             "requirementId": "FR-009",
             "file": "cli/findings.mjs",
             "line": 26

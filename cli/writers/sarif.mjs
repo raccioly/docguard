@@ -8,6 +8,7 @@
  * codes become reportingDescriptors (rules), findings become results.
  *
  * Zero npm dependencies — pure Node.js built-ins.
+ * @implements docguard.calibrated-finding-channels#FR-007
  */
 
 import { readFileSync } from 'node:fs';
@@ -28,6 +29,19 @@ function pkgInfo() {
 /** Effective severity → SARIF level. */
 function toLevel(severity) {
   return severity === 'error' ? 'error' : severity === 'info' ? 'note' : 'warning';
+}
+
+/**
+ * Disposition for a result. Every finding built by `mkFinding` carries one, so
+ * this only matters for a finding shape that predates the field — but it must
+ * apply the SAME rule the constructor does, or SARIF would report `escalate`
+ * for a finding whose own suggestion says `fix`. Unknown stays `escalate`:
+ * a result DocGuard cannot describe a correction for is one a human reads.
+ */
+function dispositionOf(f) {
+  if (f.disposition === 'act' || f.disposition === 'escalate') return f.disposition;
+  const kind = f.suggestion && f.suggestion.kind;
+  return kind === 'fix' || kind === 'suppress' ? 'act' : 'escalate';
 }
 
 /**
@@ -62,11 +76,13 @@ export function toSarif(guardData, opts = {}) {
     if (v.status === 'skipped' || v.status === 'na') continue;
     if (Array.isArray(v.findings) && v.findings.length > 0) continue;
     for (const msg of v.errors || []) {
-      synthetic.push({ code: `DOCGUARD-${String(v.key || v.name || 'unknown').toUpperCase()}`, severity: 'error', effectiveSeverity: 'error', message: msg, location: null, suggestion: null });
+      // A crashed validator is an escalation by construction: DocGuard cannot
+      // name a correction for a check it failed to run.
+      synthetic.push({ code: `DOCGUARD-${String(v.key || v.name || 'unknown').toUpperCase()}`, severity: 'error', effectiveSeverity: 'error', message: msg, location: null, suggestion: null, confidence: 'high', disposition: 'escalate', evidence: { status: 'not-measured' }, parserTier: 'not-applicable', reportable: false });
     }
     for (const msg of v.warnings || []) {
       const effectiveSeverity = v.severity === 'high' ? 'error' : v.severity === 'low' ? 'info' : 'warn';
-      synthetic.push({ code: `DOCGUARD-${String(v.key || v.name || 'unknown').toUpperCase()}`, severity: 'warn', effectiveSeverity, message: msg, location: null, suggestion: null });
+      synthetic.push({ code: `DOCGUARD-${String(v.key || v.name || 'unknown').toUpperCase()}`, severity: 'warn', effectiveSeverity, message: msg, location: null, suggestion: null, confidence: 'high', disposition: 'escalate', evidence: { status: 'not-measured' }, parserTier: 'not-applicable', reportable: false });
     }
   }
   const all = [...findings, ...synthetic];
@@ -102,11 +118,21 @@ export function toSarif(guardData, opts = {}) {
       if (loc.line) physicalLocation.region = { startLine: loc.line };
       result.locations = [{ physicalLocation }];
     }
+    // Every channel, on every result. Emitting `confidence` only when it was
+    // 'low' left a consumer unable to tell a high-confidence finding from one
+    // whose field was absent, and `disposition` was dropped entirely — so a
+    // SARIF-only consumer (GitHub Code Scanning, enterprise dashboards) could
+    // not tell "DocGuard says fix this" from "DocGuard says look at this".
     result.properties = {
       originalSeverity: f.severity,
       effectiveSeverity: f.effectiveSeverity || f.severity,
       ...(f.enforcement ? { enforcement: f.enforcement } : {}),
-      ...(f.confidence === 'low' ? { confidence: 'low', reportable: !!f.reportable } : {}),
+      confidence: f.confidence === 'low' ? 'low' : 'high',
+      disposition: dispositionOf(f),
+      evidence: f.evidence && f.evidence.status === 'measured' ? 'measured' : 'not-measured',
+      parserTier: typeof f.parserTier === 'string' ? f.parserTier : 'not-applicable',
+      reportable: !!f.reportable,
+      ...(f.suggestion && f.suggestion.kind ? { suggestionKind: f.suggestion.kind } : {}),
     };
     return result;
   });

@@ -92,9 +92,15 @@ describe('K-6 — sweep-needed nudge', () => {
     const findings = data.findings.filter(f => f.validator === 'freshness');
     assert.ok(findings.length >= 2);
     for (const finding of findings) {
-      assert.equal(finding.confidence, 'low');
+      // Escalations, not suspected false positives: DocGuard counted the
+      // commits correctly and is asking a human to judge what that means.
+      assert.equal(finding.disposition, 'escalate');
       assert.equal(finding.suggestion.kind, 'review');
       assert.equal(finding.suggestion.command, undefined);
+      // Still sampled for feedback, because no FRS code has ever been
+      // benchmarked — now for the accurate reason. (FR-014)
+      assert.equal(finding.reportable, true);
+      assert.equal(finding.evidence.status, 'not-measured');
     }
   });
 

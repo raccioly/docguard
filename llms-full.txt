@@ -39,6 +39,7 @@ It targets development teams and AI coding agents that need to maintain document
 | **Document lifecycle** | Finds exact terminal-status docs and completed-task review candidates; explicit retirement removes documentation from active context only after its source revision is reachable from a retained Git ref | `cli/scanners/document-lifecycle.mjs`, `cli/validators/document-lifecycle.mjs`, `cli/commands/retire.mjs` | Scanner is read-only; retirement uses the shared multi-file transaction and remains explicit |
 | **Spec lifecycle registry** | Projects immutable spec identities, reviewed lifecycle/lineage/scope, artifact digests, task state, qualified implementation/test evidence, bounded outcomes, and recovery tombstones into one byte-stable control file | `cli/scanners/spec-registry.mjs`, `cli/scanners/requirement-evidence.mjs`, `cli/validators/spec-registry.mjs`, `cli/commands/specs.mjs` | `specs --write` preserves reviewed fields; stale checks identify bounded field paths and distinguish canonical ordering from changed content; only committed, clean, digest-current lifecycle entries can defer traceability, while a current planned entry that is new, removed from the index, or modified pending commit remains advisory; `specs complete` is the only verified-delivery writer |
 | **Reconciliation graph** | Inventories changed paths independently from bounded patch text, maps them to direct spec evidence, and keeps mechanical facts, approved intent, decisions, unrelated changes, and unsupported evidence separate | `cli/shared-git.mjs`, `cli/scanners/reconciliation.mjs`, `cli/commands/reconcile.mjs` | Timeout, overflow, parse failure, or incomplete inventory blocks a ready result; planning is read-only and `--write` never rewrites requirements |
+| **Finding channels** | Separates the three questions a finding answers — does CI block (`severity`), who decides (`disposition`), how well is the code measured (`evidence`), and which analyzer produced it (`parserTier`) — so a certain observation is never labelled uncertain and the feedback loop samples the labels that have never been validated | `cli/findings.mjs`, `cli/precision-evidence.mjs`, `cli/writers/sarif.mjs` | Channels are additive to the published finding contract; `confidence` keeps its meaning as the detector's certainty in its own observation |
 | **Precision evidence** | Runs labelled synthetic and exact-commit public cases, separates deterministic results from observations, calculates null-safe quality metrics and confidence bounds, compares case-first baselines, persists them in a provenance envelope whose measure (`benchmark-precision`) and caveat are derived from the cases and re-verified on load, and projects per-code evidence into a generated module the CLI quotes at finding time | `benchmarks/`, `cli/precision-evidence.mjs`, `schemas/docguard-benchmark.schema.json`, `schemas/docguard-benchmark-baseline.schema.json`, `schemas/docguard-precision-evidence.schema.json` | External runs are explicit; third-party project code is never executed and disposable checkouts are removed by default |
 | **Feedback fixtures** | Validates synthetic reproductions and opposite controls, reduces them under an explicit predicate, derives duplicate identities, and emits test-only contributions | `cli/feedback-fixture.mjs`, `cli/commands/feedback.mjs`, `schemas/docguard-feedback-fixture.schema.json` | Publication remains user-controlled; contribution generation requires reviewed redaction, scope, and benchmark-delta evidence |
 | **Evidence-scoped verification** | Binds one exact Markdown statement to a typed JSON Pointer value, bounded file collection, static Python container literal, or saved upstream compatibility report and returns one of five explicit states | `cli/evidence/`, `cli/validators/evidence.mjs`, `cli/commands/verify.mjs`, `schemas/docguard-evidence.schema.json` | Reads stay local, bounded, non-executable, and symlink/private-path safe; direct verification exits 1 for contradiction/invalid input, 2 for unresolved evidence, and 0 only for verified or unconfigured evidence |
@@ -649,7 +650,7 @@ Validators emit findings and aggregate counts. The guard adapter adds names and 
 |-------|------|-------------|
 | `name` | `string` | Validator name (e.g., `"structure"`, `"changelog"`) |
 | `status` | `string` | `"pass"`, `"warn"`, or `"fail"` |
-| `findings` | `object[]` | Stable code, validator, intrinsic `severity`, `effectiveSeverity`, enforcement source/key, confidence, location, message, and normalized suggestion |
+| `findings` | `object[]` | Stable code, validator, intrinsic `severity`, `effectiveSeverity`, enforcement source/key, `confidence`, `disposition`, `evidence`, `parserTier`, location, message, and normalized suggestion |
 | `passed`, `total` | `number` | Applicable check counts |
 | `errors`, `warnings` | `string[]` | Compatibility message arrays |
 | `applicable` | `boolean` | Optional applicability indicator; false becomes N/A |
@@ -660,7 +661,27 @@ Validators emit findings and aggregate counts. The guard adapter adds names and 
 
 `guard` results carry `precisionEvidence`, scoped to the finding codes that run emitted (`schemas/docguard-precision-evidence.schema.json`). The unit of evidence is the finding code. DocGuard defines many more codes than the reviewed corpus measures, so a code the corpus never exercised reports `status: "not-measured"`, carries no ratio, and never inherits the measured precision of another code in the same validator. A measured code whose own precision denominator is below `minN` is marked `quotable: false` with a reason, and may carry a `backoff` to a coarser measured tier that names that tier (`validator` or `aggregate`). `measures` is always `benchmark-precision`; `caveat` is the sentence a consumer must show beside any quoted ratio; `source.matchesRunningVersion` is false when the numbers were measured on a different build than the one reporting them. `coverage` counts codes in the run by measurement status.
 
-The block is served from `cli/precision-evidence-data.mjs`, a generated module derived from `benchmarks/baseline.json` by `npm run generate:precision-evidence`, because `benchmarks/` is not part of the published package. A test compares the committed module against that projection, so a stale number fails the suite rather than shipping. Findings themselves are unchanged: they are written verbatim into feedback records, so their shape stays fixed.
+The block is served from `cli/precision-evidence-data.mjs`, a generated module derived from `benchmarks/baseline.json` by `npm run generate:precision-evidence`, because `benchmarks/` is not part of the published package. A test compares the committed module against that projection, so a stale number fails the suite rather than shipping. Findings are written verbatim into feedback records, so their shape is a contract: it grows only by specification, and a test pins the exact key set.
+
+## Finding channels
+
+A finding answers three independent questions, one field each. A single `confidence` field had to serve all three, so a certain observation read as an uncertain one, and the feedback loop sampled only the findings its own label already doubted.
+
+| Field | Question | Values |
+|-------|----------|--------|
+| `severity` / `effectiveSeverity` | Does CI block? | `error`, `warn`, `info` (effective only) |
+| `disposition` | Who decides — the tool or the reader? | `act`, `escalate` |
+| `confidence` | How sure is the detector of its **observation**? | `high`, `low` |
+| `evidence` | Has the reviewed corpus ever measured this code? | `{ status: 'measured' \| 'not-measured', … }` |
+| `parserTier` | Which analyzer produced it? | `js-ast`, `py-ast`, `regex-fallback`, `fallback-language`, `mixed`, `not-applicable` |
+
+`disposition` is `act` when DocGuard asserts a defect and names the correction, `escalate` when it reports a signal whose judgement belongs to the reader. A detector may set it explicitly; otherwise it derives from `suggestion.kind` (`fix`/`suppress` → `act`; `review`/`report` → `escalate`), and falls back to `escalate` when the suggestion is absent or malformed — a finding DocGuard can describe but can only describe is one a human should read. The three channels vary independently: FRS002 counts commits read directly from Git, so it is `confidence: high` and `disposition: escalate`. The count is a fact; the inference to staleness remains the reader's call.
+
+`evidence` is projected per finding code from the reviewed baseline by the same checked projection that serves `precisionEvidence` (`docguard.precision-evidence-loop#FR-019`). A `measured` entry carries `n`, its Wilson 95% interval, and a point estimate once `n` meets the published floor; an unmeasured code reports `not-measured` and always stands alone, inheriting no sibling's number. The object is frozen and shared per code, so a large run allocates one evidence object per code rather than one per finding.
+
+`reportable` is true when `evidence.status` is `not-measured` **or** `confidence` is `low`. Under the previous rule, which read confidence alone, the default feedback sample omitted the population where a wrong label costs most: a confident label on a code the corpus has yet to measure.
+
+`location` is always a string (`path` or `path:line`) or `null`. A detector that supplies `{ file, line }` is normalized at construction. Under the previous contract such findings rendered as `[object Object]`, and the SARIF location parser dropped them, so six codes reached GitHub Code Scanning with no file annotation at all.
 
 ## Fix Command Issue Format
 
@@ -1251,6 +1272,8 @@ of empty repeats driven only by generated lifecycle artifacts.
 `tests/score-assurance.test.mjs` checks that structural grades never claim factual verification and that CI, diagnose, and reports retain this boundary. `tests/feedback-contributions.test.mjs` checks confident-finding selection, preview behavior, and outbound metadata privacy. Cache tests must change source contents without changing a manifest or Git HEAD, including repeated edits and fresh-process reads. Hook tests execute generated scripts against controlled runtimes rather than merely matching shell text. Traceability tests pair synthetic fixture IDs with genuine requirement annotations.
 
 A detector fix should include a clean near-miss and a real defect. Held-out neighboring cases are required to evaluate generalization. `benchmarks/baseline.json` is the reviewed reference: 24 measured cases across 12 repository groups plus one explicit unsupported case. Its observed perfect point estimates retain Wilson confidence limits and do not establish exhaustive correctness. The envelope's `review.measures` is `benchmark-precision` and its `review.caveat` must accompany any quoted number; tests assert the committed metrics and caveat are recomputable from the committed cases, and that a hand-edited ratio, stale caveat, or pre-provenance envelope is rejected.
+
+The finding shape is itself a contract, because findings are copied verbatim into shareable feedback records. `tests/precision-evidence.test.mjs` pins the exact key set a guard run emits, so a field added without a specification fails the suite; it also asserts that `location` is a string or null and that `disposition` and `evidence.status` hold values from their declared vocabularies. `tests/findings-channels.test.mjs` pins the derivation rules for the three channels: `disposition` from `suggestion.kind` with `escalate` as the fail-closed default, `evidence` projected per code and always standing alone, and `reportable` true for an unmeasured code even at high confidence. A malformed `suggestion.kind` must omit the suggestion, so a typo stays visible as a missing suggestion instead of reclassifying a fix as a review.
 
 Retirement tests use disposable Git repositories and verify both sides of the boundary: completed planning material is reported for review, while active neighboring material stays clean. Write-path tests must prove retained-ref recovery metadata and refusal of source code, dirty, untracked, required, symlinked, private, protected, submodule, and out-of-root paths. Read-only plan and check modes must not modify repository state.
 
@@ -2155,8 +2178,9 @@ Prefer the machine contract over parsing prose: `docguard guard --format json`
 returns `status` (PASS/WARN/FAIL, matches exit code 0/2/1 — but FAIL exits `3`,
 not `1`, when the project has no `.docguard.json`, so branch on `status` rather
 than assuming `1`), `findings[]`
-(`{code, severity, confidence, message, location, suggestion}`), `nextStep`,
-`reportable[]` (low-confidence findings — verify before acting), `coverage`
+(`{code, severity, confidence, disposition, evidence, parserTier, message, location, suggestion}`),
+`nextStep`, `reportable[]` (findings whose code is unmeasured or whose
+confidence is low — verify before acting), `coverage`
 (Markdown tier map incl. `unclassified[]`), `evidence`, and `semanticClaims.count`
 (documented numbers not yet verified against code).
 
@@ -2168,6 +2192,19 @@ checks only the selected package unless it is explicitly rerun with `--dir`.
 
 - Every structured finding has a stable code (`STR001`, `ENV003`, `XRF002`, …).
   `docguard explain <CODE>` gives the contract and fix.
+- Triage on `disposition`, not on severity alone. `act` means DocGuard asserts a
+  defect and names the correction — apply it. `escalate` means DocGuard observed
+  a signal and the judgement is yours; read the source before changing anything.
+  A high-confidence finding can still be an escalation: FRS002 counts commits
+  exactly and still does not establish that the document is stale.
+- Read `evidence.status` before trusting a confidence label. `measured` quotes
+  the reviewed corpus with `n` and a Wilson interval; `not-measured` means the
+  label is a maintainer's prior that has never been checked against labelled
+  cases. Most codes are unmeasured — that does not make their findings wrong,
+  only unverified.
+- Read `parserTier` when a finding concerns source code. `regex-fallback` or
+  `fallback-language` means an AST was unavailable for that file, so absence of
+  a finding is weak evidence; the owning validator also reports `partial`.
 - When `evidence.configured` is true, inspect `docguard verify --evidence
   --format json` first. A `verified-within-scope` result covers only its selected
   statement. Contradictions can indicate code regressions from approved intent;
