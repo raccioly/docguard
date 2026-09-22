@@ -489,6 +489,16 @@
             "requirementId": "FR-014",
             "file": "cli/findings.mjs",
             "line": 27
+          },
+          {
+            "requirementId": "FR-020",
+            "file": "cli/commands/guard.mjs",
+            "line": 565
+          },
+          {
+            "requirementId": "FR-020",
+            "file": "cli/commands/guard.mjs",
+            "line": 592
           }
         ],
         "testEvidence": []

@@ -557,6 +557,47 @@ export function runGuardInternal(projectDir, config) {
 }
 
 /**
+ * Validator states that mean DocGuard could NOT check what it was asked to.
+ *
+ * `no-matches` is deliberately absent: a validator that ran and found nothing
+ * applicable did its job completely. `disabled` and `not-applicable` are
+ * choices the project made, not gaps.
+ * @implements docguard.calibrated-finding-channels#FR-020
+ */
+export const INCOMPLETE_COVERAGE_STATES = Object.freeze(['partial', 'missing-prerequisite', 'unsupported', 'error']);
+
+/** How many active validators could not complete their checks. */
+export function incompleteCoverage(checkCoverage) {
+  if (!checkCoverage || !checkCoverage.counts) return 0;
+  return INCOMPLETE_COVERAGE_STATES.reduce((sum, key) => sum + (checkCoverage.counts[key] || 0), 0);
+}
+
+/**
+ * Badge colour for a run.
+ *
+ * `passed/total` counts CHECKS, and its denominator excludes every validator
+ * that could not run — so a run can print 100% while part of the project went
+ * unexamined. The summary says so in prose, but the badge is the artifact that
+ * travels into a README without the prose.
+ *
+ * The cap is `green`, not `yellow`, and the distinction matters: a partial run
+ * is not a failing run, since everything that ran passed. `yellow` would be
+ * wrong, and would train readers to ignore the badge on any project that
+ * legitimately has no API reference. `brightgreen` claims everything is fine,
+ * which a run that could not read its Python imports cannot support.
+ * `green` says: passed, with a caveat.
+ *
+ * @param {number} pct passed/total as a percentage
+ * @param {number} incomplete active validators that could not complete
+ * @implements docguard.calibrated-finding-channels#FR-020
+ */
+export function badgeColor(pct, incomplete = 0) {
+  if (pct >= 90) return incomplete > 0 ? 'green' : 'brightgreen';
+  if (pct >= 70) return 'green';
+  return pct >= 50 ? 'yellow' : 'red';
+}
+
+/**
  * The "pre-commit lite" validator set — fast checks suitable for running
  * on every commit/save. Tuned for <2s wall-clock on average repos.
  *
@@ -897,7 +938,18 @@ export function runGuard(projectDir, config, flags) {
   }
   if (data.checkCoverage) {
     const counts = data.checkCoverage.counts;
-    console.log('  Check coverage: ' + Object.entries(counts).filter(([, count]) => count > 0).map(([status, count]) => count + ' ' + status.replaceAll('-', ' ')).join(' · '));
+    // Lead with how many validators actually checked. The passed/total figure
+    // counts CHECKS, and its denominator excludes every validator that could
+    // not run — so "628/628 passed" and "seven validators found nothing to
+    // check" were both true of the same run, with only the first travelling
+    // into a badge. (calibrated-finding-channels#FR-020)
+    const active = Object.entries(counts).filter(([status]) => status !== 'disabled')
+      .reduce((sum, [, n]) => sum + n, 0);
+    const rest = Object.entries(counts)
+      .filter(([status, count]) => count > 0 && status !== 'checked')
+      .map(([status, count]) => count + ' ' + status.replaceAll('-', ' '));
+    console.log(`  Check coverage: ${counts.checked} of ${active} validator(s) checked`
+      + (rest.length ? ' · ' + rest.join(' · ') : ''));
     console.log('  Document inventory and passing checks do not establish factual accuracy.');
   }
   if (data.semanticClaims && data.semanticClaims.count > 0) {
@@ -922,9 +974,9 @@ export function runGuard(projectDir, config, flags) {
     console.log(`     ${c.dim}Per code: ${c.cyan}${skill('explain')} <CODE>${c.reset}`);
   }
 
-  // Badge snippet
+  // Badge snippet.
   const pct = data.total > 0 ? Math.round((data.passed / data.total) * 100) : 0;
-  const bColor = pct >= 90 ? 'brightgreen' : pct >= 70 ? 'green' : pct >= 50 ? 'yellow' : 'red';
+  const bColor = badgeColor(pct, incompleteCoverage(data.checkCoverage));
   const badgeUrl = `https://img.shields.io/badge/CDD_Guard-${data.passed}%2F${data.total}_passed-${bColor}`;
   console.log(`\n  ${c.dim}📎 Badge: ![CDD Guard](${badgeUrl})${c.reset}`);
 

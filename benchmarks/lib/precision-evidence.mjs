@@ -22,7 +22,11 @@ export const PRECISION_EVIDENCE_SCHEMA_VERSION = 1;
  * Matches the floor websec-validator publishes; below it a cell still carries
  * its counts and interval, marked not quotable.
  */
-export const DEFAULT_MIN_N = 5;
+export // Reporting floor for a quotable point estimate — a judgement about how few
+// labelled findings may carry a headline rate, NOT a value fitted to data.
+// Any data-derived replacement MUST be fitted against a strictly proper
+// scoring rule — docguard.calibrated-finding-channels#FR-018.
+const DEFAULT_MIN_N = 5;
 
 const MEASURED = new Set(['defect', 'clean_control']);
 const codeOf = identity => identity.split('@')[0];

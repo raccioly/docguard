@@ -28,6 +28,13 @@ import { listCanonicalDocs } from '../shared-ignore.mjs';
 // ──── Metric Thresholds ────
 // These define "good" vs "warning" boundaries for each metric.
 // Values are based on IEEE 830 best practices and readability research.
+//
+// Hand-set from literature, NOT fitted to observed data. If any of them is
+// ever derived from feedback, it MUST be fitted against a strictly proper
+// scoring rule (Brier or logarithmic) — docguard.calibrated-finding-channels#FR-018.
+// Accuracy, F1 and "fewest reported false positives" are all maximised by a
+// detector that abstains or that asserts high confidence on whatever it does
+// emit; none of them penalises a confidently wrong label.
 
 const THRESHOLDS = {
   passiveVoiceRatio:     { warn: 0.25, label: 'Passive voice ratio' },       // >25% passive = warn
