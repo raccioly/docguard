@@ -505,7 +505,7 @@
           {
             "requirementId": "FR-016",
             "file": "cli/precision-evidence.mjs",
-            "line": 36
+            "line": 37
           },
           {
             "requirementId": "FR-017",
@@ -515,12 +515,12 @@
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 565
+            "line": 586
           },
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 592
+            "line": 613
           },
           {
             "requirementId": "FR-021",
@@ -635,6 +635,11 @@
             "line": 21
           },
           {
+            "requirementId": "FR-021",
+            "file": "tests/untouched-claims.test.mjs",
+            "line": 20
+          },
+          {
             "requirementId": "SC-001",
             "file": "tests/calibrated-channels-acceptance.test.mjs",
             "line": 13
@@ -673,6 +678,11 @@
             "requirementId": "SC-008",
             "file": "tests/calibrated-channels-acceptance.test.mjs",
             "line": 20
+          },
+          {
+            "requirementId": "SC-009",
+            "file": "tests/untouched-claims.test.mjs",
+            "line": 74
           }
         ]
       }
@@ -2370,6 +2380,11 @@
             "requirementId": "FR-019",
             "file": "benchmarks/lib/precision-evidence.mjs",
             "line": 12
+          },
+          {
+            "requirementId": "FR-019",
+            "file": "cli/detector-digest.mjs",
+            "line": 21
           },
           {
             "requirementId": "FR-019",

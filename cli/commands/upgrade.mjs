@@ -310,27 +310,33 @@ export async function runUpgrade(projectDir, _config, flags) {
   // ── --apply: actually run the migration ─────────────────────────────────
   if (apply) {
     console.log(`${c.bold}  Applying upgrades...${c.reset}\n`);
+    let cliUpgradeFailed = false;
 
     if (cliBehind) {
       console.log(`  ${c.dim}Running:${c.reset} npm install -g docguard-cli@latest`);
       const r = applyCliUpgrade();
       if (r.status !== 0) {
+        // Do NOT exit here. The schema migration below is local, offline, and
+        // independent of which CLI is installed -- gating it behind a global npm
+        // install left every npx / pnpm / devDependency / Docker user with a
+        // "Schema vX is behind vY" nudge that no command could ever clear.
         console.error(`  ${c.red}✗ CLI upgrade failed.${c.reset} Try with sudo, or check npm permissions.`);
-        process.exit(1);
+        cliUpgradeFailed = true;
+      } else {
+        console.log(`  ${c.green}✓ CLI upgraded.${c.reset}`);
+        // Validator-count drift: a CLI upgrade often adds or removes validators,
+        // which changes the "N validators" / "N checks" totals that Metrics-
+        // Consistency scans for in markdown. Without a clear nudge here, a
+        // previously-green project goes red on the very next `docguard guard`
+        // for a reason the user did not cause. The fix is mechanical (replace
+        // hardcoded counts via fix --write) but the user has to know to run it.
+        // We don't auto-run fix --write from this process — the just-installed
+        // binary has the new validator list, but THIS process is still the OLD
+        // binary, so running fix here would use stale counts.
+        console.log(`  ${c.yellow}ℹ  Validator/check totals may have shifted with this upgrade.${c.reset}`);
+        console.log(`     Run ${c.cyan}docguard fix --write${c.reset} ${c.dim}to refresh hardcoded counts in your docs${c.reset}`);
+        console.log(`     ${c.dim}(picks up the new totals from the just-installed CLI).${c.reset}`);
       }
-      console.log(`  ${c.green}✓ CLI upgraded.${c.reset}`);
-      // Validator-count drift: a CLI upgrade often adds or removes validators,
-      // which changes the "N validators" / "N checks" totals that Metrics-
-      // Consistency scans for in markdown. Without a clear nudge here, a
-      // previously-green project goes red on the very next `docguard guard`
-      // for a reason the user did not cause. The fix is mechanical (replace
-      // hardcoded counts via fix --write) but the user has to know to run it.
-      // We don't auto-run fix --write from this process — the just-installed
-      // binary has the new validator list, but THIS process is still the OLD
-      // binary, so running fix here would use stale counts.
-      console.log(`  ${c.yellow}ℹ  Validator/check totals may have shifted with this upgrade.${c.reset}`);
-      console.log(`     Run ${c.cyan}docguard fix --write${c.reset} ${c.dim}to refresh hardcoded counts in your docs${c.reset}`);
-      console.log(`     ${c.dim}(picks up the new totals from the just-installed CLI).${c.reset}`);
     }
 
     if (schemaBehind && projectSchema) {
@@ -366,6 +372,12 @@ export async function runUpgrade(projectDir, _config, flags) {
       }
     }
 
+    // The schema migration still ran and still counts; the exit code reports the
+    // CLI install that did not, so CI cannot read a partial upgrade as a full one.
+    if (cliUpgradeFailed) {
+      console.error(`\n  ${c.yellow}⚠ Schema work above completed; the CLI upgrade did not.${c.reset}`);
+      process.exit(1);
+    }
     console.log(`\n  ${c.green}✅ Upgrade complete.${c.reset} Run ${c.cyan}docguard guard${c.reset} to verify.`);
   }
 }

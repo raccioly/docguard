@@ -8,7 +8,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-
 - **Three channels on every finding, replacing one field that answered three
   questions.** `confidence` described the detector's certainty, decided whether
   a human should look, AND gated which findings the feedback loop sampled.
@@ -52,8 +51,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   why the constraint is recorded now — a test pins the pointer comment at all
   six hand-set threshold sites.
 
-### Changed
+- **The unverified-claims count travels with the badge.** A green
+  `628/628 passed` badge printed a few lines under "9 documented claim(s) are
+  unverified against code" was the last misleading surface: the two numbers were
+  adjacent and unlinked, and only one of them got pasted into READMEs. Both
+  `docguard badge` and the badge `guard` prints now carry a companion
+  `claims_unverified` badge, amber above zero. The score and pass badges keep
+  their own colour — they report structural gates that did pass, and folding
+  factual verification into them would overload one number with two meanings.
+  The count is rendered in three states, not two: `buildScoreAssurance` returns
+  null rather than zero when claim extraction fails, and that renders as
+  `unknown`, because "0 unverified" printed when DocGuard checked nothing is
+  precisely the false green this tool exists to prevent.
 
+- **An adoption baseline now reports its age and what it is still hiding.**
+  `saveBaseline` had always written `generatedAt` and `loadBaseline` had always
+  discarded it, so 233 frozen findings looked identical on day 1 and day 400 and
+  a baseline could silently become permanent amnesty. Runs now print
+  `baseline is N day(s) old; M still suppressed; K no longer occur — safe to
+  drop`. Both counts fall out of the existing suppression loop at no added cost,
+  and the stale count is the one that lets a baseline shrink instead of only
+  ever growing. The wording stays inside what the file can prove: entries carry
+  occurrence counts, not per-entry timestamps, so "still suppressed" is
+  demonstrable where "never triaged" would be a guess.
+
+- **Benchmark evidence says whether it still applies to the build that ran.**
+  `explain` reported "Measured on DocGuard 0.41.7; you are running 0.42.0" —
+  true, and useless: it compared version strings when the question is whether
+  the measured number still describes the code that just ran. It was also a
+  false alarm. The detectors shipped in 0.42.0 are byte-identical to the
+  benchmarked build, so every number remained exactly as valid. Comparing git
+  revisions could not answer it either, since `.npmignore` excludes `.git/` and
+  `benchmarks/` is unpublished, leaving an installed user with no repository to
+  diff. `benchmarks/baseline.json` now records a `detectorsDigest` over the
+  detector sources the corpus was actually run against — reviewed input, never
+  recomputed from the working tree, so an edited detector cannot re-stamp itself
+  as calibrated — and the runtime hashes the shipped `cli/validators` and
+  `cli/scanners` to compare. A release that changes only docs or the CLI shell
+  now says the detectors are unchanged and the number still applies. The hash is
+  only computed when the version strings already disagree, so the matching path
+  costs nothing and the mismatching path costs about 1.2ms. An unreadable
+  install reports `unknown` and falls back to the old wording, never to a false
+  all-clear.
+
+- **A short list of untiered files is printed instead of counted.** "3 file(s)
+  in no validation tier" with the names one `--verbose` away is a nag that
+  cannot be acted on from the run that printed it. At three files or fewer the
+  list is the message, so it is shown inline; above that the calm count and the
+  `--verbose` pointer still win, because a wall of paths every run is what
+  trains users to ignore the line.
+
+### Changed
 - **The agent skills triage on `disposition`, not severity alone.** `docguard-guard`
   told agents to sort findings by severity and, for warnings, to "consider
   running `/docguard.fix` for automated remediation" — which would have an agent
@@ -87,7 +135,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   tasks; seven were real gaps in this very feature, now closed.
 
 ### Fixed
-
 - **API-surface checking never ran on Python, Go, Rust, Java or Ruby projects.**
   `detectFramework` read `package.json` and nothing else, so it returned an
   empty framework for every non-JS project, and `scanRoutesDeep` gates its
@@ -135,6 +182,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   did pass. `no-matches` keeps the top grade: a validator that ran and found
   nothing applicable did its job. The coverage line leads with
   `N of M validator(s) checked`.
+
+- **A version bump no longer flips the verdict on an unchanged tree.** Upgrading
+  0.41.3 -> 0.42.0 turned `PASS 1870/1870` into `WARN` with `SPR001`
+  (`.docguard-specs.json` digest projection differs) with no code and no docs
+  changed. Registry currency was decided by byte-equality of the serialized
+  projection, which cannot tell "your registry is stale" from "my output format
+  changed", so every format change reached users as project drift. Two encodings
+  were already doing it: the pre-0.42 artifact digest (taken over raw bytes
+  before the `docguard:last-reviewed` stamp was excluded in #410), and
+  `schemaVersion: 1` — which `readSpecRegistry` explicitly accepts as supported
+  while the projection reported it stale forever, a state no content edit could
+  ever clear. The currency check now consults a declared table of older
+  encodings. This is not a weakening: a legacy digest is accepted only when it
+  equals the legacy digest OF THE CURRENT CONTENT, so edited content matches
+  neither form and still reports stale. `ACCEPTED_SCHEMA_VERSIONS` is derived
+  from that table, so a version cannot be accepted by the reader without the
+  currency check knowing how to treat it, and a new projection encoding without
+  a declared equivalence fails the suite. The older form is reported as a note
+  rather than a finding, and `docguard specs --write` still migrates it, so the
+  compatibility shim cannot quietly become load-bearing.
+  This is the failure mode that forces teams to pin, and pinning is what keeps
+  them on stale detectors.
+
+- **`docguard upgrade --apply` migrates the config schema even when the CLI
+  upgrade fails.** The global `npm install -g` ran first and exited 1 on
+  failure, before the schema block — so every user installed through npx, pnpm,
+  a devDependency or Docker saw a permanent "Schema vX is behind vY" nudge that
+  no command could clear, because the one command that clears it aborted first.
+  The schema migration is local and offline and no longer depends on it. A
+  failed CLI install is still reported and still exits 1, so CI cannot read a
+  partial upgrade as a complete one.
 
 ### Changed
 

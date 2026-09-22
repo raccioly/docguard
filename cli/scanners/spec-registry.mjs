@@ -49,6 +49,69 @@ const contentDigest = content => digest(digestSource(content));
 // otherwise untouched spec; the next `specs --write` migrates the entry.
 const digestMatches = (recorded, content) =>
   recorded === contentDigest(content) || recorded === digest(content);
+
+/**
+ * Registry schema versions older releases wrote that this projection still
+ * accepts. Derived into ACCEPTED_SCHEMA_VERSIONS so the set a registry may be
+ * READ at and the set the currency check TOLERATES are one declaration: a
+ * version cannot be quietly accepted by the reader while the projection keeps
+ * reporting it stale forever.
+ */
+export const LEGACY_SCHEMA_VERSIONS = Object.freeze([1]);
+export const ACCEPTED_SCHEMA_VERSIONS = Object.freeze(
+  [...LEGACY_SCHEMA_VERSIONS, SPEC_REGISTRY_SCHEMA_VERSION].sort((a, b) => a - b),
+);
+
+/**
+ * Upgrade legacy-but-equivalent encodings in a committed registry to the form
+ * this build projects, and report which forms were found.
+ *
+ * Currency was decided by byte-equality of the serialized projection, which
+ * cannot tell "your registry is stale" from "my output format changed". So a
+ * version bump alone flipped an untouched tree from PASS to WARN (SPR001) --
+ * the failure mode that forces teams to pin, and pinning is what keeps them on
+ * stale detectors. Two encodings had already done it: schemaVersion 1, and the
+ * pre-0.42 artifact digest taken over raw bytes before the `docguard:last-
+ * reviewed` stamp was excluded.
+ *
+ * This is not a weakening. A legacy digest is accepted only when it equals the
+ * legacy digest OF THE CURRENT CONTENT, so edited content matches neither form
+ * and still reports stale. The next `specs --write` rewrites the entry in the
+ * current form.
+ *
+ * Adding a new encoding to the projection REQUIRES a new clause here; see the
+ * "declares an equivalence for every accepted schema version" test.
+ *
+ * @param {object} recorded parsed committed registry (never mutated)
+ * @param {object} projected the deterministic projection for this tree
+ * @param {Map<string, {legacy: string, current: string}>} artifactDigests
+ *   per-artifact digests captured while projecting, so reconciliation re-reads
+ *   no files
+ */
+function reconcileLegacyForms(recorded, projected, artifactDigests) {
+  if (!recorded || typeof recorded !== 'object') return { value: recorded, forms: [] };
+  const value = structuredClone(recorded);
+  const forms = new Set();
+
+  if (LEGACY_SCHEMA_VERSIONS.includes(value.schemaVersion)
+    && projected.schemaVersion === SPEC_REGISTRY_SCHEMA_VERSION) {
+    forms.add(`schemaVersion ${value.schemaVersion}`);
+    value.schemaVersion = projected.schemaVersion;
+  }
+
+  for (const entry of Array.isArray(value.specs) ? value.specs : []) {
+    for (const artifact of entry?.observed?.artifacts || []) {
+      const known = artifactDigests.get(artifact?.path);
+      // Only substitutes when the two forms genuinely differ, so a spec without
+      // a review stamp never reports a legacy form it does not have.
+      if (!known || known.legacy === known.current) continue;
+      if (artifact.digest !== known.legacy) continue;
+      forms.add('pre-0.42 artifact digest');
+      artifact.digest = known.current;
+    }
+  }
+  return { value, forms: [...forms].sort() };
+}
 const sortedUnique = values => [...new Set(values)].sort((a, b) => a.localeCompare(b));
 
 function registryDifferences(left, right) {
@@ -261,7 +324,7 @@ export function readSpecRegistry(projectDir) {
   const loaded = readJson(resolve(projectDir, SPEC_REGISTRY_PATH), SPEC_REGISTRY_PATH);
   if (!loaded.exists || loaded.error) return loaded;
   const value = loaded.value;
-  if (value?.$schema !== SPEC_REGISTRY_SCHEMA_URL || ![1, SPEC_REGISTRY_SCHEMA_VERSION].includes(value?.schemaVersion)
+  if (value?.$schema !== SPEC_REGISTRY_SCHEMA_URL || !ACCEPTED_SCHEMA_VERSIONS.includes(value?.schemaVersion)
     || !Array.isArray(value?.specs) || !Array.isArray(value?.tombstones)) {
     return { exists: true, value: null, error: `${SPEC_REGISTRY_PATH} does not use a supported schema version.` };
   }
@@ -473,6 +536,7 @@ export function projectSpecRegistry(projectDir, config = {}, options = {}) {
   const implementationReferences = scanImplementationFilesForReferences(projectDir, files, patterns);
   const ids = new Map();
   const specs = [];
+  const artifactDigests = new Map();
 
   for (const feature of detected.specs.filter(item => item.hasSpec)) {
     const path = posix(relative(projectDir, feature.specPath));
@@ -508,10 +572,15 @@ export function projectSpecRegistry(projectDir, config = {}, options = {}) {
     const definitions = collectRequirementIdsFromContent(content, path, patterns);
     const requirements = sortedUnique([...definitions.values()].map(definition => `${specId}#${definition.id}`));
     const artifacts = artifactsForFeature
-      .map(artifact => ({
-        path: posix(relative(projectDir, artifact)),
-        digest: contentDigest(readFileSync(artifact, 'utf8')),
-      }));
+      .map(artifact => {
+        const artifactPath = posix(relative(projectDir, artifact));
+        const raw = readFileSync(artifact, 'utf8');
+        // Both forms come from the single read the projection already does, so
+        // reconciling a legacy registry costs no additional file I/O.
+        const current = contentDigest(raw);
+        artifactDigests.set(artifactPath, { legacy: digest(raw), current });
+        return { path: artifactPath, digest: current };
+      });
     specs.push({
       specId,
       path,
@@ -556,17 +625,26 @@ export function projectSpecRegistry(projectDir, config = {}, options = {}) {
     tombstones,
   };
   const serialized = `${JSON.stringify(projected, null, 2)}\n`;
+  // Compare against the registry with legacy-but-equivalent encodings upgraded,
+  // so a tool-version artifact never reads as project drift. `differences` uses
+  // the same reconciled value, so it reports only genuine drift too.
+  const reconciled = existing.exists && !existing.error
+    ? reconcileLegacyForms(existing.value, projected, artifactDigests)
+    : { value: existing.value, forms: [] };
   const current = existing.exists && !existing.error
-    ? `${JSON.stringify(existing.value, null, 2)}\n` === serialized
+    ? `${JSON.stringify(reconciled.value, null, 2)}\n` === serialized
     : false;
   const differences = existing.exists && !existing.error
-    ? registryDifferences(existing.value, projected)
+    ? registryDifferences(reconciled.value, projected)
     : [];
   return {
     registry: projected,
     serialized,
     current,
     differences,
+    // Non-empty when the committed registry still uses an older encoding. Not a
+    // finding: the content is provably unchanged, and `specs --write` migrates it.
+    legacyForms: reconciled.forms,
     exists: existing.exists,
     issues,
     detected: detected.specs.length,

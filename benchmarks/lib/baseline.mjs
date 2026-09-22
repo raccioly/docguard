@@ -22,7 +22,7 @@ export const DEFAULT_LIMITATIONS = 'Finite scoped cases do not establish exhaust
 const ENVELOPE_KEYS = new Set(['$schema', 'schemaVersion', 'review', 'core', 'observations']);
 const REVIEW_KEYS = new Set(['status', 'reviewedAt', 'reviewer', 'scope', 'methodology', 'limitations', 'measures', 'caveat']);
 const CORE_KEYS = new Set(['schemaVersion', 'manifestDigest', 'tool', 'cases', 'metrics']);
-const TOOL_KEYS = new Set(['version', 'revision']);
+const TOOL_KEYS = new Set(['version', 'revision', 'detectorsDigest']);
 const OBSERVATION_KEYS = new Set(['environment', 'cases', 'retainedRoot', 'comparisonProtocol']);
 const REVIEW_STATUSES = new Set(['candidate', 'reviewed']);
 const CLASSIFICATIONS = new Set(['defect', 'clean_control', 'ambiguous', 'unsupported_syntax', 'policy_disagreement']);
@@ -97,6 +97,10 @@ function validateCore(core) {
   object(core.tool, 'core.tool');
   exactKeys(core.tool, TOOL_KEYS, 'core.tool');
   line(core.tool.version, 'core.tool.version', 64);
+  if (core.tool.detectorsDigest !== undefined && core.tool.detectorsDigest !== null
+    && !/^sha256:[0-9a-f]{64}$/.test(core.tool.detectorsDigest)) {
+    throw new Error('core.tool.detectorsDigest must be a sha256:<hex> digest or null.');
+  }
   if (core.tool.revision !== null && !GIT_REVISION.test(core.tool.revision || '')) {
     throw new Error('core.tool.revision must be a full commit hash or null.');
   }

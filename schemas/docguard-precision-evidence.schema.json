@@ -13,14 +13,16 @@
     "source": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["toolVersion", "toolRevision", "reviewStatus", "reviewedAt", "runningVersion", "matchesRunningVersion"],
+      "required": ["toolVersion", "toolRevision", "reviewStatus", "reviewedAt", "runningVersion", "matchesRunningVersion", "detectorsDigest", "detectorCalibration"],
       "properties": {
         "toolVersion": { "description": "The DocGuard version the benchmark ran on.", "type": "string", "minLength": 1, "maxLength": 64 },
         "toolRevision": { "type": ["string", "null"], "pattern": "^[0-9a-f]{40}([0-9a-f]{24})?$" },
         "reviewStatus": { "enum": ["candidate", "reviewed"] },
         "reviewedAt": { "type": ["string", "null"], "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
         "runningVersion": { "description": "The version producing this report.", "type": ["string", "null"], "maxLength": 64 },
-        "matchesRunningVersion": { "description": "False means the numbers were measured on a different build than the one reporting them, which a reader must be told.", "type": "boolean" }
+        "matchesRunningVersion": { "description": "False means the numbers were measured on a different build than the one reporting them, which a reader must be told.", "type": "boolean" },
+        "detectorsDigest": { "description": "Digest of the detector sources the corpus was run against. Lets a consumer tell a version bump from a behaviour change.", "type": ["string", "null"], "pattern": "^sha256:[0-9a-f]{64}$" },
+        "detectorCalibration": { "description": "Whether the detectors that produced this report are the ones measured: `unchanged` means the numbers still apply to the running build, `changed` means they may not, `unknown` means it could not be determined and must not be read as unchanged.", "enum": ["unchanged", "changed", "unknown"] }
       }
     },
     "coverage": {
@@ -151,7 +153,7 @@
         "source": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["manifestDigest", "toolVersion", "toolRevision", "reviewStatus", "reviewedAt", "reviewer", "limitations"],
+          "required": ["manifestDigest", "toolVersion", "toolRevision", "reviewStatus", "reviewedAt", "reviewer", "limitations", "detectorsDigest"],
           "properties": {
             "manifestDigest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
             "toolVersion": { "type": "string", "minLength": 1, "maxLength": 64 },
@@ -159,7 +161,8 @@
             "reviewStatus": { "enum": ["candidate", "reviewed"] },
             "reviewedAt": { "type": ["string", "null"], "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
             "reviewer": { "type": ["string", "null"], "maxLength": 128 },
-            "limitations": { "type": "string", "minLength": 1, "maxLength": 1024 }
+            "limitations": { "type": "string", "minLength": 1, "maxLength": 1024 },
+            "detectorsDigest": { "description": "Digest of the detector sources the corpus was run against. Lets a consumer tell a version bump from a behaviour change.", "type": ["string", "null"], "pattern": "^sha256:[0-9a-f]{64}$" }
           }
         },
         "aggregate": { "$ref": "#/$defs/cell" },
