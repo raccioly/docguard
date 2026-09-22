@@ -157,10 +157,14 @@ export function validateCanonicalSync(projectDir, config, guardResults) {
   // Check ALL claims (matchAll), not just the first: with README + AGENTS.md
   // concatenated, a correct claim in one file must not mask a stale claim in
   // the other (the same first-match-masking trap the secret scanner had).
+  // The phrase set is every way the surface docs have stated the total:
+  // "ships N commands", "covers all N CLI commands", "all N commands",
+  // "supports N commands". "Covers all 15 CLI commands" sat in the README for
+  // 92 releases because only the first shape was matched.
   total++;
-  const cmdMatches = [...readme.matchAll(/ships\s+\*{0,2}(\d+)\s+commands?\*{0,2}/gi)];
+  const cmdMatches = [...readme.matchAll(/\b(?:ships|covers(?:\s+all)?|supports(?:\s+all)?|all)\s+\*{0,2}(\d+)\s+(?:CLI\s+)?commands?\*{0,2}/gi)];
   if (cmdMatches.length > 0) {
-    const wrong = [...new Set(cmdMatches.map(m => Number(m[1])).filter(n => n !== actualCommandCount))];
+    const wrong = [...new Set(cmdMatches.filter(m => Number(m[1]) !== actualCommandCount).map(m => m[0].replace(/\*/g, '')))];
     if (wrong.length === 0) {
       passed++;
     } else {
@@ -171,9 +175,9 @@ export function validateCanonicalSync(projectDir, config, guardResults) {
         code: 'CSY002',
         validator: 'canonicalSync',
         severity: 'warn',
-        message: `A surface doc (README.md/AGENTS.md) claims ${wrong.map(n => `"ships ${n} commands"`).join(' / ')} but the real count is ${detail}. Update it.`,
+        message: `A surface doc (README.md/AGENTS.md) claims ${wrong.map(p => `"${p}"`).join(' / ')} but the real count is ${detail}. Update it.`,
         location: null,
-        suggestion: { kind: 'fix', text: 'Update the "ships N commands" claim in README.md/AGENTS.md to the real count' },
+        suggestion: { kind: 'fix', text: 'Update the command-count claim in README.md/AGENTS.md to the real count' },
       }));
     }
   } else {

@@ -665,10 +665,10 @@ See [examples/README.md](https://github.com/raccioly/docguard/blob/main/examples
 ### Test Suite
 
 ```bash
-npm test    # 33 tests across 18 describe blocks
+npm test    # 2,098 tests (node:test, zero test dependencies)
 ```
 
-Covers all 15 CLI commands, project type detection, compliance profiles, JSON output format, and help completeness.
+Covers all 23 commands, every validator, project type detection, compliance profiles, JSON/SARIF/JUnit output, the packed npm tarball, and downstream field reports replayed as regression cases. Static test-case declarations are a lower bound of that number: Metrics-Consistency flags this line if it ever falls below what the test files declare.
 
 ### CI Matrix
 
@@ -677,6 +677,7 @@ Covers all 15 CLI commands, project type detection, compliance profiles, JSON ou
 | 18 | ubuntu-latest | ✅ |
 | 20 | ubuntu-latest | ✅ |
 | 22 | ubuntu-latest | ✅ |
+| 24 | ubuntu-latest | ✅ |
 
 ### Self-Validation (Dogfooding)
 
