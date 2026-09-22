@@ -52,3 +52,10 @@ websec-out/
 # future `git add -A` cannot repeat it.
 .codex/
 .testguard/
+
+# safeWrite leaves a `.bak` beside any file it overwrites. Those are local
+# recovery artifacts, never source. `cli/precision-evidence-data.mjs.bak` was
+# swept into ee3fc88 by a `git add -A` and shipped a frozen copy of a GENERATED
+# module — a near-duplicate that drifts further from the real numbers with every
+# regeneration, and that a grep for a precision value will happily find first.
+*.bak
