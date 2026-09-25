@@ -101,3 +101,53 @@ describe('Docs-Diff Validator', () => {
     }
   });
 });
+
+describe('diffRoutes and diffEntities Coverage', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = mkdtempSync(join(tmpdir(), 'docguard-test-diff-'));
+  });
+
+  afterEach(() => {
+    rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('diffRoutes returns null if neither API-REFERENCE.md nor ARCHITECTURE.md exists', async () => {
+    const { diffRoutes } = await import('../cli/commands/diff.mjs');
+    assert.strictEqual(diffRoutes(tmpDir), null);
+  });
+
+  it('diffEntities returns null if DATA-MODEL.md does not exist', async () => {
+    const { diffEntities } = await import('../cli/commands/diff.mjs');
+    assert.strictEqual(diffEntities(tmpDir), null);
+  });
+});
+
+describe('runDiff Coverage', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = mkdtempSync(join(tmpdir(), 'docguard-test-rundiff-'));
+  });
+
+  afterEach(() => {
+    rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('runDiff formats JSON correctly when --format=json is passed', async () => {
+    const { runDiff } = await import('../cli/commands/diff.mjs');
+    const logs = [];
+    const originalLog = console.log;
+    console.log = (...args) => logs.push(args.join(' '));
+    try {
+      runDiff(tmpDir, {}, { format: 'json' });
+    } finally {
+      console.log = originalLog;
+    }
+
+    // Assert it prints a JSON array of results (which should be empty because no docs exist)
+    assert.strictEqual(logs.length, 1);
+    assert.strictEqual(logs[0], '[]');
+  });
+});
