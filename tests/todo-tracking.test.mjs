@@ -197,4 +197,59 @@ describe('Todo-Tracking Validator', () => {
     const result = validateTodoTracking(tmpDir, {});
     assert.equal(result.warnings.length, 0, 'Should not flag TODO in a Go test file');
   });
+
+
+  it('matches TODO with parenthesis (e.g., TODO(user): ...)', () => {
+    writeFileSync(join(tmpDir, 'todo-user.mjs'), `
+      // TODO(user): need to refactor this function
+      function myFunc() {}
+    `);
+    const result = validateTodoTracking(tmpDir, {});
+    const todoWarnings = result.warnings.filter(w => /Untracked TODO/.test(w));
+    assert.equal(todoWarnings.length, 1);
+    assert.match(todoWarnings[0], /need to refactor this function/);
+  });
+
+  it('matches TODO without colons and with parenthesis (e.g., TODO(user) fix this)', () => {
+    writeFileSync(join(tmpDir, 'todo-user2.mjs'), `
+      // TODO(user) need to refactor this function
+      function myFunc() {}
+    `);
+    const result = validateTodoTracking(tmpDir, {});
+    const todoWarnings = result.warnings.filter(w => /Untracked TODO/.test(w));
+    assert.equal(todoWarnings.length, 1);
+    assert.match(todoWarnings[0], /need to refactor this function/);
+  });
+
+  it('matches TODO with parenthesis but no trailing colon correctly', () => {
+    writeFileSync(join(tmpDir, 'todo-user3.mjs'), `
+      // TODO(user) need to refactor this function
+      function myFunc() {}
+    `);
+    const result = validateTodoTracking(tmpDir, {});
+    const todoWarnings = result.warnings.filter(w => /Untracked TODO/.test(w));
+    assert.equal(todoWarnings.length, 1);
+    assert.match(todoWarnings[0], /need to refactor this function/);
+  });
+
+  it('matches TODO without colons and without parenthesis but with space (e.g., TODO fix this)', () => {
+    writeFileSync(join(tmpDir, 'todo-user4.mjs'), `
+      // TODO fix this function
+      function myFunc() {}
+    `);
+    const result = validateTodoTracking(tmpDir, {});
+    const todoWarnings = result.warnings.filter(w => /Untracked TODO/.test(w));
+    assert.equal(todoWarnings.length, 1);
+    assert.match(todoWarnings[0], /fix this function/);
+  });
+
+  it('does not match something like "TEMPLATE"', () => {
+    writeFileSync(join(tmpDir, 'todo-user5.mjs'), `
+      // TEMPLATE is here
+      function myFunc() {}
+    `);
+    const result = validateTodoTracking(tmpDir, {});
+    const todoWarnings = result.warnings.filter(w => /Untracked/.test(w));
+    assert.equal(todoWarnings.length, 0);
+  });
 });
