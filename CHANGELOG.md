@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.42.2] - 2026-09-28
+
+Automated weekly release — batches everything merged since `v0.42.1`.
+
+### Changed
+
+- Add tests for diffRoutes, diffEntities, and runDiff in cli/commands/diff.mjs (#451)
+- fix: redact private project references and untrack local agent state (#450)
+- docs: add the DocGuard technical brief (8-page explainer) (#449)
+- fix: finish the "N tests" check Metrics-Consistency promised since v0.8.2 (#448)
+
+
 ### Fixed
 
 - **Stopped publishing private project identifiers and local developer state.**
