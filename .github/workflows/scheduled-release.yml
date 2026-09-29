@@ -12,8 +12,10 @@ name: Scheduled Release
 # protected PR, then arms GitHub's native squash auto-merge. GitHub intentionally
 # holds that PR's workflows for one maintainer approval. Once approved, ordinary
 # PR CI satisfies the required checks and native auto-merge updates main. The
-# scheduler waits briefly and dispatches release.yml after that merge; an hourly
-# tag-driven sweep recovers approvals that happen after the wait ends.
+# scheduler waits briefly and dispatches release.yml after that merge; a
+# 10-minute tag-driven sweep publishes approvals that happen after the wait
+# ends, which is the usual case (#447).
+# @implements docguard.release-dispatch-window#FR-002
 #
 # NO-OP WHEN NOTHING CHANGED: if there are no commits since the last release
 # tag, this exits without bumping — no empty releases.
@@ -187,7 +189,7 @@ jobs:
               fi
               sleep 15
             done
-            echo "::notice::Release PR remains open after 10 minutes. The hourly tag-driven release sweep will publish after later approval and merge."
+            echo "::notice::Release PR remains open after 10 minutes. The 10-minute tag-driven release sweep will publish within 10 minutes of a later approval and merge."
           }
 
           BRANCH="release/v${NEW_VERSION}"
@@ -231,7 +233,7 @@ jobs:
 
           Batches everything merged since \`${{ steps.check.outputs.last_tag }}\`. Tests and \`guard\` already passed on this tree before the PR was opened.
 
-          **Maintainer action required:** select **Approve workflows to run** in GitHub. The ordinary pull-request CI then satisfies branch protection; GitHub's protected native auto-merge merges the exact green head, and the waiting scheduler dispatches \`release.yml\`. An hourly tag-driven sweep recovers later approvals.")
+          **Maintainer action required:** select **Approve workflows to run** in GitHub. The ordinary pull-request CI then satisfies branch protection; GitHub's protected native auto-merge merges the exact green head, and the waiting scheduler dispatches \`release.yml\`. A 10-minute tag-driven sweep publishes later approvals.")
 
           gh pr merge --auto --squash "$PR_URL"
           echo "Opened $BRANCH with auto-merge armed. Approve its workflows in GitHub to continue the release."

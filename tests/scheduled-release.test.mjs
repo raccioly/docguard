@@ -1,3 +1,9 @@
+/**
+ * @req docguard.release-dispatch-window#FR-001
+ * @req docguard.release-dispatch-window#FR-002
+ * @req docguard.release-dispatch-window#FR-003
+ * @req docguard.release-dispatch-window#SC-001
+ */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -51,13 +57,14 @@ describe('scheduled release workflow', () => {
     assert.match(workflow, /gh workflow run release\.yml --ref main/);
     assert.match(workflow, /wait_for_merge_and_publish/);
     assert.match(workflow, /seq 1 40/);
-    assert.match(workflow, /hourly tag-driven release sweep/);
+    assert.match(workflow, /10-minute tag-driven release sweep/);
     assert.match(workflow, /gh pr list[\s\S]*--head "\$BRANCH"[\s\S]*--state open/);
     assert.match(workflow, /git merge-base --is-ancestor HEAD "origin\/\$BRANCH"/);
     assert.match(workflow, /git ls-remote --exit-code --heads origin "\$BRANCH"/);
     assert.match(workflow, /concurrency:\n  group: scheduled-release\n  cancel-in-progress: false/);
     assert.match(release, /concurrency:\n  group: docguard-release\n  cancel-in-progress: false/);
-    assert.match(release, /schedule:\n[\s\S]*cron: '17 \* \* \* \*'/);
+    // docguard.release-dispatch-window#FR-003 (#447): late approvals are the norm.
+    assert.match(release, /schedule:\n[\s\S]*cron: '\*\/10 \* \* \* \*'/);
   });
 
   it('prevalidates release identity, synchronized versions, and changed paths before push', () => {

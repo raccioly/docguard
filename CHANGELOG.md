@@ -163,6 +163,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **A merged release publishes within 10 minutes, not up to an hour (#447,
+  `specs/023-release-dispatch-window`).** The scheduler waits 10 minutes for
+  the release PR to merge, and maintainers rarely approve its workflows that
+  quickly, so publication nearly always fell through to the hourly tag sweep.
+  The sweep now runs every 10 minutes and is described as the normal route.
+  Its no-op path is a version check. A `workflow_run` dispatcher (option B)
+  stays rejected: release PR #380 proved the listener only sees the
+  approval-required completion.
+
 - **The CI test-runtime budget no longer fails on runner noise.** It was set to
   120s when normal runs took 33–51s. The suite has since doubled, and identical
   code now runs anywhere from 64s to 122s on CI, so the gate failed at random.
