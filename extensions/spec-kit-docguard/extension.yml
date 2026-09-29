@@ -9,10 +9,15 @@ extension:
   repository: "https://github.com/raccioly/docguard"
   license: "MIT"
   homepage: "https://www.npmjs.com/package/docguard-cli"
+  category: "docs"
+  # read-write: fix --write, sync and init change project documents.
+  effect: "read-write"
 
 requires:
-  speckit_version: ">=0.1.0"
-  framework: "spec-kit"  # DocGuard builds on spec-kit conventions (.specify/, skills, constitution)
+  # The floor is the newest Spec Kit feature this manifest uses: per-event hook
+  # lists with priority (0.10.0), category/effect (0.10.2), after_converge
+  # (0.11.2). tests/hooks-contract.test.mjs keeps it honest.
+  speckit_version: ">=0.11.2"
   tools:
     - name: "node"
       required: true
@@ -73,16 +78,6 @@ provides:
       file: "commands/complete.md"
       description: "Plan the reviewed implemented-to-verified lifecycle transaction"
 
-  # GitHub Actions workflow starters — copyable templates users drop into
-  # .github/workflows/ for guard/fix/sync/score integration.
-  workflows:
-    - name: "docguard-guard"
-      file: "templates/github-workflows/docguard-guard.yml"
-      description: "Mandatory CI gate — runs all validators on PR + main push"
-    - name: "docguard-autofix"
-      file: "templates/github-workflows/docguard-autofix.yml"
-      description: "PR-time auto-fix — applies mechanical doc fixes + comments summary"
-
   # Helper scripts for CI/CD and automation
   scripts:
     - name: "docguard-check-docs"
@@ -98,10 +93,14 @@ provides:
       description: "Initialize a new canonical document with metadata header"
 
 hooks:
+  # Priority: lower runs first. The briefing (5) runs before the git
+  # extension's branch creation (default 10), so a blocked briefing never
+  # leaves an empty feature branch behind.
   before_specify:
-    command: "speckit.docguard.brief"
-    optional: false
-    description: "Load current spec intent and block specification on stale lifecycle state"
+    - command: "speckit.docguard.brief"
+      optional: false
+      priority: 5
+      description: "Load current spec intent and block specification on stale lifecycle state"
 
   after_implement:
     - command: "speckit.docguard.guard"
@@ -115,28 +114,41 @@ hooks:
       description: "Plan lifecycle verification after implementation"
 
   after_converge:
-    command: "speckit.docguard.complete"
-    optional: true
-    prompt: "Review evidence and plan this converged spec's completion transaction?"
-    description: "Plan lifecycle verification after convergence"
+    - command: "speckit.docguard.complete"
+      optional: true
+      priority: 10
+      prompt: "Review evidence and plan this converged spec's completion transaction?"
+      description: "Plan lifecycle verification after convergence"
 
   before_tasks:
-    command: "speckit.docguard.preflight"
-    optional: false
-    description: "Gate the generated spec before task generation"
+    - command: "speckit.docguard.preflight"
+      optional: false
+      priority: 10
+      description: "Gate the generated spec before task generation"
 
   after_tasks:
-    command: "speckit.docguard.score"
-    optional: true
-    prompt: "Show CDD maturity score after task generation?"
+    - command: "speckit.docguard.score"
+      optional: true
+      priority: 10
+      prompt: "Show CDD maturity score after task generation?"
+      description: "Show CDD maturity score after task generation"
 
+# Spec Kit's publishing guide allows 2-5 tags; the catalog submission reads these.
 tags:
   - "documentation"
   - "validation"
-  - "quality"
-  - "cdd"
-  - "spec-driven"
   - "traceability"
   - "ai-agents"
-  - "enforcement"
   - "spec-kit"
+
+# DocGuard-specific metadata Spec Kit does not read. GitHub Actions workflow
+# starters live here, not under `provides`, so they cannot be mistaken for
+# Spec Kit workflows (`specify workflow`, .specify/workflows/).
+x-docguard:
+  github_workflows:
+    - name: "docguard-guard"
+      file: "templates/github-workflows/docguard-guard.yml"
+      description: "Mandatory CI gate — runs all validators on PR + main push"
+    - name: "docguard-autofix"
+      file: "templates/github-workflows/docguard-autofix.yml"
+      description: "PR-time auto-fix — applies mechanical doc fixes + comments summary"

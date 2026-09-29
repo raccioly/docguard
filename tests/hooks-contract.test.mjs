@@ -264,3 +264,84 @@ describe('Spec Kit command registration contracts', () => {
     assert.deepEqual(entries.map(({ file }) => file).sort(), shipped);
   });
 });
+
+/**
+ * specs/018-extension-manifest-hygiene — the manifest must not claim Spec Kit
+ * support it cannot deliver, and the manual-install template must match it.
+ *
+ * @req docguard.extension-manifest-hygiene#FR-001
+ * @req docguard.extension-manifest-hygiene#FR-002
+ * @req docguard.extension-manifest-hygiene#FR-003
+ * @req docguard.extension-manifest-hygiene#FR-004
+ * @req docguard.extension-manifest-hygiene#FR-006
+ * @req docguard.extension-manifest-hygiene#SC-001
+ * @req docguard.extension-manifest-hygiene#SC-003 — category/effect asserted here;
+ *      live `specify extension info` on 1.0.13 recorded in the tasks status
+ */
+describe('extension manifest hygiene', () => {
+  const read = rel => readFileSync(new URL(`../extensions/spec-kit-docguard/${rel}`, import.meta.url), 'utf8');
+  const manifest = read('extension.yml');
+
+  // Hook entries as {event, command, optional, priority}, from either file.
+  const hookEntries = (source) => {
+    const block = source.slice(source.search(/^hooks:\s*$/m));
+    const entries = [];
+    let event = null;
+    let current = null;
+    for (const line of block.split('\n').slice(1)) {
+      if (/^\S/.test(line)) break;
+      const ev = line.match(/^ {2}([a-z_]+):\s*$/);
+      if (ev) { event = ev[1]; continue; }
+      const cmd = line.match(/^\s*-?\s*command:\s*"?([\w.-]+)"?/);
+      if (cmd) { current = { event, command: cmd[1] }; entries.push(current); continue; }
+      const kv = line.match(/^\s+(optional|priority):\s*(\S+)/);
+      if (kv && current) current[kv[1]] = kv[1] === 'priority' ? Number(kv[2]) : kv[2] === 'true';
+    }
+    return entries;
+  };
+
+  // Newest Spec Kit feature each construct needs (Spec Kit CHANGELOG).
+  const FLOORS = { hookPriority: '0.10.0', categoryEffect: '0.10.2', after_converge: '0.11.2' };
+  const cmp = (a, b) => { const x = a.split('.').map(Number), y = b.split('.').map(Number); for (let i = 0; i < 3; i++) if (x[i] !== y[i]) return x[i] - y[i]; return 0; };
+
+  it('declares a Spec Kit floor at least as new as the features it uses', () => {
+    const floor = manifest.match(/speckit_version:\s*">=([\d.]+)"/)[1];
+    const used = [];
+    if (/priority:/.test(manifest)) used.push(FLOORS.hookPriority);
+    if (/^\s+(category|effect):/m.test(manifest)) used.push(FLOORS.categoryEffect);
+    if (/^ {2}after_converge:/m.test(manifest)) used.push(FLOORS.after_converge);
+    for (const need of used) assert.ok(cmp(floor, need) >= 0, `floor ${floor} is older than ${need}`);
+    assert.match(manifest, /^ {2}category: "docs"$/m);
+    const tags = manifest.slice(manifest.indexOf('\ntags:')).split('\n').slice(1).filter(l => /^ {2}- /.test(l));
+    assert.ok(tags.length >= 2 && tags.length <= 5, `Spec Kit allows 2-5 tags, found ${tags.length}`);
+    assert.match(manifest, /^ {2}effect: "read-write"$/m);
+  });
+
+  it('gives every hook an explicit priority, with the briefing first', () => {
+    const hooks = hookEntries(manifest);
+    assert.ok(hooks.length >= 6);
+    for (const h of hooks) assert.ok(Number.isInteger(h.priority) && h.priority >= 1, `${h.event}/${h.command} has no priority`);
+    assert.equal(hooks.find(h => h.event === 'before_specify').priority, 5);
+  });
+
+  it('uses no non-schema keys under requires or provides', () => {
+    assert.doesNotMatch(manifest, /^ {2}framework:/m);
+    const provides = manifest.slice(manifest.indexOf('\nprovides:'), manifest.indexOf('\nhooks:'));
+    assert.doesNotMatch(provides, /^ {2}workflows:/m);
+    assert.match(manifest, /^x-docguard:\n {2}github_workflows:/m);
+  });
+
+  it('keeps the manual-install template equal to the manifest hooks, in Spec Kit\'s shape', () => {
+    const template = read('templates/extensions.yml');
+    assert.match(template, /^installed:\n- docguard$/m);
+    assert.match(template, /^settings:\n {2}auto_execute_hooks: true$/m);
+    const strip = hs => hs.map(({ event, command, optional, priority }) => ({ event, command, optional, priority }));
+    assert.deepEqual(strip(hookEntries(template)), strip(hookEntries(manifest)));
+  });
+
+  it('command documents state no counts of checks, validators or skills', () => {
+    for (const file of readdirSync(new URL('../extensions/spec-kit-docguard/commands/', import.meta.url))) {
+      assert.doesNotMatch(read(`commands/${file}`), /\b\d+\+?\s+(?:automated\s+)?(?:checks|validators|skills)\b/, file);
+    }
+  });
+});

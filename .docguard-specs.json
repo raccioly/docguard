@@ -1760,6 +1760,115 @@
       }
     },
     {
+      "specId": "docguard.extension-manifest-hygiene",
+      "path": "specs/018-extension-manifest-hygiene/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.extension-manifest-hygiene#FR-001",
+          "docguard.extension-manifest-hygiene#FR-002",
+          "docguard.extension-manifest-hygiene#FR-003",
+          "docguard.extension-manifest-hygiene#FR-004",
+          "docguard.extension-manifest-hygiene#FR-005",
+          "docguard.extension-manifest-hygiene#FR-006",
+          "docguard.extension-manifest-hygiene#SC-001",
+          "docguard.extension-manifest-hygiene#SC-002",
+          "docguard.extension-manifest-hygiene#SC-003"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/018-extension-manifest-hygiene/spec.md",
+            "digest": "sha256:d6336c8995c4dc9cf1e7284ecfaa54852876ee3fa45425d23c30e51c14cefe6d"
+          },
+          {
+            "path": "specs/018-extension-manifest-hygiene/plan.md",
+            "digest": "sha256:c99081963d744042fc4f9ead4fb18749a047b0c49e80d37b5220c0f0e70cf976"
+          },
+          {
+            "path": "specs/018-extension-manifest-hygiene/tasks.md",
+            "digest": "sha256:cd12315c890bcb5c0447bac55579c77d062b8f0aa72e0d991f0ca503a8263267"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 8,
+          "total": 8
+        },
+        "implementationEvidence": [],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/hooks-contract.test.mjs",
+            "line": 272
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/hooks-contract.test.mjs",
+            "line": 273
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/hooks-contract.test.mjs",
+            "line": 274
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/hooks-contract.test.mjs",
+            "line": 275
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/catalog-submission.test.mjs",
+            "line": 104
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/hooks-contract.test.mjs",
+            "line": 276
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/hooks-contract.test.mjs",
+            "line": 277
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/catalog-submission.test.mjs",
+            "line": 105
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/hooks-contract.test.mjs",
+            "line": 278
+          }
+        ]
+      }
+    },
+    {
       "specId": "docguard.language-repository-coverage",
       "path": "specs/009-language-repository-coverage/spec.md",
       "reviewed": {

@@ -100,6 +100,23 @@ test('catalog form respects upstream description and tag bounds', () => {
   assert.ok(tags.length >= 2 && tags.length <= 5);
 });
 
+/**
+ * @req docguard.extension-manifest-hygiene#FR-005
+ * @req docguard.extension-manifest-hygiene#SC-002
+ */
+test('catalog submission takes floor, category, effect and tags from the manifest', () => {
+  const manifest = readFileSync(manifestPath, 'utf8');
+  const body = execFileSync('python3', ['-B', script, '--body', '1.2.3', download], { encoding: 'utf8' });
+  const entry = JSON.parse(body.slice(body.indexOf('{', body.indexOf('```json')), body.lastIndexOf('}') + 1)).docguard;
+  const tags = manifest.slice(manifest.indexOf('\ntags:')).split('\n').slice(1)
+    .filter(l => /^  - /.test(l)).map(l => l.replace(/^  - "?|"?$/g, ''));
+  assert.equal(entry.requires.speckit_version, manifest.match(/speckit_version: "([^"]+)"/)[1]);
+  assert.equal(entry.category, manifest.match(/^  category: "([^"]+)"$/m)[1]);
+  assert.equal(entry.effect, manifest.match(/^  effect: "([^"]+)"$/m)[1]);
+  assert.deepEqual(entry.tags, tags);
+  assert.match(body, new RegExp(`### Required Spec Kit Version\\n\\n${entry.requires.speckit_version.replace(/[.]/g, '\\.')}`));
+});
+
 test('catalog workflows share one reminder upsert path', () => {
   for (const workflow of [releaseWorkflow, catalogWorkflow]) {
     assert.match(workflow, /bash \.github\/scripts\/upsert-catalog-reminder\.sh "\$VERSION" \/tmp\/reminder\.md/);

@@ -80,6 +80,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   numbering over exactly this problem. Timestamp-numbered feature directories
   never collide.
 
+- **The Spec Kit extension manifest now says what it needs (#455,
+  `specs/018-extension-manifest-hygiene`).**
+  - **Spec Kit floor.** It said `>=0.1.0` while using per-event hook lists with
+    priority (Spec Kit 0.10.0), `category`/`effect` (0.10.2) and
+    `after_converge` (0.11.2). An older Spec Kit would install it, and the hooks
+    would then silently fail to register. The floor is now `>=0.11.2`, and a
+    contract test derives it from the features the manifest uses.
+  - **New fields.** It declares `category: docs` and `effect: read-write`.
+  - **Explicit hook priorities.** Every hook has one. The briefing runs at 5,
+    ahead of the git extension's branch creation at the default 10, so a
+    blocked briefing no longer leaves an empty feature branch behind.
+  - **Non-schema keys.** `requires.framework` is removed. The GitHub workflow
+    starters move from `provides.workflows`, whose name collides with Spec
+    Kit's own workflows, to `x-docguard.github_workflows`.
+  - **Tags.** There were 9, against the publishing guide's limit of 2–5, so the
+    catalog script kept its own list. The manifest now carries the 5 tags, and
+    the submission reads the floor, description, category, effect and tags from
+    it.
+  - **Manual-install template.** `templates/extensions.yml` told adopters to
+    copy it into `.specify/extensions.yml` in a shape Spec Kit doesn't write. It
+    is now the exact registry that `specify extension add` produces, and a
+    contract test keeps it equal to the manifest's hooks.
+  - **Stale count.** `commands/guard.md` no longer promises "160+ automated
+    checks".
+
 - **This repository now obeys its validator-isolation principle, and a test
   enforces it.** `cli/validators/docs-sync.mjs` imported
   `cli/validators/api-surface.mjs`, against Constitution IV. OpenAPI discovery

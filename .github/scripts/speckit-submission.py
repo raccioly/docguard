@@ -30,12 +30,40 @@ from urllib.parse import urlencode, quote
 FORM_URL = "https://github.com/github/spec-kit/issues/new"
 TEMPLATE = "extension_submission.yml"
 MANIFEST = Path(__file__).resolve().parents[2] / "extensions/spec-kit-docguard/extension.yml"
-DESCRIPTION = (
-    "Documentation integrity for AI-assisted repositories: lifecycle registry, "
-    "drift validation, traceability, safe archival, SARIF/JUnit, MCP, GitHub "
-    "Actions, and Spec Kit hooks."
-)
-TAGS = ["documentation", "validation", "traceability", "ai-agents", "spec-kit"]
+
+
+def _scalar(value: str) -> str:
+    return value.split(" #", 1)[0].strip().strip("\"'")
+
+
+def manifest_metadata(path: Path = MANIFEST):
+    """Read the catalog-facing fields from the manifest, the single source.
+
+    Repeating them here is how the catalog entry went stale (5 tags against
+    the manifest's 9, and a Spec Kit floor of >=0.1.0 while the hooks needed
+    0.11.2). specs/018-extension-manifest-hygiene FR-005.
+    """
+    meta = {"tags": []}
+    section = None
+    for raw in path.read_text(encoding="utf-8").splitlines():
+        if not raw.strip() or raw.lstrip().startswith("#"):
+            continue
+        content = raw.lstrip()
+        indent = len(raw) - len(content)
+        if indent == 0:
+            section = content[:-1] if content.endswith(":") else None
+            continue
+        key, _, value = content.partition(":")
+        if section == "extension" and indent == 2 and key in ("description", "category", "effect"):
+            meta[key] = _scalar(value)
+        elif section == "requires" and indent == 2 and key == "speckit_version":
+            meta["speckit_version"] = _scalar(value)
+        elif section == "tags" and content.startswith("- "):
+            meta["tags"].append(_scalar(content[2:]))
+    missing = [k for k in ("description", "category", "effect", "speckit_version") if not meta.get(k)]
+    if missing or not meta["tags"]:
+        raise RuntimeError(f"Could not read {missing or ['tags']} from {path}")
+    return meta
 
 
 def manifest_inventory(path: Path = MANIFEST):
@@ -95,12 +123,15 @@ def changelog_section(version: str) -> str:
 
 def build(version: str, download_url: str):
     commands, hooks = manifest_inventory()
+    meta = manifest_metadata()
     command_count, hook_count = len(commands), len(hooks)
     catalog_entry = {
         "docguard": {
             "name": "DocGuard — CDD Enforcement",
             "id": "docguard",
-            "description": DESCRIPTION,
+            "description": meta["description"],
+            "category": meta["category"],
+            "effect": meta["effect"],
             "author": "raccioly",
             "version": version,
             "download_url": download_url,
@@ -115,13 +146,13 @@ def build(version: str, download_url: str):
             ),
             "license": "MIT",
             "requires": {
-                "speckit_version": ">=0.1.0",
+                "speckit_version": meta["speckit_version"],
                 "tools": [
                     {"name": "node", "version": ">=18.0.0", "required": True}
                 ],
             },
             "provides": {"commands": command_count, "hooks": hook_count},
-            "tags": TAGS,
+            "tags": meta["tags"],
             "verified": False,
             "downloads": 0,
             "stars": 0,
@@ -144,14 +175,14 @@ def build(version: str, download_url: str):
          catalog_entry["docguard"]["documentation"]),
         ("changelog", "Changelog URL (optional)",
          "https://github.com/raccioly/docguard/blob/main/CHANGELOG.md"),
-        ("speckit-version", "Required Spec Kit Version", ">=0.1.0"),
+        ("speckit-version", "Required Spec Kit Version", meta["speckit_version"]),
         ("required-tools", "Required Tools (optional)",
          "- node (>=18.0.0) - required\n"
          "- npx - required\n"
          "- specify - optional (auto-initializes the SDD workflow during docguard init)"),
         ("commands-count", "Number of Commands", str(command_count)),
         ("hooks-count", "Number of Hooks (optional)", str(hook_count)),
-        ("tags", "Tags", ", ".join(TAGS)),
+        ("tags", "Tags", ", ".join(meta["tags"])),
         ("features", "Key Features",
          "- Configurable quality gate with severity triage and a remediation plan\n"
          "- AI-driven documentation repair with codebase research and validation loops\n"
