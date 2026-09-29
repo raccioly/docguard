@@ -151,6 +151,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Four open field reports closed out (#438, #437, #436, #454;
+  `specs/020-field-report-followups`).**
+  - **#454.** In a husky, lefthook or simple-git-hooks repository, `docguard
+    hooks` found the manager's dispatcher and advised "re-run with --force".
+    Following that advice replaced the dispatcher and disabled every hook the
+    manager runs. DocGuard now detects the manager. It never writes into the
+    manager's hooks directory, even with `--force`, and prints the exact line
+    to add and where it goes (for example `.husky/pre-commit: npx docguard-cli
+    guard --changed-only`).
+  - **#438.** The claims-unverified badge disappeared whenever the count was
+    unknown, which is always under `--changed-only`, leaving the pass badge
+    alone. It now reads `claims_unverified-unknown`. The two honesty lines
+    ("…do not establish factual accuracy", "…configured gates passed…") and
+    their place above the nudges are now covered by a regression test.
+  - **#437.** The baseline line says what it hides as well as how much it
+    hides, for example `3 pre-existing finding(s) suppressed — 2 error · 1
+    warning`. The guard JSON carries `baselineBySeverity`.
+  - **#436.** The upgrade path that clears the schema nudge now has a test:
+    `upgrade --apply` migrates `.docguard.json` even when the global install
+    fails, and the next guard run prints no nudge. The nudge still prints while
+    the schema is behind, because it can now always be cleared by the command it
+    names.
+
 - **`.docguardignore` means the same thing to every check (#455,
   `specs/019-ignore-and-todo-parsing`).** There were two parsers. The one in
   `cli/shared-ignore.mjs` treats a gitignore-style `dir/` as the directory and
