@@ -2567,6 +2567,181 @@
       }
     },
     {
+      "specId": "docguard.spec-first-gate",
+      "path": "specs/015-spec-first-gate/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.spec-first-gate#FR-001",
+          "docguard.spec-first-gate#FR-002",
+          "docguard.spec-first-gate#FR-003",
+          "docguard.spec-first-gate#FR-004",
+          "docguard.spec-first-gate#FR-005",
+          "docguard.spec-first-gate#FR-006",
+          "docguard.spec-first-gate#FR-007",
+          "docguard.spec-first-gate#FR-008",
+          "docguard.spec-first-gate#FR-009",
+          "docguard.spec-first-gate#FR-010",
+          "docguard.spec-first-gate#SC-001",
+          "docguard.spec-first-gate#SC-002",
+          "docguard.spec-first-gate#SC-003",
+          "docguard.spec-first-gate#SC-004"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/015-spec-first-gate/spec.md",
+            "digest": "sha256:dc9abaa2b03ef5facb96ecd9955ca66667393f375a3a96de1e60c6f7bea4dc4b"
+          },
+          {
+            "path": "specs/015-spec-first-gate/plan.md",
+            "digest": "sha256:e56d9ad4d82dab18ab041d9f0d3287fadd0893e9b33cc7a79245221d69201f9f"
+          },
+          {
+            "path": "specs/015-spec-first-gate/tasks.md",
+            "digest": "sha256:a36857e305b43b4d1f71c2bd2467a31790cff2f441924fcf287f6234fea86a0b"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 10,
+          "total": 10
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/scanners/spec-first.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/scanners/spec-first.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/scanners/spec-first.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/scanners/spec-first.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/scanners/spec-first.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/commands/specs.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/commands/specs.mjs",
+            "line": 7
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/spec-first.test.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/spec-first.test.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/spec-first.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/spec-first.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/spec-first.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/spec-first.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/spec-first.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/spec-first.test.mjs",
+            "line": 167
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "tests/spec-first.test.mjs",
+            "line": 168
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "tests/spec-first.test.mjs",
+            "line": 169
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/spec-first.test.mjs",
+            "line": 170
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/spec-first.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/spec-first.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "SC-004",
+            "file": "tests/spec-first.test.mjs",
+            "line": 201
+          }
+        ]
+      }
+    },
+    {
       "specId": "docguard.specify-init-delegation",
       "path": "specs/014-specify-init-delegation/spec.md",
       "reviewed": {
@@ -2964,7 +3139,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/docguard.mjs",
-            "line": 864
+            "line": 871
           },
           {
             "requirementId": "FR-011",

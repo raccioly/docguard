@@ -164,6 +164,12 @@ extensions/spec-kit-docguard/
 
 ## Rules
 
+- **Spec-first (Constitution X).** A change to `cli/**` runs the Spec Kit pipeline:
+  `specs/###-slug/` spec → plan → tasks → implement. The PR description names the
+  spec (`specs/015-spec-first-gate` or its Spec ID), or declares one line
+  `Spec-Exempt: <release|deps|typo|test-only> — <reason>`. CI enforces this with
+  `docguard specs require --since origin/main --message-file <body>`. When the area
+  being changed has no spec, write an as-built spec scoped to that area first.
 - **PR-first workflow — no direct-to-main commits.** Create a branch (`git checkout -b <type>/<slug>`), push, `gh pr create`, let CI run, self-review, squash-merge. Tag releases only after merge on `main`. The only acceptable direct-to-main: typo fixes in comments or README badge URLs.
 - Never commit without updating CHANGELOG.md
 - If code deviates from docs, add `// DRIFT: reason`

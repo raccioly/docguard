@@ -51,6 +51,7 @@ It targets development teams and AI coding agents that need to maintain document
 | **Cross-language import graph** | Resolves repository-local JS/TS and Python static imports for cycle and layer checks | `cli/validators/architecture.mjs`, `cli/scanners/py-ast.mjs` | Python supports regular flat/`src/` packages and explicit relatives; dynamic imports, runtime path changes, parse failures, missing interpreters, and ambiguous modules remain explicit limitations |
 | **Repository-root guidance** | Detects a likely governing ancestor without changing the selected scan directory | `cli/repository-root.mjs`, `cli/docguard.mjs` | Requires ancestor DocGuard configuration or npm/pnpm membership, respects nested Git boundaries, and uses typed stderr diagnostics for machine modes |
 | **Lifecycle transactions and context** | Stages registry, recovery, spec outcome, and current-context changes before any visible mutation and rolls the set back on write or validation failure | `cli/writers/file-transaction.mjs`, `cli/writers/spec-outcomes.mjs`, `cli/scanners/lifecycle-context.mjs` | Active context includes approved current spec pointers and content hashes; retired prose is excluded |
+| **Spec-first gate** | Classifies a change between the merge base and HEAD as covered, exempt, not governed, uncovered or inconclusive. It reads governed paths from `specFirst` and resolves spec references against `specs/*/spec.md` and the registry | `cli/scanners/spec-first.mjs`, `cli/commands/specs.mjs` | Read-only. An unresolved reference never passes. Git or inventory failure is inconclusive (exit 2), never a pass. The PR body arrives as a file |
 | **Spec Kit delegation** | The only code that invokes the `specify` CLI: reads its documented `init` options, resolves the integration key from `.specify/integration.json` / `init-options.json` / unambiguous agent signals, initializes Spec Kit and registers the packaged DocGuard extension | `cli/spec-kit-delegation.mjs`, `cli/ensure-skills.mjs` | Called only by `docguard init`; argument arrays only; every failure returns a structured result with the CLI's error and a manual command; requires Spec Kit ≥ 0.10.0 |
 | **Validators** | Independent validation modules that check specific aspects of CDD compliance — all emitting structured findings with stable codes (the `CODES` registry in `findings.mjs`) | `cli/validators/` | `*.mjs` |
 | **Scanners** | Project file scanners for test discovery, route detection, schema mapping, CDK/IaC, doc-tools, integrations, frontend surface, spec-kit, memory-plan, semantic claims, agent readability | `cli/scanners/` | `*.mjs` |
@@ -361,6 +362,28 @@ evidence, and affected canonical docs are reviewed, run `docguard specs complete
 verification. A taskless living verification contract is eligible only when every
 requirement has qualified evidence. Keep living specs current; archive only when the registry reports
 that the selected persistence model is ready.
+
+## Recipe 3c — Spec-first gate
+
+Require every pull request that changes governed code to name its spec. Declare the
+governed paths in `.docguard.json` (`"specFirst": { "paths": ["src/**"] }`; unset, every
+changed path except Markdown, `specs/**` and tests is governed), then run:
+
+```yaml
+- uses: actions/checkout@<sha>
+  with: { fetch-depth: 0 }
+- uses: raccioly/docguard@<sha>
+  with: { command: spec-first }
+```
+
+The command is `docguard specs require --since origin/<base> --message-file <body>`. It passes
+when the PR description or a commit message names an existing `specs/<dir>` path or Spec ID,
+when the change edits a spec's own files, or on one line `Spec-Exempt: <kind> — <reason>`
+(kinds `release`, `deps`, `typo`, `test-only` unless `specFirst.exemptKinds` says otherwise;
+reason of 10+ characters). An invented reference never passes. Exit 1 means uncovered and exit
+2 means inconclusive (unknown base, shallow history, oversized inventory); both should fail
+the job. When calling the CLI from your own workflow, pass the PR body through `env` into a
+file. Never splice `${{ github.event.pull_request.body }}` into a `run:` script.
 
 ## Recipe 4 — Score (track CDD maturity over time)
 
@@ -1414,7 +1437,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
+### Added
+
+- **`docguard specs require`, a spec-first change gate (#455,
+  `specs/015-spec-first-gate`).** Validators evaluate a tree, so none of them
+  can notice the spec that was never written. This command evaluates a
+  change: the paths touched since the merge base with `--since`, the commit
+  messages in that range, and an optional `--message-file` (a PR body, read
+  from a file so an untrusted body never reaches a shell).
+
+  A change to governed paths (`.docguard.json` → `specFirst.paths`) passes if
+  it does any of these:
+  - names an existing `specs/<dir>` path or Spec ID;
+  - edits a spec's own files;
+  - declares `Spec-Exempt: <release|deps|typo|test-only> — <reason>`.
+
+  An invented reference never passes. The result is one of `covered`,
+  `exempt`, `not-governed`, `uncovered` (exit 1) or `inconclusive` (exit 2:
+  unknown base, shallow history, oversized inventory). A change that cannot be
+  shown to name its spec is not treated as one that does.
+
+  The GitHub Action runs it as `command: spec-first`. This repository enforces
+  it in CI for `cli/**`. Replayed over the last 40 merges on `main`, 14 of the
+  19 that changed `cli/` named no spec.
 
 - **This repository runs its own Spec Kit workflow again (#455).** It was
   initialized with Spec Kit 0.3.0 for Antigravity, in the pre-manifest layout
@@ -1783,30 +1828,8 @@ Automated weekly release — batches everything merged since `v0.42.0`.
 
 - **A malformed `suggestion.kind` was silently coerced to `review`**, turning a
   typo into an escalation. It is now omitted, per
-  `adoption-workflow-integrity#FR-002`.
 
-- **The badge claimed full coverage on a partial run.** `passed/total` counts
-  checks and its denominator excludes every validator that could not run, so a
-  repository could print `628/628` and brightgreen while the same run reported
-  a partial validator and a missing prerequisite. The colour is now capped at
-  `green` in that case — green rather than yellow, because everything that ran
-  did pass. `no-matches` keeps the top grade: a validator that ran and found
-  nothing applicable did its job. The coverage line leads with
-  `N of M validator(s) checked`.
-
-- **A version bump no longer flips the verdict on an unchanged tree.** Upgrading
-  0.41.3 -> 0.42.0 turned `PASS 1870/1870` into `WARN` with `SPR001`
-  (`.docguard-specs.json` digest projection differs) with no code and no docs
-  changed. Registry currency was decided by byte-equality of the serialized
-  projection, which cannot tell "your registry is stale" from "my output format
-  changed", so every format change reached users as project drift. Two encodings
-  were already doing it: the pre-0.42 artifact digest (taken over raw bytes
-  before the `docguard:last-reviewed` stamp was excluded in #410), and
-  `schemaVersion: 1` — which `readSpecRegistry` explicitly accepts as supported
-  while the projection reported it stale forever, a state no content edit could
-  ever clear. The currency check now consults a declared table of older
-
-<!-- truncated: 3704 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 3726 more lines — read CHANGELOG.md directly -->
 
 ---
 
@@ -2292,6 +2315,12 @@ extensions/spec-kit-docguard/
 
 ## Rules
 
+- **Spec-first (Constitution X).** A change to `cli/**` runs the Spec Kit pipeline:
+  `specs/###-slug/` spec → plan → tasks → implement. The PR description names the
+  spec (`specs/015-spec-first-gate` or its Spec ID), or declares one line
+  `Spec-Exempt: <release|deps|typo|test-only> — <reason>`. CI enforces this with
+  `docguard specs require --since origin/main --message-file <body>`. When the area
+  being changed has no spec, write an as-built spec scoped to that area first.
 - **PR-first workflow — no direct-to-main commits.** Create a branch (`git checkout -b <type>/<slug>`), push, `gh pr create`, let CI run, self-review, squash-merge. Tag releases only after merge on `main`. The only acceptable direct-to-main: typo fixes in comments or README badge URLs.
 - Never commit without updating CHANGELOG.md
 - If code deviates from docs, add `// DRIFT: reason`

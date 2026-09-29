@@ -112,6 +112,28 @@ verification. A taskless living verification contract is eligible only when ever
 requirement has qualified evidence. Keep living specs current; archive only when the registry reports
 that the selected persistence model is ready.
 
+## Recipe 3c — Spec-first gate
+
+Require every pull request that changes governed code to name its spec. Declare the
+governed paths in `.docguard.json` (`"specFirst": { "paths": ["src/**"] }`; unset, every
+changed path except Markdown, `specs/**` and tests is governed), then run:
+
+```yaml
+- uses: actions/checkout@<sha>
+  with: { fetch-depth: 0 }
+- uses: raccioly/docguard@<sha>
+  with: { command: spec-first }
+```
+
+The command is `docguard specs require --since origin/<base> --message-file <body>`. It passes
+when the PR description or a commit message names an existing `specs/<dir>` path or Spec ID,
+when the change edits a spec's own files, or on one line `Spec-Exempt: <kind> — <reason>`
+(kinds `release`, `deps`, `typo`, `test-only` unless `specFirst.exemptKinds` says otherwise;
+reason of 10+ characters). An invented reference never passes. Exit 1 means uncovered and exit
+2 means inconclusive (unknown base, shallow history, oversized inventory); both should fail
+the job. When calling the CLI from your own workflow, pass the PR body through `env` into a
+file. Never splice `${{ github.event.pull_request.body }}` into a `run:` script.
+
 ## Recipe 4 — Score (track CDD maturity over time)
 
 `score --format json` reports structural maturity. Its numeric threshold is stable, while `assurance` explicitly states that factual accuracy remains unverified. Comparing scores is meaningful only with the same tool/configuration and a comparable coverage scope.

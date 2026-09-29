@@ -42,6 +42,9 @@
     "documentLifecycle": true,
     "specRegistry": true
   },
+  "specFirst": {
+    "paths": ["cli/**"]
+  },
   "severity": {},
   "findingSeverity": {},
   "surfaceSync": {
