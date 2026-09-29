@@ -372,6 +372,141 @@
       }
     },
     {
+      "specId": "docguard.agent-instruction-budget",
+      "path": "specs/017-agent-instruction-budget/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.agent-instruction-budget#FR-001",
+          "docguard.agent-instruction-budget#FR-002",
+          "docguard.agent-instruction-budget#FR-003",
+          "docguard.agent-instruction-budget#FR-004",
+          "docguard.agent-instruction-budget#FR-005",
+          "docguard.agent-instruction-budget#SC-001",
+          "docguard.agent-instruction-budget#SC-002",
+          "docguard.agent-instruction-budget#SC-003",
+          "docguard.agent-instruction-budget#SC-004"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/017-agent-instruction-budget/spec.md",
+            "digest": "sha256:6a340b1f37ddd049402e5843d41fcb9d710f8e36548d565c79dfbdbd77cbe507"
+          },
+          {
+            "path": "specs/017-agent-instruction-budget/plan.md",
+            "digest": "sha256:030d1079cc4327dba5744518798b925ae9c398ff0667946a32d79bcf1fb6eb1a"
+          },
+          {
+            "path": "specs/017-agent-instruction-budget/tasks.md",
+            "digest": "sha256:a1161bf3b3ee6e62130ad82531724c728536d2d79c3ff712322b0bc5da39c334"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 7,
+          "total": 7
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/scanners/agent-instructions.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/validators/structure.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/validators/structure.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/validators/structure.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/scanners/speckit.mjs",
+            "line": 979
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/agent-instruction-budget.test.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/agent-instruction-budget.test.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/agent-instruction-budget.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/agent-instruction-budget.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/agent-instruction-budget.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/agent-instruction-budget.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/agent-instruction-budget.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/agent-instruction-budget.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "SC-004",
+            "file": "tests/agent-instruction-budget.test.mjs",
+            "line": 12
+          }
+        ]
+      }
+    },
+    {
       "specId": "docguard.calibrated-finding-channels",
       "path": "specs/013-calibrated-finding-channels/spec.md",
       "reviewed": {
@@ -525,7 +660,7 @@
           {
             "requirementId": "FR-021",
             "file": "cli/scanners/speckit.mjs",
-            "line": 1042
+            "line": 1089
           }
         ],
         "testEvidence": [

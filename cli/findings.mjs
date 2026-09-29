@@ -148,6 +148,18 @@ export const CODES = {
     help: 'A canonical doc exists but lacks a section its document type requires. Add the section — or, if it is genuinely not applicable, own the absence with an inline marker: `<!-- docguard:section <slug> n/a — reason -->`.',
     suppress: '<!-- docguard:section <slug> n/a — reason -->',
   },
+  STR004: {
+    validator: 'structure',
+    title: 'Agent instruction chain exceeds its byte budget',
+    help: 'Codex concatenates AGENTS.md files from the repository root down to the working directory (AGENTS.override.md replaces AGENTS.md in its directory) and stops reading at project_doc_max_bytes, 32768 bytes by default. Text past the limit is dropped without warning, and the nested, most specific rules come last. Move long procedures into linked documents, remove duplicated rules, or — for existing debt — record an allowance in `agentInstructions.allowances` (keyed by the deepest file) so the chain can shrink but any growth is a reviewed configuration change. The budget itself is `agentInstructions.maxBytes`.',
+    suppress: null,
+  },
+  STR005: {
+    validator: 'structure',
+    title: 'Instruction allowance has slack',
+    help: 'An allowance in `agentInstructions.allowances` is at least 1024 bytes above the chain it covers. The chain shrank; lower the allowance to the current size (or remove it when the chain is within the default budget) so it cannot grow back unnoticed.',
+    suppress: null,
+  },
   CHG001: {
     validator: 'changelog',
     title: 'Missing [Unreleased] section',
@@ -542,6 +554,12 @@ export const CODES = {
     validator: 'specKit',
     title: 'Additional untouched claims elided',
     help: 'Guard reports at most 10 untouched-claim findings (SPK010) per run to avoid noise; this line counts the remainder. Resolve the reported tasks and re-run guard to surface more, or set `"specKit": { "untouchedClaimCheck": false }` in .docguard.json to disable the check.',
+    suppress: null,
+  },
+  SPK012: {
+    validator: 'specKit',
+    title: 'Two feature directories share a spec number',
+    help: 'Two or more top-level `specs/` feature directories use the same numeric prefix (for example `016-a` and `016-b`), usually because parallel agents each picked "the next number" from their own checkout. References to "spec 016" become ambiguous and tools that key on the number pick one arbitrarily. Renumber the later feature with `git mv` and update references. Projects that create specs in parallel can set Spec Kit\'s `feature_numbering` to `timestamp` in `.specify/init-options.json`.',
     suppress: null,
   },
   SPK009: {

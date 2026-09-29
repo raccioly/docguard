@@ -435,7 +435,7 @@ DocGuard runs **29 automated validators** on every `guard` check. Source-facing 
 
 | # | Validator | What It Checks | Default |
 |:--|:----------|:--------------|:--------|
-| 1 | **Structure** | Required CDD files exist | ✅ On |
+| 1 | **Structure** | Required CDD files exist; each `AGENTS.md` chain fits the agent's load limit (32 KiB default, per-chain allowances for existing debt) | ✅ On |
 | 2 | **Doc Sections** | Canonical docs have required sections (or N/A markers) | ✅ On |
 | 3 | **Docs-Sync** | Routes/services referenced in docs + OpenAPI cross-check | ✅ On |
 | 4 | **Drift-Comments** | `// DRIFT:` comments logged in DRIFT-LOG.md (skips test files by default) | ✅ On |
@@ -453,7 +453,7 @@ DocGuard runs **29 automated validators** on every `guard` check. Source-facing 
 | 16 | **Doc-Quality** | Writing quality (readability, passive voice, atomicity, IEEE 830) | ✅ On |
 | 17 | **TODO-Tracking** | Untracked TODOs/FIXMEs and skipped tests (skips test files by default) | ✅ On |
 | 18 | **Schema-Sync** | Database models documented in DATA-MODEL.md | ✅ On |
-| 19 | **Spec-Kit** | Spec quality validation (FR-IDs, mandatory sections, phased tasks) | ✅ On |
+| 19 | **Spec-Kit** | Spec quality validation (FR-IDs, mandatory sections, phased tasks, unique spec numbers) | ✅ On |
 | 20 | **Document-Lifecycle** | Exact terminal states, advisory completion signals, incomplete coverage, and manifest/working-tree inconsistencies | ✅ On |
 | 21 | **Spec-Registry** | Immutable spec identities, byte-stable evidence projection, reviewed lifecycle preservation, and archive/storage consistency | ✅ On |
 | 22 | **Evidence** | Exact declared Markdown statements match current typed JSON, bounded collections, or saved compatibility reports; unsupported and missing evidence stays visible | ✅ On |
