@@ -515,17 +515,17 @@
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 592
+            "line": 608
           },
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 619
+            "line": 635
           },
           {
             "requirementId": "FR-021",
             "file": "cli/scanners/speckit.mjs",
-            "line": 1026
+            "line": 1042
           }
         ],
         "testEvidence": [
@@ -2737,6 +2737,153 @@
             "requirementId": "SC-004",
             "file": "tests/spec-first.test.mjs",
             "line": 201
+          }
+        ]
+      }
+    },
+    {
+      "specId": "docguard.spec-kit-artifact-coverage",
+      "path": "specs/016-spec-kit-artifact-coverage/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.spec-kit-artifact-coverage#FR-001",
+          "docguard.spec-kit-artifact-coverage#FR-002",
+          "docguard.spec-kit-artifact-coverage#FR-003",
+          "docguard.spec-kit-artifact-coverage#FR-004",
+          "docguard.spec-kit-artifact-coverage#FR-005",
+          "docguard.spec-kit-artifact-coverage#FR-006",
+          "docguard.spec-kit-artifact-coverage#FR-007",
+          "docguard.spec-kit-artifact-coverage#SC-001",
+          "docguard.spec-kit-artifact-coverage#SC-002",
+          "docguard.spec-kit-artifact-coverage#SC-003",
+          "docguard.spec-kit-artifact-coverage#SC-004"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/016-spec-kit-artifact-coverage/spec.md",
+            "digest": "sha256:548f792dcf22c1faac4d078b83777c878cdd0c43081b4b0b62b7e9fe4a8f5bb5"
+          },
+          {
+            "path": "specs/016-spec-kit-artifact-coverage/plan.md",
+            "digest": "sha256:8c4fe03855b941f3e1b8a5ede205be2e20f1327af2b379a4d36499313ada9638"
+          },
+          {
+            "path": "specs/016-spec-kit-artifact-coverage/tasks.md",
+            "digest": "sha256:4d7307be232a12eb21ae1e7c5c87f29d0d17069fa9635697407f410c2421dadf"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 9,
+          "total": 9
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-002",
+            "file": "cli/scanners/speckit.mjs",
+            "line": 118
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/validators/metrics-consistency.mjs",
+            "line": 23
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/validators/metrics-consistency.mjs",
+            "line": 24
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/validators/metrics-consistency.mjs",
+            "line": 25
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/shared-openapi.mjs",
+            "line": 7
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/spec-kit-artifact-coverage.test.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/spec-kit-artifact-coverage.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/spec-kit-artifact-coverage.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/spec-kit-artifact-coverage.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/spec-kit-artifact-coverage.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/spec-kit-artifact-coverage.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/validator-isolation.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/spec-kit-artifact-coverage.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/spec-kit-artifact-coverage.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/spec-kit-artifact-coverage.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "SC-004",
+            "file": "tests/validator-isolation.test.mjs",
+            "line": 8
           }
         ]
       }

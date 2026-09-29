@@ -40,6 +40,7 @@ It targets development teams and AI coding agents that need to maintain document
 | **Spec lifecycle registry** | Projects immutable spec identities, reviewed lifecycle/lineage/scope, artifact digests, task state, qualified implementation/test evidence, bounded outcomes, and recovery tombstones into one byte-stable control file | `cli/scanners/spec-registry.mjs`, `cli/scanners/requirement-evidence.mjs`, `cli/validators/spec-registry.mjs`, `cli/commands/specs.mjs` | `specs --write` preserves reviewed fields; stale checks identify bounded field paths and distinguish canonical ordering from changed content; only committed, clean, digest-current lifecycle entries can defer traceability, while a current planned entry that is new, removed from the index, or modified pending commit remains advisory; `specs complete` is the only verified-delivery writer |
 | **Reconciliation graph** | Inventories changed paths independently from bounded patch text, maps them to direct spec evidence, and keeps mechanical facts, approved intent, decisions, unrelated changes, and unsupported evidence separate | `cli/shared-git.mjs`, `cli/scanners/reconciliation.mjs`, `cli/commands/reconcile.mjs` | Timeout, overflow, parse failure, or incomplete inventory blocks a ready result; planning is read-only and `--write` never rewrites requirements |
 | **Analyzer tier** | Decides which analyzer produced each piece of evidence at the two entry points (`parseJsTs`, `extractPythonFiles`), carries `tier`/`tierReason` on scanned items, reports `parserTier` on every finding, and downgrades a validator to `partial` when an AST-capable language was read by the pattern fallback | `cli/shared-source.mjs` (`tierFor`, `summarizeTiers`, `tierApplicability`), `cli/scanners/routes.mjs`, `cli/validators/api-surface.mjs` | Findings are retained; only coverage is downgraded. `fallback-language` is not a gap — no AST tier exists for that language |
+| **Spec Kit artifact coverage** | Treats Spec Kit's own documents as governed. Coverage counts top-level `specs/<feature>/**/*.md` and the constitution under a `specKit` tier. Metrics-Consistency (including `MET004` dependency claims) and Reference-Existence read the constitution | `cli/scanners/speckit.mjs` (`findConstitution`), `cli/commands/guard.mjs`, `cli/validators/metrics-consistency.mjs`, `cli/validators/reference-existence.mjs` | The constitution usually lives in a dot directory the walkers skip, so it is located explicitly. Nested fixture `specs/` trees are not the project's artifacts |
 | **Headline coverage** | Reports how many validators actually checked beside the passed/total check count, and caps the badge colour at `green` when any active validator was partial, unsupported, missing a prerequisite, or errored | `cli/commands/guard.mjs` (`badgeColor`, `incompleteCoverage`) | `no-matches` keeps the top grade: a validator that ran and found nothing applicable completed its job |
 | **Finding channels** | Separates the three questions a finding answers — does CI block (`severity`), who decides (`disposition`), how well is the code measured (`evidence`), and which analyzer produced it (`parserTier`) — so a certain observation is never labelled uncertain and the feedback loop samples the labels that have never been validated | `cli/findings.mjs`, `cli/precision-evidence.mjs`, `cli/writers/sarif.mjs` | Channels are additive to the published finding contract; `confidence` keeps its meaning as the detector's certainty in its own observation |
 | **Precision evidence** | Runs labelled synthetic and exact-commit public cases, separates deterministic results from observations, calculates null-safe quality metrics and confidence bounds, compares case-first baselines, persists them in a provenance envelope whose measure (`benchmark-precision`) and caveat are derived from the cases and re-verified on load, and projects per-code evidence into a generated module the CLI quotes at finding time | `benchmarks/`, `cli/precision-evidence.mjs`, `schemas/docguard-benchmark.schema.json`, `schemas/docguard-benchmark-baseline.schema.json`, `schemas/docguard-precision-evidence.schema.json` | External runs are explicit; third-party project code is never executed and disposable checkouts are removed by default |
@@ -809,6 +810,8 @@ These rows are counted and kept outside every ratio. Scoring one as a false posi
 
 ## Check coverage and document roles
 
+Guard's `coverage` object inventories Markdown documents by tier: `canonical`, `specKit` (Spec Kit feature artifacts under top-level `specs/` plus the constitution), `tracked`, `ignored`, and `unclassified[]` (paths under no tier). `specKit` is additive. Before it existed, Spec Kit artifacts were reported under `unclassified`.
+
 Each guard validator adds applicability with status and reason. checkCoverage contains counts by status, limitations naming checks that were not fully performed, and an explanatory limitation. These fields describe coverage independently from legacy status, totals, findings, and exit codes. CI/report consumers preserve them, including disabled-check counts.
 
 Document discovery does not depend on the default filenames alone. A filename is
@@ -1461,6 +1464,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   it in CI for `cli/**`. Replayed over the last 40 merges on `main`, 14 of the
   19 that changed `cli/` named no spec.
 
+- **Spec Kit artifacts are first-class documents (#455,
+  `specs/016-spec-kit-artifact-coverage`).** DocGuard is a Spec Kit extension,
+  yet the three places that read project documents didn't know Spec Kit
+  existed:
+  - **Coverage map.** It reported every `specs/**` file as "outside any tier",
+    36 of 55 untiered files in this repository. That buried the genuinely
+    unenrolled documents and trained adopters to ignore the line.
+  - **Constitution.** It sits in `.specify/`, a dot directory every walker
+    skips, so it was invisible.
+  - **Consequence.** DocGuard's own constitution said "Dependencies: None.
+    Zero. Ever." next to a shipped runtime dependency for six months, and
+    guard stayed green.
+
+  Now:
+  - Coverage has a `specKit` tier: top-level `specs/<feature>/**/*.md` plus the
+    constitution. The field is additive, and untiered files here fell from 55
+    to 18.
+  - Metrics-Consistency and Reference-Existence read the constitution.
+  - A new **`MET004`** compares runtime-dependency claims ("zero runtime
+    dependencies", "Dependencies: None", "one npm dependency") with
+    `package.json`. It flags the pre-v2 constitution and nothing else here.
+    Only qualified wording counts, so "no dependencies between validators" is
+    never compared. It is an escalation with no mechanical fix: the manifest
+    may be the side that is wrong.
+
+- **This repository now obeys its validator-isolation principle, and a test
+  enforces it.** `cli/validators/docs-sync.mjs` imported
+  `cli/validators/api-surface.mjs`, against Constitution IV. OpenAPI discovery
+  moved to `cli/shared-openapi.mjs`. `api-surface` re-exports it, so existing
+  importers are unaffected. `tests/validator-isolation.test.mjs` fails on any
+  validator-to-validator import.
+
 ### Changed
 
 - **This repository runs its own Spec Kit workflow again (#455).** It was
@@ -1796,40 +1831,8 @@ Automated weekly release — batches everything merged since `v0.42.0`.
 - **API-surface checking never ran on Python, Go, Rust, Java or Ruby projects.**
   `detectFramework` read `package.json` and nothing else, so it returned an
   empty framework for every non-JS project, and `scanRoutesDeep` gates its
-  Flask, FastAPI, Django, Gin, Axum, Spring and Rails walkers on that name.
-  The scanners worked; nothing reached them. A Flask service reported
-  `no-matches` — "no checkable inputs matched this detector" — and its entire
-  API surface went unchecked. Detection now comes from `detectEcosystems`,
-  which already reads pyproject/requirements/Cargo/go.mod/pom. On one real
-  repository this surfaces six genuinely undocumented endpoints.
 
-- **The analyzer tier was invisible, so degraded scans looked like clean ones.**
-  Both AST tiers are optional by design (`@babel/parser`; the developer's own
-  `python3`), and the regex fallback cannot see a multi-line decorator. A Flask
-  route written across several lines is read by the AST tier and missed
-  entirely by the pattern tier — and both produced identical-looking output.
-  A validator whose inputs fell back now reports `partial` naming the cause,
-  and every finding carries the tier that produced it. Findings are retained;
-  only coverage is downgraded.
-
-- **Freshness called its own arithmetic uncertain.** FRS002–FRS005 count
-  commits, days and added DRIFT lines with `git log`, and the adapter labelled
-  every one of them `confidence: low` — telling readers DocGuard might have
-  miscounted, which was never the claim. They are now high-confidence
-  escalations: the count is a fact, the inference to staleness is the reader's.
-  FRS001 stays low-confidence, because it fires on the ABSENCE of a dated
-  signal, which an uncommitted file or a shallow clone can produce. Across the
-  sample this relabels 196 findings.
-
-- **Five finding codes reached SARIF with no file location.** APS001, APS002,
-  DSP001, REF001 and REF002 emitted `location` as an object, which rendered as
-  `[object Object]` and which SARIF's location parser dropped entirely, so
-  GitHub Code Scanning could not annotate them. `location` is now normalized to
-  a string at construction. Verified against the pre-change build on real
-  repositories: every SARIF result now resolves to a file.
-
-
-<!-- truncated: 3728 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 3760 more lines — read CHANGELOG.md directly -->
 
 ---
 
@@ -2223,7 +2226,7 @@ than assuming `1`), `findings[]`
 (`{code, severity, confidence, disposition, evidence, parserTier, message, location, suggestion}`),
 `nextStep`, `reportable[]` (findings whose code is unmeasured or whose
 confidence is low — verify before acting), `coverage`
-(Markdown tier map incl. `unclassified[]`), `evidence`, and `semanticClaims.count`
+(Markdown tier map incl. the `specKit` tier and `unclassified[]`), `evidence`, and `semanticClaims.count`
 (documented numbers not yet verified against code).
 
 When a command is launched from an implicitly selected nested package, inspect

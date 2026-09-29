@@ -14,6 +14,15 @@
  * fix. History: `actuals.tests` was computed from v0.8.2 on and never
  * compared to anything, so the README said "33 tests" for 92 releases while
  * the suite grew past 2,000 and every self-guard stayed green.
+ *
+ * MET004 compares runtime-dependency count claims ("zero runtime
+ * dependencies", "Dependencies: None") with package.json. DocGuard's own
+ * constitution said "None. Zero. Ever." beside one shipped dependency for six
+ * months: nothing read the constitution, and nothing checked the claim.
+ *
+ * @implements docguard.spec-kit-artifact-coverage#FR-004
+ * @implements docguard.spec-kit-artifact-coverage#FR-005
+ * @implements docguard.spec-kit-artifact-coverage#FR-006
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
@@ -26,6 +35,7 @@ import { countValidatorModules } from '../shared-validator-surface.mjs';
 import { walkFiles, countGlobFiles } from '../shared-ignore.mjs';
 import { findTestFiles, countDeclaredTestCases } from '../shared-test-cases.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
+import { findConstitution } from '../scanners/speckit.mjs';
 
 /**
  * Validate metrics consistency across documentation.
@@ -251,7 +261,77 @@ export function validateMetricsConsistency(projectDir, config, guardResults) {
     }
   }
 
+  const deps = checkDependencyClaims(projectDir, mdFiles, isIgnored);
+  findings.push(...deps.findings);
+  passed += deps.passed;
+  total += deps.total;
+
   return { ...resultFromFindings(findings, { passed, total }), fixes };
+}
+
+const NUMBER_WORDS = { zero: 0, no: 0, none: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10 };
+// Qualified wording only: "no dependencies between validators" is about
+// modules, not packages, and must never be compared to package.json.
+const DEP_QUALIFIED_RE = /\b(zero|no|none|one|two|three|four|five|six|seven|eight|nine|ten|\d+)\s+(?:runtime|production|npm|package|external|third-party)\s+dependenc(?:y|ies)\b/gi;
+const DEP_LABEL_RE = /^\s*(?:[-*|]\s*)?\**Dependencies\**\s*[:|]\s*\**\s*(none|zero|no|\d+)\b/gim;
+
+/** Runtime dependency count from package.json, or null when there is none to compare. */
+function runtimeDependencyCount(projectDir) {
+  const manifest = resolve(projectDir, 'package.json');
+  if (!existsSync(manifest)) return null;
+  try {
+    const pkg = JSON.parse(readFileSync(manifest, 'utf-8'));
+    const deps = pkg && typeof pkg.dependencies === 'object' && pkg.dependencies ? pkg.dependencies : {};
+    return Object.keys(deps).length;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * MET004 — a documented runtime-dependency count that package.json contradicts.
+ * An escalation with no mechanical fix: the reader decides whether the prose
+ * or the manifest is wrong (a dependency may have been added by mistake).
+ */
+function checkDependencyClaims(projectDir, mdFiles, isIgnored) {
+  const out = { findings: [], passed: 0, total: 0 };
+  const actual = runtimeDependencyCount(projectDir);
+  if (actual === null) return out;
+  const reported = new Set();
+  for (const mdFile of mdFiles) {
+    const relPath = relative(projectDir, mdFile).replace(/\\/g, '/');
+    if (relPath.toLowerCase().includes('changelog') || isIgnored(relPath)) continue;
+    let content;
+    try { content = readFileSync(mdFile, 'utf-8'); } catch { continue; }
+    for (const regex of [DEP_QUALIFIED_RE, DEP_LABEL_RE]) {
+      regex.lastIndex = 0;
+      let match;
+      while ((match = regex.exec(content)) !== null) {
+        if (isHistoricalMetricContext(content, match.index)) continue;
+        const word = match[1].toLowerCase();
+        const claimed = word in NUMBER_WORDS ? NUMBER_WORDS[word] : parseInt(word, 10);
+        const key = `${relPath}|${claimed}`;
+        if (reported.has(key)) continue;
+        reported.add(key);
+        out.total++;
+        if (claimed === actual) { out.passed++; continue; }
+        const line = content.slice(0, match.index).split('\n').length;
+        out.findings.push(mkFinding({
+          code: 'MET004',
+          validator: 'metricsConsistency',
+          severity: 'warn',
+          confidence: 'high',
+          message: `${relPath}:${line} claims ${claimed} runtime ${claimed === 1 ? 'dependency' : 'dependencies'} ("${match[0].trim()}") but package.json declares ${actual}`,
+          location: `${relPath}:${line}`,
+          suggestion: {
+            kind: 'review',
+            text: `Decide which side is wrong: correct the document, or remove the dependency the claim says should not exist`,
+          },
+        }));
+      }
+    }
+  }
+  return out;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -377,6 +457,10 @@ function findMarkdownFiles(dir, config = {}) {
     const searchDir = resolve(dir, sub);
     if (existsSync(searchDir)) walkFiles(searchDir, add);
   }
+  // The Spec Kit constitution governs the project and lives in a dot
+  // directory the walkers skip — read it explicitly.
+  const constitution = findConstitution(dir);
+  if (constitution) add(constitution.abs);
 
   return mdFiles;
 }

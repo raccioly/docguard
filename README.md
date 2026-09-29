@@ -460,7 +460,7 @@ DocGuard runs **29 automated validators** on every `guard` check. Source-facing 
 | 23 | **Cross-Reference** | Internal markdown links + anchors resolve (with "did you mean?" hints); Obsidian wikilinks validated when the repo uses them as file links (`.obsidian` present or a target resolves) | ✅ On |
 | 24 | **Generated-Staleness** | `source=code` sections match scanner output; `status: draft` doc age | ✅ On |
 | 25 | **Canonical-Sync** | DocGuard's own README count claims match code-truth (DocGuard repo only — N/A elsewhere) | ✅ On |
-| 26 | **Metrics-Consistency** | Hardcoded numbers match actual counts | ✅ On |
+| 26 | **Metrics-Consistency** | Hardcoded numbers match actual counts, including runtime-dependency claims against `package.json` (the Spec Kit constitution is read too) | ✅ On |
 | 27 | **Surface-Sync** | Item-level enumerable drift — names in doc tables/lists (commands, checks, etc.) match code-truth (opt-in via `surfaceSync.surfaces`; N/A unless configured) | ✅ On |
 | 28 | **Diff-Suspicion** | Change-driven: a doc/agent-instruction file that references code changed since the ref AND shares removed domain symbols is flagged for review (arXiv 2010.01625, F1 74.7) | ✅ On |
 | 29 | **Reference-Existence** | Two-revision check: a backticked code symbol present when the doc was last updated but gone at HEAD is flagged as outdated (arXiv 2212.01479) | ✅ On |
