@@ -1539,6 +1539,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   importers are unaffected. `tests/validator-isolation.test.mjs` fails on any
   validator-to-validator import.
 
+### Changed
+
 - **This repository runs its own Spec Kit workflow again (#455).** It was
   initialized with Spec Kit 0.3.0 for Antigravity, in the pre-manifest layout
   that `specify integration upgrade` cannot migrate, so it had no `converge`
@@ -1848,10 +1850,8 @@ Automated weekly release — batches everything merged since `v0.42.0`.
 ### Fixed
 - The README's Testing section: the test count, the command count, and the CI
   matrix (Node 24 has been in the matrix since the R5 release). Both stale
-  numbers are the ones the two validator changes above now catch, and the
-  exact sentences are their regression controls.
 
-<!-- truncated: 3782 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 3784 more lines — read CHANGELOG.md directly -->
 
 ---
 
