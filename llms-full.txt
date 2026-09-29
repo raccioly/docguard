@@ -1496,6 +1496,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   importers are unaffected. `tests/validator-isolation.test.mjs` fails on any
   validator-to-validator import.
 
+### Changed
+
 - **This repository runs its own Spec Kit workflow again (#455).** It was
   initialized with Spec Kit 0.3.0 for Antigravity, in the pre-manifest layout
   that `specify integration upgrade` cannot migrate, so it had no `converge`
@@ -1829,10 +1831,8 @@ Automated weekly release — batches everything merged since `v0.42.0`.
 - **API-surface checking never ran on Python, Go, Rust, Java or Ruby projects.**
   `detectFramework` read `package.json` and nothing else, so it returned an
   empty framework for every non-JS project, and `scanRoutesDeep` gates its
-  Flask, FastAPI, Django, Gin, Axum, Spring and Rails walkers on that name.
-  The scanners worked; nothing reached them. A Flask service reported
 
-<!-- truncated: 3758 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 3760 more lines — read CHANGELOG.md directly -->
 
 ---
 
