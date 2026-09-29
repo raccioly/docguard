@@ -19,6 +19,7 @@
     "generate": "node cli/docguard.mjs generate",
     "hooks": "node cli/docguard.mjs hooks",
     "llms": "node tools/generate-llms.mjs",
+    "speckit:dev": "specify extension add extensions/spec-kit-docguard --dev --force",
     "prepublishOnly": "node cli/docguard.mjs --version",
     "test": "node --test tests/*.test.mjs"
   },
