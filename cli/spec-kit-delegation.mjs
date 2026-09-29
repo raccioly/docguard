@@ -4,6 +4,15 @@
  * Spec: specs/014-specify-init-delegation (docguard.specify-init-delegation).
  * Contract: specs/014-specify-init-delegation/contracts/specify-cli.md.
  *
+ * @implements docguard.specify-init-delegation#FR-001
+ * @implements docguard.specify-init-delegation#FR-002
+ * @implements docguard.specify-init-delegation#FR-003
+ * @implements docguard.specify-init-delegation#FR-004
+ * @implements docguard.specify-init-delegation#FR-005
+ * @implements docguard.specify-init-delegation#FR-007
+ * @implements docguard.specify-init-delegation#FR-010
+ * @implements docguard.specify-init-delegation#FR-012
+ *
  * Spec Kit 0.10.0 removed `--ai`, `--ai-skills`, `--ai-commands-dir` and
  * `--no-git` in favour of `--integration <key>`. DocGuard kept passing the old
  * options and discarded the resulting error, so every adopter on a current

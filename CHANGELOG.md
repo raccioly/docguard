@@ -62,7 +62,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Agent detection reads `.specify/integration.json` before the legacy
   `init-options.json` and applies the #190 allowlist to both. `.agents/` no
   longer implies Antigravity: Spec Kit's codex, agy, zed and muse integrations
-  all install there.
+  all install there. Each requirement carries an `@implements` annotation at
+  its implementation site, so `reconcile` and `specs complete` resolve the
+  changed files to the spec.
 
 - **Only `docguard init` may initialize Spec Kit.** The Spec Kit gate ran on
   every write-capable command. Correcting the flags alone would have made

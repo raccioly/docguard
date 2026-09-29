@@ -1469,7 +1469,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Agent detection reads `.specify/integration.json` before the legacy
   `init-options.json` and applies the #190 allowlist to both. `.agents/` no
   longer implies Antigravity: Spec Kit's codex, agy, zed and muse integrations
-  all install there.
+  all install there. Each requirement carries an `@implements` annotation at
+  its implementation site, so `reconcile` and `specs complete` resolve the
+  changed files to the spec.
 
 - **Only `docguard init` may initialize Spec Kit.** The Spec Kit gate ran on
   every write-capable command. Correcting the flags alone would have made
@@ -1803,10 +1805,8 @@ Automated weekly release — batches everything merged since `v0.42.0`.
   `schemaVersion: 1` — which `readSpecRegistry` explicitly accepts as supported
   while the projection reported it stale forever, a state no content edit could
   ever clear. The currency check now consults a declared table of older
-  encodings. This is not a weakening: a legacy digest is accepted only when it
-  equals the legacy digest OF THE CURRENT CONTENT, so edited content matches
 
-<!-- truncated: 3702 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 3704 more lines — read CHANGELOG.md directly -->
 
 ---
 

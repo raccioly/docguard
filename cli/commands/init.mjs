@@ -255,6 +255,11 @@ function shouldRunGenerate(projectDir, flags) {
 /**
  * Print a Spec Kit delegation result. Every failure names its cause and the
  * command to run by hand; nothing here prints a count it did not measure.
+ *
+ * @implements docguard.specify-init-delegation#FR-007
+ * @implements docguard.specify-init-delegation#FR-008
+ * @implements docguard.specify-init-delegation#FR-010
+ * @implements docguard.specify-init-delegation#FR-011
  */
 function renderSpecKitDelegation(result, flags) {
   const integration = result.integration ? ` ${c.dim}(integration: ${result.integration.key})${c.reset}` : '';

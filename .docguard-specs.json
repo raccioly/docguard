@@ -2627,14 +2627,95 @@
           },
           {
             "path": "specs/014-specify-init-delegation/tasks.md",
-            "digest": "sha256:b7a582ba1397547cd8466e15c8c6662c665c749298207cdac2088d340448958b"
+            "digest": "sha256:bc0ea0f83257a303c8fe6de468b4247cb700747c32ca11a0590859bb9ecbfed7"
           }
         ],
         "taskCompletion": {
           "checked": 13,
           "total": 13
         },
-        "implementationEvidence": [],
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/spec-kit-delegation.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/spec-kit-delegation.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/spec-kit-delegation.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/spec-kit-delegation.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/ensure-skills.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/spec-kit-delegation.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/ensure-skills.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/commands/init.mjs",
+            "line": 259
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/spec-kit-delegation.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "cli/commands/init.mjs",
+            "line": 260
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "cli/ensure-skills.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "cli/ensure-skills.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/commands/init.mjs",
+            "line": 261
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/spec-kit-delegation.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "cli/commands/init.mjs",
+            "line": 262
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "cli/spec-kit-delegation.mjs",
+            "line": 14
+          }
+        ],
         "testEvidence": [
           {
             "requirementId": "FR-001",

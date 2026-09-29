@@ -8,6 +8,11 @@
  *
  * Zero npm dependencies — pure Node.js built-ins only.
  * Framework dependency: spec-kit (convention, not code).
+ *
+ * @implements docguard.specify-init-delegation#FR-005
+ * @implements docguard.specify-init-delegation#FR-006
+ * @implements docguard.specify-init-delegation#FR-008
+ * @implements docguard.specify-init-delegation#FR-009
  */
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync } from 'node:fs';
