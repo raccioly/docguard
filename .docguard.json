@@ -55,7 +55,7 @@
         "extract": "basename-no-ext",
         "ignore": [
           "agents", "hooks", "ci", "badge", "llms", "publish",
-          "setup", "impact", "sync-tests"
+          "setup", "impact", "sync-tests", "generate-as-built"
         ],
         "docs": ["README.md"],
         "section": "Usage"

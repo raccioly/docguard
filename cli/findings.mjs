@@ -616,6 +616,12 @@ export const CODES = {
     help: 'Working-tree presence, lifecycle context, storage state, and the recovery archive disagree. Active specs must be current/working_tree; retired specs must be retired/git_history with a reason and matching archive event.',
     suppress: null,
   },
+  SPR007: {
+    validator: 'specRegistry',
+    title: 'As-built spec drifted from its source paths',
+    help: 'An as-built spec (registry `origin: as_built`, created by `docguard generate --spec <area>`) records the facts under its `sourcePaths` — routes, exported symbols, environment variables, entities — with `<!-- docguard:fact <kind> <key> -->` markers. Guard re-scans those paths: a fact in the code that the spec neither marks nor lists under `## Out of Scope` is unaccounted for, and a marked fact that no longer exists means the spec describes code that changed. Update the spec (add or remove the requirement), or move a deliberately unspecified fact under Out of Scope with a reason. This is an escalation: DocGuard knows the fact changed, not whether the spec or the code is right.',
+    suppress: null,
+  },
   SPR006: {
     validator: 'specRegistry',
     title: 'Tasks checked but no implementation annotation',

@@ -1,7 +1,13 @@
 import { mkFinding, resultFromFindings } from '../findings.mjs';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { projectSpecRegistry, SPEC_REGISTRY_PATH } from '../scanners/spec-registry.mjs';
+import { checkAsBuiltSync } from '../scanners/as-built.mjs';
 
-/** @implements docguard.lifecycle-evidence-gaps#FR-001 */
+/**
+ * @implements docguard.lifecycle-evidence-gaps#FR-001
+ * @implements docguard.as-built-specs#FR-005
+ */
 
 export function validateSpecRegistry(projectDir, config = {}) {
   const projection = projectSpecRegistry(projectDir, config);
@@ -67,6 +73,42 @@ export function validateSpecRegistry(projectDir, config = {}) {
         text: `Annotate the implementing code, e.g. \`// @implements ${firstReq}\` (or \`# @implements …\` in Python/YAML), then run \`docguard specs --write\`. If nothing is implemented yet, uncheck the tasks.`,
       },
     }));
+  }
+  // SPR007 (docguard.as-built-specs#FR-005): an as-built spec must keep
+  // describing its source paths — code nobody accounted for, and cited facts
+  // that no longer exist, are both drift.
+  const MAX_PER_SPEC = 10;
+  for (const spec of projection.registry.specs) {
+    if (spec.reviewed?.lifecycle?.origin !== 'as_built') continue;
+    const sourcePaths = spec.reviewed?.scope?.sourcePaths || [];
+    if (sourcePaths.length === 0) continue;
+    let content;
+    try { content = readFileSync(resolve(projectDir, spec.path), 'utf8'); } catch { continue; }
+    const { unclaimed, vanished } = checkAsBuiltSync(projectDir, content, sourcePaths, config);
+    const items = [
+      ...unclaimed.map(f => ({ text: `${f.kind} \`${f.key}\`${f.file ? ` (${f.file})` : ''} is in the code under ${sourcePaths.join(', ')} but the spec neither specifies it nor lists it under Out of Scope`, fix: `Add a requirement carrying <!-- docguard:fact ${f.kind} ${f.key} -->, or move that marker under ## Out of Scope with a reason` })),
+      ...vanished.map(id => ({ text: `${id.replace(' ', ' `')}\` is cited by the spec but no longer exists in the code`, fix: 'Update or remove the requirement: the code it described has changed' })),
+    ];
+    for (const item of items.slice(0, MAX_PER_SPEC)) {
+      findings.push(mkFinding({
+        code: 'SPR007',
+        validator: 'specRegistry',
+        severity: 'warn',
+        confidence: 'high',
+        disposition: 'escalate',
+        message: `${spec.specId} (as-built): ${item.text}`,
+        location: spec.path,
+        suggestion: { kind: 'review', text: item.fix },
+      }));
+    }
+    if (items.length > MAX_PER_SPEC) {
+      findings.push(mkFinding({
+        code: 'SPR007', validator: 'specRegistry', severity: 'warn', confidence: 'high', disposition: 'escalate',
+        message: `${spec.specId} (as-built): …and ${items.length - MAX_PER_SPEC} more drifted fact(s)`,
+        location: spec.path,
+        suggestion: { kind: 'review', text: 'Resolve the facts above and re-run guard to see the rest' },
+      }));
+    }
   }
   const checks = Math.max(1, projection.registry.specs.length + projection.registry.tombstones.length);
   return resultFromFindings(findings, {

@@ -507,6 +507,163 @@
       }
     },
     {
+      "specId": "docguard.as-built-specs",
+      "path": "specs/024-as-built-specs/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.as-built-specs#FR-001",
+          "docguard.as-built-specs#FR-002",
+          "docguard.as-built-specs#FR-003",
+          "docguard.as-built-specs#FR-004",
+          "docguard.as-built-specs#FR-005",
+          "docguard.as-built-specs#FR-006",
+          "docguard.as-built-specs#FR-007",
+          "docguard.as-built-specs#SC-001",
+          "docguard.as-built-specs#SC-002",
+          "docguard.as-built-specs#SC-003",
+          "docguard.as-built-specs#SC-004"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/024-as-built-specs/spec.md",
+            "digest": "sha256:3a5301691a74ce9bd6ae380db7e2f75c4666ed4ef4b15c3875b9fb162c2f4b92"
+          },
+          {
+            "path": "specs/024-as-built-specs/plan.md",
+            "digest": "sha256:68316bf33a6a9ab6d4d9d7aec079a705dbec6a9d225bb9eb958ff585105439d5"
+          },
+          {
+            "path": "specs/024-as-built-specs/tasks.md",
+            "digest": "sha256:8628e395296210fe3f1da9487b7e1e66ead485ea4fea97db11a4478ab530a064"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 7,
+          "total": 7
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/commands/generate-as-built.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-001",
+            "file": "cli/scanners/as-built.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/scanners/as-built.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/commands/generate-as-built.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/scanners/spec-registry.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/scanners/as-built.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/validators/spec-registry.mjs",
+            "line": 9
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/as-built-specs.test.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/as-built-specs.test.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/as-built-specs.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/as-built-specs.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/as-built-specs.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/as-built-specs.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/as-built-specs.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/as-built-specs.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/as-built-specs.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/as-built-specs.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "SC-004",
+            "file": "tests/as-built-specs.test.mjs",
+            "line": 14
+          }
+        ]
+      }
+    },
+    {
       "specId": "docguard.calibrated-finding-channels",
       "path": "specs/013-calibrated-finding-channels/spec.md",
       "reviewed": {
@@ -2606,17 +2763,17 @@
           {
             "requirementId": "FR-001",
             "file": "cli/validators/spec-registry.mjs",
-            "line": 4
+            "line": 8
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/spec-registry.mjs",
-            "line": 408
+            "line": 418
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/spec-registry.mjs",
-            "line": 409
+            "line": 419
           },
           {
             "requirementId": "FR-003",
@@ -3991,7 +4148,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/docguard.mjs",
-            "line": 871
+            "line": 877
           },
           {
             "requirementId": "FR-011",

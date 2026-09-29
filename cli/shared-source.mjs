@@ -624,7 +624,12 @@ function workerEnvUsageFallback(content, kind, configured) {
   return names;
 }
 
-export function grepEnvUsage(projectDir, config = {}) {
+/**
+ * Env var names READ in code. `options.within` (a repository-relative directory)
+ * restricts the scan to one area, for as-built specs (docguard.as-built-specs#FR-001).
+ */
+export function grepEnvUsage(projectDir, config = {}, options = {}) {
+  const within = options.within ? String(options.within).replace(/\\/g, '/').replace(/\/+$/, '') : null;
   const names = new Set();
   names.limitations = [];
   const roots = resolveSourceRoots(projectDir, config);
@@ -659,6 +664,10 @@ export function grepEnvUsage(projectDir, config = {}) {
     // v0.26 (Bug #7): a token that appears only in a test/fixture file is not a
     // product env read. Skip non-product paths by default (no .docguardignore).
     if (isNonProductPath(rel.replace(/\\/g, '/'), config)) return;
+    if (within && within !== '.') {
+      const posixRel = rel.replace(/\\/g, '/');
+      if (posixRel !== within && !posixRel.startsWith(`${within}/`)) return;
+    }
     const content = readScannable(filePath);
     if (content === null) return; // unreadable, generated, or too large to scan
     if (!content.includes('env')) return;

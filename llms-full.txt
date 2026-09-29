@@ -53,6 +53,7 @@ It targets development teams and AI coding agents that need to maintain document
 | **Repository-root guidance** | Detects a likely governing ancestor without changing the selected scan directory | `cli/repository-root.mjs`, `cli/docguard.mjs` | Requires ancestor DocGuard configuration or npm/pnpm membership, respects nested Git boundaries, and uses typed stderr diagnostics for machine modes |
 | **Lifecycle transactions and context** | Stages registry, recovery, spec outcome, and current-context changes before any visible mutation and rolls the set back on write or validation failure | `cli/writers/file-transaction.mjs`, `cli/writers/spec-outcomes.mjs`, `cli/scanners/lifecycle-context.mjs` | Active context includes approved current spec pointers and content hashes; retired prose is excluded |
 | **Agent instruction budget** | Measures every `AGENTS.md` chain from the root to each instruction directory, as Codex loads it (`AGENTS.override.md` replaces `AGENTS.md`), against `agentInstructions.maxBytes` (default 32768) or a per-chain allowance | `cli/scanners/agent-instructions.mjs`, `cli/validators/structure.mjs` | `STR004` is an escalation; `STR005` suggests tightening a slack allowance. Increasing an allowance is a reviewed config change, which the digit-normalized finding baseline could not guarantee |
+| **As-built specs** | `generate --spec <area>` collects deterministic facts under one code area (routes, exported JS/TS symbols, env vars read, entities), renders a Spec Kit spec with one agent-written candidate per fact, and registers it as `origin: as_built` with `sourcePaths`. The Spec-Registry validator re-scans those paths (`SPR007`) | `cli/scanners/as-built.mjs`, `cli/commands/generate-as-built.mjs`, `cli/validators/spec-registry.mjs` | DocGuard writes no requirement prose. Facts key on method+path, file+export, name, so line moves never churn them. The registry fields are serialized only when set |
 | **Spec-first gate** | Classifies a change between the merge base and HEAD as covered, exempt, not governed, uncovered or inconclusive. It reads governed paths from `specFirst` and resolves spec references against `specs/*/spec.md` and the registry | `cli/scanners/spec-first.mjs`, `cli/commands/specs.mjs` | Read-only. An unresolved reference never passes. Git or inventory failure is inconclusive (exit 2), never a pass. The PR body arrives as a file |
 | **Spec Kit delegation** | The only code that invokes the `specify` CLI: reads its documented `init` options, resolves the integration key from `.specify/integration.json` / `init-options.json` / unambiguous agent signals, initializes Spec Kit and registers the packaged DocGuard extension | `cli/spec-kit-delegation.mjs`, `cli/ensure-skills.mjs` | Called only by `docguard init`; argument arrays only; every failure returns a structured result with the CLI's error and a manual command; requires Spec Kit ≥ 0.10.0 |
 | **Validators** | Independent validation modules that check specific aspects of CDD compliance — all emitting structured findings with stable codes (the `CODES` registry in `findings.mjs`) | `cli/validators/` | `*.mjs` |
@@ -616,6 +617,8 @@ normative JSON Schema is `schemas/docguard-specs.schema.json`.
 | `specs[].reviewed.lifecycle` | Human review | Orthogonal approval, delivery, context, retirement reason, storage, and persistence policy |
 | `specs[].reviewed.relations` | Human review | `extends`, `duplicates`, `conflictsWith`, `supersedes`, and `supersededBy` spec-ID edges |
 | `specs[].reviewed.scope.canonicalDocs` | Human review | Canonical documents affected by the specification |
+| `specs[].reviewed.scope.sourcePaths` | `generate --spec --write` | Optional. Code areas an as-built spec describes; SPR007 re-scans them. Serialized only when set |
+| `specs[].reviewed.lifecycle.origin` | `generate --spec --write` | Optional. `as_built` marks a spec that records existing behaviour. Absent for forward specs, so older registries stay byte-identical |
 | `specs[].reviewed.reconciliation.lastReviewedRevision` | Human review | Exact Git revision whose doc impact was reviewed, or `null` |
 | `specs[].reviewed.reconciliation.outcomes` | Human review | Up to 20 reviewed implementation outcomes with revision, bounded rationale, evidence paths, deviations, and optional successor |
 | `specs[].intent.requirements` | Projection | `specId#requirementId` identities parsed from the active spec |
@@ -1481,6 +1484,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **As-built specs: reverse-engineer a Spec Kit spec for code that has none,
+  and keep it synced (#455, `specs/024-as-built-specs`).** `docguard generate
+  --spec <area>` scans one directory for the facts DocGuard can establish
+  without an LLM: routes (method and path), exported JS/TS symbols,
+  environment variables read, and entities. It proposes one `FR-NNN`
+  candidate per fact, each with a `<!-- docguard:fact … -->` marker and a
+  file citation. Every requirement statement is left to the agent; DocGuard
+  writes no prose.
+
+  With `--write`, the spec lands in the next free feature directory and is
+  registered as `origin: as_built` with its `sourcePaths`. Guard then reports
+  **`SPR007`** for a fact that appears in the code with no requirement, and
+  for a cited fact that disappears. A fact deliberately left unspecified goes
+  under `## Out of Scope` with a reason. Both registry fields are serialized
+  only when set, so existing registries stay byte-identical.
+
+  The four community brownfield extensions (Brownfield Bootstrap, BrownKit,
+  Blueprint Index, Time Machine) were compared first. None validates an
+  as-built spec against code at the requirement level, and that is what
+  DocGuard adds. It composes with their drafts and never re-runs
+  `/speckit.implement` over existing code. `grepEnvUsage` gains a `within`
+  scope for this. A TestGuard claim with four faults defends the sync check.
+
 - **`docguard specs require`, a spec-first change gate (#455,
   `specs/015-spec-first-gate`).** Validators evaluate a tree, so none of them
   can notice the spec that was never written. This command evaluates a
@@ -1847,31 +1873,8 @@ Automated weekly release — batches everything merged since `v0.42.0`.
   questions.** `confidence` described the detector's certainty, decided whether
   a human should look, AND gated which findings the feedback loop sampled.
   Collapsed together, a certain observation read as an uncertain one, and —
-  because `reportable` derived from `confidence` — the channel that would
-  validate the label sampled only findings the label already doubted. On a
-  repository with 17 high-confidence findings across never-benchmarked codes,
-  `docguard feedback` selected zero.
 
-  Every finding now carries `disposition` (`act` when DocGuard asserts a defect
-  and names the correction, `escalate` when the judgement is the reader's),
-  `evidence` (whether the reviewed corpus has measured this code, with `n` and
-  a Wilson interval when it has), and `parserTier` (which analyzer produced it).
-  All additive: no existing field changed meaning, and `guard --format json`,
-  SARIF `properties` and feedback records carry all of them.
-
-  Guard now prints `N to fix · M to review` under the verdict. Across fourteen
-  real repositories, 671 findings split 234 act / 437 escalate — and 5 of 671
-  (0.7%) carry any benchmark evidence at all.
-
-- **`docguard feedback` samples the labels nobody has validated.** Selection is
-  now "unmeasured code OR low confidence", and the command states what it left
-  out (`excluded.findings`, `excluded.codes`) instead of hiding it.
-
-- **Reviewed disagreements leave a record.** A reported false positive the
-  maintainers reviewed and declined to act on previously vanished: the corpus
-  could only absorb one that had already been repaired, which made "precision
-
-<!-- truncated: 3922 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 3945 more lines — read CHANGELOG.md directly -->
 
 ---
 

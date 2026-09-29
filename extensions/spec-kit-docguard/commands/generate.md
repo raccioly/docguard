@@ -23,6 +23,27 @@ receive a full document. Existing human documents receive only bounded updates
 inside unique `source=code` sections. Shared roles and malformed markers fail
 before any mapped document is written, even with `--force`.
 
+## As-built specs for code that has none
+
+`--spec <area>` reverse-engineers a **Spec Kit spec** for one directory of existing code:
+
+```bash
+npx --yes docguard-cli@latest generate --spec src/billing            # preview the candidates
+npx --yes docguard-cli@latest generate --spec src/billing --write    # create specs/NNN-as-built-src-billing/spec.md
+```
+
+- DocGuard proposes one `FR-NNN` candidate per fact it can establish without an LLM: routes,
+  exported symbols, environment variables and entities. Each candidate carries a
+  `<!-- docguard:fact … -->` marker and a file citation. The requirement statement is left to
+  you as an `<!-- agent: … -->` note. Replace each note, keep the markers, and move any fact you
+  deliberately do not specify under `## Out of Scope` with a reason.
+- `--write` registers the spec as `origin: as_built` with its source paths. From then on,
+  `guard` reports a fact that appears in the code without a requirement, and a cited fact that
+  disappears (`SPR007`). The spec cannot silently drift from the code it describes.
+- It composes with the brownfield community extensions. Brownfield Bootstrap, BrownKit and
+  Time Machine can draft the narrative, and DocGuard adds the fact candidates and keeps them in
+  sync. Unlike Time Machine, it never re-runs `/speckit.implement` over existing code.
+
 ## User Input
 
 $ARGUMENTS

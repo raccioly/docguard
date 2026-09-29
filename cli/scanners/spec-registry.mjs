@@ -6,6 +6,7 @@
  * intent or declare work complete.
  * @implements docguard.document-lifecycle#FR-013
  * @implements docguard.document-lifecycle#FR-016
+ * @implements docguard.as-built-specs#FR-004
  */
 
 import { createHash } from 'node:crypto';
@@ -251,7 +252,12 @@ function validatedControl(entry, issues) {
   rejectUnknownKeys(reviewed, new Set(['lifecycle', 'relations', 'scope', 'reconciliation']), `${entry.specId}.reviewed`, issues);
   if (!reviewed || typeof reviewed !== 'object' || Array.isArray(reviewed)) return fallback;
   const lifecycle = reviewed.lifecycle || {};
-  rejectUnknownKeys(lifecycle, new Set(['approval', 'delivery', 'context', 'retirementReason', 'storage', 'persistenceModel']), `${entry.specId}.reviewed.lifecycle`, issues);
+  rejectUnknownKeys(lifecycle, new Set(['approval', 'delivery', 'context', 'retirementReason', 'storage', 'persistenceModel', 'origin']), `${entry.specId}.reviewed.lifecycle`, issues);
+  // docguard.as-built-specs#FR-004: optional, and serialized only when set, so
+  // every registry written before this field existed stays byte-identical.
+  if (lifecycle.origin !== undefined && lifecycle.origin !== 'as_built') {
+    issues.push({ code: 'SPR003', path: SPEC_REGISTRY_PATH, message: `Invalid lifecycle.origin for ${entry.specId || '<unknown spec>'}.` });
+  }
   const checks = [
     ['approval', APPROVAL], ['delivery', DELIVERY], ['context', CONTEXT],
     ['retirementReason', RETIREMENT], ['storage', STORAGE], ['persistenceModel', PERSISTENCE],
@@ -265,7 +271,7 @@ function validatedControl(entry, issues) {
   const scope = reviewed.scope || {};
   const reconciliation = reviewed.reconciliation || {};
   rejectUnknownKeys(relations, new Set(['extends', 'duplicates', 'conflictsWith', 'supersedes', 'supersededBy']), `${entry.specId}.reviewed.relations`, issues);
-  rejectUnknownKeys(scope, new Set(['canonicalDocs']), `${entry.specId}.reviewed.scope`, issues);
+  rejectUnknownKeys(scope, new Set(['canonicalDocs', 'sourcePaths']), `${entry.specId}.reviewed.scope`, issues);
   rejectUnknownKeys(reconciliation, new Set(['lastReviewedRevision', 'outcomes']), `${entry.specId}.reviewed.reconciliation`, issues);
   const revision = reconciliation.lastReviewedRevision ?? null;
   if (revision !== null && (typeof revision !== 'string' || !/^[0-9a-f]{40}(?:[0-9a-f]{24})?$/.test(revision))) {
@@ -295,6 +301,7 @@ function validatedControl(entry, issues) {
         retirementReason: RETIREMENT.has(lifecycle.retirementReason) ? lifecycle.retirementReason : null,
         storage: STORAGE.has(lifecycle.storage) ? lifecycle.storage : fallback.reviewed.lifecycle.storage,
         persistenceModel: PERSISTENCE.has(lifecycle.persistenceModel) ? lifecycle.persistenceModel : null,
+        ...(lifecycle.origin === 'as_built' ? { origin: 'as_built' } : {}),
       },
       relations: {
         extends: validateSpecIdArray(relations.extends ?? [], `${entry.specId}.relations.extends`, entry.specId, issues),
@@ -305,6 +312,9 @@ function validatedControl(entry, issues) {
       },
       scope: {
         canonicalDocs: validateCanonicalPaths(scope.canonicalDocs ?? [], `${entry.specId}.scope.canonicalDocs`, issues),
+        ...(scope.sourcePaths !== undefined
+          ? { sourcePaths: validateCanonicalPaths(scope.sourcePaths, `${entry.specId}.scope.sourcePaths`, issues) }
+          : {}),
       },
       reconciliation: {
         lastReviewedRevision: revision,

@@ -43,7 +43,8 @@
         "context": { "enum": ["current", "retired"] },
         "retirementReason": { "enum": [null, "completed", "superseded", "abandoned"] },
         "storage": { "enum": ["working_tree", "git_history"] },
-        "persistenceModel": { "enum": [null, "flow_back", "flow_forward", "living"] }
+        "persistenceModel": { "enum": [null, "flow_back", "flow_forward", "living"] },
+        "origin": { "enum": ["as_built"], "description": "Present only for an as-built specification (docguard generate --spec): it records existing behaviour. Omitted for forward specs." }
       }
     },
     "reviewed": {
@@ -69,7 +70,8 @@
           "additionalProperties": false,
           "required": ["canonicalDocs"],
           "properties": {
-            "canonicalDocs": { "$ref": "#/definitions/stringSet" }
+            "canonicalDocs": { "$ref": "#/definitions/stringSet" },
+            "sourcePaths": { "$ref": "#/definitions/stringSet", "description": "Code areas an as-built specification describes. Guard reports facts under these paths that the spec does not account for, and cited facts that no longer exist (SPR007)." }
           }
         },
         "reconciliation": {
