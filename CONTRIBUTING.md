@@ -6,9 +6,14 @@ Thank you for your interest in contributing to DocGuard! This document provides 
 
 1. **Fork** the repository
 2. **Clone** your fork: `git clone https://github.com/YOUR_USERNAME/docguard.git`
-3. **Install**: `npm install` (only dev dependencies — DocGuard itself has zero runtime deps)
+3. **Install**: `npm install` (one runtime dependency, `@babel/parser`, exact-pinned; no dev dependencies)
 4. **Run tests**: `npm test`
 5. **Run DocGuard on itself**: `node cli/docguard.mjs guard`
+6. **Spec Kit** (optional, needed to run the `/speckit-*` workflow): install the
+   [`specify` CLI](https://github.com/github/spec-kit), then `npm run speckit:dev`
+   to register this repository's own extension and its hooks. The Spec Kit core
+   skills for Claude Code (`.claude/skills/speckit-*`) and Codex
+   (`.agents/skills/speckit-*`) are already tracked.
 
 ## Development Workflow
 

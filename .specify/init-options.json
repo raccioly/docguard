@@ -1,9 +1,9 @@
 {
-  "ai": "agy",
-  "ai_commands_dir": null,
+  "ai": "claude",
   "ai_skills": true,
+  "feature_numbering": "sequential",
   "here": true,
-  "preset": null,
+  "integration": "claude",
   "script": "sh",
-  "speckit_version": "0.3.0"
+  "speckit_version": "1.0.13"
 }

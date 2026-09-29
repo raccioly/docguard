@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **This repository runs its own Spec Kit workflow again (#455).** It was
+  initialized with Spec Kit 0.3.0 for Antigravity, in the pre-manifest layout
+  that `specify integration upgrade` cannot migrate, so it had no `converge`
+  command and its templates and scripts were several releases behind. It is now
+  on Spec Kit 1.0.13 with the `claude` (default) and `codex` integrations. The
+  legacy `.agent/commands/speckit.*` and `.agent/skills/speckit-*` copies, the
+  unmanaged `update-agent-context.sh` and `agent-file-template.md` are removed,
+  and `.specify/memory/constitution.md` is unchanged. The core skills under
+  `.claude/skills/speckit-*` and `.agents/skills/speckit-*` are tracked, so a
+  clone can run the workflow. DocGuard's own extension is registered with
+  `npm run speckit:dev` rather than committed as a copy of `extensions/`.
+
 ### Fixed
 
 - **Stopped publishing private project identifiers and local developer state.**

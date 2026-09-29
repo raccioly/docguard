@@ -82,7 +82,12 @@ describe('repository hygiene', () => {
       /^\.specify\/extensions\/\.cache\//,
       // Agent tooling that reads .wolf/, which this repository ignores. Project
       // instructions every contributor needs live in AGENTS.md and CLAUDE.md.
-      /^\.claude\//,
+      // The one exception is the Spec Kit core skills (.claude/skills/speckit-*),
+      // which every change runs through. DocGuard's own speckit-docguard-* skills
+      // and .specify/extensions/ are copies of extensions/spec-kit-docguard/
+      // written by `npm run speckit:dev`, so a committed copy is a second source.
+      /^\.claude\/(?!skills\/speckit-(?!docguard-))/,
+      /^\.specify\/extensions(\/|\.yml$)/,
       /^\.codex\//,
       /^\.wolf\//,
       // safeWrite's local recovery copies, never source.
