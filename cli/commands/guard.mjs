@@ -445,6 +445,8 @@ export function runGuardInternal(projectDir, config) {
   // errors/warnings can't be fingerprinted), and `--no-baseline`
   // (config.baseline === false) turns it off.
   let baselineSuppressed = 0;
+  // What the baseline hides, not only how much (#437; field-report-followups#FR-002).
+  const baselineBySeverity = { error: 0, warn: 0, info: 0 };
   let baselineStillFiring = 0;
   let baselineStale = 0;
   let baselineAge = null;
@@ -462,6 +464,8 @@ export function runGuardInternal(projectDir, config) {
         const budget = remaining.get(fp) || 0;
         if (budget <= 0) return true;
         remaining.set(fp, budget - 1);
+        const sev = f.severity === 'error' ? 'error' : f.severity === 'info' ? 'info' : 'warn';
+        baselineBySeverity[sev]++;
         return false;
       });
       const removed = r.findings.length - kept.length;
@@ -579,6 +583,7 @@ export function runGuardInternal(projectDir, config) {
     effectiveWarnings,
     effectiveInfos,
     baselineSuppressed,
+    baselineBySeverity,
     baselineStillFiring,
     baselineStale,
     baselineAgeDays: baselineAge,
@@ -903,7 +908,11 @@ export function runGuard(projectDir, config, flags) {
   // Baseline suppression is always visible — a gate that hides findings
   // silently is the false-green failure mode this tool exists to prevent.
   if (data.baselineSuppressed > 0) {
-    console.log(`  ${c.dim}📋 ${data.baselineSuppressed} pre-existing finding(s) suppressed by ${BASELINE_FILE} (--no-baseline to show)${c.reset}`);
+    const sev = data.baselineBySeverity;
+    const split = sev
+      ? ` — ${[['error', 'error'], ['warn', 'warning'], ['info', 'info']].filter(([k]) => sev[k] > 0).map(([k, label]) => `${sev[k]} ${label}`).join(' · ')}`
+      : '';
+    console.log(`  ${c.dim}📋 ${data.baselineSuppressed} pre-existing finding(s) suppressed by ${BASELINE_FILE}${split} (--no-baseline to show)${c.reset}`);
     // Age the amnesty. Wording stays inside what the file can prove: entries
     // carry occurrence counts, not per-entry timestamps, so "still suppressed"
     // is demonstrable while "never triaged" would be a guess -- someone may have
@@ -1058,9 +1067,13 @@ export function runGuard(projectDir, config, flags) {
   // surface, so the claims badge travels WITH it. The pass badge keeps its own
   // colour: it reports gates that passed, which is true, and folding factual
   // verification into it would overload one number with two meanings.
+  // An unknown count (--changed-only skips extraction; extraction can fail)
+  // renders as `unknown`, never as nothing: an absent claims badge leaves the
+  // pass badge standing alone, which is the surface #438 asked to close
+  // (field-report-followups#FR-001). Same three states as `docguard badge`.
   const claims = data.semanticClaims?.count;
   const claimsBadge = claims === undefined || claims === null
-    ? ''
+    ? ' ![Claims unverified](https://img.shields.io/badge/claims_unverified-unknown-lightgrey)'
     : ` ![Claims unverified](https://img.shields.io/badge/claims_unverified-${claims}-${claims > 0 ? 'orange' : 'brightgreen'})`;
   console.log(`\n  ${c.dim}📎 Badge: ![CDD Guard](${badgeUrl})${claimsBadge}${c.reset}`);
 

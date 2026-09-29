@@ -22,6 +22,38 @@ import { existsSync, mkdirSync, chmodSync, readFileSync, unlinkSync } from 'node
 // On re-install, we splice ONLY the content between the markers, preserving
 // everything else verbatim. Without markers (legacy hooks or third-party
 // pre-existing hooks), behavior falls back to the existing --force flow.
+// Hook managers own the hooks directory: husky v9 points core.hooksPath at
+// .husky/_ (generated dispatchers), lefthook and simple-git-hooks write their
+// own dispatchers into .git/hooks. Replacing a dispatcher disables EVERY hook
+// that manager runs (#454), so DocGuard never overwrites one — it says where
+// the line belongs instead. (docguard.field-report-followups#FR-004)
+const MANAGER_COMMANDS = {
+  'pre-commit': 'npx docguard-cli guard --changed-only',
+  'pre-push': 'npx docguard-cli ci',
+};
+
+/**
+ * @implements docguard.field-report-followups#FR-004
+ * @returns {{ name: string, target: string } | null}
+ */
+export function detectHookManager(projectDir, hooksDir, hookName, existing = '') {
+  const rel = hooksDir.replace(/\\/g, '/');
+  if (/(^|\/)\.husky\/_\/?$/.test(rel) || existsSync(resolve(hooksDir, 'h')) && existsSync(resolve(projectDir, '.husky'))
+    || /\bhusky\b/.test(existing)) {
+    return { name: 'husky', target: `.husky/${hookName}` };
+  }
+  if (/\blefthook\b/.test(existing)
+    || ['lefthook.yml', 'lefthook.yaml', '.lefthook.yml', '.lefthook.yaml'].some(f => existsSync(resolve(projectDir, f)))) {
+    return { name: 'lefthook', target: `lefthook.yml → ${hookName}: commands:` };
+  }
+  let pkg = null;
+  try { pkg = JSON.parse(readFileSync(resolve(projectDir, 'package.json'), 'utf-8')); } catch { /* no package.json */ }
+  if (/simple-git-hooks/.test(existing) || (pkg && pkg['simple-git-hooks'])) {
+    return { name: 'simple-git-hooks', target: `package.json → "simple-git-hooks"."${hookName}" (then run npx simple-git-hooks)` };
+  }
+  return null;
+}
+
 const BEGIN_MARKER = '# BEGIN DOCGUARD MANAGED — do not edit between these markers';
 const END_MARKER   = '# END DOCGUARD MANAGED';
 const escapeRegExp = value => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -395,6 +427,20 @@ export function runHooks(projectDir, config, flags) {
     const rawContent = useAutofix ? PRE_COMMIT_AUTOFIX : HOOKS[name].content;
     const newContent = wrapManaged(rawContent);
     const desc = useAutofix ? 'Apply mechanical fixes (fix --write) then guard' : HOOKS[name].description;
+
+    // A hook manager owns this hook (its dispatcher, or its generated
+    // directory where a written file would be regenerated away): never offer
+    // --force, never write. A DocGuard-managed block is still refreshed below.
+    const current = existsSync(hookPath) ? readFileSync(hookPath, 'utf-8') : '';
+    const manager = current.includes(BEGIN_MARKER) ? null : detectHookManager(projectDir, hooksDir, name, current);
+    if (manager) {
+      const line = MANAGER_COMMANDS[name];
+      console.log(`  ${c.yellow}⚠️  ${name}: ${manager.name} manages this hook — DocGuard will not write to its hooks directory${flags.force ? ' (--force ignored)' : ''}.${c.reset}`);
+      if (line) console.log(`     ${c.dim}Add this line to${c.reset} ${c.cyan}${manager.target}${c.reset}${c.dim}:${c.reset} ${c.cyan}${line}${c.reset}`);
+      else console.log(`     ${c.dim}Add DocGuard's ${name} check to${c.reset} ${c.cyan}${manager.target}${c.reset}`);
+      skipped++;
+      continue;
+    }
 
     if (existsSync(hookPath)) {
       const existing = readFileSync(hookPath, 'utf-8');

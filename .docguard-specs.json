@@ -650,12 +650,12 @@
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 608
+            "line": 613
           },
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 635
+            "line": 640
           },
           {
             "requirementId": "FR-021",
@@ -1864,6 +1864,115 @@
             "requirementId": "SC-003",
             "file": "tests/hooks-contract.test.mjs",
             "line": 278
+          }
+        ]
+      }
+    },
+    {
+      "specId": "docguard.field-report-followups",
+      "path": "specs/020-field-report-followups/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.field-report-followups#FR-001",
+          "docguard.field-report-followups#FR-002",
+          "docguard.field-report-followups#FR-003",
+          "docguard.field-report-followups#FR-004",
+          "docguard.field-report-followups#FR-005",
+          "docguard.field-report-followups#SC-001",
+          "docguard.field-report-followups#SC-002",
+          "docguard.field-report-followups#SC-003"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/020-field-report-followups/spec.md",
+            "digest": "sha256:454dce97924609376d82fa1728ce07a1df1f5271c2acddf89a9680bd5bcabb07"
+          },
+          {
+            "path": "specs/020-field-report-followups/plan.md",
+            "digest": "sha256:21ce214987e4ac3d3667f61f13dfe71297d4147989facd864916ce2e7a04936b"
+          },
+          {
+            "path": "specs/020-field-report-followups/tasks.md",
+            "digest": "sha256:b373ff4bbc5c4dd48a79a363359dfc8d829ee2ee28c29027d5e6fd72398f6651"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 6,
+          "total": 6
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-004",
+            "file": "cli/commands/hooks.mjs",
+            "line": 36
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/field-report-followups.test.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/field-report-followups.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/field-report-followups.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/field-report-followups.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/field-report-followups.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/field-report-followups.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/field-report-followups.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/field-report-followups.test.mjs",
+            "line": 12
           }
         ]
       }
