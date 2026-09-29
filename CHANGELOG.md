@@ -168,6 +168,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **YAML annotations count.** `# @implements …` in `action.yml` and CI
     workflows is read as implementation evidence, so changes to the GitHub
     Action and to CI can be attributed to a spec.
+  - **Evidence is counted once per file during a conflicted merge.** `git
+    ls-files` lists an unmerged path once per stage, so a registry written
+    mid-merge counted that file's evidence up to three times. This was found
+    while syncing this very branch with `main`.
 
 - **Four open field reports closed out (#438, #437, #436, #454;
   `specs/020-field-report-followups`).**
