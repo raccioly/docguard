@@ -227,6 +227,8 @@ jobs:
             --title "release: v${NEW_VERSION} — automated weekly batch" \
             --body "Automated weekly release cut by \`scheduled-release.yml\`.
 
+          Spec-Exempt: release — automated weekly version cut; each batched change carried its own spec
+
           Batches everything merged since \`${{ steps.check.outputs.last_tag }}\`. Tests and \`guard\` already passed on this tree before the PR was opened.
 
           **Maintainer action required:** select **Approve workflows to run** in GitHub. The ordinary pull-request CI then satisfies branch protection; GitHub's protected native auto-merge merges the exact green head, and the waiting scheduler dispatches \`release.yml\`. An hourly tag-driven sweep recovers later approvals.")

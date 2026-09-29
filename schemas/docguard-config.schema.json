@@ -252,6 +252,23 @@
       },
       "additionalProperties": true
     },
+    "specFirst": {
+      "type": "object",
+      "description": "Spec-first change gate (`docguard specs require`). A change to a governed path must name its spec (a `specs/<dir>` path or Spec ID) or declare `Spec-Exempt: <kind> — <reason>`.",
+      "properties": {
+        "paths": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "description": "Glob patterns of governed paths. Default: every changed path except Markdown, `specs/**` and recognized test files."
+        },
+        "exemptKinds": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^[A-Za-z-]+$" },
+          "description": "Allowed exemption kinds. Default: release, deps, typo, test-only."
+        }
+      },
+      "additionalProperties": false
+    },
     "specKit": {
       "type": "object",
       "description": "Spec-Kit validator overrides.",

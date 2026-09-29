@@ -336,12 +336,14 @@ const COMMAND_HELP = {
   },
   specs: {
     summary: 'Maintain the deterministic spec lifecycle and evidence registry.',
-    usage: 'docguard specs [--check|--write] | docguard specs preflight [--path <spec>] | docguard specs complete --id <spec-id> [--since <ref>] [--write --reason <text>]',
+    usage: 'docguard specs [--check|--write] | docguard specs preflight [--path <spec>] | docguard specs complete --id <spec-id> [--since <ref>] [--write --reason <text>] | docguard specs require --since <ref> [--message-file <path>]',
     flags: [
       ['--check', 'Exit 2 when the committed registry is missing, stale, or inconsistent; planned lifecycle deferral requires a clean tracked registry'],
       ['--write', 'Refresh observed evidence while preserving reviewed lifecycle fields'],
       ['preflight', 'Brief prior specs, or gate a generated draft with --path'],
       ['complete', 'Plan or apply the implemented→verified evidence transaction'],
+      ['require', 'Spec-first gate: a change to governed paths must name its spec or declare Spec-Exempt (exit 1 uncovered, 2 inconclusive)'],
+      ['--message-file <path>', 'With require: PR description or extra text to search for spec references'],
       ['--id <spec-id>', 'Immutable spec identity to complete'],
       ['--since <ref>', 'First reconciliation baseline when none is recorded'],
       ['--reason <text>', 'Reviewed implementation outcome required for completion writes'],
@@ -350,7 +352,7 @@ const COMMAND_HELP = {
       ['--path <spec>', 'Generated spec to compare against current lifecycle state'],
       ['--format json', 'Machine-readable registry or preflight result'],
     ],
-    examples: ['docguard specs --check', 'docguard specs --write', 'docguard specs preflight --path specs/007-feature/spec.md', 'docguard specs complete --id acme.feature --since main --write --reason "Reviewed implementation"'],
+    examples: ['docguard specs --check', 'docguard specs --write', 'docguard specs preflight --path specs/007-feature/spec.md', 'docguard specs require --since origin/main --message-file pr-body.txt', 'docguard specs complete --id acme.feature --since main --write --reason "Reviewed implementation"'],
   },
   reconcile: {
     summary: 'Classify changed implementation facts, approved intent, decisions, and unsupported evidence.',
@@ -594,6 +596,11 @@ async function main() {
       i++;
     } else if (args[i] === '--api-key' && args[i + 1]) {
       flags.apiKey = args[i + 1];
+      i++;
+    } else if (args[i] === '--message-file' && args[i + 1]) {
+      // `specs require`: pull-request description or commit text, read from a
+      // file so CI never interpolates an untrusted body into a shell command.
+      flags.messageFile = args[i + 1];
       i++;
     } else if (args[i] === '--path' && args[i + 1]) {
       if (command === 'retire' || command === 'archive') {

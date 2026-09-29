@@ -178,6 +178,35 @@ jobs:
       - name: Hooks --list
         run: node cli/docguard.mjs hooks --list
 
+  # ── Spec-first gate (Constitution X, specs/015-spec-first-gate) ──
+  # A change to cli/ must name its governing spec or declare
+  # `Spec-Exempt: <kind> — <reason>` in the PR description or a commit message.
+  # Uncovered (exit 1) and inconclusive (exit 2) both fail: an unprovable
+  # change is not a covered one.
+  spec-first:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # merge-base needs the base branch history
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 20
+
+      - name: Require a governing spec
+        shell: bash
+        env:
+          # SECURITY: the PR body and base branch are fork-controlled data.
+          # They reach the script only through env and are written to a file /
+          # expanded quoted — never spliced into the script text.
+          PR_BODY: ${{ github.event.pull_request.body }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          printf '%s' "$PR_BODY" > "$RUNNER_TEMP/pr-body.txt"
+          node cli/docguard.mjs specs require --since "origin/$BASE_REF" --message-file "$RUNNER_TEMP/pr-body.txt"
+
   # ── npm publish dry-run on tags ──
   publish-check:
     runs-on: ubuntu-latest

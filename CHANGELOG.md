@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`docguard specs require`, a spec-first change gate (#455,
+  `specs/015-spec-first-gate`).** Validators evaluate a tree, so none of them
+  can notice the spec that was never written. This command evaluates a
+  change: the paths touched since the merge base with `--since`, the commit
+  messages in that range, and an optional `--message-file` (a PR body, read
+  from a file so an untrusted body never reaches a shell).
+
+  A change to governed paths (`.docguard.json` → `specFirst.paths`) passes if
+  it does any of these:
+  - names an existing `specs/<dir>` path or Spec ID;
+  - edits a spec's own files;
+  - declares `Spec-Exempt: <release|deps|typo|test-only> — <reason>`.
+
+  An invented reference never passes. The result is one of `covered`,
+  `exempt`, `not-governed`, `uncovered` (exit 1) or `inconclusive` (exit 2:
+  unknown base, shallow history, oversized inventory). A change that cannot be
+  shown to name its spec is not treated as one that does.
+
+  The GitHub Action runs it as `command: spec-first`. This repository enforces
+  it in CI for `cli/**`. Replayed over the last 40 merges on `main`, 14 of the
+  19 that changed `cli/` named no spec.
+
 ### Changed
 
 - **This repository runs its own Spec Kit workflow again (#455).** It was

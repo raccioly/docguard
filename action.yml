@@ -8,7 +8,7 @@ branding:
 
 inputs:
   command:
-    description: 'Command to run: audit, guard, score, diff, fix, sync'
+    description: 'Command to run: audit, guard, score, diff, fix, sync, spec-first (a pull request must name its governing spec or declare Spec-Exempt; needs actions/checkout with fetch-depth: 0)'
     required: false
     default: 'guard'
   format:
@@ -108,6 +108,10 @@ runs:
         INPUT_FORMAT: ${{ inputs.format }}
         INPUT_FAIL_ON_WARNING: ${{ inputs.fail-on-warning }}
         INPUT_SCORE_THRESHOLD: ${{ inputs.score-threshold }}
+        # spec-first reads the PR description and base branch as data only.
+        PR_BODY: ${{ github.event.pull_request.body }}
+        BASE_REF: ${{ github.base_ref }}
+        DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
       run: |
         set +e
 
@@ -163,6 +167,22 @@ runs:
             exit 0
           fi
 
+          exit $EXIT_CODE
+        elif [ "$CMD" = "spec-first" ]; then
+          # @implements docguard.spec-first-gate#FR-010
+          # Compare against the PR base, or the default branch outside a PR.
+          # Uncovered (1) and inconclusive (2) both fail: a change that cannot
+          # be shown to name its spec is not a covered change.
+          BASE="${BASE_REF:-$DEFAULT_BRANCH}"
+          git fetch --no-tags --quiet origin "$BASE" 2>/dev/null
+          printf '%s' "$PR_BODY" > "$RUNNER_TEMP/docguard-pr-body.txt"
+          npx docguard-cli specs require --since "origin/$BASE" --message-file "$RUNNER_TEMP/docguard-pr-body.txt" $FLAGS
+          EXIT_CODE=$?
+          if [ "$EXIT_CODE" = "1" ]; then
+            echo "::error::This change touches governed paths without naming its spec. Add a specs/<dir> path or Spec ID, or 'Spec-Exempt: <kind> — <reason>', to the PR description."
+          elif [ "$EXIT_CODE" = "2" ]; then
+            echo "::error::Spec-first check was inconclusive (base ref or history unavailable). Use actions/checkout with fetch-depth: 0."
+          fi
           exit $EXIT_CODE
         elif [ "$CMD" = "fix" ] || [ "$CMD" = "sync" ]; then
           # Handled by the fix step below — print marker and exit clean here so

@@ -3,6 +3,8 @@
  * @implements docguard.document-lifecycle#FR-016
  * @implements docguard.document-lifecycle#FR-017
  * @implements docguard.document-lifecycle#FR-020
+ * @implements docguard.spec-first-gate#FR-006
+ * @implements docguard.spec-first-gate#FR-007
  */
 
 import { createHash } from 'node:crypto';
@@ -15,6 +17,7 @@ import { serializeLifecycleContext } from '../scanners/lifecycle-context.mjs';
 import { buildReconciliationPlan } from '../scanners/reconciliation.mjs';
 import { preflightSpec, projectSpecRegistry, readSpecRegistry, SPEC_REGISTRY_PATH } from '../scanners/spec-registry.mjs';
 import { runGuardInternal } from './guard.mjs';
+import { checkSpecFirst } from '../scanners/spec-first.mjs';
 
 const CONTEXT_PATH = '.docguard/current-context.json';
 const digest = content => `sha256:${createHash('sha256').update(content).digest('hex')}`;
@@ -243,10 +246,49 @@ function printResult(result) {
   if (result.issues.length) printIssues(result.issues);
 }
 
+const MESSAGE_FILE_MAX = 256 * 1024;
+const SPEC_FIRST_EXIT = { covered: 0, exempt: 0, 'not-governed': 0, uncovered: 1, inconclusive: 2 };
+
+function printSpecFirst(result) {
+  const label = {
+    covered: 'COVERED', exempt: 'EXEMPT', 'not-governed': 'NOT GOVERNED', uncovered: 'UNCOVERED', inconclusive: 'INCONCLUSIVE',
+  }[result.status];
+  console.log(`Spec-first: ${label}${result.base ? ` (since merge base ${result.base.slice(0, 12)} of ${result.since})` : ''}`);
+  if (result.reason) console.log(`  ${result.reason}`);
+  if (result.governed.length) {
+    console.log(`Governed paths changed: ${result.governed.length}`);
+    for (const path of result.governed.slice(0, 20)) console.log(`  ${path}`);
+    if (result.governed.length > 20) console.log(`  … ${result.governed.length - 20} more`);
+  }
+  for (const ref of result.references) console.log(`Spec reference: ${ref.value} → ${ref.spec} (${ref.kind})`);
+  if (result.exemption) console.log(`Exemption: ${result.exemption.kind} — ${result.exemption.reason}`);
+  for (const value of result.unresolved) console.log(`Unresolved reference (no such spec): ${value}`);
+  for (const bad of result.invalidExemptions) console.log(`Invalid exemption (${bad.problem}): Spec-Exempt: ${bad.kind} — ${bad.reason}`);
+  if (result.status === 'uncovered') {
+    console.log('To pass, add one line to the pull request description or a commit message:');
+    console.log('  the governing spec, e.g.  specs/015-spec-first-gate   or its Spec ID');
+    console.log(`  or an exemption:          Spec-Exempt: <${result.allowedKinds.join('|')}> — <reason, 10+ characters>`);
+  }
+}
+
+function runSpecFirst(projectDir, config, flags) {
+  let messageText = '';
+  if (flags.messageFile) {
+    const buffer = readFileSync(resolve(projectDir, flags.messageFile));
+    messageText = buffer.subarray(0, MESSAGE_FILE_MAX).toString('utf8');
+  }
+  const result = checkSpecFirst(projectDir, config, { since: flags.since, messageText });
+  if (flags.format === 'json') console.log(JSON.stringify(result, null, 2));
+  else printSpecFirst(result);
+  process.exitCode = SPEC_FIRST_EXIT[result.status];
+  return result;
+}
+
 export function runSpecs(projectDir, config, flags = {}) {
   try {
     const action = flags.args?.[0] || null;
-    if (action && !['preflight', 'complete'].includes(action)) throw new Error(`Unknown specs action: ${action}`);
+    if (action && !['preflight', 'complete', 'require'].includes(action)) throw new Error(`Unknown specs action: ${action}`);
+    if (action === 'require') return runSpecFirst(projectDir, config, flags);
     if (flags.check && flags.write) throw new Error('Use either --check or --write, not both.');
 
     if (action === 'preflight') {
