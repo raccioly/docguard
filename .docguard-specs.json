@@ -2637,6 +2637,26 @@
         "implementationEvidence": [],
         "testEvidence": [
           {
+            "requirementId": "FR-001",
+            "file": "tests/spec-kit-delegation.test.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/spec-kit-delegation.test.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/spec-kit-delegation.test.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/spec-kit-delegation.test.mjs",
+            "line": 20
+          },
+          {
             "requirementId": "FR-005",
             "file": "tests/security-init-injection.test.mjs",
             "line": 31
@@ -2645,6 +2665,66 @@
             "requirementId": "FR-006",
             "file": "tests/security-init-injection.test.mjs",
             "line": 33
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/spec-kit-delegation.test.mjs",
+            "line": 21
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/spec-kit-delegation.test.mjs",
+            "line": 22
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "tests/spec-kit-delegation.test.mjs",
+            "line": 23
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "tests/spec-kit-delegation.test.mjs",
+            "line": 24
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "tests/spec-kit-delegation.test.mjs",
+            "line": 26
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "tests/spec-kit-delegation.test.mjs",
+            "line": 25
+          },
+          {
+            "requirementId": "FR-013",
+            "file": "tests/spec-kit-delegation.test.mjs",
+            "line": 27
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/spec-kit-delegation.test.mjs",
+            "line": 28
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/spec-kit-delegation.test.mjs",
+            "line": 29
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/spec-kit-delegation.test.mjs",
+            "line": 30
+          },
+          {
+            "requirementId": "SC-004",
+            "file": "tests/spec-kit-delegation.test.mjs",
+            "line": 31
+          },
+          {
+            "requirementId": "SC-005",
+            "file": "tests/spec-kit-delegation.test.mjs",
+            "line": 32
           }
         ]
       }
