@@ -56,6 +56,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     never compared. It is an escalation with no mechanical fix: the manifest
     may be the side that is wrong.
 
+- **Instruction files that agents cannot finish reading are reported (#455,
+  `specs/017-agent-instruction-budget`).** Codex concatenates `AGENTS.md` from
+  the repository root down to the working directory and stops reading at
+  32 KiB (`project_doc_max_bytes`). It drops the rest silently, and the nested,
+  most specific rules come last, so they are the ones lost.
+
+  The Structure validator now measures every chain. `AGENTS.override.md`
+  replaces `AGENTS.md` in its directory, as Codex does.
+  - **`STR004`**: a chain is over `agentInstructions.maxBytes`.
+  - **Existing debt**: record a per-chain `agentInstructions.allowances` entry.
+    The chain may then shrink, but any growth is a reviewed configuration
+    change. The finding baseline cannot serve this purpose, because it
+    normalizes the digits in messages.
+  - **`STR005`**: an allowance has at least 1 KiB of slack and should be
+    lowered.
+
+  This repository's chain is 13,222 bytes.
+
+- **Colliding spec numbers are reported (`SPK012`).** Parallel agents each pick
+  "the next number" from their own checkout, which produces `specs/016-a` and
+  `specs/016-b`. After that, "spec 016" is ambiguous. open-mercato abandoned
+  numbering over exactly this problem. Timestamp-numbered feature directories
+  never collide.
+
 - **This repository now obeys its validator-isolation principle, and a test
   enforces it.** `cli/validators/docs-sync.mjs` imported
   `cli/validators/api-surface.mjs`, against Constitution IV. OpenAPI discovery

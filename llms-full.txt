@@ -52,13 +52,14 @@ It targets development teams and AI coding agents that need to maintain document
 | **Cross-language import graph** | Resolves repository-local JS/TS and Python static imports for cycle and layer checks | `cli/validators/architecture.mjs`, `cli/scanners/py-ast.mjs` | Python supports regular flat/`src/` packages and explicit relatives; dynamic imports, runtime path changes, parse failures, missing interpreters, and ambiguous modules remain explicit limitations |
 | **Repository-root guidance** | Detects a likely governing ancestor without changing the selected scan directory | `cli/repository-root.mjs`, `cli/docguard.mjs` | Requires ancestor DocGuard configuration or npm/pnpm membership, respects nested Git boundaries, and uses typed stderr diagnostics for machine modes |
 | **Lifecycle transactions and context** | Stages registry, recovery, spec outcome, and current-context changes before any visible mutation and rolls the set back on write or validation failure | `cli/writers/file-transaction.mjs`, `cli/writers/spec-outcomes.mjs`, `cli/scanners/lifecycle-context.mjs` | Active context includes approved current spec pointers and content hashes; retired prose is excluded |
+| **Agent instruction budget** | Measures every `AGENTS.md` chain from the root to each instruction directory, as Codex loads it (`AGENTS.override.md` replaces `AGENTS.md`), against `agentInstructions.maxBytes` (default 32768) or a per-chain allowance | `cli/scanners/agent-instructions.mjs`, `cli/validators/structure.mjs` | `STR004` is an escalation; `STR005` suggests tightening a slack allowance. Increasing an allowance is a reviewed config change, which the digit-normalized finding baseline could not guarantee |
 | **Spec-first gate** | Classifies a change between the merge base and HEAD as covered, exempt, not governed, uncovered or inconclusive. It reads governed paths from `specFirst` and resolves spec references against `specs/*/spec.md` and the registry | `cli/scanners/spec-first.mjs`, `cli/commands/specs.mjs` | Read-only. An unresolved reference never passes. Git or inventory failure is inconclusive (exit 2), never a pass. The PR body arrives as a file |
 | **Spec Kit delegation** | The only code that invokes the `specify` CLI: reads its documented `init` options, resolves the integration key from `.specify/integration.json` / `init-options.json` / unambiguous agent signals, initializes Spec Kit and registers the packaged DocGuard extension | `cli/spec-kit-delegation.mjs`, `cli/ensure-skills.mjs` | Called only by `docguard init`; argument arrays only; every failure returns a structured result with the CLI's error and a manual command; requires Spec Kit ≥ 0.10.0 |
 | **Validators** | Independent validation modules that check specific aspects of CDD compliance — all emitting structured findings with stable codes (the `CODES` registry in `findings.mjs`) | `cli/validators/` | `*.mjs` |
 | **Scanners** | Project file scanners for test discovery, route detection, schema mapping, CDK/IaC, doc-tools, integrations, frontend surface, spec-kit, memory-plan, semantic claims, agent readability | `cli/scanners/` | `*.mjs` |
 | **Writers** | Deterministic doc-mutation and output modules — section-addressable edits, mapped-role ownership authorization, mechanical fix registry, API-Reference writer, generate I/O + doc builders (split from generate.mjs), SARIF emitter (no LLM) | `cli/writers/`, `cli/shared-doc-roles.mjs` | Mapped human docs expose only unique `source=code` sections; new or explicitly generated single-role targets permit whole-document writes; all replacements use backups and `--force` cannot grant ownership |
 | **Config** | Configuration loading, schema migration, validator policy, and exact finding-code policy | `cli/` | `config.mjs`, `shared.mjs` |
-| **Shared** | Cross-cutting utilities — ignore/glob filters, Git-ignore-aware bounded indexing, package capability counts, source-root resolution, Git helpers, declaration-shaped requirement identity parsing, and the shared doc→code trace patterns used by both `trace` and the Traceability validator | `cli/` | `shared-ignore.mjs`, `shared-validator-surface.mjs`, `shared-source.mjs`, `shared-git.mjs`, `shared-requirements.mjs`, `shared-trace-patterns.mjs`, `shared.mjs` |
+| **Shared** | Cross-cutting utilities — ignore/glob filters, Git-ignore-aware bounded indexing, package capability counts, source-root resolution, Git helpers, declaration-shaped requirement identity parsing, and the shared doc→code trace patterns used by both `trace` and the Traceability validator | `cli/` | `shared-ignore.mjs`, `shared-validator-surface.mjs`, `shared-source.mjs`, `shared-git.mjs`, `shared-requirements.mjs`, `shared-trace-patterns.mjs`, `shared-openapi.mjs` (OpenAPI discovery shared by API-Surface and Docs-Sync), `shared.mjs` |
 | **Templates** | Document skeletons (ARCHITECTURE, SECURITY, etc.) and slash command files for AI agents | `templates/` | `*.template`, `commands/*.md` |
 | **Extension** | Spec Kit extension with 5 AI skills, 4 bash scripts, workflow hooks | `extensions/spec-kit-docguard/` | `skills/*/SKILL.md`, `scripts/bash/*.sh` |
 | **Tests** | Per-validator unit tests + command-level integration tests using `node:test` | `tests/` | `*.test.mjs` |
@@ -1489,6 +1490,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     never compared. It is an escalation with no mechanical fix: the manifest
     may be the side that is wrong.
 
+- **Instruction files that agents cannot finish reading are reported (#455,
+  `specs/017-agent-instruction-budget`).** Codex concatenates `AGENTS.md` from
+  the repository root down to the working directory and stops reading at
+  32 KiB (`project_doc_max_bytes`). It drops the rest silently, and the nested,
+  most specific rules come last, so they are the ones lost.
+
+  The Structure validator now measures every chain. `AGENTS.override.md`
+  replaces `AGENTS.md` in its directory, as Codex does.
+  - **`STR004`**: a chain is over `agentInstructions.maxBytes`.
+  - **Existing debt**: record a per-chain `agentInstructions.allowances` entry.
+    The chain may then shrink, but any growth is a reviewed configuration
+    change. The finding baseline cannot serve this purpose, because it
+    normalizes the digits in messages.
+  - **`STR005`**: an allowance has at least 1 KiB of slack and should be
+    lowered.
+
+  This repository's chain is 13,222 bytes.
+
+- **Colliding spec numbers are reported (`SPK012`).** Parallel agents each pick
+  "the next number" from their own checkout, which produces `specs/016-a` and
+  `specs/016-b`. After that, "spec 016" is ambiguous. open-mercato abandoned
+  numbering over exactly this problem. Timestamp-numbered feature directories
+  never collide.
+
 - **This repository now obeys its validator-isolation principle, and a test
   enforces it.** `cli/validators/docs-sync.mjs` imported
   `cli/validators/api-surface.mjs`, against Constitution IV. OpenAPI discovery
@@ -1808,31 +1833,7 @@ Automated weekly release — batches everything merged since `v0.42.0`.
   numbers are the ones the two validator changes above now catch, and the
   exact sentences are their regression controls.
 
-- Cut a release again. The release job bumps the version, deliberately does not
-  regenerate `llms.txt` / `llms-full.txt`, and then runs the full suite — which
-  compared the bundles' footer against a generator run on the freshly bumped
-  tree. The only difference was the stamp itself (`Generated by DocGuard
-  v0.42.0` against `v0.42.1`), so every cut failed on a line that records which
-  version generated the file rather than anything about the documents. The
-  drift test now blanks that stamp on both sides; every other byte, including
-  every non-churning section body, is still compared exactly.
-
-
-- **Guard's per-finding "review" annotation never printed.** The summary counted
-  `N to fix · M to review` correctly, but the line under each finding that says
-  `(review — signal, not a verdict)` was unreachable: the renderer builds its
-  items from `findings` and did not copy `disposition` into them, so the check
-  tested `undefined` for every structured finding — which is all of them. A
-  reader scanning the enumerated list, which is where the decision about a
-  specific document actually gets made, saw no distinction at all.
-
-- **API-surface checking never ran on Python, Go, Rust, Java or Ruby projects.**
-  `detectFramework` read `package.json` and nothing else, so it returned an
-  empty framework for every non-JS project, and `scanRoutesDeep` gates its
-  Flask, FastAPI, Django, Gin, Axum, Spring and Rails walkers on that name.
-  The scanners worked; nothing reached them. A Flask service reported
-
-<!-- truncated: 3758 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 3782 more lines — read CHANGELOG.md directly -->
 
 ---
 

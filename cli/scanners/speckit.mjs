@@ -949,7 +949,54 @@ export function validateSpecKitIntegration(projectDir, config) {
     }
   }
 
+  // ── Check: spec numbers are unique (docguard.agent-instruction-budget#FR-005) ──
+  // Parallel agents each pick "the next number" from their own checkout.
+  const collisions = detectSpecNumberCollisions(projectDir);
+  if (speckit.specs.length > 0) {
+    total++;
+    if (collisions.length === 0) passed++;
+  }
+  for (const { number, dirs } of collisions) {
+    findings.push(mkFinding({
+      code: 'SPK012',
+      validator: 'specKit',
+      severity: 'warn',
+      confidence: 'high',
+      disposition: 'act',
+      message: `Spec number ${number} is used by ${dirs.length} feature directories: ${dirs.map(d => `specs/${d}`).join(', ')} — "spec ${number}" is now ambiguous`,
+      location: `specs/${dirs[1]}`,
+      suggestion: { kind: 'fix', text: `Renumber the later feature to the next free number (git mv specs/${dirs[1]} …) and update references to it` },
+    }));
+  }
+
   return resultFromFindings(findings, { passed, total });
+}
+
+/**
+ * Top-level feature directories that share a sequential numeric prefix.
+ * Timestamp-prefixed directories (YYYYMMDD-HHMMSS-…) never collide by number.
+ *
+ * @implements docguard.agent-instruction-budget#FR-005
+ * @returns {{ number: string, dirs: string[] }[]}
+ */
+export function detectSpecNumberCollisions(projectDir) {
+  const specsDir = resolve(projectDir, 'specs');
+  if (!existsSync(specsDir)) return [];
+  const byNumber = new Map();
+  let entries = [];
+  try { entries = readdirSync(specsDir, { withFileTypes: true }); } catch { return []; }
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    const m = entry.name.match(/^(\d{1,4})-(?!\d{6}-)/);
+    if (!m || /^\d{8}-\d{6}-/.test(entry.name)) continue;
+    const key = String(Number(m[1]));
+    if (!byNumber.has(key)) byNumber.set(key, []);
+    byNumber.get(key).push(entry.name);
+  }
+  return [...byNumber.entries()]
+    .filter(([, dirs]) => dirs.length > 1)
+    .map(([, dirs]) => ({ number: dirs[0].split('-')[0], dirs: dirs.sort() }))
+    .sort((a, b) => Number(a.number) - Number(b.number));
 }
 
 // ──── Untouched-Claim Detection (SPK010/SPK011) ────

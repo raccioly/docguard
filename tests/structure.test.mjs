@@ -32,8 +32,9 @@ describe('validateStructure', () => {
     try {
       const results = validateStructure(tempDir, config);
       assert.equal(results.name, 'structure');
-      assert.equal(results.total, 5); // 2 canonical + 1 agent + 1 changelog + 1 drift
-      assert.equal(results.passed, 5);
+      // 2 canonical + 1 agent + 1 changelog + 1 drift + 1 AGENTS.md chain budget
+      assert.equal(results.total, 6);
+      assert.equal(results.passed, 6);
       assert.equal(results.errors.length, 0);
     } finally {
       fs.rmSync(tempDir, { recursive: true, force: true });

@@ -252,6 +252,19 @@
       },
       "additionalProperties": true
     },
+    "agentInstructions": {
+      "type": "object",
+      "description": "Agent instruction budget (STR004/STR005). Each AGENTS.md chain (root down to a directory; AGENTS.override.md replaces AGENTS.md) is compared to a byte budget, because agents stop reading at their limit.",
+      "properties": {
+        "maxBytes": { "type": "integer", "minimum": 1, "description": "Budget per chain in bytes. Default 32768 (Codex project_doc_max_bytes)." },
+        "allowances": {
+          "type": "object",
+          "description": "Per-chain allowance for existing debt, keyed by the chain's deepest instruction file. The chain may shrink; growth past the allowance is reported.",
+          "additionalProperties": { "type": "integer", "minimum": 1 }
+        }
+      },
+      "additionalProperties": false
+    },
     "specFirst": {
       "type": "object",
       "description": "Spec-first change gate (`docguard specs require`). A change to a governed path must name its spec (a `specs/<dir>` path or Spec ID) or declare `Spec-Exempt: <kind> — <reason>`.",

@@ -2,7 +2,12 @@ import { remapDocPath } from '../shared-doc-roles.mjs';
 /**
  * Structure Validator — Checks that all required CDD files exist
  *
- * v0.29: migrated to structured findings (STR001–STR003). Messages are
+ * v0.29: migrated to structured findings (STR001–STR003).
+ * STR004/STR005 measure agent instruction chains against a byte budget.
+ *
+ * @implements docguard.agent-instruction-budget#FR-002
+ * @implements docguard.agent-instruction-budget#FR-003
+ * @implements docguard.agent-instruction-budget#FR-004 Messages are
  * byte-identical to the legacy strings — resultFromFindings derives the
  * errors/warnings arrays from the same findings, so counts, exit codes, and
  * existing tests are unaffected; guard just renders richer output.
@@ -12,6 +17,10 @@ import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { docHasSection } from '../shared.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
+import { measureInstructionChains, DEFAULT_INSTRUCTION_BUDGET } from '../scanners/agent-instructions.mjs';
+
+// An allowance this far above the chain's size is slack in the ratchet.
+const ALLOWANCE_SLACK_BYTES = 1024;
 
 export function validateStructure(projectDir, config) {
   const findings = [];
@@ -80,6 +89,48 @@ export function validateStructure(projectDir, config) {
     passed++;
   } else {
     findings.push(missingFile(config.requiredFiles.driftLog));
+  }
+
+  // Agent instruction budget (docguard.agent-instruction-budget#FR-002–FR-004).
+  // An agent silently stops reading past its limit, so an oversized chain means
+  // the instructions written are not the instructions read.
+  const budgetCfg = config.agentInstructions || {};
+  const maxBytes = Number.isInteger(budgetCfg.maxBytes) && budgetCfg.maxBytes > 0 ? budgetCfg.maxBytes : DEFAULT_INSTRUCTION_BUDGET;
+  const allowances = budgetCfg.allowances && typeof budgetCfg.allowances === 'object' ? budgetCfg.allowances : {};
+  for (const chain of measureInstructionChains(projectDir)) {
+    total++;
+    const allowance = Number.isInteger(allowances[chain.leaf]) ? allowances[chain.leaf] : null;
+    const limit = allowance ?? maxBytes;
+    const via = chain.files.length > 1 ? ` (${chain.files.join(' + ')})` : '';
+    if (chain.bytes > limit) {
+      findings.push(mkFinding({
+        code: 'STR004',
+        validator: 'structure',
+        severity: 'warn',
+        confidence: 'high',
+        disposition: 'escalate',
+        message: `Agent instruction chain for ${chain.leaf} is ${chain.bytes} bytes${via}, over its ${allowance === null ? 'budget' : 'allowance'} of ${limit}; an agent stops reading at the limit and the last (most specific) rules are the ones dropped`,
+        location: chain.leaf,
+        suggestion: {
+          kind: 'review',
+          text: 'Move procedures into linked docs, cut duplicated rules, or record an allowance in agentInstructions.allowances so any further growth is a reviewed change',
+        },
+      }));
+      continue;
+    }
+    passed++;
+    if (allowance !== null && allowance - chain.bytes >= ALLOWANCE_SLACK_BYTES) {
+      findings.push(mkFinding({
+        code: 'STR005',
+        validator: 'structure',
+        severity: 'info',
+        confidence: 'high',
+        disposition: 'act',
+        message: `Agent instruction chain for ${chain.leaf} is ${chain.bytes} bytes, well under its allowance of ${allowance}; lower the allowance so the chain cannot grow back`,
+        location: chain.leaf,
+        suggestion: { kind: 'fix', text: `Set agentInstructions.allowances["${chain.leaf}"] to ${Math.max(chain.bytes, maxBytes)}${chain.bytes <= maxBytes ? ' (or remove it: the chain is within the default budget)' : ''}` },
+      }));
+    }
   }
 
   return { name: 'structure', ...resultFromFindings(findings, { passed, total }) };
