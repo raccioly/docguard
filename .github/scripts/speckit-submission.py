@@ -36,6 +36,7 @@ def _scalar(value: str) -> str:
     return value.split(" #", 1)[0].strip().strip("\"'")
 
 
+# @implements docguard.extension-manifest-hygiene#FR-005
 def manifest_metadata(path: Path = MANIFEST):
     """Read the catalog-facing fields from the manifest, the single source.
 

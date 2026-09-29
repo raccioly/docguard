@@ -1,3 +1,6 @@
+# @implements docguard.extension-manifest-hygiene#FR-001
+# @implements docguard.extension-manifest-hygiene#FR-002
+# @implements docguard.extension-manifest-hygiene#FR-003
 schema_version: "1.0"
 
 extension:

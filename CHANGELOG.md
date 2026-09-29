@@ -142,6 +142,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Three lifecycle-evidence gaps found by building DocGuard with its own hooks
+  (#455, `specs/021-lifecycle-evidence-gaps`).**
+  - **`SPR006`.** Spec 014 was fully implemented, with every task checked,
+    before any source file carried `@implements`. Guard said nothing.
+    `reconcile` called the changed files "unsupported", and only `specs
+    complete` reported the gap, after the fact. The Spec-Registry validator now
+    escalates any spec with checked tasks and no implementation annotation. Its
+    first run caught spec 018, whose YAML and Python changes carried none; they
+    are now annotated.
+  - **`specs --write` names what it did not count.** Evidence comes from
+    tracked files only. A registry written before `git add` on a new test file
+    reads CURRENT, then goes stale as soon as the commit lands. Untracked,
+    annotated test files are now listed in the output and in
+    `untrackedEvidence`.
+  - **YAML annotations count.** `# @implements …` in `action.yml` and CI
+    workflows is read as implementation evidence, so changes to the GitHub
+    Action and to CI can be attributed to a spec.
+
 - **Four open field reports closed out (#438, #437, #436, #454;
   `specs/020-field-report-followups`).**
   - **#454.** In a husky, lefthook or simple-git-hooks repository, `docguard
