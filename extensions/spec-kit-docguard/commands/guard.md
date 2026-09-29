@@ -14,7 +14,7 @@ handoffs:
 
 # DocGuard Guard
 
-Validate your project against its canonical documentation. Runs 160+ automated checks across validators.
+Validate your project against its canonical documentation. Runs every enabled validator; `docguard --help` and the guard output report what ran.
 
 ## User Input
 

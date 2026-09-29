@@ -1,61 +1,69 @@
-# DocGuard Extension Hooks for Spec Kit
-# Place this file at .specify/extensions.yml in your project root
-# to integrate DocGuard into the spec-kit workflow.
+# DocGuard hook registration for Spec Kit (manual installs only).
 #
-# DocGuard will automatically run as a quality gate after implementation
-# and preflight lifecycle state before specification and task generation.
+# `specify extension add docguard` (or `docguard init`, or
+# `npm run speckit:dev` in this repository) writes this for you. Copy it to
+# .specify/extensions.yml only when installing without the specify CLI, and
+# merge it into an existing file rather than replacing one.
+#
+# This is the exact shape Spec Kit 1.0.13 writes; tests/hooks-contract.test.mjs
+# keeps its hooks equal to extension.yml.
 
-schema_version: "1.0"
-
-extension: docguard
-
+installed:
+- docguard
+settings:
+  auto_execute_hooks: true
 hooks:
-  # Brief current and retired spec intent before /speckit.specify starts.
   before_specify:
-    - extension: docguard
-      command: speckit.docguard.brief
-      description: "Load current spec intent and block specification on stale lifecycle state"
-      enabled: true
-      optional: false
-
-  # Run DocGuard guard after /speckit.implement completes
-  # This ensures documentation stays in sync with code changes
+  - extension: docguard
+    command: speckit.docguard.brief
+    enabled: true
+    optional: false
+    priority: 5
+    prompt: Execute speckit.docguard.brief?
+    description: Load current spec intent and block specification on stale lifecycle
+      state
+    condition: null
   after_implement:
-    - extension: docguard
-      command: speckit.docguard.guard
-      description: "Validate documentation passes CDD standards after implementation"
-      enabled: true
-      optional: false
-      priority: 5
-    - extension: docguard
-      command: speckit.docguard.complete
-      description: "Plan reviewed lifecycle verification after implementation"
-      enabled: true
-      optional: true
-      priority: 10
-      prompt: "Review evidence and plan this spec's completion transaction?"
-
+  - extension: docguard
+    command: speckit.docguard.guard
+    enabled: true
+    optional: false
+    priority: 5
+    prompt: Execute speckit.docguard.guard?
+    description: Quality gate — ensures docs stay in sync with code
+    condition: null
+  - extension: docguard
+    command: speckit.docguard.complete
+    enabled: true
+    optional: true
+    priority: 10
+    prompt: Review evidence and plan this spec's completion transaction?
+    description: Plan lifecycle verification after implementation
+    condition: null
   after_converge:
-    - extension: docguard
-      command: speckit.docguard.complete
-      description: "Plan reviewed lifecycle verification after convergence"
-      enabled: true
-      optional: true
-      prompt: "Review evidence and plan this converged spec's completion transaction?"
-
-  # Gate the generated spec before /speckit.tasks creates implementation work.
+  - extension: docguard
+    command: speckit.docguard.complete
+    enabled: true
+    optional: true
+    priority: 10
+    prompt: Review evidence and plan this converged spec's completion transaction?
+    description: Plan lifecycle verification after convergence
+    condition: null
   before_tasks:
-    - extension: docguard
-      command: speckit.docguard.preflight
-      description: "Gate the generated spec against registry integrity and prior intent"
-      enabled: true
-      optional: false
-
-  # Run DocGuard guard after /speckit.tasks to validate doc coverage
+  - extension: docguard
+    command: speckit.docguard.preflight
+    enabled: true
+    optional: false
+    priority: 10
+    prompt: Execute speckit.docguard.preflight?
+    description: Gate the generated spec before task generation
+    condition: null
   after_tasks:
-    - extension: docguard
-      command: speckit.docguard.score
-      description: "Show CDD maturity score after task generation"
-      enabled: true
-      optional: true
-      prompt: "Check CDD maturity score after task generation?"
+  - extension: docguard
+    command: speckit.docguard.score
+    enabled: true
+    optional: true
+    priority: 10
+    prompt: Show CDD maturity score after task generation?
+    description: Show CDD maturity score after task generation
+    condition: null

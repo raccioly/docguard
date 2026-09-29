@@ -1514,6 +1514,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   numbering over exactly this problem. Timestamp-numbered feature directories
   never collide.
 
+- **The Spec Kit extension manifest now says what it needs (#455,
+  `specs/018-extension-manifest-hygiene`).**
+  - **Spec Kit floor.** It said `>=0.1.0` while using per-event hook lists with
+    priority (Spec Kit 0.10.0), `category`/`effect` (0.10.2) and
+    `after_converge` (0.11.2). An older Spec Kit would install it, and the hooks
+    would then silently fail to register. The floor is now `>=0.11.2`, and a
+    contract test derives it from the features the manifest uses.
+  - **New fields.** It declares `category: docs` and `effect: read-write`.
+  - **Explicit hook priorities.** Every hook has one. The briefing runs at 5,
+    ahead of the git extension's branch creation at the default 10, so a
+    blocked briefing no longer leaves an empty feature branch behind.
+  - **Non-schema keys.** `requires.framework` is removed. The GitHub workflow
+    starters move from `provides.workflows`, whose name collides with Spec
+    Kit's own workflows, to `x-docguard.github_workflows`.
+  - **Tags.** There were 9, against the publishing guide's limit of 2–5, so the
+    catalog script kept its own list. The manifest now carries the 5 tags, and
+    the submission reads the floor, description, category, effect and tags from
+    it.
+  - **Manual-install template.** `templates/extensions.yml` told adopters to
+    copy it into `.specify/extensions.yml` in a shape Spec Kit doesn't write. It
+    is now the exact registry that `specify extension add` produces, and a
+    contract test keeps it equal to the manifest's hooks.
+  - **Stale count.** `commands/guard.md` no longer promises "160+ automated
+    checks".
+
 - **This repository now obeys its validator-isolation principle, and a test
   enforces it.** `cli/validators/docs-sync.mjs` imported
   `cli/validators/api-surface.mjs`, against Constitution IV. OpenAPI discovery
@@ -1807,33 +1832,8 @@ Automated weekly release — batches everything merged since `v0.42.0`.
   can tell DocGuard never asserted those documents were wrong.
 
 - **SPK010 — a completed task that names a file the feature never changed.**
-  The phantom check (SPK008) asks whether a checked task's deliverable EXISTS,
-  which a task naming already-existing files satisfies immediately, whether or
-  not the work happened. That hole is not hypothetical: in this repository a
-  documentation task listed six contract files, was marked `[x]`, and shipped
-  with one of them — a SKILL.md — unmodified, still telling agents to auto-fix
-  findings a human was supposed to judge.
 
-  SPK010 asks the other question: did this feature's history ever touch it? The
-  window is the commit that introduced the spec directory through HEAD, plus
-  the working tree, so uncommitted work counts. Only falsifiable slashed paths
-  convict; a non-existent path stays SPK008's business, a path inside the
-  spec's own directory is never its own deliverable, and the check is silent
-  when git is unavailable or the spec has no introducing commit. Suppress one
-  task with `<!-- docguard:ignore SPK010 — reason -->`, or disable with
-  `"specKit": { "untouchedClaimCheck": false }`.
-
-  Reported `confidence: high` and `disposition: escalate` — the git fact is
-  exact, the conclusion is the reader's. Run against this branch it found eight
-  tasks; seven were real gaps in this very feature, now closed.
-
-### Fixed
-- The README's Testing section: the test count, the command count, and the CI
-  matrix (Node 24 has been in the matrix since the R5 release). Both stale
-  numbers are the ones the two validator changes above now catch, and the
-  exact sentences are their regression controls.
-
-<!-- truncated: 3782 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 3807 more lines — read CHANGELOG.md directly -->
 
 ---
 
