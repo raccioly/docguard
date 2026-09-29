@@ -1427,6 +1427,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   clone can run the workflow. DocGuard's own extension is registered with
   `npm run speckit:dev` rather than committed as a copy of `extensions/`.
 
+- **Constitution v2.0.0: it now describes the project it governs (#455).**
+  v1.1.0 contradicted itself and the code while `guard` passed:
+  - It said both "one runtime dependency" and "Dependencies: None. Zero. Ever."
+  - It required a VS Code extension API that the repository does not have.
+  - It counted 19 validators and 4 skills.
+  - It claimed DocGuard bundles Spec Kit's core skills, which it does not.
+  - It said every workflow hook is optional, while `brief`, `preflight` and
+    `guard` are mandatory by design.
+
+  The amendment drops the counts in favour of the authoritative sources. It
+  restates Spec Kit integration as delegation to `specify` that must report
+  failure, and adds three principles the repository already practises:
+  local-first with no telemetry, honest assurance, and spec-first development.
+  The AGENTS.md hook table had the same drift (it listed three of the five
+  hooks) and is corrected.
+
 ### Fixed
 
 - **Stopped publishing private project identifiers and local developer state.**
@@ -1788,24 +1804,8 @@ Automated weekly release — batches everything merged since `v0.42.0`.
   `tests/llms-bundle-drift.test.mjs` already fails any pull request that changes
   a canonical or optional document without running `npm run llms`, so every
   section except the inlined changelog body is current on `main` at all times;
-  the release job was only ever covering that one exempted body.
-  The allowlist now refuses the two paths again, and the release job is asserted
-  neither to run the regeneration nor to stage the files, so the outage cannot
-  return by someone re-admitting them to make a failing cut pass.
-  Consequence, stated plainly: a published `llms-full.txt` carries its changelog
-  entries under `## [Unreleased]` rather than under the version header it ships
-  with. The entries are all present — only the header is not — and the footer
-  now truthfully records the version that generated the bundle instead of being
-  restamped by a job that regenerated nothing else.
 
-
-## [0.42.0] - 2026-09-18
-
-Automated weekly release — batches everything merged since `v0.41.7`.
-
-### Changed
-
-<!-- truncated: 3654 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 3670 more lines — read CHANGELOG.md directly -->
 
 ---
 
@@ -2267,23 +2267,22 @@ Skills are located at `extensions/spec-kit-docguard/skills/*/SKILL.md`. They tel
 
 ## Spec Kit Hooks
 
-DocGuard integrates into the spec-kit workflow:
+DocGuard integrates into the spec-kit workflow. `extensions/spec-kit-docguard/extension.yml`
+is authoritative; a hook is mandatory when its `optional` field is `false`.
 
-| Hook | When | Required? |
-|------|------|-----------|
-| `after_implement` | After `/speckit.implement` | Mandatory |
-| `before_tasks` | Before `/speckit.tasks` | Optional |
-| `after_tasks` | After `/speckit.tasks` | Optional |
+| Hook | Command | Required? |
+|------|---------|-----------|
+| `before_specify` | `speckit.docguard.brief` | Mandatory |
+| `before_tasks` | `speckit.docguard.preflight` | Mandatory |
+| `after_tasks` | `speckit.docguard.score` | Optional |
+| `after_implement` | `speckit.docguard.guard`, then `speckit.docguard.complete` | Mandatory, then optional |
+| `after_converge` | `speckit.docguard.complete` | Optional |
 
 ## Extension Structure
 
 ```
 extensions/spec-kit-docguard/
-├── skills/                    # AI behavior protocols
-│   ├── docguard-guard/SKILL.md
-│   ├── docguard-fix/SKILL.md
-│   ├── docguard-review/SKILL.md
-│   └── docguard-score/SKILL.md
+├── skills/                    # AI behavior protocols (docguard-guard, -fix, -review, -score, -sync)
 ├── scripts/bash/              # Orchestration scripts (--json output)
 ├── commands/                  # Spec Kit slash commands
 ├── templates/                 # Hook registration templates
