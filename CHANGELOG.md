@@ -142,6 +142,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **A merged release publishes within 10 minutes, not up to an hour (#447,
+  `specs/023-release-dispatch-window`).** The scheduler waits 10 minutes for
+  the release PR to merge, and maintainers rarely approve its workflows that
+  quickly, so publication nearly always fell through to the hourly tag sweep.
+  The sweep now runs every 10 minutes and is described as the normal route.
+  Its no-op path is a version check. A `workflow_run` dispatcher (option B)
+  stays rejected: release PR #380 proved the listener only sees the
+  approval-required completion.
+
 - **A sandboxed run no longer looks like a clean pass (#455,
   `specs/022-unreadable-git-metadata`).** Agent sandboxes such as ai-jail mount
   a linked worktree but hide the gitdir its `.git` file points at. Every git

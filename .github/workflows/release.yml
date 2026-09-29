@@ -5,9 +5,13 @@ on:
   workflow_dispatch: # Allow manual trigger for recovery
   schedule:
     # GitHub suppresses push workflows when native auto-merge was armed by
-    # GITHUB_TOKEN. This cheap tag-driven sweep makes late approvals recover
-    # within an hour without a PAT, App key, or continuously polling runner.
-    - cron: '17 * * * *'
+    # GITHUB_TOKEN, and maintainers rarely approve the release PR's workflows
+    # inside the scheduler's 10-minute wait -- so this cheap tag-driven sweep is
+    # the normal publication route, not a fallback (#447). Every 10 minutes
+    # bounds merge-to-publish at 10 minutes without a PAT, App key, or a
+    # continuously polling runner; its no-op path is a version check.
+    # @implements docguard.release-dispatch-window#FR-001
+    - cron: '*/10 * * * *'
   push:
     branches: [main]
     paths:

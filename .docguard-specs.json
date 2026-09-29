@@ -3177,6 +3177,96 @@
       }
     },
     {
+      "specId": "docguard.release-dispatch-window",
+      "path": "specs/023-release-dispatch-window/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.release-dispatch-window#FR-001",
+          "docguard.release-dispatch-window#FR-002",
+          "docguard.release-dispatch-window#FR-003",
+          "docguard.release-dispatch-window#SC-001"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/023-release-dispatch-window/spec.md",
+            "digest": "sha256:5675dc8abbdcb20229a7bc77d77a416f152d2e2a807bd86ec055f707dc49b63c"
+          },
+          {
+            "path": "specs/023-release-dispatch-window/plan.md",
+            "digest": "sha256:1f07046717da333b32929a5c5a7ce160ce3b412bfa597e056ecd1302cb3ae748"
+          },
+          {
+            "path": "specs/023-release-dispatch-window/tasks.md",
+            "digest": "sha256:0b922999306d7f7865f1ee566e898b6fcc2188205e63019a29b4fc4fac9e56d4"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 4,
+          "total": 4
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": ".github/workflows/release.yml",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-002",
+            "file": ".github/workflows/scheduled-release.yml",
+            "line": 18
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/scheduled-release.test.mjs",
+            "line": 2
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/scheduled-release.test.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/scheduled-release.test.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/scheduled-release.test.mjs",
+            "line": 5
+          }
+        ]
+      }
+    },
+    {
       "specId": "docguard.spec-first-gate",
       "path": "specs/015-spec-first-gate/spec.md",
       "reviewed": {
@@ -4178,82 +4268,82 @@
           {
             "requirementId": "FR-001",
             "file": "tests/scheduled-release.test.mjs",
-            "line": 15
+            "line": 21
           },
           {
             "requirementId": "FR-002",
             "file": "tests/scheduled-release.test.mjs",
-            "line": 16
+            "line": 22
           },
           {
             "requirementId": "FR-003",
             "file": "tests/scheduled-release.test.mjs",
-            "line": 17
+            "line": 23
           },
           {
             "requirementId": "FR-004",
             "file": "tests/scheduled-release.test.mjs",
-            "line": 18
+            "line": 24
           },
           {
             "requirementId": "FR-005",
             "file": "tests/scheduled-release.test.mjs",
-            "line": 19
+            "line": 25
           },
           {
             "requirementId": "FR-006",
             "file": "tests/scheduled-release.test.mjs",
-            "line": 20
+            "line": 26
           },
           {
             "requirementId": "FR-007",
             "file": "tests/scheduled-release.test.mjs",
-            "line": 21
+            "line": 27
           },
           {
             "requirementId": "FR-008",
             "file": "tests/scheduled-release.test.mjs",
-            "line": 22
+            "line": 28
           },
           {
             "requirementId": "FR-009",
             "file": "tests/scheduled-release.test.mjs",
-            "line": 23
+            "line": 29
           },
           {
             "requirementId": "FR-010",
             "file": "tests/scheduled-release.test.mjs",
-            "line": 24
+            "line": 30
           },
           {
             "requirementId": "FR-011",
             "file": "tests/scheduled-release.test.mjs",
-            "line": 25
+            "line": 31
           },
           {
             "requirementId": "FR-012",
             "file": "tests/scheduled-release.test.mjs",
-            "line": 26
+            "line": 32
           },
           {
             "requirementId": "SC-001",
             "file": "tests/scheduled-release.test.mjs",
-            "line": 27
+            "line": 33
           },
           {
             "requirementId": "SC-002",
             "file": "tests/scheduled-release.test.mjs",
-            "line": 28
+            "line": 34
           },
           {
             "requirementId": "SC-003",
             "file": "tests/scheduled-release.test.mjs",
-            "line": 29
+            "line": 35
           },
           {
             "requirementId": "SC-004",
             "file": "tests/scheduled-release.test.mjs",
-            "line": 30
+            "line": 36
           }
         ]
       }
