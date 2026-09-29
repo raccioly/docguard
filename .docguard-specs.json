@@ -1840,6 +1840,26 @@
             "line": 2
           },
           {
+            "requirementId": "FR-004",
+            "file": "extensions/spec-kit-docguard/templates/extensions.yml",
+            "line": 2
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "extensions/spec-kit-docguard/templates/extensions.yml",
+            "line": 2
+          },
+          {
+            "requirementId": "FR-005",
+            "file": ".github/scripts/speckit-submission.py",
+            "line": 39
+          },
+          {
+            "requirementId": "FR-005",
+            "file": ".github/scripts/speckit-submission.py",
+            "line": 39
+          },
+          {
             "requirementId": "FR-005",
             "file": ".github/scripts/speckit-submission.py",
             "line": 39
