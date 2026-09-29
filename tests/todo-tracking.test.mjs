@@ -197,4 +197,65 @@ describe('Todo-Tracking Validator', () => {
     const result = validateTodoTracking(tmpDir, {});
     assert.equal(result.warnings.length, 0, 'Should not flag TODO in a Go test file');
   });
+
+  // ── docguard.ignore-and-todo-parsing — PR #453's cases (Jules), kept, plus
+  // the precision negatives that PR's bare-word matching would have broken.
+  // @req docguard.ignore-and-todo-parsing#FR-002
+  // @req docguard.ignore-and-todo-parsing#FR-003
+  // @req docguard.ignore-and-todo-parsing#FR-004
+  // @req docguard.ignore-and-todo-parsing#FR-005
+  // @req docguard.ignore-and-todo-parsing#SC-003
+  const untracked = (name, source) => {
+    writeFileSync(join(tmpDir, name), source);
+    return validateTodoTracking(tmpDir, {}).warnings.filter(w => /Untracked/.test(w));
+  };
+
+  it('strips the author from TODO(user): text (PR #453)', () => {
+    const w = untracked('todo-user.mjs', '// TODO(user): need to refactor this function\nfunction f() {}\n');
+    assert.equal(w.length, 1);
+    assert.match(w[0], /need to refactor this function/);
+    assert.doesNotMatch(w[0], /user\)/);
+  });
+
+  it('matches TODO(user) without a colon (PR #453)', () => {
+    const w = untracked('todo-user2.mjs', '// TODO(user) need to refactor this function\nfunction f() {}\n');
+    assert.equal(w.length, 1);
+    assert.match(w[0], /need to refactor this function/);
+  });
+
+  it('matches bare TODO and FIXME followed by text (PR #453)', () => {
+    assert.equal(untracked('todo-bare.mjs', '// TODO fix this function\n').length, 1);
+    // tmpDir accumulates files: the second scan sees both.
+    assert.equal(untracked('fixme-bare.mjs', '// FIXME fix this function\n').length, 2);
+  });
+
+  it('does not match TEMPLATE (PR #453)', () => {
+    assert.equal(untracked('todo-template.mjs', '// TEMPLATE is here\n').length, 0);
+  });
+
+  it('does not treat ordinary words HACK, XXX, TEMP or WORKAROUND as annotations', () => {
+    const w = untracked('prose.mjs', [
+      '// TEMP directory path for the build',
+      '// no HACK needed here',
+      '// XXX marks the spot',
+      '// the WORKAROUND below is documented',
+      '// XXX-large sizes are rare',
+    ].join('\n') + '\n');
+    assert.equal(w.length, 0, w.join('\n'));
+  });
+
+  // Both were false findings on DocGuard's own code during this change.
+  it('does not treat a placeholder or a keyword list as an annotation', () => {
+    const w = untracked('lists.mjs', [
+      "console.log('The document should have NO <!-- TODO --> or <!-- e.g. --> placeholders.');",
+      "const help = 'Add a `// REASON:` comment (SKIP/NOTE/WHY/TODO/FIXME prefixes also count).';",
+      '// see the TODO list in the tracker',
+    ].join('\n') + '\n');
+    assert.equal(w.length, 0, w.join('\n'));
+  });
+
+  it('still matches HACK/XXX/TEMP/WORKAROUND with a separator or author', () => {
+    const w = untracked('marked.mjs', ['// HACK: retry twice', '// XXX - revisit', '// TEMP(ana) remove after v2', '// WORKAROUND: vendor bug'].join('\n') + '\n');
+    assert.equal(w.length, 4, w.join('\n'));
+  });
 });

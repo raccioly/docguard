@@ -6,9 +6,10 @@
  * @implements docguard.adoption-workflow-integrity#FR-008
  */
 
-import { existsSync, readFileSync, statSync } from 'node:fs';
-import { dirname, relative, resolve } from 'node:path';
+import { readFileSync, statSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { buildIgnoreFilter, loadDocguardIgnore } from './shared-ignore.mjs';
 
 /**
  * Current .docguard.json schema version that this CLI version writes via
@@ -356,28 +357,9 @@ export function resolveDocDirs(projectDir, config = {}) {
  * @returns {(relPath: string) => boolean} - Returns true if file should be ignored
  */
 export function loadIgnorePatterns(projectDir) {
-  const ignorePath = resolve(projectDir, '.docguardignore');
-  if (!existsSync(ignorePath)) return () => false;
-
-  let content;
-  try { content = readFileSync(ignorePath, 'utf-8'); } catch { return () => false; }
-
-  const patterns = content
-    .split('\n')
-    .map(line => line.trim())
-    .filter(line => line && !line.startsWith('#'))
-    .map(pattern => {
-      // Convert glob to regex:
-      // ** → match any path segments
-      // * → match any chars except /
-      // . → literal dot
-      const escaped = pattern
-        .replace(/\./g, '\\.')
-        .replace(/\*\*/g, '§§')     // temp placeholder
-        .replace(/\*/g, '[^/]*')
-        .replace(/§§/g, '.*');
-      return new RegExp(`^${escaped}$|/${escaped}$|^${escaped}/|/${escaped}/`);
-    });
-
-  return (relPath) => patterns.some(regex => regex.test(relPath));
+  // One parser for .docguardignore (docguard.ignore-and-todo-parsing#FR-001).
+  // This used to be a private copy of shared-ignore's glob compiler that never
+  // received its gitignore-style `dir/` fix, so `fixtures/` was honoured by
+  // some checks and silently ignored by others.
+  return buildIgnoreFilter(loadDocguardIgnore(projectDir));
 }

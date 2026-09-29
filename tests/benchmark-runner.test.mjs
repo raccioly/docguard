@@ -67,3 +67,18 @@ describe('benchmark runner', () => {
     assert.equal(findingIdentity({ code: 'SEC001', location: { file: 'src\\config.js', line: 42 } }), 'SEC001@src/config.js');
   });
 });
+
+/**
+ * docguard.ignore-and-todo-parsing changed the TODO detector; its labelled
+ * corpus cases must keep their verdicts.
+ * @req docguard.ignore-and-todo-parsing#SC-002
+ */
+describe('TODO detector keeps its benchmark verdicts', () => {
+  it('passes both the Go TODO defect and its clean control', () => {
+    const result = runBenchmark({ manifestPath });
+    const byId = new Map(result.core.cases.map(item => [item.id, item]));
+    assert.equal(byId.get('dev-go-todo-defect').status, 'PASS');
+    assert.equal(byId.get('dev-go-todo-control').status, 'PASS');
+    assert.equal(byId.get('dev-go-todo-control').actual.length, 0);
+  });
+});

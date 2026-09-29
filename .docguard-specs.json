@@ -1869,6 +1869,125 @@
       }
     },
     {
+      "specId": "docguard.ignore-and-todo-parsing",
+      "path": "specs/019-ignore-and-todo-parsing/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.ignore-and-todo-parsing#FR-001",
+          "docguard.ignore-and-todo-parsing#FR-002",
+          "docguard.ignore-and-todo-parsing#FR-003",
+          "docguard.ignore-and-todo-parsing#FR-004",
+          "docguard.ignore-and-todo-parsing#FR-005",
+          "docguard.ignore-and-todo-parsing#SC-001",
+          "docguard.ignore-and-todo-parsing#SC-002",
+          "docguard.ignore-and-todo-parsing#SC-003"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/019-ignore-and-todo-parsing/spec.md",
+            "digest": "sha256:81132bb3d7803992501c79490e9fa5e0ac2328a3551abebbe3528c1b832cbfc0"
+          },
+          {
+            "path": "specs/019-ignore-and-todo-parsing/plan.md",
+            "digest": "sha256:de05f448d71790d4e5ff08b01b63f0b5db1c933eaa3f815345a074fb930ae0f1"
+          },
+          {
+            "path": "specs/019-ignore-and-todo-parsing/tasks.md",
+            "digest": "sha256:61f13659535fec4d3574ae1f738da12789a192a6bb5963b68dac833951271a18"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 6,
+          "total": 6
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-002",
+            "file": "cli/validators/todo-tracking.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/validators/todo-tracking.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/validators/todo-tracking.mjs",
+            "line": 20
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/ignore-parser-parity.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/todo-tracking.test.mjs",
+            "line": 203
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/todo-tracking.test.mjs",
+            "line": 204
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/todo-tracking.test.mjs",
+            "line": 205
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/todo-tracking.test.mjs",
+            "line": 206
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/ignore-parser-parity.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/benchmark-runner.test.mjs",
+            "line": 74
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/todo-tracking.test.mjs",
+            "line": 207
+          }
+        ]
+      }
+    },
+    {
       "specId": "docguard.language-repository-coverage",
       "path": "specs/009-language-repository-coverage/spec.md",
       "reviewed": {
