@@ -1461,6 +1461,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   it in CI for `cli/**`. Replayed over the last 40 merges on `main`, 14 of the
   19 that changed `cli/` named no spec.
 
+### Changed
+
 - **This repository runs its own Spec Kit workflow again (#455).** It was
   initialized with Spec Kit 0.3.0 for Antigravity, in the pre-manifest layout
   that `specify integration upgrade` cannot migrate, so it had no `converge`
@@ -1826,10 +1828,8 @@ Automated weekly release — batches everything merged since `v0.42.0`.
   a string at construction. Verified against the pre-change build on real
   repositories: every SARIF result now resolves to a file.
 
-- **A malformed `suggestion.kind` was silently coerced to `review`**, turning a
-  typo into an escalation. It is now omitted, per
 
-<!-- truncated: 3726 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 3728 more lines — read CHANGELOG.md directly -->
 
 ---
 
