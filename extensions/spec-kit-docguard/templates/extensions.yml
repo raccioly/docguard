@@ -1,4 +1,5 @@
 # DocGuard hook registration for Spec Kit (manual installs only).
+# @implements docguard.extension-manifest-hygiene#FR-004
 #
 # `specify extension add docguard` (or `docguard init`, or
 # `npm run speckit:dev` in this repository) writes this for you. Copy it to

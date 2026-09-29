@@ -2,6 +2,7 @@
  * Pure requirement-reference evidence shared by validators and registry projections.
  * @implements docguard.document-lifecycle#FR-013
  * @implements docguard.document-lifecycle#FR-016
+ * @implements docguard.lifecycle-evidence-gaps#FR-003
  */
 
 import { existsSync, readFileSync } from 'node:fs';
@@ -103,7 +104,8 @@ function testDeclarations(content, filename) {
 function implementationDeclarations(content, filename) {
   const declarations = [];
   const ext = extname(filename);
-  const hashComments = /\.(?:py|rb|php|sh)$/.test(ext);
+  // YAML: action.yml and CI workflows implement specs too; `#` is their comment.
+  const hashComments = /\.(?:py|rb|php|sh|ya?ml)$/.test(ext);
   const tokens = /\/\*[\s\S]*?(?:\*\/|$)|\/\/[^\n]*|\#[^\n]*/g;
   for (const token of content.matchAll(tokens)) {
     if (token[0].startsWith('#') && !hashComments) continue;
@@ -153,7 +155,7 @@ export function scanImplementationFilesForReferences(projectDir, projectFiles, p
     projectDir,
     projectFiles,
     patterns,
-    path => !isTestSource(path) && /\.(?:[cm]?[jt]sx?|py|go|rs|java|kt|rb|php|sh|cs|swift)$/.test(path),
+    path => !isTestSource(path) && /\.(?:[cm]?[jt]sx?|py|go|rs|java|kt|rb|php|sh|cs|swift|ya?ml)$/.test(path),
     implementationDeclarations,
   );
 }

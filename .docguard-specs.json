@@ -1818,7 +1818,33 @@
           "checked": 8,
           "total": 8
         },
-        "implementationEvidence": [],
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "extensions/spec-kit-docguard/extension.yml",
+            "line": 1
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "extensions/spec-kit-docguard/extension.yml",
+            "line": 2
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "extensions/spec-kit-docguard/extension.yml",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "extensions/spec-kit-docguard/templates/extensions.yml",
+            "line": 2
+          },
+          {
+            "requirementId": "FR-005",
+            "file": ".github/scripts/speckit-submission.py",
+            "line": 39
+          }
+        ],
         "testEvidence": [
           {
             "requirementId": "FR-001",
@@ -2521,6 +2547,118 @@
       }
     },
     {
+      "specId": "docguard.lifecycle-evidence-gaps",
+      "path": "specs/021-lifecycle-evidence-gaps/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.lifecycle-evidence-gaps#FR-001",
+          "docguard.lifecycle-evidence-gaps#FR-002",
+          "docguard.lifecycle-evidence-gaps#FR-003",
+          "docguard.lifecycle-evidence-gaps#SC-001",
+          "docguard.lifecycle-evidence-gaps#SC-002",
+          "docguard.lifecycle-evidence-gaps#SC-003"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/021-lifecycle-evidence-gaps/spec.md",
+            "digest": "sha256:46ca8e8e8655e6b218738ace88bc434fab3d2fcb9d6811fb62d2c833e2f2d100"
+          },
+          {
+            "path": "specs/021-lifecycle-evidence-gaps/plan.md",
+            "digest": "sha256:a8a41c9bc18434a3375ed8d9a0c974f1489e920b47b872245fd9396f970a06e6"
+          },
+          {
+            "path": "specs/021-lifecycle-evidence-gaps/tasks.md",
+            "digest": "sha256:efd936d88414b7ac0dbc0267ac0432ece6b66f1e57088642beeee125235cda07"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 5,
+          "total": 5
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/validators/spec-registry.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/scanners/spec-registry.mjs",
+            "line": 408
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/scanners/spec-registry.mjs",
+            "line": 409
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/scanners/requirement-evidence.mjs",
+            "line": 5
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/lifecycle-evidence-gaps.test.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/lifecycle-evidence-gaps.test.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/lifecycle-evidence-gaps.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/lifecycle-evidence-gaps.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/lifecycle-evidence-gaps.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/lifecycle-evidence-gaps.test.mjs",
+            "line": 9
+          }
+        ]
+      }
+    },
+    {
       "specId": "docguard.precision-evidence-loop",
       "path": "specs/007-precision-evidence-loop/spec.md",
       "reviewed": {
@@ -3137,6 +3275,11 @@
             "requirementId": "FR-007",
             "file": "cli/commands/specs.mjs",
             "line": 7
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "action.yml",
+            "line": 172
           }
         ],
         "testEvidence": [

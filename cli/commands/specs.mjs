@@ -15,7 +15,7 @@ import { commitFileTransaction } from '../writers/file-transaction.mjs';
 import { appendImplementationOutcome } from '../writers/spec-outcomes.mjs';
 import { serializeLifecycleContext } from '../scanners/lifecycle-context.mjs';
 import { buildReconciliationPlan } from '../scanners/reconciliation.mjs';
-import { preflightSpec, projectSpecRegistry, readSpecRegistry, SPEC_REGISTRY_PATH } from '../scanners/spec-registry.mjs';
+import { preflightSpec, projectSpecRegistry, readSpecRegistry, SPEC_REGISTRY_PATH, untrackedRequirementEvidence } from '../scanners/spec-registry.mjs';
 import { runGuardInternal } from './guard.mjs';
 import { checkSpecFirst } from '../scanners/spec-first.mjs';
 
@@ -243,6 +243,11 @@ function printResult(result) {
     console.log(`Note: registry uses an older encoding (${result.legacyForms.join(', ')}); content is unchanged. `
       + 'Run `docguard specs --write` to migrate it.');
   }
+  if (result.untrackedEvidence?.length) {
+    console.log(`Not counted: ${result.untrackedEvidence.length} untracked test file(s) carry requirement annotations. `
+      + 'The registry reads tracked files only; `git add` them, then re-run `docguard specs --write`:');
+    for (const path of result.untrackedEvidence) console.log(`  ${path}`);
+  }
   if (result.issues.length) printIssues(result.issues);
 }
 
@@ -324,9 +329,11 @@ export function runSpecs(projectDir, config, flags = {}) {
       writeFileSync(resolve(projectDir, SPEC_REGISTRY_PATH), projection.serialized, 'utf-8');
       status = 'WRITTEN';
     }
+    const untrackedEvidence = untrackedRequirementEvidence(projectDir);
     const result = {
       command: 'specs',
       status,
+      untrackedEvidence,
       registry: SPEC_REGISTRY_PATH,
       specs: projection.registry.specs.length,
       tombstones: projection.registry.tombstones.length,

@@ -16,7 +16,7 @@ import { detectSpecKit } from './speckit.mjs';
 import { readRetirementManifest } from './retirement-manifest.mjs';
 import { collectRequirementIdsFromContent, requirementPatterns } from '../shared-requirements.mjs';
 import { walkFiles } from '../shared-ignore.mjs';
-import { scanImplementationFilesForReferences, scanTestFilesForReferences } from './requirement-evidence.mjs';
+import { isTestSource, scanImplementationFilesForReferences, scanTestFilesForReferences } from './requirement-evidence.mjs';
 
 export const SPEC_REGISTRY_PATH = '.docguard-specs.json';
 export const SPEC_REGISTRY_SCHEMA_VERSION = 2;
@@ -401,13 +401,37 @@ function taskCompletion(path) {
   return { checked, total: checked + open };
 }
 
+/**
+ * Untracked, non-ignored test files that carry requirement annotations. The
+ * projection reads tracked files only, so these are evidence the registry does
+ * not count yet — and a registry written now goes stale the moment they are
+ * committed. (docguard.lifecycle-evidence-gaps#FR-002)
+ * @implements docguard.lifecycle-evidence-gaps#FR-002
+ */
+export function untrackedRequirementEvidence(projectDir) {
+  const r = spawnSync('git', ['ls-files', '--others', '--exclude-standard', '-z'], {
+    cwd: projectDir, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024,
+  });
+  if (r.status !== 0) return [];
+  const out = [];
+  for (const rel of r.stdout.split('\0').filter(Boolean).map(posix).sort()) {
+    if (!isTestSource(rel)) continue;
+    try {
+      if (/@(?:req|implements)\s/.test(readFileSync(resolve(projectDir, rel), 'utf8'))) out.push(rel);
+    } catch { /* unreadable: not evidence either way */ }
+  }
+  return out;
+}
+
 function projectFiles(projectDir) {
   const tracked = spawnSync('git', ['ls-files', '-z'], {
     cwd: projectDir,
     encoding: 'utf8',
     maxBuffer: 16 * 1024 * 1024,
   });
-  if (tracked.status === 0) return tracked.stdout.split('\0').filter(Boolean).map(posix).sort();
+  // During a conflicted merge `git ls-files` lists an unmerged path once per
+  // stage (up to three times), which counted its evidence up to three times.
+  if (tracked.status === 0) return [...new Set(tracked.stdout.split('\0').filter(Boolean).map(posix))].sort();
   const files = [];
   const root = realpathSync(projectDir);
   walkFiles(projectDir, path => {

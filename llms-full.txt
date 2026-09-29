@@ -1603,6 +1603,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Three lifecycle-evidence gaps found by building DocGuard with its own hooks
+  (#455, `specs/021-lifecycle-evidence-gaps`).**
+  - **`SPR006`.** Spec 014 was fully implemented, with every task checked,
+    before any source file carried `@implements`. Guard said nothing.
+    `reconcile` called the changed files "unsupported", and only `specs
+    complete` reported the gap, after the fact. The Spec-Registry validator now
+    escalates any spec with checked tasks and no implementation annotation. Its
+    first run caught spec 018, whose YAML and Python changes carried none; they
+    are now annotated.
+  - **`specs --write` names what it did not count.** Evidence comes from
+    tracked files only. A registry written before `git add` on a new test file
+    reads CURRENT, then goes stale as soon as the commit lands. Untracked,
+    annotated test files are now listed in the output and in
+    `untrackedEvidence`.
+  - **YAML annotations count.** `# @implements …` in `action.yml` and CI
+    workflows is read as implementation evidence, so changes to the GitHub
+    Action and to CI can be attributed to a spec.
+  - **Evidence is counted once per file during a conflicted merge.** `git
+    ls-files` lists an unmerged path once per stage, so a registry written
+    mid-merge counted that file's evidence up to three times. This was found
+    while syncing this very branch with `main`.
+
 - **Four open field reports closed out (#438, #437, #436, #454;
   `specs/020-field-report-followups`).**
   - **#454.** In a husky, lefthook or simple-git-hooks repository, `docguard
@@ -1828,30 +1850,8 @@ Automated weekly release — batches everything merged since `v0.42.0`.
   true, and useless: it compared version strings when the question is whether
   the measured number still describes the code that just ran. It was also a
   false alarm. The detectors shipped in 0.42.0 are byte-identical to the
-  benchmarked build, so every number remained exactly as valid. Comparing git
-  revisions could not answer it either, since `.npmignore` excludes `.git/` and
-  `benchmarks/` is unpublished, leaving an installed user with no repository to
-  diff. `benchmarks/baseline.json` now records a `detectorsDigest` over the
-  detector sources the corpus was actually run against — reviewed input, never
-  recomputed from the working tree, so an edited detector cannot re-stamp itself
-  as calibrated — and the runtime hashes the shipped `cli/validators` and
-  `cli/scanners` to compare. A release that changes only docs or the CLI shell
-  now says the detectors are unchanged and the number still applies. The hash is
-  only computed when the version strings already disagree, so the matching path
-  costs nothing and the mismatching path costs about 1.2ms. An unreadable
-  install reports `unknown` and falls back to the old wording, never to a false
-  all-clear.
 
-- **A short list of untiered files is printed instead of counted.** "3 file(s)
-  in no validation tier" with the names one `--verbose` away is a nag that
-  cannot be acted on from the run that printed it. At three files or fewer the
-  list is the message, so it is shown inline; above that the calm count and the
-  `--verbose` pointer still win, because a wall of paths every run is what
-  trains users to ignore the line.
-
-### Changed
-
-<!-- truncated: 3855 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 3877 more lines — read CHANGELOG.md directly -->
 
 ---
 

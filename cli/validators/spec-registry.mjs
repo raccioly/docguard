@@ -1,6 +1,8 @@
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { projectSpecRegistry, SPEC_REGISTRY_PATH } from '../scanners/spec-registry.mjs';
 
+/** @implements docguard.lifecycle-evidence-gaps#FR-001 */
+
 export function validateSpecRegistry(projectDir, config = {}) {
   const projection = projectSpecRegistry(projectDir, config);
   if (projection.detected === 0 && !projection.exists) {
@@ -41,6 +43,28 @@ export function validateSpecRegistry(projectDir, config = {}) {
         kind: 'fix',
         text: 'Refresh derived evidence without changing reviewed lifecycle fields.',
         command: 'docguard specs --write',
+      },
+    }));
+  }
+  // SPR006 (docguard.lifecycle-evidence-gaps#FR-001): work is claimed (a task
+  // is checked) but no source file says which requirement it implements.
+  // Without this, the gap surfaced only at `specs complete`, after the fact,
+  // and reconcile meanwhile called the changed sources unsupported.
+  for (const spec of projection.registry.specs) {
+    if ((spec.observed?.taskCompletion?.checked || 0) === 0) continue;
+    if ((spec.observed?.implementationEvidence || []).length > 0) continue;
+    const firstReq = spec.intent?.requirements?.[0] || `${spec.specId}#FR-001`;
+    findings.push(mkFinding({
+      code: 'SPR006',
+      validator: 'specRegistry',
+      severity: 'warn',
+      confidence: 'high',
+      disposition: 'escalate',
+      message: `${spec.specId}: ${spec.observed.taskCompletion.checked} task(s) checked but no source file carries an @implements annotation for any of its requirements`,
+      location: spec.path,
+      suggestion: {
+        kind: 'review',
+        text: `Annotate the implementing code, e.g. \`// @implements ${firstReq}\` (or \`# @implements …\` in Python/YAML), then run \`docguard specs --write\`. If nothing is implemented yet, uncheck the tasks.`,
       },
     }));
   }

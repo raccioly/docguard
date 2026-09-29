@@ -616,6 +616,12 @@ export const CODES = {
     help: 'Working-tree presence, lifecycle context, storage state, and the recovery archive disagree. Active specs must be current/working_tree; retired specs must be retired/git_history with a reason and matching archive event.',
     suppress: null,
   },
+  SPR006: {
+    validator: 'specRegistry',
+    title: 'Tasks checked but no implementation annotation',
+    help: 'A spec has at least one checked task, yet no source file carries `@implements <specId>#<requirement>` for any of its requirements. Implementation evidence is explicit, never inferred from file names, so the lifecycle cannot tell what implements the spec: `reconcile` classifies the changed sources as unsupported, and `specs complete` blocks (SPC004/SPC006). Annotate the implementing code (`// @implements …`, or `# @implements …` in Python, shell and YAML) and run `docguard specs --write`. This is an escalation: if the work has not started, uncheck the tasks instead.',
+    suppress: null,
+  },
   SPR005: {
     validator: 'specRegistry',
     title: 'New spec overlaps prior intent',
