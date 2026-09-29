@@ -547,6 +547,30 @@
             "producer": "agent",
             "by": "claude-opus-5.5 (#455)"
           }
+        },
+        {
+          "id": "F4",
+          "description": "The Spec-Kit untouched-task check stays silent on unreadable metadata.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/speckit.mjs",
+          "find": "    if (gitState?.status === 'unreadable') {",
+          "replace": "    if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "An unreadable .git is classified as no repository at all.",
+          "faultClass": "condition-forced",
+          "file": "cli/shared-git.mjs",
+          "find": "      if (existsSync(resolve(cur, '.git'))) {",
+          "replace": "      if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455)"
+          }
         }
       ]
     }

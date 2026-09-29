@@ -1592,6 +1592,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **The #455 guarantees are stated as TestGuard claims and probed (TestGuard
+  0.15.0).** `testguard gate --changed origin/main` reported every source file
+  that #455 changed as unclaimed. `testguard.claims.json` gains ten claims with
+  20 exact-anchor faults, one per requirement that matters. Each fault is
+  defended by its spec's tests, and the probe kills all of them. The AGENTS.md
+  commands pin `testguard-cli@0.15.0`.
+
+  The probe also exposed a TestGuard bug: any failure message that matches
+  `/timed out/` is treated as a runner timeout. That turned two real kills into
+  TIMEOUT verdicts, because the assertion's own message contained the regex
+  `/timed out/i`. The delegation-timeout assertion is reworded to avoid it.
+
 - **This repository runs its own Spec Kit workflow again (#455).** It was
   initialized with Spec Kit 0.3.0 for Antigravity, in the pre-manifest layout
   that `specify integration upgrade` cannot migrate, so it had no `converge`
@@ -1857,20 +1869,8 @@ Automated weekly release — batches everything merged since `v0.42.0`.
   why the constraint is recorded now — a test pins the pointer comment at all
   six hand-set threshold sites.
 
-- **The unverified-claims count travels with the badge.** A green
-  `628/628 passed` badge printed a few lines under "9 documented claim(s) are
-  unverified against code" was the last misleading surface: the two numbers were
-  adjacent and unlinked, and only one of them got pasted into READMEs. Both
-  `docguard badge` and the badge `guard` prints now carry a companion
-  `claims_unverified` badge, amber above zero. The score and pass badges keep
-  their own colour — they report structural gates that did pass, and folding
-  factual verification into them would overload one number with two meanings.
-  The count is rendered in three states, not two: `buildScoreAssurance` returns
-  null rather than zero when claim extraction fails, and that renders as
-  `unknown`, because "0 unverified" printed when DocGuard checked nothing is
-  precisely the false green this tool exists to prevent.
 
-<!-- truncated: 3894 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 3906 more lines — read CHANGELOG.md directly -->
 
 ---
 
@@ -2412,7 +2412,7 @@ reads Jest-shape JSON. `tools/node-test-json-reporter.mjs` translates between
 them:
 
 ```bash
-npx testguard-cli probe --confirm 3 --serial \
+npx testguard-cli@0.15.0 probe --confirm 3 --serial \
   --node-modules "$PWD/node_modules" \
   --runner-cmd "node --test --test-reporter=$PWD/tools/node-test-json-reporter.mjs --test-reporter-destination={out} {files}"
 ```
@@ -2420,8 +2420,8 @@ npx testguard-cli probe --confirm 3 --serial \
 Pass an absolute reporter path: the probe runs in a scratch worktree built from
 a commit, so a relative path resolves there and untracked files do not exist.
 
-`testguard gate --changed origin/main` reports changed source files that carry no
-claim. It does not find bugs; it refuses to let a change land without stating
+`npx testguard-cli@0.15.0 gate --changed origin/main` reports changed source files
+that carry no claim. It does not find bugs; it refuses to let a change land without stating
 what must be true, which is the step that surfaces them.
 
 ## Evidence and contributions

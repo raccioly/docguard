@@ -121,6 +121,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **The #455 guarantees are stated as TestGuard claims and probed (TestGuard
+  0.15.0).** `testguard gate --changed origin/main` reported every source file
+  that #455 changed as unclaimed. `testguard.claims.json` gains ten claims with
+  20 exact-anchor faults, one per requirement that matters. Each fault is
+  defended by its spec's tests, and the probe kills all of them. The AGENTS.md
+  commands pin `testguard-cli@0.15.0`.
+
+  The probe also exposed a TestGuard bug: any failure message that matches
+  `/timed out/` is treated as a runner timeout. That turned two real kills into
+  TIMEOUT verdicts, because the assertion's own message contained the regex
+  `/timed out/i`. The delegation-timeout assertion is reworded to avoid it.
+
 - **This repository runs its own Spec Kit workflow again (#455).** It was
   initialized with Spec Kit 0.3.0 for Antigravity, in the pre-manifest layout
   that `specify integration upgrade` cannot migrate, so it had no `converge`
