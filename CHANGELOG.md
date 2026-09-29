@@ -112,6 +112,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   importers are unaffected. `tests/validator-isolation.test.mjs` fails on any
   validator-to-validator import.
 
+- **`tests/repository-hygiene.test.mjs` fails the build if any of it returns.**
+  `.gitignore` stops known paths; these assertions stop the *content*, which is
+  what survives a rename or a newly adopted tool: no tracked file may contain a
+  private project identifier (held base64-encoded so the guard is not itself the
+  leak) or an absolute `/Users/<name>/` or `/home/<name>/` path, and generated or
+  machine-local agent state may not be tracked. All three fail against v0.42.1.
+
+### Changed
+
+- **The #455 guarantees are stated as TestGuard claims and probed (TestGuard
+  0.15.0).** `testguard gate --changed origin/main` reported every source file
+  that #455 changed as unclaimed. `testguard.claims.json` gains ten claims with
+  20 exact-anchor faults, one per requirement that matters. Each fault is
+  defended by its spec's tests, and the probe kills all of them. The AGENTS.md
+  commands pin `testguard-cli@0.15.0`.
+
+  The probe also exposed a TestGuard bug: any failure message that matches
+  `/timed out/` is treated as a runner timeout. That turned two real kills into
+  TIMEOUT verdicts, because the assertion's own message contained the regex
+  `/timed out/i`. The delegation-timeout assertion is reworded to avoid it.
+
 - **This repository runs its own Spec Kit workflow again (#455).** It was
   initialized with Spec Kit 0.3.0 for Antigravity, in the pre-manifest layout
   that `specify integration upgrade` cannot migrate, so it had no `converge`
@@ -151,6 +172,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   stays rejected: release PR #380 proved the listener only sees the
   approval-required completion.
 
+- **The CI test-runtime budget no longer fails on runner noise.** It was set to
+  120s when normal runs took 33–51s. The suite has since doubled, and identical
+  code now runs anywhere from 64s to 122s on CI, so the gate failed at random.
+  #467 went red at 121.7s with 2189/2189 tests passing. The budget is now 240s,
+  which restores the original ~2× margin and still catches the PR #328
+  catastrophe (+165s).
+
 - **A sandboxed run no longer looks like a clean pass (#455,
   `specs/022-unreadable-git-metadata`).** Agent sandboxes such as ai-jail mount
   a linked worktree but hide the gitdir its `.git` file points at. Every git
@@ -185,6 +213,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **YAML annotations count.** `# @implements …` in `action.yml` and CI
     workflows is read as implementation evidence, so changes to the GitHub
     Action and to CI can be attributed to a spec.
+  - **Evidence is counted once per file during a conflicted merge.** `git
+    ls-files` lists an unmerged path once per stage, so a registry written
+    mid-merge counted that file's evidence up to three times. This was found
+    while syncing this very branch with `main`.
 
 - **Four open field reports closed out (#438, #437, #436, #454;
   `specs/020-field-report-followups`).**
@@ -297,15 +329,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `*.bak` (#443). `CLAUDE.md` now states that OpenWolf is optional local tooling
   instead of instructing every agent to read files that are not there. The rest of
   `.specify/` — templates, scripts, constitution — is source and stays tracked.
-
-### Added
-
-- **`tests/repository-hygiene.test.mjs` fails the build if any of it returns.**
-  `.gitignore` stops known paths; these assertions stop the *content*, which is
-  what survives a rename or a newly adopted tool: no tracked file may contain a
-  private project identifier (held base64-encoded so the guard is not itself the
-  leak) or an absolute `/Users/<name>/` or `/home/<name>/` path, and generated or
-  machine-local agent state may not be tracked. All three fail against v0.42.1.
 
 ## [0.42.1] - 2026-09-22
 

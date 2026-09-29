@@ -95,3 +95,23 @@ describe('specs --write names evidence it did not count', () => {
     assert.match(human.stdout, /Not counted: 1 untracked test file[\s\S]*tests\/feature\.test\.mjs/);
   });
 });
+
+describe('evidence is counted once per file during a conflicted merge', () => {
+  it('does not triple-count an unmerged, annotated file', () => {
+    const { dir, git } = repo({
+      'specs/001-feature/spec.md': SPEC,
+      'src/app.mjs': '// @implements acme.feature#FR-001\nexport const x = 1;\n',
+    });
+    git('checkout', '-q', '-b', 'other');
+    writeFileSync(join(dir, 'src/app.mjs'), '// @implements acme.feature#FR-001\nexport const x = 2;\n');
+    git('commit', '-qam', 'other');
+    git('checkout', '-q', '-');
+    writeFileSync(join(dir, 'src/app.mjs'), '// @implements acme.feature#FR-001\nexport const x = 3;\n');
+    git('commit', '-qam', 'main');
+    git('merge', '-q', 'other');
+    assert.match(git('status', '--porcelain').stdout, /^UU src\/app\.mjs/m, 'fixture must leave an unmerged file');
+    const spec = projectSpecRegistry(dir, {}).registry.specs.find(s => s.specId === 'acme.feature');
+    const files = spec.observed.implementationEvidence.map(e => e.file);
+    assert.equal(new Set(files).size, files.length, JSON.stringify(files));
+  });
+});
