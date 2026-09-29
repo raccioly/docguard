@@ -177,6 +177,378 @@
           }
         }
       ]
+    },
+    {
+      "id": "SPECIFY-DELEGATION-CURRENT-FLAGS",
+      "statement": "docguard init invokes specify with an explicit, non-interactive --integration and never with the options Spec Kit 0.10 removed; a failed delegation is reported as failed, never as initialized.",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/014-specify-init-delegation/spec.md#FR-003"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (#455)"
+      },
+      "defendedBy": [
+        "tests/spec-kit-delegation.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "Initialization reverts to the removed --ai option.",
+          "faultClass": "literal-changed",
+          "file": "cli/spec-kit-delegation.mjs",
+          "find": "  const args = ['init', '--here', '--force', '--integration', integrationKey];",
+          "replace": "  const args = ['init', '--here', '--force', '--ai', integrationKey];",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "A failed specify init is reported as initialized.",
+          "faultClass": "return-altered",
+          "file": "cli/spec-kit-delegation.mjs",
+          "find": "    return { status: 'failed', integration, reason: failureReason(err), manualCommand, extension: notAttempted };",
+          "replace": "    return { status: 'initialized', integration, reason: null, manualCommand: null, extension: notAttempted };",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SPEC-FIRST-NO-PASS-WITHOUT-EVIDENCE",
+      "statement": "specs require never passes a governed change on a reference to a spec that does not exist, and an inconclusive run exits non-zero.",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/015-spec-first-gate/spec.md#FR-004"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (#455)"
+      },
+      "defendedBy": [
+        "tests/spec-first.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "An unresolved specs/<dir> reference counts as covered.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/spec-first.mjs",
+          "find": "    add('path', `specs/${dir}`, inventory.dirs.has(dir) ? `specs/${dir}` : null);",
+          "replace": "    add('path', `specs/${dir}`, `specs/${dir}`);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "Inconclusive exits 0.",
+          "faultClass": "literal-changed",
+          "file": "cli/commands/specs.mjs",
+          "find": "const SPEC_FIRST_EXIT = { covered: 0, exempt: 0, 'not-governed': 0, uncovered: 1, inconclusive: 2 };",
+          "replace": "const SPEC_FIRST_EXIT = { covered: 0, exempt: 0, 'not-governed': 0, uncovered: 1, inconclusive: 0 };",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SPECKIT-ARTIFACTS-COVERED",
+      "statement": "Guard coverage counts Spec Kit feature artifacts and the constitution in the specKit tier, never as untiered.",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/016-spec-kit-artifact-coverage/spec.md#FR-001"
+      },
+      "severity": "medium",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (#455)"
+      },
+      "defendedBy": [
+        "tests/spec-kit-artifact-coverage.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "The Spec Kit tier is never assigned.",
+          "faultClass": "statement-deleted",
+          "file": "cli/commands/guard.mjs",
+          "find": "    if (SPEC_KIT_FEATURE_DOC_RE.test(rel) || rel === constitution?.rel) { specKit++; continue; }",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MET004-DEPENDENCY-CLAIMS",
+      "statement": "A documented runtime-dependency count that package.json contradicts produces MET004.",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/016-spec-kit-artifact-coverage/spec.md#FR-004"
+      },
+      "severity": "medium",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (#455)"
+      },
+      "defendedBy": [
+        "tests/spec-kit-artifact-coverage.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "Every dependency claim passes.",
+          "faultClass": "condition-forced",
+          "file": "cli/validators/metrics-consistency.mjs",
+          "find": "        if (claimed === actual) { out.passed++; continue; }",
+          "replace": "        if (true) { out.passed++; continue; }",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "AGENT-INSTRUCTION-BUDGET",
+      "statement": "An AGENTS.md chain larger than its budget or allowance produces STR004.",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/017-agent-instruction-budget/spec.md#FR-003"
+      },
+      "severity": "medium",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (#455)"
+      },
+      "defendedBy": [
+        "tests/agent-instruction-budget.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "No chain is ever over budget.",
+          "faultClass": "condition-forced",
+          "file": "cli/validators/structure.mjs",
+          "find": "    if (chain.bytes > limit) {",
+          "replace": "    if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "DOCGUARDIGNORE-ONE-PARSER",
+      "statement": "Every consumer of .docguardignore honours gitignore-style dir/ patterns through the single shared parser.",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/019-ignore-and-todo-parsing/spec.md#FR-001"
+      },
+      "severity": "medium",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (#455)"
+      },
+      "defendedBy": [
+        "tests/ignore-parser-parity.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "loadIgnorePatterns ignores nothing.",
+          "faultClass": "return-altered",
+          "file": "cli/shared.mjs",
+          "find": "  return buildIgnoreFilter(loadDocguardIgnore(projectDir));",
+          "replace": "  return () => false;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "TODO-BARE-FORM-PRECISION",
+      "statement": "Bare TODO/FIXME count only as the first word of a comment; ordinary words and keyword lists never become annotations.",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/019-ignore-and-todo-parsing/spec.md#FR-003"
+      },
+      "severity": "medium",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (#455)"
+      },
+      "defendedBy": [
+        "tests/todo-tracking.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "Bare TODO/FIXME recognition is dropped.",
+          "faultClass": "condition-forced",
+          "file": "cli/validators/todo-tracking.mjs",
+          "find": "const isTodoAnnotation = commentText => TODO_MARKED.test(commentText) || TODO_BARE_LEADING.test(commentText);",
+          "replace": "const isTodoAnnotation = commentText => TODO_MARKED.test(commentText);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "The bare form matches anywhere in the comment.",
+          "faultClass": "literal-changed",
+          "file": "cli/validators/todo-tracking.mjs",
+          "find": "const TODO_BARE_LEADING = new RegExp(String.raw`^[\\s*]*(?:TODO|FIXME)(?:${AUTHOR})?\\s+(?!-->|\\*\\/)\\S`);",
+          "replace": "const TODO_BARE_LEADING = new RegExp(String.raw`(?:TODO|FIXME)(?:${AUTHOR})?\\s+\\S`);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "HOOK-MANAGER-NEVER-OVERWRITTEN",
+      "statement": "docguard hooks never writes into a husky, lefthook or simple-git-hooks hooks directory, even with --force.",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/020-field-report-followups/spec.md#FR-004"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (#455)"
+      },
+      "defendedBy": [
+        "tests/field-report-followups.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "Hook-manager detection is bypassed.",
+          "faultClass": "condition-forced",
+          "file": "cli/commands/hooks.mjs",
+          "find": "    if (manager) {",
+          "replace": "    if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SPR006-CLAIMED-WORK-NEEDS-EVIDENCE",
+      "statement": "A spec with checked tasks and no @implements evidence produces SPR006.",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/021-lifecycle-evidence-gaps/spec.md#FR-001"
+      },
+      "severity": "medium",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (#455)"
+      },
+      "defendedBy": [
+        "tests/lifecycle-evidence-gaps.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "Specs with checked tasks are always treated as annotated.",
+          "faultClass": "condition-forced",
+          "file": "cli/validators/spec-registry.mjs",
+          "find": "    if ((spec.observed?.implementationEvidence || []).length > 0) continue;",
+          "replace": "    if (true) continue;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "Unmerged paths are counted once per stage again.",
+          "faultClass": "call-removed",
+          "file": "cli/scanners/spec-registry.mjs",
+          "find": "  if (tracked.status === 0) return [...new Set(tracked.stdout.split('\\0').filter(Boolean).map(posix))].sort();",
+          "replace": "  if (tracked.status === 0) return tracked.stdout.split('\\0').filter(Boolean).map(posix).sort();",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "UNREADABLE-GIT-NOT-A-PASS",
+      "statement": "With unreadable git metadata, history-based validators report missing-prerequisite instead of no-matches.",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/022-unreadable-git-metadata/spec.md#FR-002"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (#455)"
+      },
+      "defendedBy": [
+        "tests/unreadable-git-metadata.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "Freshness treats unreadable metadata as no repository.",
+          "faultClass": "condition-forced",
+          "file": "cli/validators/freshness.mjs",
+          "find": "  if (git.status === 'unreadable') {",
+          "replace": "  if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "Diff-Suspicion treats unreadable metadata as no repository.",
+          "faultClass": "condition-forced",
+          "file": "cli/validators/diff-suspicion.mjs",
+          "find": "  if (git.status === 'unreadable') {",
+          "replace": "  if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "Reference-Existence treats unreadable metadata as no repository.",
+          "faultClass": "condition-forced",
+          "file": "cli/validators/reference-existence.mjs",
+          "find": "  if (git.status === 'unreadable') {",
+          "replace": "  if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455)"
+          }
+        }
+      ]
     }
   ]
 }
