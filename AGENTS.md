@@ -140,23 +140,22 @@ Skills are located at `extensions/spec-kit-docguard/skills/*/SKILL.md`. They tel
 
 ## Spec Kit Hooks
 
-DocGuard integrates into the spec-kit workflow:
+DocGuard integrates into the spec-kit workflow. `extensions/spec-kit-docguard/extension.yml`
+is authoritative; a hook is mandatory when its `optional` field is `false`.
 
-| Hook | When | Required? |
-|------|------|-----------|
-| `after_implement` | After `/speckit.implement` | Mandatory |
-| `before_tasks` | Before `/speckit.tasks` | Optional |
-| `after_tasks` | After `/speckit.tasks` | Optional |
+| Hook | Command | Required? |
+|------|---------|-----------|
+| `before_specify` | `speckit.docguard.brief` | Mandatory |
+| `before_tasks` | `speckit.docguard.preflight` | Mandatory |
+| `after_tasks` | `speckit.docguard.score` | Optional |
+| `after_implement` | `speckit.docguard.guard`, then `speckit.docguard.complete` | Mandatory, then optional |
+| `after_converge` | `speckit.docguard.complete` | Optional |
 
 ## Extension Structure
 
 ```
 extensions/spec-kit-docguard/
-├── skills/                    # AI behavior protocols
-│   ├── docguard-guard/SKILL.md
-│   ├── docguard-fix/SKILL.md
-│   ├── docguard-review/SKILL.md
-│   └── docguard-score/SKILL.md
+├── skills/                    # AI behavior protocols (docguard-guard, -fix, -review, -score, -sync)
 ├── scripts/bash/              # Orchestration scripts (--json output)
 ├── commands/                  # Spec Kit slash commands
 ├── templates/                 # Hook registration templates

@@ -21,6 +21,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   clone can run the workflow. DocGuard's own extension is registered with
   `npm run speckit:dev` rather than committed as a copy of `extensions/`.
 
+- **Constitution v2.0.0: it now describes the project it governs (#455).**
+  v1.1.0 contradicted itself and the code while `guard` passed:
+  - It said both "one runtime dependency" and "Dependencies: None. Zero. Ever."
+  - It required a VS Code extension API that the repository does not have.
+  - It counted 19 validators and 4 skills.
+  - It claimed DocGuard bundles Spec Kit's core skills, which it does not.
+  - It said every workflow hook is optional, while `brief`, `preflight` and
+    `guard` are mandatory by design.
+
+  The amendment drops the counts in favour of the authoritative sources. It
+  restates Spec Kit integration as delegation to `specify` that must report
+  failure, and adds three principles the repository already practises:
+  local-first with no telemetry, honest assurance, and spec-first development.
+  The AGENTS.md hook table had the same drift (it listed three of the five
+  hooks) and is corrected.
+
 ### Fixed
 
 - **Stopped publishing private project identifiers and local developer state.**
