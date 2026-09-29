@@ -14,6 +14,10 @@
  * which uses tiered issue classification for code hygiene.
  *
  * Zero NPM runtime dependencies — pure Node.js built-ins only.
+ *
+ * @implements docguard.ignore-and-todo-parsing#FR-002
+ * @implements docguard.ignore-and-todo-parsing#FR-003
+ * @implements docguard.ignore-and-todo-parsing#FR-004
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
@@ -41,8 +45,27 @@ const TEST_EXTENSIONS = new Set(['.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx']);
 
 // TEMP must be the standalone word — `(?![A-Za-z])` excludes TEMPLATE, TEMPORARY,
 // TEMPO, TEMPEST, etc. (the old `(?!late|orar)` only caught the first two).
-const TODO_PATTERN = /\b(TODO|FIXME|HACK|XXX|TEMP(?![A-Za-z])|WORKAROUND)\s*[(:]/;
-const TODO_EXTRACT = /\b(TODO|FIXME|HACK|XXX|TEMP(?![A-Za-z])|WORKAROUND)\s*[:(]?\s*(.+)/;
+//
+// Two forms (docguard.ignore-and-todo-parsing#FR-002–FR-004):
+//   - Marked, anywhere in a comment: any keyword with a separator or author —
+//     `TODO: …`, `HACK - …`, `TEMP(ana) …`, `FIXME(bo): …`.
+//   - Bare, TODO / FIXME only, and only as the comment's FIRST word:
+//     `// TODO fix retries`. As a later word the keyword is prose ("the TODO
+//     list", "SKIP/NOTE/TODO/FIXME prefixes"), and `<!-- TODO -->` is an empty
+//     placeholder — both were false findings on this repository's own code.
+// HACK / XXX / TEMP / WORKAROUND are ordinary words ("TEMP directory", "no HACK
+// needed"), so they never match bare. A parenthesised author is stripped from
+// the reported text — `TODO(ana): …` used to be reported as "ana): …".
+const SEP = String.raw`\s*(?::|-(?=\s))`;
+const AUTHOR = String.raw`\([^)]*\)`;
+const KEYWORDS = String.raw`TODO|FIXME|HACK|XXX|TEMP(?![A-Za-z])|WORKAROUND`;
+const TODO_PREFILTER = /\b(?:TODO|FIXME|HACK|XXX|TEMP(?![A-Za-z])|WORKAROUND)/;
+const TODO_MARKED = new RegExp(String.raw`\b(?:${KEYWORDS})(?:${AUTHOR}(?:${SEP})?|${SEP})\s*\S`);
+const TODO_BARE_LEADING = new RegExp(String.raw`^[\s*]*(?:TODO|FIXME)(?:${AUTHOR})?\s+(?!-->|\*\/)\S`);
+const TODO_EXTRACT = new RegExp(
+  String.raw`\b(${KEYWORDS})(?:${AUTHOR})?(?:${SEP})?\s*(.+)`,
+);
+const isTodoAnnotation = commentText => TODO_MARKED.test(commentText) || TODO_BARE_LEADING.test(commentText);
 
 // Matches a comment-opening marker. Real TODOs live in comments — restricting
 // matches to text AFTER a comment marker prevents false positives from regex
@@ -504,13 +527,13 @@ function _scanTodoFile(rootDir, full, todos, config) {
 
   let content;
   try { content = readFileSync(full, 'utf-8'); } catch { return; }
-  if (!TODO_PATTERN.test(content)) return;
+  if (!TODO_PREFILTER.test(content)) return;
 
   const lines = content.split('\n');
   for (let i = 0; i < lines.length; i++) {
     const commentText = commentPortion(lines[i]);
     if (commentText === null) continue;
-    if (TODO_PATTERN.test(commentText)) {
+    if (isTodoAnnotation(commentText)) {
       const match = commentText.match(TODO_EXTRACT);
       if (match) {
         todos.push({

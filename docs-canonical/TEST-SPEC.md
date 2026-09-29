@@ -51,7 +51,7 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | Source File | Test File | Status |
 |------------|-----------|:------:|
 | `cli/docguard.mjs` | `tests/commands.test.mjs` | ✅ |
-| `cli/shared.mjs` | `tests/commands.test.mjs` | ✅ |
+| `cli/shared.mjs` | `tests/commands.test.mjs`, `tests/ignore-parser-parity.test.mjs` | ✅ |
 | `cli/commands/init.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/commands/guard.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/commands/score.mjs` | `tests/commands.test.mjs` | ✅ |

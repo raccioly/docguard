@@ -151,6 +151,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **`.docguardignore` means the same thing to every check (#455,
+  `specs/019-ignore-and-todo-parsing`).** There were two parsers. The one in
+  `cli/shared-ignore.mjs` treats a gitignore-style `dir/` as the directory and
+  everything under it. `cli/shared.mjs` kept a private copy that never received
+  that fix, and it compiled `dir/` into a pattern that matched nothing. Guard's
+  coverage map, Metrics-Consistency, Metadata-Sync, agent readability and
+  semantic-claim extraction all used the broken copy, so `fixtures/` was
+  honoured by some checks and silently ignored by others. This repository's
+  own ignore file worked around it by listing both `Research/` and
+  `Research/**`. The copy now delegates to the single implementation, and a
+  parity test runs this repository's own patterns through both.
+
+- **TODO annotations parse the way developers write them.**
+  - `// TODO(ana): fix retries` used to be reported as `ana): fix retries`; the
+    author is now stripped.
+  - Bare `// TODO fix retries` and `// FIXME fix retries` were not recognised
+    at all; now they are.
+  - HACK, XXX, TEMP and WORKAROUND are ordinary words in comments ("TEMP
+    directory", "no HACK needed"), so they still need a `:`, a spaced `-`, or an
+    author.
+
+  This supersedes #453 (Jules). That PR made every keyword match a bare word;
+  its tests are kept, with precision negatives added. The precision benchmark
+  comparison still passes.
+
 - **`docguard init` sets up Spec Kit again, and says so when it cannot (#455,
   `specs/014-specify-init-delegation`).** Spec Kit 0.10.0 removed `--ai`,
   `--ai-skills`, `--ai-commands-dir` and `--no-git`. DocGuard kept passing them,

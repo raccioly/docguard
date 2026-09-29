@@ -1252,7 +1252,7 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | Source File | Test File | Status |
 |------------|-----------|:------:|
 | `cli/docguard.mjs` | `tests/commands.test.mjs` | ✅ |
-| `cli/shared.mjs` | `tests/commands.test.mjs` | ✅ |
+| `cli/shared.mjs` | `tests/commands.test.mjs`, `tests/ignore-parser-parity.test.mjs` | ✅ |
 | `cli/commands/init.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/commands/guard.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/commands/score.mjs` | `tests/commands.test.mjs` | ✅ |
@@ -1603,6 +1603,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **`.docguardignore` means the same thing to every check (#455,
+  `specs/019-ignore-and-todo-parsing`).** There were two parsers. The one in
+  `cli/shared-ignore.mjs` treats a gitignore-style `dir/` as the directory and
+  everything under it. `cli/shared.mjs` kept a private copy that never received
+  that fix, and it compiled `dir/` into a pattern that matched nothing. Guard's
+  coverage map, Metrics-Consistency, Metadata-Sync, agent readability and
+  semantic-claim extraction all used the broken copy, so `fixtures/` was
+  honoured by some checks and silently ignored by others. This repository's
+  own ignore file worked around it by listing both `Research/` and
+  `Research/**`. The copy now delegates to the single implementation, and a
+  parity test runs this repository's own patterns through both.
+
+- **TODO annotations parse the way developers write them.**
+  - `// TODO(ana): fix retries` used to be reported as `ana): fix retries`; the
+    author is now stripped.
+  - Bare `// TODO fix retries` and `// FIXME fix retries` were not recognised
+    at all; now they are.
+  - HACK, XXX, TEMP and WORKAROUND are ordinary words in comments ("TEMP
+    directory", "no HACK needed"), so they still need a `:`, a spaced `-`, or an
+    author.
+
+  This supersedes #453 (Jules). That PR made every keyword match a bare word;
+  its tests are kept, with precision negatives added. The precision benchmark
+  comparison still passes.
+
 - **`docguard init` sets up Spec Kit again, and says so when it cannot (#455,
   `specs/014-specify-init-delegation`).** Spec Kit 0.10.0 removed `--ai`,
   `--ai-skills`, `--ai-commands-dir` and `--no-git`. DocGuard kept passing them,
@@ -1825,33 +1850,8 @@ Automated weekly release — batches everything merged since `v0.42.0`.
   severity into a CRITICAL list, which put an unadjudicated signal at the top
   with an edit beside it; `score` promised point gains for clearing guard
   warnings, which prices an escalation and turns "reach grade A" into an
-  instruction to edit documents until messages stop printing; `sync` refreshes
-  code-truth sections, and a re-sync that moves a timestamp is the fastest way
-  to make a freshness escalation disappear without anyone reviewing anything.
 
-- **`diagnose`, `ci` and `report` surface the disposition split.** They consume
-  the same guard run as `guard` but showed the pre-channel view, so an agent
-  reading them got back the flat list the channels exist to break up.
-  `diagnose` matters most — it turns guard output into AI fix prompts, and the
-  prompt said `TASK: Fix N documentation issue(s)` over a list that mixed
-  defects with signals. An escalation handed to an agent under that heading
-  produces a document edited until the message stops printing.
-
-  The prompt now splits `DEFECTS TO FIX` from `SIGNALS TO REVIEW`, gives each
-  signal the detector's own decision text rather than the validator's fix verb,
-  excludes escalations from the remediation steps and `fixCommands`, and states
-  that a judged signal will still print — an agent that reads a non-zero count
-  as failure otherwise keeps editing. `diagnose --format json` adds
-  `dispositionCounts` and the five channels per issue, with `fixKind: 'review'`
-  for escalations. `ci` reports the split beside the verdict, because an exit
-  code cannot distinguish a green-and-silent run from a green-but-escalating
-  one. `report` adds a disposition/confidence/evidence/parser column per code
-  and a per-run summary row, so an auditor reading "3 × FRS002, severity warn"
-  can tell DocGuard never asserted those documents were wrong.
-
-- **SPK010 — a completed task that names a file the feature never changed.**
-
-<!-- truncated: 3807 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 3832 more lines — read CHANGELOG.md directly -->
 
 ---
 
