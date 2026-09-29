@@ -220,7 +220,7 @@ reads Jest-shape JSON. `tools/node-test-json-reporter.mjs` translates between
 them:
 
 ```bash
-npx testguard-cli probe --confirm 3 --serial \
+npx testguard-cli@0.15.0 probe --confirm 3 --serial \
   --node-modules "$PWD/node_modules" \
   --runner-cmd "node --test --test-reporter=$PWD/tools/node-test-json-reporter.mjs --test-reporter-destination={out} {files}"
 ```
@@ -228,8 +228,8 @@ npx testguard-cli probe --confirm 3 --serial \
 Pass an absolute reporter path: the probe runs in a scratch worktree built from
 a commit, so a relative path resolves there and untracked files do not exist.
 
-`testguard gate --changed origin/main` reports changed source files that carry no
-claim. It does not find bugs; it refuses to let a change land without stating
+`npx testguard-cli@0.15.0 gate --changed origin/main` reports changed source files
+that carry no claim. It does not find bugs; it refuses to let a change land without stating
 what must be true, which is the step that surfaces them.
 
 ## Evidence and contributions

@@ -26,7 +26,7 @@ import { existsSync, readFileSync, readdirSync, statSync, copyFileSync, writeFil
 import { resolve, join, relative, dirname, basename, extname } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { mkFinding, resultFromFindings, lineSuppresses } from '../findings.mjs';
-import { isGitRepo } from '../shared-git.mjs';
+import { isGitRepo, gitMetadataStatus, unreadableGitApplicability } from '../shared-git.mjs';
 import { walkFiles, relPosix } from '../shared-ignore.mjs';
 import { readScannable } from '../shared-source.mjs';
 
@@ -720,6 +720,7 @@ export function validateSpecKitIntegration(projectDir, config) {
   const findings = [];
   let passed = 0;
   let total = 0;
+  let untouchedUnavailable = null;
 
   const speckit = detectSpecKit(projectDir);
 
@@ -879,6 +880,13 @@ export function validateSpecKitIntegration(projectDir, config) {
     // ── Check 2e: Untouched claims — checked tasks naming existing files the
     // feature never changed. Complements 2d: that one asks whether the artifact
     // exists, this one asks whether the work happened.
+    // docguard.unreadable-git-metadata#FR-003: the untouched-task check reads
+    // git history; with unreadable metadata it is silent, so the validator
+    // must say it only partly ran.
+    const gitState = config?.specKit?.untouchedClaimCheck !== false ? gitMetadataStatus(projectDir) : null;
+    if (gitState?.status === 'unreadable') {
+      untouchedUnavailable = unreadableGitApplicability(gitState).reason.replace('history-based checks did not run', 'the untouched-task check (SPK010) did not run');
+    }
     if (config?.specKit?.untouchedClaimCheck !== false) {
       const untouchedResults = detectUntouchedClaims(projectDir, speckit.specs);
       const claims = [];
@@ -969,7 +977,8 @@ export function validateSpecKitIntegration(projectDir, config) {
     }));
   }
 
-  return resultFromFindings(findings, { passed, total });
+  const result = resultFromFindings(findings, { passed, total });
+  return untouchedUnavailable ? { ...result, applicability: { status: 'partial', reason: untouchedUnavailable } } : result;
 }
 
 /**

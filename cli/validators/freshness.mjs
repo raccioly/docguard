@@ -9,6 +9,8 @@ import { existsSync, readdirSync, readFileSync, lstatSync } from 'node:fs';
 import { resolve, join, extname } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { buildIgnoreFilter, loadDocguardIgnore, DEFAULT_IGNORE_DIRS, relPosix } from '../shared-ignore.mjs';
+// FR-005: the shared helper, not a private copy of `git rev-parse`.
+import { gitMetadataStatus, unreadableGitApplicability } from '../shared-git.mjs';
 
 // Keep aligned with shared-source's supported languages, including module variants.
 const CODE_EXTS = ['.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx', '.mts', '.cts',
@@ -207,20 +209,6 @@ function getStagedPaths(dir) {
 }
 
 /**
- * Check if git is available in this project.
- */
-function isGitRepo(dir) {
-  try {
-    execFileSync('git', ['rev-parse', '--is-inside-work-tree'], {
-      cwd: dir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe']
-    });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-/**
  * Get total number of commits in the repo.
  */
 function getTotalCommits(dir) {
@@ -239,7 +227,13 @@ function getTotalCommits(dir) {
 export function validateFreshness(dir, config) {
   const results = [];
 
-  if (!isGitRepo(dir)) {
+  const git = gitMetadataStatus(dir);
+  if (git.status === 'unreadable') {
+    // docguard.unreadable-git-metadata#FR-002: could not run, not "no matches".
+    results.push({ status: 'skip', prerequisite: unreadableGitApplicability(git), message: unreadableGitApplicability(git).reason });
+    return results;
+  }
+  if (git.status !== 'ok') {
     results.push({
       status: 'skip',
       message: 'Not a git repository — freshness check skipped',

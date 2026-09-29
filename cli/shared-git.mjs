@@ -13,7 +13,51 @@
 
 import { execFileSync, execSync } from 'node:child_process';
 import { existsSync, statSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
+
+/**
+ * Three git states (docguard.unreadable-git-metadata#FR-001):
+ *   ok         — git commands work here.
+ *   absent     — no `.git` in this directory or any ancestor: a project
+ *                without version control, where history checks do not apply.
+ *   unreadable — a `.git` exists (or git is missing) but git fails. Agent
+ *                sandboxes produce this: they mount the worktree and hide the
+ *                gitdir its `.git` file points at. History checks could not
+ *                run, which must never read as "nothing to check".
+ *
+ * @implements docguard.unreadable-git-metadata#FR-001
+ * @implements docguard.unreadable-git-metadata#FR-004
+ * @returns {{ status: 'ok'|'absent'|'unreadable', reason: string|null }}
+ */
+export function gitMetadataStatus(dir) {
+  try {
+    execFileSync('git', ['rev-parse', '--is-inside-work-tree'], {
+      cwd: dir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    return { status: 'ok', reason: null };
+  } catch (err) {
+    if (err?.code === 'ENOENT') return { status: 'unreadable', reason: 'git is not installed' };
+    let cur = resolve(dir);
+    for (;;) {
+      if (existsSync(resolve(cur, '.git'))) {
+        const first = String(err?.stderr || err?.message || '').split('\n').find(l => l.trim()) || 'git failed';
+        return { status: 'unreadable', reason: first.trim() };
+      }
+      const parent = dirname(cur);
+      if (parent === cur) return { status: 'absent', reason: null };
+      cur = parent;
+    }
+  }
+}
+
+/** The applicability a history-based validator reports when git is unreadable. */
+export function unreadableGitApplicability(state) {
+  return {
+    status: 'missing-prerequisite',
+    reason: `Git metadata is present but unreadable (${state.reason}); history-based checks did not run. `
+      + 'In an agent sandbox, expose the repository\'s git directory (ai-jail: --worktree; other sandboxes: mount the gitdir named in .git).',
+  };
+}
 
 /**
  * True if the directory is inside a git work tree. Cached per-call.

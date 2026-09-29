@@ -21,7 +21,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { resolve, basename } from 'node:path';
-import { isGitRepo, getDiffText, fileContentAtRev } from '../shared-git.mjs';
+import { getDiffText, fileContentAtRev, gitMetadataStatus, unreadableGitApplicability } from '../shared-git.mjs';
 import { parseUnifiedDiff, removedTokens, tokenize, tokenOverlap } from '../shared-diff.mjs';
 import { parseJsTs } from '../scanners/js-ast.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
@@ -133,7 +133,13 @@ export function validateDiffSuspicion(projectDir, config = {}) {
   const minOverlap = Number.isInteger(cfg.minOverlap) ? cfg.minOverlap : 2;
   const ref = cfg.since || config.changedSinceRef || 'HEAD~1';
 
-  if (!isGitRepo(projectDir)) {
+  // docguard.unreadable-git-metadata#FR-002: unreadable metadata means this
+  // check could not run — say so, instead of looking like nothing matched.
+  const git = gitMetadataStatus(projectDir);
+  if (git.status === 'unreadable') {
+    return { ...resultFromFindings([], { passed: 0, total: 0 }), applicability: unreadableGitApplicability(git) };
+  }
+  if (git.status !== 'ok') {
     return resultFromFindings([], { passed: 0, total: 0, applicable: false });
   }
 

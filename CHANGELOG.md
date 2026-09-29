@@ -121,6 +121,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **The #455 guarantees are stated as TestGuard claims and probed (TestGuard
+  0.15.0).** `testguard gate --changed origin/main` reported every source file
+  that #455 changed as unclaimed. `testguard.claims.json` gains ten claims with
+  20 exact-anchor faults, one per requirement that matters. Each fault is
+  defended by its spec's tests, and the probe kills all of them. The AGENTS.md
+  commands pin `testguard-cli@0.15.0`.
+
+  The probe also exposed a TestGuard bug: any failure message that matches
+  `/timed out/` is treated as a runner timeout. That turned two real kills into
+  TIMEOUT verdicts, because the assertion's own message contained the regex
+  `/timed out/i`. The delegation-timeout assertion is reworded to avoid it.
+
 - **This repository runs its own Spec Kit workflow again (#455).** It was
   initialized with Spec Kit 0.3.0 for Antigravity, in the pre-manifest layout
   that `specify integration upgrade` cannot migrate, so it had no `converge`
@@ -150,6 +162,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   hooks) and is corrected.
 
 ### Fixed
+
+- **The CI test-runtime budget no longer fails on runner noise.** It was set to
+  120s when normal runs took 33–51s. The suite has since doubled, and identical
+  code now runs anywhere from 64s to 122s on CI, so the gate failed at random.
+  #467 went red at 121.7s with 2189/2189 tests passing. The budget is now 240s,
+  which restores the original ~2× margin and still catches the PR #328
+  catastrophe (+165s).
+
+- **A sandboxed run no longer looks like a clean pass (#455,
+  `specs/022-unreadable-git-metadata`).** Agent sandboxes such as ai-jail mount
+  a linked worktree but hide the gitdir its `.git` file points at. Every git
+  command then fails. Freshness, Diff-Suspicion and Reference-Existence treated
+  that like a project with no repository and reported `no-matches` ("nothing to
+  check"), which keeps the top badge grade. Reproduced on this repository: the
+  run printed `PASS — All 608 checks passed` while three validators had done
+  nothing.
+  - Git state now has three values: readable, absent, and unreadable (a `.git`
+    exists, or git is missing, and git fails).
+  - With unreadable metadata, those three report `missing-prerequisite`, and
+    the Spec-Kit untouched-task check reports `partial`. The reason carries
+    git's own error and the sandbox remedy (ai-jail: `--worktree`).
+  - A project with no `.git` at all behaves as before.
+  - Freshness drops its private copy of `git rev-parse`.
+  - `ENVIRONMENT.md` documents running DocGuard inside an agent sandbox.
 
 - **Three lifecycle-evidence gaps found by building DocGuard with its own hooks
   (#455, `specs/021-lifecycle-evidence-gaps`).**

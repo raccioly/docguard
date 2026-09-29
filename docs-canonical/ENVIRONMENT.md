@@ -85,6 +85,25 @@ node cli/docguard.mjs ci --threshold 70 --format json
 
 ---
 
+## Running inside an agent sandbox
+
+DocGuard needs no network access and no credentials, so a sandbox such as ai-jail can run it
+with the default read-write project mount. `docguard guard` runs fine under `--lockdown`, which
+makes everything read-only. `fix --write`, `sync` and `init` write into the project, so they
+need the normal mount.
+
+What must be visible:
+
+- **Git metadata.** Freshness, Diff-Suspicion, Reference-Existence and the Spec-Kit
+  untouched-task check (SPK010) read history. In a linked worktree, `.git` is a file that
+  points at a gitdir elsewhere, and sandboxes hide that gitdir by default (ai-jail needs
+  `--worktree`). DocGuard detects the case. The affected checks report `missing-prerequisite`,
+  or `partial` for Spec-Kit, naming git's own error and the remedy, and never report a clean
+  "no matches".
+- **`python3` (optional).** It provides AST-accurate Python analysis. Without it, the regex
+  tier runs, and each affected validator reports the degraded parser tier.
+- **The `specify` CLI (optional).** It is only needed for `docguard init` to set up Spec Kit.
+
 ## Revision History
 
 | Version | Date | Author | Changes |

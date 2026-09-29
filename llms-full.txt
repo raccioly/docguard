@@ -958,6 +958,25 @@ node cli/docguard.mjs ci --threshold 70 --format json
 
 ---
 
+## Running inside an agent sandbox
+
+DocGuard needs no network access and no credentials, so a sandbox such as ai-jail can run it
+with the default read-write project mount. `docguard guard` runs fine under `--lockdown`, which
+makes everything read-only. `fix --write`, `sync` and `init` write into the project, so they
+need the normal mount.
+
+What must be visible:
+
+- **Git metadata.** Freshness, Diff-Suspicion, Reference-Existence and the Spec-Kit
+  untouched-task check (SPK010) read history. In a linked worktree, `.git` is a file that
+  points at a gitdir elsewhere, and sandboxes hide that gitdir by default (ai-jail needs
+  `--worktree`). DocGuard detects the case. The affected checks report `missing-prerequisite`,
+  or `partial` for Spec-Kit, naming git's own error and the remedy, and never report a clean
+  "no matches".
+- **`python3` (optional).** It provides AST-accurate Python analysis. Without it, the regex
+  tier runs, and each affected validator reports the degraded parser tier.
+- **The `specify` CLI (optional).** It is only needed for `docguard init` to set up Spec Kit.
+
 ## Revision History
 
 | Version | Date | Author | Changes |
@@ -1573,6 +1592,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **The #455 guarantees are stated as TestGuard claims and probed (TestGuard
+  0.15.0).** `testguard gate --changed origin/main` reported every source file
+  that #455 changed as unclaimed. `testguard.claims.json` gains ten claims with
+  20 exact-anchor faults, one per requirement that matters. Each fault is
+  defended by its spec's tests, and the probe kills all of them. The AGENTS.md
+  commands pin `testguard-cli@0.15.0`.
+
+  The probe also exposed a TestGuard bug: any failure message that matches
+  `/timed out/` is treated as a runner timeout. That turned two real kills into
+  TIMEOUT verdicts, because the assertion's own message contained the regex
+  `/timed out/i`. The delegation-timeout assertion is reworded to avoid it.
+
 - **This repository runs its own Spec Kit workflow again (#455).** It was
   initialized with Spec Kit 0.3.0 for Antigravity, in the pre-manifest layout
   that `specify integration upgrade` cannot migrate, so it had no `converge`
@@ -1602,6 +1633,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   hooks) and is corrected.
 
 ### Fixed
+
+- **The CI test-runtime budget no longer fails on runner noise.** It was set to
+  120s when normal runs took 33–51s. The suite has since doubled, and identical
+  code now runs anywhere from 64s to 122s on CI, so the gate failed at random.
+  #467 went red at 121.7s with 2189/2189 tests passing. The budget is now 240s,
+  which restores the original ~2× margin and still catches the PR #328
+  catastrophe (+165s).
+
+- **A sandboxed run no longer looks like a clean pass (#455,
+  `specs/022-unreadable-git-metadata`).** Agent sandboxes such as ai-jail mount
+  a linked worktree but hide the gitdir its `.git` file points at. Every git
+  command then fails. Freshness, Diff-Suspicion and Reference-Existence treated
+  that like a project with no repository and reported `no-matches` ("nothing to
+  check"), which keeps the top badge grade. Reproduced on this repository: the
+  run printed `PASS — All 608 checks passed` while three validators had done
+  nothing.
+  - Git state now has three values: readable, absent, and unreadable (a `.git`
+    exists, or git is missing, and git fails).
+  - With unreadable metadata, those three report `missing-prerequisite`, and
+    the Spec-Kit untouched-task check reports `partial`. The reason carries
+    git's own error and the sandbox remedy (ai-jail: `--worktree`).
+  - A project with no `.git` at all behaves as before.
+  - Freshness drops its private copy of `git rev-parse`.
+  - `ENVIRONMENT.md` documents running DocGuard inside an agent sandbox.
 
 - **Three lifecycle-evidence gaps found by building DocGuard with its own hooks
   (#455, `specs/021-lifecycle-evidence-gaps`).**
@@ -1814,44 +1869,8 @@ Automated weekly release — batches everything merged since `v0.42.0`.
 
 - **A design constraint for any future threshold fitted from data**
   (`docguard.calibrated-finding-channels#FR-018`): it must be fitted against a
-  strictly proper scoring rule (Brier or logarithmic). Accuracy, F1 and "fewest
-  reported false positives" are all maximised by a detector that abstains, or
-  that asserts high confidence on whatever it still emits; none of them
-  penalises a confidently wrong label. Nothing tunes from data today, which is
-  why the constraint is recorded now — a test pins the pointer comment at all
-  six hand-set threshold sites.
 
-- **The unverified-claims count travels with the badge.** A green
-  `628/628 passed` badge printed a few lines under "9 documented claim(s) are
-  unverified against code" was the last misleading surface: the two numbers were
-  adjacent and unlinked, and only one of them got pasted into READMEs. Both
-  `docguard badge` and the badge `guard` prints now carry a companion
-  `claims_unverified` badge, amber above zero. The score and pass badges keep
-  their own colour — they report structural gates that did pass, and folding
-  factual verification into them would overload one number with two meanings.
-  The count is rendered in three states, not two: `buildScoreAssurance` returns
-  null rather than zero when claim extraction fails, and that renders as
-  `unknown`, because "0 unverified" printed when DocGuard checked nothing is
-  precisely the false green this tool exists to prevent.
-
-- **An adoption baseline now reports its age and what it is still hiding.**
-  `saveBaseline` had always written `generatedAt` and `loadBaseline` had always
-  discarded it, so 233 frozen findings looked identical on day 1 and day 400 and
-  a baseline could silently become permanent amnesty. Runs now print
-  `baseline is N day(s) old; M still suppressed; K no longer occur — safe to
-  drop`. Both counts fall out of the existing suppression loop at no added cost,
-  and the stale count is the one that lets a baseline shrink instead of only
-  ever growing. The wording stays inside what the file can prove: entries carry
-  occurrence counts, not per-entry timestamps, so "still suppressed" is
-  demonstrable where "never triaged" would be a guess.
-
-- **Benchmark evidence says whether it still applies to the build that ran.**
-  `explain` reported "Measured on DocGuard 0.41.7; you are running 0.42.0" —
-  true, and useless: it compared version strings when the question is whether
-  the measured number still describes the code that just ran. It was also a
-  false alarm. The detectors shipped in 0.42.0 are byte-identical to the
-
-<!-- truncated: 3877 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 3913 more lines — read CHANGELOG.md directly -->
 
 ---
 
@@ -2393,7 +2412,7 @@ reads Jest-shape JSON. `tools/node-test-json-reporter.mjs` translates between
 them:
 
 ```bash
-npx testguard-cli probe --confirm 3 --serial \
+npx testguard-cli@0.15.0 probe --confirm 3 --serial \
   --node-modules "$PWD/node_modules" \
   --runner-cmd "node --test --test-reporter=$PWD/tools/node-test-json-reporter.mjs --test-reporter-destination={out} {files}"
 ```
@@ -2401,8 +2420,8 @@ npx testguard-cli probe --confirm 3 --serial \
 Pass an absolute reporter path: the probe runs in a scratch worktree built from
 a commit, so a relative path resolves there and untracked files do not exist.
 
-`testguard gate --changed origin/main` reports changed source files that carry no
-claim. It does not find bugs; it refuses to let a change land without stating
+`npx testguard-cli@0.15.0 gate --changed origin/main` reports changed source files
+that carry no claim. It does not find bugs; it refuses to let a change land without stating
 what must be true, which is the step that surfaces them.
 
 ## Evidence and contributions
