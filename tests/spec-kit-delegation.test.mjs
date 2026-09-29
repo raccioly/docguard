@@ -229,7 +229,11 @@ describe('Spec Kit delegation failures are reported, never swallowed', { skip: !
     const dir = fixture();
     try {
       const { out } = run(dir, ['init', '--skip-prompts'], 'hang', { DOCGUARD_SPECIFY_TIMEOUT_MS: '1500' });
-      assert.match(out, /timed out/i);
+      // Not assert.match(out, /timed out/i): TestGuard 0.15 classifies any
+      // failure message matching /timed out/ as a runner timeout ("never a
+      // kill"), so a regex literal in this assertion's own message turned real
+      // kills into TIMEOUT verdicts (probe/runners/shared.mjs:149).
+      assert.ok(out.includes('specify timed out'), 'hang must be reported as a delegation timeout');
       assert.doesNotMatch(out, /Spec Kit initialized/);
     } finally { rmSync(dir, { recursive: true, force: true }); }
   });
