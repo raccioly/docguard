@@ -40,7 +40,7 @@
 
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { resolve, extname, relative, basename } from 'node:path';
-import { isGitRepo, lastCommitHash, symbolExistsAtRev } from '../shared-git.mjs';
+import { lastCommitHash, symbolExistsAtRev, gitMetadataStatus, unreadableGitApplicability } from '../shared-git.mjs';
 import { walkFiles, isNonProductPath, listCanonicalDocs } from '../shared-ignore.mjs';
 import { findConstitution } from '../scanners/speckit.mjs';
 import { readScannable } from '../shared-source.mjs';
@@ -191,7 +191,13 @@ export function validateReferenceExistence(projectDir, config = {}) {
   const maxRefsPerDoc = cfg.maxRefsPerDoc || 80;
   const adrEnabled = cfg.adrCitations !== false;
 
-  if (!isGitRepo(projectDir)) {
+  // docguard.unreadable-git-metadata#FR-002: unreadable metadata means this
+  // check could not run — say so, instead of looking like nothing matched.
+  const git = gitMetadataStatus(projectDir);
+  if (git.status === 'unreadable') {
+    return { ...resultFromFindings([], { passed: 0, total: 0 }), applicability: unreadableGitApplicability(git) };
+  }
+  if (git.status !== 'ok') {
     return resultFromFindings([], { passed: 0, total: 0, applicable: false });
   }
   const docs = indexDocs(projectDir);

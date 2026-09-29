@@ -142,6 +142,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **A sandboxed run no longer looks like a clean pass (#455,
+  `specs/022-unreadable-git-metadata`).** Agent sandboxes such as ai-jail mount
+  a linked worktree but hide the gitdir its `.git` file points at. Every git
+  command then fails. Freshness, Diff-Suspicion and Reference-Existence treated
+  that like a project with no repository and reported `no-matches` ("nothing to
+  check"), which keeps the top badge grade. Reproduced on this repository: the
+  run printed `PASS — All 608 checks passed` while three validators had done
+  nothing.
+  - Git state now has three values: readable, absent, and unreadable (a `.git`
+    exists, or git is missing, and git fails).
+  - With unreadable metadata, those three report `missing-prerequisite`, and
+    the Spec-Kit untouched-task check reports `partial`. The reason carries
+    git's own error and the sandbox remedy (ai-jail: `--worktree`).
+  - A project with no `.git` at all behaves as before.
+  - Freshness drops its private copy of `git rev-parse`.
+  - `ENVIRONMENT.md` documents running DocGuard inside an agent sandbox.
+
 - **Three lifecycle-evidence gaps found by building DocGuard with its own hooks
   (#455, `specs/021-lifecycle-evidence-gaps`).**
   - **`SPR006`.** Spec 014 was fully implemented, with every task checked,

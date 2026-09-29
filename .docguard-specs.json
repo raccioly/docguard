@@ -454,7 +454,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/scanners/speckit.mjs",
-            "line": 979
+            "line": 988
           }
         ],
         "testEvidence": [
@@ -650,17 +650,17 @@
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 613
+            "line": 615
           },
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 640
+            "line": 642
           },
           {
             "requirementId": "FR-021",
             "file": "cli/scanners/speckit.mjs",
-            "line": 1089
+            "line": 1098
           }
         ],
         "testEvidence": [
@@ -4254,6 +4254,125 @@
             "requirementId": "SC-004",
             "file": "tests/scheduled-release.test.mjs",
             "line": 30
+          }
+        ]
+      }
+    },
+    {
+      "specId": "docguard.unreadable-git-metadata",
+      "path": "specs/022-unreadable-git-metadata/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.unreadable-git-metadata#FR-001",
+          "docguard.unreadable-git-metadata#FR-002",
+          "docguard.unreadable-git-metadata#FR-003",
+          "docguard.unreadable-git-metadata#FR-004",
+          "docguard.unreadable-git-metadata#FR-005",
+          "docguard.unreadable-git-metadata#FR-006",
+          "docguard.unreadable-git-metadata#SC-001",
+          "docguard.unreadable-git-metadata#SC-002"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/022-unreadable-git-metadata/spec.md",
+            "digest": "sha256:e4b8017f514418a517fc56055cf4f95d8aea60405481de5a65add57f79c3c617"
+          },
+          {
+            "path": "specs/022-unreadable-git-metadata/plan.md",
+            "digest": "sha256:0160c7cdb9f04a8eb86eef29ece285dc4247f54d81f61d84a1995e2cfc04ad47"
+          },
+          {
+            "path": "specs/022-unreadable-git-metadata/tasks.md",
+            "digest": "sha256:959a50d77614f998fcbbd56262d25c47c663dc581816d7350fc1126a51af608a"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 7,
+          "total": 7
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/shared-git.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "FR-001",
+            "file": "cli/shared-git.mjs",
+            "line": 28
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/shared-git.mjs",
+            "line": 29
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/unreadable-git-metadata.test.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/unreadable-git-metadata.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/unreadable-git-metadata.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/unreadable-git-metadata.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/unreadable-git-metadata.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/unreadable-git-metadata.test.mjs",
+            "line": 105
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/unreadable-git-metadata.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/unreadable-git-metadata.test.mjs",
+            "line": 11
           }
         ]
       }

@@ -958,6 +958,25 @@ node cli/docguard.mjs ci --threshold 70 --format json
 
 ---
 
+## Running inside an agent sandbox
+
+DocGuard needs no network access and no credentials, so a sandbox such as ai-jail can run it
+with the default read-write project mount. `docguard guard` runs fine under `--lockdown`, which
+makes everything read-only. `fix --write`, `sync` and `init` write into the project, so they
+need the normal mount.
+
+What must be visible:
+
+- **Git metadata.** Freshness, Diff-Suspicion, Reference-Existence and the Spec-Kit
+  untouched-task check (SPK010) read history. In a linked worktree, `.git` is a file that
+  points at a gitdir elsewhere, and sandboxes hide that gitdir by default (ai-jail needs
+  `--worktree`). DocGuard detects the case. The affected checks report `missing-prerequisite`,
+  or `partial` for Spec-Kit, naming git's own error and the remedy, and never report a clean
+  "no matches".
+- **`python3` (optional).** It provides AST-accurate Python analysis. Without it, the regex
+  tier runs, and each affected validator reports the degraded parser tier.
+- **The `specify` CLI (optional).** It is only needed for `docguard init` to set up Spec Kit.
+
 ## Revision History
 
 | Version | Date | Author | Changes |
@@ -1594,6 +1613,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **A sandboxed run no longer looks like a clean pass (#455,
+  `specs/022-unreadable-git-metadata`).** Agent sandboxes such as ai-jail mount
+  a linked worktree but hide the gitdir its `.git` file points at. Every git
+  command then fails. Freshness, Diff-Suspicion and Reference-Existence treated
+  that like a project with no repository and reported `no-matches` ("nothing to
+  check"), which keeps the top badge grade. Reproduced on this repository: the
+  run printed `PASS — All 608 checks passed` while three validators had done
+  nothing.
+  - Git state now has three values: readable, absent, and unreadable (a `.git`
+    exists, or git is missing, and git fails).
+  - With unreadable metadata, those three report `missing-prerequisite`, and
+    the Spec-Kit untouched-task check reports `partial`. The reason carries
+    git's own error and the sandbox remedy (ai-jail: `--worktree`).
+  - A project with no `.git` at all behaves as before.
+  - Freshness drops its private copy of `git rev-parse`.
+  - `ENVIRONMENT.md` documents running DocGuard inside an agent sandbox.
+
 - **Three lifecycle-evidence gaps found by building DocGuard with its own hooks
   (#455, `specs/021-lifecycle-evidence-gaps`).**
   - **`SPR006`.** Spec 014 was fully implemented, with every task checked,
@@ -1833,25 +1869,8 @@ Automated weekly release — batches everything merged since `v0.42.0`.
 - **An adoption baseline now reports its age and what it is still hiding.**
   `saveBaseline` had always written `generatedAt` and `loadBaseline` had always
   discarded it, so 233 frozen findings looked identical on day 1 and day 400 and
-  a baseline could silently become permanent amnesty. Runs now print
-  `baseline is N day(s) old; M still suppressed; K no longer occur — safe to
-  drop`. Both counts fall out of the existing suppression loop at no added cost,
-  and the stale count is the one that lets a baseline shrink instead of only
-  ever growing. The wording stays inside what the file can prove: entries carry
-  occurrence counts, not per-entry timestamps, so "still suppressed" is
-  demonstrable where "never triaged" would be a guess.
 
-- **Benchmark evidence says whether it still applies to the build that ran.**
-  `explain` reported "Measured on DocGuard 0.41.7; you are running 0.42.0" —
-  true, and useless: it compared version strings when the question is whether
-  the measured number still describes the code that just ran. It was also a
-  false alarm. The detectors shipped in 0.42.0 are byte-identical to the
-  benchmarked build, so every number remained exactly as valid. Comparing git
-  revisions could not answer it either, since `.npmignore` excludes `.git/` and
-  `benchmarks/` is unpublished, leaving an installed user with no repository to
-  diff. `benchmarks/baseline.json` now records a `detectorsDigest` over the
-
-<!-- truncated: 3873 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 3890 more lines — read CHANGELOG.md directly -->
 
 ---
 
