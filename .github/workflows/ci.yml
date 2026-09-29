@@ -58,12 +58,15 @@ jobs:
       # forever. PR #328 did exactly that: tests/schemas.test.mjs went from
       # 118ms to >10s and the whole suite from ~25s to 190s, green the entire
       # time. Only a duration check catches that class, so auto-merge depends
-      # on this gate existing. Normal: ~33s (node 24) to ~51s (node 18) on CI.
-      # Budget is deliberately loose — it catches catastrophes, not jitter.
+      # on this gate existing. Budget is deliberately loose — it catches
+      # catastrophes, not jitter. Set at 120s when normal runs were 33-51s; by
+      # 2026-09-29 the suite had doubled and normal runs ranged 64-122s across
+      # identical code, so 120s tripped on runner noise (#467). 240s restores
+      # the ~2x margin and still catches the PR #328 class (+165s).
       - name: Run Tests (with runtime budget)
         shell: bash
         env:
-          TEST_BUDGET_MS: 120000
+          TEST_BUDGET_MS: 240000
         run: |
           set -o pipefail
           node --test --test-reporter=tap tests/*.test.mjs 2>&1 | tee /tmp/test-output.txt

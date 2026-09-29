@@ -163,6 +163,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **The CI test-runtime budget no longer fails on runner noise.** It was set to
+  120s when normal runs took 33–51s. The suite has since doubled, and identical
+  code now runs anywhere from 64s to 122s on CI, so the gate failed at random.
+  #467 went red at 121.7s with 2189/2189 tests passing. The budget is now 240s,
+  which restores the original ~2× margin and still catches the PR #328
+  catastrophe (+165s).
+
 - **A sandboxed run no longer looks like a clean pass (#455,
   `specs/022-unreadable-git-metadata`).** Agent sandboxes such as ai-jail mount
   a linked worktree but hide the gitdir its `.git` file points at. Every git
