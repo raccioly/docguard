@@ -39,6 +39,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **`docguard init` sets up Spec Kit again, and says so when it cannot (#455,
+  `specs/014-specify-init-delegation`).** Spec Kit 0.10.0 removed `--ai`,
+  `--ai-skills`, `--ai-commands-dir` and `--no-git`. DocGuard kept passing them,
+  so on every current Spec Kit the delegated setup exited with
+  `No such option: --ai`, and the error was hidden:
+  - `init` printed "had issues" with no cause unless `--debug` was passed.
+  - The per-command path discarded the error entirely.
+  - A success message claimed "9 skills installed" without counting anything.
+
+  Delegation now lives in one module, `cli/spec-kit-delegation.mjs`:
+  - It reads the options the installed `specify init --help` documents and
+    always passes an explicit, non-interactive `--integration <key>`. Without
+    one, Spec Kit silently picks Copilot.
+  - It reports a CLI older than 0.10.0 with the upgrade command.
+  - On failure it prints Spec Kit's own error and the exact command to run by
+    hand.
+  - It then registers DocGuard's extension from the directory shipped in the
+    package (`specify extension add … --dev`), so the hooks run. This is
+    offline and version-matched, because the catalog entry lags the release.
+
+  Agent detection reads `.specify/integration.json` before the legacy
+  `init-options.json` and applies the #190 allowlist to both. `.agents/` no
+  longer implies Antigravity: Spec Kit's codex, agy, zed and muse integrations
+  all install there.
+
+- **Only `docguard init` may initialize Spec Kit.** The Spec Kit gate ran on
+  every write-capable command. Correcting the flags alone would have made
+  `sync`, `fix` and `generate` run `specify init --here --force` against an
+  adopter's repository. The gate now prints one hint line at most, and prints
+  nothing under `--no-spec-kit`, the starter profile, `--quiet` or JSON output.
+  The not-installed box also lost its unmeasured "4 skills / 13 skills" counts.
+
 - **Stopped publishing private project identifiers and local developer state.**
   A retired bug-spec's directory name carried the slug of a private downstream
   project, and it survived the generic-references pass in #411/#413 in two

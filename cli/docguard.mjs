@@ -771,7 +771,9 @@ async function main() {
     !(command === 'agents' && flags.check) &&
     !headless
   ) {
-    ensureSkills(projectDir, flags);
+    // The starter profile opted out of the Spec Kit scaffold at init; its
+    // later commands must not nag about it either.
+    ensureSkills(projectDir, { ...flags, noSpecKit: flags.noSpecKit || config.profile === 'starter' });
   }
 
   // v0.20: deprecation aliases. The legacy command keeps working until v1.0

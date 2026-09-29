@@ -2567,6 +2567,89 @@
       }
     },
     {
+      "specId": "docguard.specify-init-delegation",
+      "path": "specs/014-specify-init-delegation/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.specify-init-delegation#FR-001",
+          "docguard.specify-init-delegation#FR-002",
+          "docguard.specify-init-delegation#FR-003",
+          "docguard.specify-init-delegation#FR-004",
+          "docguard.specify-init-delegation#FR-005",
+          "docguard.specify-init-delegation#FR-006",
+          "docguard.specify-init-delegation#FR-007",
+          "docguard.specify-init-delegation#FR-008",
+          "docguard.specify-init-delegation#FR-009",
+          "docguard.specify-init-delegation#FR-010",
+          "docguard.specify-init-delegation#FR-011",
+          "docguard.specify-init-delegation#FR-012",
+          "docguard.specify-init-delegation#FR-013",
+          "docguard.specify-init-delegation#SC-001",
+          "docguard.specify-init-delegation#SC-002",
+          "docguard.specify-init-delegation#SC-003",
+          "docguard.specify-init-delegation#SC-004",
+          "docguard.specify-init-delegation#SC-005"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/014-specify-init-delegation/spec.md",
+            "digest": "sha256:dde6cc2db811db2d1a7f1d44c635fbe960fb6d5763a14a22bc5dade8f4afad22"
+          },
+          {
+            "path": "specs/014-specify-init-delegation/plan.md",
+            "digest": "sha256:707146617b17d0eb6d4af326db1a7448801aeec840f795fc41dfb10c51332590"
+          },
+          {
+            "path": "specs/014-specify-init-delegation/tasks.md",
+            "digest": "sha256:b7a582ba1397547cd8466e15c8c6662c665c749298207cdac2088d340448958b"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 13,
+          "total": 13
+        },
+        "implementationEvidence": [],
+        "testEvidence": [
+          {
+            "requirementId": "FR-005",
+            "file": "tests/security-init-injection.test.mjs",
+            "line": 31
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/security-init-injection.test.mjs",
+            "line": 33
+          }
+        ]
+      }
+    },
+    {
       "specId": "docguard.task-specific-agent-context",
       "path": "specs/010-task-specific-agent-context/spec.md",
       "reviewed": {
@@ -2720,7 +2803,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/docguard.mjs",
-            "line": 862
+            "line": 864
           },
           {
             "requirementId": "FR-011",

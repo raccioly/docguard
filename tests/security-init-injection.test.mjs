@@ -28,6 +28,10 @@
  * @req SC-SEC-INJ-003 — getDetectedAgent rejects non-string values
  * @req SC-SEC-INJ-004 — getDetectedAgent accepts the allowlisted patterns
  * @req SC-SEC-INJ-005 — safeSpawnSpecify rejects non-array args (API contract)
+ * @req docguard.specify-init-delegation#FR-005 — the allowlist also guards
+ *      `.specify/integration.json`, and argv construction refuses a bad key
+ * @req docguard.specify-init-delegation#FR-006 — integration.json is read first,
+ *      init-options.json is the fallback
  */
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
@@ -35,6 +39,7 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync, existsSync } from 'node:
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { getDetectedAgent, safeSpawnSpecify } from '../cli/ensure-skills.mjs';
+import { buildInitArgs } from '../cli/spec-kit-delegation.mjs';
 
 function mkFixture(aiValue) {
   const dir = mkdtempSync(join(tmpdir(), 'security-inj-'));
@@ -122,6 +127,36 @@ describe('issue #190 — command injection via .specify/init-options.json `ai`',
       mkdirSync(join(dir, '.specify'));
       writeFileSync(join(dir, '.specify/init-options.json'), '{ this is not valid json');
       assert.equal(getDetectedAgent(dir), null);
+    });
+  });
+
+  describe('Layer 1b: integration.json (Spec Kit >= 0.8 state)', () => {
+    function mkIntegration(json, initOptions) {
+      const d = mkdtempSync(join(tmpdir(), 'security-inj-int-'));
+      mkdirSync(join(d, '.specify'));
+      writeFileSync(join(d, '.specify/integration.json'), JSON.stringify(json));
+      if (initOptions) writeFileSync(join(d, '.specify/init-options.json'), JSON.stringify(initOptions));
+      return d;
+    }
+
+    it('reads default_integration before init-options.json', () => {
+      dir = mkIntegration({ default_integration: 'codex' }, { ai: 'claude' });
+      assert.equal(getDetectedAgent(dir), 'codex');
+    });
+
+    it('rejects an injected default_integration and falls back to a valid legacy value', () => {
+      dir = mkIntegration({ default_integration: 'claude; rm -rf ~' }, { ai: 'gemini' });
+      assert.equal(getDetectedAgent(dir), 'gemini');
+    });
+
+    it('returns null when every recorded value fails the allowlist', () => {
+      dir = mkIntegration({ default_integration: '$(id)' }, { integration: 'a'.repeat(33), ai: 42 });
+      assert.equal(getDetectedAgent(dir), null);
+    });
+
+    it('buildInitArgs refuses a key outside the allowlist', () => {
+      const caps = { flags: new Set(['--integration']) };
+      assert.throws(() => buildInitArgs(caps, 'claude; touch /tmp/pwned'), /allowlist/);
     });
   });
 
