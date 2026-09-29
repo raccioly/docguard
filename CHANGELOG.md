@@ -31,6 +31,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   it in CI for `cli/**`. Replayed over the last 40 merges on `main`, 14 of the
   19 that changed `cli/` named no spec.
 
+- **Spec Kit artifacts are first-class documents (#455,
+  `specs/016-spec-kit-artifact-coverage`).** DocGuard is a Spec Kit extension,
+  yet the three places that read project documents didn't know Spec Kit
+  existed:
+  - **Coverage map.** It reported every `specs/**` file as "outside any tier",
+    36 of 55 untiered files in this repository. That buried the genuinely
+    unenrolled documents and trained adopters to ignore the line.
+  - **Constitution.** It sits in `.specify/`, a dot directory every walker
+    skips, so it was invisible.
+  - **Consequence.** DocGuard's own constitution said "Dependencies: None.
+    Zero. Ever." next to a shipped runtime dependency for six months, and
+    guard stayed green.
+
+  Now:
+  - Coverage has a `specKit` tier: top-level `specs/<feature>/**/*.md` plus the
+    constitution. The field is additive, and untiered files here fell from 55
+    to 18.
+  - Metrics-Consistency and Reference-Existence read the constitution.
+  - A new **`MET004`** compares runtime-dependency claims ("zero runtime
+    dependencies", "Dependencies: None", "one npm dependency") with
+    `package.json`. It flags the pre-v2 constitution and nothing else here.
+    Only qualified wording counts, so "no dependencies between validators" is
+    never compared. It is an escalation with no mechanical fix: the manifest
+    may be the side that is wrong.
+
+- **This repository now obeys its validator-isolation principle, and a test
+  enforces it.** `cli/validators/docs-sync.mjs` imported
+  `cli/validators/api-surface.mjs`, against Constitution IV. OpenAPI discovery
+  moved to `cli/shared-openapi.mjs`. `api-surface` re-exports it, so existing
+  importers are unaffected. `tests/validator-isolation.test.mjs` fails on any
+  validator-to-validator import.
+
 - **This repository runs its own Spec Kit workflow again (#455).** It was
   initialized with Spec Kit 0.3.0 for Antigravity, in the pre-manifest layout
   that `specify integration upgrade` cannot migrate, so it had no `converge`

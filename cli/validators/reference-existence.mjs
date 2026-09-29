@@ -42,6 +42,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { resolve, extname, relative, basename } from 'node:path';
 import { isGitRepo, lastCommitHash, symbolExistsAtRev } from '../shared-git.mjs';
 import { walkFiles, isNonProductPath, listCanonicalDocs } from '../shared-ignore.mjs';
+import { findConstitution } from '../scanners/speckit.mjs';
 import { readScannable } from '../shared-source.mjs';
 import { resolveDocDirs } from '../shared.mjs';
 import { mkFinding, resultFromFindings, lineSuppresses } from '../findings.mjs';
@@ -177,6 +178,11 @@ function indexDocs(projectDir) {
     const p = resolve(projectDir, agent);
     if (existsSync(p)) push(agent, p);
   }
+  // docguard.spec-kit-artifact-coverage#FR-006: the Spec Kit constitution names
+  // the functions and modules its principles depend on; check them like any
+  // governing document. It lives in a dot directory the source walk skips.
+  const constitution = findConstitution(projectDir);
+  if (constitution) push(constitution.rel, constitution.abs);
   return docs;
 }
 

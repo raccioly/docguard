@@ -12,7 +12,7 @@ import { resolve, join, extname, basename } from 'node:path';
 import { resolveSourceRoots } from '../shared-source.mjs';
 import { relPosix, walkFiles as sharedWalkFiles, listCanonicalDocs } from '../shared-ignore.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
-import { findAllOpenApiSpecs } from './api-surface.mjs';
+import { findAllOpenApiSpecs } from '../shared-openapi.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', '.nuxt', 'dist', 'build', 'out',

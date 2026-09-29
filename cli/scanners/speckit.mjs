@@ -110,6 +110,22 @@ function scanSpecsDir(specsDir) {
 }
 
 /**
+ * Locate the project's Spec Kit constitution, wherever detectSpecKit finds it
+ * (`.specify/memory/constitution.md`, then the legacy root file). Callers that
+ * walk documents skip dot directories, so without this the constitution is
+ * invisible to every claim check.
+ *
+ * @implements docguard.spec-kit-artifact-coverage#FR-002
+ * @returns {{ abs: string, rel: string } | null}
+ */
+export function findConstitution(projectDir) {
+  const found = detectSpecKit(projectDir);
+  if (!found.constitution || !found.constitutionPath) return null;
+  const rel = relative(resolve(projectDir), found.constitutionPath).replace(/\\/g, '/');
+  return { abs: found.constitutionPath, rel };
+}
+
+/**
  * Detect if a project uses Spec Kit.
  * Checks both spec-kit v3+ paths (.specify/) and legacy paths.
  *

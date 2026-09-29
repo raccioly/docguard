@@ -207,14 +207,16 @@ describe('field report §2 — a green badge must not stand alone next to unveri
 });
 
 describe('field report §3 — a nag must be actionable from the run that printed it', () => {
-  // Files under specs/ land outside every validation tier, which is exactly the
-  // state the report hit. The count is controlled so these assert unconditionally.
+  // Files in an unenrolled directory land outside every validation tier, which
+  // is the state the report hit. (The report's own example was specs/, which
+  // docguard.spec-kit-artifact-coverage#FR-001 now counts as the Spec Kit tier.)
+  // The count is controlled so these assert unconditionally.
   const untiered = (t, count) => {
     const files = {
       '.docguard.json': JSON.stringify({ projectName: 'tier-fixture' }),
       'docs-canonical/ARCHITECTURE.md': '# Architecture\n',
     };
-    for (let i = 0; i < count; i++) files[`specs/00${i}-f/notes-${i}.md`] = `# Notes ${i}\n`;
+    for (let i = 0; i < count; i++) files[`notes/00${i}-f/notes-${i}.md`] = `# Notes ${i}\n`;
     return cliOut(fixture(t, files), ['guard']);
   };
 

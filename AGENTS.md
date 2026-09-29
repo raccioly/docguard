@@ -72,7 +72,7 @@ than assuming `1`), `findings[]`
 (`{code, severity, confidence, disposition, evidence, parserTier, message, location, suggestion}`),
 `nextStep`, `reportable[]` (findings whose code is unmeasured or whose
 confidence is low — verify before acting), `coverage`
-(Markdown tier map incl. `unclassified[]`), `evidence`, and `semanticClaims.count`
+(Markdown tier map incl. the `specKit` tier and `unclassified[]`), `evidence`, and `semanticClaims.count`
 (documented numbers not yet verified against code).
 
 When a command is launched from an implicitly selected nested package, inspect

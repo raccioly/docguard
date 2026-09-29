@@ -184,6 +184,12 @@ export const CODES = {
     help: 'A line about the project\'s own test suite ("npm test # N tests", "N tests passing") states fewer tests than the test files declare. The declared count is a static lower bound of what the runner reports (cases generated in loops are not expanded), so a smaller documented number is stale for certain, but the true number is only known by running the suite. Run it and update the count by hand; there is no mechanical fix.',
     suppress: null,
   },
+  MET004: {
+    validator: 'metricsConsistency',
+    title: 'Documented runtime-dependency count disagrees with package.json',
+    help: 'A document (including the Spec Kit constitution) states how many runtime dependencies the project has ("zero runtime dependencies", "Dependencies: None", "one npm dependency"), and package.json `dependencies` declares a different number. Only qualified wording counts, so "no dependencies between modules" is never compared. The claim may be stale, or a dependency may have been added that the project promised not to take: decide which side is wrong. There is no mechanical fix.',
+    suppress: null,
+  },
   FRS001: {
     validator: 'freshness',
     title: 'Document review signal unavailable',

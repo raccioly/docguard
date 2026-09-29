@@ -350,6 +350,8 @@ These rows are counted and kept outside every ratio. Scoring one as a false posi
 
 ## Check coverage and document roles
 
+Guard's `coverage` object inventories Markdown documents by tier: `canonical`, `specKit` (Spec Kit feature artifacts under top-level `specs/` plus the constitution), `tracked`, `ignored`, and `unclassified[]` (paths under no tier). `specKit` is additive. Before it existed, Spec Kit artifacts were reported under `unclassified`.
+
 Each guard validator adds applicability with status and reason. checkCoverage contains counts by status, limitations naming checks that were not fully performed, and an explanatory limitation. These fields describe coverage independently from legacy status, totals, findings, and exit codes. CI/report consumers preserve them, including disabled-check counts.
 
 Document discovery does not depend on the default filenames alone. A filename is

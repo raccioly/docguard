@@ -15,6 +15,7 @@ import { walkFiles, buildIgnoreFilter } from '../shared-ignore.mjs';
 import { CODES, mkFinding, resultFromFindings } from '../findings.mjs';
 import { loadValidatorSuppressions } from '../validator-markers.mjs';
 import { detectAgentMode, isSpecKitInitialized } from '../ensure-skills.mjs';
+import { findConstitution } from '../scanners/speckit.mjs';
 import { checkUpgradeStatus } from './upgrade.mjs';
 import { changedFilesSince, isGitRepo } from '../shared-git.mjs';
 import { extractSemanticClaims } from '../scanners/semantic-claims.mjs';
@@ -244,6 +245,12 @@ const DOCGUARD_OWN_DOC_RE = /(^|\/)commands\/docguard\.[a-z-]+\.md$/i;
 // skip. Above it, the count plus `--verbose` stays calmer than a wall of paths.
 const INLINE_UNCLASSIFIED = 3;
 
+// A Markdown artifact inside a top-level Spec Kit feature directory: spec,
+// plan, tasks, research, data-model, quickstart, contracts/, checklists/.
+// Nested `specs/` trees (fixtures under tests/ or benchmarks/) are not the
+// project's own Spec Kit artifacts.
+const SPEC_KIT_FEATURE_DOC_RE = /^specs\/[^/]+\/.+\.md$/i;
+
 function collectMarkdown(projectDir) {
   const out = [];
   // Shared canonical walker (v0.29 consolidation) — same ignore set and dot-entry
@@ -259,6 +266,11 @@ function collectMarkdown(projectDir) {
 /**
  * Classify every discoverable Markdown file into a validation tier:
  *   canonical    — in requiredFiles.canonical (structure + review-gated)
+ *   specKit      — Spec Kit artifacts: every Markdown file in a top-level
+ *                  specs/<feature>/ directory, plus the constitution. The
+ *                  Spec-Kit validator and the spec registry own these; before
+ *                  this tier existed they were all reported "outside any tier"
+ *                  and the constitution (in a dot directory) was never seen.
  *   tracked      — inventoried under a doc home or at root; individual detector scopes differ
  *   ignored      — matched by .docguardignore
  *   unclassified — under NO tier; drift here is invisible (the Gap-1 trap)
@@ -277,17 +289,21 @@ function computeDocCoverage(projectDir, config) {
   // each tracked file. Keep individual check coverage separate.
   const docHomePrefixes = resolveDocDirs(projectDir, config).map(d => d.replace(/\/?$/, '/'));
   const all = collectMarkdown(projectDir);
-  let canonicalCount = 0, tracked = 0, ignored = 0;
+  // The walker skips dot directories; the constitution usually lives in one.
+  const constitution = findConstitution(projectDir);
+  if (constitution && !all.includes(constitution.rel)) all.push(constitution.rel);
+  let canonicalCount = 0, tracked = 0, ignored = 0, specKit = 0;
   const unclassified = [];
   for (const rel of all) {
     if (isIgnored(rel) || DOCGUARD_OWN_DOC_RE.test(rel)) { ignored++; continue; }
     if (canonical.has(rel)) { canonicalCount++; continue; }
+    if (SPEC_KIT_FEATURE_DOC_RE.test(rel) || rel === constitution?.rel) { specKit++; continue; }
     const inHome = docHomePrefixes.some(h => rel.startsWith(h));
     const atRoot = !rel.includes('/');
     if (inHome || atRoot || known.has(rel)) { tracked++; continue; }
     unclassified.push(rel);
   }
-  return { discovered: all.length, canonical: canonicalCount, tracked, ignored, unclassified };
+  return { discovered: all.length, canonical: canonicalCount, specKit, tracked, ignored, unclassified };
 }
 
 export function runGuardInternal(projectDir, config) {
@@ -973,7 +989,7 @@ export function runGuard(projectDir, config, flags) {
   if (data.coverage) {
     const cov = data.coverage;
     const unclassN = cov.unclassified.length;
-    const tierLine = `${cov.canonical} canonical · ${cov.tracked} tracked · ${cov.ignored} ignored`
+    const tierLine = `${cov.canonical} canonical · ${cov.specKit ? `${cov.specKit} spec-kit · ` : ''}${cov.tracked} tracked · ${cov.ignored} ignored`
       + (unclassN ? ` · ${c.yellow}${unclassN} outside any tier${c.reset}${c.dim}` : '');
     console.log(`\n  ${c.dim}📑 Docs: ${tierLine} ${c.reset}${c.dim}(${cov.discovered} Markdown files)${c.reset}`);
     if (unclassN > 0) {
