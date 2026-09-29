@@ -134,6 +134,24 @@ reason of 10+ characters). An invented reference never passes. Exit 1 means unco
 the job. When calling the CLI from your own workflow, pass the PR body through `env` into a
 file. Never splice `${{ github.event.pull_request.body }}` into a `run:` script.
 
+## Recipe 3d — Agent instruction budget
+
+`guard` measures every `AGENTS.md` chain the way Codex loads it: root to working directory,
+with `AGENTS.override.md` replacing `AGENTS.md`. It reports `STR004` above
+`agentInstructions.maxBytes` (default 32768, Codex's `project_doc_max_bytes`). The recipe
+needs no extra step: it runs inside Recipe 1.
+
+For a monorepo that is already over budget, freeze the debt instead of raising the budget
+for everyone. The key is the chain's deepest file:
+
+```json
+{ "agentInstructions": { "allowances": { "packages/api/AGENTS.md": 61440 } } }
+```
+
+A chain may shrink under its allowance, and one byte of growth past it fails again.
+`STR005` asks you to lower an allowance once the chain has shrunk by 1 KiB or more, so every
+increase stays a reviewed diff.
+
 ## Recipe 4 — Score (track CDD maturity over time)
 
 `score --format json` reports structural maturity. Its numeric threshold is stable, while `assurance` explicitly states that factual accuracy remains unverified. Comparing scores is meaningful only with the same tool/configuration and a comparable coverage scope.
