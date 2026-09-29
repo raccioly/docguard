@@ -259,11 +259,24 @@ DocGuard is a [community extension](https://github.com/github/spec-kit/blob/main
 
 ### Installing as a Spec Kit Extension
 
+`docguard init` does this for you: when the `specify` CLI (Spec Kit ≥ 0.10.0) is on your
+PATH, it initializes Spec Kit for the coding agent the repository already uses, then registers
+the DocGuard extension shipped inside the installed package, so the registered version always
+matches your CLI and nothing is downloaded. Every failure is printed with Spec Kit's own error
+and the command to run by hand. Only `init` touches Spec Kit; other commands print a one-line
+hint at most.
+
+To register it yourself, from the catalog or a local checkout:
+
 ```bash
 specify extension add docguard
+specify extension add ./node_modules/docguard-cli/extensions/spec-kit-docguard --dev
 ```
 
-This installs DocGuard's slash commands (`/docguard.init`, `/docguard.guard`, `/docguard.review`, `/docguard.fix`, `/docguard.update`) into your AI agent's command palette.
+This registers the `speckit.docguard.*` commands listed in
+[`extension.yml`](extensions/spec-kit-docguard/extension.yml) (invoked as
+`/speckit-docguard-guard` and so on in skills-based agents such as Claude Code) and the
+workflow hooks that run them.
 
 ---
 

@@ -8,6 +8,11 @@
  *
  * Zero npm dependencies — pure Node.js built-ins only.
  * Framework dependency: spec-kit (convention, not code).
+ *
+ * @implements docguard.specify-init-delegation#FR-005
+ * @implements docguard.specify-init-delegation#FR-006
+ * @implements docguard.specify-init-delegation#FR-008
+ * @implements docguard.specify-init-delegation#FR-009
  */
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync } from 'node:fs';
@@ -63,14 +68,8 @@ const COMMANDS_DEST = '.agent/commands';
  * @returns {'llm' | 'cli'}
  */
 export function detectAgentMode(projectDir) {
-  // First check .specify/init-options.json for explicit AI agent selection
-  const initOptions = resolve(projectDir, '.specify', 'init-options.json');
-  if (existsSync(initOptions)) {
-    try {
-      const opts = JSON.parse(readFileSync(initOptions, 'utf-8'));
-      if (opts.ai) return 'llm'; // spec-kit was initialized with an AI agent
-    } catch { /* ignore */ }
-  }
+  // Spec Kit recorded an agent integration — the project is agent-driven.
+  if (getDetectedAgent(projectDir)) return 'llm';
 
   // Check for LLM signal directories/files
   const llmSignals = [
@@ -103,8 +102,8 @@ export function detectAgentMode(projectDir) {
  * @param {string} projectDir - The project root directory
  * @returns {string | null}
  */
-// v0.21.1 (security): allowlist for the spec-kit --ai flag value. Source
-// values come from `.specify/init-options.json` which is attacker-writable
+// v0.21.1 (security): allowlist for the Spec Kit integration key. Source
+// values come from `.specify/*.json`, which is attacker-writable
 // in any compromised project. Without this filter, a value like
 // `"claude; touch /tmp/pwned;"` would shell-execute on every `docguard init`.
 //
@@ -112,35 +111,51 @@ export function detectAgentMode(projectDir) {
 // require a code change to be accepted — by design.
 const VALID_AI_AGENT = /^[a-zA-Z0-9_-]{1,32}$/;
 
+function readSpecifyJson(projectDir, name) {
+  const file = resolve(projectDir, '.specify', name);
+  if (!existsSync(file)) return null;
+  try {
+    const parsed = JSON.parse(readFileSync(file, 'utf-8'));
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+// Spec Kit >= 0.8 records the agent in `.specify/integration.json`
+// (`default_integration`); `init-options.json` keeps `integration`/`ai` for
+// compatibility. Read the authoritative file first (docguard.specify-init-
+// delegation#FR-006). Every candidate passes the allowlist — a value that fails
+// is skipped, never forwarded to a subprocess (issue #190).
 export function getDetectedAgent(projectDir) {
-  const initOptions = resolve(projectDir, '.specify', 'init-options.json');
-  if (existsSync(initOptions)) {
-    try {
-      const opts = JSON.parse(readFileSync(initOptions, 'utf-8'));
-      const ai = opts.ai;
-      if (typeof ai !== 'string') return null;
-      // v0.21.1 (issue #190): reject anything outside the allowlist. Without
-      // this, a malicious `.specify/init-options.json` could inject shell
-      // metacharacters through to the `specify init` exec call.
-      if (!VALID_AI_AGENT.test(ai)) return null;
-      return ai;
-    } catch { /* ignore */ }
+  const integration = readSpecifyJson(projectDir, 'integration.json');
+  const initOptions = readSpecifyJson(projectDir, 'init-options.json');
+  const candidates = [
+    integration?.default_integration,
+    integration?.integration,
+    initOptions?.integration,
+    initOptions?.ai,
+  ];
+  for (const value of candidates) {
+    if (typeof value === 'string' && VALID_AI_AGENT.test(value)) return value;
   }
   return null;
 }
 
 /**
- * Detect which AI agent is in use, returning the spec-kit --ai flag value.
- * Matches spec-kit's supported agents: agy, claude, copilot, cursor-agent,
- * gemini, windsurf, codex, roo, etc.
+ * Detect which AI agent is in use, returning a Spec Kit integration key
+ * (`specify init --integration <key>`): claude, codex, copilot, cursor-agent,
+ * gemini, kiro-cli, tabnine, … A key the installed CLI no longer knows
+ * (windsurf, roo) is still returned: Spec Kit's rejection is reported to the
+ * user rather than DocGuard silently substituting another agent.
  *
- * Priority: .specify/init-options.json > filesystem signals > null
+ * Priority: recorded Spec Kit state > filesystem signals > null
  *
  * @param {string} projectDir - The project root directory
- * @returns {string | null} - spec-kit --ai flag value, or null if unknown
+ * @returns {string | null} - integration key, or null if unknown
  */
 export function detectAIAgent(projectDir) {
-  // 1. Check spec-kit init options (already initialized — trust it)
+  // 1. Recorded Spec Kit state (already initialized — trust it)
   const existing = getDetectedAgent(projectDir);
   if (existing) return existing;
 
@@ -151,7 +166,8 @@ export function detectAIAgent(projectDir) {
     { signal: '.claude',                        agent: 'claude' },
     { signal: 'CLAUDE.md',                      agent: 'claude' },
     { signal: '.gemini',                        agent: 'gemini' },
-    { signal: '.agents',                        agent: 'agy' },         // Antigravity (Spec Kit convention)
+    // `.agents/` is NOT a signal: Spec Kit's codex, agy, zed and muse
+    // integrations all install there, so it identifies no single agent.
     { signal: '.antigravity',                   agent: 'agy' },         // Antigravity (alt convention)
     { signal: 'ANTIGRAVITY.md',                 agent: 'agy' },         // Antigravity rules file
     { signal: '.github/copilot-instructions.md', agent: 'copilot' },
@@ -193,7 +209,8 @@ export function isSpecKitAvailable() {
  * @returns {boolean}
  */
 export function isSpecKitInitialized(projectDir) {
-  return existsSync(resolve(projectDir, '.specify', 'init-options.json'));
+  return existsSync(resolve(projectDir, '.specify', 'integration.json'))
+    || existsSync(resolve(projectDir, '.specify', 'init-options.json'));
 }
 
 // ── Spec-Kit Integration Gate ───────────────────────────────────────────
@@ -201,76 +218,30 @@ export function isSpecKitInitialized(projectDir) {
 const SPEC_KIT_INSTALL_CMD = 'uv tool install specify-cli --from git+https://github.com/github/spec-kit.git';
 
 /**
- * Ensure spec-kit is initialized in the project.
- * Called on every command run — this is the persistent nudge.
- *
- * - If .specify/ exists → do nothing
- * - If specify CLI available → auto-run specify init with detected agent
- * - If specify CLI not available → show prominent install reminder (every time)
+ * Report whether Spec Kit is initialized, with a one-line hint when it is not.
+ * Called before write-capable commands. It never runs `specify`: scaffolding
+ * belongs to `docguard init` (see cli/spec-kit-delegation.mjs).
  *
  * @param {string} projectDir - The project root directory
  * @param {object} flags - CLI flags
  * @returns {{ specKitReady: boolean }}
  */
 export function ensureSpecKit(projectDir, flags = {}) {
-  const silent = flags.format === 'json';
-
-  // Already initialized — nothing to do
   if (isSpecKitInitialized(projectDir)) {
     return { specKitReady: true };
   }
-
-  // Caller opted out of the Spec Kit framework scaffold (--no-spec-kit, or the
-  // minimal `starter` profile which passes noSpecKit through). Don't auto-init
-  // and don't nag — DocGuard's own skills/commands still install below.
-  if (flags.noSpecKit) {
-    return { specKitReady: false, skipped: true };
-  }
-
-  // Spec-kit CLI available — auto-initialize
-  if (isSpecKitAvailable()) {
-    if (!silent) {
-      console.log(`  ${c.cyan}🌱 Spec Kit detected — auto-initializing SDD workflow...${c.reset}`);
-    }
-    try {
-      // v0.21.1 (issue #190): switched from shell-interpolated execSync to
-      // execFileSync via safeSpawnSpecify. detectAIAgent now also enforces
-      // the [a-zA-Z0-9_-]{1,32} allowlist on values read from .specify/
-      // init-options.json — defense in depth.
-      const detectedAgent = detectAIAgent(projectDir);
-      const aiArgs = detectedAgent
-        ? ['--ai', detectedAgent]
-        : ['--ai', 'generic', '--ai-commands-dir', '.agent/commands/'];
-      const scriptArgs = process.platform === 'win32' ? ['--script', 'ps'] : ['--script', 'sh'];
-      safeSpawnSpecify(
-        ['init', '--here', '--force', ...aiArgs, '--ai-skills', '--ignore-agent-tools', '--no-git', ...scriptArgs],
-        { cwd: projectDir, encoding: 'utf-8', stdio: 'pipe', timeout: 30000 }
-      );
-      if (!silent) {
-        console.log(`  ${c.green}✅ Spec Kit initialized${c.reset} ${c.dim}(agent: ${detectedAgent || 'generic'}, 9 skills installed)${c.reset}\n`);
-      }
-      return { specKitReady: true };
-    } catch {
-      // Failed silently — will show reminder instead
-    }
-  }
-
-  // No specify CLI — show prominent reminder (every time, no dismiss)
+  // Only an explicit `docguard init` may scaffold Spec Kit (docguard.specify-
+  // init-delegation#FR-009): this gate runs on every write-capable command,
+  // and `specify init --here --force` rewrites a repository. Here we may only
+  // point the way — once, on one line, and never in quiet or machine modes.
+  const silent = flags.format === 'json' || flags.quiet || flags.noSpecKit || flags.specKitHandled;
   if (!silent) {
-    console.log(`  ${c.yellow}┌─────────────────────────────────────────────────────────┐${c.reset}`);
-    console.log(`  ${c.yellow}│${c.reset}  ${c.bold}💡 Spec Kit not installed${c.reset}                                ${c.yellow}│${c.reset}`);
-    console.log(`  ${c.yellow}│${c.reset}                                                          ${c.yellow}│${c.reset}`);
-    console.log(`  ${c.yellow}│${c.reset}  DocGuard is a Spec Kit extension. Install Spec Kit      ${c.yellow}│${c.reset}`);
-    console.log(`  ${c.yellow}│${c.reset}  for the full experience: 13 AI skills, SDD workflow,    ${c.yellow}│${c.reset}`);
-    console.log(`  ${c.yellow}│${c.reset}  project constitution, and seamless agent integration.   ${c.yellow}│${c.reset}`);
-    console.log(`  ${c.yellow}│${c.reset}                                                          ${c.yellow}│${c.reset}`);
-    console.log(`  ${c.yellow}│${c.reset}  ${c.cyan}${SPEC_KIT_INSTALL_CMD}${c.reset}`);
-    console.log(`  ${c.yellow}│${c.reset}                                                          ${c.yellow}│${c.reset}`);
-    console.log(`  ${c.yellow}│${c.reset}  ${c.dim}Then run: ${c.cyan}docguard init${c.reset}                                ${c.yellow}│${c.reset}`);
-    console.log(`  ${c.yellow}└─────────────────────────────────────────────────────────┘${c.reset}\n`);
+    const how = isSpecKitAvailable()
+      ? `run ${c.cyan}docguard init${c.reset}${c.dim} to set it up`
+      : `install it (${c.cyan}${SPEC_KIT_INSTALL_CMD}${c.reset}${c.dim}), then run ${c.cyan}docguard init${c.reset}`;
+    console.log(`  ${c.dim}💡 Spec Kit is not initialized here — ${how}${c.dim}.${c.reset}`);
   }
-
-  return { specKitReady: false };
+  return { specKitReady: false, skipped: Boolean(flags.noSpecKit) };
 }
 
 // ── Skill Installation ──────────────────────────────────────────────────

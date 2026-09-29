@@ -20,7 +20,8 @@ import { c, PROFILES, CURRENT_SCHEMA_VERSION } from '../shared.mjs';
 import { detectCanonicalLayout, applyDocRoles, mappedDefaultPaths } from '../shared-doc-roles.mjs';
 import { autoDetectProjectType, getProjectTypeDefaults } from '../config.mjs';
 import { hasE2ESuite } from '../shared-source.mjs';
-import { ensureSkills, detectAgentMode, detectAIAgent, isSpecKitAvailable, isSpecKitInitialized, getDetectedAgent, safeSpawnSpecify } from '../ensure-skills.mjs';
+import { ensureSkills, detectAgentMode, isSpecKitInitialized } from '../ensure-skills.mjs';
+import { delegateSpecKitInit, MIN_SPEC_KIT_VERSION } from '../spec-kit-delegation.mjs';
 import { safeWrite } from '../writers/generate-io.mjs';
 
 // v0.20: scaffolder names that can be passed via `init --with <name>` and
@@ -249,6 +250,59 @@ function shouldRunGenerate(projectDir, flags) {
   } catch { /* fall through */ }
 
   return false;
+}
+
+/**
+ * Print a Spec Kit delegation result. Every failure names its cause and the
+ * command to run by hand; nothing here prints a count it did not measure.
+ *
+ * @implements docguard.specify-init-delegation#FR-007
+ * @implements docguard.specify-init-delegation#FR-008
+ * @implements docguard.specify-init-delegation#FR-010
+ * @implements docguard.specify-init-delegation#FR-011
+ */
+function renderSpecKitDelegation(result, flags) {
+  const integration = result.integration ? ` ${c.dim}(integration: ${result.integration.key})${c.reset}` : '';
+  switch (result.status) {
+    case 'skipped': {
+      const why = flags.noSpecKit
+        ? '--no-spec-kit'
+        : 'starter profile is minimal — pass --spec-kit to include the framework scaffold';
+      console.log(`\n  ${c.dim}⏭️  Spec Kit framework scaffold skipped (${why}).${c.reset}`);
+      return;
+    }
+    case 'unavailable':
+      console.log(`\n  ${c.yellow}⚠️${c.reset}  Spec Kit CLI not found — running DocGuard standalone.`);
+      console.log(`     ${c.dim}DocGuard is a Spec Kit extension. Install Spec Kit (>= ${MIN_SPEC_KIT_VERSION}), then re-run ${c.cyan}docguard init${c.reset}${c.dim}:${c.reset}`);
+      console.log(`     ${c.cyan}uv tool install specify-cli --from git+https://github.com/github/spec-kit.git${c.reset}`);
+      return;
+    case 'unsupported-version':
+      console.log(`\n  ${c.yellow}⚠️${c.reset}  Spec Kit not initialized: ${result.reason}`);
+      console.log(`     ${c.dim}Upgrade, then re-run docguard init:${c.reset} ${c.cyan}${result.manualCommand}${c.reset}`);
+      return;
+    case 'failed':
+      console.log(`\n  ${c.red}❌${c.reset} Spec Kit init failed${integration}: ${result.reason}`);
+      console.log(`     ${c.dim}Continuing with DocGuard standalone. To retry by hand:${c.reset} ${c.cyan}${result.manualCommand}${c.reset}`);
+      return;
+    case 'already-initialized':
+      console.log(`\n  ${c.green}✅${c.reset} Spec Kit already initialized${integration}`);
+      break;
+    case 'initialized':
+      console.log(`\n  ${c.bold}🌱 Spec Kit Integration${c.reset}`);
+      console.log(`  ${c.green}✅${c.reset} Spec Kit initialized${integration}`);
+      break;
+    default:
+      return;
+  }
+  const ext = result.extension;
+  if (ext.status === 'registered') {
+    console.log(`  ${c.green}✅${c.reset} DocGuard extension registered with Spec Kit ${c.dim}(workflow hooks active)${c.reset}`);
+  } else if (ext.status === 'already-registered') {
+    console.log(`  ${c.green}✅${c.reset} DocGuard extension already registered with Spec Kit`);
+  } else if (ext.status === 'failed') {
+    console.log(`  ${c.red}❌${c.reset} DocGuard extension registration failed: ${ext.reason}`);
+    console.log(`     ${c.dim}To retry by hand:${c.reset} ${c.cyan}${ext.manualCommand}${c.reset}`);
+  }
 }
 
 export async function runInit(projectDir, configArg, flags) {
@@ -556,76 +610,22 @@ poetry.lock
   }
 
   // ── Spec-Kit Integration (Extension-First) ────────────────────────────
-  // Delegate LLM/IDE detection and spec-kit skill install to `specify init`
-  // v0.16-P8: --no-spec-kit lets users skip the .specify/.agent/commands
-  // scaffolding (minimalist library projects, CI containers, etc.).
-  const specKitAvailable = isSpecKitAvailable();
-  const specKitInitialized = isSpecKitInitialized(projectDir);
-
+  // Delegate agent scaffolding to `specify init`, then register DocGuard's own
+  // packaged extension so its workflow hooks run. The subprocess contract lives
+  // in cli/spec-kit-delegation.mjs (specs/014-specify-init-delegation); this
+  // block only renders its structured result and never reports a failed step as
+  // done. v0.16-P8: --no-spec-kit skips the scaffold entirely.
+  //
   // v0.24 (field report #1): the `starter` profile is "minimal, for side
   // projects" — it skips the heavy Spec Kit framework scaffold (.specify/
   // templates/scripts/memory, ~30 files) by default. DocGuard's own canonical
   // docs and its lightweight agent skills/commands still install (ensureSkills
   // below). Opt back in with --spec-kit. Other profiles are unaffected.
   const starterSkipsSpecKit = profileName === 'starter' && !flags.specKit;
-
-  if (flags.noSpecKit || starterSkipsSpecKit) {
-    const why = flags.noSpecKit
-      ? '--no-spec-kit'
-      : 'starter profile is minimal — pass --spec-kit to include the framework scaffold';
-    console.log(`\n  ${c.dim}⏭️  Spec Kit framework scaffold skipped (${why}).${c.reset}`);
-  } else if (specKitAvailable && !specKitInitialized) {
-    console.log(`\n  ${c.bold}🌱 Spec Kit Integration${c.reset}`);
-
-    // Detect which AI agent is in use (matches spec-kit's --ai flag).
-    // v0.21.1 (issue #190): the returned value is allowlist-validated inside
-    // getDetectedAgent, so an attacker-controlled `.specify/init-options.json`
-    // can no longer inject shell metacharacters here.
-    const detectedAgent = detectAIAgent(projectDir);
-    const aiArgs = detectedAgent
-      ? ['--ai', detectedAgent]
-      : ['--ai', 'generic', '--ai-commands-dir', '.agent/commands/'];
-
-    console.log(`  ${c.dim}Running specify init (agent: ${detectedAgent || 'generic'})...${c.reset}`);
-    try {
-      // v0.21.1 (issue #190): execFileSync via safeSpawnSpecify — args pass
-      // through as an array, no shell interpolation.
-      const scriptArgs = process.platform === 'win32' ? ['--script', 'ps'] : ['--script', 'sh'];
-      safeSpawnSpecify(
-        ['init', '--here', '--force', ...aiArgs, '--ai-skills', '--ignore-agent-tools', '--no-git', ...scriptArgs],
-        { cwd: projectDir, encoding: 'utf-8', stdio: 'pipe', timeout: 30000 }
-      );
-      console.log(`  ${c.green}✅${c.reset} Spec Kit initialized ${c.dim}(.specify/, spec-kit skills, agent: ${detectedAgent || 'generic'})${c.reset}`);
-      created.push('.specify/ (spec-kit foundation)');
-    } catch (err) {
-      console.log(`  ${c.yellow}⚠️${c.reset}  Spec Kit init had issues ${c.dim}(continuing with DocGuard standalone)${c.reset}`);
-      if (flags.debug) console.log(`     ${c.dim}${err.message}${c.reset}`);
-    }
-  } else if (specKitInitialized) {
-    const agent = getDetectedAgent(projectDir);
-    console.log(`\n  ${c.green}✅${c.reset} Spec Kit already initialized${agent ? ` ${c.dim}(agent: ${agent})${c.reset}` : ''}`);
-  } else {
-    console.log(`\n  ${c.red}┌─────────────────────────────────────────────────────────────┐${c.reset}`);
-    console.log(`  ${c.red}│${c.reset}  ${c.bold}⚠️  Spec Kit not installed — running in standalone mode${c.reset}     ${c.red}│${c.reset}`);
-    console.log(`  ${c.red}│${c.reset}                                                              ${c.red}│${c.reset}`);
-    console.log(`  ${c.red}│${c.reset}  DocGuard is designed as a Spec Kit extension.               ${c.red}│${c.reset}`);
-    console.log(`  ${c.red}│${c.reset}  Without Spec Kit, you get ${c.bold}4 skills${c.reset}. With it: ${c.bold}13 skills${c.reset}.    ${c.red}│${c.reset}`);
-    console.log(`  ${c.red}│${c.reset}                                                              ${c.red}│${c.reset}`);
-    console.log(`  ${c.red}│${c.reset}  ${c.bold}What you're missing:${c.reset}                                       ${c.red}│${c.reset}`);
-    console.log(`  ${c.red}│${c.reset}   • 9 Spec Kit AI skills (specify, plan, tasks, implement)  ${c.red}│${c.reset}`);
-    console.log(`  ${c.red}│${c.reset}   • Project constitution (${c.cyan}constitution.md${c.reset})                 ${c.red}│${c.reset}`);
-    console.log(`  ${c.red}│${c.reset}   • Full SDD + CDD integrated workflow                     ${c.red}│${c.reset}`);
-    console.log(`  ${c.red}│${c.reset}   • AI agent auto-detection and config                     ${c.red}│${c.reset}`);
-    console.log(`  ${c.red}│${c.reset}                                                              ${c.red}│${c.reset}`);
-    console.log(`  ${c.red}│${c.reset}  ${c.bold}Install with:${c.reset}                                              ${c.red}│${c.reset}`);
-    console.log(`  ${c.red}│${c.reset}  ${c.cyan}uv tool install specify-cli \\${c.reset}                              ${c.red}│${c.reset}`);
-    console.log(`  ${c.red}│${c.reset}  ${c.cyan}  --from git+https://github.com/github/spec-kit.git${c.reset}       ${c.red}│${c.reset}`);
-    console.log(`  ${c.red}│${c.reset}                                                              ${c.red}│${c.reset}`);
-    console.log(`  ${c.red}│${c.reset}  ${c.dim}Alternative: ${c.cyan}pip install specify-cli${c.reset}                       ${c.red}│${c.reset}`);
-    console.log(`  ${c.red}│${c.reset}                                                              ${c.red}│${c.reset}`);
-    console.log(`  ${c.red}│${c.reset}  ${c.dim}Then re-run: ${c.cyan}docguard init${c.reset}                                 ${c.red}│${c.reset}`);
-    console.log(`  ${c.red}└─────────────────────────────────────────────────────────────┘${c.reset}`);
-  }
+  const skipSpecKit = Boolean(flags.noSpecKit || starterSkipsSpecKit);
+  const delegation = delegateSpecKitInit(projectDir, { skip: skipSpecKit });
+  renderSpecKitDelegation(delegation, flags);
+  if (delegation.status === 'initialized') created.push('.specify/ (spec-kit foundation)');
 
   // ── Summary ────────────────────────────────────────────────────────────
   console.log(`\n${c.bold}  ─────────────────────────────────────${c.reset}`);
@@ -689,7 +689,7 @@ poetry.lock
   // Auto-install DocGuard's own skills and commands. Thread the spec-kit skip
   // decision through so ensureSkills doesn't re-trigger the framework scaffold
   // we just declined for the starter profile (or --no-spec-kit).
-  ensureSkills(projectDir, { ...flags, noSpecKit: flags.noSpecKit || starterSkipsSpecKit });
+  ensureSkills(projectDir, { ...flags, noSpecKit: skipSpecKit, specKitHandled: true });
 
   // v0.20: `docguard init --with agents,hooks,ci,badge,llms,publish` runs
   // the named scaffolders after init has finished. Each one runs in sequence
