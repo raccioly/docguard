@@ -429,7 +429,9 @@ function projectFiles(projectDir) {
     encoding: 'utf8',
     maxBuffer: 16 * 1024 * 1024,
   });
-  if (tracked.status === 0) return tracked.stdout.split('\0').filter(Boolean).map(posix).sort();
+  // During a conflicted merge `git ls-files` lists an unmerged path once per
+  // stage (up to three times), which counted its evidence up to three times.
+  if (tracked.status === 0) return [...new Set(tracked.stdout.split('\0').filter(Boolean).map(posix))].sort();
   const files = [];
   const root = realpathSync(projectDir);
   walkFiles(projectDir, path => {
