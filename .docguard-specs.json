@@ -1665,12 +1665,103 @@
         },
         "implementationEvidence": [
           {
+            "requirementId": "FR-001",
+            "file": "cli/scanners/doc-ownership.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/scanners/doc-ownership.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/validators/doc-ownership.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/scanners/doc-ownership.mjs",
+            "line": 18
+          },
+          {
             "requirementId": "FR-005",
             "file": "cli/commands/trace.mjs",
             "line": 53
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/validators/doc-ownership.mjs",
+            "line": 18
           }
         ],
-        "testEvidence": []
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/doc-ownership.test.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/doc-ownership.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/doc-ownership.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/doc-ownership.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/doc-ownership.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/doc-ownership.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/doc-ownership.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/doc-ownership.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "tests/doc-ownership.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/doc-ownership.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/doc-ownership.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/doc-ownership.test.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "SC-004",
+            "file": "tests/doc-ownership.test.mjs",
+            "line": 17
+          }
+        ]
       }
     },
     {
