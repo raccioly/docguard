@@ -101,6 +101,14 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/scanners/reconciliation.mjs` (canonical requirement links) | `tests/canonical-requirement-links.test.mjs`, `tests/reconcile.test.mjs` | ✅ |
 | `cli/validators/structure.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/validators/docs-diff.mjs` | `tests/commands.test.mjs`, `tests/docs-diff.test.mjs` | ✅ |
+| `cli/scanners/doc-deps.mjs`, `cli/validators/doc-dependency.mjs`, `cli/commands/review.mjs` (doc dependency lock, DLK001–DLK005) | `tests/doc-dependency-lock.test.mjs` | ✅ |
+| `tools/budget.mjs` (non-regression budgets) | `tests/budget.test.mjs` | ✅ |
+| `cli/scanners/doc-references.mjs`, `cli/shared-headings.mjs` (MCP doc navigation) | `tests/mcp-doc-tools.test.mjs`, `tests/trace-reverse.test.mjs` | ✅ |
+| `cli/shared-sync-scope.mjs` (`sync --since` section scope) | `tests/sync-since.test.mjs` | ✅ |
+| `cli/scanners/instruction-scopes.mjs`, `cli/scanners/frontmatter.mjs`, `cli/validators/path-scoped-rules.mjs`, `cli/commands/rules.mjs` (PSR001–PSR004, `rules --for`) | `tests/path-scoped-rules.test.mjs` | ✅ |
+| `cli/scanners/doc-ownership.mjs`, `cli/validators/doc-ownership.mjs` (OWN001–OWN007, `trace --owners`) | `tests/doc-ownership.test.mjs` | ✅ |
+| `cli/scanners/import-graph.mjs`, `cli/scanners/module-diagram.mjs` (module and entity diagrams) | `tests/code-derived-diagrams.test.mjs`, `tests/architecture.test.mjs`, `tests/python-import-graph.test.mjs` | ✅ |
+| `cli/scanners/symbol-map.mjs`, `benchmarks/agent-context/run.mjs` (symbol map, agent-context protocol v2) | `tests/symbol-map.test.mjs`, `tests/agent-context-benchmark.test.mjs` | ✅ |
 
 Completion tests cover initial `implemented → verified` delivery, evidence and
 dirty-tree blockers, living-spec `verified → verified` maintenance, and refusal
