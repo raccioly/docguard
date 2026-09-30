@@ -4,7 +4,7 @@
 
 **Created**: 2026-09-29
 
-**Status**: Draft
+**Status**: Active
 
 **Spec ID**: `docguard.unreadable-git-metadata`
 
