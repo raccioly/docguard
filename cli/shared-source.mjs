@@ -17,7 +17,7 @@
 import { createRequire } from 'node:module';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, dirname, relative, extname } from 'node:path';
-import { shouldIgnore, isNonProductDir, isNonProductPath } from './shared-ignore.mjs';
+import { shouldIgnore, isNonProductDir, isNonProductPath, walkFiles } from './shared-ignore.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', '.nuxt', 'dist', 'build', 'out',
@@ -625,13 +625,48 @@ function workerEnvUsageFallback(content, kind, configured) {
 }
 
 /**
+ * The fallback a read site supplies, from the text right after the match:
+ * JS `|| x` / `?? x` (patterns 0–2), Python's second argument to
+ * `os.environ.get` / `os.getenv` (patterns 4–5). `undefined` = no fallback;
+ * a string = the literal; null = an expression whose value is not literal.
+ */
+function readFallback(rest, patternIndex) {
+  const literal = (text) => {
+    const m = /^\s*(?:'([^'\n]*)'|"([^"\n]*)"|`([^`$\n]*)`|(-?\d[\w.]*|true|false|True|False|None|null))/.exec(text);
+    if (!m) return null;
+    return m[1] ?? m[2] ?? m[3] ?? m[4];
+  };
+  if (patternIndex <= 2) {
+    const m = /^\s*(?:\?\?|\|\|)\s*(?=\S)/.exec(rest);
+    return m ? literal(rest.slice(m[0].length)) : undefined;
+  }
+  if (patternIndex === 4 || patternIndex === 5) {
+    const m = /^['"]?\s*,\s*(?=[^\s)])/.exec(rest);
+    return m ? literal(rest.slice(m[0].length)) : undefined;
+  }
+  return undefined;
+}
+
+/**
  * Env var names READ in code. `options.within` (a repository-relative directory)
  * restricts the scan to one area, for as-built specs (docguard.as-built-specs#FR-001).
+ *
+ * The returned Set also carries `sites`: name → [{ file, defaulted, default }],
+ * where a read site is defaulted when the code supplies a fallback (`|| x`,
+ * `?? x`, `os.getenv("X", x)`, `os.environ.get("X", x)`). `default` is the
+ * literal fallback, or null when it is an expression.
+ * @implements docguard.generated-docs-consistency#FR-007
+ * @implements docguard.generated-docs-consistency#FR-008
  */
 export function grepEnvUsage(projectDir, config = {}, options = {}) {
   const within = options.within ? String(options.within).replace(/\\/g, '/').replace(/\/+$/, '') : null;
   const names = new Set();
   names.limitations = [];
+  names.sites = new Map();
+  const recordSite = (name, file, fallback) => {
+    if (!names.sites.has(name)) names.sites.set(name, []);
+    names.sites.get(name).push({ file, defaulted: fallback !== undefined, default: fallback === undefined ? null : fallback });
+  };
   const roots = resolveSourceRoots(projectDir, config);
   const seen = new Set();
 
@@ -651,6 +686,9 @@ export function grepEnvUsage(projectDir, config = {}, options = {}) {
     new RegExp(`os\\.environ\\[\\s*['"]${NAME}['"]\\s*\\]`, 'g'),
     new RegExp(`os\\.environ\\.get\\s*\\(\\s*['"]${NAME}['"]`, 'g'),
     new RegExp(`os\\.getenv\\s*\\(\\s*['"]${NAME}['"]`, 'g'),
+    // Go: `os.Getenv("X")`, `os.LookupEnv("X")`. Without these a Go service's
+    // environment was invisible, so generate documented none of it.
+    new RegExp(`os\\.(?:Getenv|LookupEnv)\\s*\\(\\s*"${NAME}"`, 'g'),
   ];
   // Vite injects these at build time; they are not user-set env vars.
   const VITE_INTRINSICS = new Set(['DEV', 'PROD', 'MODE', 'BASE_URL', 'SSR']);
@@ -693,6 +731,7 @@ export function grepEnvUsage(projectDir, config = {}, options = {}) {
         if (isViteSource && VITE_INTRINSICS.has(m[1])) continue;
         if (isRunnerEnvVar(m[1])) continue; // v0.27 (#7): runner/CI/SDK var, not product config
         names.add(m[1]);
+        recordSite(m[1], rel.replace(/\\/g, '/'), readFallback(content.slice(m.index + m[0].length, m.index + m[0].length + 200), i));
       }
     }
 
@@ -745,6 +784,93 @@ export function grepEnvUsage(projectDir, config = {}, options = {}) {
 
   for (const root of roots) walk(root);
   return names;
+}
+
+/** Technologies the tech-stack drift check (DDF001) and `diff` recognise by name. */
+export const TECH_PATTERNS = ['React', 'Next.js', 'Vue', 'Angular', 'Svelte', 'Express', 'Fastify', 'Hono',
+  'PostgreSQL', 'MySQL', 'MongoDB', 'DynamoDB', 'Redis', 'Prisma', 'Drizzle',
+  'TypeScript', 'Tailwind', 'Docker', 'Terraform'];
+
+const TECH_DEPENDENCIES = {
+  'react': 'React', 'next': 'Next.js', 'vue': 'Vue', 'express': 'Express',
+  'fastify': 'Fastify', 'hono': 'Hono', 'prisma': 'Prisma', '@prisma/client': 'Prisma',
+  'drizzle-orm': 'Drizzle', 'typescript': 'TypeScript', 'tailwindcss': 'Tailwind',
+  'redis': 'Redis', 'ioredis': 'Redis', 'pg': 'PostgreSQL', 'mysql2': 'MySQL',
+  'mongoose': 'MongoDB', '@aws-sdk/client-dynamodb': 'DynamoDB',
+};
+
+/**
+ * Technologies the code declares: package.json dependencies (root, source
+ * root and workspaces), a Dockerfile/compose file, and `.tf` files. One
+ * function for the check (DDF001, `diff`) and the writer (`generate`), so the
+ * generated tech stack names exactly what the check looks for.
+ * @implements docguard.generated-docs-consistency#FR-010
+ * @returns {string[]} in TECH_PATTERNS order
+ */
+export function detectCodeTechnologies(dir, config = {}) {
+  const found = new Set();
+  const deps = {};
+  for (const { pkg } of collectPackageJsons(dir, config)) Object.assign(deps, pkg.dependencies || {}, pkg.devDependencies || {});
+  for (const [dep, tech] of Object.entries(TECH_DEPENDENCIES)) if (deps[dep]) found.add(tech);
+  if (detectDocker(dir, config)) found.add('Docker');
+  let terraform = false;
+  walkFiles(dir, (full) => {
+    if (terraform || extname(full) !== '.tf') return;
+    if (!shouldIgnore(relative(dir, full), config)) terraform = true;
+  }, { ignoreDirs: TECH_WALK_IGNORE });
+  if (terraform) found.add('Terraform');
+  return TECH_PATTERNS.filter(t => found.has(t));
+}
+
+const TECH_WALK_IGNORE = new Set([
+  'node_modules', '.git', '.next', 'dist', 'build', 'coverage', '.cache', '__pycache__', '.venv', 'vendor',
+  'docs-canonical', 'docs-implementation', 'templates',
+]);
+
+/** Env template files read at the project root, in precedence order. */
+export const ENV_TEMPLATE_FILES = ['.env.example', '.env.template'];
+
+/**
+ * The one set of environment variables `generate`, `generate --plan` and `diff`
+ * document and compare: names in a root env template plus names read in code.
+ * Values in a template are examples, never secrets DocGuard reads from `.env`.
+ *
+ * `required` is true when some read site has no fallback, false when every
+ * read site has one, and null when the code never reads the variable (it is
+ * only listed in a template). `default` is the first literal fallback.
+ * @implements docguard.generated-docs-consistency#FR-008
+ * @returns {Array<{name: string, files: string[], template: string|null, example: string|null, required: boolean|null, default: string|null}>}
+ */
+export function collectEnvVars(projectDir, config = {}) {
+  const vars = new Map();
+  const entry = (name) => {
+    if (!vars.has(name)) vars.set(name, { name, files: [], template: null, example: null, required: null, default: null });
+    return vars.get(name);
+  };
+  for (const file of ENV_TEMPLATE_FILES) {
+    const abs = resolve(projectDir, file);
+    if (!existsSync(abs)) continue;
+    let content;
+    try { content = readFileSync(abs, 'utf-8'); } catch { continue; }
+    for (const m of content.matchAll(/^([A-Z][A-Z0-9_]*[A-Z0-9])\s*=[ \t]*(.*)$/gm)) {
+      const v = entry(m[1]);
+      if (v.template) continue;
+      v.template = file;
+      const example = m[2].trim().replace(/^(['"])(.*)\1$/, '$2');
+      v.example = example || null;
+    }
+  }
+  const used = grepEnvUsage(projectDir, config);
+  for (const name of used) {
+    const v = entry(name);
+    const sites = used.sites?.get(name) || [];
+    v.files = [...new Set(sites.map(site => site.file))].sort();
+    if (sites.length > 0) {
+      v.required = sites.some(site => !site.defaulted);
+      v.default = sites.find(site => typeof site.default === 'string')?.default ?? null;
+    }
+  }
+  return [...vars.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
 
 // ─── Analyzer tier (docguard.calibrated-finding-channels#FR-010/011/012) ────

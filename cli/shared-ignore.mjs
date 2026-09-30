@@ -65,6 +65,25 @@ export const DEFAULT_DETECTION_IGNORE_DIRS = new Set([
   'examples', 'example', 'sample', 'samples',
 ]);
 
+/**
+ * True for a directory DocGuard itself writes: the canonical and implementation
+ * doc homes, and a Spec Kit `specs/` directory (one whose child directory holds
+ * a `spec.md`). These hold documentation, never product code, so the component
+ * map and DCV003 must not list them — generate created them moments earlier.
+ * A `specs/` without Spec Kit features (an RSpec-style test dir) stays code.
+ * `relDir` is project-relative, POSIX.
+ * @implements docguard.generated-docs-consistency#FR-005
+ */
+export function isDocguardOwnedDir(projectDir, relDir) {
+  const rel = String(relDir || '').replace(/\\/g, '/').replace(/^\.\//, '').replace(/\/+$/, '');
+  if (rel === 'docs-canonical' || rel === 'docs-implementation') return true;
+  if (rel !== 'specs') return false;
+  try {
+    return readdirSync(joinPath(projectDir, rel), { withFileTypes: true })
+      .some(e => e.isDirectory() && existsSync(joinPath(projectDir, rel, e.name, 'spec.md')));
+  } catch { return false; }
+}
+
 /** True if `dirName` is a non-product dir detection should skip by default. */
 export function isNonProductDir(dirName, config = {}) {
   if (config?.detection?.includeNonProduct) return false;

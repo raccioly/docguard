@@ -158,7 +158,9 @@ export function renderModuleGraph(graph, config = {}) {
   if (partialReason) notes.push(`partial: ${partialReason}`);
 
   const body = files.length === 0
-    ? '_No source modules found for the module graph._'
+    // Stated positively: generated text must pass DocGuard's own prose checks
+    // (DQ007 negation load; docguard.generated-docs-consistency#FR-011).
+    ? '_Module graph: empty. The import scanner reads JavaScript, TypeScript and Python files and found zero here._'
     : `${lines.join('\n')}${notes.length ? `\n\n_Module graph: ${notes.join('; ')}._` : ''}`;
   return {
     body,

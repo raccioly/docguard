@@ -56,7 +56,9 @@ The two sides disagree:
 - **Wrong generated content.** The API table's Handler column shows `res` or
   `async`. Every environment variable is marked Required even when the code
   supplies a default. SECURITY.md says "auth: not detected" for code that
-  uses `jsonwebtoken`.
+  uses `jsonwebtoken`. Plain `generate` writes ARCHITECTURE.md with a literal
+  backslash before every code fence and `\n` between table rows, and cites
+  Python and Go model files by absolute machine path.
 - **Different facts on each side.** Plain `generate` reads environment
   variables only from `.env.example`; `--plan` reads them only from code;
   `diff` and guard read both. The same split exists for routes (generate asks
@@ -126,8 +128,9 @@ A developer runs `docguard generate` on an existing codebase and then
   still code.
 - **Human-edited template.** Placeholder text inside HTML comments is ignored;
   the same words written as prose are still read.
-- **Backup of a human file.** A write that would change bytes outside
-  DocGuard-owned code sections keeps its `.bak`.
+- **Backup of a human file.** A person's document (no generated marker, not an
+  untouched template) keeps its `.bak`, as does any write that would change
+  bytes outside DocGuard-owned code sections.
 
 ## Requirements *(mandatory)*
 
@@ -136,7 +139,8 @@ A developer runs `docguard generate` on an existing codebase and then
 - **FR-001**: The API reference parser MUST count the path `/` and the methods
   `ALL` and `ANY`, in tables and in `#### METHOD /path` headings. Parsed
   endpoints MUST keep the path as written, so API004 and API005 messages show
-  `/users/:id`, not `/users/{}`. Matching still uses the normalized key.
+  `/users/:id`, not `/users/{}`. Matching still uses the normalized key. The
+  Go route scanner reads Gin/Echo `Any` as `ANY`.
 - **FR-002**: `diff` MUST read entity names from `### Name` headings and from
   the first column of any table whose first header cell is Entity, Model or
   Table, including the plan's code-owned `entities` section.
@@ -170,6 +174,7 @@ A developer runs `docguard generate` on an existing codebase and then
     comment, and the REQUIREMENTS template its example rows, so a fresh
     template claims no technology and defines no requirement ID.
 - **FR-007**: Plain `generate` MUST write correct facts:
+  - valid Markdown (no escaped code fences or literal `\n`);
   - the Handler column shows the handler's function name, or `inline` for an
     anonymous handler, never a parameter or keyword;
   - an environment variable read with a default in code is Required "No" and
@@ -184,18 +189,22 @@ A developer runs `docguard generate` on an existing codebase and then
 - **FR-009**: `generate --plan --write` MUST:
   - never replace an existing `source=human` section;
   - skip a `pinned` code section;
-  - write without a `.bak` when every byte outside DocGuard-owned code
-    section bodies is preserved;
-  - keep the `.bak` otherwise.
+  - write without a `.bak` when the document is DocGuard's own (marked
+    `docguard:generated true`, or an init template nobody has edited) and
+    every byte outside DocGuard-owned code section bodies is preserved;
+  - keep the `.bak` for a person's document and for any other change.
 - **FR-010**: Plain `generate` MUST read the same facts guard and `diff`
   check:
   - routes from the ecosystem-aware framework guard uses;
-  - entities, including Django models (also for `--plan` and `diff`);
+  - entities, including Django models (also for `--plan` and `diff`), cited
+    by project-relative path;
   - every technology DDF001 recognises from dependencies;
-  - every test file DDF002 counts;
+  - every test file DDF002 counts; Django's `tests.py`, pytest and Go test
+    files count as tests (so TSP007 and TRC002 see them), and a test file is
+    not a component;
   - the source modules DCV003 checks.
-- **FR-011**: Text DocGuard generates MUST pass its own prose checks; the
-  generated SECURITY.md and ARCHITECTURE.md do not trip DQ007.
+- **FR-011**: Text DocGuard generates MUST pass its own prose checks: no
+  generated document trips DQ001 (passive voice) or DQ007 (negation load).
 - **FR-012**: `docs/commands.md` (`generate`), `docs-canonical/ARCHITECTURE.md`
   and the CHANGELOG MUST describe the headings, the citation link, the
   backup rule and the single environment-variable source.
@@ -224,8 +233,6 @@ A developer runs `docguard generate` on an existing codebase and then
   no DocGuard files.
 - Findings that describe the project remain correct and stay:
   - SPK001: Spec Kit not initialized;
-  - TSP007: the test directory heuristic misses Django's `tests.py` and Go's
-    `_test.go` — a detection gap, not output;
   - TRC004 on the as-built spec's candidates: no test references them yet;
   - after init, the requests to fill the blank templates (DCV003 for real
     source directories, ENV003, SCH002, DDF001/DDF002, TRC002);
@@ -236,7 +243,6 @@ A developer runs `docguard generate` on an existing codebase and then
 
 - Django `include()` prefix composition (`/shop/` + `/products/`): generate
   and guard now agree on the same, still uncomposed, routes.
-- TSP007's test-directory heuristic for Django and Go.
 - Filling the plan's component-map responsibilities in place (a code-owned
   section): unchanged; `pinned` remains the way to keep hand edits.
 - `sync`'s backup policy: unchanged.

@@ -407,7 +407,10 @@ function hasTestFilesRecursive(dir) {
       if (s.isDirectory()) {
         if (entry === '__tests__' || entry === '__test__') return true;
         if (hasTestFilesRecursive(full)) return true;
-      } else if (/\.(test|spec)\.[^.]+$/.test(entry)) {
+      } else if (/\.(test|spec)\.[^.]+$/.test(entry)
+        // Go, pytest and Django test files are tests too; missing them reported
+        // "no test files" for projects that have them (docguard.generated-docs-consistency#FR-010).
+        || /_test\.go$|^test_[^/]+\.py$|_test\.py$|^tests\.py$/.test(entry)) {
         return true;
       }
     } catch { continue; }

@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { safeWrite } from '../cli/writers/generate-io.mjs';
 import { scanRoutesDeep } from '../cli/scanners/routes.mjs';
-import { compareEndpoints, normalizePath } from '../cli/scanners/api-doc.mjs';
+import { compareEndpoints } from '../cli/scanners/api-doc.mjs';
 import { validateApiSurface } from '../cli/validators/api-surface.mjs';
 
 const config = { sourceRoot: 'backend/src' };
@@ -79,7 +79,8 @@ describe('mounted route field precision', () => {
     const result = validateApiSurface(dir, config);
     const missing = result.findings.filter(finding => finding.code === 'API004');
     assert.equal(missing.length, 1);
-    assert.ok(missing[0].message.includes(normalizePath(removed)));
+    // The message names the path as documented (docguard.generated-docs-consistency#FR-001).
+    assert.ok(missing[0].message.includes(removed));
     assert.equal(missing[0].confidence, 'low');
     assert.equal(result.errors.length, 0);
   });

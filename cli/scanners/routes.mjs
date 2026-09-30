@@ -688,7 +688,7 @@ function scanRailsRoutes(dir) {
 function scanGoWebRoutes(dir) {
   const routes = [];
   // Generic: <recv>.<METHOD>("/path", handler)  for Gin/Echo/Chi/Fiber/mux.Router
-  const pattern = /\.(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS|HandleFunc|Handle)\s*\(\s*["']([^"']+)["']/g;
+  const pattern = /\.(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS|Any|HandleFunc|Handle)\s*\(\s*["']([^"']+)["']/g;
   const goFiles = findFiles(dir, /\.go$/);
   for (const filePath of goFiles) {
     const content = readFileSafe(filePath);
@@ -698,12 +698,13 @@ function scanGoWebRoutes(dir) {
     while ((m = re.exec(content)) !== null) {
       const verb = m[1];
       // HandleFunc / Handle are method-agnostic.
-      const method = ['HandleFunc', 'Handle'].includes(verb) ? 'ANY' : verb;
+      // HandleFunc / Handle are method-agnostic, as is Gin/Echo's Any.
+      const method = ['HandleFunc', 'Handle', 'Any'].includes(verb) ? 'ANY' : verb;
       const path = m[2];
       if (!path.startsWith('/')) continue;
       routes.push({
         method, path,
-        handler: '', file: relative(dir, filePath), source: 'go-web',
+        handler: extractHandlerName(content, m.index + m[0].length - m[2].length - 2), file: relative(dir, filePath), source: 'go-web',
         auth: /Authorization|jwt\.|middleware\.Auth/.test(content),
         description: '',
       });
@@ -820,11 +821,47 @@ function detectMethodsFromHandler(content) {
   return [...methods];
 }
 
-function extractHandlerName(content, matchIndex) {
-  // Look for function name after the route path
-  const after = content.substring(matchIndex, matchIndex + 200);
-  const fnMatch = after.match(/,\s*(?:async\s+)?(\w+)/);
-  return fnMatch ? fnMatch[1] : '';
+/**
+ * The handler a route registration names: the last plain argument after the
+ * path (`router.get('/', auth, listUsers)` → `listUsers`), a named function
+ * expression's name, or `inline` for an anonymous function/arrow. The old
+ * pattern took the first word after the first comma, so `(req, res) => …`
+ * yielded `res` and `async (req, res) => …` yielded `async`
+ * (docguard.generated-docs-consistency#FR-007).
+ */
+export function extractHandlerName(content, matchIndex) {
+  const after = content.substring(matchIndex, matchIndex + 400);
+  const path = after.match(/^[^'"`]*(['"`])(?:\\.|(?!\1)[^\\])*\1/);
+  if (!path) return '';
+  let rest = after.slice(path[0].length);
+  let last = '';
+  for (;;) {
+    const comma = rest.match(/^\s*,\s*/);
+    if (!comma) break;
+    rest = rest.slice(comma[0].length);
+    const named = rest.match(/^(?:async\s+)?function\s*\*?\s*([A-Za-z_$][\w$]*)\s*\(/);
+    if (named) return named[1];
+    if (/^(?:async\s*)?(?:\(|function\b|func\s*\(|[A-Za-z_$][\w$]*\s*=>)/.test(rest)) return 'inline';
+    const ident = rest.match(/^[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*/);
+    if (!ident) break;
+    last = ident[0];
+    rest = rest.slice(ident[0].length);
+    const call = rest.match(/^\s*\(/);
+    if (call) {
+      // A call (a middleware factory such as `rateLimit({})`) is not the
+      // handler: skip its balanced argument list and keep reading.
+      let depth = 0;
+      let i = call[0].length - 1;
+      for (; i < rest.length; i++) {
+        if (rest[i] === '(') depth++;
+        else if (rest[i] === ')' && --depth === 0) break;
+      }
+      if (depth !== 0) return '';
+      rest = rest.slice(i + 1);
+      last = '';
+    }
+  }
+  return last;
 }
 
 function extractJSDocDescription(content, methodName) {

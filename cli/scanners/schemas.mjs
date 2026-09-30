@@ -81,6 +81,15 @@ export function scanSchemasDeep(dir, stack, docTools, config = {}) {
   // user excluded (e.g. test/fixtures/**), then drop relationships that point at
   // a dropped entity. Filtering the RESULTS (not the walk) keeps the cache and
   // the per-ORM walkers untouched. entity.file is project-relative already.
+  // Every entity cites its file project-relative: the Python, Go, Rust, JPA and
+  // Rails walkers produced absolute paths, which leaked machine paths into the
+  // generated DATA-MODEL.md and kept those entities out of as-built facts
+  // (docguard.generated-docs-consistency#FR-010).
+  for (const e of entities) {
+    if (!e.file) continue;
+    const rel = relPosix(dir, resolve(dir, e.file));
+    if (!rel.startsWith('../')) e.file = rel;
+  }
   const keptEntities = entities.filter(
     e => !e.file || !shouldIgnore(relPosix(dir, resolve(dir, e.file)), config)
   );
@@ -572,6 +581,25 @@ function scanPythonModelsRegex(filePath, entities, relationships) {
     const content = readFileSafe(filePath);
     if (!content) return;
     if (!/class\s+\w+\s*\([^)]*(Base|BaseModel|db\.Model|Model|SQLModel)/.test(content)) return;
+
+    // Django: class X(models.Model): name = models.CharField(...)
+    // (docguard.generated-docs-consistency#FR-010 — SCH002 saw these models,
+    // the entity scanner did not, so generate never documented them.)
+    const djRe = /class\s+(\w+)\s*\(\s*(?:models\.)?Model\s*\):([\s\S]*?)(?=\nclass\s+\w+|\n*$)/g;
+    let dm;
+    while ((dm = djRe.exec(content)) !== null) {
+      const fields = [];
+      const fieldRe = /^\s+(\w+)\s*=\s*(?:models\.)?(\w+(?:Field)|ForeignKey|OneToOneField|ManyToManyField)\s*\(([^\n]*)/gm;
+      let fm;
+      while ((fm = fieldRe.exec(dm[2])) !== null) {
+        fields.push({ name: fm[1], type: fm[2], required: !/\b(?:null|blank)\s*=\s*True/.test(fm[3]), description: '' });
+        if (/^(?:ForeignKey|OneToOneField|ManyToManyField)$/.test(fm[2])) {
+          const target = /^\s*['"]?(\w+)/.exec(fm[3]);
+          if (target) relationships.push({ from: dm[1], to: target[1], type: 'related' });
+        }
+      }
+      if (fields.length > 0) entities.push({ name: dm[1], fields, file: filePath, source: 'django' });
+    }
 
     // SQLAlchemy ORM: class X(Base): __tablename__ = "x"; id = Column(...)
     const ormRe = /class\s+(\w+)\s*\([^)]*(?:Base|db\.Model|SQLModel)[^)]*\):([\s\S]*?)(?=\nclass\s+\w+|\n*$)/g;

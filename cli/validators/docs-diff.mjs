@@ -17,7 +17,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, extname, basename, relative } from 'node:path';
 import { shouldIgnore, globMatch, walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
-import { collectPackageJsons, detectDocker, resolveSourceRoots } from '../shared-source.mjs';
+import { collectPackageJsons, detectCodeTechnologies, resolveSourceRoots, TECH_PATTERNS } from '../shared-source.mjs';
 import { docRolePath, resolveDocRole } from '../shared-doc-roles.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 
@@ -173,9 +173,7 @@ export function diffTechStack(dir, config = {}) {
   const archContent = readFileSync(archPath, 'utf-8');
 
   const docTech = new Set();
-  const techPatterns = ['React', 'Next.js', 'Vue', 'Angular', 'Svelte', 'Express', 'Fastify', 'Hono',
-    'PostgreSQL', 'MySQL', 'MongoDB', 'DynamoDB', 'Redis', 'Prisma', 'Drizzle',
-    'TypeScript', 'Tailwind', 'Docker', 'Terraform'];
+  const techPatterns = TECH_PATTERNS;
 
   for (const tech of techPatterns) {
     if (mentionsCurrentTechnology(archContent, tech, techPatterns)) {
@@ -183,27 +181,9 @@ export function diffTechStack(dir, config = {}) {
     }
   }
 
-  const codeTech = new Set();
-  const allDeps = {};
-  for (const { pkg } of pkgs) {
-    Object.assign(allDeps, pkg.dependencies || {}, pkg.devDependencies || {});
-  }
-  const depMap = {
-    'react': 'React', 'next': 'Next.js', 'vue': 'Vue', 'express': 'Express',
-    'fastify': 'Fastify', 'hono': 'Hono', 'prisma': 'Prisma', '@prisma/client': 'Prisma',
-    'drizzle-orm': 'Drizzle', 'typescript': 'TypeScript', 'tailwindcss': 'Tailwind',
-    'redis': 'Redis', 'ioredis': 'Redis', 'pg': 'PostgreSQL', 'mysql2': 'MySQL',
-    'mongoose': 'MongoDB', '@aws-sdk/client-dynamodb': 'DynamoDB',
-  };
-
-  for (const [dep, tech] of Object.entries(depMap)) {
-    if (allDeps[dep]) codeTech.add(tech);
-  }
-
-  // Docker is not an npm dependency — detect it via a Dockerfile/compose file.
-  if (detectDocker(dir, config)) codeTech.add('Docker');
-  // Terraform: detect via .tf files anywhere in the project (non-npm artifact).
-  if (hasFileWithExt(dir, '.tf', config)) codeTech.add('Terraform');
+  // The code side is shared with `generate`, so the ARCHITECTURE.md it writes
+  // names every technology this check looks for (docguard.generated-docs-consistency#FR-010).
+  const codeTech = new Set(detectCodeTechnologies(dir, config));
 
   if (docTech.size === 0 && codeTech.size === 0) return null;
 
@@ -343,20 +323,6 @@ export function getTestFilesFromPatterns(dir, patterns, config) {
     }
   }, { ignoreDirs: IGNORE_DIRS });
   return [...results];
-}
-
-/** Returns true if any file with the given extension exists under dir (ignoring vendor dirs). */
-function hasFileWithExt(dir, ext, config) {
-  // v0.29 consolidation: shared walker. The old hand-rolled version early-exited
-  // on first match; the shared walker completes the traversal — acceptable here
-  // (one-shot existence probe on source trees already pruned by IGNORE_DIRS).
-  let found = false;
-  sharedWalkFiles(dir, (full) => {
-    if (found || extname(full) !== ext) return;
-    const rel = relative(dir, full);
-    if (!config || !shouldIgnore(rel, config)) found = true;
-  }, { ignoreDirs: IGNORE_DIRS });
-  return found;
 }
 
 // v0.29 consolidation: traversal delegates to the shared canonical walker.

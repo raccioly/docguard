@@ -20,6 +20,8 @@
  * Pure string transforms — idempotent, no disk I/O. Zero NPM dependencies.
  */
 
+import { findSectionHeading } from '../shared.mjs';
+
 const OPEN_RE = /^[ \t]*<!--\s*docguard:section\b([^>]*?)-->[ \t]*$/;
 const CLOSE_RE = /^[ \t]*<!--\s*\/docguard:section\s*-->[ \t]*$/;
 
@@ -151,16 +153,34 @@ export function replaceSection(content, id, newBody) {
  * Replace a section's body if it exists; otherwise INSERT a new section.
  * Insert position: `after:<id>` (after another section), 'top' (after the H1 /
  * first heading), or 'end' (default, appended).
+ *
+ * With `heading`, a new section is titled: when the document already has a
+ * heading that satisfies it (same text or a known synonym — the init
+ * template's `## Tech Stack`), the section goes directly under that heading;
+ * otherwise `## <heading>` is written above the marker. The heading sits
+ * outside the marker, so regeneration never rewrites it
+ * (docguard.generated-docs-consistency#FR-003).
  * @returns {{ content: string, action: 'replaced'|'inserted'|'unchanged' }}
  */
-export function upsertSection(content, id, newBody, { source = 'code', position = 'end' } = {}) {
+export function upsertSection(content, id, newBody, { source = 'code', position = 'end', heading = null } = {}) {
   if (getSection(content, id)) {
     const r = replaceSection(content, id, newBody);
     return { content: r.content, action: r.replaced ? 'replaced' : 'unchanged' };
   }
 
-  const block = renderSection(id, newBody, { source });
+  let block = renderSection(id, newBody, { source });
   const lines = String(content).split('\n');
+
+  if (heading) {
+    const host = findSectionHeading(content, heading);
+    if (host >= 0) {
+      const before = lines.slice(0, host + 1);
+      const after = lines.slice(host + 1);
+      while (after.length && after[0].trim() === '') after.shift();
+      return { content: [...before, '', block, '', ...after].join('\n'), action: 'inserted' };
+    }
+    block = `## ${heading}\n\n${block}`;
+  }
 
   // Insert after a named section.
   const afterMatch = /^after:(.+)$/.exec(position);

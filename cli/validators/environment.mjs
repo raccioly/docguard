@@ -209,8 +209,10 @@ export function validateEnvironment(projectDir, config) {
 
   // Only check .env.example if the project type needs it
   if (ptc.needsEnvExample !== false && ptc.needsEnvVars !== false) {
-    // Check if .env.example is referenced and exists
-    if (content.includes('.env.example')) {
+    // Check if .env.example is referenced and exists. A mention inside an
+    // HTML comment is template placeholder text (`<!-- e.g. Copy .env.example -->`),
+    // not a reference (docguard.generated-docs-consistency#FR-006).
+    if (content.replace(/<!--[\s\S]*?-->/g, '').includes('.env.example')) {
       total++;
       if (existsSync(resolve(projectDir, '.env.example'))) {
         passed++;

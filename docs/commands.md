@@ -154,6 +154,27 @@ npx docguard-cli generate --dir ./my-project
 
 **Detects:** Next.js, React, Vue, Angular, Express, Fastify, Hono, Django, FastAPI, SvelteKit, and more.
 
+What `generate` writes is read back by the same scanners `guard` and `diff`
+use, so running them straight after `generate` reports nothing about
+DocGuard's own output:
+
+- Routes, entities, the tech stack, test files, source modules and environment
+  variables come from the checks' own scanners. Environment variables are one
+  set: `.env.example`/`.env.template` plus the names read in code. A variable
+  read with a default is Required "No" and shows the default. Setup steps
+  mention `.env.example` only when it exists.
+- Each generated table cites the source file behind each row, which is what
+  links the doc to code for TRC002.
+- `generate --plan --write` writes an H2 heading for each section it creates,
+  or puts the section under a heading the document already has (the init
+  template's `## Tech Stack`), so the structure checks find their sections.
+- Re-running `generate --plan --write` only inserts missing sections and
+  refreshes unpinned code sections. It never replaces prose in a
+  `source=human` section and skips `pinned` sections. A document DocGuard
+  wrote (marked `docguard:generated true`, or an init template nobody edited)
+  gets no `.bak` when every byte outside its code sections is unchanged; your
+  own documents, and any other change, keep their `.bak`.
+
 #### As-built specs: `docguard generate --spec <area>`
 
 For code that has no spec (a refactor, a migration, onboarding), DocGuard

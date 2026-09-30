@@ -3454,6 +3454,445 @@
           }
         }
       ]
+    },
+    {
+      "id": "GENERATED-DOCS-PASS-OWN-CHECKS",
+      "statement": "Every document DocGuard writes (generate, generate --plan --write, init, generate --spec --write) is read back by the same parsers and scanners guard and diff use: on fresh Express, Next.js, FastAPI, Django and Go projects neither reports a finding caused by that output, the plan never overwrites human prose or pinned sections, and no .bak is left next to a DocGuard-authored document whose non-owned bytes all survive.",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/044-generated-docs-consistency/spec.md#SC-001"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (spec 044)"
+      },
+      "defendedBy": [
+        "tests/generated-docs-consistency.test.mjs",
+        "tests/generated-docs-e2e.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "The parser drops the ALL and ANY methods.",
+          "faultClass": "other",
+          "file": "cli/scanners/api-doc.mjs",
+          "find": "'OPTIONS', 'ALL', 'ANY']);",
+          "replace": "'OPTIONS']);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 044)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "The parser drops the root path.",
+          "faultClass": "other",
+          "file": "cli/scanners/api-doc.mjs",
+          "find": "    if (!normalized) return;",
+          "replace": "    if (!normalized || normalized.length < 2) return;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 044)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "Parsed endpoints carry the normalized path, so messages print {}.",
+          "faultClass": "other",
+          "file": "cli/scanners/api-doc.mjs",
+          "find": "found.set(key, { method: m, path: written, key });",
+          "replace": "found.set(key, { method: m, path: normalized, key });",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 044)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "diff ignores entity tables.",
+          "faultClass": "statement-deleted",
+          "file": "cli/commands/diff.mjs",
+          "find": "  for (const name of entityTableNames(content)) addEntity(name);\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 044)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "A new section gets no heading.",
+          "faultClass": "statement-deleted",
+          "file": "cli/writers/sections.mjs",
+          "find": "    block = `## ${heading}\\n\\n${block}`;\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 044)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "An existing heading does not host the section.",
+          "faultClass": "other",
+          "file": "cli/writers/sections.mjs",
+          "find": "    if (host >= 0) {",
+          "replace": "    if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 044)"
+          }
+        },
+        {
+          "id": "F7",
+          "description": "TRC003 fires on a generated doc.",
+          "faultClass": "statement-deleted",
+          "file": "cli/validators/traceability.mjs",
+          "find": "      if (isGeneratedDoc(doc.abs)) continue;\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 044)"
+          }
+        },
+        {
+          "id": "F8",
+          "description": "TRC002 ignores cited source files.",
+          "faultClass": "statement-deleted",
+          "file": "cli/validators/traceability.mjs",
+          "find": "      try { hasSource = citesProjectSource(readFileSync(docPath, 'utf-8'), projectFiles); } catch { /* unreadable doc: no evidence */ }\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 044)"
+          }
+        },
+        {
+          "id": "F9",
+          "description": "docs-implementation counts as code.",
+          "faultClass": "other",
+          "file": "cli/shared-ignore.mjs",
+          "find": "  if (rel === 'docs-canonical' || rel === 'docs-implementation') return true;",
+          "replace": "  if (rel === 'docs-canonical') return true;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 044)"
+          }
+        },
+        {
+          "id": "F10",
+          "description": "The component map lists owned doc dirs.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/inventory.mjs",
+          "find": "      if (kind === 'module' && isDocguardOwnedDir(projectDir, rel)) continue;\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 044)"
+          }
+        },
+        {
+          "id": "F11",
+          "description": "DCV003 reports owned doc dirs.",
+          "faultClass": "statement-deleted",
+          "file": "cli/validators/docs-coverage.mjs",
+          "find": "      if (isDocguardOwnedDir(projectDir, relPath)) continue;\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 044)"
+          }
+        },
+        {
+          "id": "F12",
+          "description": "DCV003 prefixes a root dir with the project folder name.",
+          "faultClass": "other",
+          "file": "cli/validators/docs-coverage.mjs",
+          "find": "const shown = root ? `${root}/${entry}` : entry;",
+          "replace": "const shown = `${root || basename(rootDir)}/${entry}`;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 044)"
+          }
+        },
+        {
+          "id": "F13",
+          "description": "DCV001 reports the spec registry.",
+          "faultClass": "other",
+          "file": "cli/validators/docs-coverage.mjs",
+          "find": "  '.docguard-specs.json', '.docguard-doc-lock.json',",
+          "replace": "  '.docguard-doc-lock.json',",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 044)"
+          }
+        },
+        {
+          "id": "F14",
+          "description": "ENV004 reads .env.example inside a comment.",
+          "faultClass": "other",
+          "file": "cli/validators/environment.mjs",
+          "find": "if (content.replace(/<!--[\\s\\S]*?-->/g, '').includes('.env.example')) {",
+          "replace": "if (content.includes('.env.example')) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 044)"
+          }
+        },
+        {
+          "id": "F15",
+          "description": "The init ARCHITECTURE template claims Terraform outside its comment.",
+          "faultClass": "other",
+          "file": "templates/ARCHITECTURE.md.template",
+          "find": "  as part of this system.\n",
+          "replace": "  as part of this system.\n-->\n",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 044)"
+          }
+        },
+        {
+          "id": "F16",
+          "description": "The REQUIREMENTS template defines FR-001.",
+          "faultClass": "other",
+          "file": "templates/REQUIREMENTS.md.template",
+          "find": "     row stays in this comment so an empty template defines no requirement:\n| FR-001 | P1 | System MUST [capability] | 🔴 Draft | ❌ |\n-->",
+          "replace": "     row stays in this comment so an empty template defines no requirement: -->\n| FR-001 | P1 | System MUST [capability] | 🔴 Draft | ❌ |",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 044)"
+          }
+        },
+        {
+          "id": "F17",
+          "description": "An anonymous handler is named by its first token.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/routes.mjs",
+          "find": "    if (/^(?:async\\s*)?(?:\\(|function\\b|func\\s*\\(|[A-Za-z_$][\\w$]*\\s*=>)/.test(rest)) return 'inline';\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 044)"
+          }
+        },
+        {
+          "id": "F18",
+          "description": "Gin's Any routes are not scanned.",
+          "faultClass": "other",
+          "file": "cli/scanners/routes.mjs",
+          "find": "|OPTIONS|Any|HandleFunc|Handle)",
+          "replace": "|OPTIONS|HandleFunc|Handle)",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 044)"
+          }
+        },
+        {
+          "id": "F19",
+          "description": "Every variable is Required.",
+          "faultClass": "other",
+          "file": "cli/shared-source.mjs",
+          "find": "      v.required = sites.some(site => !site.defaulted);",
+          "replace": "      v.required = true;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 044)"
+          }
+        },
+        {
+          "id": "F20",
+          "description": "Go env reads are invisible.",
+          "faultClass": "statement-deleted",
+          "file": "cli/shared-source.mjs",
+          "find": "    new RegExp(`os\\\\.(?:Getenv|LookupEnv)\\\\s*\\\\(\\\\s*\"${NAME}\"`, 'g'),\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 044)"
+          }
+        },
+        {
+          "id": "F21",
+          "description": "The plan documents only code reads, not .env.example.",
+          "faultClass": "other",
+          "file": "cli/scanners/memory-plan.mjs",
+          "find": "  const envVars = envDetails.map(v => v.name);",
+          "replace": "  const envVars = envDetails.filter(v => v.files.length).map(v => v.name);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 044)"
+          }
+        },
+        {
+          "id": "F22",
+          "description": "Re-running the plan replaces a human section.",
+          "faultClass": "other",
+          "file": "cli/commands/generate.mjs",
+          "find": "          if (sec.source !== 'code' || existing.attrs?.pinned !== undefined) continue;",
+          "replace": "          if (existing.attrs?.pinned !== undefined) continue;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 044)"
+          }
+        },
+        {
+          "id": "F23",
+          "description": "Re-running the plan replaces a pinned code section.",
+          "faultClass": "other",
+          "file": "cli/commands/generate.mjs",
+          "find": "          if (sec.source !== 'code' || existing.attrs?.pinned !== undefined) continue;",
+          "replace": "          if (sec.source !== 'code') continue;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 044)"
+          }
+        },
+        {
+          "id": "F24",
+          "description": "Plan writes to DocGuard's own docs always leave a .bak.",
+          "faultClass": "other",
+          "file": "cli/writers/generate-io.mjs",
+          "find": "  if (isDocguardAuthored(filePath, before) && preservesUnownedContent(before, after)) {",
+          "replace": "  if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 044)"
+          }
+        },
+        {
+          "id": "F25",
+          "description": "A person's document loses its .bak.",
+          "faultClass": "other",
+          "file": "cli/writers/generate-io.mjs",
+          "find": "  if (isDocguardAuthored(filePath, before) && preservesUnownedContent(before, after)) {",
+          "replace": "  if (preservesUnownedContent(before, after)) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 044)"
+          }
+        },
+        {
+          "id": "F26",
+          "description": "Django models are invisible to the AST tier.",
+          "faultClass": "other",
+          "file": "cli/scanners/py-ast.mjs",
+          "find": "            elif \"Model\" in bn and dj:",
+          "replace": "            elif False:",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 044)"
+          }
+        },
+        {
+          "id": "F27",
+          "description": "Django models are invisible to the pattern tier.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/schemas.mjs",
+          "find": "      if (fields.length > 0) entities.push({ name: dm[1], fields, file: filePath, source: 'django' });\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 044)"
+          }
+        },
+        {
+          "id": "F28",
+          "description": "Entity files stay absolute.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/schemas.mjs",
+          "find": "    if (!rel.startsWith('../')) e.file = rel;\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 044)"
+          }
+        },
+        {
+          "id": "F29",
+          "description": "The as-built spec has no success criterion ID.",
+          "faultClass": "other",
+          "file": "cli/scanners/as-built.mjs",
+          "find": "- **SC-001**: \\`docguard guard\\` reports",
+          "replace": "- SC: \\`docguard guard\\` reports",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 044)"
+          }
+        },
+        {
+          "id": "F30",
+          "description": "JWT libraries are not an Auth integration.",
+          "faultClass": "other",
+          "file": "cli/scanners/integrations.mjs",
+          "find": "category: 'Auth', patterns: ['jsonwebtoken',",
+          "replace": "category: 'Tokens', patterns: ['jsonwebtoken',",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 044)"
+          }
+        },
+        {
+          "id": "F31",
+          "description": "Django's tests.py is not a test file.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/inventory.mjs",
+          "find": "(?:^|\\/)tests\\.py|",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 044)"
+          }
+        },
+        {
+          "id": "F32",
+          "description": "Plain generate omits the technologies DDF001 checks.",
+          "faultClass": "statement-deleted",
+          "file": "cli/writers/doc-generators.mjs",
+          "find": "    ...((scan.technologies || []).length ? [`| Technologies | ${scan.technologies.join(', ')} | | |`] : []),\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 044)"
+          }
+        },
+        {
+          "id": "F33",
+          "description": "Plain generate scans routes with the package.json framework only.",
+          "faultClass": "other",
+          "file": "cli/commands/generate.mjs",
+          "find": "const routeFramework = [detectRouteFramework(projectDir, config), stack.framework].filter(Boolean).join(' ');",
+          "replace": "const routeFramework = stack.framework || '';",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 044)"
+          }
+        },
+        {
+          "id": "F34",
+          "description": "Generated SECURITY.md uses the passive voice.",
+          "faultClass": "other",
+          "file": "cli/writers/doc-generators.mjs",
+          "find": "- [ ] \\`.gitignore\\` lists \\`.env\\`",
+          "replace": "- [ ] \\`.env\\` is listed in \\`.gitignore\\`",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 044)"
+          }
+        },
+        {
+          "id": "F35",
+          "description": "The empty module graph text is a negation.",
+          "faultClass": "other",
+          "file": "cli/scanners/module-diagram.mjs",
+          "find": "'_Module graph: empty. The import scanner reads JavaScript, TypeScript and Python files and found zero here._'",
+          "replace": "'_No source modules found for the module graph._'",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 044)"
+          }
+        }
+      ]
     }
   ]
 }

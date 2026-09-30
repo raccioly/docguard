@@ -152,6 +152,37 @@ export function docHasSection(content, canonicalHeading) {
 }
 
 /**
+ * Index of the line holding the H2–H6 heading that satisfies `canonicalHeading`
+ * (the same equivalence docHasSection uses), or -1. Fenced blocks are skipped.
+ * An exact match wins over a containing one, which wins over a synonym, so
+ * `## Environment Variables` is chosen over an earlier `## Environment Setup`.
+ * @implements docguard.generated-docs-consistency#FR-003
+ */
+export function findSectionHeading(content, canonicalHeading) {
+  const key = normalizeHeadingText(canonicalHeading);
+  if (!key) return -1;
+  const lines = String(content).split('\n');
+  const headings = [];
+  let fence = null;
+  for (let i = 0; i < lines.length; i++) {
+    const marker = lines[i].match(/^\s{0,3}(`{3,}|~{3,})/);
+    if (fence) { if (marker && marker[1][0] === fence[0]) fence = null; continue; }
+    if (marker) { fence = marker[1]; continue; }
+    if (/^#{2,6}\s+\S/.test(lines[i])) headings.push({ i, norm: normalizeHeadingText(lines[i]) });
+  }
+  const tiers = [
+    h => h.norm === key,
+    h => h.norm.includes(key),
+    h => (SECTION_SYNONYMS[key] || []).some(phrase => h.norm.includes(phrase)),
+  ];
+  for (const test of tiers) {
+    const hit = headings.find(test);
+    if (hit) return hit.i;
+  }
+  return -1;
+}
+
+/**
  * Parse a dotted-decimal version string into a tuple of integers for
  * comparison. Tolerates extra suffixes (e.g. `0.4-beta` → [0, 4]).
  * Returns null when the string is unparseable.

@@ -7,10 +7,10 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, extname, basename } from 'node:path';
 import { c } from '../shared.mjs';
 import { walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
-import { collectPackageJsons, detectDocker, grepEnvUsage, resolveSourceRoots } from '../shared-source.mjs';
+import { collectEnvVars, detectCodeTechnologies } from '../shared-source.mjs';
 import { parseApiReferenceDoc, compareEndpoints } from '../scanners/api-doc.mjs';
 import { resolveApiSurface } from '../validators/api-surface.mjs';
-import { collectCodeTests } from '../validators/docs-diff.mjs';
+import { collectCodeTests, diffTechStack as guardDiffTechStack } from '../validators/docs-diff.mjs';
 import { scanSchemasDeep } from '../scanners/schemas.mjs';
 import { detectDocTools } from '../scanners/doc-tools.mjs';
 
@@ -134,6 +134,26 @@ const CODE_ENTITY_NOISE = new Set([
   'models', 'model', 'utils', 'helpers', 'constants', 'config', 'common', 'base',
 ]);
 
+const ENTITY_TABLE_HEADERS = new Set(['entity', 'entities', 'model', 'models', 'table', 'tables']);
+
+/**
+ * First-column values of every Markdown table whose first header cell is
+ * Entity/Model/Table. HTML comments (template placeholders) are ignored.
+ * @implements docguard.generated-docs-consistency#FR-002
+ */
+export function entityTableNames(content) {
+  const lines = String(content).replace(/<!--[\s\S]*?-->/g, '').split('\n');
+  const cells = (line) => line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(c => c.trim());
+  const names = [];
+  for (let i = 0; i + 1 < lines.length; i++) {
+    if (!/^\s*\|/.test(lines[i]) || !/^\s*\|?\s*:?-{3,}/.test(lines[i + 1])) continue;
+    const head = cells(lines[i])[0].replace(/[`*]/g, '').trim().toLowerCase();
+    if (!ENTITY_TABLE_HEADERS.has(head)) continue;
+    for (let j = i + 2; j < lines.length && /^\s*\|/.test(lines[j]); j++) names.push(cells(lines[j])[0]);
+  }
+  return names;
+}
+
 export function diffEntities(dir, config = {}) {
   const dataModelPath = resolve(dir, 'docs-canonical/DATA-MODEL.md');
   if (!existsSync(dataModelPath)) return null;
@@ -156,19 +176,25 @@ export function diffEntities(dir, config = {}) {
     'Testing', 'Deployment', 'Monitoring', 'Operations', 'Security',
   ]);
 
-  // Extract entity names ONLY from "### EntityName" headings. The previous
-  // table-cell extractor produced garbage tokens (table, index, foreign, string…);
-  // headings are the only reliable entity source in a DATA-MODEL doc.
+  const addEntity = (raw) => {
+    const name = String(raw).replace(/[`*]/g, '').trim();
+    if (name.startsWith('<!--') || name.length <= 2) return;
+    if (HEADER_NOISE.has(name) || HEADER_NOISE.has(name.toLowerCase())) return;
+    // An entity name is a single PascalCase/snake_case identifier — not a phrase.
+    if (!/^[A-Za-z][A-Za-z0-9_]*$/.test(name)) return;
+    docEntities.add(name.toLowerCase());
+  };
+
+  // Entity names come from "### EntityName" headings...
   const headerRegex = /^#{3,4}\s+(.+)$/gm;
   let match;
-  while ((match = headerRegex.exec(content)) !== null) {
-    const name = match[1].replace(/[`*]/g, '').trim();
-    if (name.startsWith('<!--') || name.length <= 2) continue;
-    if (HEADER_NOISE.has(name) || HEADER_NOISE.has(name.toLowerCase())) continue;
-    // Entity headings are a single PascalCase/snake_case identifier — not a phrase.
-    if (!/^[A-Za-z][A-Za-z0-9_]*$/.test(name)) continue;
-    docEntities.add(name.toLowerCase());
-  }
+  while ((match = headerRegex.exec(content)) !== null) addEntity(match[1]);
+  // ...and from the first column of an entity table — the shape
+  // `generate --plan` writes (docguard.generated-docs-consistency#FR-002). Only
+  // a table whose first header cell names an entity counts, so the cells of a
+  // Field or Index table are never read as entities (the garbage-token problem
+  // the old any-table extractor had).
+  for (const name of entityTableNames(content)) addEntity(name);
 
   // Use the REAL exported entity names from scanSchemasDeep, not file basenames
   // (a file `dynamoModels.ts` exports `User`/`Order`/etc. — its basename is not
@@ -246,20 +272,10 @@ export function diffEnvVars(dir, config = {}) {
     docVars.add(match[1]);
   }
 
-  // Code-side truth = .env.example/.env.template entries UNION process.env /
-  // import.meta.env usage across the (monorepo-aware) source roots.
-  const codeVars = new Set();
-  for (const envFile of ['.env.example', '.env.template']) {
-    const envExamplePath = resolve(dir, envFile);
-    if (existsSync(envExamplePath)) {
-      const envContent = readFileSync(envExamplePath, 'utf-8');
-      const envRegex = /^([A-Z][A-Z0-9_]*[A-Z0-9])\s*=/gm;
-      while ((match = envRegex.exec(envContent)) !== null) {
-        codeVars.add(match[1]);
-      }
-    }
-  }
-  for (const name of grepEnvUsage(dir, config)) codeVars.add(name);
+  // Code-side truth = .env.example/.env.template entries UNION the names read
+  // in code — the same set generate and generate --plan document
+  // (docguard.generated-docs-consistency#FR-008).
+  const codeVars = new Set(collectEnvVars(dir, config).map(v => v.name));
 
   if (docVars.size === 0 && codeVars.size === 0) return null;
 
@@ -272,58 +288,17 @@ export function diffEnvVars(dir, config = {}) {
   };
 }
 
+/**
+ * The tech-stack comparison guard's DDF001 makes — one reader, so `diff` never
+ * reports a technology guard does not (comments and negations are ignored:
+ * the init template's commented Terraform example is not a claim).
+ * @implements docguard.generated-docs-consistency#FR-006
+ */
 export function diffTechStack(dir, config = {}) {
-  const archPath = resolve(dir, 'docs-canonical/ARCHITECTURE.md');
-  if (!existsSync(archPath)) return null;
-
-  // Monorepo-aware: merge dependencies across root + source-root + workspace packages.
-  const pkgs = collectPackageJsons(dir, config);
-  if (pkgs.length === 0) return null;
-
-  const archContent = readFileSync(archPath, 'utf-8');
-
-  // Extract tech from ARCHITECTURE.md
-  const docTech = new Set();
-  const techPatterns = ['React', 'Next.js', 'Vue', 'Angular', 'Svelte', 'Express', 'Fastify', 'Hono',
-    'PostgreSQL', 'MySQL', 'MongoDB', 'DynamoDB', 'Redis', 'Prisma', 'Drizzle',
-    'TypeScript', 'Tailwind', 'Docker', 'Terraform'];
-
-  for (const tech of techPatterns) {
-    if (archContent.toLowerCase().includes(tech.toLowerCase())) {
-      docTech.add(tech);
-    }
-  }
-
-  // Extract from merged package.json dependencies
-  const codeTech = new Set();
-  const allDeps = {};
-  for (const { pkg } of pkgs) {
-    Object.assign(allDeps, pkg.dependencies || {}, pkg.devDependencies || {});
-  }
-  const depMap = {
-    'react': 'React', 'next': 'Next.js', 'vue': 'Vue', 'express': 'Express',
-    'fastify': 'Fastify', 'hono': 'Hono', 'prisma': 'Prisma', '@prisma/client': 'Prisma',
-    'drizzle-orm': 'Drizzle', 'typescript': 'TypeScript', 'tailwindcss': 'Tailwind',
-    'redis': 'Redis', 'ioredis': 'Redis', 'pg': 'PostgreSQL', 'mysql2': 'MySQL',
-    'mongoose': 'MongoDB', '@aws-sdk/client-dynamodb': 'DynamoDB',
-  };
-
-  for (const [dep, tech] of Object.entries(depMap)) {
-    if (allDeps[dep]) codeTech.add(tech);
-  }
-
-  // Docker via Dockerfile/compose (not an npm dependency).
-  if (detectDocker(dir, config)) codeTech.add('Docker');
-
-  if (docTech.size === 0 && codeTech.size === 0) return null;
-
-  return {
-    title: 'Tech Stack',
-    icon: '⚙️',
-    onlyInDocs: [...docTech].filter(t => !codeTech.has(t)),
-    onlyInCode: [...codeTech].filter(t => !docTech.has(t)),
-    matched: [...docTech].filter(t => codeTech.has(t)),
-  };
+  const result = guardDiffTechStack(dir, config);
+  if (!result) return null;
+  const matched = detectCodeTechnologies(dir, config).filter(t => !result.onlyInCode.includes(t));
+  return { ...result, icon: '⚙️', matched };
 }
 
 function diffTests(dir, config = {}) {

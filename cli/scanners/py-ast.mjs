@@ -115,8 +115,15 @@ def call_name(call):
         return fn.id
     return ""
 
+DJ_RELS = {"ForeignKey", "OneToOneField", "ManyToManyField"}
+
+def django_field(call):
+    # Django: name = models.CharField(...) / models.ForeignKey(Other, ...)
+    name = call_name(call)
+    return name if (name.endswith("Field") or name in DJ_RELS) else None
+
 def fields_from_class(cls):
-    pyd, orm, rels = [], [], []
+    pyd, orm, rels, dj = [], [], [], []
     for stmt in cls.body:
         # Pydantic: name: type [= default]
         if isinstance(stmt, ast.AnnAssign) and isinstance(stmt.target, ast.Name):
@@ -131,7 +138,18 @@ def fields_from_class(cls):
         # SQLAlchemy: name = Column(Type, nullable=...) / mapped_column(...) / relationship("X")
         elif isinstance(stmt, ast.Assign) and isinstance(stmt.value, ast.Call):
             cname = call_name(stmt.value)
-            if cname in ORM_COLS:
+            dtype = django_field(stmt.value)
+            if dtype and cname not in ORM_COLS:
+                null_ok = any(kw.arg in ("null", "blank") and isinstance(kw.value, ast.Constant) and kw.value.value is True for kw in stmt.value.keywords)
+                for tgt in stmt.targets:
+                    if isinstance(tgt, ast.Name):
+                        dj.append({"name": tgt.id, "type": dtype, "required": not null_ok})
+                if dtype in DJ_RELS and stmt.value.args:
+                    a0 = stmt.value.args[0]
+                    tgt_name = a0.id if isinstance(a0, ast.Name) else str_of(a0)
+                    if tgt_name:
+                        rels.append(tgt_name)
+            elif cname in ORM_COLS:
                 t = ""
                 if stmt.value.args:
                     a0 = stmt.value.args[0]
@@ -152,7 +170,7 @@ def fields_from_class(cls):
                     rel = str_of(stmt.value.args[0])
                     if rel:
                         rels.append(rel)
-    return pyd, orm, rels
+    return pyd, orm, rels, dj
 
 def imports_from_tree(tree):
     imports = []
@@ -202,11 +220,13 @@ for path in sys.stdin.read().splitlines():
             routes.extend(routes_from_func(node))
         elif isinstance(node, ast.ClassDef):
             bn = base_names(node)
-            pyd, orm, rels = fields_from_class(node)
+            pyd, orm, rels, dj = fields_from_class(node)
             if any(b in PYD_BASES for b in bn) and pyd:
                 schemas.append({"name": node.name, "fields": pyd, "kind": "pydantic", "rels": rels})
             elif any(b in ORM_BASES for b in bn) and orm:
                 schemas.append({"name": node.name, "fields": orm, "kind": "sqlalchemy", "rels": rels})
+            elif "Model" in bn and dj:
+                schemas.append({"name": node.name, "fields": dj, "kind": "django", "rels": rels})
     imports, dynamic_imports, path_mutation = imports_from_tree(tree)
     # Top-level names, for the symbol map: __all__ when declared, else public
     # top-level functions and classes, in source order.

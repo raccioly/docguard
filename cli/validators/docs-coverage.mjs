@@ -22,7 +22,7 @@ import { docRolePath, resolveDocRole } from '../shared-doc-roles.mjs';
 import { existsSync, readFileSync, readdirSync, statSync, lstatSync } from 'node:fs';
 import { resolve, join, relative, basename, extname, isAbsolute } from 'node:path';
 import { resolveSourceRoots } from '../shared-source.mjs';
-import { shouldIgnore, walkFiles as sharedWalkFiles, buildIgnoreFilter, mergeIgnoreFile, DEFAULT_IGNORE_DIRS } from '../shared-ignore.mjs';
+import { shouldIgnore, walkFiles as sharedWalkFiles, buildIgnoreFilter, mergeIgnoreFile, DEFAULT_IGNORE_DIRS, isDocguardOwnedDir } from '../shared-ignore.mjs';
 import { resolveDocDirs } from '../shared.mjs';
 import { parseJsTs, walk } from '../scanners/js-ast.mjs';
 import { detectIaC, hasInfrastructureHeading, buildIaCWarning } from '../scanners/iac.mjs';
@@ -51,6 +51,10 @@ const COMMON_DOTFILES = new Set([
   // (e.g. `guard --update-baseline` writing the baseline instantly produced
   // a DCV001 about the baseline file itself).
   '.docguard.json', '.docguardignore', '.docguard.baseline.json',
+  // State files DocGuard's own commands write (the spec registry after
+  // `generate --spec --write`, the doc lock, the retirement archive, the
+  // evidence manifest) — docguard.generated-docs-consistency#FR-005.
+  '.docguard-specs.json', '.docguard-doc-lock.json', '.docguard-archive.json', '.docguard-evidence.json',
 ]);
 
 // Generated tool artifacts (caches, coverage data, lock-data) that land at the
@@ -260,7 +264,9 @@ function checkSourceDirs(projectDir, allDocContent, config = {}, iac = { isIaC: 
 
   // Monorepo-aware: honor config.sourceRoot + workspaces instead of a hardcoded list.
   for (const rootDir of resolveSourceRoots(projectDir, config)) {
-    const root = relative(projectDir, rootDir) || basename(rootDir);
+    // A source root that IS the project prints entries as `name/`, not
+    // `<project-folder>/name/` (docguard.generated-docs-consistency#FR-005).
+    const root = relative(projectDir, rootDir).replaceAll('\\', '/');
     let entries;
     try { entries = readdirSync(rootDir); } catch { continue; }
 
@@ -274,6 +280,8 @@ function checkSourceDirs(projectDir, allDocContent, config = {}, iac = { isIaC: 
       if (IGNORE_DIRS.has(entry) || entry.startsWith('.') || entry === '__tests__' || entry === '__test__') continue;
 
       const relPath = relative(projectDir, fullPath);
+      // DocGuard's own doc homes are documentation, not source directories.
+      if (isDocguardOwnedDir(projectDir, relPath)) continue;
 
       // Honor user-configured ignore patterns (FR-006 / IR-5).
       // Patterns like `**/cdk.out/**` are written to match files INSIDE the
@@ -291,14 +299,15 @@ function checkSourceDirs(projectDir, allDocContent, config = {}, iac = { isIaC: 
 
       total++;
       const searchName = entry.toLowerCase();
-      if (lowerArchContent.includes(searchName) || lowerArchContent.includes(root + '/' + entry)) {
+      const shown = root ? `${root}/${entry}` : entry;
+      if (lowerArchContent.includes(searchName) || lowerArchContent.includes(shown.toLowerCase())) {
         passed++;
       } else {
         findings.push(mkFinding({
           code: 'DCV003',
           validator: 'docsCoverage',
           severity: 'warn',
-          message: `Source directory "${root}/${entry}/" is not referenced in ARCHITECTURE.md`,
+          message: `Source directory "${shown}/" is not referenced in ARCHITECTURE.md`,
           location: relPath,
           suggestion: { kind: 'fix', text: 'Add this directory to the Component Map in docs-canonical/ARCHITECTURE.md' },
         }));

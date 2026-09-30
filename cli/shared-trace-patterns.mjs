@@ -29,7 +29,7 @@ export const TEST_PATTERNS = [
   // JS/TS
   /\.test\.[jt]sx?$/, /\.spec\.[jt]sx?$/, /\.test\.(mjs|cjs)$/,
   // Python — pytest conventions
-  /(^|\/)test_[^/]+\.py$/, /[^/]+_test\.py$/, /(^|\/)tests?\/[^/]+\.py$/,
+  /(^|\/)test_[^/]+\.py$/, /[^/]+_test\.py$/, /(^|\/)tests?\/[^/]+\.py$/, /(^|\/)tests\.py$/,
   // Go
   /_test\.go$/,
   // Java/Kotlin — JUnit/TestNG conventions
@@ -72,7 +72,7 @@ export const TRACE_MAP = {
     standard: 'ISO/IEC/IEEE 29119-3',
     sourcePatterns: [
       // Test files in any ecosystem (mirrors TEST_PATTERNS above)
-      { label: 'Test files', glob: /\.(?:test|spec)\.(?:mjs|cjs|[jt]sx?)$|(?:^|\/)test_[^/]+\.py$|[^/]+_test\.py$|_test\.go$|(?:Test|Spec|IT)\.(?:java|kt)$|(?:^|\/)tests?\/[^/]+\.(?:rs|py|rb|php)$|_(?:spec|test)\.rb$|Test\.php$/ },
+      { label: 'Test files', glob: /\.(?:test|spec)\.(?:mjs|cjs|[jt]sx?)$|(?:^|\/)test_[^/]+\.py$|[^/]+_test\.py$|(?:^|\/)tests\.py$|_test\.go$|(?:Test|Spec|IT)\.(?:java|kt)$|(?:^|\/)tests?\/[^/]+\.(?:rs|py|rb|php)$|_(?:spec|test)\.rb$|Test\.php$/ },
       // Test runner configs: JS (jest/vitest/playwright/cypress), Python (pytest.ini/tox.ini), Rust (Cargo.toml has [[test]]),
       // Java (pom.xml/build.gradle), Go (no config file typically)
       { label: 'Test config', glob: /(?:jest|vitest|playwright|cypress|pytest|tox|phpunit)\.config|(?:^|\/)pytest\.ini$|(?:^|\/)tox\.ini$|(?:^|\/)phpunit\.xml$/ },

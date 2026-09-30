@@ -104,10 +104,17 @@ parses.
   - code-section bodies that are not pinned;
   - inserted blocks and headings.
 
-  `writeOwnedSections` verifies that, then writes without a `.bak`. Any other
-  difference falls back to `safeWrite` with its backup. Constitution VI
-  protects user content before an overwrite; a write proven not to change any
-  byte outside DocGuard-owned code sections overwrites no user content.
+  `writeOwnedSections` skips the `.bak` only when both hold:
+  - the document is DocGuard's own: marked `docguard:generated true`, or
+    byte-identical to its init template apart from dates;
+  - every line outside unpinned code-section bodies survives, in order.
+
+  Anything else goes through `safeWrite` with its backup, so a person's
+  document keeps one even for a bounded code-section refresh (the existing
+  mapped-role test). Constitution VI protects user content before an
+  overwrite; a DocGuard-authored document whose non-owned bytes all survive
+  holds no user content to lose. Rejected: skipping the backup for any
+  section-bounded write (a person's document would lose its safety copy).
 - **Human sections are insert-only.** The plan replaced a `source=human`
   section with its task placeholder on every run, losing agent prose. It now
   inserts a human section only when absent.
