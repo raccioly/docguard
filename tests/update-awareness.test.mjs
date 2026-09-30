@@ -10,6 +10,7 @@
  * @req docguard.update-awareness#FR-005
  * @req docguard.update-awareness#FR-006
  * @req docguard.update-awareness#FR-007
+ * @req docguard.update-awareness#FR-008
  * @req docguard.update-awareness#SC-001
  * @req docguard.update-awareness#SC-002
  * @req docguard.update-awareness#SC-003
@@ -199,6 +200,17 @@ describe('the note reaches agents and never a machine-readable output (FR-004, S
     }).stdout;
     assert.doesNotMatch(out, /## DocGuard version/);
   });
+});
+
+describe('the user-facing docs describe the note, its threshold and the opt-out (FR-008)', () => {
+  for (const doc of ['README.md', 'docs/configuration.md', 'docs/ai-integration.md', 'CHANGELOG.md']) {
+    it(doc, () => {
+      const text = readFileSync(join(REPO, doc), 'utf8');
+      assert.match(text, /DOCGUARD_NO_UPDATE_HINT/, 'names the opt-out');
+      assert.match(text, /14 days/, 'states the threshold');
+      assert.match(text, /docguard upgrade/, 'names the way to check');
+    });
+  }
 });
 
 describe('skills and privacy say the same thing (FR-006, FR-007)', () => {

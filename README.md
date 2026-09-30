@@ -327,7 +327,7 @@ DocGuard ships **25 commands** (the "Daily 5" + 20 situational tools, including 
 | `score --diff` | Drill into which checks pulled each category down |
 | `trace` / `trace --reverse <file>` | Requirements traceability — forward AND reverse |
 | `trace --features` | Per-feature spec-adherence scores (requirement coverage, task completion, task evidence, artifacts) — worst-first with fix hints |
-| `upgrade [--apply] [--pr]` | Check npm for a newer CLI (the one command that contacts a registry) + migrate `.docguard.json` schema; `--pr` opens a PR. When the installed release is over 14 days old, guard's text output, the MCP server and the context pack suggest running it; nothing upgrades on its own (`DOCGUARD_NO_UPDATE_HINT=1` silences the note) |
+| `upgrade [--apply] [--pr]` | Check npm for a newer CLI (the one command that contacts a registry) + migrate `.docguard.json` schema; `--pr` opens a PR. When the installed release is over 14 days old, guard's text output, the MCP server and the context pack suggest running `docguard upgrade`; nothing upgrades on its own (`DOCGUARD_NO_UPDATE_HINT=1` silences the note) |
 | `watch` | Live mode: re-run guard on file changes |
 
 **`init --with <name>` scaffolders** — picked at init time:
