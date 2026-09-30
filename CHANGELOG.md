@@ -93,7 +93,9 @@ Behaviour changes:
   - `docguard specs reanchor --id <spec-id> --write` moves the anchor to the
     first first-parent commit whose evidence files are byte-identical, and
     records `reanchoredFrom`. A revision that no longer exists needs
-    `--to <revision> --reason` and is recorded as attested.
+    `--to <revision> --reason` and is recorded as attested; so does a target
+    whose evidence changed after the review, and the differing files are
+    recorded.
   - Several completions can now run against one revision before a single
     commit: the registry, the active context and outcome blocks they write no
     longer count as changes. `specs complete --write` warns when HEAD is not on

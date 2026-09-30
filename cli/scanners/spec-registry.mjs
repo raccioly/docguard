@@ -69,7 +69,9 @@ export const ACCEPTED_SCHEMA_VERSIONS = Object.freeze(
 function validReanchor(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
   const keys = Object.keys(value);
-  if (keys.some(key => !['revision', 'method', 'reason'].includes(key))) return false;
+  if (keys.some(key => !['revision', 'method', 'reason', 'differing'].includes(key))) return false;
+  if (value.differing !== undefined && (value.method !== 'attested' || !Array.isArray(value.differing)
+    || value.differing.length === 0 || value.differing.length > 100 || value.differing.some(path => typeof path !== 'string' || !path.trim()))) return false;
   if (!/^[0-9a-f]{40}(?:[0-9a-f]{24})?$/.test(value.revision || '')) return false;
   if (!['blob-equal', 'attested'].includes(value.method)) return false;
   if (value.method === 'attested' && (typeof value.reason !== 'string' || value.reason.trim().length < 8 || value.reason.length > 500)) return false;

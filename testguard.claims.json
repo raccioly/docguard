@@ -1407,6 +1407,30 @@
             "producer": "agent",
             "by": "claude-opus-5.5 (#455 spec 028)"
           }
+        },
+        {
+          "id": "F9",
+          "description": "An attested re-anchor over differing evidence hides which files differ.",
+          "faultClass": "return-altered",
+          "file": "cli/commands/specs.mjs",
+          "find": "        moves.push({ from: revision, to: flags.to, method: 'attested', reason: attestation, differing });",
+          "replace": "        moves.push({ from: revision, to: flags.to, method: 'attested', reason: attestation });",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 028)"
+          }
+        },
+        {
+          "id": "F10",
+          "description": "A differing target is attested without a reason.",
+          "faultClass": "condition-forced",
+          "file": "cli/commands/specs.mjs",
+          "find": "        if (attestation.length < 8 || attestation.length > 500) {\n          blockers.push({ code: 'SPC008', message: `Evidence differs",
+          "replace": "        if (false) {\n          blockers.push({ code: 'SPC008', message: `Evidence differs",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 028)"
+          }
         }
       ]
     },
