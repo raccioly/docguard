@@ -1317,6 +1317,7 @@
           "docguard.completion-revision-anchoring#FR-003",
           "docguard.completion-revision-anchoring#FR-004",
           "docguard.completion-revision-anchoring#FR-005",
+          "docguard.completion-revision-anchoring#FR-006",
           "docguard.completion-revision-anchoring#SC-001",
           "docguard.completion-revision-anchoring#SC-002",
           "docguard.completion-revision-anchoring#SC-003"
@@ -1326,7 +1327,7 @@
         "artifacts": [
           {
             "path": "specs/028-completion-revision-anchoring/spec.md",
-            "digest": "sha256:ebbce3bc5014442fc1292686d72632413e29dd2bc514454e444f98096f0da105"
+            "digest": "sha256:8a8f3c09de146fd09661baaa992fa290cac4e55b190e5da86b5ba8080b8c930e"
           },
           {
             "path": "specs/028-completion-revision-anchoring/plan.md",
@@ -1403,6 +1404,11 @@
             "requirementId": "FR-005",
             "file": "tests/completion-revision-anchoring.test.mjs",
             "line": 15
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/completion-revision-anchoring.test.mjs",
+            "line": 16
           },
           {
             "requirementId": "SC-001",
@@ -5911,7 +5917,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/docguard.mjs",
-            "line": 938
+            "line": 941
           },
           {
             "requirementId": "FR-011",
