@@ -37,6 +37,7 @@ npx docguard-cli diagnose --format prompt # Raw AI prompt (all issues combined)
 ```bash
 npx docguard-cli guard                   # Text output
 npx docguard-cli guard --format json     # Structured JSON (the stable agent contract)
+npx docguard-cli guard --format json --compact   # Each fact once (what the MCP tool returns by default)
 npx docguard-cli guard --format sarif    # SARIF 2.1.0 for GitHub Code Scanning
 npx docguard-cli guard --format junit    # JUnit XML for GitLab/Jenkins/Azure DevOps
 npx docguard-cli guard --update-baseline # Freeze current findings (brownfield adoption)
@@ -408,7 +409,8 @@ read-only core as native agent tools
 (`docguard_guard`, `docguard_score`, `docguard_explain`,
 `docguard_verify_evidence`, `docguard_verify_claims`, `docguard_report`,
 `docguard_docs_for_path`, `docguard_doc_structure`, `docguard_read_section`,
-`docguard_task_context`, `docguard_diagnose`). The four navigation tools answer
+`docguard_task_context`, `docguard_diagnose`). `docguard_guard` returns each
+fact once by default; pass `detail: "full"` for the complete contract. The four navigation tools answer
 "which docs describe this file?" and read one bounded section at a time, so an
 agent does not load whole documents; none of them calls a model.
 `docguard_guard` returns the compact response by default (each finding once);
