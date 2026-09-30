@@ -5,7 +5,8 @@ import { docRolePath, resolveDocRole } from '../shared-doc-roles.mjs';
  * Detects schema definition files from popular ORMs/frameworks and validates
  * that table/model names appear in DATA-MODEL.md documentation.
  *
- * Supported: Prisma, Drizzle, Sequelize, TypeORM, Knex, Django, Rails
+ * Supported: Prisma, Drizzle, Mongoose (shared with generate), Sequelize,
+ * TypeORM, Knex, Django, Rails
  *
  * Zero NPM runtime dependencies — pure Node.js built-ins only.
  */
@@ -15,6 +16,7 @@ import { resolve, relative, basename } from 'node:path';
 import { resolveSourceRoots } from '../shared-source.mjs';
 import { DEFAULT_IGNORE_DIRS, relPosix, shouldIgnore, walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
+import { scanOrmEntities } from '../scanners/schemas.mjs';
 
 const IGNORE_DIRS = new Set([
   ...DEFAULT_IGNORE_DIRS,
@@ -25,21 +27,11 @@ const IGNORE_DIRS = new Set([
  * Schema detection configurations for each supported framework.
  * Each entry has a file pattern to detect and a regex to extract model/table names.
  */
+// Prisma, Drizzle and Mongoose come from scanOrmEntities(), the discovery and
+// parse `generate` uses, so guard and the generated DATA-MODEL.md name the same
+// entities (docguard.js-ts-extraction#FR-010). The detectors below cover the
+// ORMs that scanner does not read.
 const SCHEMA_DETECTORS = [
-  {
-    name: 'Prisma',
-    filePattern: /schema\.prisma$/,
-    searchDirs: ['prisma'],
-    // Matches: model User { ... }
-    modelPattern: /^\s*model\s+(\w+)\s*\{/gm,
-  },
-  {
-    name: 'Drizzle',
-    filePattern: /\.(ts|js|mjs)$/,
-    searchDirs: ['drizzle', 'src/db', 'src/schema', 'db'],
-    // Matches: export const users = pgTable('users', ...) or mysqlTable, sqliteTable
-    modelPattern: /(?:pg|mysql|sqlite)Table\s*\(\s*['"](\w+)['"]/g,
-  },
   {
     name: 'TypeORM',
     filePattern: /\.entity\.(ts|js)$/,
@@ -157,6 +149,13 @@ export function validateSchemaSync(projectDir, config) {
  */
 function detectAllModels(projectDir, config = {}) {
   const models = [];
+
+  const orm = scanOrmEntities(projectDir, config);
+  for (const [framework, result] of [['Prisma', orm.prisma], ['Drizzle', orm.drizzle], ['Mongoose', orm.mongoose]]) {
+    for (const entity of result.entities) {
+      if (!isCommonUtilityModel(entity.name)) models.push({ name: entity.name, framework, file: entity.file });
+    }
+  }
 
   for (const detector of SCHEMA_DETECTORS) {
     const files = findSchemaFiles(projectDir, detector, config);

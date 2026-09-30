@@ -212,6 +212,38 @@ function classify(lang, dir, deps) {
   return { framework, kind };
 }
 
+// ORM, UI and auth libraries worth naming next to the framework
+// (docguard.js-ts-extraction#FR-008): a Next.js app's React, its Drizzle or
+// Prisma, its NextAuth. Order is the output order after sorting by name.
+const JS_LIBRARIES = [
+  ['Prisma', ['prisma', '@prisma/client']],
+  ['Drizzle', ['drizzle-orm']],
+  ['Mongoose', ['mongoose']],
+  ['TypeORM', ['typeorm']],
+  ['Sequelize', ['sequelize']],
+  ['Knex', ['knex']],
+  ['React', ['react']],
+  ['Vue', ['vue']],
+  ['Svelte', ['svelte']],
+  ['NextAuth.js', ['next-auth', '@auth/core']],
+  ['Passport.js', ['passport']],
+  ['Clerk', ['@clerk/nextjs', '@clerk/clerk-sdk-node', '@clerk/express']],
+  ['Lucia', ['lucia']],
+];
+
+/**
+ * Libraries a JS/TS ecosystem declares, other than its framework.
+ * @implements docguard.js-ts-extraction#FR-008
+ */
+function jsLibraries(lang, deps, framework) {
+  if (lang !== 'JavaScript' && lang !== 'TypeScript') return [];
+  const names = Object.keys(deps || {});
+  return JS_LIBRARIES
+    .filter(([label, packages]) => label !== framework && packages.some(p => names.includes(p)))
+    .map(([label]) => label)
+    .sort((a, b) => a.localeCompare(b));
+}
+
 // ── Per-manifest ecosystem builder ───────────────────────────────────────────
 
 function buildEcosystem(projectDir, m) {
@@ -259,6 +291,7 @@ function buildEcosystem(projectDir, m) {
     manifest: relative(resolve(projectDir), path) || m.file,
     dir: relative(resolve(projectDir), m.absDir) || '.',
     framework: cls.framework,
+    libraries: jsLibraries(lang, deps, cls.framework),
     kind: kind || cls.kind || 'library',
     deps,
     entryPoints,
@@ -268,7 +301,7 @@ function buildEcosystem(projectDir, m) {
 /**
  * Detect every ecosystem present in the repo (polyglot-aware).
  * Multiple manifests in the same dir+language merge into one ecosystem.
- * @returns {Array<{ language, manifest, dir, framework, kind, deps, entryPoints }>}
+ * @returns {Array<{ language, manifest, dir, framework, libraries, kind, deps, entryPoints }>}
  */
 export function detectEcosystems(projectDir, config = {}) {
   const manifests = findManifests(projectDir, 4, config);
@@ -290,6 +323,7 @@ export function detectEcosystems(projectDir, config = {}) {
       // Re-classify with merged deps.
       const cls = classify(cur.language, join(resolve(projectDir), cur.dir === '.' ? '' : cur.dir), cur.deps);
       if (!cur.framework) cur.framework = cls.framework;
+      cur.libraries = jsLibraries(cur.language, cur.deps, cur.framework);
     } else {
       byKey.set(key, eco);
     }

@@ -188,7 +188,8 @@ prefix, adds auth at the mount, and declares routes with `router.route()`.
   - `?? x` or `|| x` after a dotted or bracket read.
 - **FR-004**: In a Next.js project (a `next` dependency or a `next.config.*`
   file), the source roots MUST include:
-  - `pages/`, `components/`, `hooks/`, `utils/` and their `src/` forms;
+  - `pages/`, `components/`, `hooks/` and `utils/` (their `src/` forms are
+    already under the `src` root);
   - for env reads, root `middleware.*`, `instrumentation.*` and
     `next.config.*`.
 

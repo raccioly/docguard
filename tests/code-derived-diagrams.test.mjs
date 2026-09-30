@@ -313,7 +313,10 @@ describe('an entity diagram that stays true (User Story 3, FR-005)', () => {
     runSync(dir, config, { write: true, silent: true });
     const body = getSection(readFileSync(join(dir, 'docs-canonical/DATA-MODEL.md'), 'utf8'), 'entity-diagram').body.trim();
     assert.match(body, /^```mermaid\nerDiagram\n {4}Post \{/);
-    assert.match(body, /User \|\|--o\{ Post : "posts"/);
+    // One relation, drawn once from the side that holds the foreign key; the
+    // `posts` back-reference is not a second edge (docguard.js-ts-extraction#FR-008).
+    assert.match(body, /Post \}o--\|\| User : "author"/);
+    assert.doesNotMatch(body, /User \|\|--o\{ Post/);
     clearMemoryPlanCache();
     assert.equal(validateGeneratedStaleness(dir, config).findings.filter(f => f.code === 'GST002').length, 0);
 

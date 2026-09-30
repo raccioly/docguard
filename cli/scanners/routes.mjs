@@ -11,7 +11,8 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, relative, basename, extname, dirname } from 'node:path';
 import { resolveSourceRoots, readScannable, tierFor, summarizeTiers } from '../shared-source.mjs';
 import { DEFAULT_IGNORE_DIRS as IGNORE_DIRS, shouldIgnore, relPosix, isNonProductPath } from '../shared-ignore.mjs';
-import { extractJsRouteCalls, extractJsRouteObjects, extractJsMountsAndImports } from './js-ast.mjs';
+import { extractJsRouteCalls, extractJsRouteObjects, extractJsMountsAndImports, nextRouteHandlers, isAuthMiddlewareName, AUTH_CHECK_RE, matchingBracket } from './js-ast.mjs';
+import { createAliasResolver } from './ts-paths.mjs';
 import { extractPythonFiles } from './py-ast.mjs';
 
 /**
@@ -115,6 +116,7 @@ export function scanRoutesDeep(dir, stack, docTools, opts = {}) {
 
 function scanNextJsRoutes(dir) {
   const routes = [];
+  const middlewareAuth = nextMiddlewareAuth(dir);
 
   // App Router: app/api/**/route.{ts,js}
   const appDirs = ['app/api', 'src/app/api'];
@@ -149,7 +151,11 @@ function scanNextJsRoutes(dir) {
         .replace(/\[\.\.\.(\w+)\]/g, ':$1*')        // Catch-all [...slug]
         .replace(/\[(\w+)\]/g, ':$1');               // Dynamic [id]
 
-      // Extract exported HTTP methods
+      // Extract exported HTTP methods. Each handler is judged by its own body
+      // (AST), or by its own export's text when the file does not parse, plus
+      // a `middleware` file whose matcher covers the path
+      // (docguard.js-ts-extraction#FR-002).
+      const handlers = nextRouteHandlers(content, filePath);
       const methods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS'];
       for (const method of methods) {
         // Match: export async function GET, export function GET, export const GET
@@ -158,14 +164,17 @@ function scanNextJsRoutes(dir) {
           new RegExp(`export\\s+(?:const|let)\\s+${method}\\s*=`),
         ];
         for (const pattern of patterns) {
-          if (pattern.test(content)) {
+          const match = pattern.exec(content);
+          const viaAst = handlers?.get(method);
+          if (match || viaAst) {
             routes.push({
               method,
               path: apiPath,
               handler: method,
               file: relative(dir, filePath),
+              line: viaAst?.line ?? (match ? lineAt(content, match.index) : null),
               source: 'nextjs-app-router',
-              auth: hasAuthCheck(content),
+              auth: (viaAst ? viaAst.auth : exportSegmentAuth(content, match.index)) || middlewareAuth(apiPath),
               description: extractJSDocDescription(content, method),
             });
             break;
@@ -203,14 +212,16 @@ function scanNextJsRoutes(dir) {
       // Detect methods from req.method checks
       const detectedMethods = detectMethodsFromHandler(content);
 
+      const defaultExport = /export\s+default\b/.exec(content);
       for (const method of detectedMethods) {
         routes.push({
           method,
           path: apiPath || '/api',
           handler: `${name}Handler`,
           file: relative(dir, filePath),
+          line: defaultExport ? lineAt(content, defaultExport.index) : null,
           source: 'nextjs-pages-router',
-          auth: hasAuthCheck(content),
+          auth: hasAuthCheck(content) || middlewareAuth(apiPath || '/api'),
           description: extractJSDocDescription(content),
         });
       }
@@ -261,40 +272,183 @@ function scanExpressRoutes(dir, roots = null) {
   // non-null receiver means it applies only to routes whose receiver matches
   // (a same-file `const r = Router(); app.use('/api', r)` — so a sibling
   // `app.get('/health')` in the same file is NOT wrongly prefixed).
-  const mountMap = buildExpressMountMap(files);
+  const mountMap = buildExpressMountMap(files, createAliasResolver(dir));
 
   // ── Phase 2: emit routes, prefixing by mount where known ────────────────────
+  // Auth is per route (docguard.js-ts-extraction#FR-002): the route's own
+  // evidence, or auth middleware on a mount above it.
   const routes = [];
   for (const { content, filePath, fileLabel } of files) {
     const mounts = mountMap.get(filePath) || [];
-    const emit = (method, path, index, receiver) => {
-      const prefixes = mounts
-        .filter(m => m.receiver === null || m.receiver === receiver)
-        .map(m => m.prefix);
-      const finalPaths = prefixes.length ? prefixes.map(p => joinRoutePath(p, path)) : [path];
-      for (const fullPath of finalPaths) {
+    const emit = (r) => {
+      const applicable = mounts.filter(m => m.receiver === null || m.receiver === r.receiver);
+      const targets = applicable.length
+        ? applicable.map(m => ({ path: joinRoutePath(m.prefix, r.path), auth: m.auth }))
+        : [{ path: r.path, auth: false }];
+      for (const target of targets) {
         routes.push({
-          method: method.toUpperCase(),
-          path: fullPath,
-          handler: extractHandlerName(content, index),
+          method: r.method.toUpperCase(),
+          path: target.path,
+          handler: r.handler ?? extractHandlerName(content, r.start),
           file: fileLabel,
+          line: r.line ?? lineAt(content, r.start),
           source: 'express',
-          auth: hasAuthMiddleware(content, path),
-          description: extractNearbyComment(content, index),
+          auth: Boolean(r.auth || target.auth),
+          description: extractNearbyComment(content, r.start),
         });
       }
     };
     const ast = extractJsRouteCalls(content, filePath);
     if (ast) {
-      for (const r of ast) emit(r.method, r.path, r.start, r.receiver ?? null);
+      for (const r of ast) emit({ ...r, receiver: r.receiver ?? null });
     } else {
       const regex = new RegExp(routePattern.source, 'gi');
       let match;
-      while ((match = regex.exec(content)) !== null) emit(match[1], match[2], match.index, null);
+      while ((match = regex.exec(content)) !== null) {
+        emit({ method: match[1], path: match[2], start: match.index, receiver: null, auth: statementAuth(content, match.index) });
+      }
+      for (const r of routeChainsByPattern(content)) emit(r);
     }
   }
 
   return routes;
+}
+
+// ── Pattern-tier route chains and auth (docguard.js-ts-extraction#FR-001/002) ─
+
+/** Top-level comma-separated argument texts of the call whose `(` is at `open`. */
+function callArgs(content, open) {
+  const close = matchingBracket(content, open);
+  if (close < 0) return null;
+  const args = [];
+  let depth = 0, start = open + 1;
+  for (let i = open + 1; i < close; i++) {
+    const ch = content[i];
+    if (ch === '"' || ch === "'" || ch === '`') { for (i++; i < close && content[i] !== ch; i++) if (content[i] === '\\') i++; continue; }
+    if ('([{'.includes(ch)) depth++;
+    else if (')]}'.includes(ch)) depth--;
+    else if (ch === ',' && depth === 0) { args.push(content.slice(start, i).trim()); start = i + 1; }
+  }
+  const last = content.slice(start, close).trim();
+  if (last) args.push(last);
+  return { args, close };
+}
+
+/** Pattern-tier auth of one call's arguments (middleware + handler), text only. */
+function argsAuth(content, middleware, handler) {
+  const isAuthArg = (text) => {
+    const m = /^([A-Za-z_$][\w$]*)(?:\s*\.\s*([A-Za-z_$][\w$]*))?/.exec(text || '');
+    return Boolean(m) && (isAuthMiddlewareName(m[1]) || isAuthMiddlewareName(m[2]));
+  };
+  if (middleware.some(text => text.startsWith('[') ? text.slice(1, -1).split(',').some(t => isAuthArg(t.trim())) : isAuthArg(text))) return true;
+  if (!handler) return false;
+  if (/^[A-Za-z_$][\w$]*$/.test(handler)) {
+    const decl = new RegExp(`(?:function\\s+${handler}\\s*\\(|(?:const|let|var)\\s+${handler}\\s*=\\s*(?:async\\s*)?(?:function\\b|\\([^)]*\\)\\s*=>|[A-Za-z_$][\\w$]*\\s*=>))`).exec(content);
+    if (!decl) return false;
+    const brace = content.indexOf('{', decl.index + decl[0].length);
+    const end = brace < 0 ? -1 : matchingBracket(content, brace);
+    return end > 0 && AUTH_CHECK_RE.test(content.slice(decl.index, end + 1));
+  }
+  return AUTH_CHECK_RE.test(handler);
+}
+
+/** Auth of the `<receiver>.<method>('/path', …)` call starting at `index` (pattern tier). */
+function statementAuth(content, index) {
+  const open = content.indexOf('(', index);
+  const call = open < 0 ? null : callArgs(content, open);
+  if (!call || call.args.length < 2) return false;
+  return argsAuth(content, call.args.slice(1, -1), call.args[call.args.length - 1]);
+}
+
+/** `<x>.route('/p').get(…).post(…)` chains read by pattern when the file does not parse. */
+function routeChainsByPattern(content) {
+  const out = [];
+  const re = /\b([A-Za-z_$][\w$]*)\s*\.\s*route\s*\(\s*(['"`])([^'"`]+)\2\s*\)/g;
+  let m;
+  while ((m = re.exec(content)) !== null) {
+    if (!/(?:app|server|router|routes)$/i.test(m[1])) continue;
+    const path = m[3];
+    if (!(path.startsWith('/') || path === '*')) continue;
+    let i = m.index + m[0].length;
+    for (;;) {
+      const next = /^\s*\.\s*(get|post|put|delete|patch|head|options|all)\s*\(/i.exec(content.slice(i));
+      if (!next) break;
+      const open = i + next[0].length - 1;
+      const call = callArgs(content, open);
+      if (!call) break;
+      const handler = call.args[call.args.length - 1];
+      out.push({
+        method: next[1], path, start: m.index, receiver: null,
+        line: lineAt(content, i + next[0].indexOf(next[1])),
+        handler: /^[A-Za-z_$][\w$]*$/.test(handler || '') ? handler : 'inline',
+        auth: argsAuth(content, call.args.slice(0, -1), handler),
+      });
+      i = call.close + 1;
+    }
+  }
+  return out;
+}
+
+/** 1-based line of a character offset. */
+function lineAt(content, index) {
+  if (typeof index !== 'number' || index < 0) return null;
+  let line = 1;
+  for (let i = 0; i < index && i < content.length; i++) if (content[i] === '\n') line++;
+  return line;
+}
+
+/** Pattern-tier auth of one Next.js export: its text up to the next export. */
+function exportSegmentAuth(content, index) {
+  const rest = content.slice(index + 6);
+  const next = rest.search(/\nexport\s/);
+  return AUTH_CHECK_RE.test(content.slice(index, next < 0 ? content.length : index + 6 + next));
+}
+
+const NEXT_MIDDLEWARE_FILES = ['middleware.ts', 'middleware.js', 'src/middleware.ts', 'src/middleware.js'];
+const MIDDLEWARE_AUTH_RE = /next-auth\/middleware|\bwithAuth\b|\bclerkMiddleware\b|\bauthMiddleware\b|\bgetToken\s*\(|\bauth\s*\(|\bauth\s+as\s+middleware\b|\bjwtVerify\s*\(|\bjwt\s*\.\s*verify\s*\(|\bverifyToken\s*\(|\bgetServerSession\s*\(|\bgetSession\s*\(/;
+
+/**
+ * A predicate for "a Next.js `middleware` file with auth covers this path"
+ * (docguard.js-ts-extraction#FR-002). No auth in the middleware → never. Auth
+ * with no literal matcher → every path. Matchers use Next's path syntax
+ * (`/api/admin/:path*`); only string literals are read.
+ */
+function nextMiddlewareAuth(dir) {
+  for (const rel of NEXT_MIDDLEWARE_FILES) {
+    const abs = resolve(dir, rel);
+    if (!existsSync(abs)) continue;
+    const content = readFileSafe(abs);
+    if (!content || !MIDDLEWARE_AUTH_RE.test(content)) return () => false;
+    const matcher = /\bmatcher\s*:\s*(\[[^\]]*\]|'[^']*'|"[^"]*"|`[^`]*`)/.exec(content);
+    if (!matcher) return () => true;
+    const patterns = [...matcher[1].matchAll(/(['"`])([^'"`]+)\1/g)].map(m => matcherRegex(m[2])).filter(Boolean);
+    return (path) => patterns.some(re => re.test(path));
+  }
+  return () => false;
+}
+
+function matcherRegex(pattern) {
+  let source = '';
+  for (let i = 0; i < pattern.length;) {
+    const param = /^\/:(\w+)([*+?]?)/.exec(pattern.slice(i));
+    if (param) {
+      source += param[2] === '*' ? '(?:/.*)?' : param[2] === '+' ? '/.+' : param[2] === '?' ? '(?:/[^/]+)?' : '/[^/]+';
+      i += param[0].length;
+      continue;
+    }
+    const ch = pattern[i];
+    // A regex group such as `((?!_next).*)` is passed through as written.
+    if (ch === '(') {
+      const end = matchingBracket(pattern, i);
+      if (end < 0) return null;
+      source += pattern.slice(i, end + 1);
+      i = end + 1;
+      continue;
+    }
+    source += /[.+?^${}|[\]\\]/.test(ch) ? `\\${ch}` : ch === '*' ? '.*' : ch;
+    i++;
+  }
+  try { return new RegExp(`^${source}/?$`); } catch { return null; }
 }
 
 /**
@@ -310,11 +464,11 @@ function scanExpressRoutes(dir, roots = null) {
  * paths (non-string-literal prefixes) are skipped. Unmounted files keep their
  * bare paths — exactly the pre-mount-map behavior.
  */
-function buildExpressMountMap(files) {
+function buildExpressMountMap(files, resolveAlias = null) {
   const map = new Map();
-  const add = (absFile, receiver, prefix) => {
+  const add = (absFile, receiver, prefix, auth) => {
     if (!map.has(absFile)) map.set(absFile, []);
-    map.get(absFile).push({ receiver, prefix });
+    map.get(absFile).push({ receiver, prefix, auth });
   };
   const metadata = new Map();
   for (const { content, filePath } of files) {
@@ -326,10 +480,10 @@ function buildExpressMountMap(files) {
   for (const { filePath } of files) {
     const mi = metadata.get(filePath);
     if (!mi) continue;
-    for (const { prefix, ident, receiver } of mi.mounts) {
+    for (const { prefix, ident, receiver, auth } of mi.mounts) {
       const spec = mi.imports[ident];
       if (spec) {
-        const target = resolveLocalImport(filePath, spec);
+        const target = resolveLocalImport(filePath, spec, resolveAlias);
         const targetMeta = target ? metadata.get(target) : null;
         if (!targetMeta) continue;
         const importedSymbol = mi.importSymbols?.[ident];
@@ -348,6 +502,7 @@ function buildExpressMountMap(files) {
           from: { file: filePath, receiver },
           to: { file: target, receiver: targetReceiver },
           prefix,
+          auth: Boolean(auth),
         });
       } else {
         const routeReceivers = new Set(mi.routeReceivers || []);
@@ -357,6 +512,7 @@ function buildExpressMountMap(files) {
           from: { file: filePath, receiver },
           to: { file: filePath, receiver: ident },
           prefix,
+          auth: Boolean(auth),
         });
       }
     }
@@ -371,6 +527,9 @@ function buildExpressMountMap(files) {
     if (!incoming.has(key)) incoming.set(key, []);
     incoming.get(key).push(edge);
   }
+  // Each effective prefix carries whether auth middleware sits on EVERY mount
+  // chain that reaches it: a router reachable at the same prefix without auth
+  // is reachable without auth (docguard.js-ts-extraction#FR-002).
   const memo = new Map();
   const effectivePrefixes = (node, visiting = new Set(), depth = 0) => {
     const key = nodeKey(node);
@@ -379,33 +538,38 @@ function buildExpressMountMap(files) {
     const nodeEdges = incoming.get(key) || [];
     if (nodeEdges.length === 0) return [];
     const nextVisiting = new Set(visiting).add(key);
-    const prefixes = new Set();
+    const prefixes = new Map(); // prefix -> auth
     for (const edge of nodeEdges) {
       const parentKey = nodeKey(edge.from);
       const parentHasIncoming = (incoming.get(parentKey) || []).length > 0;
       const parentPrefixes = parentHasIncoming
         ? effectivePrefixes(edge.from, nextVisiting, depth + 1)
-        : [''];
-      for (const parentPrefix of parentPrefixes) {
-        prefixes.add(joinRoutePath(parentPrefix, edge.prefix));
+        : [{ prefix: '', auth: false }];
+      for (const parent of parentPrefixes) {
+        const prefix = joinRoutePath(parent.prefix, edge.prefix);
+        const auth = parent.auth || edge.auth;
+        prefixes.set(prefix, prefixes.has(prefix) ? prefixes.get(prefix) && auth : auth);
         if (prefixes.size >= 256) break;
       }
       if (prefixes.size >= 256) break;
     }
-    const resolved = [...prefixes];
+    const resolved = [...prefixes].map(([prefix, auth]) => ({ prefix, auth }));
     memo.set(key, resolved);
     return resolved;
   };
 
   for (const node of nodes.values()) {
-    for (const prefix of effectivePrefixes(node)) add(node.file, node.receiver, prefix);
+    for (const { prefix, auth } of effectivePrefixes(node)) add(node.file, node.receiver, prefix, auth);
   }
   return map;
 }
 
-/** Resolve a RELATIVE import specifier to an absolute file path (best effort). */
-function resolveLocalImport(fromFile, spec) {
-  if (!spec.startsWith('.')) return null; // bare/node_modules specifiers aren't our routers
+/**
+ * Resolve a relative, or tsconfig/jsconfig-aliased, import specifier to an
+ * absolute file path (best effort). Bare package specifiers are not our routers.
+ */
+function resolveLocalImport(fromFile, spec, resolveAlias = null) {
+  if (!spec.startsWith('.')) return resolveAlias ? resolveAlias(fromFile, spec) : null;
   const base = resolve(dirname(fromFile), spec);
   for (const ext of ['', '.ts', '.js', '.mjs', '.cjs', '.tsx', '.jsx']) {
     const cand = base + ext;
@@ -441,28 +605,30 @@ function scanFastifyRoutes(dir, roots = null) {
       const content = readFileSafe(filePath);
       if (!content) return;
 
-      const emit = (method, path, index) => routes.push({
+      const emit = (method, path, index, auth, line) => routes.push({
         method: method.toUpperCase(),
         path,
         handler: extractHandlerName(content, index),
         file: relative(dir, filePath),
+        line: line ?? lineAt(content, index),
         source: 'fastify',
-        auth: hasAuthCheck(content),
+        auth: Boolean(auth),
         description: extractNearbyComment(content, index),
       });
 
       // AST-first: method shorthand (fastify.get('/x')) AND the declarative
       // object form (fastify.route({ method, url })) the regex never matched.
-      // Both return null only on parse failure → regex fallback.
+      // Both return null only on parse failure → regex fallback. Auth is the
+      // route's own evidence (docguard.js-ts-extraction#FR-002).
       const calls = extractJsRouteCalls(content, filePath);
       const objs = extractJsRouteObjects(content, filePath);
       if (calls || objs) {
-        for (const r of calls || []) emit(r.method, r.path, r.start);
-        for (const r of objs || []) emit(r.method, r.path, r.start);
+        for (const r of calls || []) emit(r.method, r.path, r.start, r.auth, r.line);
+        for (const r of objs || []) emit(r.method, r.path, r.start, r.auth, r.line);
       } else {
         let match;
         const regex = new RegExp(pattern.source, 'gi');
-        while ((match = regex.exec(content)) !== null) emit(match[1], match[2], match.index);
+        while ((match = regex.exec(content)) !== null) emit(match[1], match[2], match.index, statementAuth(content, match.index));
       }
     });
   }
@@ -487,25 +653,27 @@ function scanHonoRoutes(dir, roots = null) {
       const content = readFileSafe(filePath);
       if (!content) return;
 
-      const emit = (method, path, index) => routes.push({
+      const emit = (method, path, index, auth, line) => routes.push({
         method: method.toUpperCase(),
         path,
         handler: '',
         file: relative(dir, filePath),
+        line: line ?? lineAt(content, index),
         source: 'hono',
-        auth: hasAuthCheck(content),
+        auth: Boolean(auth),
         description: extractNearbyComment(content, index),
       });
 
       // AST-first (any receiver, multi-line, template paths — Hono/Koa method
-      // shorthand `app.get('/x')` / `router.get('/x')`); regex fallback.
+      // shorthand `app.get('/x')` / `router.get('/x')`); regex fallback. Auth
+      // is the route's own evidence (docguard.js-ts-extraction#FR-002).
       const calls = extractJsRouteCalls(content, filePath);
       if (calls) {
-        for (const r of calls) emit(r.method, r.path, r.start);
+        for (const r of calls) emit(r.method, r.path, r.start, r.auth, r.line);
       } else {
         let match;
         const regex = new RegExp(pattern.source, 'gi');
-        while ((match = regex.exec(content)) !== null) emit(match[1], match[2], match.index);
+        while ((match = regex.exec(content)) !== null) emit(match[1], match[2], match.index, statementAuth(content, match.index));
       }
     });
   }
@@ -798,15 +966,6 @@ function hasAuthCheck(content) {
     /req\.user/, /req\.auth/,
   ];
   return authPatterns.some(p => p.test(content));
-}
-
-function hasAuthMiddleware(content, routePath) {
-  // Check if route has auth middleware before handler
-  const pattern = new RegExp(
-    `['"\`]${routePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}['"\`]\\s*,\\s*(auth|protect|requireAuth|isAuthenticated|authenticate)`,
-    'i'
-  );
-  return pattern.test(content) || hasAuthCheck(content);
 }
 
 function detectMethodsFromHandler(content) {

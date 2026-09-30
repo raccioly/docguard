@@ -154,6 +154,41 @@ npx docguard-cli generate --dir ./my-project
 
 **Detects:** Next.js, React, Vue, Angular, Express, Fastify, Hono, Django, FastAPI, SvelteKit, and more.
 
+What the JS/TS scanners read:
+
+- **Routes**:
+  - `app.get('/x', …)` and `router.route('/x').get(…).post(…)` chains;
+  - mount prefixes from `app.use('/api', router)`, including routers imported
+    through a `tsconfig`/`jsconfig` path alias (`@/routes`);
+  - the Next.js App and Pages routers.
+- **Auth** is judged per route:
+  - the route's own middleware (`requireAuth`, `passport.authenticate(...)`);
+  - an auth check in its own handler;
+  - an earlier `use(auth)` on its router, or auth middleware on a mount above
+    it (`apiRouter.use('/orders', requireAuth, ordersRouter)`);
+  - for Next.js, the exported handler's body and a `middleware` file whose
+    `matcher` covers the path.
+
+  A `req.user` read elsewhere in the file does not mark a route.
+- **Environment variables**:
+  - `process.env.X`, `process.env['X']` and `import.meta.env.X`;
+  - destructuring: `const { A, B = 'x', C: c } = process.env`.
+
+  Each read site records its file, line and any default (`B = 'x'`,
+  `?? 'x'`, `|| 'x'`). In a Next.js project, `pages/`, `components/`,
+  `hooks/`, `utils/`, `middleware.*`, `instrumentation.*` and `next.config.*`
+  are scanned too.
+- **Entities**:
+  - Prisma models, with enums reported apart and each relation drawn once;
+  - Drizzle tables, from `drizzle.config.*` `schema` first, else a search of
+    the source roots;
+  - Mongoose schemas (nested `{ type, ref }` fields, arrays of refs, the
+    `model('Name', schema)` name), anywhere under the source roots, including
+    `lib/models`.
+
+  Guard's schema check reads these through the same discovery, so it and
+  `generate` name the same entities.
+
 #### As-built specs: `docguard generate --spec <area>`
 
 For code that has no spec (a refactor, a migration, onboarding), DocGuard
@@ -161,8 +196,10 @@ proposes a Spec Kit spec for **one** directory. It scans the facts it can
 establish without an LLM (routes, exported JS/TS symbols, environment variables
 read, and data entities) and writes one `FR-NNN` candidate per fact. Each
 candidate carries a `<!-- docguard:fact <kind> <key> -->` marker and a file
-citation. DocGuard writes no requirement prose; every statement is an agent
-task.
+citation: the file and line of the route registration, export, or first env
+read. A Next.js route handler is one fact, its route; its `GET`/`POST` export is
+not listed again. DocGuard writes no requirement prose; every statement is an
+agent task.
 
 ```bash
 npx docguard-cli generate --spec src/billing                # preview the candidates

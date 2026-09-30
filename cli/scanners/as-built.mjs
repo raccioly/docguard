@@ -16,6 +16,7 @@
  * @implements docguard.as-built-specs#FR-001
  * @implements docguard.as-built-specs#FR-002
  * @implements docguard.as-built-specs#FR-005
+ * @implements docguard.js-ts-extraction#FR-009
  */
 
 import { existsSync, lstatSync, readdirSync, readFileSync, realpathSync, statSync } from 'node:fs';
@@ -67,10 +68,16 @@ export function collectAreaFacts(projectDir, areaRel, config = {}) {
   const framework = profile.primary?.framework || profile.frameworks?.[0] || '';
   const docTools = detectDocTools(projectDir);
 
+  // A Next.js route handler is one fact, the route: its `GET`/`POST` export
+  // (App Router) or `default` export (Pages Router) is not a second one, so a
+  // new handler is one SPR007 drift, not two (docguard.js-ts-extraction#FR-009).
+  const handlerExports = new Set();
   for (const r of scanRoutesDeep(projectDir, { framework: (profile.frameworks || []).join(' ') }, docTools, { config }) || []) {
     const file = r.file ? String(r.file).replace(/\\/g, '/') : null;
     if (!file || r.source === 'openapi' || !within(file, areaRel) || !r.method || !r.path) continue;
     add('route', `${String(r.method).toUpperCase()} ${r.path}`, file, r.line ?? null);
+    if (r.source === 'nextjs-app-router') handlerExports.add(`${file}#${String(r.method).toUpperCase()}`);
+    if (r.source === 'nextjs-pages-router') handlerExports.add(`${file}#default`);
   }
 
   walkFiles(resolve(projectDir, areaRel), abs => {
@@ -78,10 +85,19 @@ export function collectAreaFacts(projectDir, areaRel, config = {}) {
     if (!JS_EXT.has(extname(abs)) || isTestSource(file) || /\.d\.ts$/.test(file)) return;
     let content;
     try { content = readFileSync(abs, 'utf8'); } catch { return; }
-    for (const { name, line } of exportedNames(content, abs)) add('export', `${file}#${name}`, file, line ?? null);
+    for (const { name, line } of exportedNames(content, abs)) {
+      if (handlerExports.has(`${file}#${name}`)) continue;
+      add('export', `${file}#${name}`, file, line ?? null);
+    }
   });
 
-  for (const name of grepEnvUsage(projectDir, config, { within: areaRel })) add('env', name);
+  // Env facts cite the first read under the area (by file, then line).
+  const env = grepEnvUsage(projectDir, config, { within: areaRel });
+  for (const name of env) {
+    const first = [...(env.sites?.get(name) || [])]
+      .sort((a, b) => a.file.localeCompare(b.file) || (a.line ?? 0) - (b.line ?? 0))[0];
+    add('env', name, first?.file ?? null, first?.line ?? null);
+  }
 
   const schemas = scanSchemasDeep(projectDir, { framework }, docTools, config) || { entities: [] };
   for (const e of schemas.entities || []) {

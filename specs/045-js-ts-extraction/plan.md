@@ -98,8 +98,9 @@
     scan has no AST tier for `process.env` today and the pattern is
     self-delimiting (`{ ... } = process.env`).
 - **Next.js roots only for Next.js.**
-  - Decision: add `pages`, `components`, `hooks`, `utils` (and `src/` forms)
-    when `next` is a dependency or `next.config.*` exists.
+  - Decision: add `pages`, `components`, `hooks` and `utils` when `next` is a
+    dependency or `next.config.*` exists. Their `src/` forms are already
+    under the `src` root, so adding them would walk those files twice.
   - Rationale: other projects' roots, and so every other scanner's input,
     stay byte-identical (spec 043 relies on that).
 - **Path aliases.**
