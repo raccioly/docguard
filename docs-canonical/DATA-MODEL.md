@@ -218,8 +218,8 @@ DocGuard only reads it.
 
 Each tracked file resolves to at most one owner: an exact path beats any glob,
 and a longer literal directory prefix beats a shorter one; two equal matches
-are a tie (OWN002). A malformed block is an error (OWN007), and no path has
-an owner until it is fixed.
+are a tie (OWN002). A malformed block is an error (OWN007), and every owner
+lookup reports that error until the block is fixed.
 
 ## Task Context Packet
 
