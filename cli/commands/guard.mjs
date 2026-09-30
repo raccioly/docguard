@@ -162,6 +162,7 @@ import { validateDocumentLifecycle } from '../validators/document-lifecycle.mjs'
 import { validateSpecRegistry } from '../validators/spec-registry.mjs';
 import { validateDocDependency } from '../validators/doc-dependency.mjs';
 import { validatePathScopedRules } from '../validators/path-scoped-rules.mjs';
+import { validateDocOwnership } from '../validators/doc-ownership.mjs';
 import { validateEvidence } from '../validators/evidence.mjs';
 import { coverSemanticClaims } from '../evidence/evaluate.mjs';
 
@@ -362,6 +363,7 @@ export function runGuardInternal(projectDir, config) {
     { key: 'specRegistry', name: 'Spec-Registry', fn: () => validateSpecRegistry(projectDir, config) },
     { key: 'docDependency', name: 'Doc-Dependency', fn: () => validateDocDependency(projectDir, config) },
     { key: 'pathScopedRules', name: 'Path-Scoped-Rules', fn: () => validatePathScopedRules(projectDir, config) },
+    { key: 'docOwnership', name: 'Doc-Ownership', fn: () => validateDocOwnership(projectDir, config) },
     { key: 'evidence', name: 'Evidence', fn: () => validateEvidence(projectDir, config) },
     { key: 'crossReference', name: 'Cross-Reference', fn: () => validateCrossReferences(projectDir, config) },
     { key: 'generatedStaleness', name: 'Generated-Staleness', fn: () => validateGeneratedStaleness(projectDir, config) },
@@ -684,7 +686,7 @@ export function liteValidatorsConfig(config = {}) {
     'schemaSync', 'specKit', 'crossReference', 'generatedStaleness',
     'canonicalSync', 'surfaceSync', 'metricsConsistency', 'documentLifecycle',
     'specRegistry', 'diffSuspicion', 'referenceExistence', 'apiDocSmells',
-    'evidence', 'docDependency', 'pathScopedRules',
+    'evidence', 'docDependency', 'pathScopedRules', 'docOwnership',
   ];
   const userValidators = (config && config.validators) || {};
   const exactHighValidators = new Set(

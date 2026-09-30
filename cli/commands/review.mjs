@@ -16,6 +16,7 @@
  * @implements docguard.doc-dependency-lock#FR-006
  */
 
+import { loadOwnership } from '../scanners/doc-ownership.mjs';
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -78,7 +79,7 @@ function pruneLock(projectDir, config) {
  * Low-confidence proposals: existing file paths a section already mentions.
  * Sections are the covered ones plus every `## ` heading block.
  */
-export function suggestCovers(projectDir, doc) {
+export function suggestCovers(projectDir, doc, config = {}) {
   const content = readFileSync(resolve(projectDir, doc), 'utf8');
   const blocks = [];
   let current = { heading: '(preamble)', lines: [] };
@@ -99,6 +100,15 @@ export function suggestCovers(projectDir, doc) {
       if (!rel.includes('..') && existsSync(resolve(projectDir, rel))) paths.add(rel);
     }
     if (paths.size) out.push({ heading: block.heading, covers: [...paths].sort(), confidence: 'low' });
+  }
+  // docguard.doc-ownership-map#FR-004: what the ownership map says this doc's
+  // sections are responsible for. Still low confidence: owning a directory
+  // is not describing each symbol in it.
+  const map = loadOwnership(projectDir, config);
+  if (map.present && !map.error) {
+    for (const entry of map.entries.filter(e => e.doc === doc.replace(/^\.\//, ''))) {
+      out.push({ heading: entry.section ? `#${entry.section} (ownership)` : '(ownership)', covers: entry.patterns.map(p => p.raw).sort(), confidence: 'low', source: 'ownership' });
+    }
   }
   return out;
 }
@@ -125,7 +135,7 @@ export function runReview(projectDir, config, flags = {}) {
     else if (flags.suggest) {
       const doc = String(flags.suggest);
       if (!candidateDocs(projectDir, config).includes(doc)) throw new Error(`${doc} is not a canonical doc, README.md or AGENTS.md.`);
-      result = { command: 'review', action: 'suggest', status: 'SUGGESTED', doc, suggestions: suggestCovers(projectDir, doc), note: 'Low-confidence: paths the text mentions. Declare only what the section actually describes.' };
+      result = { command: 'review', action: 'suggest', status: 'SUGGESTED', doc, suggestions: suggestCovers(projectDir, doc, config), note: 'Low-confidence: paths the text mentions. Declare only what the section actually describes.' };
     } else {
       const status = docLockStatus(projectDir, config);
       const worst = status.lockError ? 'UNREADABLE'

@@ -283,8 +283,12 @@ const COMMAND_HELP = {
   },
   trace: {
     summary: 'Requirements traceability matrix.',
-    usage: 'docguard trace [--reverse] [--features]',
-    flags: [['--reverse', 'Code→doc map instead of doc→code']],
+    usage: 'docguard trace [--reverse <path>] [--features] [--owners [--suggest]]',
+    flags: [
+      ['--reverse', 'Code→doc map instead of doc→code (the declared owner first, when an ownership map exists)'],
+      ['--owners', 'The ownership map: files per entry, unowned directories, ties'],
+      ['--owners --suggest', 'Print a draft ownership block from the source layout; never writes'],
+    ],
     examples: ['docguard trace', 'docguard trace --reverse'],
   },
   upgrade: {
@@ -518,6 +522,10 @@ async function main() {
       flags.changedOnly = true;
     } else if (args[i] === '--reverse') {
       flags.reverse = true;
+    } else if (args[i] === '--owners') {
+      flags.owners = true;
+    } else if (args[i] === '--suggest' && command === 'trace') {
+      flags.suggest = true;
     } else if (args[i] === '--features') {
       // v0.30: `docguard trace --features` — per-feature spec-adherence report.
       flags.features = true;

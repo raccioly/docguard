@@ -311,6 +311,19 @@ const EXPLAINERS = {
     example: '`.cursor/rules/api.mdc` with `globs: "src/api/**"` after `src/api/` moved reports PSR001.',
     standard: 'Canonical-Driven Development path-scoped agent rules (specs/033-path-scoped-rules)',
   },
+  docOwnership: {
+    title: 'Doc-Ownership — one responsible doc section per source path',
+    what: 'Resolves every tracked file against the `ownership` block in .docguard.json (exact path beats glob; longer literal prefix beats shorter) and lints a committed .devin/wiki.json against Devin\'s documented rules.',
+    why: 'Which doc should change when cli/writers/ changes? Without a declared owner the answer is a text search. A directory nobody owns stays undocumented; two owners for one path drift apart; a wiki note naming a deleted path keeps steering Devin toward it.',
+    triggers: [
+      ['no ownership entry covers', 'Add the directory to the paths of the doc section that describes it (`docguard trace --owners --suggest` drafts a block).'],
+      ['equally specific owners', 'Narrow one entry or name the file exactly in its owner.'],
+      ['matches no tracked file', 'Point the pattern at where the code lives now.'],
+      ['.devin/wiki.json', 'Keep within Devin\'s limits and point notes at paths that exist.'],
+    ],
+    example: '`{"ownership":{"entries":[{"doc":"docs-canonical/ARCHITECTURE.md","section":"component-map","paths":["src/**"]}]}}`',
+    standard: 'Canonical-Driven Development doc ownership map (specs/034-doc-ownership-map)',
+  },
   evidence: {
     title: 'Evidence — declared statements match bounded local sources',
     what: 'Evaluates opt-in declarations in `.docguard-evidence.json`. Each declaration selects one exact statement under one Markdown heading, reads a bounded local JSON value, file collection, saved oasdiff report, or saved Buf report, and reports verified-within-scope, contradicted, stale, inconclusive, or unsupported.',
@@ -454,6 +467,7 @@ const DISPLAY_NAMES = {
   specRegistry: 'Spec-Registry',
   docDependency: 'Doc-Dependency',
   pathScopedRules: 'Path-Scoped-Rules',
+  docOwnership: 'Doc-Ownership',
   crossReference: 'Cross-Reference',
   generatedStaleness: 'Generated-Staleness',
   surfaceSync: 'Surface-Sync',

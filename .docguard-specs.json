@@ -818,12 +818,12 @@
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 619
+            "line": 621
           },
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 646
+            "line": 648
           },
           {
             "requirementId": "FR-021",
@@ -1648,22 +1648,28 @@
         "artifacts": [
           {
             "path": "specs/034-doc-ownership-map/spec.md",
-            "digest": "sha256:61ff6937c4912ca8e0592d8f08e411070464241dbeef6ea65e5d58c829606b5c"
+            "digest": "sha256:425eca0191440ccb0e5a06be95fdd0c3d23ff1a865e0aa5727dfe22aaa09b2df"
           },
           {
             "path": "specs/034-doc-ownership-map/plan.md",
-            "digest": "sha256:ce3a15eeb3562261f771c182ee24946998c51063aeccf1c1678f05a36e8d13d1"
+            "digest": "sha256:d9d85dccb95a09f38ab274dac266af3768ea9143c1eeab53f971a561ad40a4df"
           },
           {
             "path": "specs/034-doc-ownership-map/tasks.md",
-            "digest": "sha256:4544ec8ac6e9ce2261f5d6f69dffdfbebb4a38895eaa4f66a95bffb177f892bc"
+            "digest": "sha256:20a010b9ef9572b728267c98c77cfe2598a2854035c6f71c81bf400ea6876d1b"
           }
         ],
         "taskCompletion": {
-          "checked": 0,
+          "checked": 11,
           "total": 11
         },
-        "implementationEvidence": [],
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-005",
+            "file": "cli/commands/trace.mjs",
+            "line": 53
+          }
+        ],
         "testEvidence": []
       }
     },
@@ -5811,7 +5817,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/docguard.mjs",
-            "line": 930
+            "line": 938
           },
           {
             "requirementId": "FR-011",

@@ -4,7 +4,7 @@
 
 **Created**: 2026-09-29
 
-**Status**: Draft
+**Status**: Active
 
 **Spec ID**: `docguard.doc-ownership-map`
 
@@ -45,8 +45,12 @@ So these questions have no exact answer:
 
 Devin's wiki answers the first question with `.devin/wiki.json`: pages, each
 with a title and a purpose, plus repository notes that steer an LLM writer.
-Nothing checks that file. Devin enforces its own limits (as researched: 30
-pages, 100 notes, 10,000 characters per note) and a note naming a deleted
+Nothing checks that file. Devin documents its rules (checked 2026-09-30 at
+docs.devin.ai/work-with-devin/deepwiki): `repo_notes` and `pages` are
+required, `pages` needs at least one page with a unique non-empty title and a
+purpose, at most 30 pages (80 on enterprise), at most 100 notes counting repo
+and page notes together, at most 10,000 characters per note. Devin encourages
+naming paths in notes but does not check them, so a note naming a deleted
 path keeps steering the writer toward it.
 
 ## User Scenarios & Testing *(mandatory)*
@@ -106,9 +110,10 @@ written.
 
 ### User Story 6 - A committed Devin wiki file is linted (Priority: P3)
 
-1. **Given** a `.devin/wiki.json` with more than 30 pages, more than 100
-   notes, or a note longer than 10,000 characters, **Then** OWN005 names the
-   limit and the count.
+1. **Given** a `.devin/wiki.json` with more than 30 pages (or
+   `devinWiki.maxPages`, up to 80 on enterprise), more than 100 notes in
+   total, a note longer than 10,000 characters, a missing required key, no
+   pages, or a repeated title, **Then** OWN005 names the rule and the count.
 2. **Given** a note or page purpose that names a repository path that does not
    exist, **Then** OWN006 names the page or note and the path.
 3. **Given** no `.devin/wiki.json`, **Then** nothing is reported.
@@ -121,7 +126,9 @@ written.
   file path beats any glob, and a longer literal prefix beats a shorter one.
   Anything else that overlaps is equally specific (OWN002).
 - Generated, vendored and ignored directories are never "unowned".
-  `.docguardignore`, `config.ignore` and `isNonProductPath` apply.
+  `.docguardignore` and `config.ignore` apply. Under the default roots,
+  `isNonProductPath` (tests, fixtures, examples) applies too; a declared root
+  is checked as declared, so `roots: ["tests"]` asks for tests to be owned.
 - A root that does not exist is OWN003 for the root.
 - A path pattern that leaves the project (`..`, absolute) is refused as
   OWN007.
@@ -144,11 +151,13 @@ written.
   - **OWN001** (warn, escalate): an unowned source directory under a root,
     reported at its highest unowned directory;
   - **OWN002** (warn, escalate): two entries equally specific for one file;
-  - **OWN003** (warn, act): an entry or root that matches no tracked file;
+  - **OWN003** (warn, act): an entry pattern or root that matches no tracked
+    file; low confidence when other patterns of the same entry still match;
   - **OWN004** (warn, act): an entry whose doc or section does not exist;
-  - **OWN005** (warn, act): `.devin/wiki.json` over a documented limit;
-  - **OWN006** (warn, act): a path named in `.devin/wiki.json` that does not
-    resolve;
+  - **OWN005** (warn, act): `.devin/wiki.json` breaking a documented rule
+    (a limit, a required key, a repeated title);
+  - **OWN006** (warn, act): a path named in `.devin/wiki.json` that is not in
+    the repository. This is DocGuard's rule, not Devin's;
   - **OWN007** (error): an unreadable ownership block or wiki file, or an
     unsafe path pattern.
 - **FR-004**: The resolver MUST be a scanner that other features call.
@@ -157,9 +166,12 @@ written.
 - **FR-005**: `trace --owners` MUST list each entry with its matched file
   count and each unowned directory. `--format json` MUST give the same data.
   `trace --owners --suggest` MUST print a proposed block and MUST NOT write.
-- **FR-006**: The wiki limits (30 pages, 100 notes, 10,000 characters per
-  note) and field names MUST be verified against Devin's current
-  documentation before release and kept in one constant with the date checked.
+- **FR-006**: The wiki limits and field names MUST be verified against
+  Devin's current documentation and kept in one constant with the date
+  checked (`DEVIN_WIKI`, 2026-09-30). The page cap MUST be configurable
+  (`devinWiki.maxPages`), because a repository cannot tell its plan. Note
+  length is counted in code points: the docs do not say, and this reports
+  only what is certainly over.
 - **FR-007**: A project without an `ownership` block and without
   `.devin/wiki.json` MUST produce the same guard findings as before, apart
   from the validator list.

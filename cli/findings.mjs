@@ -646,6 +646,48 @@ export const CODES = {
     help: '`.docguard-doc-lock.json` does not parse or does not match its schema (schemas/docguard-doc-lock.schema.json). Nothing in it can be trusted, so no section is reported current. Restore it from git, or delete it and accept each covered section again.',
     suppress: null,
   },
+  OWN001: {
+    validator: 'docOwnership',
+    title: 'Source directory with no owning doc section',
+    help: 'Under an ownership root, this directory holds source code that no `ownership.entries[].paths` pattern covers. Nobody is named as responsible for documenting it, so a change there has no doc to update. It is reported at the highest directory with no owned file in it, not once per file. Add the directory to the paths of the doc section that describes it, or add an entry. Test, fixture and example paths are skipped under the default roots; a declared root is checked as declared.',
+    suppress: null,
+  },
+  OWN002: {
+    validator: 'docOwnership',
+    title: 'Two ownership entries are equally specific for one file',
+    help: 'Two entries match the same file with equal specificity (an exact file path beats any glob; a longer literal directory prefix beats a shorter one), so the file has no single owner and the two docs will drift apart. Narrow one entry, or name the file exactly in the entry that owns it.',
+    suppress: null,
+  },
+  OWN003: {
+    validator: 'docOwnership',
+    title: 'Ownership pattern or root matches nothing',
+    help: "An `ownership` entry's path pattern, or an ownership root, matches no tracked file, usually because the code moved. Low confidence when other patterns of the same entry still match. Point it at where the code lives now, or remove it.",
+    suppress: null,
+  },
+  OWN004: {
+    validator: 'docOwnership',
+    title: 'Ownership entry names a missing doc or section',
+    help: 'An `ownership` entry names a doc that does not exist, or a `section` that is neither a `docguard:section` id nor a heading anchor in that doc. Name an existing doc and section.',
+    suppress: null,
+  },
+  OWN005: {
+    validator: 'docOwnership',
+    title: '.devin/wiki.json breaks a documented Devin rule',
+    help: "The committed `.devin/wiki.json` that steers Devin's DeepWiki breaks a rule from Devin's documentation (checked 2026-09-30): `repo_notes` and `pages` are required, `pages` needs at least one page, titles must be unique and non-empty, every page needs a `purpose`, at most 30 pages (80 on enterprise: set `devinWiki.maxPages`), at most 100 notes counting repo and page notes together, at most 10,000 characters per note. Devin rejects a file without pages; what it does with other violations is not documented.",
+    suppress: null,
+  },
+  OWN006: {
+    validator: 'docOwnership',
+    title: '.devin/wiki.json names a path that does not exist',
+    help: "A note or page purpose in `.devin/wiki.json` names a file or directory (`src/api/`, `docs/x.md`) that is not tracked in the repository. Devin's documentation encourages naming paths but does not check them, so a stale path keeps steering the generated wiki toward code that is gone. This is DocGuard's own rule. Point the note at the path that replaced it, or remove it.",
+    suppress: null,
+  },
+  OWN007: {
+    validator: 'docOwnership',
+    title: 'Ownership map or wiki file is unreadable',
+    help: 'The `ownership` block in `.docguard.json` is malformed (for example `entries` is not a list, or a path uses `..` or an absolute prefix), or `.devin/wiki.json` is not valid JSON. Nothing in it can be trusted, so no path counts as owned. Fix it.',
+    suppress: null,
+  },
   PSR001: {
     validator: 'pathScopedRules',
     title: 'Path-scoped rule matches no tracked file',

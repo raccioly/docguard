@@ -29,7 +29,9 @@ const CODE_EXTENSIONS = new Set([
 // a downstream project Python user: TEST-SPEC.md was flagged unlinked even
 // though Python tests existed because `.test.mjs` didn't match `test_*.py`).
 import { TEST_PATTERNS, TRACE_MAP, isTraceableSource } from '../shared-trace-patterns.mjs';
-import { referenceKind } from '../scanners/doc-references.mjs';
+import { referenceKind, docAnnotationsIn } from '../scanners/doc-references.mjs';
+import { ownerOf, ownershipReport, SOURCE_RE, projectFiles } from '../scanners/doc-ownership.mjs';
+import { scanComponents } from '../scanners/inventory.mjs';
 
 
 /**
@@ -45,6 +47,74 @@ import { referenceKind } from '../scanners/doc-references.mjs';
  *
  * Output: one line per (doc, match-line) pair, with the surrounding context.
  */
+/**
+ * `trace --owners`: the ownership map as data; `--suggest` drafts a block from
+ * the source layout, `@doc` annotations and TRACE_MAP, and never writes.
+ * @implements docguard.doc-ownership-map#FR-005
+ */
+export function runTraceOwners(projectDir, config, flags) {
+  const isJson = flags.format === 'json';
+  if (flags.suggest) {
+    const draft = suggestOwnership(projectDir, config);
+    if (isJson) console.log(JSON.stringify({ ownership: draft, note: 'Draft only: DocGuard never writes it. Replace each purpose, then add it to .docguard.json.' }, null, 2));
+    else {
+      console.log(`${c.bold}Draft ownership block${c.reset} ${c.dim}(not written; fill in each purpose, then add it to .docguard.json)${c.reset}\n`);
+      console.log(JSON.stringify({ ownership: draft }, null, 2));
+    }
+    return draft;
+  }
+  const report = ownershipReport(projectDir, config);
+  const data = {
+    present: report.map.present,
+    error: report.map.error,
+    roots: report.roots,
+    entries: report.entries.map(({ entry, files, deadPatterns }) => ({ key: entry.key, purpose: entry.purpose, paths: entry.patterns.map(p => p.raw), files, deadPatterns })),
+    unowned: report.unowned,
+    ties: report.ties.map(t => ({ entries: t.entries.map(e => e.key), example: t.example, count: t.count })),
+    deadRoots: report.deadRoots,
+  };
+  if (isJson) { console.log(JSON.stringify(data, null, 2)); return data; }
+  console.log(`${c.bold}📍 Doc ownership${c.reset}\n`);
+  if (!data.present) { console.log(`  ${c.dim}No ownership block in .docguard.json. Draft one: ${c.cyan}docguard trace --owners --suggest${c.reset}\n`); return data; }
+  if (data.error) { console.log(`  ${c.red}✗ ${data.error}${c.reset}\n`); return data; }
+  for (const e of data.entries) console.log(`  ${c.cyan}${e.key}${c.reset} ${c.dim}— ${e.files} file(s)${e.deadPatterns.length ? `; no match: ${e.deadPatterns.join(', ')}` : ''}${c.reset}`);
+  if (data.unowned.length) console.log(`\n  ${c.yellow}Unowned:${c.reset} ${data.unowned.join(', ')}`);
+  for (const t of data.ties) console.log(`  ${c.yellow}Tie:${c.reset} ${t.entries.join(' = ')} for ${t.example}`);
+  console.log('');
+  return data;
+}
+
+/** A draft block: one entry per canonical doc that the layout suggests. */
+export function suggestOwnership(projectDir, config) {
+  const { files } = projectFiles(projectDir, config);
+  const sources = files.filter(f => SOURCE_RE.test(f));
+  const modules = scanComponents(projectDir, config).filter(m => m.kind === 'module').map(m => m.path);
+  const byDoc = new Map();
+  const add = (doc, path) => { if (!byDoc.has(doc)) byDoc.set(doc, new Set()); byDoc.get(doc).add(path); };
+  for (const mod of modules) {
+    const inside = sources.filter(f => f.startsWith(`${mod}/`));
+    if (inside.length === 0) continue;
+    // A module's `@doc` annotations vote first; then TRACE_MAP's patterns.
+    const votes = new Map();
+    for (const file of inside.slice(0, 200)) {
+      let content = '';
+      try { content = readFileSync(resolve(projectDir, file), 'utf8'); } catch { continue; }
+      for (const doc of docAnnotationsIn(content)) votes.set(doc, (votes.get(doc) || 0) + 1);
+    }
+    let doc = [...votes].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]?.[0];
+    if (!doc) {
+      doc = Object.entries(TRACE_MAP).find(([, spec]) => spec.sourcePatterns.some(p => inside.some(f => p.glob.test(f))))?.[0] || 'ARCHITECTURE.md';
+    }
+    add(doc.includes('/') ? doc : `docs-canonical/${basename(doc)}`, `${mod}/**`);
+  }
+  return {
+    roots: modules.filter(m => sources.some(f => f.startsWith(`${m}/`))),
+    entries: [...byDoc].sort(([a], [b]) => a.localeCompare(b)).map(([doc, paths]) => ({
+      doc, purpose: '<what this doc explains about these paths>', paths: [...paths].sort(),
+    })),
+  };
+}
+
 export function runTraceReverse(projectDir, config, flags) {
   const target = flags.args && flags.args[0];
   if (!target) {
@@ -73,6 +143,9 @@ export function runTraceReverse(projectDir, config, flags) {
 
   // Normalize the target path: strip leading ./
   const normalized = target.replace(/^\.\//, '');
+  // docguard.doc-ownership-map#FR-004: the declared owner is the exact answer;
+  // the text matches below are heuristics.
+  const declared = ownerOf(projectDir, config, normalized);
 
   const matches = []; // { doc, line, content, kind }
   // Recursive — a nested doc mentioning this file must still be found, or
@@ -92,12 +165,17 @@ export function runTraceReverse(projectDir, config, flags) {
   if (flags.format === 'json') {
     console.log(JSON.stringify({
       target: normalized,
+      owner: declared.owner,
       matches,
       timestamp: new Date().toISOString(),
     }, null, 2));
     return;
   }
 
+  if (declared.owner) {
+    const o = declared.owner;
+    console.log(`  ${c.green}Owner (declared):${c.reset} ${c.cyan}${o.key}${c.reset}${o.purpose ? ` ${c.dim}— ${o.purpose}${c.reset}` : ''} ${c.dim}(matched by ${o.matchedBy})${c.reset}\n`);
+  }
   if (matches.length === 0) {
     console.log(`  ${c.yellow}⚠️  No canonical doc references "${normalized}"${c.reset}`);
     console.log(`  ${c.dim}Consider documenting this file in docs-canonical/ARCHITECTURE.md or DATA-MODEL.md${c.reset}`);
@@ -123,6 +201,7 @@ export function runTraceReverse(projectDir, config, flags) {
 }
 
 export function runTrace(projectDir, config, flags) {
+  if (flags.owners) return runTraceOwners(projectDir, config, flags);
   // L-2: dispatch to reverse mode when --reverse is set.
   if (flags.reverse) {
     return runTraceReverse(projectDir, config, flags);

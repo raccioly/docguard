@@ -20,6 +20,7 @@
  * @implements docguard.mcp-doc-tools#FR-008
  */
 
+import { ownerOf } from './doc-ownership.mjs';
 import { existsSync, readFileSync } from 'node:fs';
 import { basename, extname, resolve } from 'node:path';
 import { listCanonicalDocs, globMatch } from '../shared-ignore.mjs';
@@ -168,6 +169,7 @@ export function docsForPath(projectDir, config, path) {
     }
   }
   const uniq = arr => [...new Map(arr.map(x => [JSON.stringify(x), x])).values()];
+  const owned = ownerOf(projectDir, config, normalized);
   return {
     path: normalized,
     exists: target.exists,
@@ -177,8 +179,9 @@ export function docsForPath(projectDir, config, path) {
     requirements: capped(uniq(requirements).sort((a, b) => a.id.localeCompare(b.id) || a.kind.localeCompare(b.kind))),
     docAnnotations: capped([...new Set(docAnnotations)].sort()),
     covers: capped(covers),
-    owner: null,
-    ownerReason: 'no ownership map is configured (docguard.doc-ownership-map is not implemented yet)',
+    // docguard.doc-ownership-map#FR-004: the declared owner, when a map exists.
+    owner: owned.owner,
+    ...(owned.reason ? { ownerReason: owned.reason } : {}),
   };
 }
 

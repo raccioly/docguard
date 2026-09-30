@@ -2385,6 +2385,205 @@
           }
         }
       ]
+    },
+    {
+      "id": "DOC-OWNERSHIP-ONE-OWNER-PER-PATH",
+      "statement": "Every tracked file resolves to at most one declared doc owner by specificity (exact path, then longest literal prefix), ties and unowned code are reported at the right level, a broken map is an error rather than a pass, the owner is what trace, review and the MCP tool report, and a committed .devin/wiki.json is held to Devin's documented limits.",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/034-doc-ownership-map/spec.md#FR-002"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (#455 spec 034)"
+      },
+      "defendedBy": [
+        "tests/doc-ownership.test.mjs",
+        "tests/trace-reverse.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "Equally specific entries are not a tie: the first one wins.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/doc-ownership.mjs",
+          "find": "  if (hits.length > 1 && rank(hits[0].pattern) === rank(hits[1].pattern)) {",
+          "replace": "  if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 034)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "A directory pattern matches every path that starts with its name.",
+          "faultClass": "literal-changed",
+          "file": "cli/scanners/doc-ownership.mjs",
+          "find": "    const re = compileGlob(`${raw}/**`);",
+          "replace": "    const re = compileGlob(`${raw}**`);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 034)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "Unowned code is reported file by file instead of at its highest directory.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/doc-ownership.mjs",
+          "find": "      if (dir && !ownedDirs.has(dir)) { reported = dir; break; }",
+          "replace": "      if (false) { reported = dir; break; }",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 034)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "Default roots demand owners for test and example code.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/doc-ownership.mjs",
+          "find": "    if (!declared && isNonProductPath(file, config)) continue;\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 034)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "A pattern with .. is accepted.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/doc-ownership.mjs",
+          "find": "  if (p.split('/').includes('..')) return null;\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 034)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "Page notes do not count toward the 100-note limit.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/doc-ownership.mjs",
+          "find": "for (const [j, note] of (Array.isArray(page.page_notes) ? page.page_notes : []).entries()) { notes++; noteText(",
+          "replace": "for (const [j, note] of (Array.isArray(page.page_notes) ? page.page_notes : []).entries()) { noteText(",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 034)"
+          }
+        },
+        {
+          "id": "F7",
+          "description": "Note length is counted in UTF-16 units.",
+          "faultClass": "other",
+          "file": "cli/scanners/doc-ownership.mjs",
+          "find": "    const chars = [...note.content].length;",
+          "replace": "    const chars = note.content.length;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 034)"
+          }
+        },
+        {
+          "id": "F8",
+          "description": "The enterprise page cap cannot be configured.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/doc-ownership.mjs",
+          "find": "  const maxPages = Number.isInteger(config?.devinWiki?.maxPages)",
+          "replace": "  const maxPages = false",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 034)"
+          }
+        },
+        {
+          "id": "F9",
+          "description": "A root with no files is not reported.",
+          "faultClass": "return-altered",
+          "file": "cli/scanners/doc-ownership.mjs",
+          "find": "  const deadRoots = roots.filter(r => !files.some(f => under(f, r)));",
+          "replace": "  const deadRoots = [];",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 034)"
+          }
+        },
+        {
+          "id": "F10",
+          "description": "A heading anchor does not count as a section.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/doc-ownership.mjs",
+          "find": "  if (extractHeadings(content).some(h => h.anchor === id)) return null;\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 034)"
+          }
+        },
+        {
+          "id": "F11",
+          "description": "A wiki note naming an existing directory is reported.",
+          "faultClass": "condition-forced",
+          "file": "cli/validators/doc-ownership.mjs",
+          "find": "        if (fileSet.has(clean) || dirs.has(clean)) continue;",
+          "replace": "        if (fileSet.has(clean)) continue;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 034)"
+          }
+        },
+        {
+          "id": "F12",
+          "description": "docguard_docs_for_path never names the owner.",
+          "faultClass": "return-altered",
+          "file": "cli/scanners/doc-references.mjs",
+          "find": "    owner: owned.owner,",
+          "replace": "    owner: null,",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 034)"
+          }
+        },
+        {
+          "id": "F13",
+          "description": "review --suggest ignores the ownership map.",
+          "faultClass": "condition-forced",
+          "file": "cli/commands/review.mjs",
+          "find": "  if (map.present && !map.error) {",
+          "replace": "  if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 034)"
+          }
+        },
+        {
+          "id": "F14",
+          "description": "trace --reverse does not print the declared owner.",
+          "faultClass": "condition-forced",
+          "file": "cli/commands/trace.mjs",
+          "find": "  if (declared.owner) {",
+          "replace": "  if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 034)"
+          }
+        },
+        {
+          "id": "F15",
+          "description": "An unreadable ownership block is not reported.",
+          "faultClass": "condition-forced",
+          "file": "cli/validators/doc-ownership.mjs",
+          "find": "    if (map.error) {\n      push('OWN007'",
+          "replace": "    if (false) {\n      push('OWN007'",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 034)"
+          }
+        }
+      ]
     }
   ]
 }

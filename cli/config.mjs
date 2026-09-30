@@ -85,6 +85,7 @@ export function loadConfig(projectDir) {
       specRegistry: true,
       docDependency: true, // opt-in by declaration: not applicable until a section declares covers=
       pathScopedRules: true, // not applicable without agent instruction files
+      docOwnership: true, // not applicable without an ownership block or .devin/wiki.json
       evidence: true,
       // v0.31.0 — all three default ON. Soft (confidence:low, never break CI),
       // heuristic (field cases require ongoing precision checks), and quiet when
