@@ -178,12 +178,16 @@ describe('the note reaches agents and never a machine-readable output (FR-004, S
     ];
     const input = `${messages.map(m => JSON.stringify(m)).join('\n')}\n`;
     const byId = out => new Map(out.split('\n').filter(Boolean).map(l => { const m = JSON.parse(l); return [m.id, m]; }));
-    const shown = byId(run(old, ['mcp'], {}, input).stdout);
-    const silent = byId(run(old, ['mcp'], { [UPDATE_HINT_OPT_OUT]: '1' }, input).stdout);
+    // The server serves proj, so the tool call below reads it rather than being
+    // refused as outside the served directory (docguard.mcp-project-confinement).
+    const mcp = ['mcp', '--dir', proj];
+    const shown = byId(run(old, mcp, {}, input).stdout);
+    const silent = byId(run(old, mcp, { [UPDATE_HINT_OPT_OUT]: '1' }, input).stdout);
     assert.match(shown.get(0).result.instructions, /may exist[\s\S]*without the user's agreement/);
     assert.equal(silent.get(0).result.instructions, undefined);
-    assert.equal(byId(run(recent, ['mcp'], {}, input).stdout).get(0).result.instructions, undefined);
+    assert.equal(byId(run(recent, mcp, {}, input).stdout).get(0).result.instructions, undefined);
     assert.deepEqual(shown.get(1), silent.get(1), 'tools/list');
+    assert.equal(shown.get(2).result.isError, undefined, 'the compared tool result is a real score');
     assert.equal(withoutTimings(JSON.stringify(shown.get(2))), withoutTimings(JSON.stringify(silent.get(2))), 'tools/call');
   });
 

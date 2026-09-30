@@ -426,6 +426,13 @@ agent does not load whole documents; none of them calls a model.
 claude mcp add docguard -- npx docguard-cli mcp
 ```
 
+A tool call's optional `projectDir` must be the served directory (`--dir`, or
+the directory the server was started in) or inside it; relative paths resolve
+against the served directory, and symlinks are followed before the check.
+Anything else gets an `isError` result naming the served directories.
+`--root <dir>` (repeatable) serves another tree; a `--root` that does not exist
+stops the server at startup.
+
 ### `docguard verify --semantic`
 
 **Extract documented claims** (counts, limits, enums) as a verification task
