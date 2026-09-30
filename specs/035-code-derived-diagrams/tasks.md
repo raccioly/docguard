@@ -1,6 +1,6 @@
 # Tasks: Code-Derived Diagrams
 
-**Status**: Implemented.
+**Status**: Complete. SC-001, SC-002 and SC-004 hold in tests; SC-003 measured +0.7% guard time on this repository (target ≤3%).
 **Spec**: `specs/035-code-derived-diagrams/spec.md`
 **Plan**: `specs/035-code-derived-diagrams/plan.md`
 
