@@ -289,6 +289,10 @@
         "phantomCheck": {
           "type": "boolean",
           "description": "If false, disable phantom-completion detection (SPK008/SPK009) — checked tasks in tasks.md whose named deliverables don't exist and carry no implementation evidence. On by default."
+        },
+        "untouchedClaimCheck": {
+          "type": "boolean",
+          "description": "If false, disable the untouched-task check (SPK010/SPK011) — checked tasks in tasks.md naming an existing path that no commit since the feature began changed. On by default."
         }
       },
       "additionalProperties": true

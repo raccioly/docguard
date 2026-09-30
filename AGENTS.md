@@ -1,6 +1,6 @@
 # AI Agent Instructions — DocGuard
 
-<!-- docguard:last-reviewed 2026-09-18 -->
+<!-- docguard:last-reviewed 2026-09-29 -->
 
 > This project follows **Canonical-Driven Development (CDD)**.
 > Documentation is the source of truth. Read before coding.
@@ -49,11 +49,11 @@ code-truth sections), `score` (CDD maturity 0-100).
 
 **Tools** — `demo` (zero-install tour), `diagnose` (guard → AI fix prompts),
 `fix` (AI fix instructions; `--doc <name>`), `generate` (reverse-engineer docs;
-`--plan`), `agent` (task graph; `--task <text>` for bounded current evidence),
+`--plan`; `--spec <area>` for an as-built Spec Kit spec), `agent` (task graph; `--task <text>` for bounded current evidence),
 `retire` (remove reviewed docs from active context),
-`specs` (check/refresh/preflight/complete the spec lifecycle registry),
+`specs` (check/refresh/preflight/complete the spec lifecycle registry; `require` for the spec-first gate),
 `reconcile` (classify code/spec changes since a Git ref without rewriting intent),
-`explain` (explain a validator/warning), `memory` (what DocGuard
+`explain` (explain a validator/warning), `verify` (declared evidence; `--semantic` claims), `feedback` (report false positives), `mcp` (MCP server), `report` (compliance bundle), `ci` (guard + score gate), `memory` (what DocGuard
 remembers), `trace` (requirements traceability; `--reverse`), `upgrade` (migrate
 config/CLI), `watch` (live re-guard).
 
@@ -159,7 +159,7 @@ extensions/spec-kit-docguard/
 ├── scripts/bash/              # Orchestration scripts (--json output)
 ├── commands/                  # Spec Kit slash commands
 ├── templates/                 # Hook registration templates
-└── extension.yml              # Skills, scripts, hooks declaration
+└── extension.yml              # Commands, scripts, hooks declaration
 ```
 
 ## Rules

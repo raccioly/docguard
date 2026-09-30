@@ -72,6 +72,9 @@ ${c.cyan}${c.bold}  ╔═══════════════════
 }
 
 // ── Help ───────────────────────────────────────────────────────────────────
+// Each summary line names every subcommand and mode its command's own --help
+// lists (tests/release-readiness.test.mjs).
+// @implements docguard.release-readiness#FR-005
 function printHelp() {
   printBanner();
   console.log(`${c.bold}Usage:${c.reset}
@@ -91,7 +94,7 @@ ${c.bold}Tools (situational, but day-to-day useful)${c.reset}
   ${c.green}demo${c.reset}       Zero-install tour: see what DocGuard catches against a sample project in 30s
   ${c.green}diagnose${c.reset}   AI orchestrator — guard → emit fix prompts in one command
   ${c.green}fix${c.reset}        Generate AI fix instructions for specific docs
-  ${c.green}generate${c.reset}   Reverse-engineer canonical docs from existing code (${c.cyan}--plan${c.reset} for AI scan)
+  ${c.green}generate${c.reset}   Reverse-engineer canonical docs from existing code (${c.cyan}--plan${c.reset} for AI scan, ${c.cyan}--spec <area>${c.reset} for an as-built Spec Kit spec)
   ${c.green}agent${c.reset}      Agent task graph or bounded task context (${c.cyan}--task <text>${c.reset}, ${c.cyan}--format json${c.reset})
   ${c.green}explain${c.reset}    Explain a validator key, warning text, or finding code (${c.cyan}docguard explain SEC001${c.reset})
   ${c.green}verify${c.reset}     Check declared local evidence or extract claims for review (${c.cyan}--evidence${c.reset}, ${c.cyan}--semantic${c.reset})
@@ -101,7 +104,7 @@ ${c.bold}Tools (situational, but day-to-day useful)${c.reset}
   ${c.green}ci${c.reset}         Pipeline gate: guard + score in one command (${c.cyan}--threshold <n>${c.reset}, ${c.cyan}--fail-on-warning${c.reset}, ${c.cyan}--format json${c.reset}; records score history)
   ${c.green}memory${c.reset}     Show what DocGuard remembers (${c.cyan}--diff${c.reset} drills into drift)
   ${c.green}retire${c.reset}     Remove reviewed docs from active AI context (${c.cyan}--plan${c.reset}; explicit ${c.cyan}--write --path${c.reset})
-  ${c.green}specs${c.reset}      Track spec lifecycle and evidence (${c.cyan}--check|--write${c.reset}; ${c.cyan}preflight --path <spec>${c.reset})
+  ${c.green}specs${c.reset}      Track spec lifecycle and evidence (${c.cyan}--check|--write${c.reset}; ${c.cyan}preflight${c.reset}, ${c.cyan}complete${c.reset}, ${c.cyan}require${c.reset})
   ${c.green}reconcile${c.reset}  Classify code/spec changes since a Git ref before changing intent
   ${c.green}trace${c.reset}      Requirements traceability matrix (${c.cyan}--reverse${c.reset} for code→doc map, ${c.cyan}--features${c.reset} for per-feature adherence)
   ${c.green}upgrade${c.reset}    Migrate ${c.cyan}.docguard.json${c.reset} schema + CLI (${c.cyan}--apply --pr${c.reset} for team-wide PR)

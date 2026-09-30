@@ -1,6 +1,6 @@
 # CI Recipes
 
-<!-- docguard:last-reviewed 2026-09-18 -->
+<!-- docguard:last-reviewed 2026-09-29 -->
 <!-- docguard:status active -->
 
 ## Recipe 1 — Guard (mandatory CI gate)
@@ -60,7 +60,8 @@ completion does not produce a downstream `workflow_run` when the repository toke
 authored the dispatch. GitHub documents a personal token or GitHub App as the
 fully automated alternative. DocGuard instead keeps the repository token and one
 explicit maintainer action: select **Approve workflows to run** on the generated
-PR. No release credential is stored.
+PR. No credential is stored for the release PR or its merge; the only release
+secret is the Homebrew tap deploy key described below.
 
 After approval, ordinary pull-request CI supplies the four required contexts.
 Before the branch is pushed, the trusted scheduler validates the base repository,
@@ -76,6 +77,24 @@ either the sweep or the next release
 schedule sees the current package version without a tag and retries publication
 before considering another bump. An orphaned release branch fails closed; an
 existing open release PR is reused and has auto-merge re-armed.
+
+The bump is `auto` unless a maintainer dispatches `patch` or `minor`
+(`specs/026-release-readiness`). `.github/scripts/release-changelog.mjs infer`
+reads the curated `## [Unreleased]` section. Any populated `### Added`,
+`### Removed` or `### Deprecated` heading makes a minor release; otherwise the
+release is a patch. The same script's `cut` moves the curated notes under the
+new `## [x.y.z]` heading and lists the merged commit subjects under
+`### Commits`, so the published notes are the reviewed ones. The release PR
+also moves `action.yml`'s `DOCGUARD_RELEASED_VERSION` and the copyable
+`raccioly/docguard@vX.Y.Z` examples in `README.md` and `docs/ai-integration.md`.
+
+After npm serves the new tarball, the `publish-homebrew` job renders
+`packaging/homebrew/docguard.rb` from it and pushes the result to
+`raccioly/homebrew-tap`. The tarball is checked against npm's `dist.integrity`
+first. The push uses a write deploy key that can reach only the tap, stored as
+the Actions secret `HOMEBREW_TAP_DEPLOY_KEY`. Without the secret the job warns
+and skips. With it, the 10-minute sweep retries until the tap serves the
+released version.
 
 Do not use a post-approval `workflow_run` listener as the release continuation.
 The approval-required completion is the event that listener observes; approving
@@ -191,7 +210,7 @@ Treat a core comparison failure as a quality regression. In the network-free run
 
 ## Pre-commit hook (no GitHub Actions required)
 
-`docguard hooks --type pre-commit` installs a local gate that prefers the repository's installed DocGuard binary. The hook blocks an unavailable runtime. `--auto-fix` additionally applies mechanical fixes and stages their output; enable it only when that mutation is intended.
+`docguard hooks --type pre-commit` installs a local gate that prefers the repository's installed DocGuard binary. The hook blocks an unavailable runtime. When husky, lefthook or simple-git-hooks owns the hook, DocGuard writes nothing and prints the line to add to that manager's configuration. `--auto-fix` additionally applies mechanical fixes and stages their output; enable it only when that mutation is intended.
 
 A Git hook lives in the shared `.git/hooks` and is active on every branch and linked worktree, while `.docguard.json` is a branch-local tracked file. The installed hook therefore skips any working tree with no `.docguard.json` and lets the commit through, and treats guard exit `3` (errors in an uninitialised project) as allowed rather than blocking. A project that never adopted DocGuard is not blocked by a hook installed from another branch; adopted projects are gated exactly as before.
 
@@ -213,7 +232,7 @@ Regenerate installed hooks after upgrading to pick up changes in hook behavior. 
 
 ## Action inputs reference
 
-`action.yml` is the authoritative composite-action input contract. Review command selection, warning policy, score threshold, working directory, and optional commit/comment flags. Pin the action to a reviewed commit and retain the corresponding release label for maintenance.
+`action.yml` is the authoritative composite-action input contract. Review command selection, CLI version (`docguard-version`; empty installs the version the action release was published with), warning policy, score threshold, working directory, and optional commit/comment flags. Pin the action to a reviewed commit and retain the corresponding release label for maintenance.
 
 ## Action outputs reference
 

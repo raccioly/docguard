@@ -16,7 +16,7 @@
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { collectAreaFacts, resolveArea } from '../cli/scanners/as-built.mjs';
@@ -84,6 +84,23 @@ describe('generate --spec <area>', () => {
     assert.deepEqual(entry.reviewed.scope.sourcePaths, ['src/api']);
     assert.equal(entry.reviewed.lifecycle.approval, 'draft', 'a human approves the prose, not the generator');
     assert.match(cli(dir, ['specs', '--check']).stdout, /Spec registry: CURRENT/);
+  });
+
+  it('a registry write that fails rolls back the spec and its directory (one transaction)', { skip: process.getuid?.() === 0 && 'root ignores file permissions' }, () => {
+    const { dir } = project(BASE);
+    assert.equal(cli(dir, ['specs', '--write']).status, 0);
+    const registry = join(dir, '.docguard-specs.json');
+    const before = readFileSync(registry, 'utf8');
+    chmodSync(registry, 0o444);
+    try {
+      const r = cli(dir, ['generate', '--spec', 'src/api', '--write', '--format', 'json']);
+      assert.equal(r.status, 1);
+      assert.match(json(r).reason, /As-built spec not written/);
+    } finally {
+      chmodSync(registry, 0o644);
+    }
+    assert.equal(readFileSync(registry, 'utf8'), before);
+    assert.equal(existsSync(join(dir, 'specs/001-as-built-src-api')), false, 'no half-written spec directory');
   });
 
   it('refuses a missing area, an escape, or an area with no facts, and writes nothing', () => {

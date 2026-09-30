@@ -1,6 +1,6 @@
 // @req docguard.adoption-workflow-integrity#FR-014
 // @req docguard.adoption-workflow-integrity#SC-008
-// @req docs-canonical/REQUIREMENTS.md#FR-016
+// @req docs-canonical/REQUIREMENTS.md#FR-022
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';

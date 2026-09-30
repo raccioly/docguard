@@ -1,7 +1,10 @@
 name: Scheduled Release
 
 # Self-sustaining releases: batches whatever has landed on main since the last
-# tag into a weekly patch release, instead of cutting a version per merge.
+# tag into a weekly release, instead of cutting a version per merge. The bump
+# defaults to `auto`: minor when the curated [Unreleased] changelog has Added,
+# Removed or Deprecated entries, patch otherwise (docguard.release-readiness).
+# @implements docguard.release-readiness#FR-001
 #
 # WHY BATCHED AND NOT PER-MERGE: every release publishes to npm AND PyPI
 # publicly. Per-merge releases would burn a version number per dependabot
@@ -26,11 +29,11 @@ on:
   workflow_dispatch:
     inputs:
       bump:
-        description: 'Version bump type'
+        description: 'Version bump type (auto reads the [Unreleased] changelog)'
         required: false
-        default: 'patch'
+        default: 'auto'
         type: choice
-        options: [patch, minor]
+        options: [auto, patch, minor]
 
 permissions:
   actions: write
@@ -97,13 +100,15 @@ jobs:
       - name: Bump version and write changelog
         if: steps.check.outputs.changed == 'true'
         run: |
-          BUMP="${{ inputs.bump || 'patch' }}"
+          BUMP="${{ inputs.bump || 'auto' }}"
           OLD="${{ steps.check.outputs.current }}"
-          NEW=$(node -e "
-            const [maj,min,pat] = '$OLD'.split('.').map(Number);
-            console.log('$BUMP' === 'minor' ? \`\${maj}.\${min+1}.0\` : \`\${maj}.\${min}.\${pat+1}\`);
-          ")
-          echo "Bumping $OLD → $NEW"
+          if [ "$BUMP" = "auto" ]; then
+            INFERRED=$(node .github/scripts/release-changelog.mjs infer)
+            BUMP=$(node -p "JSON.parse(process.argv[1]).bump" "$INFERRED")
+            echo "Inferred bump: $INFERRED"
+          fi
+          NEW=$(node --input-type=module -e "import { nextVersion } from './.github/scripts/release-changelog.mjs'; console.log(nextVersion(process.argv[1], process.argv[2]));" "$OLD" "$BUMP")
+          echo "Bumping $OLD → $NEW ($BUMP)"
 
           node -e "
             const fs = require('fs');
@@ -113,22 +118,13 @@ jobs:
           "
           npm install --package-lock-only --ignore-scripts
 
-          # Changelog entry from the commit subjects, so release.yml's notes
-          # extractor (which reads the '## [VERSION]' section) has real content.
-          {
-            echo "## [$NEW] - $(date -u +%Y-%m-%d)"
-            echo
-            echo "Automated weekly release — batches everything merged since \`${{ steps.check.outputs.last_tag }}\`."
-            echo
-            echo "### Changed"
-            echo
-            sed -E 's/^[0-9a-f]+ /- /' /tmp/commits.txt
-            echo
-          } > /tmp/entry.md
-
-          # Splice in directly under '## [Unreleased]'
-          awk '/^## \[Unreleased\]/ { print; print ""; while ((getline line < "/tmp/entry.md") > 0) print line; next } { print }' \
-            CHANGELOG.md > /tmp/CHANGELOG.new && mv /tmp/CHANGELOG.new CHANGELOG.md
+          # The curated [Unreleased] body becomes the '## [NEW]' section that
+          # release.yml's notes extractor reads; the merged commit subjects
+          # follow under their own '### Commits' heading.
+          # @implements docguard.release-readiness#FR-002
+          node .github/scripts/release-changelog.mjs cut --version "$NEW" \
+            --date "$(date -u +%Y-%m-%d)" --last-tag "${{ steps.check.outputs.last_tag }}" \
+            --commits /tmp/commits.txt
 
           # Synchronize every active publication surface from package.json.
           # This is fail-closed: missing or duplicated fields stop the release
@@ -216,7 +212,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -b "$BRANCH"
-          git add package.json package-lock.json pyproject.toml server.json CHANGELOG.md templates/ extensions/ .agent/ 2>/dev/null || true
+          git add package.json package-lock.json pyproject.toml server.json action.yml README.md docs/ai-integration.md CHANGELOG.md templates/ extensions/ .agent/ 2>/dev/null || true
           git commit -m "release: v${NEW_VERSION} — automated weekly batch
 
           Cut by .github/workflows/scheduled-release.yml. Publishing itself is

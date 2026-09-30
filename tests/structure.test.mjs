@@ -33,6 +33,7 @@ describe('validateStructure', () => {
       const results = validateStructure(tempDir, config);
       assert.equal(results.name, 'structure');
       // 2 canonical + 1 agent + 1 changelog + 1 drift + 1 AGENTS.md chain budget
+      // @req docguard.agent-instruction-budget#FR-001
       assert.equal(results.total, 6);
       assert.equal(results.passed, 6);
       assert.equal(results.errors.length, 0);

@@ -165,9 +165,9 @@ The server is **read-only** — it never writes to the mounted project.
       rev: v0.29.0
       hooks: [{ id: docguard-guard }]   # docguard-guard-full for pre-push
   ```
-- **MCP** (Claude, Cursor, any MCP client) — `claude mcp add docguard -- npx -y docguard-cli mcp`; 5 read-only tools (guard, score, explain, verify-claims, diagnose). Registry manifest ships in-repo (`server.json`, Smithery-ready).
+- **MCP** (Claude, Cursor, any MCP client) — `claude mcp add docguard -- npx -y docguard-cli mcp`; tools for guard, score, explain, verify-evidence, verify-claims, report and diagnose. Registry manifest ships in-repo (`server.json`, Smithery-ready).
 - **GitLab CI** — component staged at [`templates/ci/gitlab-component.yml`](templates/ci/gitlab-component.yml) (guard/score/ci job with a SARIF artifact).
-- **Homebrew** — `brew install raccioly/tap/docguard` (formula in [`packaging/homebrew/`](https://github.com/raccioly/docguard/tree/main/packaging/homebrew)).
+- **Homebrew** — `brew install raccioly/tap/docguard`. The release workflow renders the formula template in [`packaging/homebrew/`](https://github.com/raccioly/docguard/tree/main/packaging/homebrew) from the published npm tarball and pushes it to the tap.
 
 ### Core Workflow
 
@@ -678,7 +678,7 @@ See [examples/README.md](https://github.com/raccioly/docguard/blob/main/examples
 ### Test Suite
 
 ```bash
-npm test    # 2,098 tests (node:test, zero test dependencies)
+npm test    # 2,232 tests (node:test, zero test dependencies)
 ```
 
 Covers all 23 commands, every validator, project type detection, compliance profiles, JSON/SARIF/JUnit output, the packed npm tarball, and downstream field reports replayed as regression cases. Static test-case declarations are a lower bound of that number: Metrics-Consistency flags this line if it ever falls below what the test files declare.
@@ -728,10 +728,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
-      - uses: raccioly/docguard@v0.12.0
+      - uses: raccioly/docguard@v0.42.1
         with:
           command: guard
 ```
+
+The action installs the `docguard-cli` version it was released with, so pinning
+the action pins the CLI too. Set `docguard-version: latest` (or an exact
+`x.y.z`) to override.
 
 On pull requests, guard mode also gives inline PR feedback (both default on):
 
@@ -760,7 +764,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.ref }}
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
-      - uses: raccioly/docguard@v0.12.0
+      - uses: raccioly/docguard@v0.42.1
         with: { command: fix, auto-commit: 'true', comment-on-pr: 'true' }
 ```
 

@@ -5,6 +5,10 @@
  * byte-identical to the legacy strings — resultFromFindings derives the
  * errors/warnings arrays from the same findings, so counts, exit codes, and
  * existing tests are unaffected; guard just renders richer output.
+ *
+ * Reads OpenAPI discovery from cli/shared-openapi.mjs, never from another
+ * validator (Constitution IV).
+ * @implements docguard.spec-kit-artifact-coverage#FR-007
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';

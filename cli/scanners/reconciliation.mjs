@@ -3,14 +3,18 @@
  * @implements docguard.document-lifecycle#FR-010
  * @implements docguard.document-lifecycle#FR-011
  * @implements docguard.document-lifecycle#FR-012
+ * @implements docguard.canonical-requirement-links#FR-001
+ * @implements docguard.canonical-requirement-links#FR-002
  */
 
 import { execFileSync } from 'node:child_process';
-import { extname } from 'node:path';
+import { existsSync, readFileSync } from 'node:fs';
+import { extname, resolve } from 'node:path';
 import { getDiffSnapshot, getHeadInfo } from '../shared-git.mjs';
 import { parseUnifiedDiff } from '../shared-diff.mjs';
 import { mechanicalSectionsForChanges } from '../shared-sync-scope.mjs';
 import { projectSpecRegistry } from './spec-registry.mjs';
+import { collectRequirementIdsFromContent } from '../shared-requirements.mjs';
 
 const CODE = new Set(['.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx', '.py', '.go', '.rs', '.java', '.kt', '.rb', '.php', '.sh', '.cs', '.swift']);
 const TEST = /(?:^|\/)(?:__tests__|tests?|specs?)\/|\.(?:test|spec)\./;
@@ -48,12 +52,40 @@ function directSpecLinks(path, text, registry) {
   return [...new Set(links)].sort();
 }
 
-function disposition(kind, linked, companionKinds, currentSpecs) {
+// A change that cites a requirement declared in a canonical document
+// (`docs-canonical/REQUIREMENTS.md#FR-024`) is traced to approved intent as
+// exactly as a spec link. Only declared identities count: a citation of a
+// missing file or an undeclared ID stays unsupported.
+const CANONICAL_REF = /\b(docs-canonical\/[\w./-]+\.md)#([A-Z]{1,6}-\d{2,4})\b/g;
+
+function canonicalRequirementLinks(projectDir, text, cache) {
+  const links = new Set();
+  for (const m of text.matchAll(CANONICAL_REF)) {
+    const [, doc, id] = m;
+    if (doc.split('/').includes('..')) continue;
+    if (!cache.has(doc)) {
+      const abs = resolve(projectDir, doc);
+      let ids = new Map();
+      try { if (existsSync(abs)) ids = collectRequirementIdsFromContent(readFileSync(abs, 'utf8'), doc); } catch { /* unreadable: no identities */ }
+      cache.set(doc, ids);
+    }
+    if (cache.get(doc).has(`${doc}#${id}`)) links.add(`${doc}#${id}`);
+  }
+  return [...links].sort();
+}
+
+function disposition(kind, linked, companionKinds, currentSpecs, canonical = [], changedPaths = new Set()) {
   if (kind === 'decision') return { evidenceClass: 'decision', disposition: 'superseded_decision_review', confidence: 'medium' };
   if (kind === 'spec_artifact' || kind === 'canonical_doc') {
     return { evidenceClass: 'approved_intent', disposition: 'intent_change_review', confidence: 'high' };
   }
   if (kind === 'source' || kind === 'test') {
+    if (linked.length === 0 && canonical.length > 0) {
+      const docChanged = canonical.some(ref => changedPaths.has(ref.split('#')[0]));
+      return docChanged
+        ? { evidenceClass: 'approved_intent', disposition: 'intentional_behavior_change_review', confidence: 'medium' }
+        : { evidenceClass: 'approved_intent', disposition: 'possible_implementation_regression', confidence: 'medium' };
+    }
     if (linked.length === 0) return { evidenceClass: 'unsupported', disposition: 'unsupported_or_ambiguous', confidence: 'low' };
     const governingChanged = companionKinds.has('spec_artifact') || companionKinds.has('canonical_doc') || companionKinds.has('decision');
     if (governingChanged) return { evidenceClass: 'approved_intent', disposition: 'intentional_behavior_change_review', confidence: 'medium' };
@@ -127,11 +159,18 @@ export function buildReconciliationPlan(projectDir, config = {}, since, runtime 
     file.newPath || file.oldPath,
     file.hunks.flatMap(hunk => hunk.lines.filter(line => line.op !== ' ').map(line => line.text)).join('\n'),
   ]));
-  const preliminary = [...new Set(changed)].sort().map(path => ({
-    path,
-    kind: fileKind(path, projection.registry),
-    specs: directSpecLinks(path, textByPath.get(path) || '', projection.registry),
-  }));
+  const canonicalCache = new Map();
+  const preliminary = [...new Set(changed)].sort().map(path => {
+    const kind = fileKind(path, projection.registry);
+    const text = textByPath.get(path) || '';
+    const item = { path, kind, specs: directSpecLinks(path, text, projection.registry) };
+    if (kind === 'source' || kind === 'test') {
+      const canonical = canonicalRequirementLinks(projectDir, text, canonicalCache);
+      if (canonical.length) item.canonical = canonical;
+    }
+    return item;
+  });
+  const changedPaths = new Set(preliminary.map(item => item.path));
   const currentSpecs = new Set(projection.registry.specs
     .filter(spec => spec.reviewed.lifecycle.context === 'current' && spec.reviewed.lifecycle.approval === 'approved')
     .map(spec => spec.specId));
@@ -139,7 +178,7 @@ export function buildReconciliationPlan(projectDir, config = {}, since, runtime 
     const companionKinds = new Set(preliminary
       .filter(other => other.specs.some(id => item.specs.includes(id)))
       .map(other => other.kind));
-    return { ...item, ...disposition(item.kind, item.specs, companionKinds, currentSpecs) };
+    return { ...item, ...disposition(item.kind, item.specs, companionKinds, currentSpecs, item.canonical, changedPaths) };
   });
   const mechanicalSections = mechanicalSectionsForChanges(changed.filter(path => CODE.has(extname(path).toLowerCase()) || /(?:package\.json|pyproject\.toml|Cargo\.toml|go\.mod|pom\.xml|Gemfile)$/.test(path)));
   if (mechanicalSections.length > 0) {
@@ -156,13 +195,23 @@ export function buildReconciliationPlan(projectDir, config = {}, since, runtime 
   const nodes = [
     ...projection.registry.specs.map(spec => ({ id: `spec:${spec.specId}`, type: 'spec', path: spec.path, lifecycle: spec.reviewed.lifecycle })),
     ...preliminary.map(item => ({ id: `change:${item.path}`, type: 'change', path: item.path, kind: item.kind })),
+    ...[...new Set(preliminary.flatMap(item => item.canonical || []))].sort()
+      .map(ref => ({ id: `requirement:${ref}`, type: 'canonical_requirement', path: ref.split('#')[0] })),
   ];
-  const edges = preliminary.flatMap(item => item.specs.map(specId => ({
-    from: `change:${item.path}`,
-    to: `spec:${specId}`,
-    kind: 'direct_evidence',
-    confidence: 'high',
-  })));
+  const edges = preliminary.flatMap(item => [
+    ...item.specs.map(specId => ({
+      from: `change:${item.path}`,
+      to: `spec:${specId}`,
+      kind: 'direct_evidence',
+      confidence: 'high',
+    })),
+    ...(item.canonical || []).map(ref => ({
+      from: `change:${item.path}`,
+      to: `requirement:${ref}`,
+      kind: 'canonical_requirement',
+      confidence: 'high',
+    })),
+  ]);
   const review = classifications.some(item => !['mechanical_fact_refresh', 'unrelated_change'].includes(item.disposition));
   const summary = summarize(classifications);
   return {

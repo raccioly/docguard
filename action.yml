@@ -31,6 +31,10 @@ inputs:
     description: 'Node.js version to use'
     required: false
     default: '20'
+  docguard-version:
+    description: 'docguard-cli version to install. Empty (default) installs the version this action release was published with, so pinning raccioly/docguard@vX.Y.Z pins the CLI too. Set "latest" to follow npm.'
+    required: false
+    default: ''
   # ---- PR feedback (guard mode) ----
   annotations:
     description: 'When command=guard: emit inline annotations (::error/::warning) on the PR diff, one per finding, capped at 50.'
@@ -90,9 +94,21 @@ runs:
       with:
         node-version: ${{ inputs.node-version }}
 
+    # The CLI version travels with the action release: sync-release-version.mjs
+    # stamps DOCGUARD_RELEASED_VERSION on every release, so a pinned action ref
+    # never silently runs a newer CLI (docguard.release-readiness#FR-003).
     - name: Install DocGuard
       shell: bash
-      run: npm install -g docguard-cli@latest || npx docguard-cli --version
+      env:
+        DOCGUARD_RELEASED_VERSION: '0.42.1'
+        DOCGUARD_VERSION_INPUT: ${{ inputs.docguard-version }}
+      run: |
+        VERSION="${DOCGUARD_VERSION_INPUT:-$DOCGUARD_RELEASED_VERSION}"
+        if ! printf '%s' "$VERSION" | grep -Eq '^([0-9]+\.[0-9]+\.[0-9]+|latest)$'; then
+          echo "::error::docguard-version must be x.y.z or latest, got '$VERSION'"; exit 1
+        fi
+        npm install -g "docguard-cli@$VERSION"
+        docguard --version
 
     - name: Run DocGuard
       id: run

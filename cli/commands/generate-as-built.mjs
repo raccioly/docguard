@@ -12,7 +12,7 @@
  * @implements docguard.as-built-specs#FR-003
  */
 
-import { existsSync, unlinkSync, writeFileSync, rmdirSync } from 'node:fs';
+import { existsSync, rmdirSync } from 'node:fs';
 import { basename, dirname, resolve } from 'node:path';
 import { c } from '../shared.mjs';
 import { areaTests, collectAreaFacts, nextFeatureDir, renderAsBuiltSpec, resolveArea, slugFor } from '../scanners/as-built.mjs';
@@ -55,21 +55,33 @@ export function runGenerateAsBuilt(projectDir, config, flags) {
     if (existsSync(abs)) return fail(`${specPath} already exists.`);
     const before = projectSpecRegistry(projectDir, config);
     if (before.issues.length) return fail(`Registry has integrity issues; fix them first: ${before.issues.map(i => i.message).join(' ')}`);
-    commitFileTransaction([{ path: abs, content }]);
+    // One transaction: the registry can only be projected once the spec is on
+    // disk, so its write runs inside the spec transaction's validation. A
+    // failure there rolls back both files (Constitution VI; no plain write).
+    const registryPath = resolve(projectDir, SPEC_REGISTRY_PATH);
     try {
-      const projection = projectSpecRegistry(projectDir, config);
-      const entry = projection.registry.specs.find(s => s.specId === specId);
-      if (projection.issues.length || !entry) {
-        throw new Error(projection.issues.map(i => i.message).join(' ') || `The new spec ${specId} did not register.`);
-      }
-      // Current behaviour, living document, not yet reviewed by a human.
-      entry.reviewed.lifecycle.delivery = 'implemented';
-      entry.reviewed.lifecycle.persistenceModel = 'living';
-      entry.reviewed.lifecycle.origin = 'as_built';
-      entry.reviewed.scope.sourcePaths = [area.rel];
-      writeFileSync(resolve(projectDir, SPEC_REGISTRY_PATH), `${JSON.stringify(projection.registry, null, 2)}\n`, 'utf-8');
+      commitFileTransaction([{ path: abs, content }], {
+        validate: () => {
+          const projection = projectSpecRegistry(projectDir, config);
+          const entry = projection.registry.specs.find(s => s.specId === specId);
+          if (projection.issues.length || !entry) {
+            throw new Error(projection.issues.map(i => i.message).join(' ') || `The new spec ${specId} did not register.`);
+          }
+          // Current behaviour, living document, not yet reviewed by a human.
+          entry.reviewed.lifecycle.delivery = 'implemented';
+          entry.reviewed.lifecycle.persistenceModel = 'living';
+          entry.reviewed.lifecycle.origin = 'as_built';
+          entry.reviewed.scope.sourcePaths = [area.rel];
+          commitFileTransaction([{ path: registryPath, content: `${JSON.stringify(projection.registry, null, 2)}\n` }], {
+            validate: () => {
+              const after = projectSpecRegistry(projectDir, config);
+              if (after.issues.length) throw new Error(after.issues.map(i => i.message).join(' '));
+            },
+          });
+        },
+      });
     } catch (error) {
-      try { unlinkSync(abs); rmdirSync(dirname(abs)); } catch { /* leave nothing half-written */ }
+      try { rmdirSync(dirname(abs)); } catch { /* the directory is not empty or already gone */ }
       return fail(`As-built spec not written: ${error.message}`);
     }
     result.status = 'WRITTEN';

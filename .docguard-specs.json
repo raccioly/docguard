@@ -376,12 +376,12 @@
       "path": "specs/017-agent-instruction-budget/spec.md",
       "reviewed": {
         "lifecycle": {
-          "approval": "draft",
-          "delivery": "planned",
+          "approval": "approved",
+          "delivery": "implemented",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
-          "persistenceModel": null
+          "persistenceModel": "living"
         },
         "relations": {
           "extends": [],
@@ -391,7 +391,10 @@
           "supersededBy": []
         },
         "scope": {
-          "canonicalDocs": []
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md",
+            "docs-canonical/CI-RECIPES.md"
+          ]
         },
         "reconciliation": {
           "lastReviewedRevision": null,
@@ -415,7 +418,7 @@
         "artifacts": [
           {
             "path": "specs/017-agent-instruction-budget/spec.md",
-            "digest": "sha256:6a340b1f37ddd049402e5843d41fcb9d710f8e36548d565c79dfbdbd77cbe507"
+            "digest": "sha256:2d4108ec5d8dcbd4d1cdbeb1c7511184a131260b74670ad94c099ffe06aa2b62"
           },
           {
             "path": "specs/017-agent-instruction-budget/plan.md",
@@ -462,6 +465,11 @@
             "requirementId": "FR-001",
             "file": "tests/agent-instruction-budget.test.mjs",
             "line": 4
+          },
+          {
+            "requirementId": "FR-001",
+            "file": "tests/structure.test.mjs",
+            "line": 36
           },
           {
             "requirementId": "FR-002",
@@ -511,12 +519,12 @@
       "path": "specs/024-as-built-specs/spec.md",
       "reviewed": {
         "lifecycle": {
-          "approval": "draft",
-          "delivery": "planned",
+          "approval": "approved",
+          "delivery": "implemented",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
-          "persistenceModel": null
+          "persistenceModel": "living"
         },
         "relations": {
           "extends": [],
@@ -526,7 +534,10 @@
           "supersededBy": []
         },
         "scope": {
-          "canonicalDocs": []
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md",
+            "docs-canonical/DATA-MODEL.md"
+          ]
         },
         "reconciliation": {
           "lastReviewedRevision": null,
@@ -552,7 +563,7 @@
         "artifacts": [
           {
             "path": "specs/024-as-built-specs/spec.md",
-            "digest": "sha256:3a5301691a74ce9bd6ae380db7e2f75c4666ed4ef4b15c3875b9fb162c2f4b92"
+            "digest": "sha256:15aa25734ee2c3c43fd005c5f3bb36ff204cdf2972f6e73537b8bfe0c055c4af"
           },
           {
             "path": "specs/024-as-built-specs/plan.md",
@@ -975,6 +986,98 @@
             "requirementId": "SC-009",
             "file": "tests/untouched-claims.test.mjs",
             "line": 74
+          }
+        ]
+      }
+    },
+    {
+      "specId": "docguard.canonical-requirement-links",
+      "path": "specs/027-canonical-requirement-links/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "approved",
+          "delivery": "implemented",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": "living"
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md"
+          ]
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.canonical-requirement-links#FR-001",
+          "docguard.canonical-requirement-links#FR-002",
+          "docguard.canonical-requirement-links#SC-001",
+          "docguard.canonical-requirement-links#SC-002"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/027-canonical-requirement-links/spec.md",
+            "digest": "sha256:cb453e53bb55856ad9b17e118037d8d6dbfd26b87ebf4006c0c79c2adae354fb"
+          },
+          {
+            "path": "specs/027-canonical-requirement-links/plan.md",
+            "digest": "sha256:e9e1255955b834eb05bd2211ac4354302ff23254d6b7a953d2ecaf79723318d8"
+          },
+          {
+            "path": "specs/027-canonical-requirement-links/tasks.md",
+            "digest": "sha256:e309ea2858ba540f260d96c63fd9ba439a00a59009708f20da1f15c19cb5236c"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 3,
+          "total": 3
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/scanners/reconciliation.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/scanners/reconciliation.mjs",
+            "line": 7
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/canonical-requirement-links.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/canonical-requirement-links.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/canonical-requirement-links.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/canonical-requirement-links.test.mjs",
+            "line": 10
           }
         ]
       }
@@ -1921,12 +2024,12 @@
       "path": "specs/018-extension-manifest-hygiene/spec.md",
       "reviewed": {
         "lifecycle": {
-          "approval": "draft",
-          "delivery": "planned",
+          "approval": "approved",
+          "delivery": "implemented",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
-          "persistenceModel": null
+          "persistenceModel": "living"
         },
         "relations": {
           "extends": [],
@@ -1936,7 +2039,9 @@
           "supersededBy": []
         },
         "scope": {
-          "canonicalDocs": []
+          "canonicalDocs": [
+            "docs-canonical/TEST-SPEC.md"
+          ]
         },
         "reconciliation": {
           "lastReviewedRevision": null,
@@ -1960,7 +2065,7 @@
         "artifacts": [
           {
             "path": "specs/018-extension-manifest-hygiene/spec.md",
-            "digest": "sha256:d6336c8995c4dc9cf1e7284ecfaa54852876ee3fa45425d23c30e51c14cefe6d"
+            "digest": "sha256:6145e6710188507008fe8de110a62c54f81a45718dd13fa68a61cd855bd27803"
           },
           {
             "path": "specs/018-extension-manifest-hygiene/plan.md",
@@ -2056,12 +2161,12 @@
       "path": "specs/020-field-report-followups/spec.md",
       "reviewed": {
         "lifecycle": {
-          "approval": "draft",
-          "delivery": "planned",
+          "approval": "approved",
+          "delivery": "implemented",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
-          "persistenceModel": null
+          "persistenceModel": "living"
         },
         "relations": {
           "extends": [],
@@ -2071,7 +2176,9 @@
           "supersededBy": []
         },
         "scope": {
-          "canonicalDocs": []
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md"
+          ]
         },
         "reconciliation": {
           "lastReviewedRevision": null,
@@ -2094,7 +2201,7 @@
         "artifacts": [
           {
             "path": "specs/020-field-report-followups/spec.md",
-            "digest": "sha256:454dce97924609376d82fa1728ce07a1df1f5271c2acddf89a9680bd5bcabb07"
+            "digest": "sha256:c86027ca5fe28471156abf312ddf075b9edc9b02e0478830170e1e1e9b56db46"
           },
           {
             "path": "specs/020-field-report-followups/plan.md",
@@ -2165,12 +2272,12 @@
       "path": "specs/019-ignore-and-todo-parsing/spec.md",
       "reviewed": {
         "lifecycle": {
-          "approval": "draft",
-          "delivery": "planned",
+          "approval": "approved",
+          "delivery": "implemented",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
-          "persistenceModel": null
+          "persistenceModel": "living"
         },
         "relations": {
           "extends": [],
@@ -2180,7 +2287,9 @@
           "supersededBy": []
         },
         "scope": {
-          "canonicalDocs": []
+          "canonicalDocs": [
+            "docs-canonical/TEST-SPEC.md"
+          ]
         },
         "reconciliation": {
           "lastReviewedRevision": null,
@@ -2203,7 +2312,7 @@
         "artifacts": [
           {
             "path": "specs/019-ignore-and-todo-parsing/spec.md",
-            "digest": "sha256:81132bb3d7803992501c79490e9fa5e0ac2328a3551abebbe3528c1b832cbfc0"
+            "digest": "sha256:e3894c243b9ac40b0618f51d326e928669072211388eb5eef4303f4165ea894b"
           },
           {
             "path": "specs/019-ignore-and-todo-parsing/plan.md",
@@ -2708,12 +2817,12 @@
       "path": "specs/021-lifecycle-evidence-gaps/spec.md",
       "reviewed": {
         "lifecycle": {
-          "approval": "draft",
-          "delivery": "planned",
+          "approval": "approved",
+          "delivery": "implemented",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
-          "persistenceModel": null
+          "persistenceModel": "living"
         },
         "relations": {
           "extends": [],
@@ -2723,7 +2832,10 @@
           "supersededBy": []
         },
         "scope": {
-          "canonicalDocs": []
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md",
+            "docs-canonical/DATA-MODEL.md"
+          ]
         },
         "reconciliation": {
           "lastReviewedRevision": null,
@@ -2744,7 +2856,7 @@
         "artifacts": [
           {
             "path": "specs/021-lifecycle-evidence-gaps/spec.md",
-            "digest": "sha256:46ca8e8e8655e6b218738ace88bc434fab3d2fcb9d6811fb62d2c833e2f2d100"
+            "digest": "sha256:732253e9464d6700c2818c1a044e7eb1747cd487646e319c5d516821395cc6c1"
           },
           {
             "path": "specs/021-lifecycle-evidence-gaps/plan.md",
@@ -3338,12 +3450,12 @@
       "path": "specs/023-release-dispatch-window/spec.md",
       "reviewed": {
         "lifecycle": {
-          "approval": "draft",
-          "delivery": "planned",
+          "approval": "approved",
+          "delivery": "implemented",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
-          "persistenceModel": null
+          "persistenceModel": "living"
         },
         "relations": {
           "extends": [],
@@ -3353,7 +3465,9 @@
           "supersededBy": []
         },
         "scope": {
-          "canonicalDocs": []
+          "canonicalDocs": [
+            "docs-canonical/CI-RECIPES.md"
+          ]
         },
         "reconciliation": {
           "lastReviewedRevision": null,
@@ -3372,7 +3486,7 @@
         "artifacts": [
           {
             "path": "specs/023-release-dispatch-window/spec.md",
-            "digest": "sha256:5675dc8abbdcb20229a7bc77d77a416f152d2e2a807bd86ec055f707dc49b63c"
+            "digest": "sha256:a72e5dcebdfea43161833b2c456cd3edeebaf8fba4b99720b7561ace58f6ec9f"
           },
           {
             "path": "specs/023-release-dispatch-window/plan.md",
@@ -3396,7 +3510,7 @@
           {
             "requirementId": "FR-002",
             "file": ".github/workflows/scheduled-release.yml",
-            "line": 18
+            "line": 21
           }
         ],
         "testEvidence": [
@@ -3424,16 +3538,16 @@
       }
     },
     {
-      "specId": "docguard.spec-first-gate",
-      "path": "specs/015-spec-first-gate/spec.md",
+      "specId": "docguard.release-readiness",
+      "path": "specs/026-release-readiness/spec.md",
       "reviewed": {
         "lifecycle": {
-          "approval": "draft",
-          "delivery": "planned",
+          "approval": "approved",
+          "delivery": "implemented",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
-          "persistenceModel": null
+          "persistenceModel": "living"
         },
         "relations": {
           "extends": [],
@@ -3443,7 +3557,181 @@
           "supersededBy": []
         },
         "scope": {
-          "canonicalDocs": []
+          "canonicalDocs": [
+            "docs-canonical/CI-RECIPES.md"
+          ]
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.release-readiness#FR-001",
+          "docguard.release-readiness#FR-002",
+          "docguard.release-readiness#FR-003",
+          "docguard.release-readiness#FR-004",
+          "docguard.release-readiness#FR-005",
+          "docguard.release-readiness#FR-006",
+          "docguard.release-readiness#SC-001",
+          "docguard.release-readiness#SC-002"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/026-release-readiness/spec.md",
+            "digest": "sha256:350e2fcea582d70d62b0d429c17ca131f1400f4d9ed9dbfb74769f72f4331020"
+          },
+          {
+            "path": "specs/026-release-readiness/plan.md",
+            "digest": "sha256:4f17e120e1c3ae96a20943712466a7a9d38dd6d11f055a0ee30c4358db19e273"
+          },
+          {
+            "path": "specs/026-release-readiness/tasks.md",
+            "digest": "sha256:3d3bca40aa37c761bc25762f03b9cb951a3c3073acaca481e67c7526fa9b0624"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 9,
+          "total": 9
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": ".github/scripts/release-changelog.mjs",
+            "line": 23
+          },
+          {
+            "requirementId": "FR-001",
+            "file": ".github/workflows/scheduled-release.yml",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-002",
+            "file": ".github/scripts/release-changelog.mjs",
+            "line": 24
+          },
+          {
+            "requirementId": "FR-002",
+            "file": ".github/workflows/scheduled-release.yml",
+            "line": 124
+          },
+          {
+            "requirementId": "FR-003",
+            "file": ".github/scripts/sync-release-version.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/release-pr-policy.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-004",
+            "file": ".github/scripts/homebrew-formula.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-004",
+            "file": ".github/scripts/homebrew-formula.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-004",
+            "file": ".github/scripts/publish-homebrew-tap.sh",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-004",
+            "file": ".github/workflows/release.yml",
+            "line": 66
+          },
+          {
+            "requirementId": "FR-004",
+            "file": ".github/workflows/release.yml",
+            "line": 284
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/docguard.mjs",
+            "line": 77
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/release-readiness.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/release-readiness.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/release-readiness.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/release-version-sync.test.mjs",
+            "line": 2
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/release-readiness.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/release-readiness.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/release-readiness.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/release-readiness.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/release-readiness.test.mjs",
+            "line": 14
+          }
+        ]
+      }
+    },
+    {
+      "specId": "docguard.spec-first-gate",
+      "path": "specs/015-spec-first-gate/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "approved",
+          "delivery": "implemented",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": "living"
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md",
+            "docs-canonical/CI-RECIPES.md"
+          ]
         },
         "reconciliation": {
           "lastReviewedRevision": null,
@@ -3472,7 +3760,7 @@
         "artifacts": [
           {
             "path": "specs/015-spec-first-gate/spec.md",
-            "digest": "sha256:dc9abaa2b03ef5facb96ecd9955ca66667393f375a3a96de1e60c6f7bea4dc4b"
+            "digest": "sha256:aba7c58e83fb5b44f0886d9780e94cbd2e12f1e2190da52d9b16f22253113b2f"
           },
           {
             "path": "specs/015-spec-first-gate/plan.md",
@@ -3526,7 +3814,7 @@
           {
             "requirementId": "FR-010",
             "file": "action.yml",
-            "line": 172
+            "line": 188
           }
         ],
         "testEvidence": [
@@ -3608,12 +3896,12 @@
       "path": "specs/016-spec-kit-artifact-coverage/spec.md",
       "reviewed": {
         "lifecycle": {
-          "approval": "draft",
-          "delivery": "planned",
+          "approval": "approved",
+          "delivery": "implemented",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
-          "persistenceModel": null
+          "persistenceModel": "living"
         },
         "relations": {
           "extends": [],
@@ -3623,7 +3911,10 @@
           "supersededBy": []
         },
         "scope": {
-          "canonicalDocs": []
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md",
+            "docs-canonical/DATA-MODEL.md"
+          ]
         },
         "reconciliation": {
           "lastReviewedRevision": null,
@@ -3649,7 +3940,7 @@
         "artifacts": [
           {
             "path": "specs/016-spec-kit-artifact-coverage/spec.md",
-            "digest": "sha256:548f792dcf22c1faac4d078b83777c878cdd0c43081b4b0b62b7e9fe4a8f5bb5"
+            "digest": "sha256:0824af700c4f1fbc97bd1c498136b22e338536fedaa8edfd66bd1ed50acef616"
           },
           {
             "path": "specs/016-spec-kit-artifact-coverage/plan.md",
@@ -3689,6 +3980,16 @@
             "requirementId": "FR-007",
             "file": "cli/shared-openapi.mjs",
             "line": 7
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/validators/api-surface.mjs",
+            "line": 26
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/validators/docs-sync.mjs",
+            "line": 11
           }
         ],
         "testEvidence": [
@@ -3755,12 +4056,12 @@
       "path": "specs/014-specify-init-delegation/spec.md",
       "reviewed": {
         "lifecycle": {
-          "approval": "draft",
-          "delivery": "planned",
+          "approval": "approved",
+          "delivery": "implemented",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
-          "persistenceModel": null
+          "persistenceModel": "living"
         },
         "relations": {
           "extends": [],
@@ -3770,7 +4071,9 @@
           "supersededBy": []
         },
         "scope": {
-          "canonicalDocs": []
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md"
+          ]
         },
         "reconciliation": {
           "lastReviewedRevision": null,
@@ -3803,7 +4106,7 @@
         "artifacts": [
           {
             "path": "specs/014-specify-init-delegation/spec.md",
-            "digest": "sha256:dde6cc2db811db2d1a7f1d44c635fbe960fb6d5763a14a22bc5dade8f4afad22"
+            "digest": "sha256:413d68559d0251c0e1ab7450a73abe171524e2606035ea83f91d22ac3e88bb9c"
           },
           {
             "path": "specs/014-specify-init-delegation/plan.md",
@@ -3999,12 +4302,12 @@
       "path": "specs/025-spk010-directory-claims/spec.md",
       "reviewed": {
         "lifecycle": {
-          "approval": "draft",
-          "delivery": "planned",
+          "approval": "approved",
+          "delivery": "implemented",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
-          "persistenceModel": null
+          "persistenceModel": "living"
         },
         "relations": {
           "extends": [],
@@ -4014,7 +4317,9 @@
           "supersededBy": []
         },
         "scope": {
-          "canonicalDocs": []
+          "canonicalDocs": [
+            "docs-canonical/REQUIREMENTS.md"
+          ]
         },
         "reconciliation": {
           "lastReviewedRevision": null,
@@ -4033,7 +4338,7 @@
         "artifacts": [
           {
             "path": "specs/025-spk010-directory-claims/spec.md",
-            "digest": "sha256:b00d337af0e4abfeabc6740177e87a3b47df7f7eb0a8d59dcfaa0994a9dbcddf"
+            "digest": "sha256:2b402b949611365248acae57d0f1f1c65bbdf34bd118905894bb595e88180d72"
           },
           {
             "path": "specs/025-spk010-directory-claims/plan.md",
@@ -4238,7 +4543,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/docguard.mjs",
-            "line": 877
+            "line": 880
           },
           {
             "requirementId": "FR-011",
@@ -4600,12 +4905,12 @@
       "path": "specs/022-unreadable-git-metadata/spec.md",
       "reviewed": {
         "lifecycle": {
-          "approval": "draft",
-          "delivery": "planned",
+          "approval": "approved",
+          "delivery": "implemented",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
-          "persistenceModel": null
+          "persistenceModel": "living"
         },
         "relations": {
           "extends": [],
@@ -4615,7 +4920,9 @@
           "supersededBy": []
         },
         "scope": {
-          "canonicalDocs": []
+          "canonicalDocs": [
+            "docs-canonical/ENVIRONMENT.md"
+          ]
         },
         "reconciliation": {
           "lastReviewedRevision": null,
@@ -4638,7 +4945,7 @@
         "artifacts": [
           {
             "path": "specs/022-unreadable-git-metadata/spec.md",
-            "digest": "sha256:e4b8017f514418a517fc56055cf4f95d8aea60405481de5a65add57f79c3c617"
+            "digest": "sha256:b78a4553596ba63c7eff69ad025d9cff61d5cbbc6543ef90913f5b6819526e55"
           },
           {
             "path": "specs/022-unreadable-git-metadata/plan.md",
