@@ -230,3 +230,9 @@ the same tools that `tools/list` returns.
   `docguard_task_context` is the deterministic version of that.
 - Write tools. The MCP server stays read-only.
 - Embedding or vector indexes.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `dfa1385749b66184c93bf65f5dde127192037711` — Reviewed at dfa1385 on main: all 10 tasks are checked and were delivered by #474, #479; the full suite (2368 tests) passes and guard reports 0 errors at this revision. Deviations from the plan are recorded in the task notes. Evidence: `cli/scanners/doc-references.mjs`, `cli/shared-headings.mjs`, `docs-canonical/ARCHITECTURE.md`, `tests/impact.test.mjs`, `tests/mcp-doc-tools.test.mjs`, `tests/trace-reverse.test.mjs`, `tests/traceability.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->

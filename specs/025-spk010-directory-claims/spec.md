@@ -77,3 +77,9 @@ changed files in that directory. Guard reports nothing for the task.
 
 - A directory is named through the existing claim syntax (a slashed token ending in `/`). Bare
   directory names without a trailing slash are soft tokens and were never claims.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `dfa1385749b66184c93bf65f5dde127192037711` — Reviewed at dfa1385 on main: all 3 tasks are checked and were delivered by #470, #471; the full suite (2368 tests) passes and guard reports 0 errors at this revision. Deviations from the plan are recorded in the task notes. Evidence: `cli/scanners/speckit.mjs`, `docs-canonical/REQUIREMENTS.md`, `tests/spk010-directory-claims.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->

@@ -79,3 +79,9 @@ reason naming unreadable git metadata and the sandbox remedy, and the badge is n
 
 - `missing-prerequisite` already caps the badge colour (calibrated-finding-channels FR-020), so
   no badge logic changes.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `dfa1385749b66184c93bf65f5dde127192037711` — Reviewed at dfa1385 on main: all 7 tasks are checked and were delivered by #467, #471; the full suite (2368 tests) passes and guard reports 0 errors at this revision. Deviations from the plan are recorded in the task notes. Evidence: `cli/shared-git.mjs`, `docs-canonical/ENVIRONMENT.md`, `tests/unreadable-git-metadata.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->

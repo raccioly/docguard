@@ -140,3 +140,9 @@ job produces.
   decision.
 - Comparing within one job removes runner-speed variance. The 150 ms floor
   absorbs process-start noise.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `dfa1385749b66184c93bf65f5dde127192037711` — Reviewed at dfa1385 on main: all 5 tasks are checked and were delivered by #474, #476; the full suite (2368 tests) passes and guard reports 0 errors at this revision. Deviations from the plan are recorded in the task notes. Evidence: `.github/workflows/ci.yml`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/CI-RECIPES.md`, `tests/budget.test.mjs`, `tools/budget.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->

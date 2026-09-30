@@ -85,3 +85,9 @@ is reported as ignored by guard's coverage map, and Metrics-Consistency does not
 
 - Precision takes priority over recall for ambiguous English keywords, consistent with the
   measured-precision discipline in `docguard.precision-evidence-loop`.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `dfa1385749b66184c93bf65f5dde127192037711` — Reviewed at dfa1385 on main: all 6 tasks are checked and were delivered by #464, #471; the full suite (2368 tests) passes and guard reports 0 errors at this revision. Deviations from the plan are recorded in the task notes. Evidence: `cli/validators/todo-tracking.mjs`, `docs-canonical/TEST-SPEC.md`, `tests/benchmark-runner.test.mjs`, `tests/ignore-parser-parity.test.mjs`, `tests/todo-tracking.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->

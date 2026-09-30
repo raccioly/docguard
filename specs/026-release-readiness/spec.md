@@ -115,3 +115,9 @@ thing without anyone noticing:
   credentials.
 - 0.x semver: a new command or finding code is a minor release; so is a
   behaviour change announced under Removed or Deprecated.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `dfa1385749b66184c93bf65f5dde127192037711` — Reviewed at dfa1385 on main: all 9 tasks are checked and were delivered by #471; the full suite (2368 tests) passes and guard reports 0 errors at this revision. Deviations from the plan are recorded in the task notes. Evidence: `.github/scripts/homebrew-formula.mjs`, `.github/scripts/publish-homebrew-tap.sh`, `.github/scripts/release-changelog.mjs`, `.github/scripts/sync-release-version.mjs`, `.github/workflows/release.yml`, `.github/workflows/scheduled-release.yml`, `cli/docguard.mjs`, `cli/release-pr-policy.mjs`, `docs-canonical/CI-RECIPES.md`, `tests/release-readiness.test.mjs`, `tests/release-version-sync.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->

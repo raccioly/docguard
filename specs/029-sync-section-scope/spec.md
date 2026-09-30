@@ -56,3 +56,9 @@ section carries. The test for the table asserted nothing (`assert.ok(true)`).
 
 - **SC-001**: A docs-only change puts zero sections in scope. The tests fail on
   the previous table.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `dfa1385749b66184c93bf65f5dde127192037711` — Reviewed at dfa1385 on main: all 3 tasks are checked and were delivered by #473; the full suite (2368 tests) passes and guard reports 0 errors at this revision. Deviations from the plan are recorded in the task notes. Evidence: `cli/shared-sync-scope.mjs`, `docs-canonical/ARCHITECTURE.md`, `tests/sync-since.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->

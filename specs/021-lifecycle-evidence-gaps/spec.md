@@ -87,3 +87,9 @@ evidence the lifecycle relies on went missing without any signal at the time:
 ## Assumptions
 
 - `@req` in YAML is not test evidence. Workflows are not tests.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `dfa1385749b66184c93bf65f5dde127192037711` — Reviewed at dfa1385 on main: all 5 tasks are checked and were delivered by #466, #471; the full suite (2368 tests) passes and guard reports 0 errors at this revision. Deviations from the plan are recorded in the task notes. Evidence: `cli/scanners/requirement-evidence.mjs`, `cli/scanners/spec-registry.mjs`, `cli/validators/spec-registry.mjs`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/DATA-MODEL.md`, `tests/lifecycle-evidence-gaps.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->

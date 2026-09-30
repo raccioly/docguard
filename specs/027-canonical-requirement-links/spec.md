@@ -68,3 +68,9 @@ accepts path-qualified canonical IDs; reconciliation did not.
 - **SC-002**: A test whose annotation moves from one declared canonical ID to
   another is not unresolved. This is the `tests/hook-fail-open.test.mjs`
   renumbering that blocked `specs complete` for specs 014–025.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `dfa1385749b66184c93bf65f5dde127192037711` — Reviewed at dfa1385 on main: all 3 tasks are checked and were delivered by #471; the full suite (2368 tests) passes and guard reports 0 errors at this revision. Deviations from the plan are recorded in the task notes. Evidence: `cli/scanners/reconciliation.mjs`, `docs-canonical/ARCHITECTURE.md`, `tests/canonical-requirement-links.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->

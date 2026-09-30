@@ -108,3 +108,9 @@ features it uses, and a test derives that floor from the hook events and fields 
 
 - Adopters on Spec Kit older than 0.11.2 already cannot run DocGuard's init delegation
   (spec 014 requires ≥ 0.10.0). Raising the floor makes that visible at install time.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `dfa1385749b66184c93bf65f5dde127192037711` — Reviewed at dfa1385 on main: all 8 tasks are checked and were delivered by #463, #471; the full suite (2368 tests) passes and guard reports 0 errors at this revision. Deviations from the plan are recorded in the task notes. Evidence: `.github/scripts/speckit-submission.py`, `docs-canonical/TEST-SPEC.md`, `extensions/spec-kit-docguard/extension.yml`, `extensions/spec-kit-docguard/templates/extensions.yml`, `tests/catalog-submission.test.mjs`, `tests/hooks-contract.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->

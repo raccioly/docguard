@@ -156,3 +156,9 @@ or an empty reason.
   requirements are met; requirement coverage stays with traceability and reconciliation.
 - On non-pull-request events the Action's check compares against the default branch and
   reads commit messages only.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `dfa1385749b66184c93bf65f5dde127192037711` — Reviewed at dfa1385 on main: all 10 tasks are checked and were delivered by #460, #471; the full suite (2368 tests) passes and guard reports 0 errors at this revision. Deviations from the plan are recorded in the task notes. Evidence: `action.yml`, `cli/commands/specs.mjs`, `cli/scanners/spec-first.mjs`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/CI-RECIPES.md`, `tests/spec-first.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->
