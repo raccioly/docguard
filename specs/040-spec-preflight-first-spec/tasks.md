@@ -1,6 +1,6 @@
 # Tasks: A Project's First Spec Can Pass Preflight
 
-**Status**: Complete. SC-001: a fresh repository's first spec is READY with no registry and after `specs --write`, and `specs --check` is CURRENT; SC-002: draft to verified with `specs approve` and `specs complete`, no hand edit to approval or delivery; SC-003: `explain` exits 0 for SPC001–SPC008. Claim FIRST-SPEC-PREFLIGHT-PASSES: PROBE_RESULT.
+**Status**: Complete. SC-001: a fresh repository's first spec is READY with no registry and after `specs --write`, and `specs --check` is CURRENT; SC-002: draft to verified with `specs approve` and `specs complete`, no hand edit to approval or delivery; SC-003: `explain` exits 0 for SPC001–SPC008. Claim FIRST-SPEC-PREFLIGHT-PASSES: 20/20 faults killed (`--confirm 3`).
 **Spec**: `specs/040-spec-preflight-first-spec/spec.md`
 **Plan**: `specs/040-spec-preflight-first-spec/plan.md`
 
