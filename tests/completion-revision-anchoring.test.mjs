@@ -12,6 +12,7 @@
  * @req docguard.completion-revision-anchoring#FR-004
  * @req docguard.completion-revision-anchoring#SC-001
  * @req docguard.completion-revision-anchoring#SC-002
+ * @req docguard.completion-revision-anchoring#FR-005
  */
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
@@ -208,5 +209,14 @@ describe('completion warns when its revision will not survive (FR-004)', () => {
     const offMain = complete(dir, 'acme.beta', first);
     assert.equal(offMain.status, 'VERIFIED');
     assert.match(offMain.warnings[0], /not on the remote default branch; a squash merge will discard it/);
+  });
+});
+
+describe('the behaviour is documented (FR-005)', () => {
+  it('commands, DATA-MODEL and CI-RECIPES explain re-anchoring and the squash-merge workflow', () => {
+    const read = p => readFileSync(p, 'utf8');
+    assert.match(read('docs/commands.md'), /specs reanchor[\s\S]*SPR008/);
+    assert.match(read('docs-canonical/DATA-MODEL.md'), /reanchoredFrom[\s\S]*blob-equal[\s\S]*attested/);
+    assert.match(read('docs-canonical/CI-RECIPES.md'), /Under squash merges, run completions on a branch whose HEAD is the default\s+branch's tip/);
   });
 });
