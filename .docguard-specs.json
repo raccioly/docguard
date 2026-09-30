@@ -817,7 +817,7 @@
           {
             "requirementId": "FR-021",
             "file": "cli/scanners/speckit.mjs",
-            "line": 1098
+            "line": 1109
           }
         ],
         "testEvidence": [
@@ -3990,6 +3990,96 @@
             "requirementId": "SC-005",
             "file": "tests/spec-kit-delegation.test.mjs",
             "line": 32
+          }
+        ]
+      }
+    },
+    {
+      "specId": "docguard.spk010-directory-claims",
+      "path": "specs/025-spk010-directory-claims/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.spk010-directory-claims#FR-001",
+          "docguard.spk010-directory-claims#FR-002",
+          "docguard.spk010-directory-claims#SC-001",
+          "docguard.spk010-directory-claims#SC-002"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/025-spk010-directory-claims/spec.md",
+            "digest": "sha256:b00d337af0e4abfeabc6740177e87a3b47df7f7eb0a8d59dcfaa0994a9dbcddf"
+          },
+          {
+            "path": "specs/025-spk010-directory-claims/plan.md",
+            "digest": "sha256:6436336dc521acadb859ce8feb1b6f648b53517d0cffd6c4608081a876ab67ef"
+          },
+          {
+            "path": "specs/025-spk010-directory-claims/tasks.md",
+            "digest": "sha256:2bc06397e721f9c6f604e04569b90ff94359c73b5d427b3cda1df53cde52ea0a"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 3,
+          "total": 3
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/scanners/speckit.mjs",
+            "line": 1110
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/scanners/speckit.mjs",
+            "line": 1111
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/spk010-directory-claims.test.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/spk010-directory-claims.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/spk010-directory-claims.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/spk010-directory-claims.test.mjs",
+            "line": 8
           }
         ]
       }

@@ -1091,11 +1091,24 @@ export function featureTouchedPaths(projectDir, specDirRel) {
   return touched;
 }
 
+function isDirectory(abs) {
+  try { return statSync(abs).isDirectory(); } catch { return false; }
+}
+
+/** True when any touched path lies strictly under `dirRel`. */
+export function touchedWithin(touched, dirRel) {
+  const prefix = `${dirRel.replace(/\/+$/, '')}/`;
+  for (const p of touched) if (p.startsWith(prefix)) return true;
+  return false;
+}
+
 /**
  * Checked tasks whose named, existing deliverables this feature never changed.
  *
  * @returns {Array<{spec, relPath, checkedCount, untouched: Array<{id, text, line, paths: string[]}>}>}
  * @implements docguard.calibrated-finding-channels#FR-021
+ * @implements docguard.spk010-directory-claims#FR-001
+ * @implements docguard.spk010-directory-claims#FR-002
  */
 export function detectUntouchedClaims(projectDir, specs) {
   const results = [];
@@ -1123,8 +1136,14 @@ export function detectUntouchedClaims(projectDir, specs) {
         // a deliverable the task promised to change.
         if (claim === specDirRel || claim.startsWith(`${specDirRel}/`)) continue;
         // A path that does not exist is SPK008's finding, never this one.
-        if (!existsSync(resolve(projectDir, claim))) continue;
-        if (!touched.has(claim)) missed.push(claim);
+        const abs = resolve(projectDir, claim);
+        if (!existsSync(abs)) continue;
+        if (touched.has(claim)) continue;
+        // A named directory is touched when the feature changed anything
+        // inside it. Git lists files, never directories, so an exact lookup
+        // would flag every directory a task names as context (#458).
+        if (isDirectory(abs) && touchedWithin(touched, claim)) continue;
+        missed.push(claim);
       }
       if (missed.length > 0) untouched.push({ id: task.id, text: task.text, line: task.line, paths: missed.sort() });
     }

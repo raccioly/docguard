@@ -186,6 +186,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **SPK010 no longer flags a directory a task names as context when the feature changed files inside it** (#458, `specs/025-spk010-directory-claims`). Git lists files, never directories, so a task naming `src/game/` beside its deliverable `src/game/liveness.js` was reported as "never changed". A named directory now counts as touched when any path strictly under it changed in the feature's window. A directory with nothing changed inside is still reported. A sibling that shares the prefix (`src/gameplay/`) does not count, and a file claim still needs its own change.
 - **A merged release publishes within 10 minutes, not up to an hour (#447,
   `specs/023-release-dispatch-window`).** The scheduler waits 10 minutes for
   the release PR to merge, and maintainers rarely approve its workflows that
