@@ -210,6 +210,48 @@ jobs:
           printf '%s' "$PR_BODY" > "$RUNNER_TEMP/pr-body.txt"
           node cli/docguard.mjs specs require --since "origin/$BASE_REF" --message-file "$RUNNER_TEMP/pr-body.txt"
 
+  # ── Non-regression budgets (specs/031-non-regression-budgets) ──
+  # Base and head run in THIS job on THIS runner, guard samples interleaved,
+  # so the comparison measures the change and not the machine. A breach fails
+  # unless the PR body declares `Budget-Exempt: <metric> — <reason>`; the
+  # table lands in the job summary either way.
+  # @implements docguard.non-regression-budgets#FR-004
+  budget:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # the base commit must be available for a worktree
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 20
+
+      - name: Install
+        run: npm ci --ignore-scripts
+
+      - name: Check out the base tree beside the head
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          git worktree add --detach "$RUNNER_TEMP/base" "$BASE_SHA"
+          ln -s "$GITHUB_WORKSPACE/node_modules" "$RUNNER_TEMP/base/node_modules"
+
+      - name: Compare base and head
+        shell: bash
+        env:
+          # SECURITY: the PR body is fork-controlled data; it reaches the tool
+          # only through a file, never through the script text.
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          printf '%s' "$PR_BODY" > "$RUNNER_TEMP/pr-body.txt"
+          node tools/budget.mjs ab --base "$RUNNER_TEMP/base" --head . \
+            --message-file "$RUNNER_TEMP/pr-body.txt" \
+            --summary "$GITHUB_STEP_SUMMARY" --out "$RUNNER_TEMP/budget.json"
+
   # ── npm publish dry-run on tags ──
   publish-check:
     runs-on: ubuntu-latest

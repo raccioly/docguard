@@ -3338,12 +3338,12 @@
       "path": "specs/031-non-regression-budgets/spec.md",
       "reviewed": {
         "lifecycle": {
-          "approval": "draft",
-          "delivery": "planned",
+          "approval": "approved",
+          "delivery": "implemented",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
-          "persistenceModel": null
+          "persistenceModel": "living"
         },
         "relations": {
           "extends": [],
@@ -3353,7 +3353,10 @@
           "supersededBy": []
         },
         "scope": {
-          "canonicalDocs": []
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md",
+            "docs-canonical/CI-RECIPES.md"
+          ]
         },
         "reconciliation": {
           "lastReviewedRevision": null,
@@ -3378,7 +3381,7 @@
         "artifacts": [
           {
             "path": "specs/031-non-regression-budgets/spec.md",
-            "digest": "sha256:17a3a98da9fcff1f668385554703745b2c20a28fa08f74118606be8414424db1"
+            "digest": "sha256:6097cefd8d6139d4974861ae3243b4f5cfd4838df1ca47d62672376017427aad"
           },
           {
             "path": "specs/031-non-regression-budgets/plan.md",
@@ -3386,15 +3389,97 @@
           },
           {
             "path": "specs/031-non-regression-budgets/tasks.md",
-            "digest": "sha256:d7505af55220889ef0ea51fdb003dd99679fed05d573ff30b37225b9848fe27b"
+            "digest": "sha256:47c4c44ed4d87287da529bd14569581f66f1e00828f433805a628ad20c4da8ac"
           }
         ],
         "taskCompletion": {
-          "checked": 0,
+          "checked": 5,
           "total": 5
         },
-        "implementationEvidence": [],
-        "testEvidence": []
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tools/budget.mjs",
+            "line": 24
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tools/budget.mjs",
+            "line": 25
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tools/budget.mjs",
+            "line": 26
+          },
+          {
+            "requirementId": "FR-004",
+            "file": ".github/workflows/ci.yml",
+            "line": 218
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tools/budget.mjs",
+            "line": 27
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tools/budget.mjs",
+            "line": 28
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/budget.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/budget.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/budget.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/budget.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/budget.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/budget.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/budget.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/budget.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/budget.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/budget.test.mjs",
+            "line": 15
+          }
+        ]
       }
     },
     {

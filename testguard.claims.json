@@ -1463,6 +1463,96 @@
           }
         }
       ]
+    },
+    {
+      "id": "BUDGETS-CATCH-REGRESSIONS",
+      "statement": "A PR that makes guard slower past its budget, adds an error finding, grows agent-facing bytes, adds a dependency, or cannot be measured against its base does not pass silently; only a declared Budget-Exempt waives one metric.",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/031-non-regression-budgets/spec.md#FR-002"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (#455 spec 031)"
+      },
+      "defendedBy": [
+        "tests/budget.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "The floor is ignored, so noise fails.",
+          "faultClass": "return-altered",
+          "file": "tools/budget.mjs",
+          "find": "  const limit = Math.max(base * maxRatio, base + floor);",
+          "replace": "  const limit = base * maxRatio;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 031)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "A breach passes.",
+          "faultClass": "condition-forced",
+          "file": "tools/budget.mjs",
+          "find": "  if (head <= limit) return row(metric, base, head, budget, 'PASS');",
+          "replace": "  if (true) return row(metric, base, head, budget, 'PASS');",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 031)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "An unmeasured base passes.",
+          "faultClass": "return-altered",
+          "file": "tools/budget.mjs",
+          "find": "  if (!Number.isFinite(base)) return row(metric, base, head, null, 'INCONCLUSIVE', 'base could not be measured');",
+          "replace": "  if (!Number.isFinite(base)) return row(metric, base, head, null, 'PASS');",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 031)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "A new dependency passes.",
+          "faultClass": "condition-forced",
+          "file": "tools/budget.mjs",
+          "find": "  else if (added.length && !exemptions.has('dependencies'))",
+          "replace": "  else if (false)",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 031)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "An exemption without a reason is accepted.",
+          "faultClass": "literal-changed",
+          "file": "tools/budget.mjs",
+          "find": "\\s*(.{8,})$/gm",
+          "replace": "\\s*(.*)$/gm",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 031)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "Interleaving stops: head always runs second.",
+          "faultClass": "condition-forced",
+          "file": "tools/budget.mjs",
+          "find": "    if (i % 2 === 0) {",
+          "replace": "    if (true) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 031)"
+          }
+        }
+      ]
     }
   ]
 }
