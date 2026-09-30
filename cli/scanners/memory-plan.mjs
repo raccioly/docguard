@@ -520,12 +520,12 @@ function _buildMemoryPlanUncached(projectDir, config = {}) {
     }
     sections.push(addTask('docs-canonical/TEST-SPEC.md', 'categories',
       ti.totalFiles > 0
-        ? 'Document the test categories (unit / integration / e2e): where each lives and the command that runs it. The table above lists the detected test files.'
+        ? 'Document the test categories (unit / integration / e2e): where each lives and the command that runs it. The Test Inventory section lists the detected test files.'
         : 'No test files were detected. Document the intended test categories and where tests will live.',
       { totalFiles: ti.totalFiles }, 'Test Categories'));
     sections.push(addTask('docs-canonical/TEST-SPEC.md', 'coverage',
       ti.totalFiles > 0
-        ? 'Document the coverage rules and the service→test mapping. The table above lists the detected test files and their case counts.'
+        ? 'Document the coverage rules and the service→test mapping. The Test Inventory section lists the detected test files and their case counts.'
         : 'Document the coverage targets the tests must meet.',
       { totalFiles: ti.totalFiles, totalCases: ti.totalCases }, 'Coverage Rules'));
     docs.push({ path: 'docs-canonical/TEST-SPEC.md', sections });

@@ -459,8 +459,11 @@ function scanProject(dir, config = {}) {
   scan.components = scan.components.filter(f => !isTestFile(f));
   scan.middlewares = scan.middlewares.filter(f => !isTestFile(f));
   // Every test file the test-drift check (DDF002) and the plan's inventory see.
+  // Files under a test directory count only when they are test files, so
+  // fixtures and helpers are not listed as tests.
+  const isTestLike = (f) => /(?:\.(?:test|spec)\.[^./]+|(?:^|\/)test_[^/]*\.py|(?:^|\/)tests\.py|_test\.(?:py|go)|_spec\.rb)$/.test(f);
   scan.tests = [...new Set([
-    ...scan.tests,
+    ...scan.tests.filter(isTestLike),
     ...collectCodeTests(dir, config),
     ...scanTestInventory(dir, config).files.map(t => t.file),
   ].map(f => f.replace(/\\/g, '/')))].sort();
