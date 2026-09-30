@@ -1382,6 +1382,7 @@
           "docguard.compact-guard-response#FR-004",
           "docguard.compact-guard-response#FR-005",
           "docguard.compact-guard-response#FR-006",
+          "docguard.compact-guard-response#FR-007",
           "docguard.compact-guard-response#SC-001",
           "docguard.compact-guard-response#SC-002",
           "docguard.compact-guard-response#SC-003"
@@ -1391,7 +1392,7 @@
         "artifacts": [
           {
             "path": "specs/037-compact-guard-response/spec.md",
-            "digest": "sha256:c5c3b8a67f3bdcfff971c2f028eb507090553463b632955ffab8aa08b6c47ea2"
+            "digest": "sha256:3f995781f6ba23d97bcc3889c294ffa5efbe4757df2fea63970f426871b15c43"
           },
           {
             "path": "specs/037-compact-guard-response/plan.md",
@@ -1399,23 +1400,28 @@
           },
           {
             "path": "specs/037-compact-guard-response/tasks.md",
-            "digest": "sha256:e05451cc75674ed21cf7a8f9a64cabf68f4c84f8790d6b84a98ae2e2187fc37b"
+            "digest": "sha256:ecd7dab36c06b769e165e2263d5c64dcb4516014d9edbf94cf1a77632479718e"
           }
         ],
         "taskCompletion": {
-          "checked": 6,
-          "total": 6
+          "checked": 9,
+          "total": 9
         },
         "implementationEvidence": [
           {
             "requirementId": "FR-001",
             "file": "cli/shared-guard-json.mjs",
-            "line": 11
+            "line": 17
           },
           {
             "requirementId": "FR-002",
             "file": "cli/shared-guard-json.mjs",
-            "line": 12
+            "line": 18
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/shared-guard-json.mjs",
+            "line": 19
           }
         ],
         "testEvidence": [
@@ -1450,19 +1456,24 @@
             "line": 10
           },
           {
-            "requirementId": "SC-001",
+            "requirementId": "FR-007",
             "file": "tests/compact-guard-response.test.mjs",
             "line": 11
           },
           {
-            "requirementId": "SC-002",
+            "requirementId": "SC-001",
             "file": "tests/compact-guard-response.test.mjs",
             "line": 12
           },
           {
-            "requirementId": "SC-003",
+            "requirementId": "SC-002",
             "file": "tests/compact-guard-response.test.mjs",
             "line": 13
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/compact-guard-response.test.mjs",
+            "line": 14
           }
         ]
       }

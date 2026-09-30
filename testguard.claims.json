@@ -2809,7 +2809,7 @@
     },
     {
       "id": "COMPACT-GUARD-LOSES-NOTHING",
-      "statement": "The compact guard response is a projection of the full one: every finding field, count, legacy validator message and per-code evidence object can be read back, raw unquotable statistics stay out, agents get it by default over MCP, and the full contract stays one argument away.",
+      "statement": "The compact guard response is a projection of the full one: every finding field, count, legacy validator message, per-code evidence object, applicability reason and coverage limitation can be read back, raw unquotable statistics stay out, agents get it by default over MCP, and the full contract stays one argument away.",
       "source": {
         "kind": "spec",
         "ref": "specs/037-compact-guard-response/spec.md#FR-005"
@@ -2929,6 +2929,54 @@
           "producedBy": {
             "producer": "agent",
             "by": "claude-opus-5.5 (#455 spec 037)"
+          }
+        },
+        {
+          "id": "F10",
+          "description": "A specific applicability reason is replaced by its status's standard reason.",
+          "faultClass": "other",
+          "file": "cli/shared-guard-json.mjs",
+          "find": "  if (Object.hasOwn(STANDARD_APPLICABILITY_REASONS, status) && reason === STANDARD_APPLICABILITY_REASONS[status]) {",
+          "replace": "  if (Object.hasOwn(STANDARD_APPLICABILITY_REASONS, status)) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 037 FR-007)"
+          }
+        },
+        {
+          "id": "F11",
+          "description": "A standard reason is dropped instead of stated once.",
+          "faultClass": "statement-deleted",
+          "file": "cli/shared-guard-json.mjs",
+          "find": "    reasons[status] = reason;\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 037 FR-007)"
+          }
+        },
+        {
+          "id": "F12",
+          "description": "The compact checkCoverage loses its counts with the limitations.",
+          "faultClass": "other",
+          "file": "cli/shared-guard-json.mjs",
+          "find": "  return coverage;\n",
+          "replace": "  return {};\n",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 037 FR-007)"
+          }
+        },
+        {
+          "id": "F13",
+          "description": "The full form's checked reason drifts from the standard table, so compaction silently stops hoisting it.",
+          "faultClass": "other",
+          "file": "cli/validator-coverage.mjs",
+          "find": "return { status: 'checked', reason: STANDARD_APPLICABILITY_REASONS.checked };",
+          "replace": "return { status: 'checked', reason: 'Completed the declared checks.' };",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 037 FR-007)"
           }
         }
       ]

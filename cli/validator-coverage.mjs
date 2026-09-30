@@ -3,14 +3,20 @@ import { existsSync } from 'node:fs';
 import { resolveDocRole, docRolePath } from './shared-doc-roles.mjs';
 const PREREQUISITES = { testSpec: 'testSpec', environment: 'environment', apiSurface: 'apiReference', architecture: 'architecture' };
 const STATES = new Set(['checked', 'partial', 'disabled', 'not-applicable', 'missing-prerequisite', 'unsupported', 'no-matches', 'error']);
+/** The reason a status carries when nothing more specific is known; the compact guard form states each once. */
+export const STANDARD_APPLICABILITY_REASONS = Object.freeze({
+  checked: 'Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage.',
+  disabled: 'Disabled by the effective configuration or selected command scope.',
+  'no-matches': 'No checkable inputs matched this detector. This does not establish that the project has no relevant behavior.',
+});
 export function describeCheckCoverage(projectDir, config, result) {
-  if (result.status === 'skipped') return { status: 'disabled', reason: 'Disabled by the effective configuration or selected command scope.' };
+  if (result.status === 'skipped') return { status: 'disabled', reason: STANDARD_APPLICABILITY_REASONS.disabled };
   if (result.note?.startsWith('declared N/A')) return { status: 'not-applicable', reason: result.note };
   if (STATES.has(result.applicability?.status) && typeof result.applicability.reason === 'string') return result.applicability;
-  if (result.total > 0) return { status: 'checked', reason: 'Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage.' };
+  if (result.total > 0) return { status: 'checked', reason: STANDARD_APPLICABILITY_REASONS.checked };
   const role = PREREQUISITES[result.key];
   if (role && !existsSync(resolveDocRole(projectDir, config, role))) return { status: 'missing-prerequisite', reason: 'No document available for role ' + role + ': ' + docRolePath(config, role) };
-  return { status: 'no-matches', reason: result.note || 'No checkable inputs matched this detector. This does not establish that the project has no relevant behavior.' };
+  return { status: 'no-matches', reason: result.note || STANDARD_APPLICABILITY_REASONS['no-matches'] };
 }
 export function summarizeCheckCoverage(results) {
   const counts = Object.fromEntries([...STATES].map(status => [status, 0]));
