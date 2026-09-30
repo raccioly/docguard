@@ -98,7 +98,7 @@ Paths that come from documents or configuration are checked before use. A `cover
 | review --accept, review --prune | `.docguard-doc-lock.json` only | One file transaction; `--accept` requires a reason. Plain `review` and `review --suggest` write nothing |
 | rules --for, trace --owners [--suggest] | None | Read-only; `--suggest` prints a draft ownership block and never writes configuration |
 | reconcile | None by default | `--write` delegates only mechanical generated-section refreshes to `sync` |
-| specs, specs preflight, specs require | None for check/plan modes | `specs --write` refreshes the registry; `specs complete --write` transactionally records a reviewed outcome and active context |
+| specs, specs preflight, specs require | None for check/plan modes | `specs --write` refreshes the registry; `specs approve --write` records a reviewed approval and delivery state in the registry only; `specs complete --write` transactionally records a reviewed outcome and active context |
 | verify --evidence | None | Reads the strict local manifest, selected Markdown, source files, and saved reports; guard consumes the same evaluator |
 | retire --write | Explicit clean tracked documentation only | Requires retained-ref recovery proof, clean replacement/evidence docs, and no live Markdown backreferences |
 | init, generate | Documentation and configuration scaffolding | Explicit force options may overwrite content. When `specify` is installed and Spec Kit is not initialized, `init` runs `specify init --here --force` (skip with `--no-spec-kit`) and registers the packaged extension. `generate --spec --write` adds one spec and its registry entry in one transaction |

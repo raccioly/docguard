@@ -1,5 +1,6 @@
 /**
  * @implements docguard.evidence-scoped-verification#FR-013
+ * @implements docguard.first-spec-preflight#FR-007
  * Explain Command — v0.16-P6.
  *
  * Asked for by a user who'd spent 5-10 minutes per warning spelunking
@@ -21,7 +22,7 @@ import { readFileSync } from 'node:fs';
 import { resolve as resolvePath, dirname as dn } from 'node:path';
 import { fileURLToPath as fp } from 'node:url';
 import { c } from '../shared.mjs';
-import { CODES } from '../findings.mjs';
+import { BLOCKER_CODES, CODES } from '../findings.mjs';
 import { describeEvidenceForCode, evidenceForCode } from '../precision-evidence.mjs';
 
 const CLI_VERSION = JSON.parse(readFileSync(resolvePath(dn(fp(import.meta.url)), '..', '..', 'package.json'), 'utf-8')).version;
@@ -573,6 +574,21 @@ export function runExplain(projectDir, _config, flags) {
       console.log(`  ${c.cyan}${cd.suppress}${c.reset}\n`);
     }
     console.log(`${c.bold}Got it wrong?${c.reset} ${c.dim}Send a redacted report so a future release stops flagging it: ${c.cyan}docguard feedback${c.reset}`);
+    return;
+  }
+
+  // Lifecycle command blockers (SPC…) are not findings: no validator, no
+  // benchmark evidence, no inline suppression (docguard.first-spec-preflight#FR-007).
+  if (BLOCKER_CODES[codeKey]) {
+    const bc = BLOCKER_CODES[codeKey];
+    if (isJson) {
+      console.log(JSON.stringify({ query, code: codeKey, kind: 'blocker', ...bc }, null, 2));
+      return;
+    }
+    console.log(`${c.bold}🧭 ${codeKey} — ${bc.title}${c.reset}`);
+    console.log(`${c.dim}   blocker printed by: ${bc.command}${c.reset}\n`);
+    console.log(`${c.bold}What it means:${c.reset}\n  ${bc.help}\n`);
+    console.log(`${c.dim}A blocker is not a guard finding: it stops the command until the condition is fixed, and cannot be suppressed.${c.reset}`);
     return;
   }
 

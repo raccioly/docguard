@@ -926,6 +926,56 @@ export const CODES = {
   },
 };
 
+/**
+ * Codes a lifecycle command prints when it refuses to act. They are not
+ * findings: guard never reports them, so `findingSeverity`, SARIF and
+ * feedback do not read this table. `docguard explain` and the MCP explain
+ * tool do, so every blocker a command prints can be looked up.
+ * @implements docguard.first-spec-preflight#FR-007
+ */
+export const BLOCKER_CODES = {
+  SPC001: {
+    command: 'docguard specs complete | approve | reanchor',
+    title: 'Spec, registry or working tree not ready',
+    help: 'The command cannot identify what it acts on, or the repository is not in a state it can record. Causes: `--id` is missing or names no spec in the registry; the committed `.docguard-specs.json` is missing or stale (run `docguard specs --write`, review and commit it); the spec is retired; completion found no Git HEAD, or tracked files changed since the recorded revision (commit them first; the lifecycle files completion itself writes are allowed).',
+  },
+  SPC002: {
+    command: 'docguard specs complete | approve',
+    title: 'Lifecycle state does not allow this transition',
+    help: 'Completion needs an approved spec whose delivery is in_progress or implemented, or a verified or released living spec for a maintenance outcome. Record approval, and the delivery state, with `docguard specs approve --id <spec-id> [--delivery in_progress|implemented] --write`; a person runs it and the registry diff is reviewed in the pull request. `approve` refuses verified and released (only `specs complete` records them) and refuses to move a verified or released spec back.',
+  },
+  SPC003: {
+    command: 'docguard specs complete',
+    title: 'Task ledger incomplete',
+    help: 'The spec has a tasks.md and not every task is checked, or it has no task ledger and is not a living verification contract. Finish and check the tasks, or uncheck none you have not done; a living spec with qualified evidence for every requirement may omit tasks.md.',
+  },
+  SPC004: {
+    command: 'docguard specs complete',
+    title: 'Requirement evidence missing',
+    help: 'Completion needs at least one source file annotated `@implements <specId>#<requirement>`, at least one test annotated `@req <specId>#<requirement>`, and implementation or test evidence for every requirement the spec declares. Add the annotations, then run `docguard specs --write`. Bare `FR-001` references do not count: the same local ID appears in many specs.',
+  },
+  SPC005: {
+    command: 'docguard specs complete',
+    title: 'Affected canonical documents not recorded',
+    help: 'The registry entry names no canonical document the spec affected (`reviewed.scope.canonicalDocs`), or names one that does not exist. List the documents the change updated; this is a reviewed field, edited by hand and reviewed in the pull request.',
+  },
+  SPC006: {
+    command: 'docguard specs complete',
+    title: 'Reconciliation incomplete',
+    help: 'Completion reconciles every file changed since the review baseline. It blocks when there is no baseline (pass `--since <ref>` the first time), when the plan is unsupported, when a changed file traces to no spec (annotate it, or list files that cannot carry an annotation under `reviewed.scope.assetPaths`), or when a living spec\'s maintenance completion has no new linked change since its last reviewed revision. `docguard reconcile --since <ref>` shows the classification.',
+  },
+  SPC007: {
+    command: 'docguard specs complete',
+    title: 'Guard has errors',
+    help: 'Completion runs guard and refuses while it reports errors. Run `docguard guard`, fix the errors, commit, and complete again.',
+  },
+  SPC008: {
+    command: 'docguard specs reanchor',
+    title: 'Re-anchor target not established',
+    help: 'Re-anchoring moves a recorded revision that a squash merge discarded (SPR008). It blocks when no commit on HEAD\'s first-parent history carries the reviewed evidence unchanged, when the old revision no longer resolves, or when `--to` names no commit on HEAD\'s history. Pass `--to <revision>` (a SHA, branch, tag or HEAD; the full SHA is recorded) with `--reason` to attest the anchor, and `--from <revision>` when one spec has dangling revisions from different merges.',
+  },
+};
+
 export const SUGGESTION_KINDS = Object.freeze(['fix', 'suppress', 'review', 'report']);
 export const DISPOSITIONS = Object.freeze(['act', 'escalate']);
 export const PARSER_TIERS = Object.freeze(['js-ast', 'py-ast', 'regex-fallback', 'fallback-language', 'mixed', 'not-applicable']);
