@@ -443,7 +443,15 @@ it, how to suppress a false positive at the finding site.
 npx docguard-cli llms              # llms.txt (link index)
 npx docguard-cli llms --full       # llms-full.txt (full doc bodies inlined)
 npx docguard-cli memory --pack     # .docguard/context-pack.md (session-start context)
+npx docguard-cli memory --pack --symbols   # …plus a symbol map (opt-in)
 ```
+
+`--symbols` adds a `## Symbol map`: the source files most central in the static
+import graph (PageRank), each with the names it exports, cut to
+`memory.symbolMap.maxBytes` (default 4096) at a whole line. It is byte-identical
+for the same tree and names what it left out. It stays opt-in until the v2
+agent-context benchmark decides whether the extra bytes pay for themselves
+(`benchmarks/agent-context/results/README-v2.md`).
 
 ---
 

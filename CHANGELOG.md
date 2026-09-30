@@ -37,6 +37,17 @@ Behaviour changes:
 
 ### Added
 
+- **Symbol map in the context pack, opt-in** (`specs/036-symbol-map`).
+  `memory --pack --symbols` adds a `## Symbol map`: the source files most
+  central in the static import graph (PageRank, deterministic), each with the
+  names it exports, within `memory.symbolMap.maxBytes` (default 4096). It costs
+  +1.2% of `memory --pack` time on this repository, because symbols are read
+  only for the files that fit. Without the flag the pack is unchanged.
+  Whether it becomes the default is decided by agent-context protocol v2,
+  frozen before any run (`benchmarks/agent-context/manifest-v2.json`): six
+  tasks, three of them navigation-bound in a new 29-module fixture. Default-on
+  needs no regression and a benefit; a regression withdraws the feature. The
+  54-trial matrix has not been run yet.
 - **Doc ownership map** (`specs/034-doc-ownership-map`). A project can declare
   which doc section is responsible for which source paths, in an `ownership`
   block in `.docguard.json`:

@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "entries": [
+    {
+      "kind": "path",
+      "pattern": "benchmarks/agent-context/hidden/ledger-*/evaluate.mjs",
+      "reason": "Hidden evaluators run as subprocesses and are read as bytes, so the probe cannot observe them (subject-not-executed). They are frozen instead: manifest-v2.json records each one's sha256 and loadManifest rejects any byte change (tests/symbol-map.test.mjs), and their calibration is tested through verifyFixtures and the claimed references.",
+      "by": "claude-opus-5.5 (#455 spec 036)",
+      "at": "2026-09-30T00:00:00Z"
+    }
+  ]
+}

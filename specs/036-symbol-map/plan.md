@@ -73,23 +73,22 @@ Pass.
 ## Project Structure
 
 ```text
-cli/scanners/js-ast.mjs                 # extractExportedSymbols (moved from as-built.mjs)
+cli/scanners/js-ast.mjs                 # exportedNames (moved from as-built.mjs), moduleSymbols
 cli/scanners/as-built.mjs               # import it
 cli/scanners/py-ast.mjs                 # PY_EXTRACTOR symbols
 cli/scanners/import-graph.mjs           # from docguard.code-derived-diagrams (or moved here)
 cli/scanners/symbol-map.mjs             # NEW: PageRank, symbols, budgeted rendering
 cli/commands/memory.mjs                 # --symbols section in runMemoryPack
 cli/docguard.mjs                        # --symbols flag, help
-cli/config.mjs, schemas/docguard-config.schema.json   # memory.symbolMap.maxBytes
+schemas/docguard-config.schema.json     # memory.symbolMap.maxBytes (bounds in symbolMapBudget)
 benchmarks/agent-context/manifest-v2.json             # NEW, frozen before runs
 benchmarks/agent-context/run.mjs        # protocol dispatch, context-pack-symbols, decideSymbolPromotion
 benchmarks/agent-context/fixtures/, hidden/, reference/   # three navigation-bound tasks
 benchmarks/agent-context/results/observed-v2.json     # NEW, after the run
-benchmarks/agent-context/results/README.md            # v2 decision
-schemas/docguard-agent-context-benchmark.schema.json, schemas/docguard-agent-context-result.schema.json
+benchmarks/agent-context/results/README-v2.md         # v2 protocol and, after the run, its decision
+schemas/docguard-agent-context-benchmark-v2.schema.json, schemas/docguard-agent-context-result-v2.schema.json (v1 schemas unchanged)
 README.md, docs/commands.md, docs/configuration.md, docs/ai-integration.md
 tests/symbol-map.test.mjs               # NEW
-tests/agent-context-benchmark.test.mjs  # v2 manifest freezing, v1 unchanged, promotion rule
 testguard.claims.json                   # SYMBOL-MAP-IS-BUDGETED-AND-GATED
 ```
 

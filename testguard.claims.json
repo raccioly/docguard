@@ -2586,6 +2586,228 @@
       ]
     },
     {
+      "id": "SYMBOL-MAP-IS-BUDGETED-AND-GATED",
+      "statement": "The symbol map ranks product source files deterministically by PageRank, lists their names within a byte budget and names every degraded tier, appears only with --symbols, and ships by default only if the frozen v2 protocol computes no regression and a benefit on navigation-bound tasks. The v2 instruments are calibrated (each reference passes every hidden check; each starting state fails as declared).",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/036-symbol-map/spec.md#FR-008"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (#455 spec 036)"
+      },
+      "defendedBy": [
+        "tests/symbol-map.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "Dangling rank mass is dropped, so scores stop summing to one.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/symbol-map.mjs",
+          "find": "    for (let v = 0; v < n; v++) next[v] += spread;\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 036)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "Equal scores keep input order instead of path order.",
+          "faultClass": "other",
+          "file": "cli/scanners/symbol-map.mjs",
+          "find": "    .sort((a, b) => b.score - a.score || (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));",
+          "replace": "    .sort((a, b) => b.score - a.score);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 036)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "Scores are not rounded before sorting.",
+          "faultClass": "other",
+          "file": "cli/scanners/symbol-map.mjs",
+          "find": "    .map((path, i) => ({ path, score: Math.round(rank[i] * 1e9) / 1e9 }))",
+          "replace": "    .map((path, i) => ({ path, score: rank[i] }))",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 036)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "Test and fixture files are ranked.",
+          "faultClass": "call-removed",
+          "file": "cli/scanners/symbol-map.mjs",
+          "find": "    .filter(f => isSource(f) && !isGenerated(f) && !isNonProductPath(f, config))",
+          "replace": "    .filter(f => isSource(f) && !isGenerated(f))",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 036)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "A file lists every name, past the cap.",
+          "faultClass": "other",
+          "file": "cli/scanners/symbol-map.mjs",
+          "find": "  const shown = symbols.names.slice(0, MAX_SYMBOLS_PER_FILE);",
+          "replace": "  const shown = symbols.names;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 036)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "A degraded tier is not named.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/symbol-map.mjs",
+          "find": "      if (!s.ok) degraded[s.tier] = (degraded[s.tier] || 0) + 1;\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 036)"
+          }
+        },
+        {
+          "id": "F7",
+          "description": "Files the graph could not read are dropped instead of listed.",
+          "faultClass": "other",
+          "file": "cli/scanners/symbol-map.mjs",
+          "find": "  const files = [...new Set([...graph.files, ...(graph.unsupportedFiles || [])].map(posix))]",
+          "replace": "  const files = [...new Set([...graph.files].map(posix))]",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 036)"
+          }
+        },
+        {
+          "id": "F8",
+          "description": "A module with no exports lists nothing.",
+          "faultClass": "other",
+          "file": "cli/scanners/js-ast.mjs",
+          "find": "  return { ok: true, names: [...new Set(exported.length ? exported : topLevel)] };",
+          "replace": "  return { ok: true, names: [...new Set(exported)] };",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 036)"
+          }
+        },
+        {
+          "id": "F9",
+          "description": "The pack gains the section without --symbols.",
+          "faultClass": "condition-forced",
+          "file": "cli/commands/memory.mjs",
+          "find": "  if (flags.symbols) {",
+          "replace": "  if (true) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 036)"
+          }
+        },
+        {
+          "id": "F10",
+          "description": "A regression is still released.",
+          "faultClass": "condition-forced",
+          "file": "benchmarks/agent-context/run.mjs",
+          "find": "  if (regression) return { status: 'not-released', reasons, reductions, increases };",
+          "replace": "  if (false) return { status: 'not-released', reasons, reductions, increases };",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 036)"
+          }
+        },
+        {
+          "id": "F11",
+          "description": "A 10% token increase passes the 5% gate.",
+          "faultClass": "literal-changed",
+          "file": "benchmarks/agent-context/run.mjs",
+          "find": "increases.uncachedInputTokens <= noRegression.maxMedianIncreasePercent.uncachedInputTokens",
+          "replace": "increases.uncachedInputTokens <= 100",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 036)"
+          }
+        },
+        {
+          "id": "F12",
+          "description": "Benefit is measured on all tasks, not the navigation-bound ones.",
+          "faultClass": "other",
+          "file": "benchmarks/agent-context/run.mjs",
+          "find": "  const navCand = navigationAggregate[c];",
+          "replace": "  const navCand = aggregate[c];",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 036)"
+          }
+        },
+        {
+          "id": "F13",
+          "description": "A v2 manifest edited after freezing still loads.",
+          "faultClass": "statement-deleted",
+          "file": "benchmarks/agent-context/run.mjs",
+          "find": "  assert(sha256(stableJson(manifest)) === V2_MANIFEST_DIGEST, 'the v2 manifest changed after it was frozen');\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 036)"
+          }
+        },
+        {
+          "id": "F14",
+          "description": "The symbols condition builds the same prompt as the plain pack.",
+          "faultClass": "return-altered",
+          "file": "benchmarks/agent-context/run.mjs",
+          "find": "    const symbols = condition === 'context-pack-symbols' ? ['--symbols'] : [];",
+          "replace": "    const symbols = [];",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 036)"
+          }
+        },
+        {
+          "id": "F15",
+          "description": "The rounding reference rounds ties up instead of to even.",
+          "faultClass": "other",
+          "file": "benchmarks/agent-context/reference/ledger-rounding/rounding.mjs",
+          "find": "(floor % 2 === 0 ? floor : floor + 1)",
+          "replace": "(floor + 1)",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 036)"
+          }
+        },
+        {
+          "id": "F16",
+          "description": "The late-fee reference skips the grace period.",
+          "faultClass": "statement-deleted",
+          "file": "benchmarks/agent-context/reference/ledger-late-fee/late-fee.mjs",
+          "find": "  if (daysBetween(invoice.dueDate, today) <= GRACE_DAYS) return 0;\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 036)"
+          }
+        },
+        {
+          "id": "F17",
+          "description": "The redaction reference misses 13- to 15-digit cards.",
+          "faultClass": "literal-changed",
+          "file": "benchmarks/agent-context/reference/ledger-redaction/redact.mjs",
+          "find": "{12,18}",
+          "replace": "{15,18}",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 036)"
+          }
+        }
+      ]
+    },
+    {
       "id": "COMPACT-GUARD-LOSES-NOTHING",
       "statement": "The compact guard response is a projection of the full one: every finding field, count, legacy validator message and per-code evidence object can be read back, raw unquotable statistics stay out, agents get it by default over MCP, and the full contract stays one argument away.",
       "source": {

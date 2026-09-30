@@ -21,6 +21,7 @@
  * Zero NPM dependencies. Pure orchestration of existing diff helpers.
  */
 
+import { buildSymbolMap } from '../scanners/symbol-map.mjs';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { c } from '../shared.mjs';
@@ -153,6 +154,13 @@ function runMemoryPack(projectDir, config, flags) {
         lines.push('');
       }
     } catch { /* ignore */ }
+  }
+
+  // docguard.symbol-map#FR-004: opt-in until the v2 agent-context benchmark
+  // promotes it (FR-008); without the flag the pack is unchanged.
+  if (flags.symbols) {
+    lines.push(...buildSymbolMap(projectDir, config).text.split('\n'));
+    lines.push('');
   }
 
   lines.push('---');
