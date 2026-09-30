@@ -1,13 +1,13 @@
 # Architecture
 
-<!-- docguard:version 1.7.0 -->
+<!-- docguard:version 1.8.0 -->
 <!-- docguard:status active -->
 <!-- docguard:last-reviewed 2026-09-30 -->
 
 | Metadata | Value |
 |----------|-------|
 | **Status** | ![Status](https://img.shields.io/badge/status-active-brightgreen) |
-| **Version** | `1.7.0` |
+| **Version** | `1.8.0` |
 | **Last Updated** | 2026-09-30 |
 | **Project Size** | ~47K lines in 147 files across `cli/` — measured 2026-09-30 with `wc -l` over `cli/**/*.mjs`; re-measure rather than trust this figure |
 
@@ -53,7 +53,7 @@ It targets development teams and AI coding agents that need to maintain document
 | **Agent instruction budget** | Measures every `AGENTS.md` chain from the root to each instruction directory, as Codex loads it (`AGENTS.override.md` replaces `AGENTS.md`), against `agentInstructions.maxBytes` (default 32768) or a per-chain allowance | `cli/scanners/agent-instructions.mjs`, `cli/validators/structure.mjs` | `STR004` is an escalation; `STR005` suggests tightening a slack allowance. Increasing an allowance is a reviewed config change, which the digit-normalized finding baseline could not guarantee |
 | **As-built specs** | `generate --spec <area>` collects deterministic facts under one code area (routes, exported JS/TS symbols, env vars read, entities), renders a Spec Kit spec with one agent-written candidate per fact, and registers it as `origin: as_built` with `sourcePaths`. The Spec-Registry validator re-scans those paths (`SPR007`) | `cli/scanners/as-built.mjs`, `cli/scanners/js-ast.mjs` (`exportedNames`, shared with the symbol map), `cli/commands/generate-as-built.mjs`, `cli/validators/spec-registry.mjs` | DocGuard writes no requirement prose. Facts key on method+path, file+export, name, so line moves never churn them. The registry fields are serialized only when set. `--write` commits the spec and its registry entry in one file transaction |
 | **Spec-first gate** | Classifies a change between the merge base and HEAD as covered, exempt, not governed, uncovered or inconclusive. It reads governed paths from `specFirst` and resolves spec references against `specs/*/spec.md` and the registry | `cli/scanners/spec-first.mjs`, `cli/commands/specs.mjs` | Read-only. An unresolved reference never passes. Git or inventory failure is inconclusive (exit 2), never a pass. The PR body arrives as a file |
-| **Spec Kit delegation** | The only code that invokes the `specify` CLI: reads its documented `init` options, resolves the integration key from `.specify/integration.json` / `init-options.json` / unambiguous agent signals, initializes Spec Kit and registers the packaged DocGuard extension | `cli/spec-kit-delegation.mjs`, `cli/ensure-skills.mjs` | Called only by `docguard init`; argument arrays only; every failure returns a structured result with the CLI's error and a manual command; requires Spec Kit ≥ 0.10.0 to initialize and ≥ 0.11.2 to register the extension (`requires.speckit_version`) |
+| **Spec Kit delegation** | The only code that invokes the `specify` CLI: reads its documented `init` options, resolves the integration key from `.specify/integration.json` / `init-options.json` / unambiguous agent signals, initializes Spec Kit and registers the packaged DocGuard extension | `cli/spec-kit-delegation.mjs`, `cli/ensure-skills.mjs` | Called only by `docguard init`, and `ensureSkills` runs only from `init` too (the dispatcher installs nothing, so every other command writes only its own outputs, spec 042); argument arrays only; every failure returns a structured result with the CLI's error and a manual command; requires Spec Kit ≥ 0.10.0 to initialize and ≥ 0.11.2 to register the extension (`requires.speckit_version`) |
 | **Validators** | Independent validation modules that check specific aspects of CDD compliance — all emitting structured findings with stable codes (the `CODES` registry in `findings.mjs`) | `cli/validators/` | `*.mjs` |
 | **Scanners** | Project file scanners for test discovery, route detection, schema mapping, CDK/IaC, doc-tools, integrations, frontend surface, spec-kit, memory-plan, semantic claims, agent readability | `cli/scanners/` | `*.mjs` |
 | **Writers** | Deterministic doc-mutation and output modules — section-addressable edits, mapped-role ownership authorization, mechanical fix registry, API-Reference writer, generate I/O + doc builders (split from generate.mjs), SARIF emitter (no LLM) | `cli/writers/`, `cli/shared-doc-roles.mjs` | Mapped human docs expose only unique `source=code` sections; new or explicitly generated single-role targets permit whole-document writes; all replacements use backups and `--force` cannot grant ownership |
@@ -253,6 +253,7 @@ DocGuard declares one exact-pinned runtime dependency, `@babel/parser`. It loads
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 1.8.0 | 2026-09-30 | DocGuard Team | `ensureSkills` runs only from `init`; the dispatcher no longer installs skills for other commands (spec 042) |
 | 1.7.0 | 2026-09-30 | DocGuard Team | Freshness review for specs 028–037: layer rules corrected to the code (scanners and validators use the pure section parsers in `writers/`), guard data flow no longer lists a fixed validator set, subprocess and built-in module inventory completed, project size re-measured |
 | 1.6.0 | 2026-09-29 | DocGuard Team | Freshness review for specs 014–026: hook-manager ownership, Spec Kit version floors, the shared test-case counter, subprocess uses, and counts replaced by their authoritative source |
 | 1.5.0 | 2026-09-18 | DocGuard Team | Freshness review: corrected a project-size figure stale since 2026-05-29 and recorded guard exit code 3 for uninitialised projects |

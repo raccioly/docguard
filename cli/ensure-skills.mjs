@@ -1,7 +1,8 @@
 /**
  * Ensure Skills — Silent auto-check for DocGuard AI skills and commands
  *
- * Called before every command execution. If skills or commands are missing,
+ * Called only by `docguard init` (docguard.read-only-commands#FR-001); no
+ * other command installs anything. If skills or commands are missing,
  * copies them from the package's bundled assets into the project directory.
  *
  * Also provides agent mode detection (LLM vs CLI) and spec-kit availability.
@@ -219,7 +220,7 @@ const SPEC_KIT_INSTALL_CMD = 'uv tool install specify-cli --from git+https://git
 
 /**
  * Report whether Spec Kit is initialized, with a one-line hint when it is not.
- * Called before write-capable commands. It never runs `specify`: scaffolding
+ * Called from ensureSkills, so only during init. It never runs `specify`: scaffolding
  * belongs to `docguard init` (see cli/spec-kit-delegation.mjs).
  *
  * @param {string} projectDir - The project root directory
@@ -231,7 +232,7 @@ export function ensureSpecKit(projectDir, flags = {}) {
     return { specKitReady: true };
   }
   // Only an explicit `docguard init` may scaffold Spec Kit (docguard.specify-
-  // init-delegation#FR-009): this gate runs on every write-capable command,
+  // init-delegation#FR-009): this gate once ran on every write-capable command,
   // and `specify init --here --force` rewrites a repository. Here we may only
   // point the way — once, on one line, and never in quiet or machine modes.
   const silent = flags.format === 'json' || flags.quiet || flags.noSpecKit || flags.specKitHandled;
@@ -258,7 +259,7 @@ export function ensureSkills(projectDir, flags = {}) {
   const result = { skillsInstalled: false, commandsInstalled: false, specKitReady: false };
   const silent = flags.format === 'json';
 
-  // ── Spec-Kit Gate (runs on every command) ─────────────────────────────
+  // ── Spec-Kit Gate ─────────────────────────────────────────────────────
   const specKitResult = ensureSpecKit(projectDir, flags);
   result.specKitReady = specKitResult.specKitReady;
 

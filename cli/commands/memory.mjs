@@ -28,6 +28,7 @@ import { resolve } from 'node:path';
 import { c } from '../shared.mjs';
 import { createEvidenceReader, evidenceDocs, extractSemanticClaims, contentHash, gitEvidence, SEMANTIC_COVERAGE_LIMITATION } from '../scanners/semantic-claims.mjs';
 import { safeWrite } from '../writers/generate-io.mjs';
+import { ensureStateDir } from '../writers/state-dir.mjs';
 import { buildScoreAssurance } from './score.mjs';
 import { diffRoutes, diffEntities, diffEnvVars, diffTechStack } from './diff.mjs';
 import { buildMemoryPlan } from '../scanners/memory-plan.mjs';
@@ -179,6 +180,7 @@ function runMemoryPack(projectDir, config, flags) {
     return;
   }
   const outPath = resolve(projectDir, '.docguard/context-pack.md');
+  ensureStateDir(projectDir);
   safeWrite(outPath, content);
   console.log(`${c.bold}🧠 DocGuard Context Pack${c.reset}`);
   console.log(`${c.green}✅ Wrote ${outPath}${c.reset} ${c.dim}(${lines.length} lines — load at agent session start)${c.reset}`);
