@@ -351,7 +351,7 @@ const COMMAND_HELP = {
   },
   specs: {
     summary: 'Maintain the deterministic spec lifecycle and evidence registry.',
-    usage: 'docguard specs [--check|--write] | docguard specs preflight [--path <spec>] | docguard specs complete --id <spec-id> [--since <ref>] [--write --reason <text>] | docguard specs require --since <ref> [--message-file <path>] | docguard specs reanchor --id <spec-id> [--to <revision>] [--write --reason <text>]',
+    usage: 'docguard specs [--check|--write] | docguard specs preflight [--path <spec>] | docguard specs complete --id <spec-id> [--since <ref>] [--write --reason <text>] | docguard specs require --since <ref> [--message-file <path>] | docguard specs reanchor --id <spec-id> [--from <revision>] [--to <revision>] [--write --reason <text>]',
     flags: [
       ['--check', 'Exit 2 when the committed registry is missing, stale, or inconsistent; planned lifecycle deferral requires a clean tracked registry'],
       ['--write', 'Refresh observed evidence while preserving reviewed lifecycle fields'],
@@ -360,6 +360,7 @@ const COMMAND_HELP = {
       ['require', 'Spec-first gate: a change to governed paths must name its spec or declare Spec-Exempt (exit 1 uncovered, 2 inconclusive)'],
       ['reanchor', 'Move recorded revisions a squash merge discarded (SPR008) to a commit on HEAD\'s history with byte-identical evidence'],
       ['--to <revision>', 'With reanchor: target revision; required, with --reason, when the old revision no longer resolves'],
+      ['--from <revision>', 'With reanchor --to: move only this recorded revision, when a spec\'s dangling revisions came from different merges'],
       ['--message-file <path>', 'With require: PR description or extra text to search for spec references'],
       ['--id <spec-id>', 'Immutable spec identity to complete'],
       ['--since <ref>', 'First reconciliation baseline when none is recorded'],
@@ -668,6 +669,8 @@ async function main() {
       i++;
     } else if (args[i] === '--prune' && command === 'review') {
       flags.prune = true;
+    } else if (args[i] === '--from' && args[i + 1] && command === 'specs') {
+      flags.from = args[++i];
     } else if (args[i] === '--to' && args[i + 1] && command === 'specs') {
       // `specs reanchor --to <revision>` (docguard.completion-revision-anchoring#FR-003)
       flags.to = args[i + 1];

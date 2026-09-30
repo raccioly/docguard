@@ -37,7 +37,7 @@
           "lastReviewedRevision": "2ff1baaefdebfc1dd7ef2d9c5e6d1f584f8af9bb",
           "outcomes": [
             {
-              "revision": "c283d1b70985858db2468667e60a9f772642b1a2",
+              "revision": "2ff1baaefdebfc1dd7ef2d9c5e6d1f584f8af9bb",
               "reason": "Verified v0.41.0 adoption workflow integrity: PR #395 merged at f925e40; release PR #396 passed approved CI and supply-chain checks, merged at 7ec6356, and publication run 34989969217 completed npm, PyPI, GHCR, GitHub Release, extension ZIP, MCPB, and catalog sync with no accepted deviations.",
               "evidence": [
                 "cli/assessment.mjs",
@@ -75,7 +75,11 @@
                 "tests/traceability-lifecycle.test.mjs"
               ],
               "deviations": [],
-              "successor": null
+              "successor": null,
+              "reanchoredFrom": {
+                "revision": "c283d1b70985858db2468667e60a9f772642b1a2",
+                "method": "blob-equal"
+              }
             },
             {
               "revision": "2ff1baaefdebfc1dd7ef2d9c5e6d1f584f8af9bb",
@@ -153,7 +157,7 @@
         "artifacts": [
           {
             "path": "specs/012-adoption-workflow-integrity/spec.md",
-            "digest": "sha256:b019d4b6af2f991d6bba8cef3a1c1f9a1bcf5c3cbfd4f65d900942d0a2f097d5"
+            "digest": "sha256:094321f78919f9d5c165c62216547fe38057c32a1591118116e281e3a2973a08"
           }
         ],
         "taskCompletion": {
@@ -1317,6 +1321,7 @@
           "docguard.completion-revision-anchoring#FR-003",
           "docguard.completion-revision-anchoring#FR-004",
           "docguard.completion-revision-anchoring#FR-005",
+          "docguard.completion-revision-anchoring#FR-006",
           "docguard.completion-revision-anchoring#SC-001",
           "docguard.completion-revision-anchoring#SC-002",
           "docguard.completion-revision-anchoring#SC-003"
@@ -1326,7 +1331,7 @@
         "artifacts": [
           {
             "path": "specs/028-completion-revision-anchoring/spec.md",
-            "digest": "sha256:ebbce3bc5014442fc1292686d72632413e29dd2bc514454e444f98096f0da105"
+            "digest": "sha256:8a8f3c09de146fd09661baaa992fa290cac4e55b190e5da86b5ba8080b8c930e"
           },
           {
             "path": "specs/028-completion-revision-anchoring/plan.md",
@@ -1405,6 +1410,11 @@
             "line": 15
           },
           {
+            "requirementId": "FR-006",
+            "file": "tests/completion-revision-anchoring.test.mjs",
+            "line": 16
+          },
+          {
             "requirementId": "SC-001",
             "file": "tests/completion-revision-anchoring.test.mjs",
             "line": 13
@@ -1413,6 +1423,11 @@
             "requirementId": "SC-002",
             "file": "tests/completion-revision-anchoring.test.mjs",
             "line": 14
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/completion-revision-anchoring.test.mjs",
+            "line": 17
           }
         ]
       }
@@ -1798,7 +1813,7 @@
           "lastReviewedRevision": "2a47de58f155f847b318f75267c43c2ee2828fd9",
           "outcomes": [
             {
-              "revision": "834e0a2299402205f5bdca7a55e353bad71bab28",
+              "revision": "a8dfb0cfadddd910771a8c63ed86f081feb631ca",
               "reason": "Implemented and reviewed R2 lifecycle transactions, reconciliation classifications, qualified evidence gates, active-context regeneration, and Spec Kit completion hooks.",
               "evidence": [
                 "cli/commands/reconcile.mjs",
@@ -1829,10 +1844,21 @@
                 "tests/spec-registry.test.mjs"
               ],
               "deviations": [],
-              "successor": null
+              "successor": null,
+              "reanchoredFrom": {
+                "revision": "834e0a2299402205f5bdca7a55e353bad71bab28",
+                "method": "attested",
+                "reason": "Squash merge of PR #357, the PR whose tree this completion reviewed",
+                "differing": [
+                  "cli/writers/file-transaction.mjs",
+                  "docs-canonical/ARCHITECTURE.md",
+                  "docs-canonical/REQUIREMENTS.md",
+                  "docs-canonical/TEST-SPEC.md"
+                ]
+              }
             },
             {
-              "revision": "f3e4d76e94f5b21073421d2ff8b2a1228a5dd55b",
+              "revision": "3a35e9d63ecd477b5add529454822fa75756edc0",
               "reason": "Reviewed living-spec maintenance now records verified-to-verified outcomes only for new linked behavior or canonical intent; generated lifecycle churn cannot self-qualify.",
               "evidence": [
                 "cli/commands/reconcile.mjs",
@@ -1863,10 +1889,18 @@
                 "tests/spec-registry.test.mjs"
               ],
               "deviations": [],
-              "successor": null
+              "successor": null,
+              "reanchoredFrom": {
+                "revision": "f3e4d76e94f5b21073421d2ff8b2a1228a5dd55b",
+                "method": "attested",
+                "reason": "Squash merge of PR #361, the PR whose tree this completion reviewed",
+                "differing": [
+                  "docs-canonical/ARCHITECTURE.md"
+                ]
+              }
             },
             {
-              "revision": "a384a04479103b43587a2f79470b3b4a1031d242",
+              "revision": "3a35e9d63ecd477b5add529454822fa75756edc0",
               "reason": "Reviewed the canonical architecture wording for living-spec maintenance eligibility; the positive rule preserves the delivered behavior and passes document quality.",
               "evidence": [
                 "cli/commands/reconcile.mjs",
@@ -1897,10 +1931,14 @@
                 "tests/spec-registry.test.mjs"
               ],
               "deviations": [],
-              "successor": null
+              "successor": null,
+              "reanchoredFrom": {
+                "revision": "a384a04479103b43587a2f79470b3b4a1031d242",
+                "method": "blob-equal"
+              }
             },
             {
-              "revision": "7374d8c35deb68e77541525082fd94643494d802",
+              "revision": "2ff1baaefdebfc1dd7ef2d9c5e6d1f584f8af9bb",
               "reason": "Reviewed taskless living-contract completion and status-preserving released maintenance with paired controls; all 1,866 tests and self-guard passed with no accepted deviations.",
               "evidence": [
                 "cli/commands/reconcile.mjs",
@@ -1931,7 +1969,11 @@
                 "tests/spec-registry.test.mjs"
               ],
               "deviations": [],
-              "successor": null
+              "successor": null,
+              "reanchoredFrom": {
+                "revision": "7374d8c35deb68e77541525082fd94643494d802",
+                "method": "blob-equal"
+              }
             },
             {
               "revision": "2a47de58f155f847b318f75267c43c2ee2828fd9",
@@ -2005,7 +2047,7 @@
         "artifacts": [
           {
             "path": "specs/006-document-lifecycle/spec.md",
-            "digest": "sha256:d87fabd012d9e5e336cae6b80b4037ec429b5d9d826674c77fa036f65ed899f6"
+            "digest": "sha256:cea5e35aae0c8eaf2e811c8bf3c16be25860521afc65eefef07a0aa1b931975e"
           },
           {
             "path": "specs/006-document-lifecycle/plan.md",
@@ -2341,10 +2383,10 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "bd9250b84617164381cba82afa03fd151e5cbe87",
+          "lastReviewedRevision": "47d198d1fbcd28977a0499ded378e8ae3b6bf246",
           "outcomes": [
             {
-              "revision": "138571668102d3e59c54d219478d284d3ae139b8",
+              "revision": "47d198d1fbcd28977a0499ded378e8ae3b6bf246",
               "reason": "Verified scoped evidence adapters and integrations across the supported Node matrix, package fallback, schema validation, and frozen external corpus with no baseline regression.",
               "evidence": [
                 "cli/commands/agent.mjs",
@@ -2374,10 +2416,20 @@
                 "tests/npm-pack-smoke.test.mjs"
               ],
               "deviations": [],
-              "successor": null
+              "successor": null,
+              "reanchoredFrom": {
+                "revision": "138571668102d3e59c54d219478d284d3ae139b8",
+                "method": "attested",
+                "reason": "Squash merge of PR #365, the PR whose tree this completion reviewed",
+                "differing": [
+                  "cli/evidence/evaluate.mjs",
+                  "docs-canonical/SECURITY.md",
+                  "tests/evidence-integration.test.mjs"
+                ]
+              }
             },
             {
-              "revision": "bd9250b84617164381cba82afa03fd151e5cbe87",
+              "revision": "47d198d1fbcd28977a0499ded378e8ae3b6bf246",
               "reason": "Self-review removed raw source values from public evidence output and added a regression assertion; scoped comparison behavior and all integrations remain verified.",
               "evidence": [
                 "cli/commands/agent.mjs",
@@ -2407,7 +2459,11 @@
                 "tests/npm-pack-smoke.test.mjs"
               ],
               "deviations": [],
-              "successor": null
+              "successor": null,
+              "reanchoredFrom": {
+                "revision": "bd9250b84617164381cba82afa03fd151e5cbe87",
+                "method": "blob-equal"
+              }
             }
           ]
         }
@@ -2438,7 +2494,7 @@
         "artifacts": [
           {
             "path": "specs/008-evidence-scoped-verification/spec.md",
-            "digest": "sha256:665b4126aedccb0873a08e51533ed0ce011528342d18bfd283f3277dc602810c"
+            "digest": "sha256:4bd5e4bfdbdd922022c6e7af914d94a4b350c2ad72b2477ee470959dc88d0e25"
           },
           {
             "path": "specs/008-evidence-scoped-verification/plan.md",
@@ -3102,10 +3158,10 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "722a80210ff37d97520a4077c7134bc3a5255742",
+          "lastReviewedRevision": "b3b70bec29f653c3543e1a65ebc8efe053d0d974",
           "outcomes": [
             {
-              "revision": "722a80210ff37d97520a4077c7134bc3a5255742",
+              "revision": "b3b70bec29f653c3543e1a65ebc8efe053d0d974",
               "reason": "Reviewed all four R6 slices: Python static import graphs, Cloudflare binding extraction, ownership-safe mapped writers, and advisory repository-root guidance. The supported Node matrix, full suite, packed parser-absent path, schemas, syntax checks, self-guard, and frozen precision corpus passed without detector regression.",
               "evidence": [
                 "cli/commands/fix.mjs",
@@ -3137,7 +3193,16 @@
                 "tests/worker-python-capability.test.mjs"
               ],
               "deviations": [],
-              "successor": null
+              "successor": null,
+              "reanchoredFrom": {
+                "revision": "722a80210ff37d97520a4077c7134bc3a5255742",
+                "method": "attested",
+                "reason": "Squash merge of PR #366, the PR whose tree this completion reviewed",
+                "differing": [
+                  "tests/mapped-writers.test.mjs",
+                  "tests/python-import-graph.test.mjs"
+                ]
+              }
             }
           ]
         }
@@ -3171,7 +3236,7 @@
         "artifacts": [
           {
             "path": "specs/009-language-repository-coverage/spec.md",
-            "digest": "sha256:fe79c3ab345a201ad2019f1c33bb6e8ab076e9dfa83dfdcd6d5d7f385eed645f"
+            "digest": "sha256:ef22ac95e5eab181afeb29d269632e5757c8daf40d02c74ecb6e922461d836dc"
           },
           {
             "path": "specs/009-language-repository-coverage/plan.md",
@@ -4181,10 +4246,10 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "8f8518524516fcdf77a69386258a49ff4c12c92f",
+          "lastReviewedRevision": "3a35e9d63ecd477b5add529454822fa75756edc0",
           "outcomes": [
             {
-              "revision": "f84c187626be0e1b6ab56ec7002c9c168ac290d6",
+              "revision": "3a35e9d63ecd477b5add529454822fa75756edc0",
               "reason": "Reviewed precision corpus, feedback contribution workflow, four-version regression matrix, package composition, dependency audit, and external baseline passed; traceability and changed-evidence invalidation were verified.",
               "evidence": [
                 "benchmarks/fixtures/generated-security-control/src/generated-client/config.js",
@@ -4215,10 +4280,22 @@
                 "tests/field-context-precision.test.mjs"
               ],
               "deviations": [],
-              "successor": null
+              "successor": null,
+              "reanchoredFrom": {
+                "revision": "f84c187626be0e1b6ab56ec7002c9c168ac290d6",
+                "method": "attested",
+                "reason": "Squash merge of PR #361, the PR whose tree these completions reviewed",
+                "differing": [
+                  "cli/commands/feedback.mjs",
+                  "cli/feedback-fixture.mjs",
+                  "docs-canonical/ARCHITECTURE.md",
+                  "docs-canonical/TEST-SPEC.md",
+                  "tests/feedback-fixture.test.mjs"
+                ]
+              }
             },
             {
-              "revision": "8f8518524516fcdf77a69386258a49ff4c12c92f",
+              "revision": "3a35e9d63ecd477b5add529454822fa75756edc0",
               "reason": "Reviewed feedback regression generation now normalizes structured finding locations through one shared identity function; lifecycle maintenance evidence and focused regression tests passed.",
               "evidence": [
                 "benchmarks/fixtures/generated-security-control/src/generated-client/config.js",
@@ -4249,7 +4326,15 @@
                 "tests/field-context-precision.test.mjs"
               ],
               "deviations": [],
-              "successor": null
+              "successor": null,
+              "reanchoredFrom": {
+                "revision": "8f8518524516fcdf77a69386258a49ff4c12c92f",
+                "method": "attested",
+                "reason": "Squash merge of PR #361, the PR whose tree these completions reviewed",
+                "differing": [
+                  "docs-canonical/ARCHITECTURE.md"
+                ]
+              }
             }
           ]
         }
@@ -4289,7 +4374,7 @@
         "artifacts": [
           {
             "path": "specs/007-precision-evidence-loop/spec.md",
-            "digest": "sha256:2e8c5343cf9ead82f3e5d663da9ba1015e36f9956584edf16d3cc2e0b73fb298"
+            "digest": "sha256:732e024db69176cd79000616bc3fcde919c33aeedd398ea60dba42b16960af1e"
           },
           {
             "path": "specs/007-precision-evidence-loop/plan.md",
@@ -5789,10 +5874,10 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "5b3fc58279065b231c6297b6ecd4cadc254a02c6",
+          "lastReviewedRevision": "79317df752c35edb3f3c9ef7798c9ec282b64afa",
           "outcomes": [
             {
-              "revision": "5b3fc58279065b231c6297b6ecd4cadc254a02c6",
+              "revision": "79317df752c35edb3f3c9ef7798c9ec282b64afa",
               "reason": "Reviewed frozen 27-run promotion evidence, bounded selector and abstention controls, opt-in CLI integration, strict schemas, lifecycle exclusions, Node 18/20/22/24 matrix, packed parser-absent execution, self-guard, and complete external detector corpus with no accepted deviations.",
               "evidence": [
                 "benchmarks/agent-context/run.mjs",
@@ -5809,7 +5894,11 @@
                 "tests/task-context.test.mjs"
               ],
               "deviations": [],
-              "successor": null
+              "successor": null,
+              "reanchoredFrom": {
+                "revision": "5b3fc58279065b231c6297b6ecd4cadc254a02c6",
+                "method": "blob-equal"
+              }
             }
           ]
         }
@@ -5842,7 +5931,7 @@
         "artifacts": [
           {
             "path": "specs/010-task-specific-agent-context/spec.md",
-            "digest": "sha256:bd8a48ebdb68134426627deb8420add84a0ac4f76f6ad5ecb970341a0c1304b0"
+            "digest": "sha256:aa57295a709157fda92c86487dcb13fcb27df40eab250dd0985ae1121bfbfe7b"
           },
           {
             "path": "specs/010-task-specific-agent-context/plan.md",
@@ -5911,7 +6000,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/docguard.mjs",
-            "line": 938
+            "line": 941
           },
           {
             "requirementId": "FR-011",
@@ -6087,7 +6176,7 @@
               "successor": null
             },
             {
-              "revision": "f4bb00638da2d1a53ad1a67928e35e1dfe1b401d",
+              "revision": "9e4a68f5a79d3439806396e7dcf4e5729b90bb57",
               "reason": "Verified v0.40.3 repository-token release PR #386: scheduled run 34922506777 armed native auto-merge; approved CI 34922605581 and supply-chain 34922605917 passed; merge e27d6bf triggered publication run 34922784629; npm, PyPI, GHCR, GitHub Release, extension ZIP, MCPB, and catalog reminder completed with no accepted deviations.",
               "evidence": [
                 ".github/scripts/validate-release-candidate.mjs",
@@ -6096,7 +6185,11 @@
                 "tests/scheduled-release.test.mjs"
               ],
               "deviations": [],
-              "successor": null
+              "successor": null,
+              "reanchoredFrom": {
+                "revision": "f4bb00638da2d1a53ad1a67928e35e1dfe1b401d",
+                "method": "blob-equal"
+              }
             },
             {
               "revision": "9e4a68f5a79d3439806396e7dcf4e5729b90bb57",
@@ -6137,7 +6230,7 @@
         "artifacts": [
           {
             "path": "specs/011-tokenless-scheduled-releases/spec.md",
-            "digest": "sha256:a69909db1d7c93b320eb330e2fc23336eb31029c2a17aa6db09337078ac0d45a"
+            "digest": "sha256:05871ac48c6d92fe59eaf311671cd31bf23fbcf14f0ead3806102a68bca17cd3"
           },
           {
             "path": "specs/011-tokenless-scheduled-releases/plan.md",

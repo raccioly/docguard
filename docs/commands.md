@@ -233,7 +233,9 @@ first-parent history whose evidence files are byte-identical to the reviewed
 ones and moves the anchor there, recording `reanchoredFrom`. If the old revision
 no longer exists anywhere, or no commit carries the reviewed bytes (the PR kept
 changing after its completion), `--to <revision> --reason "<why>"` records an
-attested anchor instead, listing the evidence files that differ.
+attested anchor instead, listing the evidence files that differ. When one spec
+has dangling revisions from different merges, add `--from <revision>` to attest
+them one at a time; the others are left as they are.
 
 ### `docguard review`
 

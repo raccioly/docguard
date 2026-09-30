@@ -119,6 +119,11 @@ specs in a row, and commits once. Every outcome records `main`'s tip.
   from the remote default branch.
 - **FR-005**: `docs/commands.md`, DATA-MODEL (`reanchoredFrom`) and CI-RECIPES
   (the completion workflow under squash merges) MUST document the behaviour.
+- **FR-006**: `specs reanchor --from <revision>` MUST limit the command to that
+  one dangling revision (a unique prefix of at least 7 characters). One spec's
+  dangling revisions can come from different merges, and a single `--to` would
+  otherwise attest all of them to one merge. Other dangling revisions MUST stay
+  untouched.
 
 ## Success Criteria *(mandatory)*
 
@@ -128,8 +133,8 @@ specs in a row, and commits once. Every outcome records `main`'s tip.
 - **SC-002**: A fixture that squash-merges a completion branch reports SPR008,
   and `specs reanchor --write` clears it by moving the anchor to the squash
   commit.
-- **SC-003**: This repository's four dangling specs, and the 14 completions of
-  specs 014–027, end with every recorded revision on `main`.
+- **SC-003**: This repository's dangling specs, and the completions of the
+  specs delivered since, end with every recorded revision on `main`.
 
 ## Assumptions
 

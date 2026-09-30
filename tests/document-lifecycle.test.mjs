@@ -112,6 +112,21 @@ describe('Document-Lifecycle validator', () => {
     assert.equal(result.findings.length, 0);
   });
 
+  it('does not ask to retire a verified living spec whose task ledger says Complete', t => {
+    const files = {
+      'specs/006-lifecycle/spec.md': '# Lifecycle\n\n**Status**: Active\n',
+      'specs/006-lifecycle/tasks.md': '# Tasks\n\n**Status**: Complete\n\n- [x] T001 Build\n',
+    };
+    const registry = lifecycle => JSON.stringify({
+      $schema: 'https://raccioly.github.io/docguard/schemas/docguard-specs.schema.json',
+      schemaVersion: 2, specs: [registryEntry(lifecycle)], tombstones: [],
+    });
+    const living = repository(t, { ...files, '.docguard-specs.json': registry({ context: 'current', persistenceModel: 'living', delivery: 'verified' }) });
+    assert.equal(validateDocumentLifecycle(living).findings.length, 0);
+    const oneShot = repository(t, { ...files, '.docguard-specs.json': registry({ context: 'current', persistenceModel: 'flow_back', delivery: 'verified' }) });
+    assert.ok(validateDocumentLifecycle(oneShot).findings.some(f => f.code === 'DLC002' && /artifact maturity is Complete/.test(f.message)));
+  });
+
   it('does not suppress completed-task review for unverified or non-living registry entries', t => {
     const variants = [
       { context: 'current', persistenceModel: 'living', delivery: 'in_progress' },

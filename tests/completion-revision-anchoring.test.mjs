@@ -13,6 +13,8 @@
  * @req docguard.completion-revision-anchoring#SC-001
  * @req docguard.completion-revision-anchoring#SC-002
  * @req docguard.completion-revision-anchoring#FR-005
+ * @req docguard.completion-revision-anchoring#FR-006
+ * @req docguard.completion-revision-anchoring#SC-003
  */
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
@@ -180,6 +182,45 @@ describe('a revision a squash merge discarded is reported and re-anchored (FR-00
       { revision: branchRevision, method: 'attested', reason: 'The squash commit is the reviewed PR tree' });
   });
 
+  it('--from scopes an attestation to one revision when two merges each carried a review (FR-006)', t => {
+    const { dir, branchRevision: first } = squashMerged(t);
+    const firstSquash = git(dir, ['rev-parse', 'HEAD']);
+    // A second PR completes the same spec again and is squash-merged too.
+    git(dir, ['checkout', '-q', '-b', 'pr2']);
+    // A living spec is completed again after later changes.
+    const reg = readSpecRegistry(dir).value;
+    reg.specs.find(x => x.specId === 'acme.alpha').reviewed.lifecycle.persistenceModel = 'living';
+    write(dir, SPEC_REGISTRY_PATH, `${JSON.stringify(reg, null, 2)}\n`);
+    write(dir, 'src/alpha.js', '/** @implements acme.alpha#FR-001 */\nexport const alpha = 2;\n');
+    git(dir, ['add', '-A']); git(dir, ['commit', '-qm', 'change alpha on the second PR']);
+    const again = complete(dir, 'acme.alpha', firstSquash);
+    assert.equal(again.status, 'VERIFIED', JSON.stringify(again.blockers));
+    git(dir, ['add', '-A']); git(dir, ['commit', '-qm', 'verify alpha again on the second PR']);
+    const second = recorded(dir, 'acme.alpha').lastReviewedRevision;
+    git(dir, ['checkout', '-q', 'main']);
+    git(dir, ['merge', '--squash', '-q', 'pr2']); git(dir, ['commit', '-qm', 'squash: verify alpha again']);
+    const secondSquash = git(dir, ['rev-parse', 'HEAD']);
+    git(dir, ['branch', '-D', 'pr2']);
+    git(dir, ['reflog', 'expire', '--expire=now', '--all']);
+    git(dir, ['gc', '-q', '--prune=now']);
+    assert.equal(spr008(dir).length, 2);
+
+    const reason = 'This squash merge is the PR whose tree the review checked';
+    assert.match(reanchorSpec(dir, {}, { id: 'acme.alpha', from: 'abc', to: firstSquash, reason }).blockers[0].message, /--from abc must name exactly one recorded revision/);
+    const one = reanchorSpec(dir, {}, { id: 'acme.alpha', from: first.slice(0, 12), to: firstSquash, reason, write: true });
+    assert.equal(one.status, 'REANCHORED', JSON.stringify(one.blockers));
+    assert.deepEqual(one.moves.map(m => [m.from, m.to]), [[first, firstSquash]]);
+    git(dir, ['add', '-A']); git(dir, ['commit', '-qm', 'reanchor the first review']);
+    assert.deepEqual(spr008(dir).map(f => f.message.match(/revision (\w{12})/)[1]), [second.slice(0, 12)], 'the second review is untouched');
+
+    const two = reanchorSpec(dir, {}, { id: 'acme.alpha', from: second.slice(0, 12), to: secondSquash, reason, write: true });
+    assert.equal(two.status, 'REANCHORED', JSON.stringify(two.blockers));
+    git(dir, ['add', '-A']); git(dir, ['commit', '-qm', 'reanchor the second review']);
+    assert.deepEqual(spr008(dir), []);
+    const outcomes = recorded(dir, 'acme.alpha').outcomes;
+    assert.deepEqual(outcomes.map(o => [o.revision, o.reanchoredFrom.revision]), [[firstSquash, first], [secondSquash, second]]);
+  });
+
   it('a shallow clone reports partial coverage instead of SPR008', t => {
     const { dir } = squashMerged(t);
     const shallow = mkdtempSync(join(tmpdir(), 'docguard-anchor-shallow-'));
@@ -218,5 +259,12 @@ describe('the behaviour is documented (FR-005)', () => {
     assert.match(read('docs/commands.md'), /specs reanchor[\s\S]*SPR008/);
     assert.match(read('docs-canonical/DATA-MODEL.md'), /reanchoredFrom[\s\S]*blob-equal[\s\S]*attested/);
     assert.match(read('docs-canonical/CI-RECIPES.md'), /Under squash merges, run completions on a branch whose HEAD is the default\s+branch's tip/);
+  });
+});
+
+describe('this repository keeps every recorded revision on its history (SC-003)', () => {
+  it('reports no dangling review revision', () => {
+    const dangling = validateSpecRegistry(process.cwd(), {}).findings.filter(f => f.code === 'SPR008');
+    assert.deepEqual(dangling.map(f => f.message), []);
   });
 });
