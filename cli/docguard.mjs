@@ -657,6 +657,13 @@ async function main() {
     } else if (args[i] === '--api-key' && args[i + 1]) {
       flags.apiKey = args[i + 1];
       i++;
+    } else if (args[i] === '--root' && args[i + 1]) {
+      // mcp: another directory tree tool calls may target with projectDir
+      // (repeatable). The served directory is always one
+      // @implements docguard.mcp-project-confinement#FR-005
+      flags.roots = flags.roots || [];
+      flags.roots.push(args[i + 1]);
+      i++;
     } else if (args[i] === '--message-file' && args[i + 1]) {
       // `specs require`: pull-request description or commit text, read from a
       // file so CI never interpolates an untrusted body into a shell command.

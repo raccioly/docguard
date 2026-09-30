@@ -29,7 +29,15 @@ claude mcp add docguard -- npx docguard-cli mcp
 npx docguard-cli mcp
 ```
 
-Every tool is read-only and accepts an optional `projectDir`:
+Every tool is read-only and accepts an optional `projectDir`. It must be the
+directory the server serves or a directory inside it, such as a package in a
+monorepo; a relative path resolves against the served directory. The served
+directory is the one the server was started in, or `--dir`. Anything else is
+refused with an `isError` result, so a client cannot point a tool at another
+part of the disk. To serve more than one project from one server, name each
+tree at startup: `docguard mcp --root ~/work/api --root ~/work/web` (repeatable;
+applies to stdio and `--transport http`).
+
 
 | Tool | Returns |
 |------|---------|
