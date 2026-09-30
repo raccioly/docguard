@@ -270,6 +270,17 @@ Behaviour changes:
 
 ### Fixed
 
+- **`generate --spec --write` writes the registry inside the spec's file
+  transaction** (`specs/024-as-built-specs`). It used a plain
+  `writeFileSync` with a hand-written rollback, outside the safe-write rule
+  every other lifecycle write follows. A failed registry write still leaves
+  neither the spec nor its directory, and a test now pins that.
+- **Requirement IDs FR-016, FR-017 and FR-018 each named two requirements in
+  `docs-canonical/REQUIREMENTS.md`.** The second set is now FR-022, FR-023
+  and FR-024. The renumbering exposed that the first set was counted as
+  tested only through annotations meant for the second; their tests now
+  reference them by qualified ID.
+
 - **SPK010 no longer flags a directory a task names as context when the feature
   changed files inside it** (#458, `specs/025-spk010-directory-claims`). Git
   lists files, never directories, so a task naming `src/game/` beside its
