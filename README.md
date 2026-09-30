@@ -146,7 +146,7 @@ The MCP server ships as a container image on GHCR — no Node.js install require
 docker run -i --rm -v "$PWD":/workspace ghcr.io/raccioly/docguard:latest
 ```
 
-The entrypoint is the **stdio** MCP transport: stdout is the JSON-RPC channel, so don't pipe anything else into it. Mount the project you want inspected at `/workspace` and pass `{"projectDir": "/workspace"}` in tool calls (or rely on the default working directory).
+The entrypoint is the **stdio** MCP transport: stdout is the JSON-RPC channel, so don't pipe anything else into it. Mount the project you want inspected at `/workspace`; tools inspect it by default, and a `projectDir` in a tool call must be `/workspace` or a directory inside it (add `--root <dir>` after the image name to serve another mounted tree).
 
 Pin a version rather than tracking `latest` in CI:
 
@@ -385,6 +385,7 @@ require current SHA-256 identities for every declared repository input.
 | `--no-indirect` | Skip the reverse-import-graph analysis (docs about modules that import a changed file) | impact, diff --since |
 | `--prs` | Open-PR doc-conflict analysis — two PRs impacting the same canonical doc = merge-order risk (needs the `gh` CLI) | impact |
 | `--transport http` `--port` `--host` `--api-key` `--path` | Serve MCP over Streamable HTTP instead of stdio (team-shared server; loopback-only unless an api-key is set) | mcp |
+| `--root <dir>` | Serve another directory tree: tool calls may pass a `projectDir` inside it (repeatable). Without it, `projectDir` must stay inside the served directory | mcp |
 | `--history` | Show fix audit log | fix |
 
 When run from a nested package without `--dir`, DocGuard checks only that
@@ -530,10 +531,16 @@ quotes the reviewed precision corpus with `n` and a Wilson lower bound;
 codes are unmeasured — that does not make their findings wrong, only unverified,
 and `docguard feedback` samples them for exactly that reason.
 
-**`parserTier`** tells you what the detector could see. `regex-fallback` or
-`fallback-language` means no syntax tree was available for that file — so the
-*absence* of a finding there is weak evidence, and the owning validator reports
-`applicability: partial` with the reason.
+**`parserTier`** tells you what the detector could see. `js-ast` and `py-ast`
+mean a syntax tree. `regex-fallback` means the language has one (JS/TS, Python)
+but it was unavailable for that file. `fallback-language` means DocGuard has no
+parser for the language at all — Go, Java, Kotlin, Ruby, Rust, PHP, C# — so
+routes and env reads there are matched by pattern. Either way the *absence* of
+a finding there is weak evidence, and the owning validator reports
+`applicability: partial` with a reason that names the language and the file
+count. Environment variables are matched by pattern in every supported
+language; a source language with no env patterns (Swift, Scala, …) makes the
+Environment check `partial` rather than a silent pass.
 
 Every channel appears on every finding in `guard --format json`, in SARIF
 `result.properties`, and per-issue in `diagnose --format json` (which also emits

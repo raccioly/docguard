@@ -61,7 +61,8 @@ function findManifests(projectDir, maxDepth = 4, config = {}) {
         // DEFAULT. A fixture `package.json` declaring express or a `py_app`
         // requirements.txt with flask must never set the PROJECT's stack/kind.
         // This is the first-run fix — it needs no `.docguardignore`.
-        if (isNonProductDir(e.name, config)) continue;
+        // The parent path lets a package segment (`com/example`) through.
+        if (isNonProductDir(e.name, config, relPosix(root, dir))) continue;
         // Also honor explicit config.ignore / .docguardignore patterns.
         if (shouldIgnore(relPosix(root, join(dir, e.name)), config)) continue;
         walk(join(dir, e.name), depth + 1);

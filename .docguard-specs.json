@@ -641,6 +641,11 @@
             "line": 16
           },
           {
+            "requirementId": "FR-001",
+            "file": "cli/shared-source.mjs",
+            "line": 675
+          },
+          {
             "requirementId": "FR-002",
             "file": "cli/scanners/as-built.mjs",
             "line": 17
@@ -3332,6 +3337,264 @@
       }
     },
     {
+      "specId": "docguard.fallback-language-coverage",
+      "path": "specs/043-fallback-language-coverage/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "approved",
+          "delivery": "implemented",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": "living"
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md",
+            "docs-canonical/DATA-MODEL.md"
+          ]
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.fallback-language-coverage#FR-001",
+          "docguard.fallback-language-coverage#FR-002",
+          "docguard.fallback-language-coverage#FR-003",
+          "docguard.fallback-language-coverage#FR-004",
+          "docguard.fallback-language-coverage#FR-005",
+          "docguard.fallback-language-coverage#FR-006",
+          "docguard.fallback-language-coverage#FR-007",
+          "docguard.fallback-language-coverage#FR-008",
+          "docguard.fallback-language-coverage#FR-009",
+          "docguard.fallback-language-coverage#FR-010",
+          "docguard.fallback-language-coverage#FR-011",
+          "docguard.fallback-language-coverage#SC-001",
+          "docguard.fallback-language-coverage#SC-002",
+          "docguard.fallback-language-coverage#SC-003"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/043-fallback-language-coverage/spec.md",
+            "digest": "sha256:17655945fc9ed0814758f5e3bb312f0003ef1b6bb1bff2c0f4cd42da37e86658"
+          },
+          {
+            "path": "specs/043-fallback-language-coverage/plan.md",
+            "digest": "sha256:970b0c79f8ee1e69a90709b8e43472347e3beb3e157f67e97a3f2391b774f791"
+          },
+          {
+            "path": "specs/043-fallback-language-coverage/tasks.md",
+            "digest": "sha256:92f8c0bc94ed4ab0a5c1fddc2473e3a606c134aedf4fa11f8ad50fb7bde37aca"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 12,
+          "total": 12
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/shared-source.mjs",
+            "line": 983
+          },
+          {
+            "requirementId": "FR-001",
+            "file": "cli/shared-source.mjs",
+            "line": 989
+          },
+          {
+            "requirementId": "FR-001",
+            "file": "cli/validators/api-surface.mjs",
+            "line": 27
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/scanners/routes.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/scanners/routes.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/validators/environment.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/shared-source.mjs",
+            "line": 685
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/commands/diff.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/shared-source.mjs",
+            "line": 681
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/shared-source.mjs",
+            "line": 686
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/validators/environment.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/shared-source.mjs",
+            "line": 687
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/shared-ignore.mjs",
+            "line": 94
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/scanners/routes.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/validators/api-surface.mjs",
+            "line": 28
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "cli/scanners/routes.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "cli/scanners/routes.mjs",
+            "line": 776
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "cli/validators/api-surface.mjs",
+            "line": 29
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/scanners/import-graph.mjs",
+            "line": 44
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/scanners/import-graph.mjs",
+            "line": 48
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/scanners/module-diagram.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/scanners/symbol-map.mjs",
+            "line": 16
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/fallback-language-coverage.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-001",
+            "file": "tests/parser-tier.test.mjs",
+            "line": 110
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/fallback-language-coverage.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/fallback-language-coverage.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/fallback-language-coverage.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/fallback-language-coverage.test.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/fallback-language-coverage.test.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/fallback-language-coverage.test.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/fallback-language-coverage.test.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "tests/fallback-language-coverage.test.mjs",
+            "line": 20
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "tests/fallback-language-coverage.test.mjs",
+            "line": 21
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "tests/fallback-language-coverage.test.mjs",
+            "line": 22
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/fallback-language-coverage.test.mjs",
+            "line": 23
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/fallback-language-coverage.test.mjs",
+            "line": 24
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/fallback-language-coverage.test.mjs",
+            "line": 25
+          }
+        ]
+      }
+    },
+    {
       "specId": "docguard.field-report-followups",
       "path": "specs/020-field-report-followups/spec.md",
       "reviewed": {
@@ -3903,17 +4166,17 @@
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/import-graph.mjs",
-            "line": 36
+            "line": 37
           },
           {
             "requirementId": "FR-003",
             "file": "cli/scanners/import-graph.mjs",
-            "line": 37
+            "line": 38
           },
           {
             "requirementId": "FR-004",
             "file": "cli/scanners/import-graph.mjs",
-            "line": 38
+            "line": 39
           },
           {
             "requirementId": "FR-004",
@@ -3923,12 +4186,12 @@
           {
             "requirementId": "FR-005",
             "file": "cli/scanners/import-graph.mjs",
-            "line": 39
+            "line": 40
           },
           {
             "requirementId": "FR-006",
             "file": "cli/shared-source.mjs",
-            "line": 375
+            "line": 421
           },
           {
             "requirementId": "FR-006",
@@ -3938,7 +4201,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/shared-source.mjs",
-            "line": 376
+            "line": 422
           },
           {
             "requirementId": "FR-007",
@@ -4551,6 +4814,161 @@
             "requirementId": "SC-005",
             "file": "tests/mcp-doc-tools.test.mjs",
             "line": 21
+          }
+        ]
+      }
+    },
+    {
+      "specId": "docguard.mcp-project-confinement",
+      "path": "specs/041-mcp-project-confinement/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "approved",
+          "delivery": "implemented",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": "living"
+        },
+        "relations": {
+          "extends": [
+            "docguard.mcp-doc-tools"
+          ],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": [
+            "docs-canonical/SECURITY.md"
+          ]
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.mcp-project-confinement#FR-001",
+          "docguard.mcp-project-confinement#FR-002",
+          "docguard.mcp-project-confinement#FR-003",
+          "docguard.mcp-project-confinement#FR-004",
+          "docguard.mcp-project-confinement#FR-005",
+          "docguard.mcp-project-confinement#FR-006",
+          "docguard.mcp-project-confinement#FR-007",
+          "docguard.mcp-project-confinement#SC-001",
+          "docguard.mcp-project-confinement#SC-002",
+          "docguard.mcp-project-confinement#SC-003"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/041-mcp-project-confinement/spec.md",
+            "digest": "sha256:08ecdef7a99503789d9c11698d04be90df4a87604b34b527da9fb27744db973b"
+          },
+          {
+            "path": "specs/041-mcp-project-confinement/plan.md",
+            "digest": "sha256:c2a5fbaad07a7f8ea0e895f366bddf7bebae21dd4237e5f136d0ca7a98d877ae"
+          },
+          {
+            "path": "specs/041-mcp-project-confinement/tasks.md",
+            "digest": "sha256:c801c155d47abf1fa59af6f0e3ea1e328c9869c689b5068e43dd7bbd48754e15"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 11,
+          "total": 11
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/commands/mcp.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/commands/mcp.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/commands/mcp.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/commands/mcp.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/commands/mcp.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/docguard.mjs",
+            "line": 663
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/commands/mcp.mjs",
+            "line": 9
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/mcp-project-confinement.test.mjs",
+            "line": 2
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/mcp-project-confinement.test.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/mcp-project-confinement.test.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/mcp-project-confinement.test.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/mcp-project-confinement.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/mcp-project-confinement.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/mcp-project-confinement.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/mcp-project-confinement.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/mcp-project-confinement.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/mcp-project-confinement.test.mjs",
+            "line": 11
           }
         ]
       }
@@ -6921,7 +7339,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/docguard.mjs",
-            "line": 951
+            "line": 958
           },
           {
             "requirementId": "FR-011",

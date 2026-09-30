@@ -25,13 +25,14 @@ const toPosix = (p) => p.split(/[\\/]/).join('/');
 // Descend through single-package wrappers (src/ → src/<pkg>/) so we list the
 // REAL modules, not just the wrapper folder. A wrapper is a dir whose only
 // non-ignored child is another dir (e.g. a Python `src/<pkg>/` layout).
-function componentRoot(root, config) {
+function componentRoot(root, config, projectDir = root) {
   let cur = root;
   for (let depth = 0; depth < 3; depth++) {
     let entries;
     try { entries = readdirSync(cur, { withFileTypes: true }); } catch { break; }
+    const parentRel = toPosix(relative(projectDir, cur));
     const dirs = entries.filter(e => e.isDirectory() && !e.name.startsWith('.')
-      && !IGNORE_DIRS.has(e.name) && !isNonProductDir(e.name, config));
+      && !IGNORE_DIRS.has(e.name) && !isNonProductDir(e.name, config, parentRel));
     const codeFiles = entries.filter(e => e.isFile() && CODE_EXT.has(extname(e.name))
       && !/^(index|main|mod|lib|__init__|__main__)\./.test(e.name));
     if (dirs.length === 1 && codeFiles.length === 0) { cur = join(cur, dirs[0].name); continue; }
@@ -51,14 +52,14 @@ export function scanComponents(projectDir, config = {}, limit = 30) {
   const out = [];
   const seen = new Set();
   for (const root of resolveSourceRoots(projectDir, config)) {
-    const croot = componentRoot(root, config);
+    const croot = componentRoot(root, config, projectDir);
     let entries;
     try { entries = readdirSync(croot, { withFileTypes: true }); } catch { continue; }
     for (const e of entries) {
       if (e.name.startsWith('.')) continue;
       let kind;
       if (e.isDirectory()) {
-        if (IGNORE_DIRS.has(e.name) || isNonProductDir(e.name, config)) continue;
+        if (IGNORE_DIRS.has(e.name) || isNonProductDir(e.name, config, toPosix(relative(projectDir, croot)))) continue;
         kind = 'module';
       } else if (e.isFile() && CODE_EXT.has(extname(e.name))) {
         if (/^(index|__init__)\./.test(e.name)) continue; // barrels/entry-init aren't components

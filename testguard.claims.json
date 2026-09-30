@@ -680,8 +680,8 @@
           "description": "Env vars read outside the area become candidates for it.",
           "faultClass": "condition-forced",
           "file": "cli/shared-source.mjs",
-          "find": "    if (within && within !== '.') {",
-          "replace": "    if (false) {",
+          "find": "    if (within && within !== '.' && rel !== within && !rel.startsWith(`${within}/`)) return null;",
+          "replace": "    if (false) return null;",
           "producedBy": {
             "producer": "agent",
             "by": "claude-opus-5.5 (#455)"
@@ -1895,7 +1895,7 @@
           "description": "A navigation tool is dropped from the server.",
           "faultClass": "statement-deleted",
           "file": "cli/commands/mcp.mjs",
-          "find": "  docguard_doc_structure(args, defaultDir) {\n    const { dir, config } = resolveTarget(args, defaultDir);\n    return docStructure(dir, config, String((args && args.doc) || ''));\n  },\n",
+          "find": "  docguard_doc_structure(args, serving) {\n    const { dir, config } = resolveTarget(args, serving);\n    return docStructure(dir, config, String((args && args.doc) || ''));\n  },\n",
           "replace": "",
           "producedBy": {
             "producer": "agent",
@@ -3282,6 +3282,535 @@
       ]
     },
     {
+      "id": "MCP-PROJECTDIR-STAYS-INSIDE-SERVED-ROOTS",
+      "statement": "An MCP tool call's projectDir is resolved against the served directory, with symlinks followed, and accepted only inside the directories the operator started the server to serve (--dir or the working directory, plus each --root); anything else, existing or not, gets one isError result before any project file is read, on stdio and HTTP, while calls inside keep working.",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/041-mcp-project-confinement/spec.md#FR-001"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (spec 041)"
+      },
+      "defendedBy": [
+        "tests/mcp-project-confinement.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "The containment check never refuses.",
+          "faultClass": "condition-forced",
+          "file": "cli/commands/mcp.mjs",
+          "find": "    if (!serving.roots.some((root) => isWithinRoot(root, real))) {",
+          "replace": "    if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 041)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "projectDir is compared lexically, so a symlink leads outside.",
+          "faultClass": "other",
+          "file": "cli/commands/mcp.mjs",
+          "find": "    const real = realish(lexical);\n",
+          "replace": "    const real = lexical;\n",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 041)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "A missing path is not resolved through its existing ancestors, so a symlink in its existing part hides that it is outside.",
+          "faultClass": "return-altered",
+          "file": "cli/commands/mcp.mjs",
+          "find": "    catch {\n      const up = dirname(head);",
+          "replace": "    catch {\n      return p;\n      const up = dirname(head);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 041)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "Existence is checked before containment, so the refusal tells a client which outside paths exist.",
+          "faultClass": "other",
+          "file": "cli/commands/mcp.mjs",
+          "find": "    const real = realish(lexical);\n",
+          "replace": "    if (!existsSync(lexical)) throw new Error(`projectDir does not exist: ${lexical}`);\n    const real = realish(lexical);\n",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 041)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "The parent directory counts as inside.",
+          "faultClass": "condition-forced",
+          "file": "cli/commands/mcp.mjs",
+          "find": "  return rel !== '..' && !rel.startsWith(`..${pathImpl.sep}`);",
+          "replace": "  return !rel.startsWith(`..${pathImpl.sep}`);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 041)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "Any name beginning with two dots counts as outside, refusing a directory such as `..hidden`.",
+          "faultClass": "other",
+          "file": "cli/commands/mcp.mjs",
+          "find": "  return rel !== '..' && !rel.startsWith(`..${pathImpl.sep}`);",
+          "replace": "  return !rel.startsWith('..');",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 041)"
+          }
+        },
+        {
+          "id": "F7",
+          "description": "Another drive or UNC share counts as inside.",
+          "faultClass": "statement-deleted",
+          "file": "cli/commands/mcp.mjs",
+          "find": "  if (pathImpl.isAbsolute(rel)) return false;\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 041)"
+          }
+        },
+        {
+          "id": "F8",
+          "description": "A relative projectDir resolves against the process directory, not the served one.",
+          "faultClass": "other",
+          "file": "cli/commands/mcp.mjs",
+          "find": "    const lexical = resolve(serving.dir, requested);",
+          "replace": "    const lexical = resolve(requested);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 041)"
+          }
+        },
+        {
+          "id": "F9",
+          "description": "A file passes as a project directory.",
+          "faultClass": "statement-deleted",
+          "file": "cli/commands/mcp.mjs",
+          "find": "    if (!statSync(real).isDirectory()) throw new Error(`projectDir is not a directory: ${lexical}`);\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 041)"
+          }
+        },
+        {
+          "id": "F10",
+          "description": "--root is ignored.",
+          "faultClass": "other",
+          "file": "cli/commands/mcp.mjs",
+          "find": "buildServedRoots(projectDir, flags.roots || [])",
+          "replace": "buildServedRoots(projectDir, [])",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 041)"
+          }
+        },
+        {
+          "id": "F11",
+          "description": "A --root that is a file is accepted.",
+          "faultClass": "statement-deleted",
+          "file": "cli/commands/mcp.mjs",
+          "find": "    if (!st.isDirectory()) throw new Error(`--root is not a directory: ${abs}`);\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 041)"
+          }
+        },
+        {
+          "id": "F12",
+          "description": "The HTTP transport serves every directory.",
+          "faultClass": "other",
+          "file": "cli/commands/mcp.mjs",
+          "find": "messages.map((m) => dispatchMessage(m, serving))",
+          "replace": "messages.map((m) => dispatchMessage(m, { ...serving, roots: ['/'] }))",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 041)"
+          }
+        },
+        {
+          "id": "F13",
+          "description": "tools/list no longer states the boundary.",
+          "faultClass": "literal-changed",
+          "file": "cli/commands/mcp.mjs",
+          "find": "description: 'Project to inspect: a directory inside the directories this server serves (absolute, or relative to the served directory). Defaults to the served directory.',",
+          "replace": "description: 'Path to the project to inspect (absolute, or relative to the server\\'s working directory). Defaults to the working directory the server was started in.',",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 041)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "FALLBACK-LANGUAGE-COVERAGE-IS-PARTIAL",
+      "statement": "A validator whose facts come from a language DocGuard reads by pattern only (Go, Java, Kotlin, Ruby, Rust, PHP, C#) reports partial coverage naming the language, and its findings carry parserTier fallback-language; env reads are found in each of those languages and in Spring config, and a language with no env patterns makes Environment partial; package segments such as com/example are product code; route discovery reaches Maven depth within a disclosed cap; an empty or fixture-only route surface of a detected framework is reported; the symbol map and module graph name unanalysed languages.",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/043-fallback-language-coverage/spec.md#FR-001"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (spec 043)"
+      },
+      "defendedBy": [
+        "tests/fallback-language-coverage.test.mjs",
+        "tests/parser-tier.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "A pattern-only language is not a coverage gap again.",
+          "faultClass": "other",
+          "file": "cli/shared-source.mjs",
+          "find": "  if (!summary || summary.degraded === 0) return null;",
+          "replace": "  if (!summary || summary.degraded === 0 || summary.tier === 'fallback-language') return null;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 043)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "The coverage reason no longer names the language.",
+          "faultClass": "other",
+          "file": "cli/shared-source.mjs",
+          "find": "    fallbackLanguages: [...new Set(patternItems.map(item => item.file && languageOf(item.file)).filter(Boolean))].sort(),",
+          "replace": "    fallbackLanguages: [],",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 043)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "Go routes carry no tier.",
+          "faultClass": "other",
+          "file": "cli/scanners/routes.mjs",
+          "find": "  return extractGoRoutes(sources).map(r => ({ ...r, source: 'go-web', description: '', ...tierFor(resolve(dir, r.file), null) }));",
+          "replace": "  return extractGoRoutes(sources).map(r => ({ ...r, source: 'go-web', description: '' }));",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 043)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "Files a pattern-only scanner read are not recorded, so an empty scan reports no tier.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/routes.mjs",
+          "find": "  for (const f of files) ctx.scan.tierItems.push({ ...tierFor(f, null), file: relative(ctx.dir, f) });",
+          "replace": "  void files;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 043)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "Route discovery stops at depth 5 again.",
+          "faultClass": "literal-changed",
+          "file": "cli/scanners/routes.mjs",
+          "find": "export const ROUTE_SCAN_MAX_DEPTH = 32;",
+          "replace": "export const ROUTE_SCAN_MAX_DEPTH = 5;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 043)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "The file cap truncates silently.",
+          "faultClass": "other",
+          "file": "cli/scanners/routes.mjs",
+          "find": "        if (results.length >= maxFiles) { truncated = true; return; }",
+          "replace": "        if (results.length >= maxFiles) { return; }",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 043)"
+          }
+        },
+        {
+          "id": "F7",
+          "description": "Routes dropped as non-product are not counted.",
+          "faultClass": "other",
+          "file": "cli/scanners/routes.mjs",
+          "find": "      if (isNonProductPath(rel, cfg)) { scan.excludedNonProduct++; return false; }",
+          "replace": "      if (isNonProductPath(rel, cfg)) return false;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 043)"
+          }
+        },
+        {
+          "id": "F8",
+          "description": "A detected framework whose patterns matched nothing is not reported.",
+          "faultClass": "condition-forced",
+          "file": "cli/validators/api-surface.mjs",
+          "find": "    if (pf.routes === 0) {",
+          "replace": "    if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 043)"
+          }
+        },
+        {
+          "id": "F9",
+          "description": "API-surface coverage ignores what the scan could not establish.",
+          "faultClass": "other",
+          "file": "cli/validators/api-surface.mjs",
+          "find": "  const gapReasons = [tierGap?.reason, ...routeScanGaps(drift.scan, drift.routeCount || 0)].filter(Boolean);",
+          "replace": "  const gapReasons = [tierGap?.reason].filter(Boolean);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 043)"
+          }
+        },
+        {
+          "id": "F10",
+          "description": "Go env reads are not matched.",
+          "faultClass": "other",
+          "file": "cli/shared-source.mjs",
+          "find": "    { exts: ['.go'], re:",
+          "replace": "    { exts: ['.none'], re:",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 043)"
+          }
+        },
+        {
+          "id": "F11",
+          "description": "Spring config placeholders are not read.",
+          "faultClass": "other",
+          "file": "cli/shared-source.mjs",
+          "find": "    if (content === null || !content.includes('${')) return;",
+          "replace": "    return;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 043)"
+          }
+        },
+        {
+          "id": "F12",
+          "description": "One language's env patterns run on every language's files.",
+          "faultClass": "other",
+          "file": "cli/shared-source.mjs",
+          "find": "    const own = LANGUAGE_PATTERNS.filter(p => p.exts.includes(ext)).map(p => p.re);",
+          "replace": "    const own = LANGUAGE_PATTERNS.map(p => p.re);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 043)"
+          }
+        },
+        {
+          "id": "F13",
+          "description": "Source files in a language with no env patterns are not counted.",
+          "faultClass": "statement-deleted",
+          "file": "cli/shared-source.mjs",
+          "find": "      if (LANGUAGE_NAMES[ext] && inScope(filePath)) unscannedFiles.push(filePath);",
+          "replace": "      void 0;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 043)"
+          }
+        },
+        {
+          "id": "F14",
+          "description": "A root-level Go module's files outside the conventional roots are not read.",
+          "faultClass": "statement-deleted",
+          "file": "cli/shared-source.mjs",
+          "find": "  if (existsSync(join(projectDir, 'go.mod'))) walk(resolve(projectDir), new Set(['.go']));",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 043)"
+          }
+        },
+        {
+          "id": "F15",
+          "description": "The env walk prunes com/example as an examples directory.",
+          "faultClass": "other",
+          "file": "cli/shared-source.mjs",
+          "find": "      if (e.isDirectory() && isNonProductDir(e.name, config, relative(projectDir, dir).replace(/\\\\/g, '/'))) continue;",
+          "replace": "      if (e.isDirectory() && isNonProductDir(e.name, config)) continue;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 043)"
+          }
+        },
+        {
+          "id": "F16",
+          "description": "A package segment counts as a non-product directory.",
+          "faultClass": "other",
+          "file": "cli/shared-ignore.mjs",
+          "find": "  return segments.some((seg, i) => DEFAULT_DETECTION_IGNORE_DIRS.has(seg) && !isPackageSegment(segments, i));",
+          "replace": "  return segments.some(seg => DEFAULT_DETECTION_IGNORE_DIRS.has(seg));",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 043)"
+          }
+        },
+        {
+          "id": "F17",
+          "description": "isNonProductDir ignores the parent path.",
+          "faultClass": "other",
+          "file": "cli/shared-ignore.mjs",
+          "find": "  if (!parentRel) return true;",
+          "replace": "  return true;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 043)"
+          }
+        },
+        {
+          "id": "F18",
+          "description": "Environment reports checked when a language has no env patterns.",
+          "faultClass": "statement-deleted",
+          "file": "cli/validators/environment.mjs",
+          "find": "    if (gaps.length) applicability = { status: 'partial', reason: gaps.join(' ') };",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 043)"
+          }
+        },
+        {
+          "id": "F19",
+          "description": "ENV003 loses the tier of the files behind it.",
+          "faultClass": "statement-deleted",
+          "file": "cli/validators/environment.mjs",
+          "find": "          parserTier: summarizeTiers(tierItems).tier,\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 043)"
+          }
+        },
+        {
+          "id": "F20",
+          "description": "diff drops the env limitation.",
+          "faultClass": "statement-deleted",
+          "file": "cli/commands/diff.mjs",
+          "find": "    ...(limitation ? { limitation } : {}),",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 043)"
+          }
+        },
+        {
+          "id": "F21",
+          "description": "The import graph does not list unanalysed files.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/import-graph.mjs",
+          "find": "    if (!isNonProductPath(rel, config)) graph.unanalysedFiles.push(rel);",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 043)"
+          }
+        },
+        {
+          "id": "F22",
+          "description": "The symbol map omits the unanalysed-languages line.",
+          "faultClass": "other",
+          "file": "cli/scanners/symbol-map.mjs",
+          "find": "    if (files.length > 0 && unanalysed.length > 0) footer.push(",
+          "replace": "    if (false) footer.push(",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 043)"
+          }
+        },
+        {
+          "id": "F23",
+          "description": "The module graph omits the unanalysed-languages caption.",
+          "faultClass": "other",
+          "file": "cli/scanners/module-diagram.mjs",
+          "find": "  if (unanalysedText) notes.push(",
+          "replace": "  if (false) notes.push(",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 043)"
+          }
+        },
+        {
+          "id": "F24",
+          "description": "The manifest walk prunes internal/example.",
+          "faultClass": "other",
+          "file": "cli/scanners/project-type.mjs",
+          "find": "        if (isNonProductDir(e.name, config, relPosix(root, dir))) continue;",
+          "replace": "        if (isNonProductDir(e.name, config)) continue;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 043)"
+          }
+        },
+        {
+          "id": "F25",
+          "description": "The component list drops a com/example package.",
+          "faultClass": "other",
+          "file": "cli/scanners/inventory.mjs",
+          "find": "isNonProductDir(e.name, config, toPosix(relative(projectDir, croot)))",
+          "replace": "isNonProductDir(e.name, config)",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 043)"
+          }
+        },
+        {
+          "id": "F26",
+          "description": "The source-root wrapper descent stops at com/example.",
+          "faultClass": "other",
+          "file": "cli/scanners/inventory.mjs",
+          "find": "&& !isNonProductDir(e.name, config, parentRel));",
+          "replace": "&& !isNonProductDir(e.name, config));",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 043)"
+          }
+        },
+        {
+          "id": "F27",
+          "description": "explain environment stops naming the Go forms.",
+          "faultClass": "other",
+          "file": "cli/commands/explain.mjs",
+          "find": "`os.Getenv` / `os.LookupEnv` (Go), ",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 043)"
+          }
+        },
+        {
+          "id": "F28",
+          "description": "The ENV003 help stops naming the Java form.",
+          "faultClass": "other",
+          "file": "cli/findings.mjs",
+          "find": "System.getenv, Spring ${X} placeholders, ",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 043)"
+          }
+        }
+      ]
+    },
+    {
       "id": "GO-SPRING-RAILS-ROUTES-COMPOSE-PREFIXES",
       "statement": "Go, Spring and Rails routes are reported at the path the framework serves them under: Go group, sub-router and mount prefixes compose across blocks, functions and files; Spring class-level @RequestMapping bases in every form join every method mapping, with @RequestMapping methods read and Feign clients skipped; Rails namespace, scope, resources options, nesting and member/collection blocks produce the routes rails routes lists. A route whose path or prefix is not literal is omitted, never guessed.",
       "source": {
@@ -3555,8 +4084,8 @@
           "description": "A draw name can be a path.",
           "faultClass": "other",
           "file": "cli/scanners/routes.mjs",
-          "find": "(/^[\\w-]+$/.test(name) ? ",
-          "replace": "(true ? ",
+          "find": "    if (!/^[\\w-]+$/.test(name)) return null;\n",
+          "replace": "",
           "producedBy": {
             "producer": "agent",
             "by": "claude-opus-5.5 (spec 047)"
@@ -3567,7 +4096,7 @@
           "description": "The Go reader is not called.",
           "faultClass": "other",
           "file": "cli/scanners/routes.mjs",
-          "find": "  return extractGoRoutes(sources).map(r => ({ ...r, source: 'go-web', description: '' }));",
+          "find": "  return extractGoRoutes(sources).map(r => ({ ...r, source: 'go-web', description: '', ...tierFor(resolve(dir, r.file), null) }));",
           "replace": "  return [];",
           "producedBy": {
             "producer": "agent",

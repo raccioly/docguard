@@ -2,9 +2,18 @@
  * Deep Route Scanner
  * @req docguard.adoption-workflow-integrity#FR-013
  * Parses actual route definitions from source code across frameworks.
- * Supports: Next.js (App Router + Pages), Express, Fastify, Hono, Django, FastAPI
- * 
+ * Supports: Next.js (App Router + Pages), Express, Fastify, Hono, Django, FastAPI,
+ * Flask, Spring Boot, Rails, Gin/Echo/Chi/Fiber, Axum/Actix/Rocket
+ *
  * Priority: OpenAPI spec > Code scanning
+ *
+ * Spring, Rails, Go and Rust have no syntax tree in DocGuard: their routes are
+ * matched by pattern, and each carries `tier: 'fallback-language'` so a finding
+ * drawn from them says so (docguard.fallback-language-coverage#FR-002).
+ *
+ * @implements docguard.fallback-language-coverage#FR-002
+ * @implements docguard.fallback-language-coverage#FR-007
+ * @implements docguard.fallback-language-coverage#FR-008
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
@@ -41,6 +50,20 @@ export function scanRoutesDeep(dir, stack, docTools, opts = {}) {
   const framework = stack?.framework || '';
   const routes = [];
   const roots = opts.config ? resolveSourceRoots(dir, opts.config) : null;
+  // What the scan READ, kept apart from what it found: an empty result from a
+  // pattern-only scanner, a truncated walk, or routes that exist only in
+  // fixtures are exactly the cases a caller must be able to tell apart from
+  // "this project registers no routes".
+  const maxFiles = Number.isInteger(opts.maxFiles) && opts.maxFiles > 0 ? opts.maxFiles : ROUTE_SCAN_MAX_FILES;
+  const scan = { tierItems: [], truncated: false, cap: maxFiles, patternFrameworks: [], excludedNonProduct: 0 };
+  const ctx = { dir, maxFiles, scan };
+  const named = (...names) => names.find(n => framework.includes(n));
+  const patternScan = (name, sources, fn) => {
+    const before = scan.tierItems.length;
+    const found = fn(dir, ctx);
+    scan.patternFrameworks.push({ name, sources, files: scan.tierItems.length - before, routes: found.length });
+    routes.push(...found);
+  };
 
   if (framework.includes('Next.js') || framework.includes('Next')) {
     routes.push(...scanNextJsRoutes(dir));
@@ -59,30 +82,27 @@ export function scanRoutesDeep(dir, stack, docTools, opts = {}) {
   }
 
   if (framework.includes('Django')) {
-    routes.push(...scanDjangoRoutes(dir));
+    routes.push(...scanDjangoRoutes(dir, ctx));
   }
 
-  if (framework.includes('Spring') || framework.includes('Java')) {
-    routes.push(...scanSpringBootRoutes(dir));
+  if (named('Spring', 'Java')) {
+    patternScan(named('Spring Boot', 'Spring', 'Java'), ['spring-boot'], scanSpringBootRoutes);
   }
 
-  if (framework.includes('Rails') || framework.includes('Ruby')) {
-    routes.push(...scanRailsRoutes(dir));
+  if (named('Rails', 'Ruby')) {
+    patternScan(named('Rails', 'Ruby'), ['rails'], scanRailsRoutes);
   }
 
-  if (framework.includes('Gin') || framework.includes('Echo') || framework.includes('Chi') || framework.includes('Fiber') || framework.includes('Go')) {
-    routes.push(...scanGoWebRoutes(dir));
+  if (named('Gin', 'Echo', 'Chi', 'Fiber', 'Go')) {
+    patternScan(named('Gin', 'Echo', 'Chi', 'Fiber', 'Go'), ['go-web'], scanGoWebRoutes);
   }
 
-  if (framework.includes('Axum') || framework.includes('Actix') || framework.includes('Rocket') || framework.includes('Warp') || framework.includes('Rust')) {
-    routes.push(...scanRustWebRoutes(dir));
+  if (named('Axum', 'Actix', 'Rocket', 'Warp', 'Rust')) {
+    patternScan(named('Axum', 'Actix', 'Rocket', 'Warp', 'Rust'), ['axum', 'actix', 'rocket'], scanRustWebRoutes);
   }
 
-  let scanTier = null;
   if (framework.includes('FastAPI') || framework.includes('Flask')) {
-    const py = scanFastAPIRoutes(dir);
-    scanTier = py.scanTier || null;
-    routes.push(...py);
+    routes.push(...scanFastAPIRoutes(dir, ctx));
   }
 
   // Deduplicate by method+path, and drop routes that live in non-product dirs
@@ -96,7 +116,7 @@ export function scanRoutesDeep(dir, stack, docTools, opts = {}) {
     const key = `${r.method}:${r.path}`;
     if (r.file) {
       const rel = relPosix(dir, resolve(dir, r.file));
-      if (isNonProductPath(rel, cfg)) return false;
+      if (isNonProductPath(rel, cfg)) { scan.excludedNonProduct++; return false; }
       if (shouldIgnore(rel, cfg)) return false;
     }
     // Filter non-product and ignored evidence before deduplication. Otherwise a
@@ -110,7 +130,20 @@ export function scanRoutesDeep(dir, stack, docTools, opts = {}) {
   // any single route, so it must survive even when the filter empties the list
   // — an empty result from a degraded tier is precisely the case a caller has
   // to know about. (calibrated-finding-channels#FR-011)
+  const scanTier = scan.tierItems.length ? summarizeTiers(scan.tierItems) : null;
   if (scanTier) Object.defineProperty(kept, 'scanTier', { value: scanTier, enumerable: false });
+  for (const pf of scan.patternFrameworks) pf.kept = kept.filter(r => pf.sources.includes(r.source)).length;
+  Object.defineProperty(kept, 'scan', {
+    enumerable: false,
+    value: {
+      tier: scanTier,
+      files: scan.tierItems.length,
+      truncated: scan.truncated,
+      cap: scan.cap,
+      patternFrameworks: scan.patternFrameworks,
+      excludedNonProduct: scan.excludedNonProduct,
+    },
+  });
   return kept;
 }
 
@@ -518,9 +551,10 @@ function scanHonoRoutes(dir, roots = null) {
 
 // ── Django ───────────────────────────────────────────────────────────────────
 
-function scanDjangoRoutes(dir) {
+function scanDjangoRoutes(dir, ctx) {
   const routes = [];
-  const urlsFiles = findFiles(dir, /urls\.py$/);
+  const urlsFiles = findRouteFiles(dir, /urls\.py$/, { maxFiles: ctx.maxFiles });
+  if (urlsFiles.truncated) ctx.scan.truncated = true;
 
   for (const filePath of urlsFiles) {
     const content = readFileSafe(filePath);
@@ -547,11 +581,12 @@ function scanDjangoRoutes(dir) {
 
 // ── FastAPI / Flask ─────────────────────────────────────────────────────────
 
-function scanFastAPIRoutes(dir) {
+function scanFastAPIRoutes(dir, ctx) {
   const routes = [];
   const pattern = /@(?:app|router)\s*\.\s*(get|post|put|delete|patch)\s*\(\s*['"]([^'"]+)['"]/gi;
 
-  const pyFiles = findFiles(dir, /\.py$/);
+  const pyFiles = findRouteFiles(dir, /\.py$/, { maxFiles: ctx.maxFiles });
+  if (pyFiles.truncated) ctx.scan.truncated = true;
   // AST-first: ONE python3 subprocess parses every file. `null` means Python is
   // unavailable or the subprocess failed → regex fallback for all files. A
   // per-file `ok:false` falls back for just that file. The AST form also reads
@@ -609,9 +644,9 @@ function scanFastAPIRoutes(dir) {
 
   // A Python file that yielded no route still carries coverage information:
   // if it was read by the pattern tier, the absence of a route from it is
-  // weak evidence. Report the scan's tier alongside the routes so a caller
-  // can downgrade applicability even when the result list is empty.
-  routes.scanTier = summarizeTiers(pyFiles.map(f => tierFor(f, astByFile && astByFile[f], batchReason)));
+  // weak evidence. Record every file's tier with the scan so a caller can
+  // downgrade applicability even when the result list is empty.
+  for (const f of pyFiles) ctx.scan.tierItems.push({ ...tierFor(f, astByFile && astByFile[f], batchReason), file: relative(dir, f) });
   return routes;
 }
 
@@ -622,9 +657,12 @@ function scanFastAPIRoutes(dir) {
 // (docguard.go-spring-rails-routes#FR-003/004). Constants may live in files
 // without a mapping, so every file is handed over.
 
-function scanSpringBootRoutes(dir) {
-  const sources = findFiles(dir, /\.(java|kt)$/).map(f => ({ file: relative(dir, f), content: readFileSafe(f) }));
-  return extractSpringRoutes(sources).map(r => ({ ...r, source: 'spring-boot', description: '' }));
+function scanSpringBootRoutes(dir, ctx) {
+  // docguard.fallback-language-coverage: files are listed (and counted for
+  // coverage) by readPatternFiles; each route carries its pattern tier.
+  const files = readPatternFiles(ctx, /\.(java|kt)$/);
+  const sources = files.map(f => ({ file: relative(dir, f), content: readFileSafe(f) }));
+  return extractSpringRoutes(sources).map(r => ({ ...r, source: 'spring-boot', description: '', ...tierFor(resolve(dir, r.file), null) }));
 }
 
 // ── Rails (Ruby) — config/routes.rb ──────────────────────────────────────────
@@ -632,13 +670,20 @@ function scanSpringBootRoutes(dir) {
 // only/except, nesting, member/collection, verbs, match, root, concerns and
 // `draw` files (docguard.go-spring-rails-routes#FR-005).
 
-function scanRailsRoutes(dir) {
+function scanRailsRoutes(dir, ctx) {
   const routesFile = resolve(dir, 'config/routes.rb');
   if (!existsSync(routesFile)) return [];
+  recordPatternFiles(ctx, [routesFile]);
+  const { tier, tierReason } = tierFor(routesFile, null);
   // `draw :admin` loads config/routes/admin.rb; a name is never a path.
-  const readDraw = name => (/^[\w-]+$/.test(name) ? readFileSafe(resolve(dir, 'config/routes', `${name}.rb`)) : null);
+  const readDraw = name => {
+    if (!/^[\w-]+$/.test(name)) return null;
+    const drawFile = resolve(dir, 'config/routes', `${name}.rb`);
+    if (existsSync(drawFile)) recordPatternFiles(ctx, [drawFile]);
+    return readFileSafe(drawFile);
+  };
   return extractRailsRoutes(readFileSafe(routesFile), { file: 'config/routes.rb', readDraw })
-    .map(r => ({ ...r, source: 'rails', description: '' }));
+    .map(r => ({ ...r, source: 'rails', description: '', tier, tierReason }));
 }
 
 // ── Go web frameworks (Gin / Echo / Chi / Fiber / gorilla/mux / net/http) ────
@@ -646,19 +691,21 @@ function scanRailsRoutes(dir) {
 // functions and files, and reads every registration form of those routers
 // (docguard.go-spring-rails-routes#FR-001/002).
 
-function scanGoWebRoutes(dir) {
-  const sources = findFiles(dir, /\.go$/).map(f => ({ file: relative(dir, f), content: readFileSafe(f) }));
-  return extractGoRoutes(sources).map(r => ({ ...r, source: 'go-web', description: '' }));
+function scanGoWebRoutes(dir, ctx) {
+  const files = readPatternFiles(ctx, /\.go$/);
+  const sources = files.map(f => ({ file: relative(dir, f), content: readFileSafe(f) }));
+  return extractGoRoutes(sources).map(r => ({ ...r, source: 'go-web', description: '', ...tierFor(resolve(dir, r.file), null) }));
 }
 
 // ── Rust web frameworks (Axum / Actix / Rocket / Warp) ───────────────────────
 
-function scanRustWebRoutes(dir) {
+function scanRustWebRoutes(dir, ctx) {
   const routes = [];
-  const rsFiles = findFiles(dir, /\.rs$/);
+  const rsFiles = readPatternFiles(ctx, /\.rs$/);
   for (const filePath of rsFiles) {
     const content = readFileSafe(filePath);
     if (!content) continue;
+    const { tier, tierReason } = tierFor(filePath, null);
 
     // Axum: .route("/x", get(handler)) / .route("/x", post(handler).get(handler))
     const axum = /\.route\s*\(\s*"([^"]+)"\s*,\s*([a-z]+)\s*\(/g;
@@ -666,19 +713,19 @@ function scanRustWebRoutes(dir) {
     while ((m = axum.exec(content)) !== null) {
       const method = m[2].toUpperCase();
       if (!['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS'].includes(method)) continue;
-      routes.push({ method, path: m[1], handler: '', file: relative(dir, filePath), source: 'axum', auth: false, description: '' });
+      routes.push({ method, path: m[1], handler: '', file: relative(dir, filePath), source: 'axum', auth: false, description: '', tier, tierReason });
     }
 
     // Actix-web: .route("/x", web::get().to(handler))
     const actix = /\.route\s*\(\s*"([^"]+)"\s*,\s*web::(get|post|put|delete|patch)\(\)/g;
     while ((m = actix.exec(content)) !== null) {
-      routes.push({ method: m[2].toUpperCase(), path: m[1], handler: '', file: relative(dir, filePath), source: 'actix', auth: false, description: '' });
+      routes.push({ method: m[2].toUpperCase(), path: m[1], handler: '', file: relative(dir, filePath), source: 'actix', auth: false, description: '', tier, tierReason });
     }
 
     // Rocket: #[get("/x")] etc.
     const rocket = /#\[(get|post|put|delete|patch)\(\s*"([^"]+)"/g;
     while ((m = rocket.exec(content)) !== null) {
-      routes.push({ method: m[1].toUpperCase(), path: m[2], handler: '', file: relative(dir, filePath), source: 'rocket', auth: false, description: '' });
+      routes.push({ method: m[1].toUpperCase(), path: m[2], handler: '', file: relative(dir, filePath), source: 'rocket', auth: false, description: '', tier, tierReason });
     }
   }
   return routes;
@@ -710,22 +757,59 @@ function walkRouteDirs(dir, callback) {
   } catch { /* skip */ }
 }
 
-function findFiles(dir, pattern, maxDepth = 5) {
+/** Files one route scan may read; reaching it is disclosed, never silent. */
+export const ROUTE_SCAN_MAX_FILES = 20000;
+/** Directory depth bound for route discovery; far below any real limit, far above Maven's. */
+export const ROUTE_SCAN_MAX_DEPTH = 32;
+
+/**
+ * Files under `dir` whose name matches `pattern`, for route scanning.
+ *
+ * This walk stopped at depth 5, and a Spring controller in a standard Maven
+ * layout (`src/main/java/com/acme/shop/web/X.java`) sits at depth 7 or more, so
+ * a Spring service had zero routes and its API surface read as empty. The
+ * bounds now are the ignore rules (node_modules, vendor, target, build, …), a
+ * depth of 32 and a file cap. `withFileTypes` never follows a symlinked
+ * directory, so the walk cannot loop. The returned array carries `truncated`
+ * when the cap stopped it, so the caller can report partial coverage.
+ *
+ * @implements docguard.fallback-language-coverage#FR-008
+ * @returns {string[] & { truncated: boolean }}
+ */
+export function findRouteFiles(dir, pattern, { maxFiles = ROUTE_SCAN_MAX_FILES, maxDepth = ROUTE_SCAN_MAX_DEPTH } = {}) {
   const results = [];
+  let truncated = false;
   function walk(d, depth) {
-    if (depth > maxDepth || !existsSync(d)) return;
-    try {
-      const entries = readdirSync(d, { withFileTypes: true });
-      for (const entry of entries) {
-        if (IGNORE_DIRS.has(entry.name) || entry.name.startsWith('.')) continue;
-        const fullPath = join(d, entry.name);
-        if (entry.isDirectory()) walk(fullPath, depth + 1);
-        else if (pattern.test(entry.name)) results.push(fullPath);
+    if (truncated || depth > maxDepth || !existsSync(d)) return;
+    let entries;
+    try { entries = readdirSync(d, { withFileTypes: true }); } catch { return; }
+    entries.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+    for (const entry of entries) {
+      if (IGNORE_DIRS.has(entry.name) || entry.name.startsWith('.')) continue;
+      const fullPath = join(d, entry.name);
+      if (entry.isDirectory()) walk(fullPath, depth + 1);
+      else if (entry.isFile() && pattern.test(entry.name)) {
+        if (results.length >= maxFiles) { truncated = true; return; }
+        results.push(fullPath);
       }
-    } catch { /* skip */ }
+      if (truncated) return;
+    }
   }
   walk(dir, 0);
+  Object.defineProperty(results, 'truncated', { value: truncated, enumerable: false });
   return results;
+}
+
+/** Read a pattern-only language's files and record each one's tier with the scan. */
+function readPatternFiles(ctx, pattern) {
+  const files = findRouteFiles(ctx.dir, pattern, { maxFiles: ctx.maxFiles });
+  if (files.truncated) ctx.scan.truncated = true;
+  recordPatternFiles(ctx, files);
+  return files;
+}
+
+function recordPatternFiles(ctx, files) {
+  for (const f of files) ctx.scan.tierItems.push({ ...tierFor(f, null), file: relative(ctx.dir, f) });
 }
 
 function hasAuthCheck(content) {
