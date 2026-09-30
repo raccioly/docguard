@@ -1781,6 +1781,14 @@ Behaviour changes:
 
 ### Fixed
 
+- **`sync --since` narrows the sections it says it narrows**
+  (`specs/029-sync-section-scope`). The matcher table was keyed
+  `endpoints-table`, `entities-table`, … while the plan emits `endpoints`,
+  `entities`, …, so eight of ten generated sections refreshed on every change,
+  docs-only changes included. `reconcile` listed mechanical sections by those
+  non-existent names. The test for the table asserted nothing; it now fails
+  whenever the table and the plan's section IDs differ.
+
 - **The validator-isolation test catches a bare side-effect import**
   (`import './other.mjs'`). Its pattern matched only `from '...'` and dynamic
   `import('...')`, so one validator could load another unnoticed
@@ -1901,16 +1909,8 @@ Behaviour changes:
   coverage map, Metrics-Consistency, Metadata-Sync, agent readability and
   semantic-claim extraction all used the broken copy, so `fixtures/` was
   honoured by some checks and silently ignored by others. This repository's
-  own ignore file worked around it by listing both `Research/` and
-  `Research/**`. The copy now delegates to the single implementation, and a
-  parity test runs this repository's own patterns through both.
 
-- **TODO annotations parse the way developers write them.**
-  - `// TODO(ana): fix retries` used to be reported as `ana): fix retries`; the
-    author is now stripped.
-  - Bare `// TODO fix retries` and `// FIXME fix retries` were not recognised
-
-<!-- truncated: 4031 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 4039 more lines — read CHANGELOG.md directly -->
 
 ---
 

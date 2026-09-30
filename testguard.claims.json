@@ -1295,6 +1295,60 @@
           }
         }
       ]
+    },
+    {
+      "id": "SYNC-SCOPE-MATCHES-PLAN-SECTIONS",
+      "statement": "sync --since narrows exactly the generated sections the plan emits, and a docs-only change refreshes none of them.",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/029-sync-section-scope/spec.md#FR-001"
+      },
+      "severity": "medium",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (#455 spec 029)"
+      },
+      "defendedBy": [
+        "tests/sync-since.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "A section keeps its old table-suffixed ID.",
+          "faultClass": "literal-changed",
+          "file": "cli/shared-sync-scope.mjs",
+          "find": "  'endpoints':        p =>",
+          "replace": "  'endpoints-table':  p =>",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 029)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "Docs changes count as code.",
+          "faultClass": "return-altered",
+          "file": "cli/shared-sync-scope.mjs",
+          "find": "const code = p => CODE.test(p);",
+          "replace": "const code = p => CODE.test(p) || /\\.md$/.test(p);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 029)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "tech-stack refreshes on any code change.",
+          "faultClass": "return-altered",
+          "file": "cli/shared-sync-scope.mjs",
+          "find": "  'tech-stack':       p => MANIFEST.test(p),",
+          "replace": "  'tech-stack':       p => MANIFEST.test(p) || code(p),",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 029)"
+          }
+        }
+      ]
     }
   ]
 }

@@ -4390,6 +4390,81 @@
       }
     },
     {
+      "specId": "docguard.sync-section-scope",
+      "path": "specs/029-sync-section-scope/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "approved",
+          "delivery": "implemented",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": "living"
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md"
+          ]
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.sync-section-scope#FR-001",
+          "docguard.sync-section-scope#SC-001"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/029-sync-section-scope/spec.md",
+            "digest": "sha256:d902a8a2a7db6bce0a3ce5bca8d0f5e0dd6003961c0cf7ce7985d010c570bf73"
+          },
+          {
+            "path": "specs/029-sync-section-scope/plan.md",
+            "digest": "sha256:502098dddcc92270406cbffcb77c63f7a061a877f969e4dc120264d4c735958b"
+          },
+          {
+            "path": "specs/029-sync-section-scope/tasks.md",
+            "digest": "sha256:a26b697196e000b94f82e6379030d4b8f7b08aa15606edffe589256d704ceebd"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 3,
+          "total": 3
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/shared-sync-scope.mjs",
+            "line": 4
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/sync-since.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/sync-since.test.mjs",
+            "line": 14
+          }
+        ]
+      }
+    },
+    {
       "specId": "docguard.task-specific-agent-context",
       "path": "specs/010-task-specific-agent-context/spec.md",
       "reviewed": {

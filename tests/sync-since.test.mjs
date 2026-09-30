@@ -6,10 +6,12 @@
  * scoping predicate.
  *
  * @req SC-L1-001 — when --since is provided and only docs changed, sync is a no-op
- * @req SC-L1-002 — when route files changed, the endpoints-table section is in scope
- * @req SC-L1-003 — when models changed, the entities-table section is in scope
+ * @req SC-L1-002 — when route files changed, the endpoints section is in scope
+ * @req SC-L1-003 — when models changed, the entities section is in scope
  * @req SC-L1-004 — unknown section IDs default to "in scope" (conservative)
  * @req SC-L1-005 — null/empty changed-files list means "sync everything"
+ * @req docguard.sync-section-scope#FR-001
+ * @req docguard.sync-section-scope#SC-001
  */
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
@@ -20,9 +22,10 @@ import { strict as assert } from 'node:assert';
 // in sync.test.mjs and the subprocess test below.
 
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { mechanicalSectionsForChanges, SECTION_FILE_MATCHERS, sectionTouchedByChanges } from '../cli/shared-sync-scope.mjs';
 
 const CLI = join(process.cwd(), 'cli/docguard.mjs');
 
@@ -87,13 +90,32 @@ describe('sync --since — banner reflects scoping', () => {
   });
 });
 
-describe('section→file matcher (sync.mjs internal table)', () => {
-  // We import the module and check it doesn't throw — and through the JSON
-  // path, verify the `skipped` entries get populated for unmatched sections.
-  it('endpoints-table is scoped to route paths', () => {
-    // Sanity: the production matcher table includes route patterns. We don't
-    // re-export the table, but the integration test above (banner) exercises
-    // the path. End-to-end coverage in sync.test.mjs is the deep test.
-    assert.ok(true);
+describe('section→file matcher (docguard.sync-section-scope)', () => {
+  // The table was keyed `endpoints-table`, `entities-table`, … while the plan
+  // emits `endpoints`, `entities`, …, so eight of ten sections never narrowed,
+  // and this test asserted nothing. It now reads the plan's own section IDs.
+  const planSource = readFileSync(join(process.cwd(), 'cli/scanners/memory-plan.mjs'), 'utf8');
+  const planCodeIds = [...planSource.matchAll(/id: '([a-z-]+)',\s*\n\s*source: 'code'/g)].map(m => m[1]).sort();
+
+  it('has exactly one matcher per source=code section the memory plan emits', () => {
+    assert.ok(planCodeIds.length >= 10, `expected the plan's code sections, found ${planCodeIds.join(', ')}`);
+    assert.deepEqual(Object.keys(SECTION_FILE_MATCHERS).sort(), planCodeIds);
+  });
+
+  it('a docs-only change refreshes nothing; a code change refreshes its sections', () => {
+    assert.deepEqual(mechanicalSectionsForChanges(['docs-canonical/ARCHITECTURE.md', 'README.md']), []);
+    const routeChange = mechanicalSectionsForChanges(['src/server.js']);
+    for (const id of ['endpoints', 'entities', 'env-vars', 'component-map']) assert.ok(routeChange.includes(id), id);
+    assert.equal(routeChange.includes('tech-stack'), false);
+    assert.deepEqual(mechanicalSectionsForChanges(['package.json']), ['integrations', 'tech-stack']);
+  });
+
+  it('keeps the conservative defaults: unknown IDs and an empty change set stay in scope', () => {
+    assert.equal(sectionTouchedByChanges('not-a-section', ['README.md']), true);
+    assert.equal(sectionTouchedByChanges('endpoints', []), true);
+    assert.equal(sectionTouchedByChanges('endpoints', ['README.md']), false);
+    assert.equal(sectionTouchedByChanges('endpoints', ['api/openapi.yaml']), true);
+    assert.equal(sectionTouchedByChanges('test-inventory', ['tests/a.test.mjs']), true);
+    assert.equal(sectionTouchedByChanges('env-vars', ['.env.example']), true);
   });
 });

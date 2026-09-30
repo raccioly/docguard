@@ -270,6 +270,14 @@ Behaviour changes:
 
 ### Fixed
 
+- **`sync --since` narrows the sections it says it narrows**
+  (`specs/029-sync-section-scope`). The matcher table was keyed
+  `endpoints-table`, `entities-table`, … while the plan emits `endpoints`,
+  `entities`, …, so eight of ten generated sections refreshed on every change,
+  docs-only changes included. `reconcile` listed mechanical sections by those
+  non-existent names. The test for the table asserted nothing; it now fails
+  whenever the table and the plan's section IDs differ.
+
 - **The validator-isolation test catches a bare side-effect import**
   (`import './other.mjs'`). Its pattern matched only `from '...'` and dynamic
   `import('...')`, so one validator could load another unnoticed
