@@ -3383,7 +3383,7 @@
           },
           {
             "path": "specs/031-non-regression-budgets/tasks.md",
-            "digest": "sha256:91f58f49f4c672c357284145173400ad4ca684e0c4deb7a0c79ae217668f1ab8"
+            "digest": "sha256:d7505af55220889ef0ea51fdb003dd99679fed05d573ff30b37225b9848fe27b"
           }
         ],
         "taskCompletion": {
