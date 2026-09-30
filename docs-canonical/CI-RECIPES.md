@@ -132,6 +132,16 @@ verification. A taskless living verification contract is eligible only when ever
 requirement has qualified evidence. Keep living specs current; archive only when the registry reports
 that the selected persistence model is ready.
 
+Under squash merges, run completions on a branch whose HEAD is the default
+branch's tip, run as many `specs complete --write` as needed (the registry,
+active context and outcome blocks they write do not count as changes), and
+commit once. Every outcome then records a revision that stays on the default
+branch. A completion recorded on a PR branch's own commit would be discarded by
+the squash, and `specs complete` warns when that is about to happen. Guard
+reports such a revision as `SPR008`; `docguard specs reanchor --id <spec-id>
+--write` moves it to the first commit on HEAD's first-parent history whose
+evidence files are byte-identical (`specs/028-completion-revision-anchoring`).
+
 ## Recipe 3c — Spec-first gate
 
 Require every pull request that changes governed code to name its spec. Declare the

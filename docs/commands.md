@@ -202,6 +202,7 @@ npx docguard-cli specs preflight --path specs/007-feature/spec.md
 npx docguard-cli specs complete --id acme.feature --since main          # plan the completion
 npx docguard-cli specs complete --id acme.feature --write --reason "..." # apply it
 npx docguard-cli specs require --since origin/main --message-file pr.txt # spec-first gate
+npx docguard-cli specs reanchor --id acme.feature --write               # move a squash-discarded revision
 ```
 
 `specs require` is the spec-first gate. A change to a governed path (see
@@ -222,7 +223,16 @@ low-confidence review context and never blocks by itself. `specs complete`
 verifies exact-revision implementation evidence, canonical outcomes, and context
 regeneration before marking a spec verified; `--write` requires a reviewed
 reason and performs the registry, spec outcome, and current-context writes as
-one rollback-safe transaction.
+one rollback-safe transaction. Several completions can run back to back against
+the same revision before one commit: the files completion writes do not count as
+changes.
+
+`specs reanchor` repairs a recorded revision that a squash merge discarded
+(guard reports it as **SPR008**). It finds the first commit on HEAD's
+first-parent history whose evidence files are byte-identical to the reviewed
+ones and moves the anchor there, recording `reanchoredFrom`. If the old revision
+no longer exists anywhere, `--to <revision> --reason "<why>"` records an
+attested anchor instead.
 
 ### `docguard retire`
 

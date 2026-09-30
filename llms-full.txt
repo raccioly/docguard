@@ -37,7 +37,7 @@ It targets development teams and AI coding agents that need to maintain document
 | **CLI Entry Point** | Argument parsing, config loading, command routing | `cli/` | `docguard.mjs` |
 | **Commands** | User-facing commands (the Daily 5 — init/guard/diff/sync/score — plus situational tools including reconcile, retire, specs, and `init --with` scaffolders) | `cli/commands/` | `*.mjs` |
 | **Document lifecycle** | Finds exact terminal-status docs and completed-task review candidates; explicit retirement removes documentation from active context only after its source revision is reachable from a retained Git ref | `cli/scanners/document-lifecycle.mjs`, `cli/validators/document-lifecycle.mjs`, `cli/commands/retire.mjs` | Scanner is read-only; retirement uses the shared multi-file transaction and remains explicit |
-| **Spec lifecycle registry** | Projects immutable spec identities, reviewed lifecycle/lineage/scope, artifact digests, task state, qualified implementation/test evidence, bounded outcomes, and recovery tombstones into one byte-stable control file | `cli/scanners/spec-registry.mjs`, `cli/scanners/requirement-evidence.mjs`, `cli/validators/spec-registry.mjs`, `cli/commands/specs.mjs` | `specs --write` preserves reviewed fields; stale checks identify bounded field paths and distinguish canonical ordering from changed content; only committed, clean, digest-current lifecycle entries can defer traceability, while a current planned entry that is new, removed from the index, or modified pending commit remains advisory; `specs complete` is the only verified-delivery writer |
+| **Spec lifecycle registry** | Projects immutable spec identities, reviewed lifecycle/lineage/scope, artifact digests, task state, qualified implementation/test evidence, bounded outcomes, and recovery tombstones into one byte-stable control file | `cli/scanners/spec-registry.mjs`, `cli/scanners/requirement-evidence.mjs`, `cli/scanners/revision-anchor.mjs`, `cli/validators/spec-registry.mjs`, `cli/commands/specs.mjs` | `specs --write` preserves reviewed fields; stale checks identify bounded field paths and distinguish canonical ordering from changed content; only committed, clean, digest-current lifecycle entries can defer traceability, while a current planned entry that is new, removed from the index, or modified pending commit remains advisory; `specs complete` is the only verified-delivery writer |
 | **Reconciliation graph** | Inventories changed paths independently from bounded patch text, maps them to direct spec evidence or to a requirement declared in a canonical document (`docs-canonical/<doc>.md#<ID>`), and keeps mechanical facts, approved intent, decisions, unrelated changes, and unsupported evidence separate | `cli/shared-git.mjs`, `cli/scanners/reconciliation.mjs`, `cli/commands/reconcile.mjs` | Timeout, overflow, parse failure, or incomplete inventory blocks a ready result; planning is read-only and `--write` never rewrites requirements |
 | **Analyzer tier** | Decides which analyzer produced each piece of evidence at the two entry points (`parseJsTs`, `extractPythonFiles`), carries `tier`/`tierReason` on scanned items, reports `parserTier` on every finding, and downgrades a validator to `partial` when an AST-capable language was read by the pattern fallback | `cli/shared-source.mjs` (`tierFor`, `summarizeTiers`, `tierApplicability`), `cli/scanners/routes.mjs`, `cli/validators/api-surface.mjs` | Findings are retained; only coverage is downgraded. `fallback-language` is not a gap — no AST tier exists for that language |
 | **Spec Kit artifact coverage** | Treats Spec Kit's own documents as governed. Coverage counts top-level `specs/<feature>/**/*.md` and the constitution under a `specKit` tier. Metrics-Consistency (including `MET004` dependency claims) and Reference-Existence read the constitution | `cli/scanners/speckit.mjs` (`findConstitution`), `cli/commands/guard.mjs`, `cli/validators/metrics-consistency.mjs`, `cli/validators/reference-existence.mjs` | The constitution usually lives in a dot directory the walkers skip, so it is located explicitly. Nested fixture `specs/` trees are not the project's artifacts |
@@ -387,6 +387,16 @@ verification. A taskless living verification contract is eligible only when ever
 requirement has qualified evidence. Keep living specs current; archive only when the registry reports
 that the selected persistence model is ready.
 
+Under squash merges, run completions on a branch whose HEAD is the default
+branch's tip, run as many `specs complete --write` as needed (the registry,
+active context and outcome blocks they write do not count as changes), and
+commit once. Every outcome then records a revision that stays on the default
+branch. A completion recorded on a PR branch's own commit would be discarded by
+the squash, and `specs complete` warns when that is about to happen. Guard
+reports such a revision as `SPR008`; `docguard specs reanchor --id <spec-id>
+--write` moves it to the first commit on HEAD's first-parent history whose
+evidence files are byte-identical (`specs/028-completion-revision-anchoring`).
+
 ## Recipe 3c — Spec-first gate
 
 Require every pull request that changes governed code to name its spec. Declare the
@@ -644,6 +654,7 @@ normative JSON Schema is `schemas/docguard-specs.schema.json`.
 | `specs[].reviewed.lifecycle.origin` | `generate --spec --write` | Optional. `as_built` marks a spec that records existing behaviour. Absent for forward specs, so older registries stay byte-identical |
 | `specs[].reviewed.reconciliation.lastReviewedRevision` | Human review | Exact Git revision whose doc impact was reviewed, or `null` |
 | `specs[].reviewed.reconciliation.outcomes` | Human review | Up to 20 reviewed implementation outcomes with revision, bounded rationale, evidence paths, deviations, and optional successor |
+| `specs[].reviewed.reconciliation.outcomes[].reanchoredFrom` | `specs reanchor` | Optional: the discarded revision an outcome was recorded at, and `method` — `blob-equal` (evidence compared) or `attested` (with a `reason`). Serialized only when set |
 | `specs[].intent.requirements` | Projection | `specId#requirementId` identities parsed from the active spec |
 | `specs[].observed.artifacts` | Projection | Paths and SHA-256 content identities for spec, plan, and tasks |
 | `specs[].observed.taskCompletion` | Projection | Checked and total Markdown task boxes; not proof of delivery |
@@ -1349,6 +1360,8 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/shared-test-cases.mjs` | `tests/test-case-count.test.mjs` | ✅ |
 | `cli/scanners/speckit.mjs` (SPK010 directory claims) | `tests/spk010-directory-claims.test.mjs`, `tests/spec-kit-artifact-coverage.test.mjs` | ✅ |
 | `.github/scripts/release-changelog.mjs`, `.github/scripts/homebrew-formula.mjs` | `tests/release-readiness.test.mjs` | ✅ |
+| `cli/scanners/revision-anchor.mjs` (`specs reanchor`, SPR008) | `tests/completion-revision-anchoring.test.mjs` | ✅ |
+| `cli/scanners/reconciliation.mjs` (canonical requirement links) | `tests/canonical-requirement-links.test.mjs`, `tests/reconcile.test.mjs` | ✅ |
 | `cli/validators/structure.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/validators/docs-diff.mjs` | `tests/commands.test.mjs`, `tests/docs-diff.test.mjs` | ✅ |
 
@@ -1541,6 +1554,22 @@ Behaviour changes:
   `@latest`. Set `docguard-version: latest` to keep following npm.
 
 ### Added
+
+- **Completion revisions survive squash merges** (`specs/028-completion-revision-anchoring`).
+  - `specs complete` records the revision it reviewed. A completion committed
+    on a PR branch recorded that branch's commit, which a squash merge never
+    puts on `main`. Twelve recorded revisions across seven of this repository's
+    specs pointed at such commits.
+  - **SPR008** reports a recorded revision that does not resolve or is not on
+    HEAD's history. A shallow clone reports partial coverage instead.
+  - `docguard specs reanchor --id <spec-id> --write` moves the anchor to the
+    first first-parent commit whose evidence files are byte-identical, and
+    records `reanchoredFrom`. A revision that no longer exists needs
+    `--to <revision> --reason` and is recorded as attested.
+  - Several completions can now run against one revision before a single
+    commit: the registry, the active context and outcome blocks they write no
+    longer count as changes. `specs complete --write` warns when HEAD is not on
+    the remote default branch.
 
 - **As-built specs: reverse-engineer a Spec Kit spec for code that has none,
   and keep it synced (#455, `specs/024-as-built-specs`).** `docguard generate
@@ -1893,24 +1922,8 @@ Behaviour changes:
     ("…do not establish factual accuracy", "…configured gates passed…") and
     their place above the nudges are now covered by a regression test.
   - **#437.** The baseline line says what it hides as well as how much it
-    hides, for example `3 pre-existing finding(s) suppressed — 2 error · 1
-    warning`. The guard JSON carries `baselineBySeverity`.
-  - **#436.** The upgrade path that clears the schema nudge now has a test:
-    `upgrade --apply` migrates `.docguard.json` even when the global install
-    fails, and the next guard run prints no nudge. The nudge still prints while
-    the schema is behind, because it can now always be cleared by the command it
-    names.
 
-- **`.docguardignore` means the same thing to every check (#455,
-  `specs/019-ignore-and-todo-parsing`).** There were two parsers. The one in
-  `cli/shared-ignore.mjs` treats a gitignore-style `dir/` as the directory and
-  everything under it. `cli/shared.mjs` kept a private copy that never received
-  that fix, and it compiled `dir/` into a pattern that matched nothing. Guard's
-  coverage map, Metrics-Consistency, Metadata-Sync, agent readability and
-  semantic-claim extraction all used the broken copy, so `fixtures/` was
-  honoured by some checks and silently ignored by others. This repository's
-
-<!-- truncated: 4039 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 4055 more lines — read CHANGELOG.md directly -->
 
 ---
 

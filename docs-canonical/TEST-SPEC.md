@@ -97,6 +97,8 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/shared-test-cases.mjs` | `tests/test-case-count.test.mjs` | ✅ |
 | `cli/scanners/speckit.mjs` (SPK010 directory claims) | `tests/spk010-directory-claims.test.mjs`, `tests/spec-kit-artifact-coverage.test.mjs` | ✅ |
 | `.github/scripts/release-changelog.mjs`, `.github/scripts/homebrew-formula.mjs` | `tests/release-readiness.test.mjs` | ✅ |
+| `cli/scanners/revision-anchor.mjs` (`specs reanchor`, SPR008) | `tests/completion-revision-anchoring.test.mjs` | ✅ |
+| `cli/scanners/reconciliation.mjs` (canonical requirement links) | `tests/canonical-requirement-links.test.mjs`, `tests/reconcile.test.mjs` | ✅ |
 | `cli/validators/structure.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/validators/docs-diff.mjs` | `tests/commands.test.mjs`, `tests/docs-diff.test.mjs` | ✅ |
 

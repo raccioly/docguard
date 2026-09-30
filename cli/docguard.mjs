@@ -104,7 +104,7 @@ ${c.bold}Tools (situational, but day-to-day useful)${c.reset}
   ${c.green}ci${c.reset}         Pipeline gate: guard + score in one command (${c.cyan}--threshold <n>${c.reset}, ${c.cyan}--fail-on-warning${c.reset}, ${c.cyan}--format json${c.reset}; records score history)
   ${c.green}memory${c.reset}     Show what DocGuard remembers (${c.cyan}--diff${c.reset} drills into drift)
   ${c.green}retire${c.reset}     Remove reviewed docs from active AI context (${c.cyan}--plan${c.reset}; explicit ${c.cyan}--write --path${c.reset})
-  ${c.green}specs${c.reset}      Track spec lifecycle and evidence (${c.cyan}--check|--write${c.reset}; ${c.cyan}preflight${c.reset}, ${c.cyan}complete${c.reset}, ${c.cyan}require${c.reset})
+  ${c.green}specs${c.reset}      Track spec lifecycle and evidence (${c.cyan}--check|--write${c.reset}; ${c.cyan}preflight${c.reset}, ${c.cyan}complete${c.reset}, ${c.cyan}require${c.reset}, ${c.cyan}reanchor${c.reset})
   ${c.green}reconcile${c.reset}  Classify code/spec changes since a Git ref before changing intent
   ${c.green}trace${c.reset}      Requirements traceability matrix (${c.cyan}--reverse${c.reset} for code→doc map, ${c.cyan}--features${c.reset} for per-feature adherence)
   ${c.green}upgrade${c.reset}    Migrate ${c.cyan}.docguard.json${c.reset} schema + CLI (${c.cyan}--apply --pr${c.reset} for team-wide PR)
@@ -341,13 +341,15 @@ const COMMAND_HELP = {
   },
   specs: {
     summary: 'Maintain the deterministic spec lifecycle and evidence registry.',
-    usage: 'docguard specs [--check|--write] | docguard specs preflight [--path <spec>] | docguard specs complete --id <spec-id> [--since <ref>] [--write --reason <text>] | docguard specs require --since <ref> [--message-file <path>]',
+    usage: 'docguard specs [--check|--write] | docguard specs preflight [--path <spec>] | docguard specs complete --id <spec-id> [--since <ref>] [--write --reason <text>] | docguard specs require --since <ref> [--message-file <path>] | docguard specs reanchor --id <spec-id> [--to <revision>] [--write --reason <text>]',
     flags: [
       ['--check', 'Exit 2 when the committed registry is missing, stale, or inconsistent; planned lifecycle deferral requires a clean tracked registry'],
       ['--write', 'Refresh observed evidence while preserving reviewed lifecycle fields'],
       ['preflight', 'Brief prior specs, or gate a generated draft with --path'],
       ['complete', 'Plan or apply the implemented→verified evidence transaction'],
       ['require', 'Spec-first gate: a change to governed paths must name its spec or declare Spec-Exempt (exit 1 uncovered, 2 inconclusive)'],
+      ['reanchor', 'Move recorded revisions a squash merge discarded (SPR008) to a commit on HEAD\'s history with byte-identical evidence'],
+      ['--to <revision>', 'With reanchor: target revision; required, with --reason, when the old revision no longer resolves'],
       ['--message-file <path>', 'With require: PR description or extra text to search for spec references'],
       ['--id <spec-id>', 'Immutable spec identity to complete'],
       ['--since <ref>', 'First reconciliation baseline when none is recorded'],
@@ -357,7 +359,7 @@ const COMMAND_HELP = {
       ['--path <spec>', 'Generated spec to compare against current lifecycle state'],
       ['--format json', 'Machine-readable registry or preflight result'],
     ],
-    examples: ['docguard specs --check', 'docguard specs --write', 'docguard specs preflight --path specs/007-feature/spec.md', 'docguard specs require --since origin/main --message-file pr-body.txt', 'docguard specs complete --id acme.feature --since main --write --reason "Reviewed implementation"'],
+    examples: ['docguard specs --check', 'docguard specs --write', 'docguard specs preflight --path specs/007-feature/spec.md', 'docguard specs require --since origin/main --message-file pr-body.txt', 'docguard specs complete --id acme.feature --since main --write --reason "Reviewed implementation"', 'docguard specs reanchor --id acme.feature --write'],
   },
   reconcile: {
     summary: 'Classify changed implementation facts, approved intent, decisions, and unsupported evidence.',
@@ -615,6 +617,10 @@ async function main() {
         // mcp --transport http: HTTP mount path (default /mcp).
         flags.path = args[i + 1];
       }
+      i++;
+    } else if (args[i] === '--to' && args[i + 1] && command === 'specs') {
+      // `specs reanchor --to <revision>` (docguard.completion-revision-anchoring#FR-003)
+      flags.to = args[i + 1];
       i++;
     } else if (args[i] === '--reason' && args[i + 1]) {
       flags.reason = args[i + 1];

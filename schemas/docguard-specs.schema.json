@@ -112,7 +112,18 @@
         "reason": { "type": "string", "minLength": 1, "maxLength": 500 },
         "evidence": { "type": "array", "maxItems": 100, "items": { "type": "string", "minLength": 1 } },
         "deviations": { "type": "array", "maxItems": 20, "items": { "type": "string", "minLength": 1, "maxLength": 500 } },
-        "successor": { "anyOf": [{ "type": "null" }, { "$ref": "#/definitions/specId" }] }
+        "successor": { "anyOf": [{ "type": "null" }, { "$ref": "#/definitions/specId" }] },
+        "reanchoredFrom": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["revision", "method"],
+          "description": "Set by `docguard specs reanchor`: the dangling revision this outcome was recorded at, and whether evidence equivalence was checked (blob-equal) or attested by a maintainer.",
+          "properties": {
+            "revision": { "type": "string", "pattern": "^[0-9a-f]{40}([0-9a-f]{24})?$" },
+            "method": { "enum": ["blob-equal", "attested"] },
+            "reason": { "type": "string", "minLength": 8, "maxLength": 500 }
+          }
+        }
       }
     },
     "testEvidence": {
