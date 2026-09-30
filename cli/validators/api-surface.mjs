@@ -20,6 +20,10 @@ import { docRolePath, resolveDocRole } from '../shared-doc-roles.mjs';
  *
  * Returns { errors, warnings, passed, total, fixes, authoritativeSpec } — the
  * `fixes` array contains only omissions corroborated by a nonempty code scan.
+ *
+ * OpenAPI discovery lives in cli/shared-openapi.mjs so no validator imports
+ * another (Constitution IV).
+ * @implements docguard.spec-kit-artifact-coverage#FR-007
  */
 
 import { existsSync, readFileSync } from 'node:fs';

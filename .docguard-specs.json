@@ -467,6 +467,11 @@
             "line": 4
           },
           {
+            "requirementId": "FR-001",
+            "file": "tests/structure.test.mjs",
+            "line": 36
+          },
+          {
             "requirementId": "FR-002",
             "file": "tests/agent-instruction-budget.test.mjs",
             "line": 5
@@ -3881,6 +3886,16 @@
             "requirementId": "FR-007",
             "file": "cli/shared-openapi.mjs",
             "line": 7
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/validators/api-surface.mjs",
+            "line": 26
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/validators/docs-sync.mjs",
+            "line": 11
           }
         ],
         "testEvidence": [
