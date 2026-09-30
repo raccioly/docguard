@@ -233,7 +233,17 @@ export function reanchorSpec(projectDir, config, flags) {
   if (changed === null || changed.length) blockers.push({ code: 'SPC001', message: `Re-anchoring requires a clean tracked working tree; changed: ${describeChanges(changed)}.` });
   const moves = [];
   if (spec && !blockers.length) {
-    const dangling = danglingRevisions(projectDir, { specs: [spec] });
+    let dangling = danglingRevisions(projectDir, { specs: [spec] });
+    // docguard.completion-revision-anchoring#FR-006: one spec's dangling
+    // revisions can come from different merges, so an attested --to must be
+    // scoped to the revision it attests.
+    if (flags.from) {
+      const matches = dangling.filter(d => d.revision.startsWith(String(flags.from)));
+      if (String(flags.from).length < 7 || matches.length !== 1) {
+        blockers.push({ code: 'SPC008', message: `--from ${flags.from} must name exactly one recorded revision that does not resolve on HEAD's history (at least 7 characters); dangling: ${dangling.map(d => d.revision.slice(0, 12)).join(', ') || 'none'}.` });
+      }
+      dangling = matches.length === 1 ? matches : [];
+    }
     const outcomes = spec.reviewed.reconciliation.outcomes;
     for (const { revision, reason } of dangling) {
       const evidence = [...new Set(outcomes.filter(o => o.revision === revision).flatMap(o => o.evidence)
