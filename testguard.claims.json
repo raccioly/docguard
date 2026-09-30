@@ -3603,8 +3603,8 @@
           "description": "Without an interpreter no file gets a pattern-tier outline.",
           "faultClass": "statement-deleted",
           "file": "cli/scanners/py-sources.mjs",
-          "find": "      try { outline = outlineFromSource(source); } catch { outline = null; }",
-          "replace": "      outline = null;",
+          "find": "  try { outline = outlineFromSource(source); } catch { outline = null; }",
+          "replace": "  outline = null;",
           "producedBy": {
             "producer": "agent",
             "by": "claude-opus-5.5 (spec 046)"

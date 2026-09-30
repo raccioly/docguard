@@ -30,6 +30,9 @@ const DJANGO_RELATION = new Set(['ForeignKey', 'OneToOneField', 'ManyToManyField
 const DJANGO_SKIP = new Set(['GenericForeignKey', 'GenericRelation', 'ManyToManyField', 'ParentalManyToManyField']);
 const COLLECTIONS = new Set(['List', 'list', 'Set', 'set', 'FrozenSet', 'frozenset', 'Sequence', 'MutableSequence', 'Iterable', 'Collection', 'Tuple', 'tuple', 'DynamicMapped', 'WriteOnlyMapped', 'AppenderQuery']);
 const WRAPPERS = new Set(['Mapped', 'Annotated', 'Final', 'Required', 'NotRequired', 'ReadOnly']);
+// A module that defines, bases or re-exports a model mentions one of these.
+// Files without any are skipped before the interpreter starts.
+const MODEL_HINT = /\b(?:Model|Base|Column|mapped_column|Mapped|SQLModel|BaseModel|RootModel|BaseSettings|DeclarativeBase\w*|declarative_base|generate_base|SQLAlchemy|models)\b/;
 
 /**
  * The Python types an annotation names.
@@ -95,7 +98,7 @@ const constValue = e => (e?.t === 'const' ? e.v : undefined);
  */
 export function scanPythonModels(dir) {
   const files = findPythonFiles(dir);
-  const { byFile, scanTier } = loadPythonOutlines(files, 'models');
+  const { byFile, scanTier } = loadPythonOutlines(files, 'models', source => MODEL_HINT.test(source));
   const index = new PythonIndex(dir, byFile);
 
   const classes = [];
