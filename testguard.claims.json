@@ -3842,6 +3842,18 @@
             "producer": "agent",
             "by": "claude-opus-5.5 (spec 045)"
           }
+        },
+        {
+          "id": "F32",
+          "description": "The DATA-MODEL writer drops the enums the scanner reports apart.",
+          "faultClass": "other",
+          "file": "cli/writers/doc-generators.mjs",
+          "find": "entities = [...deepSchemas.entities, ...(deepSchemas.enums || [])];",
+          "replace": "entities = deepSchemas.entities;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
         }
       ]
     }

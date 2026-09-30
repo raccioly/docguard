@@ -41,6 +41,7 @@ import { detectProjectProfile } from '../cli/scanners/project-type.mjs';
 import { buildMemoryPlan, clearMemoryPlanCache } from '../cli/scanners/memory-plan.mjs';
 import { collectAreaFacts, checkAsBuiltSync } from '../cli/scanners/as-built.mjs';
 import { validateSchemaSync } from '../cli/validators/schema-sync.mjs';
+import { generateDataModel } from '../cli/writers/doc-generators.mjs';
 
 const dirs = [];
 afterEach(() => {
@@ -378,6 +379,15 @@ describe('FR-008: Prisma enums, relations, and the stack', () => {
     const table = arch.sections.find(s => s.id === 'tech-stack').body;
     assert.match(table, /\| Path \| Language \| Framework \| Libraries \| Kind \|/);
     assert.match(table, /Drizzle, NextAuth\.js, React/);
+  });
+
+  it('writes Prisma enums in their own DATA-MODEL section, not as entities', () => {
+    const dir = project(PRISMA_FILES);
+    assert.equal(generateDataModel(dir, { projectName: 'blog' }, {}, { models: [] }, {}, scanSchemasDeep(dir, {}, {}, {})), true);
+    const [entitiesPart, enumsPart = ''] = readFileSync(join(dir, 'docs-canonical/DATA-MODEL.md'), 'utf8').split('## Enums');
+    assert.doesNotMatch(entitiesPart, /### (?:Role|Status)\b|^\| (?:Role|Status) \|/m);
+    assert.match(enumsPart, /### Role[\s\S]*\| ADMIN \|/);
+    assert.match(enumsPart, /### Status[\s\S]*\| PUBLISHED \|/);
   });
 
   it('keeps the tech-stack table unchanged when no library is found', () => {

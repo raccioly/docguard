@@ -1,6 +1,6 @@
 # Tasks: Accurate JS/TS Extraction for Express and Next.js Projects
 
-**Status**: Complete. On the three fixtures every count matches the written truth: Express 8/8 routes and auth flags, 3/3 entities, 2/2 relations, 5/5 env vars with defaults, 8/8 import edges; Next.js 6/6 routes and auth flags, 3/3 entities, 2/2 relations, 4/4 env vars, 8/8 edges; Prisma 4/4 entities, 2 enums, 3/3 relations. Guard and generate report the same entities (SC-004). Claim JS-TS-EXTRACTION-MATCHES-TRUTH: 31/31 faults killed.
+**Status**: Complete. On the three fixtures every count matches the written truth: Express 8/8 routes and auth flags, 3/3 entities, 2/2 relations, 5/5 env vars with defaults, 8/8 import edges; Next.js 6/6 routes and auth flags, 3/3 entities, 2/2 relations, 4/4 env vars, 8/8 edges; Prisma 4/4 entities, 2 enums, 3/3 relations. Guard and generate report the same entities (SC-004). Claim JS-TS-EXTRACTION-MATCHES-TRUTH: 32/32 faults killed.
 **Spec**: `specs/045-js-ts-extraction/spec.md`
 **Plan**: `specs/045-js-ts-extraction/plan.md`
 
