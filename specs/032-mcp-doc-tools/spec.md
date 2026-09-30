@@ -4,7 +4,7 @@
 
 **Created**: 2026-09-29
 
-**Status**: Draft
+**Status**: Active
 
 **Spec ID**: `docguard.mcp-doc-tools`
 
@@ -153,7 +153,8 @@ the same tools that `tools/list` returns.
 - **FR-002**: `docguard_docs_for_path({ path })` MUST return:
   - `path` and `exists`;
   - `references`: each canonical doc line that names the file, with doc, line,
-    match kind, enclosing heading and anchor, and enclosing section id;
+    the line's text (at most 240 characters), match kind, enclosing heading
+    and anchor, and enclosing section id;
   - `agentInstructions`: lines in `AGENTS.md`, `CLAUDE.md` and `GEMINI.md`
     that name the file;
   - `requirements`: `@implements` and `@req` IDs declared in the file itself;
@@ -171,9 +172,10 @@ the same tools that `tools/list` returns.
   pinned, covers, lines), fact markers, marker issues, the last-reviewed date,
   the generated flag and the total bytes. Anchors MUST use the same
   `slugifyHeading` rule as the Cross-Reference validator.
-- **FR-005**: `docguard_read_section({ doc, id | anchor | heading, offset?,
-  maxBytes? })` MUST resolve by section id first, then anchor, then exact
-  heading text. An ambiguous match MUST fail with the candidates. The response
+- **FR-005**: `docguard_read_section({ doc, id | anchor | heading | line,
+  context?, offset?, maxBytes? })` MUST resolve by section id first, then
+  `line` (the lines around one reference, `context` lines each side, default 3,
+  at most 50), then anchor, then exact heading text. An ambiguous match MUST fail with the candidates. The response
   MUST include the line range, the content, `truncated`, and `nextOffset` when
   truncated. The default limit MUST be 8 KiB and the hard cap 32 KiB.
 - **FR-006**: `docguard_task_context({ task })` MUST return the

@@ -3383,12 +3383,12 @@
       "path": "specs/032-mcp-doc-tools/spec.md",
       "reviewed": {
         "lifecycle": {
-          "approval": "draft",
-          "delivery": "planned",
+          "approval": "approved",
+          "delivery": "implemented",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
-          "persistenceModel": null
+          "persistenceModel": "living"
         },
         "relations": {
           "extends": [],
@@ -3398,7 +3398,9 @@
           "supersededBy": []
         },
         "scope": {
-          "canonicalDocs": []
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md"
+          ]
         },
         "reconciliation": {
           "lastReviewedRevision": null,
@@ -3429,7 +3431,7 @@
         "artifacts": [
           {
             "path": "specs/032-mcp-doc-tools/spec.md",
-            "digest": "sha256:71899373576834e2f7fc24523f1efd52150f9a15c8a29a628657562867d2cf97"
+            "digest": "sha256:a6c7c42994ec958311e1b324c72ff82c70d17a9db780114a7a0c191918814b93"
           },
           {
             "path": "specs/032-mcp-doc-tools/plan.md",
@@ -3437,15 +3439,147 @@
           },
           {
             "path": "specs/032-mcp-doc-tools/tasks.md",
-            "digest": "sha256:093b18f2f5d54e77138de21dc667c7f1fba0f7a1b6ce2634d6e3f7d41320d14f"
+            "digest": "sha256:986b4661c83be99cc1c9b2de83f3817c89b025da16a94b1fed1d31728ad0c644"
           }
         ],
         "taskCompletion": {
-          "checked": 0,
+          "checked": 10,
           "total": 10
         },
-        "implementationEvidence": [],
-        "testEvidence": []
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-002",
+            "file": "cli/scanners/doc-references.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/scanners/doc-references.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/scanners/doc-references.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/shared-headings.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/scanners/doc-references.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/scanners/doc-references.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "cli/scanners/doc-references.mjs",
+            "line": 20
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/mcp-doc-tools.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/mcp-doc-tools.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/impact.test.mjs",
+            "line": 86
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/mcp-doc-tools.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/trace-reverse.test.mjs",
+            "line": 80
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/traceability.test.mjs",
+            "line": 238
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/mcp-doc-tools.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/mcp-doc-tools.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/mcp-doc-tools.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/mcp-doc-tools.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/mcp-doc-tools.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "tests/mcp-doc-tools.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "tests/mcp-doc-tools.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "tests/mcp-doc-tools.test.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/mcp-doc-tools.test.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/mcp-doc-tools.test.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/mcp-doc-tools.test.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "SC-004",
+            "file": "tests/mcp-doc-tools.test.mjs",
+            "line": 20
+          },
+          {
+            "requirementId": "SC-005",
+            "file": "tests/mcp-doc-tools.test.mjs",
+            "line": 21
+          }
+        ]
       }
     },
     {

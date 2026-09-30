@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.raccioly/docguard",
   "title": "DocGuard",
-  "description": "Deterministic doc-drift detection: guard, score, explain, verify-claims and diagnose MCP tools.",
+  "description": "Deterministic doc-drift detection and exact doc navigation as read-only MCP tools.",
   "version": "0.42.1",
   "websiteUrl": "https://github.com/raccioly/docguard#readme",
   "repository": {

@@ -34,6 +34,8 @@ import { loadConfig } from '../config.mjs';
 import { CODES } from '../findings.mjs';
 import { extractSemanticClaims, buildSemanticVerifyTasks } from '../scanners/semantic-claims.mjs';
 import { coverSemanticClaims, evaluateEvidence } from '../evidence/evaluate.mjs';
+import { docsForPath, docStructure, readSection, READ_DEFAULT_BYTES, READ_MAX_BYTES } from '../scanners/doc-references.mjs';
+import { buildTaskContextPacket } from '../scanners/task-context.mjs';
 
 const _PKG = JSON.parse(readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', 'package.json'), 'utf-8'));
 
@@ -135,6 +137,60 @@ const TOOLS = [
     annotations: READONLY_ANNOTATIONS,
   },
   {
+    name: 'docguard_docs_for_path',
+    title: 'Docs that describe a file',
+    description: 'Exact answer to "which documentation describes this file?": canonical doc lines that name it (with heading, anchor and section), AGENTS.md/CLAUDE.md/GEMINI.md lines, the @implements/@req IDs it declares, its @doc annotations, and doc sections whose covers= includes it with their review state. Deterministic, bounded, no model.',
+    inputSchema: {
+      type: 'object',
+      properties: { path: { type: 'string', description: 'Project-relative file path, e.g. src/api/users.ts' }, ...PROJECT_DIR_PROP },
+      required: ['path'],
+    },
+    annotations: READONLY_ANNOTATIONS,
+  },
+  {
+    name: 'docguard_doc_structure',
+    title: 'Outline of one document',
+    description: 'A document\'s headings (level, text, anchor, line range, bytes), docguard:section markers (id, source, pinned, covers), fact markers, marker issues, last-reviewed date and size — so an agent can read one section instead of the whole file.',
+    inputSchema: {
+      type: 'object',
+      properties: { doc: { type: 'string', description: 'Project-relative Markdown path, e.g. docs-canonical/ARCHITECTURE.md' }, ...PROJECT_DIR_PROP },
+      required: ['doc'],
+    },
+    annotations: READONLY_ANNOTATIONS,
+  },
+  {
+    name: 'docguard_read_section',
+    title: 'Read one section of a document',
+    description: `Return one section's text, resolved by docguard:section id, then heading anchor, then exact heading text — or, with \`line\`, just the lines around one reference from docguard_docs_for_path (the cheapest read for a table row). Bounded: ${READ_DEFAULT_BYTES} bytes by default, ${READ_MAX_BYTES} at most; a truncated result carries nextOffset. An ambiguous match fails with the candidates.`,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        doc: { type: 'string', description: 'Project-relative Markdown path' },
+        id: { type: 'string', description: 'docguard:section id' },
+        anchor: { type: 'string', description: 'Heading anchor, e.g. spec-lifecycle-registry' },
+        heading: { type: 'string', description: 'Exact heading text' },
+        line: { type: 'integer', minimum: 1, description: 'Read the lines around this line number instead of a whole section' },
+        context: { type: 'integer', minimum: 0, maximum: 50, description: 'With line: lines before and after (default 3)' },
+        offset: { type: 'integer', minimum: 0, description: 'Byte offset from a previous truncated read' },
+        maxBytes: { type: 'integer', minimum: 1, maximum: READ_MAX_BYTES },
+        ...PROJECT_DIR_PROP,
+      },
+      required: ['doc'],
+    },
+    annotations: READONLY_ANNOTATIONS,
+  },
+  {
+    name: 'docguard_task_context',
+    title: 'Bounded context packet for a task',
+    description: 'The same deterministic packet as `docguard agent --task <text> --format json`: current task-linked requirements, pointers to implementing code and tests, excerpts, and verification steps; abstains when relevance is weak.',
+    inputSchema: {
+      type: 'object',
+      properties: { task: { type: 'string', description: 'What the agent is about to do' }, ...PROJECT_DIR_PROP },
+      required: ['task'],
+    },
+    annotations: READONLY_ANNOTATIONS,
+  },
+  {
     name: 'docguard_diagnose',
     title: 'Diagnose what to fix',
     description: 'Run guard and return only what needs fixing: failing/warning validators with their messages, structured findings, and suggested next actions — shaped for an agent to act on.',
@@ -203,6 +259,32 @@ const TOOL_HANDLERS = {
   docguard_report(args, defaultDir) {
     const { dir, config } = resolveTarget(args, defaultDir);
     return buildReport(dir, config);
+  },
+
+  // docguard.mcp-doc-tools: exact, bounded reads. No tool here answers in
+  // natural language or calls a model (FR-009).
+  docguard_docs_for_path(args, defaultDir) {
+    const { dir, config } = resolveTarget(args, defaultDir);
+    return docsForPath(dir, config, String((args && args.path) || ''));
+  },
+
+  docguard_doc_structure(args, defaultDir) {
+    const { dir, config } = resolveTarget(args, defaultDir);
+    return docStructure(dir, config, String((args && args.doc) || ''));
+  },
+
+  docguard_read_section(args, defaultDir) {
+    const { dir, config } = resolveTarget(args, defaultDir);
+    const { doc, id, anchor, heading, line, context, offset, maxBytes } = args || {};
+    if (!id && !anchor && !heading && line === undefined) throw new Error('Pass one of "id", "anchor", "heading" or "line" (see docguard_doc_structure and docguard_docs_for_path).');
+    return readSection(dir, config, { doc: String(doc || ''), id, anchor, heading, line, context, offset, maxBytes });
+  },
+
+  docguard_task_context(args, defaultDir) {
+    const { dir, config } = resolveTarget(args, defaultDir);
+    const task = String((args && args.task) || '').trim();
+    if (!task) throw new Error('Missing required argument "task".');
+    return buildTaskContextPacket(dir, config, task);
   },
 
   docguard_diagnose(args, defaultDir) {

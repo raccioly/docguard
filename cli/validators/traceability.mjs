@@ -33,6 +33,7 @@ import {
   requirementPatterns,
 } from '../shared-requirements.mjs';
 import { readRetirementManifest } from '../scanners/retirement-manifest.mjs';
+import { docAnnotationsIn } from '../scanners/doc-references.mjs';
 import {
   parseSpecId,
   trustedSpecLifecycleIndex,
@@ -513,9 +514,7 @@ function getRequirementDocPaths(projectDir, config) {
  */
 function scanDocAnnotations(projectFiles, projectDir) {
   const map = new Map();
-  const annotationRe = /(?:\/\/|\/\*|#)\s*@doc\s+(\S+\.md)/g;
   const CODE_EXT = new Set(['.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx', '.py', '.rb', '.go', '.rs', '.java']);
-  const HEAD_BYTES = 4096;
 
   for (const relPath of projectFiles) {
     const ext = extname(relPath);
@@ -523,14 +522,10 @@ function scanDocAnnotations(projectFiles, projectDir) {
     const full = resolve(projectDir, relPath);
     let content;
     try { content = readFileSync(full, 'utf-8'); } catch { continue; }
-    // Annotations live near the top of the file. Slicing avoids reading
-    // megabytes of bundled / minified output looking for a header comment.
-    const head = content.length > HEAD_BYTES ? content.slice(0, HEAD_BYTES) : content;
-    if (!head.includes('@doc')) continue;
-    annotationRe.lastIndex = 0;
-    let m;
-    while ((m = annotationRe.exec(head)) !== null) {
-      const docName = basename(m[1]);
+    // Annotations live near the top of the file; the shared reader slices the
+    // head so bundled output is never scanned (docguard.mcp-doc-tools#FR-003).
+    for (const annotated of docAnnotationsIn(content)) {
+      const docName = basename(annotated);
       if (!map.has(docName)) map.set(docName, new Set());
       map.get(docName).add(relPath);
     }

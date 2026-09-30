@@ -346,7 +346,10 @@ never touched without `--force`.
 **MCP server over stdio** — DocGuard's read-only core as native agent tools
 (`docguard_guard`, `docguard_score`, `docguard_explain`,
 `docguard_verify_evidence`, `docguard_verify_claims`, `docguard_report`,
-`docguard_diagnose`).
+`docguard_docs_for_path`, `docguard_doc_structure`, `docguard_read_section`,
+`docguard_task_context`, `docguard_diagnose`). The four navigation tools answer
+"which docs describe this file?" and read one bounded section at a time, so an
+agent does not load whole documents; none of them calls a model.
 
 ```bash
 claude mcp add docguard -- npx docguard-cli mcp

@@ -29,6 +29,7 @@ const CODE_EXTENSIONS = new Set([
 // a downstream project Python user: TEST-SPEC.md was flagged unlinked even
 // though Python tests existed because `.test.mjs` didn't match `test_*.py`).
 import { TEST_PATTERNS, TRACE_MAP, isTraceableSource } from '../shared-trace-patterns.mjs';
+import { referenceKind } from '../scanners/doc-references.mjs';
 
 
 /**
@@ -72,8 +73,6 @@ export function runTraceReverse(projectDir, config, flags) {
 
   // Normalize the target path: strip leading ./
   const normalized = target.replace(/^\.\//, '');
-  const base = basename(normalized);
-  const stem = base.replace(/\.[^.]+$/, '');
 
   const matches = []; // { doc, line, content, kind }
   // Recursive — a nested doc mentioning this file must still be found, or
@@ -82,15 +81,11 @@ export function runTraceReverse(projectDir, config, flags) {
     let content;
     try { content = readFileSync(doc.abs, 'utf-8'); } catch { continue; }
     const lines = content.split('\n');
+    // One matcher for trace --reverse, impact and docguard_docs_for_path
+    // (docguard.mcp-doc-tools#FR-003).
     for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      let kind = null;
-      if (line.includes(normalized)) kind = 'path';
-      else if (line.includes(base)) kind = 'basename';
-      else if (new RegExp(`\`${escapeRegex(stem)}\``).test(line)) kind = 'module';
-      if (kind) {
-        matches.push({ doc: doc.rel, line: i + 1, content: line.trim(), kind });
-      }
+      const kind = referenceKind(lines[i], normalized);
+      if (kind) matches.push({ doc: doc.rel, line: i + 1, content: lines[i].trim(), kind });
     }
   }
 
@@ -125,10 +120,6 @@ export function runTraceReverse(projectDir, config, flags) {
     }
     if (hits.length > 5) console.log(`     ${c.dim}... ${hits.length - 5} more${c.reset}`);
   }
-}
-
-function escapeRegex(s) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 export function runTrace(projectDir, config, flags) {

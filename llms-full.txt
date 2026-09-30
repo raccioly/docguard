@@ -46,6 +46,7 @@ It targets development teams and AI coding agents that need to maintain document
 | **Precision evidence** | Runs labelled synthetic and exact-commit public cases, separates deterministic results from observations, calculates null-safe quality metrics and confidence bounds, compares case-first baselines, persists them in a provenance envelope whose measure (`benchmark-precision`) and caveat are derived from the cases and re-verified on load, and projects per-code evidence into a generated module the CLI quotes at finding time | `benchmarks/`, `cli/precision-evidence.mjs`, `schemas/docguard-benchmark.schema.json`, `schemas/docguard-benchmark-baseline.schema.json`, `schemas/docguard-precision-evidence.schema.json` | External runs are explicit; third-party project code is never executed and disposable checkouts are removed by default |
 | **Non-regression budgets** | Compares a PR with its base on one runner: interleaved guard wall time, self-guard error findings, agent-facing output bytes, packed package weight and runtime dependencies, against the ratios and floors in `budgets.json`; `Budget-Exempt` waives one metric with a reason | `tools/budget.mjs`, `budgets.json` | CI `budget` job; development tooling, not shipped in the npm package |
 | **Doc dependency lock** | A doc section declares the code it describes (`covers=` on its `docguard:section` marker); `review --accept` records AST or content fingerprints in `.docguard-doc-lock.json`; the Doc-Dependency validator reports a covered symbol whose code changed (DLK001), a dependency that no longer resolves, an unaccepted or orphaned entry, or an unreadable lock | `cli/scanners/doc-deps.mjs`, `cli/validators/doc-dependency.mjs`, `cli/commands/review.mjs` | Opt-in by declaration; only `review` writes the lock; runs in `--changed-only` pre-commit mode |
+| **MCP doc navigation** | Exact, bounded answers for agents: which doc lines, instruction lines, requirement IDs and covered sections describe a file; a document's outline; one section or the lines around a reference; the task context packet. One reference matcher shared with `trace --reverse` and `impact` | `cli/scanners/doc-references.mjs`, `cli/shared-headings.mjs`, `cli/commands/mcp.mjs` | Read-only; paths pass the evidence reader's checks; 8 KiB default and 32 KiB cap per section read; no tool calls a model |
 | **Feedback fixtures** | Validates synthetic reproductions and opposite controls, reduces them under an explicit predicate, derives duplicate identities, and emits test-only contributions | `cli/feedback-fixture.mjs`, `cli/commands/feedback.mjs`, `schemas/docguard-feedback-fixture.schema.json` | Publication remains user-controlled; contribution generation requires reviewed redaction, scope, and benchmark-delta evidence |
 | **Evidence-scoped verification** | Binds one exact Markdown statement to a typed JSON Pointer value, bounded file collection, static Python container literal, or saved upstream compatibility report and returns one of five explicit states | `cli/evidence/`, `cli/validators/evidence.mjs`, `cli/commands/verify.mjs`, `schemas/docguard-evidence.schema.json` | Reads stay local, bounded, non-executable, and symlink/private-path safe; direct verification exits 1 for contradiction/invalid input, 2 for unresolved evidence, and 0 only for verified or unconfigured evidence |
 | **Managed Git hooks** | Installs bounded DocGuard blocks while preserving user-owned hook commands before and after them | `cli/commands/hooks.mjs` | Reinstall and removal use one outer marker pair, repair nested markers from affected releases, fail closed on enforcement errors, and fall through after success so user postludes execute. A hook owned by husky, lefthook or simple-git-hooks is never written, even under `--force`; the command prints the line to add to that manager |
@@ -1580,6 +1581,25 @@ Behaviour changes:
 
 ### Added
 
+- **MCP doc navigation tools** (`specs/032-mcp-doc-tools`). Agents can ask
+  which documentation describes a file and read one section, instead of
+  loading whole documents:
+  - `docguard_docs_for_path` returns the doc lines that name a file (with
+    their text, heading and section), agent-instruction lines,
+    `@implements`/`@req` IDs, `@doc` annotations, and `covers=` sections with
+    their review state;
+  - `docguard_doc_structure` returns a document's outline;
+  - `docguard_read_section` reads by section id, anchor, heading, or the lines
+    around one reference (8 KiB default, 32 KiB cap);
+  - `docguard_task_context` returns the `agent --task` packet.
+
+  Finding and reading what describes `cli/scanners/as-built.mjs` costs 11.5%
+  of reading those docs whole. The tools are deterministic and read-only,
+  refuse traversal, private and symlinked paths, and none of them calls a
+  model. `trace --reverse`, `impact` and the tool share one reference matcher.
+  The published tool listings (MCPB manifest, Smithery, server.json, docs)
+  now match `tools/list`: they had drifted to 5 and 6 of 7.
+
 - **Doc dependency lock: know which docs to re-read when code changes**
   (`specs/030-doc-dependency-lock`, new `docguard review` command).
   - A doc section declares the code it describes, e.g.
@@ -1868,6 +1888,12 @@ Behaviour changes:
 
 ### Fixed
 
+- **Traceability reads `@doc` annotations in JSDoc blocks.** The pattern
+  required `//`, `/*` or `#` immediately before `@doc`, so the common form
+  (`/**\n * @doc API-REFERENCE.md\n */`) linked nothing. It now shares one
+  reader with the MCP doc tools, which also ignores `@doc` inside string
+  literals (`specs/032-mcp-doc-tools`).
+
 - **`sync --since` narrows the sections it says it narrows**
   (`specs/029-sync-section-scope`). The matcher table was keyed
   `endpoints-table`, `entities-table`, … while the plan emits `endpoints`,
@@ -1922,33 +1948,8 @@ Behaviour changes:
 - **The CI test-runtime budget no longer fails on runner noise.** It was set to
   120s when normal runs took 33–51s. The suite has since doubled, and identical
   code now runs anywhere from 64s to 122s on CI, so the gate failed at random.
-  #467 went red at 121.7s with 2189/2189 tests passing. The budget is now 240s,
-  which restores the original ~2× margin and still catches the PR #328
-  catastrophe (+165s).
 
-- **A sandboxed run no longer looks like a clean pass (#455,
-  `specs/022-unreadable-git-metadata`).** Agent sandboxes such as ai-jail mount
-  a linked worktree but hide the gitdir its `.git` file points at. Every git
-  command then fails. Freshness, Diff-Suspicion and Reference-Existence treated
-  that like a project with no repository and reported `no-matches` ("nothing to
-  check"), which keeps the top badge grade. Reproduced on this repository: the
-  run printed `PASS — All 608 checks passed` while three validators had done
-  nothing.
-  - Git state now has three values: readable, absent, and unreadable (a `.git`
-    exists, or git is missing, and git fails).
-  - With unreadable metadata, those three report `missing-prerequisite`, and
-    the Spec-Kit untouched-task check reports `partial`. The reason carries
-    git's own error and the sandbox remedy (ai-jail: `--worktree`).
-  - A project with no `.git` at all behaves as before.
-  - Freshness drops its private copy of `git rev-parse`.
-  - `ENVIRONMENT.md` documents running DocGuard inside an agent sandbox.
-
-- **Three lifecycle-evidence gaps found by building DocGuard with its own hooks
-  (#455, `specs/021-lifecycle-evidence-gaps`).**
-  - **`SPR006`.** Spec 014 was fully implemented, with every task checked,
-    before any source file carried `@implements`. Guard said nothing.
-
-<!-- truncated: 4088 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 4113 more lines — read CHANGELOG.md directly -->
 
 ---
 

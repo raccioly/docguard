@@ -1723,6 +1723,210 @@
           }
         }
       ]
+    },
+    {
+      "id": "MCP-DOC-TOOLS-EXACT-AND-BOUNDED",
+      "statement": "The MCP doc tools name exactly the docs that describe a file with the same matcher as trace --reverse, refuse any path outside the project or private to it, and never return more than their byte caps.",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/032-mcp-doc-tools/spec.md#FR-002"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (#455 spec 032)"
+      },
+      "defendedBy": [
+        "tests/mcp-doc-tools.test.mjs",
+        "tests/trace-reverse.test.mjs",
+        "tests/impact.test.mjs",
+        "tests/mcp.test.mjs",
+        "tests/mcp-http.test.mjs",
+        "tests/traceability.test.mjs",
+        "tests/cross-reference.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "Basename references are dropped.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/doc-references.mjs",
+          "find": "  if (line.includes(base)) return 'basename';\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 032)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "Traversal is followed.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/doc-references.mjs",
+          "find": "  if (path.split('/').includes('..')) return 'the path must not contain ..';\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 032)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "Private and symlinked paths are answered, not refused.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/doc-references.mjs",
+          "find": "    if (['unsafe-path', 'symlink'].includes(evidence?.reason)) {",
+          "replace": "    if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 032)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "The 32 KiB hard cap is ignored.",
+          "faultClass": "return-altered",
+          "file": "cli/scanners/doc-references.mjs",
+          "find": "  const limit = Math.min(Math.max(1, Number(maxBytes) || READ_DEFAULT_BYTES), READ_MAX_BYTES);",
+          "replace": "  const limit = Math.max(1, Number(maxBytes) || READ_DEFAULT_BYTES);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 032)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "A truncated read splits a UTF-8 character.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/doc-references.mjs",
+          "find": "  if (text.endsWith('\\uFFFD')) text = text.slice(0, -1);\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 032)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "Ambiguous headings silently pick the first.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/doc-references.mjs",
+          "find": "    if (found.length > 1) throw new Error(`${anchor ? 'Anchor' : 'Heading'} ${JSON.stringify(anchor || heading)} is ambiguous: lines ${found.map(h => h.line).join(', ')}.`);\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 032)"
+          }
+        },
+        {
+          "id": "F7",
+          "description": "Covered sections are never reported.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/doc-references.mjs",
+          "find": "      if (hit) covers.push({ section: section.key, ref: dep.ref, state: section.state });",
+          "replace": "      if (false) covers.push({ section: section.key, ref: dep.ref, state: section.state });",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 032)"
+          }
+        },
+        {
+          "id": "F8",
+          "description": "A navigation tool is dropped from the server.",
+          "faultClass": "statement-deleted",
+          "file": "cli/commands/mcp.mjs",
+          "find": "  docguard_doc_structure(args, defaultDir) {\n    const { dir, config } = resolveTarget(args, defaultDir);\n    return docStructure(dir, config, String((args && args.doc) || ''));\n  },\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 032)"
+          }
+        },
+        {
+          "id": "F9",
+          "description": "trace --reverse stops using the shared matcher.",
+          "faultClass": "return-altered",
+          "file": "cli/commands/trace.mjs",
+          "find": "      const kind = referenceKind(lines[i], normalized);",
+          "replace": "      const kind = null;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 032)"
+          }
+        },
+        {
+          "id": "F10",
+          "description": "impact finds no references.",
+          "faultClass": "return-altered",
+          "file": "cli/scanners/doc-references.mjs",
+          "find": "      if (kind) refs.push({ doc, line: i + 1, kind });",
+          "replace": "      if (false) refs.push({ doc, line: i + 1, kind });",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 032)"
+          }
+        },
+        {
+          "id": "F11",
+          "description": "JSDoc @doc continuation lines are ignored again.",
+          "faultClass": "literal-changed",
+          "file": "cli/scanners/doc-references.mjs",
+          "find": "|#|^[ \\t]*\\*)[ \\t]*@doc",
+          "replace": "|#)[ \\t]*@doc",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 032)"
+          }
+        },
+        {
+          "id": "F12",
+          "description": "Heading anchors stop turning spaces into dashes.",
+          "faultClass": "literal-changed",
+          "file": "cli/shared-headings.mjs",
+          "find": "    .replace(/\\s+/g, '-')\n",
+          "replace": "    .replace(/\\s+/g, '')\n",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 032)"
+          }
+        },
+        {
+          "id": "F13",
+          "description": "The Cross-Reference validator stops re-exporting the heading helpers.",
+          "faultClass": "statement-deleted",
+          "file": "cli/validators/cross-reference.mjs",
+          "find": "export { slugifyHeading, extractHeadings } from '../shared-headings.mjs';\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 032)"
+          }
+        },
+        {
+          "id": "F14",
+          "description": "impact reports no references for a changed file.",
+          "faultClass": "return-altered",
+          "file": "cli/commands/impact.mjs",
+          "find": "    fileImpact.push({ file: f, references: findReferences(f, docsIndex) });",
+          "replace": "    fileImpact.push({ file: f, references: [] });",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 032)"
+          }
+        },
+        {
+          "id": "F15",
+          "description": "Traceability drops @doc annotation links.",
+          "faultClass": "statement-deleted",
+          "file": "cli/validators/traceability.mjs",
+          "find": "      map.get(docName).add(relPath);\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 032)"
+          }
+        }
+      ]
     }
   ]
 }

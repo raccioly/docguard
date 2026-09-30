@@ -77,6 +77,25 @@ describe('trace --reverse', () => {
     assert.match(r.stdout, /No canonical doc references/);
   });
 
+  it('pins the three match kinds and their JSON shape (docguard.mcp-doc-tools#FR-003)', () => {
+    dir = makeRepo({
+      'docs-canonical/ARCHITECTURE.md': '# A\nPath: src/routes/users.ts.\nBase: users.ts.\nModule: the `users` module.\nNone here.\n',
+      'src/routes/users.ts': 'x',
+      '.docguard.json': JSON.stringify({ projectName: 't', profile: 'starter', version: '0.5' }),
+    });
+    const r = spawnSync('node', [CLI, 'trace', '--reverse', 'src/routes/users.ts', '--format', 'json'], { cwd: dir, encoding: 'utf-8' });
+    const { timestamp, ...rest } = JSON.parse(r.stdout);
+    assert.ok(timestamp);
+    assert.deepEqual(rest, {
+      target: 'src/routes/users.ts',
+      matches: [
+        { doc: 'docs-canonical/ARCHITECTURE.md', line: 2, content: 'Path: src/routes/users.ts.', kind: 'path' },
+        { doc: 'docs-canonical/ARCHITECTURE.md', line: 3, content: 'Base: users.ts.', kind: 'basename' },
+        { doc: 'docs-canonical/ARCHITECTURE.md', line: 4, content: 'Module: the `users` module.', kind: 'module' },
+      ],
+    });
+  });
+
   it('emits JSON when --format json is set', () => {
     dir = makeRepo({
       'docs-canonical/ARCHITECTURE.md': '# A\nSee `src/routes/users.ts`.\n',

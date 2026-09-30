@@ -135,14 +135,14 @@ describe('docguard mcp', () => {
     client.send({ jsonrpc: '2.0', method: 'notifications/initialized' });
   });
 
-  it('tools/list exposes the seven DocGuard tools with input schemas', async () => {
+  it('tools/list exposes the DocGuard tools with input schemas', async () => {
     const res = await client.request({ jsonrpc: '2.0', id: 2, method: 'tools/list' });
     assert.equal(res.id, 2);
     const tools = res.result.tools;
-    assert.equal(tools.length, 7);
+    // The four navigation tools come from docguard.mcp-doc-tools.
     assert.deepEqual(
       tools.map((t) => t.name).sort(),
-      ['docguard_diagnose', 'docguard_explain', 'docguard_guard', 'docguard_report', 'docguard_score', 'docguard_verify_claims', 'docguard_verify_evidence']
+      ['docguard_diagnose', 'docguard_doc_structure', 'docguard_docs_for_path', 'docguard_explain', 'docguard_guard', 'docguard_read_section', 'docguard_report', 'docguard_score', 'docguard_task_context', 'docguard_verify_claims', 'docguard_verify_evidence']
     );
     for (const t of tools) {
       assert.ok(t.description, `${t.name} must have a description`);

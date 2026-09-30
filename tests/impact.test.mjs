@@ -83,6 +83,23 @@ describe('docguard impact', () => {
       'orphaned file should be highlighted');
   });
 
+  it('pins the three match kinds for a changed file (docguard.mcp-doc-tools#FR-003)', () => {
+    dir = makeRepo({
+      'package.json': JSON.stringify({ name: 't', version: '0.0.0' }),
+      'src/routes/users.ts': 'x',
+      'docs-canonical/ARCHITECTURE.md': '# A\nPath: src/routes/users.ts.\n',
+      'docs-canonical/DATA-MODEL.md': '# D\nBase: users.ts.\n',
+      'docs-canonical/SECURITY.md': '# S\nModule: the `users` module.\n',
+      '.docguard.json': JSON.stringify({ projectName: 't', profile: 'starter', version: '0.5' }),
+    });
+    gitInit(dir);
+    writeFileSync(join(dir, 'src/routes/users.ts'), 'y');
+    commit(dir, 'change');
+    const data = JSON.parse(spawnSync('node', [CLI, 'impact', '--since', 'HEAD~1', '--format', 'json'], { cwd: dir, encoding: 'utf-8' }).stdout);
+    // One doc per match kind (path, basename, backticked module): all three are affected.
+    assert.deepEqual(data.affectedDocs.map(d => d.doc).sort(), ['ARCHITECTURE.md', 'DATA-MODEL.md', 'SECURITY.md']);
+  });
+
   it('--format json emits parseable structured output', () => {
     dir = makeRepo({
       'package.json': JSON.stringify({ name: 't', version: '0.0.0' }),

@@ -48,6 +48,7 @@ import { c } from '../shared.mjs';
 import { changedFilesSince, isGitRepo } from '../shared-git.mjs';
 import { buildImportGraph } from '../validators/architecture.mjs';
 import { listCanonicalDocs } from '../shared-ignore.mjs';
+import { findReferences } from '../scanners/doc-references.mjs';
 
 /**
  * File extensions we consider "code" for the purposes of impact analysis.
@@ -81,31 +82,8 @@ function docsReferencing(changedDocPath, index) {
   return dependents;
 }
 
-/**
- * Find canonical doc references for a single file. Reuses the same three
- * match strategies as trace --reverse for consistency: direct path,
- * basename, backticked module name.
- */
-function findReferences(file, docs) {
-  const refs = [];
-  const normalized = file.replace(/^\.\//, '');
-  const base = basename(normalized);
-  const stem = base.replace(/\.[^.]+$/, '');
-  const stemRe = new RegExp(`\`${escapeRegex(stem)}\``);
-  for (const [docName, lines] of docs) {
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      let kind = null;
-      if (line.includes(normalized)) kind = 'path';
-      else if (line.includes(base)) kind = 'basename';
-      else if (stemRe.test(line)) kind = 'module';
-      if (kind) {
-        refs.push({ doc: docName, line: i + 1, kind });
-      }
-    }
-  }
-  return refs;
-}
+// Canonical doc references for one file: the matcher `trace --reverse` and the
+// `docguard_docs_for_path` MCP tool share (docguard.mcp-doc-tools#FR-003).
 
 /**
  * Ancestors of `file` in the reverse import graph, capped at `maxHops`.

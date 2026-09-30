@@ -2,17 +2,70 @@
   "schemaVersion": 1,
   "$comment": "Non-regression budgets (specs/031-non-regression-budgets). tools/budget.mjs compares a head tree with its base on one runner. Change a budget only with a reason in the PR; a one-off cost belongs in a Budget-Exempt line instead.",
   "samples": 5,
-  "guardTargets": [".", "benchmarks/fixtures/monorepo-security-control", "benchmarks/fixtures/python-layered-control"],
-  "guard": { "maxRatio": 1.15, "floorMs": 150 },
-  "agentBytes": { "maxRatio": 1.10, "floorBytes": 256 },
-  "package": { "maxRatio": 1.10, "floor": { "size": 4096, "unpackedSize": 16384, "files": 2 } },
+  "guardTargets": [
+    ".",
+    "benchmarks/fixtures/monorepo-security-control",
+    "benchmarks/fixtures/python-layered-control"
+  ],
+  "guard": {
+    "maxRatio": 1.15,
+    "floorMs": 150
+  },
+  "agentBytes": {
+    "maxRatio": 1.1,
+    "floorBytes": 256
+  },
+  "package": {
+    "maxRatio": 1.1,
+    "floor": {
+      "size": 4096,
+      "unpackedSize": 16384,
+      "files": 2
+    }
+  },
   "agentTasks": {
     "spec-lifecycle": "change how specs complete records the reviewed revision",
     "as-built": "add a fact kind to as-built specs"
   },
   "mcpCalls": [
-    { "tool": "docguard_explain", "arguments": { "code": "SPR007" } },
-    { "tool": "docguard_score", "arguments": {} },
-    { "tool": "docguard_guard", "arguments": {} }
+    {
+      "tool": "docguard_explain",
+      "arguments": {
+        "code": "SPR007"
+      }
+    },
+    {
+      "tool": "docguard_score",
+      "arguments": {}
+    },
+    {
+      "tool": "docguard_guard",
+      "arguments": {}
+    },
+    {
+      "tool": "docguard_docs_for_path",
+      "arguments": {
+        "path": "cli/findings.mjs"
+      }
+    },
+    {
+      "tool": "docguard_doc_structure",
+      "arguments": {
+        "doc": "docs-canonical/ARCHITECTURE.md"
+      }
+    },
+    {
+      "tool": "docguard_read_section",
+      "arguments": {
+        "doc": "docs-canonical/DATA-MODEL.md",
+        "anchor": "finding-channels"
+      }
+    },
+    {
+      "tool": "docguard_task_context",
+      "arguments": {
+        "task": "change how specs complete records the reviewed revision"
+      }
+    }
   ]
 }
