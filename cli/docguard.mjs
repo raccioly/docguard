@@ -53,6 +53,7 @@ import { runMcp } from './commands/mcp.mjs';
 import { runArchive } from './commands/retire.mjs';
 import { runSpecs } from './commands/specs.mjs';
 import { runReconcile } from './commands/reconcile.mjs';
+import { runReview } from './commands/review.mjs';
 import { ensureSkills } from './ensure-skills.mjs';
 import { detectRepositoryRootGuidance, renderRepositoryRootGuidance } from './repository-root.mjs';
 
@@ -106,6 +107,7 @@ ${c.bold}Tools (situational, but day-to-day useful)${c.reset}
   ${c.green}retire${c.reset}     Remove reviewed docs from active AI context (${c.cyan}--plan${c.reset}; explicit ${c.cyan}--write --path${c.reset})
   ${c.green}specs${c.reset}      Track spec lifecycle and evidence (${c.cyan}--check|--write${c.reset}; ${c.cyan}preflight${c.reset}, ${c.cyan}complete${c.reset}, ${c.cyan}require${c.reset}, ${c.cyan}reanchor${c.reset})
   ${c.green}reconcile${c.reset}  Classify code/spec changes since a Git ref before changing intent
+  ${c.green}review${c.reset}     Doc sections whose covered code changed (${c.cyan}--accept <doc>#<id>${c.reset}, ${c.cyan}--prune${c.reset}, ${c.cyan}--suggest <doc>${c.reset})
   ${c.green}trace${c.reset}      Requirements traceability matrix (${c.cyan}--reverse${c.reset} for code→doc map, ${c.cyan}--features${c.reset} for per-feature adherence)
   ${c.green}upgrade${c.reset}    Migrate ${c.cyan}.docguard.json${c.reset} schema + CLI (${c.cyan}--apply --pr${c.reset} for team-wide PR)
   ${c.green}watch${c.reset}      Live mode: re-run guard on file changes
@@ -360,6 +362,18 @@ const COMMAND_HELP = {
       ['--format json', 'Machine-readable registry or preflight result'],
     ],
     examples: ['docguard specs --check', 'docguard specs --write', 'docguard specs preflight --path specs/007-feature/spec.md', 'docguard specs require --since origin/main --message-file pr-body.txt', 'docguard specs complete --id acme.feature --since main --write --reason "Reviewed implementation"', 'docguard specs reanchor --id acme.feature --write'],
+  },
+  review: {
+    summary: 'Track which code each doc section describes, and review a section when that code changes.',
+    usage: 'docguard review [--format json] | docguard review --accept <doc>#<section>|<doc> --reason <text> | docguard review --prune | docguard review --suggest <doc>',
+    flags: [
+      ['--accept <doc>#<id>', 'Record a review: fingerprint the section\'s covers= dependencies at HEAD (requires --reason)'],
+      ['--reason <text>', 'With --accept: what you checked (8-500 characters)'],
+      ['--prune', 'Remove lock entries whose section no longer declares covers='],
+      ['--suggest <doc>', 'Propose covers= values from paths the doc already mentions (low confidence; never writes)'],
+      ['--format json', 'Machine-readable status'],
+    ],
+    examples: ['docguard review', 'docguard review --accept docs-canonical/ARCHITECTURE.md#as-built --reason "Checked against checkAsBuiltSync"', 'docguard review --suggest docs-canonical/ARCHITECTURE.md'],
   },
   reconcile: {
     summary: 'Classify changed implementation facts, approved intent, decisions, and unsupported evidence.',
@@ -618,6 +632,14 @@ async function main() {
         flags.path = args[i + 1];
       }
       i++;
+    } else if (args[i] === '--accept' && args[i + 1] && command === 'review') {
+      flags.accept = args[i + 1];
+      i++;
+    } else if (args[i] === '--suggest' && args[i + 1] && command === 'review') {
+      flags.suggest = args[i + 1];
+      i++;
+    } else if (args[i] === '--prune' && command === 'review') {
+      flags.prune = true;
     } else if (args[i] === '--to' && args[i + 1] && command === 'specs') {
       // `specs reanchor --to <revision>` (docguard.completion-revision-anchoring#FR-003)
       flags.to = args[i + 1];
@@ -761,6 +783,8 @@ async function main() {
   const READ_ONLY_COMMANDS = new Set([
     'guard', 'audit', 'score', 'diff', 'impact',
     'diagnose', 'fix', 'trace', 'explain', 'memory', 'demo', 'agent', 'retire', 'archive', 'specs',
+    // review writes only .docguard-doc-lock.json, and only on --accept/--prune.
+    'review',
     // feedback only writes its own .docguard/feedback/ — it must NOT scaffold
     // skills or touch source, so it's gated out of ensureSkills like the rest.
     'feedback',
@@ -979,6 +1003,10 @@ async function main() {
       break;
     case 'reconcile':
       runReconcile(projectDir, config, flags);
+      break;
+    case 'review':
+      // docguard.doc-dependency-lock#FR-005: the doc lock's only writer.
+      runReview(projectDir, config, flags);
       break;
     case 'demo':
       // v0.21: zero-install "ah-ha" moment — runs guard against a baked-in

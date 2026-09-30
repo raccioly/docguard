@@ -285,6 +285,19 @@ const EXPLAINERS = {
     example: '`docguard specs preflight --path specs/007-feature/spec.md` blocks reused IDs and reports prior lifecycle/evidence before planning.',
     standard: 'Canonical-Driven Development lifecycle registry contract',
   },
+  docDependency: {
+    title: 'Doc-Dependency — a reviewed doc section whose covered code changed',
+    what: 'For each `docguard:section` that declares `covers="path#symbol, …"`, compares the current fingerprint of every covered dependency (normalized JS/TS AST, Python `ast.dump`, file bytes, or a glob set) with the one `docguard review --accept` recorded in `.docguard-doc-lock.json`.',
+    why: 'Freshness counts every commit in the repository; this names the one section whose code changed, and ignores formatting, comments and line moves. A same-size edit that line counts and file sizes cannot see is still caught.',
+    triggers: [
+      ['changed since the section was reviewed', 'Run the git diff the finding names, update the prose if it no longer holds, then `docguard review --accept <doc>#<id> --reason "<what you checked>"`.'],
+      ['does not resolve', 'Point covers= at what the section now describes, update the prose, and accept the review again.'],
+      ['has no accepted review', 'Read the section against the code, then accept it with a reason.'],
+      ['no such section declares covers=', 'Run `docguard review --prune`.'],
+    ],
+    example: '`<!-- docguard:section id=pricing source=human covers="src/pricing.mjs#discount" -->` — a change to `discount` reports DLK001 until the section is re-accepted.',
+    standard: 'Canonical-Driven Development doc dependency lock (specs/030-doc-dependency-lock)',
+  },
   evidence: {
     title: 'Evidence — declared statements match bounded local sources',
     what: 'Evaluates opt-in declarations in `.docguard-evidence.json`. Each declaration selects one exact statement under one Markdown heading, reads a bounded local JSON value, file collection, saved oasdiff report, or saved Buf report, and reports verified-within-scope, contradicted, stale, inconclusive, or unsupported.',
@@ -426,6 +439,7 @@ const DISPLAY_NAMES = {
   specKit: 'Spec-Kit',
   documentLifecycle: 'Document-Lifecycle',
   specRegistry: 'Spec-Registry',
+  docDependency: 'Doc-Dependency',
   crossReference: 'Cross-Reference',
   generatedStaleness: 'Generated-Staleness',
   surfaceSync: 'Surface-Sync',

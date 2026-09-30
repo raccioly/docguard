@@ -1,11 +1,15 @@
 // @req docguard.adoption-workflow-integrity#FR-015
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
 import { validateMetricsConsistency } from '../cli/validators/metrics-consistency.mjs';
+
+// The shipped validator count is derived, never hardcoded: a new validator
+// must not break tests about a different behaviour.
+const SHIPPED = readdirSync(new URL('../cli/validators/', import.meta.url)).filter(f => f.endsWith('.mjs')).length;
 
 describe('Metrics-Consistency Validator', () => {
   let tmpDir;
@@ -21,7 +25,7 @@ describe('Metrics-Consistency Validator', () => {
   it('passes when metrics correctly match actual actuals', () => {
     // DocGuard-bound (Bug #2): the line references DocGuard, so the numbers are
     // DocGuard's to govern.
-    writeFileSync(join(tmpDir, 'README.md'), 'DocGuard runs 15 checks across 29 validators.');
+    writeFileSync(join(tmpDir, 'README.md'), `DocGuard runs 15 checks across ${SHIPPED} validators.`);
 
     const guardResults = [];
     for(let i=0; i<11; i++) {
@@ -37,7 +41,7 @@ describe('Metrics-Consistency Validator', () => {
   });
 
   it('returns warnings when numbers mismatch actuals', () => {
-    writeFileSync(join(tmpDir, 'README.md'), 'DocGuard runs 20 checks across 29 validators.');
+    writeFileSync(join(tmpDir, 'README.md'), `DocGuard runs 20 checks across ${SHIPPED} validators.`);
 
     const guardResults = [];
     for(let i=0; i<11; i++) {
@@ -175,21 +179,21 @@ describe('Metrics-Consistency Validator', () => {
 
   it('uses the shipped validator surface when a project disables validators (adoption regression)', () => {
     // A consumer can intentionally disable validators, but that does not change
-    // the truthful sentence "DocGuard ships 29 validators." The old code
-    // derived 28 from this reduced run (27 enabled + Metrics-Consistency).
-    const enabledResults = Array.from({ length: 27 }, () => ({ status: 'passed', total: 1 }));
-    writeFileSync(join(tmpDir, 'README.md'), 'DocGuard ships 29 validators.');
+    // the truthful sentence "DocGuard ships N validators." The old code
+    // derived N-1 from this reduced run (N-2 enabled + Metrics-Consistency).
+    const enabledResults = Array.from({ length: SHIPPED - 2 }, () => ({ status: 'passed', total: 1 }));
+    writeFileSync(join(tmpDir, 'README.md'), `DocGuard ships ${SHIPPED} validators.`);
     const clean = validateMetricsConsistency(tmpDir, {}, enabledResults);
     assert.deepEqual(clean.warnings, [], clean.warnings.join(' | '));
 
-    writeFileSync(join(tmpDir, 'README.md'), 'DocGuard ships 28 validators.');
+    writeFileSync(join(tmpDir, 'README.md'), `DocGuard ships ${SHIPPED - 1} validators.`);
     const stale = validateMetricsConsistency(tmpDir, {}, enabledResults);
     const fix = stale.fixes.find(item => item.type === 'replace-count');
     assert.equal(stale.warnings.length, 1, stale.warnings.join(' | '));
-    assert.ok(stale.warnings[0].includes("DocGuard's shipped validators count is 29"));
+    assert.ok(stale.warnings[0].includes(`DocGuard's shipped validators count is ${SHIPPED}`));
     assert.deepEqual(
       { found: fix?.found, actual: fix?.actual, actualSource: fix?.actualSource },
-      { found: 28, actual: 29, actualSource: 'docguard.package.validators' },
+      { found: SHIPPED - 1, actual: SHIPPED, actualSource: 'docguard.package.validators' },
     );
   });
 

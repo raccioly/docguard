@@ -4,7 +4,7 @@
 
 **Created**: 2026-09-29
 
-**Status**: Draft
+**Status**: Active
 
 **Spec ID**: `docguard.doc-dependency-lock`
 
@@ -47,7 +47,7 @@ parallel branches, and can be bumped without a review.
 ### User Story 1 - A section says what code it describes (Priority: P1)
 
 A maintainer wraps a passage of `ARCHITECTURE.md` in a `source=human` section
-marker with `covers="cli/scanners/as-built.mjs#checkAsBuiltSync"` and accepts it
+marker with `covers="src/pricing.mjs#discount"` and accepts it
 once. When the function body changes later, guard names the section, the
 changed dependency, and the command that shows the change.
 
@@ -71,7 +71,7 @@ reports nothing.
 ### User Story 2 - Accepting a review is explicit and recorded (Priority: P1)
 
 After reading the change and updating the prose (or deciding it still holds),
-the maintainer runs `docguard review --accept ARCHITECTURE.md#as-built
+the maintainer runs `docguard review --accept ARCHITECTURE.md#pricing
 --reason "..."`. The lock records the new hashes, the revision and the reason.
 
 **Acceptance Scenarios**:
@@ -161,9 +161,10 @@ writes.
   each file at most once per run, and add no more than 5% to guard's wall time
   on this repository once its own docs declare their dependencies (measured by
   the non-regression budget in `docguard.non-regression-budgets`).
-- **FR-009**: This repository MUST adopt it for the canonical sections that
-  describe specific modules: ARCHITECTURE's module map entries for as-built
-  specs, spec-first, and the spec registry, and DATA-MODEL's registry fields.
+- **FR-009**: This repository MUST adopt it for prose sections that describe
+  specific modules: ARCHITECTURE's requirement-identity section, and DATA-MODEL's
+  finding-channels and spec-registry sections. Table rows cannot carry a
+  section marker, so the module map itself is not covered.
 - **FR-010**: README, `docs/commands.md`, `docs/configuration.md`,
   ARCHITECTURE and DATA-MODEL MUST document the marker, the lock, the findings
   and the `review` command.

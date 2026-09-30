@@ -12,11 +12,14 @@
  */
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
 import { validateMetricsConsistency } from '../cli/validators/metrics-consistency.mjs';
+
+// Derived, never hardcoded: a new validator must not break this test.
+const SHIPPED = readdirSync(new URL('../cli/validators/', import.meta.url)).filter(f => f.endsWith('.mjs')).length;
 
 function makeRepo(files) {
   const dir = mkdtempSync(join(tmpdir(), 'docguard-metrics-dedup-'));
@@ -85,11 +88,11 @@ describe('Metrics-Consistency — dedup per (file, label, found)', () => {
     dir = makeRepo({
       'README.md':
         '# Project\n\n' +
-        'DocGuard ships 29 validators in total.\n' +
-        'See the DocGuard 29 validators table.\n',
+        `DocGuard ships ${SHIPPED} validators in total.\n` +
+        `See the DocGuard ${SHIPPED} validators table.\n`,
     });
     const r = validateMetricsConsistency(dir, { projectName: 't' }, fakeGuardResults(21, 100));
-    // README has TWO "29 validators" occurrences but only one pass should be credited.
+    // README has TWO "N validators" occurrences but only one pass should be credited.
     assert.equal(r.warnings.filter(w => /README\.md/.test(w)).length, 0,
       'matching number should not produce a warning');
     // Validators-pattern contribution should be exactly 1 pass for README (not 2).

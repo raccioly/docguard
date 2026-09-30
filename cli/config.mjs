@@ -83,6 +83,7 @@ export function loadConfig(projectDir) {
       freshness: true,
       documentLifecycle: true,
       specRegistry: true,
+      docDependency: true, // opt-in by declaration: not applicable until a section declares covers=
       evidence: true,
       // v0.31.0 — all three default ON. Soft (confidence:low, never break CI),
       // heuristic (field cases require ongoing precision checks), and quiet when

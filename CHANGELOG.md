@@ -31,6 +31,26 @@ Behaviour changes:
 
 ### Added
 
+- **Doc dependency lock: know which docs to re-read when code changes**
+  (`specs/030-doc-dependency-lock`, new `docguard review` command).
+  - A doc section declares the code it describes, e.g.
+    `covers="src/pricing.mjs#discount"` on its `docguard:section` marker.
+  - `docguard review --accept <doc>#<id> --reason` records a fingerprint of
+    that code in `.docguard-doc-lock.json`. JS/TS symbols use a normalized AST
+    and Python symbols `ast.dump`; files use their bytes and globs their
+    matching set.
+  - Guard's new Doc-Dependency validator reports **DLK001** when covered code
+    changes semantically, and the finding carries the `git diff` command.
+    Reformatting, comments and moving the function do not trigger it; a
+    same-size edit (`0.9` → `0.8`) does.
+  - Also reported: DLK002 (dependency gone), DLK003 (not accepted, or
+    `covers=` changed), DLK004 (orphan entry, cleared by `--prune`) and DLK005
+    (unreadable lock).
+  - `--suggest` proposes `covers=` values and never writes.
+  - Opt-in: a project without `covers=` sees no change. The validator also runs
+    in `--changed-only` pre-commit mode. This replaces the idea of tracking
+    line counts or file size, which cannot see same-size edits.
+
 - **Non-regression budgets** (`specs/031-non-regression-budgets`). A new CI
   `budget` job compares every PR with its base on the same runner. It checks:
   - guard wall time (medians of interleaved samples; ×1.15, 150 ms floor);

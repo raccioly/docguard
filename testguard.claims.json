@@ -1577,6 +1577,176 @@
           }
         }
       ]
+    },
+    {
+      "id": "DOC-LOCK-FLAGS-CHANGED-DEPENDENCIES",
+      "statement": "A reviewed doc section is reported when the code it covers changes semantically, never for formatting, comments or line moves, and only an explicit reasoned review clears it.",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/030-doc-dependency-lock/spec.md#FR-004"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (#455 spec 030)"
+      },
+      "defendedBy": [
+        "tests/doc-dependency-lock.test.mjs",
+        "tests/explain-coverage.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "AST metadata (positions) is fingerprinted, so a line move fires.",
+          "faultClass": "return-altered",
+          "file": "cli/scanners/doc-deps.mjs",
+          "find": "  return JSON.stringify(node, (key, value) => (AST_METADATA.has(key) ? undefined : value));",
+          "replace": "  return JSON.stringify(node);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 030)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "Symbols fall back to whole-file bytes, so unrelated edits fire.",
+          "faultClass": "return-altered",
+          "file": "cli/scanners/doc-deps.mjs",
+          "find": "      return { ok: true, tier: 'ast', fingerprint: sha256(normalizeAst(node)) };",
+          "replace": "      return { ok: true, tier: 'ast', fingerprint: sha256(bytes) };",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 030)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "A changed dependency is reported as current.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/doc-deps.mjs",
+          "find": "        else if (locked.tier !== current.tier || locked.fingerprint !== current.fingerprint) state = 'changed';",
+          "replace": "        else if (false) state = 'changed';",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 030)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "Symbolic links are followed.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/doc-deps.mjs",
+          "find": "  if (lstatSync(abs).isSymbolicLink()) return { ok: false, reason: 'is a symbolic link' };",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 030)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "A review is accepted without a reason.",
+          "faultClass": "condition-forced",
+          "file": "cli/commands/review.mjs",
+          "find": "  if (reason.length < 8 || reason.length > 500) throw new Error",
+          "replace": "  if (false) throw new Error",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 030)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "Marker examples inside code fences are parsed as sections.",
+          "faultClass": "return-altered",
+          "file": "cli/scanners/doc-deps.mjs",
+          "find": "  return inspectSections(withoutFences(content)).sections",
+          "replace": "  return inspectSections(content).sections",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 030)"
+          }
+        },
+        {
+          "id": "F7",
+          "description": "A project without covers= is no longer opt-out.",
+          "faultClass": "condition-forced",
+          "file": "cli/validators/doc-dependency.mjs",
+          "find": "  if (!status.anyCovered && !status.lockExists) {",
+          "replace": "  if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 030)"
+          }
+        },
+        {
+          "id": "F8",
+          "description": "The Python AST tier is never used.",
+          "faultClass": "return-altered",
+          "file": "cli/scanners/py-ast.mjs",
+          "find": "export function pythonCommand() {\n  return pyCmd();\n}",
+          "replace": "export function pythonCommand() {\n  return null;\n}",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 030)"
+          }
+        },
+        {
+          "id": "F9",
+          "description": "Guard skips Doc-Dependency by default.",
+          "faultClass": "literal-changed",
+          "file": "cli/config.mjs",
+          "find": "      docDependency: true,",
+          "replace": "      docDependency: false,",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 030)"
+          }
+        },
+        {
+          "id": "F10",
+          "description": "Doc-Dependency is not explainable.",
+          "faultClass": "statement-deleted",
+          "file": "cli/commands/explain.mjs",
+          "find": "  docDependency: 'Doc-Dependency',\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 030)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "METRICS-VALIDATOR-COUNT-IS-SHIPPED",
+      "statement": "A documented DocGuard validator count is checked against the validator modules actually shipped, whatever a project enables.",
+      "source": {
+        "kind": "spec",
+        "ref": "docs-canonical/REQUIREMENTS.md#FR-023"
+      },
+      "severity": "medium",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (#455 spec 030)"
+      },
+      "defendedBy": [
+        "tests/metrics-consistency.test.mjs",
+        "tests/metrics-dedup.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "The shipped validator count is not used, so a stale \"N validators\" claim passes.",
+          "faultClass": "statement-deleted",
+          "file": "cli/validators/metrics-consistency.mjs",
+          "find": "  if (shippedValidatorCount !== null) actuals.validators = shippedValidatorCount;",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 030)"
+          }
+        }
+      ]
     }
   ]
 }

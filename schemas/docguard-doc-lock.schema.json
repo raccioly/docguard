@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/raccioly/docguard/schemas/docguard-doc-lock.schema.json",
+  "title": "DocGuard doc dependency lock",
+  "description": "Reviewed state of doc sections that declare covers= (specs/030-doc-dependency-lock). Written only by `docguard review --accept` and `--prune`.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "sections"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "sections": {
+      "type": "object",
+      "description": "Keyed by `<doc path>#<section id>`.",
+      "propertyNames": { "pattern": "^[^#\\s]+#[\\w.-]+$" },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["reviewedRevision", "reviewedAt", "reason", "dependencies"],
+        "properties": {
+          "reviewedRevision": { "anyOf": [{ "type": "null" }, { "type": "string", "pattern": "^[0-9a-f]{40}([0-9a-f]{24})?$" }], "description": "HEAD when the review was accepted; only used to show the change." },
+          "reviewedAt": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+          "reason": { "type": "string", "minLength": 8, "maxLength": 500 },
+          "dependencies": {
+            "type": "object",
+            "minProperties": 1,
+            "description": "Keyed by the covers= entry: `path`, `path#symbol` or a glob.",
+            "additionalProperties": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["tier", "fingerprint"],
+              "properties": {
+                "tier": { "enum": ["ast", "python-ast", "content", "glob"] },
+                "fingerprint": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -818,12 +818,12 @@
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 615
+            "line": 617
           },
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 642
+            "line": 644
           },
           {
             "requirementId": "FR-021",
@@ -1293,12 +1293,12 @@
       "path": "specs/030-doc-dependency-lock/spec.md",
       "reviewed": {
         "lifecycle": {
-          "approval": "draft",
-          "delivery": "planned",
+          "approval": "approved",
+          "delivery": "implemented",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
-          "persistenceModel": null
+          "persistenceModel": "living"
         },
         "relations": {
           "extends": [],
@@ -1308,7 +1308,10 @@
           "supersededBy": []
         },
         "scope": {
-          "canonicalDocs": []
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md",
+            "docs-canonical/DATA-MODEL.md"
+          ]
         },
         "reconciliation": {
           "lastReviewedRevision": null,
@@ -1337,23 +1340,135 @@
         "artifacts": [
           {
             "path": "specs/030-doc-dependency-lock/spec.md",
-            "digest": "sha256:afee51a496beaa0cf628940f9f32b2ff61716ae7fb2c39321e4345b5f7d50469"
+            "digest": "sha256:9b3c4f1511236189993a67508bf2bae81cecdb6afa3a0e3b14acb2a9d6a26ab6"
           },
           {
             "path": "specs/030-doc-dependency-lock/plan.md",
-            "digest": "sha256:4dfb3b9a194ddc53941afc4738b7a5a3b1fdd076ab4a8976ef9ae9baa1a50eca"
+            "digest": "sha256:2ff88c63e345ff9b139ea1c83396cdefc7ddeb51d007c46a930b9d5e929d5996"
           },
           {
             "path": "specs/030-doc-dependency-lock/tasks.md",
-            "digest": "sha256:9b43f1bdf328fca2b8214146ab239d52f056286d88c8bcc7f2cd1f0084c0c8a0"
+            "digest": "sha256:93e565823b354b3894aeb06abe5a04777b260fa109aeab925a8eeeb4610e4e37"
           }
         ],
         "taskCompletion": {
-          "checked": 0,
+          "checked": 10,
           "total": 10
         },
-        "implementationEvidence": [],
-        "testEvidence": []
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/scanners/doc-deps.mjs",
+            "line": 23
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/scanners/doc-deps.mjs",
+            "line": 24
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/scanners/doc-deps.mjs",
+            "line": 25
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/validators/doc-dependency.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/commands/review.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/commands/review.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/validators/doc-dependency.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "cli/scanners/doc-deps.mjs",
+            "line": 26
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/doc-dependency-lock.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/doc-dependency-lock.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/doc-dependency-lock.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/doc-dependency-lock.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/doc-dependency-lock.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/doc-dependency-lock.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/doc-dependency-lock.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/doc-dependency-lock.test.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "tests/doc-dependency-lock.test.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "tests/doc-dependency-lock.test.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/doc-dependency-lock.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/doc-dependency-lock.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/doc-dependency-lock.test.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "SC-004",
+            "file": "tests/doc-dependency-lock.test.mjs",
+            "line": 15
+          }
+        ]
       }
     },
     {
@@ -4284,7 +4399,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/docguard.mjs",
-            "line": 77
+            "line": 78
           }
         ],
         "testEvidence": [
@@ -5314,7 +5429,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/docguard.mjs",
-            "line": 886
+            "line": 910
           },
           {
             "requirementId": "FR-011",

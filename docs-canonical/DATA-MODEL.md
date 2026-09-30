@@ -127,6 +127,7 @@ manifest cannot suppress active-context or orphan-reference findings.
 
 ## Spec Lifecycle Registry: `.docguard-specs.json`
 
+<!-- docguard:section id=spec-registry source=human covers="schemas/docguard-specs.schema.json, cli/commands/specs.mjs#completeSpec, cli/commands/specs.mjs#reanchorSpec" -->
 The committed registry indexes which specifications govern the project and what
 the repository can prove about them. It never copies requirement prose. Its
 normative JSON Schema is `schemas/docguard-specs.schema.json`.
@@ -174,6 +175,32 @@ living spec can append a status-preserving maintenance outcome only when a new
 linked source, test, canonical document, or decision changed after the last
 reviewed revision. Generated registry and outcome updates do not satisfy that
 gate.
+<!-- /docguard:section -->
+
+## Doc Dependency Lock: `.docguard-doc-lock.json`
+
+A documentation section can declare the code it describes, on its marker:
+
+```markdown
+<!-- docguard:section id=pricing source=human covers="src/pricing.mjs#discount, src/rules/**" -->
+```
+
+`covers` entries are `path` (the file's bytes), `path#symbol` (a top-level
+declaration or `Class.method`) or a glob (the matching set). Paths are
+relative to the project; absolute paths, `..`, symlinks and `.docguardignore`d
+paths are refused. `docguard review --accept` records the review; it is the
+file's only writer. Normative schema: `schemas/docguard-doc-lock.schema.json`.
+
+| Field | Meaning |
+|---|---|
+| `schemaVersion` | `1` |
+| `sections["<doc>#<id>"].dependencies["<covers entry>"]` | `{ tier, fingerprint }`: `ast` (normalized JS/TS AST of the symbol; formatting, comments and line moves do not change it), `python-ast` (`ast.dump` of the definition), `content` (sha256 of the file), or `glob` (hash of the sorted per-file fingerprints) |
+| `sections[…].reviewedRevision` | HEAD at acceptance, or `null`; used only to print the diff command, so squash merges and shallow clones do not break comparison |
+| `sections[…].reviewedAt` | UTC date of acceptance |
+| `sections[…].reason` | What the reviewer checked (8–500 characters) |
+
+Keys are sorted at every level. A project with no `covers=` has no lock and no
+new findings.
 
 ## Task Context Packet
 
@@ -240,6 +267,7 @@ The block is served from `cli/precision-evidence-data.mjs`, a generated module d
 
 ## Finding channels
 
+<!-- docguard:section id=finding-channels source=human covers="cli/findings.mjs#mkFinding, cli/findings.mjs#PARSER_TIERS" -->
 A finding answers three independent questions, one field each. A single `confidence` field had to serve all three, so a certain observation read as an uncertain one, and the feedback loop sampled only the findings its own label already doubted.
 
 | Field | Question | Values |
@@ -257,6 +285,7 @@ A finding answers three independent questions, one field each. A single `confide
 `reportable` is true when `evidence.status` is `not-measured` **or** `confidence` is `low`. Under the previous rule, which read confidence alone, the default feedback sample omitted the population where a wrong label costs most: a confident label on a code the corpus has yet to measure.
 
 `location` is always a string (`path` or `path:line`) or `null`. A detector that supplies `{ file, line }` is normalized at construction. Under the previous contract such findings rendered as `[object Object]`, and the SARIF location parser dropped them, so six codes reached GitHub Code Scanning with no file annotation at all.
+<!-- /docguard:section -->
 
 ## Fix Command Issue Format
 
