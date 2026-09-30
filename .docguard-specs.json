@@ -820,19 +820,24 @@
             "line": 10
           },
           {
-            "requirementId": "SC-001",
+            "requirementId": "FR-006",
             "file": "tests/asset-path-attribution.test.mjs",
             "line": 11
           },
           {
-            "requirementId": "SC-002",
+            "requirementId": "SC-001",
             "file": "tests/asset-path-attribution.test.mjs",
             "line": 12
           },
           {
-            "requirementId": "SC-003",
+            "requirementId": "SC-002",
             "file": "tests/asset-path-attribution.test.mjs",
             "line": 13
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/asset-path-attribution.test.mjs",
+            "line": 14
           }
         ]
       }

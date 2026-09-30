@@ -8,6 +8,7 @@
  * @req docguard.asset-path-attribution#FR-003
  * @req docguard.asset-path-attribution#FR-004
  * @req docguard.asset-path-attribution#FR-005
+ * @req docguard.asset-path-attribution#FR-006
  * @req docguard.asset-path-attribution#SC-001
  * @req docguard.asset-path-attribution#SC-002
  * @req docguard.asset-path-attribution#SC-003
@@ -21,6 +22,7 @@ import { tmpdir } from 'node:os';
 import { assetPathCovers, projectSpecRegistry } from '../cli/scanners/spec-registry.mjs';
 import { buildReconciliationPlan } from '../cli/scanners/reconciliation.mjs';
 import { validateSpecRegistry } from '../cli/validators/spec-registry.mjs';
+import { CODES } from '../cli/findings.mjs';
 
 const CLI = resolve('cli/docguard.mjs');
 const temps = [];
@@ -173,5 +175,24 @@ describe('this repository: spec 036 owns its frozen benchmark assets (FR-005, SC
     delete stripped.specs.find(s => s.specId === 'docguard.symbol-map').reviewed.scope.assetPaths;
     writeFileSync(join(copy, '.docguard-specs.json'), `${JSON.stringify(stripped, null, 2)}\n`);
     assert.ok(unresolved(buildReconciliationPlan(copy, {}, since)).length > 0, 'the block reproduces without the reviewed list');
+  });
+});
+
+describe('the schema, docs and explain describe assetPaths and SPR009 (FR-006)', () => {
+  const read = rel => readFileSync(resolve(rel), 'utf8');
+  it('the registry schema declares assetPaths', () => {
+    const scope = JSON.stringify(JSON.parse(read('schemas/docguard-specs.schema.json')));
+    assert.match(scope, /"assetPaths"/);
+  });
+  for (const doc of ['docs-canonical/DATA-MODEL.md', 'docs/commands.md', 'CHANGELOG.md']) {
+    it(doc, () => {
+      const text = read(doc);
+      assert.match(text, /assetPaths/);
+      assert.match(text, /SPR009|no tracked file/);
+    });
+  }
+  it('docguard explain SPR009 says what the entry means and how to fix it', () => {
+    assert.match(CODES.SPR009.help, /reviewed\.scope\.assetPaths/);
+    assert.match(CODES.SPR009.help, /Remove it, or correct it/);
   });
 });
