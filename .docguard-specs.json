@@ -641,6 +641,11 @@
             "line": 16
           },
           {
+            "requirementId": "FR-001",
+            "file": "cli/shared-source.mjs",
+            "line": 652
+          },
+          {
             "requirementId": "FR-002",
             "file": "cli/scanners/as-built.mjs",
             "line": 17
@@ -3455,6 +3460,244 @@
       }
     },
     {
+      "specId": "docguard.generated-docs-consistency",
+      "path": "specs/044-generated-docs-consistency/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "approved",
+          "delivery": "implemented",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": "living"
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md"
+          ]
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.generated-docs-consistency#FR-001",
+          "docguard.generated-docs-consistency#FR-002",
+          "docguard.generated-docs-consistency#FR-003",
+          "docguard.generated-docs-consistency#FR-004",
+          "docguard.generated-docs-consistency#FR-005",
+          "docguard.generated-docs-consistency#FR-006",
+          "docguard.generated-docs-consistency#FR-007",
+          "docguard.generated-docs-consistency#FR-008",
+          "docguard.generated-docs-consistency#FR-009",
+          "docguard.generated-docs-consistency#FR-010",
+          "docguard.generated-docs-consistency#FR-011",
+          "docguard.generated-docs-consistency#FR-012",
+          "docguard.generated-docs-consistency#SC-001",
+          "docguard.generated-docs-consistency#SC-002",
+          "docguard.generated-docs-consistency#SC-003"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/044-generated-docs-consistency/spec.md",
+            "digest": "sha256:1cc88c116c2f53446bbb06f925384ff7f9526a5e151f18e7f3790c6a30717845"
+          },
+          {
+            "path": "specs/044-generated-docs-consistency/plan.md",
+            "digest": "sha256:0463733a7b4a3d933fb638911fa8c94b36cb1463a1d4b1c481dcaa476e99c916"
+          },
+          {
+            "path": "specs/044-generated-docs-consistency/tasks.md",
+            "digest": "sha256:3ce3c7f2d2cb6eb2d945e69d9ef7c07aed16dfdbd58e6649e536e34a725bce6a"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 12,
+          "total": 12
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/scanners/api-doc.mjs",
+            "line": 72
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/commands/diff.mjs",
+            "line": 142
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/shared.mjs",
+            "line": 159
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/writers/doc-generators.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/writers/doc-generators.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/scanners/as-built.mjs",
+            "line": 145
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/scanners/as-built.mjs",
+            "line": 146
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/validators/traceability.mjs",
+            "line": 558
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/shared-ignore.mjs",
+            "line": 75
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/commands/diff.mjs",
+            "line": 295
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/shared-source.mjs",
+            "line": 658
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/writers/doc-generators.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "cli/shared-source.mjs",
+            "line": 659
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "cli/shared-source.mjs",
+            "line": 841
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "cli/writers/generate-io.mjs",
+            "line": 116
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/shared-source.mjs",
+            "line": 807
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/writers/doc-generators.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "cli/writers/doc-generators.mjs",
+            "line": 19
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/generated-docs-consistency.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/generated-docs-consistency.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/generated-docs-consistency.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/generated-docs-consistency.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/generated-docs-consistency.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/generated-docs-consistency.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/generated-docs-consistency.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/generated-docs-consistency.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "tests/generated-docs-consistency.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "tests/generated-docs-consistency.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "tests/generated-docs-consistency.test.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "tests/generated-docs-consistency.test.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/generated-docs-e2e.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/generated-docs-e2e.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/generated-docs-e2e.test.mjs",
+            "line": 11
+          }
+        ]
+      }
+    },
+    {
       "specId": "docguard.ignore-and-todo-parsing",
       "path": "specs/019-ignore-and-todo-parsing/spec.md",
       "reviewed": {
@@ -3780,7 +4023,7 @@
           {
             "requirementId": "FR-009",
             "file": "cli/writers/sections.mjs",
-            "line": 101
+            "line": 103
           },
           {
             "requirementId": "FR-010",
