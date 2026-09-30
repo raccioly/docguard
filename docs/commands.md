@@ -404,7 +404,8 @@ never touched without `--force`.
 
 ### `docguard mcp`
 
-**MCP server over stdio** — DocGuard's read-only core as native agent tools
+**MCP server over stdio** (or `--transport http`, loopback by default) — DocGuard's
+read-only core as native agent tools
 (`docguard_guard`, `docguard_score`, `docguard_explain`,
 `docguard_verify_evidence`, `docguard_verify_claims`, `docguard_report`,
 `docguard_docs_for_path`, `docguard_doc_structure`, `docguard_read_section`,

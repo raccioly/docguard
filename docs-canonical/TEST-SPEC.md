@@ -1,8 +1,8 @@
 # Test Specification
 
-<!-- docguard:version 1.2.0 -->
+<!-- docguard:version 1.3.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-09-29 -->
+<!-- docguard:last-reviewed 2026-09-30 -->
 
 > DocGuard has a single optional-load npm dependency (`@babel/parser`) and an optional `python3` AST tier. CLI integration tests cover the full stack with `node:test` (zero dev dependencies) and exercise both AST extractors (`js-ast`, `py-ast`) plus their regex fallbacks. The Python AST tests skip themselves automatically on a machine that lacks `python3`.
 
@@ -101,6 +101,16 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/scanners/reconciliation.mjs` (canonical requirement links) | `tests/canonical-requirement-links.test.mjs`, `tests/reconcile.test.mjs` | ✅ |
 | `cli/validators/structure.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/validators/docs-diff.mjs` | `tests/commands.test.mjs`, `tests/docs-diff.test.mjs` | ✅ |
+| `cli/scanners/doc-deps.mjs`, `cli/validators/doc-dependency.mjs`, `cli/commands/review.mjs` (doc dependency lock, DLK001–DLK005) | `tests/doc-dependency-lock.test.mjs` | ✅ |
+| `tools/budget.mjs` (non-regression budgets) | `tests/budget.test.mjs` | ✅ |
+| `cli/commands/mcp.mjs` (MCP server over stdio and loopback HTTP) | `tests/mcp.test.mjs`, `tests/mcp-http.test.mjs`, `tests/mcp-doc-tools.test.mjs` | ✅ |
+| `cli/shared-guard-json.mjs` (compact guard response) | `tests/compact-guard-response.test.mjs` | ✅ |
+| `cli/scanners/doc-references.mjs`, `cli/shared-headings.mjs` (MCP doc navigation) | `tests/mcp-doc-tools.test.mjs`, `tests/trace-reverse.test.mjs` | ✅ |
+| `cli/shared-sync-scope.mjs` (`sync --since` section scope) | `tests/sync-since.test.mjs` | ✅ |
+| `cli/scanners/instruction-scopes.mjs`, `cli/scanners/frontmatter.mjs`, `cli/validators/path-scoped-rules.mjs`, `cli/commands/rules.mjs` (PSR001–PSR004, `rules --for`) | `tests/path-scoped-rules.test.mjs` | ✅ |
+| `cli/scanners/doc-ownership.mjs`, `cli/validators/doc-ownership.mjs` (OWN001–OWN007, `trace --owners`) | `tests/doc-ownership.test.mjs` | ✅ |
+| `cli/scanners/import-graph.mjs`, `cli/scanners/module-diagram.mjs` (module and entity diagrams) | `tests/code-derived-diagrams.test.mjs`, `tests/architecture.test.mjs`, `tests/python-import-graph.test.mjs` | ✅ |
+| `cli/scanners/symbol-map.mjs`, `benchmarks/agent-context/run.mjs` (symbol map, agent-context protocol v2) | `tests/symbol-map.test.mjs`, `tests/agent-context-benchmark.test.mjs` | ✅ |
 
 Completion tests cover initial `implemented → verified` delivery, evidence and
 dirty-tree blockers, living-spec `verified → verified` maintenance, and refusal
@@ -132,6 +142,7 @@ of empty repeats driven only by generated lifecycle artifacts.
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 1.3.0 | 2026-09-30 | DocGuard Team | Freshness review: map the MCP server and the compact guard response to their tests; describe the frozen v2 agent-context protocol beside v1 |
 | 1.2.0 | 2026-09-29 | DocGuard Team | Freshness review: map the modules specs 014–026 added to their tests, and correct the benchmark case count |
 | 1.1.0 | 2026-09-15 | DocGuard Team | Add field-replay controls for shipped validator counts, ignored checkout pointer copies, and non-clean planned lifecycle advice |
 | 1.0.0 | 2026-09-15 | DocGuard Team | Add executable hook-composition, direct evidence exit-code, and field-level registry-difference regressions |
@@ -182,6 +193,13 @@ unchanged task-graph behavior. The frozen agent benchmark keeps hidden
 evaluators outside copied repositories, proves original fail-to-pass and
 pass-to-pass states plus reviewed references, records all 27 observations, and
 applies its committed non-inferiority and efficiency gate without an LLM judge.
+Protocol v2 (spec 036) is frozen beside v1 rather than replacing it: six tasks
+(three on the 29-module `ledger-service` fixture), three context conditions
+(task only, context pack, context pack with symbol map) and three repetitions,
+so 54 trials.
+The runner refuses to start when a task's fixture or evaluator digest, or the
+manifest digest, differs from the committed value, and the symbol map stays
+opt-in until those trials are recorded.
 
 Run `node benchmarks/run.mjs --baseline benchmarks/baseline.json` for the network-free synthetic corpus (CI does this on every push; pinned public baseline cases are reported as `outOfSelection`, not as removed). Run `node benchmarks/run.mjs --external --baseline benchmarks/baseline.json` explicitly for pinned public sources. The comparator gates new case-level false positives, false negatives, removals within the selection, and supported-case abstentions. Persisted cold/warm timings are observational because matching Node and platform metadata cannot exclude host contention. Runtime regression claims require at least five controlled samples from the same paired comparison session and a greater-than-20-percent real-workload change.
 

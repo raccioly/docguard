@@ -1,15 +1,15 @@
 # Architecture
 
-<!-- docguard:version 1.6.0 -->
+<!-- docguard:version 1.7.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-09-29 -->
+<!-- docguard:last-reviewed 2026-09-30 -->
 
 | Metadata | Value |
 |----------|-------|
 | **Status** | ![Status](https://img.shields.io/badge/status-active-brightgreen) |
-| **Version** | `1.5.0` |
-| **Last Updated** | 2026-09-29 |
-| **Project Size** | ~43K lines across `cli/` — measured 2026-09-29 with `wc -l` over `cli/**/*.mjs`; re-measure rather than trust this figure |
+| **Version** | `1.7.0` |
+| **Last Updated** | 2026-09-30 |
+| **Project Size** | ~47K lines in 147 files across `cli/` — measured 2026-09-30 with `wc -l` over `cli/**/*.mjs`; re-measure rather than trust this figure |
 
 ---
 
@@ -96,10 +96,10 @@ The architecture separates command orchestration, validation, extraction, output
 | Layer | Contains | Can Import From | Cannot Import From |
 |-------|----------|----------------|--------------------|
 | **Extension** (`extensions/spec-kit-docguard/`) | AI skills (SKILL.md), bash scripts, hooks, commands | CLI (via npx), Node.js built-ins | Isolated — spec-kit integration layer |
-| **Commands** (`cli/commands/`) | User-facing command logic | Validators, Config (via `docguard.mjs` exports) | Isolated — each command is self-contained |
-| **Validators** (`cli/validators/`) | Independent validation modules | Scanners, Shared utilities, Node.js built-ins | Cannot import from Commands or Writers |
+| **Commands** (`cli/commands/`) | User-facing command logic | Validators, Scanners, Writers, Evidence, Shared utilities, Config | Other commands, except the shared internals a command exports for reuse (e.g. `runGuardInternal`) |
+| **Validators** (`cli/validators/`) | Independent validation modules | Scanners, Shared utilities, the pure section parsers in `writers/sections.mjs`, Node.js built-ins | Commands, other validators, and any writer that touches the file system |
 | **Evidence** (`cli/evidence/`) | Strict manifest loading, exact Markdown selection, file-only adapters, scoped identities | Safe scanner primitives, Shared utilities, Node.js built-ins | Cannot execute project code, external tools, package managers, or network requests |
-| **Scanners** (`cli/scanners/`) | Project intelligence — detect routes, schemas, IaC, frontend surface | Shared utilities, Node.js built-ins | Cannot import from Validators, Commands, Writers |
+| **Scanners** (`cli/scanners/`) | Project intelligence — detect routes, schemas, IaC, frontend surface | Shared utilities, the pure parsers in `writers/sections.mjs` and `writers/spec-outcomes.mjs`, Node.js built-ins | Validators, Commands, and any writer that touches the file system |
 | **Writers** (`cli/writers/`) | Mutate canonical docs surgically (section-addressable, no LLM) | Shared helpers, Scanners for generated content, Node.js built-ins | Cannot import from Commands or Validators |
 | **Shared** (`cli/shared-*.mjs`) | Cross-cutting utilities: ignore/glob filters, source-root resolution, static Worker/Pages binding scopes, git helpers, shared trace patterns | Node.js built-ins plus optional direct parser loading where documented | Cannot import from Validators, Commands, or Writers |
 | **Config** (`cli/config.mjs`) | `loadConfig` + defaults/profile merge + project-type detection | Shared utilities, Node.js built-ins | Cannot import from Commands (extracted so `demo`→`docguard` is no longer a cycle) |
@@ -183,16 +183,9 @@ docguard.mjs
   │
   ▼
 guard.mjs
-  ├── For each enabled validator:
-  │     ├── structure.mjs    → checks docs-canonical/ exists, required files present
-  │     ├── docs-sync.mjs    → checks DocGuard metadata headers
-  │     ├── drift.mjs        → checks DRIFT-LOG.md for staleness
-  │     ├── changelog.mjs    → checks Unreleased section, version entries
-  │     ├── architecture.mjs → validates component map, layer boundaries
-  │     ├── test-spec.mjs    → checks test framework, coverage docs
-  │     ├── security.mjs     → checks auth, secrets documentation
-  │     ├── environment.mjs  → checks setup steps, env vars documentation
-  │     └── freshness.mjs    → checks git commit dates vs doc last-modified
+  ├── For each enabled validator in cli/validators/ (the list lives in guard.mjs;
+  │   e.g. structure, docs-sync, architecture, freshness, doc-dependency,
+  │   path-scoped-rules, doc-ownership)
   │
   ├── Collects: { pass: [...], warn: [...], fail: [...] }
   │
@@ -242,8 +235,10 @@ DocGuard declares one exact-pinned runtime dependency, `@babel/parser`. It loads
 |--------|-------|
 | `node:fs` | File system operations (read docs, check existence) |
 | `node:path` | Path resolution and manipulation |
-| `node:child_process` | Git operations, the optional `python3` AST tier, and the optional `specify` CLI (`init` only) |
+| `node:child_process` | Git operations, the optional `python3` AST tier, the optional `specify` CLI (`init` only), `npm`/`gh`/`git push` for `upgrade --pr`, `gh` for `impact`, and re-running the CLI itself (`fix`, `diagnose`). All take argv arrays; see SECURITY.md |
 | `node:url` | ES Module URL resolution |
+| `node:crypto` | Content hashes: doc-lock fingerprints, registry and evidence digests, plan-cache identity |
+| `node:http` | The opt-in MCP HTTP transport (`mcp --transport http`) |
 | `node:readline` | Interactive prompts (init command) |
 | `node:test` | Built-in test framework |
 | `node:assert` | Test assertions |
@@ -257,6 +252,7 @@ DocGuard declares one exact-pinned runtime dependency, `@babel/parser`. It loads
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 1.7.0 | 2026-09-30 | DocGuard Team | Freshness review for specs 028–037: layer rules corrected to the code (scanners and validators use the pure section parsers in `writers/`), guard data flow no longer lists a fixed validator set, subprocess and built-in module inventory completed, project size re-measured |
 | 1.6.0 | 2026-09-29 | DocGuard Team | Freshness review for specs 014–026: hook-manager ownership, Spec Kit version floors, the shared test-case counter, subprocess uses, and counts replaced by their authoritative source |
 | 1.5.0 | 2026-09-18 | DocGuard Team | Freshness review: corrected a project-size figure stale since 2026-05-29 and recorded guard exit code 3 for uninitialised projects |
 | 1.4.0 | 2026-09-15 | DocGuard Team | Bound package capability claims to shipped modules, pruned ignored and nested checkout copies from instruction pointers, and made non-clean planned lifecycle state advisory only |

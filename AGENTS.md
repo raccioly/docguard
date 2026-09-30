@@ -1,6 +1,6 @@
 # AI Agent Instructions — DocGuard
 
-<!-- docguard:last-reviewed 2026-09-29 -->
+<!-- docguard:last-reviewed 2026-09-30 -->
 
 > This project follows **Canonical-Driven Development (CDD)**.
 > Documentation is the source of truth. Read before coding.
@@ -22,7 +22,7 @@
 - **Runtime**: Node.js 18+
 - **Dependencies**: One — `@babel/parser` (exact-pinned, optional-load); Node.js built-ins otherwise
 - **Testing**: `node:test` (built-in)
-- **Distribution**: npm + PyPI
+- **Distribution**: npm + PyPI; the release also publishes the MCP server image to GHCR, the Claude Desktop MCPB bundle and the Homebrew tap
 - **Version**: see `package.json` (single source of truth — do not hardcode here)
 
 ## Key Files
@@ -30,7 +30,7 @@
 | File | Purpose |
 |------|---------|
 | `docs-canonical/ARCHITECTURE.md` | System design |
-| `docs-canonical/DATA-MODEL.md` | Database schemas |
+| `docs-canonical/DATA-MODEL.md` | Config, file formats and output contracts |
 | `docs-canonical/SECURITY.md` | Auth & secrets |
 | `docs-canonical/TEST-SPEC.md` | Test requirements |
 | `docs-canonical/ENVIRONMENT.md` | Environment setup |
@@ -51,10 +51,12 @@ code-truth sections), `score` (CDD maturity 0-100).
 `fix` (AI fix instructions; `--doc <name>`), `generate` (reverse-engineer docs;
 `--plan`; `--spec <area>` for an as-built Spec Kit spec), `agent` (task graph; `--task <text>` for bounded current evidence),
 `retire` (remove reviewed docs from active context),
-`specs` (check/refresh/preflight/complete the spec lifecycle registry; `require` for the spec-first gate),
+`specs` (check/refresh/preflight/complete the spec lifecycle registry; `require` for the spec-first gate; `reanchor` for a squash-discarded revision),
 `reconcile` (classify code/spec changes since a Git ref without rewriting intent),
-`explain` (explain a validator/warning), `verify` (declared evidence; `--semantic` claims), `feedback` (report false positives), `mcp` (MCP server), `report` (compliance bundle), `ci` (guard + score gate), `memory` (what DocGuard
-remembers), `trace` (requirements traceability; `--reverse`), `upgrade` (migrate
+`review` (doc sections whose covered code changed; `--accept`, `--prune`, `--suggest`),
+`rules` (which instruction files each agent harness loads for a path; `--for <path>`),
+`explain` (explain a validator/warning), `verify` (declared evidence; `--semantic` claims), `feedback` (report false positives), `mcp` (MCP server; stdio or loopback HTTP), `report` (compliance bundle), `ci` (guard + score gate), `memory` (what DocGuard
+remembers; `--pack [--symbols]` for the context pack), `trace` (requirements traceability; `--reverse`; `--owners` for the doc ownership map), `upgrade` (migrate
 config/CLI), `watch` (live re-guard).
 
 **`init --with <name>`** scaffolders — `agents`, `hooks`, `ci`, `badge`, `llms`,

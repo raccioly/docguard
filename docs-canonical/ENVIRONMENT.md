@@ -2,16 +2,16 @@
 
 <!-- docguard:quality negation-load off — an environment doc precisely describes the ABSENCE of requirements (no install step, no database, no credential for the CLI); the prohibitive phrasing is accurate and intentional, not sloppy writing -->
 
-<!-- docguard:version 0.9.0 -->
+<!-- docguard:version 0.10.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-09-29 -->
+<!-- docguard:last-reviewed 2026-09-30 -->
 
 > The DocGuard CLI needs no environment variables. Two optional ones exist: `DOCGUARD_API_KEY` for the HTTP MCP server and `DOCGUARD_SPECIFY_TIMEOUT_MS` for `docguard init`'s calls to the `specify` CLI. DocGuard has a single optional-load npm dependency (`@babel/parser`) and optionally uses the developer's own `python3`; everything else is Node.js built-ins.
 
 | Metadata | Value |
 |----------|-------|
 | **Status** | ![Status](https://img.shields.io/badge/status-active-brightgreen) |
-| **Version** | `0.8.0` |
+| **Version** | `0.10.0` |
 
 ---
 
@@ -69,6 +69,10 @@ node cli/docguard.mjs guard --format json
 # Regenerate llms.txt / llms-full.txt after editing a canonical or optional doc
 # (tests/llms-bundle-drift.test.mjs fails and names this command)
 npm run llms
+
+# Measure this tree against the budgets in budgets.json (the CI `budget` job
+# runs the same comparison against the base branch)
+npm run budget
 ```
 
 ## CI/CD
@@ -90,8 +94,8 @@ node cli/docguard.mjs ci --threshold 70 --format json
 
 DocGuard needs no network access and no credentials, so a sandbox such as ai-jail can run it
 with the default read-write project mount. `docguard guard` runs fine under `--lockdown`, which
-makes everything read-only. `fix --write`, `sync` and `init` write into the project, so they
-need the normal mount.
+makes everything read-only. `fix --write`, `sync`, `init`, `review --accept` / `--prune`,
+`specs --write` and `memory --pack` write into the project, so they need the normal mount.
 
 What must be visible:
 
@@ -100,15 +104,20 @@ What must be visible:
   points at a gitdir elsewhere, and sandboxes hide that gitdir by default (ai-jail needs
   `--worktree`). DocGuard detects the case. The affected checks report `missing-prerequisite`,
   or `partial` for Spec-Kit, naming git's own error and the remedy, and never report a clean
-  "no matches".
+  "no matches". Path-scoped rules and the doc ownership map list files with `git ls-files`
+  and fall back to a directory walk; path-scoped rules also ask `git check-ignore`, and a path
+  git cannot classify is reported as unknown rather than as missing.
 - **`python3` (optional).** It provides AST-accurate Python analysis. Without it, the regex
-  tier runs, and each affected validator reports the degraded parser tier.
+  tier runs, and each affected validator reports the degraded parser tier. A doc section that
+  covers a Python symbol cannot be compared, so the doc-dependency check reports `partial`, and
+  the generated module graph marks itself partial instead of drawing Python edges it cannot see.
 - **The `specify` CLI (optional).** It is only needed for `docguard init` to set up Spec Kit.
 
 ## Revision History
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 0.10.0 | 2026-09-30 | DocGuard Team | Freshness review: `npm run budget`; the full list of commands that write; how path-scoped rules and ownership read git; what a missing `python3` makes partial (specs 030, 033, 034, 035) |
 | 0.9.0 | 2026-09-29 | DocGuard Team | Freshness review: documented `DOCGUARD_SPECIFY_TIMEOUT_MS` and the optional Spec Kit prerequisite; the agent-sandbox section (spec 022) is recorded here |
 | 0.8.0 | 2026-09-18 | DocGuard Team | Freshness review: verified the MCP key contract against `cli/commands/mcp.mjs`; added `npm run llms` and the shipped GitLab CI component, both of which were missing |
 | 0.7.0 | 2026-09-17 | @raccioly | Documented `DOCGUARD_API_KEY` (HTTP MCP server); corrected the blanket "no API keys" claim that contradicted SECURITY.md |

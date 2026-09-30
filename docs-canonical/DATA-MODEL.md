@@ -1,13 +1,13 @@
 # Data Model
 
-<!-- docguard:version 0.10.0 -->
+<!-- docguard:version 0.11.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-09-29 -->
+<!-- docguard:last-reviewed 2026-09-30 -->
 
 | Metadata | Value |
 |----------|-------|
 | **Status** | ![Status](https://img.shields.io/badge/status-active-brightgreen) |
-| **Version** | `0.9.0` |
+| **Version** | `0.11.0` |
 | **Database** | None — DocGuard is a stateless CLI tool |
 | **Storage** | File-system only (reads project files, writes generated docs) |
 
@@ -56,6 +56,11 @@ The primary data structure. Controls all CLI behavior.
 | `agentInstructions.maxBytes` | `integer` | No | `32768` | Byte budget per `AGENTS.md` chain (STR004) |
 | `agentInstructions.allowances.<file>` | `integer` | No | — | Per-chain allowance keyed by the chain's deepest file; slack of 1 KiB or more reports STR005 |
 | `specFirst.paths` / `specFirst.exemptKinds` | `string[]` | No | Everything except Markdown, `specs/**` and tests / `release, deps, typo, test-only` | Governed paths and allowed `Spec-Exempt` kinds for `specs require` |
+| `validators.docDependency` / `pathScopedRules` / `docOwnership` | `boolean` | No | `true` | Each applies only when its input exists: a `covers=` declaration, agent instruction files, an `ownership` block or `.devin/wiki.json` |
+| `diagrams.moduleGraph.depth` / `maxNodes` / `include` | `integer` / `integer` / `string[]` | No | `2` / `30` (cap 60) / every product source file | Shape of the `module-graph` section |
+| `memory.symbolMap.maxBytes` | `integer` | No | `4096` (256–16384) | Budget of the symbol map `memory --pack --symbols` adds |
+| `devinWiki.maxPages` | `integer` | No | `30` (up to 80) | Page cap for linting `.devin/wiki.json`; 80 on Devin enterprise plans |
+| `ownership` | `object` | No | — | Doc ownership map, described below |
 
 ### Example Configuration
 
@@ -188,8 +193,8 @@ A documentation section can declare the code it describes, on its marker:
 `covers` entries are `path` (the file's bytes), `path#symbol` (a top-level
 declaration or `Class.method`) or a glob (the matching set). Paths are
 relative to the project; absolute paths, `..`, symlinks and `.docguardignore`d
-paths are refused. `docguard review --accept` records the review; it is the
-file's only writer. Normative schema: `schemas/docguard-doc-lock.schema.json`.
+paths are refused. Only `docguard review` writes it: `--accept` records a
+review and `--prune` removes entries whose section dropped its `covers` attribute. Normative schema: `schemas/docguard-doc-lock.schema.json`.
 
 | Field | Meaning |
 |---|---|
@@ -220,6 +225,14 @@ Each tracked file resolves to at most one owner: an exact path beats any glob,
 and a longer literal directory prefix beats a shorter one; two equal matches
 are a tie (OWN002). A malformed block is an error (OWN007), and every owner
 lookup reports that error until the block is fixed.
+
+## Generated caches and budgets
+
+| File | Written by | Shape |
+|---|---|---|
+| `.docguard/plan.cache.json` | the memory plan (guard, sync, generate) | `{ v, configKey, treeHash, plan, writtenAt }`. `v` is `"3"`: code sections may carry `completeness: "partial"` and a `partialReason`. A cache with another version, config key or tree hash is a miss and is rebuilt |
+| `budgets.json` | maintainers | `schemaVersion: 1`; sample count, guard targets, the time and byte budgets, and the agent tasks and MCP calls `tools/budget.mjs` measures |
+| `benchmarks/agent-context/manifest-v2.json` | frozen once, before any run | Agent-context protocol v2: conditions `task-only`, `context-pack`, `context-pack-symbols`, six tasks with fixture and hidden-evaluator digests, and the promotion rule. `run.mjs` holds its digest and loads it only while every byte matches. Schemas: `docguard-agent-context-benchmark-v2.schema.json`, `docguard-agent-context-result-v2.schema.json` |
 
 ## Task Context Packet
 
@@ -343,6 +356,7 @@ The `score --format json` output:
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 0.11.0 | 2026-09-30 | DocGuard Team | Freshness review for specs 028–037: configuration keys for the doc lock, path-scoped rules, ownership, diagrams and the symbol map; `review --prune` as a doc-lock writer; the plan cache (version 3), `budgets.json` and the frozen agent-context protocol v2 |
 | 0.10.0 | 2026-09-29 | DocGuard Team | Add registry `lifecycle.origin` / `scope.sourcePaths` for as-built specs, the `specKit` coverage tier, and the `agentInstructions` and `specFirst` configuration |
 | 0.9.0 | 2026-09-15 | DocGuard Team | Add bounded field-level spec-registry differences and direct evidence verification exit semantics |
 | 0.6.0 | 2026-09-14 | DocGuard Team | Add the document-retirement recovery manifest, retained-ref proof, and retired requirement tombstones |
