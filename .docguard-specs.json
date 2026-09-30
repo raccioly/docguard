@@ -5335,11 +5335,11 @@
           },
           {
             "path": "specs/042-read-only-commands/tasks.md",
-            "digest": "sha256:19c547a8b4bb8207e7397e1de9a4797c2bd50c832428d0958ed1fb50080d06ab"
+            "digest": "sha256:563844ad5cb2f82f5271d2fa992868237d629e65bac91156475be7787c8f0e98"
           }
         ],
         "taskCompletion": {
-          "checked": 0,
+          "checked": 11,
           "total": 12
         },
         "implementationEvidence": [
