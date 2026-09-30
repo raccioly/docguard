@@ -6130,9 +6130,19 @@
             "line": 10
           },
           {
+            "requirementId": "FR-007",
+            "file": "tests/symbol-map.test.mjs",
+            "line": 16
+          },
+          {
             "requirementId": "FR-008",
             "file": "tests/symbol-map.test.mjs",
             "line": 11
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "tests/symbol-map.test.mjs",
+            "line": 17
           },
           {
             "requirementId": "FR-010",
@@ -6153,6 +6163,11 @@
             "requirementId": "SC-003",
             "file": "tests/symbol-map.test.mjs",
             "line": 15
+          },
+          {
+            "requirementId": "SC-004",
+            "file": "tests/symbol-map.test.mjs",
+            "line": 18
           }
         ]
       }

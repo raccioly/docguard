@@ -13,6 +13,9 @@
  * @req docguard.symbol-map#SC-001
  * @req docguard.symbol-map#SC-002
  * @req docguard.symbol-map#SC-003
+ * @req docguard.symbol-map#FR-007
+ * @req docguard.symbol-map#FR-009
+ * @req docguard.symbol-map#SC-004
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -22,7 +25,7 @@ import { delimiter, dirname, join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { buildSymbolMap, MAX_SYMBOLS_PER_FILE, pageRank, SYMBOL_MAP_MAX_BYTES, symbolMapBudget } from '../cli/scanners/symbol-map.mjs';
 import { clearImportGraphCache } from '../cli/scanners/import-graph.mjs';
-import { aggregateTrials, buildTrialPrompt, decideSymbolPromotion, loadManifest, V2_MANIFEST_DIGEST, verifyFixtures } from '../benchmarks/agent-context/run.mjs';
+import { aggregateTrials, buildResult, buildTrialPrompt, decideSymbolPromotion, loadManifest, V2_MANIFEST_DIGEST, verifyFixtures } from '../benchmarks/agent-context/run.mjs';
 
 const CLI = resolve('cli/docguard.mjs');
 
@@ -216,6 +219,27 @@ describe('the v2 protocol decides (User Story 2, FR-005, FR-006, FR-008)', () =>
   it('does not release on a regression', () => {
     assert.equal(decide(matrix((task, condition, r) => (condition === 'context-pack-symbols' && r === 1 && ['ledger-rounding', 'status-alias'].includes(task.id) ? { success: false } : null))), 'not-released');
     assert.equal(decide(matrix((task, condition) => (condition === 'context-pack-symbols' ? { usage: { uncachedInputTokens: 1100 } } : null))), 'not-released');
+  });
+
+  it('records every trial under the v2 result schema, with the decision computed from them (FR-007, SC-004)', () => {
+    const trials = matrix((task, condition) => (condition === 'context-pack-symbols' && task.navigationBound ? { steps: 8, latencyMs: 800 } : null))
+      .map((t, i) => ({ ...t, id: `${t.task}:${t.condition}:${(i % 3) + 1}`, repetition: (i % 3) + 1 }));
+    const fixtures = manifest.tasks.map(task => ({ id: task.id, fixtureDigest: task.fixtureDigest }));
+    const result = buildResult(manifest, fixtures, trials, 'test');
+    assert.equal(result.$schema, 'https://raccioly.github.io/docguard/schemas/docguard-agent-context-result-v2.schema.json');
+    assert.equal(result.schemaVersion, 2);
+    assert.equal(result.core.protocolId, 'docguard-agent-context-v2');
+    assert.equal(result.core.trialOrder.length, 54);
+    assert.equal(result.observations.trials.length, 54, 'every run is kept');
+    assert.ok(result.core.navigationAggregate['context-pack-symbols']);
+    assert.equal(result.core.decision.status, decide(trials), 'the recorded decision is the computed one');
+    assert.equal(result.core.decision.status, 'promote');
+  });
+
+  it('documents that promotion must be recorded as a Budget-Exempt with the v2 result (FR-009)', () => {
+    const readme = readFileSync('benchmarks/agent-context/results/README-v2.md', 'utf8');
+    assert.match(readme, /Budget-Exempt: memory-pack-bytes/);
+    assert.match(readFileSync('specs/036-symbol-map/tasks.md', 'utf8'), /T010[\s\S]*Budget-Exempt: memory-pack-bytes/);
   });
 
   it('is incomplete while any trial is missing or failed on infrastructure', () => {

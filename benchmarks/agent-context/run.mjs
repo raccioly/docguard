@@ -519,7 +519,7 @@ export function decideSymbolPromotion(manifest, aggregate, navigationAggregate) 
   return { status: 'opt-in', reasons, reductions, increases };
 }
 
-function buildResult(manifest, fixtureSummaries, trials, executableVersion) {
+export function buildResult(manifest, fixtureSummaries, trials, executableVersion) {
   const aggregate = aggregateTrials(manifest, trials);
   const v2 = manifest.protocol.id === 'docguard-agent-context-v2';
   let navigationAggregate = null;

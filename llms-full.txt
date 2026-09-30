@@ -2549,7 +2549,9 @@ a commit, so a relative path resolves there and untracked files do not exist.
 
 `npx testguard-cli@0.15.0 gate --changed origin/main` reports changed source files
 that carry no claim. It does not find bugs; it refuses to let a change land without stating
-what must be true, which is the step that surfaces them.
+what must be true, which is the step that surfaces them. A file the probe cannot
+observe (for example, one that only runs as a subprocess) is excused in
+`testguard.ignore.json`, with a reason that names what protects it instead.
 
 ## Evidence and contributions
 
