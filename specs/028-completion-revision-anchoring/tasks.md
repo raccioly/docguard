@@ -1,6 +1,6 @@
 # Tasks: Completion Revision Anchoring
 
-**Status**: In progress. T001–T006 are done; T007 runs from `main`'s tip once this merges, because that is where the anchors must land.
+**Status**: Complete. SC-003 is demonstrated by the completion commit made from `main`'s tip after this merged: it re-anchors the dangling specs and verifies specs 014–029 at one revision on `main`.
 **Spec**: `specs/028-completion-revision-anchoring/spec.md`
 **Plan**: `specs/028-completion-revision-anchoring/plan.md`
 
@@ -18,4 +18,3 @@
 
 - [x] T005 `docs/commands.md`, `docs-canonical/DATA-MODEL.md`, `docs-canonical/CI-RECIPES.md`, `CHANGELOG.md` (FR-005).
 - [x] T006 `testguard.claims.json`; probe; gate; `npm test`; `npm run llms`; stage, then `docguard specs --write`.
-- [ ] T007 SC-003: re-anchor the four dangling specs, then complete specs 014–028 in one commit at `main`'s tip.
