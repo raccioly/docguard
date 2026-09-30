@@ -995,12 +995,12 @@
       "path": "specs/027-canonical-requirement-links/spec.md",
       "reviewed": {
         "lifecycle": {
-          "approval": "draft",
-          "delivery": "planned",
+          "approval": "approved",
+          "delivery": "implemented",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
-          "persistenceModel": null
+          "persistenceModel": "living"
         },
         "relations": {
           "extends": [],
@@ -1010,7 +1010,9 @@
           "supersededBy": []
         },
         "scope": {
-          "canonicalDocs": []
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md"
+          ]
         },
         "reconciliation": {
           "lastReviewedRevision": null,
@@ -1029,7 +1031,7 @@
         "artifacts": [
           {
             "path": "specs/027-canonical-requirement-links/spec.md",
-            "digest": "sha256:22a15fc358a2f89f9e94ccdcfda0764ff0bb022f6884d918a192e0ec51aab60f"
+            "digest": "sha256:4eccaa48a295f7344c19b9367243618e4f649d61568b41761ef1b4b20bbe607b"
           },
           {
             "path": "specs/027-canonical-requirement-links/plan.md",
@@ -3535,12 +3537,12 @@
       "path": "specs/026-release-readiness/spec.md",
       "reviewed": {
         "lifecycle": {
-          "approval": "draft",
-          "delivery": "planned",
+          "approval": "approved",
+          "delivery": "implemented",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
-          "persistenceModel": null
+          "persistenceModel": "living"
         },
         "relations": {
           "extends": [],
@@ -3550,7 +3552,9 @@
           "supersededBy": []
         },
         "scope": {
-          "canonicalDocs": []
+          "canonicalDocs": [
+            "docs-canonical/CI-RECIPES.md"
+          ]
         },
         "reconciliation": {
           "lastReviewedRevision": null,
@@ -3573,7 +3577,7 @@
         "artifacts": [
           {
             "path": "specs/026-release-readiness/spec.md",
-            "digest": "sha256:f20e0275abbaba8997c560248ea7fab295629f1432f03c9f42386e116173115b"
+            "digest": "sha256:350e2fcea582d70d62b0d429c17ca131f1400f4d9ed9dbfb74769f72f4331020"
           },
           {
             "path": "specs/026-release-readiness/plan.md",
@@ -3581,7 +3585,7 @@
           },
           {
             "path": "specs/026-release-readiness/tasks.md",
-            "digest": "sha256:2897efc40edb35e0b2ccd00f201d23307bed511ed370b17a89359d713ff2cdcd"
+            "digest": "sha256:3d3bca40aa37c761bc25762f03b9cb951a3c3073acaca481e67c7526fa9b0624"
           }
         ],
         "taskCompletion": {

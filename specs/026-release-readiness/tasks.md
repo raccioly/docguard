@@ -20,4 +20,4 @@
 ## Phase 3: Verification
 
 - [x] T008 `tests/release-readiness.test.mjs`, `tests/release-version-sync.test.mjs`: every FR, SC-001 and SC-002, with the FR-005 test shown to fail on `main`.
-- [x] T009 Lifecycle: `specs complete` for specs 014–025; review the docs FRS002 names; `npm run llms`; stage, then `docguard specs --write`; `docguard guard`; `npm test`.
+- [x] T009 Lifecycle: record approval and delivery for specs 014–027; review the docs FRS002 names; `npm run llms`; stage, then `docguard specs --write`; `docguard guard`; `npm test`. The `specs complete` runs move to the follow-up that anchors their revisions to `main`, because a completion recorded on this branch would not survive the squash merge.
