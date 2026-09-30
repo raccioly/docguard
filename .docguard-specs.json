@@ -401,11 +401,26 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "dfa1385749b66184c93bf65f5dde127192037711",
+          "lastReviewedRevision": "78b3b30dfb50f5eb49cba53a68fcf5825892b177",
           "outcomes": [
             {
               "revision": "dfa1385749b66184c93bf65f5dde127192037711",
               "reason": "Reviewed at dfa1385 on main: all 7 tasks are checked and were delivered by #462, #471; the full suite (2368 tests) passes and guard reports 0 errors at this revision. Deviations from the plan are recorded in the task notes.",
+              "evidence": [
+                "cli/scanners/agent-instructions.mjs",
+                "cli/scanners/speckit.mjs",
+                "cli/validators/structure.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/CI-RECIPES.md",
+                "tests/agent-instruction-budget.test.mjs",
+                "tests/structure.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            },
+            {
+              "revision": "78b3b30dfb50f5eb49cba53a68fcf5825892b177",
+              "reason": "Maintenance at 78b3b30 on main: #489 made STR005 informational as FR-004 requires (CODES.STR005.defaultLevel, tasks T008-T010); the full suite (2444 tests) passes and guard reports 0 errors. Spec 036's frozen benchmark assets, which blocked this completion, are attributed by spec 039's reviewed assetPaths.",
               "evidence": [
                 "cli/scanners/agent-instructions.mjs",
                 "cli/scanners/speckit.mjs",
@@ -438,7 +453,7 @@
         "artifacts": [
           {
             "path": "specs/017-agent-instruction-budget/spec.md",
-            "digest": "sha256:3f04ea15786dddd6dc3f98714347341ff6e46150fd28b7290c6d25464ceded0a"
+            "digest": "sha256:e8a4f90c3e2cfdbc72f85f0240e99270e942a5f60d445d5213a15803a906ed17"
           },
           {
             "path": "specs/017-agent-instruction-budget/plan.md",
@@ -716,7 +731,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "implemented",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -735,8 +750,22 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "78b3b30dfb50f5eb49cba53a68fcf5825892b177",
+          "outcomes": [
+            {
+              "revision": "78b3b30dfb50f5eb49cba53a68fcf5825892b177",
+              "reason": "Reviewed at 78b3b30 on main: all 8 tasks are checked and were delivered by #493, #495; the full suite (2444 tests) passes and guard reports 0 errors at this revision. #495 added the FR-006 docs test that completion required.",
+              "evidence": [
+                "cli/scanners/reconciliation.mjs",
+                "cli/scanners/spec-registry.mjs",
+                "cli/validators/spec-registry.mjs",
+                "docs-canonical/DATA-MODEL.md",
+                "tests/asset-path-attribution.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -756,7 +785,7 @@
         "artifacts": [
           {
             "path": "specs/039-asset-path-attribution/spec.md",
-            "digest": "sha256:fea16549d7ed865b7af3c9948b7e2e3e9afc2020f8c77024e524233dfed275cd"
+            "digest": "sha256:ba6164d01e339cba3f050234b5a99ec4de26f25db83f10a7979b8c754655d387"
           },
           {
             "path": "specs/039-asset-path-attribution/plan.md",

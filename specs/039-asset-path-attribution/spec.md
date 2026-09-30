@@ -144,3 +144,9 @@ spec. A completion of any spec no longer stops on them.
   only this repository).
 - Changing how attributed files are then classified (they follow the existing
   linked-file rules).
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `78b3b30dfb50f5eb49cba53a68fcf5825892b177` — Reviewed at 78b3b30 on main: all 8 tasks are checked and were delivered by #493, #495; the full suite (2444 tests) passes and guard reports 0 errors at this revision. #495 added the FR-006 docs test that completion required. Evidence: `cli/scanners/reconciliation.mjs`, `cli/scanners/spec-registry.mjs`, `cli/validators/spec-registry.mjs`, `docs-canonical/DATA-MODEL.md`, `tests/asset-path-attribution.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->
