@@ -37,8 +37,11 @@ const git = (dir, args) => execFileSync('git', args, { cwd: dir, encoding: 'utf8
 /** Two approved, implemented specs with evidence, committed on `main`. */
 function fixture(t) {
   const dir = mkdtempSync(join(tmpdir(), 'docguard-anchor-'));
-  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  // Retry: a commit can leave a detached `git gc --auto` writing into .git.
+  t.after(() => rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }));
   git(dir, ['init', '-q', '-b', 'main']);
+  // No background maintenance racing the cleanup (a CI flake: ENOTEMPTY on .git).
+  git(dir, ['config', 'gc.auto', '0']); git(dir, ['config', 'maintenance.auto', 'false']);
   git(dir, ['config', 'user.email', 't@t']); git(dir, ['config', 'user.name', 't']);
   write(dir, '.docguard.json', JSON.stringify({ projectName: 'fixture', profile: 'starter' }));
   for (const [n, name] of [['001', 'alpha'], ['002', 'beta']]) {

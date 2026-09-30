@@ -63,6 +63,13 @@ jobs:
       # 2026-09-29 the suite had doubled and normal runs ranged 64-122s across
       # identical code, so 120s tripped on runner noise (#467). 240s restores
       # the ~2x margin and still catches the PR #328 class (+165s).
+      # Tests build throwaway git repositories and delete them in after-hooks.
+      # A commit can leave a detached `git gc --auto` writing into .git, which
+      # made a cleanup fail with ENOTEMPTY (#486). No background maintenance here.
+      - name: Disable background git maintenance for test fixtures
+        run: |
+          git config --global gc.auto 0
+          git config --global maintenance.auto false
       - name: Run Tests (with runtime budget)
         shell: bash
         env:
