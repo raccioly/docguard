@@ -311,9 +311,14 @@ const COMMAND_HELP = {
   },
   memory: {
     summary: 'Show what DocGuard remembers about the project.',
-    usage: 'docguard memory [--diff]',
-    flags: [['--diff', 'Drill into drift between memory and code']],
-    examples: ['docguard memory', 'docguard memory --diff'],
+    usage: 'docguard memory [--diff] | docguard memory --pack [--stdout] [--symbols]',
+    flags: [
+      ['--diff', 'Drill into drift between memory and code'],
+      ['--pack', 'Write .docguard/context-pack.md, a session-start snapshot for an agent'],
+      ['--stdout', 'With --pack: print the pack instead of writing it'],
+      ['--symbols', 'With --pack: add a symbol map (the most central files and their exported names, within memory.symbolMap.maxBytes). Opt-in until a benchmark promotes it'],
+    ],
+    examples: ['docguard memory', 'docguard memory --diff', 'docguard memory --pack --symbols'],
   },
   feedback: {
     summary: 'Review detection feedback locally, or validate and reduce a synthetic fixture manifest. Duplicate searches cover open and closed work; nothing is submitted automatically.',
@@ -522,6 +527,8 @@ async function main() {
       flags.changedOnly = true;
     } else if (args[i] === '--reverse') {
       flags.reverse = true;
+    } else if (args[i] === '--symbols') {
+      flags.symbols = true;
     } else if (args[i] === '--owners') {
       flags.owners = true;
     } else if (args[i] === '--suggest' && command === 'trace') {

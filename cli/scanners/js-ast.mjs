@@ -568,3 +568,54 @@ export function extractJsMountsAndImports(content, filename = 'file.ts') {
   const routeReceivers = new Set(extractJsRouteCalls(content, filename)?.map(route => route.receiver) || []);
   return { imports, importSymbols, exports, mounts, routeReceivers: [...routeReceivers] };
 }
+
+/**
+ * Names a JS/TS module exports (`default` for a default export), with the
+ * line of each export statement. Shared by as-built specs and the symbol map.
+ * @returns {{ name: string, line: number|undefined }[]}
+ */
+export function exportedNames(content, filename) {
+  const { ast, ok } = parseJsTs(content, filename);
+  if (!ok || !ast) return [];
+  const names = [];
+  walk(ast, node => {
+    if (node.type === 'ExportDefaultDeclaration') names.push({ name: 'default', line: node.loc?.start.line });
+    if (node.type !== 'ExportNamedDeclaration') return;
+    const d = node.declaration;
+    if (d?.id?.name) names.push({ name: d.id.name, line: node.loc?.start.line });
+    for (const decl of d?.declarations || []) if (decl.id?.name) names.push({ name: decl.id.name, line: node.loc?.start.line });
+    for (const s of node.specifiers || []) {
+      const n = s.exported?.name ?? s.exported?.value;
+      if (n) names.push({ name: n, line: node.loc?.start.line });
+    }
+  });
+  return names;
+}
+
+/**
+ * The names a module offers, for the symbol map (docguard.symbol-map#FR-001):
+ * its exports in source order, or, for a module that exports nothing (a
+ * script), its top-level function and class declarations.
+ * @returns {{ ok: boolean, names: string[] }} `ok: false` when it did not parse
+ */
+export function moduleSymbols(content, filename) {
+  const { ast, ok } = parseJsTs(content, filename);
+  if (!ok || !ast) return { ok: false, names: [] };
+  const exported = [];
+  const topLevel = [];
+  for (const stmt of ast.program?.body || []) {
+    if (stmt.type === 'ExportDefaultDeclaration') exported.push('default');
+    else if (stmt.type === 'ExportNamedDeclaration') {
+      const d = stmt.declaration;
+      if (d?.id?.name) exported.push(d.id.name);
+      for (const decl of d?.declarations || []) if (decl.id?.name) exported.push(decl.id.name);
+      for (const s of stmt.specifiers || []) {
+        const n = s.exported?.name ?? s.exported?.value;
+        if (n) exported.push(n);
+      }
+    } else if ((stmt.type === 'FunctionDeclaration' || stmt.type === 'ClassDeclaration') && stmt.id?.name) {
+      topLevel.push(stmt.id.name);
+    }
+  }
+  return { ok: true, names: [...new Set(exported.length ? exported : topLevel)] };
+}
