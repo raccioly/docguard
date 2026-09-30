@@ -195,3 +195,9 @@ makes no network call.
 - A configurable threshold.
 - Telling the user which newer version exists (that needs the network; run
   `docguard upgrade`).
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `7f7921f8390140b97f59231500b987be8cbd02f1` — Reviewed at 7f7921f on main: all 10 tasks are checked and were delivered by #490, #491; the full suite (2425 tests) passes and guard reports 0 errors at this revision. #491 added the FR-008 docs test, which caught a README row that did not name docguard upgrade. Evidence: `cli/release-age.mjs`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/ENVIRONMENT.md`, `docs-canonical/SECURITY.md`, `tests/update-awareness.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->
