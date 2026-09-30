@@ -23,6 +23,9 @@ non-zero exit as failure. Most likely triggers:
 
 Behaviour changes:
 
+- `docguard mcp` refuses a tool call whose `projectDir` is outside the
+  directory it serves. Start it with `--root <dir>` for each other tree a
+  client should reach.
 - `sync`, `fix` and `generate` no longer run `specify init`. Run `docguard init`
   or `specify init` yourself.
 - The Spec Kit extension requires Spec Kit 0.11.2 or later.
@@ -494,6 +497,19 @@ Behaviour changes:
   now takes anything git resolves to a commit (a branch, tag, `HEAD` or a
   short SHA) and records the full SHA. A value starting with `-` is refused.
 
+- **Security: MCP tool calls stay inside the served project.** `docguard mcp`
+  accepted any existing directory as a tool call's `projectDir`, over stdio and
+  HTTP. The documentation tools return document text, so a client could read
+  Markdown anywhere the server's account could read: `docguard_read_section`
+  with the parent directory as `projectDir` returned a file outside the
+  project. Now `projectDir` must resolve (symlinks followed, relative paths
+  against the served directory) to the directory the server was started for
+  (`--dir`, else its working directory) or a directory inside it. Anything
+  else, existing or not, gets one `isError` result naming the served
+  directories. Every tool that takes `projectDir` follows the rule. To serve
+  several projects from one server, pass `--root <dir>` for each tree
+  (repeatable); a `--root` that does not exist stops the server at startup.
+  Calls without `projectDir` behave as before (spec 041).
 - **STR005 is informational, as spec 017 requires.** The validator asked for
   `severity: 'info'`, which the finding constructor only accepts as `error` or
   `warn`, so it became a warning: slack in an instruction allowance turned

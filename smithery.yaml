@@ -5,8 +5,10 @@
 # docguard_explain, docguard_verify_evidence, docguard_verify_claims,
 # docguard_report, docguard_docs_for_path, docguard_doc_structure,
 # docguard_read_section, docguard_task_context, docguard_diagnose. No credentials
-# or required configuration — every project-scoped tool also accepts a
-# per-call `projectDir` argument, so the startup config below is optional.
+# or required configuration. Every project-scoped tool also accepts a per-call
+# `projectDir`, which must be inside the served directory (the startup
+# projectDir below, else the working directory); `docguard mcp --root <dir>`
+# serves more trees.
 
 startCommand:
   type: stdio
@@ -16,8 +18,8 @@ startCommand:
       projectDir:
         type: string
         description: >-
-          Optional default project directory the server inspects. Tools can
-          still override it per call with their own projectDir argument.
+          Optional project directory the server serves. Tools may pass their
+          own projectDir only inside it (the server's --root <dir> adds trees).
     additionalProperties: false
   commandFunction: |-
     (config) => ({

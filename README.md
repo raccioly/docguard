@@ -146,7 +146,7 @@ The MCP server ships as a container image on GHCR — no Node.js install require
 docker run -i --rm -v "$PWD":/workspace ghcr.io/raccioly/docguard:latest
 ```
 
-The entrypoint is the **stdio** MCP transport: stdout is the JSON-RPC channel, so don't pipe anything else into it. Mount the project you want inspected at `/workspace` and pass `{"projectDir": "/workspace"}` in tool calls (or rely on the default working directory).
+The entrypoint is the **stdio** MCP transport: stdout is the JSON-RPC channel, so don't pipe anything else into it. Mount the project you want inspected at `/workspace`; tools inspect it by default, and a `projectDir` in a tool call must be `/workspace` or a directory inside it (add `--root <dir>` after the image name to serve another mounted tree).
 
 Pin a version rather than tracking `latest` in CI:
 
@@ -386,6 +386,7 @@ require current SHA-256 identities for every declared repository input.
 | `--no-indirect` | Skip the reverse-import-graph analysis (docs about modules that import a changed file) | impact, diff --since |
 | `--prs` | Open-PR doc-conflict analysis — two PRs impacting the same canonical doc = merge-order risk (needs the `gh` CLI) | impact |
 | `--transport http` `--port` `--host` `--api-key` `--path` | Serve MCP over Streamable HTTP instead of stdio (team-shared server; loopback-only unless an api-key is set) | mcp |
+| `--root <dir>` | Serve another directory tree: tool calls may pass a `projectDir` inside it (repeatable). Without it, `projectDir` must stay inside the served directory | mcp |
 | `--history` | Show fix audit log | fix |
 
 When run from a nested package without `--dir`, DocGuard checks only that

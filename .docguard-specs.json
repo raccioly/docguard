@@ -4591,6 +4591,161 @@
       }
     },
     {
+      "specId": "docguard.mcp-project-confinement",
+      "path": "specs/041-mcp-project-confinement/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "approved",
+          "delivery": "implemented",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": "living"
+        },
+        "relations": {
+          "extends": [
+            "docguard.mcp-doc-tools"
+          ],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": [
+            "docs-canonical/SECURITY.md"
+          ]
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.mcp-project-confinement#FR-001",
+          "docguard.mcp-project-confinement#FR-002",
+          "docguard.mcp-project-confinement#FR-003",
+          "docguard.mcp-project-confinement#FR-004",
+          "docguard.mcp-project-confinement#FR-005",
+          "docguard.mcp-project-confinement#FR-006",
+          "docguard.mcp-project-confinement#FR-007",
+          "docguard.mcp-project-confinement#SC-001",
+          "docguard.mcp-project-confinement#SC-002",
+          "docguard.mcp-project-confinement#SC-003"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/041-mcp-project-confinement/spec.md",
+            "digest": "sha256:08ecdef7a99503789d9c11698d04be90df4a87604b34b527da9fb27744db973b"
+          },
+          {
+            "path": "specs/041-mcp-project-confinement/plan.md",
+            "digest": "sha256:c2a5fbaad07a7f8ea0e895f366bddf7bebae21dd4237e5f136d0ca7a98d877ae"
+          },
+          {
+            "path": "specs/041-mcp-project-confinement/tasks.md",
+            "digest": "sha256:c801c155d47abf1fa59af6f0e3ea1e328c9869c689b5068e43dd7bbd48754e15"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 11,
+          "total": 11
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/commands/mcp.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/commands/mcp.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/commands/mcp.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/commands/mcp.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/commands/mcp.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/docguard.mjs",
+            "line": 665
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/commands/mcp.mjs",
+            "line": 10
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/mcp-project-confinement.test.mjs",
+            "line": 2
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/mcp-project-confinement.test.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/mcp-project-confinement.test.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/mcp-project-confinement.test.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/mcp-project-confinement.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/mcp-project-confinement.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/mcp-project-confinement.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/mcp-project-confinement.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/mcp-project-confinement.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/mcp-project-confinement.test.mjs",
+            "line": 11
+          }
+        ]
+      }
+    },
+    {
       "specId": "docguard.non-regression-budgets",
       "path": "specs/031-non-regression-budgets/spec.md",
       "reviewed": {
@@ -6956,7 +7111,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/docguard.mjs",
-            "line": 956
+            "line": 963
           },
           {
             "requirementId": "FR-011",

@@ -1895,7 +1895,7 @@
           "description": "A navigation tool is dropped from the server.",
           "faultClass": "statement-deleted",
           "file": "cli/commands/mcp.mjs",
-          "find": "  docguard_doc_structure(args, defaultDir) {\n    const { dir, config } = resolveTarget(args, defaultDir);\n    return docStructure(dir, config, String((args && args.doc) || ''));\n  },\n",
+          "find": "  docguard_doc_structure(args, serving) {\n    const { dir, config } = resolveTarget(args, serving);\n    return docStructure(dir, config, String((args && args.doc) || ''));\n  },\n",
           "replace": "",
           "producedBy": {
             "producer": "agent",
@@ -3277,6 +3277,180 @@
           "producedBy": {
             "producer": "agent",
             "by": "claude-opus-5.5 (spec 039)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MCP-PROJECTDIR-STAYS-INSIDE-SERVED-ROOTS",
+      "statement": "An MCP tool call's projectDir is resolved against the served directory, with symlinks followed, and accepted only inside the directories the operator started the server to serve (--dir or the working directory, plus each --root); anything else, existing or not, gets one isError result before any project file is read, on stdio and HTTP, while calls inside keep working.",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/041-mcp-project-confinement/spec.md#FR-001"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (spec 041)"
+      },
+      "defendedBy": [
+        "tests/mcp-project-confinement.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "The containment check never refuses.",
+          "faultClass": "condition-forced",
+          "file": "cli/commands/mcp.mjs",
+          "find": "    if (!serving.roots.some((root) => isWithinRoot(root, real))) {",
+          "replace": "    if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 041)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "projectDir is compared lexically, so a symlink leads outside.",
+          "faultClass": "other",
+          "file": "cli/commands/mcp.mjs",
+          "find": "    const real = realish(lexical);\n",
+          "replace": "    const real = lexical;\n",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 041)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "A missing path is not resolved through its existing ancestors, so a symlink in its existing part hides that it is outside.",
+          "faultClass": "return-altered",
+          "file": "cli/commands/mcp.mjs",
+          "find": "    catch {\n      const up = dirname(head);",
+          "replace": "    catch {\n      return p;\n      const up = dirname(head);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 041)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "Existence is checked before containment, so the refusal tells a client which outside paths exist.",
+          "faultClass": "other",
+          "file": "cli/commands/mcp.mjs",
+          "find": "    const real = realish(lexical);\n",
+          "replace": "    if (!existsSync(lexical)) throw new Error(`projectDir does not exist: ${lexical}`);\n    const real = realish(lexical);\n",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 041)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "The parent directory counts as inside.",
+          "faultClass": "condition-forced",
+          "file": "cli/commands/mcp.mjs",
+          "find": "  return rel !== '..' && !rel.startsWith(`..${pathImpl.sep}`);",
+          "replace": "  return !rel.startsWith(`..${pathImpl.sep}`);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 041)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "Any name beginning with two dots counts as outside, refusing a directory such as `..hidden`.",
+          "faultClass": "other",
+          "file": "cli/commands/mcp.mjs",
+          "find": "  return rel !== '..' && !rel.startsWith(`..${pathImpl.sep}`);",
+          "replace": "  return !rel.startsWith('..');",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 041)"
+          }
+        },
+        {
+          "id": "F7",
+          "description": "Another drive or UNC share counts as inside.",
+          "faultClass": "statement-deleted",
+          "file": "cli/commands/mcp.mjs",
+          "find": "  if (pathImpl.isAbsolute(rel)) return false;\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 041)"
+          }
+        },
+        {
+          "id": "F8",
+          "description": "A relative projectDir resolves against the process directory, not the served one.",
+          "faultClass": "other",
+          "file": "cli/commands/mcp.mjs",
+          "find": "    const lexical = resolve(serving.dir, requested);",
+          "replace": "    const lexical = resolve(requested);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 041)"
+          }
+        },
+        {
+          "id": "F9",
+          "description": "A file passes as a project directory.",
+          "faultClass": "statement-deleted",
+          "file": "cli/commands/mcp.mjs",
+          "find": "    if (!statSync(real).isDirectory()) throw new Error(`projectDir is not a directory: ${lexical}`);\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 041)"
+          }
+        },
+        {
+          "id": "F10",
+          "description": "--root is ignored.",
+          "faultClass": "other",
+          "file": "cli/commands/mcp.mjs",
+          "find": "buildServedRoots(projectDir, flags.roots || [])",
+          "replace": "buildServedRoots(projectDir, [])",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 041)"
+          }
+        },
+        {
+          "id": "F11",
+          "description": "A --root that is a file is accepted.",
+          "faultClass": "statement-deleted",
+          "file": "cli/commands/mcp.mjs",
+          "find": "    if (!st.isDirectory()) throw new Error(`--root is not a directory: ${abs}`);\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 041)"
+          }
+        },
+        {
+          "id": "F12",
+          "description": "The HTTP transport serves every directory.",
+          "faultClass": "other",
+          "file": "cli/commands/mcp.mjs",
+          "find": "messages.map((m) => dispatchMessage(m, serving))",
+          "replace": "messages.map((m) => dispatchMessage(m, { ...serving, roots: ['/'] }))",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 041)"
+          }
+        },
+        {
+          "id": "F13",
+          "description": "tools/list no longer states the boundary.",
+          "faultClass": "literal-changed",
+          "file": "cli/commands/mcp.mjs",
+          "find": "description: 'Project to inspect: a directory inside the directories this server serves (absolute, or relative to the served directory). Defaults to the served directory.',",
+          "replace": "description: 'Path to the project to inspect (absolute, or relative to the server\\'s working directory). Defaults to the working directory the server was started in.',",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 041)"
           }
         }
       ]

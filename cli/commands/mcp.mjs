@@ -2,6 +2,12 @@
  * @implements docguard.evidence-scoped-verification#FR-009
  * @implements docguard.evidence-scoped-verification#FR-012
  * @implements docguard.first-spec-preflight#FR-007
+ * @implements docguard.mcp-project-confinement#FR-001
+ * @implements docguard.mcp-project-confinement#FR-002
+ * @implements docguard.mcp-project-confinement#FR-003
+ * @implements docguard.mcp-project-confinement#FR-004
+ * @implements docguard.mcp-project-confinement#FR-005
+ * @implements docguard.mcp-project-confinement#FR-006
  * MCP Command — DocGuard as a Model Context Protocol server (stdio).
  *
  * `docguard mcp` exposes the read-only core (guard / score / explain /
@@ -19,15 +25,17 @@
  *     method, unknown tool) get the standard JSON-RPC error codes.
  *   - Config is loaded PER tool call: the server is long-lived, .docguard.json
  *     may change between calls, and the optional `projectDir` argument may
- *     point each call at a different project.
+ *     point each call at a different project — but only one inside the
+ *     directories the operator started the server to serve (`--dir` or the
+ *     working directory, plus each `--root`). The client never widens that.
  *
  * Zero npm dependencies — node:readline over process.stdin.
  */
 
 import { compactGuardResult } from '../shared-guard-json.mjs';
 import { createInterface } from 'node:readline';
-import { existsSync, readFileSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
+import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs';
+import path, { resolve, dirname, basename, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runGuardInternal } from './guard.mjs';
 import { runScoreInternal } from './score.mjs';
@@ -54,11 +62,12 @@ const E_INVALID_PARAMS = -32602;
 const E_INTERNAL = -32603;
 
 // Shared schema fragment: every project-scoped tool accepts an optional
-// projectDir and falls back to the server's working directory.
+// projectDir and falls back to the directory the server serves.
+// docguard.mcp-project-confinement#FR-006
 const PROJECT_DIR_PROP = {
   projectDir: {
     type: 'string',
-    description: 'Path to the project to inspect (absolute, or relative to the server\'s working directory). Defaults to the working directory the server was started in.',
+    description: 'Project to inspect: a directory inside the directories this server serves (absolute, or relative to the served directory). Defaults to the served directory.',
   },
 };
 
@@ -208,14 +217,96 @@ const TOOLS = [
   },
 ];
 
+// ── Served roots (docguard.mcp-project-confinement) ─────────────────────────
+//
+// The operator decides what the server exposes when starting it; a tool call's
+// projectDir may only select a directory inside that. Comparison happens on
+// real paths (symlinks followed, letter case as stored — realpathSync.native
+// canonicalizes it on macOS and Windows), so neither a symlink nor `..` nor a
+// case variant changes the answer.
+
+/**
+ * True when `target` is `root` or inside it. Both must already be absolute
+ * paths in `pathImpl`'s flavour. `relative` rather than a string prefix, so
+ * `/x/app-other` is not inside `/x/app`; win32's `relative` compares case-
+ * insensitively and returns an absolute path across drives and UNC shares.
+ */
+export function isWithinRoot(root, target, pathImpl = path) {
+  const rel = pathImpl.relative(root, target);
+  if (rel === '') return true;
+  if (pathImpl.isAbsolute(rel)) return false;
+  return rel !== '..' && !rel.startsWith(`..${pathImpl.sep}`);
+}
+
+/**
+ * The real path of `p`, or — when its tail does not exist — the real path of
+ * its deepest existing ancestor with the missing segments appended. A missing
+ * path is judged by where it would be, so a symlink in its existing part
+ * cannot make an outside path look inside (and the refusal cannot be used to
+ * probe which outside paths exist).
+ */
+function realish(p) {
+  const tail = [];
+  let head = p;
+  for (;;) {
+    try { return tail.length ? join(realpathSync.native(head), ...tail.reverse()) : realpathSync.native(head); }
+    catch {
+      const up = dirname(head);
+      if (up === head) return p;
+      tail.push(basename(head));
+      head = up;
+    }
+  }
+}
+
+/**
+ * The serving context, built once at startup (FR-005). The served directory
+ * is always a root; each `--root` must exist and be a directory, or the
+ * server refuses to start (throws).
+ */
+export function buildServedRoots(projectDir, extraRoots = []) {
+  const dir = resolve(projectDir);
+  const roots = [realish(dir)];
+  for (const r of extraRoots) {
+    const abs = resolve(String(r));
+    let st;
+    try { st = statSync(abs); } catch { throw new Error(`--root does not exist: ${abs}`); }
+    if (!st.isDirectory()) throw new Error(`--root is not a directory: ${abs}`);
+    const real = realpathSync.native(abs);
+    if (!roots.includes(real)) roots.push(real);
+  }
+  return { dir, realDir: roots[0], roots };
+}
+
 /**
  * Resolve a tool call's target project + config. loadConfig() process.exit(1)s
  * on a malformed .docguard.json — fatal for a long-lived server — so the file
  * is pre-parsed here and a broken config surfaces as an isError tool result.
+ *
+ * docguard.mcp-project-confinement#FR-001, FR-002, FR-004: no projectDir →
+ * the served directory, unchanged. Otherwise the argument resolves against the
+ * served directory and must land inside a served root before anything under it
+ * is read; an outside path gets one message whether or not it exists.
  */
-function resolveTarget(args, defaultDir) {
-  const dir = resolve(args && typeof args.projectDir === 'string' && args.projectDir.trim() !== '' ? args.projectDir : defaultDir);
-  if (!existsSync(dir)) throw new Error(`projectDir does not exist: ${dir}`);
+function resolveTarget(args, serving) {
+  const requested = args && typeof args.projectDir === 'string' && args.projectDir.trim() !== '' ? args.projectDir : null;
+  let dir = serving.dir;
+  if (requested !== null) {
+    const lexical = resolve(serving.dir, requested);
+    const real = realish(lexical);
+    if (!serving.roots.some((root) => isWithinRoot(root, real))) {
+      throw new Error(
+        `projectDir is outside the directories this server serves (${serving.roots.join(', ')}). ` +
+        'Pass a directory inside one of them, or restart the server with --root <dir> to serve another tree.');
+    }
+    if (!existsSync(real)) throw new Error(`projectDir does not exist: ${lexical}`);
+    if (!statSync(real).isDirectory()) throw new Error(`projectDir is not a directory: ${lexical}`);
+    // Run against the resolved path, not the caller's spelling; the served
+    // directory keeps its own spelling so every name for it answers alike.
+    dir = real === serving.realDir ? serving.dir : real;
+  } else if (!existsSync(dir)) {
+    throw new Error(`projectDir does not exist: ${dir}`);
+  }
   const cfgPath = resolve(dir, '.docguard.json');
   if (existsSync(cfgPath)) {
     try { JSON.parse(readFileSync(cfgPath, 'utf-8')); }
@@ -225,8 +316,8 @@ function resolveTarget(args, defaultDir) {
 }
 
 const TOOL_HANDLERS = {
-  docguard_guard(args, defaultDir) {
-    const { dir, config } = resolveTarget(args, defaultDir);
+  docguard_guard(args, serving) {
+    const { dir, config } = resolveTarget(args, serving);
     const detail = args?.detail ?? 'compact';
     if (detail !== 'compact' && detail !== 'full') throw new Error('detail must be "compact" or "full"');
     const result = runGuardInternal(dir, config);
@@ -234,8 +325,8 @@ const TOOL_HANDLERS = {
     return detail === 'full' ? result : compactGuardResult(result);
   },
 
-  docguard_score(args, defaultDir) {
-    const { dir, config } = resolveTarget(args, defaultDir);
+  docguard_score(args, serving) {
+    const { dir, config } = resolveTarget(args, serving);
     return runScoreInternal(dir, config);
   },
 
@@ -252,8 +343,8 @@ const TOOL_HANDLERS = {
     return { code, title: entry.title, help: entry.help, suppress: entry.suppress, validator: entry.validator };
   },
 
-  docguard_verify_claims(args, defaultDir) {
-    const { dir, config } = resolveTarget(args, defaultDir);
+  docguard_verify_claims(args, serving) {
+    const { dir, config } = resolveTarget(args, serving);
     const claims = extractSemanticClaims(dir, config);
     const coverage = coverSemanticClaims(claims, evaluateEvidence(dir, config));
     return {
@@ -264,44 +355,44 @@ const TOOL_HANDLERS = {
     };
   },
 
-  docguard_verify_evidence(args, defaultDir) {
-    const { dir, config } = resolveTarget(args, defaultDir);
+  docguard_verify_evidence(args, serving) {
+    const { dir, config } = resolveTarget(args, serving);
     return evaluateEvidence(dir, config);
   },
 
-  docguard_report(args, defaultDir) {
-    const { dir, config } = resolveTarget(args, defaultDir);
+  docguard_report(args, serving) {
+    const { dir, config } = resolveTarget(args, serving);
     return buildReport(dir, config);
   },
 
   // docguard.mcp-doc-tools: exact, bounded reads. No tool here answers in
   // natural language or calls a model (FR-009).
-  docguard_docs_for_path(args, defaultDir) {
-    const { dir, config } = resolveTarget(args, defaultDir);
+  docguard_docs_for_path(args, serving) {
+    const { dir, config } = resolveTarget(args, serving);
     return docsForPath(dir, config, String((args && args.path) || ''));
   },
 
-  docguard_doc_structure(args, defaultDir) {
-    const { dir, config } = resolveTarget(args, defaultDir);
+  docguard_doc_structure(args, serving) {
+    const { dir, config } = resolveTarget(args, serving);
     return docStructure(dir, config, String((args && args.doc) || ''));
   },
 
-  docguard_read_section(args, defaultDir) {
-    const { dir, config } = resolveTarget(args, defaultDir);
+  docguard_read_section(args, serving) {
+    const { dir, config } = resolveTarget(args, serving);
     const { doc, id, anchor, heading, line, context, offset, maxBytes } = args || {};
     if (!id && !anchor && !heading && line === undefined) throw new Error('Pass one of "id", "anchor", "heading" or "line" (see docguard_doc_structure and docguard_docs_for_path).');
     return readSection(dir, config, { doc: String(doc || ''), id, anchor, heading, line, context, offset, maxBytes });
   },
 
-  docguard_task_context(args, defaultDir) {
-    const { dir, config } = resolveTarget(args, defaultDir);
+  docguard_task_context(args, serving) {
+    const { dir, config } = resolveTarget(args, serving);
     const task = String((args && args.task) || '').trim();
     if (!task) throw new Error('Missing required argument "task".');
     return buildTaskContextPacket(dir, config, task);
   },
 
-  docguard_diagnose(args, defaultDir) {
-    const { dir, config } = resolveTarget(args, defaultDir);
+  docguard_diagnose(args, serving) {
+    const { dir, config } = resolveTarget(args, serving);
     const data = runGuardInternal(dir, config);
     // Only what needs acting on: validators with errors/warnings, each carrying
     // its structured findings (code + location + suggestion) when available.
@@ -339,7 +430,7 @@ const TOOL_HANDLERS = {
  * request, or null for notifications (which get no response by spec). Both
  * the stdio and HTTP transports route through this one dispatcher.
  */
-function dispatchMessage(msg, projectDir) {
+function dispatchMessage(msg, serving) {
   const result = (id, res) => ({ jsonrpc: '2.0', id, result: res });
   const error = (id, code, message) => ({ jsonrpc: '2.0', id, error: { code, message } });
 
@@ -371,7 +462,7 @@ function dispatchMessage(msg, projectDir) {
       // In-tool failures are tool RESULTS (isError), not protocol errors —
       // one bad call must never take down the server or the session.
       try {
-        const payload = handler(params?.arguments || {}, projectDir);
+        const payload = handler(params?.arguments || {}, serving);
         return result(id, { content: [{ type: 'text', text: JSON.stringify(payload, null, 2) }] });
       } catch (err) {
         return result(id, { content: [{ type: 'text', text: String((err && err.message) || err) }], isError: true });
@@ -391,12 +482,21 @@ function dispatchMessage(msg, projectDir) {
  * the MCP Streamable HTTP transport so one shared process can serve a team.
  */
 export function runMcp(projectDir, _config, flags = {}) {
-  if (flags.transport === 'http') return runMcpHttp(projectDir, flags);
-  if (flags.transport && flags.transport !== 'stdio') {
+  if (flags.transport && flags.transport !== 'stdio' && flags.transport !== 'http') {
     process.stderr.write(`docguard mcp: unknown transport "${flags.transport}" (expected stdio or http)\n`);
     process.exitCode = 1;
     return;
   }
+  // docguard.mcp-project-confinement#FR-005: a bad --root stops the server
+  // before it serves anything, on either transport.
+  let serving;
+  try { serving = buildServedRoots(projectDir, flags.roots || []); }
+  catch (err) {
+    process.stderr.write(`docguard mcp: ${err.message}\n`);
+    process.exitCode = 1;
+    return;
+  }
+  if (flags.transport === 'http') return runMcpHttp(serving, flags);
 
   const send = (msg) => {
     // A vanished client (EPIPE) is a normal shutdown, not a crash.
@@ -404,7 +504,7 @@ export function runMcp(projectDir, _config, flags = {}) {
     catch { /* client gone — the readline close handler ends the server */ }
   };
 
-  process.stderr.write(`docguard mcp v${_PKG.version} — serving ${TOOLS.length} tools on stdio (project: ${projectDir})\n`);
+  process.stderr.write(`docguard mcp v${_PKG.version} — serving ${TOOLS.length} tools on stdio (project: ${serving.dir}; roots: ${serving.roots.join(', ')})\n`);
 
   return new Promise((done) => {
     const rl = createInterface({ input: process.stdin, terminal: false });
@@ -415,7 +515,7 @@ export function runMcp(projectDir, _config, flags = {}) {
       try { msg = JSON.parse(trimmed); }
       catch { send({ jsonrpc: '2.0', id: null, error: { code: E_PARSE, message: 'Parse error' } }); return; }
       try {
-        const resp = dispatchMessage(msg, projectDir);
+        const resp = dispatchMessage(msg, serving);
         if (resp) send(resp);
       } catch (err) {
         // Last-resort trap: a protocol-handler bug must not kill the server.
@@ -457,7 +557,7 @@ function isLoopbackHost(host) {
   return host === '127.0.0.1' || host === 'localhost' || host === '::1';
 }
 
-async function runMcpHttp(projectDir, flags) {
+async function runMcpHttp(serving, flags) {
   const { createServer } = await import('node:http');
   const { randomUUID } = await import('node:crypto');
 
@@ -520,7 +620,7 @@ async function runMcpHttp(projectDir, flags) {
 
       try {
         const messages = Array.isArray(parsed) ? parsed : [parsed];
-        const responses = messages.map((m) => dispatchMessage(m, projectDir)).filter(Boolean);
+        const responses = messages.map((m) => dispatchMessage(m, serving)).filter(Boolean);
         // New sessions get an id on initialize; we accept any/none afterwards.
         const headers = messages.some((m) => m && m.method === 'initialize')
           ? { 'mcp-session-id': randomUUID() } : {};
@@ -538,7 +638,7 @@ async function runMcpHttp(projectDir, flags) {
       const addr = server.address();
       process.stderr.write(
         `docguard mcp v${_PKG.version} — Streamable HTTP on http://${host}:${addr.port}${mountPath} ` +
-        `(project: ${projectDir}${apiKey ? ', api-key required' : ', loopback only'})\n`);
+        `(project: ${serving.dir}; roots: ${serving.roots.join(', ')}${apiKey ? '; api-key required' : '; loopback only'})\n`);
     });
     server.on('close', () => done());
   });
