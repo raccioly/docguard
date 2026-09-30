@@ -74,6 +74,10 @@ specs in a row, and commits once. Every outcome records `main`'s tip.
 3. **Given** an old revision that no longer resolves, **Then** re-anchoring
    requires `--to <rev> --reason <text>` and records that the evidence
    equivalence was attested, not checked.
+4. **Given** a target whose evidence differs from the reviewed bytes (the PR
+   kept changing after its completion), **When** `--to <rev> --reason <text>`
+   is passed, **Then** the anchor moves as attested and the differing evidence
+   files are recorded. Without `--reason` nothing is written.
 
 ### User Story 4 - Warned before it happens (Priority: P2)
 
@@ -106,7 +110,8 @@ specs in a row, and commits once. Every outcome records `main`'s tip.
   instead.
 - **FR-003**: `specs reanchor --id <id> [--to <rev>] [--write --reason <text>]`
   MUST find, or accept, a target revision that is an ancestor of `HEAD` and
-  whose evidence blobs equal the old revision's. It MUST rewrite
+  whose evidence blobs equal the old revision's, or accept an attested target
+  (`--to` with `--reason`) whose differing evidence files it records. It MUST rewrite
   `lastReviewedRevision`, the affected outcome revisions (registry and spec
   outcome block) and `reanchoredFrom` through `commitFileTransaction`. Without a
   resolvable old revision it MUST require both `--to` and `--reason`.

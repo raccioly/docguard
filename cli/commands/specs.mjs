@@ -253,8 +253,16 @@ export function reanchorSpec(projectDir, config, flags) {
           continue;
         }
         const differing = evidenceDifferences(projectDir, revision, flags.to, evidence);
-        if (differing.length) blockers.push({ code: 'SPC008', message: `Evidence differs between ${revision.slice(0, 12)} and ${flags.to.slice(0, 12)}: ${differing.join(', ')}.` });
-        else moves.push({ from: revision, to: flags.to, method: 'blob-equal' });
+        if (!differing.length) { moves.push({ from: revision, to: flags.to, method: 'blob-equal' }); continue; }
+        // The reviewed bytes never reached this history (the PR kept changing
+        // after completion). A maintainer may attest the target; the files
+        // that differ are recorded, never hidden.
+        const attestation = String(flags.reason || '').replace(/\s+/g, ' ').trim();
+        if (attestation.length < 8 || attestation.length > 500) {
+          blockers.push({ code: 'SPC008', message: `Evidence differs between ${revision.slice(0, 12)} and ${flags.to.slice(0, 12)}: ${differing.join(', ')}. Pass --reason (8-500 characters) to attest that ${flags.to.slice(0, 12)} is the reviewed state; the differing files are recorded.` });
+          continue;
+        }
+        moves.push({ from: revision, to: flags.to, method: 'attested', reason: attestation, differing });
         continue;
       }
       if (reason === 'missing') {
@@ -263,7 +271,7 @@ export function reanchorSpec(projectDir, config, flags) {
       }
       const { target, differing } = findAnchor(projectDir, revision, evidence);
       if (target) moves.push({ from: revision, to: target, method: 'blob-equal' });
-      else blockers.push({ code: 'SPC008', message: `No commit on HEAD's first-parent history carries ${revision.slice(0, 12)}'s evidence unchanged; differing: ${differing.join(', ') || 'unknown'}. Complete the spec again, or pass --to with --reason.` });
+      else blockers.push({ code: 'SPC008', message: `No commit on HEAD's first-parent history carries ${revision.slice(0, 12)}'s evidence unchanged; differing: ${differing.join(', ') || 'unknown'}. Pass --to <the merge commit that carried this review> with --reason to attest it; the differing files are recorded.` });
     }
   }
   const result = { command: 'reanchor', specId: flags.id || null, status: blockers.length ? 'BLOCKED' : moves.length ? 'READY' : 'CURRENT', moves, blockers, applied: false };
@@ -274,7 +282,7 @@ export function reanchorSpec(projectDir, config, flags) {
   for (const move of moves) {
     if (rec.lastReviewedRevision === move.from) rec.lastReviewedRevision = move.to;
     rec.outcomes = rec.outcomes.map(outcome => (outcome.revision === move.from
-      ? { ...outcome, revision: move.to, reanchoredFrom: { revision: move.from, method: move.method, ...(move.reason ? { reason: move.reason } : {}) } }
+      ? { ...outcome, revision: move.to, reanchoredFrom: { revision: move.from, method: move.method, ...(move.reason ? { reason: move.reason } : {}), ...(move.differing?.length ? { differing: move.differing } : {}) } }
       : outcome));
     specContent = rewriteOutcomeRevision(specContent, move.from, move.to);
   }
