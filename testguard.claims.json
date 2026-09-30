@@ -4069,6 +4069,253 @@
       ]
     },
     {
+      "id": "READ-ONLY-COMMANDS-WRITE-NOTHING",
+      "statement": "Only init (and the aliases that run it) installs DocGuard's agent skills and slash commands; every read, report, check and preview mode, and every unknown command, leaves the working tree unchanged; every writer into .docguard/ makes it ignore itself with a .gitignore holding '*', never replacing an existing one or writing through a symlink; DocGuard's dirty checks (memory --pack, report/reconcile HEAD identity, specs complete) leave .docguard/ out and still see every other change.",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/042-read-only-commands/spec.md#FR-001"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (spec 042)"
+      },
+      "defendedBy": [
+        "tests/read-only-commands.test.mjs",
+        "tests/ensure-skills-idempotent.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "The dispatcher installs skills before every command again.",
+          "faultClass": "other",
+          "file": "cli/docguard.mjs",
+          "find": "  // v0.20: deprecation aliases. The legacy command keeps working until v1.0",
+          "replace": "  if (command !== 'init' && command !== 'setup') (await import('./ensure-skills.mjs')).ensureSkills(projectDir, flags);\n  // v0.20: deprecation aliases. The legacy command keeps working until v1.0",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 042)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "`rules --for` scaffolds, as when it was missing from the read-only list.",
+          "faultClass": "other",
+          "file": "cli/docguard.mjs",
+          "find": "      runRules(projectDir, config, flags);",
+          "replace": "      (await import('./ensure-skills.mjs')).ensureSkills(projectDir, flags);\n      runRules(projectDir, config, flags);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 042)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "An unknown command scaffolds before failing.",
+          "faultClass": "other",
+          "file": "cli/docguard.mjs",
+          "find": "    default:\n",
+          "replace": "    default:\n      (await import('./ensure-skills.mjs')).ensureSkills(projectDir, flags);\n",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 042)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "The state directory does not ignore itself.",
+          "faultClass": "statement-deleted",
+          "file": "cli/writers/state-dir.mjs",
+          "find": "      writeFileSync(join(dir, '.gitignore'), '*\\n', { encoding: 'utf-8', flag: 'wx' });",
+          "replace": "      void writeFileSync;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 042)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "An existing .docguard/.gitignore is overwritten.",
+          "faultClass": "other",
+          "file": "cli/writers/state-dir.mjs",
+          "find": "{ encoding: 'utf-8', flag: 'wx' }",
+          "replace": "{ encoding: 'utf-8', flag: 'w' }",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 042)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "A symlinked or non-directory .docguard is written through.",
+          "faultClass": "other",
+          "file": "cli/writers/state-dir.mjs",
+          "find": "      if (!lstatSync(dir).isDirectory()) return false;\n    } catch (err) {",
+          "replace": "      lstatSync(dir);\n    } catch (err) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 042)"
+          }
+        },
+        {
+          "id": "F7",
+          "description": "The plan cache bypasses ensureStateDir (and so the ignore file).",
+          "faultClass": "other",
+          "file": "cli/scanners/memory-plan.mjs",
+          "find": "    if (!ensureStateDir(projectDir)) return;",
+          "replace": "    if (!_cacheDirectorySafe(projectDir)) return;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 042)"
+          }
+        },
+        {
+          "id": "F8",
+          "description": "Score history writes .docguard/ without the ignore file.",
+          "faultClass": "statement-deleted",
+          "file": "cli/writers/history.mjs",
+          "find": "    ensureStateDir(projectDir);\n    mkdirSync(dirname(p), { recursive: true });",
+          "replace": "    mkdirSync(dirname(p), { recursive: true });",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 042)"
+          }
+        },
+        {
+          "id": "F9",
+          "description": "The context pack writes .docguard/ without the ignore file.",
+          "faultClass": "statement-deleted",
+          "file": "cli/commands/memory.mjs",
+          "find": "  ensureStateDir(projectDir);\n  safeWrite(outPath, content);",
+          "replace": "  safeWrite(outPath, content);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 042)"
+          }
+        },
+        {
+          "id": "F10",
+          "description": "Spec completion writes the active context without the ignore file.",
+          "faultClass": "statement-deleted",
+          "file": "cli/commands/specs.mjs",
+          "find": "  ensureStateDir(projectDir);\n  commitFileTransaction([",
+          "replace": "  commitFileTransaction([",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 042)"
+          }
+        },
+        {
+          "id": "F11",
+          "description": "The nudge hook writes its throttle state without the ignore file.",
+          "faultClass": "statement-deleted",
+          "file": "cli/commands/hooks.mjs",
+          "find": "      ensureStateDir(projectDir);\n      mkdirSync(resolve(projectDir, '.docguard'), { recursive: true });",
+          "replace": "      mkdirSync(resolve(projectDir, '.docguard'), { recursive: true });",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 042)"
+          }
+        },
+        {
+          "id": "F12",
+          "description": "Feedback records are written without the ignore file.",
+          "faultClass": "statement-deleted",
+          "file": "cli/commands/feedback.mjs",
+          "find": "      ensureStateDir(projectDir);\n      if (!existsSync(feedbackDir))",
+          "replace": "      if (!existsSync(feedbackDir))",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 042)"
+          }
+        },
+        {
+          "id": "F13",
+          "description": "Fix memory is written without the ignore file.",
+          "faultClass": "statement-deleted",
+          "file": "cli/writers/fix-memory.mjs",
+          "find": "  ensureStateDir(projectDir);\n  if (!existsSync(dir))",
+          "replace": "  if (!existsSync(dir))",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 042)"
+          }
+        },
+        {
+          "id": "F14",
+          "description": "The report and reconcile HEAD identity counts .docguard/ as dirty.",
+          "faultClass": "other",
+          "file": "cli/shared-git.mjs",
+          "find": "run(['status', '--porcelain', '--untracked-files=no', ...OWN_STATE_PATHSPEC])",
+          "replace": "run(['status', '--porcelain', '--untracked-files=no'])",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 042)"
+          }
+        },
+        {
+          "id": "F15",
+          "description": "memory --pack counts .docguard/ as dirty.",
+          "faultClass": "other",
+          "file": "cli/scanners/semantic-claims.mjs",
+          "find": "['status', '--porcelain', '--untracked-files=normal', ...OWN_STATE_PATHSPEC]",
+          "replace": "['status', '--porcelain', '--untracked-files=normal']",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 042)"
+          }
+        },
+        {
+          "id": "F16",
+          "description": "specs complete counts .docguard/ as a change.",
+          "faultClass": "other",
+          "file": "cli/scanners/revision-anchor.mjs",
+          "find": "['status', '--porcelain=v1', '-z', '--untracked-files=no', ...OWN_STATE_PATHSPEC]",
+          "replace": "['status', '--porcelain=v1', '-z', '--untracked-files=no']",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 042)"
+          }
+        },
+        {
+          "id": "F17",
+          "description": "The exclusion hides real changes elsewhere in the repository.",
+          "faultClass": "other",
+          "file": "cli/shared-git.mjs",
+          "find": "Object.freeze(['--', ':/', ':(exclude).docguard'])",
+          "replace": "Object.freeze(['--', ':/', ':(exclude).docguard', ':(exclude)src'])",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 042)"
+          }
+        },
+        {
+          "id": "F18",
+          "description": "init rewrites every installed skill on each run (no content-equality gate).",
+          "faultClass": "other",
+          "file": "cli/ensure-skills.mjs",
+          "find": "        if (installedContent !== srcContent) {",
+          "replace": "        if (installedContent !== null || srcContent) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 042)"
+          }
+        },
+        {
+          "id": "F19",
+          "description": "init no longer installs the slash commands.",
+          "faultClass": "other",
+          "file": "cli/ensure-skills.mjs",
+          "find": "  if (!existsSync(commandsCheck) && existsSync(COMMANDS_SOURCE)) {",
+          "replace": "  if (false && !existsSync(commandsCheck) && existsSync(COMMANDS_SOURCE)) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 042)"
+          }
+        }
+      ]
+    },
+    {
       "id": "GO-SPRING-RAILS-ROUTES-COMPOSE-PREFIXES",
       "statement": "Go, Spring and Rails routes are reported at the path the framework serves them under: Go group, sub-router and mount prefixes compose across blocks, functions and files; Spring class-level @RequestMapping bases in every form join every method mapping, with @RequestMapping methods read and Feign clients skipped; Rails namespace, scope, resources options, nesting and member/collection blocks produce the routes rails routes lists. A route whose path or prefix is not literal is omitted, never guessed.",
       "source": {

@@ -17,6 +17,7 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { commitFileTransaction } from '../writers/file-transaction.mjs';
+import { ensureStateDir } from '../writers/state-dir.mjs';
 import { appendImplementationOutcome, rewriteOutcomeRevision } from '../writers/spec-outcomes.mjs';
 import { danglingRevisions, evidenceDifferences, findAnchor, isAncestorOf, nonLifecycleChanges, reachableFromDefaultBranch, resolveCommit } from '../scanners/revision-anchor.mjs';
 import { serializeLifecycleContext } from '../scanners/lifecycle-context.mjs';
@@ -206,6 +207,7 @@ export function completeSpec(projectDir, config, flags, options = {}) {
   projection.registry.schemaVersion = 2;
   const registryContent = `${JSON.stringify(projection.registry, null, 2)}\n`;
   const contextContent = serializeLifecycleContext(projectDir, projection.registry, plan.revision);
+  ensureStateDir(projectDir);
   commitFileTransaction([
     { path: specPath, content: specContent },
     { path: resolve(projectDir, SPEC_REGISTRY_PATH), content: registryContent },
@@ -319,7 +321,10 @@ export function reanchorSpec(projectDir, config, flags) {
   let context = null;
   try { context = JSON.parse(readFileSync(contextPath, 'utf8')); } catch { /* no active context yet */ }
   const moved = moves.find(move => move.from === context?.generatedFrom);
-  if (moved) writes.push({ path: contextPath, content: serializeLifecycleContext(projectDir, projection.registry, moved.to) });
+  if (moved) {
+    ensureStateDir(projectDir);
+    writes.push({ path: contextPath, content: serializeLifecycleContext(projectDir, projection.registry, moved.to) });
+  }
   commitFileTransaction(writes, {
     validate: () => {
       const next = projectSpecRegistry(projectDir, config);

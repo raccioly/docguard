@@ -34,11 +34,11 @@
     "docs-canonical/DATA-MODEL.md#spec-registry": {
       "dependencies": {
         "cli/commands/specs.mjs#completeSpec": {
-          "fingerprint": "sha256:533a88b37c2015a4228138842b4760179a374b217f55191e21723045094f1d54",
+          "fingerprint": "sha256:46bb81255eed96ede2c92439ca4de3c1f0341795bba858075235e5005cc66971",
           "tier": "ast"
         },
         "cli/commands/specs.mjs#reanchorSpec": {
-          "fingerprint": "sha256:249d5ff0de8cc13702543e73de1d36f1bf2cdbf23b09f838acb329d7976e343c",
+          "fingerprint": "sha256:47335217c668292e1be76b49f82c879981a1670cad6570b8fceb9f74dff41aed",
           "tier": "ast"
         },
         "schemas/docguard-specs.schema.json": {
@@ -46,9 +46,9 @@
           "tier": "content"
         }
       },
-      "reason": "reanchorSpec now resolves --to to a full SHA before recording it; the lifecycle row names specs approve and specs complete",
+      "reason": "Merged 040 and 042: reanchorSpec resolves --to to a full SHA and completeSpec/reanchorSpec treat .docguard/ state as clean; the section states both (specs approve row, clean-tree note).",
       "reviewedAt": "2026-09-30",
-      "reviewedRevision": "896e3a9dd92ca4bfdf930c01f565e54a1403cddc"
+      "reviewedRevision": "21f0c85caeecc2943df578702416339fea74d752"
     }
   }
 }

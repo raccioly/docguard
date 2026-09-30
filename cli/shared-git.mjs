@@ -441,9 +441,19 @@ export function lastCommitHash(dir, filePath) {
 }
 
 /**
+ * `git status` pathspec that keeps the whole repository in scope but leaves out
+ * this project's own `.docguard/` state (plan cache, history, context pack…).
+ * Relative to the git working directory, so callers run git in the project
+ * directory. It also covers state an earlier version let a project commit,
+ * which an ignore file cannot untrack.
+ * @implements docguard.read-only-commands#FR-006
+ */
+export const OWN_STATE_PATHSPEC = Object.freeze(['--', ':/', ':(exclude).docguard']);
+
+/**
  * Resolve HEAD identity for evidence reports: { commit, branch, dirty }.
  * `branch` is null on a detached HEAD (common in CI checkouts); `dirty` is
- * true when tracked files have uncommitted changes — evidence consumers need
+ * true when tracked files outside `.docguard/` have uncommitted changes — evidence consumers need
  * to know the report may not describe a reproducible tree. Returns null when
  * the dir isn't a git repo or git is unavailable.
  */
@@ -456,7 +466,7 @@ export function getHeadInfo(dir) {
     if (!commit) return null;
     const branchRaw = run(['rev-parse', '--abbrev-ref', 'HEAD']);
     const branch = branchRaw === 'HEAD' ? null : branchRaw;
-    const dirty = run(['status', '--porcelain', '--untracked-files=no']) !== '';
+    const dirty = run(['status', '--porcelain', '--untracked-files=no', ...OWN_STATE_PATHSPEC]) !== '';
     return { commit, branch, dirty };
   } catch {
     return null;

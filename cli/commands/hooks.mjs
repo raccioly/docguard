@@ -132,6 +132,7 @@ function removeManagedBlock(content) {
 import { resolve, relative, basename } from 'node:path';
 import { c } from '../shared.mjs';
 import { safeWrite } from '../writers/generate-io.mjs';
+import { ensureStateDir } from '../writers/state-dir.mjs';
 import { getHooksDir } from '../shared-git.mjs';
 import { listCanonicalDocs } from '../shared-ignore.mjs';
 
@@ -334,7 +335,7 @@ export function runHooks(projectDir, config, flags) {
   // ── Claude Code agent nudge: `docguard hooks --claude` ──
   // Separate path from git hooks: it edits .claude/settings.json, needs no
   // git repo, and is explicitly opt-in (writing agent config unasked is a
-  // trust break — same class as the ensureSkills READ_ONLY_COMMANDS rule).
+  // trust break — the same rule that keeps skill installation inside init).
   if (flags.claude) {
     installClaudeNudge(projectDir, { remove: !!flags.remove });
     return;
@@ -616,6 +617,7 @@ export function runNudgeHook(projectDir) {
     if (state[rel] && now - state[rel] < NUDGE_THROTTLE_MS) return;
     state[rel] = now;
     try {
+      ensureStateDir(projectDir);
       mkdirSync(resolve(projectDir, '.docguard'), { recursive: true });
       safeWrite(statePath, JSON.stringify(state, null, 2) + '\n');
     } catch { /* state is best-effort; still nudge */ }

@@ -498,6 +498,34 @@ Behaviour changes:
     (`github.com/labstack/echo/v4`, `go-chi/chi/v5`, `gofiber/fiber/v2`), which
     left those projects' routes unscanned, and recognises gorilla/mux.
 
+- **Read-only commands no longer install anything**
+  (`specs/042-read-only-commands`).
+  - Before every command, the dispatcher installed DocGuard's agent skills
+    and slash commands (17 files under `.agent/`) and printed "Spec Kit is not
+    initialized". It skipped only the commands on a hand-kept list.
+  - Commands missing from that list scaffolded:
+    - `rules --for`, documented as read-only;
+    - the `generate --spec <area>` preview and the `sync` dry run;
+    - `reconcile`, `upgrade` (the report), `watch` and `hooks --claude`;
+    - a mistyped command name, before it failed with "Unknown command".
+  - Now only `docguard init`, and the aliases that run it, install skills and
+    commands. Every other command, in every mode, writes only the outputs it
+    documents.
+  - To refresh the installed skills after upgrading DocGuard, re-run `docguard
+    init`. It keeps existing files.
+- **DocGuard's `.docguard/` state no longer ends up in commits.** `guard`,
+  `sync`, `generate --plan`, `ci`, `memory --pack` and others write a plan
+  cache, history or context pack into `.docguard/`. Nothing ignored that
+  directory in a user's project, so `git add -A` committed it, and the next
+  `memory --pack` reported `dirty: true`.
+  - Each writer now creates `.docguard/.gitignore` containing `*`, as pytest
+    and ruff do for their caches. An existing `.gitignore` there is kept, and
+    the project's own `.gitignore` is not touched.
+  - `memory --pack`, `report`, `reconcile`, `specs complete` and `specs
+    reanchor` no longer count files under `.docguard/` as uncommitted changes.
+  - If you already committed them, `git rm -r --cached .docguard` untracks
+    them.
+
 - **A project's first spec passes the generated-spec preflight**
   (`specs/040-spec-preflight-first-spec`). The mandatory `before_tasks` hook
   runs `specs preflight --path <draft>`. With no registry it blocked on
