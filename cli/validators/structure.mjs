@@ -123,7 +123,8 @@ export function validateStructure(projectDir, config) {
       findings.push(mkFinding({
         code: 'STR005',
         validator: 'structure',
-        severity: 'info',
+        // Informational by its registered default (CODES.STR005.defaultLevel).
+        severity: 'warn',
         confidence: 'high',
         disposition: 'act',
         message: `Agent instruction chain for ${chain.leaf} is ${chain.bytes} bytes, well under its allowance of ${allowance}; lower the allowance so the chain cannot grow back`,

@@ -10,6 +10,7 @@ import { readFileSync, statSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildIgnoreFilter, loadDocguardIgnore } from './shared-ignore.mjs';
+import { codeDefaultLevel } from './findings.mjs';
 
 /**
  * Current .docguard.json schema version that this CLI version writes via
@@ -63,7 +64,9 @@ export function resolveSeverity(config, validatorKey) {
 /**
  * Resolve the enforcement level for one structured finding. Exact finding-code
  * policy wins over validator policy. Without an exact override, intrinsic
- * errors remain blocking and validator severity only reweights warnings.
+ * errors remain blocking, a code registered as informational stays
+ * informational (it is more specific than its validator's policy), and
+ * validator severity reweights the remaining warnings.
  */
 export function resolveFindingEnforcement(config, finding, validatorKey) {
   const code = typeof finding?.code === 'string' ? finding.code.toUpperCase() : null;
@@ -79,6 +82,8 @@ export function resolveFindingEnforcement(config, finding, validatorKey) {
   if (finding?.severity === 'error') {
     return { level: 'error', source: 'intrinsic', key: code };
   }
+  const codeLevel = codeDefaultLevel(code);
+  if (codeLevel) return { level: codeLevel, source: 'code', key: code };
   const validatorSeverity = resolveSeverity(config, validatorKey);
   return {
     level: validatorSeverity === 'high' ? 'error' : validatorSeverity === 'low' ? 'info' : 'warn',

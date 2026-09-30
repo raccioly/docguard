@@ -291,7 +291,7 @@ A finding answers three independent questions, one field each. A single `confide
 
 | Field | Question | Values |
 |-------|----------|--------|
-| `severity` / `effectiveSeverity` | Does CI block? | `error`, `warn`, `info` (effective only) |
+| `severity` / `effectiveSeverity` | Does CI block? | `error`, `warn`, `info` (effective only: from `findingSeverity`, validator `severity`, or a code registered as informational, such as `STR005`; `enforcement.source` says which: `finding`, `validator`, `code` or `intrinsic`) |
 | `disposition` | Who decides — the tool or the reader? | `act`, `escalate` |
 | `confidence` | How sure is the detector of its **observation**? | `high`, `low` |
 | `evidence` | Has the reviewed corpus ever measured this code? | `{ status: 'measured' \| 'not-measured', … }` |

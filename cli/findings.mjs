@@ -79,6 +79,11 @@ import { evidenceForCode, PRECISION_EVIDENCE } from './precision-evidence.mjs';
  * Stable finding-code registry. `docguard explain <CODE>` reads this, and
  * inline `// docguard:ignore <CODE>` keys off it. Keep codes append-only — a
  * published code is a public surface we don't renumber.
+ *
+ * `defaultLevel: 'info'` makes a code informational for the exit code unless
+ * `findingSeverity.<CODE>` says otherwise. A finding's own `severity` stays
+ * `error` or `warn` (the documented contract: `info` is an enforcement level
+ * only), so the code's default lives here, beside its title and help.
  */
 export const CODES = {
   SEC001: {
@@ -156,8 +161,9 @@ export const CODES = {
   },
   STR005: {
     validator: 'structure',
+    defaultLevel: 'info',
     title: 'Instruction allowance has slack',
-    help: 'An allowance in `agentInstructions.allowances` is at least 1024 bytes above the chain it covers. The chain shrank; lower the allowance to the current size (or remove it when the chain is within the default budget) so it cannot grow back unnoticed.',
+    help: 'An allowance in `agentInstructions.allowances` is at least 1024 bytes above the chain it covers. The chain shrank; lower the allowance to the current size (or remove it when the chain is within the default budget) so it cannot grow back unnoticed. Informational: it never changes the exit code unless `findingSeverity.STR005` says so.',
     suppress: null,
   },
   CHG001: {
@@ -968,6 +974,12 @@ function normalizeLocation(loc) {
   return null;
 }
 
+/** A code's registered default enforcement level, or null (docguard.agent-instruction-budget#FR-004). */
+export function codeDefaultLevel(code) {
+  const level = typeof code === 'string' ? CODES[code.toUpperCase()]?.defaultLevel : undefined;
+  return level === 'info' ? level : null;
+}
+
 /**
  * Build a Finding with sane defaults.
  *
@@ -990,6 +1002,10 @@ function normalizeLocation(loc) {
  * Deriving it from confidence alone made the feedback loop sample only the
  * findings it already doubted — the population where a wrong label is most
  * costly (confident, never measured) was excluded by default.
+ *
+ * `severity` is `error` or `warn`; anything else becomes `warn`. A detector
+ * that means "informational" registers `defaultLevel: 'info'` for its code
+ * instead: passing `severity: 'info'` here was silently read as a warning.
  *
  * @param {Partial<Finding>} f
  * @returns {Finding}
