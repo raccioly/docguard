@@ -1,6 +1,6 @@
 # Tasks: Read-Only Commands Write Nothing
 
-**Status**: In progress.
+**Status**: Complete. SC-001: 69 read, report, check and preview invocations plus `watch` leave the tree unchanged, and before the fix 36 tests failed (`rules --for`, `generate --spec`, `sync`, `reconcile`, `upgrade`, `watch`, unknown commands, and every state and dirty-check case); SC-002 and SC-003 hold. Claim READ-ONLY-COMMANDS-WRITE-NOTHING: 19/19 faults killed.
 **Spec**: `specs/042-read-only-commands/spec.md`
 **Plan**: `specs/042-read-only-commands/plan.md`
 
@@ -49,5 +49,5 @@
   `ARCHITECTURE.md`, `CHANGELOG.md` (FR-007).
 - [x] T011 Registry entry (`.docguard-specs.json`), then `docguard specs
   --write` and `npm run llms`.
-- [ ] T012 `testguard.claims.json`: claim READ-ONLY-COMMANDS-WRITE-NOTHING,
+- [x] T012 `testguard.claims.json`: claim READ-ONLY-COMMANDS-WRITE-NOTHING,
   probed with `--confirm 3`. Then the gate, `npm test` and `docguard guard`.
