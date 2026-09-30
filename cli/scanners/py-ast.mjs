@@ -15,6 +15,12 @@
  * tier. Python parsing never becomes load-bearing for the CLI to run.
  * @implements docguard.language-repository-coverage#FR-001
  * @implements docguard.language-repository-coverage#FR-004
+ *
+ * The extractor emits a module outline (imports, module-level statements,
+ * classes, functions) that the route, model and settings resolvers share with
+ * the pattern tier (py-outline.mjs), and the module's public names, including
+ * names assigned at the top level, for the symbol map.
+ * @implements docguard.python-extraction#FR-016
  */
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';

@@ -244,7 +244,7 @@ function shouldRunGenerate(projectDir, flags) {
 
   // Python web layouts keep their code in a project package and app packages
   // (Django: manage.py, mysite/, blog/), not in src/ or app/.
-  // (docguard.python-extraction#FR-011)
+  // @implements docguard.python-extraction#FR-011
   if (existsSync(resolve(projectDir, 'manage.py'))) return true;
   try {
     const { ecosystems } = detectProjectProfile(projectDir);

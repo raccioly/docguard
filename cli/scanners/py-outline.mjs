@@ -22,8 +22,6 @@
 import { existsSync, readdirSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { DEFAULT_IGNORE_DIRS as IGNORE_DIRS } from '../shared-ignore.mjs';
-import { extractPythonFiles } from './py-ast.mjs';
-import { readScannable, tierFor, summarizeTiers } from '../shared-source.mjs';
 
 const MAX_DEPTH = 14;
 const MAX_ITEMS = 500;
@@ -641,36 +639,6 @@ export function outlineFromSource(source) {
   const aliases = [];
   const body = statements(buildTree(logicalLines(source)), 'module', aliases, 0);
   return { aliases, body };
-}
-
-// ── Loading outlines for a set of files ─────────────────────────────────────
-
-/**
- * Outlines for a batch of files: the AST tier where `python3` parses the file,
- * the pattern tier otherwise. Files the size/generated guard skips are omitted.
- *
- * @param {string[]} files absolute paths
- * @param {string} noun what the batch fell back for, in the tier reason
- * @returns {{ byFile: Map<string, {outline, tier, tierReason}>, scanTier: object }}
- */
-export function loadPythonOutlines(files, noun = 'facts') {
-  const ast = extractPythonFiles(files);
-  const batchReason = ast === null ? `No usable python3 interpreter; ${noun} matched by pattern.` : null;
-  const byFile = new Map();
-  const tiers = [];
-  for (const file of files) {
-    const source = readScannable(file);
-    if (source === null) continue;
-    const parsed = ast && ast[file];
-    const { tier, tierReason } = tierFor(file, parsed, batchReason);
-    tiers.push({ tier, tierReason });
-    let outline = parsed && parsed.ok && parsed.outline ? parsed.outline : null;
-    if (!outline) {
-      try { outline = outlineFromSource(source); } catch { outline = null; }
-    }
-    if (outline) byFile.set(file, { outline, tier, tierReason });
-  }
-  return { byFile, scanTier: summarizeTiers(tiers) };
 }
 
 // ── Module index and name resolution ────────────────────────────────────────

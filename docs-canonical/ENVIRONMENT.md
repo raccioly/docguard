@@ -111,7 +111,13 @@ What must be visible:
 - **`python3` (optional).** It provides AST-accurate Python analysis. Without it, the regex
   tier runs, and each affected validator reports the degraded parser tier. A doc section that
   covers a Python symbol cannot be compared, so the doc-dependency check reports `partial`, and
-  the generated module graph marks itself partial instead of drawing Python edges it cannot see.
+  the generated module graph says the interpreter was unavailable instead of drawing Python
+  edges it cannot see. `generate --plan` names the parser tier of its endpoints and entities,
+  reports `low` confidence with a note, and marks those sections partial; `generate --spec`
+  reports the tier and `low` confidence; SPR007 findings on routes and entities carry
+  `parserTier: regex-fallback` and `low` confidence. The pattern tier still composes router
+  prefixes and Django URL configurations the same way, so on standard layouts it reports the
+  same facts.
 - **The `specify` CLI (optional).** It is only needed for `docguard init` to set up Spec Kit.
 
 ## Revision History

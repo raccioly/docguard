@@ -21,7 +21,8 @@
  * @implements docguard.python-extraction#FR-003
  */
 import { relative } from 'node:path';
-import { findPythonFiles, loadPythonOutlines, PythonIndex, refTail, exprText, evalString } from './py-outline.mjs';
+import { findPythonFiles, PythonIndex, refTail, exprText, evalString } from './py-outline.mjs';
+import { loadPythonOutlines } from './py-sources.mjs';
 
 const HTTP = new Set(['get', 'post', 'put', 'delete', 'patch', 'head', 'options', 'trace']);
 const APP_KINDS = new Set(['FastAPI', 'Flask', 'Quart']);

@@ -102,7 +102,10 @@ export function collectAreaFacts(projectDir, areaRel, config = {}) {
   return list;
 }
 
-/** True when a tier means an AST-capable file was read by the pattern fallback. */
+/**
+ * True when a tier means an AST-capable file was read by the pattern fallback.
+ * @implements docguard.python-extraction#FR-013
+ */
 export function isPatternTier(tier) {
   return tier === 'regex-fallback' || tier === 'mixed';
 }
@@ -118,7 +121,8 @@ export function factsTier(facts) {
 /**
  * Test files under the area — existing evidence, listed, never candidates.
  * Python package markers and fixtures (`__init__.py`, `conftest.py`) sit in
- * test directories but are not tests (docguard.python-extraction#FR-015).
+ * test directories but are not tests.
+ * @implements docguard.python-extraction#FR-015
  */
 export function areaTests(projectDir, areaRel) {
   const out = [];

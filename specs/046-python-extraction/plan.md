@@ -127,7 +127,8 @@ Pass.
 
 ```text
 cli/scanners/py-ast.mjs          # outline in the AST extractor; symbols; cache
-cli/scanners/py-outline.mjs      # NEW pattern-tier outline
+cli/scanners/py-outline.mjs      # NEW pattern-tier outline, module index
+cli/scanners/py-sources.mjs      # NEW outlines per file from the best tier
 cli/scanners/python-routes.mjs   # NEW FastAPI/Flask/Django resolvers
 cli/scanners/python-models.mjs   # NEW ORM entities and relationships
 cli/scanners/py-env.mjs          # NEW BaseSettings and os imports

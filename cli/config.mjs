@@ -184,8 +184,9 @@ export function loadConfig(projectDir) {
  * One detector: the ecosystem profile (scanners/project-type.mjs), which
  * reads every manifest DocGuard supports. A root ecosystem that names a
  * framework or a kind wins over a root `library` (a Python service with a
- * package.json for tooling), and a `service` is an `api`. A Worker config is
- * checked first, as before. (docguard.python-extraction#FR-010)
+ * package.json for tooling), and a `service` with a web framework is an
+ * `api`. A Worker config is checked first, as before.
+ * @implements docguard.python-extraction#FR-010
  */
 const KIND_TO_PROJECT_TYPE = { cli: 'cli', library: 'library', webapp: 'webapp', api: 'api', service: 'api' };
 
@@ -199,6 +200,9 @@ export function autoDetectProjectType(dir) {
   // A package.json with no entry point, no bin and no framework is not
   // evidence of a library; keep the historical 'unknown' for it.
   if (pick.kind === 'library' && pick.manifest === 'package.json' && !hasLibraryEntry(dir)) return 'unknown';
+  // A `service` is an API only when a web framework says so; a bare Go
+  // main package stays 'unknown', as before.
+  if (pick.kind === 'service' && !pick.framework) return 'unknown';
   return KIND_TO_PROJECT_TYPE[pick.kind] || 'unknown';
 }
 

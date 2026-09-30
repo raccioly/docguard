@@ -342,6 +342,7 @@ export function buildMemoryPlan(projectDir, config = {}, opts = {}) {
 }
 
 /**
+ * @implements docguard.python-extraction#FR-012
  * The parser tier behind one surface: the scan's own summary when the scanner
  * reports one (Python), combined with the tiers its items carry. Degraded when
  * a file an AST could read was read by the pattern fallback.

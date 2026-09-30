@@ -20,6 +20,9 @@ non-zero exit as failure. Most likely triggers:
 - **PSR001–PSR004:** agent instruction files (including a root `AGENTS.md`)
   that point at missing paths, or whose path scopes match nothing or cannot
   be read.
+- **SCH002 and ENV findings on Python projects:** SQLAlchemy models and
+  pydantic `BaseSettings` fields are now read, so ones the docs do not
+  mention yet are reported.
 
 Behaviour changes:
 
@@ -463,7 +466,40 @@ Behaviour changes:
 ### Fixed
 
 - **Python web projects are read accurately** (`specs/046-python-extraction`).
-  Draft; completed with the implementation.
+  Measured on a FastAPI reference project and a Django reference project, with
+  and without `python3`:
+  - FastAPI/Flask routes compose every prefix (`APIRouter(prefix=)`,
+    `include_router`, blueprints, `mount`) across modules and under any router
+    name; `/api/v1/users/{user_id}` was reported as `/{user_id}`, and two
+    `GET /` routes collapsed into one as-built fact. Router-level
+    authentication dependencies mark their routes.
+  - Django routes follow `ROOT_URLCONF` through `include()`, `re_path` and DRF
+    router registrations; an include mount is no longer reported as an
+    endpoint (`ALL /api/`). `<int:pk>` compares equal to `{pk}` (path
+    normalization turned it into `<int{}`).
+  - SQLAlchemy 2.0 models (`Mapped`/`mapped_column`) and Django models are the
+    entities; Pydantic payloads are not, unless there is no ORM. Relationships
+    carry one-to-many, many-to-many or one-to-one, one edge per relationship,
+    never to a missing entity or labelled `undefined`. Diagram types read
+    `str`, not `Optional_str_`. Guard's schema check reads the same scanner
+    as `generate`, so the two agree; it now also checks SQLAlchemy models.
+  - `BaseSettings` fields (`env_prefix`, `alias`, `validation_alias`) and
+    `environ.get()` after `from os import environ` are environment variables.
+  - `init --skip-prompts` types a FastAPI project as `api` (it said `library`):
+    one project-type detector. Plain `init` on a Django layout scans the code
+    instead of prompting. A `pyproject.toml` dependency with extras no longer
+    ends the dependency list.
+  - Without `python3`, `generate --plan` (text and JSON) and `generate --spec`
+    report the pattern tier with `low` confidence and a note, pattern-tier
+    sections are partial, and SPR007 findings carry the facts' parser tier.
+    The module graph says the interpreter was unavailable instead of "No
+    source modules found".
+  - The as-built test list no longer counts `tests/__init__.py`; the symbol
+    map lists module-level names such as `app` and `settings`.
+
+  Upgrading: guard may report new SCH002 warnings for SQLAlchemy models and
+  new ENV findings for settings fields that DATA-MODEL.md or ENVIRONMENT.md
+  do not document yet.
 
 - **STR005 is informational, as spec 017 requires.** The validator asked for
   `severity: 'info'`, which the finding constructor only accepts as `error` or

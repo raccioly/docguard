@@ -1419,7 +1419,7 @@
           {
             "requirementId": "FR-008",
             "file": "cli/scanners/memory-plan.mjs",
-            "line": 348
+            "line": 362
           },
           {
             "requirementId": "FR-009",
@@ -3745,7 +3745,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/shared-source.mjs",
-            "line": 375
+            "line": 376
           },
           {
             "requirementId": "FR-006",
@@ -3755,7 +3755,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/shared-source.mjs",
-            "line": 376
+            "line": 377
           },
           {
             "requirementId": "FR-007",
@@ -3852,7 +3852,7 @@
           {
             "requirementId": "FR-001",
             "file": "tests/py-ast.test.mjs",
-            "line": 94
+            "line": 123
           },
           {
             "requirementId": "FR-002",
@@ -5276,6 +5276,292 @@
       }
     },
     {
+      "specId": "docguard.python-extraction",
+      "path": "specs/046-python-extraction/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "approved",
+          "delivery": "implemented",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": "living"
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md",
+            "docs-canonical/ENVIRONMENT.md"
+          ]
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.python-extraction#FR-001",
+          "docguard.python-extraction#FR-002",
+          "docguard.python-extraction#FR-003",
+          "docguard.python-extraction#FR-004",
+          "docguard.python-extraction#FR-005",
+          "docguard.python-extraction#FR-006",
+          "docguard.python-extraction#FR-007",
+          "docguard.python-extraction#FR-008",
+          "docguard.python-extraction#FR-009",
+          "docguard.python-extraction#FR-010",
+          "docguard.python-extraction#FR-011",
+          "docguard.python-extraction#FR-012",
+          "docguard.python-extraction#FR-013",
+          "docguard.python-extraction#FR-014",
+          "docguard.python-extraction#FR-015",
+          "docguard.python-extraction#FR-016",
+          "docguard.python-extraction#FR-017",
+          "docguard.python-extraction#FR-018",
+          "docguard.python-extraction#SC-001",
+          "docguard.python-extraction#SC-002",
+          "docguard.python-extraction#SC-003",
+          "docguard.python-extraction#SC-004"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/046-python-extraction/spec.md",
+            "digest": "sha256:59b879bf7616b247751df2cc69efd44c0b8745e5ac4c174be992eb2e96ed000b"
+          },
+          {
+            "path": "specs/046-python-extraction/plan.md",
+            "digest": "sha256:29f13df17e1aa70a83c5fc30e0f00cdcd468f8d97f7b4524c14d9a4bc4cca7a7"
+          },
+          {
+            "path": "specs/046-python-extraction/tasks.md",
+            "digest": "sha256:2ba283300efd19abbfc8524f8cfb0ede1cfe0d956ffcc8f621e3225ddb30b4ba"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 12,
+          "total": 12
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/scanners/py-outline.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "FR-001",
+            "file": "cli/scanners/python-routes.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/scanners/python-routes.mjs",
+            "line": 20
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/scanners/py-outline.mjs",
+            "line": 20
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/scanners/python-routes.mjs",
+            "line": 21
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/scanners/api-doc.mjs",
+            "line": 50
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/scanners/python-models.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/scanners/python-models.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/scanners/python-models.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "cli/scanners/python-models.mjs",
+            "line": 20
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "cli/scanners/py-env.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/config.mjs",
+            "line": 189
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "cli/commands/init.mjs",
+            "line": 247
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "cli/scanners/memory-plan.mjs",
+            "line": 345
+          },
+          {
+            "requirementId": "FR-013",
+            "file": "cli/scanners/as-built.mjs",
+            "line": 107
+          },
+          {
+            "requirementId": "FR-014",
+            "file": "cli/scanners/module-diagram.mjs",
+            "line": 161
+          },
+          {
+            "requirementId": "FR-015",
+            "file": "cli/scanners/as-built.mjs",
+            "line": 125
+          },
+          {
+            "requirementId": "FR-016",
+            "file": "cli/scanners/py-ast.mjs",
+            "line": 23
+          },
+          {
+            "requirementId": "FR-017",
+            "file": "cli/scanners/project-type.mjs",
+            "line": 101
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/python-extraction.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/python-extraction.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/python-extraction.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/python-extraction.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/python-extraction.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/python-extraction.test.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/python-extraction.test.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/python-extraction.test.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "tests/python-extraction.test.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "tests/python-extraction.test.mjs",
+            "line": 20
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "tests/python-extraction.test.mjs",
+            "line": 21
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "tests/python-extraction.test.mjs",
+            "line": 22
+          },
+          {
+            "requirementId": "FR-013",
+            "file": "tests/python-extraction.test.mjs",
+            "line": 23
+          },
+          {
+            "requirementId": "FR-014",
+            "file": "tests/python-extraction.test.mjs",
+            "line": 24
+          },
+          {
+            "requirementId": "FR-015",
+            "file": "tests/python-extraction.test.mjs",
+            "line": 25
+          },
+          {
+            "requirementId": "FR-016",
+            "file": "tests/python-extraction.test.mjs",
+            "line": 26
+          },
+          {
+            "requirementId": "FR-017",
+            "file": "tests/python-extraction.test.mjs",
+            "line": 27
+          },
+          {
+            "requirementId": "FR-018",
+            "file": "tests/python-extraction.test.mjs",
+            "line": 28
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/python-extraction.test.mjs",
+            "line": 29
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/python-extraction.test.mjs",
+            "line": 30
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/python-extraction.test.mjs",
+            "line": 31
+          },
+          {
+            "requirementId": "SC-004",
+            "file": "tests/python-extraction.test.mjs",
+            "line": 32
+          }
+        ]
+      }
+    },
+    {
       "specId": "docguard.release-dispatch-window",
       "path": "specs/023-release-dispatch-window/spec.md",
       "reviewed": {
@@ -6071,7 +6357,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/commands/init.mjs",
-            "line": 259
+            "line": 271
           },
           {
             "requirementId": "FR-007",
@@ -6081,7 +6367,7 @@
           {
             "requirementId": "FR-008",
             "file": "cli/commands/init.mjs",
-            "line": 260
+            "line": 272
           },
           {
             "requirementId": "FR-008",
@@ -6096,7 +6382,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/commands/init.mjs",
-            "line": 261
+            "line": 273
           },
           {
             "requirementId": "FR-010",
@@ -6106,7 +6392,7 @@
           {
             "requirementId": "FR-011",
             "file": "cli/commands/init.mjs",
-            "line": 262
+            "line": 274
           },
           {
             "requirementId": "FR-012",

@@ -20,7 +20,8 @@
  * @implements docguard.python-extraction#FR-008
  */
 import { relative } from 'node:path';
-import { findPythonFiles, loadPythonOutlines, PythonIndex, refTail } from './py-outline.mjs';
+import { findPythonFiles, PythonIndex, refTail } from './py-outline.mjs';
+import { loadPythonOutlines } from './py-sources.mjs';
 
 const SQLA_COLUMN = new Set(['Column', 'mapped_column']);
 const SQLA_RELATION = new Set(['relationship', 'relation']);
