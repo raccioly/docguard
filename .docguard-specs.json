@@ -1083,6 +1083,75 @@
       }
     },
     {
+      "specId": "docguard.code-derived-diagrams",
+      "path": "specs/035-code-derived-diagrams/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.code-derived-diagrams#FR-001",
+          "docguard.code-derived-diagrams#FR-002",
+          "docguard.code-derived-diagrams#FR-003",
+          "docguard.code-derived-diagrams#FR-004",
+          "docguard.code-derived-diagrams#FR-005",
+          "docguard.code-derived-diagrams#FR-006",
+          "docguard.code-derived-diagrams#FR-007",
+          "docguard.code-derived-diagrams#FR-008",
+          "docguard.code-derived-diagrams#FR-009",
+          "docguard.code-derived-diagrams#FR-010",
+          "docguard.code-derived-diagrams#FR-011",
+          "docguard.code-derived-diagrams#SC-001",
+          "docguard.code-derived-diagrams#SC-002",
+          "docguard.code-derived-diagrams#SC-003",
+          "docguard.code-derived-diagrams#SC-004"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/035-code-derived-diagrams/spec.md",
+            "digest": "sha256:54be0b29bfaf0fecea00d6361187e40596e9bfd45ce87f98b7feb2cf64544c30"
+          },
+          {
+            "path": "specs/035-code-derived-diagrams/plan.md",
+            "digest": "sha256:c41d88184e699ca24643c3dfb632a9867052e92de10ba19422042eba9fc4a042"
+          },
+          {
+            "path": "specs/035-code-derived-diagrams/tasks.md",
+            "digest": "sha256:aefc9fc03ee07fdf8bd84b01988d1836fa8b5d6a2e1bcb5f5643f8beb9787087"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 0,
+          "total": 12
+        },
+        "implementationEvidence": [],
+        "testEvidence": []
+      }
+    },
+    {
       "specId": "docguard.completion-revision-anchoring",
       "path": "specs/028-completion-revision-anchoring/spec.md",
       "reviewed": {
@@ -1209,6 +1278,141 @@
             "line": 14
           }
         ]
+      }
+    },
+    {
+      "specId": "docguard.doc-dependency-lock",
+      "path": "specs/030-doc-dependency-lock/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.doc-dependency-lock#FR-001",
+          "docguard.doc-dependency-lock#FR-002",
+          "docguard.doc-dependency-lock#FR-003",
+          "docguard.doc-dependency-lock#FR-004",
+          "docguard.doc-dependency-lock#FR-005",
+          "docguard.doc-dependency-lock#FR-006",
+          "docguard.doc-dependency-lock#FR-007",
+          "docguard.doc-dependency-lock#FR-008",
+          "docguard.doc-dependency-lock#FR-009",
+          "docguard.doc-dependency-lock#FR-010",
+          "docguard.doc-dependency-lock#SC-001",
+          "docguard.doc-dependency-lock#SC-002",
+          "docguard.doc-dependency-lock#SC-003",
+          "docguard.doc-dependency-lock#SC-004"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/030-doc-dependency-lock/spec.md",
+            "digest": "sha256:afee51a496beaa0cf628940f9f32b2ff61716ae7fb2c39321e4345b5f7d50469"
+          },
+          {
+            "path": "specs/030-doc-dependency-lock/plan.md",
+            "digest": "sha256:4dfb3b9a194ddc53941afc4738b7a5a3b1fdd076ab4a8976ef9ae9baa1a50eca"
+          },
+          {
+            "path": "specs/030-doc-dependency-lock/tasks.md",
+            "digest": "sha256:9b43f1bdf328fca2b8214146ab239d52f056286d88c8bcc7f2cd1f0084c0c8a0"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 0,
+          "total": 10
+        },
+        "implementationEvidence": [],
+        "testEvidence": []
+      }
+    },
+    {
+      "specId": "docguard.doc-ownership-map",
+      "path": "specs/034-doc-ownership-map/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.doc-ownership-map#FR-001",
+          "docguard.doc-ownership-map#FR-002",
+          "docguard.doc-ownership-map#FR-003",
+          "docguard.doc-ownership-map#FR-004",
+          "docguard.doc-ownership-map#FR-005",
+          "docguard.doc-ownership-map#FR-006",
+          "docguard.doc-ownership-map#FR-007",
+          "docguard.doc-ownership-map#FR-008",
+          "docguard.doc-ownership-map#FR-009",
+          "docguard.doc-ownership-map#SC-001",
+          "docguard.doc-ownership-map#SC-002",
+          "docguard.doc-ownership-map#SC-003",
+          "docguard.doc-ownership-map#SC-004"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/034-doc-ownership-map/spec.md",
+            "digest": "sha256:61ff6937c4912ca8e0592d8f08e411070464241dbeef6ea65e5d58c829606b5c"
+          },
+          {
+            "path": "specs/034-doc-ownership-map/plan.md",
+            "digest": "sha256:ce3a15eeb3562261f771c182ee24946998c51063aeccf1c1678f05a36e8d13d1"
+          },
+          {
+            "path": "specs/034-doc-ownership-map/tasks.md",
+            "digest": "sha256:4544ec8ac6e9ce2261f5d6f69dffdfbebb4a38895eaa4f66a95bffb177f892bc"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 0,
+          "total": 11
+        },
+        "implementationEvidence": [],
+        "testEvidence": []
       }
     },
     {
@@ -3057,6 +3261,208 @@
       }
     },
     {
+      "specId": "docguard.mcp-doc-tools",
+      "path": "specs/032-mcp-doc-tools/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.mcp-doc-tools#FR-001",
+          "docguard.mcp-doc-tools#FR-002",
+          "docguard.mcp-doc-tools#FR-003",
+          "docguard.mcp-doc-tools#FR-004",
+          "docguard.mcp-doc-tools#FR-005",
+          "docguard.mcp-doc-tools#FR-006",
+          "docguard.mcp-doc-tools#FR-007",
+          "docguard.mcp-doc-tools#FR-008",
+          "docguard.mcp-doc-tools#FR-009",
+          "docguard.mcp-doc-tools#FR-010",
+          "docguard.mcp-doc-tools#FR-011",
+          "docguard.mcp-doc-tools#SC-001",
+          "docguard.mcp-doc-tools#SC-002",
+          "docguard.mcp-doc-tools#SC-003",
+          "docguard.mcp-doc-tools#SC-004",
+          "docguard.mcp-doc-tools#SC-005"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/032-mcp-doc-tools/spec.md",
+            "digest": "sha256:71899373576834e2f7fc24523f1efd52150f9a15c8a29a628657562867d2cf97"
+          },
+          {
+            "path": "specs/032-mcp-doc-tools/plan.md",
+            "digest": "sha256:ae51588a3ff4c7c187f0c998be62ef7a1d13540778d17cf6d9f83ef50d9e2a8d"
+          },
+          {
+            "path": "specs/032-mcp-doc-tools/tasks.md",
+            "digest": "sha256:093b18f2f5d54e77138de21dc667c7f1fba0f7a1b6ce2634d6e3f7d41320d14f"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 0,
+          "total": 10
+        },
+        "implementationEvidence": [],
+        "testEvidence": []
+      }
+    },
+    {
+      "specId": "docguard.non-regression-budgets",
+      "path": "specs/031-non-regression-budgets/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.non-regression-budgets#FR-001",
+          "docguard.non-regression-budgets#FR-002",
+          "docguard.non-regression-budgets#FR-003",
+          "docguard.non-regression-budgets#FR-004",
+          "docguard.non-regression-budgets#FR-005",
+          "docguard.non-regression-budgets#FR-006",
+          "docguard.non-regression-budgets#FR-007",
+          "docguard.non-regression-budgets#SC-001",
+          "docguard.non-regression-budgets#SC-002",
+          "docguard.non-regression-budgets#SC-003"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/031-non-regression-budgets/spec.md",
+            "digest": "sha256:17a3a98da9fcff1f668385554703745b2c20a28fa08f74118606be8414424db1"
+          },
+          {
+            "path": "specs/031-non-regression-budgets/plan.md",
+            "digest": "sha256:83153488d5de2efa8a8df0322ebbfc5ff9f7d4c8b6dd4e2d57fb34d9ec3bb18b"
+          },
+          {
+            "path": "specs/031-non-regression-budgets/tasks.md",
+            "digest": "sha256:91f58f49f4c672c357284145173400ad4ca684e0c4deb7a0c79ae217668f1ab8"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 0,
+          "total": 5
+        },
+        "implementationEvidence": [],
+        "testEvidence": []
+      }
+    },
+    {
+      "specId": "docguard.path-scoped-rules",
+      "path": "specs/033-path-scoped-rules/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.path-scoped-rules#FR-001",
+          "docguard.path-scoped-rules#FR-002",
+          "docguard.path-scoped-rules#FR-003",
+          "docguard.path-scoped-rules#FR-004",
+          "docguard.path-scoped-rules#FR-005",
+          "docguard.path-scoped-rules#FR-006",
+          "docguard.path-scoped-rules#FR-007",
+          "docguard.path-scoped-rules#FR-008",
+          "docguard.path-scoped-rules#FR-009",
+          "docguard.path-scoped-rules#FR-010",
+          "docguard.path-scoped-rules#SC-001",
+          "docguard.path-scoped-rules#SC-002",
+          "docguard.path-scoped-rules#SC-003",
+          "docguard.path-scoped-rules#SC-004"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/033-path-scoped-rules/spec.md",
+            "digest": "sha256:c602de5cb9c2a39d162d0176611bd33f3c79911e27e9587cf16567f470d5cd7a"
+          },
+          {
+            "path": "specs/033-path-scoped-rules/plan.md",
+            "digest": "sha256:30397cf321a838ce595123581c90081f97b7336342ef56bf2cf286ae6f595ad6"
+          },
+          {
+            "path": "specs/033-path-scoped-rules/tasks.md",
+            "digest": "sha256:f036296f009299154151c9e975f6f4b0a8d6e06186cc55e0ce840fccb0f9b30c"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 0,
+          "total": 10
+        },
+        "implementationEvidence": [],
+        "testEvidence": []
+      }
+    },
+    {
       "specId": "docguard.precision-evidence-loop",
       "path": "specs/007-precision-evidence-loop/spec.md",
       "reviewed": {
@@ -4516,6 +4922,74 @@
             "line": 8
           }
         ]
+      }
+    },
+    {
+      "specId": "docguard.symbol-map",
+      "path": "specs/036-symbol-map/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.symbol-map#FR-001",
+          "docguard.symbol-map#FR-002",
+          "docguard.symbol-map#FR-003",
+          "docguard.symbol-map#FR-004",
+          "docguard.symbol-map#FR-005",
+          "docguard.symbol-map#FR-006",
+          "docguard.symbol-map#FR-007",
+          "docguard.symbol-map#FR-008",
+          "docguard.symbol-map#FR-009",
+          "docguard.symbol-map#FR-010",
+          "docguard.symbol-map#SC-001",
+          "docguard.symbol-map#SC-002",
+          "docguard.symbol-map#SC-003",
+          "docguard.symbol-map#SC-004"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/036-symbol-map/spec.md",
+            "digest": "sha256:2ce55257957db2421be82ea43b91294e072064f392c0f9ddf36db78517c929ee"
+          },
+          {
+            "path": "specs/036-symbol-map/plan.md",
+            "digest": "sha256:375106199a4b773b025f031da49f560b2db7077819488097cab8ea011851f2eb"
+          },
+          {
+            "path": "specs/036-symbol-map/tasks.md",
+            "digest": "sha256:5d38f51c44ac4a9dc8171fa6b5d7de3c4548e06895c92eba3aa9b345d0a7d67a"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 0,
+          "total": 13
+        },
+        "implementationEvidence": [],
+        "testEvidence": []
       }
     },
     {
