@@ -225,3 +225,9 @@ in guidance.
   (`extensions/spec-kit-docguard/`), so it needs no network access and cannot fetch a catalog
   version that differs from the running CLI.
 - Changing the content of DocGuard's skills is out of scope.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `dfa1385749b66184c93bf65f5dde127192037711` — Reviewed at dfa1385 on main: all 13 tasks are checked and were delivered by #459, #471; the full suite (2368 tests) passes and guard reports 0 errors at this revision. Deviations from the plan are recorded in the task notes. Evidence: `cli/commands/init.mjs`, `cli/ensure-skills.mjs`, `cli/spec-kit-delegation.mjs`, `docs-canonical/ARCHITECTURE.md`, `tests/security-init-injection.test.mjs`, `tests/spec-kit-delegation.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->

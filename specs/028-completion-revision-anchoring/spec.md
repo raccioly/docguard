@@ -141,3 +141,9 @@ specs in a row, and commits once. Every outcome records `main`'s tip.
 - Blob equality of every evidence file is the right equivalence. The outcome's
   evidence list is what the review looked at.
 - `origin/HEAD` names the default branch when present.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `dfa1385749b66184c93bf65f5dde127192037711` — Reviewed at dfa1385 on main: all 6 tasks are checked and were delivered by #472, #473, #475, #483; the full suite (2368 tests) passes and guard reports 0 errors at this revision. Deviations from the plan are recorded in the task notes. Evidence: `cli/commands/specs.mjs`, `cli/scanners/revision-anchor.mjs`, `cli/validators/spec-registry.mjs`, `cli/writers/spec-outcomes.mjs`, `docs-canonical/CI-RECIPES.md`, `docs-canonical/DATA-MODEL.md`, `tests/completion-revision-anchoring.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->

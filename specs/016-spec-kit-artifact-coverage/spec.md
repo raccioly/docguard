@@ -153,3 +153,9 @@ another module in `cli/validators/`.
   manifests are out of scope for this spec. The check reports not-applicable there.
 - Fixture `specs/` trees nested under test or benchmark directories are not the project's Spec
   Kit artifacts. Only the top-level `specs/` counts.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `dfa1385749b66184c93bf65f5dde127192037711` — Reviewed at dfa1385 on main: all 9 tasks are checked and were delivered by #461, #471; the full suite (2368 tests) passes and guard reports 0 errors at this revision. Deviations from the plan are recorded in the task notes. Evidence: `cli/scanners/speckit.mjs`, `cli/shared-openapi.mjs`, `cli/validators/api-surface.mjs`, `cli/validators/docs-sync.mjs`, `cli/validators/metrics-consistency.mjs`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/DATA-MODEL.md`, `tests/spec-kit-artifact-coverage.test.mjs`, `tests/validator-isolation.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->

@@ -208,3 +208,9 @@ written.
 - Changing Traceability (TRC) findings to use owners.
 - Code owners for review routing (`CODEOWNERS`). This map is doc
   responsibility, not approval rights.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `dfa1385749b66184c93bf65f5dde127192037711` — Reviewed at dfa1385 on main: all 11 tasks are checked and were delivered by #474, #482; the full suite (2368 tests) passes and guard reports 0 errors at this revision. Deviations from the plan are recorded in the task notes. Evidence: `cli/commands/trace.mjs`, `cli/scanners/doc-ownership.mjs`, `cli/validators/doc-ownership.mjs`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/DATA-MODEL.md`, `tests/doc-ownership.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->
