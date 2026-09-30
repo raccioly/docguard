@@ -7,7 +7,7 @@
 ## Phase 1: Tests first
 
 - [x] T001 `tests/code-derived-diagrams.test.mjs`: four-directory fixture with the expected diagram byte for byte; cross-module vs same-module import (SC-001); dashed dynamic edge; grouping, merging and caption (User Story 2); 500-module synthetic tree (SC-002); Python hidden → `partial`, file unchanged (SC-004); entity diagram order; pinned section untouched.
-- [x] T002 `tests/architecture.test.mjs`, `tests/impact.test.mjs`, `tests/python-import-graph.test.mjs`: run unchanged before and after the move (25/25); `tests/code-derived-diagrams.test.mjs` pins the re-export (FR-001).
+- [x] T002 Pin current output across the move: the existing architecture, impact and Python import-graph suites pass unchanged before and after it (25/25), and `tests/code-derived-diagrams.test.mjs` pins the re-export (FR-001).
 
 ## Phase 2: Scanners
 
