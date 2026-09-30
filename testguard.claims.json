@@ -2125,6 +2125,30 @@
             "producer": "agent",
             "by": "claude-opus-5.5 (#455 spec 035)"
           }
+        },
+        {
+          "id": "F14",
+          "description": "The validator stops re-exporting the moved builder.",
+          "faultClass": "statement-deleted",
+          "file": "cli/validators/architecture.mjs",
+          "find": "export { buildImportGraph };\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 035)"
+          }
+        },
+        {
+          "id": "F15",
+          "description": "An unreadable source file is skipped silently.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/import-graph.mjs",
+          "find": "      graph.limitations.push({ code: 'source-unreadable', file: posixPath(relPath) });\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 035)"
+          }
         }
       ]
     }

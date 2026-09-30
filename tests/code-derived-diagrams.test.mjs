@@ -22,11 +22,11 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { delimiter, dirname, join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { buildImportGraph, cachedImportGraphCount, clearImportGraphCache } from '../cli/scanners/import-graph.mjs';
-import { buildImportGraph as reexported } from '../cli/validators/architecture.mjs';
+import { buildImportGraph as reexported, validateArchitecture } from '../cli/validators/architecture.mjs';
 import { MAX_EDGES, moduleGraphOptions, moduleOf, renderModuleGraph } from '../cli/scanners/module-diagram.mjs';
 import { buildMemoryPlan, clearMemoryPlanCache } from '../cli/scanners/memory-plan.mjs';
 import { generateERDiagram } from '../cli/scanners/schemas.mjs';
@@ -86,6 +86,18 @@ const gst002 = dir => {
 describe('the import graph lives in a scanner (FR-001, FR-008)', () => {
   it('the validator re-exports the scanner builder', () => {
     assert.equal(reexported, buildImportGraph);
+  });
+
+  it('an unreadable source file is a stated limitation, not a silent gap', { skip: process.platform === 'win32' || process.getuid?.() === 0 ? 'needs POSIX permissions as a non-root user' : false }, t => {
+    const dir = fixture(t, FOUR_MODULES);
+    chmodSync(join(dir, 'src/core/service.js'), 0o000);
+    clearImportGraphCache();
+    const graph = buildImportGraph(dir, {});
+    assert.deepEqual(graph.limitations, [{ code: 'source-unreadable', file: 'src/core/service.js' }]);
+    const arch = validateArchitecture(dir, {});
+    assert.equal(arch.applicability.status, 'partial');
+    assert.match(arch.applicability.reason, /unreadable source file/);
+    assert.equal(renderModuleGraph(graph).completeness, 'partial');
   });
 
   it('builds once per tree state and rebuilds after an edit', t => {
