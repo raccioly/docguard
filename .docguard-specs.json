@@ -612,7 +612,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/validators/spec-registry.mjs",
-            "line": 9
+            "line": 11
           }
         ],
         "testEvidence": [
@@ -1078,6 +1078,135 @@
             "requirementId": "SC-002",
             "file": "tests/canonical-requirement-links.test.mjs",
             "line": 10
+          }
+        ]
+      }
+    },
+    {
+      "specId": "docguard.completion-revision-anchoring",
+      "path": "specs/028-completion-revision-anchoring/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.completion-revision-anchoring#FR-001",
+          "docguard.completion-revision-anchoring#FR-002",
+          "docguard.completion-revision-anchoring#FR-003",
+          "docguard.completion-revision-anchoring#FR-004",
+          "docguard.completion-revision-anchoring#FR-005",
+          "docguard.completion-revision-anchoring#SC-001",
+          "docguard.completion-revision-anchoring#SC-002",
+          "docguard.completion-revision-anchoring#SC-003"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/028-completion-revision-anchoring/spec.md",
+            "digest": "sha256:32173272fff4d9f044b2f65a065be5e0121e18e8f7af5a8c645d9d1c1a3ddb40"
+          },
+          {
+            "path": "specs/028-completion-revision-anchoring/plan.md",
+            "digest": "sha256:77bab7c63edc4c38211b0d05d87056f54cb8812b6b13c0687619304a06ba5ece"
+          },
+          {
+            "path": "specs/028-completion-revision-anchoring/tasks.md",
+            "digest": "sha256:cf56a756991f45598c5fb0f2812cd47e7c244981f84da74085e09415d41b93d0"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 6,
+          "total": 7
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/scanners/revision-anchor.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "FR-001",
+            "file": "cli/writers/spec-outcomes.mjs",
+            "line": 34
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/scanners/revision-anchor.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/validators/spec-registry.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/commands/specs.mjs",
+            "line": 224
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/scanners/revision-anchor.mjs",
+            "line": 20
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/writers/spec-outcomes.mjs",
+            "line": 43
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/completion-revision-anchoring.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/completion-revision-anchoring.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/completion-revision-anchoring.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/completion-revision-anchoring.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/completion-revision-anchoring.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/completion-revision-anchoring.test.mjs",
+            "line": 14
           }
         ]
       }
@@ -2875,17 +3004,17 @@
           {
             "requirementId": "FR-001",
             "file": "cli/validators/spec-registry.mjs",
-            "line": 8
+            "line": 10
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/spec-registry.mjs",
-            "line": 418
+            "line": 433
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/spec-registry.mjs",
-            "line": 419
+            "line": 434
           },
           {
             "requirementId": "FR-003",
@@ -4543,7 +4672,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/docguard.mjs",
-            "line": 880
+            "line": 886
           },
           {
             "requirementId": "FR-011",

@@ -616,6 +616,12 @@ export const CODES = {
     help: 'Working-tree presence, lifecycle context, storage state, and the recovery archive disagree. Active specs must be current/working_tree; retired specs must be retired/git_history with a reason and matching archive event.',
     suppress: null,
   },
+  SPR008: {
+    validator: 'specRegistry',
+    title: 'Recorded review revision is not on this history',
+    help: 'A spec\'s `lastReviewedRevision` or an outcome revision does not resolve, or is not an ancestor of HEAD. This happens when `specs complete` ran on a PR branch that was then squash-merged: the reviewed commit never reached the default branch, so the next maintenance completion cannot reconcile from it. Run `docguard specs reanchor --id <spec-id> --write` to move the anchor to the commit on this history whose evidence files are byte-identical; if the old revision no longer exists anywhere, pass `--to <revision> --reason <text>` to attest it. To avoid it, run completions on a branch at the default branch\'s tip and commit them once. In a shallow clone ancestry cannot be known, so the check reports partial coverage instead.',
+    suppress: null,
+  },
   SPR007: {
     validator: 'specRegistry',
     title: 'As-built spec drifted from its source paths',

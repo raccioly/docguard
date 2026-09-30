@@ -31,6 +31,22 @@ Behaviour changes:
 
 ### Added
 
+- **Completion revisions survive squash merges** (`specs/028-completion-revision-anchoring`).
+  - `specs complete` records the revision it reviewed. A completion committed
+    on a PR branch recorded that branch's commit, which a squash merge never
+    puts on `main`. Twelve recorded revisions across seven of this repository's
+    specs pointed at such commits.
+  - **SPR008** reports a recorded revision that does not resolve or is not on
+    HEAD's history. A shallow clone reports partial coverage instead.
+  - `docguard specs reanchor --id <spec-id> --write` moves the anchor to the
+    first first-parent commit whose evidence files are byte-identical, and
+    records `reanchoredFrom`. A revision that no longer exists needs
+    `--to <revision> --reason` and is recorded as attested.
+  - Several completions can now run against one revision before a single
+    commit: the registry, the active context and outcome blocks they write no
+    longer count as changes. `specs complete --write` warns when HEAD is not on
+    the remote default branch.
+
 - **As-built specs: reverse-engineer a Spec Kit spec for code that has none,
   and keep it synced (#455, `specs/024-as-built-specs`).** `docguard generate
   --spec <area>` scans one directory for the facts DocGuard can establish

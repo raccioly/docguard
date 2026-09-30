@@ -849,8 +849,8 @@
           "description": "Top-level help drops `specs require`.",
           "faultClass": "literal-changed",
           "file": "cli/docguard.mjs",
-          "find": "${c.cyan}complete${c.reset}, ${c.cyan}require${c.reset})",
-          "replace": "${c.cyan}complete${c.reset})",
+          "find": "${c.cyan}complete${c.reset}, ${c.cyan}require${c.reset}, ${c.cyan}reanchor${c.reset})",
+          "replace": "${c.cyan}complete${c.reset}, ${c.cyan}reanchor${c.reset})",
           "producedBy": {
             "producer": "agent",
             "by": "claude-opus-5.5 (#455 release prep)"
@@ -1292,6 +1292,120 @@
           "producedBy": {
             "producer": "agent",
             "by": "claude-opus-5.5 (#455 release prep)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "COMPLETION-ANCHORS-SURVIVE-SQUASH",
+      "statement": "Several completions can share one revision, a recorded revision off HEAD's history is reported, and re-anchoring moves it only to a commit with byte-identical evidence or an attested revision.",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/028-completion-revision-anchoring/spec.md#FR-001"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (#455 spec 028)"
+      },
+      "defendedBy": [
+        "tests/completion-revision-anchoring.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "Outcome-only spec edits count as changes, so batches block.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/revision-anchor.mjs",
+          "find": "        && stripImplementationOutcomes(committed.out) === stripImplementationOutcomes(current)) continue;",
+          "replace": "        && false) continue;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 028)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "Spec prose edits are treated as lifecycle-only.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/revision-anchor.mjs",
+          "find": "    if (specs.has(path) && !code.includes('D') && !code.includes('R')) {",
+          "replace": "    if (specs.has(path)) { continue;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 028)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "A revision off HEAD's history is not reported.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/revision-anchor.mjs",
+          "find": "      else if (!isAncestorOf(projectDir, revision)) out.push({ specId: spec.specId, revision, reason: 'not-ancestor' });",
+          "replace": "      else if (false) out.push({ specId: spec.specId, revision, reason: 'not-ancestor' });",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 028)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "Re-anchoring accepts a target whose evidence differs.",
+          "faultClass": "return-altered",
+          "file": "cli/scanners/revision-anchor.mjs",
+          "find": "  return evidence.filter(path => blobAt(projectDir, from, path) !== blobAt(projectDir, candidate, path));",
+          "replace": "  return [];",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 028)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "An unresolvable revision is re-anchored without an attestation.",
+          "faultClass": "condition-forced",
+          "file": "cli/commands/specs.mjs",
+          "find": "          if (attestation.length < 8 || attestation.length > 500) {",
+          "replace": "          if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 028)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "The off-default-branch warning is never raised.",
+          "faultClass": "condition-forced",
+          "file": "cli/commands/specs.mjs",
+          "find": "  if (reachableFromDefaultBranch(projectDir) === false) {",
+          "replace": "  if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 028)"
+          }
+        },
+        {
+          "id": "F7",
+          "description": "Stripping the outcome block leaves it in place, so an outcome-only change blocks the batch.",
+          "faultClass": "return-altered",
+          "file": "cli/writers/spec-outcomes.mjs",
+          "find": "  return String(content).replace(BLOCK_RE, '\\n').trimEnd();",
+          "replace": "  return String(content).trimEnd();",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 028)"
+          }
+        },
+        {
+          "id": "F8",
+          "description": "Re-anchoring does not move the outcome line in the spec.",
+          "faultClass": "return-altered",
+          "file": "cli/writers/spec-outcomes.mjs",
+          "find": "  return content.slice(0, start) + next + content.slice(end);",
+          "replace": "  return content;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 028)"
           }
         }
       ]

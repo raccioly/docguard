@@ -25,3 +25,28 @@ export function appendImplementationOutcome(content, outcome) {
   const lines = [...prior.filter(item => !item.startsWith(`- \`${outcome.revision}\``)), line].slice(-20);
   return content.replace(pattern, `${START}\n## Implementation Outcomes\n\n${lines.join('\n')}\n${END}`);
 }
+
+const BLOCK_RE = new RegExp(`\\n*${START.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\\s\\S]*?${END.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\n?`);
+
+/**
+ * The spec without its machine-owned outcome block, so a change confined to
+ * that block can be told apart from a change to the spec's intent.
+ * @implements docguard.completion-revision-anchoring#FR-001
+ */
+export function stripImplementationOutcomes(content) {
+  return String(content).replace(BLOCK_RE, '\n').trimEnd();
+}
+
+/**
+ * Move one outcome line's revision. Every other byte of the block, and of the
+ * spec, is unchanged.
+ * @implements docguard.completion-revision-anchoring#FR-003
+ */
+export function rewriteOutcomeRevision(content, from, to) {
+  const start = content.indexOf(START);
+  const end = content.indexOf(END, start);
+  if (start < 0 || end < 0) return content;
+  const block = content.slice(start, end);
+  const next = block.split('\n').map(line => (line.startsWith(`- \`${from}\``) ? `- \`${to}\`${line.slice(from.length + 4)}` : line)).join('\n');
+  return content.slice(0, start) + next + content.slice(end);
+}

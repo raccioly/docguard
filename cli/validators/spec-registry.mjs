@@ -3,10 +3,13 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { projectSpecRegistry, SPEC_REGISTRY_PATH } from '../scanners/spec-registry.mjs';
 import { checkAsBuiltSync } from '../scanners/as-built.mjs';
+import { danglingRevisions, isShallowRepository } from '../scanners/revision-anchor.mjs';
+import { gitMetadataStatus } from '../shared-git.mjs';
 
 /**
  * @implements docguard.lifecycle-evidence-gaps#FR-001
  * @implements docguard.as-built-specs#FR-005
+ * @implements docguard.completion-revision-anchoring#FR-002
  */
 
 export function validateSpecRegistry(projectDir, config = {}) {
@@ -110,10 +113,42 @@ export function validateSpecRegistry(projectDir, config = {}) {
       }));
     }
   }
+  // SPR008 (docguard.completion-revision-anchoring#FR-002): a recorded review
+  // revision that a squash merge discarded cannot anchor the next
+  // reconciliation. A shallow clone cannot tell, so it reports partial.
+  let partial = null;
+  const hasRecorded = projection.registry.specs.some(spec => spec.reviewed?.reconciliation?.lastReviewedRevision
+    || (spec.reviewed?.reconciliation?.outcomes || []).length);
+  if (hasRecorded && gitMetadataStatus(projectDir).status === 'ok') {
+    if (isShallowRepository(projectDir)) {
+      partial = 'This is a shallow clone, so whether recorded review revisions are on this history (SPR008) could not be checked.';
+    } else {
+      for (const { specId, revision, reason } of danglingRevisions(projectDir, projection.registry)) {
+        const spec = projection.registry.specs.find(entry => entry.specId === specId);
+        findings.push(mkFinding({
+          code: 'SPR008',
+          validator: 'specRegistry',
+          severity: 'warn',
+          confidence: 'high',
+          disposition: 'escalate',
+          message: `${specId}: recorded review revision ${revision.slice(0, 12)} ${reason === 'missing' ? 'does not resolve in this repository' : 'is not on this branch\'s history'}; the next maintenance completion cannot reconcile from it`,
+          location: spec?.path || SPEC_REGISTRY_PATH,
+          suggestion: {
+            kind: 'review',
+            text: reason === 'missing'
+              ? `Run \`docguard specs reanchor --id ${specId} --to <revision> --write --reason "<why that revision carries the reviewed evidence>"\``
+              : `Run \`docguard specs reanchor --id ${specId} --write\` to move it to the commit with byte-identical evidence`,
+            command: `docguard specs reanchor --id ${specId}`,
+          },
+        }));
+      }
+    }
+  }
   const checks = Math.max(1, projection.registry.specs.length + projection.registry.tombstones.length);
-  return resultFromFindings(findings, {
+  const result = resultFromFindings(findings, {
     passed: Math.max(0, checks - findings.length),
     total: checks,
     applicable: true,
   });
+  return partial ? { ...result, applicability: { status: 'partial', reason: partial } } : result;
 }

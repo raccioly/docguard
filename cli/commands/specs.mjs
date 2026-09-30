@@ -12,7 +12,8 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { commitFileTransaction } from '../writers/file-transaction.mjs';
-import { appendImplementationOutcome } from '../writers/spec-outcomes.mjs';
+import { appendImplementationOutcome, rewriteOutcomeRevision } from '../writers/spec-outcomes.mjs';
+import { danglingRevisions, evidenceDifferences, findAnchor, isAncestorOf, nonLifecycleChanges, reachableFromDefaultBranch, revisionResolves } from '../scanners/revision-anchor.mjs';
 import { serializeLifecycleContext } from '../scanners/lifecycle-context.mjs';
 import { buildReconciliationPlan } from '../scanners/reconciliation.mjs';
 import { preflightSpec, projectSpecRegistry, readSpecRegistry, SPEC_REGISTRY_PATH, untrackedRequirementEvidence } from '../scanners/spec-registry.mjs';
@@ -37,12 +38,21 @@ function headRevision(projectDir) {
   } catch { return null; }
 }
 
-function trackedDirty(projectDir) {
-  try {
-    return execFileSync('git', ['status', '--porcelain=v1', '--untracked-files=no'], {
-      cwd: projectDir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'],
-    }).trim();
-  } catch { return 'git-unavailable'; }
+// Completion may run several times against one revision before a single
+// commit: the registry, the active context and outcome blocks it writes do
+// not count as changes (docguard.completion-revision-anchoring#FR-001).
+function blockingChanges(projectDir, registry) {
+  return nonLifecycleChanges(projectDir, {
+    registryPath: SPEC_REGISTRY_PATH,
+    contextPath: CONTEXT_PATH,
+    specPaths: (registry?.specs || []).map(spec => spec.path),
+  });
+}
+
+function describeChanges(changed) {
+  if (changed === null) return 'Git status could not be read.';
+  const shown = changed.slice(0, 5).join(', ');
+  return `${shown}${changed.length > 5 ? `, and ${changed.length - 5} more` : ''}`;
 }
 
 function archiveReadiness(spec, targetVerified = false) {
@@ -78,7 +88,10 @@ export function planSpecCompletion(projectDir, config, flags, options = {}) {
   if (!loaded.exists || loaded.error || !projection.current) blockers.push({ code: 'SPC001', message: 'Committed registry must be current before completion.' });
   if (!spec) blockers.push({ code: 'SPC001', message: `Unknown spec ID: ${flags.id || '<missing>'}.` });
   if (!revision) blockers.push({ code: 'SPC001', message: 'Completion requires a resolvable Git HEAD.' });
-  if (trackedDirty(projectDir)) blockers.push({ code: 'SPC001', message: 'Completion requires a clean tracked working tree at the recorded revision.' });
+  const changed = blockingChanges(projectDir, projection.registry);
+  if (changed === null || changed.length) {
+    blockers.push({ code: 'SPC001', message: `Completion requires a clean tracked working tree at the recorded revision (lifecycle files written by earlier completions are allowed); changed: ${describeChanges(changed)}.` });
+  }
 
   let reconcile = null;
   if (spec) {
@@ -195,7 +208,95 @@ export function completeSpec(projectDir, config, flags, options = {}) {
       if (context.generatedFrom !== plan.revision) throw new Error('active context revision mismatch');
     },
   });
-  return { command: 'complete', ...plan, status: 'VERIFIED', applied: true, outcome };
+  // A revision a squash merge will discard cannot anchor the next
+  // reconciliation (docguard.completion-revision-anchoring#FR-004).
+  const warnings = [];
+  if (reachableFromDefaultBranch(projectDir) === false) {
+    warnings.push(`HEAD ${plan.revision.slice(0, 12)} is not on the remote default branch; a squash merge will discard it. Complete on a branch at the default branch's tip, or run \`docguard specs reanchor --id ${plan.specId} --write\` after merging.`);
+  }
+  return { command: 'complete', ...plan, status: 'VERIFIED', applied: true, outcome, warnings };
+}
+
+/**
+ * Move a spec's dangling recorded revisions to a commit on HEAD's history
+ * whose evidence is byte-identical, or, when the old revision no longer
+ * resolves, to a maintainer-attested revision.
+ * @implements docguard.completion-revision-anchoring#FR-003
+ */
+export function reanchorSpec(projectDir, config, flags) {
+  const projection = projectSpecRegistry(projectDir, config);
+  const spec = projection.registry.specs.find(entry => entry.specId === flags.id);
+  const blockers = [...projection.issues];
+  if (!flags.id || !spec) blockers.push({ code: 'SPC001', message: `Unknown spec ID: ${flags.id || '<missing>'}.` });
+  if (!projection.current) blockers.push({ code: 'SPC001', message: 'Committed registry must be current before re-anchoring.' });
+  const changed = blockingChanges(projectDir, projection.registry);
+  if (changed === null || changed.length) blockers.push({ code: 'SPC001', message: `Re-anchoring requires a clean tracked working tree; changed: ${describeChanges(changed)}.` });
+  const moves = [];
+  if (spec && !blockers.length) {
+    const dangling = danglingRevisions(projectDir, { specs: [spec] });
+    const outcomes = spec.reviewed.reconciliation.outcomes;
+    for (const { revision, reason } of dangling) {
+      const evidence = [...new Set(outcomes.filter(o => o.revision === revision).flatMap(o => o.evidence)
+        .concat(outcomes.some(o => o.revision === revision) ? [] : outcomes.flatMap(o => o.evidence)))].sort();
+      if (flags.to) {
+        if (!revisionResolves(projectDir, flags.to) || !isAncestorOf(projectDir, flags.to)) {
+          blockers.push({ code: 'SPC008', message: `--to ${flags.to} must be a full revision on HEAD's history.` });
+          continue;
+        }
+        if (reason === 'missing') {
+          const attestation = String(flags.reason || '').replace(/\s+/g, ' ').trim();
+          if (attestation.length < 8 || attestation.length > 500) {
+            blockers.push({ code: 'SPC008', message: `${revision.slice(0, 12)} no longer resolves, so evidence cannot be compared: --reason (8-500 characters) must attest that ${flags.to.slice(0, 12)} carries the reviewed evidence.` });
+            continue;
+          }
+          moves.push({ from: revision, to: flags.to, method: 'attested', reason: attestation });
+          continue;
+        }
+        const differing = evidenceDifferences(projectDir, revision, flags.to, evidence);
+        if (differing.length) blockers.push({ code: 'SPC008', message: `Evidence differs between ${revision.slice(0, 12)} and ${flags.to.slice(0, 12)}: ${differing.join(', ')}.` });
+        else moves.push({ from: revision, to: flags.to, method: 'blob-equal' });
+        continue;
+      }
+      if (reason === 'missing') {
+        blockers.push({ code: 'SPC008', message: `${revision.slice(0, 12)} no longer resolves; pass --to <revision> and --reason to attest the anchor.` });
+        continue;
+      }
+      const { target, differing } = findAnchor(projectDir, revision, evidence);
+      if (target) moves.push({ from: revision, to: target, method: 'blob-equal' });
+      else blockers.push({ code: 'SPC008', message: `No commit on HEAD's first-parent history carries ${revision.slice(0, 12)}'s evidence unchanged; differing: ${differing.join(', ') || 'unknown'}. Complete the spec again, or pass --to with --reason.` });
+    }
+  }
+  const result = { command: 'reanchor', specId: flags.id || null, status: blockers.length ? 'BLOCKED' : moves.length ? 'READY' : 'CURRENT', moves, blockers, applied: false };
+  if (result.status !== 'READY' || !flags.write) return result;
+
+  let specContent = readFileSync(resolve(projectDir, spec.path), 'utf8');
+  const rec = spec.reviewed.reconciliation;
+  for (const move of moves) {
+    if (rec.lastReviewedRevision === move.from) rec.lastReviewedRevision = move.to;
+    rec.outcomes = rec.outcomes.map(outcome => (outcome.revision === move.from
+      ? { ...outcome, revision: move.to, reanchoredFrom: { revision: move.from, method: move.method, ...(move.reason ? { reason: move.reason } : {}) } }
+      : outcome));
+    specContent = rewriteOutcomeRevision(specContent, move.from, move.to);
+  }
+  const artifact = spec.observed.artifacts.find(item => item.path === spec.path);
+  if (artifact) artifact.digest = digest(specContent);
+  projection.registry.schemaVersion = 2;
+  const writes = [
+    { path: resolve(projectDir, spec.path), content: specContent },
+    { path: resolve(projectDir, SPEC_REGISTRY_PATH), content: `${JSON.stringify(projection.registry, null, 2)}\n` },
+  ];
+  const contextPath = resolve(projectDir, CONTEXT_PATH);
+  let context = null;
+  try { context = JSON.parse(readFileSync(contextPath, 'utf8')); } catch { /* no active context yet */ }
+  const moved = moves.find(move => move.from === context?.generatedFrom);
+  if (moved) writes.push({ path: contextPath, content: serializeLifecycleContext(projectDir, projection.registry, moved.to) });
+  commitFileTransaction(writes, {
+    validate: () => {
+      const next = projectSpecRegistry(projectDir, config);
+      if (next.issues.length || !next.current) throw new Error('re-anchored registry does not match the resulting repository');
+    },
+  });
+  return { ...result, status: 'REANCHORED', applied: true };
 }
 
 function printIssues(issues) {
@@ -206,6 +307,13 @@ function printResult(result) {
   if (result.command === 'complete') {
     console.log(`Spec completion: ${result.status}`);
     console.log(`${result.specId || '<missing>'}: ${result.transition}`);
+    if (result.blockers?.length) printIssues(result.blockers.map(issue => ({ path: result.specId || SPEC_REGISTRY_PATH, ...issue })));
+    for (const warning of result.warnings || []) console.log(`  ⚠ ${warning}`);
+    return;
+  }
+  if (result.command === 'reanchor') {
+    console.log(`Spec re-anchor: ${result.status}`);
+    for (const move of result.moves) console.log(`  ${result.specId}: ${move.from.slice(0, 12)} → ${move.to.slice(0, 12)} (${move.method})`);
     if (result.blockers?.length) printIssues(result.blockers.map(issue => ({ path: result.specId || SPEC_REGISTRY_PATH, ...issue })));
     return;
   }
@@ -292,13 +400,21 @@ function runSpecFirst(projectDir, config, flags) {
 export function runSpecs(projectDir, config, flags = {}) {
   try {
     const action = flags.args?.[0] || null;
-    if (action && !['preflight', 'complete', 'require'].includes(action)) throw new Error(`Unknown specs action: ${action}`);
+    if (action && !['preflight', 'complete', 'require', 'reanchor'].includes(action)) throw new Error(`Unknown specs action: ${action}`);
     if (action === 'require') return runSpecFirst(projectDir, config, flags);
     if (flags.check && flags.write) throw new Error('Use either --check or --write, not both.');
 
     if (action === 'preflight') {
       if (flags.write) throw new Error('Specs preflight is read-only.');
       const result = { command: 'preflight', ...preflightSpec(projectDir, config, flags.path || null) };
+      if (flags.format === 'json') console.log(JSON.stringify(result, null, 2));
+      else printResult(result);
+      if (result.status === 'BLOCKED') process.exitCode = 2;
+      return result;
+    }
+
+    if (action === 'reanchor') {
+      const result = reanchorSpec(projectDir, config, flags);
       if (flags.format === 'json') console.log(JSON.stringify(result, null, 2));
       else printResult(result);
       if (result.status === 'BLOCKED') process.exitCode = 2;
