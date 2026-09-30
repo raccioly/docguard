@@ -16,7 +16,9 @@
     - `unscanned` counts per language for source files that have no env
       patterns (FR-004);
     - walks prune non-product directories by path (FR-006).
-  - `resolveSourceRoots` adds the Go and Ruby roots (FR-005).
+  - the env scan also reads a root-level Go module's `.go` files and a
+    Gemfile project's `config/**/*.rb`; `resolveSourceRoots` is unchanged, so
+    no other scanner widens (FR-005).
   - `LANGUAGE_NAMES` and `unanalysedLanguages()` are shared by the import
     graph and the env scan.
 - `cli/shared-ignore.mjs`: `isNonProductPath` exempts package segments.
@@ -125,7 +127,7 @@ Pass.
 ## Project Structure
 
 ```text
-cli/shared-source.mjs            # tiers, env patterns, source roots, language names
+cli/shared-source.mjs            # tiers, env patterns, Go/Rails env layouts, language names
 cli/shared-ignore.mjs            # package-segment exemption
 cli/scanners/routes.mjs          # tiers, scan record, depth/cap
 cli/scanners/import-graph.mjs    # unanalysedFiles

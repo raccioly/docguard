@@ -116,12 +116,12 @@ finding carries `parserTier: "fallback-language"`.
   `detection.includeNonProduct`.
 - **Deep trees:** discovery is bounded by the ignore rules, a depth of 32 and
   a cap of 20,000 files. Hitting the cap makes the coverage `partial`.
-- **Go layout:** when `go.mod` is at the root, `cmd/`, `internal/` and `pkg/`
-  are source roots even when another conventional root (such as `api/`)
-  exists.
+- **Go layout:** when `go.mod` is at the root, the env scan reads the module's
+  Go files even when a conventional root such as `api/` exists and would
+  otherwise hide `cmd/` and `internal/`.
 - **Go `internal/example`:** a Go package, not an examples directory.
-- **API reference doc missing:** the status stays `missing-prerequisite`. The
-  reason also says that the detected framework's scan found no route.
+- **API reference doc missing:** the status stays `missing-prerequisite`, as
+  today, and no route scan runs for it.
 - **This repository:** its moduleGraph `include` is `cli`. It declares
   `needsEnvVars: false`. Its outputs do not change.
 
@@ -157,9 +157,14 @@ finding carries `parserTier: "fallback-language"`.
   `partial`, naming the languages and file counts. It MUST NOT report
   `checked` in that case. `diff` MUST print the same limitation under
   Environment Variables, and its JSON MUST carry it as `limitation`.
-- **FR-005**: When `go.mod` is at the project root, `cmd/`, `internal/` and
-  `pkg/` MUST be source roots when they exist. When a `Gemfile` is at the
-  root, `config/` MUST be one.
+- **FR-005**: The env scan MUST cover the languages' own layouts, and nothing
+  more:
+  - when `go.mod` is at the project root, it reads every `.go` file in the
+    module, because a Go package can live in any directory;
+  - when a `Gemfile` is at the root, it reads the `.rb` files under
+    `config/`.
+
+  Other scanners' source roots are unchanged.
 - **FR-006**: A path segment MUST NOT be treated as a non-product directory
   when it is a package name:
   - any segment below `src/main/java`, `src/main/kotlin`, `src/main/scala` or
@@ -177,11 +182,12 @@ finding carries `parserTier: "fallback-language"`.
 - **FR-008**: Route file discovery MUST NOT stop at depth 5. It is bounded by
   the ignore rules, a depth of 32 and a cap of 20,000 files per scan.
   Reaching the cap MUST make the coverage `partial`.
-- **FR-009**: When a framework is detected and its route scan yields no route,
-  the API-surface validator MUST NOT report `checked` or `no-matches`:
-  - it reports `partial`, naming the framework and the number of files read;
-  - when the API reference doc is missing, it reports `missing-prerequisite`
-    and its reason also states the empty scan.
+- **FR-009**: When a framework whose routes are read by pattern only is
+  detected and its route scan yields no route, the API-surface validator MUST
+  NOT report `checked` or `no-matches`. It reports `partial`, naming the
+  framework and the number of files read. Without an API reference doc the
+  validator still reports `missing-prerequisite` and does not scan routes, so
+  it claims nothing about the code.
 - **FR-010**: The symbol map and the module graph MUST name the source
   languages the import graph does not read (JS/TS and Python only), with file
   counts, for files in their scope.
@@ -205,8 +211,13 @@ finding carries `parserTier: "fallback-language"`.
   - renaming a Go env var produces ENV003.
 - **SC-002**: An Express project and a Flask project produce the same
   `apiSurface` and `environment` coverage and findings as before.
-- **SC-003**: `docguard guard` on this repository reports no new finding and
-  no change in check coverage.
+- **SC-003**: A project shaped like this repository keeps its Environment
+  coverage and its module-graph bytes:
+  - it declares `needsEnvVars: false` and a module-graph `include`;
+  - it holds a source file in another language outside that scope.
+
+  On this repository itself, `docguard guard` reports no new finding and no
+  change in check coverage.
 
 ## Assumptions
 

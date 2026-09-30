@@ -530,10 +530,16 @@ quotes the reviewed precision corpus with `n` and a Wilson lower bound;
 codes are unmeasured — that does not make their findings wrong, only unverified,
 and `docguard feedback` samples them for exactly that reason.
 
-**`parserTier`** tells you what the detector could see. `regex-fallback` or
-`fallback-language` means no syntax tree was available for that file — so the
-*absence* of a finding there is weak evidence, and the owning validator reports
-`applicability: partial` with the reason.
+**`parserTier`** tells you what the detector could see. `js-ast` and `py-ast`
+mean a syntax tree. `regex-fallback` means the language has one (JS/TS, Python)
+but it was unavailable for that file. `fallback-language` means DocGuard has no
+parser for the language at all — Go, Java, Kotlin, Ruby, Rust, PHP, C# — so
+routes and env reads there are matched by pattern. Either way the *absence* of
+a finding there is weak evidence, and the owning validator reports
+`applicability: partial` with a reason that names the language and the file
+count. Environment variables are matched by pattern in every supported
+language; a source language with no env patterns (Swift, Scala, …) makes the
+Environment check `partial` rather than a silent pass.
 
 Every channel appears on every finding in `guard --format json`, in SARIF
 `result.properties`, and per-issue in `diagnose --format json` (which also emits

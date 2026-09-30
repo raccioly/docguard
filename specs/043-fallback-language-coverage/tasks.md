@@ -16,18 +16,20 @@
     count, and Spring placeholders (FR-003);
   - a Swift file makes Environment `partial`, and `diff` prints the
     limitation (FR-004);
-  - Go and Ruby source roots (FR-005);
+  - a Go module's files outside the conventional roots and Rails
+    `config/*.rb` are read by the env scan (FR-005);
   - `isNonProductPath` package segments; `examples/` and `src/test/java`
     stay non-product (FR-006);
   - routes only under fixtures give an excluded-count reason (FR-007);
   - a depth-9 controller is found; the cap is disclosed (FR-008);
-  - a detected framework with no route is `partial`, and with no API doc
-    `missing-prerequisite` with the scan in its reason (FR-009);
+  - a detected pattern-only framework with no route is `partial`; with no
+    API doc it stays `missing-prerequisite` (FR-009);
   - symbol map and module graph name Go and Java (FR-010);
   - a Go env rename produces ENV003 (SC-001);
   - Express and Flask controls are unchanged (SC-002).
 - [ ] T002 `tests/fallback-language-coverage.test.mjs`: docs name the
-  behaviour (FR-011); this repository's guard coverage is unchanged (SC-003).
+  behaviour (FR-011); a temporary project shaped like this repository keeps
+  its Environment coverage and module-graph bytes (SC-003).
 - [ ] T003 `tests/parser-tier.test.mjs`: `fallback-language` is a coverage
   gap with its own reason (FR-001).
 
@@ -35,7 +37,7 @@
 
 - [ ] T004 `cli/shared-source.mjs`: tier summary and applicability (FR-001).
 - [ ] T005 `cli/shared-source.mjs`: env patterns, Spring config, unscanned
-  languages, source roots (FR-003, FR-004, FR-005).
+  languages, Go and Rails layouts (FR-003, FR-004, FR-005).
 - [ ] T006 `cli/shared-ignore.mjs`, `cli/scanners/project-type.mjs`,
   `cli/scanners/inventory.mjs`: package segments (FR-006, FR-007).
 - [ ] T007 `cli/scanners/routes.mjs`: route tiers, scan record, depth and cap
