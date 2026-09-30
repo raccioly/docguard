@@ -166,7 +166,7 @@ to a governed path that neither names its spec nor declares an exemption.
 - `paths`: glob patterns of governed paths. Default: every changed path except
   Markdown, `specs/**` and recognized test files.
 - `exemptKinds`: the kinds accepted in `Spec-Exempt: <kind> — <reason>`. The
-  reason is required.
+  reason is required and must be at least 10 characters.
 
 ## Agent instruction budget — `agentInstructions`
 

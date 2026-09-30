@@ -21,6 +21,13 @@ does not mark the feature verified without a reviewed rationale.
 docguard specs complete --id <spec-id> --since <ref> --check --format json
 ```
 
+   If SPC002 reports that the spec is not approved or its delivery is
+   `planned`, ask the maintainer to approve it. Never approve on your own:
+
+```bash
+docguard specs approve --id <spec-id> --delivery implemented --write
+```
+
 6. Review every reconciliation classification. Unsupported or ambiguous changes
    block completion. A possible implementation regression requires deciding
    whether to fix code, amend approved intent, or record an accepted deviation.

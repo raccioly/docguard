@@ -200,6 +200,8 @@ npx docguard-cli specs --check                 # CI: registry must match the rep
 npx docguard-cli specs --write                 # Refresh observations; preserve reviewed fields
 npx docguard-cli specs preflight               # Brief prior intent before specification
 npx docguard-cli specs preflight --path specs/007-feature/spec.md
+npx docguard-cli specs approve --id acme.feature --delivery implemented # plan the approval
+npx docguard-cli specs approve --id acme.feature --delivery implemented --write
 npx docguard-cli specs complete --id acme.feature --since main          # plan the completion
 npx docguard-cli specs complete --id acme.feature --write --reason "..." # apply it
 npx docguard-cli specs require --since origin/main --message-file pr.txt # spec-first gate
@@ -209,9 +211,12 @@ npx docguard-cli specs reanchor --id acme.feature --write               # move a
 `specs require` is the spec-first gate. A change to a governed path (see
 [`specFirst`](configuration.md#spec-first-gate--specfirst)) must name its spec,
 either as a `specs/<dir>` path or a Spec ID, in the commit messages or the
-message file, or declare `Spec-Exempt: <kind> — <reason>`. Exit 1 means an
-uncovered change; exit 2 means the check could not decide (for example, the base
-ref is missing). The GitHub Action runs it with `command: spec-first`.
+message file, or declare `Spec-Exempt: <kind> — <reason>`. The reason must be at
+least 10 characters; a shorter one is listed as an invalid exemption. A Spec ID
+written after `Spec:` or `Spec ID:` that matches no spec is listed as an
+unresolved reference and covers nothing. Exit 1 means an uncovered change; exit
+2 means the check could not decide (for example, the base ref is missing). The
+GitHub Action runs it with `command: spec-first`.
 
 Every active spec needs a stable project-scoped metadata identity such as
 `Spec ID: acme.billing-export` near the top of the authoritative spec. Completion evidence uses
@@ -220,7 +225,23 @@ the same local ID commonly appears in several specs.
 
 The generated-spec preflight blocks missing or duplicate identity, stale
 registry state, unsafe paths, and broken lifecycle lineage. Text similarity is
-low-confidence review context and never blocks by itself. `specs complete`
+low-confidence review context and never blocks by itself. It checks the
+registry against every spec except the draft, so the draft's own entry may be
+missing (not yet written) or stale (the draft is still changing). A project's
+first spec therefore passes with no registry at all, and again after `specs
+--write` has registered it.
+
+`specs approve` records a person's approval in the registry's reviewed
+lifecycle, and with `--delivery` the state `planned`, `in_progress` or
+`implemented`. Without `--write` it prints the transition and writes nothing.
+It needs a current registry and a current spec. It refuses `verified` and
+`released`, which only `specs complete` records after checking evidence, and
+never moves a verified spec back. Approval is never read from the spec's prose
+(a `**Status**: Approved` line): prose is generated and observed, while
+reviewed fields are attested by whoever runs the command and reviewed in the
+pull request that commits the registry. `docguard explain SPC001` … `SPC008`
+explains each blocker `specs approve`, `specs complete` and `specs reanchor`
+print. `specs complete`
 verifies exact-revision implementation evidence, canonical outcomes, and context
 regeneration before marking a spec verified; `--write` requires a reviewed
 reason and performs the registry, spec outcome, and current-context writes as
@@ -242,7 +263,9 @@ first-parent history whose evidence files are byte-identical to the reviewed
 ones and moves the anchor there, recording `reanchoredFrom`. If the old revision
 no longer exists anywhere, or no commit carries the reviewed bytes (the PR kept
 changing after its completion), `--to <revision> --reason "<why>"` records an
-attested anchor instead, listing the evidence files that differ. When one spec
+attested anchor instead, listing the evidence files that differ. `--to` takes
+anything git resolves to a commit on HEAD's history: a SHA (full or short), a
+branch, a tag or `HEAD`. The full SHA is recorded. When one spec
 has dangling revisions from different merges, add `--from <revision>` to attest
 them one at a time; the others are left as they are.
 

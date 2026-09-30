@@ -1449,8 +1449,8 @@
           "description": "An attested re-anchor over differing evidence hides which files differ.",
           "faultClass": "return-altered",
           "file": "cli/commands/specs.mjs",
-          "find": "        moves.push({ from: revision, to: flags.to, method: 'attested', reason: attestation, differing });",
-          "replace": "        moves.push({ from: revision, to: flags.to, method: 'attested', reason: attestation });",
+          "find": "        moves.push({ from: revision, to: toCommit, method: 'attested', reason: attestation, differing });",
+          "replace": "        moves.push({ from: revision, to: toCommit, method: 'attested', reason: attestation });",
           "producedBy": {
             "producer": "agent",
             "by": "claude-opus-5.5 (#455 spec 028)"
@@ -3806,6 +3806,264 @@
           "producedBy": {
             "producer": "agent",
             "by": "claude-opus-5.5 (spec 043)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "FIRST-SPEC-PREFLIGHT-PASSES",
+      "statement": "Generated-spec preflight judges the registry against every spec except the draft, so a project's first spec is READY with no registry and after specs --write, while a registry stale for any other spec still blocks; specs approve records approval and a planned/in_progress/implemented delivery (never verified, never backwards, never from prose) and SPC002 names it; every SPC blocker code is explainable in the CLI and MCP; the spec-first hint names no DocGuard spec and labelled unknown Spec IDs are listed; completion reports the transition from the recorded delivery; reanchor --to resolves any commit git names and records its full SHA.",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/040-spec-preflight-first-spec/spec.md#FR-001"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (spec 040)"
+      },
+      "defendedBy": [
+        "tests/first-spec-preflight.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "The draft's own registry entry counts when judging currency.",
+          "faultClass": "other",
+          "file": "cli/scanners/spec-registry.mjs",
+          "find": "      specs: (Array.isArray(value?.specs) ? value.specs : []).filter(entry => entry?.path !== options.draftPath),",
+          "replace": "      specs: (Array.isArray(value?.specs) ? value.specs : []),",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 040)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "A missing registry is never current, even for the first spec.",
+          "faultClass": "other",
+          "file": "cli/scanners/spec-registry.mjs",
+          "find": "      : projected.tombstones.length === 0 && projected.specs.every(entry => entry.path === options.draftPath);",
+          "replace": "      : false;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 040)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "Retired specs in the archive do not stop a missing registry from counting as current.",
+          "faultClass": "other",
+          "file": "cli/scanners/spec-registry.mjs",
+          "find": "      : projected.tombstones.length === 0 && projected.specs.every(",
+          "replace": "      : projected.specs.every(",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 040)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "Preflight judges the whole registry, draft included.",
+          "faultClass": "other",
+          "file": "cli/scanners/spec-registry.mjs",
+          "find": "  if (!projection.currentExceptDraft) blockers.push(",
+          "replace": "  if (!projection.current) blockers.push(",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 040)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "The draft's entry under an earlier Spec ID is reported as a vanished spec.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/spec-registry.mjs",
+          "find": "    if (options.draftPath && entry?.path === options.draftPath) continue;\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 040)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "Preflight reports the draft's reused identity twice.",
+          "faultClass": "other",
+          "file": "cli/scanners/spec-registry.mjs",
+          "find": "  const blockers = projection.issues.filter(issue => !(issue.code === 'SPR002' && issue.path === rel));",
+          "replace": "  const blockers = [...projection.issues];",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 040)"
+          }
+        },
+        {
+          "id": "F7",
+          "description": "approve accepts --delivery verified.",
+          "faultClass": "other",
+          "file": "cli/commands/specs.mjs",
+          "find": "const APPROVABLE_DELIVERY = ['planned', 'in_progress', 'implemented'];",
+          "replace": "const APPROVABLE_DELIVERY = ['planned', 'in_progress', 'implemented', 'verified', 'released'];",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 040)"
+          }
+        },
+        {
+          "id": "F8",
+          "description": "approve moves a verified spec back.",
+          "faultClass": "other",
+          "file": "cli/commands/specs.mjs",
+          "find": "    && delivery !== spec.reviewed.lifecycle.delivery) {",
+          "replace": "    && false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 040)"
+          }
+        },
+        {
+          "id": "F9",
+          "description": "approve --write does not record the approval.",
+          "faultClass": "statement-deleted",
+          "file": "cli/commands/specs.mjs",
+          "find": "  spec.reviewed.lifecycle.approval = to.approval;\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 040)"
+          }
+        },
+        {
+          "id": "F10",
+          "description": "approve writes over a stale registry.",
+          "faultClass": "other",
+          "file": "cli/commands/specs.mjs",
+          "find": "  if (!projection.current) blockers.push({ code: 'SPC001', message: 'Committed registry must be current before approval;",
+          "replace": "  if (false) blockers.push({ code: 'SPC001', message: 'Committed registry must be current before approval;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 040)"
+          }
+        },
+        {
+          "id": "F11",
+          "description": "SPC002 does not say how to approve.",
+          "faultClass": "other",
+          "file": "cli/commands/specs.mjs",
+          "find": "Only an approved spec can become verified. Record the approval with \\`docguard specs approve --id ${spec.specId} --write\\`.",
+          "replace": "Only an approved spec can become verified.",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 040)"
+          }
+        },
+        {
+          "id": "F12",
+          "description": "completion prints implemented→verified whatever the delivery.",
+          "faultClass": "other",
+          "file": "cli/commands/specs.mjs",
+          "find": "  return `${delivery}→verified`;",
+          "replace": "  return 'implemented→verified';",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 040)"
+          }
+        },
+        {
+          "id": "F13",
+          "description": "reanchor --to accepts only a full SHA.",
+          "faultClass": "other",
+          "file": "cli/commands/specs.mjs",
+          "find": "const toCommit = flags.to ? resolveCommit(projectDir, flags.to) : null;",
+          "replace": "const toCommit = /^[0-9a-f]{40}$/.test(flags.to || '') ? flags.to : null;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 040)"
+          }
+        },
+        {
+          "id": "F14",
+          "description": "The spec-first hint names DocGuard's own spec.",
+          "faultClass": "other",
+          "file": "cli/commands/specs.mjs",
+          "find": "'  the governing spec:        specs/<###-feature>   or its Spec ID'",
+          "replace": "'  the governing spec, e.g.  specs/015-spec-first-gate   or its Spec ID'",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 040)"
+          }
+        },
+        {
+          "id": "F15",
+          "description": "A labelled Spec ID that matches no spec is not listed as unresolved.",
+          "faultClass": "other",
+          "file": "cli/scanners/spec-first.mjs",
+          "find": "    if (!inventory.ids.has(m[1].toLowerCase())) add('id', m[1], null);",
+          "replace": "    void m;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 040)"
+          }
+        },
+        {
+          "id": "F16",
+          "description": "resolveCommit returns the name it was given, not the full SHA.",
+          "faultClass": "other",
+          "file": "cli/scanners/revision-anchor.mjs",
+          "find": "  return REVISION_RE.test(sha) ? sha : null;",
+          "replace": "  return r.ok ? value : null;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 040)"
+          }
+        },
+        {
+          "id": "F17",
+          "description": "explain does not know blocker codes.",
+          "faultClass": "other",
+          "file": "cli/commands/explain.mjs",
+          "find": "  if (BLOCKER_CODES[codeKey]) {",
+          "replace": "  if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 040)"
+          }
+        },
+        {
+          "id": "F18",
+          "description": "The MCP explain tool does not know blocker codes.",
+          "faultClass": "other",
+          "file": "cli/commands/mcp.mjs",
+          "find": "    if (!entry && blocker) return",
+          "replace": "    if (false) return",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 040)"
+          }
+        },
+        {
+          "id": "F19",
+          "description": "A blocker code the CLI prints has no entry.",
+          "faultClass": "other",
+          "file": "cli/findings.mjs",
+          "find": "  SPC008: {\n    command: 'docguard specs reanchor',",
+          "replace": "  SPC999: {\n    command: 'docguard specs reanchor',",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 040)"
+          }
+        },
+        {
+          "id": "F20",
+          "description": "The --delivery flag is not parsed.",
+          "faultClass": "other",
+          "file": "cli/docguard.mjs",
+          "find": "      flags.delivery = args[++i];",
+          "replace": "      i++;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 040)"
           }
         }
       ]

@@ -809,12 +809,12 @@
           {
             "requirementId": "FR-001",
             "file": "cli/scanners/spec-registry.mjs",
-            "line": 255
+            "line": 259
           },
           {
             "requirementId": "FR-001",
             "file": "cli/scanners/spec-registry.mjs",
-            "line": 260
+            "line": 264
           },
           {
             "requirementId": "FR-002",
@@ -1764,7 +1764,7 @@
           {
             "requirementId": "FR-003",
             "file": "cli/commands/specs.mjs",
-            "line": 224
+            "line": 234
           },
           {
             "requirementId": "FR-003",
@@ -3718,6 +3718,224 @@
       }
     },
     {
+      "specId": "docguard.first-spec-preflight",
+      "path": "specs/040-spec-preflight-first-spec/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "approved",
+          "delivery": "implemented",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": "living"
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": [
+            "docs-canonical/DATA-MODEL.md",
+            "docs-canonical/SECURITY.md"
+          ]
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.first-spec-preflight#FR-001",
+          "docguard.first-spec-preflight#FR-002",
+          "docguard.first-spec-preflight#FR-003",
+          "docguard.first-spec-preflight#FR-004",
+          "docguard.first-spec-preflight#FR-005",
+          "docguard.first-spec-preflight#FR-006",
+          "docguard.first-spec-preflight#FR-007",
+          "docguard.first-spec-preflight#FR-008",
+          "docguard.first-spec-preflight#FR-009",
+          "docguard.first-spec-preflight#FR-010",
+          "docguard.first-spec-preflight#FR-011",
+          "docguard.first-spec-preflight#SC-001",
+          "docguard.first-spec-preflight#SC-002",
+          "docguard.first-spec-preflight#SC-003"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/040-spec-preflight-first-spec/spec.md",
+            "digest": "sha256:2f0c05c1a59810da144a9e0fe9441825f2b54e3e97c81d7e43819a2b9838bd99"
+          },
+          {
+            "path": "specs/040-spec-preflight-first-spec/plan.md",
+            "digest": "sha256:0a3048551dea494efe5a6a6183713306dd18969c4bf6792f8bd3aebb7f820bb8"
+          },
+          {
+            "path": "specs/040-spec-preflight-first-spec/tasks.md",
+            "digest": "sha256:76645f695a9126bb5ce588e92577e0f2ccb0feba911ba4c6b9a1088f71b59528"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 10,
+          "total": 10
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/scanners/spec-registry.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/scanners/spec-registry.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/scanners/spec-registry.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/scanners/spec-registry.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/commands/specs.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/commands/specs.mjs",
+            "line": 340
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/commands/specs.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/commands/explain.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/commands/mcp.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/findings.mjs",
+            "line": 934
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "cli/commands/specs.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "cli/scanners/spec-first.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "cli/commands/specs.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/commands/specs.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/scanners/revision-anchor.mjs",
+            "line": 51
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/first-spec-preflight.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/first-spec-preflight.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/first-spec-preflight.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/first-spec-preflight.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/first-spec-preflight.test.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/first-spec-preflight.test.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/first-spec-preflight.test.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/first-spec-preflight.test.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "tests/first-spec-preflight.test.mjs",
+            "line": 20
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "tests/first-spec-preflight.test.mjs",
+            "line": 21
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "tests/first-spec-preflight.test.mjs",
+            "line": 22
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/first-spec-preflight.test.mjs",
+            "line": 23
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/first-spec-preflight.test.mjs",
+            "line": 24
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/first-spec-preflight.test.mjs",
+            "line": 25
+          }
+        ]
+      }
+    },
+    {
       "specId": "docguard.ignore-and-todo-parsing",
       "path": "specs/019-ignore-and-todo-parsing/spec.md",
       "reviewed": {
@@ -4368,12 +4586,12 @@
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/spec-registry.mjs",
-            "line": 461
+            "line": 465
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/spec-registry.mjs",
-            "line": 462
+            "line": 466
           },
           {
             "requirementId": "FR-003",
@@ -4703,37 +4921,37 @@
           {
             "requirementId": "FR-001",
             "file": "cli/commands/mcp.mjs",
-            "line": 4
+            "line": 5
           },
           {
             "requirementId": "FR-002",
             "file": "cli/commands/mcp.mjs",
-            "line": 5
+            "line": 6
           },
           {
             "requirementId": "FR-003",
             "file": "cli/commands/mcp.mjs",
-            "line": 6
-          },
-          {
-            "requirementId": "FR-004",
-            "file": "cli/commands/mcp.mjs",
             "line": 7
           },
           {
-            "requirementId": "FR-005",
+            "requirementId": "FR-004",
             "file": "cli/commands/mcp.mjs",
             "line": 8
           },
           {
             "requirementId": "FR-005",
+            "file": "cli/commands/mcp.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-005",
             "file": "cli/docguard.mjs",
-            "line": 663
+            "line": 665
           },
           {
             "requirementId": "FR-006",
             "file": "cli/commands/mcp.mjs",
-            "line": 9
+            "line": 10
           }
         ],
         "testEvidence": [
@@ -7156,7 +7374,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/docguard.mjs",
-            "line": 958
+            "line": 963
           },
           {
             "requirementId": "FR-011",
