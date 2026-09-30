@@ -11,14 +11,14 @@
 
 # Architecture
 
-<!-- docguard:version 1.7.0 -->
+<!-- docguard:version 1.8.0 -->
 <!-- docguard:status active -->
 <!-- docguard:last-reviewed 2026-09-30 -->
 
 | Metadata | Value |
 |----------|-------|
 | **Status** | ![Status](https://img.shields.io/badge/status-active-brightgreen) |
-| **Version** | `1.7.0` |
+| **Version** | `1.8.0` |
 | **Last Updated** | 2026-09-30 |
 | **Project Size** | ~47K lines in 147 files across `cli/` — measured 2026-09-30 with `wc -l` over `cli/**/*.mjs`; re-measure rather than trust this figure |
 
@@ -64,7 +64,7 @@ It targets development teams and AI coding agents that need to maintain document
 | **Agent instruction budget** | Measures every `AGENTS.md` chain from the root to each instruction directory, as Codex loads it (`AGENTS.override.md` replaces `AGENTS.md`), against `agentInstructions.maxBytes` (default 32768) or a per-chain allowance | `cli/scanners/agent-instructions.mjs`, `cli/validators/structure.mjs` | `STR004` is an escalation; `STR005` suggests tightening a slack allowance. Increasing an allowance is a reviewed config change, which the digit-normalized finding baseline could not guarantee |
 | **As-built specs** | `generate --spec <area>` collects deterministic facts under one code area (routes, exported JS/TS symbols, env vars read, entities), renders a Spec Kit spec with one agent-written candidate per fact, and registers it as `origin: as_built` with `sourcePaths`. The Spec-Registry validator re-scans those paths (`SPR007`) | `cli/scanners/as-built.mjs`, `cli/scanners/js-ast.mjs` (`exportedNames`, shared with the symbol map), `cli/commands/generate-as-built.mjs`, `cli/validators/spec-registry.mjs` | DocGuard writes no requirement prose. Facts key on method+path, file+export, name, so line moves never churn them. The registry fields are serialized only when set. `--write` commits the spec and its registry entry in one file transaction |
 | **Spec-first gate** | Classifies a change between the merge base and HEAD as covered, exempt, not governed, uncovered or inconclusive. It reads governed paths from `specFirst` and resolves spec references against `specs/*/spec.md` and the registry | `cli/scanners/spec-first.mjs`, `cli/commands/specs.mjs` | Read-only. An unresolved reference never passes. Git or inventory failure is inconclusive (exit 2), never a pass. The PR body arrives as a file |
-| **Spec Kit delegation** | The only code that invokes the `specify` CLI: reads its documented `init` options, resolves the integration key from `.specify/integration.json` / `init-options.json` / unambiguous agent signals, initializes Spec Kit and registers the packaged DocGuard extension | `cli/spec-kit-delegation.mjs`, `cli/ensure-skills.mjs` | Called only by `docguard init`; argument arrays only; every failure returns a structured result with the CLI's error and a manual command; requires Spec Kit ≥ 0.10.0 to initialize and ≥ 0.11.2 to register the extension (`requires.speckit_version`) |
+| **Spec Kit delegation** | The only code that invokes the `specify` CLI: reads its documented `init` options, resolves the integration key from `.specify/integration.json` / `init-options.json` / unambiguous agent signals, initializes Spec Kit and registers the packaged DocGuard extension | `cli/spec-kit-delegation.mjs`, `cli/ensure-skills.mjs` | Called only by `docguard init`, and `ensureSkills` runs only from `init` too (the dispatcher installs nothing, so every other command writes only its own outputs, spec 042); argument arrays only; every failure returns a structured result with the CLI's error and a manual command; requires Spec Kit ≥ 0.10.0 to initialize and ≥ 0.11.2 to register the extension (`requires.speckit_version`) |
 | **Validators** | Independent validation modules that check specific aspects of CDD compliance — all emitting structured findings with stable codes (the `CODES` registry in `findings.mjs`) | `cli/validators/` | `*.mjs` |
 | **Scanners** | Project file scanners for test discovery, route detection, schema mapping, CDK/IaC, doc-tools, integrations, frontend surface, spec-kit, memory-plan, semantic claims, agent readability | `cli/scanners/` | `*.mjs` |
 | **Writers** | Deterministic doc-mutation and output modules — section-addressable edits, mapped-role ownership authorization, mechanical fix registry, API-Reference writer, generate I/O + doc builders (split from generate.mjs), SARIF emitter (no LLM) | `cli/writers/`, `cli/shared-doc-roles.mjs` | Mapped human docs expose only unique `source=code` sections; new or explicitly generated single-role targets permit whole-document writes; all replacements use backups and `--force` cannot grant ownership |
@@ -264,6 +264,7 @@ DocGuard declares one exact-pinned runtime dependency, `@babel/parser`. It loads
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 1.8.0 | 2026-09-30 | DocGuard Team | `ensureSkills` runs only from `init`; the dispatcher no longer installs skills for other commands (spec 042) |
 | 1.7.0 | 2026-09-30 | DocGuard Team | Freshness review for specs 028–037: layer rules corrected to the code (scanners and validators use the pure section parsers in `writers/`), guard data flow no longer lists a fixed validator set, subprocess and built-in module inventory completed, project size re-measured |
 | 1.6.0 | 2026-09-29 | DocGuard Team | Freshness review for specs 014–026: hook-manager ownership, Spec Kit version floors, the shared test-case counter, subprocess uses, and counts replaced by their authoritative source |
 | 1.5.0 | 2026-09-18 | DocGuard Team | Freshness review: corrected a project-size figure stale since 2026-05-29 and recorded guard exit code 3 for uninitialised projects |
@@ -572,14 +573,14 @@ Read the outputs declared in `action.yml` and the command's JSON schema before w
 
 # Data Model
 
-<!-- docguard:version 0.11.0 -->
+<!-- docguard:version 0.12.0 -->
 <!-- docguard:status active -->
 <!-- docguard:last-reviewed 2026-09-30 -->
 
 | Metadata | Value |
 |----------|-------|
 | **Status** | ![Status](https://img.shields.io/badge/status-active-brightgreen) |
-| **Version** | `0.11.0` |
+| **Version** | `0.12.0` |
 | **Database** | None — DocGuard is a stateless CLI tool |
 | **Storage** | File-system only (reads project files, writes generated docs) |
 
@@ -739,7 +740,8 @@ can compare a byte-stable result in CI. A non-current projection exposes up to
 Order-only differences use kind `order`; changed, missing, and unexpected
 content remain distinct. Additional differences are reported as truncated.
 
-`docguard specs complete` requires a clean Git revision, coverage for every
+`docguard specs complete` requires a clean Git revision (files under DocGuard's
+own `.docguard/` state directory do not count), coverage for every
 requirement through qualified implementation or test evidence, existing affected
 canonical documents, a supported reconciliation plan, and a guard result without
 errors. Declared task ledgers must be non-empty and fully checked. An approved
@@ -806,6 +808,8 @@ lookup reports that error until the block is fixed.
 | `.docguard/plan.cache.json` | the memory plan (guard, sync, generate) | `{ v, configKey, treeHash, plan, writtenAt }`. `v` is `"3"`: code sections may carry `completeness: "partial"` and a `partialReason`. A cache with another version, config key or tree hash is a miss and is rebuilt |
 | `budgets.json` | maintainers | `schemaVersion: 1`; sample count, guard targets, the time and byte budgets, and the agent tasks and MCP calls `tools/budget.mjs` measures |
 | `benchmarks/agent-context/manifest-v2.json` | frozen once, before any run | Agent-context protocol v2: conditions `task-only`, `context-pack`, `context-pack-symbols`, six tasks with fixture and hidden-evaluator digests, and the promotion rule. `run.mjs` holds its digest and loads it only while every byte matches. Schemas: `docguard-agent-context-benchmark-v2.schema.json`, `docguard-agent-context-result-v2.schema.json` |
+
+`.docguard/` holds only local state: the plan cache above, score history, fix memory, feedback records, the nudge throttle, the context pack and the active context. It ignores itself. The first write creates `.docguard/.gitignore` containing `*`, and an existing one is kept. DocGuard never edits the project's `.gitignore` for this. If a project committed these files under an earlier version, `git rm -r --cached .docguard` untracks them. DocGuard's dirty checks leave `.docguard/` out either way.
 
 ## Task Context Packet
 
@@ -929,6 +933,7 @@ The `score --format json` output:
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 0.12.0 | 2026-09-30 | DocGuard Team | `.docguard/` ignores itself, and dirty checks leave it out (spec 042) |
 | 0.11.0 | 2026-09-30 | DocGuard Team | Freshness review for specs 028–037: configuration keys for the doc lock, path-scoped rules, ownership, diagrams and the symbol map; `review --prune` as a doc-lock writer; the plan cache (version 3), `budgets.json` and the frozen agent-context protocol v2 |
 | 0.10.0 | 2026-09-29 | DocGuard Team | Add registry `lifecycle.origin` / `scope.sourcePaths` for as-built specs, the `specKit` coverage tier, and the `agentInstructions` and `specFirst` configuration |
 | 0.9.0 | 2026-09-15 | DocGuard Team | Add bounded field-level spec-registry differences and direct evidence verification exit semantics |
@@ -967,11 +972,7 @@ metadata, or declared inputs invalidate it. A verified declaration removes a
 heuristic claim from the unverified count only through a unique same-line,
 same-value match.
 
-`docguard verify --evidence` exits `0` for `verified-within-scope` and for an
-unconfigured manifest, `2` for `attention-required` (stale, inconclusive, or
-unsupported evidence), and `1` for `contradicted` or `invalid`. The JSON status
-
-<!-- truncated: 58 more lines — read docs-canonical/DATA-MODEL.md directly -->
+<!-- truncated: 62 more lines — read docs-canonical/DATA-MODEL.md directly -->
 
 ---
 
@@ -982,7 +983,7 @@ unsupported evidence), and `1` for `contradicted` or `invalid`. The JSON status
 
 <!-- docguard:quality negation-load off — an environment doc precisely describes the ABSENCE of requirements (no install step, no database, no credential for the CLI); the prohibitive phrasing is accurate and intentional, not sloppy writing -->
 
-<!-- docguard:version 0.11.0 -->
+<!-- docguard:version 0.12.0 -->
 <!-- docguard:status active -->
 <!-- docguard:last-reviewed 2026-09-30 -->
 
@@ -991,7 +992,7 @@ unsupported evidence), and `1` for `contradicted` or `invalid`. The JSON status
 | Metadata | Value |
 |----------|-------|
 | **Status** | ![Status](https://img.shields.io/badge/status-active-brightgreen) |
-| **Version** | `0.11.0` |
+| **Version** | `0.12.0` |
 
 ---
 
@@ -1075,8 +1076,11 @@ node cli/docguard.mjs ci --threshold 70 --format json
 
 DocGuard needs no network access and no credentials, so a sandbox such as ai-jail can run it
 with the default read-write project mount. `docguard guard` runs fine under `--lockdown`, which
-makes everything read-only. `fix --write`, `sync`, `init`, `review --accept` / `--prune`,
-`specs --write` and `memory --pack` write into the project, so they need the normal mount.
+makes everything read-only. `fix --write`, `sync --write`, `init`, `review --accept` /
+`--prune`, `specs --write` and `memory --pack` write into the project, so they need the normal
+mount. Read and preview modes (`sync` and `generate --spec` without `--write`, `rules --for`)
+write at most the plan cache and other local state in `.docguard/`, which is best-effort and
+ignores itself.
 
 What must be visible:
 
@@ -1098,6 +1102,7 @@ What must be visible:
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 0.12.0 | 2026-09-30 | DocGuard Team | `sync --write`, not a bare `sync`, writes into the project; read and preview modes write only the self-ignoring `.docguard/` (spec 042) |
 | 0.11.0 | 2026-09-30 | DocGuard Team | `DOCGUARD_NO_UPDATE_HINT` and the `CI` rule for the version-age note (spec 038) |
 | 0.10.0 | 2026-09-30 | DocGuard Team | Freshness review: `npm run budget`; the full list of commands that write; how path-scoped rules and ownership read git; what a missing `python3` makes partial (specs 030, 033, 034, 035) |
 | 0.9.0 | 2026-09-29 | DocGuard Team | Freshness review: documented `DOCGUARD_SPECIFY_TIMEOUT_MS` and the optional Spec Kit prerequisite; the agent-sandbox section (spec 022) is recorded here |
@@ -1193,7 +1198,7 @@ The verification column above links each requirement to executable tests. The te
 # Security
 
 <!-- docguard:quality negation-load off — prohibitions define security boundaries -->
-<!-- docguard:version 0.12.0 -->
+<!-- docguard:version 0.13.0 -->
 <!-- docguard:status active -->
 <!-- docguard:last-reviewed 2026-09-30 -->
 
@@ -1279,16 +1284,18 @@ Paths that come from documents or configuration are checked before use. A `cover
 
 ## Command Safety Levels
 
+Only `init`, and the aliases that run it (`setup`, `agents`, `hooks`, `badge`, `llms`, `publish`), installs DocGuard's agent skills and slash commands (`.agent/skills/`, `.agent/commands/`) or prints the Spec Kit setup hint. No other command does, in any mode, and an unknown command name writes nothing. Read, report, check and preview modes leave the working tree unchanged. The only place they may write is DocGuard's own state directory, `.docguard/`, which ignores itself: each writer creates `.docguard/.gitignore` containing `*` when it is missing and keeps an existing one. DocGuard's dirty-tree checks (`memory --pack`, `report`, `reconcile`, `specs complete`) leave `.docguard/` out.
+
 | Operation | Source writes | Auxiliary writes / effects |
 |---|---|---|
-| guard, score, diff, diagnose | None by default | Plan caching may create `.docguard/` artifacts; explicit mutation flags change behavior |
+| guard, score, diff, diagnose | None by default | Plan caching may write into the self-ignoring `.docguard/`; explicit mutation flags change behavior |
 | ci | None | Records history unless `--no-history` is set |
 | feedback | None | Saves local records or an explicitly requested direct `tests/*.test.mjs` contribution unless `--preview`; prints opt-in URLs but never submits |
 | memory --pack | None | Writes a generated context pack unless `--stdout` is used; `--symbols` adds a bounded symbol map |
 | agent, agent --task | None | Emits a task graph or transient bounded context; never stores raw task text or selected output |
 | fix --write, sync --write | Targeted documentation edits | Mapped human documents permit only unique `source=code` sections; backups and fix history remain enabled where supported. `sync --write` skips a section drawn from incomplete evidence unless `--allow-partial` |
 | review --accept, review --prune | `.docguard-doc-lock.json` only | One file transaction; `--accept` requires a reason. Plain `review` and `review --suggest` write nothing |
-| rules --for, trace --owners [--suggest] | None | Read-only; `--suggest` prints a draft ownership block and never writes configuration |
+| rules --for, trace --owners [--suggest] | None | Read-only, including agent skills and the Spec Kit hint; `--suggest` prints a draft ownership block and never writes configuration |
 | reconcile | None by default | `--write` delegates only mechanical generated-section refreshes to `sync` |
 | specs, specs preflight, specs require | None for check/plan modes | `specs --write` refreshes the registry; `specs complete --write` transactionally records a reviewed outcome and active context |
 | verify --evidence | None | Reads the strict local manifest, selected Markdown, source files, and saved reports; guard consumes the same evaluator |
@@ -1342,6 +1349,7 @@ Exclude `node_modules`, environment values, generated build output, and private 
 
 | Version | Date | Changes |
 |---|---|---|
+| 0.13.0 | 2026-09-30 | Only `init` installs agent skills and slash commands; read and preview modes write nothing; `.docguard/` ignores itself and dirty checks leave it out (spec 042) |
 | 0.12.0 | 2026-09-30 | Freshness review for specs 028–037: full subprocess inventory (git, `python3 -c`, dev tooling), the remaining static shell strings, path checks for `covers=`, ownership patterns and `rules --for`, the MCP documentation tools' boundary, and the `review`, `rules` and `trace --owners` write levels |
 | 0.11.0 | 2026-09-29 | Freshness review: the `specify` subprocess boundary, hook-manager ownership, the spec-first gate, and the Homebrew tap deploy key |
 | 0.10.0 | 2026-09-14 | Prevent scoped evidence output from exposing raw source values |
@@ -2036,7 +2044,7 @@ Behaviour changes:
   finding up to three times: in `findings`, in `reportable`, and in
   `validators[].findings`. It also repeated each code's evidence on every
 
-<!-- truncated: 4247 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 4275 more lines — read CHANGELOG.md directly -->
 
 ---
 

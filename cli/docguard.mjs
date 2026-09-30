@@ -55,7 +55,6 @@ import { runSpecs } from './commands/specs.mjs';
 import { runReconcile } from './commands/reconcile.mjs';
 import { runReview } from './commands/review.mjs';
 import { runRules } from './commands/rules.mjs';
-import { ensureSkills } from './ensure-skills.mjs';
 import { detectRepositoryRootGuidance, renderRepositoryRootGuidance } from './repository-root.mjs';
 
 // ── Shared constants (imported to break circular dependencies) ──────────
@@ -563,7 +562,7 @@ async function main() {
       flags.out = args[i + 1];
       i++;
     } else if (args[i] === '--quiet' || args[i] === '-q') {
-      // v0.16-P5: suppress the banner + ensureSkills decorative line.
+      // v0.16-P5: suppress the banner.
       // Useful inside git hooks (every commit prints the banner otherwise)
       // and any CI/script that pipes docguard's output.
       flags.quiet = true;
@@ -763,16 +762,15 @@ async function main() {
     process.exit(0);
   }
 
-  // In JSON mode the entire stdout MUST be parseable JSON. The banner and
-  // ensureSkills' install message would corrupt the output for any
+  // In JSON mode the entire stdout MUST be parseable JSON. The banner would
+  // corrupt the output for any
   // programmatic consumer (CI, dashboards, the Score-on-PR Action recipe).
   // Headless flags (`--write`, `--check-only`, `--auto`) also suppress chrome.
   // v0.16-P5: --quiet (-q) joins the headless club for users who want
   // banner-free output without committing to a specific machine format.
   // v0.24 (field report): `--plan` is a read-only preview — "show me, don't
-  // touch" — so it joins the club to suppress the banner AND ensureSkills'
-  // .agent/.specify writes, which were a surprising side effect of a bare
-  // `generate --plan` (and were already suppressed for `--plan --write`).
+  // touch" — so it joins the club. (Skill installation no longer depends on
+  // this flag: only init installs skills; see the scaffolding rule below.)
   // v0.29: 'sarif' joins 'json' — any machine format where stdout IS the
   // artifact belongs here, or the banner corrupts the payload.
   // v0.33: 'junit' joins for the same reason (GitLab/Jenkins parse stdout XML).
@@ -809,59 +807,18 @@ async function main() {
   // same way runGuardInternal sees everything else.
   if (flags.noBaseline) config.baseline = false;
 
-  // Commands whose normal mode only reads/reports, plus explicit writers whose
-  // mutations must stay scoped to their named output. They must never add
-  // unrelated setup files. Scaffolding (ensureSkills → .agent/.specify,
-  // spawning `specify`) belongs to setup/init/generate and `init --with`, where
-  // the user is establishing or expanding setup rather than inspecting it.
-  //
-  // v0.26 (field report Bug #3): a bare `docguard guard` used to run
-  // ensureSkills → auto-init Spec Kit → spawn `specify` and write ~9 files into
-  // the tree BEFORE printing results. Surprising for a *validate* command, and
-  // fatal for a read-only CI audit or a clean-tree precondition check. These
-  // commands are now exempt regardless of flags. (`audit` is the guard alias;
-  // `diff`/`impact` only read; `demo` runs against a throwaway fixture.)
-  const READ_ONLY_COMMANDS = new Set([
-    'guard', 'audit', 'score', 'diff', 'impact',
-    'diagnose', 'fix', 'trace', 'explain', 'memory', 'demo', 'agent', 'retire', 'archive', 'specs',
-    // review writes only .docguard-doc-lock.json, and only on --accept/--prune.
-    'review',
-    // feedback only writes its own .docguard/feedback/ — it must NOT scaffold
-    // skills or touch source, so it's gated out of ensureSkills like the rest.
-    'feedback',
-    // verify only reads docs and emits a task list — pure report.
-    'verify',
-    // report gathers evidence (guard+score, read-only); --out writes only the
-    // user-named file — it must never scaffold or mutate the tree otherwise.
-    'report',
-    // ci is the pipeline gate — it must never scaffold into the workspace it
-    // gates (review finding H1: bare `docguard ci` in text mode ran
-    // ensureSkills and wrote ~9 files before gating). Its only write is its
-    // own .docguard/history.jsonl, same carve-out as feedback.
-    'ci',
-    // mcp serves read-only tools over stdio — scaffolding writes are off-limits.
-    'mcp',
-    // nudge-hook runs inside an agent's PostToolUse hook — it may write only
-    // its own .docguard/nudge-state.json throttle file, never scaffold skills.
-    'nudge-hook',
-  ]);
-
-  // Silent auto-check: install skills/commands if missing. Skip entirely in
-  // headless modes (deterministic, parseable output; no side effects expected)
-  // and for read-only commands (see above).
-  if (
-    command !== 'setup' &&
-    command !== 'init' &&
-    !READ_ONLY_COMMANDS.has(command) &&
-    !(command === 'hooks' && flags.list) &&
-    // Agent-family staleness checks must not bootstrap skills or Spec Kit.
-    !(command === 'agents' && flags.check) &&
-    !headless
-  ) {
-    // The starter profile opted out of the Spec Kit scaffold at init; its
-    // later commands must not nag about it either.
-    ensureSkills(projectDir, { ...flags, noSpecKit: flags.noSpecKit || config.profile === 'starter' });
-  }
+  // Scaffolding rule (docguard.read-only-commands#FR-001): only `init`, and the
+  // aliases that run it (setup, agents, hooks, badge, llms, publish), may install
+  // DocGuard's agent skills and slash commands. runInit calls ensureSkills
+  // itself; the dispatcher never does. Every other command, in
+  // every mode, writes only the outputs it documents. The v0.26 deny-list of
+  // read-only commands that gated a dispatcher-wide install here failed open:
+  // `rules`, `reconcile`, `upgrade`, `watch`, the `generate --spec` and `sync`
+  // previews, and even an unknown command name scaffolded ~17 files.
+  // @implements docguard.read-only-commands#FR-001
+  // @implements docguard.read-only-commands#FR-002
+  // @implements docguard.read-only-commands#FR-003
+  // @implements docguard.read-only-commands#FR-004
 
   // v0.20: deprecation aliases. The legacy command keeps working until v1.0
   // and emits a yellow stderr warning suggesting the new shape. Quiet mode

@@ -1,13 +1,13 @@
 # Data Model
 
-<!-- docguard:version 0.11.0 -->
+<!-- docguard:version 0.12.0 -->
 <!-- docguard:status active -->
 <!-- docguard:last-reviewed 2026-09-30 -->
 
 | Metadata | Value |
 |----------|-------|
 | **Status** | ![Status](https://img.shields.io/badge/status-active-brightgreen) |
-| **Version** | `0.11.0` |
+| **Version** | `0.12.0` |
 | **Database** | None — DocGuard is a stateless CLI tool |
 | **Storage** | File-system only (reads project files, writes generated docs) |
 
@@ -167,7 +167,8 @@ can compare a byte-stable result in CI. A non-current projection exposes up to
 Order-only differences use kind `order`; changed, missing, and unexpected
 content remain distinct. Additional differences are reported as truncated.
 
-`docguard specs complete` requires a clean Git revision, coverage for every
+`docguard specs complete` requires a clean Git revision (files under DocGuard's
+own `.docguard/` state directory do not count), coverage for every
 requirement through qualified implementation or test evidence, existing affected
 canonical documents, a supported reconciliation plan, and a guard result without
 errors. Declared task ledgers must be non-empty and fully checked. An approved
@@ -234,6 +235,8 @@ lookup reports that error until the block is fixed.
 | `.docguard/plan.cache.json` | the memory plan (guard, sync, generate) | `{ v, configKey, treeHash, plan, writtenAt }`. `v` is `"3"`: code sections may carry `completeness: "partial"` and a `partialReason`. A cache with another version, config key or tree hash is a miss and is rebuilt |
 | `budgets.json` | maintainers | `schemaVersion: 1`; sample count, guard targets, the time and byte budgets, and the agent tasks and MCP calls `tools/budget.mjs` measures |
 | `benchmarks/agent-context/manifest-v2.json` | frozen once, before any run | Agent-context protocol v2: conditions `task-only`, `context-pack`, `context-pack-symbols`, six tasks with fixture and hidden-evaluator digests, and the promotion rule. `run.mjs` holds its digest and loads it only while every byte matches. Schemas: `docguard-agent-context-benchmark-v2.schema.json`, `docguard-agent-context-result-v2.schema.json` |
+
+`.docguard/` holds only local state: the plan cache above, score history, fix memory, feedback records, the nudge throttle, the context pack and the active context. It ignores itself. The first write creates `.docguard/.gitignore` containing `*`, and an existing one is kept. DocGuard never edits the project's `.gitignore` for this. If a project committed these files under an earlier version, `git rm -r --cached .docguard` untracks them. DocGuard's dirty checks leave `.docguard/` out either way.
 
 ## Task Context Packet
 
@@ -357,6 +360,7 @@ The `score --format json` output:
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 0.12.0 | 2026-09-30 | DocGuard Team | `.docguard/` ignores itself, and dirty checks leave it out (spec 042) |
 | 0.11.0 | 2026-09-30 | DocGuard Team | Freshness review for specs 028–037: configuration keys for the doc lock, path-scoped rules, ownership, diagrams and the symbol map; `review --prune` as a doc-lock writer; the plan cache (version 3), `budgets.json` and the frozen agent-context protocol v2 |
 | 0.10.0 | 2026-09-29 | DocGuard Team | Add registry `lifecycle.origin` / `scope.sourcePaths` for as-built specs, the `specKit` coverage tier, and the `agentInstructions` and `specFirst` configuration |
 | 0.9.0 | 2026-09-15 | DocGuard Team | Add bounded field-level spec-registry differences and direct evidence verification exit semantics |

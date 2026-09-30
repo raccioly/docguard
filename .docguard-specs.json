@@ -1759,7 +1759,7 @@
           {
             "requirementId": "FR-003",
             "file": "cli/commands/specs.mjs",
-            "line": 224
+            "line": 226
           },
           {
             "requirementId": "FR-003",
@@ -5276,6 +5276,164 @@
       }
     },
     {
+      "specId": "docguard.read-only-commands",
+      "path": "specs/042-read-only-commands/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "approved",
+          "delivery": "implemented",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": "living"
+        },
+        "relations": {
+          "extends": [
+            "docguard.specify-init-delegation"
+          ],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md",
+            "docs-canonical/DATA-MODEL.md",
+            "docs-canonical/ENVIRONMENT.md",
+            "docs-canonical/SECURITY.md"
+          ]
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.read-only-commands#FR-001",
+          "docguard.read-only-commands#FR-002",
+          "docguard.read-only-commands#FR-003",
+          "docguard.read-only-commands#FR-004",
+          "docguard.read-only-commands#FR-005",
+          "docguard.read-only-commands#FR-006",
+          "docguard.read-only-commands#FR-007",
+          "docguard.read-only-commands#SC-001",
+          "docguard.read-only-commands#SC-002",
+          "docguard.read-only-commands#SC-003"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/042-read-only-commands/spec.md",
+            "digest": "sha256:99c00ce6c785995473c64af7dd43febc8b312494eccaf0f8fc3cf89670b1fb36"
+          },
+          {
+            "path": "specs/042-read-only-commands/plan.md",
+            "digest": "sha256:e96555a7c5b6c73989ddd7d3d1652093c9aeb58d8ed4dcce60361972cc5f8fcd"
+          },
+          {
+            "path": "specs/042-read-only-commands/tasks.md",
+            "digest": "sha256:19c547a8b4bb8207e7397e1de9a4797c2bd50c832428d0958ed1fb50080d06ab"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 0,
+          "total": 12
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/docguard.mjs",
+            "line": 818
+          },
+          {
+            "requirementId": "FR-001",
+            "file": "cli/ensure-skills.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/docguard.mjs",
+            "line": 819
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/docguard.mjs",
+            "line": 820
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/docguard.mjs",
+            "line": 821
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/writers/state-dir.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/shared-git.mjs",
+            "line": 449
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/read-only-commands.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/read-only-commands.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/read-only-commands.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/read-only-commands.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/read-only-commands.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/read-only-commands.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/read-only-commands.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/read-only-commands.test.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/read-only-commands.test.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/read-only-commands.test.mjs",
+            "line": 18
+          }
+        ]
+      }
+    },
+    {
       "specId": "docguard.release-dispatch-window",
       "path": "specs/023-release-dispatch-window/spec.md",
       "reviewed": {
@@ -5519,7 +5677,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/docguard.mjs",
-            "line": 79
+            "line": 78
           }
         ],
         "testEvidence": [
@@ -6056,7 +6214,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/ensure-skills.mjs",
-            "line": 12
+            "line": 13
           },
           {
             "requirementId": "FR-005",
@@ -6066,7 +6224,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/ensure-skills.mjs",
-            "line": 13
+            "line": 14
           },
           {
             "requirementId": "FR-007",
@@ -6086,12 +6244,12 @@
           {
             "requirementId": "FR-008",
             "file": "cli/ensure-skills.mjs",
-            "line": 14
+            "line": 15
           },
           {
             "requirementId": "FR-009",
             "file": "cli/ensure-skills.mjs",
-            "line": 15
+            "line": 16
           },
           {
             "requirementId": "FR-010",
@@ -6738,7 +6896,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/docguard.mjs",
-            "line": 951
+            "line": 908
           },
           {
             "requirementId": "FR-011",

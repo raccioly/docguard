@@ -10,10 +10,9 @@
  * Fix: a content-equality gate. These tests assert that a second identical
  * run writes nothing and prints no install message.
  *
- * v0.26 (Bug #3): ensureSkills now ONLY runs for scaffolding commands
- * (generate / init / init --with) — read-only commands like `explain` are
- * exempt and never touch .agent/skills. So this exercises idempotency via
- * `generate` (a scaffolding command) rather than a read command.
+ * Spec 042 (docguard.read-only-commands#FR-001): only `init` installs skills;
+ * every other command, `generate` included, writes only its own outputs. So
+ * this exercises idempotency through `init`.
  */
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
@@ -41,10 +40,10 @@ function makeRepo() {
   return dir;
 }
 
-// A non-headless SCAFFOLDING command (not read-only, no --quiet/--format json)
-// so ensureSkills runs. `generate` is non-interactive and triggers the install.
+// `init` is the only command that installs skills. --skip-prompts keeps it
+// non-interactive; --no-spec-kit keeps this test about DocGuard's own skills.
 function runCmd(dir) {
-  return spawnSync('node', [CLI, 'generate', '--dir', dir], { encoding: 'utf-8' }).stdout;
+  return spawnSync('node', [CLI, 'init', '--skip-prompts', '--no-spec-kit', '--dir', dir], { encoding: 'utf-8' }).stdout;
 }
 
 function skillMtimes(dir) {

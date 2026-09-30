@@ -24,6 +24,7 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { stripImplementationOutcomes } from '../writers/spec-outcomes.mjs';
+import { OWN_STATE_PATHSPEC } from '../shared-git.mjs';
 
 const REVISION_RE = /^[0-9a-f]{40}(?:[0-9a-f]{24})?$/;
 export const HISTORY_LIMIT = 1000;
@@ -82,7 +83,8 @@ export function danglingRevisions(projectDir, registry) {
  * @returns {string[]|null} changed paths, or null when git cannot answer
  */
 export function nonLifecycleChanges(projectDir, { registryPath, contextPath, specPaths = [] }) {
-  const status = git(projectDir, ['status', '--porcelain=v1', '-z', '--untracked-files=no']);
+  // DocGuard's own .docguard/ state is never a change (docguard.read-only-commands#FR-006).
+  const status = git(projectDir, ['status', '--porcelain=v1', '-z', '--untracked-files=no', ...OWN_STATE_PATHSPEC]);
   if (!status.ok) return null;
   const specs = new Set(specPaths);
   const entries = status.out.split('\0').filter(Boolean);
