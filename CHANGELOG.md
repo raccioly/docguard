@@ -270,6 +270,13 @@ Behaviour changes:
 
 ### Fixed
 
+- **`reconcile` traces a change that cites a canonical requirement**
+  (`specs/027-canonical-requirement-links`). A test annotated
+  `@req docs-canonical/REQUIREMENTS.md#FR-024` cites approved intent as exactly
+  as a spec link, but was classified `unsupported_or_ambiguous`, which blocked
+  `specs complete` for every spec whose window contained it. Only IDs declared
+  in the named document count; an invented citation stays unsupported.
+
 - **`generate --spec --write` writes the registry inside the spec's file
   transaction** (`specs/024-as-built-specs`). It used a plain
   `writeFileSync` with a hand-written rollback, outside the safe-write rule

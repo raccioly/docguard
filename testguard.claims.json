@@ -856,6 +856,72 @@
           }
         }
       ]
+    },
+    {
+      "id": "RECONCILE-TRACES-CANONICAL-REQUIREMENTS",
+      "statement": "reconcile links a change to a requirement declared in a canonical document it cites, and never to an undeclared or escaping citation.",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/027-canonical-requirement-links/spec.md#FR-001"
+      },
+      "severity": "medium",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (#455 release prep)"
+      },
+      "defendedBy": [
+        "tests/canonical-requirement-links.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "Canonical links are never recorded.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/reconciliation.mjs",
+          "find": "      if (canonical.length) item.canonical = canonical;",
+          "replace": "      if (false) item.canonical = canonical;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 release prep)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "Undeclared IDs are linked.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/reconciliation.mjs",
+          "find": "    if (cache.get(doc).has(`${doc}#${id}`)) links.add(`${doc}#${id}`);",
+          "replace": "    links.add(`${doc}#${id}`);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 release prep)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "A path escape is followed.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/reconciliation.mjs",
+          "find": "    if (doc.split('/').includes('..')) continue;",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 release prep)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "A co-changed canonical document is not treated as intent.",
+          "faultClass": "return-altered",
+          "file": "cli/scanners/reconciliation.mjs",
+          "find": "      const docChanged = canonical.some(ref => changedPaths.has(ref.split('#')[0]));",
+          "replace": "      const docChanged = false;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 release prep)"
+          }
+        }
+      ]
     }
   ]
 }

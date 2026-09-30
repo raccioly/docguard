@@ -38,7 +38,7 @@ It targets development teams and AI coding agents that need to maintain document
 | **Commands** | User-facing commands (the Daily 5 — init/guard/diff/sync/score — plus situational tools including reconcile, retire, specs, and `init --with` scaffolders) | `cli/commands/` | `*.mjs` |
 | **Document lifecycle** | Finds exact terminal-status docs and completed-task review candidates; explicit retirement removes documentation from active context only after its source revision is reachable from a retained Git ref | `cli/scanners/document-lifecycle.mjs`, `cli/validators/document-lifecycle.mjs`, `cli/commands/retire.mjs` | Scanner is read-only; retirement uses the shared multi-file transaction and remains explicit |
 | **Spec lifecycle registry** | Projects immutable spec identities, reviewed lifecycle/lineage/scope, artifact digests, task state, qualified implementation/test evidence, bounded outcomes, and recovery tombstones into one byte-stable control file | `cli/scanners/spec-registry.mjs`, `cli/scanners/requirement-evidence.mjs`, `cli/validators/spec-registry.mjs`, `cli/commands/specs.mjs` | `specs --write` preserves reviewed fields; stale checks identify bounded field paths and distinguish canonical ordering from changed content; only committed, clean, digest-current lifecycle entries can defer traceability, while a current planned entry that is new, removed from the index, or modified pending commit remains advisory; `specs complete` is the only verified-delivery writer |
-| **Reconciliation graph** | Inventories changed paths independently from bounded patch text, maps them to direct spec evidence, and keeps mechanical facts, approved intent, decisions, unrelated changes, and unsupported evidence separate | `cli/shared-git.mjs`, `cli/scanners/reconciliation.mjs`, `cli/commands/reconcile.mjs` | Timeout, overflow, parse failure, or incomplete inventory blocks a ready result; planning is read-only and `--write` never rewrites requirements |
+| **Reconciliation graph** | Inventories changed paths independently from bounded patch text, maps them to direct spec evidence or to a requirement declared in a canonical document (`docs-canonical/<doc>.md#<ID>`), and keeps mechanical facts, approved intent, decisions, unrelated changes, and unsupported evidence separate | `cli/shared-git.mjs`, `cli/scanners/reconciliation.mjs`, `cli/commands/reconcile.mjs` | Timeout, overflow, parse failure, or incomplete inventory blocks a ready result; planning is read-only and `--write` never rewrites requirements |
 | **Analyzer tier** | Decides which analyzer produced each piece of evidence at the two entry points (`parseJsTs`, `extractPythonFiles`), carries `tier`/`tierReason` on scanned items, reports `parserTier` on every finding, and downgrades a validator to `partial` when an AST-capable language was read by the pattern fallback | `cli/shared-source.mjs` (`tierFor`, `summarizeTiers`, `tierApplicability`), `cli/scanners/routes.mjs`, `cli/validators/api-surface.mjs` | Findings are retained; only coverage is downgraded. `fallback-language` is not a gap — no AST tier exists for that language |
 | **Spec Kit artifact coverage** | Treats Spec Kit's own documents as governed. Coverage counts top-level `specs/<feature>/**/*.md` and the constitution under a `specKit` tier. Metrics-Consistency (including `MET004` dependency claims) and Reference-Existence read the constitution | `cli/scanners/speckit.mjs` (`findConstitution`), `cli/commands/guard.mjs`, `cli/validators/metrics-consistency.mjs`, `cli/validators/reference-existence.mjs` | The constitution usually lives in a dot directory the walkers skip, so it is located explicitly. Nested fixture `specs/` trees are not the project's artifacts |
 | **Headline coverage** | Reports how many validators actually checked beside the passed/total check count, and caps the badge colour at `green` when any active validator was partial, unsupported, missing a prerequisite, or errored | `cli/commands/guard.mjs` (`badgeColor`, `incompleteCoverage`) | `no-matches` keeps the top grade: a validator that ran and found nothing applicable completed its job |
@@ -1781,6 +1781,13 @@ Behaviour changes:
 
 ### Fixed
 
+- **`reconcile` traces a change that cites a canonical requirement**
+  (`specs/027-canonical-requirement-links`). A test annotated
+  `@req docs-canonical/REQUIREMENTS.md#FR-024` cites approved intent as exactly
+  as a spec link, but was classified `unsupported_or_ambiguous`, which blocked
+  `specs complete` for every spec whose window contained it. Only IDs declared
+  in the named document count; an invented citation stays unsupported.
+
 - **`generate --spec --write` writes the registry inside the spec's file
   transaction** (`specs/024-as-built-specs`). It used a plain
   `writeFileSync` with a hand-written rollback, outside the safe-write rule
@@ -1902,15 +1909,8 @@ Behaviour changes:
 
   This supersedes #453 (Jules). That PR made every keyword match a bare word;
   its tests are kept, with precision negatives added. The precision benchmark
-  comparison still passes.
 
-- **`docguard init` sets up Spec Kit again, and says so when it cannot (#455,
-  `specs/014-specify-init-delegation`).** Spec Kit 0.10.0 removed `--ai`,
-  `--ai-skills`, `--ai-commands-dir` and `--no-git`. DocGuard kept passing them,
-  so on every current Spec Kit the delegated setup exited with
-  `No such option: --ai`, and the error was hidden:
-
-<!-- truncated: 4017 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 4024 more lines — read CHANGELOG.md directly -->
 
 ---
 

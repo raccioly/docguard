@@ -991,6 +991,91 @@
       }
     },
     {
+      "specId": "docguard.canonical-requirement-links",
+      "path": "specs/027-canonical-requirement-links/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.canonical-requirement-links#FR-001",
+          "docguard.canonical-requirement-links#FR-002",
+          "docguard.canonical-requirement-links#SC-001",
+          "docguard.canonical-requirement-links#SC-002"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/027-canonical-requirement-links/spec.md",
+            "digest": "sha256:22a15fc358a2f89f9e94ccdcfda0764ff0bb022f6884d918a192e0ec51aab60f"
+          },
+          {
+            "path": "specs/027-canonical-requirement-links/plan.md",
+            "digest": "sha256:e9e1255955b834eb05bd2211ac4354302ff23254d6b7a953d2ecaf79723318d8"
+          },
+          {
+            "path": "specs/027-canonical-requirement-links/tasks.md",
+            "digest": "sha256:b23d7d1d272c21a333c0ddad1b1aeb299b9e82cfa59207801a449628810d43ea"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 3,
+          "total": 3
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/scanners/reconciliation.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/scanners/reconciliation.mjs",
+            "line": 7
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/canonical-requirement-links.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/canonical-requirement-links.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/canonical-requirement-links.test.mjs",
+            "line": 9
+          }
+        ]
+      }
+    },
+    {
       "specId": "docguard.document-lifecycle",
       "path": "specs/006-document-lifecycle/spec.md",
       "reviewed": {
