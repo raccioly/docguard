@@ -27,6 +27,7 @@ import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { resolve, relative, isAbsolute, sep } from 'node:path';
 import { loadIgnorePatterns } from '../shared.mjs';
+import { OWN_STATE_PATHSPEC } from '../shared-git.mjs';
 
 
 // Numbers are only claims when adjacent to a recognized unit.
@@ -172,7 +173,8 @@ export function gitEvidence(projectDir) {
     if (/^[a-f0-9]{40,64}$/.test(revision)) result.revision = revision;
   } catch { /* missing Git/revision stays unknown */ }
   try {
-    result.dirty = execFileSync('git', ['status', '--porcelain', '--untracked-files=normal'], options).length > 0;
+    // DocGuard's own .docguard/ state never makes the tree dirty (docguard.read-only-commands#FR-006).
+    result.dirty = execFileSync('git', ['status', '--porcelain', '--untracked-files=normal', ...OWN_STATE_PATHSPEC], options).length > 0;
   } catch { /* dirty state unknown */ }
   if (result.revision !== null && result.dirty !== null) result.status = 'snapshot';
   return result;

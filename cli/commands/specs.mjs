@@ -5,6 +5,11 @@
  * @implements docguard.document-lifecycle#FR-020
  * @implements docguard.spec-first-gate#FR-006
  * @implements docguard.spec-first-gate#FR-007
+ * @implements docguard.first-spec-preflight#FR-005
+ * @implements docguard.first-spec-preflight#FR-006
+ * @implements docguard.first-spec-preflight#FR-008
+ * @implements docguard.first-spec-preflight#FR-009
+ * @implements docguard.first-spec-preflight#FR-010
  */
 
 import { createHash } from 'node:crypto';
@@ -12,8 +17,9 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { commitFileTransaction } from '../writers/file-transaction.mjs';
+import { ensureStateDir } from '../writers/state-dir.mjs';
 import { appendImplementationOutcome, rewriteOutcomeRevision } from '../writers/spec-outcomes.mjs';
-import { danglingRevisions, evidenceDifferences, findAnchor, isAncestorOf, nonLifecycleChanges, reachableFromDefaultBranch, revisionResolves } from '../scanners/revision-anchor.mjs';
+import { danglingRevisions, evidenceDifferences, findAnchor, isAncestorOf, nonLifecycleChanges, reachableFromDefaultBranch, resolveCommit } from '../scanners/revision-anchor.mjs';
 import { serializeLifecycleContext } from '../scanners/lifecycle-context.mjs';
 import { buildReconciliationPlan } from '../scanners/reconciliation.mjs';
 import { preflightSpec, projectSpecRegistry, readSpecRegistry, SPEC_REGISTRY_PATH, untrackedRequirementEvidence } from '../scanners/spec-registry.mjs';
@@ -68,14 +74,14 @@ function archiveReadiness(spec, targetVerified = false) {
   return { status: 'READY', reason: 'Run the reviewed spec retirement flow after the verified state is committed and retained.' };
 }
 
+// The transition from the recorded delivery state, whether or not the
+// completion is allowed; blockers say why it is not.
 function completionTransition(spec) {
-  if (spec?.reviewed.lifecycle.persistenceModel === 'living'
-    && ['verified', 'released'].includes(spec.reviewed.lifecycle.delivery)) {
-    return `${spec.reviewed.lifecycle.delivery}→${spec.reviewed.lifecycle.delivery}`;
-  }
-  return spec?.reviewed.lifecycle.delivery === 'in_progress'
-    ? 'in_progress→implemented→verified'
-    : 'implemented→verified';
+  if (!spec) return null;
+  const delivery = spec.reviewed.lifecycle.delivery;
+  if (delivery === 'released') return 'released→released';
+  if (delivery === 'in_progress') return 'in_progress→implemented→verified';
+  return `${delivery}→verified`;
 }
 
 export function planSpecCompletion(projectDir, config, flags, options = {}) {
@@ -97,9 +103,14 @@ export function planSpecCompletion(projectDir, config, flags, options = {}) {
   if (spec) {
     const maintenance = ['verified', 'released'].includes(spec.reviewed.lifecycle.delivery)
       && spec.reviewed.lifecycle.persistenceModel === 'living';
-    if (spec.reviewed.lifecycle.approval !== 'approved') blockers.push({ code: 'SPC002', message: 'Only an approved spec can become verified.' });
+    if (spec.reviewed.lifecycle.approval !== 'approved') {
+      blockers.push({ code: 'SPC002', message: `Only an approved spec can become verified. Record the approval with \`docguard specs approve --id ${spec.specId} --write\`.` });
+    }
     if (!['in_progress', 'implemented'].includes(spec.reviewed.lifecycle.delivery) && !maintenance) {
-      blockers.push({ code: 'SPC002', message: `Expected delivery=in_progress, implemented, or verified with persistenceModel=living; found ${spec.reviewed.lifecycle.delivery}/${spec.reviewed.lifecycle.persistenceModel || 'unset'}.` });
+      const hint = spec.reviewed.lifecycle.delivery === 'planned'
+        ? ` Record the delivery state with \`docguard specs approve --id ${spec.specId} --delivery implemented --write\`.`
+        : '';
+      blockers.push({ code: 'SPC002', message: `Expected delivery=in_progress, implemented, or verified with persistenceModel=living; found ${spec.reviewed.lifecycle.delivery}/${spec.reviewed.lifecycle.persistenceModel || 'unset'}.${hint}` });
     }
     const tasks = spec.observed.taskCompletion;
     const hasTaskLedger = spec.observed.artifacts.some(artifact => /(?:^|\/)tasks\.md$/i.test(artifact.path));
@@ -196,6 +207,7 @@ export function completeSpec(projectDir, config, flags, options = {}) {
   projection.registry.schemaVersion = 2;
   const registryContent = `${JSON.stringify(projection.registry, null, 2)}\n`;
   const contextContent = serializeLifecycleContext(projectDir, projection.registry, plan.revision);
+  ensureStateDir(projectDir);
   commitFileTransaction([
     { path: specPath, content: specContent },
     { path: resolve(projectDir, SPEC_REGISTRY_PATH), content: registryContent },
@@ -245,34 +257,36 @@ export function reanchorSpec(projectDir, config, flags) {
       dangling = matches.length === 1 ? matches : [];
     }
     const outcomes = spec.reviewed.reconciliation.outcomes;
+    // Any revision git resolves to a commit; the full SHA is what is recorded.
+    const toCommit = flags.to ? resolveCommit(projectDir, flags.to) : null;
     for (const { revision, reason } of dangling) {
       const evidence = [...new Set(outcomes.filter(o => o.revision === revision).flatMap(o => o.evidence)
         .concat(outcomes.some(o => o.revision === revision) ? [] : outcomes.flatMap(o => o.evidence)))].sort();
       if (flags.to) {
-        if (!revisionResolves(projectDir, flags.to) || !isAncestorOf(projectDir, flags.to)) {
-          blockers.push({ code: 'SPC008', message: `--to ${flags.to} must be a full revision on HEAD's history.` });
+        if (!toCommit || !isAncestorOf(projectDir, toCommit)) {
+          blockers.push({ code: 'SPC008', message: `--to ${flags.to} must name a commit on HEAD's history.` });
           continue;
         }
         if (reason === 'missing') {
           const attestation = String(flags.reason || '').replace(/\s+/g, ' ').trim();
           if (attestation.length < 8 || attestation.length > 500) {
-            blockers.push({ code: 'SPC008', message: `${revision.slice(0, 12)} no longer resolves, so evidence cannot be compared: --reason (8-500 characters) must attest that ${flags.to.slice(0, 12)} carries the reviewed evidence.` });
+            blockers.push({ code: 'SPC008', message: `${revision.slice(0, 12)} no longer resolves, so evidence cannot be compared: --reason (8-500 characters) must attest that ${toCommit.slice(0, 12)} carries the reviewed evidence.` });
             continue;
           }
-          moves.push({ from: revision, to: flags.to, method: 'attested', reason: attestation });
+          moves.push({ from: revision, to: toCommit, method: 'attested', reason: attestation });
           continue;
         }
-        const differing = evidenceDifferences(projectDir, revision, flags.to, evidence);
-        if (!differing.length) { moves.push({ from: revision, to: flags.to, method: 'blob-equal' }); continue; }
+        const differing = evidenceDifferences(projectDir, revision, toCommit, evidence);
+        if (!differing.length) { moves.push({ from: revision, to: toCommit, method: 'blob-equal' }); continue; }
         // The reviewed bytes never reached this history (the PR kept changing
         // after completion). A maintainer may attest the target; the files
         // that differ are recorded, never hidden.
         const attestation = String(flags.reason || '').replace(/\s+/g, ' ').trim();
         if (attestation.length < 8 || attestation.length > 500) {
-          blockers.push({ code: 'SPC008', message: `Evidence differs between ${revision.slice(0, 12)} and ${flags.to.slice(0, 12)}: ${differing.join(', ')}. Pass --reason (8-500 characters) to attest that ${flags.to.slice(0, 12)} is the reviewed state; the differing files are recorded.` });
+          blockers.push({ code: 'SPC008', message: `Evidence differs between ${revision.slice(0, 12)} and ${toCommit.slice(0, 12)}: ${differing.join(', ')}. Pass --reason (8-500 characters) to attest that ${toCommit.slice(0, 12)} is the reviewed state; the differing files are recorded.` });
           continue;
         }
-        moves.push({ from: revision, to: flags.to, method: 'attested', reason: attestation, differing });
+        moves.push({ from: revision, to: toCommit, method: 'attested', reason: attestation, differing });
         continue;
       }
       if (reason === 'missing') {
@@ -307,7 +321,10 @@ export function reanchorSpec(projectDir, config, flags) {
   let context = null;
   try { context = JSON.parse(readFileSync(contextPath, 'utf8')); } catch { /* no active context yet */ }
   const moved = moves.find(move => move.from === context?.generatedFrom);
-  if (moved) writes.push({ path: contextPath, content: serializeLifecycleContext(projectDir, projection.registry, moved.to) });
+  if (moved) {
+    ensureStateDir(projectDir);
+    writes.push({ path: contextPath, content: serializeLifecycleContext(projectDir, projection.registry, moved.to) });
+  }
   commitFileTransaction(writes, {
     validate: () => {
       const next = projectSpecRegistry(projectDir, config);
@@ -317,6 +334,58 @@ export function reanchorSpec(projectDir, config, flags) {
   return { ...result, status: 'REANCHORED', applied: true };
 }
 
+const APPROVABLE_DELIVERY = ['planned', 'in_progress', 'implemented'];
+
+/**
+ * Record a person's approval of a spec, and optionally its delivery state,
+ * in the registry's reviewed lifecycle. Approval is never read from spec
+ * prose: prose is generated and observed, while reviewed fields are attested
+ * by whoever runs this and reviewed in the pull request that commits it.
+ * Verification stays with `specs complete`, which checks evidence.
+ * @implements docguard.first-spec-preflight#FR-005
+ */
+export function approveSpec(projectDir, config, flags = {}) {
+  const projection = projectSpecRegistry(projectDir, config);
+  const spec = projection.registry.specs.find(entry => entry.specId === flags.id);
+  const blockers = [...projection.issues];
+  if (!flags.id || !spec) blockers.push({ code: 'SPC001', message: `Unknown spec ID: ${flags.id || '<missing>'}.` });
+  if (!projection.current) blockers.push({ code: 'SPC001', message: 'Committed registry must be current before approval; run `docguard specs --write` first.' });
+  if (spec && spec.reviewed.lifecycle.context !== 'current') blockers.push({ code: 'SPC001', message: `Spec ${spec.specId} is retired; only a current spec can be approved.` });
+  const delivery = flags.delivery === undefined ? null : String(flags.delivery);
+  if (delivery !== null && !APPROVABLE_DELIVERY.includes(delivery)) {
+    blockers.push({ code: 'SPC002', message: `--delivery must be ${APPROVABLE_DELIVERY.join(', ')}; verified and released are recorded by \`docguard specs complete\`.` });
+  }
+  if (spec && delivery !== null && ['verified', 'released'].includes(spec.reviewed.lifecycle.delivery)
+    && delivery !== spec.reviewed.lifecycle.delivery) {
+    blockers.push({ code: 'SPC002', message: `Spec ${spec.specId} is ${spec.reviewed.lifecycle.delivery}; it cannot move back to ${delivery}. Record later work with \`docguard specs complete\`.` });
+  }
+  const from = spec ? { approval: spec.reviewed.lifecycle.approval, delivery: spec.reviewed.lifecycle.delivery } : null;
+  const to = from ? { approval: 'approved', delivery: delivery && APPROVABLE_DELIVERY.includes(delivery) ? delivery : from.delivery } : null;
+  const transition = from ? { approval: `${from.approval}→${to.approval}`, delivery: `${from.delivery}→${to.delivery}` } : null;
+  const unchanged = from && from.approval === to.approval && from.delivery === to.delivery;
+  const result = {
+    command: 'approve',
+    specId: flags.id || null,
+    status: blockers.length ? 'BLOCKED' : unchanged ? 'CURRENT' : 'READY',
+    transition,
+    blockers,
+    applied: false,
+  };
+  if (result.status !== 'READY' || !flags.write) return result;
+
+  spec.reviewed.lifecycle.approval = to.approval;
+  spec.reviewed.lifecycle.delivery = to.delivery;
+  commitFileTransaction([
+    { path: resolve(projectDir, SPEC_REGISTRY_PATH), content: `${JSON.stringify(projection.registry, null, 2)}\n` },
+  ], {
+    validate: () => {
+      const next = projectSpecRegistry(projectDir, config);
+      if (next.issues.length || !next.current) throw new Error('approved registry does not match the resulting repository');
+    },
+  });
+  return { ...result, status: 'APPROVED', applied: true };
+}
+
 function printIssues(issues) {
   for (const issue of issues) console.log(`  ${issue.code} ${issue.path}: ${issue.message}`);
 }
@@ -324,9 +393,16 @@ function printIssues(issues) {
 function printResult(result) {
   if (result.command === 'complete') {
     console.log(`Spec completion: ${result.status}`);
-    console.log(`${result.specId || '<missing>'}: ${result.transition}`);
+    console.log(`${result.specId || '<missing>'}: ${result.transition || 'no transition (unknown spec)'}`);
     if (result.blockers?.length) printIssues(result.blockers.map(issue => ({ path: result.specId || SPEC_REGISTRY_PATH, ...issue })));
     for (const warning of result.warnings || []) console.log(`  ⚠ ${warning}`);
+    return;
+  }
+  if (result.command === 'approve') {
+    console.log(`Spec approval: ${result.status}`);
+    if (result.transition) console.log(`${result.specId}: approval ${result.transition.approval}; delivery ${result.transition.delivery}`);
+    if (result.blockers?.length) printIssues(result.blockers.map(issue => ({ path: result.specId || SPEC_REGISTRY_PATH, ...issue })));
+    if (result.status === 'READY') console.log('Run again with --write to record it.');
     return;
   }
   if (result.command === 'reanchor') {
@@ -397,7 +473,7 @@ function printSpecFirst(result) {
   for (const bad of result.invalidExemptions) console.log(`Invalid exemption (${bad.problem}): Spec-Exempt: ${bad.kind} — ${bad.reason}`);
   if (result.status === 'uncovered') {
     console.log('To pass, add one line to the pull request description or a commit message:');
-    console.log('  the governing spec, e.g.  specs/015-spec-first-gate   or its Spec ID');
+    console.log('  the governing spec:        specs/<###-feature>   or its Spec ID');
     console.log(`  or an exemption:          Spec-Exempt: <${result.allowedKinds.join('|')}> — <reason, 10+ characters>`);
   }
 }
@@ -418,13 +494,21 @@ function runSpecFirst(projectDir, config, flags) {
 export function runSpecs(projectDir, config, flags = {}) {
   try {
     const action = flags.args?.[0] || null;
-    if (action && !['preflight', 'complete', 'require', 'reanchor'].includes(action)) throw new Error(`Unknown specs action: ${action}`);
+    if (action && !['preflight', 'complete', 'require', 'reanchor', 'approve'].includes(action)) throw new Error(`Unknown specs action: ${action}`);
     if (action === 'require') return runSpecFirst(projectDir, config, flags);
     if (flags.check && flags.write) throw new Error('Use either --check or --write, not both.');
 
     if (action === 'preflight') {
       if (flags.write) throw new Error('Specs preflight is read-only.');
       const result = { command: 'preflight', ...preflightSpec(projectDir, config, flags.path || null) };
+      if (flags.format === 'json') console.log(JSON.stringify(result, null, 2));
+      else printResult(result);
+      if (result.status === 'BLOCKED') process.exitCode = 2;
+      return result;
+    }
+
+    if (action === 'approve') {
+      const result = approveSpec(projectDir, config, flags);
       if (flags.format === 'json') console.log(JSON.stringify(result, null, 2));
       else printResult(result);
       if (result.status === 'BLOCKED') process.exitCode = 2;

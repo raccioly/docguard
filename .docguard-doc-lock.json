@@ -4,7 +4,7 @@
     "docs-canonical/ARCHITECTURE.md#requirement-identity": {
       "dependencies": {
         "cli/commands/specs.mjs#planSpecCompletion": {
-          "fingerprint": "sha256:80e618baa55f73531437683ac4d15dc49eadc8a06a7da8739ddf8febcc0e3798",
+          "fingerprint": "sha256:467085a6675710e13f70c4458b6d75c1de8ff95111250a0a22797fc159b53918",
           "tier": "ast"
         },
         "cli/shared-requirements.mjs#collectRequirementIdsFromContent": {
@@ -12,9 +12,9 @@
           "tier": "ast"
         }
       },
-      "reason": "Verified against the code in the 2026-09-29 freshness review of specs 014-029",
+      "reason": "planSpecCompletion now names specs approve in SPC002 and reports the transition from the recorded delivery; requirement identity and evidence rules are unchanged",
       "reviewedAt": "2026-09-30",
-      "reviewedRevision": "6b3c1586023aeaf1738951c2d04c886caf512125"
+      "reviewedRevision": "896e3a9dd92ca4bfdf930c01f565e54a1403cddc"
     },
     "docs-canonical/DATA-MODEL.md#finding-channels": {
       "dependencies": {
@@ -34,11 +34,11 @@
     "docs-canonical/DATA-MODEL.md#spec-registry": {
       "dependencies": {
         "cli/commands/specs.mjs#completeSpec": {
-          "fingerprint": "sha256:533a88b37c2015a4228138842b4760179a374b217f55191e21723045094f1d54",
+          "fingerprint": "sha256:46bb81255eed96ede2c92439ca4de3c1f0341795bba858075235e5005cc66971",
           "tier": "ast"
         },
         "cli/commands/specs.mjs#reanchorSpec": {
-          "fingerprint": "sha256:ed4b34a60120056c743df1c2ba3b7f6d607017a3b48d943c65837a1e3e5f69c0",
+          "fingerprint": "sha256:47335217c668292e1be76b49f82c879981a1670cad6570b8fceb9f74dff41aed",
           "tier": "ast"
         },
         "schemas/docguard-specs.schema.json": {
@@ -46,9 +46,9 @@
           "tier": "content"
         }
       },
-      "reason": "Schema gained reviewed.scope.assetPaths (spec 039); the section's registry field table now has the assetPaths row describing dir/ vs file entries, no wildcards, reconciliation links and SPR009.",
+      "reason": "Merged 040 and 042: reanchorSpec resolves --to to a full SHA and completeSpec/reanchorSpec treat .docguard/ state as clean; the section states both (specs approve row, clean-tree note).",
       "reviewedAt": "2026-09-30",
-      "reviewedRevision": "97a48b98b6abd20ca09ba9efb5d335f39f98a038"
+      "reviewedRevision": "21f0c85caeecc2943df578702416339fea74d752"
     }
   }
 }

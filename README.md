@@ -317,6 +317,7 @@ DocGuard ships **25 commands** (the "Daily 5" + 20 situational tools, including 
 | `specs` | Maintain the versioned spec registry, preflight new specs, and apply evidence-gated completion transactions with bounded outcomes and active-context regeneration. Verified living specs can record later reviewed maintenance without reopening or duplicating the specification. `specs require` is the spec-first gate: a change to governed paths must name its spec or declare `Spec-Exempt: <kind> — <reason>`. |
 | `specs --check` / `specs --write` | Validate or refresh `.docguard-specs.json`, the byte-stable index of immutable spec IDs, reviewed lifecycle/lineage/scope, artifact digests, task state, explicitly scoped test evidence, and archive tombstones. Refreshes preserve the reviewed block. |
 | `specs preflight [--path <spec>]` | Before specification, print current spec lifecycle and evidence. Before planning, check the generated draft for structural blockers and report semantic overlap as review-only evidence. |
+| `specs approve --id <spec-id>` | Record a person's approval of a spec in the registry, and with `--delivery` its `planned`, `in_progress` or `implemented` state. Plans by default; `--write` records it. Verification stays with `specs complete`. |
 | `mcp` | MCP server — exposes checking (guard, score, explain, verify, report, diagnose) and exact doc navigation (docs for a file, document outline, one section, task context) as native tools for Claude, Cursor, and any MCP client; `docguard_guard` returns each fact once unless called with `detail: "full"`. Stdio: `claude mcp add docguard -- npx docguard-cli mcp`. Team-shared HTTP: `docguard mcp --transport http --port 8585` (loopback by default; non-loopback binds require `--api-key`) |
 | `report` | Compliance-evidence bundle for audits — combined readiness, guard verdict, structural maturity, ALCOA+ attributes, and fix history, stamped with git commit and a tamper-evident sha256 integrity hash (`--format json`, `--out <file>`). Evidence, not a gate: always exits 0 |
 | `ci` | Pipeline gate: guard + structural maturity in one command with READY/ATTENTION/BLOCKED assessment — never scaffolds or touches source; its only write is its own `.docguard/history.jsonl` (opt out: `--no-history`). `--threshold <n>` fails below a score, `--fail-on-warning` for strict mode, `--format json` for parsers |
@@ -531,10 +532,16 @@ quotes the reviewed precision corpus with `n` and a Wilson lower bound;
 codes are unmeasured — that does not make their findings wrong, only unverified,
 and `docguard feedback` samples them for exactly that reason.
 
-**`parserTier`** tells you what the detector could see. `regex-fallback` or
-`fallback-language` means no syntax tree was available for that file — so the
-*absence* of a finding there is weak evidence, and the owning validator reports
-`applicability: partial` with the reason.
+**`parserTier`** tells you what the detector could see. `js-ast` and `py-ast`
+mean a syntax tree. `regex-fallback` means the language has one (JS/TS, Python)
+but it was unavailable for that file. `fallback-language` means DocGuard has no
+parser for the language at all — Go, Java, Kotlin, Ruby, Rust, PHP, C# — so
+routes and env reads there are matched by pattern. Either way the *absence* of
+a finding there is weak evidence, and the owning validator reports
+`applicability: partial` with a reason that names the language and the file
+count. Environment variables are matched by pattern in every supported
+language; a source language with no env patterns (Swift, Scala, …) makes the
+Environment check `partial` rather than a silent pass.
 
 Every channel appears on every finding in `guard --format json`, in SARIF
 `result.properties`, and per-issue in `diagnose --format json` (which also emits

@@ -14,7 +14,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { resolve, join, extname, relative, dirname } from 'node:path';
 import { shouldIgnore, isNonProductPath, walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
-import { getWorkspaceDirs } from '../shared-source.mjs';
+import { getWorkspaceDirs, languageOf } from '../shared-source.mjs';
 import { extractPythonFiles } from './py-ast.mjs';
 import { createAliasResolver } from './ts-paths.mjs';
 
@@ -22,6 +22,7 @@ const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build',
   'coverage', '.cache', '__pycache__', '.venv', 'vendor',
   'templates', 'configs', 'Research', 'docs-canonical', 'docs-implementation',
+  'target', '.gradle',
 ]);
 
 export const JS_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.mjs', '.cjs', '.jsx']);
@@ -38,8 +39,16 @@ export const JS_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.mjs', '.cjs', '.js
  * @implements docguard.language-repository-coverage#FR-003
  * @implements docguard.language-repository-coverage#FR-004
  * @implements docguard.language-repository-coverage#FR-005
+ * `unanalysedFiles` lists product source files in languages this graph does
+ * not read (Go, Java, Ruby, …), so its consumers can say a language is not
+ * analysed instead of reporting "no imports"
+ * (docguard.fallback-language-coverage#FR-010). They are not `limitations`:
+ * the gap depends on the code, not on the machine, so the Architecture
+ * validator's coverage is unchanged.
+ *
+ * @implements docguard.fallback-language-coverage#FR-010
  * @implements docguard.js-ts-extraction#FR-005
- * @returns {{files: string[], edges: {from,to,dynamic,language}[], fileMap: Map<string,string[]>, unsupportedFiles: string[], limitations: object[]}}
+ * @returns {{files: string[], edges: {from,to,dynamic,language}[], fileMap: Map<string,string[]>, unsupportedFiles: string[], unanalysedFiles: string[], limitations: object[]}}
  */
 export function buildImportGraph(projectDir, config) {
   const allFiles = getFilesRecursive(projectDir, config, projectDir);
@@ -106,7 +115,12 @@ function treeSignature(files) {
 }
 
 function buildUncached(projectDir, config, allFiles) {
-  const graph = { files: [], edges: [], fileMap: new Map(), unsupportedFiles: [], limitations: [] };
+  const graph = { files: [], edges: [], fileMap: new Map(), unsupportedFiles: [], unanalysedFiles: [], limitations: [] };
+  for (const file of allFiles) {
+    if (!languageOf(file)) continue;
+    const rel = posixPath(relative(projectDir, file));
+    if (!isNonProductPath(rel, config)) graph.unanalysedFiles.push(rel);
+  }
 
   const pythonFiles = allFiles
     .filter(f => extname(f) === '.py' && !isNonProductPath(relative(projectDir, f).replace(/\\/g, '/'), config))

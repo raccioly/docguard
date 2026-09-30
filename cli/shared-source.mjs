@@ -22,13 +22,59 @@ import { shouldIgnore, isNonProductDir, isNonProductPath } from './shared-ignore
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', '.nuxt', 'dist', 'build', 'out',
   'coverage', '.cache', '__pycache__', '.venv', 'vendor', '.turbo',
-  'cdk.out',
+  // Maven/Gradle/Cargo build output: compiled or generated, never authored.
+  'cdk.out', 'target', '.gradle',
 ]);
 
+/** Extensions the env scan reads (docguard.fallback-language-coverage#FR-003). */
 const CODE_EXTENSIONS = new Set([
   '.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx',
   '.py', '.java', '.go', '.rs', '.rb', '.php',
+  '.kt', '.kts', '.cs',
 ]);
+
+/**
+ * Source languages DocGuard reads without a syntax tree, by extension. Used to
+ * NAME a coverage gap ("3 Go files"), so a reader learns which language was
+ * read by pattern, or not read at all. JS/TS and Python are absent: they have
+ * AST tiers. (docguard.fallback-language-coverage#FR-001/FR-004/FR-010)
+ */
+export const LANGUAGE_NAMES = Object.freeze({
+  '.go': 'Go', '.java': 'Java', '.kt': 'Kotlin', '.kts': 'Kotlin', '.rb': 'Ruby',
+  '.rs': 'Rust', '.php': 'PHP', '.cs': 'C#', '.swift': 'Swift', '.scala': 'Scala',
+  '.ex': 'Elixir', '.exs': 'Elixir', '.dart': 'Dart', '.c': 'C', '.h': 'C',
+  '.cc': 'C++', '.cpp': 'C++', '.cxx': 'C++', '.hpp': 'C++', '.m': 'Objective-C',
+  '.mm': 'Objective-C', '.lua': 'Lua', '.clj': 'Clojure', '.hs': 'Haskell',
+  '.erl': 'Erlang', '.ml': 'OCaml', '.fs': 'F#', '.vb': 'Visual Basic',
+  '.groovy': 'Groovy', '.pl': 'Perl', '.cr': 'Crystal', '.nim': 'Nim', '.zig': 'Zig',
+  '.jl': 'Julia',
+});
+
+const extOf = filePath => (String(filePath).match(/\.[^./\\]+$/) || [''])[0].toLowerCase();
+
+/** The display name of a source language that has no AST tier, or null. */
+export function languageOf(filePath) {
+  return LANGUAGE_NAMES[extOf(filePath)] || null;
+}
+
+const byLanguage = (a, b) => (a.language < b.language ? -1 : a.language > b.language ? 1 : 0);
+
+/** Files per language, `[{ language, files }]` sorted by language; unnamed files are skipped. */
+export function countLanguages(paths) {
+  const counts = new Map();
+  for (const p of paths) {
+    const language = languageOf(p);
+    if (language) counts.set(language, (counts.get(language) || 0) + 1);
+  }
+  return [...counts].map(([language, files]) => ({ language, files })).sort(byLanguage);
+}
+
+/** "3 Go files, 1 Java file", in language order so the text never changes between runs. */
+export function describeLanguageCounts(counts) {
+  return [...counts].sort(byLanguage)
+    .map(({ language, files }) => `${files} ${language} file${files === 1 ? '' : 's'}`)
+    .join(', ');
+}
 
 /** Normalize config.sourceRoot into an array of relative paths. */
 function sourceRootList(config) {
@@ -258,7 +304,7 @@ export function detectDocker(projectDir, config = {}) {
 }
 
 const HASH_COMMENT_EXTS = new Set(['.py', '.rb', '.php', '.sh']);
-const SLASH_COMMENT_EXTS = new Set(['.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx', '.go', '.rs', '.java', '.php', '.kt', '.scala']);
+const SLASH_COMMENT_EXTS = new Set(['.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx', '.go', '.rs', '.java', '.php', '.kt', '.kts', '.cs', '.scala']);
 
 /**
  * Classify every character of `content` as code (0), string-literal (1), or
@@ -765,11 +811,22 @@ function destructuredEnvReads(content, kind) {
  * Env var names READ in code. `options.within` (a repository-relative directory)
  * restricts the scan to one area, for as-built specs (docguard.as-built-specs#FR-001).
  *
- * The returned Set also carries `sites`: name → [{ file, line, defaulted,
- * default }], one per read. A read is defaulted when the code supplies a
- * fallback: a destructuring default, `?? x` / `|| x`, or a second argument to
- * `os.getenv` / `os.environ.get`. `default` is the literal fallback, or null
- * when it is an expression. A consumer derives Required from every site.
+ * The returned Set also carries:
+ * - `limitations`: Worker binding forms the parser fallback cannot verify;
+ * - `unscanned`: `[{ language, files }]` for source files in a language that
+ *   has no env patterns, so a variable read there is unseen
+ *   (docguard.fallback-language-coverage#FR-004);
+ * - `origins`: name → Set of file extensions it was read from, so a finding
+ *   can carry the analyzer tier of the files behind it (FR-002);
+ * - `sites`: name → [{ file, line, defaulted, default }], one per read. A read
+ *   is defaulted when the code supplies a fallback: a destructuring default,
+ *   `?? x` / `|| x`, or a second argument to `os.getenv` / `os.environ.get`.
+ *   `default` is the literal fallback, or null when it is an expression. A
+ *   consumer derives Required from every site.
+ *
+ * @implements docguard.fallback-language-coverage#FR-003
+ * @implements docguard.fallback-language-coverage#FR-004
+ * @implements docguard.fallback-language-coverage#FR-005
  * @implements docguard.js-ts-extraction#FR-003
  * @implements docguard.js-ts-extraction#FR-004
  */
@@ -777,6 +834,8 @@ export function grepEnvUsage(projectDir, config = {}, options = {}) {
   const within = options.within ? String(options.within).replace(/\\/g, '/').replace(/\/+$/, '') : null;
   const names = new Set();
   names.limitations = [];
+  names.origins = new Map();
+  const unscannedFiles = [];
   names.sites = new Map();
   const recordSite = (name, file, line, fallback) => {
     if (!names.sites.has(name)) names.sites.set(name, []);
@@ -784,6 +843,11 @@ export function grepEnvUsage(projectDir, config = {}, options = {}) {
   };
   const roots = resolveSourceRoots(projectDir, config);
   const seen = new Set();
+  const add = (name, ext) => {
+    names.add(name);
+    if (!names.origins.has(name)) names.origins.set(name, new Set());
+    names.origins.get(name).add(ext);
+  };
 
   // Require names to start with a letter and END with a letter/digit (NOT an
   // underscore) — fixes "VITE_" being captured as a literal env var name.
@@ -802,57 +866,103 @@ export function grepEnvUsage(projectDir, config = {}, options = {}) {
     new RegExp(`os\\.environ\\.get\\s*\\(\\s*['"]${NAME}['"]`, 'g'),
     new RegExp(`os\\.getenv\\s*\\(\\s*['"]${NAME}['"]`, 'g'),
   ];
+  // The same blind spot, one language at a time: a Go, Ruby, Java, C#, PHP or
+  // Rust service read none of its env vars, so the env check was skipped as
+  // vacuous and still said `checked` — and `diff` called a still-used variable
+  // "not found in code". Each form runs ONLY on its own language's files, so
+  // one language's syntax can never match inside another's.
+  const LANGUAGE_PATTERNS = [
+    { exts: ['.go'], re: new RegExp(`\\bos\\.(?:Getenv|LookupEnv)\\s*\\(\\s*["\`]${NAME}["\`]`, 'g') },
+    { exts: ['.rb'], re: new RegExp(`\\bENV\\s*\\[\\s*['"]${NAME}['"]\\s*\\]`, 'g') },
+    { exts: ['.rb'], re: new RegExp(`\\bENV\\.fetch\\s*\\(?\\s*['"]${NAME}['"]`, 'g') },
+    { exts: ['.java', '.kt', '.kts'], re: new RegExp(`\\bSystem\\.getenv\\s*\\(\\s*"${NAME}"`, 'g') },
+    // Spring injects `${X}` / `${X:default}` from the environment (among other sources).
+    { exts: ['.java', '.kt'], re: new RegExp(`@Value\\s*\\(\\s*"\\$\\{${NAME}[:}]`, 'g') },
+    { exts: ['.cs'], re: new RegExp(`\\bEnvironment\\.GetEnvironmentVariable\\s*\\(\\s*@?"${NAME}"`, 'g') },
+    { exts: ['.php'], re: new RegExp(`\\bgetenv\\s*\\(\\s*['"]${NAME}['"]`, 'g') },
+    { exts: ['.php'], re: new RegExp(`\\$_ENV\\s*\\[\\s*['"]${NAME}['"]\\s*\\]`, 'g') },
+    // Laravel's env() helper, the idiomatic read in its config/*.php files.
+    { exts: ['.php'], re: new RegExp(`(?<![\\w$>:])env\\s*\\(\\s*['"]${NAME}['"]`, 'g') },
+    { exts: ['.rs'], re: new RegExp(`\\benv::var(?:_os)?\\s*\\(\\s*"${NAME}"`, 'g') },
+  ];
   // Vite injects these at build time; they are not user-set env vars.
   const VITE_INTRINSICS = new Set(['DEV', 'PROD', 'MODE', 'BASE_URL', 'SSR']);
 
-  const visit = (filePath) => {
-    if (seen.has(filePath)) return;
-    seen.add(filePath);
-    if (!CODE_EXTENSIONS.has(extname(filePath))) return;
-    const rel = relative(projectDir, filePath);
-    if (shouldIgnore(rel, config)) return;
+  const inScope = (filePath) => {
+    const rel = relative(projectDir, filePath).replace(/\\/g, '/');
+    if (shouldIgnore(rel, config)) return null;
     // v0.26 (Bug #7): a token that appears only in a test/fixture file is not a
     // product env read. Skip non-product paths by default (no .docguardignore).
-    if (isNonProductPath(rel.replace(/\\/g, '/'), config)) return;
-    if (within && within !== '.') {
-      const posixRel = rel.replace(/\\/g, '/');
-      if (posixRel !== within && !posixRel.startsWith(`${within}/`)) return;
+    if (isNonProductPath(rel, config)) return null;
+    if (within && within !== '.' && rel !== within && !rel.startsWith(`${within}/`)) return null;
+    return rel;
+  };
+
+  const visitSpringConfig = (filePath, ext) => {
+    if (!inScope(filePath)) return;
+    const content = readScannable(filePath);
+    if (content === null || !content.includes('${')) return;
+    // YAML values are usually quoted, so the string/comment lexer would hide
+    // every placeholder. Drop whole comment lines instead (`#`, and `!` in a
+    // .properties file); upper-snake names only, because `${server.port}` is a
+    // property reference rather than an env var.
+    const comment = ext === '.properties' ? /^\s*[#!]/ : /^\s*#/;
+    for (const line of content.split(/\r?\n/)) {
+      if (comment.test(line)) continue;
+      for (const m of line.matchAll(new RegExp(`\\$\\{${NAME}(?::[^}]*)?\\}`, 'g'))) {
+        if (!isRunnerEnvVar(m[1])) add(m[1], ext);
+      }
     }
+  };
+
+  const visit = (filePath, onlyExts = null) => {
+    if (seen.has(filePath)) return;
+    const ext = extname(filePath).toLowerCase();
+    if (onlyExts && !onlyExts.has(ext)) return;
+    seen.add(filePath);
+    if (SPRING_CONFIG_RE.test(filePath.replace(/\\/g, '/').split('/').pop())) { visitSpringConfig(filePath, ext); return; }
+    if (!CODE_EXTENSIONS.has(ext)) {
+      if (LANGUAGE_NAMES[ext] && inScope(filePath)) unscannedFiles.push(filePath);
+      return;
+    }
+    if (!inScope(filePath)) return;
+    const rel = relative(projectDir, filePath);
     const content = readScannable(filePath);
     if (content === null) return; // unreadable, generated, or too large to scan
-    if (!content.includes('env')) return;
+    if (!/env|Env|ENV/.test(content)) return;
     // v0.26 (Bug #7): classify chars so we count env vars actually READ in code,
     // not ones MENTIONED inside a string literal (a detection signature like
     // `r"os.environ.get('JWT_SECRET')"`) or a comment. We test the position of
     // the access KEYWORD (process/os/import) — for a real read the keyword is
     // code while only the argument 'X' is a string, so the name is still caught.
-    const kind = classifyChars(content, extname(filePath));
+    const kind = classifyChars(content, ext);
     const file = rel.replace(/\\/g, '/');
     const lineStarts = [0];
     for (let i = 0; i < content.length; i++) if (content[i] === '\n') lineStarts.push(i + 1);
-    const isJs = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs'].includes(extname(filePath));
-    if (isJs) {
+    if (['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs'].includes(ext)) {
       for (const read of destructuredEnvReads(content, kind)) {
         if (read.vite && VITE_INTRINSICS.has(read.name)) continue;
         if (isRunnerEnvVar(read.name)) continue;
-        names.add(read.name);
+        add(read.name, ext);
         recordSite(read.name, file, lineOf(lineStarts, read.index), read.fallback);
       }
       const workerBindings = extractWorkerEnvBindings(content, filePath, workerConfigForFile(projectDir, filePath));
-      for (const name of workerBindings) names.add(name);
+      for (const name of workerBindings) add(name, ext);
       for (const limitation of workerBindings.limitations || []) names.limitations.push({ code: limitation, file: rel.replace(/\\/g, '/') });
     }
     // patterns[2] is the import.meta.env one — its matches are Vite-injected
     // when the name is an intrinsic, and must not be reported as user env vars.
-    for (let i = 0; i < patterns.length; i++) {
+    const own = LANGUAGE_PATTERNS.filter(p => p.exts.includes(ext)).map(p => p.re);
+    const active = [...patterns, ...own];
+    for (let i = 0; i < active.length; i++) {
       let m;
-      const rx = new RegExp(patterns[i].source, 'g');
+      const rx = new RegExp(active[i].source, 'g');
       const isViteSource = i === 2;
       while ((m = rx.exec(content)) !== null) {
         if (kind[m.index] !== 0) continue; // keyword inside a string/comment → a mention, not a read
         if (isViteSource && VITE_INTRINSICS.has(m[1])) continue;
         if (isRunnerEnvVar(m[1])) continue; // v0.27 (#7): runner/CI/SDK var, not product config
-        names.add(m[1]);
+        add(m[1], ext);
         const end = m.index + m[0].length;
         recordSite(m[1], file, lineOf(lineStarts, m.index), readFallback(content.slice(end, end + 200), i));
       }
@@ -874,7 +984,7 @@ export function grepEnvUsage(projectDir, config = {}, options = {}) {
       const keyRe = /^\s*['"]?([A-Z][A-Z0-9_]*[A-Z0-9])['"]?\s*:/gm;
       while ((km = keyRe.exec(content)) !== null) {
         if (km[1].length >= 3 && !VITE_INTRINSICS.has(km[1]) && !isRunnerEnvVar(km[1])) {
-          names.add(km[1]);
+          add(km[1], ext);
           const at = km.index + km[0].indexOf(km[1]);
           const lineText = content.slice(at, content.indexOf('\n', at) >>> 0);
           const dflt = /\.default\(\s*([^)]*)\)/.exec(lineText);
@@ -885,21 +995,28 @@ export function grepEnvUsage(projectDir, config = {}, options = {}) {
       // convict: the env var name is the `env:` property value, not the key.
       const convictRe = /\benv\s*:\s*['"]([A-Z][A-Z0-9_]*[A-Z0-9])['"]/g;
       while ((km = convictRe.exec(content)) !== null) {
-        if (km[1].length >= 3 && !isRunnerEnvVar(km[1])) names.add(km[1]);
+        if (km[1].length >= 3 && !isRunnerEnvVar(km[1])) add(km[1], ext);
       }
     }
   };
 
-  const walk = (dir) => {
+  const walk = (dir, onlyExts = null) => {
     let entries;
     try { entries = readdirSync(dir, { withFileTypes: true }); } catch { return; }
     for (const e of entries) {
       if (IGNORE_DIRS.has(e.name) || e.name.startsWith('.')) continue;
-      if (e.isDirectory() && isNonProductDir(e.name, config)) continue; // v0.26: skip test/fixture dirs in env detection
       const full = join(dir, e.name);
-      if (e.isDirectory()) walk(full);
-      else if (e.isFile()) visit(full);
+      // v0.26: skip test/fixture dirs in env detection. The parent path lets a
+      // package segment (`src/main/java/com/example`) through (FR-006).
+      if (e.isDirectory() && isNonProductDir(e.name, config, relative(projectDir, dir).replace(/\\/g, '/'))) continue;
+      if (e.isDirectory()) walk(full, onlyExts);
+      else if (e.isFile()) visit(full, onlyExts);
     }
+  };
+
+  const finish = () => {
+    names.unscanned = countLanguages(unscannedFiles);
+    return names;
   };
 
   // v0.14-P2: when config.changedFiles is populated (by --changed-only),
@@ -909,7 +1026,7 @@ export function grepEnvUsage(projectDir, config = {}, options = {}) {
     for (const rel of config.changedFiles) {
       visit(resolve(projectDir, rel));
     }
-    return names;
+    return finish();
   }
 
   for (const root of roots) walk(root);
@@ -921,8 +1038,20 @@ export function grepEnvUsage(projectDir, config = {}, options = {}) {
       if (existsSync(abs)) visit(abs);
     }
   }
-  return names;
+  // A language's own layout, and nothing more (FR-005): every directory of a
+  // root-level Go module can hold a package, so `cmd/` and `internal/` must be
+  // read even when a conventional root such as `api/` exists and would hide
+  // them; a Rails app reads ENV in `config/` (initializers, environments).
+  // Restricted to that language's files so no other scanner input widens.
+  if (existsSync(join(projectDir, 'go.mod'))) walk(resolve(projectDir), new Set(['.go']));
+  if (existsSync(join(projectDir, 'Gemfile')) && existsSync(join(projectDir, 'config'))) {
+    walk(resolve(projectDir, 'config'), new Set(['.rb']));
+  }
+  return finish();
 }
+
+/** Spring Boot's own config files, whose `${X}` placeholders may name env vars. */
+const SPRING_CONFIG_RE = /^(?:application|bootstrap)(?:-[\w.-]+)?\.(?:ya?ml|properties)$/;
 
 // ─── Analyzer tier (docguard.calibrated-finding-channels#FR-010/011/012) ────
 //
@@ -987,38 +1116,76 @@ export function tierFor(filePath, parsed, batchReason = null) {
  * WEAKEST tier present — the strength of a conclusion drawn from several
  * files is the strength of its weakest input, never the average.
  *
- * @param {Array<{tier?: string, tierReason?: string|null}>} items
- * @returns {{tier: string, tierReason: string|null, degraded: number}}
+ * `patternOnly` counts the `fallback-language` items (part of `degraded`), and
+ * `fallbackLanguages` names their languages when the items carry a `file`, so
+ * a coverage reason can say "3 Go files" rather than "3 inputs"
+ * (docguard.fallback-language-coverage#FR-001).
+ *
+ * @param {Array<{tier?: string, tierReason?: string|null, file?: string}>} items
+ * @returns {{tier: string, tierReason: string|null, degraded: number,
+ *   patternOnly: number, fallbackLanguages: string[], regexReason: string|null}}
  */
 export function summarizeTiers(items) {
   const list = (items || []).filter(item => item && typeof item.tier === 'string' && PARSER_TIERS.includes(item.tier));
-  if (list.length === 0) return { tier: 'not-applicable', tierReason: null, degraded: 0 };
+  if (list.length === 0) return { tier: 'not-applicable', tierReason: null, degraded: 0, patternOnly: 0, fallbackLanguages: [], regexReason: null };
   const tiers = new Set(list.map(item => item.tier));
   const degraded = list.filter(item => !FULL_TIERS.has(item.tier) && item.tier !== 'not-applicable').length;
+  const patternItems = list.filter(item => item.tier === 'fallback-language');
+  const channels = {
+    patternOnly: patternItems.length,
+    fallbackLanguages: [...new Set(patternItems.map(item => item.file && languageOf(item.file)).filter(Boolean))].sort(),
+    regexReason: list.find(item => item.tier === 'regex-fallback' && item.tierReason)?.tierReason || null,
+  };
   if (tiers.size === 1) {
     const [only] = tiers;
-    return { tier: only, tierReason: list.find(item => item.tierReason)?.tierReason || null, degraded };
+    return { tier: only, tierReason: list.find(item => item.tierReason)?.tierReason || null, degraded, ...channels };
   }
   const weakest = list.find(item => item.tier === 'regex-fallback') || list.find(item => item.tier === 'fallback-language');
-  return { tier: 'mixed', tierReason: weakest?.tierReason || null, degraded };
+  return { tier: 'mixed', tierReason: weakest?.tierReason || null, degraded, ...channels };
 }
 
 /**
  * The `applicability` a validator should report when some of its inputs were
- * read by a weaker analyzer than the language supports.
+ * read without a syntax tree.
  *
- * Findings are always RETAINED — what the regex tier did find is still real.
+ * Two causes, two sentences:
+ * - `regex-fallback`: the language has an AST tier that was unavailable or
+ *   failed for this file (calibrated-finding-channels#FR-012);
+ * - `fallback-language`: the language has no AST tier at all. No parser is
+ *   missing, but a form the patterns do not match is just as unseen, so it is
+ *   partial coverage too. The README always said so; this function used to
+ *   return null for it, and Go, Java and Ruby services reported `checked`
+ *   (docguard.fallback-language-coverage#FR-001).
+ *
+ * Findings are always RETAINED — what the patterns did find is still real.
  * Only coverage is downgraded, exactly as the architecture and environment
  * validators already do for their own limitations.
  *
+ * @implements docguard.fallback-language-coverage#FR-001
  * @returns {{status: string, reason: string}|null} null when coverage is full
  */
 export function tierApplicability(summary, noun = 'input') {
   if (!summary || summary.degraded === 0) return null;
-  if (summary.tier === 'fallback-language') return null; // no AST tier exists; not a gap
-  const reason = summary.tierReason ? ` ${summary.tierReason}` : '';
+  const plural = n => `${n} ${noun}${n === 1 ? '' : 's'}`;
+  const patternOnly = Number.isInteger(summary.patternOnly)
+    ? summary.patternOnly
+    : (summary.tier === 'fallback-language' ? summary.degraded : 0);
+  const regex = summary.degraded - patternOnly;
+  const langs = summary.fallbackLanguages || [];
+  const where = langs.length ? `in ${langs.join(', ')}` : 'in a language DocGuard has no parser for';
+  const them = langs.length === 1 ? langs[0] : langs.length ? 'those languages' : 'it';
+  const patternPart = `${plural(patternOnly)} ${where} read by pattern only (no syntax tree exists for ${them})`;
+  if (regex === 0) {
+    return {
+      status: 'partial',
+      reason: `Findings are retained; ${patternPart}, so a form the patterns do not match is not seen and absence of a finding there is weak evidence.`,
+    };
+  }
+  const regexReason = summary.regexReason ?? summary.tierReason;
+  const reason = regexReason ? ` ${regexReason}` : '';
+  const alsoPattern = patternOnly > 0 ? `, and ${patternPart}` : '';
   return {
     status: 'partial',
-    reason: `Findings are retained; ${summary.degraded} ${noun}${summary.degraded === 1 ? '' : 's'} read by the pattern fallback rather than a syntax tree, so absence of a finding there is weak evidence.${reason}`,
+    reason: `Findings are retained; ${plural(regex)} read by the pattern fallback rather than a syntax tree${alsoPattern}, so absence of a finding there is weak evidence.${reason}`,
   };
 }

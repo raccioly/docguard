@@ -55,7 +55,6 @@ import { runSpecs } from './commands/specs.mjs';
 import { runReconcile } from './commands/reconcile.mjs';
 import { runReview } from './commands/review.mjs';
 import { runRules } from './commands/rules.mjs';
-import { ensureSkills } from './ensure-skills.mjs';
 import { detectRepositoryRootGuidance, renderRepositoryRootGuidance } from './repository-root.mjs';
 
 // ── Shared constants (imported to break circular dependencies) ──────────
@@ -106,7 +105,7 @@ ${c.bold}Tools (situational, but day-to-day useful)${c.reset}
   ${c.green}ci${c.reset}         Pipeline gate: guard + score in one command (${c.cyan}--threshold <n>${c.reset}, ${c.cyan}--fail-on-warning${c.reset}, ${c.cyan}--format json${c.reset}; records score history)
   ${c.green}memory${c.reset}     Show what DocGuard remembers (${c.cyan}--diff${c.reset} drills into drift)
   ${c.green}retire${c.reset}     Remove reviewed docs from active AI context (${c.cyan}--plan${c.reset}; explicit ${c.cyan}--write --path${c.reset})
-  ${c.green}specs${c.reset}      Track spec lifecycle and evidence (${c.cyan}--check|--write${c.reset}; ${c.cyan}preflight${c.reset}, ${c.cyan}complete${c.reset}, ${c.cyan}require${c.reset}, ${c.cyan}reanchor${c.reset})
+  ${c.green}specs${c.reset}      Track spec lifecycle and evidence (${c.cyan}--check|--write${c.reset}; ${c.cyan}preflight${c.reset}, ${c.cyan}approve${c.reset}, ${c.cyan}complete${c.reset}, ${c.cyan}require${c.reset}, ${c.cyan}reanchor${c.reset})
   ${c.green}reconcile${c.reset}  Classify code/spec changes since a Git ref before changing intent
   ${c.green}review${c.reset}     Doc sections whose covered code changed (${c.cyan}--accept <doc>#<id>${c.reset}, ${c.cyan}--prune${c.reset}, ${c.cyan}--suggest <doc>${c.reset})
   ${c.green}rules${c.reset}      Which agent instruction files each harness loads for a path (${c.cyan}--for <path>${c.reset}, ${c.cyan}--harness <name>${c.reset})
@@ -357,18 +356,20 @@ const COMMAND_HELP = {
   },
   specs: {
     summary: 'Maintain the deterministic spec lifecycle and evidence registry.',
-    usage: 'docguard specs [--check|--write] | docguard specs preflight [--path <spec>] | docguard specs complete --id <spec-id> [--since <ref>] [--write --reason <text>] | docguard specs require --since <ref> [--message-file <path>] | docguard specs reanchor --id <spec-id> [--from <revision>] [--to <revision>] [--write --reason <text>]',
+    usage: 'docguard specs [--check|--write] | docguard specs preflight [--path <spec>] | docguard specs approve --id <spec-id> [--delivery <state>] [--write] | docguard specs complete --id <spec-id> [--since <ref>] [--write --reason <text>] | docguard specs require --since <ref> [--message-file <path>] | docguard specs reanchor --id <spec-id> [--from <revision>] [--to <revision>] [--write --reason <text>]',
     flags: [
       ['--check', 'Exit 2 when the committed registry is missing, stale, or inconsistent; planned lifecycle deferral requires a clean tracked registry'],
       ['--write', 'Refresh observed evidence while preserving reviewed lifecycle fields'],
       ['preflight', 'Brief prior specs, or gate a generated draft with --path'],
+      ['approve', 'Record a person\'s approval of a spec, and with --delivery its planned, in_progress or implemented state'],
       ['complete', 'Plan or apply the implemented→verified evidence transaction'],
       ['require', 'Spec-first gate: a change to governed paths must name its spec or declare Spec-Exempt (exit 1 uncovered, 2 inconclusive)'],
       ['reanchor', 'Move recorded revisions a squash merge discarded (SPR008) to a commit on HEAD\'s history with byte-identical evidence'],
-      ['--to <revision>', 'With reanchor: target revision; required, with --reason, when the old revision no longer resolves'],
+      ['--to <revision>', 'With reanchor: target commit (a SHA, branch, tag or HEAD; the full SHA is recorded); required, with --reason, when the old revision no longer resolves'],
       ['--from <revision>', 'With reanchor --to: move only this recorded revision, when a spec\'s dangling revisions came from different merges'],
       ['--message-file <path>', 'With require: PR description or extra text to search for spec references'],
-      ['--id <spec-id>', 'Immutable spec identity to complete'],
+      ['--id <spec-id>', 'Immutable spec identity to approve, complete or re-anchor'],
+      ['--delivery <state>', 'With approve: planned, in_progress or implemented (verified is recorded by complete)'],
       ['--since <ref>', 'First reconciliation baseline when none is recorded'],
       ['--reason <text>', 'Reviewed implementation outcome required for completion writes'],
       ['--deviation <text>', 'Accepted deviation to record; repeatable'],
@@ -376,7 +377,7 @@ const COMMAND_HELP = {
       ['--path <spec>', 'Generated spec to compare against current lifecycle state'],
       ['--format json', 'Machine-readable registry or preflight result'],
     ],
-    examples: ['docguard specs --check', 'docguard specs --write', 'docguard specs preflight --path specs/007-feature/spec.md', 'docguard specs require --since origin/main --message-file pr-body.txt', 'docguard specs complete --id acme.feature --since main --write --reason "Reviewed implementation"', 'docguard specs reanchor --id acme.feature --write'],
+    examples: ['docguard specs --check', 'docguard specs --write', 'docguard specs preflight --path specs/007-feature/spec.md', 'docguard specs approve --id acme.feature --delivery implemented --write', 'docguard specs require --since origin/main --message-file pr-body.txt', 'docguard specs complete --id acme.feature --since main --write --reason "Reviewed implementation"', 'docguard specs reanchor --id acme.feature --write'],
   },
   review: {
     summary: 'Track which code each doc section describes, and review a section when that code changes.',
@@ -563,7 +564,7 @@ async function main() {
       flags.out = args[i + 1];
       i++;
     } else if (args[i] === '--quiet' || args[i] === '-q') {
-      // v0.16-P5: suppress the banner + ensureSkills decorative line.
+      // v0.16-P5: suppress the banner.
       // Useful inside git hooks (every commit prints the banner otherwise)
       // and any CI/script that pipes docguard's output.
       flags.quiet = true;
@@ -709,6 +710,9 @@ async function main() {
       // `generate --spec <area>`: as-built spec for one code area.
       flags.spec = args[i + 1];
       i++;
+    } else if (args[i] === '--delivery' && args[i + 1] && command === 'specs') {
+      // `specs approve --delivery <state>` (docguard.first-spec-preflight#FR-005)
+      flags.delivery = args[++i];
     } else if (args[i] === '--id' && args[i + 1]) {
       flags.id = args[i + 1];
       i++;
@@ -770,16 +774,15 @@ async function main() {
     process.exit(0);
   }
 
-  // In JSON mode the entire stdout MUST be parseable JSON. The banner and
-  // ensureSkills' install message would corrupt the output for any
+  // In JSON mode the entire stdout MUST be parseable JSON. The banner would
+  // corrupt the output for any
   // programmatic consumer (CI, dashboards, the Score-on-PR Action recipe).
   // Headless flags (`--write`, `--check-only`, `--auto`) also suppress chrome.
   // v0.16-P5: --quiet (-q) joins the headless club for users who want
   // banner-free output without committing to a specific machine format.
   // v0.24 (field report): `--plan` is a read-only preview — "show me, don't
-  // touch" — so it joins the club to suppress the banner AND ensureSkills'
-  // .agent/.specify writes, which were a surprising side effect of a bare
-  // `generate --plan` (and were already suppressed for `--plan --write`).
+  // touch" — so it joins the club. (Skill installation no longer depends on
+  // this flag: only init installs skills; see the scaffolding rule below.)
   // v0.29: 'sarif' joins 'json' — any machine format where stdout IS the
   // artifact belongs here, or the banner corrupts the payload.
   // v0.33: 'junit' joins for the same reason (GitLab/Jenkins parse stdout XML).
@@ -816,59 +819,18 @@ async function main() {
   // same way runGuardInternal sees everything else.
   if (flags.noBaseline) config.baseline = false;
 
-  // Commands whose normal mode only reads/reports, plus explicit writers whose
-  // mutations must stay scoped to their named output. They must never add
-  // unrelated setup files. Scaffolding (ensureSkills → .agent/.specify,
-  // spawning `specify`) belongs to setup/init/generate and `init --with`, where
-  // the user is establishing or expanding setup rather than inspecting it.
-  //
-  // v0.26 (field report Bug #3): a bare `docguard guard` used to run
-  // ensureSkills → auto-init Spec Kit → spawn `specify` and write ~9 files into
-  // the tree BEFORE printing results. Surprising for a *validate* command, and
-  // fatal for a read-only CI audit or a clean-tree precondition check. These
-  // commands are now exempt regardless of flags. (`audit` is the guard alias;
-  // `diff`/`impact` only read; `demo` runs against a throwaway fixture.)
-  const READ_ONLY_COMMANDS = new Set([
-    'guard', 'audit', 'score', 'diff', 'impact',
-    'diagnose', 'fix', 'trace', 'explain', 'memory', 'demo', 'agent', 'retire', 'archive', 'specs',
-    // review writes only .docguard-doc-lock.json, and only on --accept/--prune.
-    'review',
-    // feedback only writes its own .docguard/feedback/ — it must NOT scaffold
-    // skills or touch source, so it's gated out of ensureSkills like the rest.
-    'feedback',
-    // verify only reads docs and emits a task list — pure report.
-    'verify',
-    // report gathers evidence (guard+score, read-only); --out writes only the
-    // user-named file — it must never scaffold or mutate the tree otherwise.
-    'report',
-    // ci is the pipeline gate — it must never scaffold into the workspace it
-    // gates (review finding H1: bare `docguard ci` in text mode ran
-    // ensureSkills and wrote ~9 files before gating). Its only write is its
-    // own .docguard/history.jsonl, same carve-out as feedback.
-    'ci',
-    // mcp serves read-only tools over stdio — scaffolding writes are off-limits.
-    'mcp',
-    // nudge-hook runs inside an agent's PostToolUse hook — it may write only
-    // its own .docguard/nudge-state.json throttle file, never scaffold skills.
-    'nudge-hook',
-  ]);
-
-  // Silent auto-check: install skills/commands if missing. Skip entirely in
-  // headless modes (deterministic, parseable output; no side effects expected)
-  // and for read-only commands (see above).
-  if (
-    command !== 'setup' &&
-    command !== 'init' &&
-    !READ_ONLY_COMMANDS.has(command) &&
-    !(command === 'hooks' && flags.list) &&
-    // Agent-family staleness checks must not bootstrap skills or Spec Kit.
-    !(command === 'agents' && flags.check) &&
-    !headless
-  ) {
-    // The starter profile opted out of the Spec Kit scaffold at init; its
-    // later commands must not nag about it either.
-    ensureSkills(projectDir, { ...flags, noSpecKit: flags.noSpecKit || config.profile === 'starter' });
-  }
+  // Scaffolding rule (docguard.read-only-commands#FR-001): only `init`, and the
+  // aliases that run it (setup, agents, hooks, badge, llms, publish), may install
+  // DocGuard's agent skills and slash commands. runInit calls ensureSkills
+  // itself; the dispatcher never does. Every other command, in
+  // every mode, writes only the outputs it documents. The v0.26 deny-list of
+  // read-only commands that gated a dispatcher-wide install here failed open:
+  // `rules`, `reconcile`, `upgrade`, `watch`, the `generate --spec` and `sync`
+  // previews, and even an unknown command name scaffolded ~17 files.
+  // @implements docguard.read-only-commands#FR-001
+  // @implements docguard.read-only-commands#FR-002
+  // @implements docguard.read-only-commands#FR-003
+  // @implements docguard.read-only-commands#FR-004
 
   // v0.20: deprecation aliases. The legacy command keeps working until v1.0
   // and emits a yellow stderr warning suggesting the new shape. Quiet mode

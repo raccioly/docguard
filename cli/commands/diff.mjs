@@ -1,13 +1,14 @@
 /**
  * Diff Command — Show differences between canonical docs and implementation
  * Compares what's documented vs what's actually in the code.
+ * @implements docguard.fallback-language-coverage#FR-004
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, extname, basename } from 'node:path';
 import { c } from '../shared.mjs';
 import { walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
-import { collectPackageJsons, detectDocker, grepEnvUsage, resolveSourceRoots } from '../shared-source.mjs';
+import { collectPackageJsons, describeLanguageCounts, detectDocker, grepEnvUsage, resolveSourceRoots } from '../shared-source.mjs';
 import { parseApiReferenceDoc, compareEndpoints } from '../scanners/api-doc.mjs';
 import { resolveApiSurface } from '../validators/api-surface.mjs';
 import { collectCodeTests } from '../validators/docs-diff.mjs';
@@ -89,6 +90,8 @@ export function runDiff(projectDir, config, flags) {
     if (result.onlyInDocs.length === 0 && result.onlyInCode.length === 0) {
       console.log(`    ${c.green}✓ In sync${c.reset}`);
     }
+
+    if (result.limitation) console.log(`    ${c.dim}${result.limitation}${c.reset}`);
 
     console.log('');
   }
@@ -259,9 +262,16 @@ export function diffEnvVars(dir, config = {}) {
       }
     }
   }
-  for (const name of grepEnvUsage(dir, config)) codeVars.add(name);
+  const used = grepEnvUsage(dir, config);
+  for (const name of used) codeVars.add(name);
+  // A language with no env patterns makes "documented but not found in code"
+  // weak evidence: say which files were not read, as the Environment validator
+  // does (docguard.fallback-language-coverage#FR-004).
+  const limitation = used.unscanned?.length
+    ? `Not read for env vars: ${describeLanguageCounts(used.unscanned)} (no env patterns for ${used.unscanned.length === 1 ? 'that language' : 'those languages'}), so a variable read there counts as not found.`
+    : null;
 
-  if (docVars.size === 0 && codeVars.size === 0) return null;
+  if (docVars.size === 0 && codeVars.size === 0 && !limitation) return null;
 
   return {
     title: 'Environment Variables',
@@ -269,6 +279,7 @@ export function diffEnvVars(dir, config = {}) {
     onlyInDocs: [...docVars].filter(v => !codeVars.has(v)),
     onlyInCode: [...codeVars].filter(v => !docVars.has(v)),
     matched: [...docVars].filter(v => codeVars.has(v)),
+    ...(limitation ? { limitation } : {}),
   };
 }
 

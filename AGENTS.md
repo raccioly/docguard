@@ -51,7 +51,7 @@ code-truth sections), `score` (CDD maturity 0-100).
 `fix` (AI fix instructions; `--doc <name>`), `generate` (reverse-engineer docs;
 `--plan`; `--spec <area>` for an as-built Spec Kit spec), `agent` (task graph; `--task <text>` for bounded current evidence),
 `retire` (remove reviewed docs from active context),
-`specs` (check/refresh/preflight/complete the spec lifecycle registry; `require` for the spec-first gate; `reanchor` for a squash-discarded revision),
+`specs` (check/refresh/preflight/approve/complete the spec lifecycle registry; `require` for the spec-first gate; `reanchor` for a squash-discarded revision),
 `reconcile` (classify code/spec changes since a Git ref without rewriting intent),
 `review` (doc sections whose covered code changed; `--accept`, `--prune`, `--suggest`),
 `rules` (which instruction files each agent harness loads for a path; `--for <path>`),
