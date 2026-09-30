@@ -583,6 +583,7 @@ func main() {
 	_ = s
 	resp, _ := http.Get("https://upstream.internal/status")
 	client.R().Get("/users")
+	cache.Get("/cache-key") // a capitalised verb on something that is not a known router
 	r.GET("/ctx", func(c *gin.Context) { v, _ := c.Get("user"); c.JSON(200, v) })
 }
 `,
