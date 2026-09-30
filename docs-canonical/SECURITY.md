@@ -7,7 +7,7 @@
 
 ## Overview
 
-DocGuard's validation and extraction run on the local machine. They inspect repository content and return findings. Agent integrations inherit the permissions and data-handling policy of the calling agent. A generated prompt does not authorize a network request, a code edit, or publication.
+DocGuard's validation and extraction run on the local machine. They inspect repository content and return findings. The version-age note (spec 038) reads only the `package.json` and `CHANGELOG.md` shipped with DocGuard and the local clock; the one command that contacts a registry is `docguard upgrade`, when the user runs it. Agent integrations inherit the permissions and data-handling policy of the calling agent. A generated prompt does not authorize a network request, a code edit, or publication.
 
 The optional MCP server supports stdio and HTTP. Installation, upgrade, publishing, and user-opened feedback links may access external services. Local analysis requires no hosted AI service.
 

@@ -46,6 +46,7 @@ It targets development teams and AI coding agents that need to maintain document
 | **Precision evidence** | Runs labelled synthetic and exact-commit public cases, separates deterministic results from observations, calculates null-safe quality metrics and confidence bounds, compares case-first baselines, persists them in a provenance envelope whose measure (`benchmark-precision`) and caveat are derived from the cases and re-verified on load, and projects per-code evidence into a generated module the CLI quotes at finding time | `benchmarks/`, `cli/precision-evidence.mjs`, `schemas/docguard-benchmark.schema.json`, `schemas/docguard-benchmark-baseline.schema.json`, `schemas/docguard-precision-evidence.schema.json` | External runs are explicit; third-party project code is never executed and disposable checkouts are removed by default |
 | **Non-regression budgets** | Compares a PR with its base on one runner: interleaved guard wall time, self-guard error findings, agent-facing output bytes, packed package weight and runtime dependencies, against the ratios and floors in `budgets.json`; `Budget-Exempt` waives one metric with a reason | `tools/budget.mjs`, `budgets.json` | CI `budget` job; development tooling, not shipped in the npm package |
 | **Doc dependency lock** | A doc section declares the code it describes (`covers=` on its `docguard:section` marker); `review --accept` records AST or content fingerprints in `.docguard-doc-lock.json`; the Doc-Dependency validator reports a covered symbol whose code changed (DLK001), a dependency that no longer resolves, an unaccepted or orphaned entry, or an unreadable lock | `cli/scanners/doc-deps.mjs`, `cli/validators/doc-dependency.mjs`, `cli/commands/review.mjs` | Opt-in by declaration; only `review` writes the lock; runs in `--changed-only` pre-commit mode |
+| **Version-age note** | Reads the running release's date from the shipped `CHANGELOG.md` heading for exactly its version; when it is more than 14 days old, the guard text footer, the MCP `initialize` instructions and the context pack say a newer version may exist and name `docguard upgrade` | `cli/release-age.mjs`, `cli/commands/guard.mjs`, `cli/commands/mcp.mjs`, `cli/commands/memory.mjs` | No network call; silent when unsure (no CHANGELOG, no heading, bad date, clock before release), in a source checkout, with `DOCGUARD_NO_UPDATE_HINT=1`, and in the guard footer under `CI`; never in JSON, SARIF, JUnit or MCP tool results |
 | **Compact guard response** | Projects the full guard result so each fact appears once: findings once, each code's agent-facing evidence once, validator status and counts, each standard applicability reason once; the MCP guard tool's default | `cli/shared-guard-json.mjs`, `cli/validator-coverage.mjs` (`STANDARD_APPLICABILITY_REASONS`), `cli/commands/mcp.mjs`, `cli/commands/guard.mjs` (`--compact`) | A projection, never a recomputation; `detail: "full"` and the CLI's default JSON keep the complete contract |
 | **MCP doc navigation** | Exact, bounded answers for agents: which doc lines, instruction lines, requirement IDs and covered sections describe a file; a document's outline; one section or the lines around a reference; the task context packet. One reference matcher shared with `trace --reverse` and `impact` | `cli/scanners/doc-references.mjs`, `cli/shared-headings.mjs`, `cli/commands/mcp.mjs` | Read-only; paths pass the evidence reader's checks; 8 KiB default and 32 KiB cap per section read; no tool calls a model |
 | **Feedback fixtures** | Validates synthetic reproductions and opposite controls, reduces them under an explicit predicate, derives duplicate identities, and emits test-only contributions | `cli/feedback-fixture.mjs`, `cli/commands/feedback.mjs`, `schemas/docguard-feedback-fixture.schema.json` | Publication remains user-controlled; contribution generation requires reviewed redaction, scope, and benchmark-delta evidence |
@@ -981,16 +982,16 @@ and process status therefore carry the same enforcement meaning in direct CI use
 
 <!-- docguard:quality negation-load off — an environment doc precisely describes the ABSENCE of requirements (no install step, no database, no credential for the CLI); the prohibitive phrasing is accurate and intentional, not sloppy writing -->
 
-<!-- docguard:version 0.10.0 -->
+<!-- docguard:version 0.11.0 -->
 <!-- docguard:status active -->
 <!-- docguard:last-reviewed 2026-09-30 -->
 
-> The DocGuard CLI needs no environment variables. Two optional ones exist: `DOCGUARD_API_KEY` for the HTTP MCP server and `DOCGUARD_SPECIFY_TIMEOUT_MS` for `docguard init`'s calls to the `specify` CLI. DocGuard has a single optional-load npm dependency (`@babel/parser`) and optionally uses the developer's own `python3`; everything else is Node.js built-ins.
+> The DocGuard CLI needs no environment variables. Three optional ones exist: `DOCGUARD_API_KEY` for the HTTP MCP server, `DOCGUARD_SPECIFY_TIMEOUT_MS` for `docguard init`'s calls to the `specify` CLI, and `DOCGUARD_NO_UPDATE_HINT` to silence the version-age note. DocGuard has a single optional-load npm dependency (`@babel/parser`) and optionally uses the developer's own `python3`; everything else is Node.js built-ins.
 
 | Metadata | Value |
 |----------|-------|
 | **Status** | ![Status](https://img.shields.io/badge/status-active-brightgreen) |
-| **Version** | `0.10.0` |
+| **Version** | `0.11.0` |
 
 ---
 
@@ -1011,11 +1012,12 @@ and process status therefore carry the same enforcement meaning in direct CI use
 > credential of any kind. (Its one npm dependency, `@babel/parser`, needs no
 > configuration.)
 
-Two **optional** variables exist:
+Three **optional** variables exist:
 
 | Variable | When it applies | Purpose |
 |----------|-----------------|---------|
 | `DOCGUARD_API_KEY` | `docguard mcp --transport http`: optional on loopback; **required to bind a non-loopback host** | Shared secret for the HTTP MCP server. Equivalent to `--api-key <key>`, which takes precedence. When set, every request must carry `Authorization: Bearer <key>` or `X-API-Key: <key>`, else `401`. |
+| `DOCGUARD_NO_UPDATE_HINT` | guard text output, the MCP server's instructions, `memory --pack` | `1` turns off the note that the installed release is more than 14 days old (spec 038). The note makes no network call; `CI` set to a non-empty value other than `false` or `0` also silences it in guard's text output. |
 | `DOCGUARD_SPECIFY_TIMEOUT_MS` | `docguard init` with the `specify` CLI installed | Timeout in milliseconds for each `specify` call. Defaults: 15000 for `specify init --help`, 60000 for `specify init` and `specify extension add`. A missing, zero or non-numeric value uses the default. |
 
 The server binds `127.0.0.1` by default and **refuses to start** on a
@@ -1096,6 +1098,7 @@ What must be visible:
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 0.11.0 | 2026-09-30 | DocGuard Team | `DOCGUARD_NO_UPDATE_HINT` and the `CI` rule for the version-age note (spec 038) |
 | 0.10.0 | 2026-09-30 | DocGuard Team | Freshness review: `npm run budget`; the full list of commands that write; how path-scoped rules and ownership read git; what a missing `python3` makes partial (specs 030, 033, 034, 035) |
 | 0.9.0 | 2026-09-29 | DocGuard Team | Freshness review: documented `DOCGUARD_SPECIFY_TIMEOUT_MS` and the optional Spec Kit prerequisite; the agent-sandbox section (spec 022) is recorded here |
 | 0.8.0 | 2026-09-18 | DocGuard Team | Freshness review: verified the MCP key contract against `cli/commands/mcp.mjs`; added `npm run llms` and the shipped GitLab CI component, both of which were missing |
@@ -1196,7 +1199,7 @@ The verification column above links each requirement to executable tests. The te
 
 ## Overview
 
-DocGuard's validation and extraction run on the local machine. They inspect repository content and return findings. Agent integrations inherit the permissions and data-handling policy of the calling agent. A generated prompt does not authorize a network request, a code edit, or publication.
+DocGuard's validation and extraction run on the local machine. They inspect repository content and return findings. The version-age note (spec 038) reads only the `package.json` and `CHANGELOG.md` shipped with DocGuard and the local clock; the one command that contacts a registry is `docguard upgrade`, when the user runs it. Agent integrations inherit the permissions and data-handling policy of the calling agent. A generated prompt does not authorize a network request, a code edit, or publication.
 
 The optional MCP server supports stdio and HTTP. Installation, upgrade, publishing, and user-opened feedback links may access external services. Local analysis requires no hosted AI service.
 
@@ -1458,6 +1461,7 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/scanners/doc-deps.mjs`, `cli/validators/doc-dependency.mjs`, `cli/commands/review.mjs` (doc dependency lock, DLK001–DLK005) | `tests/doc-dependency-lock.test.mjs` | ✅ |
 | `tools/budget.mjs` (non-regression budgets) | `tests/budget.test.mjs` | ✅ |
 | `cli/commands/mcp.mjs` (MCP server over stdio and loopback HTTP) | `tests/mcp.test.mjs`, `tests/mcp-http.test.mjs`, `tests/mcp-doc-tools.test.mjs` | ✅ |
+| `cli/release-age.mjs` (version-age note on guard text, MCP instructions and the context pack) | `tests/update-awareness.test.mjs` | ✅ |
 | `cli/shared-guard-json.mjs` (compact guard response) | `tests/compact-guard-response.test.mjs` | ✅ |
 | `cli/scanners/doc-references.mjs`, `cli/shared-headings.mjs` (MCP doc navigation) | `tests/mcp-doc-tools.test.mjs`, `tests/trace-reverse.test.mjs` | ✅ |
 | `cli/shared-sync-scope.mjs` (`sync --since` section scope) | `tests/sync-since.test.mjs` | ✅ |
@@ -1670,6 +1674,18 @@ Behaviour changes:
   `checkCoverage.limitations`.
 
 ### Added
+
+- **Agents learn when DocGuard is old, with no network call**
+  (`specs/038-update-awareness`). DocGuard reads its own release date from the
+  `CHANGELOG.md` it ships with. When that is more than 14 days ago, guard's
+  text output, the MCP server's `initialize` instructions and the context pack
+  say a newer version may exist and name `docguard upgrade`, the one command
+  that checks npm. The DocGuard skills tell the agent to ask the user and
+  never upgrade unasked. The note is silent when the date cannot be read for
+  certain, in a source checkout, in guard's text output under `CI`, and with
+  `DOCGUARD_NO_UPDATE_HINT=1`. JSON, SARIF, JUnit and MCP tool results are
+  unchanged. `PRIVACY.md` now also lists `docguard upgrade`'s registry fetch,
+  which it omitted.
 
 - **Symbol map in the context pack, opt-in** (`specs/036-symbol-map`).
   `memory --pack --symbols` adds a `## Symbol map`: the source files most
@@ -2019,20 +2035,8 @@ Behaviour changes:
   new form.
 - **Entity diagrams are sorted.** `generate` writes DATA-MODEL's `erDiagram`
   with entities and relationships in name order, not file-walk order, so the
-  same schema always yields the same diagram.
-- **An unreadable source file marks the Architecture check `partial`.** It was
-  skipped silently, so its imports were missing from cycle and layer checks
-  without saying so.
-- **The #455 guarantees are stated as TestGuard claims and probed (TestGuard
-  0.15.0).** `testguard gate --changed origin/main` reported every source file
-  that #455 changed as unclaimed. `testguard.claims.json` gains ten claims with
-  20 exact-anchor faults, one per requirement that matters. Each fault is
-  defended by its spec's tests, and the probe kills all of them. The AGENTS.md
-  commands pin `testguard-cli@0.15.0`.
 
-  The probe also exposed a TestGuard bug: any failure message that matches
-
-<!-- truncated: 4224 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 4236 more lines — read CHANGELOG.md directly -->
 
 ---
 

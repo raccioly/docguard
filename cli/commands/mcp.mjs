@@ -37,6 +37,7 @@ import { extractSemanticClaims, buildSemanticVerifyTasks } from '../scanners/sem
 import { coverSemanticClaims, evaluateEvidence } from '../evidence/evaluate.mjs';
 import { docsForPath, docStructure, readSection, READ_DEFAULT_BYTES, READ_MAX_BYTES } from '../scanners/doc-references.mjs';
 import { buildTaskContextPacket } from '../scanners/task-context.mjs';
+import { releaseAge, updateHintText } from '../release-age.mjs';
 
 const _PKG = JSON.parse(readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', 'package.json'), 'utf-8'));
 
@@ -345,12 +346,17 @@ function dispatchMessage(msg, projectDir) {
   const isNotification = id === undefined || id === null;
 
   switch (method) {
-    case 'initialize':
+    case 'initialize': {
+      // docguard.update-awareness#FR-004: computed per session, so a server
+      // left running for weeks reports its current age to each new client.
+      const instructions = updateHintText(releaseAge(), 'mcp');
       return result(id, {
         protocolVersion: typeof params?.protocolVersion === 'string' ? params.protocolVersion : PROTOCOL_VERSION,
         capabilities: { tools: {} },
         serverInfo: { name: 'docguard', version: _PKG.version },
+        ...(instructions ? { instructions } : {}),
       });
+    }
     case 'ping':
       return result(id, {});
     case 'tools/list':

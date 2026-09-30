@@ -3016,6 +3016,168 @@
           }
         }
       ]
+    },
+    {
+      "id": "UPDATE-HINT-IS-LOCAL-AND-SILENT-WHEN-UNSURE",
+      "statement": "The version-age note is computed from the shipped CHANGELOG with no network call, appears only past 14 days on guard text, MCP initialize instructions and the context pack, stays silent when the date is uncertain, in a source checkout, with the opt-out, and in the guard footer under CI, and never reaches a machine-readable output.",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/038-update-awareness/spec.md#FR-001"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (spec 038)"
+      },
+      "defendedBy": [
+        "tests/update-awareness.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "The note shows at exactly 14 days.",
+          "faultClass": "other",
+          "file": "cli/release-age.mjs",
+          "find": "  const show = ageDays > UPDATE_HINT_DAYS;",
+          "replace": "  const show = ageDays >= UPDATE_HINT_DAYS;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 038)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "DOCGUARD_NO_UPDATE_HINT is ignored.",
+          "faultClass": "statement-deleted",
+          "file": "cli/release-age.mjs",
+          "find": "  if (truthy(env?.[UPDATE_HINT_OPT_OUT])) return none('opt-out');\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 038)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "A source checkout shows the note.",
+          "faultClass": "statement-deleted",
+          "file": "cli/release-age.mjs",
+          "find": "  if (existsSync(join(pkgDir, '.git'))) return none('source-checkout');\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 038)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "A heading inside a code fence is read as the release date.",
+          "faultClass": "statement-deleted",
+          "file": "cli/release-age.mjs",
+          "find": "    if (fence !== null) continue;\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 038)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "An impossible date (2026-02-30) is accepted.",
+          "faultClass": "other",
+          "file": "cli/release-age.mjs",
+          "find": "  return back.getUTCFullYear() === y && back.getUTCMonth() === mo - 1 && back.getUTCDate() === d ? ms : null;",
+          "replace": "  return ms;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 038)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "A clock before the release is not reported as such.",
+          "faultClass": "other",
+          "file": "cli/release-age.mjs",
+          "find": "  if (!Number.isFinite(ageDays) || ageDays < 0) return",
+          "replace": "  if (!Number.isFinite(ageDays)) return",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 038)"
+          }
+        },
+        {
+          "id": "F7",
+          "description": "CI does not silence the guard footer.",
+          "faultClass": "statement-deleted",
+          "file": "cli/release-age.mjs",
+          "find": "  if (truthy(env?.CI)) return null;\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 038)"
+          }
+        },
+        {
+          "id": "F8",
+          "description": "The pack note carries a day count and changes daily.",
+          "faultClass": "other",
+          "file": "cli/release-age.mjs",
+          "find": "more than ${UPDATE_HINT_DAYS} days before this pack was written",
+          "replace": "${age.ageDays} days ago",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 038)"
+          }
+        },
+        {
+          "id": "F9",
+          "description": "The version is matched as a pattern, so a look-alike heading counts.",
+          "faultClass": "other",
+          "file": "cli/release-age.mjs",
+          "find": "const escapeRegExp = s => s.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&');",
+          "replace": "const escapeRegExp = s => s;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 038)"
+          }
+        },
+        {
+          "id": "F10",
+          "description": "The MCP server drops the instructions.",
+          "faultClass": "statement-deleted",
+          "file": "cli/commands/mcp.mjs",
+          "find": "        ...(instructions ? { instructions } : {}),\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 038)"
+          }
+        },
+        {
+          "id": "F11",
+          "description": "The context pack drops the section.",
+          "faultClass": "statement-deleted",
+          "file": "cli/commands/memory.mjs",
+          "find": "  if (versionNote) lines.push('## DocGuard version', '', versionNote, '');\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 038)"
+          }
+        },
+        {
+          "id": "F12",
+          "description": "Guard text drops the footer.",
+          "faultClass": "statement-deleted",
+          "file": "cli/commands/guard.mjs",
+          "find": "  if (hint) console.log(",
+          "replace": "  if (false) console.log(",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 038)"
+          }
+        }
+      ]
     }
   ]
 }

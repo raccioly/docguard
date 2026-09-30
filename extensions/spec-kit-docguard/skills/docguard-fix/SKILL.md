@@ -244,6 +244,14 @@ If `.specify/` directory exists:
 - Align documentation language with constitutional requirements
 - If `specs/*/spec.md` exists, cross-reference requirements with TEST-SPEC.md
 
+## When DocGuard says it is old
+
+If DocGuard's output says its version was released more than 14 days ago, tell
+the user and offer to run `docguard upgrade`, which checks npm for a newer
+version only when it runs. Never upgrade DocGuard without the user's agreement,
+and never treat the note as a failure: it says a newer version may exist, not
+that one does.
+
 ## Context
 
 $ARGUMENTS

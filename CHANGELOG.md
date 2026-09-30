@@ -38,6 +38,18 @@ Behaviour changes:
 
 ### Added
 
+- **Agents learn when DocGuard is old, with no network call**
+  (`specs/038-update-awareness`). DocGuard reads its own release date from the
+  `CHANGELOG.md` it ships with. When that is more than 14 days ago, guard's
+  text output, the MCP server's `initialize` instructions and the context pack
+  say a newer version may exist and name `docguard upgrade`, the one command
+  that checks npm. The DocGuard skills tell the agent to ask the user and
+  never upgrade unasked. The note is silent when the date cannot be read for
+  certain, in a source checkout, in guard's text output under `CI`, and with
+  `DOCGUARD_NO_UPDATE_HINT=1`. JSON, SARIF, JUnit and MCP tool results are
+  unchanged. `PRIVACY.md` now also lists `docguard upgrade`'s registry fetch,
+  which it omitted.
+
 - **Symbol map in the context pack, opt-in** (`specs/036-symbol-map`).
   `memory --pack --symbols` adds a `## Symbol map`: the source files most
   central in the static import graph (PageRank, deterministic), each with the

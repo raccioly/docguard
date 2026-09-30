@@ -49,6 +49,16 @@ The server is read-only (never scaffolds), keeps stdout as a pure JSON-RPC
 transport, and turns in-tool failures (e.g. a malformed `.docguard.json`) into
 `isError` results instead of dying.
 
+**Version-age note.** When the installed release is more than 14 days old,
+`initialize` returns `instructions` saying so: the version, its release date,
+that a newer version *may* exist, and that the agent should offer
+`docguard upgrade` and never upgrade without the user's agreement. Guard's
+text output and the context pack carry the same note; the DocGuard skills say
+what to do with it. DocGuard reads its release date from the `CHANGELOG.md`
+it ships with, so the note makes no network call. It is silent in a source
+checkout and with `DOCGUARD_NO_UPDATE_HINT=1`, and never appears in a tool
+result or any JSON, SARIF or JUnit output.
+
 ## The JSON contract (CLI automation)
 
 ```bash

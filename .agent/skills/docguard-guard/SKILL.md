@@ -214,6 +214,14 @@ DocGuard is a spec-kit extension. When this project has a `.specify/` directory:
 - When cross-artifact inconsistencies exceed 3 → suggest `/speckit.analyze`
 - When no constitution exists → suggest `/speckit.constitution` as first step
 
+## When DocGuard says it is old
+
+If DocGuard's output says its version was released more than 14 days ago, tell
+the user and offer to run `docguard upgrade`, which checks npm for a newer
+version only when it runs. Never upgrade DocGuard without the user's agreement,
+and never treat the note as a failure: it says a newer version may exist, not
+that one does.
+
 ## Context
 
 $ARGUMENTS

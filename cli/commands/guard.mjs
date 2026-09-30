@@ -166,6 +166,7 @@ import { validatePathScopedRules } from '../validators/path-scoped-rules.mjs';
 import { validateDocOwnership } from '../validators/doc-ownership.mjs';
 import { validateEvidence } from '../validators/evidence.mjs';
 import { coverSemanticClaims } from '../evidence/evaluate.mjs';
+import { footerHint } from '../release-age.mjs';
 
 /**
  * Internal guard — returns structured data, no console output, no process.exit.
@@ -1212,6 +1213,11 @@ export function runGuard(projectDir, config, flags) {
     }
     console.log('');
   }
+
+  // docguard.update-awareness#FR-004: text output only; JSON, SARIF and JUnit
+  // returned above and never reach this line.
+  const hint = footerHint();
+  if (hint) console.log(`  ${c.dim}ⓘ ${hint}${c.reset}\n`);
 
   // v0.5: severity-aware exit codes (see runGuardInternal for the rollup).
   // v0.28: exitCode + return (not process.exit) so the buffered text output

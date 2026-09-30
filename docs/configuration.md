@@ -391,3 +391,19 @@ Feature requirement scoring recognizes eligible test annotations and labels usin
 Requirement definitions are identified by repository-relative document path plus ID. A bare test annotation such as `@req FR-001` earns linkage credit only when that ID is defined in one document. When features reuse an ID, qualify the declaration: `@req specs/payments/spec.md#FR-001`. The same spelling works in a test label. Use forward slashes; an optional leading `./` is accepted. Qualifiers are exact repository-relative paths, not paths relative to the test file.
 
 Validation and `trace --features` share definition parsing and reference resolution. A qualified reference credits only its target document. Ambiguous bare references credit neither feature and produce a review finding for each unresolved definition. A wrong qualifier is an orphan reference and never falls back to a bare match. Repeated mentions within one document do not create additional identities. Linkage remains evidence of a declaration, not proof of behavioral correctness; lifecycle and arbitrary verification-link semantics are separate concerns.
+
+## Version-age note — `DOCGUARD_NO_UPDATE_HINT`
+
+When the installed DocGuard was released more than 14 days ago, guard's text
+output, the MCP server's `initialize` instructions and the context pack say
+so, and suggest `docguard upgrade` to check npm. DocGuard reads its own
+release date from the `CHANGELOG.md` it ships with: the note makes no network
+call and never claims a newer version exists. The threshold is fixed.
+
+It is silent when the date cannot be read for certain, in a DocGuard source
+checkout, and in guard's text output when `CI` is set. Machine outputs (JSON,
+SARIF, JUnit, MCP tool results) never carry it. Turn it off everywhere with:
+
+```bash
+export DOCGUARD_NO_UPDATE_HINT=1
+```
