@@ -208,9 +208,19 @@ for path in sys.stdin.read().splitlines():
             elif any(b in ORM_BASES for b in bn) and orm:
                 schemas.append({"name": node.name, "fields": orm, "kind": "sqlalchemy", "rels": rels})
     imports, dynamic_imports, path_mutation = imports_from_tree(tree)
+    # Top-level names, for the symbol map: __all__ when declared, else public
+    # top-level functions and classes, in source order.
+    symbols, declared_all = [], None
+    for stmt in tree.body:
+        if isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and not stmt.name.startswith("_"):
+            symbols.append(stmt.name)
+        elif isinstance(stmt, ast.Assign) and any(isinstance(t, ast.Name) and t.id == "__all__" for t in stmt.targets):
+            if isinstance(stmt.value, (ast.List, ast.Tuple)):
+                declared_all = [e.value for e in stmt.value.elts if isinstance(e, ast.Constant) and isinstance(e.value, str)]
     results.append({
         "file": path, "ok": True, "routes": routes, "schemas": schemas,
-        "imports": imports, "dynamicImports": dynamic_imports, "pathMutation": path_mutation
+        "imports": imports, "dynamicImports": dynamic_imports, "pathMutation": path_mutation,
+        "symbols": declared_all if declared_all is not None else symbols
     })
 
 sys.stdout.write(json.dumps(results))

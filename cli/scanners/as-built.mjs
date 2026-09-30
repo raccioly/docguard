@@ -26,7 +26,7 @@ import { detectDocTools } from './doc-tools.mjs';
 import { detectProjectProfile } from './project-type.mjs';
 import { scanRoutesDeep } from './routes.mjs';
 import { scanSchemasDeep } from './schemas.mjs';
-import { parseJsTs, walk } from './js-ast.mjs';
+import { exportedNames } from './js-ast.mjs';
 import { isTestSource } from './requirement-evidence.mjs';
 
 const JS_EXT = new Set(['.js', '.mjs', '.cjs', '.jsx', '.ts', '.tsx', '.mts', '.cts']);
@@ -51,23 +51,6 @@ export function resolveArea(projectDir, area) {
 
 const within = (file, rel) => rel === '.' || file === rel || file.startsWith(`${rel}/`);
 
-function exportedNames(content, filename) {
-  const { ast, ok } = parseJsTs(content, filename);
-  if (!ok || !ast) return [];
-  const names = [];
-  walk(ast, node => {
-    if (node.type === 'ExportDefaultDeclaration') names.push({ name: 'default', line: node.loc?.start.line });
-    if (node.type !== 'ExportNamedDeclaration') return;
-    const d = node.declaration;
-    if (d?.id?.name) names.push({ name: d.id.name, line: node.loc?.start.line });
-    for (const decl of d?.declarations || []) if (decl.id?.name) names.push({ name: decl.id.name, line: node.loc?.start.line });
-    for (const s of node.specifiers || []) {
-      const n = s.exported?.name ?? s.exported?.value;
-      if (n) names.push({ name: n, line: node.loc?.start.line });
-    }
-  });
-  return names;
-}
 
 /**
  * Deterministic facts under one area, sorted by key.

@@ -293,6 +293,16 @@ are optional:
 
 The `entity-diagram` section has no options.
 
+## Symbol map budget — `memory.symbolMap`
+
+`memory --pack --symbols` stops the symbol map at `memory.symbolMap.maxBytes`
+bytes (default 4096, between 256 and 16384), at a whole line, and states how
+many ranked files it left out. About 4 bytes stand for one token.
+
+```json
+{ "memory": { "symbolMap": { "maxBytes": 4096 } } }
+```
+
 ## Project Type Detection
 
 DocGuard auto-detects your project type from `package.json`:

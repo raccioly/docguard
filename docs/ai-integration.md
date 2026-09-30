@@ -119,7 +119,10 @@ and degrade gracefully on fork tokens and shallow clones.
 | Task-context JSON | `docguard agent --task <text> --format json` | Read-only, bounded excerpts from approved current evidence plus source/test pointers. It excludes retired and unsafe material and abstains when relevance is weak. |
 
 Load the context pack at agent session start; regenerate any time — it is
-never hand-edited.
+never hand-edited. `memory --pack --symbols` adds a symbol map, which names the
+most central files and their exports within a byte budget. It stays opt-in until
+the predeclared v2 benchmark measures it against the plain pack: default-on
+needs no regression and a benefit, and a regression means it is not released.
 
 For a concrete change, task context can reduce discovery steps:
 
