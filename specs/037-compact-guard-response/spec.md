@@ -139,3 +139,9 @@ response at least 30% smaller than the full one on the fixture.
 
 - Changing the CLI's default JSON, SARIF or JUnit output.
 - Changing which findings guard emits.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `7f7921f8390140b97f59231500b987be8cbd02f1` — Reviewed at 7f7921f on main: all 9 tasks are checked and were delivered by #486, #487, #491; the full suite (2425 tests) passes and guard reports 0 errors at this revision. #487 added FR-007 (the fixed part states each fact once) and revised SC-002 to measure committed fixtures, recorded in the spec and tasks. Evidence: `cli/shared-guard-json.mjs`, `cli/validator-coverage.mjs`, `docs-canonical/ARCHITECTURE.md`, `tests/compact-guard-response.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->
