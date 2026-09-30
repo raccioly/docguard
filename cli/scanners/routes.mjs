@@ -352,7 +352,10 @@ function argsAuth(content, middleware, handler) {
   return AUTH_CHECK_RE.test(handler);
 }
 
-/** Auth of the `<receiver>.<method>('/path', …)` call starting at `index` (pattern tier). */
+/**
+ * Auth of the `<receiver>.<method>('/path', …)` call starting at `index` (pattern tier).
+ * @implements docguard.js-ts-extraction#FR-002
+ */
 function statementAuth(content, index) {
   const open = content.indexOf('(', index);
   const call = open < 0 ? null : callArgs(content, open);
@@ -360,7 +363,10 @@ function statementAuth(content, index) {
   return argsAuth(content, call.args.slice(1, -1), call.args[call.args.length - 1]);
 }
 
-/** `<x>.route('/p').get(…).post(…)` chains read by pattern when the file does not parse. */
+/**
+ * `<x>.route('/p').get(…).post(…)` chains read by pattern when the file does not parse.
+ * @implements docguard.js-ts-extraction#FR-001
+ */
 function routeChainsByPattern(content) {
   const out = [];
   const re = /\b([A-Za-z_$][\w$]*)\s*\.\s*route\s*\(\s*(['"`])([^'"`]+)\2\s*\)/g;
@@ -412,6 +418,7 @@ const MIDDLEWARE_AUTH_RE = /next-auth\/middleware|\bwithAuth\b|\bclerkMiddleware
  * (docguard.js-ts-extraction#FR-002). No auth in the middleware → never. Auth
  * with no literal matcher → every path. Matchers use Next's path syntax
  * (`/api/admin/:path*`); only string literals are read.
+ * @implements docguard.js-ts-extraction#FR-002
  */
 function nextMiddlewareAuth(dir) {
   for (const rel of NEXT_MIDDLEWARE_FILES) {
@@ -462,7 +469,11 @@ function matcherRegex(pattern) {
  * Imported-router mounts are composed transitively, so
  * `app.use('/api', api)` plus `api.use('/x', x)` yields `/api/x`. Dynamic mount
  * paths (non-string-literal prefixes) are skipped. Unmounted files keep their
- * bare paths — exactly the pre-mount-map behavior.
+ * bare paths — exactly the pre-mount-map behavior. Each prefix carries whether
+ * auth middleware guards every mount chain to it, and imports resolve through
+ * tsconfig/jsconfig aliases.
+ * @implements docguard.js-ts-extraction#FR-002
+ * @implements docguard.js-ts-extraction#FR-005
  */
 function buildExpressMountMap(files, resolveAlias = null) {
   const map = new Map();

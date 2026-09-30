@@ -343,6 +343,7 @@ const NOT_MIDDLEWARE_TAIL = new Set(['router', 'routes', 'route', 'controller', 
  * `verifyToken`, `ensureLoggedIn`, `checkJwt`, `requireRole`, `authGuard`, ...
  * Words are split on camelCase and `_`, so `authorsList` or `oauthCallback`
  * are not auth, and `authRouter` (a router) is not middleware.
+ * @implements docguard.js-ts-extraction#FR-002
  */
 export function isAuthMiddlewareName(name) {
   if (!name || typeof name !== 'string') return false;
@@ -480,8 +481,11 @@ function pathArgValue(node, constants = new Map(), dynamicPlaceholder = true) {
  * `.get()` calls (e.g. `map.get('key')`, `headers.get('x')`) out.
  *
  * Returns `null` when the file can't be parsed (caller falls back to regex);
- * otherwise an array of `{ method, path, start }` (start = call node offset, for
- * the caller's comment/handler/auth context lookups).
+ * otherwise an array of `{ method, path, start, receiver, line, auth }` (start =
+ * call node offset, for the caller's comment/handler lookups; `auth` = the
+ * route's own evidence).
+ * @implements docguard.js-ts-extraction#FR-001
+ * @implements docguard.js-ts-extraction#FR-002
  */
 export function extractJsRouteCalls(content, filename = 'file.ts') {
   const { ast, ok } = parseJsTs(content, filename);
@@ -570,6 +574,7 @@ function handlerName(node) {
  * Per-handler auth of a Next.js App Router `route.ts` (docguard.js-ts-extraction#FR-002):
  * each exported HTTP method is judged by its own body, or by an auth wrapper
  * (`export const GET = withAuth(async () => …)`). `null` on parse failure.
+ * @implements docguard.js-ts-extraction#FR-009
  * @returns {Map<string, { line: number|null, auth: boolean }>|null}
  */
 export function nextRouteHandlers(content, filename = 'route.ts') {

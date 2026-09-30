@@ -431,8 +431,8 @@ function _buildMemoryPlanUncached(projectDir, config = {}) {
   {
     const sections = [];
     // A Libraries column (ORM, UI, auth) only when some ecosystem has one, so
-    // a project without any keeps its table byte for byte
-    // (docguard.js-ts-extraction#FR-008).
+    // a project without any keeps its table byte for byte.
+    // @implements docguard.js-ts-extraction#FR-008
     const withLibraries = profile.ecosystems.some(e => (e.libraries || []).length > 0);
     const stackRows = profile.ecosystems.map(e => withLibraries
       ? [e.dir, e.language, e.framework || '—', (e.libraries || []).join(', ') || '—', e.kind]

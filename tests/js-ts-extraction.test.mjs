@@ -266,6 +266,21 @@ describe('FR-006: Drizzle discovery and columns', () => {
     assert.doesNotMatch(er, /integer__auto_|priorityEnum/);
     assert.match(er, /serial id PK/);
     assert.match(er, /enum priority/);
+    const described = generateERDiagram([{ name: 'legacy', fields: [{ name: 'id', type: 'integer (auto)', primaryKey: true }] }], []);
+    assert.match(described, /^ {8}integer id PK$/m);
+  });
+
+  it('reads a schema the config names outside every searched directory, and only there', () => {
+    const files = {
+      'package.json': JSON.stringify({ dependencies: { 'drizzle-orm': '0.30.10' } }),
+      'src/index.ts': "export { audits } from '../infra/tables';\n",
+      'infra/tables.ts': "import { pgTable, serial } from 'drizzle-orm/pg-core';\n" +
+        "export const audits = pgTable('audits', { id: serial('id').primaryKey() });\n",
+    };
+    assert.deepEqual(scanSchemasDeep(project(files), {}, {}, {}).entities.map(e => e.name), [],
+      'infra/ is not a source root, so the bounded search does not reach it');
+    const configured = project({ ...files, 'drizzle.config.ts': "export default { schema: './infra/tables.ts' };\n" });
+    assert.deepEqual(scanSchemasDeep(configured, {}, {}, {}).entities.map(e => e.name), ['audits']);
   });
 
   it('reports each table once when the schema sits in src/db with no config', () => {
