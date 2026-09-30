@@ -1,6 +1,6 @@
 # CI Recipes
 
-<!-- docguard:last-reviewed 2026-09-29 -->
+<!-- docguard:last-reviewed 2026-09-30 -->
 <!-- docguard:status active -->
 
 ## Recipe 1 — Guard (mandatory CI gate)
@@ -45,14 +45,14 @@ The shipped auto-fix template and composite action expose optional commit/commen
 
 ## Recipe 3 — Sync (memory refresh on a schedule or pre-merge)
 
-`sync --write` regenerates sections declared as code-derived. Human sections retain judgment and rationale. Cache identity reflects relevant inputs, so ordinary source edits invalidate a prior plan.
+`sync --write` regenerates sections declared as code-derived. Human sections retain judgment and rationale. Cache identity reflects relevant inputs, so ordinary source edits invalidate a prior plan. `--since <ref>` refreshes only the sections whose sources changed (`specs/029-sync-section-scope`). A section drawn from incomplete evidence, such as a `module-graph` on a runner without `python3` for a Python project, is skipped unless `--allow-partial`; run the refresh where the evidence is complete.
 
 On a schedule, produce a diff, check for an existing repair PR, and create a new proposal only when meaningful work remains. Keep clean runs quiet. Set an owner and response expectation for unresolved findings. Scheduled source scans cannot detect every external deployment or vendor change; operational checks need their own evidence.
 
 ## Recipe 3a — Protected scheduled releases
 
 The repository's scheduled release workflow opens a reviewable `release/vX.Y.Z`
-pull request because `main` requires pull requests and four runtime checks. GitHub
+pull request because `main` requires pull requests and six checks: four runtime checks (`test (18/20/22/24)`) and the supply-chain checks `osv-scan-pr / osv-scan` and `websec`. GitHub
 places pull-request workflows created with the repository `GITHUB_TOKEN` into an
 approval-required state. Explicit `workflow_dispatch` events run, but their jobs
 do not satisfy branch protection's required pull-request checks, and their
@@ -63,11 +63,11 @@ explicit maintainer action: select **Approve workflows to run** on the generated
 PR. No credential is stored for the release PR or its merge; the only release
 secret is the Homebrew tap deploy key described below.
 
-After approval, ordinary pull-request CI supplies the four required contexts.
+After approval, ordinary pull-request CI supplies the six required contexts.
 Before the branch is pushed, the trusted scheduler validates the base repository,
 bot author, branch/title/version agreement, next-version increment, synchronized
 package surfaces, and changed-file allowlist. It then arms GitHub's native squash
-auto-merge. Native auto-merge remains blocked by the four required checks, binds
+auto-merge. Native auto-merge remains blocked by the six required checks, binds
 eligibility to the current PR head, and resets when that head changes. The
 scheduler waits up to ten minutes for the merge and then dispatches the
 idempotent release workflow. Approvals rarely arrive inside that wait, so a
@@ -141,6 +141,10 @@ the squash, and `specs complete` warns when that is about to happen. Guard
 reports such a revision as `SPR008`; `docguard specs reanchor --id <spec-id>
 --write` moves it to the first commit on HEAD's first-parent history whose
 evidence files are byte-identical (`specs/028-completion-revision-anchoring`).
+When no commit carries those bytes, or the old revision no longer resolves,
+`--to <merge commit> --reason "<why>"` records an attested anchor and the
+evidence files that differ. When one spec has dangling revisions from different
+merges, add `--from <revision>` so each is attested to its own merge.
 
 ## Recipe 3c — Spec-first gate
 

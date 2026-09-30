@@ -101,7 +101,7 @@ ${c.bold}Tools (situational, but day-to-day useful)${c.reset}
   ${c.green}explain${c.reset}    Explain a validator key, warning text, or finding code (${c.cyan}docguard explain SEC001${c.reset})
   ${c.green}verify${c.reset}     Check declared local evidence or extract claims for review (${c.cyan}--evidence${c.reset}, ${c.cyan}--semantic${c.reset})
   ${c.green}feedback${c.reset}   Report likely false positives back to DocGuard (local-first + 1-click prefilled issue)
-  ${c.green}mcp${c.reset}        MCP server over stdio — guard/score/explain/verify/report/diagnose as agent tools
+  ${c.green}mcp${c.reset}        MCP server (stdio, or ${c.cyan}--transport http${c.reset} on loopback) — guard, score, verify, doc navigation and task context as agent tools
   ${c.green}report${c.reset}     Compliance-evidence bundle — guard + score + ALCOA+ + integrity hash (${c.cyan}--format json${c.reset}, ${c.cyan}--out <file>${c.reset})
   ${c.green}ci${c.reset}         Pipeline gate: guard + score in one command (${c.cyan}--threshold <n>${c.reset}, ${c.cyan}--fail-on-warning${c.reset}, ${c.cyan}--format json${c.reset}; records score history)
   ${c.green}memory${c.reset}     Show what DocGuard remembers (${c.cyan}--diff${c.reset} drills into drift)

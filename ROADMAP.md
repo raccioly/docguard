@@ -1,6 +1,6 @@
 # DocGuard Roadmap
 
-<!-- docguard:last-reviewed 2026-09-29 -->
+<!-- docguard:last-reviewed 2026-09-30 -->
 
 This file contains current product intent only. Released work belongs in
 `CHANGELOG.md`; implementation history remains recoverable from Git. Completed or
@@ -13,9 +13,19 @@ structural score is useful, but it is not proof that arbitrary prose is true.
 
 ## Active roadmap
 
-No unreleased milestone is currently committed. New work starts with a reviewed
-specification and measurable acceptance criteria rather than an evergreen task
-list that can become stale.
+Specs 014–037 are merged on `main` and wait for the next release; the
+`[Unreleased]` section of `CHANGELOG.md` lists them, and each spec's
+`tasks.md` is its checklist. Two items remain open:
+
+- **Symbol map promotion (spec 036, T009–T010).** The frozen v2 protocol's 54
+  trials have yet to run. Until they do, `memory --pack --symbols` stays opt-in
+  and the default context pack is unchanged.
+- **Native suppressions for claimspec (issue #420).** Whether DocGuard adopts
+  the claimspec ignore format depends on reason-bearing suppressions; the
+  decision is open.
+
+New work starts with a reviewed specification and measurable acceptance
+criteria rather than an evergreen task list that can become stale.
 
 ## Delivered roadmap
 

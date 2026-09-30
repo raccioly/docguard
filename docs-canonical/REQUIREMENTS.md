@@ -1,9 +1,9 @@
 # Requirements
 
 <!-- docguard:quality negation-load off — requirements define explicit failure and non-disclosure boundaries -->
-<!-- docguard:version 0.8.0 -->
+<!-- docguard:version 0.9.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-09-29 -->
+<!-- docguard:last-reviewed 2026-09-30 -->
 
 ## Functional Requirements
 
@@ -46,7 +46,7 @@
 
 ## Success Criteria
 
-The full supported-runtime test matrix and guard determine local release readiness. The reviewed benchmark records observed detector precision and recall with explicit coverage limits; its finite confidence interval is not universal accuracy. The frozen R7 evaluation supports opt-in task context through equal measured correctness, 50% fewer median steps, and 17% lower median latency against context packs. It also recorded 80% more median uncached input and does not establish universal agent productivity.
+The full supported-runtime test matrix and guard determine local release readiness. The reviewed benchmark records observed detector precision and recall with explicit coverage limits; its finite confidence interval is not universal accuracy. The frozen R7 evaluation supports opt-in task context through equal measured correctness, 50% fewer median steps, and 17% lower median latency against context packs. It also recorded 80% more median uncached input and does not establish universal agent productivity. The symbol map (`memory --pack --symbols`, spec 036) stays opt-in until the frozen v2 protocol records its trials; the protocol, not an impression, decides whether it becomes a default.
 
 ## User Scenarios
 
@@ -60,6 +60,7 @@ The verification column above links each requirement to executable tests. The te
 
 | Version | Date | Changes |
 |---|---|---|
+| 0.9.0 | 2026-09-30 | Add FR-025 (Metrics-Consistency counts what ships and reports each drifted value once); record that the symbol map stays opt-in until the v2 protocol runs |
 | 0.8.0 | 2026-09-29 | Renumber the second FR-016/017/018 rows to FR-022/023/024: each ID was used for two different requirements, and path-qualified test annotations bound to the second meaning |
 | 0.7.0 | 2026-09-18 | Record the uninitialised-project hook boundary (exit 3) and foreign-hook backup protection shipped without a stated requirement |
 | 0.6.0 | 2026-09-15 | Exclude disposable checkout copies from pointer evidence, distinguish shipped capability counts from enabled configuration, and explain non-clean planned registries without weakening traceability |
