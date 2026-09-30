@@ -1,8 +1,8 @@
 # Data Model
 
-<!-- docguard:version 0.9.0 -->
+<!-- docguard:version 0.10.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-09-18 -->
+<!-- docguard:last-reviewed 2026-09-29 -->
 
 | Metadata | Value |
 |----------|-------|
@@ -53,6 +53,9 @@ The primary data structure. Controls all CLI behavior.
 | `docs.dirs` | `string[]` | No | Auto-detected | EXTENDS the auto-detected documentation homes (docs/, documentation/, guides/, …) with non-standard dirs; exclude via `.docguardignore` |
 | `severity.*` | `"high" \| "medium" \| "low"` | No | `"medium"` | Per-validator exit-code weight — `high` promotes warnings to blocking, `low` demotes them (display unchanged) |
 | `findingSeverity.<CODE>` | `"high" \| "medium" \| "low"` | No | — | Exact stable-code enforcement; takes precedence over validator policy. Intrinsic errors require an exact code entry to be demoted. |
+| `agentInstructions.maxBytes` | `integer` | No | `32768` | Byte budget per `AGENTS.md` chain (STR004) |
+| `agentInstructions.allowances.<file>` | `integer` | No | — | Per-chain allowance keyed by the chain's deepest file; slack of 1 KiB or more reports STR005 |
+| `specFirst.paths` / `specFirst.exemptKinds` | `string[]` | No | Everything except Markdown, `specs/**` and tests / `release, deps, typo, test-only` | Governed paths and allowed `Spec-Exempt` kinds for `specs require` |
 
 ### Example Configuration
 
@@ -291,6 +294,7 @@ The `score --format json` output:
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 0.10.0 | 2026-09-29 | DocGuard Team | Add registry `lifecycle.origin` / `scope.sourcePaths` for as-built specs, the `specKit` coverage tier, and the `agentInstructions` and `specFirst` configuration |
 | 0.9.0 | 2026-09-15 | DocGuard Team | Add bounded field-level spec-registry differences and direct evidence verification exit semantics |
 | 0.6.0 | 2026-09-14 | DocGuard Team | Add the document-retirement recovery manifest, retained-ref proof, and retired requirement tombstones |
 | 0.4.0 | 2026-03-13 | DocGuard Team | Complete rewrite — documented all config formats, output schemas, metadata headers |

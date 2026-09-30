@@ -1,4 +1,4 @@
-// @req docs-canonical/REQUIREMENTS.md#FR-018
+// @req docs-canonical/REQUIREMENTS.md#FR-024
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import {

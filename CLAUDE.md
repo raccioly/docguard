@@ -1,4 +1,4 @@
-<!-- docguard:last-reviewed 2026-09-22 -->
+<!-- docguard:last-reviewed 2026-09-29 -->
 
 # Agent Instructions
 
@@ -11,7 +11,8 @@ contribute.
 This repository does not ship OpenWolf state. `.wolf/` and `.claude/` are
 gitignored because they hold machine-local session memory and hooks that point
 at `.wolf/hooks/*.js`, so a fresh clone has neither and must not be told to read
-them. If you have OpenWolf installed, `openwolf init` regenerates both.
+them. The exception is `.claude/skills/speckit-*/`: the Spec Kit skills that
+`specify init --integration claude` generates are tracked. If you have OpenWolf installed, `openwolf init` regenerates both.
 
 When `.wolf/OPENWOLF.md` is present, read it for historical context: prior
 decisions, known bugs, and conventions learned across sessions. It supplies

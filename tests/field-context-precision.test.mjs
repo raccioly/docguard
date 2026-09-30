@@ -1,6 +1,6 @@
 // @req docguard.adoption-workflow-integrity#FR-015
 // @req docguard.adoption-workflow-integrity#SC-009
-// @req docs-canonical/REQUIREMENTS.md#FR-017
+// @req docs-canonical/REQUIREMENTS.md#FR-023
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync } from 'node:fs';

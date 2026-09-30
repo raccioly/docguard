@@ -1,4 +1,4 @@
-// @req docs-canonical/REQUIREMENTS.md#FR-018
+// @req docs-canonical/REQUIREMENTS.md#FR-024
 /**
  * Downstream field report — the pre-commit hook could block a project that had
  * never adopted DocGuard, and the installer could destroy a user's backup.

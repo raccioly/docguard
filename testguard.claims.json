@@ -685,6 +685,18 @@
             "producer": "agent",
             "by": "claude-opus-5.5 (#455)"
           }
+        },
+        {
+          "id": "F9",
+          "description": "A failed registry write leaves the spec directory behind.",
+          "faultClass": "statement-deleted",
+          "file": "cli/commands/generate-as-built.mjs",
+          "find": "      try { rmdirSync(dirname(abs)); } catch { /* the directory is not empty or already gone */ }",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455)"
+          }
         }
       ]
     },

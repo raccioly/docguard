@@ -1,6 +1,6 @@
 # CI Recipes
 
-<!-- docguard:last-reviewed 2026-09-18 -->
+<!-- docguard:last-reviewed 2026-09-29 -->
 <!-- docguard:status active -->
 
 ## Recipe 1 — Guard (mandatory CI gate)
@@ -60,7 +60,8 @@ completion does not produce a downstream `workflow_run` when the repository toke
 authored the dispatch. GitHub documents a personal token or GitHub App as the
 fully automated alternative. DocGuard instead keeps the repository token and one
 explicit maintainer action: select **Approve workflows to run** on the generated
-PR. No release credential is stored.
+PR. No credential is stored for the release PR or its merge; the only release
+secret is the Homebrew tap deploy key described below.
 
 After approval, ordinary pull-request CI supplies the four required contexts.
 Before the branch is pushed, the trusted scheduler validates the base repository,
@@ -209,7 +210,7 @@ Treat a core comparison failure as a quality regression. In the network-free run
 
 ## Pre-commit hook (no GitHub Actions required)
 
-`docguard hooks --type pre-commit` installs a local gate that prefers the repository's installed DocGuard binary. The hook blocks an unavailable runtime. `--auto-fix` additionally applies mechanical fixes and stages their output; enable it only when that mutation is intended.
+`docguard hooks --type pre-commit` installs a local gate that prefers the repository's installed DocGuard binary. The hook blocks an unavailable runtime. When husky, lefthook or simple-git-hooks owns the hook, DocGuard writes nothing and prints the line to add to that manager's configuration. `--auto-fix` additionally applies mechanical fixes and stages their output; enable it only when that mutation is intended.
 
 A Git hook lives in the shared `.git/hooks` and is active on every branch and linked worktree, while `.docguard.json` is a branch-local tracked file. The installed hook therefore skips any working tree with no `.docguard.json` and lets the commit through, and treats guard exit `3` (errors in an uninitialised project) as allowed rather than blocking. A project that never adopted DocGuard is not blocked by a hook installed from another branch; adopted projects are gated exactly as before.
 
@@ -231,7 +232,7 @@ Regenerate installed hooks after upgrading to pick up changes in hook behavior. 
 
 ## Action inputs reference
 
-`action.yml` is the authoritative composite-action input contract. Review command selection, warning policy, score threshold, working directory, and optional commit/comment flags. Pin the action to a reviewed commit and retain the corresponding release label for maintenance.
+`action.yml` is the authoritative composite-action input contract. Review command selection, CLI version (`docguard-version`; empty installs the version the action release was published with), warning policy, score threshold, working directory, and optional commit/comment flags. Pin the action to a reviewed commit and retain the corresponding release label for maintenance.
 
 ## Action outputs reference
 

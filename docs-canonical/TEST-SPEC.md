@@ -1,8 +1,8 @@
 # Test Specification
 
-<!-- docguard:version 1.1.0 -->
+<!-- docguard:version 1.2.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-09-18 -->
+<!-- docguard:last-reviewed 2026-09-29 -->
 
 > DocGuard has a single optional-load npm dependency (`@babel/parser`) and an optional `python3` AST tier. CLI integration tests cover the full stack with `node:test` (zero dev dependencies) and exercise both AST extractors (`js-ast`, `py-ast`) plus their regex fallbacks. The Python AST tests skip themselves automatically on a machine that lacks `python3`.
 
@@ -15,7 +15,7 @@
 
 ---
 
-DocGuard's tests verify command behavior through subprocess execution. Each test runs the full CLI binary via execSync, capturing stdout and checking output patterns. This approach tests the complete stack in a single pass: argument parsing, config loading, validator execution, and output formatting.
+DocGuard's tests verify command behavior through subprocess execution. Command tests run the full CLI binary as a subprocess, capturing stdout and checking output patterns. This approach tests the complete stack in a single pass: argument parsing, config loading, validator execution, and output formatting.
 
 Tests are designed to be config-aware. They verify that project-type settings like needsEnvExample and testFramework correctly influence scoring and validation behavior. Regression guards preserve known failures with dedicated assertions and neighboring valid cases.
 
@@ -90,8 +90,15 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/feedback-fixture.mjs`, `cli/commands/feedback.mjs` | `tests/feedback-fixture.test.mjs`, `tests/feedback-contributions.test.mjs` | ✅ |
 | `cli/validators/document-lifecycle.mjs` | `tests/document-lifecycle.test.mjs` | ✅ |
 | `cli/commands/specs.mjs`, `cli/scanners/spec-registry.mjs`, `cli/validators/spec-registry.mjs` | `tests/spec-registry.test.mjs` | ✅ |
+| `cli/spec-kit-delegation.mjs`, `cli/ensure-skills.mjs` | `tests/spec-kit-delegation.test.mjs`, `tests/security-init-injection.test.mjs` | ✅ |
+| `cli/scanners/spec-first.mjs` (`specs require`) | `tests/spec-first.test.mjs` | ✅ |
+| `cli/scanners/agent-instructions.mjs` (STR004/STR005) | `tests/agent-instruction-budget.test.mjs` | ✅ |
+| `cli/scanners/as-built.mjs`, `cli/commands/generate-as-built.mjs` | `tests/as-built-specs.test.mjs` | ✅ |
+| `cli/shared-test-cases.mjs` | `tests/test-case-count.test.mjs` | ✅ |
+| `cli/scanners/speckit.mjs` (SPK010 directory claims) | `tests/spk010-directory-claims.test.mjs`, `tests/spec-kit-artifact-coverage.test.mjs` | ✅ |
+| `.github/scripts/release-changelog.mjs`, `.github/scripts/homebrew-formula.mjs` | `tests/release-readiness.test.mjs` | ✅ |
 | `cli/validators/structure.mjs` | `tests/commands.test.mjs` | ✅ |
-| `cli/validators/docs-diff.mjs` | `tests/commands.test.mjs` | ✅ |
+| `cli/validators/docs-diff.mjs` | `tests/commands.test.mjs`, `tests/docs-diff.test.mjs` | ✅ |
 
 Completion tests cover initial `implemented → verified` delivery, evidence and
 dirty-tree blockers, living-spec `verified → verified` maintenance, and refusal
@@ -123,6 +130,7 @@ of empty repeats driven only by generated lifecycle artifacts.
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 1.2.0 | 2026-09-29 | DocGuard Team | Freshness review: map the modules specs 014–026 added to their tests, and correct the benchmark case count |
 | 1.1.0 | 2026-09-15 | DocGuard Team | Add field-replay controls for shipped validator counts, ignored checkout pointer copies, and non-clean planned lifecycle advice |
 | 1.0.0 | 2026-09-15 | DocGuard Team | Add executable hook-composition, direct evidence exit-code, and field-level registry-difference regressions |
 | 0.7.0 | 2026-03-13 | @raccioly | Added trace, publish; watch.mjs coverage justified (ISO 29119); 15 commands |
@@ -134,7 +142,7 @@ of empty repeats driven only by generated lifecycle artifacts.
 
 `tests/score-assurance.test.mjs` checks that structural grades never claim factual verification and that CI, diagnose, and reports retain this boundary. `tests/feedback-contributions.test.mjs` checks confident-finding selection, preview behavior, and outbound metadata privacy. Cache tests must change source contents without changing a manifest or Git HEAD, including repeated edits and fresh-process reads. Hook tests execute generated scripts against controlled runtimes rather than merely matching shell text. Traceability tests pair synthetic fixture IDs with genuine requirement annotations.
 
-A detector fix should include a clean near-miss and a real defect. Held-out neighboring cases are required to evaluate generalization. `benchmarks/baseline.json` is the reviewed reference: 24 measured cases across 12 repository groups plus one explicit unsupported case. Its observed perfect point estimates retain Wilson confidence limits and do not establish exhaustive correctness. The envelope's `review.measures` is `benchmark-precision` and its `review.caveat` must accompany any quoted number; tests assert the committed metrics and caveat are recomputable from the committed cases, and that a hand-edited ratio, stale caveat, or pre-provenance envelope is rejected.
+A detector fix should include a clean near-miss and a real defect. Held-out neighboring cases are required to evaluate generalization. `benchmarks/baseline.json` is the reviewed reference: 26 measured cases across 13 repository groups plus one explicit unsupported case. Its observed perfect point estimates retain Wilson confidence limits and do not establish exhaustive correctness. The envelope's `review.measures` is `benchmark-precision` and its `review.caveat` must accompany any quoted number; tests assert the committed metrics and caveat are recomputable from the committed cases, and that a hand-edited ratio, stale caveat, or pre-provenance envelope is rejected.
 
 The finding shape is itself a contract, because findings are copied verbatim into shareable feedback records. `tests/precision-evidence.test.mjs` pins the exact key set a guard run emits, so a field added without a specification fails the suite; it also asserts that `location` is a string or null and that `disposition` and `evidence.status` hold values from their declared vocabularies. `tests/findings-channels.test.mjs` pins the derivation rules for the three channels: `disposition` from `suggestion.kind` with `escalate` as the fail-closed default, `evidence` projected per code and always standing alone, and `reportable` true for an unmeasured code even at high confidence. A malformed `suggestion.kind` must omit the suggestion, so a typo stays visible as a missing suggestion instead of reclassifying a fix as a review.
 
