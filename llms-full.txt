@@ -46,6 +46,7 @@ It targets development teams and AI coding agents that need to maintain document
 | **Precision evidence** | Runs labelled synthetic and exact-commit public cases, separates deterministic results from observations, calculates null-safe quality metrics and confidence bounds, compares case-first baselines, persists them in a provenance envelope whose measure (`benchmark-precision`) and caveat are derived from the cases and re-verified on load, and projects per-code evidence into a generated module the CLI quotes at finding time | `benchmarks/`, `cli/precision-evidence.mjs`, `schemas/docguard-benchmark.schema.json`, `schemas/docguard-benchmark-baseline.schema.json`, `schemas/docguard-precision-evidence.schema.json` | External runs are explicit; third-party project code is never executed and disposable checkouts are removed by default |
 | **Non-regression budgets** | Compares a PR with its base on one runner: interleaved guard wall time, self-guard error findings, agent-facing output bytes, packed package weight and runtime dependencies, against the ratios and floors in `budgets.json`; `Budget-Exempt` waives one metric with a reason | `tools/budget.mjs`, `budgets.json` | CI `budget` job; development tooling, not shipped in the npm package |
 | **Doc dependency lock** | A doc section declares the code it describes (`covers=` on its `docguard:section` marker); `review --accept` records AST or content fingerprints in `.docguard-doc-lock.json`; the Doc-Dependency validator reports a covered symbol whose code changed (DLK001), a dependency that no longer resolves, an unaccepted or orphaned entry, or an unreadable lock | `cli/scanners/doc-deps.mjs`, `cli/validators/doc-dependency.mjs`, `cli/commands/review.mjs` | Opt-in by declaration; only `review` writes the lock; runs in `--changed-only` pre-commit mode |
+| **Compact guard response** | Projects the full guard result so each fact appears once: findings once, each code's agent-facing evidence once, validator status and counts; the MCP guard tool's default | `cli/shared-guard-json.mjs`, `cli/commands/mcp.mjs`, `cli/commands/guard.mjs` (`--compact`) | A projection, never a recomputation; `detail: "full"` and the CLI's default JSON keep the complete contract |
 | **MCP doc navigation** | Exact, bounded answers for agents: which doc lines, instruction lines, requirement IDs and covered sections describe a file; a document's outline; one section or the lines around a reference; the task context packet. One reference matcher shared with `trace --reverse` and `impact` | `cli/scanners/doc-references.mjs`, `cli/shared-headings.mjs`, `cli/commands/mcp.mjs` | Read-only; paths pass the evidence reader's checks; 8 KiB default and 32 KiB cap per section read; no tool calls a model |
 | **Feedback fixtures** | Validates synthetic reproductions and opposite controls, reduces them under an explicit predicate, derives duplicate identities, and emits test-only contributions | `cli/feedback-fixture.mjs`, `cli/commands/feedback.mjs`, `schemas/docguard-feedback-fixture.schema.json` | Publication remains user-controlled; contribution generation requires reviewed redaction, scope, and benchmark-delta evidence |
 | **Evidence-scoped verification** | Binds one exact Markdown statement to a typed JSON Pointer value, bounded file collection, static Python container literal, or saved upstream compatibility report and returns one of five explicit states | `cli/evidence/`, `cli/validators/evidence.mjs`, `cli/commands/verify.mjs`, `schemas/docguard-evidence.schema.json` | Reads stay local, bounded, non-executable, and symlink/private-path safe; direct verification exits 1 for contradiction/invalid input, 2 for unresolved evidence, and 0 only for verified or unconfigured evidence |
@@ -1621,6 +1622,9 @@ Behaviour changes:
   as in `.gitignore`. This can hide findings that fired before.
 - The GitHub Action installs the CLI version it was released with, not
   `@latest`. Set `docguard-version: latest` to keep following npm.
+- The MCP tool `docguard_guard` returns the compact form (each fact once).
+  Pass `detail: "full"` for the previous shape, with `reportable` and
+  `validators[].findings`.
 
 ### Added
 
@@ -1946,6 +1950,17 @@ Behaviour changes:
 
 ### Changed
 
+- **The MCP `docguard_guard` tool returns each fact once by default**
+  (`specs/037-compact-guard-response`). The full guard JSON repeated every
+  finding up to three times: in `findings`, in `reportable`, and in
+  `validators[].findings`. It also repeated each code's evidence on every
+  finding. The compact form lists each finding once and each code's evidence
+  once (`evidenceByCode`), and keeps validator status, counts and legacy
+  messages. It is 41% smaller on the budget fixture and 60% smaller on this
+  repository. A reconstruction test proves every finding field, count and
+  evidence object can be read back. Agents that need the old shape pass
+  `detail: "full"`. `guard --format json` is unchanged; `--compact` prints the
+  new form.
 - **Entity diagrams are sorted.** `generate` writes DATA-MODEL's `erDiagram`
   with entities and relationships in name order, not file-walk order, so the
   same schema always yields the same diagram.
@@ -1974,22 +1989,8 @@ Behaviour changes:
   and `.specify/memory/constitution.md` is unchanged. The core skills under
   `.claude/skills/speckit-*` and `.agents/skills/speckit-*` are tracked, so a
   clone can run the workflow. DocGuard's own extension is registered with
-  `npm run speckit:dev` rather than committed as a copy of `extensions/`.
 
-- **Constitution v2.0.0: it now describes the project it governs (#455).**
-  v1.1.0 contradicted itself and the code while `guard` passed:
-  - It said both "one runtime dependency" and "Dependencies: None. Zero. Ever."
-  - It required a VS Code extension API that the repository does not have.
-  - It counted 19 validators and 4 skills.
-  - It claimed DocGuard bundles Spec Kit's core skills, which it does not.
-  - It said every workflow hook is optional, while `brief`, `preflight` and
-    `guard` are mandatory by design.
-
-  The amendment drops the counts in favour of the authoritative sources. It
-  restates Spec Kit integration as delegation to `specify` that must report
-  failure, and adds three principles the repository already practises:
-
-<!-- truncated: 4186 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 4200 more lines — read CHANGELOG.md directly -->
 
 ---
 

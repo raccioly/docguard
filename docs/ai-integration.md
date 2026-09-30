@@ -33,7 +33,7 @@ Every tool is read-only and accepts an optional `projectDir`:
 
 | Tool | Returns |
 |------|---------|
-| `docguard_guard` | The full guard JSON contract — status, findings (stable codes), coverage, unverified-claim count |
+| `docguard_guard` | Status, every finding once (stable codes), each code's evidence once (`evidenceByCode`), per-validator status and counts, coverage, unverified-claim count. Pass `detail: "full"` for the complete guard JSON contract |
 | `docguard_score` | `{score, grade, categories}` |
 | `docguard_explain` | A finding code's contract: title, help, suppression pragma, owning validator |
 | `docguard_verify_evidence` | Exact declared statement-to-source checks with scoped verification states |
@@ -65,6 +65,14 @@ npx docguard-cli guard --format json
 | `semanticClaims.count` | Documented counts/limits/enums **not yet verified against code** |
 | `validators[]` | Per-validator results — `na` means "nothing to validate", which is not a pass |
 | `precisionEvidence` | Benchmark evidence for the finding codes in this run: `coverage` counts how many have ever been measured, `codes[CODE]` is `measured` or `not-measured`, and `caveat` must accompany any quoted rate |
+
+`--compact` (and the MCP tool's default) prints each fact once. Findings are
+listed once, without the copies in `reportable` and `validators[].findings`.
+Each code's agent-facing evidence (a precision is withheld unless it is
+quotable) moves to `evidenceByCode`. Validators keep status, counts and
+applicability, and legacy validators without structured findings keep their
+messages. The raw benchmark statistics per code stay in the full form. On this
+repository the compact response is about 60% smaller.
 
 Working with findings:
 

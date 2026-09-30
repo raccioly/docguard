@@ -2584,6 +2584,132 @@
           }
         }
       ]
+    },
+    {
+      "id": "COMPACT-GUARD-LOSES-NOTHING",
+      "statement": "The compact guard response is a projection of the full one: every finding field, count, legacy validator message and per-code evidence object can be read back, raw unquotable statistics stay out, agents get it by default over MCP, and the full contract stays one argument away.",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/037-compact-guard-response/spec.md#FR-005"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (#455 spec 037)"
+      },
+      "defendedBy": [
+        "tests/compact-guard-response.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "A legacy validator's messages are dropped with the copies.",
+          "faultClass": "other",
+          "file": "cli/shared-guard-json.mjs",
+          "find": "    ...(Array.isArray(structured) ? {} : { errors, warnings }),",
+          "replace": "    ...({}),",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 037)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "Evidence is dropped instead of kept once per code.",
+          "faultClass": "statement-deleted",
+          "file": "cli/shared-guard-json.mjs",
+          "find": "    if (finding.code && evidence && !Object.hasOwn(evidenceByCode, finding.code)) evidenceByCode[finding.code] = evidence;\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 037)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "A configured enforcement is dropped like an intrinsic one.",
+          "faultClass": "other",
+          "file": "cli/shared-guard-json.mjs",
+          "find": "      ...(enforcement && enforcement.source !== 'intrinsic' ? { enforcement } : {}),",
+          "replace": "      ...({}),",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 037)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "A redacted context is dropped.",
+          "faultClass": "other",
+          "file": "cli/shared-guard-json.mjs",
+          "find": "      ...(redactedContext != null ? { redactedContext } : {}),",
+          "replace": "      ...({}),",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 037)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "Raw per-code benchmark statistics reach the agent.",
+          "faultClass": "other",
+          "file": "cli/shared-guard-json.mjs",
+          "find": "    const { codes: _codes, ...summary } = precisionEvidence;",
+          "replace": "    const summary = precisionEvidence;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 037)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "Validator error counts are lost.",
+          "faultClass": "literal-changed",
+          "file": "cli/shared-guard-json.mjs",
+          "find": "    errorCount: Array.isArray(errors) ? errors.length : 0,",
+          "replace": "    errorCount: 0,",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 037)"
+          }
+        },
+        {
+          "id": "F7",
+          "description": "The MCP guard tool returns the full form by default.",
+          "faultClass": "return-altered",
+          "file": "cli/commands/mcp.mjs",
+          "find": "    return detail === 'full' ? result : compactGuardResult(result);",
+          "replace": "    return result;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 037)"
+          }
+        },
+        {
+          "id": "F8",
+          "description": "An unknown detail value is accepted.",
+          "faultClass": "statement-deleted",
+          "file": "cli/commands/mcp.mjs",
+          "find": "    if (detail !== 'compact' && detail !== 'full') throw new Error('detail must be \"compact\" or \"full\"');\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 037)"
+          }
+        },
+        {
+          "id": "F9",
+          "description": "--compact is ignored by the CLI.",
+          "faultClass": "other",
+          "file": "cli/commands/guard.mjs",
+          "find": "flags.compact ? compactGuardResult(data) : data",
+          "replace": "data",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 037)"
+          }
+        }
+      ]
     }
   ]
 }

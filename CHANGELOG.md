@@ -31,6 +31,9 @@ Behaviour changes:
   as in `.gitignore`. This can hide findings that fired before.
 - The GitHub Action installs the CLI version it was released with, not
   `@latest`. Set `docguard-version: latest` to keep following npm.
+- The MCP tool `docguard_guard` returns the compact form (each fact once).
+  Pass `detail: "full"` for the previous shape, with `reportable` and
+  `validators[].findings`.
 
 ### Added
 
@@ -356,6 +359,17 @@ Behaviour changes:
 
 ### Changed
 
+- **The MCP `docguard_guard` tool returns each fact once by default**
+  (`specs/037-compact-guard-response`). The full guard JSON repeated every
+  finding up to three times: in `findings`, in `reportable`, and in
+  `validators[].findings`. It also repeated each code's evidence on every
+  finding. The compact form lists each finding once and each code's evidence
+  once (`evidenceByCode`), and keeps validator status, counts and legacy
+  messages. It is 41% smaller on the budget fixture and 60% smaller on this
+  repository. A reconstruction test proves every finding field, count and
+  evidence object can be read back. Agents that need the old shape pass
+  `detail: "full"`. `guard --format json` is unchanged; `--compact` prints the
+  new form.
 - **Entity diagrams are sorted.** `generate` writes DATA-MODEL's `erDiagram`
   with entities and relationships in name order, not file-walk order, so the
   same schema always yields the same diagram.

@@ -235,6 +235,7 @@ const COMMAND_HELP = {
     usage: 'docguard guard [--format json|sarif|junit] [--changed-only] [--fail-on-warning]',
     flags: [
       ['--format json', 'Machine-readable results for CI (also: sarif, junit)'],
+      ['--compact', 'With --format json: each fact once (the form MCP returns by default); the default JSON is unchanged'],
       ['--changed-only', 'Only validate docs/code touched in the working tree'],
       ['--fail-on-warning', 'Exit non-zero on warnings (strict CI)'],
       ['--update-baseline', 'Freeze current findings to .docguard.baseline.json — adopt on a legacy repo without a red day one'],
@@ -523,6 +524,8 @@ async function main() {
       flags.changedOnly = true;
     } else if (args[i] === '--reverse') {
       flags.reverse = true;
+    } else if (args[i] === '--compact') {
+      flags.compact = true;
     } else if (args[i] === '--owners') {
       flags.owners = true;
     } else if (args[i] === '--suggest' && command === 'trace') {

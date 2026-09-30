@@ -854,12 +854,12 @@
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 621
+            "line": 622
           },
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 648
+            "line": 649
           },
           {
             "requirementId": "FR-021",
@@ -1343,6 +1343,71 @@
             "line": 20
           }
         ]
+      }
+    },
+    {
+      "specId": "docguard.compact-guard-response",
+      "path": "specs/037-compact-guard-response/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "approved",
+          "delivery": "implemented",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": "living"
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md"
+          ]
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.compact-guard-response#FR-001",
+          "docguard.compact-guard-response#FR-002",
+          "docguard.compact-guard-response#FR-003",
+          "docguard.compact-guard-response#FR-004",
+          "docguard.compact-guard-response#FR-005",
+          "docguard.compact-guard-response#FR-006",
+          "docguard.compact-guard-response#SC-001",
+          "docguard.compact-guard-response#SC-002",
+          "docguard.compact-guard-response#SC-003"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/037-compact-guard-response/spec.md",
+            "digest": "sha256:c5c3b8a67f3bdcfff971c2f028eb507090553463b632955ffab8aa08b6c47ea2"
+          },
+          {
+            "path": "specs/037-compact-guard-response/plan.md",
+            "digest": "sha256:9e8213d436d92f02500f2d1f867199d68a21eba920784edddf0a1e57dd57c221"
+          },
+          {
+            "path": "specs/037-compact-guard-response/tasks.md",
+            "digest": "sha256:e05451cc75674ed21cf7a8f9a64cabf68f4c84f8790d6b84a98ae2e2187fc37b"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 6,
+          "total": 6
+        },
+        "implementationEvidence": [],
+        "testEvidence": []
       }
     },
     {
@@ -2680,7 +2745,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/commands/guard.mjs",
-            "line": 4
+            "line": 5
           },
           {
             "requirementId": "FR-010",
@@ -6313,7 +6378,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/docguard.mjs",
-            "line": 941
+            "line": 944
           },
           {
             "requirementId": "FR-011",

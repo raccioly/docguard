@@ -23,6 +23,7 @@
  * Zero npm dependencies — node:readline over process.stdin.
  */
 
+import { compactGuardResult } from '../shared-guard-json.mjs';
 import { createInterface } from 'node:readline';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
@@ -73,10 +74,13 @@ const TOOLS = [
   {
     name: 'docguard_guard',
     title: 'Guard docs against code',
-    description: 'Run every enabled DocGuard validator against the project\'s canonical docs. Returns the full guard JSON contract: status (PASS/WARN/FAIL), structured findings with stable codes and suggestions, nextStep, doc coverage map, semantic-claim count, and per-validator results.',
+    description: 'Run every enabled DocGuard validator against the project\'s canonical docs. Returns status (PASS/WARN/FAIL), every finding once with its stable code and suggestion, each code\'s evidence once, nextStep, doc coverage, semantic-claim count, and per-validator status and counts. Pass detail "full" for the complete guard JSON contract (per-validator finding copies, the reportable subset, raw benchmark statistics per code).',
     inputSchema: {
       type: 'object',
-      properties: { ...PROJECT_DIR_PROP },
+      properties: {
+        ...PROJECT_DIR_PROP,
+        detail: { type: 'string', enum: ['compact', 'full'], default: 'compact', description: '"compact" (default): each fact once. "full": the complete guard JSON contract, as `docguard guard --format json` prints it.' },
+      },
     },
     annotations: READONLY_ANNOTATIONS,
   },
@@ -221,7 +225,11 @@ function resolveTarget(args, defaultDir) {
 const TOOL_HANDLERS = {
   docguard_guard(args, defaultDir) {
     const { dir, config } = resolveTarget(args, defaultDir);
-    return runGuardInternal(dir, config);
+    const detail = args?.detail ?? 'compact';
+    if (detail !== 'compact' && detail !== 'full') throw new Error('detail must be "compact" or "full"');
+    const result = runGuardInternal(dir, config);
+    // docguard.compact-guard-response#FR-003: agents get each fact once by default.
+    return detail === 'full' ? result : compactGuardResult(result);
   },
 
   docguard_score(args, defaultDir) {
