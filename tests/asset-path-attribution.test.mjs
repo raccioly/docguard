@@ -146,7 +146,6 @@ describe('this repository: spec 036 owns its frozen benchmark assets (FR-005, SC
   const REPO = resolve('.');
   const registry = JSON.parse(readFileSync(join(REPO, '.docguard-specs.json'), 'utf8'));
   const symbolMap = registry.specs.find(s => s.specId === 'docguard.symbol-map');
-  const budget = registry.specs.find(s => s.specId === 'docguard.agent-instruction-budget');
 
   it('lists the ledger-service fixture and the three ledger evaluators and references', () => {
     assert.deepEqual(symbolMap.reviewed.scope.assetPaths, [
@@ -160,12 +159,18 @@ describe('this repository: spec 036 owns its frozen benchmark assets (FR-005, SC
     ]);
   });
 
-  it('017\'s maintenance plan resolves every benchmark file; without the list it would not', { skip: !budget?.reviewed?.reconciliation?.lastReviewedRevision }, () => {
-    const since = budget.reviewed.reconciliation.lastReviewedRevision;
+  // A fixed revision, not a spec's recorded one: a completion moves the
+  // recorded revision past the assets, and a test tied to it stops testing
+  // anything. #485 added spec 036's frozen assets; reconciling from just
+  // before it covers every one of them.
+  const BEFORE_036 = '3f88bdf87cc9e8386d445f59dc9e8dc7c802ca00^';
+  const resolvable = spawnSync('git', ['rev-parse', '--verify', '-q', `${BEFORE_036}{commit}`], { cwd: REPO }).status === 0;
+
+  it('a plan spanning 036\'s frozen assets resolves every benchmark file; without the list it would not', { skip: !resolvable && 'history before #485 is not available (shallow clone)' }, () => {
     const unresolved = plan => plan.classifications
       .filter(item => item.disposition === 'unsupported_or_ambiguous' && item.path?.startsWith('benchmarks/agent-context/'))
       .map(item => item.path);
-    assert.deepEqual(unresolved(buildReconciliationPlan(REPO, {}, since)), []);
+    assert.deepEqual(unresolved(buildReconciliationPlan(REPO, {}, BEFORE_036)), []);
     // Reproduce the block on a copy whose registry lacks the list.
     const copy = mkdtempSync(join(tmpdir(), 'asset-paths-repo-'));
     temps.push(copy);
@@ -174,7 +179,8 @@ describe('this repository: spec 036 owns its frozen benchmark assets (FR-005, SC
     const stripped = JSON.parse(readFileSync(join(REPO, '.docguard-specs.json'), 'utf8'));
     delete stripped.specs.find(s => s.specId === 'docguard.symbol-map').reviewed.scope.assetPaths;
     writeFileSync(join(copy, '.docguard-specs.json'), `${JSON.stringify(stripped, null, 2)}\n`);
-    assert.ok(unresolved(buildReconciliationPlan(copy, {}, since)).length > 0, 'the block reproduces without the reviewed list');
+    const blocked = unresolved(buildReconciliationPlan(copy, {}, BEFORE_036));
+    assert.ok(blocked.some(path => path.startsWith('benchmarks/agent-context/fixtures/ledger-service/')), 'the block reproduces without the reviewed list');
   });
 });
 
