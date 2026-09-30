@@ -52,6 +52,7 @@ It targets development teams and AI coding agents that need to maintain document
 | **Managed Git hooks** | Installs bounded DocGuard blocks while preserving user-owned hook commands before and after them | `cli/commands/hooks.mjs` | Reinstall and removal use one outer marker pair, repair nested markers from affected releases, fail closed on enforcement errors, and fall through after success so user postludes execute. A hook owned by husky, lefthook or simple-git-hooks is never written, even under `--force`; the command prints the line to add to that manager |
 | **Readiness assessment** | Combines guard enforcement and optional CI score policy without changing structural score semantics | `cli/assessment.mjs`, `cli/commands/ci.mjs`, `cli/commands/diagnose.mjs`, `cli/commands/report.mjs` | READY requires a passing guard and configured gates; ATTENTION carries advisory warnings; BLOCKED identifies failed enforcement |
 | **Task-specific agent context** | Ranks exact task paths, qualified requirements, finding codes, identifiers, and bounded lexical overlap across current governed evidence | `cli/scanners/task-context.mjs`, `cli/commands/agent.mjs`, `schemas/docguard-task-context.schema.json` | Read-only and deterministic; excludes retired, unapproved, digest-stale, private, and unsafe material; abstains on weak relevance and never upgrades prose accuracy |
+| **Doc ownership map** | Resolves each tracked file to the one doc section responsible for it (exact path beats glob; longer literal prefix beats shorter), reports unowned code and ties, and lints a committed `.devin/wiki.json` | `cli/scanners/doc-ownership.mjs`, `cli/validators/doc-ownership.mjs`, `cli/commands/trace.mjs` | The map is declared by people in `.docguard.json`; `trace --owners --suggest` drafts one and never writes |
 | **Path-scoped agent rules** | Derives each agent instruction file's scope per harness (Codex, Claude Code, Cursor, Copilot, OpenHands) and checks it against the tracked files; `rules --for` resolves what an agent loads for a path | `cli/scanners/instruction-scopes.mjs`, `cli/scanners/frontmatter.mjs`, `cli/validators/path-scoped-rules.mjs`, `cli/commands/rules.mjs` | Tracked files only in guard; formats verified 2026-09-30 and recorded in `docs/ai-integration.md`; patterns DocGuard does not evaluate are reported as not checked |
 | **Cross-language import graph** | Resolves repository-local JS/TS and Python static imports for cycle and layer checks, once per run for every consumer | `cli/scanners/import-graph.mjs`, `cli/validators/architecture.mjs`, `cli/scanners/py-ast.mjs` | Python supports regular flat/`src/` packages and explicit relatives; dynamic imports, runtime path changes, parse failures, missing interpreters, and ambiguous modules remain explicit limitations |
 | **Code-derived diagrams** | Draws the `module-graph` (directory modules and their imports) and `entity-diagram` (schema entities) mermaid sections from code, so GST002 reports drift and `sync --write` redraws them; a graph missing evidence is `partial`, never stale | `cli/scanners/module-diagram.mjs`, `cli/scanners/memory-plan.mjs`, `cli/validators/generated-staleness.mjs` | Only for a doc that has the marker or is being created; node, edge and depth limits are captioned; hand-drawn diagrams are untouched |
@@ -770,6 +771,25 @@ file's only writer. Normative schema: `schemas/docguard-doc-lock.schema.json`.
 Keys are sorted at every level. A project with no `covers=` has no lock and no
 new findings.
 
+## Doc Ownership Map: `ownership`
+
+The `ownership` block in `.docguard.json` maps doc sections to the source
+paths they are responsible for (specs/034-doc-ownership-map). People write it;
+DocGuard only reads it.
+
+| Field | Type | Required | Meaning |
+|---|---|---|---|
+| `roots` | `string[]` | No | Directories whose source must be owned (default: top-level source modules) |
+| `entries[].doc` | `string` | Yes | Project-relative `.md` path |
+| `entries[].section` | `string` | No | A `docguard:section` id or heading anchor in `doc` |
+| `entries[].purpose` | `string` | No | What the section explains about these paths |
+| `entries[].paths` | `string[]` | Yes | Project-relative files, directories or globs |
+
+Each tracked file resolves to at most one owner: an exact path beats any glob,
+and a longer literal directory prefix beats a shorter one; two equal matches
+are a tie (OWN002). A malformed block is an error (OWN007), and every owner
+lookup reports that error until the block is fixed.
+
 ## Task Context Packet
 
 `docguard agent --task <text> --format json` emits a transient
@@ -948,26 +968,7 @@ These rows are counted and kept outside every ratio. Scoring one as a false posi
 
 `--fixture-manifest` verifies the reproduction and its control in separate temporary projects. `--reduce` removes fixture lines in deterministic order only while the declared predicate remains true. Duplicate identity hashes detector code, classification, parser tier, and normalized synthetic shape; preview returns all/open/closed GitHub searches and never submits. `--contribution tests/<name>.test.mjs` requires test-only, scope, and benchmark-delta evidence before writing a generated regression test. `--preview` skips every local write.
 
-## Precision benchmark contract
-
-`benchmarks/corpus.json` is a strict versioned manifest. Cases carry immutable ID, split, repository and causal groups, parser tier, classification, exact source revision or fixture digest, bounded config, scoped expected/forbidden identities, mutation preconditions, opposite control, and repair outcome. `benchmarks/baseline.json` is a strict envelope (`schemas/docguard-benchmark-baseline.schema.json`, envelope `schemaVersion` 2 around core `schemaVersion` 1) storing the reviewed deterministic core, grouped metrics, Wilson 95% confidence bounds, and separately identified environment/timing observations. Zero denominators remain `null`. The `review` block carries provenance: `status` (`candidate` from `--write-baseline`, `reviewed` only with `reviewedAt` and `reviewer`), `methodology`, `limitations`, `measures` (always `benchmark-precision` — never a calibrated probability), and `caveat`, the sentence a consumer must show beside any quoted ratio. `caveat` and `core.metrics` are derived from `core.cases`; `benchmarks/lib/baseline.mjs` recomputes both on load and rejects an envelope where either disagrees, an envelope with unknown fields, unsorted cases, or the pre-provenance `schemaVersion` 1 shape. Every run report also carries `provenance.{measures,caveat}` and `selection.{split,includeExternal,caseIds}`. Baseline comparison fails on case removal, new false positives, new false negatives, or new supported-case abstention even when aggregate warning count improves; baseline cases outside the run's selection (for example pinned public cases in a network-free run) are listed under `outOfSelection` and are not counted as removed.
-
-## Check coverage and document roles
-
-Guard's `coverage` object inventories Markdown documents by tier: `canonical`, `specKit` (Spec Kit feature artifacts under top-level `specs/` plus the constitution), `tracked`, `ignored`, and `unclassified[]` (paths under no tier). `specKit` is additive. Before it existed, Spec Kit artifacts were reported under `unclassified`.
-
-Each guard validator adds applicability with status and reason. checkCoverage contains counts by status, limitations naming checks that were not fully performed, and an explanatory limitation. These fields describe coverage independently from legacy status, totals, findings, and exit codes. CI/report consumers preserve them, including disabled-check counts.
-
-Document discovery does not depend on the default filenames alone. A filename is
-normalised to letters and digits — separators, case and Markdown extension are
-noise — and matched against an alias table per role, so `data_model.md`,
-`datamodel.md`, `Data Model.md` and `DATA-MODEL.md` all resolve to the same
-role, and `API.md` resolves to the API-Reference role. Directory detection is
-deliberately tight: a directory must hold at least two distinct roles before it
-counts as a canonical home, so a lone root-level `SECURITY.md` — GitHub's
-security policy, not a design document — never triggers a match on its own.
-
-<!-- truncated: 24 more lines — read docs-canonical/DATA-MODEL.md directly -->
+<!-- truncated: 43 more lines — read docs-canonical/DATA-MODEL.md directly -->
 
 ---
 
@@ -1622,6 +1623,27 @@ Behaviour changes:
 
 ### Added
 
+- **Doc ownership map** (`specs/034-doc-ownership-map`). A project can declare
+  which doc section is responsible for which source paths, in an `ownership`
+  block in `.docguard.json`:
+  - Each tracked file has at most one owner. An exact path beats any glob, a
+    longer literal directory prefix beats a shorter one, and anything else is
+    a tie.
+  - `trace --reverse`, `review --suggest` and the MCP tool
+    `docguard_docs_for_path` now report the declared owner.
+  - `trace --owners` lists the map; `trace --owners --suggest` drafts one and
+    never writes it.
+  - The **Doc-Ownership** validator reports unowned source directories (at
+    their highest level), ties, patterns and roots that match nothing, and
+    entries naming a missing doc or section (OWN001–OWN004). A broken block is
+    an error (OWN007), never a pass.
+  - A committed `.devin/wiki.json` is linted against Devin's documented rules
+    (checked 2026-09-30): 30 pages (80 on enterprise, via
+    `devinWiki.maxPages`), 100 notes counted together, 10,000 characters per
+    note, required keys, unique titles (OWN005). Paths its notes name that are
+    no longer in the repository are OWN006.
+  - This repository maps `cli/`, `extensions/`, `tools/`, `benchmarks/` and
+    `tests/`: every source file has exactly one owner, checked in 25 ms.
 - **Path-scoped agent rules** (`specs/033-path-scoped-rules`). Agents load
   instructions by path, and each harness does it differently. DocGuard now
   reads them the way each one does: Codex, Claude Code, Cursor, Copilot and
@@ -1965,29 +1987,8 @@ Behaviour changes:
   The amendment drops the counts in favour of the authoritative sources. It
   restates Spec Kit integration as delegation to `specify` that must report
   failure, and adds three principles the repository already practises:
-  local-first with no telemetry, honest assurance, and spec-first development.
-  The AGENTS.md hook table had the same drift (it listed three of the five
-  hooks) and is corrected.
 
-- **Canonical-Sync reads every phrasing of the command total.** Only
-  `ships N commands` was matched, so `Covers all 15 CLI commands` sat in the
-  README's Testing section beside a correct `ships 23 commands` for the same
-  92 releases. `covers all N`, `supports N`, `all N` and the `CLI` qualifier
-  now count, and CSY002 quotes the stale phrase it found instead of
-  paraphrasing it as "ships N".
-
-### Fixed
-
-- **Traceability reads `@doc` annotations in JSDoc blocks.** The pattern
-  required `//`, `/*` or `#` immediately before `@doc`, so the common form
-  (`/**\n * @doc API-REFERENCE.md\n */`) linked nothing. It now shares one
-  reader with the MCP doc tools, which also ignores `@doc` inside string
-  literals (`specs/032-mcp-doc-tools`).
-
-- **`sync --since` narrows the sections it says it narrows**
-  (`specs/029-sync-section-scope`). The matcher table was keyed
-
-<!-- truncated: 4165 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 4186 more lines — read CHANGELOG.md directly -->
 
 ---
 

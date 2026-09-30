@@ -236,6 +236,42 @@ review in `.docguard-doc-lock.json` (commit it). Set
 `"validators": { "docDependency": false }` to turn the check off. See
 [`docguard review`](commands.md#docguard-review).
 
+## Doc ownership — `ownership`
+
+Declares which doc section is responsible for which source paths. `trace
+--reverse`, `review --suggest` and the MCP tool `docguard_docs_for_path` report
+the owner, and the Doc-Ownership validator (OWN001–OWN007) keeps the map true.
+
+```json
+{
+  "ownership": {
+    "roots": ["src"],
+    "entries": [
+      { "doc": "docs-canonical/ARCHITECTURE.md", "section": "component-map",
+        "purpose": "What each module is responsible for", "paths": ["src/**"] },
+      { "doc": "docs-canonical/DATA-MODEL.md", "section": "entities",
+        "purpose": "The schema", "paths": ["src/db/schema.ts"] }
+    ]
+  }
+}
+```
+
+- `entries[].paths`: files, directories or globs. Each file has at most one
+  owner: an exact path beats any glob, a longer literal directory prefix beats
+  a shorter one, and any other overlap is a tie (OWN002).
+- `entries[].section`: a `docguard:section` id or a heading anchor in `doc`.
+- `roots`: directories whose source code must be owned (OWN001). By default,
+  the top-level source modules, skipping test, fixture and example paths. A
+  declared root is checked as declared.
+
+DocGuard never writes this block; `docguard trace --owners --suggest` prints a
+draft. Without it (and without `.devin/wiki.json`) the validator is not
+applicable.
+
+A committed `.devin/wiki.json` is linted against Devin's documented rules
+(checked 2026-09-30): at most 30 pages, 100 notes and 10,000 characters per
+note. Set `"devinWiki": { "maxPages": 80 }` on an enterprise plan.
+
 ## Code-derived diagrams — `diagrams.moduleGraph`
 
 Shapes the `module-graph` section (see

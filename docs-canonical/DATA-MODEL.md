@@ -202,6 +202,25 @@ file's only writer. Normative schema: `schemas/docguard-doc-lock.schema.json`.
 Keys are sorted at every level. A project with no `covers=` has no lock and no
 new findings.
 
+## Doc Ownership Map: `ownership`
+
+The `ownership` block in `.docguard.json` maps doc sections to the source
+paths they are responsible for (specs/034-doc-ownership-map). People write it;
+DocGuard only reads it.
+
+| Field | Type | Required | Meaning |
+|---|---|---|---|
+| `roots` | `string[]` | No | Directories whose source must be owned (default: top-level source modules) |
+| `entries[].doc` | `string` | Yes | Project-relative `.md` path |
+| `entries[].section` | `string` | No | A `docguard:section` id or heading anchor in `doc` |
+| `entries[].purpose` | `string` | No | What the section explains about these paths |
+| `entries[].paths` | `string[]` | Yes | Project-relative files, directories or globs |
+
+Each tracked file resolves to at most one owner: an exact path beats any glob,
+and a longer literal directory prefix beats a shorter one; two equal matches
+are a tie (OWN002). A malformed block is an error (OWN007), and every owner
+lookup reports that error until the block is fixed.
+
 ## Task Context Packet
 
 `docguard agent --task <text> --format json` emits a transient

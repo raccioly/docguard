@@ -88,6 +88,8 @@ describe('trace --reverse', () => {
     assert.ok(timestamp);
     assert.deepEqual(rest, {
       target: 'src/routes/users.ts',
+      // docguard.doc-ownership-map#FR-004: the declared owner, null without a map.
+      owner: null,
       matches: [
         { doc: 'docs-canonical/ARCHITECTURE.md', line: 2, content: 'Path: src/routes/users.ts.', kind: 'path' },
         { doc: 'docs-canonical/ARCHITECTURE.md', line: 3, content: 'Base: users.ts.', kind: 'basename' },

@@ -58,14 +58,13 @@ cli/commands/trace.mjs                  # --owners, --owners --suggest; owner li
 cli/docguard.mjs                        # --owners, --suggest flags and help
 cli/config.mjs                          # ownership defaults; validators.docOwnership
 schemas/docguard-config.schema.json     # ownership block
-cli/shared-git.mjs                      # listTrackedFiles, if not already added
-cli/commands/mcp.mjs                    # owner in docguard_docs_for_path (after 031)
+cli/scanners/doc-references.mjs         # owner in docguard_docs_for_path (the MCP tool's data)
+tests/trace-reverse.test.mjs            # the pinned JSON shape gains `owner`
 cli/commands/review.mjs                 # covers candidates in --suggest (after 029)
 .docguard.json                          # adopt for cli/, extensions/, tools/, benchmarks/, tests/ (FR-008)
 README.md, docs/configuration.md, docs/commands.md
 docs-canonical/ARCHITECTURE.md, docs-canonical/DATA-MODEL.md
-tests/doc-ownership.test.mjs            # NEW
-tests/fixtures/doc-ownership/           # NEW
+tests/doc-ownership.test.mjs            # NEW: builds each fixture in a temp git repo
 testguard.claims.json                   # DOC-OWNERSHIP-ONE-OWNER-PER-PATH
 ```
 

@@ -78,7 +78,7 @@ graph TD
     Commands --> setup["setup wizard"]
     Commands --> other["diff · init · fix · trace · impact · sync · reconcile · retire · specs<br/>explain · memory · upgrade · agents · hooks · badge · ci · watch"]
 
-    guard --> Validators["Validators (31)"]
+    guard --> Validators["Validators (32)"]
     generate --> Scanners["Scanners (4)<br/>routes · schemas · doc-tools · speckit"]
     score --> Scoring["Weighted Scoring<br/>8 categories"]
     diagnose --> Validators
@@ -289,7 +289,7 @@ DocGuard ships **25 commands** (the "Daily 5" + 20 situational tools, including 
 | Command | What It Does |
 |:--------|:-------------|
 | `init`  | Bootstrap a project (`--wizard` for interactive · `--with <name>` for scaffolders) |
-| `guard` | Validate against canonical docs — 31 validators |
+| `guard` | Validate against canonical docs — 32 validators |
 | `diff`  | Show gaps between docs and code (`--since <ref>` for impact mode) |
 | `sync`  | Refresh code-truth doc sections, including the `module-graph` and `entity-diagram` mermaid diagrams drawn from code — keeps memory always up to date |
 | `score` | Structural CDD maturity score (0-100; not a guard verdict; `--diff` for delta between refs) |
@@ -427,7 +427,7 @@ $ npx docguard-cli generate
 
 ## 🔍 Validators
 
-DocGuard runs **31 automated validators** on every `guard` check. Source-facing validators are language-aware where their evidence model applies; repository and document validators operate independently of source language.
+DocGuard runs **32 automated validators** on every `guard` check. Source-facing validators are language-aware where their evidence model applies; repository and document validators operate independently of source language.
 
 > **Counting note:** `guard` prints 30 result rows, not 29. `Structure` emits a
 > second check result (`Doc Sections`) under the same validator key, so rows are
@@ -469,6 +469,7 @@ DocGuard runs **31 automated validators** on every `guard` check. Source-facing 
 | 30 | **API-Doc-Smells** | Bloated (≥300 words) / Lazy (≤6 prose words) API documentation units, keyed on signature-headed sections (F1 0.90/0.95) | ✅ On |
 | 31 | **Doc-Dependency** | A doc section that declares `covers=` is reported when a covered symbol's code changes semantically since its last `docguard review --accept` (formatting, comments and line moves do not count); opt-in by declaration | ✅ On |
 | 32 | **Path-Scoped-Rules** | Agent instruction files per harness (nested AGENTS.md/CLAUDE.md, Claude Code rules and skills, Cursor `.mdc`, Copilot `.instructions.md`, OpenHands skills): scope globs that match no tracked file, pointers to missing paths (including routing tables), instructions loaded for one path over the byte budget, and scopes a harness cannot read | ✅ On |
+| 33 | **Doc-Ownership** | With an `ownership` map in `.docguard.json`: source directories no doc section owns, two equally specific owners, patterns that match nothing, entries naming missing docs; also lints a committed `.devin/wiki.json` against Devin's limits and for paths that are gone | ✅ On |
 
 **Per-validator controls** (in `.docguard.json`):
 ```json
@@ -613,7 +614,7 @@ DocGuard provides AI agent slash commands for integrated workflows. Installed au
 | Command | What It Does |
 |:--------|:-------------|
 | `/docguard.init` | Initialize Canonical-Driven Development in a new or existing project |
-| `/docguard.guard` | Run quality validation — check all 31 validators |
+| `/docguard.guard` | Run quality validation — check all 32 validators |
 | `/docguard.review` | Analyze doc quality and suggest improvements |
 | `/docguard.fix` | Generate targeted fix prompts for specific issues |
 | `/docguard.update` | Update canonical docs after code changes — detect drift and sync documentation |

@@ -292,6 +292,34 @@ only:
   written (for example `globs:` in a Claude Code rule, which reads only
   `paths:`).
 
+### `docguard trace`
+
+**Which docs describe which code.** Without flags, a requirements traceability
+matrix from each canonical doc to the source files it usually covers.
+
+```bash
+npx docguard-cli trace                         # doc → code matrix
+npx docguard-cli trace --reverse src/api/x.ts  # code → doc: the declared owner, then text mentions
+npx docguard-cli trace --features              # per-feature Spec Kit adherence
+npx docguard-cli trace --owners                # the ownership map: files per entry, unowned code, ties
+npx docguard-cli trace --owners --suggest      # a draft ownership block; never writes
+```
+
+`--owners` reads the `ownership` block in `.docguard.json`
+([configuration](configuration.md#doc-ownership--ownership)). `--suggest` builds
+a draft from the top-level source modules, their `@doc` annotations and the
+built-in doc patterns, and leaves every `purpose` as a placeholder for a person.
+With a map, `trace --reverse` prints the owner first, labelled `declared`.
+
+Guard's **Doc-Ownership** validator reports:
+- **OWN001**: an unowned source directory;
+- **OWN002**: two equally specific owners;
+- **OWN003**: a pattern or root that matches nothing;
+- **OWN004**: an entry naming a missing doc or section;
+- **OWN005 / OWN006**: a committed `.devin/wiki.json` over Devin's limits, or
+  naming a path that is gone;
+- **OWN007**: an unreadable map or wiki file.
+
 ### `docguard retire`
 
 **Remove reviewed stale documents from active AI context while preserving exact
