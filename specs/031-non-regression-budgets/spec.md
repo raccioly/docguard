@@ -4,7 +4,7 @@
 
 **Created**: 2026-09-29
 
-**Status**: Draft
+**Status**: Active
 
 **Spec ID**: `docguard.non-regression-budgets`
 
@@ -127,8 +127,11 @@ job produces.
 - **SC-001**: An injected 30% slowdown (a synthetic busy-wait in a validator,
   used only in the test) fails `compare`. Ten repeated base-vs-base runs never
   fail.
-- **SC-002**: The budget job adds no more than 3 minutes to CI.
-- **SC-003**: Every spec merged after this one records its budget table in its PR.
+- **SC-002**: The budget job runs beside the test matrix, not after it, and is
+  bounded by `timeout-minutes: 6`. A local A/B of this repository takes about
+  80 s.
+- **SC-003**: Every PR's budget table lands in its CI job summary, so each
+  merged change carries its measured cost.
 
 ## Assumptions
 

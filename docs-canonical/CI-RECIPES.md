@@ -182,6 +182,20 @@ A chain may shrink under its allowance, and one byte of growth past it fails aga
 `STR005` asks you to lower an allowance once the chain has shrunk by 1 KiB or more, so every
 increase stays a reviewed diff.
 
+## Recipe 3e — Non-regression budgets
+
+The `budget` job in `ci.yml` checks the PR's base commit out beside the head
+and runs `node tools/budget.mjs ab`. Guard runs interleaved over the same
+targets for both CLIs, so the time comparison measures the code, not the
+runner. Each tree also reports its own agent-facing output sizes (context pack,
+task packets, MCP responses, llms bundles), its packed package weight, its
+runtime dependencies and its self-guard findings. `budgets.json` holds the
+ratios and floors. A breach fails the job unless the PR body declares
+`Budget-Exempt: <metric> — <reason>`; the full table goes to the job summary.
+An unmeasurable base is inconclusive, never a pass. To reproduce the table
+locally, run `git worktree add ../base origin/main` and then
+`npm run budget -- --base ../base` (`specs/031-non-regression-budgets`).
+
 ## Recipe 4 — Score (track CDD maturity over time)
 
 `score --format json` reports structural maturity. Its numeric threshold is stable, while `assurance` explicitly states that factual accuracy remains unverified. Comparing scores is meaningful only with the same tool/configuration and a comparable coverage scope.

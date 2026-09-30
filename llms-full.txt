@@ -44,6 +44,7 @@ It targets development teams and AI coding agents that need to maintain document
 | **Headline coverage** | Reports how many validators actually checked beside the passed/total check count, and caps the badge colour at `green` when any active validator was partial, unsupported, missing a prerequisite, or errored | `cli/commands/guard.mjs` (`badgeColor`, `incompleteCoverage`) | `no-matches` keeps the top grade: a validator that ran and found nothing applicable completed its job |
 | **Finding channels** | Separates the three questions a finding answers — does CI block (`severity`), who decides (`disposition`), how well is the code measured (`evidence`), and which analyzer produced it (`parserTier`) — so a certain observation is never labelled uncertain and the feedback loop samples the labels that have never been validated | `cli/findings.mjs`, `cli/precision-evidence.mjs`, `cli/writers/sarif.mjs` | Channels are additive to the published finding contract; `confidence` keeps its meaning as the detector's certainty in its own observation |
 | **Precision evidence** | Runs labelled synthetic and exact-commit public cases, separates deterministic results from observations, calculates null-safe quality metrics and confidence bounds, compares case-first baselines, persists them in a provenance envelope whose measure (`benchmark-precision`) and caveat are derived from the cases and re-verified on load, and projects per-code evidence into a generated module the CLI quotes at finding time | `benchmarks/`, `cli/precision-evidence.mjs`, `schemas/docguard-benchmark.schema.json`, `schemas/docguard-benchmark-baseline.schema.json`, `schemas/docguard-precision-evidence.schema.json` | External runs are explicit; third-party project code is never executed and disposable checkouts are removed by default |
+| **Non-regression budgets** | Compares a PR with its base on one runner: interleaved guard wall time, self-guard error findings, agent-facing output bytes, packed package weight and runtime dependencies, against the ratios and floors in `budgets.json`; `Budget-Exempt` waives one metric with a reason | `tools/budget.mjs`, `budgets.json` | CI `budget` job; development tooling, not shipped in the npm package |
 | **Feedback fixtures** | Validates synthetic reproductions and opposite controls, reduces them under an explicit predicate, derives duplicate identities, and emits test-only contributions | `cli/feedback-fixture.mjs`, `cli/commands/feedback.mjs`, `schemas/docguard-feedback-fixture.schema.json` | Publication remains user-controlled; contribution generation requires reviewed redaction, scope, and benchmark-delta evidence |
 | **Evidence-scoped verification** | Binds one exact Markdown statement to a typed JSON Pointer value, bounded file collection, static Python container literal, or saved upstream compatibility report and returns one of five explicit states | `cli/evidence/`, `cli/validators/evidence.mjs`, `cli/commands/verify.mjs`, `schemas/docguard-evidence.schema.json` | Reads stay local, bounded, non-executable, and symlink/private-path safe; direct verification exits 1 for contradiction/invalid input, 2 for unresolved evidence, and 0 only for verified or unconfigured evidence |
 | **Managed Git hooks** | Installs bounded DocGuard blocks while preserving user-owned hook commands before and after them | `cli/commands/hooks.mjs` | Reinstall and removal use one outer marker pair, repair nested markers from affected releases, fail closed on enforcement errors, and fall through after success so user postludes execute. A hook owned by husky, lefthook or simple-git-hooks is never written, even under `--force`; the command prints the line to add to that manager |
@@ -436,6 +437,20 @@ for everyone. The key is the chain's deepest file:
 A chain may shrink under its allowance, and one byte of growth past it fails again.
 `STR005` asks you to lower an allowance once the chain has shrunk by 1 KiB or more, so every
 increase stays a reviewed diff.
+
+## Recipe 3e — Non-regression budgets
+
+The `budget` job in `ci.yml` checks the PR's base commit out beside the head
+and runs `node tools/budget.mjs ab`. Guard runs interleaved over the same
+targets for both CLIs, so the time comparison measures the code, not the
+runner. Each tree also reports its own agent-facing output sizes (context pack,
+task packets, MCP responses, llms bundles), its packed package weight, its
+runtime dependencies and its self-guard findings. `budgets.json` holds the
+ratios and floors. A breach fails the job unless the PR body declares
+`Budget-Exempt: <metric> — <reason>`; the full table goes to the job summary.
+An unmeasurable base is inconclusive, never a pass. To reproduce the table
+locally, run `git worktree add ../base origin/main` and then
+`npm run budget -- --base ../base` (`specs/031-non-regression-budgets`).
 
 ## Recipe 4 — Score (track CDD maturity over time)
 
@@ -1555,6 +1570,19 @@ Behaviour changes:
 
 ### Added
 
+- **Non-regression budgets** (`specs/031-non-regression-budgets`). A new CI
+  `budget` job compares every PR with its base on the same runner. It checks:
+  - guard wall time (medians of interleaved samples; ×1.15, 150 ms floor);
+  - new error findings on this repository;
+  - agent-facing bytes: context pack, task packets, MCP responses and llms
+    bundles (+10%);
+  - packed package weight;
+  - runtime dependencies.
+
+  A cost the change needs is declared as `Budget-Exempt: <metric> — <reason>`.
+  `npm run budget -- --base <dir>` prints the same table locally. The first
+  measurement shows the `docguard_guard` MCP response at about 130 KB per call.
+
 - **Completion revisions survive squash merges** (`specs/028-completion-revision-anchoring`).
   - `specs complete` records the revision it reviewed. A completion committed
     on a PR branch recorded that branch's commit, which a squash merge never
@@ -1909,21 +1937,8 @@ Behaviour changes:
     mid-merge counted that file's evidence up to three times. This was found
     while syncing this very branch with `main`.
 
-- **Four open field reports closed out (#438, #437, #436, #454;
-  `specs/020-field-report-followups`).**
-  - **#454.** In a husky, lefthook or simple-git-hooks repository, `docguard
-    hooks` found the manager's dispatcher and advised "re-run with --force".
-    Following that advice replaced the dispatcher and disabled every hook the
-    manager runs. DocGuard now detects the manager. It never writes into the
-    manager's hooks directory, even with `--force`, and prints the exact line
-    to add and where it goes (for example `.husky/pre-commit: npx docguard-cli
-    guard --changed-only`).
-  - **#438.** The claims-unverified badge disappeared whenever the count was
-    unknown, which is always under `--changed-only`, leaving the pass badge
-    alone. It now reads `claims_unverified-unknown`. The two honesty lines
-    ("…do not establish factual accuracy", "…configured gates passed…") and
 
-<!-- truncated: 4057 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 4070 more lines — read CHANGELOG.md directly -->
 
 ---
 
@@ -2415,6 +2430,13 @@ extensions/spec-kit-docguard/
   `Spec-Exempt: <release|deps|typo|test-only> — <reason>`. CI enforces this with
   `docguard specs require --since origin/main --message-file <body>`. When the area
   being changed has no spec, write an as-built spec scoped to that area first.
+- **Changes must not make DocGuard slower, noisier or heavier by accident.** The
+  CI `budget` job compares the PR with its base on one runner: guard wall time
+  (×1.15, 150 ms floor), new error findings on this repository, agent-facing
+  bytes (context pack, task packets, MCP responses, llms bundles; +10%), package
+  weight and runtime dependencies. A cost the change needs is declared in the PR
+  body as `Budget-Exempt: <metric> — <reason>`. Reproduce locally with
+  `npm run budget -- --base <base-worktree>` (specs/031-non-regression-budgets).
 - **PR-first workflow — no direct-to-main commits.** Create a branch (`git checkout -b <type>/<slug>`), push, `gh pr create`, let CI run, self-review, squash-merge. Tag releases only after merge on `main`. The only acceptable direct-to-main: typo fixes in comments or README badge URLs.
 - Never commit without updating CHANGELOG.md
 - If code deviates from docs, add `// DRIFT: reason`

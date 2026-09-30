@@ -31,6 +31,19 @@ Behaviour changes:
 
 ### Added
 
+- **Non-regression budgets** (`specs/031-non-regression-budgets`). A new CI
+  `budget` job compares every PR with its base on the same runner. It checks:
+  - guard wall time (medians of interleaved samples; ×1.15, 150 ms floor);
+  - new error findings on this repository;
+  - agent-facing bytes: context pack, task packets, MCP responses and llms
+    bundles (+10%);
+  - packed package weight;
+  - runtime dependencies.
+
+  A cost the change needs is declared as `Budget-Exempt: <metric> — <reason>`.
+  `npm run budget -- --base <dir>` prints the same table locally. The first
+  measurement shows the `docguard_guard` MCP response at about 130 KB per call.
+
 - **Completion revisions survive squash merges** (`specs/028-completion-revision-anchoring`).
   - `specs complete` records the revision it reviewed. A completion committed
     on a PR branch recorded that branch's commit, which a squash merge never
