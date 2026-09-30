@@ -762,11 +762,11 @@
           },
           {
             "path": "specs/039-asset-path-attribution/tasks.md",
-            "digest": "sha256:7bf4aee25cb37e5f725bd60518430813fc61956845dfd48efdea437f15391775"
+            "digest": "sha256:4c971e9a4f366e455a58ae7de1f66247886fed48d24d8ac19d4ab6919cca9688"
           }
         ],
         "taskCompletion": {
-          "checked": 0,
+          "checked": 8,
           "total": 8
         },
         "implementationEvidence": [
@@ -791,7 +791,48 @@
             "line": 13
           }
         ],
-        "testEvidence": []
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/asset-path-attribution.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/asset-path-attribution.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/asset-path-attribution.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/asset-path-attribution.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/asset-path-attribution.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/asset-path-attribution.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/asset-path-attribution.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/asset-path-attribution.test.mjs",
+            "line": 13
+          }
+        ]
       }
     },
     {

@@ -1,5 +1,6 @@
 # Tasks: Reviewed Asset Paths for Spec Reconciliation
 
+**Status**: Complete. SC-001: with spec 036's seven asset paths, 017's maintenance plan resolves every benchmark file, and without them the block reproduces; SC-002 and SC-003 hold. Claim ASSET-PATHS-ATTRIBUTE-EXACTLY: 7/7 faults killed.
 **Spec**: `specs/039-asset-path-attribution/spec.md`
 **Plan**: `specs/039-asset-path-attribution/plan.md`
 
@@ -28,4 +29,4 @@
 ## Phase 3: Docs and verification
 
 - [x] T007 `docs-canonical/DATA-MODEL.md`, `docs/commands.md`, `CHANGELOG.md` (FR-006).
-- [ ] T008 `testguard.claims.json`: claim ASSET-PATHS-ATTRIBUTE-EXACTLY, probed `--confirm 3`; gate; `npm test`; `npm run llms`; `docguard specs --write`; `docguard guard`; budgets.
+- [x] T008 `testguard.claims.json`: claim ASSET-PATHS-ATTRIBUTE-EXACTLY, probed `--confirm 3`; gate; `npm test`; `npm run llms`; `docguard specs --write`; `docguard guard`; budgets.
