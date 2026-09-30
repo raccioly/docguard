@@ -1383,6 +1383,30 @@
             "producer": "agent",
             "by": "claude-opus-5.5 (#455 spec 028)"
           }
+        },
+        {
+          "id": "F7",
+          "description": "Stripping the outcome block leaves it in place, so an outcome-only change blocks the batch.",
+          "faultClass": "return-altered",
+          "file": "cli/writers/spec-outcomes.mjs",
+          "find": "  return String(content).replace(BLOCK_RE, '\\n').trimEnd();",
+          "replace": "  return String(content).trimEnd();",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 028)"
+          }
+        },
+        {
+          "id": "F8",
+          "description": "Re-anchoring does not move the outcome line in the spec.",
+          "faultClass": "return-altered",
+          "file": "cli/writers/spec-outcomes.mjs",
+          "find": "  return content.slice(0, start) + next + content.slice(end);",
+          "replace": "  return content;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 028)"
+          }
         }
       ]
     }
