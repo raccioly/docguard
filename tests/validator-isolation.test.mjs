@@ -13,7 +13,10 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const DIR = resolve('cli/validators');
-const IMPORT_RE = /\bfrom\s+['"](\.\/[^'"]+)['"]|\bimport\s*\(\s*['"](\.\/[^'"]+)['"]\s*\)/g;
+// `from './x.mjs'` (static and re-export), `import('./x.mjs')`, and the bare
+// side-effect form `import './x.mjs'`, which the first two miss.
+const IMPORT_RE = /\bfrom\s+['"](\.\/[^'"]+)['"]|\bimport\s*\(\s*['"](\.\/[^'"]+)['"]\s*\)|\bimport\s+['"](\.\/[^'"]+)['"]/g;
+const targets = source => [...source.matchAll(IMPORT_RE)].map(m => (m[1] || m[2] || m[3]).replace(/^\.\//, ''));
 
 describe('validator isolation (Constitution IV)', () => {
   it('no module in cli/validators/ imports a sibling module', () => {
@@ -21,11 +24,21 @@ describe('validator isolation (Constitution IV)', () => {
     const offenders = [];
     for (const file of siblings) {
       const source = readFileSync(resolve(DIR, file), 'utf8');
-      for (const m of source.matchAll(IMPORT_RE)) {
-        const target = (m[1] || m[2]).replace(/^\.\//, '');
+      for (const target of targets(source)) {
         if (siblings.has(target)) offenders.push(`${file} → ${target}`);
       }
     }
     assert.deepEqual(offenders, []);
+  });
+
+  it('recognizes every relative import form, including a bare side-effect import', () => {
+    const source = [
+      "import { a } from './a.mjs';",
+      "export { b } from './b.mjs';",
+      "const c = await import('./c.mjs');",
+      "import './d.mjs';",
+      "import e from '../shared.mjs';",
+    ].join('\n');
+    assert.deepEqual(targets(source), ['a.mjs', 'b.mjs', 'c.mjs', 'd.mjs']);
   });
 });

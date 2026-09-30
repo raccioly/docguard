@@ -270,6 +270,13 @@ Behaviour changes:
 
 ### Fixed
 
+- **The validator-isolation test catches a bare side-effect import**
+  (`import './other.mjs'`). Its pattern matched only `from '...'` and dynamic
+  `import('...')`, so one validator could load another unnoticed
+  (Constitution IV). Six new TestGuard claims cover finding channels, feedback
+  sampling, adjudication, API-contract omissions, field-warning precision and
+  validator isolation; each of their 22 faults is caught.
+
 - **`reconcile` traces a change that cites a canonical requirement**
   (`specs/027-canonical-requirement-links`). A test annotated
   `@req docs-canonical/REQUIREMENTS.md#FR-024` cites approved intent as exactly

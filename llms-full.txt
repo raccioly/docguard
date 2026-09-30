@@ -1781,6 +1781,13 @@ Behaviour changes:
 
 ### Fixed
 
+- **The validator-isolation test catches a bare side-effect import**
+  (`import './other.mjs'`). Its pattern matched only `from '...'` and dynamic
+  `import('...')`, so one validator could load another unnoticed
+  (Constitution IV). Six new TestGuard claims cover finding channels, feedback
+  sampling, adjudication, API-contract omissions, field-warning precision and
+  validator isolation; each of their 22 faults is caught.
+
 - **`reconcile` traces a change that cites a canonical requirement**
   (`specs/027-canonical-requirement-links`). A test annotated
   `@req docs-canonical/REQUIREMENTS.md#FR-024` cites approved intent as exactly
@@ -1902,15 +1909,8 @@ Behaviour changes:
   - `// TODO(ana): fix retries` used to be reported as `ana): fix retries`; the
     author is now stripped.
   - Bare `// TODO fix retries` and `// FIXME fix retries` were not recognised
-    at all; now they are.
-  - HACK, XXX, TEMP and WORKAROUND are ordinary words in comments ("TEMP
-    directory", "no HACK needed"), so they still need a `:`, a spaced `-`, or an
-    author.
 
-  This supersedes #453 (Jules). That PR made every keyword match a bare word;
-  its tests are kept, with precision negatives added. The precision benchmark
-
-<!-- truncated: 4024 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 4031 more lines — read CHANGELOG.md directly -->
 
 ---
 

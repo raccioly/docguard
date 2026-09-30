@@ -1031,7 +1031,7 @@
         "artifacts": [
           {
             "path": "specs/027-canonical-requirement-links/spec.md",
-            "digest": "sha256:4eccaa48a295f7344c19b9367243618e4f649d61568b41761ef1b4b20bbe607b"
+            "digest": "sha256:cb453e53bb55856ad9b17e118037d8d6dbfd26b87ebf4006c0c79c2adae354fb"
           },
           {
             "path": "specs/027-canonical-requirement-links/plan.md",
@@ -1039,7 +1039,7 @@
           },
           {
             "path": "specs/027-canonical-requirement-links/tasks.md",
-            "digest": "sha256:b23d7d1d272c21a333c0ddad1b1aeb299b9e82cfa59207801a449628810d43ea"
+            "digest": "sha256:e309ea2858ba540f260d96c63fd9ba439a00a59009708f20da1f15c19cb5236c"
           }
         ],
         "taskCompletion": {
@@ -1073,6 +1073,11 @@
             "requirementId": "SC-001",
             "file": "tests/canonical-requirement-links.test.mjs",
             "line": 9
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/canonical-requirement-links.test.mjs",
+            "line": 10
           }
         ]
       }

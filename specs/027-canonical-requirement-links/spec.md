@@ -65,5 +65,6 @@ accepts path-qualified canonical IDs; reconciliation did not.
 
 - **SC-001**: The fixture test annotated with a declared canonical requirement
   is approved intent. The tests fail against the previous reconciler.
-- **SC-002**: `specs complete` for specs 014–025 no longer lists
-  `tests/hook-fail-open.test.mjs` as unresolved.
+- **SC-002**: A test whose annotation moves from one declared canonical ID to
+  another is not unresolved. This is the `tests/hook-fail-open.test.mjs`
+  renumbering that blocked `specs complete` for specs 014–025.

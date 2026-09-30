@@ -7,6 +7,7 @@
  * @req docguard.canonical-requirement-links#FR-001
  * @req docguard.canonical-requirement-links#FR-002
  * @req docguard.canonical-requirement-links#SC-001
+ * @req docguard.canonical-requirement-links#SC-002
  */
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
@@ -55,6 +56,19 @@ describe('reconcile links a change to a declared canonical requirement', () => {
     write('tests/hook.test.js', '// @req docs-canonical/REQUIREMENTS.md#FR-024\ntest("hook", () => {});\n');
     commit('intent and test');
     assert.equal(find(buildReconciliationPlan(dir, {}, base), 'tests/hook.test.js').disposition, 'intentional_behavior_change_review');
+  });
+
+  it('a citation renumbered from one declared ID to another is not unresolved (SC-002)', t => {
+    const { dir, write, commit } = fixture(t);
+    write('docs-canonical/REQUIREMENTS.md', `${REQS}| FR-018 | P1 | Findings carry three channels. |\n`);
+    write('tests/hook.test.js', '// @req docs-canonical/REQUIREMENTS.md#FR-018\ntest("hook", () => {});\n');
+    commit('old citation');
+    const before = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: dir, encoding: 'utf8' }).trim();
+    write('tests/hook.test.js', '// @req docs-canonical/REQUIREMENTS.md#FR-024\ntest("hook", () => {});\n');
+    commit('renumbered citation');
+    const item = find(buildReconciliationPlan(dir, {}, before), 'tests/hook.test.js');
+    assert.notEqual(item.disposition, 'unsupported_or_ambiguous');
+    assert.deepEqual(item.canonical, ['docs-canonical/REQUIREMENTS.md#FR-018', 'docs-canonical/REQUIREMENTS.md#FR-024']);
   });
 
   it('an undeclared ID, a missing document, or a path escape stays unsupported (FR-002)', t => {

@@ -335,7 +335,8 @@
         "by": "claude-opus-5.5 (#455)"
       },
       "defendedBy": [
-        "tests/agent-instruction-budget.test.mjs"
+        "tests/agent-instruction-budget.test.mjs",
+        "tests/structure.test.mjs"
       ],
       "faults": [
         {
@@ -916,6 +917,378 @@
           "file": "cli/scanners/reconciliation.mjs",
           "find": "      const docChanged = canonical.some(ref => changedPaths.has(ref.split('#')[0]));",
           "replace": "      const docChanged = false;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 release prep)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "FINDING-CHANNELS-INDEPENDENT",
+      "statement": "Every finding carries severity, disposition, confidence, evidence and parserTier as independent channels: an explicit valid disposition wins, only the exact string 'low' means low confidence, parserTier accepts only the benchmark vocabulary, and evidence reports measured only for codes the reviewed corpus measures.",
+      "source": {
+        "kind": "spec",
+        "ref": "docs-canonical/REQUIREMENTS.md#FR-016"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (#455 release prep)"
+      },
+      "defendedBy": [
+        "tests/findings-channels.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "Explicit disposition ignored: disposition is always derived from the suggestion kind, so disposition 'act' on a finding without a fix suggestion becomes 'escalate'.",
+          "faultClass": "condition-forced",
+          "file": "cli/findings.mjs",
+          "find": "  const disposition = DISPOSITIONS.includes(f.disposition)\n",
+          "replace": "  const disposition = false\n",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 release prep)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "Confidence coercion inverted: anything other than the exact string 'high' (null, 'medium', 'review') becomes 'low', labelling certain observations uncertain.",
+          "faultClass": "literal-changed",
+          "file": "cli/findings.mjs",
+          "find": "  const confidence = f.confidence === 'low' ? 'low' : 'high';",
+          "replace": "  const confidence = f.confidence === 'high' ? 'high' : 'low';",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 release prep)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "parserTier vocabulary check removed: any value (including undefined, 'ast', 7) passes through instead of defaulting to 'not-applicable'.",
+          "faultClass": "condition-forced",
+          "file": "cli/findings.mjs",
+          "find": "    parserTier: PARSER_TIERS.includes(f.parserTier) ? f.parserTier : 'not-applicable',",
+          "replace": "    parserTier: true ? f.parserTier : 'not-applicable',",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 release prep)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "isMeasured always true: a never-benchmarked code claims measured status.",
+          "faultClass": "return-altered",
+          "file": "cli/precision-evidence.mjs",
+          "find": "  return evidenceForCode(code).status === 'measured';",
+          "replace": "  return true;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 release prep)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "FEEDBACK-SAMPLES-UNVALIDATED-LABELS",
+      "statement": "Default feedback selection offers every finding whose code is unmeasured or whose confidence is low, and discloses the measured, confident findings it excludes, with --all excluding nothing.",
+      "source": {
+        "kind": "spec",
+        "ref": "docs-canonical/REQUIREMENTS.md#FR-017"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (#455 release prep)"
+      },
+      "defendedBy": [
+        "tests/feedback-sampling.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "reportable no longer includes unmeasured codes: a confident finding on a never-benchmarked code is not sampled, restoring the closed loop.",
+          "faultClass": "condition-forced",
+          "file": "cli/findings.mjs",
+          "find": " || evidence.status === 'not-measured',",
+          "replace": " || false,",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 release prep)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "Default selection ignores reportable: `docguard feedback` offers nothing unless --all or --code is passed.",
+          "faultClass": "condition-forced",
+          "file": "cli/commands/feedback.mjs",
+          "find": ": flags.all || f.reportable);",
+          "replace": ": flags.all || false);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 release prep)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "Excluded set hidden: the default selection reports zero excluded findings even when measured, confident findings were left out.",
+          "faultClass": "return-altered",
+          "file": "cli/commands/feedback.mjs",
+          "find": "    : (data.findings || []).filter(f => !f.reportable);",
+          "replace": "    : [];",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 release prep)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "--all no longer clears the excluded set: an --all run still reports findings as excluded.",
+          "faultClass": "condition-forced",
+          "file": "cli/commands/feedback.mjs",
+          "find": "  const excluded = selectedCode || flags.all\n",
+          "replace": "  const excluded = selectedCode\n",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 release prep)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ADJUDICATION-OUTSIDE-EVERY-RATE",
+      "statement": "A reviewed disagreement is recorded as an auditable corpus row that is counted per code and corpus-wide, enters no precision, recall or abstention denominator, and whose removal fails baseline comparison.",
+      "source": {
+        "kind": "spec",
+        "ref": "docs-canonical/REQUIREMENTS.md#FR-018"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (#455 release prep)"
+      },
+      "defendedBy": [
+        "tests/adjudication-record.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "Measured-class filter removed: adjudicated rows enter cases, repositories and repair denominators.",
+          "faultClass": "statement-deleted",
+          "file": "benchmarks/lib/metrics.mjs",
+          "find": "    if (!measured(item)) continue;\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 release prep)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "policy_disagreement rows no longer counted: the disagreement vanishes from the per-code and corpus-wide adjudicated counts.",
+          "faultClass": "statement-deleted",
+          "file": "benchmarks/lib/metrics.mjs",
+          "find": "    if (item.classification === 'policy_disagreement') counts.adjudicated.policyDisagreements++;\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 release prep)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "Case-removed regression not reported: deleting an adjudication row from the corpus passes baseline comparison.",
+          "faultClass": "statement-deleted",
+          "file": "benchmarks/lib/compare.mjs",
+          "find": "      regressions.push({ id, kind: 'case-removed', detail: 'A baseline case is absent from the candidate.' });\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 release prep)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "Opposite-control requirement dropped: buildAdjudicationRow accepts a manifest with no neighbouring clean case.",
+          "faultClass": "condition-forced",
+          "file": "cli/feedback-fixture.mjs",
+          "find": "  if (!manifest.oppositeControl) {",
+          "replace": "  if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 release prep)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "API-CONTRACT-OMISSIONS-REVIEW-ONLY",
+      "statement": "A documented endpoint missing from the OpenAPI contract is reported as a review-only error with separate low-confidence code evidence (present, not-found or unknown), and neither the validator nor `docguard fix --write`, forced or not, ever deletes it from the API reference.",
+      "source": {
+        "kind": "spec",
+        "ref": "docs-canonical/REQUIREMENTS.md#FR-022"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (#455 release prep)"
+      },
+      "defendedBy": [
+        "tests/api-authority-precision.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "Contract-omission suggestion becomes an actionable fix instead of a review, so a code-present omission is dispositioned 'act'.",
+          "faultClass": "literal-changed",
+          "file": "cli/validators/api-surface.mjs",
+          "find": "          suggestion: { kind: 'review', text: e.codeEvidence.status === 'present'",
+          "replace": "          suggestion: { kind: 'fix', text: e.codeEvidence.status === 'present'",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 release prep)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "Unknown coverage collapsed into not-found: when no routes were extracted, every omission claims the route scan did not find it.",
+          "faultClass": "condition-forced",
+          "file": "cli/validators/api-surface.mjs",
+          "find": "          ? 'present' : routes.length ? 'not-found' : 'unknown',",
+          "replace": "          ? 'present' : true ? 'not-found' : 'unknown',",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 release prep)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "Negative route-scan evidence reported at high confidence, overstating what an incomplete scanner can prove.",
+          "faultClass": "literal-changed",
+          "file": "cli/validators/api-surface.mjs",
+          "find": "        confidence: 'low',\n      },\n    }));",
+          "replace": "        confidence: 'high',\n      },\n    }));",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 release prep)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "applyApiSurfaceWrites reports the not-found omissions as removed, authorizing deletion from negative route-scan evidence.",
+          "faultClass": "return-altered",
+          "file": "cli/commands/fix.mjs",
+          "find": "    applied: false,\n    removed: [],\n    ...(reviewCount > 0 ? {",
+          "replace": "    applied: false,\n    removed: drift.documentedButAbsent,\n    ...(reviewCount > 0 ? {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 release prep)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "FIELD-WARNING-PRECISION",
+      "statement": "Password and skipped-test warnings are withheld only on proven context: a password inside an expect(...) mock expectation is exempt only for explicit synthetic vocabulary and downgraded only when the literal repeats, and a skipped test is explained only by a non-empty static reason argument or a directly adjacent REASON comment.",
+      "source": {
+        "kind": "spec",
+        "ref": "docs-canonical/REQUIREMENTS.md#FR-023"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (#455 release prep)"
+      },
+      "defendedBy": [
+        "tests/field-context-precision.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "Repeat threshold lowered to one occurrence: every password in a test assertion is treated as a repeated fixture and downgraded to a low-confidence warning.",
+          "faultClass": "literal-changed",
+          "file": "cli/validators/security.mjs",
+          "find": "        const repeatedFixtureValue = (literalCounts.get(prop.value.value) || 0) > 1;",
+          "replace": "        const repeatedFixtureValue = (literalCounts.get(prop.value.value) || 0) > 0;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 release prep)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "Receiver check removed: any `.toHaveBeenCalledWith(...)` call, not only one on expect(...), exempts a synthetic-looking password.",
+          "faultClass": "condition-forced",
+          "file": "cli/validators/security.mjs",
+          "find": "    if (expectation.type !== 'CallExpression' || expectation.callee.type !== 'Identifier' ||\n        expectation.callee.name !== 'expect') return;",
+          "replace": "    if (false) return;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 release prep)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "Whitespace-only skip reason accepted as an explanation.",
+          "faultClass": "condition-forced",
+          "file": "cli/validators/todo-tracking.mjs",
+          "find": "      (reason?.type === 'StringLiteral' && reason.value.trim().length > 0 ||",
+          "replace": "      (reason?.type === 'StringLiteral' ||",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 release prep)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "Adjacency check removed: a REASON comment separated from the skip by intervening code still explains it.",
+          "faultClass": "statement-deleted",
+          "file": "cli/validators/todo-tracking.mjs",
+          "find": "      if (call.loc.start.line - comment.loc.end.line !== 1 || !/^\\s*$/.test(gap)) return false;\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 release prep)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "VALIDATORS-STAY-ISOLATED",
+      "statement": "No module in cli/validators/ imports a sibling validator module; shared logic lives in shared modules (Constitution IV).",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/016-spec-kit-artifact-coverage/spec.md#FR-007"
+      },
+      "severity": "medium",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (#455 release prep)"
+      },
+      "defendedBy": [
+        "tests/validator-isolation.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "api-surface.mjs gains a working named import of the changelog validator.",
+          "faultClass": "other",
+          "file": "cli/validators/api-surface.mjs",
+          "find": "import { mkFinding, resultFromFindings } from '../findings.mjs';\n",
+          "replace": "import { mkFinding, resultFromFindings } from '../findings.mjs';\nimport { validateChangelog } from './changelog.mjs';\n",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 release prep)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "docs-sync.mjs re-imports the api-surface validator, the historical Constitution IV violation.",
+          "faultClass": "other",
+          "file": "cli/validators/docs-sync.mjs",
+          "find": "import { findAllOpenApiSpecs } from '../shared-openapi.mjs';\n",
+          "replace": "import { findAllOpenApiSpecs } from '../shared-openapi.mjs';\nimport { validateApiSurface } from './api-surface.mjs';\n",
           "producedBy": {
             "producer": "agent",
             "by": "claude-opus-5.5 (#455 release prep)"
