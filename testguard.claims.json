@@ -3294,7 +3294,8 @@
         "by": "claude-opus-5.5 (spec 043)"
       },
       "defendedBy": [
-        "tests/fallback-language-coverage.test.mjs"
+        "tests/fallback-language-coverage.test.mjs",
+        "tests/parser-tier.test.mjs"
       ],
       "faults": [
         {
