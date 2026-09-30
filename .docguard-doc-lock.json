@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "sections": {
+    "docs-canonical/ARCHITECTURE.md#requirement-identity": {
+      "dependencies": {
+        "cli/commands/specs.mjs#planSpecCompletion": {
+          "fingerprint": "sha256:80e618baa55f73531437683ac4d15dc49eadc8a06a7da8739ddf8febcc0e3798",
+          "tier": "ast"
+        },
+        "cli/shared-requirements.mjs#collectRequirementIdsFromContent": {
+          "fingerprint": "sha256:493c21d59bac254dff65ad866935c64cd3686aefa55f15d22a35f465b14d8a0a",
+          "tier": "ast"
+        }
+      },
+      "reason": "Verified against the code in the 2026-09-29 freshness review of specs 014-029",
+      "reviewedAt": "2026-09-30",
+      "reviewedRevision": "6b3c1586023aeaf1738951c2d04c886caf512125"
+    },
+    "docs-canonical/DATA-MODEL.md#finding-channels": {
+      "dependencies": {
+        "cli/findings.mjs#PARSER_TIERS": {
+          "fingerprint": "sha256:1eeb4ba2915f257b5d0e4db8a70ecefd7c2c9e365d103277c096dbd230b41dd9",
+          "tier": "ast"
+        },
+        "cli/findings.mjs#mkFinding": {
+          "fingerprint": "sha256:9dd2ff5c173907b8014e19fd5e276b06e8e82ac02da9947753e58b9d9c580dc7",
+          "tier": "ast"
+        }
+      },
+      "reason": "Verified against the code in the 2026-09-29 freshness review of specs 014-029",
+      "reviewedAt": "2026-09-30",
+      "reviewedRevision": "6b3c1586023aeaf1738951c2d04c886caf512125"
+    },
+    "docs-canonical/DATA-MODEL.md#spec-registry": {
+      "dependencies": {
+        "cli/commands/specs.mjs#completeSpec": {
+          "fingerprint": "sha256:533a88b37c2015a4228138842b4760179a374b217f55191e21723045094f1d54",
+          "tier": "ast"
+        },
+        "cli/commands/specs.mjs#reanchorSpec": {
+          "fingerprint": "sha256:5ea5efcb7490ba6ac7e8c0f812215e9ef6282c05f2a4371f8661eb3e042cb00e",
+          "tier": "ast"
+        },
+        "schemas/docguard-specs.schema.json": {
+          "fingerprint": "sha256:8eef19e4bd96564e7618057d33ef3adbdc37bc2f6c56249644db9c4ea459faa8",
+          "tier": "content"
+        }
+      },
+      "reason": "Verified against the code in the 2026-09-29 freshness review of specs 014-029",
+      "reviewedAt": "2026-09-30",
+      "reviewedRevision": "6b3c1586023aeaf1738951c2d04c886caf512125"
+    }
+  }
+}

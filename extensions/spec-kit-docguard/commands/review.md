@@ -25,6 +25,17 @@ You **MUST** consider the user input before proceeding when it is not empty.
 
 ## Execution
 
+0. If any doc section declares `covers=`, list which covered sections changed
+   since their last review (read-only):
+
+   ```bash
+   npx --yes docguard-cli@latest review --format json
+   ```
+
+   Report every section that is not `current`. Do not run `review --accept`
+   on the user's behalf: accepting records that a person checked the prose.
+
+
 1. Run the deterministic inventory and quality checks:
 
 ```bash

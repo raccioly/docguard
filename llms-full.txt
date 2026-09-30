@@ -45,6 +45,7 @@ It targets development teams and AI coding agents that need to maintain document
 | **Finding channels** | Separates the three questions a finding answers — does CI block (`severity`), who decides (`disposition`), how well is the code measured (`evidence`), and which analyzer produced it (`parserTier`) — so a certain observation is never labelled uncertain and the feedback loop samples the labels that have never been validated | `cli/findings.mjs`, `cli/precision-evidence.mjs`, `cli/writers/sarif.mjs` | Channels are additive to the published finding contract; `confidence` keeps its meaning as the detector's certainty in its own observation |
 | **Precision evidence** | Runs labelled synthetic and exact-commit public cases, separates deterministic results from observations, calculates null-safe quality metrics and confidence bounds, compares case-first baselines, persists them in a provenance envelope whose measure (`benchmark-precision`) and caveat are derived from the cases and re-verified on load, and projects per-code evidence into a generated module the CLI quotes at finding time | `benchmarks/`, `cli/precision-evidence.mjs`, `schemas/docguard-benchmark.schema.json`, `schemas/docguard-benchmark-baseline.schema.json`, `schemas/docguard-precision-evidence.schema.json` | External runs are explicit; third-party project code is never executed and disposable checkouts are removed by default |
 | **Non-regression budgets** | Compares a PR with its base on one runner: interleaved guard wall time, self-guard error findings, agent-facing output bytes, packed package weight and runtime dependencies, against the ratios and floors in `budgets.json`; `Budget-Exempt` waives one metric with a reason | `tools/budget.mjs`, `budgets.json` | CI `budget` job; development tooling, not shipped in the npm package |
+| **Doc dependency lock** | A doc section declares the code it describes (`covers=` on its `docguard:section` marker); `review --accept` records AST or content fingerprints in `.docguard-doc-lock.json`; the Doc-Dependency validator reports a covered symbol whose code changed (DLK001), a dependency that no longer resolves, an unaccepted or orphaned entry, or an unreadable lock | `cli/scanners/doc-deps.mjs`, `cli/validators/doc-dependency.mjs`, `cli/commands/review.mjs` | Opt-in by declaration; only `review` writes the lock; runs in `--changed-only` pre-commit mode |
 | **Feedback fixtures** | Validates synthetic reproductions and opposite controls, reduces them under an explicit predicate, derives duplicate identities, and emits test-only contributions | `cli/feedback-fixture.mjs`, `cli/commands/feedback.mjs`, `schemas/docguard-feedback-fixture.schema.json` | Publication remains user-controlled; contribution generation requires reviewed redaction, scope, and benchmark-delta evidence |
 | **Evidence-scoped verification** | Binds one exact Markdown statement to a typed JSON Pointer value, bounded file collection, static Python container literal, or saved upstream compatibility report and returns one of five explicit states | `cli/evidence/`, `cli/validators/evidence.mjs`, `cli/commands/verify.mjs`, `schemas/docguard-evidence.schema.json` | Reads stay local, bounded, non-executable, and symlink/private-path safe; direct verification exits 1 for contradiction/invalid input, 2 for unresolved evidence, and 0 only for verified or unconfigured evidence |
 | **Managed Git hooks** | Installs bounded DocGuard blocks while preserving user-owned hook commands before and after them | `cli/commands/hooks.mjs` | Reinstall and removal use one outer marker pair, repair nested markers from affected releases, fail closed on enforcement errors, and fall through after success so user postludes execute. A hook owned by husky, lefthook or simple-git-hooks is never written, even under `--force`; the command prints the line to add to that manager |
@@ -243,11 +244,13 @@ DocGuard declares one exact-pinned runtime dependency, `@babel/parser`. It loads
 
 ### Requirement identity across documents
 
+<!-- docguard:section id=requirement-identity source=human covers="cli/shared-requirements.mjs#collectRequirementIdsFromContent, cli/commands/specs.mjs#planSpecCompletion" -->
 Requirement definitions are identified by immutable spec ID plus requirement ID when a spec declares `Spec ID` metadata. Repository-relative path qualifiers remain supported during migration. A bare test annotation such as `@req FR-001` earns linkage credit only when that ID is defined in one active or retired document. Prefer `@req acme.payments#FR-001`; `@req specs/payments/spec.md#FR-001` remains valid while the spec is active. Path qualifiers use forward slashes and are repository-relative.
 
 Validation, `trace --features`, and the spec registry share definition parsing and reference resolution. A qualified reference credits only its target document. Ambiguous bare references credit neither feature and produce a review finding for each unresolved definition. A wrong qualifier is an orphan reference and never falls back to a bare match. Registry completion evidence always requires an explicit spec ID or exact path qualifier, even when a bare ID is currently unique. Repeated mentions within one document do not create additional identities. Linkage remains evidence of a declaration, not proof of behavioral correctness.
 
 Completion also supports reviewed maintenance of a verified or released living spec. It reconciles from the prior reviewed revision and appends a status-preserving outcome when a linked source, test, canonical document, or decision changed. Eligibility comes exclusively from those reviewable changes; generated registry, active-context, and implementation-outcome updates are excluded.
+<!-- /docguard:section -->
 
 
 ---
@@ -653,6 +656,7 @@ manifest cannot suppress active-context or orphan-reference findings.
 
 ## Spec Lifecycle Registry: `.docguard-specs.json`
 
+<!-- docguard:section id=spec-registry source=human covers="schemas/docguard-specs.schema.json, cli/commands/specs.mjs#completeSpec, cli/commands/specs.mjs#reanchorSpec" -->
 The committed registry indexes which specifications govern the project and what
 the repository can prove about them. It never copies requirement prose. Its
 normative JSON Schema is `schemas/docguard-specs.schema.json`.
@@ -700,6 +704,32 @@ living spec can append a status-preserving maintenance outcome only when a new
 linked source, test, canonical document, or decision changed after the last
 reviewed revision. Generated registry and outcome updates do not satisfy that
 gate.
+<!-- /docguard:section -->
+
+## Doc Dependency Lock: `.docguard-doc-lock.json`
+
+A documentation section can declare the code it describes, on its marker:
+
+```markdown
+<!-- docguard:section id=pricing source=human covers="src/pricing.mjs#discount, src/rules/**" -->
+```
+
+`covers` entries are `path` (the file's bytes), `path#symbol` (a top-level
+declaration or `Class.method`) or a glob (the matching set). Paths are
+relative to the project; absolute paths, `..`, symlinks and `.docguardignore`d
+paths are refused. `docguard review --accept` records the review; it is the
+file's only writer. Normative schema: `schemas/docguard-doc-lock.schema.json`.
+
+| Field | Meaning |
+|---|---|
+| `schemaVersion` | `1` |
+| `sections["<doc>#<id>"].dependencies["<covers entry>"]` | `{ tier, fingerprint }`: `ast` (normalized JS/TS AST of the symbol; formatting, comments and line moves do not change it), `python-ast` (`ast.dump` of the definition), `content` (sha256 of the file), or `glob` (hash of the sorted per-file fingerprints) |
+| `sections[…].reviewedRevision` | HEAD at acceptance, or `null`; used only to print the diff command, so squash merges and shallow clones do not break comparison |
+| `sections[…].reviewedAt` | UTC date of acceptance |
+| `sections[…].reason` | What the reviewer checked (8–500 characters) |
+
+Keys are sorted at every level. A project with no `covers=` has no lock and no
+new findings.
 
 ## Task Context Packet
 
@@ -766,6 +796,7 @@ The block is served from `cli/precision-evidence-data.mjs`, a generated module d
 
 ## Finding channels
 
+<!-- docguard:section id=finding-channels source=human covers="cli/findings.mjs#mkFinding, cli/findings.mjs#PARSER_TIERS" -->
 A finding answers three independent questions, one field each. A single `confidence` field had to serve all three, so a certain observation read as an uncertain one, and the feedback loop sampled only the findings its own label already doubted.
 
 | Field | Question | Values |
@@ -783,6 +814,7 @@ A finding answers three independent questions, one field each. A single `confide
 `reportable` is true when `evidence.status` is `not-measured` **or** `confidence` is `low`. Under the previous rule, which read confidence alone, the default feedback sample omitted the population where a wrong label costs most: a confident label on a code the corpus has yet to measure.
 
 `location` is always a string (`path` or `path:line`) or `null`. A detector that supplies `{ file, line }` is normalized at construction. Under the previous contract such findings rendered as `[object Object]`, and the SARIF location parser dropped them, so six codes reached GitHub Code Scanning with no file annotation at all.
+<!-- /docguard:section -->
 
 ## Fix Command Issue Format
 
@@ -895,30 +927,8 @@ role, and `API.md` resolves to the API-Reference role. Directory detection is
 deliberately tight: a directory must hold at least two distinct roles before it
 counts as a canonical home, so a lone root-level `SECURITY.md` — GitHub's
 security policy, not a design document — never triggers a match on its own.
-This also removes an accidental platform dependency: literal-path probing was
-case-insensitive only on case-insensitive filesystems, so the same repository
-was judged differently on macOS and Linux.
 
-Optional docs.roles maps canonical roles to safe project-relative Markdown paths. Configuration normalization replaces each mapped default in requiredFiles.canonical and documentTypes. A mapped write is authorized either for a unique `source=code` section in an existing human file or for a missing/explicitly generated single-role whole document. Marker shape, role cardinality, and ownership are validated before mutation; `--force` does not alter that model. The configuration schema and docs/configuration.md define the role names and operation-specific contract.
-
-Repository-root guidance is an ephemeral diagnostic and is never persisted in
-project configuration. Its machine shape is
-`{selectedDir,suggestedDir,reason,evidence,packagePath,gitRoot,rerun,automaticScopeChange}`.
-`reason` is `ancestor_docguard_config`, `npm_workspace`, or `pnpm_workspace`;
-`automaticScopeChange` is always false. Machine modes wrap it with type
-`docguard.repository-root-guidance` on stderr so their primary stdout schema is
-unchanged.
-
-## Readiness assessment contract
-
-CI, diagnose, and report include `assessment`. Its status is `BLOCKED` when
-guard enforcement fails, a configured structural threshold fails, or CI is set
-to block warnings; `ATTENTION` means advisory guard warnings remain; `READY`
-means guard and configured gates pass. The object carries reason codes, raw
-guard status, effective finding counts, structural maturity, and threshold
-state. It does not replace legacy status, score, grade, assurance, or exit-code
-fields.
-
+<!-- truncated: 24 more lines — read docs-canonical/DATA-MODEL.md directly -->
 
 ---
 
@@ -1570,6 +1580,26 @@ Behaviour changes:
 
 ### Added
 
+- **Doc dependency lock: know which docs to re-read when code changes**
+  (`specs/030-doc-dependency-lock`, new `docguard review` command).
+  - A doc section declares the code it describes, e.g.
+    `covers="src/pricing.mjs#discount"` on its `docguard:section` marker.
+  - `docguard review --accept <doc>#<id> --reason` records a fingerprint of
+    that code in `.docguard-doc-lock.json`. JS/TS symbols use a normalized AST
+    and Python symbols `ast.dump`; files use their bytes and globs their
+    matching set.
+  - Guard's new Doc-Dependency validator reports **DLK001** when covered code
+    changes semantically, and the finding carries the `git diff` command.
+    Reformatting, comments and moving the function do not trigger it; a
+    same-size edit (`0.9` → `0.8`) does.
+  - Also reported: DLK002 (dependency gone), DLK003 (not accepted, or
+    `covers=` changed), DLK004 (orphan entry, cleared by `--prune`) and DLK005
+    (unreadable lock).
+  - `--suggest` proposes `covers=` values and never writes.
+  - Opt-in: a project without `covers=` sees no change. The validator also runs
+    in `--changed-only` pre-commit mode. This replaces the idea of tracking
+    line counts or file size, which cannot see same-size edits.
+
 - **Non-regression budgets** (`specs/031-non-regression-budgets`). A new CI
   `budget` job compares every PR with its base on the same runner. It checks:
   - guard wall time (medians of interleaved samples; ×1.15, 150 ms floor);
@@ -1917,28 +1947,8 @@ Behaviour changes:
   (#455, `specs/021-lifecycle-evidence-gaps`).**
   - **`SPR006`.** Spec 014 was fully implemented, with every task checked,
     before any source file carried `@implements`. Guard said nothing.
-    `reconcile` called the changed files "unsupported", and only `specs
-    complete` reported the gap, after the fact. The Spec-Registry validator now
-    escalates any spec with checked tasks and no implementation annotation. Its
-    first run caught spec 018, whose YAML and Python changes carried none; they
-    are now annotated.
-  - **`specs --write` names what it did not count.** Evidence comes from
-    tracked files only. A registry written before `git add` on a new test file
-    reads CURRENT, then goes stale as soon as the commit lands. Untracked,
-    annotated test files are now listed in the output and in
-    `untrackedEvidence`.
-  - **YAML annotations count.** `# @implements …` in `action.yml` and CI
-    workflows is read as implementation evidence, so changes to the GitHub
-    Action and to CI can be attributed to a spec.
-  - **Evidence is counted once per file during a conflicted merge.** `git
-    ls-files` lists an unmerged path once per stage, so a registry written
-    mid-merge counted that file's evidence up to three times. This was found
-    while syncing this very branch with `main`.
 
-- **Four open field reports closed out (#438, #437, #436, #454;
-  `specs/020-field-report-followups`).**
-
-<!-- truncated: 4068 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 4088 more lines — read CHANGELOG.md directly -->
 
 ---
 

@@ -160,6 +160,7 @@ import { validateReferenceExistence } from '../validators/reference-existence.mj
 import { validateApiDocSmells } from '../validators/api-doc-smells.mjs';
 import { validateDocumentLifecycle } from '../validators/document-lifecycle.mjs';
 import { validateSpecRegistry } from '../validators/spec-registry.mjs';
+import { validateDocDependency } from '../validators/doc-dependency.mjs';
 import { validateEvidence } from '../validators/evidence.mjs';
 import { coverSemanticClaims } from '../evidence/evaluate.mjs';
 
@@ -358,6 +359,7 @@ export function runGuardInternal(projectDir, config) {
     { key: 'specKit', name: 'Spec-Kit', fn: () => validateSpecKitIntegration(projectDir, config) },
     { key: 'documentLifecycle', name: 'Document-Lifecycle', fn: () => validateDocumentLifecycle(projectDir, config) },
     { key: 'specRegistry', name: 'Spec-Registry', fn: () => validateSpecRegistry(projectDir, config) },
+    { key: 'docDependency', name: 'Doc-Dependency', fn: () => validateDocDependency(projectDir, config) },
     { key: 'evidence', name: 'Evidence', fn: () => validateEvidence(projectDir, config) },
     { key: 'crossReference', name: 'Cross-Reference', fn: () => validateCrossReferences(projectDir, config) },
     { key: 'generatedStaleness', name: 'Generated-Staleness', fn: () => validateGeneratedStaleness(projectDir, config) },
@@ -658,7 +660,7 @@ export function badgeColor(pct, incomplete = 0) {
  * Freshness (git log), Traceability (REQ scan), Doc-Quality (prose lint) —
  * stay off for speed.
  */
-export const CHANGED_ONLY_VALIDATORS = ['docsSync', 'environment', 'apiSurface', 'drift', 'todoTracking', 'evidence'];
+export const CHANGED_ONLY_VALIDATORS = ['docsSync', 'environment', 'apiSurface', 'drift', 'todoTracking', 'evidence', 'docDependency'];
 
 /**
  * Build a validators map that enables the pre-commit-lite set — PLUS any
@@ -680,7 +682,7 @@ export function liteValidatorsConfig(config = {}) {
     'schemaSync', 'specKit', 'crossReference', 'generatedStaleness',
     'canonicalSync', 'surfaceSync', 'metricsConsistency', 'documentLifecycle',
     'specRegistry', 'diffSuspicion', 'referenceExistence', 'apiDocSmells',
-    'evidence',
+    'evidence', 'docDependency',
   ];
   const userValidators = (config && config.validators) || {};
   const exactHighValidators = new Set(

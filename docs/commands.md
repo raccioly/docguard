@@ -234,6 +234,34 @@ ones and moves the anchor there, recording `reanchoredFrom`. If the old revision
 no longer exists anywhere, `--to <revision> --reason "<why>"` records an
 attested anchor instead.
 
+### `docguard review`
+
+**Know which docs to re-read when code changes.** A doc section declares the
+code it describes on its marker, and a review records what that code looked
+like:
+
+```markdown
+<!-- docguard:section id=pricing source=human covers="src/pricing.mjs#discount" -->
+Orders over 100 get a 10% discount.
+<!-- /docguard:section -->
+```
+
+```bash
+npx docguard-cli review                                   # status of every covered section
+npx docguard-cli review --accept docs-canonical/ARCHITECTURE.md#pricing --reason "Checked the discount rule"
+npx docguard-cli review --prune                           # drop entries whose section is gone
+npx docguard-cli review --suggest docs-canonical/ARCHITECTURE.md   # propose covers= (low confidence)
+```
+
+Guard then reports **DLK001** when a covered symbol's code changes
+semantically. Reformatting, comments and moving the function do not count; a
+same-size edit such as `0.9` → `0.8` does. The finding carries the `git diff`
+command for the change. **DLK002** reports a dependency that no longer
+resolves, **DLK003** a section never accepted or whose `covers=` changed,
+**DLK004** a lock entry without a section, and **DLK005** an unreadable lock.
+Only `review --accept` and `--prune` write `.docguard-doc-lock.json`; `sync`,
+`fix` and agents never do.
+
 ### `docguard retire`
 
 **Remove reviewed stale documents from active AI context while preserving exact

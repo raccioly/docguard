@@ -34,6 +34,11 @@ function pyCmd() {
   return _pyCmd;
 }
 
+/** The working interpreter command ('python3' or 'python'), or null. */
+export function pythonCommand() {
+  return pyCmd();
+}
+
 /** True when a usable Python 3 interpreter (with ast/json) is on PATH. */
 export function pyAstAvailable() {
   return pyCmd() !== null;

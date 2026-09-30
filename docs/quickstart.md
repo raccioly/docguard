@@ -68,7 +68,7 @@ diagnose  →  AI reads prompts  →  AI fixes docs  →  guard verifies
 ## Verify
 
 ```bash
-npx docguard-cli guard        # Pass/fail check (29 validators)
+npx docguard-cli guard        # Pass/fail check (30 validators)
 npx docguard-cli score        # 0-100 maturity score
 ```
 

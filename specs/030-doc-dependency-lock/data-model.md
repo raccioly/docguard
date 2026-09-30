@@ -3,8 +3,8 @@
 ## Section declaration (in a Markdown document)
 
 ```markdown
-<!-- docguard:section id=as-built source=human covers="cli/scanners/as-built.mjs#checkAsBuiltSync, cli/commands/generate-as-built.mjs" -->
-Prose describing how as-built specs stay synced.
+<!-- docguard:section id=pricing source=human covers="src/pricing.mjs#discount, src/rules.mjs" -->
+Prose describing how discounts are applied.
 <!-- /docguard:section -->
 ```
 
@@ -24,13 +24,13 @@ Prose describing how as-built specs stay synced.
 {
   "schemaVersion": 1,
   "sections": {
-    "docs-canonical/ARCHITECTURE.md#as-built": {
+    "docs-canonical/ARCHITECTURE.md#pricing": {
       "reviewedRevision": "542b9c5…",
       "reviewedAt": "2026-09-29",
-      "reason": "Prose matches checkAsBuiltSync after the directory-claim change",
+      "reason": "Prose matches the discount rule after the threshold change",
       "dependencies": {
-        "cli/scanners/as-built.mjs#checkAsBuiltSync": { "tier": "ast", "fingerprint": "sha256:…" },
-        "cli/commands/generate-as-built.mjs": { "tier": "content", "fingerprint": "sha256:…" }
+        "src/pricing.mjs#discount": { "tier": "ast", "fingerprint": "sha256:…" },
+        "src/rules.mjs": { "tier": "content", "fingerprint": "sha256:…" }
       }
     }
   }

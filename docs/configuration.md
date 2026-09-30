@@ -203,6 +203,20 @@ reported.
   existing path that no commit since the feature began changed. A named
   directory counts as changed when a file inside it changed.
 
+## Doc dependency lock — `covers=` and `validators.docDependency`
+
+The Doc-Dependency validator is on by default but has nothing to check until a
+doc section declares the code it describes:
+
+```markdown
+<!-- docguard:section id=pricing source=human covers="src/pricing.mjs#discount, src/rules/**" -->
+```
+
+`docguard review --accept <doc>#<id> --reason "<what you checked>"` records the
+review in `.docguard-doc-lock.json` (commit it). Set
+`"validators": { "docDependency": false }` to turn the check off. See
+[`docguard review`](commands.md#docguard-review).
+
 ## Project Type Detection
 
 DocGuard auto-detects your project type from `package.json`:

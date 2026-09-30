@@ -616,6 +616,36 @@ export const CODES = {
     help: 'Working-tree presence, lifecycle context, storage state, and the recovery archive disagree. Active specs must be current/working_tree; retired specs must be retired/git_history with a reason and matching archive event.',
     suppress: null,
   },
+  DLK001: {
+    validator: 'docDependency',
+    title: 'Code a reviewed doc section describes has changed',
+    help: 'A `docguard:section` declares `covers="path#symbol, …"`, and `.docguard-doc-lock.json` records what that code looked like when the section was last reviewed. The fingerprint of a covered dependency no longer matches: the symbol\'s normalized AST changed (formatting, comments and line moves do not count), or the file\'s bytes changed where no parser applies. Read the change (the finding carries the `git diff` command), update the prose if it no longer holds, then record the review with `docguard review --accept <doc>#<section> --reason "<what you checked>"`. This is a review signal: DocGuard knows the code changed, not whether the prose is now wrong.',
+    suppress: null,
+  },
+  DLK002: {
+    validator: 'docDependency',
+    title: 'Covered dependency no longer exists',
+    help: 'A path or symbol named in a section\'s `covers=` attribute does not resolve: the file was moved or deleted, the symbol was renamed, or the path is outside the project, a symlink, or excluded by .docguardignore. Fix the declaration to name what the section now describes, update the prose, and accept the review again.',
+    suppress: null,
+  },
+  DLK003: {
+    validator: 'docDependency',
+    title: 'Covered section has no accepted review',
+    help: 'A section declares `covers=` but `.docguard-doc-lock.json` has no entry for it, or its declared dependencies changed since the last review. Read the section against the code and run `docguard review --accept <doc>#<section> --reason "<what you checked>"`. Only this command writes the lock; sync, fix and agents never do.',
+    suppress: null,
+  },
+  DLK004: {
+    validator: 'docDependency',
+    title: 'Doc lock entry has no section',
+    help: 'The lock records a review for a `doc#section` that no longer declares `covers=` (the section was removed, renamed, or its attribute dropped). Run `docguard review --prune` to remove entries without a section.',
+    suppress: null,
+  },
+  DLK005: {
+    validator: 'docDependency',
+    title: 'Doc lock file is unreadable',
+    help: '`.docguard-doc-lock.json` does not parse or does not match its schema (schemas/docguard-doc-lock.schema.json). Nothing in it can be trusted, so no section is reported current. Restore it from git, or delete it and accept each covered section again.',
+    suppress: null,
+  },
   SPR008: {
     validator: 'specRegistry',
     title: 'Recorded review revision is not on this history',

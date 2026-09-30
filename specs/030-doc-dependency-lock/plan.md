@@ -39,7 +39,6 @@ Pass.
 cli/scanners/doc-deps.mjs            # NEW: parse covers, resolve, fingerprint (ast|python-ast|content|glob), load/compare lock
 cli/validators/doc-dependency.mjs    # NEW: DLK001–DLK005
 cli/commands/review.mjs              # NEW: list / --accept / --prune / --suggest
-cli/writers/sections.mjs             # expose covers on parsed sections (no behaviour change)
 cli/findings.mjs                     # DLK001–DLK005
 cli/commands/guard.mjs               # register the validator
 cli/docguard.mjs                     # command, help, flags
