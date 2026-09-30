@@ -462,6 +462,9 @@ Behaviour changes:
 
 ### Fixed
 
+- **Python web projects are read accurately** (`specs/046-python-extraction`).
+  Draft; completed with the implementation.
+
 - **STR005 is informational, as spec 017 requires.** The validator asked for
   `severity: 'info'`, which the finding constructor only accepts as `error` or
   `warn`, so it became a warning: slack in an instruction allowance turned
