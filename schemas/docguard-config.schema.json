@@ -108,6 +108,7 @@
         "documentLifecycle":  { "type": "boolean" },
         "specRegistry":       { "type": "boolean" },
         "docDependency":      { "type": "boolean" },
+        "pathScopedRules":    { "type": "boolean" },
         "evidence":           { "type": "boolean" },
         "crossReference":    { "type": "boolean" },
         "generatedStaleness":{ "type": "boolean" },

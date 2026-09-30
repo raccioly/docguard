@@ -298,6 +298,19 @@ const EXPLAINERS = {
     example: '`<!-- docguard:section id=pricing source=human covers="src/pricing.mjs#discount" -->` — a change to `discount` reports DLK001 until the section is re-accepted.',
     standard: 'Canonical-Driven Development doc dependency lock (specs/030-doc-dependency-lock)',
   },
+  pathScopedRules: {
+    title: 'Path-Scoped-Rules — agent instructions whose scope or pointers went stale',
+    what: 'Reads every agent instruction file per harness (nested AGENTS.md and CLAUDE.md, Claude Code rules and skills, Cursor .mdc rules, Copilot .instructions.md, OpenHands skills), derives each one\'s scope from its frontmatter, and checks it against the tracked files.',
+    why: 'A rule scoped to src/api/** keeps silently not loading after the code moves to packages/api/; a routing line pointing at a renamed doc sends every agent to nothing; a scope key the harness does not read turns a scoped rule into an always-on one.',
+    triggers: [
+      ['matches no tracked file', 'Point the pattern at where the code lives now (`docguard rules --for <path>` shows what applies), or delete the rule.'],
+      ['points at … which does not exist', 'Point it at the file that replaced it, or remove the reference.'],
+      ['bytes of instructions', 'Narrow the scopes, move procedures into linked docs, or record an allowance in agentInstructions.allowances.'],
+      ['reads `paths:`, not `globs:`', 'Rename the key to the one the harness reads.'],
+    ],
+    example: '`.cursor/rules/api.mdc` with `globs: "src/api/**"` after `src/api/` moved reports PSR001.',
+    standard: 'Canonical-Driven Development path-scoped agent rules (specs/033-path-scoped-rules)',
+  },
   evidence: {
     title: 'Evidence — declared statements match bounded local sources',
     what: 'Evaluates opt-in declarations in `.docguard-evidence.json`. Each declaration selects one exact statement under one Markdown heading, reads a bounded local JSON value, file collection, saved oasdiff report, or saved Buf report, and reports verified-within-scope, contradicted, stale, inconclusive, or unsupported.',
@@ -440,6 +453,7 @@ const DISPLAY_NAMES = {
   documentLifecycle: 'Document-Lifecycle',
   specRegistry: 'Spec-Registry',
   docDependency: 'Doc-Dependency',
+  pathScopedRules: 'Path-Scoped-Rules',
   crossReference: 'Cross-Reference',
   generatedStaleness: 'Generated-Staleness',
   surfaceSync: 'Surface-Sync',

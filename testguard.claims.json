@@ -1951,6 +1951,204 @@
           }
         }
       ]
+    },
+    {
+      "id": "PATH-SCOPED-RULES-REPORT-DEAD-SCOPES",
+      "statement": "Each harness's instruction files are scoped as that harness documents: a scope that matches no tracked file, a pointer to a missing path, instructions over the budget for a path, and a scope the harness cannot or does not read are each reported exactly where they occur, while machine-local files, test fixtures, runtime placeholders and patterns DocGuard cannot evaluate are never reported as defects.",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/033-path-scoped-rules/spec.md#FR-003"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (#455 spec 033)"
+      },
+      "defendedBy": [
+        "tests/path-scoped-rules.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "A Claude Code rule without paths: is treated as not path-scoped instead of always loaded.",
+          "faultClass": "literal-changed",
+          "file": "cli/scanners/instruction-scopes.mjs",
+          "find": "'claude-rule': { harness: 'claude', field: 'paths', whenAbsent: 'always'",
+          "replace": "'claude-rule': { harness: 'claude', field: 'paths', whenAbsent: 'not-path-scoped'",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 033)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "OpenHands slashless patterns are anchored at the root like Claude Code.",
+          "faultClass": "literal-changed",
+          "file": "cli/scanners/instruction-scopes.mjs",
+          "find": "  const byName = semantics === 'basename' && !pattern.includes('/');",
+          "replace": "  const byName = false;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 033)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "Character classes are compiled literally and read as matching nothing.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/instruction-scopes.mjs",
+          "find": "  if (/[[\\]]/.test(pattern)) return { ok: false, pattern: raw, reason: 'character classes ([...]) are not evaluated by DocGuard' };\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 033)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "A scope key the harness does not read goes unreported.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/instruction-scopes.mjs",
+          "find": "    if (foreign.length && !Object.hasOwn(data, spec.field)) {",
+          "replace": "    if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 033)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "A .md file in .cursor/rules is not recognized.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/instruction-scopes.mjs",
+          "find": "  if (/(^|\\/)\\.cursor\\/rules\\/.+\\.md$/.test(file)) return 'cursor-ignored';\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 033)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "Dead scope patterns are never found.",
+          "faultClass": "return-altered",
+          "file": "cli/validators/path-scoped-rules.mjs",
+          "find": "    const dead = e.globs.filter(g => !matches(g));",
+          "replace": "    const dead = [];",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 033)"
+          }
+        },
+        {
+          "id": "F7",
+          "description": "A pointer to a gitignored, machine-local file is reported as broken.",
+          "faultClass": "condition-forced",
+          "file": "cli/validators/path-scoped-rules.mjs",
+          "find": "    if (ignoredByGit && (ignoredByGit.ignored.has(u.candidate) || ignoredByGit.unknown.has(u.candidate))) continue;",
+          "replace": "    if (false) continue;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 033)"
+          }
+        },
+        {
+          "id": "F8",
+          "description": "Instruction files in test fixtures are checked as this project's instructions.",
+          "faultClass": "call-removed",
+          "file": "cli/validators/path-scoped-rules.mjs",
+          "find": "  const entries = all.filter(e => !isNonProductPath(e.file, config));",
+          "replace": "  const entries = all;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 033)"
+          }
+        },
+        {
+          "id": "F9",
+          "description": "PSR003 counts nested AGENTS.md chains that STR004 already measures.",
+          "faultClass": "condition-forced",
+          "file": "cli/validators/path-scoped-rules.mjs",
+          "find": "e.harness === harness && e.kind !== 'agents' && e.scope",
+          "replace": "e.harness === harness && true && e.scope",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 033)"
+          }
+        },
+        {
+          "id": "F10",
+          "description": "An allowance applies only when keyed by the example path.",
+          "faultClass": "other",
+          "file": "cli/validators/path-scoped-rules.mjs",
+          "find": "    const allowanceKey = [harness, ...group.paths.map(p => `${harness}:${p}`)].find(k => Number.isInteger(allowances[k]));",
+          "replace": "    const allowanceKey = [harness, `${harness}:${group.paths[0]}`].find(k => Number.isInteger(allowances[k]));",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 033)"
+          }
+        },
+        {
+          "id": "F11",
+          "description": "A skill's runtime paths are checked as pointers.",
+          "faultClass": "statement-deleted",
+          "file": "cli/validators/path-scoped-rules.mjs",
+          "find": "      if (skill && !SKILL_DIRS_RE.test(path)) continue;\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 033)"
+          }
+        },
+        {
+          "id": "F12",
+          "description": "An unquoted value starting with * is read as text.",
+          "faultClass": "literal-changed",
+          "file": "cli/scanners/frontmatter.mjs",
+          "find": "const INDICATOR_RE = /^[*&!@`%|>{]/;",
+          "replace": "const INDICATOR_RE = /^[&!@`%|>{]/;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 033)"
+          }
+        },
+        {
+          "id": "F13",
+          "description": "Sentences that say a file may be absent are checked as pointers.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/instruction-audit.mjs",
+          "find": "      if (CONDITIONAL_RE.test(sentence)) continue;",
+          "replace": "      if (false) continue;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 033)"
+          }
+        },
+        {
+          "id": "F14",
+          "description": "A symlink leaving the project is followed.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/instruction-scopes.mjs",
+          "find": "        if (isAbsolute(rel) || rel === '..' || rel.startsWith(`..${sep}`)) return null;\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 033)"
+          }
+        },
+        {
+          "id": "F15",
+          "description": "Files deleted from the working tree still keep a scope alive.",
+          "faultClass": "call-removed",
+          "file": "cli/shared-git.mjs",
+          "find": "    return [...new Set(files)].filter(f => !deleted.has(f)).sort();",
+          "replace": "    return [...new Set(files)].sort();",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 033)"
+          }
+        }
+      ]
     }
   ]
 }

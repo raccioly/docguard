@@ -148,6 +148,29 @@ docguard agents --check   # CI gate: exit 2 if any generated variant is stale
 Generated variants carry a source-hash marker. Files you wrote by hand (no
 marker) are never touched without `--force`.
 
+## Path-scoped instructions, per harness
+
+Agents load instructions by path, and each harness does it differently.
+`docguard rules --for <path>` shows what applies; the Path-Scoped-Rules
+validator (PSR001–PSR004) reports scopes and pointers that went stale. The
+formats below were checked against each vendor's documentation on 2026-09-30:
+
+| Harness | Files | Scope field | Always loaded |
+|---|---|---|---|
+| Codex | `AGENTS.override.md` or `AGENTS.md` per directory, root to leaf | none | every file in the chain (32 KiB combined) |
+| Claude Code | `CLAUDE.md` / `CLAUDE.local.md` per directory (`AGENTS.md` only when no CLAUDE file exists up the chain); `.claude/rules/**/*.md`; skills | `paths:` (list or comma string) | a rule without `paths:`; a rule whose frontmatter does not parse |
+| Cursor | `.cursor/rules/**/*.mdc` at any depth (`.md` there is ignored); nested `AGENTS.md` | `globs:` (comma string) | `alwaysApply: true` |
+| GitHub Copilot | `.github/copilot-instructions.md`; `.github/instructions/**/*.instructions.md`; the nearest `AGENTS.md` | `applyTo:` (comma string) | `copilot-instructions.md`, `applyTo: "**"` |
+| OpenHands | `.agents/skills/*/SKILL.md`, `.openhands/skills`, legacy `.openhands/microagents` | `paths:` (list or comma string); a slashless pattern matches the file name at any depth | root `AGENTS.md` and `CLAUDE.md`; a legacy microagent with no `triggers:` or `paths:` |
+
+Sources: code.claude.com/docs/en/memory and /skills, cursor.com/docs/context/rules,
+docs.github.com (repository custom instructions), agentskills.io/specification
+(no path field), docs.openhands.dev/overview/skills, and the Codex AGENTS.md
+guide. A slashless `*.md` means the root only in Claude Code and Copilot, but
+any depth in OpenHands. DocGuard follows each harness. No harness documents `!`
+negation. DocGuard does not evaluate `[...]` classes or nested braces, and
+reports those scopes as not checked instead of guessing.
+
 ## Slash commands
 
 `docguard init` installs `/docguard.*` commands into `.agent/commands/` (the
