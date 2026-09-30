@@ -8,6 +8,7 @@
  * @req SC-N1-001 — same drift in one file → one warning (not one per match)
  * @req SC-N1-002 — distinct drift values in one file are separate warnings
  * @req SC-N1-003 — replace-count fix is emitted exactly once per (file, label)
+ * @req docs-canonical/REQUIREMENTS.md#FR-025
  * @req SC-N1-004 — passed count uses unique-per-(file,label), not per-match
  */
 import { describe, it, afterEach } from 'node:test';
@@ -18,7 +19,8 @@ import { tmpdir } from 'node:os';
 
 import { validateMetricsConsistency } from '../cli/validators/metrics-consistency.mjs';
 
-// Derived, never hardcoded: a new validator must not break this test.
+// Derived, never hardcoded: a new validator must not break this test
+// (docs-canonical/REQUIREMENTS.md#FR-025).
 const SHIPPED = readdirSync(new URL('../cli/validators/', import.meta.url)).filter(f => f.endsWith('.mjs')).length;
 
 function makeRepo(files) {

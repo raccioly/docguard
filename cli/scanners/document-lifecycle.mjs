@@ -123,7 +123,11 @@ export function scanDocumentLifecycle(projectDir, config = {}) {
       });
       continue;
     }
-    if (normalizedStatus && COMPLETION_STATUSES.has(normalizedStatus)) {
+    // docguard.document-lifecycle#FR-002: a verified living spec is kept
+    // current on purpose, so its artifacts saying "Complete" are not a
+    // retirement question either (the completed-task rule below agrees).
+    const livingArtifact = path.startsWith('specs/') && verifiedLivingSpecs.has(`${dirname(path)}/spec.md`);
+    if (normalizedStatus && COMPLETION_STATUSES.has(normalizedStatus) && !livingArtifact) {
       candidates.push({
         code: 'DLC002',
         path: /(?:^|\/)spec\.md$/i.test(path) ? dirname(path) : path,

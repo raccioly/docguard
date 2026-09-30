@@ -83,6 +83,8 @@ describe('disk-backed plan cache', () => {
     buildMemoryPlan(dir, { projectName: 't' });
     const raw = readFileSync(resolve(dir, '.docguard/plan.cache.json'), 'utf-8');
     const data = JSON.parse(raw);
+    // A cache written by an older scanner must never be read back
+    // (docs-canonical/REQUIREMENTS.md#NFR-003).
     assert.equal(data.v, '3', 'schema version stamp');
     assert.equal(typeof data.configKey, 'string');
     assert.equal(typeof data.treeHash, 'string');
