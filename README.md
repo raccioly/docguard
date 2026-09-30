@@ -291,7 +291,7 @@ DocGuard ships **25 commands** (the "Daily 5" + 20 situational tools, including 
 | `init`  | Bootstrap a project (`--wizard` for interactive · `--with <name>` for scaffolders) |
 | `guard` | Validate against canonical docs — 31 validators |
 | `diff`  | Show gaps between docs and code (`--since <ref>` for impact mode) |
-| `sync`  | Refresh code-truth doc sections — keeps memory always up to date |
+| `sync`  | Refresh code-truth doc sections, including the `module-graph` and `entity-diagram` mermaid diagrams drawn from code — keeps memory always up to date |
 | `score` | Structural CDD maturity score (0-100; not a guard verdict; `--diff` for delta between refs) |
 
 **Tools (situational, but day-to-day useful):**

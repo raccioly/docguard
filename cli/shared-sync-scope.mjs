@@ -2,6 +2,7 @@
  * Shared changed-file to generated-section applicability rules.
  * @implements docguard.document-lifecycle#FR-010
  * @implements docguard.sync-section-scope#FR-001
+ * @implements docguard.code-derived-diagrams#FR-009
  */
 
 // Keyed by the `source=code` section IDs the memory plan emits
@@ -29,6 +30,10 @@ export const SECTION_FILE_MATCHERS = {
   'test-inventory':   p => TEST_FILE.test(p),
   'endpoints':        p => code(p) || (API_CONTRACT.test(p) && /openapi|swagger/i.test(p)),
   'entities':         p => code(p) || /\.(?:prisma|sql|graphql|gql)$/i.test(p),
+  // docguard.code-derived-diagrams#FR-009: the module graph is drawn from
+  // imports in code files; the entity diagram from the same scan as `entities`.
+  'module-graph':     p => code(p),
+  'entity-diagram':   p => code(p) || /\.(?:prisma|sql|graphql|gql)$/i.test(p),
   'screens':          p => /\.(?:[jt]sx|vue|svelte)$/i.test(p) || /(?:^|\/)(?:screens|pages|app)\//.test(p),
   'env-vars':         p => code(p) || /(?:^|\/)\.env(?:\.[^/]+)?$/.test(p),
 };

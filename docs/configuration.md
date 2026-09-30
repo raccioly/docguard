@@ -236,6 +236,27 @@ review in `.docguard-doc-lock.json` (commit it). Set
 `"validators": { "docDependency": false }` to turn the check off. See
 [`docguard review`](commands.md#docguard-review).
 
+## Code-derived diagrams — `diagrams.moduleGraph`
+
+Shapes the `module-graph` section (see
+[Diagrams drawn from code](doc-sections.md#diagrams-drawn-from-code)). All keys
+are optional:
+
+```json
+{
+  "diagrams": {
+    "moduleGraph": { "depth": 2, "maxNodes": 30, "include": ["src"] }
+  }
+}
+```
+
+- `depth` (1–8, default 2): directory segments that make a module, so
+  `src/api/routes.ts` belongs to `src/api`.
+- `maxNodes` (2–60, default 30): the node limit before grouping and merging.
+- `include`: directories to draw. Default: every product source file.
+
+The `entity-diagram` section has no options.
+
 ## Project Type Detection
 
 DocGuard auto-detects your project type from `package.json`:

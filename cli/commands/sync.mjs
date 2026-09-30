@@ -13,6 +13,7 @@ import { isMappedDocPath } from '../shared-doc-roles.mjs';
  * Default is a DRY RUN (preview); `--write` applies. `--since <ref>` adds the
  * git diff as context. Only edits docguard:generated docs unless `--force`.
  * @implements docguard.document-lifecycle#FR-010
+ * @implements docguard.code-derived-diagrams#FR-007
  */
 
 import { existsSync, readFileSync } from 'node:fs';
@@ -93,6 +94,13 @@ export function runSync(projectDir, config, flags) {
         continue;
       }
       if (existing.body.trim() === String(sec.body).trim()) continue; // already current
+      // docguard.code-derived-diagrams#FR-007: a section drawn from incomplete
+      // evidence would overwrite a complete one with less. Opt in explicitly;
+      // --force already means "edit docs not marked generated".
+      if (sec.completeness === 'partial' && !flags.allowPartial) {
+        skipped.push({ doc: doc.path, reason: `section ${sec.id} is partial (${sec.partialReason}) — not synced; use --allow-partial to write it anyway` });
+        continue;
+      }
       // L-1: when --since is provided, only update sections whose underlying
       // source files appear in the changed set. Avoids spurious updates when
       // the section's CONTENT would naturally drift (e.g. timestamp-driven

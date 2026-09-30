@@ -21,6 +21,8 @@
  * @req SC-M1-002 — no warning when sections match
  * @req SC-M1-003 — N/A when no canonical docs exist
  * @req SC-M1-004 — N/A when no source=code sections present in any doc
+ * @implements docguard.code-derived-diagrams#FR-006
+ * @implements docguard.code-derived-diagrams#FR-007
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
@@ -139,6 +141,7 @@ export function validateGeneratedStaleness(projectDir, config = {}) {
 
   // Walk each doc's source=code sections and compare against on-disk content.
   let anySourceCodeSection = false;
+  const partialSections = [];
   const draftThresholdDays = (config.draftStalenessDays != null)
     ? Number(config.draftStalenessDays)
     : DRAFT_STALENESS_DAYS;
@@ -185,6 +188,15 @@ export function validateGeneratedStaleness(projectDir, config = {}) {
       // If the section isn't present in the doc at all, that's a Structure /
       // Doc Sections concern — not ours. Skip without counting.
       if (!onDisk) continue;
+
+      // docguard.code-derived-diagrams#FR-007: a section drawn from incomplete
+      // evidence (no Python interpreter here, an unreadable file) cannot say the
+      // committed one is stale, and must not flip a guard that another machine
+      // passes. Report it as unchecked instead; emit no regenerate fix.
+      if (sec.completeness === 'partial' && onDisk.attrs?.pinned === undefined) {
+        partialSections.push(`${basename(doc.path)} § ${sec.id} (${sec.partialReason})`);
+        continue;
+      }
 
       result.total++;
 
@@ -249,5 +261,11 @@ export function validateGeneratedStaleness(projectDir, config = {}) {
     return { ...result, applicable: false };
   }
 
-  return { ...resultFromFindings(findings, { passed: result.passed, total: result.total }), fixes: result.fixes };
+  return {
+    ...resultFromFindings(findings, { passed: result.passed, total: result.total }),
+    fixes: result.fixes,
+    ...(partialSections.length ? {
+      applicability: { status: 'partial', reason: `Not compared, evidence incomplete: ${partialSections.join('; ')}` },
+    } : {}),
+  };
 }

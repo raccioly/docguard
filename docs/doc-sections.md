@@ -27,6 +27,36 @@ ignored (DocGuard never corrupts a malformed doc).
 - **Everything outside any marker — and any `source=human` section — is preserved
   exactly.** Your rationale, "why" notes, and design intent are safe.
 
+## Diagrams drawn from code
+
+Two section ids hold mermaid diagrams that DocGuard draws from the code. Add the
+empty marker where the diagram should go, then run `docguard sync --write` (add
+`--force` if the doc is not marked `docguard:generated`):
+
+```markdown
+<!-- docguard:section id=module-graph source=code -->
+<!-- /docguard:section -->
+```
+
+- **`module-graph`** (ARCHITECTURE) — a `graph LR` with one node per directory
+  module and one edge per pair of modules with a static import between them. A
+  dashed edge is a dynamic `import()` only. Tests, fixtures, examples and ignored
+  paths are not drawn. Over `diagrams.moduleGraph.maxNodes` (default 30, at most
+  60), modules are grouped one directory level higher, then the least-connected
+  are merged into one counted node; at most 150 edges are drawn. A caption under
+  the diagram states every reduction.
+- **`entity-diagram`** (DATA-MODEL) — an `erDiagram` from the same schema scan as
+  the `entities` table, with entities and relationships sorted by name.
+
+When imports or schemas change, Generated-Staleness reports the section (GST002)
+and `sync --write` redraws it. An existing doc without the marker is never given
+one; `generate --plan --write` adds both when it creates the doc.
+
+When the graph cannot be complete on this machine (no Python interpreter for
+Python files, an unreadable source file), guard reports the check as `partial`
+instead of GST002, and `sync --write` leaves the committed diagram alone unless
+you pass `--allow-partial`. Options: [`diagrams.moduleGraph`](configuration.md#code-derived-diagrams--diagramsmodulegraph).
+
 ## Why this matters
 
 This is the foundation for two things:

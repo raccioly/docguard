@@ -58,6 +58,23 @@ Behaviour changes:
     skills.
   - Patterns DocGuard does not evaluate (`[...]`, `!`) are reported as not
     checked, never as matching nothing.
+- **Diagrams drawn from code** (`specs/035-code-derived-diagrams`). Add an
+  empty `<!-- docguard:section id=module-graph source=code -->` block to
+  ARCHITECTURE, or `id=entity-diagram` to DATA-MODEL, and `sync --write` fills
+  it with a mermaid diagram:
+  - `module-graph`: directory modules and the static imports between them;
+  - `entity-diagram`: the entities and relationships from the schema scan.
+
+  When imports or schemas change, Generated-Staleness reports the section
+  (GST002) and `sync --write` redraws it. The output is byte-identical for the
+  same code. Large graphs are grouped and merged to at most
+  `diagrams.moduleGraph.maxNodes` nodes (default 30) and 150 edges, and a
+  caption states every reduction. A graph missing evidence on this machine
+  (no Python interpreter, an unreadable file) is reported `partial`, not
+  stale. `sync --write` leaves it alone unless `--allow-partial` is given.
+  The import graph is now built once per run for the Architecture validator,
+  `impact` and the diagram (a stat-checked cache). Adopting the diagram in
+  this repository cost 0.7% of guard time.
 - **MCP doc navigation tools** (`specs/032-mcp-doc-tools`). Agents can ask
   which documentation describes a file and read one section, instead of
   loading whole documents:
@@ -318,6 +335,12 @@ Behaviour changes:
 
 ### Changed
 
+- **Entity diagrams are sorted.** `generate` writes DATA-MODEL's `erDiagram`
+  with entities and relationships in name order, not file-walk order, so the
+  same schema always yields the same diagram.
+- **An unreadable source file marks the Architecture check `partial`.** It was
+  skipped silently, so its imports were missing from cycle and layer checks
+  without saying so.
 - **The #455 guarantees are stated as TestGuard claims and probed (TestGuard
   0.15.0).** `testguard gate --changed origin/main` reported every source file
   that #455 changed as unclaimed. `testguard.claims.json` gains ten claims with
