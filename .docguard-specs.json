@@ -1087,12 +1087,12 @@
       "path": "specs/035-code-derived-diagrams/spec.md",
       "reviewed": {
         "lifecycle": {
-          "approval": "draft",
-          "delivery": "planned",
+          "approval": "approved",
+          "delivery": "implemented",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
-          "persistenceModel": null
+          "persistenceModel": "living"
         },
         "relations": {
           "extends": [],
@@ -1102,7 +1102,9 @@
           "supersededBy": []
         },
         "scope": {
-          "canonicalDocs": []
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md"
+          ]
         },
         "reconciliation": {
           "lastReviewedRevision": null,
@@ -1132,23 +1134,150 @@
         "artifacts": [
           {
             "path": "specs/035-code-derived-diagrams/spec.md",
-            "digest": "sha256:54be0b29bfaf0fecea00d6361187e40596e9bfd45ce87f98b7feb2cf64544c30"
+            "digest": "sha256:d10ac4b4a0e9f98ed24a5cf58069836d12f9f9c0de40fb3acdb6f1d6b0888de5"
           },
           {
             "path": "specs/035-code-derived-diagrams/plan.md",
-            "digest": "sha256:c41d88184e699ca24643c3dfb632a9867052e92de10ba19422042eba9fc4a042"
+            "digest": "sha256:398d3b48976d841411cbe5c9dbeb84f6ba7c8dca7505a72b481858c3b350ae40"
           },
           {
             "path": "specs/035-code-derived-diagrams/tasks.md",
-            "digest": "sha256:aefc9fc03ee07fdf8bd84b01988d1836fa8b5d6a2e1bcb5f5643f8beb9787087"
+            "digest": "sha256:07cf9e094f8c10b903dc7417f4f4549fd19c10b51d789a731d4e8effc2951be8"
           }
         ],
         "taskCompletion": {
-          "checked": 0,
+          "checked": 12,
           "total": 12
         },
-        "implementationEvidence": [],
-        "testEvidence": []
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/scanners/import-graph.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/scanners/module-diagram.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/scanners/module-diagram.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/scanners/module-diagram.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/validators/generated-staleness.mjs",
+            "line": 24
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/commands/sync.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/validators/generated-staleness.mjs",
+            "line": 25
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "cli/scanners/import-graph.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "cli/scanners/memory-plan.mjs",
+            "line": 348
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "cli/shared-sync-scope.mjs",
+            "line": 5
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/code-derived-diagrams.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/code-derived-diagrams.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/code-derived-diagrams.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/code-derived-diagrams.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/code-derived-diagrams.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/code-derived-diagrams.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/code-derived-diagrams.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/code-derived-diagrams.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "tests/code-derived-diagrams.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "tests/code-derived-diagrams.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "tests/code-derived-diagrams.test.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/code-derived-diagrams.test.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/code-derived-diagrams.test.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/code-derived-diagrams.test.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "SC-004",
+            "file": "tests/code-derived-diagrams.test.mjs",
+            "line": 20
+          }
+        ]
       }
     },
     {
@@ -2965,13 +3094,18 @@
           },
           {
             "requirementId": "FR-002",
-            "file": "cli/validators/architecture.mjs",
-            "line": 169
+            "file": "cli/scanners/import-graph.mjs",
+            "line": 36
           },
           {
             "requirementId": "FR-003",
-            "file": "cli/validators/architecture.mjs",
-            "line": 170
+            "file": "cli/scanners/import-graph.mjs",
+            "line": 37
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/scanners/import-graph.mjs",
+            "line": 38
           },
           {
             "requirementId": "FR-004",
@@ -2979,14 +3113,9 @@
             "line": 17
           },
           {
-            "requirementId": "FR-004",
-            "file": "cli/validators/architecture.mjs",
-            "line": 171
-          },
-          {
             "requirementId": "FR-005",
-            "file": "cli/validators/architecture.mjs",
-            "line": 172
+            "file": "cli/scanners/import-graph.mjs",
+            "line": 39
           },
           {
             "requirementId": "FR-006",
@@ -5563,7 +5692,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/docguard.mjs",
-            "line": 910
+            "line": 914
           },
           {
             "requirementId": "FR-011",

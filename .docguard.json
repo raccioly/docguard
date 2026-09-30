@@ -42,6 +42,9 @@
     "documentLifecycle": true,
     "specRegistry": true
   },
+  "diagrams": {
+    "moduleGraph": { "include": ["cli"] }
+  },
   "specFirst": {
     "paths": ["cli/**"]
   },

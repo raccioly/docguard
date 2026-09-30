@@ -1951,6 +1951,206 @@
           }
         }
       ]
+    },
+    {
+      "id": "MODULE-GRAPH-DRIFT-IS-DETECTED",
+      "statement": "A module-graph section is drawn from the import graph deterministically and within its node and edge limits; a new import between modules makes it stale (GST002) and sync redraws it, while a graph missing evidence on this machine is reported partial and never overwrites the committed diagram without --allow-partial.",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/035-code-derived-diagrams/spec.md#FR-006"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (#455 spec 035)"
+      },
+      "defendedBy": [
+        "tests/code-derived-diagrams.test.mjs",
+        "tests/sync-since.test.mjs",
+        "tests/plan-disk-cache.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "Imports inside one module draw a self-edge.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/module-diagram.mjs",
+          "find": "    if (from !== to) addPair(pairs, from, to, e.dynamic);",
+          "replace": "    if (true) addPair(pairs, from, to, e.dynamic);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 035)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "One dynamic import dashes an edge that also has static imports.",
+          "faultClass": "other",
+          "file": "cli/scanners/module-diagram.mjs",
+          "find": "  if (existing) existing.dynamic = existing.dynamic && dynamic;",
+          "replace": "  if (existing) existing.dynamic = existing.dynamic || dynamic;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 035)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "Test files are drawn as modules.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/module-diagram.mjs",
+          "find": "  const inScope = file => !isNonProductPath(file, config)",
+          "replace": "  const inScope = file => true",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 035)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "Hidden Python files outside the drawn scope make the diagram partial.",
+          "faultClass": "call-removed",
+          "file": "cli/scanners/module-diagram.mjs",
+          "find": "      for (const f of (graph.unsupportedFiles || []).map(posix).filter(inScope)) partialFiles.set(f, PARTIAL_CODES[item.code]);",
+          "replace": "      for (const f of (graph.unsupportedFiles || []).map(posix)) partialFiles.set(f, PARTIAL_CODES[item.code]);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 035)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "Too many modules are never grouped a level higher.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/module-diagram.mjs",
+          "find": "  while (modules.names.length > options.maxNodes && depth > 1) {",
+          "replace": "  while (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 035)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "The edge cap is ignored.",
+          "faultClass": "other",
+          "file": "cli/scanners/module-diagram.mjs",
+          "find": "  const kept = new Set(priority.slice(0, MAX_EDGES));",
+          "replace": "  const kept = new Set(priority);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 035)"
+          }
+        },
+        {
+          "id": "F7",
+          "description": "Colliding node ids are not disambiguated.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/module-diagram.mjs",
+          "find": "      ids.set(name, members.length === 1 ? id :",
+          "replace": "      ids.set(name, true ? id :",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 035)"
+          }
+        },
+        {
+          "id": "F8",
+          "description": "A partial section is compared and reported stale.",
+          "faultClass": "condition-forced",
+          "file": "cli/validators/generated-staleness.mjs",
+          "find": "      if (sec.completeness === 'partial' && onDisk.attrs?.pinned === undefined) {",
+          "replace": "      if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 035)"
+          }
+        },
+        {
+          "id": "F9",
+          "description": "sync overwrites a committed diagram from a partial graph.",
+          "faultClass": "condition-forced",
+          "file": "cli/commands/sync.mjs",
+          "find": "      if (sec.completeness === 'partial' && !flags.allowPartial) {",
+          "replace": "      if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 035)"
+          }
+        },
+        {
+          "id": "F10",
+          "description": "Entities keep scan order.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/schemas.mjs",
+          "find": "  entities = [...entities].sort((a, b) => byText(String(a.name), String(b.name)));\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 035)"
+          }
+        },
+        {
+          "id": "F11",
+          "description": "An existing doc without the marker gains the section.",
+          "faultClass": "return-altered",
+          "file": "cli/scanners/memory-plan.mjs",
+          "find": "  try { return getSection(readFileSync(full, 'utf-8'), sectionId) !== null; }",
+          "replace": "  try { return true; }",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 035)"
+          }
+        },
+        {
+          "id": "F12",
+          "description": "The cached graph is served after the tree changed.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/import-graph.mjs",
+          "find": "    if (cached?.signature === signature) return cached.graph;",
+          "replace": "    if (cached) return cached.graph;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 035)"
+          }
+        },
+        {
+          "id": "F13",
+          "description": "Any change, docs included, refreshes the module graph under --since.",
+          "faultClass": "return-altered",
+          "file": "cli/shared-sync-scope.mjs",
+          "find": "  'module-graph':     p => code(p),",
+          "replace": "  'module-graph':     p => true,",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 035)"
+          }
+        },
+        {
+          "id": "F14",
+          "description": "The validator stops re-exporting the moved builder.",
+          "faultClass": "statement-deleted",
+          "file": "cli/validators/architecture.mjs",
+          "find": "export { buildImportGraph };\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 035)"
+          }
+        },
+        {
+          "id": "F15",
+          "description": "An unreadable source file is skipped silently.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/import-graph.mjs",
+          "find": "      graph.limitations.push({ code: 'source-unreadable', file: posixPath(relPath) });\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 035)"
+          }
+        }
+      ]
     }
   ]
 }

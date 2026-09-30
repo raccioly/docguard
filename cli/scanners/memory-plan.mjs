@@ -16,12 +16,15 @@ import { remapDocPath } from '../shared-doc-roles.mjs';
 import { detectProjectProfile } from './project-type.mjs';
 import { detectDocTools } from './doc-tools.mjs';
 import { scanRoutesDeep } from './routes.mjs';
-import { scanSchemasDeep } from './schemas.mjs';
+import { scanSchemasDeep, generateERDiagram } from './schemas.mjs';
 import { scanFrontend } from './frontend.mjs';
 import { grepEnvUsage } from '../shared-source.mjs';
 import { detectIntegrations } from './integrations.mjs';
 import { PROFILES } from '../shared.mjs';
 import { scanComponents, scanTestInventory } from './inventory.mjs';
+import { buildImportGraph } from './import-graph.mjs';
+import { renderModuleGraph } from './module-diagram.mjs';
+import { getSection } from '../writers/sections.mjs';
 
 const md = {
   table(headers, rows) {
@@ -50,7 +53,8 @@ import { pyAstAvailable } from './py-ast.mjs';
 
 const _memoryPlanCache = new Map(); // config key → { treeHash, plan }
 const _DISK_CACHE_PATH = '.docguard/plan.cache.json';
-const _DISK_CACHE_VERSION = '2';
+// 3: code sections may carry `completeness` (docguard.code-derived-diagrams).
+const _DISK_CACHE_VERSION = '3';
 const _CACHE_IGNORE_DIRS = new Set([
   ...DEFAULT_IGNORE_DIRS, '.local', '.docguard', '.wolf', '.codex', '.claude',
 ]);
@@ -216,6 +220,7 @@ function _validCachedPlan(plan) {
   const grounding = value => value == null || record(value);
   const section = value => record(value) && text(value.id) && (
     value.source === 'code' ? text(value.body)
+      && (value.completeness === undefined || (value.completeness === 'partial' && text(value.partialReason)))
       : value.source === 'human' && text(value.task) && grounding(value.grounding)
   );
   const namedFile = value => record(value) && text(value.name) && text(value.file);
@@ -334,6 +339,19 @@ export function buildMemoryPlan(projectDir, config = {}, opts = {}) {
     if (config.diskCache !== false) _writeDiskCache(projectDir, key, treeHash, result);
   }
   return result;
+}
+
+/**
+ * A diagram section is planned when the doc already has its marker, or when
+ * the doc does not exist yet and `generate --plan --write` would create it.
+ * An existing doc without the marker is left alone: the maintainer opts in.
+ * @implements docguard.code-derived-diagrams#FR-008
+ */
+function _wantsSection(projectDir, config, docPath, sectionId) {
+  const full = resolvePath(projectDir, remapDocPath(config, docPath));
+  if (!existsSync(full)) return true;
+  try { return getSection(readFileSync(full, 'utf-8'), sectionId) !== null; }
+  catch { return false; }
 }
 
 // Original implementation, renamed so the public buildMemoryPlan can wrap it.
@@ -456,6 +474,18 @@ function _buildMemoryPlanUncached(projectDir, config = {}) {
         body: md.table(['Kind', 'Count', 'Examples'], feRows),
       });
     }
+    // Module graph (docguard.code-derived-diagrams): drawn from the import
+    // graph, only for a doc that asks for it or is about to be created, so a
+    // project without the marker never pays for the graph (FR-008).
+    if (_wantsSection(projectDir, config, 'docs-canonical/ARCHITECTURE.md', 'module-graph')) {
+      const graph = renderModuleGraph(buildImportGraph(projectDir, config), config);
+      sections.push({
+        id: 'module-graph',
+        source: 'code',
+        body: graph.body,
+        ...(graph.completeness === 'partial' ? { completeness: 'partial', partialReason: graph.partialReason } : {}),
+      });
+    }
     docs.push({ path: 'docs-canonical/ARCHITECTURE.md', sections });
   }
 
@@ -504,6 +534,13 @@ function _buildMemoryPlanUncached(projectDir, config = {}) {
       source: 'code',
       body: md.table(['Entity', 'Fields'], rows),
     }];
+    if (_wantsSection(projectDir, config, 'docs-canonical/DATA-MODEL.md', 'entity-diagram')) {
+      sections.push({
+        id: 'entity-diagram',
+        source: 'code',
+        body: `\`\`\`mermaid\n${generateERDiagram(entities, schemas.relationships || [])}\n\`\`\``,
+      });
+    }
     sections.push(addTask('docs-canonical/DATA-MODEL.md', 'relationships',
       'Describe the relationships between the entities below and any key indexes.',
       { entities: surface.entities.map(e => e.name) }));

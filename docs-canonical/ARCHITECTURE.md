@@ -41,7 +41,8 @@ It targets development teams and AI coding agents that need to maintain document
 | **Managed Git hooks** | Installs bounded DocGuard blocks while preserving user-owned hook commands before and after them | `cli/commands/hooks.mjs` | Reinstall and removal use one outer marker pair, repair nested markers from affected releases, fail closed on enforcement errors, and fall through after success so user postludes execute. A hook owned by husky, lefthook or simple-git-hooks is never written, even under `--force`; the command prints the line to add to that manager |
 | **Readiness assessment** | Combines guard enforcement and optional CI score policy without changing structural score semantics | `cli/assessment.mjs`, `cli/commands/ci.mjs`, `cli/commands/diagnose.mjs`, `cli/commands/report.mjs` | READY requires a passing guard and configured gates; ATTENTION carries advisory warnings; BLOCKED identifies failed enforcement |
 | **Task-specific agent context** | Ranks exact task paths, qualified requirements, finding codes, identifiers, and bounded lexical overlap across current governed evidence | `cli/scanners/task-context.mjs`, `cli/commands/agent.mjs`, `schemas/docguard-task-context.schema.json` | Read-only and deterministic; excludes retired, unapproved, digest-stale, private, and unsafe material; abstains on weak relevance and never upgrades prose accuracy |
-| **Cross-language import graph** | Resolves repository-local JS/TS and Python static imports for cycle and layer checks | `cli/validators/architecture.mjs`, `cli/scanners/py-ast.mjs` | Python supports regular flat/`src/` packages and explicit relatives; dynamic imports, runtime path changes, parse failures, missing interpreters, and ambiguous modules remain explicit limitations |
+| **Cross-language import graph** | Resolves repository-local JS/TS and Python static imports for cycle and layer checks, once per run for every consumer | `cli/scanners/import-graph.mjs`, `cli/validators/architecture.mjs`, `cli/scanners/py-ast.mjs` | Python supports regular flat/`src/` packages and explicit relatives; dynamic imports, runtime path changes, parse failures, missing interpreters, and ambiguous modules remain explicit limitations |
+| **Code-derived diagrams** | Draws the `module-graph` (directory modules and their imports) and `entity-diagram` (schema entities) mermaid sections from code, so GST002 reports drift and `sync --write` redraws them; a graph missing evidence is `partial`, never stale | `cli/scanners/module-diagram.mjs`, `cli/scanners/memory-plan.mjs`, `cli/validators/generated-staleness.mjs` | Only for a doc that has the marker or is being created; node, edge and depth limits are captioned; hand-drawn diagrams are untouched |
 | **Repository-root guidance** | Detects a likely governing ancestor without changing the selected scan directory | `cli/repository-root.mjs`, `cli/docguard.mjs` | Requires ancestor DocGuard configuration or npm/pnpm membership, respects nested Git boundaries, and uses typed stderr diagnostics for machine modes |
 | **Lifecycle transactions and context** | Stages registry, recovery, spec outcome, and current-context changes before any visible mutation and rolls the set back on write or validation failure | `cli/writers/file-transaction.mjs`, `cli/writers/spec-outcomes.mjs`, `cli/scanners/lifecycle-context.mjs` | Active context includes approved current spec pointers and content hashes; retired prose is excluded |
 | **Agent instruction budget** | Measures every `AGENTS.md` chain from the root to each instruction directory, as Codex loads it (`AGENTS.override.md` replaces `AGENTS.md`), against `agentInstructions.maxBytes` (default 32768) or a per-chain allowance | `cli/scanners/agent-instructions.mjs`, `cli/validators/structure.mjs` | `STR004` is an escalation; `STR005` suggests tightening a slack allowance. Increasing an allowance is a reviewed config change, which the digit-normalized finding baseline could not guarantee |
@@ -124,6 +125,42 @@ graph TD
     style F fill:#17a2b8,color:#fff
     style G fill:#e83e8c,color:#fff
 ```
+
+### Module graph
+
+Drawn from the static imports in `cli/` by `docguard sync --write`
+(`diagrams.moduleGraph` in `.docguard.json`). The layer graph above is the
+intended shape and is maintained by hand; this one is what the code does, and
+Generated-Staleness (GST002) reports it when an import between modules changes.
+
+<!-- docguard:section id=module-graph source=code -->
+```mermaid
+graph LR
+  m_cli["cli"]
+  m_cli_commands["cli/commands"]
+  m_cli_evidence["cli/evidence"]
+  m_cli_scanners["cli/scanners"]
+  m_cli_validators["cli/validators"]
+  m_cli_writers["cli/writers"]
+  m_cli --> m_cli_commands
+  m_cli --> m_cli_scanners
+  m_cli_commands --> m_cli
+  m_cli_commands --> m_cli_evidence
+  m_cli_commands --> m_cli_scanners
+  m_cli_commands --> m_cli_validators
+  m_cli_commands --> m_cli_writers
+  m_cli_evidence --> m_cli
+  m_cli_evidence --> m_cli_scanners
+  m_cli_scanners --> m_cli
+  m_cli_scanners --> m_cli_writers
+  m_cli_validators --> m_cli
+  m_cli_validators --> m_cli_evidence
+  m_cli_validators --> m_cli_scanners
+  m_cli_validators --> m_cli_writers
+  m_cli_writers --> m_cli
+  m_cli_writers --> m_cli_scanners
+```
+<!-- /docguard:section -->
 
 ## Data Flow
 

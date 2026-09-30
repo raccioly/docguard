@@ -801,16 +801,22 @@ export function generateERDiagram(entities, relationships) {
   if (entities.length === 0) return '';
 
   const lines = ['erDiagram'];
+  // Sorted, so the diagram only changes when the schema does: scan order
+  // depends on the file walk (docguard.code-derived-diagrams#FR-005).
+  const byText = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
+  entities = [...entities].sort((a, b) => byText(String(a.name), String(b.name)));
+  relationships = [...(relationships || [])].sort((a, b) => byText(String(a.from), String(b.from))
+    || byText(String(a.to), String(b.to)) || byText(String(a.field), String(b.field)));
 
   // Add entities with fields
   for (const entity of entities) {
     if (entity.source === 'prisma-enum') continue; // Skip enums in ER
-    const fieldLines = entity.fields
+    const fieldLines = (entity.fields || [])
       .slice(0, 8) // Limit fields shown
       .map(f => {
         const pk = f.primaryKey ? ' PK' : '';
         const uk = f.unique ? ' UK' : '';
-        return `        ${f.type.replace(/[^a-zA-Z0-9]/g, '_')} ${f.name}${pk}${uk}`;
+        return `        ${String(f.type || 'unknown').replace(/[^a-zA-Z0-9]/g, '_')} ${f.name}${pk}${uk}`;
       });
     lines.push(`    ${entity.name} {`);
     lines.push(...fieldLines);
