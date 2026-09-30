@@ -34,6 +34,27 @@ Behaviour changes:
 
 ### Added
 
+- **Doc ownership map** (`specs/034-doc-ownership-map`). A project can declare
+  which doc section is responsible for which source paths, in an `ownership`
+  block in `.docguard.json`:
+  - Each tracked file has at most one owner. An exact path beats any glob, a
+    longer literal directory prefix beats a shorter one, and anything else is
+    a tie.
+  - `trace --reverse`, `review --suggest` and the MCP tool
+    `docguard_docs_for_path` now report the declared owner.
+  - `trace --owners` lists the map; `trace --owners --suggest` drafts one and
+    never writes it.
+  - The **Doc-Ownership** validator reports unowned source directories (at
+    their highest level), ties, patterns and roots that match nothing, and
+    entries naming a missing doc or section (OWN001–OWN004). A broken block is
+    an error (OWN007), never a pass.
+  - A committed `.devin/wiki.json` is linted against Devin's documented rules
+    (checked 2026-09-30): 30 pages (80 on enterprise, via
+    `devinWiki.maxPages`), 100 notes counted together, 10,000 characters per
+    note, required keys, unique titles (OWN005). Paths its notes name that are
+    no longer in the repository are OWN006.
+  - This repository maps `cli/`, `extensions/`, `tools/`, `benchmarks/` and
+    `tests/`: every source file has exactly one owner, checked in 25 ms.
 - **Path-scoped agent rules** (`specs/033-path-scoped-rules`). Agents load
   instructions by path, and each harness does it differently. DocGuard now
   reads them the way each one does: Codex, Claude Code, Cursor, Copilot and

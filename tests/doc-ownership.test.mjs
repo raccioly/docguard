@@ -140,10 +140,14 @@ describe('the validator (SC-001, User Stories 1–3)', () => {
   });
 
   it('default roots skip test and example code; a declared root is checked as declared', t => {
-    const dir = project(t, { ...DOCS, 'src/a.ts': '', 'src/tests/a.test.ts': '', 'src/examples/demo.ts': '' });
-    const own = { entries: [entry('docs-canonical/ARCHITECTURE.md', ['src/a.ts'])] };
-    assert.deepEqual(ownershipReport(dir, { ownership: own }).unowned, []);
-    assert.deepEqual(ownershipReport(dir, { ownership: { ...own, roots: ['src'] } }).unowned, ['src/examples', 'src/tests']);
+    // Default roots are the top-level modules (src/api, src/db); test and
+    // example code nested inside one is not "unowned code".
+    const dir = project(t, { ...DOCS, 'src/api/users.ts': '', 'src/api/tests/users.test.ts': '', 'src/api/examples/demo.ts': '', 'src/db/store.ts': '' });
+    const own = { entries: [entry('docs-canonical/ARCHITECTURE.md', ['src/api/users.ts', 'src/db/**'])] };
+    const byDefault = ownershipReport(dir, { ownership: own });
+    assert.deepEqual(byDefault.roots, ['src/api', 'src/db']);
+    assert.deepEqual(byDefault.unowned, []);
+    assert.deepEqual(ownershipReport(dir, { ownership: { ...own, roots: ['src'] } }).unowned, ['src/api/examples', 'src/api/tests']);
   });
 
   it('ignored paths are never unowned', t => {
