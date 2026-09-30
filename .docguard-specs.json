@@ -1271,6 +1271,11 @@
             "line": 12
           },
           {
+            "requirementId": "FR-005",
+            "file": "tests/completion-revision-anchoring.test.mjs",
+            "line": 15
+          },
+          {
             "requirementId": "SC-001",
             "file": "tests/completion-revision-anchoring.test.mjs",
             "line": 13
