@@ -838,8 +838,6 @@ export function grepEnvUsage(projectDir, config = {}, options = {}) {
         names.add(read.name);
         recordSite(read.name, file, lineOf(lineStarts, read.index), read.fallback);
       }
-    }
-    if (isJs) {
       const workerBindings = extractWorkerEnvBindings(content, filePath, workerConfigForFile(projectDir, filePath));
       for (const name of workerBindings) names.add(name);
       for (const limitation of workerBindings.limitations || []) names.limitations.push({ code: limitation, file: rel.replace(/\\/g, '/') });
