@@ -102,6 +102,8 @@ anything from display: `"high"` promotes its warnings to blocking (CI fails),
 finding code and takes precedence over the validator setting. This is the
 preferred control for a noisy rule because neighboring findings retain their
 policy. Intrinsic errors remain blocking unless their exact code is configured.
+A few codes are informational by default (`STR005`); validator severity leaves
+them informational, and `findingSeverity.<CODE>` can still promote them.
 Machine outputs preserve `severity` and add `effectiveSeverity` plus the
 enforcement source so audit consumers can distinguish detection from policy.
 
@@ -171,7 +173,8 @@ to a governed path that neither names its spec nor declares an exemption.
 Agents stop reading instructions at a byte limit (Codex:
 `project_doc_max_bytes`, 32 KiB). **STR004** reports an `AGENTS.md` chain (root
 down to a directory; `AGENTS.override.md` replaces `AGENTS.md`) over the budget.
-**STR005** reports an allowance that has slack to reclaim.
+**STR005** reports an allowance that has slack to reclaim. It is informational:
+it never changes guard's exit code unless `findingSeverity.STR005` says so.
 
 ```json
 {

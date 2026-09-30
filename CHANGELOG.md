@@ -451,6 +451,16 @@ Behaviour changes:
 
 ### Fixed
 
+- **STR005 is informational, as spec 017 requires.** The validator asked for
+  `severity: 'info'`, which the finding constructor only accepts as `error` or
+  `warn`, so it became a warning: slack in an instruction allowance turned
+  guard to WARN (exit 2) and failed `ci --fail-on-warning`. A code can now be
+  registered as informational (`CODES.<code>.defaultLevel`); its findings
+  resolve to `info` with enforcement source `code`, validator severity leaves
+  them there, and `findingSeverity.<CODE>` still overrides. A finding's own
+  `severity` stays `error` or `warn`. Guard's note names these codes instead
+  of blaming `severity=low`, and a test rejects any other literal severity in
+  a detector.
 - **Traceability reads `@doc` annotations in JSDoc blocks.** The pattern
   required `//`, `/*` or `#` immediately before `@doc`, so the common form
   (`/**\n * @doc API-REFERENCE.md\n */`) linked nothing. It now shares one

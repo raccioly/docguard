@@ -1177,13 +1177,20 @@ export function runGuard(projectDir, config, flags) {
       + data.validators.filter(v => !Array.isArray(v.findings) || v.findings.length === 0)
         .reduce((sum, v) => sum + (v.severity === 'high' ? v.warnings.length : 0), 0);
     const demotedErrors = data.findings.filter(f => f.severity === 'error' && f.effectiveSeverity !== 'error').length;
-    const informational = data.effectiveInfos;
+    // A code registered as informational (CODES.<code>.defaultLevel) is not
+    // an override: name it apart so the note never blames the user's config.
+    const byDefault = data.findings.filter(f => f.enforcement?.source === 'code' && f.effectiveSeverity === 'info');
+    const informational = data.effectiveInfos - byDefault.length;
     const parts = [];
     if (upgraded > 0) parts.push(`${upgraded} warning(s) escalated to fail (severity=high)`);
     if (demotedErrors > 0) parts.push(`${demotedErrors} intrinsic error(s) explicitly demoted by finding code`);
     if (informational > 0) parts.push(`${informational} finding(s) informational for exit code (severity=low)`);
     if (parts.length > 0) {
       console.log(`\n  ${c.dim}Severity override: ${parts.join('; ')}.${c.reset}`);
+    }
+    if (byDefault.length > 0) {
+      const codes = [...new Set(byDefault.map(f => f.code))].sort().join(', ');
+      console.log(`  ${c.dim}${byDefault.length} finding(s) informational by default (${codes}); set findingSeverity.<CODE> to change that.${c.reset}`);
     }
   }
 

@@ -446,12 +446,12 @@
           },
           {
             "path": "specs/017-agent-instruction-budget/tasks.md",
-            "digest": "sha256:a1161bf3b3ee6e62130ad82531724c728536d2d79c3ff712322b0bc5da39c334"
+            "digest": "sha256:60f45348cc125343bc37d36bf64960a8543f0eed22a033bd544922936755cd80"
           }
         ],
         "taskCompletion": {
-          "checked": 7,
-          "total": 7
+          "checked": 10,
+          "total": 10
         },
         "implementationEvidence": [
           {

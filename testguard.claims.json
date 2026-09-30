@@ -324,7 +324,7 @@
     },
     {
       "id": "AGENT-INSTRUCTION-BUDGET",
-      "statement": "An AGENTS.md chain larger than its budget or allowance produces STR004.",
+      "statement": "An AGENTS.md chain larger than its budget or allowance produces STR004. STR005 is informational: it never changes the exit code unless its exact code is configured.",
       "source": {
         "kind": "spec",
         "ref": "specs/017-agent-instruction-budget/spec.md#FR-003"
@@ -349,6 +349,42 @@
           "producedBy": {
             "producer": "agent",
             "by": "claude-opus-5.5 (#455)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "A code registered as informational is ignored, so STR005 is a warning again.",
+          "faultClass": "other",
+          "file": "cli/shared.mjs",
+          "find": "  if (codeLevel) return { level: codeLevel, source: 'code', key: code };",
+          "replace": "  if (false) return { level: codeLevel, source: 'code', key: code };",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (STR005 informational fix)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "STR005 loses its registered informational default.",
+          "faultClass": "statement-deleted",
+          "file": "cli/findings.mjs",
+          "find": "    defaultLevel: 'info',\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (STR005 informational fix)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "Guard blames severity=low for a finding that is informational by its code.",
+          "faultClass": "other",
+          "file": "cli/commands/guard.mjs",
+          "find": "    const informational = data.effectiveInfos - byDefault.length;",
+          "replace": "    const informational = data.effectiveInfos;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (STR005 informational fix)"
           }
         }
       ]

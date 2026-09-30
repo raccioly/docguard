@@ -19,3 +19,9 @@
 - [x] T005 `tests/agent-instruction-budget.test.mjs`: chain composition, override precedence, ignored paths, budget, allowance pass/regrow/slack, SPK012 numeric vs timestamp.
 - [x] T006 [P] `README.md` Structure and Spec-Kit rows; `docs-canonical/ARCHITECTURE.md`; `docs-canonical/CI-RECIPES.md` note.
 - [x] T007 `CHANGELOG.md`; `npm run llms`; stage, then `docguard specs --write`; `docguard guard`; `npm test`; record SC-003.
+
+## Phase 4: STR005 is informational (FR-004 fix, 2026-09-30)
+
+- [x] T008 `tests/agent-instruction-budget.test.mjs`: STR005 resolves to `info` with enforcement source `code`, stays `info` under `severity.structure: high`, is promoted by `findingSeverity.STR005`, and leaves guard's exit code alone; a lint rejects any literal detector severity other than `error` or `warn`. All five fail on the code before this phase: `mkFinding` read the validator's `severity: 'info'` as `warn`, so slack in an allowance turned guard to WARN (exit 2).
+- [x] T009 `cli/findings.mjs`: `CODES.STR005.defaultLevel: 'info'` and `codeDefaultLevel()`; `cli/shared.mjs`: `resolveFindingEnforcement` applies a code's default after exact code policy and intrinsic errors, before validator policy; `cli/validators/structure.mjs` emits `warn` (a finding's own severity stays `error` or `warn`, as DATA-MODEL documents); `cli/commands/guard.mjs` names a code default apart from a config override.
+- [x] T010 `docs-canonical/DATA-MODEL.md`, `docs/configuration.md`, `CHANGELOG.md`; `npm test`; `docguard specs --write`; `npm run llms`.
