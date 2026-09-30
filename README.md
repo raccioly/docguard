@@ -715,7 +715,7 @@ The pieces that matter at company scale:
 | **Audit trail** for compliance reviews | `docguard report` — commit-stamped evidence bundle (guard verdict, findings by code, CDD score, ALCOA+ data-integrity attributes, fix history) with a tamper-evident sha256 integrity hash |
 | **Every CI system**, not just GitHub | `guard --format sarif` (GitHub Code Scanning) · `--format junit` (GitLab, Jenkins, Azure DevOps, CircleCI) · `--format json` (anything else) |
 | **Trajectory, not snapshots** | `docguard ci` records every run to `.docguard/history.jsonl`; `score --trend` shows the sparkline + delta |
-| **AI agents on the team** | MCP server (stdio or team-shared HTTP) exposes guard/score/explain/verify/report/diagnose as read-only tools; `agents --sync` keeps the whole agent-file family drift-proof |
+| **AI agents on the team** | MCP server (stdio or team-shared HTTP) exposes guard, score, verify, report, doc navigation and task context as read-only tools; `agents --sync` keeps the whole agent-file family drift-proof |
 | **Data-integrity framing auditors know** | ALCOA+ scoring (FDA 21 CFR Part 11 / EMA Annex 11 vocabulary) built into `score` and `report` |
 
 ## ⚙️ CI/CD Integration
@@ -806,8 +806,8 @@ Highlights from recent releases:
   `.docguard/history.jsonl`; the trend view shows the sparkline and delta over time.
 - **Three machine formats for guard** — `--format json`, `--format sarif` (GitHub Code
   Scanning), and `--format junit` (GitLab, Jenkins, Azure DevOps, CircleCI).
-- **MCP server, stdio + team HTTP** — guard/score/explain/verify/report/diagnose as read-only
-  agent tools: `claude mcp add docguard -- npx docguard-cli mcp`.
+- **MCP server, stdio + team HTTP** — guard, score, verify, report, doc navigation and task
+  context as read-only agent tools: `claude mcp add docguard -- npx docguard-cli mcp`.
 - **Agent-file family sync** — `agents --sync` treats AGENTS.md as canonical and regenerates
   CLAUDE.md / `.cursor/rules` / Copilot / Gemini variants with drift-proof source-hash markers.
 - **`verify --evidence`, `verify --semantic`, and `verify --instructions`** — check exact local
