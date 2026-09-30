@@ -462,6 +462,38 @@ Behaviour changes:
 
 ### Fixed
 
+- **A project's first spec passes the generated-spec preflight**
+  (`specs/040-spec-preflight-first-spec`). The mandatory `before_tasks` hook
+  runs `specs preflight --path <draft>`. With no registry it blocked on
+  SPR001, and after `specs --write` it blocked on SPR004 and SPR001 while
+  `specs --check` said CURRENT, so no project could get past its first spec.
+  Preflight now checks the registry against every spec except the draft: the
+  draft's own entry may be missing or stale. A registry stale for any other
+  spec still blocks, and the briefing lists the same specs with and without
+  `--path`.
+- **`docguard specs approve` records approval.** Approving a spec meant
+  editing `.docguard-specs.json` by hand, and SPC002 did not say so.
+  `specs approve --id <id> [--delivery planned|in_progress|implemented]
+  --write` sets the reviewed approval and delivery state. It refuses
+  `verified` and `released`, which only `specs complete` records, and never
+  moves a verified spec back. A `**Status**: Approved` line in spec prose is
+  still not read. SPC002 now names the command.
+- **`docguard explain SPC001` works.** The SPC codes `specs complete` and
+  `specs reanchor` print had no entry, so `explain` answered "No matching
+  validator". All eight are explained, in the CLI and the MCP
+  `docguard_explain` tool. They are blockers, not findings, so
+  `findingSeverity` still rejects them.
+- **The spec-first gate no longer names DocGuard's own spec in your
+  project.** The fix hint suggested `specs/015-spec-first-gate`. A Spec ID
+  written after `Spec:` or `Spec ID:` that matches no spec is now listed as
+  unresolved, as an unknown path already was. The docs state the exemption
+  reason's 10-character minimum.
+- **`specs complete` prints the real transition.** It printed
+  `implemented→verified` for a planned or already verified spec.
+- **`specs reanchor --to HEAD` works.** `--to` accepted only a full SHA. It
+  now takes anything git resolves to a commit (a branch, tag, `HEAD` or a
+  short SHA) and records the full SHA. A value starting with `-` is refused.
+
 - **STR005 is informational, as spec 017 requires.** The validator asked for
   `severity: 'info'`, which the finding constructor only accepts as `error` or
   `warn`, so it became a warning: slack in an instruction allowance turned

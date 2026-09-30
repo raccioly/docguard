@@ -142,7 +142,7 @@ normative JSON Schema is `schemas/docguard-specs.schema.json`.
 | `$schema`, `schemaVersion` | Contract | Exact schema URL and version `2`; version 1 is read for migration and projects stale until refreshed |
 | `specs[].specId` | Spec metadata | Immutable lowercase namespaced identity; never generated or reused |
 | `specs[].path` | Projection | Current spec path or former path for a retired record |
-| `specs[].reviewed.lifecycle` | Human review | Orthogonal approval, delivery, context, retirement reason, storage, and persistence policy |
+| `specs[].reviewed.lifecycle` | Human review | Orthogonal approval, delivery, context, retirement reason, storage, and persistence policy. `specs approve` records approval and a `planned`, `in_progress` or `implemented` delivery; `specs complete` records `verified` |
 | `specs[].reviewed.relations` | Human review | `extends`, `duplicates`, `conflictsWith`, `supersedes`, and `supersededBy` spec-ID edges |
 | `specs[].reviewed.scope.canonicalDocs` | Human review | Canonical documents affected by the specification |
 | `specs[].reviewed.scope.sourcePaths` | `generate --spec --write` | Optional. Code areas an as-built spec describes; SPR007 re-scans them. Serialized only when set |

@@ -714,7 +714,7 @@ normative JSON Schema is `schemas/docguard-specs.schema.json`.
 | `$schema`, `schemaVersion` | Contract | Exact schema URL and version `2`; version 1 is read for migration and projects stale until refreshed |
 | `specs[].specId` | Spec metadata | Immutable lowercase namespaced identity; never generated or reused |
 | `specs[].path` | Projection | Current spec path or former path for a retired record |
-| `specs[].reviewed.lifecycle` | Human review | Orthogonal approval, delivery, context, retirement reason, storage, and persistence policy |
+| `specs[].reviewed.lifecycle` | Human review | Orthogonal approval, delivery, context, retirement reason, storage, and persistence policy. `specs approve` records approval and a `planned`, `in_progress` or `implemented` delivery; `specs complete` records `verified` |
 | `specs[].reviewed.relations` | Human review | `extends`, `duplicates`, `conflictsWith`, `supersedes`, and `supersededBy` spec-ID edges |
 | `specs[].reviewed.scope.canonicalDocs` | Human review | Canonical documents affected by the specification |
 | `specs[].reviewed.scope.sourcePaths` | `generate --spec --write` | Optional. Code areas an as-built spec describes; SPR007 re-scans them. Serialized only when set |
@@ -1290,7 +1290,7 @@ Paths that come from documents or configuration are checked before use. A `cover
 | review --accept, review --prune | `.docguard-doc-lock.json` only | One file transaction; `--accept` requires a reason. Plain `review` and `review --suggest` write nothing |
 | rules --for, trace --owners [--suggest] | None | Read-only; `--suggest` prints a draft ownership block and never writes configuration |
 | reconcile | None by default | `--write` delegates only mechanical generated-section refreshes to `sync` |
-| specs, specs preflight, specs require | None for check/plan modes | `specs --write` refreshes the registry; `specs complete --write` transactionally records a reviewed outcome and active context |
+| specs, specs preflight, specs require | None for check/plan modes | `specs --write` refreshes the registry; `specs approve --write` records a reviewed approval and delivery state in the registry only; `specs complete --write` transactionally records a reviewed outcome and active context |
 | verify --evidence | None | Reads the strict local manifest, selected Markdown, source files, and saved reports; guard consumes the same evaluator |
 | retire --write | Explicit clean tracked documentation only | Requires retained-ref recovery proof, clean replacement/evidence docs, and no live Markdown backreferences |
 | init, generate | Documentation and configuration scaffolding | Explicit force options may overwrite content. When `specify` is installed and Spec Kit is not initialized, `init` runs `specify init --here --force` (skip with `--no-spec-kit`) and registers the packaged extension. `generate --spec --write` adds one spec and its registry entry in one transaction |
@@ -2036,7 +2036,7 @@ Behaviour changes:
   finding up to three times: in `findings`, in `reportable`, and in
   `validators[].findings`. It also repeated each code's evidence on every
 
-<!-- truncated: 4247 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 4279 more lines — read CHANGELOG.md directly -->
 
 ---
 
@@ -2419,7 +2419,7 @@ code-truth sections), `score` (CDD maturity 0-100).
 `fix` (AI fix instructions; `--doc <name>`), `generate` (reverse-engineer docs;
 `--plan`; `--spec <area>` for an as-built Spec Kit spec), `agent` (task graph; `--task <text>` for bounded current evidence),
 `retire` (remove reviewed docs from active context),
-`specs` (check/refresh/preflight/complete the spec lifecycle registry; `require` for the spec-first gate; `reanchor` for a squash-discarded revision),
+`specs` (check/refresh/preflight/approve/complete the spec lifecycle registry; `require` for the spec-first gate; `reanchor` for a squash-discarded revision),
 `reconcile` (classify code/spec changes since a Git ref without rewriting intent),
 `review` (doc sections whose covered code changed; `--accept`, `--prune`, `--suggest`),
 `rules` (which instruction files each agent harness loads for a path; `--for <path>`),
