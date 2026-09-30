@@ -32,8 +32,9 @@ Behaviour changes:
 - The GitHub Action installs the CLI version it was released with, not
   `@latest`. Set `docguard-version: latest` to keep following npm.
 - The MCP tool `docguard_guard` returns the compact form (each fact once).
-  Pass `detail: "full"` for the previous shape, with `reportable` and
-  `validators[].findings`.
+  Pass `detail: "full"` for the previous shape, with `reportable`,
+  `validators[].findings`, every applicability reason and
+  `checkCoverage.limitations`.
 
 ### Added
 
@@ -376,8 +377,10 @@ Behaviour changes:
   `validators[].findings`. It also repeated each code's evidence on every
   finding. The compact form lists each finding once and each code's evidence
   once (`evidenceByCode`), and keeps validator status, counts and legacy
-  messages. It is 41% smaller on the budget fixture and 60% smaller on this
-  repository. A reconstruction test proves every finding field, count and
+  messages. A standard applicability reason is stated once
+  (`applicabilityReasons`), and `checkCoverage` drops `limitations`, which
+  repeated the validators' applicability. It is 50–55% smaller on the
+  benchmark fixtures, and about a quarter smaller when there are no findings. A reconstruction test proves every finding field, count and
   evidence object can be read back. Agents that need the old shape pass
   `detail: "full"`. `guard --format json` is unchanged; `--compact` prints the
   new form.

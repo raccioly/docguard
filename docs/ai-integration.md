@@ -71,8 +71,12 @@ listed once, without the copies in `reportable` and `validators[].findings`.
 Each code's agent-facing evidence (a precision is withheld unless it is
 quotable) moves to `evidenceByCode`. Validators keep status, counts and
 applicability, and legacy validators without structured findings keep their
-messages. The raw benchmark statistics per code stay in the full form. On this
-repository the compact response is about 60% smaller.
+messages. An applicability reason that is the standard one for its status
+appears once, in `applicabilityReasons`, and `checkCoverage` keeps its counts
+without `limitations`, which repeat the validators' applicability. The raw
+benchmark statistics per code stay in the full form. The compact response is
+50–55% smaller on the benchmark fixtures, and about a quarter smaller for a
+result with no findings.
 
 Working with findings:
 
