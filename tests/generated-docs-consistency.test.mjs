@@ -357,6 +357,10 @@ console.log(JSON.stringify(scanSchemasDeep(${JSON.stringify(dir)}, {}, {}, {}).e
     const go = fixture('go-svc');
     assert.ok(!scanComponents(go, loadConfig(go)).some(m => m.path === 'main_test.go'));
     assert.ok(!codes(validateTestSpec(go, loadConfig(go))).includes('TSP007'));
+    // A blank TEST-SPEC.md in a Django project is linked by its tests.py.
+    assert.equal(dg(django, ['init', '--skip-prompts']).status, 0);
+    const trc = validateTraceability(django, loadConfig(django)).findings.filter(f => f.code === 'TRC002').map(f => f.message);
+    assert.ok(!trc.some(m => m.startsWith('TEST-SPEC.md')), trc.join('\n'));
   });
 
   it('tech, tests, modules and routes match what guard reads', () => {

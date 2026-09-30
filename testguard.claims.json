@@ -3469,7 +3469,8 @@
       },
       "defendedBy": [
         "tests/generated-docs-consistency.test.mjs",
-        "tests/generated-docs-e2e.test.mjs"
+        "tests/generated-docs-e2e.test.mjs",
+        "tests/route-field-precision.test.mjs"
       ],
       "faults": [
         {
@@ -3887,6 +3888,42 @@
           "file": "cli/scanners/module-diagram.mjs",
           "find": "'_Module graph: empty. The import scanner reads JavaScript, TypeScript and Python files and found zero here._'",
           "replace": "'_No source modules found for the module graph._'",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 044)"
+          }
+        },
+        {
+          "id": "F36",
+          "description": "Django's tests.py does not link TEST-SPEC.md.",
+          "faultClass": "other",
+          "file": "cli/shared-trace-patterns.mjs",
+          "find": "[^/]+_test\\.py$|(?:^|\\/)tests\\.py$|_test\\.go$|",
+          "replace": "[^/]+_test\\.py$|_test\\.go$|",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 044)"
+          }
+        },
+        {
+          "id": "F37",
+          "description": "The tech-stack check reads no technology from code.",
+          "faultClass": "other",
+          "file": "cli/validators/docs-diff.mjs",
+          "find": "  const codeTech = new Set(detectCodeTechnologies(dir, config));",
+          "replace": "  const codeTech = new Set();",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 044)"
+          }
+        },
+        {
+          "id": "F38",
+          "description": "TSP007 misses Go, pytest and Django test files.",
+          "faultClass": "other",
+          "file": "cli/validators/test-spec.mjs",
+          "find": "        || /_test\\.go$|^test_[^/]+\\.py$|_test\\.py$|^tests\\.py$/.test(entry)) {",
+          "replace": "        ) {",
           "producedBy": {
             "producer": "agent",
             "by": "claude-opus-5.5 (spec 044)"
