@@ -107,10 +107,14 @@ import inside one directory changes nothing.
 - Python edges need `python3`. When it is missing, the graph cannot be
   complete. Guard reports the section as `partial` and does not raise GST002
   for it, so a runner without Python does not flip the result. `sync` refuses
-  to rewrite the section from a partial graph unless `--force` is given.
-- Node ids are derived from module paths (`cli/commands` → `cli_commands`),
+  to rewrite the section from a partial graph unless `--allow-partial` is
+  given. (`--force` already means "sync docs not marked generated", which
+  this repository passes routinely, so it must not also accept a partial
+  graph.)
+- Node ids are derived from module paths (`cli/commands` → `m_cli_commands`),
   not from positions. Adding a module adds lines; it does not renumber the
-  diagram.
+  diagram. Paths that sanitize to the same id each take a suffix from their
+  own path.
 - A module name with characters mermaid treats specially is quoted in the
   node label.
 - Files under test, fixture, generated and ignored paths are not modules
@@ -138,7 +142,8 @@ import inside one directory changes nothing.
   change without a graph change. Two runs on the same tree MUST be
   byte-identical on Linux, macOS and Windows.
 - **FR-004**: The diagram MUST respect `diagrams.moduleGraph.maxNodes`
-  (default 30, hard cap 60) by grouping to shallower depths, then by merging
+  (default 30, hard cap 60) and draw only the directories in
+  `diagrams.moduleGraph.include` when it is set, by grouping to shallower depths, then by merging
   the lowest-degree modules into one counted node. Edges MUST be capped at
   150. Every reduction MUST be stated in a caption line.
 - **FR-005**: The memory plan MUST offer an `entity-diagram` code section for
@@ -147,13 +152,16 @@ import inside one directory changes nothing.
 - **FR-006**: Drift MUST be reported by the existing GST002 finding, and
   `sync --write` MUST refresh both sections through the existing section
   writer. No new finding code is added.
-- **FR-007**: When the graph is partial (Python interpreter unavailable, or a
-  JS/TS file unreadable), guard MUST report the section's check as `partial`
-  instead of GST002, and `sync --write` MUST NOT rewrite it without
-  `--force`.
+- **FR-007**: When the graph is partial (Python interpreter unavailable, a
+  Python file that cannot be parsed, or an unreadable source file), guard MUST
+  report the section's check as `partial` instead of GST002, and
+  `sync --write` MUST NOT rewrite it without `--allow-partial`. Gaps that come
+  from the code itself (a dynamic Python import, a `sys.path` change) draw the
+  same on every machine, so they are captioned, not partial.
 - **FR-008**: The import graph MUST be built at most once per guard run and
-  only when a canonical doc contains a `module-graph` marker or the
-  Architecture validator needs it.
+  only when a canonical doc contains a `module-graph` marker, the doc is about
+  to be created by `generate --plan --write`, or the Architecture validator
+  needs it.
 - **FR-009**: `sync --since` MUST map `module-graph` to code-file changes and
   `entity-diagram` to model and schema changes.
 - **FR-010**: This repository MUST add a `module-graph` section to

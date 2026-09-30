@@ -21,11 +21,12 @@
   `_validCachedPlan` accepts the flag.
 - `cli/validators/generated-staleness.mjs` reports a `partial` check instead
   of GST002 when the section is incomplete. `cli/commands/sync.mjs` skips an
-  incomplete section unless `--force`.
+  incomplete section unless `--allow-partial`.
 - `cli/shared-sync-scope.mjs` adds matchers for the two ids.
-- Plan building calls the graph only when `_quickScan`-style detection finds a
-  `module-graph` marker in a canonical doc, or when `generate --plan` is
-  creating ARCHITECTURE.
+- Plan building calls the graph only when the ARCHITECTURE doc has a
+  `module-graph` marker or does not exist yet (so `generate --plan --write`
+  would create it). The same rule plans `entity-diagram` for DATA-MODEL. An
+  existing doc without the marker never gains the section.
 
 ## Technical Context
 
@@ -62,7 +63,7 @@ cli/scanners/schemas.mjs               # generateERDiagram sorts entities and re
 cli/validators/generated-staleness.mjs # partial instead of GST002 for incomplete sections
 cli/commands/sync.mjs                  # skip incomplete sections without --force
 cli/shared-sync-scope.mjs              # matchers for module-graph, entity-diagram
-cli/config.mjs, schemas/docguard-config.schema.json   # diagrams.moduleGraph.{depth,maxNodes}
+schemas/docguard-config.schema.json    # diagrams.moduleGraph.{depth,maxNodes,include}; defaults live in module-diagram.mjs
 docs-canonical/ARCHITECTURE.md         # module-graph section (FR-010)
 docs/doc-sections.md, docs/configuration.md, README.md
 tests/code-derived-diagrams.test.mjs   # NEW
@@ -77,8 +78,12 @@ testguard.claims.json                  # MODULE-GRAPH-DRIFT-IS-DETECTED
   maps to `cli`.
 - Degree for merging counts distinct neighbour modules, not import lines, so
   one busy file does not keep a module alive.
-- `SECTION_FILE_MATCHERS` today uses `endpoints-table`, `entities-table` and
-  `env-vars-table`, while the plan's section ids are `endpoints`, `entities`
-  and `env-vars`. Those three sections never match and are always refreshed
-  under `--since`. This spec keys its two matchers by the real ids and leaves
-  the old keys to a separate fix.
+- `SECTION_FILE_MATCHERS` is keyed by the plan's real section ids since
+  `docguard.sync-section-scope`, and a test keeps the two sets equal, so the
+  two new ids get matchers there.
+- The graph cache is per process and validated on every call by each walked
+  file's path, size, inode and times (a few milliseconds here, against
+  150–300 ms for a build), so a long-lived MCP server never serves a stale
+  graph.
+- The diagram draws product files only: `isNonProductPath` drops tests,
+  fixtures and examples. Only limitations on drawn files make it partial.

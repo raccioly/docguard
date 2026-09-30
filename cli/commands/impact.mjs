@@ -46,7 +46,7 @@ import { execFileSync } from 'node:child_process';
 
 import { c } from '../shared.mjs';
 import { changedFilesSince, isGitRepo } from '../shared-git.mjs';
-import { buildImportGraph } from "../scanners/import-graph.mjs";
+import { buildImportGraph } from '../scanners/import-graph.mjs';
 import { listCanonicalDocs } from '../shared-ignore.mjs';
 import { findReferences } from '../scanners/doc-references.mjs';
 

@@ -258,10 +258,12 @@ const COMMAND_HELP = {
   },
   sync: {
     summary: 'Refresh code-truth doc sections (preview by default). `--tests` reconciles the TEST-SPEC Source-to-Test Map from disk.',
-    usage: 'docguard sync [--write] [--since <ref>] [--tests]',
+    usage: 'docguard sync [--write] [--since <ref>] [--tests] [--force] [--allow-partial]',
     flags: [
       ['--write', 'Apply the refresh (default is a dry-run preview)'],
       ['--since <ref>', 'Only sync sections whose source files changed since <ref>'],
+      ['--force', 'Also sync docs not marked docguard:generated'],
+      ['--allow-partial', 'Write a section drawn from incomplete evidence (e.g. a module graph without a Python interpreter)'],
       ['--tests', 'Reconcile the TEST-SPEC Source-to-Test Map: drop ghost-source rows, append newly-covered source↔test pairs (report ghost tests). Pair with --write to apply.'],
     ],
     examples: ['docguard sync', 'docguard sync --write', 'docguard sync --tests', 'docguard sync --tests --write'],
@@ -437,6 +439,8 @@ async function main() {
       flags.fix = true;
     } else if (args[i] === '--force') {
       flags.force = true;
+    } else if (args[i] === '--allow-partial') {
+      flags.allowPartial = true;
     } else if (args[i] === '--agent' && args[i + 1]) {
       flags.agent = args[i + 1];
       i++;

@@ -7,9 +7,11 @@
  * (Constitution IV).
  *
  * @implements docguard.code-derived-diagrams#FR-001
+ * @implements docguard.code-derived-diagrams#FR-008
  */
 
-import { existsSync, readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import { resolve, join, extname, relative, dirname } from 'node:path';
 import { shouldIgnore, isNonProductPath, walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
 import { getWorkspaceDirs } from '../shared-source.mjs';
@@ -38,9 +40,72 @@ export const JS_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.mjs', '.cjs', '.js
  * @returns {{files: string[], edges: {from,to,dynamic,language}[], fileMap: Map<string,string[]>, unsupportedFiles: string[], limitations: object[]}}
  */
 export function buildImportGraph(projectDir, config) {
+  const allFiles = getFilesRecursive(projectDir, config, projectDir);
+  const key = graphCacheKey(projectDir, config);
+  const signature = key && treeSignature(allFiles);
+  if (signature) {
+    const cached = _graphCache.get(key);
+    if (cached?.signature === signature) return cached.graph;
+  }
+  const graph = buildUncached(projectDir, config, allFiles);
+  if (signature) {
+    _graphCache.delete(key);
+    while (_graphCache.size >= MAX_CACHED_GRAPHS) _graphCache.delete(_graphCache.keys().next().value);
+    _graphCache.set(key, { signature, graph });
+  }
+  return graph;
+}
+
+// One graph per guard run (docguard.code-derived-diagrams#FR-008): the
+// Architecture validator and the module-graph section both need it, and a build
+// costs 150–300 ms on this repository. The cache is per process, so a
+// long-lived MCP server must not serve a stale graph: every call re-walks the
+// tree and compares each file's path, size, inode and times, which costs a
+// few milliseconds. Callers treat the returned graph as read-only.
+const _graphCache = new Map();
+const MAX_CACHED_GRAPHS = 8;
+
+/** Drop cached graphs (tests, `watch`). */
+export function clearImportGraphCache() {
+  _graphCache.clear();
+}
+
+/** How many graphs are cached: lets a test prove a graph was never built. */
+export function cachedImportGraphCount() {
+  return _graphCache.size;
+}
+
+function graphCacheKey(projectDir, config) {
+  try {
+    const { changedFiles, diskCache, ...rest } = config || {};
+    return JSON.stringify([resolve(projectDir), stableJson(rest)]);
+  } catch { return null; }
+}
+
+function stableJson(value) {
+  if (Array.isArray(value)) return value.map(stableJson);
+  if (value && typeof value === 'object') {
+    if (Object.getPrototypeOf(value) !== Object.prototype) throw new Error('Non-JSON configuration');
+    return Object.fromEntries(Object.keys(value).sort().map(k => [k, stableJson(value[k])]));
+  }
+  if (typeof value === 'function' || typeof value === 'symbol') throw new Error('Non-JSON configuration');
+  return value;
+}
+
+function treeSignature(files) {
+  try {
+    const hash = createHash('sha256');
+    for (const file of files) {
+      const st = statSync(file);
+      hash.update(`${file}\0${st.size}\0${st.ino}\0${st.mtimeMs}\0${st.ctimeMs}\n`);
+    }
+    return hash.digest('hex');
+  } catch { return null; }
+}
+
+function buildUncached(projectDir, config, allFiles) {
   const graph = { files: [], edges: [], fileMap: new Map(), unsupportedFiles: [], limitations: [] };
 
-  const allFiles = getFilesRecursive(projectDir, config, projectDir);
   const pythonFiles = allFiles
     .filter(f => extname(f) === '.py' && !isNonProductPath(relative(projectDir, f).replace(/\\/g, '/'), config))
     .filter(f => !(config && shouldIgnore(relative(projectDir, f), config)));
@@ -77,7 +142,10 @@ export function buildImportGraph(projectDir, config) {
       }
 
       graph.fileMap.set(relPath, resolvedImports);
-    } catch { /* skip binary or unreadable files */ }
+    } catch {
+      // An unreadable file's imports are unknown, so the graph is incomplete.
+      graph.limitations.push({ code: 'source-unreadable', file: posixPath(relPath) });
+    }
   }
 
   addPythonImportGraph(projectDir, config || {}, pythonFiles, graph);

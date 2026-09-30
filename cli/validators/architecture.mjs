@@ -161,6 +161,7 @@ function summarizeLimitations(limitations) {
     'python-path-mutation': 'runtime sys.path mutation',
     'python-relative-outside-package': 'relative import outside a resolvable package',
     'python-ambiguous-module': 'ambiguous Python module across import roots',
+    'source-unreadable': 'unreadable source file',
   };
   const counts = new Map();
   for (const item of limitations) counts.set(item.code, (counts.get(item.code) || 0) + 1);
