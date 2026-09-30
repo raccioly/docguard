@@ -22,7 +22,7 @@ import { delimiter, dirname, join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { buildSymbolMap, MAX_SYMBOLS_PER_FILE, pageRank, SYMBOL_MAP_MAX_BYTES, symbolMapBudget } from '../cli/scanners/symbol-map.mjs';
 import { clearImportGraphCache } from '../cli/scanners/import-graph.mjs';
-import { aggregateTrials, buildTrialPrompt, decideSymbolPromotion, loadManifest, V2_MANIFEST_DIGEST } from '../benchmarks/agent-context/run.mjs';
+import { aggregateTrials, buildTrialPrompt, decideSymbolPromotion, loadManifest, V2_MANIFEST_DIGEST, verifyFixtures } from '../benchmarks/agent-context/run.mjs';
 
 const CLI = resolve('cli/docguard.mjs');
 
@@ -173,6 +173,11 @@ describe('the v2 protocol decides (User Story 2, FR-005, FR-006, FR-008)', () =>
     assert.doesNotMatch(task.prompt, /rounding\.mjs|src\//, 'a navigation-bound prompt names the requirement, not the file');
   });
 
+  it('is calibrated: every reference passes its hidden checks, and every starting state fails as declared', () => {
+    const summaries = verifyFixtures(manifest);
+    assert.deepEqual(summaries.map(s => [s.id, s.initial.passed, s.initial.failures.length]), manifest.tasks.map(t => [t.id, t.expectedInitial.passed, t.expectedInitial.failed]));
+  });
+
   it('rejects the manifest after any change to a frozen field', t => {
     const dir = mkdtempSync(join(tmpdir(), 'docguard-v2-'));
     t.after(() => rmSync(dir, { recursive: true, force: true }));
@@ -181,6 +186,7 @@ describe('the v2 protocol decides (User Story 2, FR-005, FR-006, FR-008)', () =>
       m => { m.promotion.benefit.minimumMedianReductionPercent = 10; },
       m => { m.tasks[3].prompt += ' Hint: look in src/currency.'; },
       m => { m.conditions.reverse(); },
+      m => { m.tasks[4].evaluatorDigest = `sha256:${'0'.repeat(64)}`; },
     ]) {
       const copy = JSON.parse(readFileSync('benchmarks/agent-context/manifest-v2.json', 'utf8'));
       change(copy);

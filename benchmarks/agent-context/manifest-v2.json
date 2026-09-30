@@ -62,7 +62,8 @@
         "failed": 2
       },
       "navigationBound": false,
-      "fixtureDigest": "sha256:215b12c33b17a4b42a3aee79fe6f090c1774a0539eb6557dbeee3ec8ffe4fdef"
+      "fixtureDigest": "sha256:215b12c33b17a4b42a3aee79fe6f090c1774a0539eb6557dbeee3ec8ffe4fdef",
+      "evaluatorDigest": "sha256:07399f48b215de882a68921ca8b170ca07fa298870f9354e53ab95040e757e25"
     },
     {
       "id": "python-config",
@@ -86,7 +87,8 @@
         "failed": 3
       },
       "navigationBound": false,
-      "fixtureDigest": "sha256:0c5e5e4976948b8efb356dbfdbf95baeb1d1ccb4f8bc1637d106152cc6ac80aa"
+      "fixtureDigest": "sha256:0c5e5e4976948b8efb356dbfdbf95baeb1d1ccb4f8bc1637d106152cc6ac80aa",
+      "evaluatorDigest": "sha256:875a7e2a3f4cc326e2f0c201db546c20a8986e57ef71c8d1cb18e777be46eb1d"
     },
     {
       "id": "option-migration",
@@ -107,7 +109,8 @@
         "failed": 2
       },
       "navigationBound": false,
-      "fixtureDigest": "sha256:20939ded1205f0984367fe0a4d93fce75722ea4600565b329106d401e2abf2ce"
+      "fixtureDigest": "sha256:20939ded1205f0984367fe0a4d93fce75722ea4600565b329106d401e2abf2ce",
+      "evaluatorDigest": "sha256:998db73dbc1169c8cde54f30f1d3a419a56ee663899a4ca7b39b2ec31dcc7794"
     },
     {
       "id": "ledger-rounding",
@@ -128,7 +131,8 @@
         "failed": 8
       },
       "navigationBound": true,
-      "fixtureDigest": "sha256:d5e3110afa547acdea3e8f12dafaebda1fe76d6544453644a2e41c47ee9a5a68"
+      "fixtureDigest": "sha256:d5e3110afa547acdea3e8f12dafaebda1fe76d6544453644a2e41c47ee9a5a68",
+      "evaluatorDigest": "sha256:cf85af4911ac08e3db615a72352b926bb8d934cd7c72a06c1347f45fdfc499e1"
     },
     {
       "id": "ledger-late-fee",
@@ -149,7 +153,8 @@
         "failed": 3
       },
       "navigationBound": true,
-      "fixtureDigest": "sha256:d5e3110afa547acdea3e8f12dafaebda1fe76d6544453644a2e41c47ee9a5a68"
+      "fixtureDigest": "sha256:d5e3110afa547acdea3e8f12dafaebda1fe76d6544453644a2e41c47ee9a5a68",
+      "evaluatorDigest": "sha256:d70ada530f6b55686f9d553f152f9b77900a7339fdf089e130c110419dfdc924"
     },
     {
       "id": "ledger-redaction",
@@ -170,7 +175,8 @@
         "failed": 5
       },
       "navigationBound": true,
-      "fixtureDigest": "sha256:d5e3110afa547acdea3e8f12dafaebda1fe76d6544453644a2e41c47ee9a5a68"
+      "fixtureDigest": "sha256:d5e3110afa547acdea3e8f12dafaebda1fe76d6544453644a2e41c47ee9a5a68",
+      "evaluatorDigest": "sha256:dbc24c3b33fecec8f8221ae7eb189435b1a7694ead1e8866ac12ea99283c979b"
     }
   ]
 }

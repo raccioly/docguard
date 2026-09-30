@@ -34,7 +34,7 @@ const DEFAULT_RESULT = join(HERE, 'results/observed-v1.json');
 const MANIFEST_V2_PATH = join(HERE, 'manifest-v2.json');
 const RESULT_SCHEMA_V2 = 'https://raccioly.github.io/docguard/schemas/docguard-agent-context-result-v2.schema.json';
 const DEFAULT_RESULT_V2 = join(HERE, 'results/observed-v2.json');
-export const V2_MANIFEST_DIGEST = 'sha256:554a4e60392e6eaefec45127b14124a4ffd15d85e2246992d61fff5ca041a57e';
+export const V2_MANIFEST_DIGEST = 'sha256:b1e7aaf6af47ce4f373b0a2e0a9bac6ab3eafa46091ddfd1fc9142384bbbb514';
 const MIN_NAVIGATION_MODULES = 25;
 const DOCGUARD = join(REPO_ROOT, 'cli/docguard.mjs');
 const TASK_SELECTOR = join(REPO_ROOT, 'cli/scanners/task-context.mjs');
@@ -116,6 +116,8 @@ function validateManifestV2(manifest) {
     }
     assert(!resolve(join(HERE, task.hiddenEvaluator)).startsWith(`${resolve(join(HERE, task.fixture))}${sep}`), `${task.id} hidden evaluator leaked into fixture`);
     assert(digestTree(join(HERE, task.fixture)) === task.fixtureDigest, `${task.id} fixture changed after the v2 protocol was frozen`);
+    // The hidden evaluator is the measuring instrument: it is frozen too.
+    assert(sha256(readFileSync(join(HERE, task.hiddenEvaluator))) === task.evaluatorDigest, `${task.id} hidden evaluator changed after the v2 protocol was frozen`);
     if (task.navigationBound) {
       // The prompt names a requirement, never the file to change.
       for (const path of task.allowedChanges) {

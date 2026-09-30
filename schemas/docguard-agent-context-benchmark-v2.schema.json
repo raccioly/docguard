@@ -220,7 +220,8 @@
         "visibleTest",
         "expectedInitial",
         "navigationBound",
-        "fixtureDigest"
+        "fixtureDigest",
+        "evaluatorDigest"
       ],
       "properties": {
         "id": {
@@ -284,6 +285,11 @@
           "type": "string",
           "pattern": "^sha256:[a-f0-9]{64}$",
           "description": "Frozen digest of the fixture tree; any later edit is rejected."
+        },
+        "evaluatorDigest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$",
+          "description": "Frozen digest of the hidden evaluator; the measuring instrument cannot change after freezing."
         }
       }
     }
