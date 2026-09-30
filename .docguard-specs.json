@@ -1087,12 +1087,12 @@
       "path": "specs/028-completion-revision-anchoring/spec.md",
       "reviewed": {
         "lifecycle": {
-          "approval": "draft",
-          "delivery": "planned",
+          "approval": "approved",
+          "delivery": "implemented",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
-          "persistenceModel": null
+          "persistenceModel": "living"
         },
         "relations": {
           "extends": [],
@@ -1102,7 +1102,10 @@
           "supersededBy": []
         },
         "scope": {
-          "canonicalDocs": []
+          "canonicalDocs": [
+            "docs-canonical/CI-RECIPES.md",
+            "docs-canonical/DATA-MODEL.md"
+          ]
         },
         "reconciliation": {
           "lastReviewedRevision": null,
@@ -1125,7 +1128,7 @@
         "artifacts": [
           {
             "path": "specs/028-completion-revision-anchoring/spec.md",
-            "digest": "sha256:32173272fff4d9f044b2f65a065be5e0121e18e8f7af5a8c645d9d1c1a3ddb40"
+            "digest": "sha256:1659151b0b28def9ca252e69f326fe158bbc5937b35833c2796bcb46ea393834"
           },
           {
             "path": "specs/028-completion-revision-anchoring/plan.md",
@@ -1133,12 +1136,12 @@
           },
           {
             "path": "specs/028-completion-revision-anchoring/tasks.md",
-            "digest": "sha256:cf56a756991f45598c5fb0f2812cd47e7c244981f84da74085e09415d41b93d0"
+            "digest": "sha256:d1ace5ebb9ee086e36b78dadfb9424a9b9c587d7684d8cd97bf03b8964014677"
           }
         ],
         "taskCompletion": {
           "checked": 6,
-          "total": 7
+          "total": 6
         },
         "implementationEvidence": [
           {
