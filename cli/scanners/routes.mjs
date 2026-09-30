@@ -22,6 +22,9 @@ import { resolveSourceRoots, readScannable, tierFor, summarizeTiers } from '../s
 import { DEFAULT_IGNORE_DIRS as IGNORE_DIRS, shouldIgnore, relPosix, isNonProductPath } from '../shared-ignore.mjs';
 import { extractJsRouteCalls, extractJsRouteObjects, extractJsMountsAndImports } from './js-ast.mjs';
 import { extractPythonFiles } from './py-ast.mjs';
+import { extractGoRoutes } from './go-routes.mjs';
+import { extractSpringRoutes } from './spring-routes.mjs';
+import { extractRailsRoutes } from './rails-routes.mjs';
 
 /**
  * Scan routes from source code with framework-aware parsing.
@@ -648,107 +651,50 @@ function scanFastAPIRoutes(dir, ctx) {
 }
 
 // ── Spring Boot (Java/Kotlin) ────────────────────────────────────────────────
+// What a Java/Kotlin file routes is read by spring-routes.mjs: class-level
+// @RequestMapping bases in every form, method-level mappings and
+// @RequestMapping(method = …), constants, Feign clients skipped
+// (docguard.go-spring-rails-routes#FR-003/004). Constants may live in files
+// without a mapping, so every file is handed over.
 
 function scanSpringBootRoutes(dir, ctx) {
-  const routes = [];
-  // Method-level verb annotations (NOT @RequestMapping — that's class-level base).
-  // Optional path; bare `@PostMapping` means "base path only".
-  const verbMap = /@(Get|Post|Put|Delete|Patch)Mapping(?:\s*\(\s*(?:value\s*=\s*)?["']([^"']*)["'])?/g;
-  const classBase = /@RequestMapping\s*\(\s*(?:value\s*=\s*)?["']([^"']+)["'][^)]*\)\s*[\r\n][\s\S]*?(?:public\s+)?class\s+\w+/;
-
-  const javaFiles = readPatternFiles(ctx, /\.(java|kt)$/);
-  for (const filePath of javaFiles) {
-    const content = readFileSafe(filePath);
-    if (!content || !content.includes('Mapping')) continue;
-    const { tier, tierReason } = tierFor(filePath, null);
-
-    // Class-level base path, if any.
-    const cb = classBase.exec(content);
-    const basePath = cb ? cb[1] : '';
-    const authPresent = /@PreAuthorize|@Secured|SecurityContext/.test(content);
-
-    let match;
-    const re = new RegExp(verbMap.source, 'g');
-    while ((match = re.exec(content)) !== null) {
-      const method = match[1].toUpperCase();
-      const sub = match[2] || '';
-      const path = (basePath + sub).replace(/\/+/g, '/') || '/';
-      routes.push({
-        method, path,
-        handler: '', file: relative(dir, filePath), source: 'spring-boot',
-        auth: authPresent, description: '', tier, tierReason,
-      });
-    }
-  }
-  return routes;
+  // docguard.fallback-language-coverage: files are listed (and counted for
+  // coverage) by readPatternFiles; each route carries its pattern tier.
+  const files = readPatternFiles(ctx, /\.(java|kt)$/);
+  const sources = files.map(f => ({ file: relative(dir, f), content: readFileSafe(f) }));
+  return extractSpringRoutes(sources).map(r => ({ ...r, source: 'spring-boot', description: '', ...tierFor(resolve(dir, r.file), null) }));
 }
 
 // ── Rails (Ruby) — config/routes.rb ──────────────────────────────────────────
+// rails-routes.mjs reads namespace/scope prefixes, resources/resource with
+// only/except, nesting, member/collection, verbs, match, root, concerns and
+// `draw` files (docguard.go-spring-rails-routes#FR-005).
 
 function scanRailsRoutes(dir, ctx) {
-  const routes = [];
   const routesFile = resolve(dir, 'config/routes.rb');
-  if (!existsSync(routesFile)) return routes;
+  if (!existsSync(routesFile)) return [];
   recordPatternFiles(ctx, [routesFile]);
-  const content = readFileSafe(routesFile);
-  if (!content) return routes;
   const { tier, tierReason } = tierFor(routesFile, null);
-
-  // Verb DSL: get '/x', post '/x', etc.  AND  resources :things (RESTful 7 actions)
-  const verbDsl = /^\s*(get|post|put|patch|delete)\s+['"]([^'"]+)['"]/gm;
-  let m;
-  while ((m = verbDsl.exec(content)) !== null) {
-    routes.push({
-      method: m[1].toUpperCase(),
-      path: m[2].startsWith('/') ? m[2] : '/' + m[2],
-      handler: '', file: 'config/routes.rb', source: 'rails', auth: false, description: '', tier, tierReason,
-    });
-  }
-  // resources :users → 7 standard RESTful routes.
-  const resourcesRe = /^\s*resources\s+:([a-z_]+)/gm;
-  while ((m = resourcesRe.exec(content)) !== null) {
-    const r = m[1];
-    const base = `/${r}`;
-    const seven = [
-      ['GET', base], ['GET', `${base}/new`], ['POST', base],
-      ['GET', `${base}/:id`], ['GET', `${base}/:id/edit`],
-      ['PATCH', `${base}/:id`], ['DELETE', `${base}/:id`],
-    ];
-    for (const [method, path] of seven) {
-      routes.push({ method, path, handler: '', file: 'config/routes.rb', source: 'rails', auth: false, description: '', tier, tierReason });
-    }
-  }
-  return routes;
+  // `draw :admin` loads config/routes/admin.rb; a name is never a path.
+  const readDraw = name => {
+    if (!/^[\w-]+$/.test(name)) return null;
+    const drawFile = resolve(dir, 'config/routes', `${name}.rb`);
+    if (existsSync(drawFile)) recordPatternFiles(ctx, [drawFile]);
+    return readFileSafe(drawFile);
+  };
+  return extractRailsRoutes(readFileSafe(routesFile), { file: 'config/routes.rb', readDraw })
+    .map(r => ({ ...r, source: 'rails', description: '', tier, tierReason }));
 }
 
-// ── Go web frameworks (Gin / Echo / Chi / Fiber / std mux) ───────────────────
+// ── Go web frameworks (Gin / Echo / Chi / Fiber / gorilla/mux / net/http) ────
+// go-routes.mjs composes group, sub-router and mount prefixes across blocks,
+// functions and files, and reads every registration form of those routers
+// (docguard.go-spring-rails-routes#FR-001/002).
 
 function scanGoWebRoutes(dir, ctx) {
-  const routes = [];
-  // Generic: <recv>.<METHOD>("/path", handler)  for Gin/Echo/Chi/Fiber/mux.Router
-  const pattern = /\.(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS|HandleFunc|Handle)\s*\(\s*["']([^"']+)["']/g;
-  const goFiles = readPatternFiles(ctx, /\.go$/);
-  for (const filePath of goFiles) {
-    const content = readFileSafe(filePath);
-    if (!content) continue;
-    const { tier, tierReason } = tierFor(filePath, null);
-    let m;
-    const re = new RegExp(pattern.source, 'g');
-    while ((m = re.exec(content)) !== null) {
-      const verb = m[1];
-      // HandleFunc / Handle are method-agnostic.
-      const method = ['HandleFunc', 'Handle'].includes(verb) ? 'ANY' : verb;
-      const path = m[2];
-      if (!path.startsWith('/')) continue;
-      routes.push({
-        method, path,
-        handler: '', file: relative(dir, filePath), source: 'go-web',
-        auth: /Authorization|jwt\.|middleware\.Auth/.test(content),
-        description: '', tier, tierReason,
-      });
-    }
-  }
-  return routes;
+  const files = readPatternFiles(ctx, /\.go$/);
+  const sources = files.map(f => ({ file: relative(dir, f), content: readFileSafe(f) }));
+  return extractGoRoutes(sources).map(r => ({ ...r, source: 'go-web', description: '', ...tierFor(resolve(dir, r.file), null) }));
 }
 
 // ── Rust web frameworks (Axum / Actix / Rocket / Warp) ───────────────────────

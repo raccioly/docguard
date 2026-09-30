@@ -472,6 +472,32 @@ Behaviour changes:
 
 ### Fixed
 
+- **Go, Spring and Rails routes are reported at the path they are served
+  under** (`specs/047-go-spring-rails-routes`). On eight reference projects the
+  scanner found 6 of 80 routes and reported 43 that do not exist; it now reports
+  exactly the 80. Each wrong route had been two false API findings.
+  - Go: a route on a gin, echo or fiber group lost the group's prefix
+    (`users.GET("/:id")` under `/api/v1/users` became `GET /:id`), and
+    `GET("")` on a group was dropped. chi and fiber (`r.Get`) were not read at
+    all. Prefixes now compose through blocks, functions, files, chi
+    `Route`/`Mount`, gorilla `PathPrefix().Subrouter()` and
+    `http.StripPrefix`. Go 1.22 patterns (`"GET /items/{id}"`) are read, and
+    `_test.go` files, comments and HTTP client calls no longer count.
+  - Spring: a class base written `@RequestMapping(path = …)`, `value = …` or as
+    an array was ignored, so a bare `@GetMapping` became `GET /`.
+    `@GetMapping(path = …)`, arrays, constants and every
+    `@RequestMapping(method = …)` were missed. A mapping in a comment and a
+    `@FeignClient`'s outbound mappings were reported as routes.
+  - Rails: `namespace`, `scope`, `only:`, `except:` and nesting were ignored,
+    so `namespace :admin do resources :users, only: [:index, :show] end` gave
+    seven `/users` routes. `resource`, `member`, `collection`, `root`, `match`,
+    hash-rocket routes, concerns and `draw` files are now read, and update is
+    reported as `PATCH` and `PUT`, as `rails routes` lists it.
+  - A route whose path or prefix is not literal is omitted, never guessed.
+  - Go framework detection reads versioned module paths
+    (`github.com/labstack/echo/v4`, `go-chi/chi/v5`, `gofiber/fiber/v2`), which
+    left those projects' routes unscanned, and recognises gorilla/mux.
+
 - **Read-only commands no longer install anything**
   (`specs/042-read-only-commands`).
   - Before every command, the dispatcher installed DocGuard's agent skills

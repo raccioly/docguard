@@ -381,7 +381,9 @@ describe('a detected framework with no route is not a pass (FR-009)', () => {
   const unmatched = () => ({
     ...DOCS,
     'pom.xml': '<project><dependencies><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency></dependencies></project>\n',
-    'src/main/java/com/acme/Legacy.java': '@Controller\npublic class Legacy {\n  @RequestMapping(value = "/legacy", method = RequestMethod.GET) public String x() { return ""; }\n}\n',
+    // A mapping no reader resolves: the path is a property placeholder, which
+    // the Spring reader leaves out rather than guess (spec 047).
+    'src/main/java/com/acme/Legacy.java': '@Controller\npublic class Legacy {\n  @GetMapping("${legacy.path}") public String x() { return ""; }\n}\n',
   });
 
   it('reports partial, naming the framework and the files read', t => {

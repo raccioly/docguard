@@ -1477,6 +1477,7 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/scanners/doc-ownership.mjs`, `cli/validators/doc-ownership.mjs` (OWN001–OWN007, `trace --owners`) | `tests/doc-ownership.test.mjs` | ✅ |
 | `cli/scanners/import-graph.mjs`, `cli/scanners/module-diagram.mjs` (module and entity diagrams) | `tests/code-derived-diagrams.test.mjs`, `tests/architecture.test.mjs`, `tests/python-import-graph.test.mjs` | ✅ |
 | `cli/scanners/symbol-map.mjs`, `benchmarks/agent-context/run.mjs` (symbol map, agent-context protocol v2) | `tests/symbol-map.test.mjs`, `tests/agent-context-benchmark.test.mjs` | ✅ |
+| `cli/scanners/go-routes.mjs`, `cli/scanners/spring-routes.mjs`, `cli/scanners/rails-routes.mjs`, `cli/scanners/route-lexing.mjs` (Go, Spring and Rails routes) | `tests/go-spring-rails-routes.test.mjs`, `tests/routes-multilang.test.mjs` | ✅ |
 
 Completion tests cover initial `implemented → verified` delivery, evidence and
 dirty-tree blockers, living-spec `verified → verified` maintenance, and refusal
@@ -1599,6 +1600,15 @@ and nested imported mounts. They also cover static path constants, pathless
 mounts, aliased router exports, trailing middleware, and multiple router symbols
 in one module. Non-product evidence is rejected before route-key deduplication
 so a discarded test call cannot hide a later product route.
+
+Go, Spring and Rails route fixtures are eight reference projects (gin, echo,
+chi, net/http, gorilla/mux with fiber, Spring in Java and in Kotlin, Rails).
+Each ground truth was written from the framework's routing rules before the
+scanner was changed, and the scanner must report exactly that set. Neighbouring
+cases cover router names reused in two functions, same-named methods told apart
+by package and receiver type, cyclic calls, HTTP-client calls, comments,
+`_test.go` files and Feign clients. Prefixes that cannot be read must yield no
+route at all.
 
 API omission tests preserve documented endpoints across generated and human
 documents, mapped roles, and forced writes whenever the only runtime-absence
@@ -2044,7 +2054,7 @@ Behaviour changes:
     the job warns and skips.
   - The top-level `--help` names `generate --spec` and `specs
 
-<!-- truncated: 4361 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 4387 more lines — read CHANGELOG.md directly -->
 
 ---
 

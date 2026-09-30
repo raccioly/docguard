@@ -3501,8 +3501,8 @@
           "description": "Go routes carry no tier.",
           "faultClass": "other",
           "file": "cli/scanners/routes.mjs",
-          "find": "        description: '', tier, tierReason,\n",
-          "replace": "        description: '',\n",
+          "find": "  return extractGoRoutes(sources).map(r => ({ ...r, source: 'go-web', description: '', ...tierFor(resolve(dir, r.file), null) }));",
+          "replace": "  return extractGoRoutes(sources).map(r => ({ ...r, source: 'go-web', description: '' }));",
           "producedBy": {
             "producer": "agent",
             "by": "claude-opus-5.5 (spec 043)"
@@ -4311,6 +4311,313 @@
           "producedBy": {
             "producer": "agent",
             "by": "claude-opus-5.5 (spec 042)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "GO-SPRING-RAILS-ROUTES-COMPOSE-PREFIXES",
+      "statement": "Go, Spring and Rails routes are reported at the path the framework serves them under: Go group, sub-router and mount prefixes compose across blocks, functions and files; Spring class-level @RequestMapping bases in every form join every method mapping, with @RequestMapping methods read and Feign clients skipped; Rails namespace, scope, resources options, nesting and member/collection blocks produce the routes rails routes lists. A route whose path or prefix is not literal is omitted, never guessed.",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/047-go-spring-rails-routes/spec.md#FR-001"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (spec 047)"
+      },
+      "defendedBy": [
+        "tests/go-spring-rails-routes.test.mjs",
+        "tests/routes-multilang.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "A Go group prefix is not joined to its parent's.",
+          "faultClass": "other",
+          "file": "cli/scanners/go-routes.mjs",
+          "find": "        out = prefixes(node.parent, visiting).map(p => joinRoutePath(p, node.prefix));",
+          "replace": "        out = [node.prefix];",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 047)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "A group passed to a function is ignored.",
+          "faultClass": "other",
+          "file": "cli/scanners/go-routes.mjs",
+          "find": "        out = callers.length ? callers.flatMap(n => prefixes(n, visiting)) : [''];",
+          "replace": "        out = [''];",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 047)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "_test.go files are read as product routes.",
+          "faultClass": "other",
+          "file": "cli/scanners/go-routes.mjs",
+          "find": "/_test\\.go$/.test(s.file)",
+          "replace": "false",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 047)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "An ambiguous callee receives every caller's prefix.",
+          "faultClass": "other",
+          "file": "cli/scanners/go-routes.mjs",
+          "find": "  const one = list => (list.length <= 1 ? list : AMBIGUOUS);",
+          "replace": "  const one = list => list;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 047)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "A non-literal group prefix is dropped instead of omitting its routes.",
+          "faultClass": "other",
+          "file": "cli/scanners/go-routes.mjs",
+          "find": "      node = typeof prefix === 'string' ? { kind: 'child', parent: node, prefix } : UNRESOLVED;",
+          "replace": "      node = typeof prefix === 'string' ? { kind: 'child', parent: node, prefix } : node;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 047)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "A capitalised verb on an unknown receiver counts as a route.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/go-routes.mjs",
+          "find": "    if (r.requireKnown && !known(r.node)) continue;\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 047)"
+          }
+        },
+        {
+          "id": "F7",
+          "description": "Go 1.22 method patterns are not parsed.",
+          "faultClass": "other",
+          "file": "cli/scanners/go-routes.mjs",
+          "find": "  const m = /^([A-Z]+)\\s+(.*)$/.exec(pattern);",
+          "replace": "  const m = null;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 047)"
+          }
+        },
+        {
+          "id": "F8",
+          "description": "chi Mount is ignored.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/go-routes.mjs",
+          "find": "    if (sub && sub !== UNKNOWN) state.mounts.push({ target: sub, parent: recv, prefix: strOf(args[0]) });\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 047)"
+          }
+        },
+        {
+          "id": "F9",
+          "description": "The class-level @RequestMapping base is ignored.",
+          "faultClass": "other",
+          "file": "cli/scanners/spring-routes.mjs",
+          "find": "      const bases = mapping ? annotationPaths(f, mapping, consts).filter(p => typeof p === 'string') : [''];",
+          "replace": "      const bases = [''];",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 047)"
+          }
+        },
+        {
+          "id": "F10",
+          "description": "path = is not read as the mapping path.",
+          "faultClass": "other",
+          "file": "cli/scanners/spring-routes.mjs",
+          "find": "named[1] === 'value' || named[1] === 'path'",
+          "replace": "named[1] === 'value'",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 047)"
+          }
+        },
+        {
+          "id": "F11",
+          "description": "@RequestMapping(method = …) is ignored.",
+          "faultClass": "other",
+          "file": "cli/scanners/spring-routes.mjs",
+          "find": "    return methods.length ? methods : ['ANY'];",
+          "replace": "    return ['ANY'];",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 047)"
+          }
+        },
+        {
+          "id": "F12",
+          "description": "A Feign client's mappings are reported as routes.",
+          "faultClass": "other",
+          "file": "cli/scanners/spring-routes.mjs",
+          "find": "run.some(a => a.name === 'FeignClient')",
+          "replace": "run.some(a => a.name === 'NoSuchAnnotation')",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 047)"
+          }
+        },
+        {
+          "id": "F13",
+          "description": "A ${…} placeholder path is reported.",
+          "faultClass": "other",
+          "file": "cli/scanners/spring-routes.mjs",
+          "find": "  return out.includes('${') ? null : out;",
+          "replace": "  return out;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 047)"
+          }
+        },
+        {
+          "id": "F14",
+          "description": "Block comments are read as code.",
+          "faultClass": "other",
+          "file": "cli/scanners/route-lexing.mjs",
+          "find": "      blank(i, j);\n      i = j;\n      continue;\n    }\n    if (tripleQuote",
+          "replace": "      i = j;\n      continue;\n    }\n    if (tripleQuote",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 047)"
+          }
+        },
+        {
+          "id": "F15",
+          "description": "A sub-path of \"/\" keeps a trailing slash.",
+          "faultClass": "other",
+          "file": "cli/scanners/route-lexing.mjs",
+          "find": "  const right = (p === '/' || p === '') ? '' : ('/' + p.replace(/^\\/+/, ''));",
+          "replace": "  const right = '/' + p.replace(/^\\/+/, '');",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 047)"
+          }
+        },
+        {
+          "id": "F16",
+          "description": "A Rails namespace adds no path prefix.",
+          "faultClass": "other",
+          "file": "cli/scanners/rails-routes.mjs",
+          "find": "        const segment = optText('path') ?? n;\n        const path = join(scope.path, segment);",
+          "replace": "        const segment = optText('path') ?? n;\n        const path = scope.path;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 047)"
+          }
+        },
+        {
+          "id": "F17",
+          "description": "only: is ignored.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/rails-routes.mjs",
+          "find": "    if (opt('only')) { const only = new Set(names(opt('only'))); actions = actions.filter(a => only.has(a)); }\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 047)"
+          }
+        },
+        {
+          "id": "F18",
+          "description": "A nested resource is not placed under its parent.",
+          "faultClass": "other",
+          "file": "cli/scanners/rails-routes.mjs",
+          "find": "      ...scope, path: nested, shallow,",
+          "replace": "      ...scope, path: scope.path, shallow,",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 047)"
+          }
+        },
+        {
+          "id": "F19",
+          "description": "Update is reported as PATCH only.",
+          "faultClass": "other",
+          "file": "cli/scanners/rails-routes.mjs",
+          "find": "      update: [['PATCH', member], ['PUT', member]],",
+          "replace": "      update: [['PATCH', member]],",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 047)"
+          }
+        },
+        {
+          "id": "F20",
+          "description": "An interpolated Ruby string is read as a path.",
+          "faultClass": "other",
+          "file": "cli/scanners/rails-routes.mjs",
+          "find": "  return { value: dynamic ? null : value, end: j + 1 };",
+          "replace": "  return { value, end: j + 1 };",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 047)"
+          }
+        },
+        {
+          "id": "F21",
+          "description": "A member block places routes on the collection.",
+          "faultClass": "other",
+          "file": "cli/scanners/rails-routes.mjs",
+          "find": "        const path = name === 'member' ? scope.res.member",
+          "replace": "        const path = name === 'member' ? scope.res.collection",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 047)"
+          }
+        },
+        {
+          "id": "F22",
+          "description": "A draw name can be a path.",
+          "faultClass": "other",
+          "file": "cli/scanners/routes.mjs",
+          "find": "    if (!/^[\\w-]+$/.test(name)) return null;\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 047)"
+          }
+        },
+        {
+          "id": "F23",
+          "description": "The Go reader is not called.",
+          "faultClass": "other",
+          "file": "cli/scanners/routes.mjs",
+          "find": "  return extractGoRoutes(sources).map(r => ({ ...r, source: 'go-web', description: '', ...tierFor(resolve(dir, r.file), null) }));",
+          "replace": "  return [];",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 047)"
+          }
+        },
+        {
+          "id": "F24",
+          "description": "A Go module's major-version suffix defeats framework detection.",
+          "faultClass": "other",
+          "file": "cli/scanners/project-type.mjs",
+          "find": ".map(k => k.toLowerCase().replace(/\\/v\\d+$/, ''));",
+          "replace": ".map(k => k.toLowerCase());",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 047)"
           }
         }
       ]
