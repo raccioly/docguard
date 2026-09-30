@@ -61,6 +61,7 @@
     "commands/",
     "extensions/",
     "docs/",
+    "!docs/*.pdf",
     "schemas/",
     "STANDARD.md",
     "PRIVACY.md",
