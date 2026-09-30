@@ -34,11 +34,11 @@
     "docs-canonical/DATA-MODEL.md#spec-registry": {
       "dependencies": {
         "cli/commands/specs.mjs#completeSpec": {
-          "fingerprint": "sha256:533a88b37c2015a4228138842b4760179a374b217f55191e21723045094f1d54",
+          "fingerprint": "sha256:46bb81255eed96ede2c92439ca4de3c1f0341795bba858075235e5005cc66971",
           "tier": "ast"
         },
         "cli/commands/specs.mjs#reanchorSpec": {
-          "fingerprint": "sha256:ed4b34a60120056c743df1c2ba3b7f6d607017a3b48d943c65837a1e3e5f69c0",
+          "fingerprint": "sha256:c3b75a06cb1ca9479c554782fadb7709f8c3ec4247b91068429119d92a259c68",
           "tier": "ast"
         },
         "schemas/docguard-specs.schema.json": {
@@ -46,9 +46,9 @@
           "tier": "content"
         }
       },
-      "reason": "Schema gained reviewed.scope.assetPaths (spec 039); the section's registry field table now has the assetPaths row describing dir/ vs file entries, no wildcards, reconciliation links and SPR009.",
+      "reason": "Checked completeSpec and reanchorSpec: both now create the self-ignoring .docguard/ before the transaction, and the clean-tree gate excludes .docguard/ (spec 042); the section states this.",
       "reviewedAt": "2026-09-30",
-      "reviewedRevision": "97a48b98b6abd20ca09ba9efb5d335f39f98a038"
+      "reviewedRevision": "a90d442363dc0c438e3599d6dee482a61d7b204b"
     }
   }
 }

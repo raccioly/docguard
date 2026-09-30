@@ -3294,7 +3294,8 @@
         "by": "claude-opus-5.5 (spec 042)"
       },
       "defendedBy": [
-        "tests/read-only-commands.test.mjs"
+        "tests/read-only-commands.test.mjs",
+        "tests/ensure-skills-idempotent.test.mjs"
       ],
       "faults": [
         {
@@ -3496,6 +3497,30 @@
           "file": "cli/shared-git.mjs",
           "find": "Object.freeze(['--', ':/', ':(exclude).docguard'])",
           "replace": "Object.freeze(['--', ':/', ':(exclude).docguard', ':(exclude)src'])",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 042)"
+          }
+        },
+        {
+          "id": "F18",
+          "description": "init rewrites every installed skill on each run (no content-equality gate).",
+          "faultClass": "other",
+          "file": "cli/ensure-skills.mjs",
+          "find": "        if (installedContent !== srcContent) {",
+          "replace": "        if (installedContent !== null || srcContent) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 042)"
+          }
+        },
+        {
+          "id": "F19",
+          "description": "init no longer installs the slash commands.",
+          "faultClass": "other",
+          "file": "cli/ensure-skills.mjs",
+          "find": "  if (!existsSync(commandsCheck) && existsSync(COMMANDS_SOURCE)) {",
+          "replace": "  if (false && !existsSync(commandsCheck) && existsSync(COMMANDS_SOURCE)) {",
           "producedBy": {
             "producer": "agent",
             "by": "claude-opus-5.5 (spec 042)"
