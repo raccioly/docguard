@@ -71,7 +71,8 @@
           "required": ["canonicalDocs"],
           "properties": {
             "canonicalDocs": { "$ref": "#/definitions/stringSet" },
-            "sourcePaths": { "$ref": "#/definitions/stringSet", "description": "Code areas an as-built specification describes. Guard reports facts under these paths that the spec does not account for, and cited facts that no longer exist (SPR007)." }
+            "sourcePaths": { "$ref": "#/definitions/stringSet", "description": "Code areas an as-built specification describes. Guard reports facts under these paths that the spec does not account for, and cited facts that no longer exist (SPR007)." },
+            "assetPaths": { "$ref": "#/definitions/stringSet", "description": "Reviewed files the spec owns that cannot carry a spec annotation (digest-pinned fixtures, recorded outputs). An entry ending in / covers a directory; any other entry one file; no wildcards. Reconciliation links changes under these paths to the spec; an entry that covers no tracked file is SPR009." }
           }
         },
         "reconciliation": {

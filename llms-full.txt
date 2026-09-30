@@ -718,6 +718,7 @@ normative JSON Schema is `schemas/docguard-specs.schema.json`.
 | `specs[].reviewed.relations` | Human review | `extends`, `duplicates`, `conflictsWith`, `supersedes`, and `supersededBy` spec-ID edges |
 | `specs[].reviewed.scope.canonicalDocs` | Human review | Canonical documents affected by the specification |
 | `specs[].reviewed.scope.sourcePaths` | `generate --spec --write` | Optional. Code areas an as-built spec describes; SPR007 re-scans them. Serialized only when set |
+| `specs[].reviewed.scope.assetPaths` | Human review | Optional. Files the spec owns that cannot carry a spec annotation (digest-pinned fixtures, recorded outputs): `dir/` covers a directory, any other entry one file, no wildcards. Reconciliation links changes under them to the spec; an entry covering no tracked file is SPR009. Serialized only when set |
 | `specs[].reviewed.lifecycle.origin` | `generate --spec --write` | Optional. `as_built` marks a spec that records existing behaviour. Absent for forward specs, so older registries stay byte-identical |
 | `specs[].reviewed.reconciliation.lastReviewedRevision` | Human review | Exact Git revision whose doc impact was reviewed, or `null` |
 | `specs[].reviewed.reconciliation.outcomes` | Human review | Up to 20 reviewed implementation outcomes with revision, bounded rationale, evidence paths, deviations, and optional successor |
@@ -969,9 +970,8 @@ same-value match.
 `docguard verify --evidence` exits `0` for `verified-within-scope` and for an
 unconfigured manifest, `2` for `attention-required` (stale, inconclusive, or
 unsupported evidence), and `1` for `contradicted` or `invalid`. The JSON status
-and process status therefore carry the same enforcement meaning in direct CI use.
 
-<!-- truncated: 57 more lines — read docs-canonical/DATA-MODEL.md directly -->
+<!-- truncated: 58 more lines — read docs-canonical/DATA-MODEL.md directly -->
 
 ---
 
@@ -1675,6 +1675,17 @@ Behaviour changes:
 
 ### Added
 
+- **Reviewed asset paths for spec reconciliation**
+  (`specs/039-asset-path-attribution`). Some files can't name their spec:
+  digest-pinned fixtures, recorded outputs. `specs complete` reported every
+  such file as unresolved (SPC006), and that blocked completion. A spec's
+  `reviewed.scope.assetPaths` now lists them by hand. An entry ending in `/`
+  covers a directory, any other entry one file, and wildcards are rejected.
+  Reconciliation links a change under a listed path to the spec. Guard
+  reports **SPR009** for an entry that covers no tracked file. Spec 036 lists
+  its frozen benchmark assets, which had blocked maintenance completions of
+  every living spec reviewed before it merged.
+
 - **Agents learn when DocGuard is old, with no network call**
   (`specs/038-update-awareness`). DocGuard reads its own release date from the
   `CHANGELOG.md` it ships with. When that is more than 14 days ago, guard's
@@ -2024,19 +2035,8 @@ Behaviour changes:
   (`specs/037-compact-guard-response`). The full guard JSON repeated every
   finding up to three times: in `findings`, in `reportable`, and in
   `validators[].findings`. It also repeated each code's evidence on every
-  finding. The compact form lists each finding once and each code's evidence
-  once (`evidenceByCode`), and keeps validator status, counts and legacy
-  messages. A standard applicability reason is stated once
-  (`applicabilityReasons`), and `checkCoverage` drops `limitations`, which
-  repeated the validators' applicability. It is 50–55% smaller on the
-  benchmark fixtures, and about a quarter smaller when there are no findings. A reconstruction test proves every finding field, count and
-  evidence object can be read back. Agents that need the old shape pass
-  `detail: "full"`. `guard --format json` is unchanged; `--compact` prints the
-  new form.
-- **Entity diagrams are sorted.** `generate` writes DATA-MODEL's `erDiagram`
-  with entities and relationships in name order, not file-walk order, so the
 
-<!-- truncated: 4236 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 4247 more lines — read CHANGELOG.md directly -->
 
 ---
 

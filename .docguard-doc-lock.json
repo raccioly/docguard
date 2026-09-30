@@ -42,13 +42,13 @@
           "tier": "ast"
         },
         "schemas/docguard-specs.schema.json": {
-          "fingerprint": "sha256:dbd0a27ab3c5c5541888f2fe7981ae264227a2e00aecf8b528ed72213223b9be",
+          "fingerprint": "sha256:4e8ac1793f3c1c385a07c080e8faee98cfa9b30afe32bfa822a3e5d804596d56",
           "tier": "content"
         }
       },
-      "reason": "reanchorSpec gained --from, which scopes which dangling revision moves; the reanchoredFrom shape this section describes (revision, method, reason, differing) is unchanged",
+      "reason": "Schema gained reviewed.scope.assetPaths (spec 039); the section's registry field table now has the assetPaths row describing dir/ vs file entries, no wildcards, reconciliation links and SPR009.",
       "reviewedAt": "2026-09-30",
-      "reviewedRevision": "fe9669e71a0375aecf69eef88b6cc6db90b602d2"
+      "reviewedRevision": "97a48b98b6abd20ca09ba9efb5d335f39f98a038"
     }
   }
 }

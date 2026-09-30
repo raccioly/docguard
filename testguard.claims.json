@@ -3178,6 +3178,108 @@
           }
         }
       ]
+    },
+    {
+      "id": "ASSET-PATHS-ATTRIBUTE-EXACTLY",
+      "statement": "A spec's reviewed assetPaths attribute exactly the listed files (a trailing / covers a directory, anything else one file, no wildcards) to that spec in reconciliation; registries without it are unchanged; an entry covering no tracked file is reported as SPR009; spec 036 lists its frozen benchmark assets so living-spec maintenance is not blocked by them.",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/039-asset-path-attribution/spec.md#FR-002"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (spec 039)"
+      },
+      "defendedBy": [
+        "tests/asset-path-attribution.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "A path without \"/\" covers everything that starts with it.",
+          "faultClass": "other",
+          "file": "cli/scanners/spec-registry.mjs",
+          "find": "  return assetPath.endsWith('/') ? file.startsWith(assetPath) : file === assetPath;",
+          "replace": "  return file.startsWith(assetPath);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 039)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "Wildcards are accepted.",
+          "faultClass": "other",
+          "file": "cli/scanners/spec-registry.mjs",
+          "find": "  if (values.some(path => /[*?[\\]{}]/.test(path) || path === '/' || path === '')) {",
+          "replace": "  if (values.some(path => path === '/' || path === '')) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 039)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "assetPaths is dropped when the registry is written.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/spec-registry.mjs",
+          "find": "          ? { assetPaths: validateAssetPaths(scope.assetPaths, `${entry.specId}.scope.assetPaths`, issues) }",
+          "replace": "          ? {}",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 039)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "assetPaths is rejected as an unknown field.",
+          "faultClass": "other",
+          "file": "cli/scanners/spec-registry.mjs",
+          "find": "new Set(['canonicalDocs', 'sourcePaths', 'assetPaths'])",
+          "replace": "new Set(['canonicalDocs', 'sourcePaths'])",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 039)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "Reconciliation ignores asset paths.",
+          "faultClass": "other",
+          "file": "cli/scanners/reconciliation.mjs",
+          "find": "    if (evidencePaths.includes(path) || explicit || asset) links.push(spec.specId);",
+          "replace": "    if (evidencePaths.includes(path) || explicit) links.push(spec.specId);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 039)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "A stale entry is not reported.",
+          "faultClass": "other",
+          "file": "cli/validators/spec-registry.mjs",
+          "find": "      for (const assetPath of spec.reviewed.scope.assetPaths.filter(p => !covered(p))) {",
+          "replace": "      for (const assetPath of [].filter(p => !covered(p))) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 039)"
+          }
+        },
+        {
+          "id": "F7",
+          "description": "An untracked file on disk satisfies an entry inside git.",
+          "faultClass": "other",
+          "file": "cli/validators/spec-registry.mjs",
+          "find": "    const covered = assetPath => (tracked\n",
+          "replace": "    const covered = assetPath => (false\n",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 039)"
+          }
+        }
+      ]
     }
   ]
 }

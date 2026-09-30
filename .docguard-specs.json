@@ -711,6 +711,133 @@
       }
     },
     {
+      "specId": "docguard.asset-path-attribution",
+      "path": "specs/039-asset-path-attribution/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "approved",
+          "delivery": "implemented",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": "living"
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": [
+            "docs-canonical/DATA-MODEL.md"
+          ]
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.asset-path-attribution#FR-001",
+          "docguard.asset-path-attribution#FR-002",
+          "docguard.asset-path-attribution#FR-003",
+          "docguard.asset-path-attribution#FR-004",
+          "docguard.asset-path-attribution#FR-005",
+          "docguard.asset-path-attribution#FR-006",
+          "docguard.asset-path-attribution#SC-001",
+          "docguard.asset-path-attribution#SC-002",
+          "docguard.asset-path-attribution#SC-003"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/039-asset-path-attribution/spec.md",
+            "digest": "sha256:fea16549d7ed865b7af3c9948b7e2e3e9afc2020f8c77024e524233dfed275cd"
+          },
+          {
+            "path": "specs/039-asset-path-attribution/plan.md",
+            "digest": "sha256:d008a2cbcda1a0fb048d589b902e1342d913c198bd1e00bc7a1964c74196d090"
+          },
+          {
+            "path": "specs/039-asset-path-attribution/tasks.md",
+            "digest": "sha256:4c971e9a4f366e455a58ae7de1f66247886fed48d24d8ac19d4ab6919cca9688"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 8,
+          "total": 8
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/scanners/spec-registry.mjs",
+            "line": 255
+          },
+          {
+            "requirementId": "FR-001",
+            "file": "cli/scanners/spec-registry.mjs",
+            "line": 260
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/scanners/reconciliation.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/validators/spec-registry.mjs",
+            "line": 13
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/asset-path-attribution.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/asset-path-attribution.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/asset-path-attribution.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/asset-path-attribution.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/asset-path-attribution.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/asset-path-attribution.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/asset-path-attribution.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/asset-path-attribution.test.mjs",
+            "line": 13
+          }
+        ]
+      }
+    },
+    {
       "specId": "docguard.calibrated-finding-channels",
       "path": "specs/013-calibrated-finding-channels/spec.md",
       "reviewed": {
@@ -3944,12 +4071,12 @@
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/spec-registry.mjs",
-            "line": 435
+            "line": 461
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/spec-registry.mjs",
-            "line": 436
+            "line": 462
           },
           {
             "requirementId": "FR-003",
@@ -6173,6 +6300,15 @@
         "scope": {
           "canonicalDocs": [
             "docs-canonical/ARCHITECTURE.md"
+          ],
+          "assetPaths": [
+            "benchmarks/agent-context/fixtures/ledger-service/",
+            "benchmarks/agent-context/hidden/ledger-late-fee/",
+            "benchmarks/agent-context/hidden/ledger-redaction/",
+            "benchmarks/agent-context/hidden/ledger-rounding/",
+            "benchmarks/agent-context/reference/ledger-late-fee/",
+            "benchmarks/agent-context/reference/ledger-redaction/",
+            "benchmarks/agent-context/reference/ledger-rounding/"
           ]
         },
         "reconciliation": {

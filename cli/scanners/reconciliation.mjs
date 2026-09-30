@@ -5,6 +5,7 @@
  * @implements docguard.document-lifecycle#FR-012
  * @implements docguard.canonical-requirement-links#FR-001
  * @implements docguard.canonical-requirement-links#FR-002
+ * @implements docguard.asset-path-attribution#FR-002
  */
 
 import { execFileSync } from 'node:child_process';
@@ -13,7 +14,7 @@ import { extname, resolve } from 'node:path';
 import { getDiffSnapshot, getHeadInfo } from '../shared-git.mjs';
 import { parseUnifiedDiff } from '../shared-diff.mjs';
 import { mechanicalSectionsForChanges } from '../shared-sync-scope.mjs';
-import { projectSpecRegistry } from './spec-registry.mjs';
+import { assetPathCovers, projectSpecRegistry } from './spec-registry.mjs';
 import { collectRequirementIdsFromContent } from '../shared-requirements.mjs';
 
 const CODE = new Set(['.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx', '.py', '.go', '.rs', '.java', '.kt', '.rb', '.php', '.sh', '.cs', '.swift']);
@@ -47,7 +48,10 @@ function directSpecLinks(path, text, registry) {
       ...spec.reviewed.scope.canonicalDocs,
     ];
     const explicit = (spec.intent.requirements || []).some(identity => text.includes(identity));
-    if (evidencePaths.includes(path) || explicit) links.push(spec.specId);
+    // docguard.asset-path-attribution#FR-002: a reviewed owner for files that
+    // cannot name their spec (digest-pinned fixtures, recorded outputs).
+    const asset = (spec.reviewed.scope.assetPaths || []).some(assetPath => assetPathCovers(assetPath, path));
+    if (evidencePaths.includes(path) || explicit || asset) links.push(spec.specId);
   }
   return [...new Set(links)].sort();
 }

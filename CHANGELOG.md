@@ -38,6 +38,17 @@ Behaviour changes:
 
 ### Added
 
+- **Reviewed asset paths for spec reconciliation**
+  (`specs/039-asset-path-attribution`). Some files can't name their spec:
+  digest-pinned fixtures, recorded outputs. `specs complete` reported every
+  such file as unresolved (SPC006), and that blocked completion. A spec's
+  `reviewed.scope.assetPaths` now lists them by hand. An entry ending in `/`
+  covers a directory, any other entry one file, and wildcards are rejected.
+  Reconciliation links a change under a listed path to the spec. Guard
+  reports **SPR009** for an entry that covers no tracked file. Spec 036 lists
+  its frozen benchmark assets, which had blocked maintenance completions of
+  every living spec reviewed before it merged.
+
 - **Agents learn when DocGuard is old, with no network call**
   (`specs/038-update-awareness`). DocGuard reads its own release date from the
   `CHANGELOG.md` it ships with. When that is more than 14 days ago, guard's
