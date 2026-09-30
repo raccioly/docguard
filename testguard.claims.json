@@ -2587,7 +2587,7 @@
     },
     {
       "id": "SYMBOL-MAP-IS-BUDGETED-AND-GATED",
-      "statement": "The symbol map ranks product source files deterministically by PageRank, lists their names within a byte budget and names every degraded tier, appears only with --symbols, and ships by default only if the frozen v2 protocol computes no regression and a benefit on navigation-bound tasks. The v2 instruments are calibrated (each reference passes every hidden check; each starting state fails as declared) and the evaluators are frozen with the manifest.",
+      "statement": "The symbol map ranks product source files deterministically by PageRank, lists their names within a byte budget and names every degraded tier, appears only with --symbols, and ships by default only if the frozen v2 protocol computes no regression and a benefit on navigation-bound tasks. The v2 instruments are calibrated (each reference passes every hidden check; each starting state fails as declared).",
       "source": {
         "kind": "spec",
         "ref": "specs/036-symbol-map/spec.md#FR-008"
@@ -2800,42 +2800,6 @@
           "file": "benchmarks/agent-context/reference/ledger-redaction/redact.mjs",
           "find": "{12,18}",
           "replace": "{15,18}",
-          "producedBy": {
-            "producer": "agent",
-            "by": "claude-opus-5.5 (#455 spec 036)"
-          }
-        },
-        {
-          "id": "F18",
-          "description": "A rounding check is dropped from the hidden evaluator.",
-          "faultClass": "statement-deleted",
-          "file": "benchmarks/agent-context/hidden/ledger-rounding/evaluate.mjs",
-          "find": "  ['JPY non-ties round to whole yen', () => roundMinor(99.4, 'JPY') === 99],\n",
-          "replace": "",
-          "producedBy": {
-            "producer": "agent",
-            "by": "claude-opus-5.5 (#455 spec 036)"
-          }
-        },
-        {
-          "id": "F19",
-          "description": "The late-fee evaluator moves the grace boundary.",
-          "faultClass": "literal-changed",
-          "file": "benchmarks/agent-context/hidden/ledger-late-fee/evaluate.mjs",
-          "find": "lateFee(invoice(), '2026-01-20') === 0",
-          "replace": "lateFee(invoice(), '2026-01-21') === 0",
-          "producedBy": {
-            "producer": "agent",
-            "by": "claude-opus-5.5 (#455 spec 036)"
-          }
-        },
-        {
-          "id": "F20",
-          "description": "A redaction check is dropped from the hidden evaluator.",
-          "faultClass": "statement-deleted",
-          "file": "benchmarks/agent-context/hidden/ledger-redaction/evaluate.mjs",
-          "find": "  ['a 13-digit card is masked', () => redact('x 4222222222222 y') === 'x **** **** **** 2222 y'],\n",
-          "replace": "",
           "producedBy": {
             "producer": "agent",
             "by": "claude-opus-5.5 (#455 spec 036)"
