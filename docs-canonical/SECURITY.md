@@ -1,9 +1,9 @@
 # Security
 
 <!-- docguard:quality negation-load off — prohibitions define security boundaries -->
-<!-- docguard:version 0.11.0 -->
+<!-- docguard:version 0.12.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-09-29 -->
+<!-- docguard:last-reviewed 2026-09-30 -->
 
 ## Overview
 
@@ -19,7 +19,7 @@ The optional MCP server supports stdio and HTTP. Installation, upgrade, publishi
 | HTTP MCP | Optional API key on loopback; mandatory for non-loopback binding | Host binding, key check, and browser-origin validation in `cli/commands/mcp.mjs` |
 | GitHub feedback | User-controlled browser session | Submission occurs only when the user submits a reviewed issue |
 
-HTTP clients can cause the server to inspect project directories available to its process. Run it under an account with only the intended filesystem access. An API key does not provide per-project authorization or a multi-tenant isolation boundary. Network exposure needs deployment-specific access controls.
+HTTP clients can cause the server to inspect project directories available to its process. The four documentation tools (`docguard_docs_for_path`, `docguard_doc_structure`, `docguard_read_section`, `docguard_task_context`) return document text, not only findings. They read through the same safe reader, which refuses `.env*`, `.local`, traversal and symlinked paths, and they bound each answer (8 KiB by default, 32 KiB at most). Run it under an account with only the intended filesystem access. An API key does not provide per-project authorization or a multi-tenant isolation boundary. Network exposure needs deployment-specific access controls.
 
 ## Authorization
 
@@ -75,6 +75,16 @@ The optional external benchmark accepts only credential-free public HTTPS Git UR
 
 Pass untrusted arguments through argv arrays and validate values for their intended operation. Avoid interpolating configuration or repository content into shell commands. Existing static command strings do not authorize expanding their input surface. Regression tests in `tests/security-init-injection.test.mjs` exercise the input boundary. `cli/spec-kit-delegation.mjs` is the only caller of the `specify` CLI: it passes argv arrays, accepts an integration key only if it matches `^[a-zA-Z0-9_-]{1,32}$`, uses only the options `specify init --help` documents, and bounds each call with a timeout.
 
+Every other subprocess also takes an argv array and no shell:
+
+- Git: `ls-files -z --cached` / `--deleted` (tracked files), `check-ignore --no-index -z --stdin` (paths go through stdin, never the command line), `cat-file -e` with a regex-validated revision, and `rev-parse` (`cli/shared-git.mjs`, `cli/scanners/doc-deps.mjs`, `cli/scanners/revision-anchor.mjs`, `cli/commands/review.mjs`).
+- `python3 -c` with a fixed script that only calls `ast.parse`, on a path already checked by the doc lock's path guard, with a 15-second timeout (`cli/scanners/doc-deps.mjs`); the import graph and schema scanners use the same pattern (`cli/scanners/py-ast.mjs`).
+- Development only: `tools/budget.mjs` runs `node` and `npm pack --dry-run --ignore-scripts`.
+
+Only two shell strings remain, and both are static: `git rev-parse --is-inside-work-tree` (`cli/shared-git.mjs`) and `which specify` / `where specify` (`cli/ensure-skills.mjs`).
+
+Paths that come from documents or configuration are checked before use. A `covers=` target must be relative, without `..` or a symlink, resolve inside the project, and respect `.docguardignore`. An `ownership` pattern with `..` or an absolute prefix is an error (OWN007). `rules --for` refuses an absolute path, `..`, and a symlink that leaves the project. Instruction-scope discovery reads at most 200 files and walks at most 100,000 entries without following links.
+
 ## Command Safety Levels
 
 | Operation | Source writes | Auxiliary writes / effects |
@@ -82,9 +92,11 @@ Pass untrusted arguments through argv arrays and validate values for their inten
 | guard, score, diff, diagnose | None by default | Plan caching may create `.docguard/` artifacts; explicit mutation flags change behavior |
 | ci | None | Records history unless `--no-history` is set |
 | feedback | None | Saves local records or an explicitly requested direct `tests/*.test.mjs` contribution unless `--preview`; prints opt-in URLs but never submits |
-| memory --pack | None | Writes a generated context pack unless `--stdout` is used |
+| memory --pack | None | Writes a generated context pack unless `--stdout` is used; `--symbols` adds a bounded symbol map |
 | agent, agent --task | None | Emits a task graph or transient bounded context; never stores raw task text or selected output |
-| fix --write, sync --write | Targeted documentation edits | Mapped human documents permit only unique `source=code` sections; backups and fix history remain enabled where supported |
+| fix --write, sync --write | Targeted documentation edits | Mapped human documents permit only unique `source=code` sections; backups and fix history remain enabled where supported. `sync --write` skips a section drawn from incomplete evidence unless `--allow-partial` |
+| review --accept, review --prune | `.docguard-doc-lock.json` only | One file transaction; `--accept` requires a reason. Plain `review` and `review --suggest` write nothing |
+| rules --for, trace --owners [--suggest] | None | Read-only; `--suggest` prints a draft ownership block and never writes configuration |
 | reconcile | None by default | `--write` delegates only mechanical generated-section refreshes to `sync` |
 | specs, specs preflight, specs require | None for check/plan modes | `specs --write` refreshes the registry; `specs complete --write` transactionally records a reviewed outcome and active context |
 | verify --evidence | None | Reads the strict local manifest, selected Markdown, source files, and saved reports; guard consumes the same evaluator |
@@ -138,6 +150,7 @@ Exclude `node_modules`, environment values, generated build output, and private 
 
 | Version | Date | Changes |
 |---|---|---|
+| 0.12.0 | 2026-09-30 | Freshness review for specs 028–037: full subprocess inventory (git, `python3 -c`, dev tooling), the remaining static shell strings, path checks for `covers=`, ownership patterns and `rules --for`, the MCP documentation tools' boundary, and the `review`, `rules` and `trace --owners` write levels |
 | 0.11.0 | 2026-09-29 | Freshness review: the `specify` subprocess boundary, hook-manager ownership, the spec-first gate, and the Homebrew tap deploy key |
 | 0.10.0 | 2026-09-14 | Prevent scoped evidence output from exposing raw source values |
 | 0.9.0 | 2026-09-14 | Document public benchmark isolation and synthetic feedback-fixture privacy boundaries |
