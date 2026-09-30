@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "$comment": "Non-regression budgets (specs/031-non-regression-budgets). tools/budget.mjs compares a head tree with its base on one runner. Change a budget only with a reason in the PR; a one-off cost belongs in a Budget-Exempt line instead.",
+  "$comment": "Non-regression budgets (specs/031-non-regression-budgets). tools/budget.mjs compares a head tree with its base on one runner. Change a budget only with a reason in the PR; a one-off cost belongs in a Budget-Exempt line instead. The MCP guard response is measured on a fixed fixture: on this repository its size follows the branch's own findings (commit-count and diff heuristics), not the output format.",
   "samples": 5,
   "guardTargets": [
     ".",
@@ -40,7 +40,10 @@
     },
     {
       "tool": "docguard_guard",
-      "arguments": {}
+      "label": "sparse-doc-control",
+      "arguments": {
+        "projectDir": "benchmarks/fixtures/sparse-doc-control"
+      }
     },
     {
       "tool": "docguard_docs_for_path",
