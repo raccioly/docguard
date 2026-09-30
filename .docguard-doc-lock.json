@@ -38,17 +38,17 @@
           "tier": "ast"
         },
         "cli/commands/specs.mjs#reanchorSpec": {
-          "fingerprint": "sha256:5ea5efcb7490ba6ac7e8c0f812215e9ef6282c05f2a4371f8661eb3e042cb00e",
+          "fingerprint": "sha256:6e57c2ceeec42276877b9977ddf476be87c9cceef4e8dd08c495f1d59837b74e",
           "tier": "ast"
         },
         "schemas/docguard-specs.schema.json": {
-          "fingerprint": "sha256:8eef19e4bd96564e7618057d33ef3adbdc37bc2f6c56249644db9c4ea459faa8",
+          "fingerprint": "sha256:dbd0a27ab3c5c5541888f2fe7981ae264227a2e00aecf8b528ed72213223b9be",
           "tier": "content"
         }
       },
-      "reason": "Verified against the code in the 2026-09-29 freshness review of specs 014-029",
+      "reason": "Checked #475: the reanchoredFrom row documents attested re-anchors with differing evidence paths",
       "reviewedAt": "2026-09-30",
-      "reviewedRevision": "6b3c1586023aeaf1738951c2d04c886caf512125"
+      "reviewedRevision": "f1f8de985b0e9645b6feeedadb40209d69a2ef62"
     }
   }
 }
