@@ -2347,6 +2347,42 @@
             "producer": "agent",
             "by": "claude-opus-5.5 (#455 spec 033)"
           }
+        },
+        {
+          "id": "F16",
+          "description": "An unknown harness is accepted.",
+          "faultClass": "statement-deleted",
+          "file": "cli/commands/rules.mjs",
+          "find": "  if (harness && !HARNESSES.includes(harness)) throw new Error(`--harness must be one of ${HARNESSES.join(', ')}`);\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 033)"
+          }
+        },
+        {
+          "id": "F17",
+          "description": "Machine-local rules are not marked local.",
+          "faultClass": "return-altered",
+          "file": "cli/commands/rules.mjs",
+          "find": "  const local = new Set(tracked ? disk.files.filter(f => !trackedSet.has(f)) : []);",
+          "replace": "  const local = new Set();",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 033)"
+          }
+        },
+        {
+          "id": "F18",
+          "description": "A refused path exits 0.",
+          "faultClass": "statement-deleted",
+          "file": "cli/commands/rules.mjs",
+          "find": "    console.error(`${c.red}${error.message}${c.reset}`);\n    process.exitCode = 1;\n",
+          "replace": "    console.error(`${c.red}${error.message}${c.reset}`);\n",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 033)"
+          }
         }
       ]
     }
