@@ -17,13 +17,14 @@ honest answer is short: **DocGuard collects nothing.**
 
 ## The explicit, user-initiated exceptions
 
-Three commands can *prepare* outbound actions — each is opt-in, visible, and
-executed by you or your own tooling, never silently by DocGuard:
+These commands can make or *prepare* outbound actions — each is opt-in, visible,
+and run by you or your own tooling, never silently by DocGuard:
 
 | Command | What happens |
 |---------|--------------|
 | `docguard feedback` | Builds a **prefilled GitHub issue URL** (redacted and length-capped) and saves a local record. Nothing is sent unless you open the URL and submit it yourself. |
 | `docguard upgrade --pr` / `impact --prs` | Shell out to **your** locally-authenticated `gh` CLI to interact with **your** repositories. DocGuard never holds credentials. |
+| `docguard upgrade` | Fetches the latest published version from `registry.npmjs.org` to compare it with yours, only when you run it. It sends no project data. `--apply` runs your own `npm install`. |
 | `docguard mcp --transport http` | Serves read-only tools over HTTP. Binds to loopback by default; binding a non-loopback address **refuses to start** without an `--api-key`. |
 
 ## Data written to disk (yours, locally)
@@ -43,3 +44,11 @@ was built from this repository.
 Changes to this policy land in this file with a dated entry in
 [CHANGELOG.md](CHANGELOG.md). Questions: open an issue at
 <https://github.com/raccioly/docguard/issues> (see [SUPPORT.md](SUPPORT.md)).
+
+## The version-age note
+
+When the installed DocGuard was released more than 14 days ago, guard's text
+output, the MCP server's instructions and the context pack say so and suggest
+`docguard upgrade`. The note makes no network call: DocGuard reads its own
+release date from the `CHANGELOG.md` it ships with and compares it to your
+clock. Set `DOCGUARD_NO_UPDATE_HINT=1` to turn it off.

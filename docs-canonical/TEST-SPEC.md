@@ -104,6 +104,7 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/scanners/doc-deps.mjs`, `cli/validators/doc-dependency.mjs`, `cli/commands/review.mjs` (doc dependency lock, DLK001–DLK005) | `tests/doc-dependency-lock.test.mjs` | ✅ |
 | `tools/budget.mjs` (non-regression budgets) | `tests/budget.test.mjs` | ✅ |
 | `cli/commands/mcp.mjs` (MCP server over stdio and loopback HTTP) | `tests/mcp.test.mjs`, `tests/mcp-http.test.mjs`, `tests/mcp-doc-tools.test.mjs` | ✅ |
+| `cli/release-age.mjs` (version-age note on guard text, MCP instructions and the context pack) | `tests/update-awareness.test.mjs` | ✅ |
 | `cli/shared-guard-json.mjs` (compact guard response) | `tests/compact-guard-response.test.mjs` | ✅ |
 | `cli/scanners/doc-references.mjs`, `cli/shared-headings.mjs` (MCP doc navigation) | `tests/mcp-doc-tools.test.mjs`, `tests/trace-reverse.test.mjs` | ✅ |
 | `cli/shared-sync-scope.mjs` (`sync --since` section scope) | `tests/sync-since.test.mjs` | ✅ |

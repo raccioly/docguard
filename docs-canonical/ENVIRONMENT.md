@@ -2,16 +2,16 @@
 
 <!-- docguard:quality negation-load off — an environment doc precisely describes the ABSENCE of requirements (no install step, no database, no credential for the CLI); the prohibitive phrasing is accurate and intentional, not sloppy writing -->
 
-<!-- docguard:version 0.10.0 -->
+<!-- docguard:version 0.11.0 -->
 <!-- docguard:status active -->
 <!-- docguard:last-reviewed 2026-09-30 -->
 
-> The DocGuard CLI needs no environment variables. Two optional ones exist: `DOCGUARD_API_KEY` for the HTTP MCP server and `DOCGUARD_SPECIFY_TIMEOUT_MS` for `docguard init`'s calls to the `specify` CLI. DocGuard has a single optional-load npm dependency (`@babel/parser`) and optionally uses the developer's own `python3`; everything else is Node.js built-ins.
+> The DocGuard CLI needs no environment variables. Three optional ones exist: `DOCGUARD_API_KEY` for the HTTP MCP server, `DOCGUARD_SPECIFY_TIMEOUT_MS` for `docguard init`'s calls to the `specify` CLI, and `DOCGUARD_NO_UPDATE_HINT` to silence the version-age note. DocGuard has a single optional-load npm dependency (`@babel/parser`) and optionally uses the developer's own `python3`; everything else is Node.js built-ins.
 
 | Metadata | Value |
 |----------|-------|
 | **Status** | ![Status](https://img.shields.io/badge/status-active-brightgreen) |
-| **Version** | `0.10.0` |
+| **Version** | `0.11.0` |
 
 ---
 
@@ -32,11 +32,12 @@
 > credential of any kind. (Its one npm dependency, `@babel/parser`, needs no
 > configuration.)
 
-Two **optional** variables exist:
+Three **optional** variables exist:
 
 | Variable | When it applies | Purpose |
 |----------|-----------------|---------|
 | `DOCGUARD_API_KEY` | `docguard mcp --transport http`: optional on loopback; **required to bind a non-loopback host** | Shared secret for the HTTP MCP server. Equivalent to `--api-key <key>`, which takes precedence. When set, every request must carry `Authorization: Bearer <key>` or `X-API-Key: <key>`, else `401`. |
+| `DOCGUARD_NO_UPDATE_HINT` | guard text output, the MCP server's instructions, `memory --pack` | `1` turns off the note that the installed release is more than 14 days old (spec 038). The note makes no network call; `CI` set to a non-empty value other than `false` or `0` also silences it in guard's text output. |
 | `DOCGUARD_SPECIFY_TIMEOUT_MS` | `docguard init` with the `specify` CLI installed | Timeout in milliseconds for each `specify` call. Defaults: 15000 for `specify init --help`, 60000 for `specify init` and `specify extension add`. A missing, zero or non-numeric value uses the default. |
 
 The server binds `127.0.0.1` by default and **refuses to start** on a
@@ -117,6 +118,7 @@ What must be visible:
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 0.11.0 | 2026-09-30 | DocGuard Team | `DOCGUARD_NO_UPDATE_HINT` and the `CI` rule for the version-age note (spec 038) |
 | 0.10.0 | 2026-09-30 | DocGuard Team | Freshness review: `npm run budget`; the full list of commands that write; how path-scoped rules and ownership read git; what a missing `python3` makes partial (specs 030, 033, 034, 035) |
 | 0.9.0 | 2026-09-29 | DocGuard Team | Freshness review: documented `DOCGUARD_SPECIFY_TIMEOUT_MS` and the optional Spec Kit prerequisite; the agent-sandbox section (spec 022) is recorded here |
 | 0.8.0 | 2026-09-18 | DocGuard Team | Freshness review: verified the MCP key contract against `cli/commands/mcp.mjs`; added `npm run llms` and the shipped GitLab CI component, both of which were missing |

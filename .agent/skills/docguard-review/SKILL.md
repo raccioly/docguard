@@ -213,6 +213,14 @@ Ask: "Would you like me to fix the top N issues? (I'll show you what I plan to c
 - **Preserve evidence scope** — a verified declaration covers one selected statement, while undeclared prose and whole-document accuracy remain review work
 - **Preserve approved intent** — a contradiction can mean implementation regressed; determine which side owns truth before recommending an edit
 
+## When DocGuard says it is old
+
+If DocGuard's output says its version was released more than 14 days ago, tell
+the user and offer to run `docguard upgrade`, which checks npm for a newer
+version only when it runs. Never upgrade DocGuard without the user's agreement,
+and never treat the note as a failure: it says a newer version may exist, not
+that one does.
+
 ## Context
 
 $ARGUMENTS

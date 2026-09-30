@@ -185,6 +185,14 @@ If user has run score before (check git log for score badge changes):
 - **Keep assurance separate** — report `assurance.declaredEvidence` and remaining `unverifiedClaims` beside the structural score; never convert a scoped evidence pass into an accuracy score for a document or project
 - **Score is not accuracy** — the channels make this explicit: a code whose `evidence.status` is `not-measured` has never been scored by the reviewed corpus, so neither its confidence label nor the points attached to clearing it are measured quantities
 
+## When DocGuard says it is old
+
+If DocGuard's output says its version was released more than 14 days ago, tell
+the user and offer to run `docguard upgrade`, which checks npm for a newer
+version only when it runs. Never upgrade DocGuard without the user's agreement,
+and never treat the note as a failure: it says a newer version may exist, not
+that one does.
+
 ## Context
 
 $ARGUMENTS

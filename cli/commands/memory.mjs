@@ -22,6 +22,7 @@
  */
 
 import { buildSymbolMap } from '../scanners/symbol-map.mjs';
+import { releaseAge, updateHintText } from '../release-age.mjs';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { c } from '../shared.mjs';
@@ -162,6 +163,11 @@ function runMemoryPack(projectDir, config, flags) {
     lines.push(...buildSymbolMap(projectDir, config).text.split('\n'));
     lines.push('');
   }
+
+  // docguard.update-awareness#FR-004: only when the release is old; the text
+  // names the date, not a day count, so the pack does not change daily.
+  const versionNote = updateHintText(releaseAge(), 'pack');
+  if (versionNote) lines.push('## DocGuard version', '', versionNote, '');
 
   lines.push('---');
   lines.push('Verify claims: `docguard verify --semantic` · Full docs: `llms-full.txt`');

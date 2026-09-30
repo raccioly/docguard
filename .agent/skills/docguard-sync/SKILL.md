@@ -128,3 +128,11 @@ that ref. Use that diff to:
 - ❌ Rewriting an evidence-bound human statement from generated code alone — rerun the declared predicate and review approved intent first.
 - ❌ Treating a `disposition: escalate` finding as drift to sync away — it is a decision someone owes, not a section that is out of date.
 - ❌ Stamping `<!-- docguard:last-reviewed -->` to silence a freshness escalation — the date attests that a human reviewed; writing it without reviewing makes the attestation false.
+
+## When DocGuard says it is old
+
+If DocGuard's output says its version was released more than 14 days ago, tell
+the user and offer to run `docguard upgrade`, which checks npm for a newer
+version only when it runs. Never upgrade DocGuard without the user's agreement,
+and never treat the note as a failure: it says a newer version may exist, not
+that one does.
