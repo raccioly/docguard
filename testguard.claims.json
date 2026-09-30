@@ -2966,6 +2966,18 @@
             "producer": "agent",
             "by": "claude-opus-5.5 (#455 spec 037 FR-007)"
           }
+        },
+        {
+          "id": "F13",
+          "description": "The full form's checked reason drifts from the standard table, so compaction silently stops hoisting it.",
+          "faultClass": "other",
+          "file": "cli/validator-coverage.mjs",
+          "find": "return { status: 'checked', reason: STANDARD_APPLICABILITY_REASONS.checked };",
+          "replace": "return { status: 'checked', reason: 'Completed the declared checks.' };",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 spec 037 FR-007)"
+          }
         }
       ]
     }
