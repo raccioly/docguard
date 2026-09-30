@@ -1,5 +1,6 @@
 # Tasks: MCP Project Confinement
 
+**Status**: Complete. The reported `docguard_read_section` reproduction is refused over stdio and HTTP and allowed with `--root`; the full suite (2458 tests) passes and guard is PASS. Claim MCP-PROJECTDIR-STAYS-INSIDE-SERVED-ROOTS: 13/13 faults killed (`--confirm 3`); MCP-DOC-TOOLS-EXACT-AND-BOUNDED re-probed after its F8 anchor followed the parameter rename: 15/15 killed.
 **Spec**: `specs/041-mcp-project-confinement/spec.md`
 **Plan**: `specs/041-mcp-project-confinement/plan.md`
 
@@ -43,6 +44,6 @@
 - [x] T010 `docs-canonical/SECURITY.md`, `docs/ai-integration.md`,
   `docs/commands.md`, `README.md`, `mcpb/manifest.template.json`,
   `smithery.yaml`, `CHANGELOG.md` (FR-007).
-- [ ] T011 `testguard.claims.json`: claim
+- [x] T011 `testguard.claims.json`: claim
   MCP-PROJECTDIR-STAYS-INSIDE-SERVED-ROOTS, probed `--confirm 3`; gate;
   `npm test`; `npm run llms`; `docguard specs --write`; `docguard guard`.
