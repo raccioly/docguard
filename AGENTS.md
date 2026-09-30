@@ -170,6 +170,13 @@ extensions/spec-kit-docguard/
   `Spec-Exempt: <release|deps|typo|test-only> — <reason>`. CI enforces this with
   `docguard specs require --since origin/main --message-file <body>`. When the area
   being changed has no spec, write an as-built spec scoped to that area first.
+- **Changes must not make DocGuard slower, noisier or heavier by accident.** The
+  CI `budget` job compares the PR with its base on one runner: guard wall time
+  (×1.15, 150 ms floor), new error findings on this repository, agent-facing
+  bytes (context pack, task packets, MCP responses, llms bundles; +10%), package
+  weight and runtime dependencies. A cost the change needs is declared in the PR
+  body as `Budget-Exempt: <metric> — <reason>`. Reproduce locally with
+  `npm run budget -- --base <base-worktree>` (specs/031-non-regression-budgets).
 - **PR-first workflow — no direct-to-main commits.** Create a branch (`git checkout -b <type>/<slug>`), push, `gh pr create`, let CI run, self-review, squash-merge. Tag releases only after merge on `main`. The only acceptable direct-to-main: typo fixes in comments or README badge URLs.
 - Never commit without updating CHANGELOG.md
 - If code deviates from docs, add `// DRIFT: reason`
