@@ -77,6 +77,24 @@ schedule sees the current package version without a tag and retries publication
 before considering another bump. An orphaned release branch fails closed; an
 existing open release PR is reused and has auto-merge re-armed.
 
+The bump is `auto` unless a maintainer dispatches `patch` or `minor`
+(`specs/026-release-readiness`). `.github/scripts/release-changelog.mjs infer`
+reads the curated `## [Unreleased]` section. Any populated `### Added`,
+`### Removed` or `### Deprecated` heading makes a minor release; otherwise the
+release is a patch. The same script's `cut` moves the curated notes under the
+new `## [x.y.z]` heading and lists the merged commit subjects under
+`### Commits`, so the published notes are the reviewed ones. The release PR
+also moves `action.yml`'s `DOCGUARD_RELEASED_VERSION` and the copyable
+`raccioly/docguard@vX.Y.Z` examples in `README.md` and `docs/ai-integration.md`.
+
+After npm serves the new tarball, the `publish-homebrew` job renders
+`packaging/homebrew/docguard.rb` from it and pushes the result to
+`raccioly/homebrew-tap`. The tarball is checked against npm's `dist.integrity`
+first. The push uses a write deploy key that can reach only the tap, stored as
+the Actions secret `HOMEBREW_TAP_DEPLOY_KEY`. Without the secret the job warns
+and skips. With it, the 10-minute sweep retries until the tap serves the
+released version.
+
 Do not use a post-approval `workflow_run` listener as the release continuation.
 The approval-required completion is the event that listener observes; approving
 the held run executes its jobs without producing a second completion event for

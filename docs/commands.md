@@ -153,6 +153,28 @@ npx docguard-cli generate --dir ./my-project
 
 **Detects:** Next.js, React, Vue, Angular, Express, Fastify, Hono, Django, FastAPI, SvelteKit, and more.
 
+#### As-built specs: `docguard generate --spec <area>`
+
+For code that has no spec (a refactor, a migration, onboarding), DocGuard
+proposes a Spec Kit spec for **one** directory. It scans the facts it can
+establish without an LLM (routes, exported JS/TS symbols, environment variables
+read, and data entities) and writes one `FR-NNN` candidate per fact. Each
+candidate carries a `<!-- docguard:fact <kind> <key> -->` marker and a file
+citation. DocGuard writes no requirement prose; every statement is an agent
+task.
+
+```bash
+npx docguard-cli generate --spec src/billing                # preview the candidates
+npx docguard-cli generate --spec src/billing --write        # create specs/NNN-as-built-src-billing/spec.md
+npx docguard-cli generate --spec src/billing --id acme.billing --write --format json
+```
+
+`--write` creates the spec in the next free feature directory (honouring Spec
+Kit's `feature_numbering`) and registers it with `origin: as_built` and its
+`sourcePaths`, in one transaction. From then on **SPR007** reports facts under
+those paths that the spec neither marks nor lists under `## Out of Scope`, and
+cited facts that no longer exist. An as-built spec needs no `tasks.md`.
+
 ### `docguard audit`
 
 **Scan and report** which CDD documents exist, are missing, or need attention.
@@ -177,7 +199,17 @@ npx docguard-cli specs --check                 # CI: registry must match the rep
 npx docguard-cli specs --write                 # Refresh observations; preserve reviewed fields
 npx docguard-cli specs preflight               # Brief prior intent before specification
 npx docguard-cli specs preflight --path specs/007-feature/spec.md
+npx docguard-cli specs complete --id acme.feature --since main          # plan the completion
+npx docguard-cli specs complete --id acme.feature --write --reason "..." # apply it
+npx docguard-cli specs require --since origin/main --message-file pr.txt # spec-first gate
 ```
+
+`specs require` is the spec-first gate. A change to a governed path (see
+[`specFirst`](configuration.md#spec-first-gate--specfirst)) must name its spec,
+either as a `specs/<dir>` path or a Spec ID, in the commit messages or the
+message file, or declare `Spec-Exempt: <kind> — <reason>`. Exit 1 means an
+uncovered change; exit 2 means the check could not decide (for example, the base
+ref is missing). The GitHub Action runs it with `command: spec-first`.
 
 Every active spec needs a stable project-scoped metadata identity such as
 `Spec ID: acme.billing-export` near the top of the authoritative spec. Completion evidence uses

@@ -331,6 +331,24 @@ schedule sees the current package version without a tag and retries publication
 before considering another bump. An orphaned release branch fails closed; an
 existing open release PR is reused and has auto-merge re-armed.
 
+The bump is `auto` unless a maintainer dispatches `patch` or `minor`
+(`specs/026-release-readiness`). `.github/scripts/release-changelog.mjs infer`
+reads the curated `## [Unreleased]` section. Any populated `### Added`,
+`### Removed` or `### Deprecated` heading makes a minor release; otherwise the
+release is a patch. The same script's `cut` moves the curated notes under the
+new `## [x.y.z]` heading and lists the merged commit subjects under
+`### Commits`, so the published notes are the reviewed ones. The release PR
+also moves `action.yml`'s `DOCGUARD_RELEASED_VERSION` and the copyable
+`raccioly/docguard@vX.Y.Z` examples in `README.md` and `docs/ai-integration.md`.
+
+After npm serves the new tarball, the `publish-homebrew` job renders
+`packaging/homebrew/docguard.rb` from it and pushes the result to
+`raccioly/homebrew-tap`. The tarball is checked against npm's `dist.integrity`
+first. The push uses a write deploy key that can reach only the tap, stored as
+the Actions secret `HOMEBREW_TAP_DEPLOY_KEY`. Without the secret the job warns
+and skips. With it, the 10-minute sweep retries until the tap serves the
+released version.
+
 Do not use a post-approval `workflow_run` listener as the release continuation.
 The approval-required completion is the event that listener observes; approving
 the held run executes its jobs without producing a second completion event for
@@ -1482,6 +1500,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+**Upgrading from 0.42.x.** No new check fails a build: every new finding is a
+warning or an escalation, so the worst case is `guard` moving from PASS to WARN
+(exit 2). That still fails CI that runs with `--fail-on-warning` or treats any
+non-zero exit as failure. Most likely triggers:
+
+- **STR004:** an `AGENTS.md` instruction chain over 32 KiB. Codex stops reading
+  there.
+- **TDO002:** a comment that starts with a bare `TODO` or `FIXME`.
+- **SPR006/SPR007:** Spec Kit projects whose checked tasks carry no
+  `@implements` annotation, and as-built specs that drifted.
+
+Behaviour changes:
+
+- `sync`, `fix` and `generate` no longer run `specify init`. Run `docguard init`
+  or `specify init` yourself.
+- The Spec Kit extension requires Spec Kit 0.11.2 or later.
+- The manifest key `provides.workflows` moved to `x-docguard.github_workflows`.
+- A `.docguardignore` `dir/` pattern now matches that directory at any depth,
+  as in `.gitignore`. This can hide findings that fired before.
+- The GitHub Action installs the CLI version it was released with, not
+  `@latest`. Set `docguard-version: latest` to keep following npm.
+
 ### Added
 
 - **As-built specs: reverse-engineer a Spec Kit spec for code that has none,
@@ -1572,7 +1612,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
   This repository's chain is 13,222 bytes.
 
-- **Colliding spec numbers are reported (`SPK012`).** Parallel agents each pick
+- **Colliding spec numbers are reported (`SPK012`; #462,
+  `specs/017-agent-instruction-budget`).** Parallel agents each pick
   "the next number" from their own checkout, which produces `specs/016-a` and
   `specs/016-b`. After that, "spec 016" is ambiguous. open-mercato abandoned
   numbering over exactly this problem. Timestamp-numbered feature directories
@@ -1617,6 +1658,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   leak) or an absolute `/Users/<name>/` or `/home/<name>/` path, and generated or
   machine-local agent state may not be tracked. All three fail against v0.42.1.
 
+- **Metrics-Consistency finishes the "N tests" check it has promised since
+  v0.8.2 (MET003).** The validator's header listed "N tests" among the numbers
+  it governs, `actuals.tests` was computed on every run, and no pattern ever
+  read it — so the README's Testing section said `33 tests across 18 describe
+  blocks` from 2026-03-15 through 92 releases while the suite grew past 2,000
+  cases, and every self-guard was green. A dead path a passing check cannot
+  see.
+
+  The actual is now the number of test cases *declared* in the test files
+  (`it`/`test` call sites via the AST tier, `def test_`, `func Test`), which is
+  a lower bound of what the runner reports: cases generated in loops run more
+  than once. Measured on this repository, 1,721 declared against 2,085
+  reported. So MET003 flags a documented count only when it is *below* the
+  declared floor — stale for certain — and passes anything at or above it,
+  because a static count cannot disprove it. The true number is only known by
+  running the suite, so MET003 is review-only and never carries a mechanical
+  fix; a `docguard fix --write` that wrote the floor would replace a stale
+  number with a wrong one. The claim is bound to the project's own suite by
+  the line's vocabulary (`npm test`, `pytest`, `go test`, "suite", "passing"),
+  not by the word "docguard": a number about a study's tests or a sample
+  output line is out of scope. Thousands separators parse as one number
+  ("1,733 tests" is 1733, not 733), and a count under a version-pinned
+  heading ("Results — v0.31.0", "released in v0.40.0") is history, not a
+  current assertion.
+
+- **The DocGuard technical brief** (`docs/docguard-explained.html`, #449): an
+  eight-page, print-ready explainer of what DocGuard checks, what it cannot
+  know, and how its findings are calibrated.
+
+- **Releases cut the right version, publish their own notes, and pin what they
+  ship** (`specs/026-release-readiness`).
+  - The weekly scheduler's bump defaults to `auto`: minor when the curated
+    [Unreleased] changelog has Added, Removed or Deprecated entries, patch
+    otherwise. It previously defaulted to `patch`, so an unattended Monday cut
+    of this release would have published 0.42.2.
+  - The changelog cut moves the curated [Unreleased] notes under the new
+    version and lists merged commits under their own `### Commits` heading.
+    The old splice put a raw commit list above the notes, which gave every
+    automated release two `### Changed` headings.
+  - The GitHub Action installs the CLI version it was released with. It ran
+    `npm install -g docguard-cli@latest`, so pinning `raccioly/docguard@vX.Y.Z`
+    did not pin the CLI. The new `docguard-version` input overrides it, and
+    `latest` still works when asked for.
+  - The Homebrew tap is published by the release workflow. The formula is
+    rendered from the published npm tarball, verified against npm's
+    `dist.integrity`, and pushed to `raccioly/homebrew-tap` with a deploy key
+    scoped to that repository. The tap had been hand-maintained and stopped at
+    0.40.0. It needs a one-time `HOMEBREW_TAP_DEPLOY_KEY` secret; until then
+    the job warns and skips.
+  - The top-level `--help` names `generate --spec` and `specs
+    preflight|complete|require`, and the config schema declares
+    `specKit.untouchedClaimCheck`, which SPK010's help already told users to
+    set. Tests now fail when either drifts again.
+
 ### Changed
 
 - **The #455 guarantees are stated as TestGuard claims and probed (TestGuard
@@ -1659,9 +1754,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   The AGENTS.md hook table had the same drift (it listed three of the five
   hooks) and is corrected.
 
+- **Canonical-Sync reads every phrasing of the command total.** Only
+  `ships N commands` was matched, so `Covers all 15 CLI commands` sat in the
+  README's Testing section beside a correct `ships 23 commands` for the same
+  92 releases. `covers all N`, `supports N`, `all N` and the `CLI` qualifier
+  now count, and CSY002 quotes the stale phrase it found instead of
+  paraphrasing it as "ships N".
+
 ### Fixed
 
-- **SPK010 no longer flags a directory a task names as context when the feature changed files inside it** (#458, `specs/025-spk010-directory-claims`). Git lists files, never directories, so a task naming `src/game/` beside its deliverable `src/game/liveness.js` was reported as "never changed". A named directory now counts as touched when any path strictly under it changed in the feature's window. A directory with nothing changed inside is still reported. A sibling that shares the prefix (`src/gameplay/`) does not count, and a file claim still needs its own change.
+- **SPK010 no longer flags a directory a task names as context when the feature
+  changed files inside it** (#458, `specs/025-spk010-directory-claims`). Git
+  lists files, never directories, so a task naming `src/game/` beside its
+  deliverable `src/game/liveness.js` was reported as "never changed". A named
+  directory now counts as touched when any path strictly under it changed in the
+  feature's window. A directory with nothing changed inside is still reported. A
+  sibling that shares the prefix (`src/gameplay/`) does not count, and a file
+  claim still needs its own change.
+
 - **A merged release publishes within 10 minutes, not up to an hour (#447,
   `specs/023-release-dispatch-window`).** The scheduler waits 10 minutes for
   the release PR to merge, and maintainers rarely approve its workflows that
@@ -1781,100 +1891,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - It reports a CLI older than 0.10.0 with the upgrade command.
   - On failure it prints Spec Kit's own error and the exact command to run by
     hand.
-  - It then registers DocGuard's extension from the directory shipped in the
-    package (`specify extension add … --dev`), so the hooks run. This is
-    offline and version-matched, because the catalog entry lags the release.
 
-  Agent detection reads `.specify/integration.json` before the legacy
-  `init-options.json` and applies the #190 allowlist to both. `.agents/` no
-  longer implies Antigravity: Spec Kit's codex, agy, zed and muse integrations
-  all install there. Each requirement carries an `@implements` annotation at
-  its implementation site, so `reconcile` and `specs complete` resolve the
-  changed files to the spec.
-
-- **Only `docguard init` may initialize Spec Kit.** The Spec Kit gate ran on
-  every write-capable command. Correcting the flags alone would have made
-  `sync`, `fix` and `generate` run `specify init --here --force` against an
-  adopter's repository. The gate now prints one hint line at most, and prints
-  nothing under `--no-spec-kit`, the starter profile, `--quiet` or JSON output.
-  The not-installed box also lost its unmeasured "4 skills / 13 skills" counts.
-
-- **Stopped publishing private project identifiers and local developer state.**
-  A retired bug-spec's directory name carried the slug of a private downstream
-  project, and it survived the generic-references pass in #411/#413 in two
-  places: the `.docguard-archive.json` tombstone for that spec, and the v0.22.0
-  CHANGELOG entry that cited the spec directory. Both are redacted. The archive
-  entry keeps its recoverability: `path` is documented as the *former* path and
-  `restore` as a *convenience* command derived from it (DATA-MODEL.md), while the
-  recovery contract is `archivedFrom` + `blob`, so the entry now restores by
-  content identity — `git cat-file blob <sha> > <path>` — which was verified to
-  reproduce the retired document byte for byte.
-
-- **`assets/demo.tape` is reproducible on any machine.** It pinned an absolute
-  `Env PATH` naming one developer's home directory, a since-deleted worktree and
-  a since-upgraded Node version, so the recording was broken for its own author.
-  It now derives the wrapper path from `$PWD` inside a `Hide`/`Show` block, which
-  keeps the setup out of the frame. Record from the repository root.
-
-- **Untracked generated and machine-local state that a `git add -A` had swept in.**
-  `.specify/extensions/.cache/` is a Spec Kit HTTP cache that is re-downloaded
-  from the `catalog_url` it records, so the committed copy was a frozen snapshot
-  (2026-03-17) that aged while looking authoritative; it entered in 96e2dd8. All
-  of `.claude/` was OpenWolf-local and unusable in a fresh clone — `settings.json`
-  registered five hooks running `.wolf/hooks/*.js`, which this repository ignores,
-  and `rules/openwolf.md` told agents to consult `.wolf/` files a clone does not
-  have; both entered in fc73116, a validator-fix commit that also captured all of
-  `.wolf/`. This is the same defect as `.codex/hooks.json` (#440) and the stray
-  `*.bak` (#443). `CLAUDE.md` now states that OpenWolf is optional local tooling
-  instead of instructing every agent to read files that are not there. The rest of
-  `.specify/` — templates, scripts, constitution — is source and stays tracked.
-
-## [0.42.1] - 2026-09-22
-
-Automated weekly release — batches everything merged since `v0.42.0`.
-
-### Changed
-
-- fix: stop the release cut failing on its own version stamp (#445)
-- chore: scan this repo with the validator it ships alongside (#444)
-- fix: untrack a generated module's stale backup and ignore *.bak (#443)
-- fix: carry the finding channels to every surface that reads a guard run (#442)
-- fix: stop a version bump from flipping the verdict on an unchanged tree (#441)
-- fix: untrack .codex/hooks.json and ignore local agent tooling (#440)
-- feat: separate the three channels a finding conflates (#439)
-
-
-### Added
-- **Metrics-Consistency finishes the "N tests" check it has promised since
-  v0.8.2 (MET003).** The validator's header listed "N tests" among the numbers
-  it governs, `actuals.tests` was computed on every run, and no pattern ever
-  read it — so the README's Testing section said `33 tests across 18 describe
-  blocks` from 2026-03-15 through 92 releases while the suite grew past 2,000
-  cases, and every self-guard was green. A dead path a passing check cannot
-  see.
-
-  The actual is now the number of test cases *declared* in the test files
-  (`it`/`test` call sites via the AST tier, `def test_`, `func Test`), which is
-  a lower bound of what the runner reports: cases generated in loops run more
-  than once. Measured on this repository, 1,721 declared against 2,085
-  reported. So MET003 flags a documented count only when it is *below* the
-  declared floor — stale for certain — and passes anything at or above it,
-  because a static count cannot disprove it. The true number is only known by
-  running the suite, so MET003 is review-only and never carries a mechanical
-  fix; a `docguard fix --write` that wrote the floor would replace a stale
-  number with a wrong one. The claim is bound to the project's own suite by
-  the line's vocabulary (`npm test`, `pytest`, `go test`, "suite", "passing"),
-  not by the word "docguard": a number about a study's tests or a sample
-  output line is out of scope. Thousands separators parse as one number
-  ("1,733 tests" is 1733, not 733), and a count under a version-pinned
-  heading ("Results — v0.31.0", "released in v0.40.0") is history, not a
-  current assertion.
-
-- **Three channels on every finding, replacing one field that answered three
-  questions.** `confidence` described the detector's certainty, decided whether
-  a human should look, AND gated which findings the feedback loop sampled.
-
-<!-- truncated: 3946 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 4006 more lines — read CHANGELOG.md directly -->
 
 ---
 

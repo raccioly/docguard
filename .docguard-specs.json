@@ -3396,7 +3396,7 @@
           {
             "requirementId": "FR-002",
             "file": ".github/workflows/scheduled-release.yml",
-            "line": 18
+            "line": 21
           }
         ],
         "testEvidence": [
@@ -3419,6 +3419,175 @@
             "requirementId": "SC-001",
             "file": "tests/scheduled-release.test.mjs",
             "line": 5
+          }
+        ]
+      }
+    },
+    {
+      "specId": "docguard.release-readiness",
+      "path": "specs/026-release-readiness/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.release-readiness#FR-001",
+          "docguard.release-readiness#FR-002",
+          "docguard.release-readiness#FR-003",
+          "docguard.release-readiness#FR-004",
+          "docguard.release-readiness#FR-005",
+          "docguard.release-readiness#FR-006",
+          "docguard.release-readiness#SC-001",
+          "docguard.release-readiness#SC-002"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/026-release-readiness/spec.md",
+            "digest": "sha256:f20e0275abbaba8997c560248ea7fab295629f1432f03c9f42386e116173115b"
+          },
+          {
+            "path": "specs/026-release-readiness/plan.md",
+            "digest": "sha256:4f17e120e1c3ae96a20943712466a7a9d38dd6d11f055a0ee30c4358db19e273"
+          },
+          {
+            "path": "specs/026-release-readiness/tasks.md",
+            "digest": "sha256:2897efc40edb35e0b2ccd00f201d23307bed511ed370b17a89359d713ff2cdcd"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 9,
+          "total": 9
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": ".github/scripts/release-changelog.mjs",
+            "line": 23
+          },
+          {
+            "requirementId": "FR-001",
+            "file": ".github/workflows/scheduled-release.yml",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-002",
+            "file": ".github/scripts/release-changelog.mjs",
+            "line": 24
+          },
+          {
+            "requirementId": "FR-002",
+            "file": ".github/workflows/scheduled-release.yml",
+            "line": 124
+          },
+          {
+            "requirementId": "FR-003",
+            "file": ".github/scripts/sync-release-version.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/release-pr-policy.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-004",
+            "file": ".github/scripts/homebrew-formula.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-004",
+            "file": ".github/scripts/homebrew-formula.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-004",
+            "file": ".github/scripts/publish-homebrew-tap.sh",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-004",
+            "file": ".github/workflows/release.yml",
+            "line": 66
+          },
+          {
+            "requirementId": "FR-004",
+            "file": ".github/workflows/release.yml",
+            "line": 284
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/docguard.mjs",
+            "line": 77
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/release-readiness.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/release-readiness.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/release-readiness.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/release-version-sync.test.mjs",
+            "line": 2
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/release-readiness.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/release-readiness.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/release-readiness.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/release-readiness.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/release-readiness.test.mjs",
+            "line": 14
           }
         ]
       }
@@ -3526,7 +3695,7 @@
           {
             "requirementId": "FR-010",
             "file": "action.yml",
-            "line": 172
+            "line": 188
           }
         ],
         "testEvidence": [
@@ -4238,7 +4407,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/docguard.mjs",
-            "line": 877
+            "line": 880
           },
           {
             "requirementId": "FR-011",

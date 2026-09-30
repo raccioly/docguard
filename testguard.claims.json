@@ -741,6 +741,109 @@
           }
         }
       ]
+    },
+    {
+      "id": "RELEASE-CUTS-WHAT-IT-SHIPS",
+      "statement": "An unattended release cuts the version its curated changelog describes, publishes the reviewed notes, pins the CLI its Action installs, renders Homebrew only from verified registry bytes, and its help and schema name what the code accepts.",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/026-release-readiness/spec.md#FR-001"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (#455 release prep)"
+      },
+      "defendedBy": [
+        "tests/release-readiness.test.mjs",
+        "tests/release-version-sync.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "Added entries no longer make a minor release.",
+          "faultClass": "literal-changed",
+          "file": ".github/scripts/release-changelog.mjs",
+          "find": "const MINOR_HEADINGS = new Set(['added', 'removed', 'deprecated']);",
+          "replace": "const MINOR_HEADINGS = new Set(['removed', 'deprecated']);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 release prep)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "The cut drops the curated notes.",
+          "faultClass": "statement-deleted",
+          "file": ".github/scripts/release-changelog.mjs",
+          "find": "  if (curated) lines.push(curated, '');",
+          "replace": "  if (false) lines.push(curated, '');",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 release prep)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "An existing version section is overwritten.",
+          "faultClass": "condition-forced",
+          "file": ".github/scripts/release-changelog.mjs",
+          "find": "  if (new RegExp(`^## \\\\[${version.replace(/\\./g, '\\\\.')}\\\\]`, 'm').test(changelog)) {",
+          "replace": "  if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 release prep)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "Release sync stops moving the Action's CLI pin.",
+          "faultClass": "statement-deleted",
+          "file": ".github/scripts/sync-release-version.mjs",
+          "find": "    (_match, before, after) => `${before}${version}${after}`,\n    'action.yml DOCGUARD_RELEASED_VERSION',",
+          "replace": "    (match) => match,\n    'action.yml DOCGUARD_RELEASED_VERSION',",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 release prep)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "A tampered tarball is trusted.",
+          "faultClass": "condition-forced",
+          "file": ".github/scripts/homebrew-formula.mjs",
+          "find": "  if (actual !== m[1]) throw new Error('downloaded tarball does not match npm dist.integrity');",
+          "replace": "  if (false) throw new Error('downloaded tarball does not match npm dist.integrity');",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 release prep)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "Release PRs may not change action.yml.",
+          "faultClass": "literal-changed",
+          "file": "cli/release-pr-policy.mjs",
+          "find": "server\\.json|action\\.yml|README\\.md",
+          "replace": "server\\.json|README\\.md",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 release prep)"
+          }
+        },
+        {
+          "id": "F7",
+          "description": "Top-level help drops `specs require`.",
+          "faultClass": "literal-changed",
+          "file": "cli/docguard.mjs",
+          "find": "${c.cyan}complete${c.reset}, ${c.cyan}require${c.reset})",
+          "replace": "${c.cyan}complete${c.reset})",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455 release prep)"
+          }
+        }
+      ]
     }
   ]
 }

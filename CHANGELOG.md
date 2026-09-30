@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+**Upgrading from 0.42.x.** No new check fails a build: every new finding is a
+warning or an escalation, so the worst case is `guard` moving from PASS to WARN
+(exit 2). That still fails CI that runs with `--fail-on-warning` or treats any
+non-zero exit as failure. Most likely triggers:
+
+- **STR004:** an `AGENTS.md` instruction chain over 32 KiB. Codex stops reading
+  there.
+- **TDO002:** a comment that starts with a bare `TODO` or `FIXME`.
+- **SPR006/SPR007:** Spec Kit projects whose checked tasks carry no
+  `@implements` annotation, and as-built specs that drifted.
+
+Behaviour changes:
+
+- `sync`, `fix` and `generate` no longer run `specify init`. Run `docguard init`
+  or `specify init` yourself.
+- The Spec Kit extension requires Spec Kit 0.11.2 or later.
+- The manifest key `provides.workflows` moved to `x-docguard.github_workflows`.
+- A `.docguardignore` `dir/` pattern now matches that directory at any depth,
+  as in `.gitignore`. This can hide findings that fired before.
+- The GitHub Action installs the CLI version it was released with, not
+  `@latest`. Set `docguard-version: latest` to keep following npm.
+
 ### Added
 
 - **As-built specs: reverse-engineer a Spec Kit spec for code that has none,
@@ -97,7 +119,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
   This repository's chain is 13,222 bytes.
 
-- **Colliding spec numbers are reported (`SPK012`).** Parallel agents each pick
+- **Colliding spec numbers are reported (`SPK012`; #462,
+  `specs/017-agent-instruction-budget`).** Parallel agents each pick
   "the next number" from their own checkout, which produces `specs/016-a` and
   `specs/016-b`. After that, "spec 016" is ambiguous. open-mercato abandoned
   numbering over exactly this problem. Timestamp-numbered feature directories
@@ -142,6 +165,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   leak) or an absolute `/Users/<name>/` or `/home/<name>/` path, and generated or
   machine-local agent state may not be tracked. All three fail against v0.42.1.
 
+- **Metrics-Consistency finishes the "N tests" check it has promised since
+  v0.8.2 (MET003).** The validator's header listed "N tests" among the numbers
+  it governs, `actuals.tests` was computed on every run, and no pattern ever
+  read it — so the README's Testing section said `33 tests across 18 describe
+  blocks` from 2026-03-15 through 92 releases while the suite grew past 2,000
+  cases, and every self-guard was green. A dead path a passing check cannot
+  see.
+
+  The actual is now the number of test cases *declared* in the test files
+  (`it`/`test` call sites via the AST tier, `def test_`, `func Test`), which is
+  a lower bound of what the runner reports: cases generated in loops run more
+  than once. Measured on this repository, 1,721 declared against 2,085
+  reported. So MET003 flags a documented count only when it is *below* the
+  declared floor — stale for certain — and passes anything at or above it,
+  because a static count cannot disprove it. The true number is only known by
+  running the suite, so MET003 is review-only and never carries a mechanical
+  fix; a `docguard fix --write` that wrote the floor would replace a stale
+  number with a wrong one. The claim is bound to the project's own suite by
+  the line's vocabulary (`npm test`, `pytest`, `go test`, "suite", "passing"),
+  not by the word "docguard": a number about a study's tests or a sample
+  output line is out of scope. Thousands separators parse as one number
+  ("1,733 tests" is 1733, not 733), and a count under a version-pinned
+  heading ("Results — v0.31.0", "released in v0.40.0") is history, not a
+  current assertion.
+
+- **The DocGuard technical brief** (`docs/docguard-explained.html`, #449): an
+  eight-page, print-ready explainer of what DocGuard checks, what it cannot
+  know, and how its findings are calibrated.
+
+- **Releases cut the right version, publish their own notes, and pin what they
+  ship** (`specs/026-release-readiness`).
+  - The weekly scheduler's bump defaults to `auto`: minor when the curated
+    [Unreleased] changelog has Added, Removed or Deprecated entries, patch
+    otherwise. It previously defaulted to `patch`, so an unattended Monday cut
+    of this release would have published 0.42.2.
+  - The changelog cut moves the curated [Unreleased] notes under the new
+    version and lists merged commits under their own `### Commits` heading.
+    The old splice put a raw commit list above the notes, which gave every
+    automated release two `### Changed` headings.
+  - The GitHub Action installs the CLI version it was released with. It ran
+    `npm install -g docguard-cli@latest`, so pinning `raccioly/docguard@vX.Y.Z`
+    did not pin the CLI. The new `docguard-version` input overrides it, and
+    `latest` still works when asked for.
+  - The Homebrew tap is published by the release workflow. The formula is
+    rendered from the published npm tarball, verified against npm's
+    `dist.integrity`, and pushed to `raccioly/homebrew-tap` with a deploy key
+    scoped to that repository. The tap had been hand-maintained and stopped at
+    0.40.0. It needs a one-time `HOMEBREW_TAP_DEPLOY_KEY` secret; until then
+    the job warns and skips.
+  - The top-level `--help` names `generate --spec` and `specs
+    preflight|complete|require`, and the config schema declares
+    `specKit.untouchedClaimCheck`, which SPK010's help already told users to
+    set. Tests now fail when either drifts again.
+
 ### Changed
 
 - **The #455 guarantees are stated as TestGuard claims and probed (TestGuard
@@ -184,9 +261,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   The AGENTS.md hook table had the same drift (it listed three of the five
   hooks) and is corrected.
 
+- **Canonical-Sync reads every phrasing of the command total.** Only
+  `ships N commands` was matched, so `Covers all 15 CLI commands` sat in the
+  README's Testing section beside a correct `ships 23 commands` for the same
+  92 releases. `covers all N`, `supports N`, `all N` and the `CLI` qualifier
+  now count, and CSY002 quotes the stale phrase it found instead of
+  paraphrasing it as "ships N".
+
 ### Fixed
 
-- **SPK010 no longer flags a directory a task names as context when the feature changed files inside it** (#458, `specs/025-spk010-directory-claims`). Git lists files, never directories, so a task naming `src/game/` beside its deliverable `src/game/liveness.js` was reported as "never changed". A named directory now counts as touched when any path strictly under it changed in the feature's window. A directory with nothing changed inside is still reported. A sibling that shares the prefix (`src/gameplay/`) does not count, and a file claim still needs its own change.
+- **SPK010 no longer flags a directory a task names as context when the feature
+  changed files inside it** (#458, `specs/025-spk010-directory-claims`). Git
+  lists files, never directories, so a task naming `src/game/` beside its
+  deliverable `src/game/liveness.js` was reported as "never changed". A named
+  directory now counts as touched when any path strictly under it changed in the
+  feature's window. A directory with nothing changed inside is still reported. A
+  sibling that shares the prefix (`src/gameplay/`) does not count, and a file
+  claim still needs its own change.
+
 - **A merged release publishes within 10 minutes, not up to an hour (#447,
   `specs/023-release-dispatch-window`).** The scheduler waits 10 minutes for
   the release PR to merge, and maintainers rarely approve its workflows that
@@ -354,6 +446,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   instead of instructing every agent to read files that are not there. The rest of
   `.specify/` — templates, scripts, constitution — is source and stays tracked.
 
+- The README's Testing section: the test count, the command count, and the CI
+  matrix (Node 24 has been in the matrix since the R5 release). Both stale
+  numbers are the ones the two validator changes above now catch, and the
+  exact sentences are their regression controls.
+
 ## [0.42.1] - 2026-09-22
 
 Automated weekly release — batches everything merged since `v0.42.0`.
@@ -370,31 +467,6 @@ Automated weekly release — batches everything merged since `v0.42.0`.
 
 
 ### Added
-- **Metrics-Consistency finishes the "N tests" check it has promised since
-  v0.8.2 (MET003).** The validator's header listed "N tests" among the numbers
-  it governs, `actuals.tests` was computed on every run, and no pattern ever
-  read it — so the README's Testing section said `33 tests across 18 describe
-  blocks` from 2026-03-15 through 92 releases while the suite grew past 2,000
-  cases, and every self-guard was green. A dead path a passing check cannot
-  see.
-
-  The actual is now the number of test cases *declared* in the test files
-  (`it`/`test` call sites via the AST tier, `def test_`, `func Test`), which is
-  a lower bound of what the runner reports: cases generated in loops run more
-  than once. Measured on this repository, 1,721 declared against 2,085
-  reported. So MET003 flags a documented count only when it is *below* the
-  declared floor — stale for certain — and passes anything at or above it,
-  because a static count cannot disprove it. The true number is only known by
-  running the suite, so MET003 is review-only and never carries a mechanical
-  fix; a `docguard fix --write` that wrote the floor would replace a stale
-  number with a wrong one. The claim is bound to the project's own suite by
-  the line's vocabulary (`npm test`, `pytest`, `go test`, "suite", "passing"),
-  not by the word "docguard": a number about a study's tests or a sample
-  output line is out of scope. Thousands separators parse as one number
-  ("1,733 tests" is 1733, not 733), and a count under a version-pinned
-  heading ("Results — v0.31.0", "released in v0.40.0") is history, not a
-  current assertion.
-
 - **Three channels on every finding, replacing one field that answered three
   questions.** `confidence` described the detector's certainty, decided whether
   a human should look, AND gated which findings the feedback loop sampled.
@@ -489,13 +561,6 @@ Automated weekly release — batches everything merged since `v0.42.0`.
   trains users to ignore the line.
 
 ### Changed
-- **Canonical-Sync reads every phrasing of the command total.** Only
-  `ships N commands` was matched, so `Covers all 15 CLI commands` sat in the
-  README's Testing section beside a correct `ships 23 commands` for the same
-  92 releases. `covers all N`, `supports N`, `all N` and the `CLI` qualifier
-  now count, and CSY002 quotes the stale phrase it found instead of
-  paraphrasing it as "ships N".
-
 - **The agent skills triage on `disposition`, not severity alone.** `docguard-guard`
   told agents to sort findings by severity and, for warnings, to "consider
   running `/docguard.fix` for automated remediation" — which would have an agent
@@ -558,11 +623,6 @@ Automated weekly release — batches everything merged since `v0.42.0`.
   tasks; seven were real gaps in this very feature, now closed.
 
 ### Fixed
-- The README's Testing section: the test count, the command count, and the CI
-  matrix (Node 24 has been in the matrix since the R5 release). Both stale
-  numbers are the ones the two validator changes above now catch, and the
-  exact sentences are their regression controls.
-
 - Cut a release again. The release job bumps the version, deliberately does not
   regenerate `llms.txt` / `llms-full.txt`, and then runs the full suite — which
   compared the bundles' footer against a generator run on the freshly bumped

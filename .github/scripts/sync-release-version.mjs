@@ -6,6 +6,8 @@
  * The allowlist is deliberate: release metadata and copyable install templates
  * must move together, while historical references in changelogs, roadmaps, and
  * completed specifications must remain untouched.
+ *
+ * @implements docguard.release-readiness#FR-003
  */
 
 import { existsSync, readFileSync, readdirSync, unlinkSync } from 'node:fs';
@@ -108,6 +110,26 @@ export function syncReleaseVersion(root = process.cwd()) {
     /raccioly\/docguard@v\d+\.\d+\.\d+/g,
     `raccioly/docguard@v${version}`,
     'extensions/spec-kit-docguard/templates/github-workflows/docguard-autofix.yml action pin',
+  ));
+
+  // Copyable Action examples in the user docs move with the release, so a
+  // reader never copies a pin that is dozens of releases old (the README
+  // carried raccioly/docguard@v0.12.0 through v0.42.1).
+  for (const relPath of ['README.md', 'docs/ai-integration.md']) {
+    stageText(staged, root, relPath, content => {
+      const count = (content.match(/raccioly\/docguard@v\d+\.\d+\.\d+/g) || []).length;
+      if (count === 0) throw new Error(`${relPath}: expected at least one raccioly/docguard@vX.Y.Z example, found 0`);
+      return replaceRequired(content, /raccioly\/docguard@v\d+\.\d+\.\d+/g, `raccioly/docguard@v${version}`, `${relPath} action example`, count);
+    });
+  }
+
+  // The GitHub Action installs the CLI version it was released with
+  // (docguard.release-readiness#FR-003).
+  stageText(staged, root, 'action.yml', content => replaceRequired(
+    content,
+    /^(\s+DOCGUARD_RELEASED_VERSION:\s*')\d+\.\d+\.\d+(')/m,
+    (_match, before, after) => `${before}${version}${after}`,
+    'action.yml DOCGUARD_RELEASED_VERSION',
   ));
 
   const skillsRoot = resolve(root, 'extensions/spec-kit-docguard/skills');

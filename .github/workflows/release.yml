@@ -31,6 +31,7 @@ jobs:
     outputs:
       version: ${{ steps.check.outputs.version }}
       changed: ${{ steps.check.outputs.changed }}
+      brew_missing: ${{ steps.brew.outputs.brew_missing }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -57,6 +58,26 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"
             echo "✅ $TAG is not yet released — releasing"
           fi
+
+      # The Homebrew tap is its own surface: a release whose tap update failed
+      # (or predates the deploy key) is retried by this 10-minute sweep until
+      # the tap serves the released version. Without the key configured there is
+      # nothing to retry, so the sweep stays a no-op instead of warning forever.
+      # @implements docguard.release-readiness#FR-004
+      - name: Is the Homebrew tap behind the released version?
+        id: brew
+        env:
+          HAS_TAP_KEY: ${{ secrets.HOMEBREW_TAP_DEPLOY_KEY != '' }}
+        run: |
+          CURRENT=$(node -p "require('./package.json').version")
+          BEHIND=false
+          if [ "$HAS_TAP_KEY" = "true" ] && git ls-remote --tags origin "refs/tags/v$CURRENT" | grep -q "refs/tags/v$CURRENT$"; then
+            TAP=$(curl -fsSL https://raw.githubusercontent.com/raccioly/homebrew-tap/main/Formula/docguard.rb \
+              | sed -nE 's#^[[:space:]]*url ".*docguard-cli-([0-9]+\.[0-9]+\.[0-9]+)\.tgz"#\1#p' || true)
+            if [ "$TAP" != "$CURRENT" ]; then BEHIND=true; fi
+            echo "tap serves ${TAP:-nothing}; released v$CURRENT"
+          fi
+          echo "brew_missing=$BEHIND" >> "$GITHUB_OUTPUT"
 
   # ── Step 2: Run full test suite ────────────────────────────────────────
   test:
@@ -252,6 +273,44 @@ jobs:
           gh release upload "v${VERSION}" \
             "/tmp/docguard-v${VERSION}.mcpb" \
             --clobber
+
+  # ── Step 5b: Homebrew tap ──────────────────────────────────────────────
+  # Renders packaging/homebrew/docguard.rb from the PUBLISHED tarball (checked
+  # against npm's dist.integrity) and pushes it to raccioly/homebrew-tap with a
+  # write deploy key scoped only to that tap. One-time setup: add a write deploy
+  # key to raccioly/homebrew-tap and store its private half as the Actions
+  # secret HOMEBREW_TAP_DEPLOY_KEY in this repository. Until then the job warns
+  # once per release and skips.
+  # @implements docguard.release-readiness#FR-004
+  publish-homebrew:
+    needs: [detect-version, publish-npm]
+    if: >-
+      !cancelled()
+      && (needs.detect-version.outputs.brew_missing == 'true'
+          || (needs.detect-version.outputs.changed == 'true' && needs.publish-npm.result == 'success'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+      - name: Render the formula from the published tarball and publish the tap
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HOMEBREW_TAP_DEPLOY_KEY: ${{ secrets.HOMEBREW_TAP_DEPLOY_KEY }}
+        run: |
+          set -euo pipefail
+          VERSION=$(node -p "require('./package.json').version")
+          if [ -z "${HOMEBREW_TAP_DEPLOY_KEY}" ]; then
+            MSG="Homebrew tap not updated for v${VERSION}: add a write deploy key to raccioly/homebrew-tap and store its private half as the Actions secret HOMEBREW_TAP_DEPLOY_KEY here. The 10-minute sweep then publishes it."
+            echo "::warning::$MSG"
+            echo "$MSG" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          node .github/scripts/homebrew-formula.mjs --version "$VERSION" --out "$RUNNER_TEMP/docguard.rb" --wait 900
+          .github/scripts/publish-homebrew-tap.sh "$VERSION" "$RUNNER_TEMP/docguard.rb"
 
   # ── Step 5: Publish to npm ─────────────────────────────────────────────
   publish-npm:

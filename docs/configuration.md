@@ -147,6 +147,62 @@ Two ways to turn a validator off, for two different intents:
 
 The marker is preferred when the validator genuinely does not apply: the rationale lives next to the declaration, travels with the repo, and shows up honestly as N/A rather than a hidden skip or a fake green check. The key is the validator key from the table above (case/separator tolerant — `test-spec` works too); a mistyped key is reported as a warning rather than silently ignored. A no-tests POC typically marks both `testSpec` and `traceability` N/A.
 
+## Spec-first gate — `specFirst`
+
+`docguard specs require` (and the Action's `command: spec-first`) fails a change
+to a governed path that neither names its spec nor declares an exemption.
+
+```json
+{
+  "specFirst": {
+    "paths": ["cli/**", "src/**"],
+    "exemptKinds": ["release", "deps", "typo", "test-only"]
+  }
+}
+```
+
+- `paths`: glob patterns of governed paths. Default: every changed path except
+  Markdown, `specs/**` and recognized test files.
+- `exemptKinds`: the kinds accepted in `Spec-Exempt: <kind> — <reason>`. The
+  reason is required.
+
+## Agent instruction budget — `agentInstructions`
+
+Agents stop reading instructions at a byte limit (Codex:
+`project_doc_max_bytes`, 32 KiB). **STR004** reports an `AGENTS.md` chain (root
+down to a directory; `AGENTS.override.md` replaces `AGENTS.md`) over the budget.
+**STR005** reports an allowance that has slack to reclaim.
+
+```json
+{
+  "agentInstructions": {
+    "maxBytes": 32768,
+    "allowances": { "packages/big/AGENTS.md": 40000 }
+  }
+}
+```
+
+`allowances` freezes existing debt per chain, keyed by the chain's deepest
+instruction file: the chain may shrink, and growth past the allowance is
+reported.
+
+## Spec Kit checks — `specKit`
+
+```json
+{
+  "specKit": {
+    "phantomCheck": true,
+    "untouchedClaimCheck": true
+  }
+}
+```
+
+- `phantomCheck: false` disables SPK008/SPK009: checked tasks whose named
+  deliverables do not exist and carry no implementation evidence.
+- `untouchedClaimCheck: false` disables SPK010/SPK011: checked tasks naming an
+  existing path that no commit since the feature began changed. A named
+  directory counts as changed when a file inside it changed.
+
 ## Project Type Detection
 
 DocGuard auto-detects your project type from `package.json`:
