@@ -724,6 +724,12 @@ export const CODES = {
     help: 'A spec\'s `lastReviewedRevision` or an outcome revision does not resolve, or is not an ancestor of HEAD. This happens when `specs complete` ran on a PR branch that was then squash-merged: the reviewed commit never reached the default branch, so the next maintenance completion cannot reconcile from it. Run `docguard specs reanchor --id <spec-id> --write` to move the anchor to the commit on this history whose evidence files are byte-identical; if the old revision no longer exists anywhere, pass `--to <revision> --reason <text>` to attest it. To avoid it, run completions on a branch at the default branch\'s tip and commit them once. In a shallow clone ancestry cannot be known, so the check reports partial coverage instead.',
     suppress: null,
   },
+  SPR009: {
+    validator: 'specRegistry',
+    title: 'Asset path covers no file',
+    help: 'A spec\'s `reviewed.scope.assetPaths` names files it owns that cannot carry a spec annotation, such as digest-pinned fixtures or recorded outputs; reconciliation links changes under those paths to the spec. An entry ending in `/` covers a directory, any other entry one file. This entry covers no tracked file (no file on disk outside git): the files moved or were removed, so the entry no longer records anything. Remove it, or correct it to the files the spec owns. Editing `assetPaths` is a reviewed change, like `canonicalDocs`.',
+    suppress: null,
+  },
   SPR007: {
     validator: 'specRegistry',
     title: 'As-built spec drifted from its source paths',

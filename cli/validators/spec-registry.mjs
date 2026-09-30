@@ -1,15 +1,16 @@
 import { mkFinding, resultFromFindings } from '../findings.mjs';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { projectSpecRegistry, SPEC_REGISTRY_PATH } from '../scanners/spec-registry.mjs';
+import { assetPathCovers, projectSpecRegistry, SPEC_REGISTRY_PATH } from '../scanners/spec-registry.mjs';
 import { checkAsBuiltSync } from '../scanners/as-built.mjs';
 import { danglingRevisions, isShallowRepository } from '../scanners/revision-anchor.mjs';
-import { gitMetadataStatus } from '../shared-git.mjs';
+import { gitMetadataStatus, listTrackedFiles } from '../shared-git.mjs';
 
 /**
  * @implements docguard.lifecycle-evidence-gaps#FR-001
  * @implements docguard.as-built-specs#FR-005
  * @implements docguard.completion-revision-anchoring#FR-002
+ * @implements docguard.asset-path-attribution#FR-003
  */
 
 export function validateSpecRegistry(projectDir, config = {}) {
@@ -113,6 +114,30 @@ export function validateSpecRegistry(projectDir, config = {}) {
       }));
     }
   }
+  // SPR009 (docguard.asset-path-attribution#FR-003): a reviewed asset path
+  // that covers no file grants nothing, and left in place it reads as an
+  // ownership record for files that are gone.
+  const withAssets = projection.registry.specs.filter(spec => (spec.reviewed?.scope?.assetPaths || []).length);
+  if (withAssets.length) {
+    const tracked = listTrackedFiles(projectDir);
+    const covered = assetPath => (tracked
+      ? tracked.some(file => assetPathCovers(assetPath, file))
+      : hasFileOnDisk(resolve(projectDir, assetPath), assetPath.endsWith('/')));
+    for (const spec of withAssets) {
+      for (const assetPath of spec.reviewed.scope.assetPaths.filter(p => !covered(p))) {
+        findings.push(mkFinding({
+          code: 'SPR009',
+          validator: 'specRegistry',
+          severity: 'warn',
+          confidence: 'high',
+          disposition: 'act',
+          message: `${spec.specId} lists asset path ${assetPath}, which covers no ${tracked ? 'tracked ' : ''}file`,
+          location: SPEC_REGISTRY_PATH,
+          suggestion: { kind: 'fix', text: `Remove ${assetPath} from ${spec.specId}.reviewed.scope.assetPaths, or correct it to the files the spec owns` },
+        }));
+      }
+    }
+  }
   // SPR008 (docguard.completion-revision-anchoring#FR-002): a recorded review
   // revision that a squash merge discarded cannot anchor the next
   // reconciliation. A shallow clone cannot tell, so it reports partial.
@@ -151,4 +176,12 @@ export function validateSpecRegistry(projectDir, config = {}) {
     applicable: true,
   });
   return partial ? { ...result, applicability: { status: 'partial', reason: partial } } : result;
+}
+
+/** Outside git: a file exists, or a directory holds at least one file. */
+function hasFileOnDisk(abs, isDir) {
+  try {
+    if (!isDir) return existsSync(abs) && statSync(abs).isFile();
+    return readdirSync(abs, { recursive: true, withFileTypes: true }).some(entry => entry.isFile());
+  } catch { return false; }
 }

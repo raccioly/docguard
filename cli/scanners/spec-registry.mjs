@@ -251,6 +251,28 @@ function validateCanonicalPaths(value, label, issues) {
   return values;
 }
 
+/**
+ * Reviewed asset paths (docguard.asset-path-attribution#FR-001): files a spec
+ * owns that cannot name it, such as digest-pinned fixtures. `dir/` covers
+ * every file under it; any other entry covers exactly one file. No wildcards:
+ * a reviewer must be able to read what the list claims.
+ *
+ * @implements docguard.asset-path-attribution#FR-001
+ */
+function validateAssetPaths(value, label, issues) {
+  const values = sortedUnique(validateCanonicalPaths(value, label, issues));
+  if (values.some(path => /[*?[\]{}]/.test(path) || path === '/' || path === '')) {
+    issues.push({ code: 'SPR003', path: SPEC_REGISTRY_PATH, message: `${label} must list exact files or directories ending in "/", without wildcards.` });
+  }
+  return values;
+}
+
+/** True when a reviewed asset path covers a repository-relative file. */
+export function assetPathCovers(assetPath, file) {
+  if (typeof assetPath !== 'string' || typeof file !== 'string' || !assetPath) return false;
+  return assetPath.endsWith('/') ? file.startsWith(assetPath) : file === assetPath;
+}
+
 function rejectUnknownKeys(value, allowed, label, issues) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     issues.push({ code: 'SPR003', path: SPEC_REGISTRY_PATH, message: `${label} must be an object.` });
@@ -286,7 +308,7 @@ function validatedControl(entry, issues) {
   const scope = reviewed.scope || {};
   const reconciliation = reviewed.reconciliation || {};
   rejectUnknownKeys(relations, new Set(['extends', 'duplicates', 'conflictsWith', 'supersedes', 'supersededBy']), `${entry.specId}.reviewed.relations`, issues);
-  rejectUnknownKeys(scope, new Set(['canonicalDocs', 'sourcePaths']), `${entry.specId}.reviewed.scope`, issues);
+  rejectUnknownKeys(scope, new Set(['canonicalDocs', 'sourcePaths', 'assetPaths']), `${entry.specId}.reviewed.scope`, issues);
   rejectUnknownKeys(reconciliation, new Set(['lastReviewedRevision', 'outcomes']), `${entry.specId}.reviewed.reconciliation`, issues);
   const revision = reconciliation.lastReviewedRevision ?? null;
   if (revision !== null && (typeof revision !== 'string' || !/^[0-9a-f]{40}(?:[0-9a-f]{24})?$/.test(revision))) {
@@ -330,6 +352,10 @@ function validatedControl(entry, issues) {
         canonicalDocs: validateCanonicalPaths(scope.canonicalDocs ?? [], `${entry.specId}.scope.canonicalDocs`, issues),
         ...(scope.sourcePaths !== undefined
           ? { sourcePaths: validateCanonicalPaths(scope.sourcePaths, `${entry.specId}.scope.sourcePaths`, issues) }
+          : {}),
+        // Serialized only when set, so a registry without it is unchanged (FR-004).
+        ...(scope.assetPaths !== undefined
+          ? { assetPaths: validateAssetPaths(scope.assetPaths, `${entry.specId}.scope.assetPaths`, issues) }
           : {}),
       },
       reconciliation: {

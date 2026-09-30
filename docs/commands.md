@@ -228,6 +228,14 @@ one rollback-safe transaction. Several completions can run back to back against
 the same revision before one commit: the files completion writes do not count as
 changes.
 
+Completion traces every changed source or test file to a spec: through that
+spec's recorded evidence, or through a requirement identity in the changed
+text. A file that can name neither, such as a digest-pinned fixture or a
+recorded output, is listed by hand under its owner's
+`reviewed.scope.assetPaths` in `.docguard-specs.json`. An entry ending in `/`
+covers a directory, and any other entry covers exactly one file; wildcards are
+rejected. Guard reports **SPR009** for an entry that covers no tracked file.
+
 `specs reanchor` repairs a recorded revision that a squash merge discarded
 (guard reports it as **SPR008**). It finds the first commit on HEAD's
 first-parent history whose evidence files are byte-identical to the reviewed
