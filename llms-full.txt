@@ -1810,6 +1810,14 @@ Behaviour changes:
 
 ### Fixed
 
+- **`sync --since` narrows the sections it says it narrows**
+  (`specs/029-sync-section-scope`). The matcher table was keyed
+  `endpoints-table`, `entities-table`, … while the plan emits `endpoints`,
+  `entities`, …, so eight of ten generated sections refreshed on every change,
+  docs-only changes included. `reconcile` listed mechanical sections by those
+  non-existent names. The test for the table asserted nothing; it now fails
+  whenever the table and the plan's section IDs differ.
+
 - **The validator-isolation test catches a bare side-effect import**
   (`import './other.mjs'`). Its pattern matched only `from '...'` and dynamic
   `import('...')`, so one validator could load another unnoticed
@@ -1914,16 +1922,8 @@ Behaviour changes:
     ("…do not establish factual accuracy", "…configured gates passed…") and
     their place above the nudges are now covered by a regression test.
   - **#437.** The baseline line says what it hides as well as how much it
-    hides, for example `3 pre-existing finding(s) suppressed — 2 error · 1
-    warning`. The guard JSON carries `baselineBySeverity`.
-  - **#436.** The upgrade path that clears the schema nudge now has a test:
-    `upgrade --apply` migrates `.docguard.json` even when the global install
-    fails, and the next guard run prints no nudge. The nudge still prints while
-    the schema is behind, because it can now always be cleared by the command it
-    names.
 
-
-<!-- truncated: 4047 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 4055 more lines — read CHANGELOG.md directly -->
 
 ---
 

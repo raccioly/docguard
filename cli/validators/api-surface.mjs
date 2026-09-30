@@ -273,7 +273,8 @@ export function validateApiSurface(projectDir, config) {
   // v0.14-P2: when --changed-only scoping is active and NONE of the changed
   // files look like route/spec/controller files, this validator has nothing
   // to add — return N/A so the lite-mode total reflects only what was actually
-  // checked. Route patterns mirror the SECTION_FILE_MATCHERS in sync.mjs.
+  // checked. This lite-mode filter is narrower than sync's `endpoints` matcher
+  // (cli/shared-sync-scope.mjs), which refreshes on any code change.
   if (Array.isArray(config.changedFiles)) {
     const ROUTE_RE = /(^|\/)(routes|controllers|handlers|app\/api)\/|openapi|swagger/i;
     const anyRouteFile = config.changedFiles.some(f => ROUTE_RE.test(f));
