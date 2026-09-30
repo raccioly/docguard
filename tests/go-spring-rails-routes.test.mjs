@@ -623,9 +623,27 @@ public class Outer {
 ` }), ['GET /outer/o', 'POST /inner/i', 'PUT /outer/after']);
   });
 
+  it('a mapping commented out is not a route', () => {
+    assert.deepEqual(spring({ 'Commented.java': `
+@RestController
+@RequestMapping("/c")
+public class Commented {
+  /*
+  @DeleteMapping
+  public void purge() {}
+  */
+  // @PutMapping public void put() {}
+  @GetMapping public String ok() { return ""; }
+}
+` }), ['GET /c']);
+  });
+
   it('Kotlin arrayOf, nested comments, and a class without a base', () => {
     assert.deepEqual(spring({ 'Ping.kt': `
-/* outer /* inner */ @GetMapping("/in-comment") */
+/* outer /* inner */
+@GetMapping("/in-comment")
+fun hidden() = ""
+*/
 @RestController
 class PingController {
     @GetMapping(path = arrayOf("/ping", "/pong"))

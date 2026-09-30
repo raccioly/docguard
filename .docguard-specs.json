@@ -3455,6 +3455,189 @@
       }
     },
     {
+      "specId": "docguard.go-spring-rails-routes",
+      "path": "specs/047-go-spring-rails-routes/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "approved",
+          "delivery": "implemented",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": "living"
+        },
+        "relations": {
+          "extends": [
+            "docguard.adoption-workflow-integrity",
+            "docguard.language-repository-coverage"
+          ],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": [
+            "docs-canonical/TEST-SPEC.md"
+          ]
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.go-spring-rails-routes#FR-001",
+          "docguard.go-spring-rails-routes#FR-002",
+          "docguard.go-spring-rails-routes#FR-003",
+          "docguard.go-spring-rails-routes#FR-004",
+          "docguard.go-spring-rails-routes#FR-005",
+          "docguard.go-spring-rails-routes#FR-006",
+          "docguard.go-spring-rails-routes#FR-007",
+          "docguard.go-spring-rails-routes#FR-008",
+          "docguard.go-spring-rails-routes#FR-009",
+          "docguard.go-spring-rails-routes#SC-001",
+          "docguard.go-spring-rails-routes#SC-002",
+          "docguard.go-spring-rails-routes#SC-003"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/047-go-spring-rails-routes/spec.md",
+            "digest": "sha256:10ab8d3b4035c4e2e8a860627ff1da7ca7600f77d787eef48107640655761fdf"
+          },
+          {
+            "path": "specs/047-go-spring-rails-routes/plan.md",
+            "digest": "sha256:8da63e8fc516404c7a0441dcd8581672b271dbd652a312a5b90db5c26e2b2c8e"
+          },
+          {
+            "path": "specs/047-go-spring-rails-routes/tasks.md",
+            "digest": "sha256:b52192192d66d56a2a61cb5d818e696b8c81ec6251c98dbf105f8f80548b0930"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 10,
+          "total": 10
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/scanners/go-routes.mjs",
+            "line": 24
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/scanners/go-routes.mjs",
+            "line": 25
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/scanners/route-lexing.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/scanners/spring-routes.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/scanners/route-lexing.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/scanners/spring-routes.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/scanners/rails-routes.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/scanners/go-routes.mjs",
+            "line": 26
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/scanners/rails-routes.mjs",
+            "line": 20
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/scanners/spring-routes.mjs",
+            "line": 20
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/go-spring-rails-routes.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/go-spring-rails-routes.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/go-spring-rails-routes.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/go-spring-rails-routes.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/go-spring-rails-routes.test.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/go-spring-rails-routes.test.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/go-spring-rails-routes.test.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/go-spring-rails-routes.test.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "tests/go-spring-rails-routes.test.mjs",
+            "line": 20
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/go-spring-rails-routes.test.mjs",
+            "line": 21
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/go-spring-rails-routes.test.mjs",
+            "line": 22
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/go-spring-rails-routes.test.mjs",
+            "line": 23
+          }
+        ]
+      }
+    },
+    {
       "specId": "docguard.ignore-and-todo-parsing",
       "path": "specs/019-ignore-and-todo-parsing/spec.md",
       "reviewed": {
