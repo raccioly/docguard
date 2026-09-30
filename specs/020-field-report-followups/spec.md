@@ -105,3 +105,9 @@ done, finish what is partial."
   The schema is `0.x`, so a "major version behind" rule would never fire.
 - #454's optional `--husky` flag, which would write to a tracked file, needs a maintainer
   decision and is not included. Printed guidance covers the need without writing.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `dfa1385749b66184c93bf65f5dde127192037711` — Reviewed at dfa1385 on main: all 6 tasks are checked and were delivered by #436, #437, #438, #454, #465, #471; the full suite (2368 tests) passes and guard reports 0 errors at this revision. Deviations from the plan are recorded in the task notes. Evidence: `cli/commands/hooks.mjs`, `docs-canonical/ARCHITECTURE.md`, `tests/field-report-followups.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->

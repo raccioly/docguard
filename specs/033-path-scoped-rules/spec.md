@@ -245,3 +245,9 @@ instruction budget. It names one example path per distinct set of rules.
   task for the calling agent.
 - Keyword- or description-triggered skills. They are not path-scoped, and
   `rules --for` lists them as `not path-scoped`.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `dfa1385749b66184c93bf65f5dde127192037711` — Reviewed at dfa1385 on main: all 10 tasks are checked and were delivered by #474, #481; the full suite (2368 tests) passes and guard reports 0 errors at this revision. Deviations from the plan are recorded in the task notes. Evidence: `cli/commands/rules.mjs`, `cli/scanners/instruction-audit.mjs`, `cli/scanners/instruction-scopes.mjs`, `cli/validators/path-scoped-rules.mjs`, `docs-canonical/ARCHITECTURE.md`, `tests/path-scoped-rules.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->

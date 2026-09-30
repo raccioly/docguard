@@ -55,3 +55,9 @@ an exception.
 
 - Scheduled runs on a public repository cost no Actions minutes. The sweep's no-op path is a
   version comparison.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `dfa1385749b66184c93bf65f5dde127192037711` — Reviewed at dfa1385 on main: all 4 tasks are checked and were delivered by #468, #471; the full suite (2368 tests) passes and guard reports 0 errors at this revision. Deviations from the plan are recorded in the task notes. Evidence: `.github/workflows/release.yml`, `.github/workflows/scheduled-release.yml`, `docs-canonical/CI-RECIPES.md`, `tests/scheduled-release.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->

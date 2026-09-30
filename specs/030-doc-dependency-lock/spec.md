@@ -202,3 +202,9 @@ writes.
   change.
 - A DLK finding is a review signal, never a hard failure. DLK005 is the one
   exception: a broken lock means nothing can be trusted.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `dfa1385749b66184c93bf65f5dde127192037711` — Reviewed at dfa1385 on main: all 10 tasks are checked and were delivered by #474, #477; the full suite (2368 tests) passes and guard reports 0 errors at this revision. Deviations from the plan are recorded in the task notes. Evidence: `cli/commands/review.mjs`, `cli/scanners/doc-deps.mjs`, `cli/validators/doc-dependency.mjs`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/DATA-MODEL.md`, `tests/doc-dependency-lock.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->

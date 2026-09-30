@@ -199,3 +199,9 @@ import inside one directory changes nothing.
 - Replacing hand-drawn diagrams or README's diagram (CSY004 stays).
 - Colouring edges that break configured layers. That can follow once the
   graph is in a scanner.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `dfa1385749b66184c93bf65f5dde127192037711` — Reviewed at dfa1385 on main: all 12 tasks are checked and were delivered by #474, #480; the full suite (2368 tests) passes and guard reports 0 errors at this revision. Deviations from the plan are recorded in the task notes. Evidence: `cli/commands/sync.mjs`, `cli/scanners/import-graph.mjs`, `cli/scanners/memory-plan.mjs`, `cli/scanners/module-diagram.mjs`, `cli/shared-sync-scope.mjs`, `cli/validators/generated-staleness.mjs`, `docs-canonical/ARCHITECTURE.md`, `tests/code-derived-diagrams.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->
