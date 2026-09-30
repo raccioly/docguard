@@ -39,7 +39,7 @@ It targets development teams and AI coding agents that need to maintain document
 | **Document lifecycle** | Finds exact terminal-status docs and completed-task review candidates; explicit retirement removes documentation from active context only after its source revision is reachable from a retained Git ref | `cli/scanners/document-lifecycle.mjs`, `cli/validators/document-lifecycle.mjs`, `cli/commands/retire.mjs` | Scanner is read-only; retirement uses the shared multi-file transaction and remains explicit |
 | **Spec lifecycle registry** | Projects immutable spec identities, reviewed lifecycle/lineage/scope, artifact digests, task state, qualified implementation/test evidence, bounded outcomes, and recovery tombstones into one byte-stable control file | `cli/scanners/spec-registry.mjs`, `cli/scanners/requirement-evidence.mjs`, `cli/scanners/revision-anchor.mjs`, `cli/validators/spec-registry.mjs`, `cli/commands/specs.mjs` | `specs --write` preserves reviewed fields; stale checks identify bounded field paths and distinguish canonical ordering from changed content; only committed, clean, digest-current lifecycle entries can defer traceability, while a current planned entry that is new, removed from the index, or modified pending commit remains advisory; `specs complete` is the only verified-delivery writer |
 | **Reconciliation graph** | Inventories changed paths independently from bounded patch text, maps them to direct spec evidence or to a requirement declared in a canonical document (`docs-canonical/<doc>.md#<ID>`), and keeps mechanical facts, approved intent, decisions, unrelated changes, and unsupported evidence separate | `cli/shared-git.mjs`, `cli/scanners/reconciliation.mjs`, `cli/commands/reconcile.mjs` | Timeout, overflow, parse failure, or incomplete inventory blocks a ready result; planning is read-only and `--write` never rewrites requirements |
-| **Analyzer tier** | Decides which analyzer produced each piece of evidence at the two entry points (`parseJsTs`, `extractPythonFiles`), carries `tier`/`tierReason` on scanned items, reports `parserTier` on every finding, and downgrades a validator to `partial` when an AST-capable language was read by the pattern fallback | `cli/shared-source.mjs` (`tierFor`, `summarizeTiers`, `tierApplicability`), `cli/scanners/routes.mjs`, `cli/validators/api-surface.mjs` | Findings are retained; only coverage is downgraded. `fallback-language` is not a gap — no AST tier exists for that language |
+| **Analyzer tier** | Decides which analyzer produced each piece of evidence at the two entry points (`parseJsTs`, `extractPythonFiles`), carries `tier`/`tierReason` on scanned items, reports `parserTier` on every finding, and downgrades a validator to `partial` when an AST-capable language was read by the pattern fallback (`regex-fallback`) or when a language with no AST tier was read by pattern (`fallback-language`: Go, Java, Kotlin, Ruby, Rust, PHP, C#). The Environment validator is `partial` when a source language has no env patterns. The symbol map and module graph name the languages the import graph does not read | `cli/shared-source.mjs` (`tierFor`, `summarizeTiers`, `tierApplicability`, `grepEnvUsage`, `LANGUAGE_NAMES`), `cli/scanners/routes.mjs`, `cli/validators/api-surface.mjs`, `cli/validators/environment.mjs` | Findings are retained; only coverage is downgraded. The two tiers give different reasons: a parser was unavailable, or none exists. A package segment (`src/main/java/com/example`) is product code, not an examples directory (specs/043-fallback-language-coverage) |
 | **Spec Kit artifact coverage** | Treats Spec Kit's own documents as governed. Coverage counts top-level `specs/<feature>/**/*.md` and the constitution under a `specKit` tier. Metrics-Consistency (including `MET004` dependency claims) and Reference-Existence read the constitution | `cli/scanners/speckit.mjs` (`findConstitution`), `cli/commands/guard.mjs`, `cli/validators/metrics-consistency.mjs`, `cli/validators/reference-existence.mjs` | The constitution usually lives in a dot directory the walkers skip, so it is located explicitly. Nested fixture `specs/` trees are not the project's artifacts |
 | **Headline coverage** | Reports how many validators actually checked beside the passed/total check count, and caps the badge colour at `green` when any active validator was partial, unsupported, missing a prerequisite, or errored | `cli/commands/guard.mjs` (`badgeColor`, `incompleteCoverage`) | `no-matches` keeps the top grade: a validator that ran and found nothing applicable completed its job |
 | **Finding channels** | Separates the three questions a finding answers — does CI block (`severity`), who decides (`disposition`), how well is the code measured (`evidence`), and which analyzer produced it (`parserTier`) — so a certain observation is never labelled uncertain and the feedback loop samples the labels that have never been validated | `cli/findings.mjs`, `cli/precision-evidence.mjs`, `cli/writers/sarif.mjs` | Channels are additive to the published finding contract; `confidence` keeps its meaning as the detector's certainty in its own observation |
@@ -629,6 +629,7 @@ The primary data structure. Controls all CLI behavior.
 | `agentInstructions.allowances.<file>` | `integer` | No | — | Per-chain allowance keyed by the chain's deepest file; slack of 1 KiB or more reports STR005 |
 | `specFirst.paths` / `specFirst.exemptKinds` | `string[]` | No | Everything except Markdown, `specs/**` and tests / `release, deps, typo, test-only` | Governed paths and allowed `Spec-Exempt` kinds for `specs require` |
 | `validators.docDependency` / `pathScopedRules` / `docOwnership` | `boolean` | No | `true` | Each applies only when its input exists: a `covers=` declaration, agent instruction files, an `ownership` block or `.devin/wiki.json` |
+| `detection.includeNonProduct` | `boolean` | No | `false` | Read test, fixture, example and mock directories as product code during surface detection (routes, env vars, frameworks). Package segments such as `src/main/java/com/example` are always product code |
 | `diagrams.moduleGraph.depth` / `maxNodes` / `include` | `integer` / `integer` / `string[]` | No | `2` / `30` (cap 60) / every product source file | Shape of the `module-graph` section |
 | `memory.symbolMap.maxBytes` | `integer` | No | `4096` (256–16384) | Budget of the symbol map `memory --pack --symbols` adds |
 | `devinWiki.maxPages` | `integer` | No | `30` (up to 80) | Page cap for linting `.devin/wiki.json`; 80 on Devin enterprise plans |
@@ -969,9 +970,8 @@ same-value match.
 
 `docguard verify --evidence` exits `0` for `verified-within-scope` and for an
 unconfigured manifest, `2` for `attention-required` (stale, inconclusive, or
-unsupported evidence), and `1` for `contradicted` or `invalid`. The JSON status
 
-<!-- truncated: 58 more lines — read docs-canonical/DATA-MODEL.md directly -->
+<!-- truncated: 59 more lines — read docs-canonical/DATA-MODEL.md directly -->
 
 ---
 
@@ -1657,6 +1657,9 @@ non-zero exit as failure. Most likely triggers:
 - **PSR001–PSR004:** agent instruction files (including a root `AGENTS.md`)
   that point at missing paths, or whose path scopes match nothing or cannot
   be read.
+- **ENV003 on Go, Java, Kotlin, Ruby, Rust, PHP and C# projects:** env reads in
+  those languages (and Spring `${X}` placeholders) are now found, so an
+  undocumented variable is reported where it was invisible before.
 
 Behaviour changes:
 
@@ -1675,6 +1678,10 @@ Behaviour changes:
   Pass `detail: "full"` for the previous shape, with `reportable`,
   `validators[].findings`, every applicability reason and
   `checkCoverage.limitations`.
+- `apiSurface` reports `partial` on Go, Java, Ruby and Rust services, and
+  Environment reports `partial` when a source language has no env patterns.
+  Both used to say `checked`. Partial coverage does not change the exit code;
+  it lowers the badge colour and the coverage counts.
 
 ### Added
 
@@ -2028,15 +2035,8 @@ Behaviour changes:
     0.40.0. It needs a one-time `HOMEBREW_TAP_DEPLOY_KEY` secret; until then
     the job warns and skips.
   - The top-level `--help` names `generate --spec` and `specs
-    preflight|complete|require`, and the config schema declares
-    `specKit.untouchedClaimCheck`, which SPK010's help already told users to
-    set. Tests now fail when either drifts again.
 
-### Changed
-
-- **The MCP `docguard_guard` tool returns each fact once by default**
-
-<!-- truncated: 4295 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 4333 more lines — read CHANGELOG.md directly -->
 
 ---
 

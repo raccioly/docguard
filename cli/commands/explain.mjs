@@ -97,7 +97,7 @@ const EXPLAINERS = {
   },
   environment: {
     title: 'Environment — env vars used in code are documented',
-    what: 'Greps `process.env.X` and `import.meta.env.X` (plus `os.environ` for Python) across source. Each name must appear in ENVIRONMENT.md or .env.example/.env.template.',
+    what: 'Matches env reads by pattern across source: `process.env.X` and `import.meta.env.X` (JS/TS), `os.environ` / `os.getenv` (Python), `os.Getenv` / `os.LookupEnv` (Go), `ENV["X"]` / `ENV.fetch` (Ruby), `System.getenv` and `@Value("${X}")` (Java, Kotlin), `Environment.GetEnvironmentVariable` (C#), `getenv` / `$_ENV` / `env()` (PHP), `env::var` (Rust), and `${X}` placeholders in Spring `application*`/`bootstrap*` config. Each name must appear in ENVIRONMENT.md or .env.example/.env.template. A source language with no env patterns makes the check `partial`.',
     why:  'Undocumented env vars are runtime surprises waiting to happen.',
     triggers: [
       ['used but not documented', 'Code reads an env var that ENVIRONMENT.md doesn\'t list. Add it to the table.'],

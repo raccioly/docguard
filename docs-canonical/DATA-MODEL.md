@@ -57,6 +57,7 @@ The primary data structure. Controls all CLI behavior.
 | `agentInstructions.allowances.<file>` | `integer` | No | — | Per-chain allowance keyed by the chain's deepest file; slack of 1 KiB or more reports STR005 |
 | `specFirst.paths` / `specFirst.exemptKinds` | `string[]` | No | Everything except Markdown, `specs/**` and tests / `release, deps, typo, test-only` | Governed paths and allowed `Spec-Exempt` kinds for `specs require` |
 | `validators.docDependency` / `pathScopedRules` / `docOwnership` | `boolean` | No | `true` | Each applies only when its input exists: a `covers=` declaration, agent instruction files, an `ownership` block or `.devin/wiki.json` |
+| `detection.includeNonProduct` | `boolean` | No | `false` | Read test, fixture, example and mock directories as product code during surface detection (routes, env vars, frameworks). Package segments such as `src/main/java/com/example` are always product code |
 | `diagrams.moduleGraph.depth` / `maxNodes` / `include` | `integer` / `integer` / `string[]` | No | `2` / `30` (cap 60) / every product source file | Shape of the `module-graph` section |
 | `memory.symbolMap.maxBytes` | `integer` | No | `4096` (256–16384) | Budget of the symbol map `memory --pack --symbols` adds |
 | `devinWiki.maxPages` | `integer` | No | `30` (up to 80) | Page cap for linting `.devin/wiki.json`; 80 on Devin enterprise plans |

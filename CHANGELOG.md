@@ -20,6 +20,9 @@ non-zero exit as failure. Most likely triggers:
 - **PSR001–PSR004:** agent instruction files (including a root `AGENTS.md`)
   that point at missing paths, or whose path scopes match nothing or cannot
   be read.
+- **ENV003 on Go, Java, Kotlin, Ruby, Rust, PHP and C# projects:** env reads in
+  those languages (and Spring `${X}` placeholders) are now found, so an
+  undocumented variable is reported where it was invisible before.
 
 Behaviour changes:
 
@@ -38,6 +41,10 @@ Behaviour changes:
   Pass `detail: "full"` for the previous shape, with `reportable`,
   `validators[].findings`, every applicability reason and
   `checkCoverage.limitations`.
+- `apiSurface` reports `partial` on Go, Java, Ruby and Rust services, and
+  Environment reports `partial` when a source language has no env patterns.
+  Both used to say `checked`. Partial coverage does not change the exit code;
+  it lowers the badge colour and the coverage counts.
 
 ### Added
 
@@ -496,6 +503,37 @@ Behaviour changes:
 - **`specs reanchor --to HEAD` works.** `--to` accepted only a full SHA. It
   now takes anything git resolves to a commit (a branch, tag, `HEAD` or a
   short SHA) and records the full SHA. A value starting with `-` is refused.
+
+- **Go, Java, Kotlin, Ruby, Rust, PHP and C# projects no longer pass checks
+  DocGuard could not perform** (specs/043-fallback-language-coverage).
+  - **Coverage:** a language with no syntax tree (`fallback-language`) now
+    makes the owning validator `partial`, naming the language and the file
+    count, as the README always said. Spring, Rails, Go and Rust routes carry
+    `parserTier: "fallback-language"` instead of `not-applicable`.
+  - **Env vars:** found in Go (`os.Getenv`, `os.LookupEnv`), Ruby (`ENV[]`,
+    `ENV.fetch`), Java and Kotlin (`System.getenv`, `@Value("${X}")`), C#,
+    PHP (`getenv`, `$_ENV`, `env()`) and Rust (`env::var`), and in Spring
+    `application*`/`bootstrap*` placeholders. The env scan also reads a
+    root-level Go module's `cmd/` and `internal/` and a Rails app's `config/`.
+    A source language with no env patterns makes Environment `partial`, and
+    `diff` says which files it did not read. Before, a renamed Go env var
+    produced no finding, and `diff` called a still-used one "not found in
+    code".
+  - **Spring's `com.example` package** is product code. A segment below
+    `src/main/{java,kotlin,scala,groovy}`, or `example(s)`/`sample(s)` after
+    a reverse-domain root or Go `internal`, is a package name, not an
+    examples directory.
+  - **Route discovery** reaches a standard Maven layout: the depth-5 limit is
+    now depth 32 with a 20,000-file cap, and hitting the cap is reported.
+  - **Empty surfaces are gaps:**
+    - a detected Spring, Rails, Go or Rust framework whose patterns match no
+      route makes `apiSurface` `partial`;
+    - so do routes found only under test, fixture or example paths, naming
+      `detection.includeNonProduct` (now in the config schema and
+      DATA-MODEL).
+  - **Symbol map and module graph:** they say which languages are not
+    analysed instead of "No import edges were found" or "_No source modules
+    found_".
 
 - **Security: MCP tool calls stay inside the served project.** `docguard mcp`
   accepted any existing directory as a tool call's `projectDir`, over stdio and

@@ -331,7 +331,7 @@ export const CODES = {
   ENV003: {
     validator: 'environment',
     title: 'Env vars used in code but undocumented',
-    help: "Variables read via process.env / import.meta.env were found in code but not in ENVIRONMENT.md or .env.example. Document each listed variable in the doc, or add it to .env.example — either counts as documentation.",
+    help: "Variables read in code (process.env / import.meta.env, os.environ, os.Getenv, ENV[...], System.getenv, Spring ${X} placeholders, and the C#, PHP and Rust forms) were not found in ENVIRONMENT.md or .env.example. Document each listed variable in the doc, or add it to .env.example — either counts as documentation.",
     suppress: null,
   },
   ENV004: {
