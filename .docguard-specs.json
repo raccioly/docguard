@@ -1351,7 +1351,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "implemented",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -1370,8 +1370,21 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "7f7921f8390140b97f59231500b987be8cbd02f1",
+          "outcomes": [
+            {
+              "revision": "7f7921f8390140b97f59231500b987be8cbd02f1",
+              "reason": "Reviewed at 7f7921f on main: all 9 tasks are checked and were delivered by #486, #487, #491; the full suite (2425 tests) passes and guard reports 0 errors at this revision. #487 added FR-007 (the fixed part states each fact once) and revised SC-002 to measure committed fixtures, recorded in the spec and tasks.",
+              "evidence": [
+                "cli/shared-guard-json.mjs",
+                "cli/validator-coverage.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "tests/compact-guard-response.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -1392,7 +1405,7 @@
         "artifacts": [
           {
             "path": "specs/037-compact-guard-response/spec.md",
-            "digest": "sha256:3f995781f6ba23d97bcc3889c294ffa5efbe4757df2fea63970f426871b15c43"
+            "digest": "sha256:97d3014001a6cae1f8c90c426736a7cbbd4d9a12c375d1faed655b94d559e820"
           },
           {
             "path": "specs/037-compact-guard-response/plan.md",
@@ -7055,7 +7068,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "implemented",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -7076,8 +7089,22 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "7f7921f8390140b97f59231500b987be8cbd02f1",
+          "outcomes": [
+            {
+              "revision": "7f7921f8390140b97f59231500b987be8cbd02f1",
+              "reason": "Reviewed at 7f7921f on main: all 10 tasks are checked and were delivered by #490, #491; the full suite (2425 tests) passes and guard reports 0 errors at this revision. #491 added the FR-008 docs test, which caught a README row that did not name docguard upgrade.",
+              "evidence": [
+                "cli/release-age.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/ENVIRONMENT.md",
+                "docs-canonical/SECURITY.md",
+                "tests/update-awareness.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -7100,7 +7127,7 @@
         "artifacts": [
           {
             "path": "specs/038-update-awareness/spec.md",
-            "digest": "sha256:c653ad7349789e99335106d921c83f5e66df1de2db307756471d98a3b8bd57f5"
+            "digest": "sha256:8060334a964d56c2df1346b430c2468307fc69d625c671a43dec6d4877b72173"
           },
           {
             "path": "specs/038-update-awareness/plan.md",
