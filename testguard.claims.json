@@ -687,6 +687,60 @@
           }
         }
       ]
+    },
+    {
+      "id": "SPK010-DIRECTORY-CLAIMS",
+      "statement": "SPK010 counts a named directory as touched when the feature changed a path strictly under it, and still reports a directory with nothing changed inside.",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/025-spk010-directory-claims/spec.md#FR-001"
+      },
+      "severity": "medium",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (#458)"
+      },
+      "defendedBy": [
+        "tests/spk010-directory-claims.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "Directory claims are never matched against nested changes.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/speckit.mjs",
+          "find": "        if (isDirectory(abs) && touchedWithin(touched, claim)) continue;",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#458)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "A sibling directory sharing the prefix vouches for it.",
+          "faultClass": "return-altered",
+          "file": "cli/scanners/speckit.mjs",
+          "find": "  const prefix = `${dirRel.replace(/\\/+$/, '')}/`;",
+          "replace": "  const prefix = dirRel.replace(/\\/+$/, '');",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#458)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "Any change under a file's directory vouches for the file.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/speckit.mjs",
+          "find": "        if (isDirectory(abs) && touchedWithin(touched, claim)) continue;",
+          "replace": "        if (touchedWithin(touched, claim.slice(0, claim.lastIndexOf('/')) || claim)) continue;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#458)"
+          }
+        }
+      ]
     }
   ]
 }
