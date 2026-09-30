@@ -52,6 +52,14 @@ jobs:
       - name: Python wrapper imports
         run: python3 -c "import docguard_cli.wrapper; print('docguard_cli.wrapper OK')"
 
+      # Tests build throwaway git repositories and delete them in after-hooks.
+      # A commit can leave a detached `git gc --auto` writing into .git, which
+      # made a cleanup fail with ENOTEMPTY (#486). No background maintenance here.
+      - name: Disable background git maintenance for test fixtures
+        run: |
+          git config --global gc.auto 0
+          git config --global maintenance.auto false
+
       # ── Automated Test Suite ──
       # Also enforces a RUNTIME BUDGET. A test that walks an unintended tree
       # (e.g. passing '/' as a project dir) still PASSES — it just takes

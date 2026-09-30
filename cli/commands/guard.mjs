@@ -1,3 +1,4 @@
+import { compactGuardResult } from '../shared-guard-json.mjs';
 import { describeCheckCoverage, summarizeCheckCoverage } from '../validator-coverage.mjs';
 import { applyDocRoles } from '../shared-doc-roles.mjs';
 /**
@@ -809,7 +810,9 @@ export function runGuard(projectDir, config, flags) {
     // gets "Unterminated string in JSON" on exactly the big reports that matter.
     // Returning lets Node drain stdout and exit naturally with process.exitCode.
     process.exitCode = code;
-    process.stdout.write(JSON.stringify(data, null, 2) + '\n');
+    // docguard.compact-guard-response#FR-004: --compact selects the projection;
+    // the default JSON contract is unchanged.
+    process.stdout.write(JSON.stringify(flags.compact ? compactGuardResult(data) : data, null, 2) + '\n');
     return;
   }
 
