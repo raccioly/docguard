@@ -3,7 +3,7 @@
   "name": "docguard",
   "display_name": "DocGuard",
   "version": "__VERSION__",
-  "description": "Deterministic doc-drift detection: guard, score, explain, verify-claims, report and diagnose as read-only MCP tools.",
+  "description": "Deterministic doc-drift detection and exact doc navigation as read-only MCP tools.",
   "long_description": "DocGuard validates your project's documentation against its code — 27 deterministic validators, CDD maturity score, compliance-evidence reports, requirements traceability — with a zero-LLM core. Every tool is read-only: it inspects the project folder you choose and never writes, mutates, or reaches the network. Local-first: no telemetry, no data collection (see PRIVACY.md in the repository).",
   "author": {
     "name": "Ricardo Accioly",
@@ -44,8 +44,13 @@
     { "name": "docguard_guard", "description": "Run every enabled validator against the project's canonical docs" },
     { "name": "docguard_score", "description": "CDD maturity score (0-100) with per-category breakdown" },
     { "name": "docguard_explain", "description": "Explain a stable finding code (STR001, ENV003, ...)" },
+    { "name": "docguard_verify_evidence", "description": "Check declared statements against bounded local sources" },
     { "name": "docguard_verify_claims", "description": "Extract documented numbers/limits/enums as verification tasks" },
     { "name": "docguard_report", "description": "Commit-stamped compliance-evidence bundle with integrity hash" },
+    { "name": "docguard_docs_for_path", "description": "Which docs, instructions and requirements describe a file" },
+    { "name": "docguard_doc_structure", "description": "Headings, sections and markers of one document" },
+    { "name": "docguard_read_section", "description": "Read one bounded section of a document" },
+    { "name": "docguard_task_context", "description": "Deterministic context packet for a task" },
     { "name": "docguard_diagnose", "description": "Only what needs fixing, shaped for an agent to act on" }
   ],
   "compatibility": {

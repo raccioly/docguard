@@ -29,7 +29,7 @@ claude mcp add docguard -- npx docguard-cli mcp
 npx docguard-cli mcp
 ```
 
-Seven tools, each accepting an optional `projectDir`:
+Every tool is read-only and accepts an optional `projectDir`:
 
 | Tool | Returns |
 |------|---------|
@@ -39,6 +39,10 @@ Seven tools, each accepting an optional `projectDir`:
 | `docguard_verify_evidence` | Exact declared statement-to-source checks with scoped verification states |
 | `docguard_verify_claims` | Documented numbers/limits/enums as verification tasks — **the caller checks each against the code** |
 | `docguard_report` | Commit-stamped compliance evidence with a tamper-evident integrity hash |
+| `docguard_docs_for_path` | Which canonical doc lines, agent-instruction lines, `@implements`/`@req` IDs, `@doc` annotations and `covers=` sections describe one file |
+| `docguard_doc_structure` | One document's headings (with anchors, line ranges, bytes), section markers and fact markers |
+| `docguard_read_section` | One section by id, anchor or heading, bounded (8 KiB default, 32 KiB cap, `nextOffset` when truncated) |
+| `docguard_task_context` | The `agent --task` context packet: task-linked requirements, code and test pointers, excerpts |
 | `docguard_diagnose` | Failing/warning validators with per-finding suggestions, shaped for action |
 
 The server is read-only (never scaffolds), keeps stdout as a pure JSON-RPC

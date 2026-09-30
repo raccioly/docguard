@@ -31,6 +31,25 @@ Behaviour changes:
 
 ### Added
 
+- **MCP doc navigation tools** (`specs/032-mcp-doc-tools`). Agents can ask
+  which documentation describes a file and read one section, instead of
+  loading whole documents:
+  - `docguard_docs_for_path` returns the doc lines that name a file (with
+    their text, heading and section), agent-instruction lines,
+    `@implements`/`@req` IDs, `@doc` annotations, and `covers=` sections with
+    their review state;
+  - `docguard_doc_structure` returns a document's outline;
+  - `docguard_read_section` reads by section id, anchor, heading, or the lines
+    around one reference (8 KiB default, 32 KiB cap);
+  - `docguard_task_context` returns the `agent --task` packet.
+
+  Finding and reading what describes `cli/scanners/as-built.mjs` costs 11.5%
+  of reading those docs whole. The tools are deterministic and read-only,
+  refuse traversal, private and symlinked paths, and none of them calls a
+  model. `trace --reverse`, `impact` and the tool share one reference matcher.
+  The published tool listings (MCPB manifest, Smithery, server.json, docs)
+  now match `tools/list`: they had drifted to 5 and 6 of 7.
+
 - **Doc dependency lock: know which docs to re-read when code changes**
   (`specs/030-doc-dependency-lock`, new `docguard review` command).
   - A doc section declares the code it describes, e.g.
@@ -320,6 +339,12 @@ Behaviour changes:
   paraphrasing it as "ships N".
 
 ### Fixed
+
+- **Traceability reads `@doc` annotations in JSDoc blocks.** The pattern
+  required `//`, `/*` or `#` immediately before `@doc`, so the common form
+  (`/**\n * @doc API-REFERENCE.md\n */`) linked nothing. It now shares one
+  reader with the MCP doc tools, which also ignores `@doc` inside string
+  literals (`specs/032-mcp-doc-tools`).
 
 - **`sync --since` narrows the sections it says it narrows**
   (`specs/029-sync-section-scope`). The matcher table was keyed

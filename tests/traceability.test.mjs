@@ -235,6 +235,17 @@ describe('Traceability Validator', () => {
       );
     });
 
+    it('a JSDoc continuation line (` * @doc X.md`) links too, and a string literal does not (docguard.mcp-doc-tools#FR-003)', () => {
+      mkdirSync(join(tmpDir, 'docs-canonical'), { recursive: true });
+      writeFileSync(join(tmpDir, 'docs-canonical', 'API-REFERENCE.md'), '# API');
+      mkdirSync(join(tmpDir, 'src', 'weird-place'), { recursive: true });
+      writeFileSync(join(tmpDir, 'src', 'weird-place', 'thing.ts'), '/**\n * Things.\n * @doc API-REFERENCE.md\n */\nexport const foo = 1;\n');
+      const config = { requiredFiles: { canonical: ['API-REFERENCE.md'] } };
+      assert.strictEqual(validateTraceability(tmpDir, config).passed, 1, 'the JSDoc form is the common one');
+      writeFileSync(join(tmpDir, 'src', 'weird-place', 'thing.ts'), 'export const s = "@doc API-REFERENCE.md";\n');
+      assert.strictEqual(validateTraceability(tmpDir, config).passed, 0, 'a string literal is not an annotation');
+    });
+
     it('Next.js App Router src/app/api/ is recognised by TRACE_MAP', () => {
       mkdirSync(join(tmpDir, 'docs-canonical'), { recursive: true });
       writeFileSync(join(tmpDir, 'docs-canonical', 'API-REFERENCE.md'), '# API');
