@@ -14,6 +14,7 @@
  * @req docguard.completion-revision-anchoring#SC-002
  * @req docguard.completion-revision-anchoring#FR-005
  * @req docguard.completion-revision-anchoring#FR-006
+ * @req docguard.completion-revision-anchoring#SC-003
  */
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
@@ -258,5 +259,12 @@ describe('the behaviour is documented (FR-005)', () => {
     assert.match(read('docs/commands.md'), /specs reanchor[\s\S]*SPR008/);
     assert.match(read('docs-canonical/DATA-MODEL.md'), /reanchoredFrom[\s\S]*blob-equal[\s\S]*attested/);
     assert.match(read('docs-canonical/CI-RECIPES.md'), /Under squash merges, run completions on a branch whose HEAD is the default\s+branch's tip/);
+  });
+});
+
+describe('this repository keeps every recorded revision on its history (SC-003)', () => {
+  it('reports no dangling review revision', () => {
+    const dangling = validateSpecRegistry(process.cwd(), {}).findings.filter(f => f.code === 'SPR008');
+    assert.deepEqual(dangling.map(f => f.message), []);
   });
 });
