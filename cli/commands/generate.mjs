@@ -14,6 +14,7 @@ import { assertMappedFullDocumentWrites, docRolePath, isMappedDocPath, mappedRol
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve, extname, basename, relative } from 'node:path';
 import { c } from '../shared.mjs';
+import { runGenerateAsBuilt } from './generate-as-built.mjs';
 import { walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
 import { detectDocTools } from '../scanners/doc-tools.mjs';
 import { scanRoutesDeep } from '../scanners/routes.mjs';
@@ -168,6 +169,10 @@ export function runGeneratePlan(projectDir, config, flags) {
 }
 
 export function runGenerate(projectDir, config, flags) {
+  // --spec <area>: an as-built Spec Kit spec for one area (specs/024-as-built-specs).
+  if (flags.spec) {
+    return runGenerateAsBuilt(projectDir, config, flags);
+  }
   // --plan: emit the AI-powered "memory plan" — the agent task manifest. The CLI
   // builds the code-truth skeleton (marked sections) + tells the agent exactly
   // what prose to write per section. This is the language-aware Generate path.

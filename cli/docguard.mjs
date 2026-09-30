@@ -202,14 +202,16 @@ const COMMAND_HELP = {
   },
   generate: {
     summary: 'Reverse-engineer canonical docs from existing code.',
-    usage: 'docguard generate [--plan [--write] [--format json]] [--force]',
+    usage: 'docguard generate [--plan [--write] [--format json]] [--force] | docguard generate --spec <area> [--id <spec-id>] [--write] [--format json]',
     flags: [
+      ['--spec <area>', 'As-built Spec Kit spec for one code area: one requirement candidate per route, export, env var or entity found there'],
+      ['--id <spec-id>', 'With --spec: Spec ID for the new spec (default: <project>.as-built-<area>)'],
       ['--plan', 'AI scan: emit the agent task manifest + code-truth skeleton'],
-      ['--write', 'With --plan: scaffold the skeleton docs to disk'],
+      ['--write', 'With --plan: scaffold the skeleton docs to disk. With --spec: create the spec and register it (origin: as_built)'],
       ['--format json', 'With --plan: machine-readable manifest'],
       ['--force', 'Overwrite existing docs (.bak backup kept)'],
     ],
-    examples: ['docguard generate', 'docguard generate --plan', 'docguard generate --plan --write', 'docguard generate --plan --format json'],
+    examples: ['docguard generate', 'docguard generate --plan', 'docguard generate --plan --write', 'docguard generate --plan --format json', 'docguard generate --spec src/billing --write'],
   },
   agent: {
     summary: 'Agent task graph, or a bounded evidence packet for one explicit task.',
@@ -623,6 +625,10 @@ async function main() {
       i++;
     } else if (args[i] === '--retention-ref' && args[i + 1]) {
       flags.retentionRef = args[i + 1];
+      i++;
+    } else if (args[i] === '--spec' && args[i + 1] && command === 'generate') {
+      // `generate --spec <area>`: as-built spec for one code area.
+      flags.spec = args[i + 1];
       i++;
     } else if (args[i] === '--id' && args[i + 1]) {
       flags.id = args[i + 1];

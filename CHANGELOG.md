@@ -9,6 +9,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **As-built specs: reverse-engineer a Spec Kit spec for code that has none,
+  and keep it synced (#455, `specs/024-as-built-specs`).** `docguard generate
+  --spec <area>` scans one directory for the facts DocGuard can establish
+  without an LLM: routes (method and path), exported JS/TS symbols,
+  environment variables read, and entities. It proposes one `FR-NNN`
+  candidate per fact, each with a `<!-- docguard:fact … -->` marker and a
+  file citation. Every requirement statement is left to the agent; DocGuard
+  writes no prose.
+
+  With `--write`, the spec lands in the next free feature directory and is
+  registered as `origin: as_built` with its `sourcePaths`. Guard then reports
+  **`SPR007`** for a fact that appears in the code with no requirement, and
+  for a cited fact that disappears. A fact deliberately left unspecified goes
+  under `## Out of Scope` with a reason. Both registry fields are serialized
+  only when set, so existing registries stay byte-identical.
+
+  The four community brownfield extensions (Brownfield Bootstrap, BrownKit,
+  Blueprint Index, Time Machine) were compared first. None validates an
+  as-built spec against code at the requirement level, and that is what
+  DocGuard adds. It composes with their drafts and never re-runs
+  `/speckit.implement` over existing code. `grepEnvUsage` gains a `within`
+  scope for this. A TestGuard claim with four faults defends the sync check.
+
 - **`docguard specs require`, a spec-first change gate (#455,
   `specs/015-spec-first-gate`).** Validators evaluate a tree, so none of them
   can notice the spec that was never written. This command evaluates a

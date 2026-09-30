@@ -573,6 +573,120 @@
           }
         }
       ]
+    },
+    {
+      "id": "AS-BUILT-SPEC-STAYS-SYNCED",
+      "statement": "An as-built spec is registered with origin as_built and its source paths, and guard reports both code the spec does not account for and cited facts that no longer exist.",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/024-as-built-specs/spec.md#FR-005"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (#455)"
+      },
+      "defendedBy": [
+        "tests/as-built-specs.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "Vanished facts are never reported.",
+          "faultClass": "return-altered",
+          "file": "cli/scanners/as-built.mjs",
+          "find": "  const vanished = [...all].filter(id => !current.has(id));",
+          "replace": "  const vanished = [];",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "Unclaimed facts are never reported.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/as-built.mjs",
+          "find": "  const unclaimed = [...current.entries()].filter(([id]) => !all.has(id)).map(([, f]) => f);",
+          "replace": "  const unclaimed = [];",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "generate --spec --write does not record origin.",
+          "faultClass": "statement-deleted",
+          "file": "cli/commands/generate-as-built.mjs",
+          "find": "      entry.reviewed.lifecycle.origin = 'as_built';",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "The registry drops origin when it re-serializes.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/spec-registry.mjs",
+          "find": "        ...(lifecycle.origin === 'as_built' ? { origin: 'as_built' } : {}),",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "Env vars read outside the area become candidates for it.",
+          "faultClass": "condition-forced",
+          "file": "cli/shared-source.mjs",
+          "find": "    if (within && within !== '.') {",
+          "replace": "    if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "generate --spec falls through to the doc generator.",
+          "faultClass": "condition-forced",
+          "file": "cli/commands/generate.mjs",
+          "find": "  if (flags.spec) {",
+          "replace": "  if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455)"
+          }
+        },
+        {
+          "id": "F7",
+          "description": "The CLI never parses --spec.",
+          "faultClass": "condition-forced",
+          "file": "cli/docguard.mjs",
+          "find": "    } else if (args[i] === '--spec' && args[i + 1] && command === 'generate') {",
+          "replace": "    } else if (args[i] === '--spec' && args[i + 1] && command === 'never') {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455)"
+          }
+        },
+        {
+          "id": "F8",
+          "description": "SPR007 is not a registered finding code.",
+          "faultClass": "statement-deleted",
+          "file": "cli/findings.mjs",
+          "find": "  SPR007: {\n    validator: 'specRegistry',",
+          "replace": "  SPR007_UNREGISTERED: {\n    validator: 'specRegistry',",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (#455)"
+          }
+        }
+      ]
     }
   ]
 }
