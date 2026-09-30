@@ -18,7 +18,7 @@ import { detectDocTools } from './doc-tools.mjs';
 import { scanRoutesDeep } from './routes.mjs';
 import { scanSchemasDeep, generateERDiagram } from './schemas.mjs';
 import { scanFrontend } from './frontend.mjs';
-import { grepEnvUsage } from '../shared-source.mjs';
+import { grepEnvUsage, summarizeTiers } from '../shared-source.mjs';
 import { detectIntegrations } from './integrations.mjs';
 import { PROFILES } from '../shared.mjs';
 import { scanComponents, scanTestInventory } from './inventory.mjs';
@@ -342,6 +342,19 @@ export function buildMemoryPlan(projectDir, config = {}, opts = {}) {
 }
 
 /**
+ * The parser tier behind one surface: the scan's own summary when the scanner
+ * reports one (Python), combined with the tiers its items carry. Degraded when
+ * a file an AST could read was read by the pattern fallback.
+ */
+function surfaceTier(scanTier, items) {
+  const tiered = (items || []).filter(i => i && i.tier);
+  const summary = summarizeTiers([...(scanTier ? [scanTier] : []), ...tiered]);
+  const degraded = (!!scanTier && ['regex-fallback', 'mixed'].includes(scanTier.tier))
+    || tiered.some(i => i.tier === 'regex-fallback');
+  return { tier: summary.tier, reason: degraded ? summary.tierReason || (scanTier && scanTier.tierReason) || null : null, degraded };
+}
+
+/**
  * A diagram section is planned when the doc already has its marker, or when
  * the doc does not exist yet and `generate --plan --write` would create it.
  * An existing doc without the marker is left alone: the maintainer opts in.
@@ -376,8 +389,21 @@ function _buildMemoryPlanUncached(projectDir, config = {}) {
   const modules = scanComponents(projectDir, config);
   const tests = scanTestInventory(projectDir, config);
 
+  // Which analyzer read the endpoints and entities (docguard.python-extraction
+  // #FR-012). A section built from pattern-tier facts is partial, as the module
+  // graph is without an interpreter: what the fallback cannot see is missing.
+  const parserTiers = {
+    endpoints: surfaceTier(routes.scanTier, routes),
+    entities: surfaceTier(schemas.scanTier, entities),
+  };
+  parserTiers.degraded = parserTiers.endpoints.degraded || parserTiers.entities.degraded;
+  const partial = which => (parserTiers[which].degraded
+    ? { completeness: 'partial', partialReason: `${which} read by the pattern fallback: ${parserTiers[which].reason || 'no syntax tree'}` }
+    : {});
+
   const surface = {
     profile,
+    parserTiers,
     endpoints: routes.map(r => ({ method: r.method, path: r.path, auth: !!r.auth })),
     entities: entities.map(e => ({ name: e.name, fields: e.fields || [] })),
     screens: fe.screens,
@@ -410,6 +436,11 @@ function _buildMemoryPlanUncached(projectDir, config = {}) {
   // produced, say so — a web app mislabeled with the wrong --profile is still
   // recoverable instead of silently under-documented.
   const notes = [];
+  if (parserTiers.degraded) {
+    const read = ['endpoints', 'entities'].filter(k => parserTiers[k].degraded);
+    const reason = parserTiers[read[0]].reason;
+    notes.push(`The ${read.join(' and ')} were read by the pattern fallback, not a syntax tree${reason ? ` (${reason})` : ''}. What it cannot see is missing, so those sections are marked partial. Install python3 (or fix the parse error) and re-run for exact extraction.`);
+  }
   if (constrainedProfile) {
     if (surface.endpoints.length > 0 && !allowedCanonical.has('docs-canonical/API-REFERENCE.md')) {
       notes.push(`Detected ${surface.endpoints.length} endpoint(s) but the '${profileName}' profile omits API-REFERENCE.md — not generated. If this project genuinely exposes an HTTP API, re-run with --profile standard.`);
@@ -519,6 +550,7 @@ function _buildMemoryPlanUncached(projectDir, config = {}) {
       id: 'endpoints',
       source: 'code',
       body: md.table(['Method', 'Path', 'Auth'], rows),
+      ...partial('endpoints'),
     }];
     sections.push(addTask('docs-canonical/API-REFERENCE.md', 'overview',
       `Write a short intro describing the API (${surface.endpoints.length} endpoints) and its auth model.`,
@@ -533,12 +565,14 @@ function _buildMemoryPlanUncached(projectDir, config = {}) {
       id: 'entities',
       source: 'code',
       body: md.table(['Entity', 'Fields'], rows),
+      ...partial('entities'),
     }];
     if (_wantsSection(projectDir, config, 'docs-canonical/DATA-MODEL.md', 'entity-diagram')) {
       sections.push({
         id: 'entity-diagram',
         source: 'code',
         body: `\`\`\`mermaid\n${generateERDiagram(entities, schemas.relationships || [])}\n\`\`\``,
+        ...partial('entities'),
       });
     }
     sections.push(addTask('docs-canonical/DATA-MODEL.md', 'relationships',

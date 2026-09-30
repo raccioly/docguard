@@ -127,9 +127,13 @@ function probe(dir, framework, tier) {
   return JSON.parse(r.stdout);
 }
 
-const cli = (dir, args, env = process.env) => spawnSync(process.execPath, [CLI, ...args], {
-  cwd: dir, encoding: 'utf8', env: { ...env, NO_COLOR: '1' }, input: '', timeout: 60000,
-});
+const cli = (dir, args, env = process.env) => {
+  const r = spawnSync(process.execPath, [CLI, ...args], {
+    cwd: dir, encoding: 'utf8', env: { ...env, NO_COLOR: '1' }, input: '', timeout: 60000,
+  });
+  // eslint-disable-next-line no-control-regex
+  return { ...r, stdout: String(r.stdout || '').replace(/\x1b\[[0-9;]*m/g, '') };
+};
 const jsonOut = r => JSON.parse(r.stdout.slice(r.stdout.indexOf('{')));
 const keys = routes => routes.map(r => r.key).sort();
 

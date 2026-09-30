@@ -157,8 +157,10 @@ export function renderModuleGraph(graph, config = {}) {
   }
   if (partialReason) notes.push(`partial: ${partialReason}`);
 
+  // Nothing drawable because the parser was missing is not "no modules"
+  // (docguard.python-extraction#FR-014).
   const body = files.length === 0
-    ? '_No source modules found for the module graph._'
+    ? (partialReason ? `_Module graph not drawn: ${partialReason}._` : '_No source modules found for the module graph._')
     : `${lines.join('\n')}${notes.length ? `\n\n_Module graph: ${notes.join('; ')}._` : ''}`;
   return {
     body,

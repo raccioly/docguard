@@ -16,7 +16,7 @@ import { resolve, basename } from 'node:path';
 import { c, PROFILES, SEVERITY_LEVELS } from './shared.mjs';
 import { CODES } from './findings.mjs';
 import { mergeIgnoreFile } from './shared-ignore.mjs';
-import { detectProjectName } from './scanners/project-type.mjs';
+import { detectProjectName, detectProjectProfile } from './scanners/project-type.mjs';
 
 export function loadConfig(projectDir) {
   const configPath = resolve(projectDir, '.docguard.json');
@@ -179,37 +179,34 @@ export function loadConfig(projectDir) {
 // PROFILES is exported from shared.mjs (re-exported at line 43)
 
 /**
- * Auto-detect project type from package.json and file structure.
- * Returns: 'cli' | 'library' | 'webapp' | 'api' | 'unknown'
+ * Auto-detect project type: 'cli' | 'library' | 'webapp' | 'api' | 'unknown'.
+ *
+ * One detector: the ecosystem profile (scanners/project-type.mjs), which
+ * reads every manifest DocGuard supports. A root ecosystem that names a
+ * framework or a kind wins over a root `library` (a Python service with a
+ * package.json for tooling), and a `service` is an `api`. A Worker config is
+ * checked first, as before. (docguard.python-extraction#FR-010)
  */
+const KIND_TO_PROJECT_TYPE = { cli: 'cli', library: 'library', webapp: 'webapp', api: 'api', service: 'api' };
+
 export function autoDetectProjectType(dir) {
   if (hasWorkerConfig(dir)) return 'api';
-  const pkgPath = resolve(dir, 'package.json');
-  if (existsSync(pkgPath)) {
-    try {
-      const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
-      const allDeps = { ...(pkg.dependencies || {}), ...(pkg.devDependencies || {}) };
+  let profile;
+  try { profile = detectProjectProfile(dir); } catch { return 'unknown'; }
+  const roots = profile.ecosystems.filter(e => e.dir === '.');
+  const pick = roots.find(e => e.kind !== 'library') || profile.primary;
+  if (!pick) return 'unknown';
+  // A package.json with no entry point, no bin and no framework is not
+  // evidence of a library; keep the historical 'unknown' for it.
+  if (pick.kind === 'library' && pick.manifest === 'package.json' && !hasLibraryEntry(dir)) return 'unknown';
+  return KIND_TO_PROJECT_TYPE[pick.kind] || 'unknown';
+}
 
-      // CLI tool: has "bin" field
-      if (pkg.bin) return 'cli';
-
-      // Web app: has a frontend framework
-      if (allDeps.next || allDeps.react || allDeps.vue || allDeps['@angular/core'] ||
-          allDeps.svelte || allDeps.nuxt || allDeps['@sveltejs/kit']) return 'webapp';
-
-      // API: has a server framework but no frontend
-      if (allDeps.express || allDeps.fastify || allDeps.hono || allDeps.koa) return 'api';
-
-      // Library: has "main" or "exports" and no framework
-      if (pkg.main || pkg.exports || pkg.module) return 'library';
-    } catch { /* fall through */ }
-  }
-
-  // Python project
-  if (existsSync(resolve(dir, 'manage.py'))) return 'webapp';
-  if (existsSync(resolve(dir, 'setup.py')) || existsSync(resolve(dir, 'pyproject.toml'))) return 'library';
-
-  return 'unknown';
+function hasLibraryEntry(dir) {
+  try {
+    const pkg = JSON.parse(readFileSync(resolve(dir, 'package.json'), 'utf-8'));
+    return !!(pkg.main || pkg.exports || pkg.module);
+  } catch { return false; }
 }
 
 /**

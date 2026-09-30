@@ -95,13 +95,46 @@ function tomlSectionDeps(content, sections) {
   return deps;
 }
 
+/**
+ * The strings of a TOML array starting at `open` (the index of its `[`).
+ * Quote- and comment-aware, so `"uvicorn[standard]"` does not end the array.
+ * @implements docguard.python-extraction#FR-017
+ */
+function tomlArrayStrings(content, open) {
+  const out = [];
+  let depth = 0;
+  for (let i = open; i < content.length; i++) {
+    const ch = content[i];
+    if (ch === '#') { while (i < content.length && content[i] !== '\n') i++; continue; }
+    if (ch === '"' || ch === "'") {
+      const triple = content.startsWith(ch.repeat(3), i);
+      const delim = triple ? ch.repeat(3) : ch;
+      let j = i + delim.length;
+      let value = '';
+      while (j < content.length && !content.startsWith(delim, j)) {
+        if (ch === '"' && content[j] === '\\') { value += content[j + 1] || ''; j += 2; continue; }
+        value += content[j++];
+      }
+      if (depth === 1) out.push(value);
+      i = j + delim.length - 1;
+      continue;
+    }
+    if (ch === '[') depth++;
+    else if (ch === ']' && --depth === 0) break;
+  }
+  return out;
+}
+
 /** pyproject [project] dependencies = ["pkg>=1", ...] and poetry table form. */
 function pyprojectDeps(content) {
   const deps = {};
   // PEP 621 array form
-  const arr = content.match(/dependencies\s*=\s*\[([\s\S]*?)\]/);
+  const arr = /(?:^|\n)\s*dependencies\s*=\s*\[/.exec(content);
   if (arr) {
-    for (const m of arr[1].matchAll(/["']([A-Za-z0-9_.\-]+)\s*[><=~!\[]?/g)) deps[m[1]] = '*';
+    for (const spec of tomlArrayStrings(content, arr.index + arr[0].length - 1)) {
+      const m = spec.match(/^\s*([A-Za-z0-9_.\-]+)/);
+      if (m) deps[m[1]] = '*';
+    }
   }
   // Poetry table form
   Object.assign(deps, tomlSectionDeps(content, ['tool.poetry.dependencies']));
