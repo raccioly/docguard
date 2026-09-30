@@ -4,12 +4,14 @@
 
 ## Summary
 
-- A new scanner, `cli/scanners/instruction-scopes.mjs`, discovers instruction
-  files per harness, reads their frontmatter with a small built-in reader, and
-  returns `{ file, harness, scope: always|directory|globs|unknown, globs,
-  bytes, local, issues }`. Nested `AGENTS.md` discovery reuses
-  `measureInstructionChains` (`cli/scanners/agent-instructions.mjs`), which
-  gains a nested `CLAUDE.md` variant for Claude Code.
+- A new scanner, `cli/scanners/instruction-scopes.mjs`, classifies instruction
+  files per harness from a file list, reads their frontmatter with the subset
+  reader in `cli/scanners/frontmatter.mjs`, and returns `{ file, harness,
+  scope: always|directory|globs|not-path-scoped|not-loaded|unknown, globs,
+  bytes, local, issues }`. Directory files (nested `AGENTS.md`, `CLAUDE.md`)
+  are entries with a `directory` scope, and the resolver builds each
+  harness's chain from them, so `measureInstructionChains` stays STR004's and
+  is unchanged.
 - `resolveInstructionsFor(path, scopes)` in the same scanner answers
   `rules --for` and feeds PSR003. It matches with `compileGlob`
   (`cli/shared-ignore.mjs`).
@@ -21,9 +23,13 @@
 - A new validator, `cli/validators/path-scoped-rules.mjs`, emits
   PSR001–PSR004. It imports only the scanners and `cli/findings.mjs`.
 - A new command, `cli/commands/rules.mjs`, implements `rules --for`.
-- The tracked-file list comes from `git ls-files -z` (argv array, no shell),
-  added to `cli/shared-git.mjs` as `listTrackedFiles`. Without git it falls
-  back to `walkFiles` with the ignore filters and reports `partial`.
+- The tracked-file list comes from `git ls-files -z --cached` minus deleted
+  files (argv array, no shell), added to `cli/shared-git.mjs` as
+  `listTrackedFiles`: tracked only, so a laptop and CI agree. Without git it
+  falls back to `walkFiles` with the ignore filters and reports `partial`.
+- `gitIgnoredPaths` (`git check-ignore --no-index --stdin`) tells whether an
+  unresolved pointer names a gitignored path, whether or not the file exists
+  here. A path git refuses (through a symlink) is `unknown` and not reported.
 
 ## Technical Context
 
@@ -51,10 +57,10 @@ Pass.
 ## Project Structure
 
 ```text
-cli/scanners/instruction-scopes.mjs      # NEW: discovery, frontmatter subset reader, scopes, resolver
-cli/scanners/agent-instructions.mjs      # expose nested CLAUDE.md chains alongside AGENTS.md
+cli/scanners/instruction-scopes.mjs      # NEW: classification, scopes, resolver, safe paths, disk walk
+cli/scanners/frontmatter.mjs             # NEW: frontmatter subset reader
 cli/scanners/instruction-audit.mjs       # export pointer helpers; extractInstructionPointers
-cli/shared-git.mjs                       # listTrackedFiles (git ls-files -z)
+cli/shared-git.mjs                       # listTrackedFiles, gitIgnoredPaths
 cli/validators/path-scoped-rules.mjs     # NEW: PSR001–PSR004
 cli/findings.mjs                         # PSR001–PSR004
 cli/commands/guard.mjs                   # register the validator
@@ -64,8 +70,7 @@ cli/config.mjs, schemas/docguard-config.schema.json   # validators.pathScopedRul
 .docguard.json                           # surfaceSync commands list if `rules` is excluded there
 README.md, docs/commands.md, docs/configuration.md, docs/ai-integration.md
 docs-canonical/ARCHITECTURE.md           # component map row
-tests/path-scoped-rules.test.mjs         # NEW
-tests/fixtures/path-scoped-rules/        # NEW: five-harness fixture
+tests/path-scoped-rules.test.mjs         # NEW: builds the five-harness fixture in a temp git repo
 testguard.claims.json                    # PATH-SCOPED-RULES-REPORT-DEAD-SCOPES
 ```
 

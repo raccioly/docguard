@@ -186,6 +186,25 @@ down to a directory; `AGENTS.override.md` replaces `AGENTS.md`) over the budget.
 instruction file: the chain may shrink, and growth past the allowance is
 reported.
 
+## Path-scoped agent rules — `validators.pathScopedRules`
+
+The Path-Scoped-Rules validator (PSR001–PSR004) is on by default and not
+applicable when the project has no agent instruction files. **PSR003** uses
+the same `agentInstructions.maxBytes` for the bytes one harness loads for a
+path, excluding `AGENTS.md` chains (STR004's). Its allowances are keyed by
+harness, either for every path (`"claude"`) or for a group that contains a
+given path (`"claude:src/web/app.tsx"`):
+
+```json
+{
+  "agentInstructions": { "allowances": { "cursor:src/web/app.tsx": 40000 } },
+  "validators": { "pathScopedRules": false }
+}
+```
+
+Set `"pathScopedRules": false` to turn the check off. See
+[`docguard rules`](commands.md#docguard-rules).
+
 ## Spec Kit checks — `specKit`
 
 ```json

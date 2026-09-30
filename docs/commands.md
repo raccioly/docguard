@@ -263,6 +263,35 @@ resolves, **DLK003** a section never accepted or whose `covers=` changed,
 Only `review --accept` and `--prune` write `.docguard-doc-lock.json`; `sync`,
 `fix` and agents never do.
 
+### `docguard rules`
+
+**Which instructions an agent loads for a path.** Each harness finds its
+instructions its own way (nested `AGENTS.md`, `CLAUDE.md`, `.claude/rules`,
+`.cursor/rules/*.mdc`, `.github/instructions`, skills). `rules --for` answers,
+per harness, which files apply to a path, why (always, the directory chain, or
+the pattern that matched) and how many bytes they add up to:
+
+```bash
+npx docguard-cli rules --for src/api/users.ts
+npx docguard-cli rules --for src/api/users.ts --harness cursor --format json
+```
+
+The path need not exist yet. It must be project-relative: an absolute path,
+`..`, or a symlink leaving the project is refused. Machine-local rules (untracked
+or gitignored) are listed and marked `local`. Skills and rules that load by
+description or keyword are counted as not path-scoped. Read-only.
+
+Guard's **Path-Scoped-Rules** validator checks the same files, tracked ones
+only:
+- **PSR001**: a scope pattern matches no tracked file (the rule never loads);
+- **PSR002**: an instruction file points at a path that does not exist,
+  including routing-table rows and Markdown links;
+- **PSR003**: the instructions one harness loads for some path exceed
+  `agentInstructions.maxBytes`;
+- **PSR004**: a scope the harness cannot read, or reads differently than
+  written (for example `globs:` in a Claude Code rule, which reads only
+  `paths:`).
+
 ### `docguard retire`
 
 **Remove reviewed stale documents from active AI context while preserving exact

@@ -11,7 +11,7 @@
  * @implements docguard.adoption-workflow-integrity#FR-004
  */
 
-import { execFileSync, execSync } from 'node:child_process';
+import { execFileSync, execSync, spawnSync } from 'node:child_process';
 import { existsSync, statSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 
@@ -190,6 +190,63 @@ export function changedFilesSince(dir, ref = 'HEAD~1') {
     return raw.split('\n').filter(Boolean);
   } catch {
     return [];
+  }
+}
+
+/**
+ * The project's tracked files, minus those deleted from the working tree, as
+ * POSIX paths relative to `dir`. Tracked only, so guard gives the same answer
+ * on a laptop with untracked files as in CI. Without usable git, returns null;
+ * the caller walks the tree and reports its check as partial
+ * (docguard.path-scoped-rules edge cases).
+ *
+ * @returns {string[]|null}
+ */
+export function listTrackedFiles(dir) {
+  const run = args => execFileSync('git', args, {
+    cwd: dir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'], maxBuffer: 64 * 1024 * 1024,
+  }).split('\0').filter(Boolean);
+  try {
+    const deleted = new Set(run(['ls-files', '-z', '--deleted']));
+    const files = run(['ls-files', '-z', '--cached']);
+    return [...new Set(files)].filter(f => !deleted.has(f)).sort();
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Which of `paths` the repository's ignore rules exclude, whether or not the
+ * file exists here: a pointer to a machine-local file (a gitignored note)
+ * must read the same on a laptop that has it and in CI that does not.
+ * A path git refuses to evaluate (one that runs through a symlink) is
+ * `unknown`. Returns null when git is unusable.
+ *
+ * @param {string[]} paths project-relative POSIX paths
+ * @returns {{ ignored: Set<string>, unknown: Set<string> }|null}
+ */
+export function gitIgnoredPaths(dir, paths) {
+  const check = list => spawnSync('git', ['check-ignore', '--no-index', '-z', '--stdin'], {
+    cwd: dir, input: `${list.join('\0')}\0`, encoding: 'utf-8', maxBuffer: 16 * 1024 * 1024,
+  });
+  const out = { ignored: new Set(), unknown: new Set() };
+  if (paths.length === 0) return out;
+  try {
+    const r = check(paths);
+    if (r.error) return null;
+    // 0: some ignored, 1: none ignored. Anything else fails the whole batch.
+    if (r.status === 0 || r.status === 1) {
+      for (const p of r.stdout.split('\0').filter(Boolean)) out.ignored.add(p);
+      return out;
+    }
+    for (const path of paths) {
+      const one = check([path]);
+      if (one.status === 0) out.ignored.add(path);
+      else if (one.status !== 1) out.unknown.add(path);
+    }
+    return out;
+  } catch {
+    return null;
   }
 }
 

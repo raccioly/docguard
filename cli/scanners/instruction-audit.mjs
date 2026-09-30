@@ -127,7 +127,7 @@ const BACKTICK_RE = /`([^`]+)`/g;
 const DOCGUARD_CMD_RE = /\bdocguard\s+([a-z][a-z0-9-]*)\b/g;
 
 /** File-path candidates referenced by a rule (anchors/line refs stripped). */
-function pathCandidates(text) {
+export function pathCandidates(text) {
   const found = new Set();
   BACKTICK_RE.lastIndex = 0;
   let m;
@@ -144,12 +144,12 @@ function pathCandidates(text) {
   return [...found];
 }
 
-function safePointerPath(path) {
+export function safePointerPath(path) {
   if (typeof path !== 'string' || !path || isAbsolute(path) || /[\\:\0]/.test(path)) return false;
   return !path.split('/').some(part => part === '..' || part.toLowerCase() === '.local' || /^\.env(?:\.|$)/i.test(part));
 }
 
-function exactRegularFile(projectDir, path) {
+export function exactRegularFile(projectDir, path) {
   if (!safePointerPath(path)) return false;
   let root;
   try { root = realpathSync(projectDir); } catch { return false; }
@@ -164,7 +164,7 @@ function exactRegularFile(projectDir, path) {
   } catch { return false; }
 }
 
-function basenameIndex(projectDir, wanted, config = {}) {
+export function basenameIndex(projectDir, wanted, config = {}) {
   const matches = new Map([...wanted].map(name => [name, []]));
   if (wanted.size === 0) return { matches, complete: true, visited: 0, reason: null };
   const ignored = buildIgnoreFilter([...(config.ignore || []), ...loadDocguardIgnore(projectDir)]);
@@ -317,6 +317,73 @@ export function findDeterministicFindings(rules, projectDir, config = {}) {
     duplicates, negations, stalePointers, ambiguousPointers, unsafePointers, resolvedPointers, staleCommands,
     pointerCoverage: { status: index.complete ? 'complete' : 'partial', visited: index.visited, reason: index.reason },
   };
+}
+
+// ── Pointers in any instruction file (docguard.path-scoped-rules) ───────────
+
+const LINK_RE = /\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g;
+// A token with glob or template syntax names a pattern, not a file; so does a
+// segment in UPPER_CASE (`FEATURE_DIR/spec.md`), the placeholder convention.
+const NOT_LITERAL_RE = /[*?<>{}$[\]|]/;
+const PLACEHOLDER_SEGMENT_RE = /(^|\/)[A-Z][A-Z0-9_]*[A-Z0-9](\/|$)/;
+// A line that says the file may be absent is a conditional, not a pointer:
+// "check if `.specify/extensions.yml` exists", "when present, read …".
+const CONDITIONAL_RE = /\b(if|whether|when)\b.*?\b(exists?|present|available|found)\b|\b(optional(ly)?|may not exist|if any)\b/i;
+
+/**
+ * Every path an instruction file points at, on every line outside fenced code
+ * and HTML comments, including table rows and Markdown links, which
+ * `extractInstructionRules` skips on purpose: a routing table ("Working on X?
+ * Read `docs/x.md`") is exactly where a renamed doc goes unnoticed. Patterns,
+ * UPPER_CASE placeholders and lines that say the file may be absent are not
+ * pointers. `skipLines` skips frontmatter.
+ *
+ * @implements docguard.path-scoped-rules#FR-003
+ * @returns {{ line: number, path: string }[]}
+ */
+export function extractInstructionPointers(content, { skipLines = 0 } = {}) {
+  const out = [];
+  const seen = new Set();
+  let inFence = false;
+  let inComment = false;
+  const lines = String(content).split('\n');
+  for (let i = skipLines; i < lines.length; i++) {
+    let line = lines[i];
+    if (/^\s*(```|~~~)/.test(line)) { inFence = !inFence; continue; }
+    if (inFence) continue;
+    if (inComment) {
+      const end = line.indexOf('-->');
+      if (end === -1) continue;
+      inComment = false;
+      line = line.slice(end + 3);
+    }
+    line = line.replace(/<!--.*?-->/g, '');
+    const open = line.indexOf('<!--');
+    if (open !== -1) { inComment = true; line = line.slice(0, open); }
+    // The conditional test applies per sentence, so "Run `a/x.sh`. Read
+    // `b/y.md` if present." still checks the first pointer.
+    const found = new Set();
+    for (const sentence of line.split(/(?<=[.!?`)])\s+(?=[A-Z`[(])/)) {
+      if (CONDITIONAL_RE.test(sentence)) continue;
+      for (const path of pathCandidates(sentence)) found.add(path);
+      LINK_RE.lastIndex = 0;
+      let m;
+      while ((m = LINK_RE.exec(sentence)) !== null) {
+        const target = m[1];
+        if (/^[a-z][a-z0-9+.-]*:/i.test(target) || target.startsWith('#')) continue; // URL, mailto:, anchor
+        const path = target.replace(/#.*$/, '').replace(/^\.\//, '');
+        if (path) found.add(path);
+      }
+    }
+    for (const path of found) {
+      if (NOT_LITERAL_RE.test(path) || PLACEHOLDER_SEGMENT_RE.test(path)) continue;
+      const key = `${i}\0${path}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push({ line: i + 1, path: path.replace(/^\.\//, '') });
+    }
+  }
+  return out;
 }
 
 // ── LLM tasks (topical-cluster pairs) ───────────────────────────────────────

@@ -818,12 +818,12 @@
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 617
+            "line": 619
           },
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 644
+            "line": 646
           },
           {
             "requirementId": "FR-021",
@@ -3870,12 +3870,12 @@
       "path": "specs/033-path-scoped-rules/spec.md",
       "reviewed": {
         "lifecycle": {
-          "approval": "draft",
-          "delivery": "planned",
+          "approval": "approved",
+          "delivery": "implemented",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
-          "persistenceModel": null
+          "persistenceModel": "living"
         },
         "relations": {
           "extends": [],
@@ -3885,7 +3885,9 @@
           "supersededBy": []
         },
         "scope": {
-          "canonicalDocs": []
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md"
+          ]
         },
         "reconciliation": {
           "lastReviewedRevision": null,
@@ -3914,23 +3916,140 @@
         "artifacts": [
           {
             "path": "specs/033-path-scoped-rules/spec.md",
-            "digest": "sha256:c602de5cb9c2a39d162d0176611bd33f3c79911e27e9587cf16567f470d5cd7a"
+            "digest": "sha256:5fd1d8accec2f3d4b57a64634c2f41c7ce6b26ccb50f5abd3f3fdfa5fbfadc35"
           },
           {
             "path": "specs/033-path-scoped-rules/plan.md",
-            "digest": "sha256:30397cf321a838ce595123581c90081f97b7336342ef56bf2cf286ae6f595ad6"
+            "digest": "sha256:1b16892a8943a60c82f42e4b4a9816027ee73caaeca7b05400f90507f81a6a4c"
           },
           {
             "path": "specs/033-path-scoped-rules/tasks.md",
-            "digest": "sha256:f036296f009299154151c9e975f6f4b0a8d6e06186cc55e0ce840fccb0f9b30c"
+            "digest": "sha256:71ec71ba8a2e34ea0013465dd721fe3a772369d618a316137f647277567f3466"
           }
         ],
         "taskCompletion": {
-          "checked": 0,
+          "checked": 10,
           "total": 10
         },
-        "implementationEvidence": [],
-        "testEvidence": []
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/scanners/instruction-scopes.mjs",
+            "line": 23
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/scanners/instruction-scopes.mjs",
+            "line": 24
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/scanners/instruction-audit.mjs",
+            "line": 341
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/validators/path-scoped-rules.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/validators/path-scoped-rules.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/commands/rules.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/commands/rules.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/validators/path-scoped-rules.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "cli/scanners/instruction-scopes.mjs",
+            "line": 25
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/path-scoped-rules.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/path-scoped-rules.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/path-scoped-rules.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/path-scoped-rules.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/path-scoped-rules.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/path-scoped-rules.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/path-scoped-rules.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/path-scoped-rules.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "tests/path-scoped-rules.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "tests/path-scoped-rules.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/path-scoped-rules.test.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/path-scoped-rules.test.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/path-scoped-rules.test.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "SC-004",
+            "file": "tests/path-scoped-rules.test.mjs",
+            "line": 19
+          }
+        ]
       }
     },
     {
@@ -4662,7 +4781,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/docguard.mjs",
-            "line": 78
+            "line": 79
           }
         ],
         "testEvidence": [
@@ -5692,7 +5811,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/docguard.mjs",
-            "line": 914
+            "line": 930
           },
           {
             "requirementId": "FR-011",

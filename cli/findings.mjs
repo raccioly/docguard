@@ -646,6 +646,30 @@ export const CODES = {
     help: '`.docguard-doc-lock.json` does not parse or does not match its schema (schemas/docguard-doc-lock.schema.json). Nothing in it can be trusted, so no section is reported current. Restore it from git, or delete it and accept each covered section again.',
     suppress: null,
   },
+  PSR001: {
+    validator: 'pathScopedRules',
+    title: 'Path-scoped rule matches no tracked file',
+    help: 'A path-scoped agent instruction file (a Claude Code rule or skill `paths:`, a Cursor rule `globs:`, a Copilot `.instructions.md` `applyTo:`, an OpenHands skill `paths:`) has a pattern that matches no tracked file. The harness never loads the rule for that pattern, so its instructions silently stop applying — usually because the code moved. Point the pattern at where the code lives now, or delete the rule. Low confidence when other patterns in the same file still match. `docguard rules --for <path>` shows which rules apply to a path.',
+    suppress: null,
+  },
+  PSR002: {
+    validator: 'pathScopedRules',
+    title: 'Instruction file points at a path that does not exist',
+    help: 'An agent instruction file (AGENTS.md, CLAUDE.md, a rule, a skill) names a file or directory — in backticks, a Markdown link or a table row — that is not tracked in this repository. A pointer is resolved against the instruction file\'s own directory first, then the project root; a bare file name that matches exactly one tracked file counts as resolved; a path the repository\'s ignore rules exclude is treated as a machine-local file and not reported. Point it at the file that replaced it, or remove the reference.',
+    suppress: null,
+  },
+  PSR003: {
+    validator: 'pathScopedRules',
+    title: 'Instructions loaded for a path exceed the budget',
+    help: 'For some tracked path, the instruction files one harness loads (always-on rules, directory files such as nested CLAUDE.md, and the path-scoped rules that match) total more than `agentInstructions.maxBytes` (default 32768). Every byte is paid on every turn, and some harnesses truncate. Nested AGENTS.md chains are measured by STR004 and are not counted here. Narrow the scopes, move procedures into linked docs, or record `agentInstructions.allowances["<harness>:<path>"]` (any path in the reported group, or `"<harness>"` for all) so further growth is a reviewed change.',
+    suppress: null,
+  },
+  PSR004: {
+    validator: 'pathScopedRules',
+    title: 'Instruction scope cannot be read',
+    help: 'The frontmatter of a path-scoped instruction file does not parse, a scope field has the wrong type (`alwaysApply: "yes"`), an unquoted value starts with `*` (YAML reads `globs: **/*` as an alias, not text: quote it), or a `.md` file sits in `.cursor/rules` where Cursor loads only `.mdc`. A scope key the harness does not read (`globs:` in a Claude Code rule) is ignored by it. Claude Code loads a rule whose frontmatter does not parse for every file. A pattern that is valid for the harness but uses syntax DocGuard does not evaluate (`[...]` classes, `!` negation, nested braces) is not a finding: the check reports partial coverage and names the rule.',
+    suppress: null,
+  },
   SPR008: {
     validator: 'specRegistry',
     title: 'Recorded review revision is not on this history',

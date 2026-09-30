@@ -54,6 +54,7 @@ import { runArchive } from './commands/retire.mjs';
 import { runSpecs } from './commands/specs.mjs';
 import { runReconcile } from './commands/reconcile.mjs';
 import { runReview } from './commands/review.mjs';
+import { runRules } from './commands/rules.mjs';
 import { ensureSkills } from './ensure-skills.mjs';
 import { detectRepositoryRootGuidance, renderRepositoryRootGuidance } from './repository-root.mjs';
 
@@ -108,6 +109,7 @@ ${c.bold}Tools (situational, but day-to-day useful)${c.reset}
   ${c.green}specs${c.reset}      Track spec lifecycle and evidence (${c.cyan}--check|--write${c.reset}; ${c.cyan}preflight${c.reset}, ${c.cyan}complete${c.reset}, ${c.cyan}require${c.reset}, ${c.cyan}reanchor${c.reset})
   ${c.green}reconcile${c.reset}  Classify code/spec changes since a Git ref before changing intent
   ${c.green}review${c.reset}     Doc sections whose covered code changed (${c.cyan}--accept <doc>#<id>${c.reset}, ${c.cyan}--prune${c.reset}, ${c.cyan}--suggest <doc>${c.reset})
+  ${c.green}rules${c.reset}      Which agent instruction files each harness loads for a path (${c.cyan}--for <path>${c.reset}, ${c.cyan}--harness <name>${c.reset})
   ${c.green}trace${c.reset}      Requirements traceability matrix (${c.cyan}--reverse${c.reset} for code→doc map, ${c.cyan}--features${c.reset} for per-feature adherence)
   ${c.green}upgrade${c.reset}    Migrate ${c.cyan}.docguard.json${c.reset} schema + CLI (${c.cyan}--apply --pr${c.reset} for team-wide PR)
   ${c.green}watch${c.reset}      Live mode: re-run guard on file changes
@@ -377,6 +379,16 @@ const COMMAND_HELP = {
     ],
     examples: ['docguard review', 'docguard review --accept docs-canonical/ARCHITECTURE.md#as-built --reason "Checked against checkAsBuiltSync"', 'docguard review --suggest docs-canonical/ARCHITECTURE.md'],
   },
+  rules: {
+    summary: 'Which agent instruction files each harness loads for a path, why, and how many bytes.',
+    usage: 'docguard rules --for <path> [--harness <name>] [--format json]',
+    flags: [
+      ['--for <path>', 'Project-relative path to resolve (it need not exist)'],
+      ['--harness <name>', 'Only one harness: codex, claude, cursor, copilot, openhands'],
+      ['--format json', 'Machine-readable listing'],
+    ],
+    examples: ['docguard rules --for src/api/users.ts', 'docguard rules --for src/api/users.ts --harness cursor --format json'],
+  },
   reconcile: {
     summary: 'Classify changed implementation facts, approved intent, decisions, and unsupported evidence.',
     usage: 'docguard reconcile --since <ref> [--check|--write] [--format json]',
@@ -576,6 +588,10 @@ async function main() {
       // v0.21: `docguard demo --keep` doesn't delete the temp fixture after
       // running (useful for poking around what DocGuard set up).
       flags.keep = true;
+    } else if (args[i] === '--for' && args[i + 1]) {
+      flags.for = args[++i];
+    } else if (args[i] === '--harness' && args[i + 1]) {
+      flags.harness = args[++i];
     } else if (args[i] === '--task') {
       flags.task = args[i + 1] && !args[i + 1].startsWith('--') ? args[++i] : '';
     } else if (!args[i].startsWith('--') && i > 0) {
@@ -1011,6 +1027,10 @@ async function main() {
     case 'review':
       // docguard.doc-dependency-lock#FR-005: the doc lock's only writer.
       runReview(projectDir, config, flags);
+      break;
+    case 'rules':
+      // docguard.path-scoped-rules#FR-005: read-only.
+      runRules(projectDir, config, flags);
       break;
     case 'demo':
       // v0.21: zero-install "ah-ha" moment — runs guard against a baked-in

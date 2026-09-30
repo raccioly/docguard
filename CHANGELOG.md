@@ -17,6 +17,9 @@ non-zero exit as failure. Most likely triggers:
 - **TDO002:** a comment that starts with a bare `TODO` or `FIXME`.
 - **SPR006/SPR007:** Spec Kit projects whose checked tasks carry no
   `@implements` annotation, and as-built specs that drifted.
+- **PSR001–PSR004:** agent instruction files (including a root `AGENTS.md`)
+  that point at missing paths, or whose path scopes match nothing or cannot
+  be read.
 
 Behaviour changes:
 
@@ -31,6 +34,30 @@ Behaviour changes:
 
 ### Added
 
+- **Path-scoped agent rules** (`specs/033-path-scoped-rules`). Agents load
+  instructions by path, and each harness does it differently. DocGuard now
+  reads them the way each one does: Codex, Claude Code, Cursor, Copilot and
+  OpenHands. The formats were checked against each vendor's documentation on
+  2026-09-30 and recorded in `docs/ai-integration.md`.
+  - `docguard rules --for <path>` lists, per harness, the files an agent loads
+    for a path, why (always, the directory chain, or the pattern that matched)
+    and the bytes. Machine-local rules are included and marked.
+  - The **Path-Scoped-Rules** validator reports:
+    - PSR001: a scope pattern that matches no tracked file, so the rule never
+      loads;
+    - PSR002: a pointer to a missing path, including routing-table rows and
+      Markdown links;
+    - PSR003: instructions for one path over `agentInstructions.maxBytes`;
+    - PSR004: a scope the harness cannot read, or reads differently than
+      written, e.g. `globs:` in a Claude Code rule. Claude Code reads only
+      `paths:`, so it loads that rule for every file.
+  - Pointer checks skip frontmatter, patterns, `UPPER_CASE` placeholders,
+    sentences saying the file may be absent, gitignored paths, and a skill's
+    runtime paths. On this repository they check 12 pointers and find none
+    broken; a raw check found 247 false positives in Spec Kit's generated
+    skills.
+  - Patterns DocGuard does not evaluate (`[...]`, `!`) are reported as not
+    checked, never as matching nothing.
 - **Diagrams drawn from code** (`specs/035-code-derived-diagrams`). Add an
   empty `<!-- docguard:section id=module-graph source=code -->` block to
   ARCHITECTURE, or `id=entity-diagram` to DATA-MODEL, and `sync --write` fills

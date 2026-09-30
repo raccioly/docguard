@@ -70,7 +70,7 @@ DocGuard is an official [GitHub Spec Kit](https://github.com/github/spec-kit) co
 
 ```mermaid
 graph TD
-    CLI["CLI Entry<br/>docguard.mjs"] --> Commands["Commands (24)"]
+    CLI["CLI Entry<br/>docguard.mjs"] --> Commands["Commands (25)"]
     Commands --> guard["guard"]
     Commands --> generate["generate"]
     Commands --> score["score"]
@@ -78,7 +78,7 @@ graph TD
     Commands --> setup["setup wizard"]
     Commands --> other["diff · init · fix · trace · impact · sync · reconcile · retire · specs<br/>explain · memory · upgrade · agents · hooks · badge · ci · watch"]
 
-    guard --> Validators["Validators (30)"]
+    guard --> Validators["Validators (31)"]
     generate --> Scanners["Scanners (4)<br/>routes · schemas · doc-tools · speckit"]
     score --> Scoring["Weighted Scoring<br/>8 categories"]
     diagnose --> Validators
@@ -282,14 +282,14 @@ workflow hooks that run them.
 
 ## Usage
 
-DocGuard ships **24 commands** (the "Daily 5" + 19 situational tools, including lifecycle reconciliation, doc dependency review, retirement and spec tracking, the zero-install `demo`, the `mcp` server, and the `ci` pipeline gate). Six additional one-shot scaffolders are accessed via `docguard init --with <name>`. Legacy command forms remain compatible until v1.0 and print their replacements.
+DocGuard ships **25 commands** (the "Daily 5" + 20 situational tools, including lifecycle reconciliation, doc dependency review, agent-rule resolution, retirement and spec tracking, the zero-install `demo`, the `mcp` server, and the `ci` pipeline gate). Six additional one-shot scaffolders are accessed via `docguard init --with <name>`. Legacy command forms remain compatible until v1.0 and print their replacements.
 
 **The Daily 5** — what you'll reach for 95% of the time:
 
 | Command | What It Does |
 |:--------|:-------------|
 | `init`  | Bootstrap a project (`--wizard` for interactive · `--with <name>` for scaffolders) |
-| `guard` | Validate against canonical docs — 30 validators |
+| `guard` | Validate against canonical docs — 31 validators |
 | `diff`  | Show gaps between docs and code (`--since <ref>` for impact mode) |
 | `sync`  | Refresh code-truth doc sections, including the `module-graph` and `entity-diagram` mermaid diagrams drawn from code — keeps memory always up to date |
 | `score` | Structural CDD maturity score (0-100; not a guard verdict; `--diff` for delta between refs) |
@@ -313,6 +313,7 @@ DocGuard ships **24 commands** (the "Daily 5" + 19 situational tools, including 
 | `retire` | Find completed or superseded planning material (`--plan`/`--check`; `--fail-on-warning` gates advisory candidates) and explicitly remove clean tracked documentation from active AI context. `.docguard-archive.json` records recovery metadata and retired requirement identities, and `--retention-ref` proves the source revision remains reachable. This is separate from the Spec Kit Archive extension, which consolidates feature documents. |
 | `reconcile` | Build a read-only code↔spec review graph since a Git ref. Classifies mechanical facts, approved intent, decisions, unrelated changes, and unsupported evidence; `--write` applies only mechanical generated-section refreshes. |
 | `review` | Doc sections whose covered code changed since their last review (`--accept <doc>#<id> --reason`, `--prune`, `--suggest`) |
+| `rules` | Which agent instruction files each harness (Codex, Claude Code, Cursor, Copilot, OpenHands) loads for a path, why, and how many bytes (`--for <path>`, `--harness`) |
 | `specs` | Maintain the versioned spec registry, preflight new specs, and apply evidence-gated completion transactions with bounded outcomes and active-context regeneration. Verified living specs can record later reviewed maintenance without reopening or duplicating the specification. `specs require` is the spec-first gate: a change to governed paths must name its spec or declare `Spec-Exempt: <kind> — <reason>`. |
 | `specs --check` / `specs --write` | Validate or refresh `.docguard-specs.json`, the byte-stable index of immutable spec IDs, reviewed lifecycle/lineage/scope, artifact digests, task state, explicitly scoped test evidence, and archive tombstones. Refreshes preserve the reviewed block. |
 | `specs preflight [--path <spec>]` | Before specification, print current spec lifecycle and evidence. Before planning, check the generated draft for structural blockers and report semantic overlap as review-only evidence. |
@@ -426,7 +427,7 @@ $ npx docguard-cli generate
 
 ## 🔍 Validators
 
-DocGuard runs **30 automated validators** on every `guard` check. Source-facing validators are language-aware where their evidence model applies; repository and document validators operate independently of source language.
+DocGuard runs **31 automated validators** on every `guard` check. Source-facing validators are language-aware where their evidence model applies; repository and document validators operate independently of source language.
 
 > **Counting note:** `guard` prints 30 result rows, not 29. `Structure` emits a
 > second check result (`Doc Sections`) under the same validator key, so rows are
@@ -467,6 +468,7 @@ DocGuard runs **30 automated validators** on every `guard` check. Source-facing 
 | 29 | **Reference-Existence** | Two-revision check: a backticked code symbol present when the doc was last updated but gone at HEAD is flagged as outdated (arXiv 2212.01479) | ✅ On |
 | 30 | **API-Doc-Smells** | Bloated (≥300 words) / Lazy (≤6 prose words) API documentation units, keyed on signature-headed sections (F1 0.90/0.95) | ✅ On |
 | 31 | **Doc-Dependency** | A doc section that declares `covers=` is reported when a covered symbol's code changes semantically since its last `docguard review --accept` (formatting, comments and line moves do not count); opt-in by declaration | ✅ On |
+| 32 | **Path-Scoped-Rules** | Agent instruction files per harness (nested AGENTS.md/CLAUDE.md, Claude Code rules and skills, Cursor `.mdc`, Copilot `.instructions.md`, OpenHands skills): scope globs that match no tracked file, pointers to missing paths (including routing tables), instructions loaded for one path over the byte budget, and scopes a harness cannot read | ✅ On |
 
 **Per-validator controls** (in `.docguard.json`):
 ```json
@@ -611,7 +613,7 @@ DocGuard provides AI agent slash commands for integrated workflows. Installed au
 | Command | What It Does |
 |:--------|:-------------|
 | `/docguard.init` | Initialize Canonical-Driven Development in a new or existing project |
-| `/docguard.guard` | Run quality validation — check all 30 validators |
+| `/docguard.guard` | Run quality validation — check all 31 validators |
 | `/docguard.review` | Analyze doc quality and suggest improvements |
 | `/docguard.fix` | Generate targeted fix prompts for specific issues |
 | `/docguard.update` | Update canonical docs after code changes — detect drift and sync documentation |
@@ -683,7 +685,7 @@ See [examples/README.md](https://github.com/raccioly/docguard/blob/main/examples
 npm test    # 2,232 tests (node:test, zero test dependencies)
 ```
 
-Covers all 24 commands, every validator, project type detection, compliance profiles, JSON/SARIF/JUnit output, the packed npm tarball, and downstream field reports replayed as regression cases. Static test-case declarations are a lower bound of that number: Metrics-Consistency flags this line if it ever falls below what the test files declare.
+Covers all 25 commands, every validator, project type detection, compliance profiles, JSON/SARIF/JUnit output, the packed npm tarball, and downstream field reports replayed as regression cases. Static test-case declarations are a lower bound of that number: Metrics-Consistency flags this line if it ever falls below what the test files declare.
 
 ### CI Matrix
 
