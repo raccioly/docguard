@@ -105,7 +105,7 @@ ${c.bold}Tools (situational, but day-to-day useful)${c.reset}
   ${c.green}ci${c.reset}         Pipeline gate: guard + score in one command (${c.cyan}--threshold <n>${c.reset}, ${c.cyan}--fail-on-warning${c.reset}, ${c.cyan}--format json${c.reset}; records score history)
   ${c.green}memory${c.reset}     Show what DocGuard remembers (${c.cyan}--diff${c.reset} drills into drift)
   ${c.green}retire${c.reset}     Remove reviewed docs from active AI context (${c.cyan}--plan${c.reset}; explicit ${c.cyan}--write --path${c.reset})
-  ${c.green}specs${c.reset}      Track spec lifecycle and evidence (${c.cyan}--check|--write${c.reset}; ${c.cyan}preflight${c.reset}, ${c.cyan}complete${c.reset}, ${c.cyan}require${c.reset}, ${c.cyan}reanchor${c.reset})
+  ${c.green}specs${c.reset}      Track spec lifecycle and evidence (${c.cyan}--check|--write${c.reset}; ${c.cyan}preflight${c.reset}, ${c.cyan}approve${c.reset}, ${c.cyan}complete${c.reset}, ${c.cyan}require${c.reset}, ${c.cyan}reanchor${c.reset})
   ${c.green}reconcile${c.reset}  Classify code/spec changes since a Git ref before changing intent
   ${c.green}review${c.reset}     Doc sections whose covered code changed (${c.cyan}--accept <doc>#<id>${c.reset}, ${c.cyan}--prune${c.reset}, ${c.cyan}--suggest <doc>${c.reset})
   ${c.green}rules${c.reset}      Which agent instruction files each harness loads for a path (${c.cyan}--for <path>${c.reset}, ${c.cyan}--harness <name>${c.reset})
@@ -356,18 +356,20 @@ const COMMAND_HELP = {
   },
   specs: {
     summary: 'Maintain the deterministic spec lifecycle and evidence registry.',
-    usage: 'docguard specs [--check|--write] | docguard specs preflight [--path <spec>] | docguard specs complete --id <spec-id> [--since <ref>] [--write --reason <text>] | docguard specs require --since <ref> [--message-file <path>] | docguard specs reanchor --id <spec-id> [--from <revision>] [--to <revision>] [--write --reason <text>]',
+    usage: 'docguard specs [--check|--write] | docguard specs preflight [--path <spec>] | docguard specs approve --id <spec-id> [--delivery <state>] [--write] | docguard specs complete --id <spec-id> [--since <ref>] [--write --reason <text>] | docguard specs require --since <ref> [--message-file <path>] | docguard specs reanchor --id <spec-id> [--from <revision>] [--to <revision>] [--write --reason <text>]',
     flags: [
       ['--check', 'Exit 2 when the committed registry is missing, stale, or inconsistent; planned lifecycle deferral requires a clean tracked registry'],
       ['--write', 'Refresh observed evidence while preserving reviewed lifecycle fields'],
       ['preflight', 'Brief prior specs, or gate a generated draft with --path'],
+      ['approve', 'Record a person\'s approval of a spec, and with --delivery its planned, in_progress or implemented state'],
       ['complete', 'Plan or apply the implemented→verified evidence transaction'],
       ['require', 'Spec-first gate: a change to governed paths must name its spec or declare Spec-Exempt (exit 1 uncovered, 2 inconclusive)'],
       ['reanchor', 'Move recorded revisions a squash merge discarded (SPR008) to a commit on HEAD\'s history with byte-identical evidence'],
-      ['--to <revision>', 'With reanchor: target revision; required, with --reason, when the old revision no longer resolves'],
+      ['--to <revision>', 'With reanchor: target commit (a SHA, branch, tag or HEAD; the full SHA is recorded); required, with --reason, when the old revision no longer resolves'],
       ['--from <revision>', 'With reanchor --to: move only this recorded revision, when a spec\'s dangling revisions came from different merges'],
       ['--message-file <path>', 'With require: PR description or extra text to search for spec references'],
-      ['--id <spec-id>', 'Immutable spec identity to complete'],
+      ['--id <spec-id>', 'Immutable spec identity to approve, complete or re-anchor'],
+      ['--delivery <state>', 'With approve: planned, in_progress or implemented (verified is recorded by complete)'],
       ['--since <ref>', 'First reconciliation baseline when none is recorded'],
       ['--reason <text>', 'Reviewed implementation outcome required for completion writes'],
       ['--deviation <text>', 'Accepted deviation to record; repeatable'],
@@ -375,7 +377,7 @@ const COMMAND_HELP = {
       ['--path <spec>', 'Generated spec to compare against current lifecycle state'],
       ['--format json', 'Machine-readable registry or preflight result'],
     ],
-    examples: ['docguard specs --check', 'docguard specs --write', 'docguard specs preflight --path specs/007-feature/spec.md', 'docguard specs require --since origin/main --message-file pr-body.txt', 'docguard specs complete --id acme.feature --since main --write --reason "Reviewed implementation"', 'docguard specs reanchor --id acme.feature --write'],
+    examples: ['docguard specs --check', 'docguard specs --write', 'docguard specs preflight --path specs/007-feature/spec.md', 'docguard specs approve --id acme.feature --delivery implemented --write', 'docguard specs require --since origin/main --message-file pr-body.txt', 'docguard specs complete --id acme.feature --since main --write --reason "Reviewed implementation"', 'docguard specs reanchor --id acme.feature --write'],
   },
   review: {
     summary: 'Track which code each doc section describes, and review a section when that code changes.',
@@ -656,6 +658,13 @@ async function main() {
     } else if (args[i] === '--api-key' && args[i + 1]) {
       flags.apiKey = args[i + 1];
       i++;
+    } else if (args[i] === '--root' && args[i + 1]) {
+      // mcp: another directory tree tool calls may target with projectDir
+      // (repeatable). The served directory is always one
+      // @implements docguard.mcp-project-confinement#FR-005
+      flags.roots = flags.roots || [];
+      flags.roots.push(args[i + 1]);
+      i++;
     } else if (args[i] === '--message-file' && args[i + 1]) {
       // `specs require`: pull-request description or commit text, read from a
       // file so CI never interpolates an untrusted body into a shell command.
@@ -701,6 +710,9 @@ async function main() {
       // `generate --spec <area>`: as-built spec for one code area.
       flags.spec = args[i + 1];
       i++;
+    } else if (args[i] === '--delivery' && args[i + 1] && command === 'specs') {
+      // `specs approve --delivery <state>` (docguard.first-spec-preflight#FR-005)
+      flags.delivery = args[++i];
     } else if (args[i] === '--id' && args[i + 1]) {
       flags.id = args[i + 1];
       i++;

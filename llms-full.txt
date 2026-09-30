@@ -39,7 +39,7 @@ It targets development teams and AI coding agents that need to maintain document
 | **Document lifecycle** | Finds exact terminal-status docs and completed-task review candidates; explicit retirement removes documentation from active context only after its source revision is reachable from a retained Git ref | `cli/scanners/document-lifecycle.mjs`, `cli/validators/document-lifecycle.mjs`, `cli/commands/retire.mjs` | Scanner is read-only; retirement uses the shared multi-file transaction and remains explicit |
 | **Spec lifecycle registry** | Projects immutable spec identities, reviewed lifecycle/lineage/scope, artifact digests, task state, qualified implementation/test evidence, bounded outcomes, and recovery tombstones into one byte-stable control file | `cli/scanners/spec-registry.mjs`, `cli/scanners/requirement-evidence.mjs`, `cli/scanners/revision-anchor.mjs`, `cli/validators/spec-registry.mjs`, `cli/commands/specs.mjs` | `specs --write` preserves reviewed fields; stale checks identify bounded field paths and distinguish canonical ordering from changed content; only committed, clean, digest-current lifecycle entries can defer traceability, while a current planned entry that is new, removed from the index, or modified pending commit remains advisory; `specs complete` is the only verified-delivery writer |
 | **Reconciliation graph** | Inventories changed paths independently from bounded patch text, maps them to direct spec evidence or to a requirement declared in a canonical document (`docs-canonical/<doc>.md#<ID>`), and keeps mechanical facts, approved intent, decisions, unrelated changes, and unsupported evidence separate | `cli/shared-git.mjs`, `cli/scanners/reconciliation.mjs`, `cli/commands/reconcile.mjs` | Timeout, overflow, parse failure, or incomplete inventory blocks a ready result; planning is read-only and `--write` never rewrites requirements |
-| **Analyzer tier** | Decides which analyzer produced each piece of evidence at the two entry points (`parseJsTs`, `extractPythonFiles`), carries `tier`/`tierReason` on scanned items, reports `parserTier` on every finding, and downgrades a validator to `partial` when an AST-capable language was read by the pattern fallback | `cli/shared-source.mjs` (`tierFor`, `summarizeTiers`, `tierApplicability`), `cli/scanners/routes.mjs`, `cli/validators/api-surface.mjs` | Findings are retained; only coverage is downgraded. `fallback-language` is not a gap — no AST tier exists for that language |
+| **Analyzer tier** | Decides which analyzer produced each piece of evidence at the two entry points (`parseJsTs`, `extractPythonFiles`), carries `tier`/`tierReason` on scanned items, reports `parserTier` on every finding, and downgrades a validator to `partial` when an AST-capable language was read by the pattern fallback (`regex-fallback`) or when a language with no AST tier was read by pattern (`fallback-language`: Go, Java, Kotlin, Ruby, Rust, PHP, C#). The Environment validator is `partial` when a source language has no env patterns. The symbol map and module graph name the languages the import graph does not read | `cli/shared-source.mjs` (`tierFor`, `summarizeTiers`, `tierApplicability`, `grepEnvUsage`, `LANGUAGE_NAMES`), `cli/scanners/routes.mjs`, `cli/validators/api-surface.mjs`, `cli/validators/environment.mjs` | Findings are retained; only coverage is downgraded. The two tiers give different reasons: a parser was unavailable, or none exists. A package segment (`src/main/java/com/example`) is product code, not an examples directory (specs/043-fallback-language-coverage) |
 | **Spec Kit artifact coverage** | Treats Spec Kit's own documents as governed. Coverage counts top-level `specs/<feature>/**/*.md` and the constitution under a `specKit` tier. Metrics-Consistency (including `MET004` dependency claims) and Reference-Existence read the constitution | `cli/scanners/speckit.mjs` (`findConstitution`), `cli/commands/guard.mjs`, `cli/validators/metrics-consistency.mjs`, `cli/validators/reference-existence.mjs` | The constitution usually lives in a dot directory the walkers skip, so it is located explicitly. Nested fixture `specs/` trees are not the project's artifacts |
 | **Headline coverage** | Reports how many validators actually checked beside the passed/total check count, and caps the badge colour at `green` when any active validator was partial, unsupported, missing a prerequisite, or errored | `cli/commands/guard.mjs` (`badgeColor`, `incompleteCoverage`) | `no-matches` keeps the top grade: a validator that ran and found nothing applicable completed its job |
 | **Finding channels** | Separates the three questions a finding answers — does CI block (`severity`), who decides (`disposition`), how well is the code measured (`evidence`), and which analyzer produced it (`parserTier`) — so a certain observation is never labelled uncertain and the feedback loop samples the labels that have never been validated | `cli/findings.mjs`, `cli/precision-evidence.mjs`, `cli/writers/sarif.mjs` | Channels are additive to the published finding contract; `confidence` keeps its meaning as the detector's certainty in its own observation |
@@ -630,6 +630,7 @@ The primary data structure. Controls all CLI behavior.
 | `agentInstructions.allowances.<file>` | `integer` | No | — | Per-chain allowance keyed by the chain's deepest file; slack of 1 KiB or more reports STR005 |
 | `specFirst.paths` / `specFirst.exemptKinds` | `string[]` | No | Everything except Markdown, `specs/**` and tests / `release, deps, typo, test-only` | Governed paths and allowed `Spec-Exempt` kinds for `specs require` |
 | `validators.docDependency` / `pathScopedRules` / `docOwnership` | `boolean` | No | `true` | Each applies only when its input exists: a `covers=` declaration, agent instruction files, an `ownership` block or `.devin/wiki.json` |
+| `detection.includeNonProduct` | `boolean` | No | `false` | Read test, fixture, example and mock directories as product code during surface detection (routes, env vars, frameworks). Package segments such as `src/main/java/com/example` are always product code |
 | `diagrams.moduleGraph.depth` / `maxNodes` / `include` | `integer` / `integer` / `string[]` | No | `2` / `30` (cap 60) / every product source file | Shape of the `module-graph` section |
 | `memory.symbolMap.maxBytes` | `integer` | No | `4096` (256–16384) | Budget of the symbol map `memory --pack --symbols` adds |
 | `devinWiki.maxPages` | `integer` | No | `30` (up to 80) | Page cap for linting `.devin/wiki.json`; 80 on Devin enterprise plans |
@@ -715,7 +716,7 @@ normative JSON Schema is `schemas/docguard-specs.schema.json`.
 | `$schema`, `schemaVersion` | Contract | Exact schema URL and version `2`; version 1 is read for migration and projects stale until refreshed |
 | `specs[].specId` | Spec metadata | Immutable lowercase namespaced identity; never generated or reused |
 | `specs[].path` | Projection | Current spec path or former path for a retired record |
-| `specs[].reviewed.lifecycle` | Human review | Orthogonal approval, delivery, context, retirement reason, storage, and persistence policy |
+| `specs[].reviewed.lifecycle` | Human review | Orthogonal approval, delivery, context, retirement reason, storage, and persistence policy. `specs approve` records approval and a `planned`, `in_progress` or `implemented` delivery; `specs complete` records `verified` |
 | `specs[].reviewed.relations` | Human review | `extends`, `duplicates`, `conflictsWith`, `supersedes`, and `supersededBy` spec-ID edges |
 | `specs[].reviewed.scope.canonicalDocs` | Human review | Canonical documents affected by the specification |
 | `specs[].reviewed.scope.sourcePaths` | `generate --spec --write` | Optional. Code areas an as-built spec describes; SPR007 re-scans them. Serialized only when set |
@@ -970,9 +971,8 @@ reason code, and scope limitation. The state is exactly one of
 changes to the selected statement, declaration, source, report, producer
 metadata, or declared inputs invalidate it. A verified declaration removes a
 heuristic claim from the unverified count only through a unique same-line,
-same-value match.
 
-<!-- truncated: 62 more lines — read docs-canonical/DATA-MODEL.md directly -->
+<!-- truncated: 63 more lines — read docs-canonical/DATA-MODEL.md directly -->
 
 ---
 
@@ -1212,11 +1212,11 @@ The optional MCP server supports stdio and HTTP. Installation, upgrade, publishi
 
 | Surface | Authentication | Boundary |
 |---|---|---|
-| CLI and stdio MCP | Calling operating-system user | Local filesystem permissions |
-| HTTP MCP | Optional API key on loopback; mandatory for non-loopback binding | Host binding, key check, and browser-origin validation in `cli/commands/mcp.mjs` |
+| CLI and stdio MCP | Calling operating-system user | Local filesystem permissions; MCP tool calls are also confined to the served directories |
+| HTTP MCP | Optional API key on loopback; mandatory for non-loopback binding | Host binding, key check, browser-origin validation, and served-directory confinement of `projectDir` in `cli/commands/mcp.mjs` |
 | GitHub feedback | User-controlled browser session | Submission occurs only when the user submits a reviewed issue |
 
-HTTP clients can cause the server to inspect project directories available to its process. The four documentation tools (`docguard_docs_for_path`, `docguard_doc_structure`, `docguard_read_section`, `docguard_task_context`) return document text, not only findings. They read through the same safe reader, which refuses `.env*`, `.local`, traversal and symlinked paths, and they bound each answer (8 KiB by default, 32 KiB at most). Run it under an account with only the intended filesystem access. An API key does not provide per-project authorization or a multi-tenant isolation boundary. Network exposure needs deployment-specific access controls.
+The MCP server serves the directory it was started for (`--dir`, else its working directory) and each directory named with `--root <dir>`. The operator sets these at startup; a client cannot widen them. A tool call's `projectDir` is resolved against the served directory, with symlinks followed and letter case as the filesystem stores it, and must land in a served directory or below one. Any other `projectDir` gets an error result that names the served directories, before anything under it is read, and the same error whether or not the path exists. This applies to every tool that takes `projectDir`, over stdio and HTTP. The four documentation tools (`docguard_docs_for_path`, `docguard_doc_structure`, `docguard_read_section`, `docguard_task_context`) return document text, not only findings. Inside a served directory they read through the same safe reader, which refuses `.env*`, `.local`, traversal and symlinked paths, and they bound each answer (8 KiB by default, 32 KiB at most). Serve only the trees clients may read; `--root /` serves everything the account can read. Run the server under an account with only the intended filesystem access. An API key does not provide per-project authorization or a multi-tenant isolation boundary: every client of one server sees every served directory. Network exposure needs deployment-specific access controls.
 
 ## Authorization
 
@@ -1297,7 +1297,7 @@ Only `init`, and the aliases that run it (`setup`, `agents`, `hooks`, `badge`, `
 | review --accept, review --prune | `.docguard-doc-lock.json` only | One file transaction; `--accept` requires a reason. Plain `review` and `review --suggest` write nothing |
 | rules --for, trace --owners [--suggest] | None | Read-only, including agent skills and the Spec Kit hint; `--suggest` prints a draft ownership block and never writes configuration |
 | reconcile | None by default | `--write` delegates only mechanical generated-section refreshes to `sync` |
-| specs, specs preflight, specs require | None for check/plan modes | `specs --write` refreshes the registry; `specs complete --write` transactionally records a reviewed outcome and active context |
+| specs, specs preflight, specs require | None for check/plan modes | `specs --write` refreshes the registry; `specs approve --write` records a reviewed approval and delivery state in the registry only; `specs complete --write` transactionally records a reviewed outcome and active context |
 | verify --evidence | None | Reads the strict local manifest, selected Markdown, source files, and saved reports; guard consumes the same evaluator |
 | retire --write | Explicit clean tracked documentation only | Requires retained-ref recovery proof, clean replacement/evidence docs, and no live Markdown backreferences |
 | init, generate | Documentation and configuration scaffolding | Explicit force options may overwrite content. When `specify` is installed and Spec Kit is not initialized, `init` runs `specify init --here --force` (skip with `--no-spec-kit`) and registers the packaged extension. `generate --spec --write` adds one spec and its registry entry in one transaction |
@@ -1665,9 +1665,15 @@ non-zero exit as failure. Most likely triggers:
 - **PSR001–PSR004:** agent instruction files (including a root `AGENTS.md`)
   that point at missing paths, or whose path scopes match nothing or cannot
   be read.
+- **ENV003 on Go, Java, Kotlin, Ruby, Rust, PHP and C# projects:** env reads in
+  those languages (and Spring `${X}` placeholders) are now found, so an
+  undocumented variable is reported where it was invisible before.
 
 Behaviour changes:
 
+- `docguard mcp` refuses a tool call whose `projectDir` is outside the
+  directory it serves. Start it with `--root <dir>` for each other tree a
+  client should reach.
 - `sync`, `fix` and `generate` no longer run `specify init`. Run `docguard init`
   or `specify init` yourself.
 - The Spec Kit extension requires Spec Kit 0.11.2 or later.
@@ -1680,6 +1686,10 @@ Behaviour changes:
   Pass `detail: "full"` for the previous shape, with `reportable`,
   `validators[].findings`, every applicability reason and
   `checkCoverage.limitations`.
+- `apiSurface` reports `partial` on Go, Java, Ruby and Rust services, and
+  Environment reports `partial` when a source language has no env patterns.
+  Both used to say `checked`. Partial coverage does not change the exit code;
+  it lowers the badge colour and the coverage counts.
 
 ### Added
 
@@ -2033,18 +2043,8 @@ Behaviour changes:
     0.40.0. It needs a one-time `HOMEBREW_TAP_DEPLOY_KEY` secret; until then
     the job warns and skips.
   - The top-level `--help` names `generate --spec` and `specs
-    preflight|complete|require`, and the config schema declares
-    `specKit.untouchedClaimCheck`, which SPK010's help already told users to
-    set. Tests now fail when either drifts again.
 
-### Changed
-
-- **The MCP `docguard_guard` tool returns each fact once by default**
-  (`specs/037-compact-guard-response`). The full guard JSON repeated every
-  finding up to three times: in `findings`, in `reportable`, and in
-  `validators[].findings`. It also repeated each code's evidence on every
-
-<!-- truncated: 4275 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 4361 more lines — read CHANGELOG.md directly -->
 
 ---
 
@@ -2427,7 +2427,7 @@ code-truth sections), `score` (CDD maturity 0-100).
 `fix` (AI fix instructions; `--doc <name>`), `generate` (reverse-engineer docs;
 `--plan`; `--spec <area>` for an as-built Spec Kit spec), `agent` (task graph; `--task <text>` for bounded current evidence),
 `retire` (remove reviewed docs from active context),
-`specs` (check/refresh/preflight/complete the spec lifecycle registry; `require` for the spec-first gate; `reanchor` for a squash-discarded revision),
+`specs` (check/refresh/preflight/approve/complete the spec lifecycle registry; `require` for the spec-first gate; `reanchor` for a squash-discarded revision),
 `reconcile` (classify code/spec changes since a Git ref without rewriting intent),
 `review` (doc sections whose covered code changed; `--accept`, `--prune`, `--suggest`),
 `rules` (which instruction files each agent harness loads for a path; `--for <path>`),

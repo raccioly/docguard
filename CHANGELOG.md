@@ -20,9 +20,15 @@ non-zero exit as failure. Most likely triggers:
 - **PSR001–PSR004:** agent instruction files (including a root `AGENTS.md`)
   that point at missing paths, or whose path scopes match nothing or cannot
   be read.
+- **ENV003 on Go, Java, Kotlin, Ruby, Rust, PHP and C# projects:** env reads in
+  those languages (and Spring `${X}` placeholders) are now found, so an
+  undocumented variable is reported where it was invisible before.
 
 Behaviour changes:
 
+- `docguard mcp` refuses a tool call whose `projectDir` is outside the
+  directory it serves. Start it with `--root <dir>` for each other tree a
+  client should reach.
 - `sync`, `fix` and `generate` no longer run `specify init`. Run `docguard init`
   or `specify init` yourself.
 - The Spec Kit extension requires Spec Kit 0.11.2 or later.
@@ -35,6 +41,10 @@ Behaviour changes:
   Pass `detail: "full"` for the previous shape, with `reportable`,
   `validators[].findings`, every applicability reason and
   `checkCoverage.limitations`.
+- `apiSurface` reports `partial` on Go, Java, Ruby and Rust services, and
+  Environment reports `partial` when a source language has no env patterns.
+  Both used to say `checked`. Partial coverage does not change the exit code;
+  it lowers the badge colour and the coverage counts.
 
 ### Added
 
@@ -490,6 +500,82 @@ Behaviour changes:
   - If you already committed them, `git rm -r --cached .docguard` untracks
     them.
 
+- **A project's first spec passes the generated-spec preflight**
+  (`specs/040-spec-preflight-first-spec`). The mandatory `before_tasks` hook
+  runs `specs preflight --path <draft>`. With no registry it blocked on
+  SPR001, and after `specs --write` it blocked on SPR004 and SPR001 while
+  `specs --check` said CURRENT, so no project could get past its first spec.
+  Preflight now checks the registry against every spec except the draft: the
+  draft's own entry may be missing or stale. A registry stale for any other
+  spec still blocks, and the briefing lists the same specs with and without
+  `--path`.
+- **`docguard specs approve` records approval.** Approving a spec meant
+  editing `.docguard-specs.json` by hand, and SPC002 did not say so.
+  `specs approve --id <id> [--delivery planned|in_progress|implemented]
+  --write` sets the reviewed approval and delivery state. It refuses
+  `verified` and `released`, which only `specs complete` records, and never
+  moves a verified spec back. A `**Status**: Approved` line in spec prose is
+  still not read. SPC002 now names the command.
+- **`docguard explain SPC001` works.** The SPC codes `specs complete` and
+  `specs reanchor` print had no entry, so `explain` answered "No matching
+  validator". All eight are explained, in the CLI and the MCP
+  `docguard_explain` tool. They are blockers, not findings, so
+  `findingSeverity` still rejects them.
+- **The spec-first gate no longer names DocGuard's own spec in your
+  project.** The fix hint suggested `specs/015-spec-first-gate`. A Spec ID
+  written after `Spec:` or `Spec ID:` that matches no spec is now listed as
+  unresolved, as an unknown path already was. The docs state the exemption
+  reason's 10-character minimum.
+- **`specs complete` prints the real transition.** It printed
+  `implemented→verified` for a planned or already verified spec.
+- **`specs reanchor --to HEAD` works.** `--to` accepted only a full SHA. It
+  now takes anything git resolves to a commit (a branch, tag, `HEAD` or a
+  short SHA) and records the full SHA. A value starting with `-` is refused.
+
+- **Go, Java, Kotlin, Ruby, Rust, PHP and C# projects no longer pass checks
+  DocGuard could not perform** (specs/043-fallback-language-coverage).
+  - **Coverage:** a language with no syntax tree (`fallback-language`) now
+    makes the owning validator `partial`, naming the language and the file
+    count, as the README always said. Spring, Rails, Go and Rust routes carry
+    `parserTier: "fallback-language"` instead of `not-applicable`.
+  - **Env vars:** found in Go (`os.Getenv`, `os.LookupEnv`), Ruby (`ENV[]`,
+    `ENV.fetch`), Java and Kotlin (`System.getenv`, `@Value("${X}")`), C#,
+    PHP (`getenv`, `$_ENV`, `env()`) and Rust (`env::var`), and in Spring
+    `application*`/`bootstrap*` placeholders. The env scan also reads a
+    root-level Go module's `cmd/` and `internal/` and a Rails app's `config/`.
+    A source language with no env patterns makes Environment `partial`, and
+    `diff` says which files it did not read. Before, a renamed Go env var
+    produced no finding, and `diff` called a still-used one "not found in
+    code".
+  - **Spring's `com.example` package** is product code. A segment below
+    `src/main/{java,kotlin,scala,groovy}`, or `example(s)`/`sample(s)` after
+    a reverse-domain root or Go `internal`, is a package name, not an
+    examples directory.
+  - **Route discovery** reaches a standard Maven layout: the depth-5 limit is
+    now depth 32 with a 20,000-file cap, and hitting the cap is reported.
+  - **Empty surfaces are gaps:**
+    - a detected Spring, Rails, Go or Rust framework whose patterns match no
+      route makes `apiSurface` `partial`;
+    - so do routes found only under test, fixture or example paths, naming
+      `detection.includeNonProduct` (now in the config schema and
+      DATA-MODEL).
+  - **Symbol map and module graph:** they say which languages are not
+    analysed instead of "No import edges were found" or "_No source modules
+    found_".
+
+- **Security: MCP tool calls stay inside the served project.** `docguard mcp`
+  accepted any existing directory as a tool call's `projectDir`, over stdio and
+  HTTP. The documentation tools return document text, so a client could read
+  Markdown anywhere the server's account could read: `docguard_read_section`
+  with the parent directory as `projectDir` returned a file outside the
+  project. Now `projectDir` must resolve (symlinks followed, relative paths
+  against the served directory) to the directory the server was started for
+  (`--dir`, else its working directory) or a directory inside it. Anything
+  else, existing or not, gets one `isError` result naming the served
+  directories. Every tool that takes `projectDir` follows the rule. To serve
+  several projects from one server, pass `--root <dir>` for each tree
+  (repeatable); a `--root` that does not exist stops the server at startup.
+  Calls without `projectDir` behave as before (spec 041).
 - **STR005 is informational, as spec 017 requires.** The validator asked for
   `severity: 'info'`, which the finding constructor only accepts as `error` or
   `warn`, so it became a warning: slack in an instruction allowance turned

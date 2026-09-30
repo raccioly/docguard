@@ -15,11 +15,11 @@ The optional MCP server supports stdio and HTTP. Installation, upgrade, publishi
 
 | Surface | Authentication | Boundary |
 |---|---|---|
-| CLI and stdio MCP | Calling operating-system user | Local filesystem permissions |
-| HTTP MCP | Optional API key on loopback; mandatory for non-loopback binding | Host binding, key check, and browser-origin validation in `cli/commands/mcp.mjs` |
+| CLI and stdio MCP | Calling operating-system user | Local filesystem permissions; MCP tool calls are also confined to the served directories |
+| HTTP MCP | Optional API key on loopback; mandatory for non-loopback binding | Host binding, key check, browser-origin validation, and served-directory confinement of `projectDir` in `cli/commands/mcp.mjs` |
 | GitHub feedback | User-controlled browser session | Submission occurs only when the user submits a reviewed issue |
 
-HTTP clients can cause the server to inspect project directories available to its process. The four documentation tools (`docguard_docs_for_path`, `docguard_doc_structure`, `docguard_read_section`, `docguard_task_context`) return document text, not only findings. They read through the same safe reader, which refuses `.env*`, `.local`, traversal and symlinked paths, and they bound each answer (8 KiB by default, 32 KiB at most). Run it under an account with only the intended filesystem access. An API key does not provide per-project authorization or a multi-tenant isolation boundary. Network exposure needs deployment-specific access controls.
+The MCP server serves the directory it was started for (`--dir`, else its working directory) and each directory named with `--root <dir>`. The operator sets these at startup; a client cannot widen them. A tool call's `projectDir` is resolved against the served directory, with symlinks followed and letter case as the filesystem stores it, and must land in a served directory or below one. Any other `projectDir` gets an error result that names the served directories, before anything under it is read, and the same error whether or not the path exists. This applies to every tool that takes `projectDir`, over stdio and HTTP. The four documentation tools (`docguard_docs_for_path`, `docguard_doc_structure`, `docguard_read_section`, `docguard_task_context`) return document text, not only findings. Inside a served directory they read through the same safe reader, which refuses `.env*`, `.local`, traversal and symlinked paths, and they bound each answer (8 KiB by default, 32 KiB at most). Serve only the trees clients may read; `--root /` serves everything the account can read. Run the server under an account with only the intended filesystem access. An API key does not provide per-project authorization or a multi-tenant isolation boundary: every client of one server sees every served directory. Network exposure needs deployment-specific access controls.
 
 ## Authorization
 
@@ -100,7 +100,7 @@ Only `init`, and the aliases that run it (`setup`, `agents`, `hooks`, `badge`, `
 | review --accept, review --prune | `.docguard-doc-lock.json` only | One file transaction; `--accept` requires a reason. Plain `review` and `review --suggest` write nothing |
 | rules --for, trace --owners [--suggest] | None | Read-only, including agent skills and the Spec Kit hint; `--suggest` prints a draft ownership block and never writes configuration |
 | reconcile | None by default | `--write` delegates only mechanical generated-section refreshes to `sync` |
-| specs, specs preflight, specs require | None for check/plan modes | `specs --write` refreshes the registry; `specs complete --write` transactionally records a reviewed outcome and active context |
+| specs, specs preflight, specs require | None for check/plan modes | `specs --write` refreshes the registry; `specs approve --write` records a reviewed approval and delivery state in the registry only; `specs complete --write` transactionally records a reviewed outcome and active context |
 | verify --evidence | None | Reads the strict local manifest, selected Markdown, source files, and saved reports; guard consumes the same evaluator |
 | retire --write | Explicit clean tracked documentation only | Requires retained-ref recovery proof, clean replacement/evidence docs, and no live Markdown backreferences |
 | init, generate | Documentation and configuration scaffolding | Explicit force options may overwrite content. When `specify` is installed and Spec Kit is not initialized, `init` runs `specify init --here --force` (skip with `--no-spec-kit`) and registers the packaged extension. `generate --spec --write` adds one spec and its registry entry in one transaction |

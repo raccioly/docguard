@@ -45,6 +45,20 @@ export function revisionResolves(projectDir, revision) {
   return REVISION_RE.test(revision || '') && git(projectDir, ['cat-file', '-e', `${revision}^{commit}`]).ok;
 }
 
+/**
+ * The full SHA of the commit `revision` names (a branch, tag, `HEAD`, an
+ * abbreviated SHA), or null. A value starting with `-` is refused before git
+ * runs: git would read it as an option.
+ * @implements docguard.first-spec-preflight#FR-010
+ */
+export function resolveCommit(projectDir, revision) {
+  const value = typeof revision === 'string' ? revision.trim() : '';
+  if (!value || value.startsWith('-') || value.length > 256 || /[\s\0]/.test(value)) return null;
+  const r = git(projectDir, ['rev-parse', '--verify', '--quiet', `${value}^{commit}`]);
+  const sha = r.ok ? r.out.trim() : '';
+  return REVISION_RE.test(sha) ? sha : null;
+}
+
 export function isAncestorOf(projectDir, revision, of = 'HEAD') {
   return git(projectDir, ['merge-base', '--is-ancestor', revision, of]).ok;
 }

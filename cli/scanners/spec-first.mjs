@@ -16,6 +16,7 @@
  * @implements docguard.spec-first-gate#FR-003
  * @implements docguard.spec-first-gate#FR-004
  * @implements docguard.spec-first-gate#FR-005
+ * @implements docguard.first-spec-preflight#FR-008
  */
 
 import { execFileSync } from 'node:child_process';
@@ -29,6 +30,10 @@ export const DEFAULT_EXEMPT_KINDS = ['release', 'deps', 'typo', 'test-only'];
 const MIN_REASON = 10;
 const SPEC_PATH_RE = /\bspecs\/([0-9]{3,}[a-z0-9._-]*)/gi;
 const SPEC_ID_RE = /\b([a-z0-9][a-z0-9_-]*(?:\.[a-z0-9][a-z0-9_-]*)+)\b/gi;
+// `Spec: acme.x`, `**Spec ID**: \`acme.x\``: a word written as a reference.
+// Only these are reported when unresolved; any dotted word (a file name, a
+// version) has the Spec ID shape, so unlabelled ones would be noise.
+const LABELLED_ID_RE = /\bSpec(?:[ \t]+ID)?\b[*_]*[ \t]*:[*_]*[ \t]*`?([a-z0-9][a-z0-9_-]*(?:\.[a-z0-9][a-z0-9_-]*)+)`?/gi;
 const EXEMPT_RE = /^\s*Spec-Exempt:\s*([A-Za-z-]+)\s*[—–-]+\s*(.*)$/gim;
 const DEFAULT_TEST_RE = /(^|\/)(tests?|__tests__)\/|\.(test|spec)\.[^/]+$|_test\.[^/]+$|(^|\/)test_[^/]*\.py$/;
 
@@ -136,6 +141,9 @@ export function classifySpecFirst({ paths, text, config, inventory }) {
   for (const m of text.matchAll(SPEC_ID_RE)) {
     const spec = inventory.ids.get(m[1].toLowerCase());
     if (spec) add('id', m[1], spec);
+  }
+  for (const m of text.matchAll(LABELLED_ID_RE)) {
+    if (!inventory.ids.has(m[1].toLowerCase())) add('id', m[1], null);
   }
 
   let exemption = null;

@@ -13,6 +13,7 @@
  * @implements docguard.symbol-map#FR-001
  * @implements docguard.symbol-map#FR-002
  * @implements docguard.symbol-map#FR-003
+ * @implements docguard.fallback-language-coverage#FR-010
  */
 
 import { readFileSync } from 'node:fs';
@@ -21,6 +22,7 @@ import { buildImportGraph, JS_EXTENSIONS } from './import-graph.mjs';
 import { moduleSymbols } from './js-ast.mjs';
 import { extractPythonFiles } from './py-ast.mjs';
 import { isNonProductPath } from '../shared-ignore.mjs';
+import { countLanguages, describeLanguageCounts } from '../shared-source.mjs';
 
 export const SYMBOL_MAP_DEFAULT_BYTES = 4096;
 export const SYMBOL_MAP_MAX_BYTES = 16384;
@@ -108,7 +110,7 @@ function line(file, symbols) {
  * included; it stops at a whole line and says how many ranked files it left
  * out.
  *
- * @returns {{ text: string, listed: number, omitted: number, degraded: object, ranking: 'pagerank'|'symbol-count' }}
+ * @returns {{ text: string, listed: number, omitted: number, degraded: object, ranking: 'pagerank'|'symbol-count'|'none' }}
  */
 export function buildSymbolMap(projectDir, config = {}, { maxBytes = symbolMapBudget(config) } = {}) {
   const graph = buildImportGraph(projectDir, config);
@@ -118,6 +120,11 @@ export function buildSymbolMap(projectDir, config = {}, { maxBytes = symbolMapBu
     .filter(f => isSource(f) && !isGenerated(f) && !isNonProductPath(f, config))
     .sort();
   const fileSet = new Set(files);
+  // Source the graph cannot read is named, never mistaken for a project with
+  // no imports (docguard.fallback-language-coverage#FR-010).
+  const unanalysed = countLanguages((graph.unanalysedFiles || []).map(posix)
+    .filter(f => !isGenerated(f) && !isNonProductPath(f, config)));
+  const unanalysedText = describeLanguageCounts(unanalysed);
   const edges = graph.edges
     .filter(e => !e.dynamic)
     .map(e => [posix(e.from), posix(e.to)])
@@ -127,7 +134,11 @@ export function buildSymbolMap(projectDir, config = {}, { maxBytes = symbolMapBu
   let ranked;
   let ranking = 'pagerank';
   let symbols = new Map();
-  if (edges.length > 0) {
+  if (files.length === 0 && unanalysed.length > 0) {
+    ranking = 'none';
+    ranked = [];
+    header.push(`No symbol map: the import graph reads JS/TS and Python only, and this project's source (${unanalysedText}) is not analysed, so there is nothing to rank.`);
+  } else if (edges.length > 0) {
     ranked = pageRank(files, edges).map(r => r.path);
     header.push('Source files ranked by how central they are in the static import graph (PageRank), each with the names it exports. Names only: this says nothing about what they do.');
   } else {
@@ -164,7 +175,8 @@ export function buildSymbolMap(projectDir, config = {}, { maxBytes = symbolMapBu
   const render = () => {
     const omitted = ranked.length - body.length;
     const footer = [];
-    if (files.length === 0) footer.push('_No ranked source files._');
+    if (files.length === 0 && unanalysed.length === 0) footer.push('_No ranked source files._');
+    if (files.length > 0 && unanalysed.length > 0) footer.push(`_Not analysed: ${unanalysedText} (the import graph reads JS/TS and Python only)._`);
     if (omitted > 0) footer.push(`_${omitted} more ranked file${omitted === 1 ? '' : 's'} not shown (budget ${maxBytes} bytes)._`);
     const tiers = Object.entries(degraded).sort(([a], [b]) => (a < b ? -1 : 1));
     if (tiers.length) footer.push(`_Listed without symbols: ${tiers.map(([t, n]) => `${n} (${t})`).join(', ')}._`);

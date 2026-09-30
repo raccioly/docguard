@@ -345,6 +345,14 @@
       },
       "additionalProperties": false
     },
+    "detection": {
+      "type": "object",
+      "description": "Surface detection (routes, env vars, frameworks). Test, fixture, example and mock directories are skipped by default; a package segment such as `src/main/java/com/example` or a Go `internal/example` package is product code and is always read.",
+      "properties": {
+        "includeNonProduct": { "type": "boolean", "default": false, "description": "Read test, fixture, example and mock directories as product code. When routes exist only there, the API-surface validator reports partial coverage and names this setting." }
+      },
+      "additionalProperties": false
+    },
     "diagrams": {
       "type": "object",
       "description": "Code-derived diagrams (specs/035-code-derived-diagrams). A diagram is drawn only into a doc that has its section marker: `<!-- docguard:section id=module-graph source=code -->` in ARCHITECTURE, `<!-- docguard:section id=entity-diagram source=code -->` in DATA-MODEL. Generated-Staleness (GST002) reports drift and `docguard sync --write` redraws it.",

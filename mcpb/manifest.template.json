@@ -36,7 +36,7 @@
     "project_dir": {
       "type": "directory",
       "title": "Project folder",
-      "description": "The repository DocGuard analyzes by default. Every tool also accepts a per-call projectDir override.",
+      "description": "The repository DocGuard analyzes. A tool call may pass a projectDir inside this folder (a package in a monorepo); folders outside it are refused. The server takes --root <dir> to serve more trees.",
       "required": true
     }
   },
