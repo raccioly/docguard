@@ -3,7 +3,12 @@ import { existsSync } from 'node:fs';
 import { resolveDocRole, docRolePath } from './shared-doc-roles.mjs';
 const PREREQUISITES = { testSpec: 'testSpec', environment: 'environment', apiSurface: 'apiReference', architecture: 'architecture' };
 const STATES = new Set(['checked', 'partial', 'disabled', 'not-applicable', 'missing-prerequisite', 'unsupported', 'no-matches', 'error']);
-/** The reason a status carries when nothing more specific is known; the compact guard form states each once. */
+/**
+ * The reason a status carries when nothing more specific is known; the compact
+ * guard form states each once.
+ *
+ * @implements docguard.compact-guard-response#FR-007
+ */
 export const STANDARD_APPLICABILITY_REASONS = Object.freeze({
   checked: 'Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage.',
   disabled: 'Disabled by the effective configuration or selected command scope.',
