@@ -1,6 +1,6 @@
 # Tasks: Go, Spring and Rails Route Extraction
 
-**Status**: Complete. SC-001: the eight reference projects report exactly their 80 ground-truth routes (before: 6 found, 43 wrong); SC-002: the one gin assertion that pinned the missing group prefix is corrected; SC-003: unresolvable prefixes and paths yield no route. Claim GO-SPRING-RAILS-ROUTES-COMPOSE-PREFIXES: 24 faults.
+**Status**: Complete. SC-001: the eight reference projects report exactly their 80 ground-truth routes (before: 6 found, 43 wrong); SC-002: the one gin assertion that pinned the missing group prefix is corrected; SC-003: unresolvable prefixes and paths yield no route. Claim GO-SPRING-RAILS-ROUTES-COMPOSE-PREFIXES: 24/24 faults killed (`--confirm 3`); gate clean.
 **Spec**: `specs/047-go-spring-rails-routes/spec.md`
 **Plan**: `specs/047-go-spring-rails-routes/plan.md`
 
