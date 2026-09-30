@@ -7,6 +7,9 @@
  * @implements docguard.task-specific-agent-context#FR-013
  * @implements docguard.task-specific-agent-context#FR-014
  * @implements docguard.task-specific-agent-context#FR-015
+ * @implements docguard.symbol-map#FR-005
+ * @implements docguard.symbol-map#FR-006
+ * @implements docguard.symbol-map#FR-008
  */
 
 import { spawn, spawnSync } from 'node:child_process';
@@ -24,6 +27,15 @@ const REPO_ROOT = resolve(HERE, '../..');
 const MANIFEST_PATH = join(HERE, 'manifest.json');
 const RESULT_SCHEMA = 'https://raccioly.github.io/docguard/schemas/docguard-agent-context-result.schema.json';
 const DEFAULT_RESULT = join(HERE, 'results/observed-v1.json');
+// Protocol v2 (docguard.symbol-map): the context pack with and without the
+// symbol map. Frozen by digest: the manifest below is the one committed before
+// any v2 model run, and any change to its conditions, tasks, thresholds, seed
+// or fixture digests is rejected.
+const MANIFEST_V2_PATH = join(HERE, 'manifest-v2.json');
+const RESULT_SCHEMA_V2 = 'https://raccioly.github.io/docguard/schemas/docguard-agent-context-result-v2.schema.json';
+const DEFAULT_RESULT_V2 = join(HERE, 'results/observed-v2.json');
+export const V2_MANIFEST_DIGEST = 'sha256:554a4e60392e6eaefec45127b14124a4ffd15d85e2246992d61fff5ca041a57e';
+const MIN_NAVIGATION_MODULES = 25;
 const DOCGUARD = join(REPO_ROOT, 'cli/docguard.mjs');
 const TASK_SELECTOR = join(REPO_ROOT, 'cli/scanners/task-context.mjs');
 const FIXED_GIT_ENV = {
@@ -60,6 +72,7 @@ function assert(condition, message) {
 
 export function loadManifest(path = MANIFEST_PATH) {
   const manifest = readJson(path);
+  if (manifest?.protocol?.id === 'docguard-agent-context-v2') return validateManifestV2(manifest);
   assert(manifest?.$schema === 'https://raccioly.github.io/docguard/schemas/docguard-agent-context-benchmark.schema.json', 'unexpected schema');
   assert(manifest.schemaVersion === 1, 'schemaVersion must be 1');
   assert(manifest.protocol?.id === 'docguard-agent-context-v1', 'protocol id is frozen');
@@ -79,6 +92,38 @@ export function loadManifest(path = MANIFEST_PATH) {
       assert(existsSync(join(HERE, pathValue)), `${task.id}.${key} is missing`);
     }
     assert(!resolve(join(HERE, task.hiddenEvaluator)).startsWith(`${resolve(join(HERE, task.fixture))}${sep}`), `${task.id} hidden evaluator leaked into fixture`);
+  }
+  return manifest;
+}
+
+function validateManifestV2(manifest) {
+  assert(manifest.$schema === 'https://raccioly.github.io/docguard/schemas/docguard-agent-context-benchmark-v2.schema.json', 'unexpected v2 schema');
+  assert(manifest.schemaVersion === 2, 'v2 schemaVersion must be 2');
+  assert(sha256(stableJson(manifest)) === V2_MANIFEST_DIGEST, 'the v2 manifest changed after it was frozen');
+  assert(manifest.protocol.repetitions >= 3, 'at least three repetitions are required');
+  assert(stableJson(manifest.conditions) === stableJson(['task-only', 'context-pack', 'context-pack-symbols']), 'the three v2 conditions are frozen');
+  assert(manifest.tasks?.length >= 6, 'v2 requires at least six tasks');
+  assert(new Set(manifest.tasks.map(task => task.id)).size === manifest.tasks.length, 'task ids must be unique');
+  const navigation = manifest.tasks.filter(task => task.navigationBound);
+  assert(navigation.length >= 3, 'v2 requires at least three navigation-bound tasks');
+  for (const task of manifest.tasks) {
+    assert(typeof task.prompt === 'string' && task.prompt.length <= 2000, `${task.id} prompt is invalid`);
+    assert(Array.isArray(task.allowedChanges) && task.allowedChanges.length, `${task.id} needs an allowlist`);
+    for (const key of ['fixture', 'hiddenEvaluator', 'reference']) {
+      const pathValue = task[key];
+      assert(typeof pathValue === 'string' && !pathValue.startsWith('/') && !pathValue.split('/').includes('..'), `${task.id}.${key} must be relative`);
+      assert(existsSync(join(HERE, pathValue)), `${task.id}.${key} is missing`);
+    }
+    assert(!resolve(join(HERE, task.hiddenEvaluator)).startsWith(`${resolve(join(HERE, task.fixture))}${sep}`), `${task.id} hidden evaluator leaked into fixture`);
+    assert(digestTree(join(HERE, task.fixture)) === task.fixtureDigest, `${task.id} fixture changed after the v2 protocol was frozen`);
+    if (task.navigationBound) {
+      // The prompt names a requirement, never the file to change.
+      for (const path of task.allowedChanges) {
+        assert(!task.prompt.includes(path) && !task.prompt.includes(basename(path)), `${task.id} prompt names the file to change`);
+      }
+      const modules = walkFiles(join(HERE, task.fixture)).filter(path => /^src\/.+\.(?:[cm]?js|ts|py)$/.test(path));
+      assert(modules.length >= MIN_NAVIGATION_MODULES, `${task.id} fixture has ${modules.length} source modules; navigation-bound tasks need ${MIN_NAVIGATION_MODULES}`);
+    }
   }
   return manifest;
 }
@@ -204,8 +249,9 @@ function normalizePack(text) {
 
 function contextFor(task, condition, projectDir) {
   if (condition === 'task-only') return '';
-  if (condition === 'context-pack') {
-    const result = runFile(process.execPath, [DOCGUARD, 'memory', '--pack', '--stdout', '--dir', projectDir], { cwd: REPO_ROOT, timeout: 60000 });
+  if (condition === 'context-pack' || condition === 'context-pack-symbols') {
+    const symbols = condition === 'context-pack-symbols' ? ['--symbols'] : [];
+    const result = runFile(process.execPath, [DOCGUARD, 'memory', '--pack', '--stdout', ...symbols, '--dir', projectDir], { cwd: REPO_ROOT, timeout: 60000 });
     if (result.status !== 0) throw new Error(`context pack failed: ${result.stderr || result.stdout}`);
     return normalizePack(result.stdout);
   }
@@ -414,12 +460,75 @@ export function decidePromotion(manifest, aggregate) {
   return { status: 'reject', reasons, reductions };
 }
 
+function increase(candidate, baseline) {
+  if (!Number.isFinite(candidate) || !Number.isFinite(baseline) || baseline <= 0) return null;
+  return ((candidate - baseline) / baseline) * 100;
+}
+
+/**
+ * The v2 promotion rule (docguard.symbol-map#FR-008), comparing
+ * `context-pack-symbols` with `context-pack`. No regression: at most one more
+ * failed trial, no more requirement violations or unnecessary edits, and median
+ * uncached input tokens and steps each at most 5% higher. Benefit: more
+ * successes, or a median reduction of at least 15% in steps or latency on the
+ * navigation-bound tasks. Default-on needs both; `--symbols` stays available
+ * with no regression; a regression means the feature is not released.
+ */
+export function decideSymbolPromotion(manifest, aggregate, navigationAggregate) {
+  const { candidate: c, baseline: b, noRegression, benefit } = manifest.promotion;
+  const cand = aggregate[c];
+  const base = aggregate[b];
+  const expected = manifest.tasks.length * manifest.protocol.repetitions;
+  if (manifest.conditions.some(condition => aggregate[condition]?.runs !== expected)) {
+    return { status: 'incomplete', reasons: [`The frozen ${expected * manifest.conditions.length}-run matrix is incomplete.`] };
+  }
+  const infrastructureFailures = manifest.conditions.reduce((n, condition) => n + aggregate[condition].infrastructureFailures, 0);
+  if (infrastructureFailures > 0) {
+    return { status: 'incomplete', reasons: [`${infrastructureFailures} trial(s) ended in infrastructure failure; the decision requires every frozen trial.`] };
+  }
+  const reasons = [];
+  const increases = {
+    uncachedInputTokens: increase(cand.medianUncachedInputTokens, base.medianUncachedInputTokens),
+    steps: increase(cand.medianSteps, base.medianSteps),
+  };
+  const checks = [
+    [cand.failures <= base.failures + noRegression.maxAdditionalFailures, 'The symbol map added more than one failed trial.'],
+    [cand.requirementViolations <= base.requirementViolations + noRegression.maxAdditionalRequirementViolations, 'The symbol map added requirement violations.'],
+    [cand.unnecessaryEdits <= base.unnecessaryEdits + noRegression.maxAdditionalUnnecessaryEdits, 'The symbol map added unnecessary edits.'],
+    [increases.uncachedInputTokens == null || increases.uncachedInputTokens <= noRegression.maxMedianIncreasePercent.uncachedInputTokens, 'Median uncached input tokens rose more than 5%.'],
+    [increases.steps == null || increases.steps <= noRegression.maxMedianIncreasePercent.steps, 'Median steps rose more than 5%.'],
+  ];
+  for (const [ok, reason] of checks) if (!ok) reasons.push(reason);
+  const regression = reasons.length > 0;
+  const navCand = navigationAggregate[c];
+  const navBase = navigationAggregate[b];
+  const reductions = {
+    steps: reduction(navCand.medianSteps, navBase.medianSteps),
+    latency: reduction(navCand.medianLatencyMs, navBase.medianLatencyMs),
+  };
+  const successGain = benefit.successGainQualifies && cand.successes > base.successes;
+  const costGain = benefit.measures.some(measure => reductions[measure] != null && reductions[measure] >= benefit.minimumMedianReductionPercent);
+  if (regression) return { status: 'not-released', reasons, reductions, increases };
+  if (successGain || costGain) {
+    reasons.push(successGain ? 'The symbol map gained at least one success with no regression.' : 'The symbol map met the frozen 15% median reduction on navigation-bound tasks with no regression.');
+    return { status: 'promote', reasons, reductions, increases };
+  }
+  reasons.push('No regression, but no predeclared benefit: the section stays behind --symbols.');
+  return { status: 'opt-in', reasons, reductions, increases };
+}
+
 function buildResult(manifest, fixtureSummaries, trials, executableVersion) {
   const aggregate = aggregateTrials(manifest, trials);
-  const decision = decidePromotion(manifest, aggregate);
+  const v2 = manifest.protocol.id === 'docguard-agent-context-v2';
+  let navigationAggregate = null;
+  if (v2) {
+    const navigation = new Set(manifest.tasks.filter(task => task.navigationBound).map(task => task.id));
+    navigationAggregate = aggregateTrials(manifest, trials.filter(trial => navigation.has(trial.task)));
+  }
+  const decision = v2 ? decideSymbolPromotion(manifest, aggregate, navigationAggregate) : decidePromotion(manifest, aggregate);
   return {
-    $schema: RESULT_SCHEMA,
-    schemaVersion: 1,
+    $schema: v2 ? RESULT_SCHEMA_V2 : RESULT_SCHEMA,
+    schemaVersion: v2 ? 2 : 1,
     core: {
       protocolId: manifest.protocol.id,
       manifestDigest: sha256(stableJson(manifest)),
@@ -429,6 +538,7 @@ function buildResult(manifest, fixtureSummaries, trials, executableVersion) {
       fixtureDigests: Object.fromEntries(fixtureSummaries.map(item => [item.id, item.fixtureDigest])),
       trialOrder: orderedTrials(manifest).map(trial => trial.id),
       aggregate,
+      ...(v2 ? { navigationAggregate } : {}),
       decision,
     },
     observations: {
@@ -474,21 +584,23 @@ async function runMatrix(manifest, fixtureSummaries, options) {
 }
 
 function parseArgs(argv) {
-  const options = { run: false, out: DEFAULT_RESULT, concurrency: 3, executable: process.env.CODEX_BIN || '/Applications/ChatGPT.app/Contents/Resources/codex' };
+  const options = { run: false, out: null, protocol: 'v1', concurrency: 3, executable: process.env.CODEX_BIN || '/Applications/ChatGPT.app/Contents/Resources/codex' };
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--run') options.run = true;
+    else if (argv[i] === '--protocol' && ['v1', 'v2'].includes(argv[i + 1])) options.protocol = argv[++i];
     else if (argv[i] === '--out' && argv[i + 1]) options.out = resolve(argv[++i]);
     else if (argv[i] === '--concurrency' && argv[i + 1]) options.concurrency = Number(argv[++i]);
     else if (argv[i] === '--codex' && argv[i + 1]) options.executable = resolve(argv[++i]);
     else throw new Error(`Unknown argument: ${argv[i]}`);
   }
   if (!Number.isInteger(options.concurrency) || options.concurrency < 1 || options.concurrency > 6) throw new Error('--concurrency must be an integer from 1 to 6');
+  options.out ??= options.protocol === 'v2' ? DEFAULT_RESULT_V2 : DEFAULT_RESULT;
   return options;
 }
 
 async function main() {
   const options = parseArgs(process.argv.slice(2));
-  const manifest = loadManifest();
+  const manifest = loadManifest(options.protocol === 'v2' ? MANIFEST_V2_PATH : MANIFEST_PATH);
   const fixtures = verifyFixtures(manifest);
   if (!options.run) {
     console.log(JSON.stringify({ status: 'validated', protocol: manifest.protocol.id, trials: orderedTrials(manifest).length, fixtures }, null, 2));

@@ -55,6 +55,7 @@ It targets development teams and AI coding agents that need to maintain document
 | **Doc ownership map** | Resolves each tracked file to the one doc section responsible for it (exact path beats glob; longer literal prefix beats shorter), reports unowned code and ties, and lints a committed `.devin/wiki.json` | `cli/scanners/doc-ownership.mjs`, `cli/validators/doc-ownership.mjs`, `cli/commands/trace.mjs` | The map is declared by people in `.docguard.json`; `trace --owners --suggest` drafts one and never writes |
 | **Path-scoped agent rules** | Derives each agent instruction file's scope per harness (Codex, Claude Code, Cursor, Copilot, OpenHands) and checks it against the tracked files; `rules --for` resolves what an agent loads for a path | `cli/scanners/instruction-scopes.mjs`, `cli/scanners/frontmatter.mjs`, `cli/validators/path-scoped-rules.mjs`, `cli/commands/rules.mjs` | Tracked files only in guard; formats verified 2026-09-30 and recorded in `docs/ai-integration.md`; patterns DocGuard does not evaluate are reported as not checked |
 | **Cross-language import graph** | Resolves repository-local JS/TS and Python static imports for cycle and layer checks, once per run for every consumer | `cli/scanners/import-graph.mjs`, `cli/validators/architecture.mjs`, `cli/scanners/py-ast.mjs` | Python supports regular flat/`src/` packages and explicit relatives; dynamic imports, runtime path changes, parse failures, missing interpreters, and ambiguous modules remain explicit limitations |
+| **Symbol map** | `memory --pack --symbols`: ranks source files by PageRank over the cached import graph and lists their exported names within a byte budget; symbols are read only for the files that fit | `cli/scanners/symbol-map.mjs`, `cli/scanners/js-ast.mjs` (`moduleSymbols`), `cli/scanners/py-ast.mjs` | Opt-in until the frozen v2 agent-context benchmark (`benchmarks/agent-context/manifest-v2.json`) decides; names only, no claim about behavior |
 | **Code-derived diagrams** | Draws the `module-graph` (directory modules and their imports) and `entity-diagram` (schema entities) mermaid sections from code, so GST002 reports drift and `sync --write` redraws them; a graph missing evidence is `partial`, never stale | `cli/scanners/module-diagram.mjs`, `cli/scanners/memory-plan.mjs`, `cli/validators/generated-staleness.mjs` | Only for a doc that has the marker or is being created; node, edge and depth limits are captioned; hand-drawn diagrams are untouched |
 | **Repository-root guidance** | Detects a likely governing ancestor without changing the selected scan directory | `cli/repository-root.mjs`, `cli/docguard.mjs` | Requires ancestor DocGuard configuration or npm/pnpm membership, respects nested Git boundaries, and uses typed stderr diagnostics for machine modes |
 | **Lifecycle transactions and context** | Stages registry, recovery, spec outcome, and current-context changes before any visible mutation and rolls the set back on write or validation failure | `cli/writers/file-transaction.mjs`, `cli/writers/spec-outcomes.mjs`, `cli/scanners/lifecycle-context.mjs` | Active context includes approved current spec pointers and content hashes; retired prose is excluded |
@@ -1623,6 +1624,17 @@ Behaviour changes:
 
 ### Added
 
+- **Symbol map in the context pack, opt-in** (`specs/036-symbol-map`).
+  `memory --pack --symbols` adds a `## Symbol map`: the source files most
+  central in the static import graph (PageRank, deterministic), each with the
+  names it exports, within `memory.symbolMap.maxBytes` (default 4096). It costs
+  +1.2% of `memory --pack` time on this repository, because symbols are read
+  only for the files that fit. Without the flag the pack is unchanged.
+  Whether it becomes the default is decided by agent-context protocol v2,
+  frozen before any run (`benchmarks/agent-context/manifest-v2.json`): six
+  tasks, three of them navigation-bound in a new 29-module fixture. Default-on
+  needs no regression and a benefit; a regression withdraws the feature. The
+  54-trial matrix has not been run yet.
 - **Doc ownership map** (`specs/034-doc-ownership-map`). A project can declare
   which doc section is responsible for which source paths, in an `ownership`
   block in `.docguard.json`:
@@ -1976,19 +1988,8 @@ Behaviour changes:
   `npm run speckit:dev` rather than committed as a copy of `extensions/`.
 
 - **Constitution v2.0.0: it now describes the project it governs (#455).**
-  v1.1.0 contradicted itself and the code while `guard` passed:
-  - It said both "one runtime dependency" and "Dependencies: None. Zero. Ever."
-  - It required a VS Code extension API that the repository does not have.
-  - It counted 19 validators and 4 skills.
-  - It claimed DocGuard bundles Spec Kit's core skills, which it does not.
-  - It said every workflow hook is optional, while `brief`, `preflight` and
-    `guard` are mandatory by design.
 
-  The amendment drops the counts in favour of the authoritative sources. It
-  restates Spec Kit integration as delegation to `specify` that must report
-  failure, and adds three principles the repository already practises:
-
-<!-- truncated: 4186 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 4197 more lines — read CHANGELOG.md directly -->
 
 ---
 

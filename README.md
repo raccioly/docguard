@@ -365,6 +365,7 @@ require current SHA-256 identities for every declared repository input.
 | `--update-baseline` | Adopt DocGuard on a legacy repo without a red day one: freeze today's findings into a committed `.docguard.baseline.json`; guard/ci then gate only NEW drift. Suppression is always visible ("N pre-existing finding(s) suppressed"), and `--no-baseline` shows the full picture | guard |
 | `--full` | Generate `llms-full.txt` (full doc bodies inlined) instead of the `llms.txt` link index | llms |
 | `--pack` | Write `.docguard/context-pack.md` — agent session-start context | memory |
+| `--symbols` | With `--pack`: add a symbol map (most central files and their exported names, within `memory.symbolMap.maxBytes`); opt-in until the v2 benchmark decides | memory |
 | `--sync` | Regenerate the agent-file family (CLAUDE.md, Copilot, Cursor, …) from AGENTS.md; hash-marked, never touches hand-written files without `--force` | agents |
 | `--check` | CI gate for the synced agent-file family — exit 2 when a variant is stale | agents |
 | `--force` | Overwrite existing files (creates `.bak` backups) | generate, agents, init |

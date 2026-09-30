@@ -1,0 +1,176 @@
+{
+  "$schema": "https://raccioly.github.io/docguard/schemas/docguard-agent-context-benchmark-v2.schema.json",
+  "schemaVersion": 2,
+  "protocol": {
+    "id": "docguard-agent-context-v2",
+    "frozenAt": "2026-09-30",
+    "seed": "docguard-symbol-map-v2",
+    "repetitions": 3,
+    "timeoutMs": 300000,
+    "harness": "codex-exec-jsonl-v1",
+    "model": {
+      "cliVersion": "0.154.0-alpha.6.2",
+      "id": "gpt-5.3-codex-spark",
+      "reasoningEffort": "low",
+      "sandbox": "workspace-write"
+    }
+  },
+  "conditions": [
+    "task-only",
+    "context-pack",
+    "context-pack-symbols"
+  ],
+  "promotion": {
+    "candidate": "context-pack-symbols",
+    "baseline": "context-pack",
+    "noRegression": {
+      "maxAdditionalFailures": 1,
+      "maxAdditionalRequirementViolations": 0,
+      "maxAdditionalUnnecessaryEdits": 0,
+      "maxMedianIncreasePercent": {
+        "uncachedInputTokens": 5,
+        "steps": 5
+      }
+    },
+    "benefit": {
+      "successGainQualifies": true,
+      "minimumMedianReductionPercent": 15,
+      "measures": [
+        "steps",
+        "latency"
+      ],
+      "scope": "navigation-bound"
+    }
+  },
+  "tasks": [
+    {
+      "id": "status-alias",
+      "fixture": "fixtures/status-alias",
+      "hiddenEvaluator": "hidden/status-alias/evaluate.mjs",
+      "reference": "reference/status-alias/status.mjs",
+      "prompt": "Update src/status.mjs to complete acme.status-aliases#FR-001. Preserve existing behavior, make the smallest justified change, and run the repository tests.",
+      "allowedChanges": [
+        "src/status.mjs"
+      ],
+      "visibleTest": [
+        "node",
+        "--test",
+        "tests/*.test.mjs"
+      ],
+      "expectedInitial": {
+        "passed": 5,
+        "failed": 2
+      },
+      "navigationBound": false,
+      "fixtureDigest": "sha256:215b12c33b17a4b42a3aee79fe6f090c1774a0539eb6557dbeee3ec8ffe4fdef"
+    },
+    {
+      "id": "python-config",
+      "fixture": "fixtures/python-config",
+      "hiddenEvaluator": "hidden/python-config/evaluate.py",
+      "reference": "reference/python-config/config_loader.py",
+      "prompt": "Update config_loader.py to complete acme.safe-config#FR-001. Preserve existing behavior, make the smallest justified change, and run the repository tests.",
+      "allowedChanges": [
+        "config_loader.py"
+      ],
+      "visibleTest": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests"
+      ],
+      "expectedInitial": {
+        "passed": 5,
+        "failed": 3
+      },
+      "navigationBound": false,
+      "fixtureDigest": "sha256:0c5e5e4976948b8efb356dbfdbf95baeb1d1ccb4f8bc1637d106152cc6ac80aa"
+    },
+    {
+      "id": "option-migration",
+      "fixture": "fixtures/option-migration",
+      "hiddenEvaluator": "hidden/option-migration/evaluate.mjs",
+      "reference": "reference/option-migration/options.mjs",
+      "prompt": "Update src/options.mjs to complete acme.timeout-options#FR-001. Preserve existing behavior, make the smallest justified change, and run the repository tests.",
+      "allowedChanges": [
+        "src/options.mjs"
+      ],
+      "visibleTest": [
+        "node",
+        "--test",
+        "tests/*.test.mjs"
+      ],
+      "expectedInitial": {
+        "passed": 5,
+        "failed": 2
+      },
+      "navigationBound": false,
+      "fixtureDigest": "sha256:20939ded1205f0984367fe0a4d93fce75722ea4600565b329106d401e2abf2ce"
+    },
+    {
+      "id": "ledger-rounding",
+      "fixture": "fixtures/ledger-service",
+      "hiddenEvaluator": "hidden/ledger-rounding/evaluate.mjs",
+      "reference": "reference/ledger-rounding/rounding.mjs",
+      "prompt": "Complete acme.ledger#FR-004 in this repository. Preserve existing behavior, make the smallest justified change, and run the repository tests.",
+      "allowedChanges": [
+        "src/currency/rounding.mjs"
+      ],
+      "visibleTest": [
+        "node",
+        "--test",
+        "tests/*.test.mjs"
+      ],
+      "expectedInitial": {
+        "passed": 3,
+        "failed": 8
+      },
+      "navigationBound": true,
+      "fixtureDigest": "sha256:d5e3110afa547acdea3e8f12dafaebda1fe76d6544453644a2e41c47ee9a5a68"
+    },
+    {
+      "id": "ledger-late-fee",
+      "fixture": "fixtures/ledger-service",
+      "hiddenEvaluator": "hidden/ledger-late-fee/evaluate.mjs",
+      "reference": "reference/ledger-late-fee/late-fee.mjs",
+      "prompt": "Complete acme.ledger#FR-007 in this repository. Preserve existing behavior, make the smallest justified change, and run the repository tests.",
+      "allowedChanges": [
+        "src/invoices/late-fee.mjs"
+      ],
+      "visibleTest": [
+        "node",
+        "--test",
+        "tests/*.test.mjs"
+      ],
+      "expectedInitial": {
+        "passed": 4,
+        "failed": 3
+      },
+      "navigationBound": true,
+      "fixtureDigest": "sha256:d5e3110afa547acdea3e8f12dafaebda1fe76d6544453644a2e41c47ee9a5a68"
+    },
+    {
+      "id": "ledger-redaction",
+      "fixture": "fixtures/ledger-service",
+      "hiddenEvaluator": "hidden/ledger-redaction/evaluate.mjs",
+      "reference": "reference/ledger-redaction/redact.mjs",
+      "prompt": "Complete acme.ledger#FR-011 in this repository. Preserve existing behavior, make the smallest justified change, and run the repository tests.",
+      "allowedChanges": [
+        "src/audit/redact.mjs"
+      ],
+      "visibleTest": [
+        "node",
+        "--test",
+        "tests/*.test.mjs"
+      ],
+      "expectedInitial": {
+        "passed": 3,
+        "failed": 5
+      },
+      "navigationBound": true,
+      "fixtureDigest": "sha256:d5e3110afa547acdea3e8f12dafaebda1fe76d6544453644a2e41c47ee9a5a68"
+    }
+  ]
+}

@@ -112,7 +112,9 @@ function line(file, symbols) {
  */
 export function buildSymbolMap(projectDir, config = {}, { maxBytes = symbolMapBudget(config) } = {}) {
   const graph = buildImportGraph(projectDir, config);
-  const files = [...new Set(graph.files.map(posix))]
+  // Files the graph could not read (Python without an interpreter) are still
+  // ranked, and listed without symbols under their degraded tier.
+  const files = [...new Set([...graph.files, ...(graph.unsupportedFiles || [])].map(posix))]
     .filter(f => isSource(f) && !isGenerated(f) && !isNonProductPath(f, config))
     .sort();
   const fileSet = new Set(files);

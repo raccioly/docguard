@@ -5619,12 +5619,12 @@
       "path": "specs/036-symbol-map/spec.md",
       "reviewed": {
         "lifecycle": {
-          "approval": "draft",
-          "delivery": "planned",
+          "approval": "approved",
+          "delivery": "in_progress",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
-          "persistenceModel": null
+          "persistenceModel": "living"
         },
         "relations": {
           "extends": [],
@@ -5634,7 +5634,9 @@
           "supersededBy": []
         },
         "scope": {
-          "canonicalDocs": []
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md"
+          ]
         },
         "reconciliation": {
           "lastReviewedRevision": null,
@@ -5663,22 +5665,53 @@
         "artifacts": [
           {
             "path": "specs/036-symbol-map/spec.md",
-            "digest": "sha256:2ce55257957db2421be82ea43b91294e072064f392c0f9ddf36db78517c929ee"
+            "digest": "sha256:c214fdcbe8165613badcafdfab1ce0cc423f1bd5cb2f441e1e5cea2338e023a5"
           },
           {
             "path": "specs/036-symbol-map/plan.md",
-            "digest": "sha256:375106199a4b773b025f031da49f560b2db7077819488097cab8ea011851f2eb"
+            "digest": "sha256:45bf19f598464e30d7e9557abc40f9fdd4c0b8a1533d9389acfa8f2a45041c44"
           },
           {
             "path": "specs/036-symbol-map/tasks.md",
-            "digest": "sha256:5d38f51c44ac4a9dc8171fa6b5d7de3c4548e06895c92eba3aa9b345d0a7d67a"
+            "digest": "sha256:8c77e92492c6743764966673a3bcb826baa11a22c06b5cd374c2332a0db2a4d3"
           }
         ],
         "taskCompletion": {
-          "checked": 0,
+          "checked": 11,
           "total": 13
         },
-        "implementationEvidence": [],
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/scanners/symbol-map.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/scanners/symbol-map.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/scanners/symbol-map.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "benchmarks/agent-context/run.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "benchmarks/agent-context/run.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "benchmarks/agent-context/run.mjs",
+            "line": 12
+          }
+        ],
         "testEvidence": []
       }
     },
@@ -5911,7 +5944,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/docguard.mjs",
-            "line": 938
+            "line": 945
           },
           {
             "requirementId": "FR-011",

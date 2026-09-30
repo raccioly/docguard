@@ -1,0 +1,314 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raccioly.github.io/docguard/schemas/docguard-agent-context-result-v2.schema.json",
+  "title": "DocGuard agent-context benchmark result, protocol v2 (symbol map)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "schemaVersion",
+    "core",
+    "observations"
+  ],
+  "properties": {
+    "$schema": {
+      "const": "https://raccioly.github.io/docguard/schemas/docguard-agent-context-result-v2.schema.json"
+    },
+    "schemaVersion": {
+      "const": 2
+    },
+    "core": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "protocolId",
+        "manifestDigest",
+        "harnessDigest",
+        "analysisDigest",
+        "selectorDigest",
+        "fixtureDigests",
+        "trialOrder",
+        "aggregate",
+        "decision",
+        "navigationAggregate"
+      ],
+      "properties": {
+        "protocolId": {
+          "const": "docguard-agent-context-v2"
+        },
+        "manifestDigest": {
+          "$ref": "#/$defs/digest"
+        },
+        "harnessDigest": {
+          "$ref": "#/$defs/digest"
+        },
+        "analysisDigest": {
+          "$ref": "#/$defs/digest"
+        },
+        "selectorDigest": {
+          "$ref": "#/$defs/digest"
+        },
+        "fixtureDigests": {
+          "type": "object",
+          "minProperties": 2,
+          "additionalProperties": {
+            "$ref": "#/$defs/digest"
+          }
+        },
+        "trialOrder": {
+          "type": "array",
+          "minItems": 54,
+          "items": {
+            "type": "string"
+          }
+        },
+        "aggregate": {
+          "type": "object"
+        },
+        "decision": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "reasons"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "promote",
+                "opt-in",
+                "not-released",
+                "incomplete"
+              ]
+            },
+            "reasons": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "reductions": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "steps",
+                "latency"
+              ],
+              "properties": {
+                "steps": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "latency": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "increases": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "uncachedInputTokens",
+                "steps"
+              ],
+              "properties": {
+                "uncachedInputTokens": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "steps": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "navigationAggregate": {
+          "type": "object"
+        }
+      }
+    },
+    "observations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "generatedAt",
+        "environment",
+        "trials"
+      ],
+      "properties": {
+        "generatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "environment": {
+          "type": "object"
+        },
+        "trials": {
+          "type": "array",
+          "minItems": 54,
+          "items": {
+            "$ref": "#/$defs/trial"
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "nullableMetric": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "trial": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "task",
+        "condition",
+        "repetition",
+        "status",
+        "success",
+        "requirementsPassed",
+        "requirementsTotal",
+        "requirementViolations",
+        "unnecessaryEdits",
+        "changedFiles",
+        "steps",
+        "usage",
+        "latencyMs",
+        "humanIntervention",
+        "patchDigest",
+        "failure"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "task": {
+          "type": "string"
+        },
+        "condition": {
+          "enum": [
+            "task-only",
+            "context-pack",
+            "context-pack-symbols"
+          ]
+        },
+        "repetition": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "status": {
+          "enum": [
+            "completed",
+            "agent-failed",
+            "timed-out",
+            "infrastructure-failed"
+          ]
+        },
+        "success": {
+          "type": "boolean"
+        },
+        "requirementsPassed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "requirementsTotal": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "requirementViolations": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unnecessaryEdits": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "changedFiles": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "steps": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "usage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "inputTokens",
+            "cachedInputTokens",
+            "uncachedInputTokens",
+            "outputTokens",
+            "reasoningTokens"
+          ],
+          "properties": {
+            "inputTokens": {
+              "$ref": "#/$defs/nullableMetric"
+            },
+            "cachedInputTokens": {
+              "$ref": "#/$defs/nullableMetric"
+            },
+            "uncachedInputTokens": {
+              "$ref": "#/$defs/nullableMetric"
+            },
+            "outputTokens": {
+              "$ref": "#/$defs/nullableMetric"
+            },
+            "reasoningTokens": {
+              "$ref": "#/$defs/nullableMetric"
+            }
+          }
+        },
+        "latencyMs": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "humanIntervention": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "patchDigest": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/digest"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "failure": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    }
+  }
+}

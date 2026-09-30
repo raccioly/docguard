@@ -300,6 +300,20 @@
       },
       "additionalProperties": true
     },
+    "memory": {
+      "type": "object",
+      "description": "Context pack options.",
+      "properties": {
+        "symbolMap": {
+          "type": "object",
+          "properties": {
+            "maxBytes": { "type": "integer", "minimum": 256, "maximum": 16384, "default": 4096, "description": "Byte budget for the symbol map `memory --pack --symbols` adds (specs/036-symbol-map)." }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
     "ownership": {
       "type": "object",
       "description": "Doc ownership map (specs/034-doc-ownership-map): which doc section is responsible for which source paths. An exact file path beats any glob, a longer literal directory prefix beats a shorter one, and any other overlap is a tie (OWN002). DocGuard never writes this block; `docguard trace --owners --suggest` drafts one.",
