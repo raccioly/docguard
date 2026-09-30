@@ -654,7 +654,7 @@ normative JSON Schema is `schemas/docguard-specs.schema.json`.
 | `specs[].reviewed.lifecycle.origin` | `generate --spec --write` | Optional. `as_built` marks a spec that records existing behaviour. Absent for forward specs, so older registries stay byte-identical |
 | `specs[].reviewed.reconciliation.lastReviewedRevision` | Human review | Exact Git revision whose doc impact was reviewed, or `null` |
 | `specs[].reviewed.reconciliation.outcomes` | Human review | Up to 20 reviewed implementation outcomes with revision, bounded rationale, evidence paths, deviations, and optional successor |
-| `specs[].reviewed.reconciliation.outcomes[].reanchoredFrom` | `specs reanchor` | Optional: the discarded revision an outcome was recorded at, and `method` — `blob-equal` (evidence compared) or `attested` (with a `reason`). Serialized only when set |
+| `specs[].reviewed.reconciliation.outcomes[].reanchoredFrom` | `specs reanchor` | Optional: the discarded revision an outcome was recorded at, and `method` — `blob-equal` (evidence compared) or `attested` (with a `reason`, and `differing` evidence paths when the target's bytes differ). Serialized only when set |
 | `specs[].intent.requirements` | Projection | `specId#requirementId` identities parsed from the active spec |
 | `specs[].observed.artifacts` | Projection | Paths and SHA-256 content identities for spec, plan, and tasks |
 | `specs[].observed.taskCompletion` | Projection | Checked and total Markdown task boxes; not proof of delivery |
@@ -1565,7 +1565,9 @@ Behaviour changes:
   - `docguard specs reanchor --id <spec-id> --write` moves the anchor to the
     first first-parent commit whose evidence files are byte-identical, and
     records `reanchoredFrom`. A revision that no longer exists needs
-    `--to <revision> --reason` and is recorded as attested.
+    `--to <revision> --reason` and is recorded as attested; so does a target
+    whose evidence changed after the review, and the differing files are
+    recorded.
   - Several completions can now run against one revision before a single
     commit: the registry, the active context and outcome blocks they write no
     longer count as changes. `specs complete --write` warns when HEAD is not on
@@ -1920,10 +1922,8 @@ Behaviour changes:
     unknown, which is always under `--changed-only`, leaving the pass badge
     alone. It now reads `claims_unverified-unknown`. The two honesty lines
     ("…do not establish factual accuracy", "…configured gates passed…") and
-    their place above the nudges are now covered by a regression test.
-  - **#437.** The baseline line says what it hides as well as how much it
 
-<!-- truncated: 4055 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 4057 more lines — read CHANGELOG.md directly -->
 
 ---
 

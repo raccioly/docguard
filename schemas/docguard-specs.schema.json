@@ -121,7 +121,12 @@
           "properties": {
             "revision": { "type": "string", "pattern": "^[0-9a-f]{40}([0-9a-f]{24})?$" },
             "method": { "enum": ["blob-equal", "attested"] },
-            "reason": { "type": "string", "minLength": 8, "maxLength": 500 }
+            "reason": { "type": "string", "minLength": 8, "maxLength": 500 },
+            "differing": {
+              "type": "array", "minItems": 1, "maxItems": 100,
+              "items": { "type": "string", "minLength": 1 },
+              "description": "Attested only: evidence files whose content at the new revision differs from the reviewed revision."
+            }
           }
         }
       }

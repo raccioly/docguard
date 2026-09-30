@@ -1128,7 +1128,7 @@
         "artifacts": [
           {
             "path": "specs/028-completion-revision-anchoring/spec.md",
-            "digest": "sha256:1659151b0b28def9ca252e69f326fe158bbc5937b35833c2796bcb46ea393834"
+            "digest": "sha256:ebbce3bc5014442fc1292686d72632413e29dd2bc514454e444f98096f0da105"
           },
           {
             "path": "specs/028-completion-revision-anchoring/plan.md",
@@ -3012,12 +3012,12 @@
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/spec-registry.mjs",
-            "line": 433
+            "line": 435
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/spec-registry.mjs",
-            "line": 434
+            "line": 436
           },
           {
             "requirementId": "FR-003",

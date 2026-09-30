@@ -146,6 +146,23 @@ describe('a revision a squash merge discarded is reported and re-anchored (FR-00
     assert.equal(refused.status, 'BLOCKED');
     assert.match(refused.blockers[0].message, /Evidence differs .*src\/alpha\.js/);
     assert.equal(readFileSync(join(dir, SPEC_REGISTRY_PATH), 'utf8'), before);
+    assert.match(refused.blockers[0].message, /Pass --reason .* to attest/);
+  });
+
+  it('a differing target can be attested, and the differing files are recorded', t => {
+    const { dir, branchRevision } = squashMerged(t);
+    write(dir, 'src/alpha.js', '/** @implements acme.alpha#FR-001 */\nexport const alpha = "changed after review";\n');
+    git(dir, ['commit', '-qam', 'change evidence after the squash']);
+    const head = git(dir, ['rev-parse', 'HEAD']);
+    const done = reanchorSpec(dir, {}, { id: 'acme.alpha', to: head, write: true, reason: 'The PR kept changing after review; this merge is the reviewed feature' });
+    assert.equal(done.status, 'REANCHORED');
+    assert.deepEqual(recorded(dir, 'acme.alpha').outcomes.at(-1).reanchoredFrom, {
+      revision: branchRevision, method: 'attested',
+      reason: 'The PR kept changing after review; this merge is the reviewed feature',
+      differing: ['src/alpha.js'],
+    });
+    git(dir, ['add', '-A']); git(dir, ['commit', '-qm', 'reanchor']);
+    assert.equal(projectSpecRegistry(dir).current, true);
   });
 
   it('a revision that no longer resolves needs --to and an attested --reason', t => {
