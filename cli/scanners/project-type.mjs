@@ -164,7 +164,9 @@ function csprojDeps(content) {
 // ── Framework + kind classification per ecosystem ────────────────────────────
 
 function has(deps, ...names) {
-  const keys = Object.keys(deps).map(k => k.toLowerCase());
+  // A Go module's major version is a path suffix (`github.com/labstack/echo/v4`);
+  // match on the module without it (docguard.go-spring-rails-routes#FR-007).
+  const keys = Object.keys(deps).map(k => k.toLowerCase().replace(/\/v\d+$/, ''));
   return names.some(n => keys.some(k => k === n.toLowerCase() || k.endsWith('/' + n.toLowerCase()) || k.endsWith(':' + n.toLowerCase())));
 }
 
@@ -196,6 +198,7 @@ function classify(lang, dir, deps) {
     else if (has(deps, 'echo', 'labstack/echo')) { framework = 'Echo'; kind = 'service'; }
     else if (has(deps, 'chi', 'go-chi/chi')) { framework = 'Chi'; kind = 'service'; }
     else if (has(deps, 'fiber', 'gofiber/fiber')) { framework = 'Fiber'; kind = 'service'; }
+    else if (has(deps, 'gorilla/mux')) { framework = 'Gorilla Mux'; kind = 'service'; }
     else if (existsSync(join(dir, 'main.go')) || existsSync(join(dir, 'cmd'))) kind = 'service';
   } else if (lang === 'Java' || lang === 'Kotlin') {
     if (has(deps, 'spring-boot-starter-web', 'spring-boot-starter', 'org.springframework.boot:spring-boot-starter-web')) { framework = 'Spring Boot'; kind = 'api'; }

@@ -201,6 +201,9 @@ registered through net/http in the same service.
 
 - Which files the scanners read, their depth and file caps, and tier
   disclosure (spec 043).
+- `generate`'s own framework detection, which reads only `package.json` and so
+  never asks these scanners for a Go, Java or Ruby project (spec 044, FR-010).
+  Once it asks, it gets the routes this spec fixes.
 - Routes registered from runtime data (loops over a table, reflection, string
   building beyond `+` of constants).
 - Spring WebFlux functional routes (`RouterFunctions.route`, `coRouter`), JAX-RS,

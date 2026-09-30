@@ -154,6 +154,33 @@ npx docguard-cli generate --dir ./my-project
 
 **Detects:** Next.js, React, Vue, Angular, Express, Fastify, Hono, Django, FastAPI, SvelteKit, and more.
 
+#### How routes are read
+
+Guard's API-surface check, `diff` and `generate` take routes from one scanner.
+It reads JavaScript, TypeScript and Python with a syntax tree. Go, Java, Kotlin
+and Ruby are read by pattern (`fallback-language`), following each framework's
+routing rules:
+
+- **Go** (gin, echo, chi, fiber, gorilla/mux, net/http): route groups and
+  sub-routers carry their prefix (`r.Group`, chi `Route` and `Mount`, gorilla
+  `PathPrefix().Subrouter()`, `http.StripPrefix`). This holds when the group is
+  passed to a function in another file, or a function returns the router. Go
+  1.22 patterns (`"GET /items/{id}"`) are read; `HandleFunc` with no method is
+  `ANY`. `_test.go` files and HTTP client calls are not routes.
+- **Spring** (Java, Kotlin): the class-level `@RequestMapping` base, in any
+  form (`path =`, `value =`, arrays, constants), joins every method mapping.
+  `@RequestMapping(method = …)` names the method, `ANY` when it names none.
+  `@FeignClient` interfaces are skipped.
+- **Rails** (`config/routes.rb` and its `draw` files): `namespace` and `scope`
+  prefixes, `resources`/`resource` with `only:`/`except:`, nesting, `shallow`,
+  `member`/`collection`, `match … via:`, `root` and concerns, as `rails routes`
+  lists them. Update is both `PATCH` and `PUT`.
+
+A route is omitted when its path or prefix is not literal text or a constant
+it can resolve: an environment variable, a `${…}` placeholder, a Ruby
+interpolation, or a call it cannot pin to one function. It is never reported
+at a guessed path.
+
 #### As-built specs: `docguard generate --spec <area>`
 
 For code that has no spec (a refactor, a migration, onboarding), DocGuard
