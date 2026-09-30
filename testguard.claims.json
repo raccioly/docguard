@@ -3294,7 +3294,8 @@
         "by": "claude-opus-5.5 (spec 046)"
       },
       "defendedBy": [
-        "tests/python-extraction.test.mjs"
+        "tests/python-extraction.test.mjs",
+        "tests/py-ast.test.mjs"
       ],
       "faults": [
         {
@@ -3592,6 +3593,42 @@
           "file": "cli/scanners/py-ast.mjs",
           "find": "\"outline\": {\"aliases\": aliases_of(tree), \"body\": outline_of(tree.body, \"module\")},",
           "replace": "\"outline\": {\"aliases\": [], \"body\": []},",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 046)"
+          }
+        },
+        {
+          "id": "F26",
+          "description": "Without an interpreter no file gets a pattern-tier outline.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/py-sources.mjs",
+          "find": "      try { outline = outlineFromSource(source); } catch { outline = null; }",
+          "replace": "      outline = null;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 046)"
+          }
+        },
+        {
+          "id": "F27",
+          "description": "Django routes are never scanned.",
+          "faultClass": "literal-changed",
+          "file": "cli/scanners/routes.mjs",
+          "find": "    const py = scanPythonWebRoutes(dir, { django, asgi });",
+          "replace": "    const py = scanPythonWebRoutes(dir, { django: false, asgi });",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 046)"
+          }
+        },
+        {
+          "id": "F28",
+          "description": "Unresolved includes are dropped from the scan result silently.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/routes.mjs",
+          "find": "  if (limitations?.length) Object.defineProperty(kept, 'limitations', { value: limitations, enumerable: false });\n",
+          "replace": "",
           "producedBy": {
             "producer": "agent",
             "by": "claude-opus-5.5 (spec 046)"
