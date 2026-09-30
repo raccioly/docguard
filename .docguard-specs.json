@@ -854,12 +854,12 @@
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 622
+            "line": 623
           },
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 649
+            "line": 650
           },
           {
             "requirementId": "FR-021",
@@ -7040,6 +7040,149 @@
             "requirementId": "SC-002",
             "file": "tests/unreadable-git-metadata.test.mjs",
             "line": 11
+          }
+        ]
+      }
+    },
+    {
+      "specId": "docguard.update-awareness",
+      "path": "specs/038-update-awareness/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.update-awareness#FR-001",
+          "docguard.update-awareness#FR-002",
+          "docguard.update-awareness#FR-003",
+          "docguard.update-awareness#FR-004",
+          "docguard.update-awareness#FR-005",
+          "docguard.update-awareness#FR-006",
+          "docguard.update-awareness#FR-007",
+          "docguard.update-awareness#FR-008",
+          "docguard.update-awareness#SC-001",
+          "docguard.update-awareness#SC-002",
+          "docguard.update-awareness#SC-003",
+          "docguard.update-awareness#SC-004"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/038-update-awareness/spec.md",
+            "digest": "sha256:c653ad7349789e99335106d921c83f5e66df1de2db307756471d98a3b8bd57f5"
+          },
+          {
+            "path": "specs/038-update-awareness/plan.md",
+            "digest": "sha256:ac5f909dc92efed003a95c83ffcab688608ded36d37af6c8ef3a698fb0e6e30f"
+          },
+          {
+            "path": "specs/038-update-awareness/tasks.md",
+            "digest": "sha256:7702819a51a55753e0a29e10ccd8da8134b4341cfbf11a8e5975723d3543dae8"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 10,
+          "total": 10
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/release-age.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/release-age.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/release-age.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/release-age.mjs",
+            "line": 19
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/update-awareness.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/update-awareness.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/update-awareness.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/update-awareness.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/update-awareness.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/update-awareness.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/update-awareness.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/update-awareness.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/update-awareness.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/update-awareness.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "SC-004",
+            "file": "tests/update-awareness.test.mjs",
+            "line": 16
           }
         ]
       }

@@ -1,5 +1,6 @@
 # Tasks: Update Awareness Without Network Calls
 
+**Status**: Complete. SC-001–SC-004 hold: 16 tests, including subprocess runs of a copied install dated 14 and 15 days back; claim UPDATE-HINT-IS-LOCAL-AND-SILENT-WHEN-UNSURE 12/12 faults killed.
 **Spec**: `specs/038-update-awareness/spec.md`
 **Plan**: `specs/038-update-awareness/plan.md`
 
@@ -39,4 +40,4 @@
 ## Phase 3: Docs and verification
 
 - [x] T009 `PRIVACY.md` (FR-007); `README.md`, `docs/configuration.md`, `docs/ai-integration.md`, `CHANGELOG.md` (FR-008); `docs-canonical/ARCHITECTURE.md`, `DATA-MODEL.md`, `ENVIRONMENT.md`, `SECURITY.md`, `TEST-SPEC.md`.
-- [ ] T010 `testguard.claims.json`: claim UPDATE-HINT-IS-LOCAL-AND-SILENT-WHEN-UNSURE, probed `--confirm 3`; gate; budgets unchanged; `npm test`; `npm run llms`; `docguard specs --write`; `docguard guard`.
+- [x] T010 `testguard.claims.json`: claim UPDATE-HINT-IS-LOCAL-AND-SILENT-WHEN-UNSURE, probed `--confirm 3`; gate; budgets unchanged; `npm test`; `npm run llms`; `docguard specs --write`; `docguard guard`.
