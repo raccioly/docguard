@@ -413,8 +413,6 @@ read-only core as native agent tools
 fact once by default; pass `detail: "full"` for the complete contract. The four navigation tools answer
 "which docs describe this file?" and read one bounded section at a time, so an
 agent does not load whole documents; none of them calls a model.
-`docguard_guard` returns the compact response by default (each finding once);
-pass `detail: "full"` for the legacy shape.
 
 ```bash
 claude mcp add docguard -- npx docguard-cli mcp

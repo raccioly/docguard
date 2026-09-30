@@ -4278,7 +4278,7 @@
           {
             "requirementId": "FR-004",
             "file": ".github/workflows/ci.yml",
-            "line": 218
+            "line": 226
           },
           {
             "requirementId": "FR-004",
