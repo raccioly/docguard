@@ -12,6 +12,7 @@
  * @req docguard.completion-revision-anchoring#FR-004
  * @req docguard.completion-revision-anchoring#SC-001
  * @req docguard.completion-revision-anchoring#SC-002
+ * @req docguard.completion-revision-anchoring#FR-005
  */
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
@@ -146,6 +147,23 @@ describe('a revision a squash merge discarded is reported and re-anchored (FR-00
     assert.equal(refused.status, 'BLOCKED');
     assert.match(refused.blockers[0].message, /Evidence differs .*src\/alpha\.js/);
     assert.equal(readFileSync(join(dir, SPEC_REGISTRY_PATH), 'utf8'), before);
+    assert.match(refused.blockers[0].message, /Pass --reason .* to attest/);
+  });
+
+  it('a differing target can be attested, and the differing files are recorded', t => {
+    const { dir, branchRevision } = squashMerged(t);
+    write(dir, 'src/alpha.js', '/** @implements acme.alpha#FR-001 */\nexport const alpha = "changed after review";\n');
+    git(dir, ['commit', '-qam', 'change evidence after the squash']);
+    const head = git(dir, ['rev-parse', 'HEAD']);
+    const done = reanchorSpec(dir, {}, { id: 'acme.alpha', to: head, write: true, reason: 'The PR kept changing after review; this merge is the reviewed feature' });
+    assert.equal(done.status, 'REANCHORED');
+    assert.deepEqual(recorded(dir, 'acme.alpha').outcomes.at(-1).reanchoredFrom, {
+      revision: branchRevision, method: 'attested',
+      reason: 'The PR kept changing after review; this merge is the reviewed feature',
+      differing: ['src/alpha.js'],
+    });
+    git(dir, ['add', '-A']); git(dir, ['commit', '-qm', 'reanchor']);
+    assert.equal(projectSpecRegistry(dir).current, true);
   });
 
   it('a revision that no longer resolves needs --to and an attested --reason', t => {
@@ -191,5 +209,14 @@ describe('completion warns when its revision will not survive (FR-004)', () => {
     const offMain = complete(dir, 'acme.beta', first);
     assert.equal(offMain.status, 'VERIFIED');
     assert.match(offMain.warnings[0], /not on the remote default branch; a squash merge will discard it/);
+  });
+});
+
+describe('the behaviour is documented (FR-005)', () => {
+  it('commands, DATA-MODEL and CI-RECIPES explain re-anchoring and the squash-merge workflow', () => {
+    const read = p => readFileSync(p, 'utf8');
+    assert.match(read('docs/commands.md'), /specs reanchor[\s\S]*SPR008/);
+    assert.match(read('docs-canonical/DATA-MODEL.md'), /reanchoredFrom[\s\S]*blob-equal[\s\S]*attested/);
+    assert.match(read('docs-canonical/CI-RECIPES.md'), /Under squash merges, run completions on a branch whose HEAD is the default\s+branch's tip/);
   });
 });
