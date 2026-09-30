@@ -1423,6 +1423,11 @@
             "requirementId": "SC-002",
             "file": "tests/completion-revision-anchoring.test.mjs",
             "line": 14
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/completion-revision-anchoring.test.mjs",
+            "line": 17
           }
         ]
       }
