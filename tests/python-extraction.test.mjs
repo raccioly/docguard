@@ -572,8 +572,8 @@ for (const tier of TIERS) {
       assert.ok(f.limitations.some(l => l.code === 'django-unresolved-include' && /social_django\.urls/.test(l.target)));
     });
 
-    it('marks the login_required view as authenticated (FR-003)', () => {
-      assert.deepEqual(get().routes.filter(r => r.auth).map(r => r.key), ['ALL /accounts/profile/{username}/']);
+    it('marks the login_required view and the admin site as authenticated (FR-003)', () => {
+      assert.deepEqual(get().routes.filter(r => r.auth).map(r => r.key).sort(), ['ALL /accounts/profile/{username}/', 'ALL /admin/']);
     });
 
     it('reads Django models with their fields and relationships (FR-005, FR-006)', () => {
