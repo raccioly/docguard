@@ -63,6 +63,19 @@ export const ACCEPTED_SCHEMA_VERSIONS = Object.freeze(
   [...LEGACY_SCHEMA_VERSIONS, SPEC_REGISTRY_SCHEMA_VERSION].sort((a, b) => a - b),
 );
 
+// A re-anchored outcome records where it came from and how equivalence was
+// established (docguard.completion-revision-anchoring#FR-003). Serialized only
+// when set, so registries without re-anchoring are byte-identical.
+function validReanchor(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const keys = Object.keys(value);
+  if (keys.some(key => !['revision', 'method', 'reason'].includes(key))) return false;
+  if (!/^[0-9a-f]{40}(?:[0-9a-f]{24})?$/.test(value.revision || '')) return false;
+  if (!['blob-equal', 'attested'].includes(value.method)) return false;
+  if (value.method === 'attested' && (typeof value.reason !== 'string' || value.reason.trim().length < 8 || value.reason.length > 500)) return false;
+  return value.reason === undefined || typeof value.reason === 'string';
+}
+
 /**
  * Upgrade legacy-but-equivalent encodings in a committed registry to the form
  * this build projects, and report which forms were found.
@@ -280,8 +293,9 @@ function validatedControl(entry, issues) {
   const outcomes = reconciliation.outcomes ?? [];
   if (!Array.isArray(outcomes) || outcomes.length > 20 || outcomes.some(outcome => {
     if (!outcome || typeof outcome !== 'object' || Array.isArray(outcome)) return true;
-    const allowed = new Set(['revision', 'reason', 'evidence', 'deviations', 'successor']);
+    const allowed = new Set(['revision', 'reason', 'evidence', 'deviations', 'successor', 'reanchoredFrom']);
     return Object.keys(outcome).some(key => !allowed.has(key))
+      || (outcome.reanchoredFrom !== undefined && !validReanchor(outcome.reanchoredFrom))
       || !/^[0-9a-f]{40}(?:[0-9a-f]{24})?$/.test(outcome.revision || '')
       || typeof outcome.reason !== 'string' || !outcome.reason.trim() || outcome.reason.length > 500
       || !Array.isArray(outcome.evidence) || outcome.evidence.length > 100
@@ -324,6 +338,7 @@ function validatedControl(entry, issues) {
           evidence: sortedUnique(outcome.evidence || []),
           deviations: sortedUnique(outcome.deviations || []),
           successor: outcome.successor ?? null,
+          ...(outcome.reanchoredFrom ? { reanchoredFrom: outcome.reanchoredFrom } : {}),
         })) : [],
       },
     },
