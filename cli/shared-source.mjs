@@ -17,7 +17,7 @@
 import { createRequire } from 'node:module';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, dirname, relative, extname } from 'node:path';
-import { shouldIgnore, isNonProductDir, isNonProductPath } from './shared-ignore.mjs';
+import { shouldIgnore, isNonProductDir, isNonProductPath, walkFiles } from './shared-ignore.mjs';
 import { pythonEnvNames } from './scanners/py-env.mjs';
 
 const IGNORE_DIRS = new Set([
@@ -726,7 +726,9 @@ function readFallback(rest, patternIndex) {
     return m ? leading(rest.slice(m[0].length)) : undefined;
   }
   if (patternIndex === 4 || patternIndex === 5) {
-    const m = /^['"]\s*,\s*(?=[^\s)])/.exec(rest);
+    // The Python patterns already consume the closing quote, so `rest` starts
+    // at the comma (docguard.generated-docs-consistency#FR-007).
+    const m = /^['"]?\s*,\s*(?=[^\s)])/.exec(rest);
     return m ? leading(rest.slice(m[0].length)) : undefined;
   }
   return undefined;
@@ -830,6 +832,8 @@ function destructuredEnvReads(content, kind) {
  * @implements docguard.fallback-language-coverage#FR-005
  * @implements docguard.js-ts-extraction#FR-003
  * @implements docguard.js-ts-extraction#FR-004
+ * @implements docguard.generated-docs-consistency#FR-007
+ * @implements docguard.generated-docs-consistency#FR-008
  */
 export function grepEnvUsage(projectDir, config = {}, options = {}) {
   const within = options.within ? String(options.within).replace(/\\/g, '/').replace(/\/+$/, '') : null;
@@ -1053,6 +1057,92 @@ export function grepEnvUsage(projectDir, config = {}, options = {}) {
     walk(resolve(projectDir, 'config'), new Set(['.rb']));
   }
   return finish();
+}
+
+/** Technologies the tech-stack drift check (DDF001) and `diff` recognise by name. */
+export const TECH_PATTERNS = ['React', 'Next.js', 'Vue', 'Angular', 'Svelte', 'Express', 'Fastify', 'Hono',
+  'PostgreSQL', 'MySQL', 'MongoDB', 'DynamoDB', 'Redis', 'Prisma', 'Drizzle',
+  'TypeScript', 'Tailwind', 'Docker', 'Terraform'];
+
+const TECH_DEPENDENCIES = {
+  'react': 'React', 'next': 'Next.js', 'vue': 'Vue', 'express': 'Express',
+  'fastify': 'Fastify', 'hono': 'Hono', 'prisma': 'Prisma', '@prisma/client': 'Prisma',
+  'drizzle-orm': 'Drizzle', 'typescript': 'TypeScript', 'tailwindcss': 'Tailwind',
+  'redis': 'Redis', 'ioredis': 'Redis', 'pg': 'PostgreSQL', 'mysql2': 'MySQL',
+  'mongoose': 'MongoDB', '@aws-sdk/client-dynamodb': 'DynamoDB',
+};
+
+/**
+ * Technologies the code declares: package.json dependencies (root, source
+ * root and workspaces), a Dockerfile/compose file, and `.tf` files. One
+ * function for the check (DDF001, `diff`) and the writer (`generate`), so the
+ * generated tech stack names exactly what the check looks for.
+ * @implements docguard.generated-docs-consistency#FR-010
+ * @returns {string[]} in TECH_PATTERNS order
+ */
+export function detectCodeTechnologies(dir, config = {}) {
+  const found = new Set();
+  const deps = {};
+  for (const { pkg } of collectPackageJsons(dir, config)) Object.assign(deps, pkg.dependencies || {}, pkg.devDependencies || {});
+  for (const [dep, tech] of Object.entries(TECH_DEPENDENCIES)) if (deps[dep]) found.add(tech);
+  if (detectDocker(dir, config)) found.add('Docker');
+  let terraform = false;
+  walkFiles(dir, (full) => {
+    if (terraform || extname(full) !== '.tf') return;
+    if (!shouldIgnore(relative(dir, full), config)) terraform = true;
+  }, { ignoreDirs: TECH_WALK_IGNORE });
+  if (terraform) found.add('Terraform');
+  return TECH_PATTERNS.filter(t => found.has(t));
+}
+
+const TECH_WALK_IGNORE = new Set([
+  'node_modules', '.git', '.next', 'dist', 'build', 'coverage', '.cache', '__pycache__', '.venv', 'vendor',
+  'docs-canonical', 'docs-implementation', 'templates',
+]);
+
+/** Env template files read at the project root, in precedence order. */
+export const ENV_TEMPLATE_FILES = ['.env.example', '.env.template'];
+
+/**
+ * The one set of environment variables `generate`, `generate --plan` and `diff`
+ * document and compare: names in a root env template plus names read in code.
+ * Values in a template are examples, never secrets DocGuard reads from `.env`.
+ *
+ * `required` is true when some read site has no fallback, false when every
+ * read site has one, and null when the code never reads the variable (it is
+ * only listed in a template). `default` is the first literal fallback.
+ * @implements docguard.generated-docs-consistency#FR-008
+ * @returns {Array<{name: string, files: string[], template: string|null, example: string|null, required: boolean|null, default: string|null}>}
+ */
+export function collectEnvVars(projectDir, config = {}, used = grepEnvUsage(projectDir, config)) {
+  const vars = new Map();
+  const entry = (name) => {
+    if (!vars.has(name)) vars.set(name, { name, files: [], template: null, example: null, required: null, default: null });
+    return vars.get(name);
+  };
+  for (const file of ENV_TEMPLATE_FILES) {
+    const abs = resolve(projectDir, file);
+    if (!existsSync(abs)) continue;
+    let content;
+    try { content = readFileSync(abs, 'utf-8'); } catch { continue; }
+    for (const m of content.matchAll(/^([A-Z][A-Z0-9_]*[A-Z0-9])\s*=[ \t]*(.*)$/gm)) {
+      const v = entry(m[1]);
+      if (v.template) continue;
+      v.template = file;
+      const example = m[2].trim().replace(/^(['"])(.*)\1$/, '$2');
+      v.example = example || null;
+    }
+  }
+  for (const name of used) {
+    const v = entry(name);
+    const sites = used.sites?.get(name) || [];
+    v.files = [...new Set(sites.map(site => site.file))].sort();
+    if (sites.length > 0) {
+      v.required = sites.some(site => !site.defaulted);
+      v.default = sites.find(site => typeof site.default === 'string')?.default ?? null;
+    }
+  }
+  return [...vars.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
 
 /** Spring Boot's own config files, whose `${X}` placeholders may name env vars. */

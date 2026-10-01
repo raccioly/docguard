@@ -76,6 +76,15 @@ export function scanSchemasDeep(dir, stack, docTools, config = {}) {
   // user excluded (e.g. test/fixtures/**), then drop relationships that point at
   // a dropped entity. Filtering the RESULTS (not the walk) keeps the cache and
   // the per-ORM walkers untouched. entity.file is project-relative already.
+  // Every entity cites its file project-relative: the Python, Go, Rust, JPA and
+  // Rails walkers produced absolute paths, which leaked machine paths into the
+  // generated DATA-MODEL.md and kept those entities out of as-built facts
+  // (docguard.generated-docs-consistency#FR-010).
+  for (const e of entities) {
+    if (!e.file) continue;
+    const rel = relPosix(dir, resolve(dir, e.file));
+    if (!rel.startsWith('../')) e.file = rel;
+  }
   const keptEntities = entities.filter(
     e => !e.file || !shouldIgnore(relPosix(dir, resolve(dir, e.file)), config)
   );

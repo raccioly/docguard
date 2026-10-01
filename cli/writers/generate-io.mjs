@@ -8,7 +8,26 @@
  */
 
 import { existsSync, readFileSync, writeFileSync, mkdirSync, copyFileSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
+import { resolve, dirname, basename, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { inspectSections } from './sections.mjs';
+
+const TEMPLATES_DIR = fileURLToPath(new URL('../../templates/', import.meta.url));
+const GENERATED_MARKER_RE = /^[ \t]*<!--\s*docguard:generated\s+true\s*-->[ \t]*$/m;
+
+/**
+ * True for a document DocGuard wrote and nobody has edited: one marked
+ * `docguard:generated true`, or an init template still byte-identical to its
+ * template apart from the dates init stamps. A person's document is never
+ * DocGuard's, so its overwrite keeps a backup.
+ */
+export function isDocguardAuthored(docPath, content) {
+  if (GENERATED_MARKER_RE.test(content)) return true;
+  const template = join(TEMPLATES_DIR, `${basename(docPath)}.template`);
+  if (!existsSync(template)) return false;
+  const norm = (text) => String(text).replace(/\r\n/g, '\n').replace(/\b\d{4}-\d{2}-\d{2}\b|YYYY-MM-DD/g, '<date>');
+  try { return norm(readFileSync(template, 'utf-8')) === norm(content); } catch { return false; }
+}
 
 /**
  * Create a .bak backup of an existing file before --force overwrites it.
@@ -51,6 +70,60 @@ export function safeWrite(filePath, content) {
   mkdirSync(dirname(filePath), { recursive: true });
   backupFile(filePath, content);
   writeFileSync(filePath, content, 'utf-8');
+}
+
+/**
+ * The lines of `content` a person owns: everything except the bodies of
+ * unpinned `source=code` sections, which DocGuard regenerates from code.
+ * Null when the markers are malformed (ownership cannot be decided).
+ */
+function unownedLines(content) {
+  const { sections, issues } = inspectSections(content);
+  if (issues.length) return null;
+  const lines = String(content).split('\n');
+  const owned = new Set();
+  for (const sec of sections) {
+    if (sec.source !== 'code' || sec.attrs?.pinned !== undefined) continue;
+    for (let i = sec.openLine + 1; i < sec.closeLine; i++) owned.add(i);
+  }
+  return lines.filter((_, i) => !owned.has(i));
+}
+
+/**
+ * True when turning `before` into `after` only rewrites DocGuard-owned bytes:
+ * every line outside unpinned code-section bodies survives, in order (the
+ * write may only insert new lines around them).
+ */
+export function preservesUnownedContent(before, after) {
+  const was = unownedLines(before);
+  const now = unownedLines(after);
+  if (!was || !now) return false;
+  let j = 0;
+  for (const line of was) {
+    while (j < now.length && now[j] !== line) j++;
+    if (j === now.length) return false;
+    j++;
+  }
+  return true;
+}
+
+/**
+ * Write a document `generate --plan --write` updated. A document DocGuard
+ * authored (see isDocguardAuthored) whose every line outside unpinned
+ * code-section bodies survives gets no `.bak`: nothing a person wrote is
+ * overwritten. A person's document, or any lossy change, goes through
+ * safeWrite and keeps its backup (Constitution VI).
+ * @implements docguard.generated-docs-consistency#FR-009
+ */
+export function writeOwnedSections(filePath, before, after) {
+  if (before === null || before === undefined || !existsSync(filePath)) return safeWrite(filePath, after);
+  if (before === after) return;
+  if (isDocguardAuthored(filePath, before) && preservesUnownedContent(before, after)) {
+    mkdirSync(dirname(filePath), { recursive: true });
+    writeFileSync(filePath, after, 'utf-8');
+    return;
+  }
+  safeWrite(filePath, after);
 }
 
 /**

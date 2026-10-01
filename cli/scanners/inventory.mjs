@@ -15,7 +15,7 @@
 import { existsSync, readdirSync } from 'node:fs';
 import { resolve, join, relative, extname } from 'node:path';
 import { resolveSourceRoots, readScannable } from '../shared-source.mjs';
-import { DEFAULT_IGNORE_DIRS as IGNORE_DIRS, isNonProductDir } from '../shared-ignore.mjs';
+import { DEFAULT_IGNORE_DIRS as IGNORE_DIRS, isNonProductDir, isDocguardOwnedDir } from '../shared-ignore.mjs';
 
 const CODE_EXT = new Set(['.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx', '.py', '.go', '.rs', '.rb', '.php', '.java', '.kt']);
 const toPosix = (p) => p.split(/[\\/]/).join('/');
@@ -63,9 +63,13 @@ export function scanComponents(projectDir, config = {}, limit = 30) {
         kind = 'module';
       } else if (e.isFile() && CODE_EXT.has(extname(e.name))) {
         if (/^(index|__init__)\./.test(e.name)) continue; // barrels/entry-init aren't components
+        if (TEST_FILE_RE.test(e.name)) continue; // a test file is not a component
         kind = 'file';
       } else continue;
       const rel = toPosix(relative(projectDir, join(croot, e.name)));
+      // DocGuard's own doc homes are not modules (docguard.generated-docs-consistency#FR-005):
+      // listing them made the component map stale the moment generate created them.
+      if (kind === 'module' && isDocguardOwnedDir(projectDir, rel)) continue;
       if (seen.has(rel)) continue;
       seen.add(rel);
       out.push({ name: e.name, kind, path: rel });
@@ -79,7 +83,8 @@ export function scanComponents(projectDir, config = {}, limit = 30) {
 
 // Test FILE conventions across ecosystems: JS *.test/*.spec, Python test_*.py /
 // *_test.py, Go *_test.go, Ruby *_spec.rb / *_test.rb.
-const TEST_FILE_RE = /(?:\.(?:test|spec)\.[cm]?[jt]sx?|(?:^|\/)test_[^/]*\.py|_test\.(?:py|go)|_spec\.rb|(?:^|\/)[^/]*_test\.rb)$/i;
+// Django's per-app `tests.py` is a test module too (docguard.generated-docs-consistency#FR-010).
+const TEST_FILE_RE = /(?:\.(?:test|spec)\.[cm]?[jt]sx?|(?:^|\/)test_[^/]*\.py|(?:^|\/)tests\.py|_test\.(?:py|go)|_spec\.rb|(?:^|\/)[^/]*_test\.rb)$/i;
 // Fixture/mock subdirs that sit INSIDE a test dir but aren't themselves tests.
 const FIXTURE_DIRS = new Set(['fixtures', '__fixtures__', 'testdata', 'test-fixtures', 'testfixtures', 'mocks', '__mocks__', 'snapshots', '__snapshots__']);
 const TEST_DIRS = ['tests', 'test', '__tests__', 'spec', 'e2e'];

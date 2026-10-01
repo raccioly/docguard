@@ -20,9 +20,14 @@ import { detectDocTools } from '../scanners/doc-tools.mjs';
 import { scanRoutesDeep } from '../scanners/routes.mjs';
 import { scanSchemasDeep } from '../scanners/schemas.mjs';
 import { buildMemoryPlan } from '../scanners/memory-plan.mjs';
+import { scanComponents as scanModules, scanTestInventory } from '../scanners/inventory.mjs';
+import { detectIntegrations } from '../scanners/integrations.mjs';
+import { collectEnvVars, detectCodeTechnologies } from '../shared-source.mjs';
+import { detectRouteFramework } from '../validators/api-surface.mjs';
+import { collectCodeTests } from '../validators/docs-diff.mjs';
+import { assertOwnedCodeSection, getSection, replaceSection, upsertSection } from '../writers/sections.mjs';
+import { registerGeneratedCanonicalDocs, surfaceConfidence, writeOwnedSections } from '../writers/generate-io.mjs';
 import { detectProjectProfile } from '../scanners/project-type.mjs';
-import { assertOwnedCodeSection, replaceSection, upsertSection } from '../writers/sections.mjs';
-import { safeWrite, registerGeneratedCanonicalDocs, surfaceConfidence } from '../writers/generate-io.mjs';
 import {
   generateArchitecture, generateApiReference, generateDataModel,
   generateEnvironment, generateTestSpec, generateSecurity, generateRootFiles,
@@ -119,23 +124,37 @@ export function runGeneratePlan(projectDir, config, flags) {
     for (const doc of plan.docs) {
       const full = resolve(projectDir, doc.path);
       const title = basename(doc.path, '.md').replace(/-/g, ' ');
-      let content = existsSync(full)
-        ? readFileSync(full, 'utf-8')
-        : `# ${title}\n\n<!-- docguard:generated true -->\n`;
-      const boundedMapped = isMappedDocPath(config, doc.path) && existsSync(full)
+      const before = existsSync(full) ? readFileSync(full, 'utf-8') : null;
+      let content = before ?? `# ${title}\n\n<!-- docguard:generated true -->\n`;
+      const boundedMapped = isMappedDocPath(config, doc.path) && before !== null
         && !/^[ \t]*<!--\s*docguard:generated\s+true\s*-->[ \t]*$/mi.test(content);
+      let previous = null;
       for (const sec of doc.sections) {
+        const prior = previous;
+        previous = sec.id;
         if (boundedMapped && sec.source !== 'code') continue;
+        const existing = getSection(content, sec.id);
+        if (existing) {
+          // docguard.generated-docs-consistency#FR-009: a human section is
+          // insert-only — re-running the plan used to replace an agent's prose
+          // with the task placeholder. A pinned code section is hand-kept, as
+          // `sync` already honours.
+          if (sec.source !== 'code' || existing.attrs?.pinned !== undefined) continue;
+          content = replaceSection(content, sec.id, sec.body).content;
+          continue;
+        }
+        if (boundedMapped) continue;
         const body = sec.source === 'code'
           ? sec.body
           : `> **AI task:** ${sec.task}\n<!-- docguard:pending agent writes this section -->`;
-        content = boundedMapped
-          ? replaceSection(content, sec.id, body).content
-          : upsertSection(content, sec.id, body, { source: sec.source }).content;
+        // A section with a heading is titled (FR-003); one without continues
+        // the section before it.
+        const position = !sec.heading && prior ? `after:${prior}` : 'end';
+        content = upsertSection(content, sec.id, body, { source: sec.source, heading: sec.heading || null, position }).content;
       }
-      // Route through safeWrite: creates the parent dir (docs-implementation/ may
-      // not exist yet — was an ENOENT crash) and snapshots a .bak before writing.
-      safeWrite(full, content);
+      // writeOwnedSections creates the parent dir (docs-implementation/ may not
+      // exist yet) and keeps a .bak only when a byte a person owns would change.
+      writeOwnedSections(full, before, content);
       wrote++;
     }
     // B7: register the scaffolded canonical docs so guard doesn't flag them.
@@ -221,10 +240,16 @@ export function runGenerate(projectDir, config, flags) {
   }
 
   // ── 3. Scan Project Structure ──
-  const scan = scanProject(projectDir);
+  // Facts the checks read come from the checks' own scanners, so guard run
+  // straight after generate agrees with what was written
+  // (docguard.generated-docs-consistency#FR-008, FR-010).
+  const scan = scanProject(projectDir, config);
 
   // ── 4. Deep Scan Routes ──
-  const deepRoutes = scanRoutesDeep(projectDir, stack, docTools, { config });
+  // The ecosystem-aware framework guard's API-surface check uses (a FastAPI,
+  // Django or Gin project has no package.json framework to read).
+  const routeFramework = [detectRouteFramework(projectDir, config), stack.framework].filter(Boolean).join(' ');
+  const deepRoutes = scanRoutesDeep(projectDir, { ...stack, framework: routeFramework }, docTools, { config });
   if (deepRoutes.length > 0) {
     console.log(`  ${c.bold}Route Scanning:${c.reset} ${deepRoutes.length} endpoints found (source: ${deepRoutes[0]?.source || 'code'})`);
   }
@@ -416,7 +441,7 @@ function detectStack(dir) {
 
 
 
-function scanProject(dir) {
+function scanProject(dir, config = {}) {
   const scan = {
     routes: [],
     models: [],
@@ -435,7 +460,10 @@ function scanProject(dir) {
   scanTests(dir, scan);
   scanComponents(dir, scan);
   scanMiddlewares(dir, scan);
-  scanEnvVars(dir, scan);
+  scan.envVars = collectEnvVars(dir, config);
+  scan.modules = scanModules(dir, config);
+  scan.technologies = detectCodeTechnologies(dir, config);
+  scan.authLibraries = detectIntegrations(dir, config).filter(i => i.category === 'Auth');
 
   // Count files and lines
   countFilesAndLines(dir, scan);
@@ -448,6 +476,15 @@ function scanProject(dir) {
   scan.services = scan.services.filter(f => !isTestFile(f));
   scan.components = scan.components.filter(f => !isTestFile(f));
   scan.middlewares = scan.middlewares.filter(f => !isTestFile(f));
+  // Every test file the test-drift check (DDF002) and the plan's inventory see.
+  // Files under a test directory count only when they are test files, so
+  // fixtures and helpers are not listed as tests.
+  const isTestLike = (f) => /(?:\.(?:test|spec)\.[^./]+|(?:^|\/)test_[^/]*\.py|(?:^|\/)tests\.py|_test\.(?:py|go)|_spec\.rb)$/.test(f);
+  scan.tests = [...new Set([
+    ...scan.tests.filter(isTestLike),
+    ...collectCodeTests(dir, config),
+    ...scanTestInventory(dir, config).files.map(t => t.file),
+  ].map(f => f.replace(/\\/g, '/')))].sort();
 
   return scan;
 }
@@ -584,21 +621,6 @@ function scanMiddlewares(dir, scan) {
   });
 }
 
-
-function scanEnvVars(dir, scan) {
-  // Parse .env.example for env vars
-  const envExample = resolve(dir, '.env.example');
-  if (existsSync(envExample)) {
-    const content = readFileSync(envExample, 'utf-8');
-    const lines = content.split('\n');
-    for (const line of lines) {
-      const match = line.match(/^([A-Z][A-Z0-9_]+)\s*=\s*(.*)/);
-      if (match) {
-        scan.envVars.push({ name: match[1], example: match[2] || '<required>' });
-      }
-    }
-  }
-}
 
 function countFilesAndLines(dir, scan) {
   walkDir(dir, (filePath) => {

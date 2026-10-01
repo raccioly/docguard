@@ -171,11 +171,13 @@ export function renderModuleGraph(graph, config = {}) {
   // Nothing drawable because the parser was missing is not "no modules".
   // @implements docguard.python-extraction#FR-014
   const body = files.length === 0
+    // Stated positively: generated text must pass DocGuard's own prose checks
+    // (DQ007 negation load; docguard.generated-docs-consistency#FR-011).
     ? (partialReason
       ? `_Module graph not drawn: ${partialReason}._`
       : unanalysedText
-        ? `_No module graph: the import graph reads JS/TS and Python only, and ${unanalysedText}._`
-        : '_No source modules found for the module graph._')
+        ? `_Module graph: empty. The import graph reads JS/TS and Python only, and ${unanalysedText}._`
+        : '_Module graph: empty. The import scanner reads JavaScript, TypeScript and Python files and found zero here._')
     : `${lines.join('\n')}${notes.length ? `\n\n_Module graph: ${notes.join('; ')}._` : ''}`;
   return {
     body,

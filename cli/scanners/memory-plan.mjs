@@ -18,7 +18,7 @@ import { detectDocTools } from './doc-tools.mjs';
 import { scanRoutesDeep } from './routes.mjs';
 import { scanSchemasDeep, generateERDiagram } from './schemas.mjs';
 import { scanFrontend } from './frontend.mjs';
-import { grepEnvUsage, summarizeTiers } from '../shared-source.mjs';
+import { collectEnvVars, detectCodeTechnologies, summarizeTiers } from '../shared-source.mjs';
 import { detectIntegrations } from './integrations.mjs';
 import { PROFILES } from '../shared.mjs';
 import { scanComponents, scanTestInventory } from './inventory.mjs';
@@ -219,7 +219,7 @@ function _validCachedPlan(plan) {
   const docPath = value => text(value) && /^docs-(?:canonical|implementation)\/.+\.md$/.test(value)
     && !/[\\:\x00-\x1f]/.test(value) && value.split('/').every(part => part && !part.startsWith('.'));
   const grounding = value => value == null || record(value);
-  const section = value => record(value) && text(value.id) && (
+  const section = value => record(value) && text(value.id) && nullableText(value.heading) && (
     value.source === 'code' ? text(value.body)
       && (value.completeness === undefined || (value.completeness === 'partial' && text(value.partialReason)))
       : value.source === 'human' && text(value.task) && grounding(value.grounding)
@@ -384,7 +384,11 @@ function _buildMemoryPlanUncached(projectDir, config = {}) {
     : { screens: [], components: [], stores: [], hooks: [], contexts: [], apiCalls: [],
         i18n: { usedKeys: [], locales: [], missing: [] },
         framework: null, stateLib: null, dataLib: null };
-  const envVars = [...grepEnvUsage(projectDir, config)].sort();
+  // One env set for generate, the plan and diff: templates + code reads
+  // (docguard.generated-docs-consistency#FR-008).
+  const envDetails = collectEnvVars(projectDir, config);
+  const envVars = envDetails.map(v => v.name);
+  const technologies = detectCodeTechnologies(projectDir, config);
   const integrations = detectIntegrations(projectDir, config);
   // Pre-filled code-truth (field report §5): real source modules + test inventory.
   const modules = scanComponents(projectDir, config);
@@ -405,8 +409,8 @@ function _buildMemoryPlanUncached(projectDir, config = {}) {
   const surface = {
     profile,
     parserTiers,
-    endpoints: routes.map(r => ({ method: r.method, path: r.path, auth: !!r.auth })),
-    entities: entities.map(e => ({ name: e.name, fields: e.fields || [] })),
+    endpoints: routes.map(r => ({ method: r.method, path: r.path, auth: !!r.auth, file: r.file ? String(r.file).replace(/\\/g, '/') : null })),
+    entities: entities.map(e => ({ name: e.name, fields: e.fields || [], file: e.file || null })),
     screens: fe.screens,
     components: fe.components,
     envVars,
@@ -454,10 +458,14 @@ function _buildMemoryPlanUncached(projectDir, config = {}) {
   // ── Compose documents + sections (language/kind-aware) ──
   const docs = [];
   const agentTasks = [];
-  const addTask = (doc, sectionId, instruction, grounding) => {
+  // `heading` is the H2 the section is written under (null: it continues the
+  // section before it). The structure validators require these headings, so a
+  // scaffolded doc satisfies STR003/ENV001/ENV002 (docguard.generated-docs-consistency#FR-003).
+  const addTask = (doc, sectionId, instruction, grounding, heading = null) => {
     agentTasks.push({ doc, sectionId, instruction, grounding });
-    return { id: sectionId, source: 'human', task: instruction, grounding };
+    return { id: sectionId, heading, source: 'human', task: instruction, grounding };
   };
+  const cite = (file) => (file ? `\`${file}\`` : '—');
 
   // ARCHITECTURE — always.
   {
@@ -472,11 +480,13 @@ function _buildMemoryPlanUncached(projectDir, config = {}) {
     sections.push({
       id: 'tech-stack',
       source: 'code',
-      body: md.table(withLibraries ? ['Path', 'Language', 'Framework', 'Libraries', 'Kind'] : ['Path', 'Language', 'Framework', 'Kind'], stackRows),
+      heading: 'Tech Stack',
+      body: md.table(withLibraries ? ['Path', 'Language', 'Framework', 'Libraries', 'Kind'] : ['Path', 'Language', 'Framework', 'Kind'], stackRows)
+        + (technologies.length ? `\n\nTechnologies: ${technologies.join(', ')}.` : ''),
     });
     sections.push(addTask('docs-canonical/ARCHITECTURE.md', 'overview',
       'Write a 2-3 sentence System Overview: what this project does and who uses it.',
-      { languages: profile.languages, frameworks: profile.frameworks, kind: profile.kind }));
+      { languages: profile.languages, frameworks: profile.frameworks, kind: profile.kind }, 'System Overview'));
 
     // Component Map — PRE-FILLED from the real source layout (field report §5):
     // the agent gets the module list for free and only annotates responsibilities.
@@ -484,6 +494,7 @@ function _buildMemoryPlanUncached(projectDir, config = {}) {
       sections.push({
         id: 'component-map',
         source: 'code',
+        heading: 'Component Map',
         body: md.table(['Module', 'Kind', 'Responsibility'],
           surface.modules.map(m => [`\`${m.path}\``, m.kind, '<!-- one-line responsibility -->'])),
       });
@@ -493,7 +504,7 @@ function _buildMemoryPlanUncached(projectDir, config = {}) {
     } else {
       sections.push(addTask('docs-canonical/ARCHITECTURE.md', 'components',
         'Describe the major components/modules and their responsibilities, using the real directories below.',
-        { ecosystems: profile.ecosystems.map(e => ({ dir: e.dir, language: e.language, framework: e.framework })) }));
+        { ecosystems: profile.ecosystems.map(e => ({ dir: e.dir, language: e.language, framework: e.framework })) }, 'Component Map'));
     }
 
     // Frontend modules (stores/hooks/contexts) — code-truth section when present.
@@ -507,6 +518,7 @@ function _buildMemoryPlanUncached(projectDir, config = {}) {
       sections.push({
         id: 'frontend-modules',
         source: 'code',
+        heading: 'Frontend Modules',
         body: md.table(['Kind', 'Count', 'Examples'], feRows),
       });
     }
@@ -518,6 +530,7 @@ function _buildMemoryPlanUncached(projectDir, config = {}) {
       sections.push({
         id: 'module-graph',
         source: 'code',
+        heading: 'Module Graph',
         body: graph.body,
         ...(graph.completeness === 'partial' ? { completeness: 'partial', partialReason: graph.partialReason } : {}),
       });
@@ -537,52 +550,61 @@ function _buildMemoryPlanUncached(projectDir, config = {}) {
       sections.push({
         id: 'test-inventory',
         source: 'code',
+        heading: 'Test Inventory',
         body: `${header}\n\n${md.table(['Test file', 'Cases'], rows)}`,
       });
     }
+    sections.push(addTask('docs-canonical/TEST-SPEC.md', 'categories',
+      ti.totalFiles > 0
+        ? 'Document the test categories (unit / integration / e2e): where each lives and the command that runs it. The Test Inventory section lists the detected test files.'
+        : 'No test files were detected. Document the intended test categories and where tests will live.',
+      { totalFiles: ti.totalFiles }, 'Test Categories'));
     sections.push(addTask('docs-canonical/TEST-SPEC.md', 'coverage',
       ti.totalFiles > 0
-        ? 'Document the test categories (unit / integration / e2e), the coverage rules, and the service→test mapping. The detected test files + case counts are listed above.'
-        : 'No test files were detected. Document the intended test strategy: categories, coverage targets, and where tests will live.',
-      { totalFiles: ti.totalFiles, totalCases: ti.totalCases }));
+        ? 'Document the coverage rules and the service→test mapping. The Test Inventory section lists the detected test files and their case counts.'
+        : 'Document the coverage targets the tests must meet.',
+      { totalFiles: ti.totalFiles, totalCases: ti.totalCases }, 'Coverage Rules'));
     docs.push({ path: 'docs-canonical/TEST-SPEC.md', sections });
   }
 
   // API-REFERENCE — only if there's an API surface AND the profile allows it.
   if (surface.endpoints.length > 0 && profileAllows('docs-canonical/API-REFERENCE.md')) {
-    const rows = surface.endpoints.map(e => [`\`${e.method}\``, `\`${e.path}\``, e.auth ? '🔒' : '🔓']);
+    const rows = surface.endpoints.map(e => [`\`${e.method}\``, `\`${e.path}\``, e.auth ? '🔒' : '🔓', cite(e.file)]);
     const sections = [{
       id: 'endpoints',
       source: 'code',
-      body: md.table(['Method', 'Path', 'Auth'], rows),
+      heading: 'Endpoints',
+      body: md.table(['Method', 'Path', 'Auth', 'Source'], rows),
       ...partial('endpoints'),
     }];
     sections.push(addTask('docs-canonical/API-REFERENCE.md', 'overview',
       `Write a short intro describing the API (${surface.endpoints.length} endpoints) and its auth model.`,
-      { endpointCount: surface.endpoints.length, framework: primaryFramework }));
+      { endpointCount: surface.endpoints.length, framework: primaryFramework }, 'Overview'));
     docs.push({ path: 'docs-canonical/API-REFERENCE.md', sections });
   }
 
   // DATA-MODEL — only if entities detected AND the profile allows it.
   if (surface.entities.length > 0 && profileAllows('docs-canonical/DATA-MODEL.md')) {
-    const rows = surface.entities.map(e => [`\`${e.name}\``, String((e.fields || []).length)]);
+    const rows = surface.entities.map(e => [`\`${e.name}\``, String((e.fields || []).length), cite(e.file)]);
     const sections = [{
       id: 'entities',
       source: 'code',
-      body: md.table(['Entity', 'Fields'], rows),
+      heading: 'Entities',
+      body: md.table(['Entity', 'Fields', 'Source'], rows),
       ...partial('entities'),
     }];
     if (_wantsSection(projectDir, config, 'docs-canonical/DATA-MODEL.md', 'entity-diagram')) {
       sections.push({
         id: 'entity-diagram',
         source: 'code',
+        heading: 'Entity Diagram',
         body: `\`\`\`mermaid\n${generateERDiagram(entities, schemas.relationships || [])}\n\`\`\``,
         ...partial('entities'),
       });
     }
     sections.push(addTask('docs-canonical/DATA-MODEL.md', 'relationships',
       'Describe the relationships between the entities below and any key indexes.',
-      { entities: surface.entities.map(e => e.name) }));
+      { entities: surface.entities.map(e => e.name) }, 'Relationships'));
     docs.push({ path: 'docs-canonical/DATA-MODEL.md', sections });
   }
 
@@ -592,11 +614,12 @@ function _buildMemoryPlanUncached(projectDir, config = {}) {
     const sections = [{
       id: 'screens',
       source: 'code',
+      heading: 'Screens',
       body: md.table(['Route', 'Screen'], rows),
     }];
     sections.push(addTask('docs-canonical/SCREENS.md', 'flows',
       `Group the ${surface.screens.length} screens into features/user-flows and describe each flow.`,
-      { screens: surface.screens.map(s => s.path), components: surface.components.length }));
+      { screens: surface.screens.map(s => s.path), components: surface.components.length }, 'User Flows'));
     docs.push({ path: 'docs-canonical/SCREENS.md', sections });
   }
 
@@ -606,11 +629,12 @@ function _buildMemoryPlanUncached(projectDir, config = {}) {
     const sections = [{
       id: 'integrations',
       source: 'code',
+      heading: 'Integrations',
       body: md.table(['Category', 'Service', 'Evidence (SDK)'], rows),
     }];
     sections.push(addTask('docs-canonical/INTEGRATIONS.md', 'overview',
       `Describe each detected integration: what role it plays in this system, which module(s) use it, and any operational notes (auth, credentials, regions).`,
-      { integrations: surface.integrations.map(i => ({ name: i.name, category: i.category })) }));
+      { integrations: surface.integrations.map(i => ({ name: i.name, category: i.category })) }, 'Overview'));
     docs.push({ path: 'docs-canonical/INTEGRATIONS.md', sections });
   }
 
@@ -627,6 +651,7 @@ function _buildMemoryPlanUncached(projectDir, config = {}) {
     const sections = [{
       id: 'feature-areas',
       source: 'code',
+      heading: 'Feature Areas',
       body: md.table(['Area', 'Screens', 'Examples'], rows),
     }];
     sections.push(addTask('docs-canonical/FEATURES.md', 'features',
@@ -637,21 +662,24 @@ function _buildMemoryPlanUncached(projectDir, config = {}) {
         endpointCount: surface.endpoints.length,
         apiCalls: surface.apiCalls.slice(0, 30).map(c => ({ method: c.method, path: c.path })),
         storeCount: surface.stores.length,
-      }));
+      }, 'Features'));
     docs.push({ path: 'docs-canonical/FEATURES.md', sections });
   }
 
   // ENVIRONMENT — env vars + setup.
   if (surface.envVars.length > 0) {
-    const rows = surface.envVars.map(v => [`\`${v}\``, '<!-- describe -->']);
+    const required = v => (v.required === null ? '—' : v.required ? 'Yes' : 'No');
+    const source = v => [...v.files.slice(0, 2), ...(v.template ? [v.template] : [])].map(f => `\`${f}\``).join(', ') || '—';
+    const rows = envDetails.map(v => [`\`${v.name}\``, required(v), v.default === null ? '—' : `\`${v.default}\``, source(v), '<!-- describe -->']);
     const sections = [{
       id: 'env-vars',
       source: 'code',
-      body: md.table(['Variable', 'Description'], rows),
+      heading: 'Environment Variables',
+      body: md.table(['Variable', 'Required', 'Default', 'Source', 'Description'], rows),
     }];
     sections.push(addTask('docs-canonical/ENVIRONMENT.md', 'setup',
       'Write the Prerequisites and Setup Steps (clone → install → run) for this stack.',
-      { languages: profile.languages, frameworks: profile.frameworks }));
+      { languages: profile.languages, frameworks: profile.frameworks }, 'Setup Steps'));
     docs.push({ path: 'docs-canonical/ENVIRONMENT.md', sections });
   }
 
@@ -664,7 +692,7 @@ function _buildMemoryPlanUncached(projectDir, config = {}) {
     sections: [
       addTask('docs-implementation/KNOWN-GOTCHAS.md', 'gotchas',
         'Document the non-obvious lessons that have bitten this team. For each: symptom → cause → fix. Mine git log (commit messages, revert/hotfix commits), recent PRs, and chat history. Keep entries terse and actionable.',
-        { integrations: surface.integrations.map(i => i.name), primary: profile.primary?.framework }),
+        { integrations: surface.integrations.map(i => i.name), primary: profile.primary?.framework }, 'Known Gotchas'),
     ],
   });
   docs.push({
@@ -672,7 +700,7 @@ function _buildMemoryPlanUncached(projectDir, config = {}) {
     sections: [
       addTask('docs-implementation/CURRENT-STATE.md', 'state',
         'Snapshot of what is shipped vs in-flight vs planned. What is deployed (where, which versions), which features are behind flags, what is known tech debt. Mine CHANGELOG, deploy logs, feature-flag config, GitHub Issues/Projects.',
-        { kind: profile.kind, languages: profile.languages }),
+        { kind: profile.kind, languages: profile.languages }, 'Current State'),
     ],
   });
   docs.push({
@@ -680,7 +708,7 @@ function _buildMemoryPlanUncached(projectDir, config = {}) {
     sections: [
       addTask('docs-implementation/RUNBOOKS.md', 'runbooks',
         'Operational procedures for production: deploy, rollback, hot-fix, common incidents, on-call escalation. For each runbook: when to use, exact steps, and the verification check. Mine scripts/, .github/workflows, deploy docs, and chat history.',
-        { integrations: surface.integrations.map(i => i.name) }),
+        { integrations: surface.integrations.map(i => i.name) }, 'Runbooks'),
     ],
   });
 

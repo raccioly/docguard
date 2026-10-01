@@ -920,11 +920,47 @@ function detectMethodsFromHandler(content) {
   return [...methods];
 }
 
-function extractHandlerName(content, matchIndex) {
-  // Look for function name after the route path
-  const after = content.substring(matchIndex, matchIndex + 200);
-  const fnMatch = after.match(/,\s*(?:async\s+)?(\w+)/);
-  return fnMatch ? fnMatch[1] : '';
+/**
+ * The handler a route registration names: the last plain argument after the
+ * path (`router.get('/', auth, listUsers)` → `listUsers`), a named function
+ * expression's name, or `inline` for an anonymous function/arrow. The old
+ * pattern took the first word after the first comma, so `(req, res) => …`
+ * yielded `res` and `async (req, res) => …` yielded `async`
+ * (docguard.generated-docs-consistency#FR-007).
+ */
+export function extractHandlerName(content, matchIndex) {
+  const after = content.substring(matchIndex, matchIndex + 400);
+  const path = after.match(/^[^'"`]*(['"`])(?:\\.|(?!\1)[^\\])*\1/);
+  if (!path) return '';
+  let rest = after.slice(path[0].length);
+  let last = '';
+  for (;;) {
+    const comma = rest.match(/^\s*,\s*/);
+    if (!comma) break;
+    rest = rest.slice(comma[0].length);
+    const named = rest.match(/^(?:async\s+)?function\s*\*?\s*([A-Za-z_$][\w$]*)\s*\(/);
+    if (named) return named[1];
+    if (/^(?:async\s*)?(?:\(|function\b|func\s*\(|[A-Za-z_$][\w$]*\s*=>)/.test(rest)) return 'inline';
+    const ident = rest.match(/^[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*/);
+    if (!ident) break;
+    last = ident[0];
+    rest = rest.slice(ident[0].length);
+    const call = rest.match(/^\s*\(/);
+    if (call) {
+      // A call (a middleware factory such as `rateLimit({})`) is not the
+      // handler: skip its balanced argument list and keep reading.
+      let depth = 0;
+      let i = call[0].length - 1;
+      for (; i < rest.length; i++) {
+        if (rest[i] === '(') depth++;
+        else if (rest[i] === ')' && --depth === 0) break;
+      }
+      if (depth !== 0) return '';
+      rest = rest.slice(i + 1);
+      last = '';
+    }
+  }
+  return last;
 }
 
 function extractJSDocDescription(content, methodName) {

@@ -8,6 +8,15 @@
  *
  * v0.29 split: extracted verbatim from cli/commands/generate.mjs — pure code
  * motion, zero behavior change.
+ *
+ * Every fact written here comes from the scanner the matching check reads, and
+ * every heading is one the structure validators recognise, so guard run
+ * straight after `generate` finds nothing DocGuard caused
+ * (docguard.generated-docs-consistency#FR-003, FR-007, FR-010, FR-011).
+ * @implements docguard.generated-docs-consistency#FR-003
+ * @implements docguard.generated-docs-consistency#FR-007
+ * @implements docguard.generated-docs-consistency#FR-010
+ * @implements docguard.generated-docs-consistency#FR-011
  */
 
 import { existsSync } from 'node:fs';
@@ -27,10 +36,14 @@ export function generateArchitecture(dir, config, stack, scan, flags, docTools) 
   }
   assertMappedFullDocumentWrites(dir, config, ['architecture']);
 
-  const techRows = Object.entries(stack)
-    .filter(([, v]) => v)
-    .map(([k, v]) => `| ${k.charAt(0).toUpperCase() + k.slice(1)} | ${v} | | |`)
-    .join('\n');
+  const techRows = [
+    ...Object.entries(stack)
+      .filter(([, v]) => v)
+      .map(([k, v]) => `| ${k.charAt(0).toUpperCase() + k.slice(1)} | ${v} | | |`),
+    // Every technology the tech-stack drift check recognises in the code.
+    ...((scan.technologies || []).length ? [`| Technologies | ${scan.technologies.join(', ')} | | |`] : []),
+  ].join('\n');
+  const moduleRows = (scan.modules || []).map(m => `| \`${m.path}\` | ${m.kind} | <!-- one-line responsibility --> |`).join('\n');
 
   const componentRows = [];
   if (scan.routes.length > 0) componentRows.push(`| API Routes | HTTP request handling | ${scan.routes.length > 3 ? scan.routes.slice(0, 3).join(', ') + '...' : scan.routes.join(', ')} | |`);
@@ -73,7 +86,7 @@ export function generateArchitecture(dir, config, stack, scan, flags, docTools) 
 
 ---
 
-## 1. Introduction & Goals
+## 1. Introduction and Goals
 <!-- arc42: §1 — Introduction and Goals -->
 
 <!-- TBD: Describe what this system does, who it's for, and key quality goals -->
@@ -99,38 +112,44 @@ ${config.projectName} is a ${stack.framework || stack.language || 'software'} ap
 ## 3. Context & Scope
 <!-- arc42: §3 — Context and Scope (C4 Level 1: System Context) -->
 
-\\\`\\\`\\\`mermaid
+\`\`\`mermaid
 graph TD
     U[Users/Clients] --> S[${config.projectName}]
     S --> DB[(${stack.database || 'Database'})]
     S --> EXT[External Services]
-\\\`\\\`\\\`
+\`\`\`
 
 ## 4. Solution Strategy
 <!-- arc42: §4 — Solution Strategy -->
 
-See \\\`docs-canonical/ADR.md\\\` for architecture decision records.
+<!-- TBD: the key technology and design decisions, and why -->
 
 ## 5. Building Block View
 <!-- arc42: §5 — Building Block View (C4 Level 2: Container) -->
 
 | Component | Responsibility | Location | Tests |
 |-----------|---------------|----------|-------|
-${componentRows.join('\\n') || '| <!-- Add components --> | | | |'}
+${componentRows.join('\n') || '| <!-- Add components --> | | | |'}
+${moduleRows ? `
+### Source Modules
 
-\\\`\\\`\\\`mermaid
+| Module | Kind | Responsibility |
+|--------|------|----------------|
+${moduleRows}
+` : ''}
+\`\`\`mermaid
 graph TD
     A[Client] --> B[${stack.framework || 'API'}]
     B --> C[Services]
     C --> D[${stack.database || 'Database'}]
     ${scan.middlewares.length > 0 ? 'A --> M[Middleware] --> B' : ''}
     ${scan.components.length > 0 ? 'A --> UI[UI Components]' : ''}
-\\\`\\\`\\\`
+\`\`\`
 
 ## 6. Runtime View
 <!-- arc42: §6 — Runtime View -->
 
-\\\`\\\`\\\`mermaid
+\`\`\`mermaid
 sequenceDiagram
     participant C as Client
     participant A as ${stack.framework || 'API'}
@@ -142,12 +161,10 @@ sequenceDiagram
     D-->>S: Result
     S-->>A: Response
     A-->>C: JSON
-\\\`\\\`\\\`
+\`\`\`
 
 ## 7. Deployment View
 <!-- arc42: §7 — Deployment View -->
-
-See \\\`docs-canonical/DEPLOYMENT.md\\\` for details.
 
 | Environment | Infrastructure | URL |
 |-------------|---------------|-----|
@@ -168,7 +185,7 @@ ${docToolRows.length > 0 ? `
 
 | Tool | Config | Status |
 |------|--------|--------|
-${docToolRows.join('\\n')}
+${docToolRows.join('\n')}
 ` : ''}
 
 ### Layer Boundaries
@@ -182,18 +199,17 @@ ${scan.models.length > 0 ? '| Models/Repositories | Utils | Services, Routes |' 
 ## 9. Architecture Decisions
 <!-- arc42: §9 — Architecture Decisions -->
 
-See \\\`docs-canonical/ADR.md\\\` for the full decision log.
+<!-- TBD: the decision log (context, decision, consequences) -->
 
 ## 10. Quality Requirements
 <!-- arc42: §10 — Quality Requirements -->
 
-See \\\`${docRolePath(config, 'testSpec')}\\\` for test requirements and coverage targets.
+See \`${docRolePath(config, 'testSpec')}\` for test requirements and coverage targets.
 
 ## 11. Risks & Technical Debt
 <!-- arc42: §11 — Risk Assessment and Technical Debt -->
 
-See \\\`DRIFT-LOG.md\\\` for documented deviations from canonical specs.
-See \\\`docs-canonical/KNOWN-GOTCHAS.md\\\` for known issues.
+See \`DRIFT-LOG.md\` for documented deviations from canonical specs.
 
 ## 12. Glossary
 <!-- arc42: §12 — Glossary -->
@@ -231,8 +247,10 @@ export function generateApiReference(dir, config, stack, deepRoutes, flags) {
   // Group routes by resource (first path segment after /api/)
   const groups = {};
   for (const route of deepRoutes) {
+    // The resource is the first segment after an `/api` prefix, else the first
+    // segment (`/todos/:id` groups under Todos, not `:id`).
     const parts = route.path.split('/').filter(Boolean);
-    const resource = parts[1] || parts[0] || 'root';
+    const resource = (parts[0] === 'api' ? parts[1] : parts[0]) || 'root';
     if (!groups[resource]) groups[resource] = [];
     groups[resource].push(route);
   }
@@ -357,7 +375,7 @@ export function generateDataModel(dir, config, stack, scan, flags, deepSchemas) 
     .filter(e => e.source !== 'prisma-enum')
     .map(e => {
       const pk = e.fields?.find(f => f.primaryKey);
-      return `| ${e.name} | ${stack.database || 'TBD'} | ${pk ? pk.name : e.name.toLowerCase() + 'Id'} | ${e.file || '—'} | ${e.fields?.length || 0} fields |`;
+      return `| ${e.name} | ${stack.database || 'TBD'} | ${pk ? pk.name : e.name.toLowerCase() + 'Id'} | ${e.file ? `\`${e.file}\`` : '—'} | ${e.fields?.length || 0} fields |`;
     }).join('\n');
 
   // Build detailed entity sections
@@ -428,7 +446,7 @@ ${e.fields.map(f => `| ${f.name} |`).join('\n')}
 
 ---
 
-## Entity Summary
+## Entities
 
 | Entity | Storage | Primary Key | Source | Fields |
 |--------|---------|-------------|--------|--------|
@@ -482,9 +500,17 @@ export function generateEnvironment(dir, config, stack, scan, flags) {
   }
   assertMappedFullDocumentWrites(dir, config, ['environment']);
 
+  // One env set (docguard.generated-docs-consistency#FR-008): template
+  // entries plus names read in code. Required reflects the code: "No" when
+  // every read supplies a default, "—" when no code reads it (FR-007).
+  const cell = (v) => (v === null || v === undefined || v === '' ? '—' : `\`${v}\``);
+  const required = (v) => (v.required === null ? '—' : v.required ? 'Yes' : 'No');
+  const sources = (v) => [...v.files.slice(0, 2), ...(v.template ? [v.template] : [])].map(f => `\`${f}\``).join(', ') || '—';
   const envVarRows = scan.envVars.map(v =>
-    `| \`${v.name}\` | ${categorizeEnvVar(v.name)} | Yes | \`${v.example}\` | |`
+    `| \`${v.name}\` | ${categorizeEnvVar(v.name)} | ${required(v)} | ${cell(v.default)} | ${cell(v.example)} | ${sources(v)} | |`
   ).join('\n');
+  const setup = setupCommands(dir, stack);
+  const envTemplate = ['.env.example', '.env.template'].find(f => existsSync(resolve(dir, f)));
 
   const content = `# Environment
 
@@ -512,17 +538,17 @@ ${stack.database ? `| ${stack.database} | latest | |` : ''}
 
 ## Environment Variables
 
-| Variable | Category | Required | Example | Description |
-|----------|----------|:--------:|---------|-------------|
-${envVarRows || '| <!-- No .env.example found --> | | | | |'}
+| Variable | Category | Required | Default | Example | Source | Description |
+|----------|----------|:--------:|---------|---------|--------|-------------|
+${envVarRows || '| <!-- No environment variables detected --> | | | | | | |'}
 
 ## Setup Steps
 
 1. Clone the repository
-2. Install dependencies: \`${existsSync(resolve(dir, 'pnpm-lock.yaml')) ? 'pnpm install' : 'npm install'}\`
-3. Copy environment file: \`cp .env.example .env.local\`
+2. Install dependencies: \`${setup.install}\`
+3. ${envTemplate ? `Copy the environment template: \`cp ${envTemplate} .env\`` : 'Set the environment variables listed above'}
 4. Fill in environment variables
-5. Start development server: \`${existsSync(resolve(dir, 'pnpm-lock.yaml')) ? 'pnpm' : 'npm'} run dev\`
+5. Start the application: \`${setup.start}\`
 
 ---
 
@@ -597,6 +623,10 @@ export function generateTestSpec(dir, config, stack, scan, flags) {
 | Branch Coverage | 70% | <!-- TBD --> |
 | Function Coverage | 80% | <!-- TBD --> |
 
+## Test Inventory
+
+${scan.tests.length ? `| Test file |\n|-----------|\n${[...scan.tests].sort().map(t => `| \`${t}\` |`).join('\n')}` : '<!-- No test files detected -->'}
+
 ## Service-to-Test Map
 
 | Source File | Unit Test | Integration Test | Status |
@@ -632,6 +662,16 @@ export function generateSecurity(dir, config, stack, scan, flags) {
   }
   assertMappedFullDocumentWrites(dir, config, ['security']);
 
+  // Auth libraries come from the integrations scanner; secrets from the one
+  // env set, cited by the files that read them (FR-007, FR-004).
+  const auth = scan.authLibraries || [];
+  const authRows = auth.length
+    ? auth.map(a => `| ${a.name} | ${a.evidence.map(e => `\`${e}\``).join(', ')} | <!-- TBD --> | <!-- TBD --> |`).join('\n')
+    : `| ${stack.auth || '<!-- TBD -->'} | | | |`;
+  const secretRows = scan.envVars.filter(v => isSecretVar(v.name)).map(v =>
+    `| \`${v.name}\` | Environment variable | <!-- TBD --> | ${v.files.map(f => `\`${f}\``).join(', ') || 'Application'} |`
+  ).join('\n');
+
   const content = `# Security
 
 <!-- docguard:version 0.1.0 -->
@@ -649,9 +689,9 @@ export function generateSecurity(dir, config, stack, scan, flags) {
 
 ## Authentication
 
-| Method | Provider | Token Type | Expiry |
+| Method | Library | Token Type | Expiry |
 |--------|---------|-----------|--------|
-| ${stack.auth || '<!-- TBD -->'} | | | |
+${authRows}
 
 ## Authorization
 
@@ -662,16 +702,14 @@ export function generateSecurity(dir, config, stack, scan, flags) {
 
 ## Secrets Management
 
-| Secret | Storage | Rotation | Access |
-|--------|---------|----------|--------|
-${scan.envVars.filter(v => isSecretVar(v.name)).map(v =>
-  `| \`${v.name}\` | Environment Variable | <!-- TBD --> | Application |`
-).join('\n') || '| <!-- TBD --> | | | |'}
+| Secret | Storage | Rotation | Read by |
+|--------|---------|----------|---------|
+${secretRows || '| <!-- TBD --> | | | |'}
 
 ## Security Rules
 
-- [ ] All secrets stored in environment variables (never in code)
-- [ ] \`.env\` is in \`.gitignore\`
+- [ ] Secrets live in environment variables, outside source code
+- [ ] \`.gitignore\` lists \`.env\`
 - [ ] API endpoints require authentication
 - [ ] Input validation on all user inputs
 - [ ] HTTPS enforced in production
@@ -687,7 +725,8 @@ ${scan.envVars.filter(v => isSecretVar(v.name)).map(v =>
 `;
 
   safeWrite(path, appendStandardsCitation(content, 'SECURITY.md'), 'utf-8');
-  console.log(`  ${c.green}✅ SECURITY.md${c.reset} (auth: ${stack.auth || 'not detected'})`);
+  const authLabel = auth.length ? auth.map(a => `${a.name} (${a.evidence.join(', ')})`).join(', ') : stack.auth;
+  console.log(`  ${c.green}✅ SECURITY.md${c.reset} (auth: ${authLabel || 'not detected'})`);
   return true;
 }
 
@@ -854,6 +893,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 }
 
 // ── Utility Functions ──────────────────────────────────────────────────────
+
+/** Install and start commands for the detected language. */
+function setupCommands(dir, stack) {
+  const lang = String(stack.language || '');
+  if (lang.startsWith('Python')) {
+    const install = existsSync(resolve(dir, 'requirements.txt')) ? 'pip install -r requirements.txt' : 'pip install .';
+    return { install, start: existsSync(resolve(dir, 'manage.py')) ? 'python manage.py runserver' : 'python -m <package>' };
+  }
+  if (lang.startsWith('Go')) return { install: 'go mod download', start: 'go run .' };
+  const pm = existsSync(resolve(dir, 'pnpm-lock.yaml')) ? 'pnpm' : 'npm';
+  return { install: `${pm} install`, start: `${pm} run dev` };
+}
 
 function categorizeEnvVar(name) {
   if (name.includes('SECRET') || name.includes('KEY') || name.includes('TOKEN') || name.includes('PASSWORD')) return '🔐 Secret';

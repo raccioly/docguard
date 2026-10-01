@@ -202,6 +202,13 @@ export function validateTraceability(projectDir, config) {
       }
     }
 
+    // A doc that names an existing source file or directory is linked to it:
+    // a stronger signal than a project-wide filename glob, and the one every
+    // generated doc carries (docguard.generated-docs-consistency#FR-004).
+    if (!hasSource) {
+      try { hasSource = citesProjectSource(readFileSync(docPath, 'utf-8'), projectFiles); } catch { /* unreadable doc: no evidence */ }
+    }
+
     // Graphify interop: an EXTRACTED doc↔code edge in a committed
     // graphify-out/graph.json is author-grade linkage evidence (the graph's
     // code side is deterministic AST extraction). Only trusted when at least
@@ -239,6 +246,10 @@ export function validateTraceability(projectDir, config) {
   for (const doc of listCanonicalDocs(projectDir, { config })) {
     const docFile = basename(doc.rel);
     if (!requiredDocs.has(docFile) && TRACE_MAP[docFile]) {
+      // DocGuard wrote this doc (`generate` on a project without a config
+      // cannot register it); "consider deleting it" is never the right advice
+      // for DocGuard's own output (docguard.generated-docs-consistency#FR-004).
+      if (isGeneratedDoc(doc.abs)) continue;
       findings.push(mkFinding({
         code: 'TRC003',
         validator: 'traceability',
@@ -531,6 +542,38 @@ function scanDocAnnotations(projectFiles, projectDir) {
     }
   }
   return map;
+}
+
+const GENERATED_MARKER_RE = /^[ \t]*<!--\s*docguard:generated\s+true\s*-->[ \t]*$/m;
+
+function isGeneratedDoc(absPath) {
+  try { return GENERATED_MARKER_RE.test(readFileSync(absPath, 'utf-8')); } catch { return false; }
+}
+
+/**
+ * True when `content` cites (in backticks or a Markdown link) a path that
+ * exists in the project as a non-Markdown file or as a directory holding one.
+ * Comments and fenced blocks are skipped: a template's `<!-- e.g. src/ -->`
+ * placeholder is not a citation.
+ * @implements docguard.generated-docs-consistency#FR-004
+ */
+export function citesProjectSource(content, projectFiles) {
+  const files = projectFiles.map(f => f.replaceAll('\\', '/')).filter(isTraceableSource);
+  const fileSet = new Set(files);
+  const text = String(content).replace(/<!--[\s\S]*?-->/g, '').replace(/^(`{3,}|~{3,})[\s\S]*?^\1/gm, '');
+  const tokens = [
+    ...[...text.matchAll(/`([^`\s]+)`/g)].map(m => m[1]),
+    ...[...text.matchAll(/\]\(([^)\s]+)\)/g)].map(m => m[1]),
+  ];
+  for (const raw of tokens) {
+    if (/^[a-z][a-z0-9+.-]*:/i.test(raw) || raw.startsWith('/') || raw.includes('..') || raw.includes('*')) continue;
+    const token = raw.replace(/^\.\//, '').replace(/#.*$/, '').replace(/:\d+(?::\d+)?$/, '').replace(/\/+$/, '');
+    if (!token || token.endsWith('.md')) continue;
+    if (fileSet.has(token)) return true;
+    const prefix = `${token}/`;
+    if (files.some(f => f.startsWith(prefix))) return true;
+  }
+  return false;
 }
 
 // v0.29 consolidation: traversal delegates to the shared canonical walker.

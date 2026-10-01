@@ -127,6 +127,14 @@ function detectFramework(projectDir, config) {
 }
 
 /**
+ * The framework name guard's route scan uses, so `generate` documents the
+ * routes guard will check (docguard.generated-docs-consistency#FR-010).
+ */
+export function detectRouteFramework(projectDir, config) {
+  return detectFramework(projectDir, config);
+}
+
+/**
  * Resolve the actual API surface.
  * @returns {{ endpoints: Array<{method,path}>, confidence: 'spec'|'code'|'none', source: string }}
  */

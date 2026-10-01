@@ -693,6 +693,65 @@ Behaviour changes:
   several projects from one server, pass `--root <dir>` for each tree
   (repeatable); a `--root` that does not exist stops the server at startup.
   Calls without `projectDir` behave as before (spec 041).
+
+- **DocGuard's generated documents pass DocGuard's own checks**
+  (`specs/044-generated-docs-consistency`). On fresh Express, Next.js,
+  FastAPI, Django and Go projects, `guard` and `diff` run straight after
+  `generate`, `generate --plan --write`, `init`, or `init` plus
+  `generate --spec --write` used to report 2–22 findings about DocGuard's own
+  output. They now report none; an end-to-end test runs all 25 combinations.
+  - The API reference parser counts `GET /` and the `ALL`/`ANY` methods, and
+    messages keep the path as written (`/users/:id`, not `/users/{}`). Gin's
+    `Any` routes are scanned.
+  - `diff` reads entities from the plan's entity table, and its tech-stack
+    comparison is guard's DDF001 reader, so comments and negations no longer
+    count.
+  - `generate --plan --write` writes an H2 heading for each section it creates
+    (or places the section under a heading the document already has), so
+    STR003, ENV001 and ENV002 no longer fire on scaffolded docs; TEST-SPEC gets
+    a Test Categories task beside Coverage Rules. Plain `generate` writes
+    "Introduction and Goals" and "Entities". Its ARCHITECTURE.md was emitting
+    literal backslashes before every code fence and `\n` between table rows;
+    fixed.
+  - TRC003 no longer tells you to delete a document marked
+    `docguard:generated true`. TRC002 counts a document as linked when it cites
+    an existing source file or directory, and generated tables now cite their
+    sources. The as-built spec carries SC-001 (SPR007 reports no drift) and,
+    when tests exist, SC-002, so SPK003 passes.
+  - `docs-canonical/`, `docs-implementation/` and a Spec Kit `specs/` are no
+    longer listed as code modules or reported by DCV003, so guard no longer
+    reports the component map stale (GST002) straight after `generate`. DCV003
+    names a root directory as `internal/`, not `go-svc/internal/`. DCV001 skips
+    `.docguard-specs.json` and DocGuard's other state files.
+  - Template placeholders are not claims: the init ARCHITECTURE template keeps
+    its IaC examples inside a comment (no more `Terraform`/`DynamoDB`
+    "documented but not found"), the REQUIREMENTS template's example rows
+    define no requirement IDs (eight TRC004s on a fresh init), and ENV004
+    ignores `.env.example` named only in a comment.
+  - Plain `generate` writes the handler's function name, or `inline` (not
+    `res`/`async`); marks a variable read with a default as Required "No" and
+    shows the default; names the JWT library in SECURITY.md (the integrations
+    scanner now reports `jsonwebtoken`, `PyJWT` and similar as Auth).
+  - `generate`, `generate --plan` and `diff` document and compare one set of
+    environment variables: `.env.example`/`.env.template` plus the names read in
+    code, now including Go's `os.Getenv`/`os.LookupEnv`. Setup steps mention
+    `.env.example` only when it exists.
+  - Plain `generate` reads routes, entities, tech stack, test files and source
+    modules through the scanners guard checks with. Django's `tests.py`,
+    pytest and Go test files are test files; entity files are cited
+    project-relative instead of as absolute machine paths.
+  - Re-running `generate --plan --write` no longer replaces prose an agent
+    wrote in a `source=human` section with the task placeholder, and skips
+    `pinned` code sections as `sync` does. A document DocGuard wrote (marked
+    `docguard:generated true`, or an init template nobody edited) gets no
+    `.bak` when every byte outside its code sections is preserved; your own
+    documents, and any other change, keep their backup.
+
+  **After upgrading:** projects scaffolded by an earlier `generate --plan
+  --write` may see GST002 once, because the plan's tables gained a Source column
+  and the environment table gained Required and Default. Run
+  `docguard sync --write` to refresh them.
+
 - **Python web projects are read accurately** (`specs/046-python-extraction`).
   Measured on a FastAPI reference project and a Django reference project, with
   and without `python3`:

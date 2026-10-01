@@ -18,7 +18,11 @@
  * Zero NPM dependencies — pure Node.js built-ins only.
  */
 
-const HTTP_METHODS = new Set(['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS']);
+// ALL (Express `app.all`) and ANY (Gin/Echo `Any`) are the catch-all methods the
+// route scanners emit and `generate` writes; dropping them made guard report the
+// endpoint DocGuard had just documented as undocumented (docguard.generated-docs-consistency#FR-001).
+const HTTP_METHODS = new Set(['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS', 'ALL', 'ANY']);
+const METHOD_ALTERNATION = [...HTTP_METHODS].join('|');
 
 /**
  * Normalize an API path for comparison.
@@ -65,6 +69,10 @@ export function endpointKey(method, path) {
 
 /**
  * Parse endpoints documented in an API reference markdown string.
+ * `path` is the path as written (decoration and query stripped), so a message
+ * about it names the parameter (`/users/:id`); `key` is the normalized
+ * comparison key (`DELETE /users/{}`). The root path `/` is an endpoint.
+ * @implements docguard.generated-docs-consistency#FR-001
  * @param {string} content
  * @returns {Array<{ method: string, path: string, key: string }>}
  */
@@ -75,16 +83,17 @@ export function parseApiReferenceDoc(content) {
   const addEndpoint = (method, rawPath) => {
     const m = String(method).toUpperCase();
     if (!HTTP_METHODS.has(m)) return;
-    const path = normalizePath(rawPath);
-    if (!path || path.length < 2) return;
-    const key = `${m} ${path}`;
-    if (!found.has(key)) found.set(key, { method: m, path, key });
+    const normalized = normalizePath(rawPath);
+    if (!normalized) return;
+    const written = String(rawPath).replace(/^[|`'"\s]+/, '').replace(/[|`'"\s]+$/, '').split(/[?#]/)[0];
+    const key = `${m} ${normalized}`;
+    if (!found.has(key)) found.set(key, { method: m, path: written, key });
   };
 
   const lines = content.split('\n');
 
   // Style 1: headings — "#### GET `/api/...`" (method + path, backticks optional)
-  const headingRe = /^#{2,6}\s+`?(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS)`?\s+`?(\/[^\s`|]+)`?/i;
+  const headingRe = new RegExp(`^#{2,6}\\s+\`?(${METHOD_ALTERNATION})\`?\\s+\`?(\\/[^\\s\`|]*)\`?`, 'i');
 
   // Style 2: table rows — "| `GET` | `/api/...` | ... |"
   for (const line of lines) {

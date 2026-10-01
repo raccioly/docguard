@@ -12,32 +12,32 @@
 
 ## Functional Requirements
 
-<!-- List functional requirements with FR-NNN IDs -->
+<!-- List functional requirements with FR-NNN IDs, one row each. The example
+     row stays in this comment so an empty template defines no requirement:
+| FR-001 | P1 | System MUST [capability] | 🔴 Draft | ❌ |
+-->
 
 | ID | Priority | Requirement | Status | Test Coverage |
 |----|----------|-------------|--------|---------------|
-| FR-001 | P1 | System MUST [capability] | 🔴 Draft | ❌ |
-| FR-002 | P1 | System MUST [capability] | 🔴 Draft | ❌ |
-| FR-003 | P2 | Users MUST be able to [interaction] | 🔴 Draft | ❌ |
 
 ## Non-Functional Requirements
 
-<!-- Quality attributes: performance, security, reliability -->
+<!-- Quality attributes: performance, security, reliability. Examples:
+| NFR-001 | Performance | Response time < 200ms p95 | Measured via [tool] |
+| NFR-002 | Security | All endpoints require authentication | Validated by guard |
+-->
 
 | ID | Category | Requirement | Metric |
 |----|----------|-------------|--------|
-| NFR-001 | Performance | Response time < 200ms p95 | Measured via [tool] |
-| NFR-002 | Security | All endpoints require authentication | Validated by guard |
-| NFR-003 | Reliability | 99.9% uptime SLA | Monitored via [tool] |
 
 ## Success Criteria
 
-<!-- Measurable outcomes — aligned with spec-kit SC-NNN format -->
+<!-- Measurable outcomes — aligned with spec-kit SC-NNN format. Example:
+| SC-001 | [Measurable user outcome] | [How measured] | [Target value] |
+-->
 
 | ID | Criteria | Measurement | Target |
 |----|----------|-------------|--------|
-| SC-001 | [Measurable user outcome] | [How measured] | [Target value] |
-| SC-002 | [Performance metric] | [How measured] | [Target value] |
 
 ## User Scenarios
 
@@ -53,11 +53,12 @@
 
 ## Traceability Matrix
 
-<!-- Maps requirements → code → tests -->
+<!-- Maps requirements → code → tests. Example:
+| FR-001 | `src/[file]` | `tests/[file]` | ❌ |
+-->
 
 | Requirement | Source File | Test File | Status |
 |-------------|------------|-----------|--------|
-| FR-001 | `src/[file]` | `tests/[file]` | ❌ |
 
 ## Revision History
 

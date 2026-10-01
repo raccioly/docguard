@@ -41,6 +41,9 @@ const REGISTRY = [
   { name: 'NextAuth',   category: 'Auth', patterns: ['next-auth', '@auth/'] },
   { name: 'Passport',   category: 'Auth', patterns: ['passport', 'passport-'] },
   { name: 'Cognito',    category: 'Auth', patterns: ['@aws-sdk/client-cognito-identity', 'amazon-cognito-identity-js', 'aws-amplify'] },
+  // Token libraries: a service signing or verifying JWTs itself
+  // (docguard.generated-docs-consistency#FR-007 — generate said "auth: not detected").
+  { name: 'JWT',        category: 'Auth', patterns: ['jsonwebtoken', 'jose', 'pyjwt', 'djangorestframework-simplejwt', 'golang-jwt', 'jwt-go', 'jjwt', 'firebase/php-jwt'] },
   // ── AI ──
   { name: 'OpenAI',     category: 'AI', patterns: ['openai'] },
   { name: 'Anthropic',  category: 'AI', patterns: ['@anthropic-ai/sdk', 'anthropic'] },

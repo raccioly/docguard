@@ -188,6 +188,10 @@ const FACT_NOUN = {
 /**
  * The Spec Kit-shaped skeleton. Every requirement statement is an agent task,
  * never DocGuard prose; each candidate carries its fact marker and citation.
+ * The success criteria DocGuard can state are checks it runs itself: SPR007
+ * reports no drift for the spec, and (when tests exist) those tests pass —
+ * so the skeleton passes SPK003 (docguard.generated-docs-consistency#FR-004).
+ * @implements docguard.generated-docs-consistency#FR-004
  */
 export function renderAsBuiltSpec({ title, specId, areaRel, facts, tests, dirName, date }) {
   const cite = f => (f.file ? ` (\`${f.file}${f.line ? `:${f.line}` : ''}\`)` : '');
@@ -229,7 +233,9 @@ ${tests.length ? tests.map(t => `- \`${t}\``).join('\n') : '- none found under t
 
 ## Success Criteria *(mandatory)*
 
-<!-- agent: measurable outcomes the current implementation meets, stated so a refactor can be checked against them. -->
+- **SC-001**: \`docguard guard\` reports no SPR007 finding for this spec: every fact marked above still exists under \`${areaRel}\`, or is listed under Out of Scope with a reason.
+${tests.length ? `- **SC-002**: The existing tests listed above pass.\n` : ''}
+<!-- agent: add the measurable outcomes the current implementation meets, stated so a refactor can be checked against them. -->
 
 ## Out of Scope
 
