@@ -2783,7 +2783,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "implemented",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -2802,8 +2802,21 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "d17dee0a5924795582cae3b0fcd97bfdbad93c76",
+          "outcomes": [
+            {
+              "revision": "d17dee0a5924795582cae3b0fcd97bfdbad93c76",
+              "reason": "Reviewed at d17dee0 on main: all 5 tasks are checked and were delivered by #507; the full suite (2909 tests) passes and guard reports 0 errors at this revision.",
+              "evidence": [
+                "cli/shared-doc-roles.mjs",
+                "cli/validators/metrics-consistency.mjs",
+                "docs-canonical/DATA-MODEL.md",
+                "tests/dogfood-findings.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -2822,7 +2835,7 @@
         "artifacts": [
           {
             "path": "specs/050-dogfood-findings/spec.md",
-            "digest": "sha256:00263d15848d6c919cd2e9f12cfa111c09f287aafd1b67293d7f7e8d3d61b3e6"
+            "digest": "sha256:be10f3de3e2af35668ca9144e7ed5936058360818ddea6115758d775c288bc61"
           },
           {
             "path": "specs/050-dogfood-findings/plan.md",
@@ -3473,7 +3486,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "implemented",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -3493,8 +3506,30 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "d17dee0a5924795582cae3b0fcd97bfdbad93c76",
+          "outcomes": [
+            {
+              "revision": "d17dee0a5924795582cae3b0fcd97bfdbad93c76",
+              "reason": "Reviewed at d17dee0 on main: all 12 tasks are checked and were delivered by #498; the full suite (2909 tests) passes and guard reports 0 errors at this revision.",
+              "evidence": [
+                "cli/commands/diff.mjs",
+                "cli/scanners/import-graph.mjs",
+                "cli/scanners/module-diagram.mjs",
+                "cli/scanners/routes.mjs",
+                "cli/scanners/symbol-map.mjs",
+                "cli/shared-ignore.mjs",
+                "cli/shared-source.mjs",
+                "cli/validators/api-surface.mjs",
+                "cli/validators/environment.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/DATA-MODEL.md",
+                "tests/fallback-language-coverage.test.mjs",
+                "tests/parser-tier.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -3519,7 +3554,7 @@
         "artifacts": [
           {
             "path": "specs/043-fallback-language-coverage/spec.md",
-            "digest": "sha256:17655945fc9ed0814758f5e3bb312f0003ef1b6bb1bff2c0f4cd42da37e86658"
+            "digest": "sha256:27e3a9add91f7cf9ce4c0b495797f976e393df82ff187a2bec6e9453b91716fe"
           },
           {
             "path": "specs/043-fallback-language-coverage/plan.md",
@@ -3854,7 +3889,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "implemented",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -3874,8 +3909,27 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "d17dee0a5924795582cae3b0fcd97bfdbad93c76",
+          "outcomes": [
+            {
+              "revision": "d17dee0a5924795582cae3b0fcd97bfdbad93c76",
+              "reason": "Reviewed at d17dee0 on main: all 10 tasks are checked and were delivered by #499; the full suite (2909 tests) passes and guard reports 0 errors at this revision.",
+              "evidence": [
+                "cli/commands/explain.mjs",
+                "cli/commands/mcp.mjs",
+                "cli/commands/specs.mjs",
+                "cli/findings.mjs",
+                "cli/scanners/revision-anchor.mjs",
+                "cli/scanners/spec-first.mjs",
+                "cli/scanners/spec-registry.mjs",
+                "docs-canonical/DATA-MODEL.md",
+                "docs-canonical/SECURITY.md",
+                "tests/first-spec-preflight.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -3900,7 +3954,7 @@
         "artifacts": [
           {
             "path": "specs/040-spec-preflight-first-spec/spec.md",
-            "digest": "sha256:2f0c05c1a59810da144a9e0fe9441825f2b54e3e97c81d7e43819a2b9838bd99"
+            "digest": "sha256:00d22addbf59e3c90e6b3c52715849187b625f45b0b7829b0533e526602deaf5"
           },
           {
             "path": "specs/040-spec-preflight-first-spec/plan.md",
@@ -4072,7 +4126,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "implemented",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -4095,8 +4149,31 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "d17dee0a5924795582cae3b0fcd97bfdbad93c76",
+          "outcomes": [
+            {
+              "revision": "d17dee0a5924795582cae3b0fcd97bfdbad93c76",
+              "reason": "Reviewed at d17dee0 on main: all 12 tasks are checked and were delivered by #504, #508; the full suite (2909 tests) passes and guard reports 0 errors at this revision.",
+              "evidence": [
+                "cli/commands/diff.mjs",
+                "cli/scanners/api-doc.mjs",
+                "cli/scanners/as-built.mjs",
+                "cli/shared-ignore.mjs",
+                "cli/shared-source.mjs",
+                "cli/shared-trace-patterns.mjs",
+                "cli/shared.mjs",
+                "cli/validators/traceability.mjs",
+                "cli/writers/doc-generators.mjs",
+                "cli/writers/generate-io.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "tests/fixtures/generated-docs-projects.mjs",
+                "tests/generated-docs-consistency.test.mjs",
+                "tests/generated-docs-e2e.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -4122,7 +4199,7 @@
         "artifacts": [
           {
             "path": "specs/044-generated-docs-consistency/spec.md",
-            "digest": "sha256:9aa8d740016b5830d437317f0095a72e4c55fde79fb54218b9bd8d305a37e45f"
+            "digest": "sha256:c877856a4a81396d0b0864949d7afc506cf22413d0515425a52419d041f98af7"
           },
           {
             "path": "specs/044-generated-docs-consistency/plan.md",
@@ -4324,7 +4401,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "implemented",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -4346,8 +4423,24 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "d17dee0a5924795582cae3b0fcd97bfdbad93c76",
+          "outcomes": [
+            {
+              "revision": "d17dee0a5924795582cae3b0fcd97bfdbad93c76",
+              "reason": "Reviewed at d17dee0 on main: all 10 tasks are checked and were delivered by #500, #508; the full suite (2909 tests) passes and guard reports 0 errors at this revision.",
+              "evidence": [
+                "cli/scanners/go-routes.mjs",
+                "cli/scanners/rails-routes.mjs",
+                "cli/scanners/route-lexing.mjs",
+                "cli/scanners/spring-routes.mjs",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/go-spring-rails-routes.test.mjs",
+                "tests/routes-multilang.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -4370,7 +4463,7 @@
         "artifacts": [
           {
             "path": "specs/047-go-spring-rails-routes/spec.md",
-            "digest": "sha256:10ab8d3b4035c4e2e8a860627ff1da7ca7600f77d787eef48107640655761fdf"
+            "digest": "sha256:1f066b5e3489dec3ecd407fcb7e2b194759f9d98fa25324ea5fcab4d849288c4"
           },
           {
             "path": "specs/047-go-spring-rails-routes/plan.md",
@@ -4647,7 +4740,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "implemented",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -4669,8 +4762,29 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "d17dee0a5924795582cae3b0fcd97bfdbad93c76",
+          "outcomes": [
+            {
+              "revision": "d17dee0a5924795582cae3b0fcd97bfdbad93c76",
+              "reason": "Reviewed at d17dee0 on main: all 10 tasks are checked and were delivered by #503, #508; the full suite (2909 tests) passes and guard reports 0 errors at this revision.",
+              "evidence": [
+                "cli/scanners/as-built.mjs",
+                "cli/scanners/import-graph.mjs",
+                "cli/scanners/js-ast.mjs",
+                "cli/scanners/memory-plan.mjs",
+                "cli/scanners/project-type.mjs",
+                "cli/scanners/routes.mjs",
+                "cli/scanners/schemas.mjs",
+                "cli/scanners/ts-paths.mjs",
+                "cli/shared-source.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "tests/fixtures/js-ts-projects.mjs",
+                "tests/js-ts-extraction.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -4698,7 +4812,7 @@
         "artifacts": [
           {
             "path": "specs/045-js-ts-extraction/spec.md",
-            "digest": "sha256:fbf1a8083ee5c242fd0ae898c06337fbe4c20800cc5322f15418c3935ae6dc67"
+            "digest": "sha256:763c4472f960b937d9e77b994b5a31ce7b2b26bc97cbe860d4910db3d22d8428"
           },
           {
             "path": "specs/045-js-ts-extraction/plan.md",
@@ -5718,7 +5832,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "implemented",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -5739,8 +5853,21 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "d17dee0a5924795582cae3b0fcd97bfdbad93c76",
+          "outcomes": [
+            {
+              "revision": "d17dee0a5924795582cae3b0fcd97bfdbad93c76",
+              "reason": "Reviewed at d17dee0 on main: all 11 tasks are checked and were delivered by #497; the full suite (2909 tests) passes and guard reports 0 errors at this revision.",
+              "evidence": [
+                "cli/commands/mcp.mjs",
+                "cli/docguard.mjs",
+                "docs-canonical/SECURITY.md",
+                "tests/mcp-project-confinement.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -5761,7 +5888,7 @@
         "artifacts": [
           {
             "path": "specs/041-mcp-project-confinement/spec.md",
-            "digest": "sha256:08ecdef7a99503789d9c11698d04be90df4a87604b34b527da9fb27744db973b"
+            "digest": "sha256:f5b9ff71cbc8527a8de8d237ff68adf97824e6dd62319ce69a876437b3d34b6a"
           },
           {
             "path": "specs/041-mcp-project-confinement/plan.md",
@@ -6036,7 +6163,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "implemented",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -6055,8 +6182,39 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "d17dee0a5924795582cae3b0fcd97bfdbad93c76",
+          "outcomes": [
+            {
+              "revision": "d17dee0a5924795582cae3b0fcd97bfdbad93c76",
+              "reason": "Reviewed at d17dee0 on main: all 19 tasks are checked and were delivered by #505; the full suite (2909 tests) passes and guard reports 0 errors at this revision.",
+              "evidence": [
+                "cli/commands/fix.mjs",
+                "cli/commands/guard.mjs",
+                "cli/commands/init.mjs",
+                "cli/commands/review.mjs",
+                "cli/commands/sync.mjs",
+                "cli/commands/trace.mjs",
+                "cli/commands/upgrade.mjs",
+                "cli/config.mjs",
+                "cli/scanners/doc-deps.mjs",
+                "cli/scanners/doc-ownership.mjs",
+                "cli/scanners/doc-references.mjs",
+                "cli/scanners/instruction-scopes.mjs",
+                "cli/shared.mjs",
+                "cli/validators/generated-staleness.mjs",
+                "cli/validators/path-scoped-rules.mjs",
+                "cli/validators/reference-existence.mjs",
+                "docs-canonical/DATA-MODEL.md",
+                "tests/doc-dependency-lock.test.mjs",
+                "tests/mcp-doc-tools.test.mjs",
+                "tests/output-ux.test.mjs",
+                "tests/sync-since.test.mjs",
+                "tests/validator-surface-invariant.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -6088,7 +6246,7 @@
         "artifacts": [
           {
             "path": "specs/049-output-ux/spec.md",
-            "digest": "sha256:9589ffefe0998425e49e65d62cfbafb9a47d42cabc359d48feb7fecd9f087fed"
+            "digest": "sha256:73c7fad0c222c968babde36e305023470766a0d716d49454300f2e5f644274b1"
           },
           {
             "path": "specs/049-output-ux/plan.md",
@@ -7105,7 +7263,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "implemented",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -7125,8 +7283,33 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "d17dee0a5924795582cae3b0fcd97bfdbad93c76",
+          "outcomes": [
+            {
+              "revision": "d17dee0a5924795582cae3b0fcd97bfdbad93c76",
+              "reason": "Reviewed at d17dee0 on main: all 12 tasks are checked and were delivered by #502; the full suite (2909 tests) passes and guard reports 0 errors at this revision.",
+              "evidence": [
+                "cli/commands/init.mjs",
+                "cli/config.mjs",
+                "cli/scanners/api-doc.mjs",
+                "cli/scanners/as-built.mjs",
+                "cli/scanners/memory-plan.mjs",
+                "cli/scanners/module-diagram.mjs",
+                "cli/scanners/project-type.mjs",
+                "cli/scanners/py-ast.mjs",
+                "cli/scanners/py-env.mjs",
+                "cli/scanners/py-outline.mjs",
+                "cli/scanners/py-sources.mjs",
+                "cli/scanners/python-models.mjs",
+                "cli/scanners/python-routes.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/ENVIRONMENT.md",
+                "tests/python-extraction.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -7159,7 +7342,7 @@
         "artifacts": [
           {
             "path": "specs/046-python-extraction/spec.md",
-            "digest": "sha256:59b879bf7616b247751df2cc69efd44c0b8745e5ac4c174be992eb2e96ed000b"
+            "digest": "sha256:c553e9e9ce7df48d4dd45736b34cbf79f3eb0c4eedc8b147fad5536034c9c183"
           },
           {
             "path": "specs/046-python-extraction/plan.md",
@@ -7401,7 +7584,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "implemented",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -7425,8 +7608,29 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "d17dee0a5924795582cae3b0fcd97bfdbad93c76",
+          "outcomes": [
+            {
+              "revision": "d17dee0a5924795582cae3b0fcd97bfdbad93c76",
+              "reason": "Reviewed at d17dee0 on main: all 12 tasks are checked and were delivered by #501, #508; the full suite (2909 tests) passes and guard reports 0 errors at this revision.",
+              "evidence": [
+                "cli/commands/memory.mjs",
+                "cli/docguard.mjs",
+                "cli/ensure-skills.mjs",
+                "cli/shared-git.mjs",
+                "cli/writers/fix-memory.mjs",
+                "cli/writers/history.mjs",
+                "cli/writers/state-dir.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/DATA-MODEL.md",
+                "docs-canonical/ENVIRONMENT.md",
+                "docs-canonical/SECURITY.md",
+                "tests/read-only-commands.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -7447,7 +7651,7 @@
         "artifacts": [
           {
             "path": "specs/042-read-only-commands/spec.md",
-            "digest": "sha256:99c00ce6c785995473c64af7dd43febc8b312494eccaf0f8fc3cf89670b1fb36"
+            "digest": "sha256:d86654111cb45ad379d0b5cb9b89217d7c625b851dfdfb4ba9409ed13510ac9e"
           },
           {
             "path": "specs/042-read-only-commands/plan.md",
@@ -8246,7 +8450,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "implemented",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -8270,8 +8474,28 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "d17dee0a5924795582cae3b0fcd97bfdbad93c76",
+          "outcomes": [
+            {
+              "revision": "d17dee0a5924795582cae3b0fcd97bfdbad93c76",
+              "reason": "Reviewed at d17dee0 on main: all 17 tasks are checked and were delivered by #506, #508; the full suite (2909 tests) passes and guard reports 0 errors at this revision.",
+              "evidence": [
+                "cli/agent-surface.mjs",
+                "cli/commands/diagnose.mjs",
+                "cli/commands/init.mjs",
+                "cli/commands/memory.mjs",
+                "cli/commands/upgrade.mjs",
+                "cli/ensure-skills.mjs",
+                "cli/spec-kit-delegation.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/ENVIRONMENT.md",
+                "tests/release-version-sync.test.mjs",
+                "tests/spec-kit-integration-honesty.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -8299,7 +8523,7 @@
         "artifacts": [
           {
             "path": "specs/048-spec-kit-integration-honesty/spec.md",
-            "digest": "sha256:f353753f118d3221746dcc2a3712f9c3974d94682fd1b1ee9e5773a0394db85d"
+            "digest": "sha256:87684e59b1dfef0b203f42bc59e6a415b20f18cfaf1445da8a959dc53baf600e"
           },
           {
             "path": "specs/048-spec-kit-integration-honesty/plan.md",

@@ -304,3 +304,9 @@ split across modules and mounted with prefixes.
   is marked as a whole).
 - Making the regex tier a parser: it reads the same facts from standard
   layouts, and it stays the lower-confidence tier.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `d17dee0a5924795582cae3b0fcd97bfdbad93c76` — Reviewed at d17dee0 on main: all 12 tasks are checked and were delivered by #502; the full suite (2909 tests) passes and guard reports 0 errors at this revision. Evidence: `cli/commands/init.mjs`, `cli/config.mjs`, `cli/scanners/api-doc.mjs`, `cli/scanners/as-built.mjs`, `cli/scanners/memory-plan.mjs`, `cli/scanners/module-diagram.mjs`, `cli/scanners/project-type.mjs`, `cli/scanners/py-ast.mjs`, `cli/scanners/py-env.mjs`, `cli/scanners/py-outline.mjs`, `cli/scanners/py-sources.mjs`, `cli/scanners/python-models.mjs`, `cli/scanners/python-routes.mjs`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/ENVIRONMENT.md`, `tests/python-extraction.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->

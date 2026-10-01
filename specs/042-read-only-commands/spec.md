@@ -199,3 +199,9 @@ clean tree.
 - What `init --with <name>` and its aliases write beyond skills. They are
   explicit setup commands.
 - Warning when the installed skills are older than the running package.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `d17dee0a5924795582cae3b0fcd97bfdbad93c76` — Reviewed at d17dee0 on main: all 12 tasks are checked and were delivered by #501, #508; the full suite (2909 tests) passes and guard reports 0 errors at this revision. Evidence: `cli/commands/memory.mjs`, `cli/docguard.mjs`, `cli/ensure-skills.mjs`, `cli/shared-git.mjs`, `cli/writers/fix-memory.mjs`, `cli/writers/history.mjs`, `cli/writers/state-dir.mjs`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/DATA-MODEL.md`, `docs-canonical/ENVIRONMENT.md`, `docs-canonical/SECURITY.md`, `tests/read-only-commands.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->

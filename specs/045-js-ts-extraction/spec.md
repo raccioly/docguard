@@ -290,3 +290,9 @@ prefix, adds auth at the mount, and declares routes with `router.route()`.
   text with configured directories and are unchanged.
 - Executing any project code or config: tsconfig, drizzle config and Next.js
   middleware are read as text or syntax trees.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `d17dee0a5924795582cae3b0fcd97bfdbad93c76` — Reviewed at d17dee0 on main: all 10 tasks are checked and were delivered by #503, #508; the full suite (2909 tests) passes and guard reports 0 errors at this revision. Evidence: `cli/scanners/as-built.mjs`, `cli/scanners/import-graph.mjs`, `cli/scanners/js-ast.mjs`, `cli/scanners/memory-plan.mjs`, `cli/scanners/project-type.mjs`, `cli/scanners/routes.mjs`, `cli/scanners/schemas.mjs`, `cli/scanners/ts-paths.mjs`, `cli/shared-source.mjs`, `docs-canonical/ARCHITECTURE.md`, `tests/fixtures/js-ts-projects.mjs`, `tests/js-ts-extraction.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->

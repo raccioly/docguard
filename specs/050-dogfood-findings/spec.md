@@ -54,3 +54,9 @@ Three defects appeared on real repositories:
 ## Out of Scope
 
 - Role resolution for documents outside the canonical directory set.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `d17dee0a5924795582cae3b0fcd97bfdbad93c76` — Reviewed at d17dee0 on main: all 5 tasks are checked and were delivered by #507; the full suite (2909 tests) passes and guard reports 0 errors at this revision. Evidence: `cli/shared-doc-roles.mjs`, `cli/validators/metrics-consistency.mjs`, `docs-canonical/DATA-MODEL.md`, `tests/dogfood-findings.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->

@@ -255,3 +255,9 @@ A user follows GST002's advice, and every suggestion they are given works.
 - Adding JSON output to commands that do not document it (`upgrade`,
   `watch`).
 - Changing STR003's code or message.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `d17dee0a5924795582cae3b0fcd97bfdbad93c76` — Reviewed at d17dee0 on main: all 19 tasks are checked and were delivered by #505; the full suite (2909 tests) passes and guard reports 0 errors at this revision. Evidence: `cli/commands/fix.mjs`, `cli/commands/guard.mjs`, `cli/commands/init.mjs`, `cli/commands/review.mjs`, `cli/commands/sync.mjs`, `cli/commands/trace.mjs`, `cli/commands/upgrade.mjs`, `cli/config.mjs`, `cli/scanners/doc-deps.mjs`, `cli/scanners/doc-ownership.mjs`, `cli/scanners/doc-references.mjs`, `cli/scanners/instruction-scopes.mjs`, `cli/shared.mjs`, `cli/validators/generated-staleness.mjs`, `cli/validators/path-scoped-rules.mjs`, `cli/validators/reference-existence.mjs`, `docs-canonical/DATA-MODEL.md`, `tests/doc-dependency-lock.test.mjs`, `tests/mcp-doc-tools.test.mjs`, `tests/output-ux.test.mjs`, `tests/sync-since.test.mjs`, `tests/validator-surface-invariant.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->
