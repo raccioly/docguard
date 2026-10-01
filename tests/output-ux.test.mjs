@@ -482,7 +482,7 @@ describe('agent instructions (FR-010, FR-011)', () => {
     const dir = project(t, {
       'package.json': '{"name":"x"}\n',
       'src/index.mjs': 'export const a = 1;\n',
-      'CLAUDE.md': '# Claude\n\n@docs/guide.md\n@docs/missing.md\n\nIn `@docs/code-span.md` nothing is imported, nor is @babel/parser or a@b.md.\n',
+      'CLAUDE.md': '# Claude\n\n@docs/guide.md\n@docs/missing.md\n\nIn `@NOTES.md` nothing is imported, nor is @babel/parser or a@b.md.\n',
       'docs/guide.md': `# Guide\n\n${'x'.repeat(3000)}\n`,
     });
     const findings = validatePathScopedRules(dir, { agentInstructions: { maxBytes: 2000 } }).findings;

@@ -23,6 +23,7 @@
  * @implements docguard.path-scoped-rules#FR-001
  * @implements docguard.path-scoped-rules#FR-002
  * @implements docguard.path-scoped-rules#FR-008
+ * @implements docguard.output-ux#FR-011
  */
 
 import { lstatSync, readdirSync, readFileSync, realpathSync, statSync } from 'node:fs';
@@ -82,6 +83,73 @@ function patternList(value) {
   return null;
 }
 
+// ── Claude Code `@path` imports (docguard.output-ux#FR-011) ─────────────────
+/**
+ * Claude Code expands `@path/to/file` in a memory file it loads, relative to
+ * the importing file, recursively up to MAX_IMPORT_HOPS, and never inside a
+ * code span or a fenced block (its memory documentation, checked 2026-09-30).
+ * DocGuard follows the same rule so byte totals and broken pointers include
+ * what the harness really loads. Only a token that ends in a file extension
+ * counts: `@babel/parser` in prose is a package name, not an import.
+ */
+export const MAX_IMPORT_HOPS = 5;
+const IMPORTING_KINDS = new Set(['claude-memory', 'claude-rule', 'agents']);
+
+/** `@path` tokens outside code, with their 1-based line. */
+export function claudeImportsIn(content) {
+  const out = [];
+  let fence = null;
+  String(content).split('\n').forEach((line, i) => {
+    const m = line.match(/^\s{0,3}(`{3,}|~{3,})/);
+    if (fence) { if (m && m[1][0] === fence[0] && m[1].length >= fence.length) fence = null; return; }
+    if (m) { fence = m[1]; return; }
+    const prose = line.replace(/`[^`]*`/g, ' ');
+    for (const hit of prose.matchAll(/(^|\s)@(\S+)/g)) {
+      const path = hit[2].replace(/[.,;:!?)\]]+$/, '');
+      if (/\.[A-Za-z0-9]+$/.test(path)) out.push({ line: i + 1, path });
+    }
+  });
+  return out;
+}
+
+/**
+ * Every file `file` imports, transitively, and every import that names
+ * nothing. Paths outside the project (home, absolute, `..` past the root) are
+ * the user's own and are skipped. Cycle-safe.
+ * @returns {{ imports: {file, bytes, via}[], missing: {from, line, path}[] }}
+ */
+export function resolveClaudeImports(projectDir, file, content) {
+  const imports = [];
+  const missing = [];
+  const seen = new Set([file]);
+  const visit = (from, text, depth) => {
+    if (depth > MAX_IMPORT_HOPS) return;
+    for (const { line, path } of claudeImportsIn(text)) {
+      if (path.startsWith('~') || path.startsWith('/')) continue;
+      const joined = posix.normalize(posix.join(dirOf(from), path));
+      if (joined === '..' || joined.startsWith('../')) continue;
+      const target = safeProjectPath(projectDir, joined);
+      if (target === null || seen.has(target)) continue;
+      let body;
+      let bytes;
+      try {
+        const full = resolve(projectDir, target);
+        if (!lstatSync(full).isFile()) throw new Error('not a file');
+        body = readFileSync(full, 'utf-8');
+        bytes = statSync(full).size;
+      } catch {
+        missing.push({ from, line, path });
+        continue;
+      }
+      seen.add(target);
+      imports.push({ file: target, bytes, via: from });
+      visit(target, body, depth + 1);
+    }
+  };
+  visit(file, content, 1);
+  return { imports, missing };
+}
+
 /**
  * Derive every (file, harness) scope entry from a list of project-relative
  * files. Reads each instruction file once; bounded to MAX_INSTRUCTION_FILES.
@@ -103,6 +171,10 @@ export function instructionScopes(projectDir, files, { local = new Set() } = {})
       bytes = statSync(full).size;
     } catch { continue; }
     const base = { file, kind, bytes, local: local.has(file), generated: content.includes(GENERATED_MARKER), content };
+    if (IMPORTING_KINDS.has(kind)) {
+      const { imports, missing } = resolveClaudeImports(projectDir, file, content);
+      if (imports.length || missing.length) Object.assign(base, { imports, missingImports: missing });
+    }
     const dir = dirOf(file);
     const add = (harness, scope) => entries.push({ ...base, harness, ...scope });
 
@@ -208,7 +280,20 @@ export function applicableFor(entries, harness, path) {
   const chainDirs = dir => mine.filter(e => e.scope === 'directory' && within(path, e.dir))
     .sort((a, b) => a.dir.split('/').filter(Boolean).length - b.dir.split('/').filter(Boolean).length || a.file.localeCompare(b.file));
   const out = [];
-  const push = (e, reason) => out.push({ file: e.file, reason, bytes: e.bytes, local: e.local });
+  const listed = new Set();
+  const push = (e, reason) => {
+    if (listed.has(e.file)) return;
+    listed.add(e.file);
+    out.push({ file: e.file, reason, bytes: e.bytes, local: e.local });
+    // Claude Code loads what a memory file imports, right after it.
+    if (harness === 'claude') {
+      for (const imp of e.imports || []) {
+        if (listed.has(imp.file)) continue;
+        listed.add(imp.file);
+        out.push({ file: imp.file, reason: `imported by ${imp.via}`, bytes: imp.bytes, local: e.local });
+      }
+    }
+  };
 
   let chain = chainDirs();
   if (harness === 'codex' || harness === 'cursor' || harness === 'copilot' || harness === 'claude') {
