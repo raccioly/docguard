@@ -643,7 +643,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/shared-source.mjs",
-            "line": 676
+            "line": 699
           },
           {
             "requirementId": "FR-002",
@@ -3407,12 +3407,12 @@
           {
             "requirementId": "FR-001",
             "file": "cli/shared-source.mjs",
-            "line": 988
+            "line": 1109
           },
           {
             "requirementId": "FR-001",
             "file": "cli/shared-source.mjs",
-            "line": 994
+            "line": 1115
           },
           {
             "requirementId": "FR-001",
@@ -3437,7 +3437,7 @@
           {
             "requirementId": "FR-003",
             "file": "cli/shared-source.mjs",
-            "line": 686
+            "line": 713
           },
           {
             "requirementId": "FR-004",
@@ -3447,12 +3447,12 @@
           {
             "requirementId": "FR-004",
             "file": "cli/shared-source.mjs",
-            "line": 682
+            "line": 709
           },
           {
             "requirementId": "FR-004",
             "file": "cli/shared-source.mjs",
-            "line": 687
+            "line": 714
           },
           {
             "requirementId": "FR-004",
@@ -3462,12 +3462,12 @@
           {
             "requirementId": "FR-005",
             "file": "cli/shared-source.mjs",
-            "line": 688
+            "line": 715
           },
           {
             "requirementId": "FR-006",
             "file": "cli/shared-ignore.mjs",
-            "line": 94
+            "line": 113
           },
           {
             "requirementId": "FR-007",
@@ -3931,6 +3931,242 @@
             "requirementId": "SC-003",
             "file": "tests/first-spec-preflight.test.mjs",
             "line": 25
+          }
+        ]
+      }
+    },
+    {
+      "specId": "docguard.generated-docs-consistency",
+      "path": "specs/044-generated-docs-consistency/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.generated-docs-consistency#FR-001",
+          "docguard.generated-docs-consistency#FR-002",
+          "docguard.generated-docs-consistency#FR-003",
+          "docguard.generated-docs-consistency#FR-004",
+          "docguard.generated-docs-consistency#FR-005",
+          "docguard.generated-docs-consistency#FR-006",
+          "docguard.generated-docs-consistency#FR-007",
+          "docguard.generated-docs-consistency#FR-008",
+          "docguard.generated-docs-consistency#FR-009",
+          "docguard.generated-docs-consistency#FR-010",
+          "docguard.generated-docs-consistency#FR-011",
+          "docguard.generated-docs-consistency#FR-012",
+          "docguard.generated-docs-consistency#SC-001",
+          "docguard.generated-docs-consistency#SC-002",
+          "docguard.generated-docs-consistency#SC-003"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/044-generated-docs-consistency/spec.md",
+            "digest": "sha256:1cc88c116c2f53446bbb06f925384ff7f9526a5e151f18e7f3790c6a30717845"
+          },
+          {
+            "path": "specs/044-generated-docs-consistency/plan.md",
+            "digest": "sha256:25fdb4d89f4d8eab18200a8051077cda673ab649c920cf015ffd80d21a764fef"
+          },
+          {
+            "path": "specs/044-generated-docs-consistency/tasks.md",
+            "digest": "sha256:46514c80668c06674c86c2153fe3d18dcf1cca2766147d0137984032c2f49338"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 12,
+          "total": 12
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/scanners/api-doc.mjs",
+            "line": 75
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/commands/diff.mjs",
+            "line": 145
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/shared.mjs",
+            "line": 159
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/writers/doc-generators.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/writers/doc-generators.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/scanners/as-built.mjs",
+            "line": 177
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/scanners/as-built.mjs",
+            "line": 178
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/validators/traceability.mjs",
+            "line": 558
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/shared-ignore.mjs",
+            "line": 85
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/commands/diff.mjs",
+            "line": 306
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/shared-source.mjs",
+            "line": 716
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/writers/doc-generators.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "cli/shared-source.mjs",
+            "line": 717
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "cli/shared-source.mjs",
+            "line": 970
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "cli/writers/generate-io.mjs",
+            "line": 116
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/shared-source.mjs",
+            "line": 936
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/writers/doc-generators.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "cli/writers/doc-generators.mjs",
+            "line": 19
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/generated-docs-consistency.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/generated-docs-consistency.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/generated-docs-consistency.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/generated-docs-consistency.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/generated-docs-consistency.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/generated-docs-consistency.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/generated-docs-consistency.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/generated-docs-consistency.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "tests/generated-docs-consistency.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "tests/generated-docs-consistency.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "tests/generated-docs-consistency.test.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "tests/generated-docs-consistency.test.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/generated-docs-e2e.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/generated-docs-e2e.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/generated-docs-e2e.test.mjs",
+            "line": 11
           }
         ]
       }
@@ -4444,7 +4680,7 @@
           {
             "requirementId": "FR-009",
             "file": "cli/writers/sections.mjs",
-            "line": 101
+            "line": 103
           },
           {
             "requirementId": "FR-010",
@@ -6203,7 +6439,7 @@
           {
             "requirementId": "FR-004",
             "file": "cli/scanners/api-doc.mjs",
-            "line": 50
+            "line": 54
           },
           {
             "requirementId": "FR-005",
