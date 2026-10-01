@@ -199,7 +199,9 @@ A user follows GST002's advice, and every suggestion they are given works.
   marker MUST keep applying to it unless the config sets `docSections`.
 - **FR-009**: Default ownership roots MUST include source files directly in
   the parent directory of a detected module. `--suggest` MUST cover them and
-  MUST assign paths only to existing documents. `trace --reverse` MUST name
+  MUST assign paths only to existing documents (falling back to
+  `ARCHITECTURE.md`, or the first canonical document, when no candidate
+  exists). `trace --reverse` MUST name
   the entries of a tie (JSON `ownerReason`, `tie`).
 - **FR-010**: `docguard_docs_for_path` MUST search every agent instruction
   file the path-scoped-rules scanner knows, plus the root `AGENTS.md`,
