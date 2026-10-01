@@ -5703,11 +5703,11 @@
           },
           {
             "path": "specs/049-output-ux/tasks.md",
-            "digest": "sha256:3ea840a6fce9492b1c87936be11bfb7c3361638474e5f32d6fae327211d61768"
+            "digest": "sha256:738953260d024872c75d648ab36544afcbeb65b2c0b53603175085ca03ab6b12"
           }
         ],
         "taskCompletion": {
-          "checked": 17,
+          "checked": 19,
           "total": 19
         },
         "implementationEvidence": [
