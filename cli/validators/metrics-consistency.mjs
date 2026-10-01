@@ -308,6 +308,9 @@ function checkDependencyClaims(projectDir, mdFiles, isIgnored) {
       let match;
       while ((match = regex.exec(content)) !== null) {
         if (isHistoricalMetricContext(content, match.index)) continue;
+        // A `| Dependencies | 5 |` row is a count only when its column says so:
+        // a scoring table's `Max Points` column is not (docguard.dogfood-findings#FR-003).
+        if (regex === DEP_LABEL_RE && !tableRowIsCount(content, match.index)) continue;
         const word = match[1].toLowerCase();
         const claimed = word in NUMBER_WORDS ? NUMBER_WORDS[word] : parseInt(word, 10);
         const key = `${relPath}|${claimed}`;
@@ -335,6 +338,35 @@ function checkDependencyClaims(projectDir, mdFiles, isIgnored) {
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
+
+const COUNT_HEADER = /^(?:count|value|total|number|no\.?|#|amount|qty|quantity|dependencies)$/i;
+
+/**
+ * For a match on a Markdown table row, true only when the table's header cell
+ * above the value names a count. A match outside a table is a label line and
+ * always counts.
+ *
+ * @implements docguard.dogfood-findings#FR-003
+ */
+function tableRowIsCount(content, index) {
+  const lineStart = content.lastIndexOf('\n', index) + 1;
+  const lineEnd = content.indexOf('\n', index);
+  const row = content.slice(lineStart, lineEnd === -1 ? undefined : lineEnd);
+  if (!row.trimStart().startsWith('|')) return true;
+  const lines = content.slice(0, lineStart).split('\n');
+  lines.pop();
+  let header = null;
+  for (let i = lines.length - 1; i >= 0; i--) {
+    if (!lines[i].trimStart().startsWith('|')) break;
+    header = lines[i];
+  }
+  if (!header) return false;
+  const cells = s => s.trim().replace(/^\||\|$/g, '').split('|').map(c => c.trim().replace(/[*_`]/g, ''));
+  const rowCells = cells(row);
+  const valueColumn = rowCells.findIndex((c, i) => i > 0 && /^(none|zero|no|\d+)$/i.test(c));
+  if (valueColumn < 1) return false;
+  return COUNT_HEADER.test(cells(header)[valueColumn] || '');
+}
 
 /**
  * Bug #2 — subject binding. A "N checks/validators" claim is DocGuard's to

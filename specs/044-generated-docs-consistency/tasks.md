@@ -36,7 +36,7 @@
 - [x] T007 `cli/shared-ignore.mjs`, `cli/scanners/inventory.mjs`, `cli/validators/docs-coverage.mjs` (FR-005).
 - [x] T008 `cli/validators/environment.mjs`, `templates/ARCHITECTURE.md.template`, `templates/REQUIREMENTS.md.template` (FR-006).
 - [x] T009 `cli/shared-source.mjs`, `cli/scanners/integrations.mjs`, `cli/writers/doc-generators.mjs` (FR-007, FR-008, FR-010, FR-011).
-- [x] T010 `cli/scanners/py-ast.mjs`, `cli/scanners/schemas.mjs`, `cli/validators/api-surface.mjs` (FR-010).
+- [x] T010 `cli/scanners/schemas.mjs`, `cli/validators/api-surface.mjs` (FR-010). The Python model changes planned here were superseded by spec 046, whose scanner landed first, so this feature's Python edits were dropped in the merge.
 
 ## Phase 3: Docs and verification
 

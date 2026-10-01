@@ -1,6 +1,6 @@
 /** Explicit document roles let existing repository layouts serve as canonical input. */
 import { existsSync, lstatSync, readFileSync, readdirSync } from 'node:fs';
-import { resolve, isAbsolute, join } from 'node:path';
+import { resolve, isAbsolute, join, basename } from 'node:path';
 export const DOC_ROLES = Object.freeze({
   architecture: 'docs-canonical/ARCHITECTURE.md', dataModel: 'docs-canonical/DATA-MODEL.md',
   security: 'docs-canonical/SECURITY.md', testSpec: 'docs-canonical/TEST-SPEC.md',
@@ -16,8 +16,20 @@ export function docRolePath(config = {}, role) {
   if (isAbsolute(path) || /^[A-Za-z]:/.test(path) || path.split('/').some(p => p === '..' || p.toLowerCase() === '.local' || p.toLowerCase() === '.git')) throw new Error('Document role path must stay within the project: ' + role);
   return path.startsWith('./') ? path.slice(2) : path;
 }
+/**
+ * The path a document role reads. An explicit `docs.roles` mapping wins; else
+ * the default path; else, when the default is missing, the one canonical
+ * document with the default's file name (`docs-canonical/03-architecture/
+ * DATA-MODEL.md`). Two such documents are ambiguous and keep the default.
+ *
+ * @implements docguard.dogfood-findings#FR-002
+ */
 export function resolveDocRole(projectDir, config, role) {
   const rel = docRolePath(config, role);
+  if (config.docs?.roles?.[role] === undefined && !existsSync(resolve(projectDir, rel))) {
+    const nested = uniqueSameNamedCanonical(projectDir, config, basename(rel));
+    if (nested) return resolve(projectDir, nested);
+  }
   // Opt-in mappings must not follow links into another repository/private data.
   if (config.docs?.roles?.[role] !== undefined) {
     let current = resolve(projectDir);
@@ -278,4 +290,26 @@ export function detectCanonicalLayout(projectDir, opts = {}) {
     // already-conventional project is never told to "relocate" to itself.
     .sort((a, b) => b.count - a.count
       || (a.dir === 'docs-canonical' ? -1 : b.dir === 'docs-canonical' ? 1 : a.dir.localeCompare(b.dir)));
+}
+
+function uniqueSameNamedCanonical(projectDir, config, name) {
+  const found = new Set();
+  for (const p of config.requiredFiles?.canonical || []) {
+    if (typeof p === 'string' && basename(p) === name && existsSync(resolve(projectDir, p))) found.add(p.replace(/\\/g, '/'));
+  }
+  // A bounded walk of the canonical directory (shared-ignore imports this
+  // module, so it cannot import listCanonicalDocs back).
+  const walk = (rel, depth) => {
+    if (depth > 6 || found.size > 1) return;
+    let entries;
+    try { entries = readdirSync(join(projectDir, rel), { withFileTypes: true }); } catch { return; }
+    for (const e of entries) {
+      if (e.name.startsWith('.') || e.isSymbolicLink()) continue;
+      const child = `${rel}/${e.name}`;
+      if (e.isDirectory()) walk(child, depth + 1);
+      else if (e.isFile() && e.name === name) found.add(child);
+    }
+  };
+  walk('docs-canonical', 0);
+  return found.size === 1 ? [...found][0] : null;
 }

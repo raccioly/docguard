@@ -478,6 +478,21 @@ Behaviour changes:
 
 ### Fixed
 
+- **Fixes found by running this release against ten real repositories**
+  (`specs/050-dogfood-findings`).
+  - `score` and `fix` crashed with "agentFile.some is not a function" when
+    `.docguard.json` set `requiredFiles.agentFile` to a string, which the
+    config schema allows. Config loading now turns it into a list.
+  - Schema-Sync reported "no DATA-MODEL.md exists" for a project whose
+    nested DATA-MODEL.md (`docs-canonical/03-architecture/DATA-MODEL.md`)
+    was listed in its config. A document role now resolves to the one
+    canonical document with its file name when the default path is missing;
+    two such documents keep the default, and an explicit `docs.roles` mapping
+    still wins.
+  - Metrics-Consistency read `| Dependencies | 5 |` in a scoring table's
+    `Max Points` column as "claims 5 runtime dependencies". A table row now
+    counts only when its column header names a count.
+
 - **`docguard init` no longer reports a Spec Kit integration that does not
   work** (`specs/048-spec-kit-integration-honesty`, spec 048). Each defect was
   reproduced with `specify` 1.0.13.
