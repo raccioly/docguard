@@ -794,7 +794,9 @@ async function main() {
   // byte corrupts the JSON the hook runner parses.
   // `report`: stdout IS the evidence artifact (markdown or JSON) — banner
   // bytes would corrupt it for redirection/piping in both formats.
-  const headless = jsonMode || flags.write || flags.checkOnly || flags.changedOnly || flags.quiet || flags.plan || command === 'agent' || command === 'mcp' || command === 'nudge-hook' || command === 'report';
+  // `--stdout` (memory --pack, llms): stdout IS the artifact, so no banner
+  // (docguard.output-ux#FR-001).
+  const headless = jsonMode || flags.stdout || flags.write || flags.checkOnly || flags.changedOnly || flags.quiet || flags.plan || command === 'agent' || command === 'mcp' || command === 'nudge-hook' || command === 'report';
 
   if (!headless) printBanner();
 

@@ -739,7 +739,11 @@ export function runGuard(projectDir, config, flags) {
     const escalatedNote = escalated.length > 0
       ? ` ${c.yellow}+ ${escalated.length} high-severity validator(s): ${escalated.join(', ')}${c.reset}`
       : '';
-    console.log(`${c.cyan}⚡ docguard guard --changed-only${c.reset} ${c.dim}(${label})${c.reset}${escalatedNote}\n`);
+    // docguard.output-ux#FR-001: in a machine format stdout is the artifact,
+    // so the note explaining the reduced validator set goes to stderr.
+    const note = `${c.cyan}⚡ docguard guard --changed-only${c.reset} ${c.dim}(${label})${c.reset}${escalatedNote}\n`;
+    if (['json', 'sarif', 'junit'].includes(flags.format)) process.stderr.write(`${note}\n`);
+    else console.log(note);
   }
 
   // ── `--update-baseline`: freeze the CURRENT full finding set ──
