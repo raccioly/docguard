@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.43.0] - 2026-10-01
+
 **Upgrading from 0.42.x.** No new check fails a build: every new finding is a
 warning or an escalation, so the worst case is `guard` moving from PASS to WARN
 (exit 2). That still fails CI that runs with `--fail-on-warning` or treats any
@@ -1097,6 +1099,67 @@ Behaviour changes:
   matrix (Node 24 has been in the matrix since the R5 release). Both stale
   numbers are the ones the two validator changes above now catch, and the
   exact sentences are their regression controls.
+
+### Commits
+
+- chore: verify spec 051 (#511)
+- fix: the release cut passes its own suite (spec 051) (#510)
+- chore: verify specs 040-050 and refresh the brief for v0.43.0 (#509)
+- chore: completion evidence for specs 042-048 and approve 044 (#508)
+- fix: three defects found by dogfooding real repositories (spec 050) (#507)
+- fix: DocGuard's generated docs pass DocGuard's own checks (044) (#504)
+- fix: honest Spec Kit integration — hooks that resolve, version refresh, pinned runner, real hints (spec 048) (#506)
+- fix: truthful, machine-clean command output (spec 049) (#505)
+- fix: accurate JS/TS extraction for Express and Next.js projects (spec 045) (#503)
+- fix: read Python web projects accurately (FastAPI, Flask, Django; both parser tiers) (#502)
+- fix: report Go, Spring and Rails routes at the path they are served under (#500)
+- fix: read-only commands write nothing; .docguard/ ignores itself (#501)
+- fix: let a project's first spec pass the generated-spec preflight (#499)
+- fix: report partial coverage where DocGuard reads a language by pattern only (spec 043) (#498)
+- fix: confine MCP tool calls to the served project directories (#497)
+- chore: verify spec 039, re-verify 017, and correct the brief's test count (#496)
+- test: evidence for spec 039 FR-006 (schema, docs and explain describe assetPaths) (#495)
+- docs: update the technical brief for v0.43.0 and add its PDF (#494)
+- feat: reviewed asset paths attribute frozen files in spec reconciliation (spec 039) (#493)
+- chore: verify specs 037 and 038 at main's tip (#492)
+- fix: link the evidence specs 037 and 038 need to complete (#491)
+- feat: tell agents when DocGuard is old, with no network call (spec 038) (#490)
+- fix: STR005 is informational, as spec 017 FR-004 requires (#489)
+- docs: freshness review of the canonical docs, AGENTS.md and ROADMAP (#488)
+- fix: the compact guard response states its fixed part once too (spec 037 FR-007) (#487)
+- feat: compact guard response for agents — each fact once, 60% smaller (spec 037) (#486)
+- feat: opt-in symbol map for the context pack, gated by a frozen v2 benchmark (spec 036) (#485)
+- chore: verify specs 014–035 at main's tip (#484)
+- fix: re-anchor squash-discarded reviews, reanchor --from, and link unowned test edits (#483)
+- feat: doc ownership map — one responsible doc section per source path (spec 034) (#482)
+- feat: path-scoped agent rules — dead scopes, broken pointers, per-path size (spec 033) (#481)
+- feat: module and entity diagrams drawn from code (spec 035) (#480)
+- feat: MCP doc navigation tools (spec 032) (#479)
+- feat: doc dependency lock — know which docs to re-read when code changes (#477)
+- fix: re-anchor can attest a target whose evidence changed after review (#475)
+- feat: non-regression budgets — every PR is measured against its base (#476)
+- docs: specs 030–036 — doc dependency lock, budgets, MCP doc tools, path-scoped rules, ownership map, diagrams, symbol map (#474)
+- fix: sync --since narrows the sections it says it narrows (#473)
+- fix: make completion revisions survive squash merges (#472)
+- chore: release prep for 0.43.0 — right version, reviewed notes, pinned CLI, reviewed docs (#471)
+- fix: SPK010 counts a named directory as touched when files inside it changed (#470)
+- feat: reverse-engineer as-built Spec Kit specs and keep them synced (#469)
+- fix: publish a merged release within 10 minutes, not up to an hour (#468)
+- fix: make a sandboxed run report what it could not check (#467)
+- fix: surface lifecycle-evidence gaps while the work is underway (#466)
+- fix: close out four field reports (#454 hook managers, #438, #437, #436) (#465)
+- fix: give .docguardignore one meaning and parse TODOs the way developers write them (#464)
+- fix: make the Spec Kit extension manifest state what it needs (#463)
+- feat: report instruction chains agents cannot finish reading, and colliding spec numbers (#462)
+- feat: treat Spec Kit artifacts as first-class documents (#461)
+- feat: add a spec-first change gate (docguard specs require) (#460)
+- fix: make docguard init set up Spec Kit again, and report when it cannot (#459)
+- docs: amend the constitution to v2.0.0 so it describes the project it governs (#457)
+- chore: upgrade this repository's Spec Kit to 1.0.13 (claude + codex) (#456)
+- Add tests for diffRoutes, diffEntities, and runDiff in cli/commands/diff.mjs (#451)
+- fix: redact private project references and untrack local agent state (#450)
+- docs: add the DocGuard technical brief (8-page explainer) (#449)
+- fix: finish the "N tests" check Metrics-Consistency promised since v0.8.2 (#448)
 
 ## [0.42.1] - 2026-09-22
 
