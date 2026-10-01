@@ -7225,22 +7225,29 @@
       "path": "specs/048-spec-kit-integration-honesty/spec.md",
       "reviewed": {
         "lifecycle": {
-          "approval": "draft",
-          "delivery": "planned",
+          "approval": "approved",
+          "delivery": "implemented",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
-          "persistenceModel": null
+          "persistenceModel": "living"
         },
         "relations": {
-          "extends": [],
+          "extends": [
+            "docguard.extension-manifest-hygiene",
+            "docguard.read-only-commands",
+            "docguard.specify-init-delegation"
+          ],
           "duplicates": [],
           "conflictsWith": [],
           "supersedes": [],
           "supersededBy": []
         },
         "scope": {
-          "canonicalDocs": []
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md",
+            "docs-canonical/ENVIRONMENT.md"
+          ]
         },
         "reconciliation": {
           "lastReviewedRevision": null,
