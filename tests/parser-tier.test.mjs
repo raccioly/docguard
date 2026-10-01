@@ -107,13 +107,19 @@ describe('tierFor (FR-010)', () => {
     assert.match(tierFor('a.py', null, 'custom reason').tierReason, /custom reason/);
   });
 
-  test('a language with no AST tier is fallback-language, which is not a gap', () => {
+  // @req docguard.fallback-language-coverage#FR-001
+  test('a language with no AST tier is fallback-language, a coverage gap with its own reason', () => {
     for (const f of ['a.go', 'a.rs', 'a.java', 'a.rb', 'a.php', 'Makefile']) {
       assert.equal(tierFor(f, null).tier, 'fallback-language', f);
     }
-    // Distinguishing this from regex-fallback matters: DocGuard has no Go
-    // parser to be missing, so reporting a coverage gap would be noise.
-    assert.equal(tierApplicability(summarizeTiers([{ tier: 'fallback-language' }]), 'file'), null);
+    // No Go parser is missing, but a route or read the patterns do not match
+    // is just as unseen, so a pattern-only language is partial coverage
+    // (specs/043). The reason says no syntax tree exists, which is different
+    // from the regex-fallback reason, where one was unavailable.
+    const gap = tierApplicability(summarizeTiers([{ tier: 'fallback-language' }]), 'file');
+    assert.equal(gap.status, 'partial');
+    assert.match(gap.reason, /no syntax tree exists/i);
+    assert.doesNotMatch(gap.reason, /pattern fallback/);
   });
 
   test('every tier it can return is in the published vocabulary', () => {

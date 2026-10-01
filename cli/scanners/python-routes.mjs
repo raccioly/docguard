@@ -40,11 +40,11 @@ const DRF_AUTH_PERMISSION = /^(?:IsAuthenticated|IsAdminUser|IsAuthenticatedOrRe
  * Scan Python web routes.
  * @param {string} dir project root
  * @param {{django?: boolean, asgi?: boolean}} frameworks which resolvers to run
- * @returns {Array<object>} routes, with non-enumerable `scanTier` and `limitations`
+ * @param {{files?: string[]}} [opts] the Python files to read (default: every one under `dir`)
+ * @returns {Array<object>} routes, with non-enumerable `scanTier`, `fileTiers` and `limitations`
  */
-export function scanPythonWebRoutes(dir, frameworks = {}) {
-  const files = findPythonFiles(dir);
-  const { byFile, scanTier } = loadPythonOutlines(files, 'routes');
+export function scanPythonWebRoutes(dir, frameworks = {}, { files = null } = {}) {
+  const { byFile, scanTier } = loadPythonOutlines(files || findPythonFiles(dir), 'routes');
   const index = new PythonIndex(dir, byFile);
   const limitations = [];
   const routes = [];
@@ -52,6 +52,9 @@ export function scanPythonWebRoutes(dir, frameworks = {}) {
   if (frameworks.django) routes.push(...resolveDjangoRoutes(dir, index, byFile, limitations));
   Object.defineProperty(routes, 'scanTier', { value: scanTier, enumerable: false, configurable: true, writable: true });
   Object.defineProperty(routes, 'limitations', { value: limitations, enumerable: false, configurable: true, writable: true });
+  // Each file's tier, for the route scan's coverage record (routes.mjs).
+  const fileTiers = [...byFile].map(([file, rec]) => ({ tier: rec.tier, tierReason: rec.tierReason, file: relative(dir, file) }));
+  Object.defineProperty(routes, 'fileTiers', { value: fileTiers, enumerable: false, configurable: true, writable: true });
   return routes;
 }
 
