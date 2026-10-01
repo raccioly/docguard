@@ -15,7 +15,7 @@
 import { existsSync, rmdirSync } from 'node:fs';
 import { basename, dirname, resolve } from 'node:path';
 import { c } from '../shared.mjs';
-import { areaTests, collectAreaFacts, nextFeatureDir, renderAsBuiltSpec, resolveArea, slugFor } from '../scanners/as-built.mjs';
+import { areaTests, collectAreaFacts, factsTier, isPatternTier, nextFeatureDir, renderAsBuiltSpec, resolveArea, slugFor } from '../scanners/as-built.mjs';
 import { projectSpecRegistry, SPEC_REGISTRY_PATH } from '../scanners/spec-registry.mjs';
 import { commitFileTransaction } from '../writers/file-transaction.mjs';
 
@@ -48,7 +48,18 @@ export function runGenerateAsBuilt(projectDir, config, flags) {
   const title = `As-built: ${area.rel}`;
   const content = renderAsBuiltSpec({ title, specId, areaRel: area.rel, facts, tests, dirName, date: new Date().toISOString().slice(0, 10) });
   const specPath = `specs/${dirName}/spec.md`;
-  const result = { command: 'generate --spec', status: 'PLANNED', area: area.rel, specId, path: specPath, facts, tests, written: false };
+  // Which analyzer read the route and entity facts: a candidate the pattern
+  // fallback could not see is missing, so the result says so
+  // (docguard.python-extraction#FR-013).
+  const tier = factsTier(facts);
+  const lowConfidence = isPatternTier(tier.tier);
+  const notes = lowConfidence
+    ? [`Routes and entities were read by the pattern fallback, not a syntax tree (${tier.tierReason || 'no parser'}); a candidate it cannot see is missing. Install python3 (or fix the parse error) and re-run for exact facts.`]
+    : [];
+  const result = {
+    command: 'generate --spec', status: 'PLANNED', area: area.rel, specId, path: specPath, facts, tests, written: false,
+    parserTier: tier.tier, confidence: lowConfidence ? 'low' : 'high', notes,
+  };
 
   if (flags.write) {
     const abs = resolve(projectDir, specPath);
@@ -96,6 +107,7 @@ export function runGenerateAsBuilt(projectDir, config, flags) {
   console.log(`${c.bold}🧭 As-built spec — ${area.rel}${c.reset}`);
   console.log(`  ${facts.length} requirement candidate(s): ${Object.entries(byKind).map(([k, n]) => `${n} ${k}`).join(' · ')}; ${tests.length} existing test file(s)`);
   console.log(`  Spec ID: ${specId}`);
+  for (const note of notes) console.log(`  ${c.yellow}⚠️  ${note}${c.reset}`);
   console.log(`  ${result.written ? `${c.green}✅ Written${c.reset}` : 'Would write'}: ${specPath}${result.written ? ' (registry: origin as_built, sourcePaths recorded)' : ` — re-run with ${c.cyan}--write${c.reset}`}`);
   console.log(`  ${c.dim}Next: have your agent replace each <!-- agent: … --> note with the requirement it observes; keep every docguard:fact marker. Guard reports new or vanished facts (SPR007).${c.reset}`);
   if (!result.written) {

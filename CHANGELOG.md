@@ -23,6 +23,9 @@ non-zero exit as failure. Most likely triggers:
 - **ENV003 on Go, Java, Kotlin, Ruby, Rust, PHP and C# projects:** env reads in
   those languages (and Spring `${X}` placeholders) are now found, so an
   undocumented variable is reported where it was invisible before.
+- **SCH002 and ENV findings on Python projects:** SQLAlchemy models and
+  pydantic `BaseSettings` fields are now read, so ones the docs do not
+  mention yet are reported.
 
 Behaviour changes:
 
@@ -472,6 +475,32 @@ Behaviour changes:
 
 ### Fixed
 
+- **Go, Spring and Rails routes are reported at the path they are served
+  under** (`specs/047-go-spring-rails-routes`). On eight reference projects the
+  scanner found 6 of 80 routes and reported 43 that do not exist; it now reports
+  exactly the 80. Each wrong route had been two false API findings.
+  - Go: a route on a gin, echo or fiber group lost the group's prefix
+    (`users.GET("/:id")` under `/api/v1/users` became `GET /:id`), and
+    `GET("")` on a group was dropped. chi and fiber (`r.Get`) were not read at
+    all. Prefixes now compose through blocks, functions, files, chi
+    `Route`/`Mount`, gorilla `PathPrefix().Subrouter()` and
+    `http.StripPrefix`. Go 1.22 patterns (`"GET /items/{id}"`) are read, and
+    `_test.go` files, comments and HTTP client calls no longer count.
+  - Spring: a class base written `@RequestMapping(path = …)`, `value = …` or as
+    an array was ignored, so a bare `@GetMapping` became `GET /`.
+    `@GetMapping(path = …)`, arrays, constants and every
+    `@RequestMapping(method = …)` were missed. A mapping in a comment and a
+    `@FeignClient`'s outbound mappings were reported as routes.
+  - Rails: `namespace`, `scope`, `only:`, `except:` and nesting were ignored,
+    so `namespace :admin do resources :users, only: [:index, :show] end` gave
+    seven `/users` routes. `resource`, `member`, `collection`, `root`, `match`,
+    hash-rocket routes, concerns and `draw` files are now read, and update is
+    reported as `PATCH` and `PUT`, as `rails routes` lists it.
+  - A route whose path or prefix is not literal is omitted, never guessed.
+  - Go framework detection reads versioned module paths
+    (`github.com/labstack/echo/v4`, `go-chi/chi/v5`, `gofiber/fiber/v2`), which
+    left those projects' routes unscanned, and recognises gorilla/mux.
+
 - **Read-only commands no longer install anything**
   (`specs/042-read-only-commands`).
   - Before every command, the dispatcher installed DocGuard's agent skills
@@ -576,6 +605,42 @@ Behaviour changes:
   several projects from one server, pass `--root <dir>` for each tree
   (repeatable); a `--root` that does not exist stops the server at startup.
   Calls without `projectDir` behave as before (spec 041).
+- **Python web projects are read accurately** (`specs/046-python-extraction`).
+  Measured on a FastAPI reference project and a Django reference project, with
+  and without `python3`:
+  - FastAPI/Flask routes compose every prefix (`APIRouter(prefix=)`,
+    `include_router`, blueprints, `mount`) across modules and under any router
+    name; `/api/v1/users/{user_id}` was reported as `/{user_id}`, and two
+    `GET /` routes collapsed into one as-built fact. Router-level
+    authentication dependencies mark their routes.
+  - Django routes follow `ROOT_URLCONF` through `include()`, `re_path` and DRF
+    router registrations; an include mount is no longer reported as an
+    endpoint (`ALL /api/`). `<int:pk>` compares equal to `{pk}` (path
+    normalization turned it into `<int{}`).
+  - SQLAlchemy 2.0 models (`Mapped`/`mapped_column`) and Django models are the
+    entities; Pydantic payloads are not, unless there is no ORM. Relationships
+    carry one-to-many, many-to-many or one-to-one, one edge per relationship,
+    never to a missing entity or labelled `undefined`. Diagram types read
+    `str`, not `Optional_str_`. Guard's schema check reads the same scanner
+    as `generate`, so the two agree; it now also checks SQLAlchemy models.
+  - `BaseSettings` fields (`env_prefix`, `alias`, `validation_alias`) and
+    `environ.get()` after `from os import environ` are environment variables.
+  - `init --skip-prompts` types a FastAPI project as `api` (it said `library`):
+    one project-type detector. Plain `init` on a Django layout scans the code
+    instead of prompting. A `pyproject.toml` dependency with extras no longer
+    ends the dependency list.
+  - Without `python3`, `generate --plan` (text and JSON) and `generate --spec`
+    report the pattern tier with `low` confidence and a note, pattern-tier
+    sections are partial, and SPR007 findings carry the facts' parser tier.
+    The module graph says the interpreter was unavailable instead of "No
+    source modules found".
+  - The as-built test list no longer counts `tests/__init__.py`; the symbol
+    map lists module-level names such as `app` and `settings`.
+
+  Upgrading: guard may report new SCH002 warnings for SQLAlchemy models and
+  new ENV findings for settings fields that DATA-MODEL.md or ENVIRONMENT.md
+  do not document yet.
+
 - **STR005 is informational, as spec 017 requires.** The validator asked for
   `severity: 'info'`, which the finding constructor only accepts as `error` or
   `warn`, so it became a warning: slack in an instruction allowance turned

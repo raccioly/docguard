@@ -154,6 +154,59 @@ npx docguard-cli generate --dir ./my-project
 
 **Detects:** Next.js, React, Vue, Angular, Express, Fastify, Hono, Django, FastAPI, SvelteKit, and more.
 
+#### How routes are read
+
+Guard's API-surface check, `diff` and `generate` take routes from one scanner.
+It reads JavaScript, TypeScript and Python with a syntax tree. Go, Java, Kotlin
+and Ruby are read by pattern (`fallback-language`), following each framework's
+routing rules:
+
+- **Go** (gin, echo, chi, fiber, gorilla/mux, net/http): route groups and
+  sub-routers carry their prefix (`r.Group`, chi `Route` and `Mount`, gorilla
+  `PathPrefix().Subrouter()`, `http.StripPrefix`). This holds when the group is
+  passed to a function in another file, or a function returns the router. Go
+  1.22 patterns (`"GET /items/{id}"`) are read; `HandleFunc` with no method is
+  `ANY`. `_test.go` files and HTTP client calls are not routes.
+- **Spring** (Java, Kotlin): the class-level `@RequestMapping` base, in any
+  form (`path =`, `value =`, arrays, constants), joins every method mapping.
+  `@RequestMapping(method = …)` names the method, `ANY` when it names none.
+  `@FeignClient` interfaces are skipped.
+- **Rails** (`config/routes.rb` and its `draw` files): `namespace` and `scope`
+  prefixes, `resources`/`resource` with `only:`/`except:`, nesting, `shallow`,
+  `member`/`collection`, `match … via:`, `root` and concerns, as `rails routes`
+  lists them. Update is both `PATCH` and `PUT`.
+
+A route is omitted when its path or prefix is not literal text or a constant
+it can resolve: an environment variable, a `${…}` placeholder, a Ruby
+interpolation, or a call it cannot pin to one function. It is never reported
+at a guessed path.
+
+**Python projects.** Routes carry their full paths:
+
+- FastAPI and Flask: `APIRouter(prefix=)`, `include_router(..., prefix=)`,
+  `Blueprint(url_prefix=)`, `register_blueprint()` and `mount()`, across
+  modules and under any router name. A prefix read from a constant or a
+  settings default (`settings.API_V1_STR`) is evaluated; one that cannot be is
+  flagged, not dropped. A route is marked authenticated when an
+  authentication dependency (`Depends(get_current_user)`, `Security(...)`)
+  applies to it, its router, its include or the app.
+- Django: the URL configuration from `ROOT_URLCONF` (`path`, `re_path`,
+  `include()`), DRF `DefaultRouter`/`SimpleRouter` registrations expanded into
+  list, detail and `@action` routes, and the methods views declare. `<int:pk>`
+  is written `{pk}` and compares equal to it. An include of a module outside
+  the project is reported, never invented as an endpoint.
+
+The data model is the ORM model (SQLAlchemy `Column` and `Mapped`/
+`mapped_column`, Django models, SQLModel `table=True`), with one-to-many,
+many-to-many and one-to-one relationships; Pydantic classes are the data model
+only when there is no ORM. Environment variables include pydantic
+`BaseSettings` fields (`env_prefix`, `alias`, `validation_alias`).
+
+Without `python3`, the pattern fallback reads the same facts from standard
+layouts, and `generate --plan` says so: `surface.parserTiers` names the tier
+of the endpoints and entities, `surface.confidence` is `low`, a note explains
+why, and those code sections are marked partial.
+
 #### As-built specs: `docguard generate --spec <area>`
 
 For code that has no spec (a refactor, a migration, onboarding), DocGuard
@@ -169,6 +222,10 @@ npx docguard-cli generate --spec src/billing                # preview the candid
 npx docguard-cli generate --spec src/billing --write        # create specs/NNN-as-built-src-billing/spec.md
 npx docguard-cli generate --spec src/billing --id acme.billing --write --format json
 ```
+
+The JSON result carries `parserTier` and `confidence` (`low` when routes or
+entities were read by the pattern fallback), and SPR007 findings carry the
+tier of the facts they concern.
 
 `--write` creates the spec in the next free feature directory (honouring Spec
 Kit's `feature_numbering`) and registers it with `origin: as_built` and its

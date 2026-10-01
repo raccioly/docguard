@@ -15,8 +15,16 @@
  * tier. Python parsing never becomes load-bearing for the CLI to run.
  * @implements docguard.language-repository-coverage#FR-001
  * @implements docguard.language-repository-coverage#FR-004
+ *
+ * The extractor emits a module outline (imports, module-level statements,
+ * classes, functions) that the route, model and settings resolvers share with
+ * the pattern tier (py-outline.mjs), and the module's public names, including
+ * names assigned at the top level, for the symbol map.
+ * @implements docguard.python-extraction#FR-016
  */
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 
 // Cached interpreter probe: undefined = unchecked, null = unavailable,
 // string = the working command ('python3' or 'python').
@@ -53,106 +61,174 @@ export function pyAstAvailable() {
 const PY_EXTRACTOR = `
 import ast, sys, json
 
-HTTP = {"get", "post", "put", "delete", "patch", "head", "options"}
-PYD_BASES = {"BaseModel", "SQLModel"}
-ORM_BASES = {"Base", "Model", "DeclarativeBase"}
-ORM_COLS = {"Column", "mapped_column", "relationship"}
+MAX_DEPTH = 14
+MAX_ITEMS = 500
 
-def str_of(node):
-    if isinstance(node, ast.Constant) and isinstance(node.value, str):
-        return node.value
+def dotted(node):
+    parts = []
+    while isinstance(node, ast.Attribute):
+        parts.append(node.attr)
+        node = node.value
+    if isinstance(node, ast.Name):
+        parts.append(node.id)
+        return ".".join(reversed(parts))
     return None
 
-def routes_from_func(fn):
+# The outline encodes an expression in a small JSON form that the pattern
+# tier (cli/scanners/py-outline.mjs) produces from source text too, so both
+# tiers feed the same resolvers. Anything outside the form is "other".
+def enc(node, depth=0):
+    if node is None:
+        return None
+    if depth > MAX_DEPTH:
+        return {"t": "other"}
+    depth += 1
+    if isinstance(node, ast.Constant):
+        v = node.value
+        if isinstance(v, str):
+            return {"t": "str", "v": v}
+        if isinstance(v, bytes):
+            return {"t": "str", "v": v.decode("utf-8", "replace")}
+        if v is True or v is False or v is None:
+            return {"t": "const", "v": v}
+        if v is Ellipsis:
+            return {"t": "const", "v": "..."}
+        if isinstance(v, (int, float)) and not isinstance(v, bool):
+            return {"t": "num", "v": v}
+        return {"t": "other"}
+    if isinstance(node, ast.JoinedStr):
+        parts = []
+        for p in node.values:
+            parts.append(enc(p.value if isinstance(p, ast.FormattedValue) else p, depth))
+        return {"t": "fstr", "parts": parts}
+    name = dotted(node)
+    if name is not None:
+        return {"t": "ref", "v": name}
+    if isinstance(node, ast.Attribute):
+        return {"t": "attr", "value": enc(node.value, depth), "attr": node.attr}
+    if isinstance(node, ast.Call):
+        args = [{"t": "other"} if isinstance(a, ast.Starred) else enc(a, depth) for a in node.args[:MAX_ITEMS]]
+        kw = {}
+        for k in node.keywords:
+            if k.arg:
+                kw[k.arg] = enc(k.value, depth)
+        return {"t": "call", "fn": enc(node.func, depth), "args": args, "kw": kw}
+    if isinstance(node, (ast.List, ast.Tuple, ast.Set)):
+        return {"t": "list", "items": [{"t": "other"} if isinstance(e, ast.Starred) else enc(e, depth) for e in node.elts[:MAX_ITEMS]]}
+    if isinstance(node, ast.Dict):
+        keys, values = [], []
+        for k, v in list(zip(node.keys, node.values))[:MAX_ITEMS]:
+            if k is None:
+                continue
+            keys.append(enc(k, depth))
+            values.append(enc(v, depth))
+        return {"t": "dict", "keys": keys, "values": values}
+    if isinstance(node, ast.Subscript):
+        sl = node.slice
+        if hasattr(ast, "Index") and isinstance(sl, getattr(ast, "Index")):
+            sl = sl.value
+        if isinstance(sl, ast.Slice):
+            index = [{"t": "other"}]
+        elif isinstance(sl, ast.Tuple):
+            index = [enc(e, depth) for e in sl.elts[:MAX_ITEMS]]
+        else:
+            index = [enc(sl, depth)]
+        return {"t": "sub", "value": enc(node.value, depth), "index": index}
+    if isinstance(node, ast.BinOp):
+        op = "+" if isinstance(node.op, ast.Add) else "|" if isinstance(node.op, ast.BitOr) else None
+        if op is None:
+            return {"t": "other"}
+        return {"t": "bin", "op": op, "l": enc(node.left, depth), "r": enc(node.right, depth)}
+    return {"t": "other"}
+
+def params_of(a):
     out = []
-    doc = ast.get_docstring(fn) or ""
-    desc = doc.strip().split("\\n")[0] if doc else ""
-    for dec in fn.decorator_list:
-        if not isinstance(dec, ast.Call) or not isinstance(dec.func, ast.Attribute):
-            continue
-        method = dec.func.attr.lower()
-        if method in HTTP:
-            path = str_of(dec.args[0]) if dec.args else None
-            if path and path.startswith("/"):
-                out.append({"method": method.upper(), "path": path, "func": fn.name, "desc": desc})
-        elif method == "route":  # Flask: @app.route("/x", methods=["GET","POST"])
-            path = str_of(dec.args[0]) if dec.args else None
-            methods = ["GET"]
-            for kw in dec.keywords:
-                if kw.arg == "methods" and isinstance(kw.value, (ast.List, ast.Tuple)):
-                    ms = [str_of(e) for e in kw.value.elts]
-                    ms = [m.upper() for m in ms if m]
-                    if ms:
-                        methods = ms
-            if path and path.startswith("/"):
-                for m in methods:
-                    out.append({"method": m, "path": path, "func": fn.name, "desc": desc})
+    pos = list(getattr(a, "posonlyargs", [])) + list(a.args)
+    defaults = [None] * (len(pos) - len(a.defaults)) + list(a.defaults)
+    for p, d in zip(pos, defaults):
+        out.append({"name": p.arg, "ann": enc(p.annotation), "default": enc(d)})
+    for p, d in zip(a.kwonlyargs, a.kw_defaults):
+        out.append({"name": p.arg, "ann": enc(p.annotation), "default": enc(d)})
     return out
 
-def base_names(cls):
-    names = []
-    for b in cls.bases:
-        if isinstance(b, ast.Name):
-            names.append(b.id)
-        elif isinstance(b, ast.Attribute):
-            names.append(b.attr)
-    return names
+def doc_line(fn):
+    doc = ast.get_docstring(fn) or ""
+    return doc.strip().split("\\n")[0] if doc else ""
 
-def type_str(node):
-    f = getattr(ast, "unparse", None)  # ast.unparse is 3.9+; degrade to "" otherwise
-    if f is None or node is None:
-        return ""
-    try:
-        return f(node)
-    except Exception:
-        return ""
+BLOCKS = (ast.If, ast.For, ast.While, ast.With, ast.Try, ast.AsyncFor, ast.AsyncWith)
+if hasattr(ast, "TryStar"):
+    BLOCKS = BLOCKS + (getattr(ast, "TryStar"),)
 
-def call_name(call):
-    fn = call.func
-    if isinstance(fn, ast.Attribute):
-        return fn.attr
-    if isinstance(fn, ast.Name):
-        return fn.id
-    return ""
+# scope: "module" keeps assignments, calls, classes and functions; "class"
+# keeps assignments, methods and nested classes; "function" keeps nested
+# definitions and the assignments and calls whose value is a call (a factory
+# that builds an app and registers its routers). Compound statements are
+# flattened into the enclosing scope, since a guarded "urlpatterns +=" or an
+# app built inside a try block is still part of the module.
+def outline_of(body, scope, depth=0):
+    out = []
+    for s in body:
+        line = getattr(s, "lineno", 0)
+        if isinstance(s, BLOCKS):
+            inner = list(getattr(s, "body", []))
+            for h in getattr(s, "handlers", []):
+                inner.extend(h.body)
+            inner += list(getattr(s, "orelse", [])) + list(getattr(s, "finalbody", []))
+            out.extend(outline_of(inner, scope, depth))
+        elif isinstance(s, ast.ClassDef):
+            out.append({
+                "k": "class", "name": s.name, "line": line,
+                "bases": [enc(b) for b in s.bases],
+                "keywords": dict((k.arg, enc(k.value)) for k in s.keywords if k.arg),
+                "decorators": [enc(d) for d in s.decorator_list],
+                "body": outline_of(s.body, "class", depth + 1) if depth < 4 else [],
+            })
+        elif isinstance(s, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            out.append({
+                "k": "def", "name": s.name, "line": line,
+                "decorators": [enc(d) for d in s.decorator_list],
+                "params": params_of(s.args), "doc": doc_line(s),
+                "body": outline_of(s.body, "function", depth + 1) if depth < 4 else [],
+            })
+        elif isinstance(s, (ast.Assign, ast.AnnAssign, ast.AugAssign)):
+            if isinstance(s, ast.Assign):
+                targets = [dotted(t) for t in s.targets]
+            else:
+                targets = [dotted(s.target)]
+            targets = [t for t in targets if t]
+            if not targets:
+                continue
+            value = enc(s.value) if s.value is not None else None
+            if scope == "function" and (value is None or value.get("t") != "call"):
+                continue
+            aug = None
+            if isinstance(s, ast.AugAssign):
+                aug = "+" if isinstance(s.op, ast.Add) else "other"
+            out.append({
+                "k": "assign", "targets": targets, "line": line, "aug": aug,
+                "ann": enc(s.annotation) if isinstance(s, ast.AnnAssign) else None,
+                "value": value,
+            })
+        elif isinstance(s, ast.Expr) and isinstance(s.value, ast.Call) and scope != "class":
+            out.append({"k": "expr", "line": line, "value": enc(s.value)})
+    return out
 
-def fields_from_class(cls):
-    pyd, orm, rels = [], [], []
-    for stmt in cls.body:
-        # Pydantic: name: type [= default]
-        if isinstance(stmt, ast.AnnAssign) and isinstance(stmt.target, ast.Name):
-            t = type_str(stmt.annotation)
-            has_none_default = isinstance(stmt.value, ast.Constant) and stmt.value.value is None
-            required = not ("Optional" in t or "None" in t or has_none_default)
-            pyd.append({"name": stmt.target.id, "type": t, "required": required})
-            if isinstance(stmt.value, ast.Call) and call_name(stmt.value) == "relationship" and stmt.value.args:
-                tgt = str_of(stmt.value.args[0])
-                if tgt:
-                    rels.append(tgt)
-        # SQLAlchemy: name = Column(Type, nullable=...) / mapped_column(...) / relationship("X")
-        elif isinstance(stmt, ast.Assign) and isinstance(stmt.value, ast.Call):
-            cname = call_name(stmt.value)
-            if cname in ORM_COLS:
-                t = ""
-                if stmt.value.args:
-                    a0 = stmt.value.args[0]
-                    if isinstance(a0, ast.Name):
-                        t = a0.id
-                    elif isinstance(a0, ast.Attribute):
-                        t = a0.attr
-                    elif isinstance(a0, ast.Call):
-                        t = call_name(a0)
-                required = True
-                for kw in stmt.value.keywords:
-                    if kw.arg == "nullable" and isinstance(kw.value, ast.Constant) and kw.value.value is True:
-                        required = False
-                for tgt in stmt.targets:
-                    if isinstance(tgt, ast.Name):
-                        orm.append({"name": tgt.id, "type": t, "required": required})
-                if cname == "relationship" and stmt.value.args:
-                    rel = str_of(stmt.value.args[0])
-                    if rel:
-                        rels.append(rel)
-    return pyd, orm, rels
+def aliases_of(tree):
+    out = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for nm in node.names:
+                if nm.asname:
+                    out.append({"local": nm.asname, "module": nm.name, "name": None, "level": 0})
+                else:
+                    top = nm.name.split(".")[0]
+                    out.append({"local": top, "module": top, "name": None, "level": 0})
+        elif isinstance(node, ast.ImportFrom):
+            for nm in node.names:
+                if nm.name == "*":
+                    continue
+                out.append({"local": nm.asname or nm.name, "module": node.module or "", "name": nm.name, "level": node.level or 0})
+    return out
 
 def imports_from_tree(tree):
     imports = []
@@ -196,20 +272,9 @@ for path in sys.stdin.read().splitlines():
     except Exception:
         results.append({"file": path, "ok": False})
         continue
-    routes, schemas = [], []
-    for node in ast.walk(tree):
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            routes.extend(routes_from_func(node))
-        elif isinstance(node, ast.ClassDef):
-            bn = base_names(node)
-            pyd, orm, rels = fields_from_class(node)
-            if any(b in PYD_BASES for b in bn) and pyd:
-                schemas.append({"name": node.name, "fields": pyd, "kind": "pydantic", "rels": rels})
-            elif any(b in ORM_BASES for b in bn) and orm:
-                schemas.append({"name": node.name, "fields": orm, "kind": "sqlalchemy", "rels": rels})
     imports, dynamic_imports, path_mutation = imports_from_tree(tree)
     # Top-level names, for the symbol map: __all__ when declared, else public
-    # top-level functions and classes, in source order.
+    # top-level functions, classes and assigned names, in source order.
     symbols, declared_all = [], None
     for stmt in tree.body:
         if isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and not stmt.name.startswith("_"):
@@ -217,8 +282,13 @@ for path in sys.stdin.read().splitlines():
         elif isinstance(stmt, ast.Assign) and any(isinstance(t, ast.Name) and t.id == "__all__" for t in stmt.targets):
             if isinstance(stmt.value, (ast.List, ast.Tuple)):
                 declared_all = [e.value for e in stmt.value.elts if isinstance(e, ast.Constant) and isinstance(e.value, str)]
+        elif isinstance(stmt, (ast.Assign, ast.AnnAssign)):
+            for t in (stmt.targets if isinstance(stmt, ast.Assign) else [stmt.target]):
+                if isinstance(t, ast.Name) and not t.id.startswith("_") and t.id not in symbols:
+                    symbols.append(t.id)
     results.append({
-        "file": path, "ok": True, "routes": routes, "schemas": schemas,
+        "file": path, "ok": True,
+        "outline": {"aliases": aliases_of(tree), "body": outline_of(tree.body, "module")},
         "imports": imports, "dynamicImports": dynamic_imports, "pathMutation": path_mutation,
         "symbols": declared_all if declared_all is not None else symbols
     })
@@ -226,24 +296,51 @@ for path in sys.stdin.read().splitlines():
 sys.stdout.write(json.dumps(results))
 `;
 
+// Parsed files, keyed by path and content digest, for the life of the
+// process. Routes, schemas, the import graph and the symbol map each ask for
+// the same files in one run; each ask used to be a separate interpreter run.
+const _parsed = new Map(); // path → { digest, entry }
+const _MAX_CACHED = 20000;
+
+function digestOf(path) {
+  try { return createHash('sha1').update(readFileSync(path)).digest('hex'); } catch { return null; }
+}
+
+/** Forget cached parses (tests that rewrite a file in place within one tick). */
+export function clearPythonParseCache() {
+  _parsed.clear();
+}
+
 /**
  * Parse a batch of Python files in ONE python3 subprocess.
  *
  * @param {string[]} filePaths - absolute paths to .py files
- * @returns {Object<string, {ok:boolean, routes?, schemas?, imports?, dynamicImports?, pathMutation?}>|null}
+ * @returns {Object<string, {ok:boolean, outline?, imports?, dynamicImports?, pathMutation?, symbols?}>|null}
  *   A map keyed by the input path, or `null` when Python is unavailable / the
  *   subprocess failed / output was unparseable (caller falls back to regex).
  *   An empty input returns `{}` (nothing to do, but Python IS available).
+ *   `outline` is the module outline both tiers share (see py-outline.mjs).
  */
 export function extractPythonFiles(filePaths) {
   const cmd = pyCmd();
   if (!cmd) return null;
   if (!filePaths || filePaths.length === 0) return {};
 
+  const byFile = {};
+  const digests = new Map();
+  const missing = [];
+  for (const path of filePaths) {
+    const digest = digestOf(path);
+    const hit = digest && _parsed.get(path);
+    if (hit && hit.digest === digest) byFile[path] = hit.entry;
+    else { digests.set(path, digest); missing.push(path); }
+  }
+  if (missing.length === 0) return byFile;
+
   let r;
   try {
     r = spawnSync(cmd, ['-c', PY_EXTRACTOR], {
-      input: filePaths.join('\n'),
+      input: missing.join('\n'),
       encoding: 'utf-8',
       maxBuffer: 64 * 1024 * 1024,
       timeout: 30000,
@@ -257,9 +354,12 @@ export function extractPythonFiles(filePaths) {
   try { parsed = JSON.parse(r.stdout); } catch { return null; }
   if (!Array.isArray(parsed)) return null;
 
-  const byFile = {};
+  if (_parsed.size + missing.length > _MAX_CACHED) _parsed.clear();
   for (const entry of parsed) {
-    if (entry && entry.file) byFile[entry.file] = entry;
+    if (!entry || !entry.file) continue;
+    byFile[entry.file] = entry;
+    const digest = digests.get(entry.file);
+    if (digest) _parsed.set(entry.file, { digest, entry });
   }
   return byFile;
 }

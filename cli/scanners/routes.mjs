@@ -21,7 +21,10 @@ import { resolve, join, relative, basename, extname, dirname } from 'node:path';
 import { resolveSourceRoots, readScannable, tierFor, summarizeTiers } from '../shared-source.mjs';
 import { DEFAULT_IGNORE_DIRS as IGNORE_DIRS, shouldIgnore, relPosix, isNonProductPath } from '../shared-ignore.mjs';
 import { extractJsRouteCalls, extractJsRouteObjects, extractJsMountsAndImports } from './js-ast.mjs';
-import { extractPythonFiles } from './py-ast.mjs';
+import { scanPythonWebRoutes } from './python-routes.mjs';
+import { extractGoRoutes } from './go-routes.mjs';
+import { extractSpringRoutes } from './spring-routes.mjs';
+import { extractRailsRoutes } from './rails-routes.mjs';
 
 /**
  * Scan routes from source code with framework-aware parsing.
@@ -78,10 +81,6 @@ export function scanRoutesDeep(dir, stack, docTools, opts = {}) {
     routes.push(...scanHonoRoutes(dir, roots));
   }
 
-  if (framework.includes('Django')) {
-    routes.push(...scanDjangoRoutes(dir, ctx));
-  }
-
   if (named('Spring', 'Java')) {
     patternScan(named('Spring Boot', 'Spring', 'Java'), ['spring-boot'], scanSpringBootRoutes);
   }
@@ -98,8 +97,19 @@ export function scanRoutesDeep(dir, stack, docTools, opts = {}) {
     patternScan(named('Axum', 'Actix', 'Rocket', 'Warp', 'Rust'), ['axum', 'actix', 'rocket'], scanRustWebRoutes);
   }
 
-  if (framework.includes('FastAPI') || framework.includes('Flask')) {
-    routes.push(...scanFastAPIRoutes(dir, ctx));
+  // Python: one scan resolves FastAPI/Flask routers and Django URL
+  // configurations from the same module outlines (python-routes.mjs), and
+  // records each file's parser tier with the scan.
+  let limitations = null;
+  const django = framework.includes('Django');
+  const asgi = framework.includes('FastAPI') || framework.includes('Flask');
+  if (django || asgi) {
+    const pyFiles = findRouteFiles(dir, /\.py$/, { maxFiles });
+    if (pyFiles.truncated) scan.truncated = true;
+    const py = scanPythonWebRoutes(dir, { django, asgi }, { files: pyFiles });
+    scan.tierItems.push(...py.fileTiers);
+    limitations = py.limitations || null;
+    routes.push(...py);
   }
 
   // Deduplicate by method+path, and drop routes that live in non-product dirs
@@ -129,6 +139,7 @@ export function scanRoutesDeep(dir, stack, docTools, opts = {}) {
   // to know about. (calibrated-finding-channels#FR-011)
   const scanTier = scan.tierItems.length ? summarizeTiers(scan.tierItems) : null;
   if (scanTier) Object.defineProperty(kept, 'scanTier', { value: scanTier, enumerable: false });
+  if (limitations?.length) Object.defineProperty(kept, 'limitations', { value: limitations, enumerable: false });
   for (const pf of scan.patternFrameworks) pf.kept = kept.filter(r => pf.sources.includes(r.source)).length;
   Object.defineProperty(kept, 'scan', {
     enumerable: false,
@@ -546,209 +557,51 @@ function scanHonoRoutes(dir, roots = null) {
   return routes;
 }
 
-// ── Django ───────────────────────────────────────────────────────────────────
-
-function scanDjangoRoutes(dir, ctx) {
-  const routes = [];
-  const urlsFiles = findRouteFiles(dir, /urls\.py$/, { maxFiles: ctx.maxFiles });
-  if (urlsFiles.truncated) ctx.scan.truncated = true;
-
-  for (const filePath of urlsFiles) {
-    const content = readFileSafe(filePath);
-    if (!content) continue;
-
-    // Match: path('api/users/', views.user_list, name='user-list')
-    const pathPattern = /path\s*\(\s*['"]([^'"]+)['"]\s*,\s*(\w+[\w.]*)/g;
-    let match;
-    while ((match = pathPattern.exec(content)) !== null) {
-      routes.push({
-        method: 'ALL',
-        path: '/' + match[1],
-        handler: match[2],
-        file: relative(dir, filePath),
-        source: 'django',
-        auth: false,
-        description: '',
-      });
-    }
-  }
-
-  return routes;
-}
-
-// ── FastAPI / Flask ─────────────────────────────────────────────────────────
-
-function scanFastAPIRoutes(dir, ctx) {
-  const routes = [];
-  const pattern = /@(?:app|router)\s*\.\s*(get|post|put|delete|patch)\s*\(\s*['"]([^'"]+)['"]/gi;
-
-  const pyFiles = findRouteFiles(dir, /\.py$/, { maxFiles: ctx.maxFiles });
-  if (pyFiles.truncated) ctx.scan.truncated = true;
-  // AST-first: ONE python3 subprocess parses every file. `null` means Python is
-  // unavailable or the subprocess failed → regex fallback for all files. A
-  // per-file `ok:false` falls back for just that file. The AST form also reads
-  // multi-line decorators and Flask `methods=[...]` arrays the regex misses.
-  const astByFile = extractPythonFiles(pyFiles);
-  // `null` means the whole batch fell back — no usable interpreter. Name that
-  // once here so every route from this scan carries the same accurate reason
-  // rather than a per-file guess. (calibrated-finding-channels#FR-010/011)
-  const batchReason = astByFile === null ? 'No usable python3 interpreter; routes matched by pattern.' : null;
-
-  for (const filePath of pyFiles) {
-    const content = readFileSafe(filePath);
-    if (!content) continue;
-
-    const parsed = astByFile && astByFile[filePath];
-    const { tier, tierReason } = tierFor(filePath, parsed, batchReason);
-    const fileAuth = content.includes('Depends(') && content.includes('auth');
-    if (parsed && parsed.ok) {
-      for (const r of parsed.routes || []) {
-        routes.push({
-          method: r.method,
-          path: r.path,
-          handler: r.func || '',
-          file: relative(dir, filePath),
-          source: 'fastapi',
-          auth: fileAuth,
-          description: r.desc || '',
-          tier,
-          tierReason,
-        });
-      }
-      continue;
-    }
-
-    // The pattern tier. It cannot see a multi-line decorator or a Flask
-    // `methods=[...]` array, so a route may be missing entirely here — which
-    // is exactly why the tier travels with the result instead of staying a
-    // silent implementation detail.
-    let match;
-    const regex = new RegExp(pattern.source, 'gi');
-    while ((match = regex.exec(content)) !== null) {
-      routes.push({
-        method: match[1].toUpperCase(),
-        path: match[2],
-        handler: extractPythonFunctionName(content, match.index),
-        file: relative(dir, filePath),
-        source: 'fastapi',
-        auth: fileAuth,
-        description: extractPythonDocstring(content, match.index),
-        tier,
-        tierReason,
-      });
-    }
-  }
-
-  // A Python file that yielded no route still carries coverage information:
-  // if it was read by the pattern tier, the absence of a route from it is
-  // weak evidence. Record every file's tier with the scan so a caller can
-  // downgrade applicability even when the result list is empty.
-  for (const f of pyFiles) ctx.scan.tierItems.push({ ...tierFor(f, astByFile && astByFile[f], batchReason), file: relative(dir, f) });
-  return routes;
-}
-
 // ── Spring Boot (Java/Kotlin) ────────────────────────────────────────────────
+// What a Java/Kotlin file routes is read by spring-routes.mjs: class-level
+// @RequestMapping bases in every form, method-level mappings and
+// @RequestMapping(method = …), constants, Feign clients skipped
+// (docguard.go-spring-rails-routes#FR-003/004). Constants may live in files
+// without a mapping, so every file is handed over.
 
 function scanSpringBootRoutes(dir, ctx) {
-  const routes = [];
-  // Method-level verb annotations (NOT @RequestMapping — that's class-level base).
-  // Optional path; bare `@PostMapping` means "base path only".
-  const verbMap = /@(Get|Post|Put|Delete|Patch)Mapping(?:\s*\(\s*(?:value\s*=\s*)?["']([^"']*)["'])?/g;
-  const classBase = /@RequestMapping\s*\(\s*(?:value\s*=\s*)?["']([^"']+)["'][^)]*\)\s*[\r\n][\s\S]*?(?:public\s+)?class\s+\w+/;
-
-  const javaFiles = readPatternFiles(ctx, /\.(java|kt)$/);
-  for (const filePath of javaFiles) {
-    const content = readFileSafe(filePath);
-    if (!content || !content.includes('Mapping')) continue;
-    const { tier, tierReason } = tierFor(filePath, null);
-
-    // Class-level base path, if any.
-    const cb = classBase.exec(content);
-    const basePath = cb ? cb[1] : '';
-    const authPresent = /@PreAuthorize|@Secured|SecurityContext/.test(content);
-
-    let match;
-    const re = new RegExp(verbMap.source, 'g');
-    while ((match = re.exec(content)) !== null) {
-      const method = match[1].toUpperCase();
-      const sub = match[2] || '';
-      const path = (basePath + sub).replace(/\/+/g, '/') || '/';
-      routes.push({
-        method, path,
-        handler: '', file: relative(dir, filePath), source: 'spring-boot',
-        auth: authPresent, description: '', tier, tierReason,
-      });
-    }
-  }
-  return routes;
+  // docguard.fallback-language-coverage: files are listed (and counted for
+  // coverage) by readPatternFiles; each route carries its pattern tier.
+  const files = readPatternFiles(ctx, /\.(java|kt)$/);
+  const sources = files.map(f => ({ file: relative(dir, f), content: readFileSafe(f) }));
+  return extractSpringRoutes(sources).map(r => ({ ...r, source: 'spring-boot', description: '', ...tierFor(resolve(dir, r.file), null) }));
 }
 
 // ── Rails (Ruby) — config/routes.rb ──────────────────────────────────────────
+// rails-routes.mjs reads namespace/scope prefixes, resources/resource with
+// only/except, nesting, member/collection, verbs, match, root, concerns and
+// `draw` files (docguard.go-spring-rails-routes#FR-005).
 
 function scanRailsRoutes(dir, ctx) {
-  const routes = [];
   const routesFile = resolve(dir, 'config/routes.rb');
-  if (!existsSync(routesFile)) return routes;
+  if (!existsSync(routesFile)) return [];
   recordPatternFiles(ctx, [routesFile]);
-  const content = readFileSafe(routesFile);
-  if (!content) return routes;
   const { tier, tierReason } = tierFor(routesFile, null);
-
-  // Verb DSL: get '/x', post '/x', etc.  AND  resources :things (RESTful 7 actions)
-  const verbDsl = /^\s*(get|post|put|patch|delete)\s+['"]([^'"]+)['"]/gm;
-  let m;
-  while ((m = verbDsl.exec(content)) !== null) {
-    routes.push({
-      method: m[1].toUpperCase(),
-      path: m[2].startsWith('/') ? m[2] : '/' + m[2],
-      handler: '', file: 'config/routes.rb', source: 'rails', auth: false, description: '', tier, tierReason,
-    });
-  }
-  // resources :users → 7 standard RESTful routes.
-  const resourcesRe = /^\s*resources\s+:([a-z_]+)/gm;
-  while ((m = resourcesRe.exec(content)) !== null) {
-    const r = m[1];
-    const base = `/${r}`;
-    const seven = [
-      ['GET', base], ['GET', `${base}/new`], ['POST', base],
-      ['GET', `${base}/:id`], ['GET', `${base}/:id/edit`],
-      ['PATCH', `${base}/:id`], ['DELETE', `${base}/:id`],
-    ];
-    for (const [method, path] of seven) {
-      routes.push({ method, path, handler: '', file: 'config/routes.rb', source: 'rails', auth: false, description: '', tier, tierReason });
-    }
-  }
-  return routes;
+  // `draw :admin` loads config/routes/admin.rb; a name is never a path.
+  const readDraw = name => {
+    if (!/^[\w-]+$/.test(name)) return null;
+    const drawFile = resolve(dir, 'config/routes', `${name}.rb`);
+    if (existsSync(drawFile)) recordPatternFiles(ctx, [drawFile]);
+    return readFileSafe(drawFile);
+  };
+  return extractRailsRoutes(readFileSafe(routesFile), { file: 'config/routes.rb', readDraw })
+    .map(r => ({ ...r, source: 'rails', description: '', tier, tierReason }));
 }
 
-// ── Go web frameworks (Gin / Echo / Chi / Fiber / std mux) ───────────────────
+// ── Go web frameworks (Gin / Echo / Chi / Fiber / gorilla/mux / net/http) ────
+// go-routes.mjs composes group, sub-router and mount prefixes across blocks,
+// functions and files, and reads every registration form of those routers
+// (docguard.go-spring-rails-routes#FR-001/002).
 
 function scanGoWebRoutes(dir, ctx) {
-  const routes = [];
-  // Generic: <recv>.<METHOD>("/path", handler)  for Gin/Echo/Chi/Fiber/mux.Router
-  const pattern = /\.(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS|HandleFunc|Handle)\s*\(\s*["']([^"']+)["']/g;
-  const goFiles = readPatternFiles(ctx, /\.go$/);
-  for (const filePath of goFiles) {
-    const content = readFileSafe(filePath);
-    if (!content) continue;
-    const { tier, tierReason } = tierFor(filePath, null);
-    let m;
-    const re = new RegExp(pattern.source, 'g');
-    while ((m = re.exec(content)) !== null) {
-      const verb = m[1];
-      // HandleFunc / Handle are method-agnostic.
-      const method = ['HandleFunc', 'Handle'].includes(verb) ? 'ANY' : verb;
-      const path = m[2];
-      if (!path.startsWith('/')) continue;
-      routes.push({
-        method, path,
-        handler: '', file: relative(dir, filePath), source: 'go-web',
-        auth: /Authorization|jwt\.|middleware\.Auth/.test(content),
-        description: '', tier, tierReason,
-      });
-    }
-  }
-  return routes;
+  const files = readPatternFiles(ctx, /\.go$/);
+  const sources = files.map(f => ({ file: relative(dir, f), content: readFileSafe(f) }));
+  return extractGoRoutes(sources).map(r => ({ ...r, source: 'go-web', description: '', ...tierFor(resolve(dir, r.file), null) }));
 }
 
 // ── Rust web frameworks (Axum / Actix / Rocket / Warp) ───────────────────────
@@ -924,16 +777,4 @@ function extractNearbyComment(content, index) {
     if (line.startsWith('*') && !line.startsWith('*/')) return line.replace(/^\*\s*/, '');
   }
   return '';
-}
-
-function extractPythonFunctionName(content, index) {
-  const after = content.substring(index, index + 300);
-  const match = after.match(/def\s+(\w+)/);
-  return match ? match[1] : '';
-}
-
-function extractPythonDocstring(content, index) {
-  const after = content.substring(index, index + 500);
-  const match = after.match(/"""([^"]+)"""/);
-  return match ? match[1].trim().split('\n')[0] : '';
 }

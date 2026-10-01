@@ -21,7 +21,7 @@
 import { existsSync, lstatSync, readdirSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import { extname, resolve, sep } from 'node:path';
 import { walkFiles, relPosix } from '../shared-ignore.mjs';
-import { grepEnvUsage } from '../shared-source.mjs';
+import { grepEnvUsage, summarizeTiers } from '../shared-source.mjs';
 import { detectDocTools } from './doc-tools.mjs';
 import { detectProjectProfile } from './project-type.mjs';
 import { scanRoutesDeep } from './routes.mjs';
@@ -58,19 +58,23 @@ const within = (file, rel) => rel === '.' || file === rel || file.startsWith(`${
  */
 export function collectAreaFacts(projectDir, areaRel, config = {}) {
   const facts = new Map();
-  const add = (kind, key, file = null, line = null) => {
+  // Route and entity facts carry the parser tier that read them; the scan
+  // tiers ride along so a fact that is absent can be judged too
+  // (docguard.python-extraction#FR-013).
+  const add = (kind, key, file = null, line = null, tier = null) => {
     const id = `${kind} ${key}`;
-    if (!facts.has(id)) facts.set(id, { kind, key, file, line });
+    if (!facts.has(id)) facts.set(id, { kind, key, file, line, ...(tier ? { tier } : {}) });
   };
 
   const profile = detectProjectProfile(projectDir, config);
   const framework = profile.primary?.framework || profile.frameworks?.[0] || '';
   const docTools = detectDocTools(projectDir);
 
-  for (const r of scanRoutesDeep(projectDir, { framework: (profile.frameworks || []).join(' ') }, docTools, { config }) || []) {
+  const routes = scanRoutesDeep(projectDir, { framework: (profile.frameworks || []).join(' ') }, docTools, { config }) || [];
+  for (const r of routes) {
     const file = r.file ? String(r.file).replace(/\\/g, '/') : null;
     if (!file || r.source === 'openapi' || !within(file, areaRel) || !r.method || !r.path) continue;
-    add('route', `${String(r.method).toUpperCase()} ${r.path}`, file, r.line ?? null);
+    add('route', `${String(r.method).toUpperCase()} ${r.path}`, file, r.line ?? null, r.tier || null);
   }
 
   walkFiles(resolve(projectDir, areaRel), abs => {
@@ -86,17 +90,45 @@ export function collectAreaFacts(projectDir, areaRel, config = {}) {
   const schemas = scanSchemasDeep(projectDir, { framework }, docTools, config) || { entities: [] };
   for (const e of schemas.entities || []) {
     const file = e.file ? String(e.file).replace(/\\/g, '/') : null;
-    if (e.name && file && within(file, areaRel)) add('entity', e.name, file, e.line ?? null);
+    if (e.name && file && within(file, areaRel)) add('entity', e.name, file, e.line ?? null, e.tier || null);
   }
 
-  return [...facts.values()].sort((a, b) => `${a.kind} ${a.key}`.localeCompare(`${b.kind} ${b.key}`));
+  const list = [...facts.values()].sort((a, b) => `${a.kind} ${a.key}`.localeCompare(`${b.kind} ${b.key}`));
+  const kindTier = (scanTier, kind) => summarizeTiers([...(scanTier ? [scanTier] : []), ...list.filter(f => f.kind === kind && f.tier)]);
+  Object.defineProperty(list, 'tiers', {
+    value: { route: kindTier(routes.scanTier, 'route'), entity: kindTier(schemas.scanTier, 'entity') },
+    enumerable: false,
+  });
+  return list;
 }
 
-/** Test files under the area — existing evidence, listed, never candidates. */
+/**
+ * True when a tier means an AST-capable file was read by the pattern fallback.
+ * @implements docguard.python-extraction#FR-013
+ */
+export function isPatternTier(tier) {
+  return tier === 'regex-fallback' || tier === 'mixed';
+}
+
+/** The tier of the facts behind an as-built result, for reports and findings. */
+export function factsTier(facts) {
+  const tiers = facts?.tiers;
+  if (!tiers) return { tier: 'not-applicable', tierReason: null };
+  const s = summarizeTiers([tiers.route, tiers.entity].filter(t => t && t.tier !== 'not-applicable'));
+  return { tier: s.tier, tierReason: s.tierReason };
+}
+
+/**
+ * Test files under the area — existing evidence, listed, never candidates.
+ * Python package markers and fixtures (`__init__.py`, `conftest.py`) sit in
+ * test directories but are not tests.
+ * @implements docguard.python-extraction#FR-015
+ */
 export function areaTests(projectDir, areaRel) {
   const out = [];
   walkFiles(resolve(projectDir, areaRel), abs => {
     const file = relPosix(projectDir, abs);
+    if (/(?:^|\/)(?:__init__|conftest)\.py$/.test(file)) return;
     if (isTestSource(file)) out.push(file);
   });
   return out.sort();
@@ -209,18 +241,21 @@ export function specFactKeys(content) {
 
 /**
  * Compare an as-built spec with the facts under its source paths.
- * @returns {{ unclaimed: object[], vanished: string[] }}
+ * @returns {{ unclaimed: object[], vanished: string[], tiers: {route: object, entity: object} }}
  */
 export function checkAsBuiltSync(projectDir, specContent, sourcePaths, config = {}) {
   const current = new Map();
+  const scanTiers = { route: [], entity: [] };
   for (const areaPath of sourcePaths) {
     const area = resolveArea(projectDir, areaPath);
     if (!area.ok) continue;
-    for (const f of collectAreaFacts(projectDir, area.rel, config)) current.set(`${f.kind} ${f.key}`, f);
+    const facts = collectAreaFacts(projectDir, area.rel, config);
+    for (const f of facts) current.set(`${f.kind} ${f.key}`, f);
+    for (const kind of ['route', 'entity']) if (facts.tiers?.[kind]) scanTiers[kind].push(facts.tiers[kind]);
   }
   const { all } = specFactKeys(specContent);
   const unclaimed = [...current.entries()].filter(([id]) => !all.has(id)).map(([, f]) => f);
   const vanished = [...all].filter(id => !current.has(id));
-  return { unclaimed, vanished };
+  return { unclaimed, vanished, tiers: { route: summarizeTiers(scanTiers.route), entity: summarizeTiers(scanTiers.entity) } };
 }
 
