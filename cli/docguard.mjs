@@ -687,9 +687,11 @@ async function main() {
     } else if (args[i] === '--accept' && args[i + 1] && command === 'review') {
       flags.accept = args[i + 1];
       i++;
-    } else if (args[i] === '--suggest' && args[i + 1] && command === 'review') {
-      flags.suggest = args[i + 1];
-      i++;
+    } else if (args[i] === '--suggest' && command === 'review') {
+      // docguard.output-ux#FR-012: `--suggest` with no document is a usage
+      // error, not a silent fall-through to the status view.
+      if (args[i + 1] && !args[i + 1].startsWith('--')) { flags.suggest = args[i + 1]; i++; }
+      else flags.suggest = true;
     } else if (args[i] === '--prune' && command === 'review') {
       flags.prune = true;
     } else if (args[i] === '--from' && args[i + 1] && command === 'specs') {

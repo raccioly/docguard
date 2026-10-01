@@ -165,15 +165,15 @@ function extractRefs(content) {
 
 function indexDocs(projectDir) {
   const docs = [];
-  const push = (name, full) => {
+  const push = (name, full, rel = name) => {
     try {
       const content = readFileSync(full, 'utf-8');
-      docs.push({ name, path: full, refs: extractRefs(content) });
+      docs.push({ name, rel, path: full, refs: extractRefs(content) });
     } catch { /* skip */ }
   };
   // Recursive. `name` stays the bare basename — matches this validator's
   // pre-existing flat-tree message/location format exactly.
-  for (const doc of listCanonicalDocs(projectDir)) push(basename(doc.rel), doc.abs);
+  for (const doc of listCanonicalDocs(projectDir)) push(basename(doc.rel), doc.abs, doc.rel);
   for (const agent of ['AGENTS.md', 'CLAUDE.md', 'GEMINI.md']) {
     const p = resolve(projectDir, agent);
     if (existsSync(p)) push(agent, p);
@@ -186,6 +186,7 @@ function indexDocs(projectDir) {
   return docs;
 }
 
+/** @implements docguard.output-ux#FR-016 */
 export function validateReferenceExistence(projectDir, config = {}) {
   const cfg = config.referenceExistence || {};
   const maxRefsPerDoc = cfg.maxRefsPerDoc || 80;
@@ -262,7 +263,9 @@ export function validateReferenceExistence(projectDir, config = {}) {
         severity: 'warn',
         confidence: 'low',
         message: `${doc.name} references \`${sym}\`, which existed in the code when the doc was last updated but has ZERO matches at HEAD — likely renamed or removed.`,
-        location: { file: doc.name },
+        // docguard.output-ux#FR-016: the project-relative path; two nested
+        // docs can share a basename.
+        location: { file: doc.rel },
         suggestion: {
           kind: 'review',
           text: `Update or remove the \`${sym}\` reference in ${doc.name} (or suppress if it is a still-relevant user-facing name).`,
