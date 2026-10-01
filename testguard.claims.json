@@ -5378,6 +5378,469 @@
           }
         }
       ]
+    },
+    {
+      "id": "OUTPUT-UX-TRUTHFUL",
+      "statement": "Machine output modes print only the artifact; colour follows NO_COLOR, FORCE_COLOR and the TTY; every sync, GST002 and upgrade message names a command that does what it says; smart init writes its config; Doc Sections has its own key while honouring structure settings; ownership checks root-level files and names ties; Claude Code @imports count toward instruction budgets and are checked; review, glob fingerprints, doc_structure bytes, project types and REF001 locations report the truth.",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/049-output-ux/spec.md#FR-001"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (spec 049)"
+      },
+      "defendedBy": [
+        "tests/output-ux.test.mjs",
+        "tests/validator-surface-invariant.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "NO_COLOR is ignored.",
+          "faultClass": "statement-deleted",
+          "file": "cli/shared.mjs",
+          "find": "  if (env.NO_COLOR) return false;\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 049)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "Colour is printed into pipes.",
+          "faultClass": "other",
+          "file": "cli/shared.mjs",
+          "find": "  return Boolean(stream && stream.isTTY);",
+          "replace": "  return true;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 049)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "--stdout prints the banner into the artifact.",
+          "faultClass": "other",
+          "file": "cli/docguard.mjs",
+          "find": "const headless = jsonMode || flags.stdout || flags.write",
+          "replace": "const headless = jsonMode || flags.write",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 049)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "The --changed-only note goes to stdout before the JSON.",
+          "faultClass": "other",
+          "file": "cli/commands/guard.mjs",
+          "find": "if (['json', 'sarif', 'junit'].includes(flags.format)) process.stderr.write(`${note}\\n`);",
+          "replace": "if (['json', 'sarif', 'junit'].includes(flags.format)) process.stdout.write(`${note}\\n`);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 049)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "fix --doc --format json prints plain text.",
+          "faultClass": "other",
+          "file": "cli/commands/fix.mjs",
+          "find": "    console.log(JSON.stringify({ doc: filePath, action, projectType, prompt: lines.join('\\n').trim() }, null, 2));",
+          "replace": "    for (const line of lines) console.log(line);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 049)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "sync says \"up to date\" after skipping a stale section.",
+          "faultClass": "other",
+          "file": "cli/commands/sync.mjs",
+          "find": "  if (updates.length === 0 && staleSkipped.length === 0) {",
+          "replace": "  if (updates.length === 0) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 049)"
+          }
+        },
+        {
+          "id": "F7",
+          "description": "The command for an unmarked doc omits --force.",
+          "faultClass": "other",
+          "file": "cli/commands/sync.mjs",
+          "find": "          command: syncCommand({ force: true, allowPartial: !!flags.allowPartial, since }),",
+          "replace": "          command: syncCommand({ force: false, allowPartial: !!flags.allowPartial, since }),",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 049)"
+          }
+        },
+        {
+          "id": "F8",
+          "description": "The --force preview suggests --write without --force.",
+          "faultClass": "other",
+          "file": "cli/commands/sync.mjs",
+          "find": "${syncCommand({ force: !!flags.force, allowPartial: !!flags.allowPartial, since })}",
+          "replace": "${syncCommand({ force: false, allowPartial: !!flags.allowPartial, since })}",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 049)"
+          }
+        },
+        {
+          "id": "F9",
+          "description": "A partial section names a command that still skips it.",
+          "faultClass": "other",
+          "file": "cli/commands/sync.mjs",
+          "find": "          command: syncCommand({ force: needsForce, allowPartial: true, since }),",
+          "replace": "          command: syncCommand({ force: needsForce, allowPartial: false, since }),",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 049)"
+          }
+        },
+        {
+          "id": "F10",
+          "description": "A bad --since ref falls back to a full sync and exits 0.",
+          "faultClass": "other",
+          "file": "cli/commands/sync.mjs",
+          "find": "  if (flags.since && refResolves(projectDir, flags.since) === false) {",
+          "replace": "  if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 049)"
+          }
+        },
+        {
+          "id": "F11",
+          "description": "Prose review lists sections the doc does not have.",
+          "faultClass": "other",
+          "file": "cli/commands/sync.mjs",
+          "find": "      const present = doc.sections.filter(sec => sec.source === 'human' && getSection(content, sec.id));",
+          "replace": "      const present = doc.sections.filter(sec => sec.source === 'human');",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 049)"
+          }
+        },
+        {
+          "id": "F12",
+          "description": "GST002 suggests a command that skips an unmarked doc.",
+          "faultClass": "other",
+          "file": "cli/validators/generated-staleness.mjs",
+          "find": "        ? 'docguard sync --write' : 'docguard sync --write --force';",
+          "replace": "        ? 'docguard sync --write' : 'docguard sync --write';",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 049)"
+          }
+        },
+        {
+          "id": "F13",
+          "description": "--schema-only contacts npm.",
+          "faultClass": "other",
+          "file": "cli/commands/upgrade.mjs",
+          "find": "  const latest = schemaOnly ? null : await fetchLatestNpmVersion();",
+          "replace": "  const latest = await fetchLatestNpmVersion();",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 049)"
+          }
+        },
+        {
+          "id": "F14",
+          "description": "The schema note suggests a command that can install software.",
+          "faultClass": "other",
+          "file": "cli/commands/upgrade.mjs",
+          "find": "Run \\`docguard upgrade --apply --schema-only\\` to migrate it (no npm check, no install).",
+          "replace": "Run \\`docguard upgrade --apply\\` to migrate.",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 049)"
+          }
+        },
+        {
+          "id": "F15",
+          "description": "Smart init writes no .docguard.json.",
+          "faultClass": "other",
+          "file": "cli/commands/init.mjs",
+          "find": "    if (!existsSync(smartConfigPath)) {",
+          "replace": "    if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 049)"
+          }
+        },
+        {
+          "id": "F16",
+          "description": "Doc Sections shares the structure key again.",
+          "faultClass": "other",
+          "file": "cli/commands/guard.mjs",
+          "find": "{ key: 'docSections', parent: 'structure', name: 'Doc Sections',",
+          "replace": "{ key: 'structure', name: 'Doc Sections',",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 049)"
+          }
+        },
+        {
+          "id": "F17",
+          "description": "validators.structure: false no longer turns Doc Sections off.",
+          "faultClass": "other",
+          "file": "cli/commands/guard.mjs",
+          "find": "    if (validators[key] === false || (parent && validators[key] === undefined && validators[parent] === false)) {",
+          "replace": "    if (validators[key] === false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 049)"
+          }
+        },
+        {
+          "id": "F18",
+          "description": "severity.structure no longer applies to STR003.",
+          "faultClass": "other",
+          "file": "cli/commands/guard.mjs",
+          "find": "  const policyKey = key => (parentOf[key] && config.severity?.[key] === undefined ? parentOf[key] : key);",
+          "replace": "  const policyKey = key => key;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 049)"
+          }
+        },
+        {
+          "id": "F19",
+          "description": "A structure N/A marker no longer covers Doc Sections.",
+          "faultClass": "other",
+          "file": "cli/commands/guard.mjs",
+          "find": "    const naKey = naMarkers.has(key) ? key : parent && naMarkers.has(parent) ? parent : null;",
+          "replace": "    const naKey = naMarkers.has(key) ? key : null;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 049)"
+          }
+        },
+        {
+          "id": "F20",
+          "description": "STR003 findings name the wrong validator.",
+          "faultClass": "other",
+          "file": "cli/validators/structure.mjs",
+          "find": "          validator: 'docSections',",
+          "replace": "          validator: 'structure',",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 049)"
+          }
+        },
+        {
+          "id": "F21",
+          "description": "The registry files STR003 under structure.",
+          "faultClass": "other",
+          "file": "cli/findings.mjs",
+          "find": "    validator: 'docSections',\n    title: 'Missing required doc section',",
+          "replace": "    validator: 'structure',\n    title: 'Missing required doc section',",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 049)"
+          }
+        },
+        {
+          "id": "F22",
+          "description": "score --diff drops Doc Sections warnings.",
+          "faultClass": "other",
+          "file": "cli/commands/score.mjs",
+          "find": "  structure:    ['structure', 'docSections'],",
+          "replace": "  structure:    ['structure'],",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 049)"
+          }
+        },
+        {
+          "id": "F23",
+          "description": "Root-level source files are never checked for an owner.",
+          "faultClass": "other",
+          "file": "cli/scanners/doc-ownership.mjs",
+          "find": "    const loose = root === undefined && looseDirs.has(dirName(file));",
+          "replace": "    const loose = false;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 049)"
+          }
+        },
+        {
+          "id": "F24",
+          "description": "--suggest assigns paths to documents that do not exist.",
+          "faultClass": "other",
+          "file": "cli/commands/trace.mjs",
+          "find": "    return [...voted, ...traced].find(exists) || fallback;",
+          "replace": "    return [...voted, ...traced][0] || fallback;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 049)"
+          }
+        },
+        {
+          "id": "F25",
+          "description": "trace --reverse hides a tie.",
+          "faultClass": "statement-deleted",
+          "file": "cli/commands/trace.mjs",
+          "find": "      ...(declared.tie ? { tie: declared.tie } : {}),",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 049)"
+          }
+        },
+        {
+          "id": "F26",
+          "description": "A package name in prose is taken for an import.",
+          "faultClass": "other",
+          "file": "cli/scanners/instruction-scopes.mjs",
+          "find": "      if (/\\.[A-Za-z0-9]+$/.test(path)) out.push({ line: i + 1, path });",
+          "replace": "      out.push({ line: i + 1, path });",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 049)"
+          }
+        },
+        {
+          "id": "F27",
+          "description": "An @path inside a code span is imported.",
+          "faultClass": "other",
+          "file": "cli/scanners/instruction-scopes.mjs",
+          "find": "    const prose = line.replace(/`[^`]*`/g, ' ');",
+          "replace": "    const prose = line;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 049)"
+          }
+        },
+        {
+          "id": "F28",
+          "description": "Imports are followed past 5 hops.",
+          "faultClass": "other",
+          "file": "cli/scanners/instruction-scopes.mjs",
+          "find": "    if (depth > MAX_IMPORT_HOPS) return;",
+          "replace": "    if (depth > MAX_IMPORT_HOPS + 1) return;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 049)"
+          }
+        },
+        {
+          "id": "F29",
+          "description": "rules --for ignores Claude Code imports.",
+          "faultClass": "other",
+          "file": "cli/scanners/instruction-scopes.mjs",
+          "find": "      for (const imp of e.imports || []) {",
+          "replace": "      for (const imp of []) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 049)"
+          }
+        },
+        {
+          "id": "F30",
+          "description": "A missing import is not reported.",
+          "faultClass": "statement-deleted",
+          "file": "cli/validators/path-scoped-rules.mjs",
+          "find": "  unresolved.push(...missingImports.values());",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 049)"
+          }
+        },
+        {
+          "id": "F31",
+          "description": "docs_for_path reads only the root agent files.",
+          "faultClass": "other",
+          "file": "cli/scanners/doc-references.mjs",
+          "find": "  for (const file of instructionFiles) {",
+          "replace": "  for (const file of AGENT_FILES) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 049)"
+          }
+        },
+        {
+          "id": "F32",
+          "description": "Instruction hits carry no text.",
+          "faultClass": "other",
+          "file": "cli/scanners/doc-references.mjs",
+          "find": "      agentInstructions.push({ ...ref, text: lines[ref.line - 1].trim().slice(0, LINE_TEXT_MAX) });",
+          "replace": "      agentInstructions.push(ref);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 049)"
+          }
+        },
+        {
+          "id": "F33",
+          "description": "doc_structure counts a byte for the missing final newline.",
+          "faultClass": "other",
+          "file": "cli/scanners/doc-references.mjs",
+          "find": "(i < lines.length - 1 ? 1 : 0)",
+          "replace": "1",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 049)"
+          }
+        },
+        {
+          "id": "F34",
+          "description": "review --suggest without a document gives no usage message.",
+          "faultClass": "statement-deleted",
+          "file": "cli/commands/review.mjs",
+          "find": "      if (flags.suggest === true) throw new Error('Usage: docguard review --suggest <doc> — name the document to propose covers= values for.');",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 049)"
+          }
+        },
+        {
+          "id": "F35",
+          "description": "An empty prune prints a bare status.",
+          "faultClass": "other",
+          "file": "cli/commands/review.mjs",
+          "find": "    } else if (result.action === 'prune' && result.pruned.length === 0) {",
+          "replace": "    } else if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 049)"
+          }
+        },
+        {
+          "id": "F36",
+          "description": "An untracked file changes a glob fingerprint.",
+          "faultClass": "other",
+          "file": "cli/scanners/doc-deps.mjs",
+          "find": "    if (tracked) ctx.files = [...tracked];",
+          "replace": "    if (false) ctx.files = [...tracked];",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 049)"
+          }
+        },
+        {
+          "id": "F37",
+          "description": "REF001 locates a nested doc by basename.",
+          "faultClass": "other",
+          "file": "cli/validators/reference-existence.mjs",
+          "find": "        location: { file: doc.rel },",
+          "replace": "        location: { file: doc.name },",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 049)"
+          }
+        }
+      ]
     }
   ]
 }

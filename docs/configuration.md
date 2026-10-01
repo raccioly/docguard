@@ -81,7 +81,8 @@ See [Profiles](./profiles.md) for details.
 
 | Validator | Default | What It Checks |
 |-----------|---------|----------------|
-| `structure` | `true` | `docs-canonical/` exists, required files present, expected sections |
+| `structure` | `true` | `docs-canonical/` exists, required files present (STR001, STR002, STR004, STR005) |
+| `docSections` | follows `structure` | Each canonical doc has its expected sections (STR003). Reported as its own result, key `docSections` with `parent: "structure"`; until a config names `docSections`, `validators.structure`, `severity.structure` and a `structure` N/A marker apply to it as before |
 | `docsSync` | `true` | AGENTS.md references DocGuard workflow |
 | `drift` | `true` | DRIFT-LOG.md exists and has entries when code deviates |
 | `changelog` | `true` | CHANGELOG.md has [Unreleased] section, version entries |

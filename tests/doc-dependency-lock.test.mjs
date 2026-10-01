@@ -17,6 +17,7 @@
  * @req docguard.doc-dependency-lock#FR-009
  * @req docguard.doc-dependency-lock#FR-010
  * @req docguard.doc-dependency-lock#SC-003
+ * @req docguard.output-ux#FR-013
  */
 import { describe, it, after } from 'node:test';
 import { strict as assert } from 'node:assert';
@@ -224,10 +225,13 @@ describe('fingerprints are safe and tiered (FR-002)', () => {
     assert.match(fingerprint(ctx, 'src/link.mjs').reason, /symbolic link/);
   });
 
-  it('a glob fingerprints the set, so adding a file changes it', () => {
+  it('a glob fingerprints the tracked set, so adding a file changes it once it is tracked', () => {
     const p = project();
     const before = fingerprint(createContext(p.dir), 'src/**').fingerprint;
     p.write('src/extra.mjs', 'export const x = 1;\n');
+    // docguard.output-ux#FR-013: an untracked scratch file is not part of the set.
+    assert.equal(fingerprint(createContext(p.dir), 'src/**').fingerprint, before);
+    p.git('add', 'src/extra.mjs');
     assert.notEqual(fingerprint(createContext(p.dir), 'src/**').fingerprint, before);
   });
 
