@@ -6,9 +6,10 @@ all three mandatory hooks resolve; a Claude project gets
 `.claude/skills/docguard-*` and no `.agent/`, with hooks resolving to
 `/speckit-docguard-*`; a registered 0.40.0 is re-registered to 0.42.1 by
 `init` and by `upgrade --apply`; Gemini gets no skill copies. Claim
-SPEC-KIT-HOOKS-RESOLVE-HONESTLY: 17/17 faults killed (`--confirm 3`); spec
-042's re-anchored F18/F19 re-probed. Full suite 2,755 tests green (one budget
-timing test re-run alone).
+SPEC-KIT-HOOKS-RESOLVE-HONESTLY: 17/17 faults killed (`--confirm 3`, at
+4750fae); spec 042's F18/F19 are re-anchored to the new installer, and their
+re-probe is deferred (machine load). Full suite green (one budget timing test
+re-run alone).
 **Spec**: `specs/048-spec-kit-integration-honesty/spec.md`
 **Plan**: `specs/048-spec-kit-integration-honesty/plan.md`
 
