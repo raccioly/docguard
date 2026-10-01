@@ -5393,10 +5393,7 @@
       },
       "defendedBy": [
         "tests/output-ux.test.mjs",
-        "tests/validator-surface-invariant.test.mjs",
-        "tests/sync-since.test.mjs",
-        "tests/doc-dependency-lock.test.mjs",
-        "tests/mcp-doc-tools.test.mjs"
+        "tests/validator-surface-invariant.test.mjs"
       ],
       "faults": [
         {
