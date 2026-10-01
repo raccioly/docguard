@@ -14,6 +14,7 @@
  *
  * @implements docguard.doc-dependency-lock#FR-005
  * @implements docguard.doc-dependency-lock#FR-006
+ * @implements docguard.output-ux#FR-012
  */
 
 import { loadOwnership } from '../scanners/doc-ownership.mjs';
@@ -133,6 +134,7 @@ export function runReview(projectDir, config, flags = {}) {
     if (flags.accept) result = acceptSections(projectDir, config, flags);
     else if (flags.prune) result = pruneLock(projectDir, config);
     else if (flags.suggest) {
+      if (flags.suggest === true) throw new Error('Usage: docguard review --suggest <doc> — name the document to propose covers= values for.');
       const doc = String(flags.suggest);
       if (!candidateDocs(projectDir, config).includes(doc)) throw new Error(`${doc} is not a canonical doc, README.md or AGENTS.md.`);
       result = { command: 'review', action: 'suggest', status: 'SUGGESTED', doc, suggestions: suggestCovers(projectDir, doc, config), note: 'Low-confidence: paths the text mentions. Declare only what the section actually describes.' };
@@ -150,6 +152,8 @@ export function runReview(projectDir, config, flags = {}) {
     else if (result.action === 'suggest') {
       console.log(`${c.bold}Suggested covers= for ${result.doc}${c.reset} ${c.dim}(${result.note})${c.reset}\n`);
       for (const s of result.suggestions) console.log(`  ## ${s.heading}\n    covers="${s.covers.join(', ')}"`);
+    } else if (result.action === 'prune' && result.pruned.length === 0) {
+      console.log(`${c.green}✓ Nothing to prune${c.reset} ${c.dim}— every lock entry still has its section.${c.reset}`);
     } else console.log(`${c.green}✓ ${result.status}${c.reset} ${(result.accepted || result.pruned || []).join(', ')}`);
     return result;
   } catch (error) {

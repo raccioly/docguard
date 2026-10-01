@@ -56,8 +56,8 @@ code-truth sections), `score` (CDD maturity 0-100).
 `review` (doc sections whose covered code changed; `--accept`, `--prune`, `--suggest`),
 `rules` (which instruction files each agent harness loads for a path; `--for <path>`),
 `explain` (explain a validator/warning), `verify` (declared evidence; `--semantic` claims), `feedback` (report false positives), `mcp` (MCP server; stdio or loopback HTTP), `report` (compliance bundle), `ci` (guard + score gate), `memory` (what DocGuard
-remembers; `--pack [--symbols]` for the context pack), `trace` (requirements traceability; `--reverse`; `--owners` for the doc ownership map), `upgrade` (migrate
-config/CLI), `watch` (live re-guard).
+remembers; `--pack [--symbols]` for the context pack), `trace` (requirements traceability; `--reverse`; `--owners` for the doc ownership map), `upgrade` (check npm for a newer
+release and migrate the config schema; `--apply --schema-only` stays offline), `watch` (live re-guard).
 
 **`init --with <name>`** scaffolders — `agents`, `hooks`, `ci`, `badge`, `llms`,
 `publish` (also reachable as standalone deprecation aliases).

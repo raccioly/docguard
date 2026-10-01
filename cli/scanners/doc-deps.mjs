@@ -31,6 +31,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, lstatSync, readFileSync, realpathSync } from 'node:fs';
 import { extname, resolve, sep } from 'node:path';
 import { buildIgnoreFilter, globMatch, listCanonicalDocs, loadDocguardIgnore, relPosix, walkFiles } from '../shared-ignore.mjs';
+import { listTrackedFiles } from '../shared-git.mjs';
 import { inspectSections } from '../writers/sections.mjs';
 import { parseJsTs } from './js-ast.mjs';
 import { pythonCommand } from './py-ast.mjs';
@@ -189,10 +190,21 @@ function pySymbolDump(ctx, abs, symbol) {
   return dump === undefined ? { parseFailed: true } : { dump };
 }
 
+/**
+ * The files a glob dependency can match: tracked files, as spec 033's
+ * listTrackedFiles reports them, so a scratch file inside `src/lib/**` does
+ * not change the fingerprint before anyone adds it (docguard.output-ux#FR-013).
+ * Outside git, the working tree.
+ * @implements docguard.output-ux#FR-013
+ */
 function listFiles(ctx) {
   if (!ctx.files) {
-    ctx.files = [];
-    walkFiles(ctx.projectDir, abs => { ctx.files.push(relPosix(ctx.projectDir, abs)); });
+    const tracked = listTrackedFiles(ctx.projectDir);
+    if (tracked) ctx.files = [...tracked];
+    else {
+      ctx.files = [];
+      walkFiles(ctx.projectDir, abs => { ctx.files.push(relPosix(ctx.projectDir, abs)); });
+    }
     ctx.files.sort();
   }
   return ctx.files;

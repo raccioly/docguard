@@ -88,6 +88,7 @@
       "description": "Enable / disable individual validators. Set to false to skip.",
       "properties": {
         "structure":          { "type": "boolean" },
+        "docSections":        { "type": "boolean" },
         "docsSync":           { "type": "boolean" },
         "drift":              { "type": "boolean" },
         "changelog":          { "type": "boolean" },

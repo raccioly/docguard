@@ -13,6 +13,8 @@
  * exit 2 (warnings-only). So the self-scan alone cannot keep a wrong count out
  * of main — PR #407 was green on all four Node legs. These assertions run in
  * `npm test`, which is a hard gate.
+ *
+ * @req docguard.output-ux#FR-008
  */
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
@@ -43,7 +45,10 @@ describe('validator surface invariant', () => {
         encoding: 'utf-8', timeout: 60000,
       });
       assert.ok(run.stdout, `guard produced no JSON (status ${run.status}): ${run.stderr}`);
-      const keys = JSON.parse(run.stdout).validators.map(v => v.key);
+      // A sub-check that a module emits under its own key names that module
+      // as `parent` (Doc Sections → structure, docguard.output-ux#FR-008); it
+      // is a row and a key, not a shipped validator.
+      const keys = JSON.parse(run.stdout).validators.filter(v => !v.parent).map(v => v.key);
       const modules = countValidatorModules(VALIDATORS_DIR);
 
       assert.equal(

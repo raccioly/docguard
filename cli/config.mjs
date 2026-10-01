@@ -187,6 +187,7 @@ export function loadConfig(projectDir) {
  * package.json for tooling), and a `service` with a web framework is an
  * `api`. A Worker config is checked first, as before.
  * @implements docguard.python-extraction#FR-010
+ * @implements docguard.output-ux#FR-015
  */
 const KIND_TO_PROJECT_TYPE = { cli: 'cli', library: 'library', webapp: 'webapp', api: 'api', service: 'api' };
 
@@ -238,7 +239,7 @@ export function getProjectTypeDefaults(type) {
  * normalized blindly: kebab-case→camelCase always.
  */
 const _KNOWN_VALIDATORS = [
-  'structure', 'docsSync', 'drift', 'changelog', 'testSpec', 'environment',
+  'structure', 'docSections', 'docsSync', 'drift', 'changelog', 'testSpec', 'environment',
   'security', 'architecture', 'freshness', 'traceability', 'docsDiff',
   'apiSurface', 'metadataSync', 'docsCoverage', 'docQuality', 'todoTracking',
   'schemaSync', 'specKit', 'crossReference', 'generatedStaleness',

@@ -30,7 +30,7 @@ const CODE_EXTENSIONS = new Set([
 // though Python tests existed because `.test.mjs` didn't match `test_*.py`).
 import { TEST_PATTERNS, TRACE_MAP, isTraceableSource } from '../shared-trace-patterns.mjs';
 import { referenceKind, docAnnotationsIn } from '../scanners/doc-references.mjs';
-import { ownerOf, ownershipReport, SOURCE_RE, projectFiles } from '../scanners/doc-ownership.mjs';
+import { defaultOwnershipRoots, ownerOf, ownershipReport, SOURCE_RE, projectFiles } from '../scanners/doc-ownership.mjs';
 import { scanComponents } from '../scanners/inventory.mjs';
 
 
@@ -84,31 +84,47 @@ export function runTraceOwners(projectDir, config, flags) {
   return data;
 }
 
-/** A draft block: one entry per canonical doc that the layout suggests. */
+/**
+ * A draft block: one entry per canonical doc that the layout suggests.
+ * Covers the source files directly in a module's parent directory too, and
+ * assigns paths only to documents that exist when the project has any
+ * (docguard.output-ux#FR-009).
+ * @implements docguard.output-ux#FR-009
+ */
 export function suggestOwnership(projectDir, config) {
   const { files } = projectFiles(projectDir, config);
   const sources = files.filter(f => SOURCE_RE.test(f));
-  const modules = scanComponents(projectDir, config).filter(m => m.kind === 'module').map(m => m.path);
-  const byDoc = new Map();
-  const add = (doc, path) => { if (!byDoc.has(doc)) byDoc.set(doc, new Set()); byDoc.get(doc).add(path); };
-  for (const mod of modules) {
-    const inside = sources.filter(f => f.startsWith(`${mod}/`));
-    if (inside.length === 0) continue;
-    // A module's `@doc` annotations vote first; then TRACE_MAP's patterns.
+  const { modules, looseDirs } = defaultOwnershipRoots(projectDir, config);
+  const docPath = doc => (doc.includes('/') ? doc : `docs-canonical/${basename(doc)}`);
+  const canonical = listCanonicalDocs(projectDir, { config }).map(d => d.rel).sort();
+  const exists = path => existsSync(resolve(projectDir, path));
+  const fallback = exists('docs-canonical/ARCHITECTURE.md') ? 'docs-canonical/ARCHITECTURE.md'
+    : canonical[0] || 'docs-canonical/ARCHITECTURE.md';
+  /** `@doc` votes first, then TRACE_MAP's patterns; the first document that exists wins. */
+  const chooseDoc = inside => {
     const votes = new Map();
     for (const file of inside.slice(0, 200)) {
       let content = '';
       try { content = readFileSync(resolve(projectDir, file), 'utf8'); } catch { continue; }
       for (const doc of docAnnotationsIn(content)) votes.set(doc, (votes.get(doc) || 0) + 1);
     }
-    let doc = [...votes].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]?.[0];
-    if (!doc) {
-      doc = Object.entries(TRACE_MAP).find(([, spec]) => spec.sourcePatterns.some(p => inside.some(f => p.glob.test(f))))?.[0] || 'ARCHITECTURE.md';
-    }
-    add(doc.includes('/') ? doc : `docs-canonical/${basename(doc)}`, `${mod}/**`);
+    const voted = [...votes].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([doc]) => docPath(doc));
+    const traced = Object.entries(TRACE_MAP)
+      .filter(([, spec]) => spec.sourcePatterns.some(p => inside.some(f => p.glob.test(f))))
+      .map(([doc]) => docPath(doc));
+    return [...voted, ...traced].find(exists) || fallback;
+  };
+  const byDoc = new Map();
+  const add = (doc, path) => { if (!byDoc.has(doc)) byDoc.set(doc, new Set()); byDoc.get(doc).add(path); };
+  for (const mod of modules) {
+    const inside = sources.filter(f => f.startsWith(`${mod}/`));
+    if (inside.length === 0) continue;
+    add(chooseDoc(inside), `${mod}/**`);
   }
+  const loose = sources.filter(f => looseDirs.includes(f.includes('/') ? f.slice(0, f.lastIndexOf('/')) : ''));
+  for (const file of loose) add(chooseDoc([file]), file);
   return {
-    roots: modules.filter(m => sources.some(f => f.startsWith(`${m}/`))),
+    roots: [...modules.filter(m => sources.some(f => f.startsWith(`${m}/`))), ...looseDirs.filter(d => loose.some(f => f.startsWith(`${d}/`)))].sort(),
     entries: [...byDoc].sort(([a], [b]) => a.localeCompare(b)).map(([doc, paths]) => ({
       doc, purpose: '<what this doc explains about these paths>', paths: [...paths].sort(),
     })),
@@ -166,6 +182,9 @@ export function runTraceReverse(projectDir, config, flags) {
     console.log(JSON.stringify({
       target: normalized,
       owner: declared.owner,
+      // docguard.output-ux#FR-009: say why there is no owner (a tie names its entries).
+      ...(declared.owner || declared.configured === false ? {} : { ownerReason: declared.reason }),
+      ...(declared.tie ? { tie: declared.tie } : {}),
       matches,
       timestamp: new Date().toISOString(),
     }, null, 2));
@@ -175,6 +194,8 @@ export function runTraceReverse(projectDir, config, flags) {
   if (declared.owner) {
     const o = declared.owner;
     console.log(`  ${c.green}Owner (declared):${c.reset} ${c.cyan}${o.key}${c.reset}${o.purpose ? ` ${c.dim}— ${o.purpose}${c.reset}` : ''} ${c.dim}(matched by ${o.matchedBy})${c.reset}\n`);
+  } else if (declared.tie || /ownership map is invalid/.test(declared.reason || '')) {
+    console.log(`  ${c.yellow}Owner: none — ${declared.reason}${c.reset}\n`);
   }
   if (matches.length === 0) {
     console.log(`  ${c.yellow}⚠️  No canonical doc references "${normalized}"${c.reset}`);

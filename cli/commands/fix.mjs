@@ -1,6 +1,7 @@
 /**
  * @implements docguard.language-repository-coverage#FR-010
  * @implements docguard.language-repository-coverage#FR-011
+ * @implements docguard.output-ux#FR-001
  */
 /**
  * Fix Command — The AI Orchestrator
@@ -366,7 +367,7 @@ export function runFix(projectDir, config, flags) {
 
   // If --doc flag is provided, generate a deep prompt for that specific document
   if (specificDoc) {
-    return generateDocPrompt(projectDir, config, specificDoc);
+    return generateDocPrompt(projectDir, config, specificDoc, { json: isJson });
   }
 
   if (!isJson && !isPrompt) {
@@ -584,7 +585,7 @@ function assessDocQuality(content, expectations) {
 
 // ── Deep Document Prompt Generator ─────────────────────────────────────────
 
-function generateDocPrompt(projectDir, config, docName) {
+function generateDocPrompt(projectDir, config, docName, { json = false } = {}) {
   // Normalize doc name: "architecture" → "docs-canonical/ARCHITECTURE.md"
   const normalized = docName.toLowerCase().replace(/\.md$/, '');
   const mapping = {
@@ -604,7 +605,7 @@ function generateDocPrompt(projectDir, config, docName) {
   const filePath = mapping[normalized];
   if (!filePath) {
     console.error(`${c.red}Unknown document: ${docName}${c.reset}`);
-    console.log(`${c.dim}Available: architecture, data-model, security, test-spec, environment, api-reference${c.reset}`);
+    console.error(`${c.dim}Available: architecture, data-model, security, test-spec, environment, api-reference${c.reset}`);
     process.exit(1);
   }
 
@@ -626,21 +627,27 @@ function generateDocPrompt(projectDir, config, docName) {
 
   const action = !exists ? 'CREATE' : quality?.score === 'empty' ? 'REWRITE (current file is just a template)' : 'IMPROVE';
 
-  console.log(`\nYou are documenting the project "${projectName}" (a ${projectType} project).`);
-  console.log(`Project directory: ${projectDir}\n`);
-  console.log(`TASK: ${action} the file ${filePath}`);
-  console.log(`PURPOSE: ${expectations.purpose}\n`);
-
+  // docguard.output-ux#FR-001: build the prompt once; JSON mode wraps it so
+  // stdout stays parseable.
+  const lines = [
+    `\nYou are documenting the project "${projectName}" (a ${projectType} project).`,
+    `Project directory: ${projectDir}\n`,
+    `TASK: ${action} the file ${filePath}`,
+    `PURPOSE: ${expectations.purpose}\n`,
+  ];
   if (exists && quality?.score !== 'good') {
-    console.log(`CURRENT STATE: The document ${quality?.score === 'empty' ? 'is just a skeleton template with TODO placeholders — it needs to be completely rewritten with REAL project content' : `has ${quality?.placeholders} placeholder(s) that need to be replaced with real content`}.`);
-    console.log('');
+    lines.push(`CURRENT STATE: The document ${quality?.score === 'empty' ? 'is just a skeleton template with TODO placeholders — it needs to be completely rewritten with REAL project content' : `has ${quality?.placeholders} placeholder(s) that need to be replaced with real content`}.`);
+    lines.push('');
   }
-
-  console.log(expectations.aiResearchInstructions.trim());
-
-  console.log(`\nVALIDATION: After writing, run \`npx docguard-cli guard\` to verify the document passes all checks.`);
-  console.log(`The document should have NO <!-- TODO --> or <!-- e.g. --> placeholders.`);
-  console.log(`Set the docguard:status header to 'active' (not 'draft').`);
+  lines.push(expectations.aiResearchInstructions.trim());
+  lines.push(`\nVALIDATION: After writing, run \`npx docguard-cli guard\` to verify the document passes all checks.`);
+  lines.push(`The document should have NO <!-- TODO --> or <!-- e.g. --> placeholders.`);
+  lines.push(`Set the docguard:status header to 'active' (not 'draft').`);
+  if (json) {
+    console.log(JSON.stringify({ doc: filePath, action, projectType, prompt: lines.join('\n').trim() }, null, 2));
+    return;
+  }
+  for (const line of lines) console.log(line);
 }
 
 // ── Auto-Fix (skeleton creation only) ──────────────────────────────────────

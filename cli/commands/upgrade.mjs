@@ -7,11 +7,16 @@
  *   confusing "validator missing" or "field unknown" warnings. A one-shot
  *   `docguard upgrade` lets them see the gap and fix it in seconds.
  *
- * Three modes:
- *   docguard upgrade                — report current vs latest, exit 0
- *   docguard upgrade --check-only   — same report, exit 1 if behind (for CI)
- *   docguard upgrade --apply        — actually run `npm i -g docguard-cli@latest`
- *                                     and migrate .docguard.json if needed
+ * Modes:
+ *   docguard upgrade                       — report current vs latest, exit 0
+ *   docguard upgrade --check-only          — same report, exit 1 if behind (for CI)
+ *   docguard upgrade --apply               — run `npm i -g docguard-cli@latest` when
+ *                                            npm has a newer release, and migrate
+ *                                            .docguard.json if needed
+ *   docguard upgrade --apply --schema-only — migrate .docguard.json only; no
+ *                                            network, no install
+ *
+ * @implements docguard.output-ux#FR-006
  *
  * Network access (npm registry fetch) is OPTIONAL — if offline, we fall back
  * to "could not check remote version" without erroring.
@@ -235,11 +240,13 @@ export async function runUpgrade(projectDir, _config, flags) {
   const checkOnly = flags.checkOnly || flags['check-only'];
   const apply = flags.apply;
 
-  console.log(`${c.bold}🔧 DocGuard Upgrade${c.reset}`);
-  console.log(`${c.dim}   Checking CLI and schema versions...${c.reset}\n`);
+  const schemaOnly = !!flags.schemaOnly;
 
-  // CLI version check
-  const latest = await fetchLatestNpmVersion();
+  console.log(`${c.bold}🔧 DocGuard Upgrade${c.reset}`);
+  console.log(`${c.dim}   ${schemaOnly ? 'Checking the .docguard.json schema (--schema-only: npm is not contacted)...' : 'Checking the CLI release on npm and the .docguard.json schema...'}${c.reset}\n`);
+
+  // CLI version check — skipped entirely under --schema-only (offline).
+  const latest = schemaOnly ? null : await fetchLatestNpmVersion();
   const cliCmp = latest ? compareVersions(INSTALLED_VERSION, latest) : 0;
   const cliBehind = cliCmp < 0;
 
@@ -250,7 +257,9 @@ export async function runUpgrade(projectDir, _config, flags) {
 
   // ── Report ──────────────────────────────────────────────────────────────
   console.log(`  ${c.cyan}CLI${c.reset}    installed: ${c.bold}v${INSTALLED_VERSION}${c.reset}`);
-  if (latest) {
+  if (schemaOnly) {
+    console.log(`         ${c.dim}npm not checked (--schema-only)${c.reset}`);
+  } else if (latest) {
     if (cliBehind) {
       console.log(`         latest:    ${c.yellow}v${latest}${c.reset} ${c.yellow}(behind)${c.reset}`);
     } else if (cliCmp > 0) {
@@ -310,7 +319,7 @@ export async function runUpgrade(projectDir, _config, flags) {
     console.log(`    ${c.yellow}•${c.reset} Upgrade CLI:    ${c.cyan}npm install -g docguard-cli@latest${c.reset}`);
   }
   if (schemaBehind) {
-    console.log(`    ${c.yellow}•${c.reset} Migrate schema: ${c.cyan}docguard upgrade --apply${c.reset} ${c.dim}(or hand-edit .docguard.json)${c.reset}`);
+    console.log(`    ${c.yellow}•${c.reset} Migrate schema: ${c.cyan}docguard upgrade --apply --schema-only${c.reset} ${c.dim}(or hand-edit .docguard.json)${c.reset}`);
   }
   if (agentFiles.behind) {
     console.log(`    ${c.yellow}•${c.reset} Refresh agent files: ${c.cyan}docguard upgrade --apply${c.reset} ${c.dim}(or docguard init)${c.reset}`);
@@ -466,7 +475,7 @@ export function checkUpgradeStatus(projectDir) {
     // '0.0' is the internal sentinel for pre-0.4 schemas (no `version` field).
     // Surface that as a friendlier label so users don't see "Schema 0.0".
     const label = schema === '0.0' ? 'pre-0.4 (no version field)' : `v${schema}`;
-    return `Schema ${label} is behind current v${CURRENT_SCHEMA_VERSION}. Run \`docguard upgrade --apply\` to migrate.`;
+    return `Schema ${label} is behind current v${CURRENT_SCHEMA_VERSION}. Run \`docguard upgrade --apply --schema-only\` to migrate it (no npm check, no install).`;
   }
   return null;
 }

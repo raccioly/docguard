@@ -3,6 +3,8 @@ import { describeCheckCoverage, summarizeCheckCoverage } from '../validator-cove
 import { applyDocRoles } from '../shared-doc-roles.mjs';
 /**
  * @implements docguard.evidence-scoped-verification#FR-010
+ * @implements docguard.output-ux#FR-001
+ * @implements docguard.output-ux#FR-008
  * Guard Command — Validate project against its canonical documentation
  * Runs all enabled validators and reports results.
  *
@@ -319,7 +321,11 @@ export function runGuardInternal(projectDir, config) {
 
   const validatorMap = [
     { key: 'structure', name: 'Structure', fn: () => validateStructure(projectDir, config) },
-    { key: 'structure', name: 'Doc Sections', fn: () => validateDocSections(projectDir, config) },
+    // docguard.output-ux#FR-008: its own key, so full and compact results can
+    // tell it from Structure. Configs written for the shared `structure` key
+    // keep working: `parent` supplies the switch, severity and N/A marker
+    // whenever the config does not name docSections itself.
+    { key: 'docSections', parent: 'structure', name: 'Doc Sections', fn: () => validateDocSections(projectDir, config) },
     { key: 'docsSync', name: 'Docs-Sync', fn: () => validateDocsSync(projectDir, config) },
     { key: 'drift', name: 'Drift-Comments', fn: () => validateDrift(projectDir, config) },
     { key: 'changelog', name: 'Changelog', fn: () => validateChangelog(projectDir, config) },
@@ -393,13 +399,14 @@ export function runGuardInternal(projectDir, config) {
   // v0.14-Q2: per-validator timing. Cheap (one `performance.now()` pair per
   // validator) and the data is what we'd need to optimize anything later.
   // Exposed via --profile in the public guard.
-  for (const { key, name, fn } of validatorMap) {
-    if (naMarkers.has(key)) {
-      results.push(naResult(name, key));
+  for (const { key, parent, name, fn } of validatorMap) {
+    const naKey = naMarkers.has(key) ? key : parent && naMarkers.has(parent) ? parent : null;
+    if (naKey) {
+      results.push({ ...naResult(name, naKey), key, ...(parent ? { parent } : {}) });
       continue;
     }
-    if (validators[key] === false) {
-      results.push({ name, key, status: 'skipped', quality: null, errors: [], warnings: [], passed: 0, total: 0, durationMs: 0 });
+    if (validators[key] === false || (parent && validators[key] === undefined && validators[parent] === false)) {
+      results.push({ name, key, ...(parent ? { parent } : {}), status: 'skipped', quality: null, errors: [], warnings: [], passed: 0, total: 0, durationMs: 0 });
       continue;
     }
 
@@ -407,10 +414,10 @@ export function runGuardInternal(projectDir, config) {
     try {
       const result = fn();
       const durationMs = Math.round((performance.now() - start) * 100) / 100;
-      results.push({ ...result, name, key, durationMs, ...classifyResult(result) });
+      results.push({ ...result, name, key, ...(parent ? { parent } : {}), durationMs, ...classifyResult(result) });
     } catch (err) {
       const durationMs = Math.round((performance.now() - start) * 100) / 100;
-      results.push({ name, key, status: 'fail', quality: 'LOW', applicability: { status: 'error', reason: 'Validator could not complete: ' + err.message }, errors: [err.message], warnings: [], passed: 0, total: 1, durationMs });
+      results.push({ name, key, ...(parent ? { parent } : {}), status: 'fail', quality: 'LOW', applicability: { status: 'error', reason: 'Validator could not complete: ' + err.message }, errors: [err.message], warnings: [], passed: 0, total: 1, durationMs });
     }
   }
 
@@ -514,12 +521,16 @@ export function runGuardInternal(projectDir, config) {
   // Compute enforcement after baseline suppression. Structured findings can
   // be reweighted by exact stable code; legacy validators retain the existing
   // per-validator behavior. Preserve intrinsic severity for auditability.
+  // A child validator (docSections) inherits its parent's severity policy
+  // unless the config names the child (docguard.output-ux#FR-008).
+  const parentOf = Object.fromEntries(validatorMap.filter(v => v.parent).map(v => [v.key, v.parent]));
+  const policyKey = key => (parentOf[key] && config.severity?.[key] === undefined ? parentOf[key] : key);
   for (const v of activeResults) {
-    v.severity = resolveSeverity(config, v.key);
+    v.severity = resolveSeverity(config, policyKey(v.key));
     let errors = 0, warnings = 0, infos = 0;
     if (Array.isArray(v.findings) && v.findings.length > 0) {
       for (const finding of v.findings) {
-        const enforcement = resolveFindingEnforcement(config, finding, v.key);
+        const enforcement = resolveFindingEnforcement(config, finding, policyKey(v.key));
         finding.effectiveSeverity = enforcement.level;
         finding.enforcement = enforcement;
         if (enforcement.level === 'error') errors++;
@@ -683,7 +694,7 @@ export const CHANGED_ONLY_VALIDATORS = ['docsSync', 'environment', 'apiSurface',
  */
 export function liteValidatorsConfig(config = {}) {
   const all = [
-    'structure', 'docsSync', 'drift', 'changelog', 'testSpec', 'environment',
+    'structure', 'docSections', 'docsSync', 'drift', 'changelog', 'testSpec', 'environment',
     'security', 'architecture', 'freshness', 'traceability', 'docsDiff',
     'apiSurface', 'metadataSync', 'docsCoverage', 'docQuality', 'todoTracking',
     'schemaSync', 'specKit', 'crossReference', 'generatedStaleness',
@@ -701,7 +712,10 @@ export function liteValidatorsConfig(config = {}) {
   const out = {};
   for (const k of all) {
     let enabled = CHANGED_ONLY_VALIDATORS.includes(k);
-    if (!enabled && (resolveSeverity(config, k) === 'high' || exactHighValidators.has(k)) && userValidators[k] !== false) {
+    // docSections follows structure's policy unless named (docguard.output-ux#FR-008).
+    const policy = k === 'docSections' && config.severity?.docSections === undefined ? 'structure' : k;
+    const userSwitch = k === 'docSections' && userValidators.docSections === undefined ? userValidators.structure : userValidators[k];
+    if (!enabled && (resolveSeverity(config, policy) === 'high' || exactHighValidators.has(k)) && userSwitch !== false) {
       enabled = true;
     }
     out[k] = enabled;
@@ -740,7 +754,11 @@ export function runGuard(projectDir, config, flags) {
     const escalatedNote = escalated.length > 0
       ? ` ${c.yellow}+ ${escalated.length} high-severity validator(s): ${escalated.join(', ')}${c.reset}`
       : '';
-    console.log(`${c.cyan}⚡ docguard guard --changed-only${c.reset} ${c.dim}(${label})${c.reset}${escalatedNote}\n`);
+    // docguard.output-ux#FR-001: in a machine format stdout is the artifact,
+    // so the note explaining the reduced validator set goes to stderr.
+    const note = `${c.cyan}⚡ docguard guard --changed-only${c.reset} ${c.dim}(${label})${c.reset}${escalatedNote}\n`;
+    if (['json', 'sarif', 'junit'].includes(flags.format)) process.stderr.write(`${note}\n`);
+    else console.log(note);
   }
 
   // ── `--update-baseline`: freeze the CURRENT full finding set ──
