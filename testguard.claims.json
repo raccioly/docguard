@@ -5161,6 +5161,42 @@
             "producer": "agent",
             "by": "claude-opus-5.5 (spec 048)"
           }
+        },
+        {
+          "id": "F15",
+          "description": "diagnose keeps the /docguard.<name> placeholders.",
+          "faultClass": "statement-deleted",
+          "file": "cli/commands/diagnose.mjs",
+          "find": "    if (m) issue.llmCommand = agent(m[1], m[2] || '');",
+          "replace": "    // placeholders kept",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 048)"
+          }
+        },
+        {
+          "id": "F16",
+          "description": "verify names a /docguard.verify command that does not exist.",
+          "faultClass": "other",
+          "file": "cli/commands/verify.mjs",
+          "find": "  const cmd = 'docguard verify --semantic --format json';",
+          "replace": "  const cmd = '/docguard.verify';",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 048)"
+          }
+        },
+        {
+          "id": "F17",
+          "description": "setup offers /speckit.constitution only when it is missing.",
+          "faultClass": "other",
+          "file": "cli/commands/setup.mjs",
+          "find": "    if (constitution) {",
+          "replace": "    if (!constitution) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 048)"
+          }
         }
       ]
     }

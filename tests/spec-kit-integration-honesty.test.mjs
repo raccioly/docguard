@@ -317,7 +317,12 @@ describe('hints name only commands that exist (FR-006, SC-004)', { skip: !posix 
       assert.match(guard.out, /docguard feedback|Next:/);
       const diagnose = run(dir, ['diagnose']);
       const verify = run(dir, ['verify', '--semantic']);
-      for (const [label, out] of [['init', init.out], ['guard', guard.out], ['diagnose', diagnose.out], ['verify', verify.out]]) {
+      assert.match(verify.out, /Get the machine task list: docguard verify --semantic --format json/);
+      const setup = run(dir, ['init', '--wizard', '--skip-prompts']);
+      assert.match(setup.out, /Bootstrap:\s+\/speckit-constitution/);
+      assert.match(setup.out, /Fill docs:\s+\/speckit-docguard-guard/);
+      assert.match(diagnose.out, /\/speckit-docguard-(fix|guard)/);
+      for (const [label, out] of [['init', init.out], ['guard', guard.out], ['diagnose', diagnose.out], ['verify', verify.out], ['setup', setup.out]]) {
         assert.doesNotMatch(out, /\/docguard\.(diagnose|verify|feedback|init|explain)\b/, label);
         assertResolvable(dir, out, label);
       }
