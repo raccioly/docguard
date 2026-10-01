@@ -1,6 +1,6 @@
 # Tasks: A Release Cut That Passes Its Own Suite
 
-**Status**: Complete. SC-001: the replayed cut passes 2,919/2,919 tests, guard exits 0, the candidate validates (42 files), and the release add stages every changed file; SC-002: below.
+**Status**: Complete. SC-001: the replayed cut passes 2,920/2,920 tests, guard exits 0, the candidate validates (42 files), and the release add stages every changed file; SC-002: below.
 **Spec**: `specs/051-release-cut-green/spec.md`
 **Plan**: `specs/051-release-cut-green/plan.md`
 
@@ -18,6 +18,7 @@
 - [x] T003 `.github/scripts/sync-release-version.mjs`: `.agent/` mirrors (FR-003).
 - [x] T004 `.github/workflows/scheduled-release.yml`: remove the `ensureSkills` refresh (FR-004).
 - [x] T005 `cli/ensure-skills.mjs`: required `surface` (FR-005).
+- [x] T009 `.github/workflows/ci.yml`: runtime budget 360s with its measurements (FR-007).
 - [x] T008 Workflow `git add` includes `commands/`; `RELEASE_PATH_ALLOWLIST` admits `.agent/commands`; tests check that every synchronized path is staged and admitted (FR-006).
 
 ## Phase 3: Docs and verification

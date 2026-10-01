@@ -4,6 +4,7 @@
  * @req docguard.release-cut-green#FR-004
  * @req docguard.release-cut-green#FR-005
  * @req docguard.release-cut-green#FR-006
+ * @req docguard.release-cut-green#FR-007
  * @req docguard.release-cut-green#SC-001
  * @req docguard.release-cut-green#SC-002
  */
@@ -129,5 +130,18 @@ describe("replaying the cut on this repository's release surfaces (SC-001)", () 
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
+  });
+});
+
+describe('the CI runtime budget keeps headroom and still catches a runaway (FR-007)', () => {
+  it('sits above normal Node 18 runs and below them plus the PR #328 regression', () => {
+    const ci = readFileSync('.github/workflows/ci.yml', 'utf8');
+    const budgets = [...ci.matchAll(/TEST_BUDGET_MS: (\d+)/g)].map(m => Number(m[1]));
+    assert.equal(budgets.length, 1, 'one runtime budget');
+    const [budget] = budgets;
+    const slowestNormal = 241_500; // Node 18, #510, every test passing
+    const pr328Regression = 165_000;
+    assert.ok(budget >= slowestNormal * 1.4, `budget ${budget} leaves headroom over ${slowestNormal}`);
+    assert.ok(budget < 235_000 + pr328Regression, `budget ${budget} still trips the PR #328 class`);
   });
 });

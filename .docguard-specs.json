@@ -6090,7 +6090,7 @@
           {
             "requirementId": "FR-004",
             "file": ".github/workflows/ci.yml",
-            "line": 226
+            "line": 231
           },
           {
             "requirementId": "FR-004",
@@ -7811,6 +7811,7 @@
           "docguard.release-cut-green#FR-004",
           "docguard.release-cut-green#FR-005",
           "docguard.release-cut-green#FR-006",
+          "docguard.release-cut-green#FR-007",
           "docguard.release-cut-green#SC-001",
           "docguard.release-cut-green#SC-002"
         ]
@@ -7819,20 +7820,20 @@
         "artifacts": [
           {
             "path": "specs/051-release-cut-green/spec.md",
-            "digest": "sha256:514a8f287d70bb4bca44511159c4f1ea7dad8c1ab64db1bcb295011985dbd672"
+            "digest": "sha256:02bd8dc68c4d4463844178035bee6004a747592a5e74e20b7efa3ab4305c9e85"
           },
           {
             "path": "specs/051-release-cut-green/plan.md",
-            "digest": "sha256:1618e02a065495e40925fc64ecba5bb9e9b869e8c5238565f0af5fd7ce6d4a17"
+            "digest": "sha256:7b6af60c85424f6c9073489a690e08f726e196e8522d0fbf79de4d95fb2cf18c"
           },
           {
             "path": "specs/051-release-cut-green/tasks.md",
-            "digest": "sha256:63cd41b5f03a9b28e09cfd511fc146e54336765cb5a77c7948d7d5c619501b69"
+            "digest": "sha256:64457e085a0b1757b537e53c1c7c7d6627efe1c07b43618349a0f7f97fbaac1c"
           }
         ],
         "taskCompletion": {
-          "checked": 8,
-          "total": 8
+          "checked": 9,
+          "total": 9
         },
         "implementationEvidence": [
           {
@@ -7883,14 +7884,19 @@
             "line": 6
           },
           {
-            "requirementId": "SC-001",
+            "requirementId": "FR-007",
             "file": "tests/release-cut-green.test.mjs",
             "line": 7
           },
           {
-            "requirementId": "SC-002",
+            "requirementId": "SC-001",
             "file": "tests/release-cut-green.test.mjs",
             "line": 8
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/release-cut-green.test.mjs",
+            "line": 9
           }
         ]
       }

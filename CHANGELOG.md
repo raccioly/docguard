@@ -493,6 +493,10 @@ Behaviour changes:
     The release-candidate policy rejected the `.agent/commands` mirrors. Both
     are fixed, and a replay of the cut on main's tree passes the full suite and
     the candidate validation.
+  - CI's test runtime budget rises from 240s to 360s. The end-to-end tests of
+    specs 040–050 put Node 18 at 211–241s through CPU contention between
+    parallel test files; `guard` itself grew about 20%. A run failed at 241.5s
+    with every test passing. 360s still trips on a PR #328-class runaway.
 - **Fixes found by running this release against ten real repositories**
   (`specs/050-dogfood-findings`).
   - `score` and `fix` crashed with "agentFile.some is not a function" when

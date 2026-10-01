@@ -8,6 +8,10 @@
 - `.github/scripts/sync-release-version.mjs`: after staging the sources, it stages each `.agent/` mirror from the staged (or current) source and writes everything in the existing loop. Missing mirrors are created (FR-003).
 - `.github/workflows/scheduled-release.yml`: the `ensureSkills` one-liner is removed (FR-004), and the release commit stages `commands/` (FR-006).
 - `cli/release-pr-policy.mjs`: `RELEASE_PATH_ALLOWLIST` admits `.agent/commands/docguard.*.md` (FR-006).
+- `.github/workflows/ci.yml`: `TEST_BUDGET_MS` 240000 → 360000, with the 2026-10-01 measurements (FR-007). Rejected alternatives:
+  - Keep 240s: it now fails on runner noise, the failure the budget's own comment says it must avoid.
+  - Drop the budget: nothing else catches a test that walks an unintended tree (PR #328).
+  - Make the heavy end-to-end tests cheaper: worth doing, but no single test is a runaway. The time is spread across new coverage.
 - `cli/ensure-skills.mjs`: `ensureSkills` throws a `TypeError` when `surface` is missing (FR-005).
 
 ## Technical Context
