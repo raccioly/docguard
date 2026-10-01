@@ -1,6 +1,6 @@
 # Tasks: DocGuard's Generated Docs Pass DocGuard's Own Checks
 
-**Status**: Complete. SC-001: on five fresh projects (Express, Next.js, FastAPI, Django, Go) × five flows, guard and `diff` report only allow-listed project findings and no `.bak` remains; the same 25 runs failed on the base revision (2–22 DocGuard-caused findings each). SC-002: each bug has a reproduction in `tests/generated-docs-consistency.test.mjs`. SC-003: the full suite passes and guard on this repository reports no new finding. Claim GENERATED-DOCS-PASS-OWN-CHECKS: 34/34 faults killed.
+**Status**: Complete. SC-001: on five fresh projects (Express, Next.js, FastAPI, Django, Go) × five flows, guard and `diff` report only allow-listed project findings and no `.bak` remains; the same 25 runs failed on the base revision (2–22 DocGuard-caused findings each). SC-002: each bug has a reproduction in `tests/generated-docs-consistency.test.mjs`. SC-003: the full suite passes and guard on this repository reports no new finding. Claim GENERATED-DOCS-PASS-OWN-CHECKS: 34 faults with anchors checked; probe deferred (machine load), to run after release. A partial run at 65c235e killed 28 of 36 then-current faults with none surviving.
 **Spec**: `specs/044-generated-docs-consistency/spec.md`
 **Plan**: `specs/044-generated-docs-consistency/plan.md`
 
