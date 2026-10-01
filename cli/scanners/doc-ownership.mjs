@@ -152,6 +152,23 @@ export function projectFiles(projectDir, config = {}) {
 }
 
 /**
+ * Default roots when the map declares none: the top-level source modules the
+ * memory plan finds, plus each module's parent directory for the source files
+ * directly in it (`src/pricing.mjs` beside `src/api/`). Without the second
+ * part such a file was never checked (docguard.output-ux#FR-009).
+ * @implements docguard.output-ux#FR-009
+ * @returns {{ modules: string[], looseDirs: string[] }}
+ */
+export function defaultOwnershipRoots(projectDir, config = {}) {
+  const modules = scanComponents(projectDir, config).filter(m => m.kind === 'module').map(m => m.path).sort();
+  const looseDirs = [...new Set(modules.filter(m => m.includes('/')).map(m => m.slice(0, m.lastIndexOf('/'))))]
+    .filter(dir => !modules.includes(dir)).sort();
+  return { modules, looseDirs };
+}
+
+const dirName = file => (file.includes('/') ? file.slice(0, file.lastIndexOf('/')) : '');
+
+/**
  * Everything the validator and `trace --owners` report.
  *
  * Roots: declared, or the top-level source modules the memory plan finds. A
@@ -160,11 +177,12 @@ export function projectFiles(projectDir, config = {}) {
  */
 export function ownershipReport(projectDir, config = {}) {
   const map = loadOwnership(projectDir, config);
-  if (!map.present || map.error) return { map, files: [], tracked: true, entries: [], ties: [], unowned: [], deadRoots: [], roots: [] };
+  if (!map.present || map.error) return { map, files: [], tracked: true, entries: [], ties: [], unowned: [], deadRoots: [], roots: [], looseDirs: [] };
   const { files, tracked } = projectFiles(projectDir, config);
   const declared = map.roots !== null;
-  const roots = declared ? map.roots
-    : scanComponents(projectDir, config).filter(m => m.kind === 'module').map(m => m.path).sort();
+  const defaults = declared ? { modules: [], looseDirs: [] } : defaultOwnershipRoots(projectDir, config);
+  const roots = declared ? map.roots : defaults.modules;
+  const looseDirs = new Set(defaults.looseDirs);
   const under = (file, root) => root === '' || file === root || file.startsWith(`${root}/`);
 
   const perEntry = new Map(map.entries.map(e => [e.index, { entry: e, files: 0, deadPatterns: e.patterns.map(p => p.raw) }]));
@@ -186,16 +204,19 @@ export function ownershipReport(projectDir, config = {}) {
       if (!ties.has(k)) ties.set(k, { entries: result.tie, example: file, count: 0 });
       ties.get(k).count++;
     }
-    const root = roots.find(r => under(file, r));
+    let root = roots.find(r => under(file, r));
+    const loose = root === undefined && looseDirs.has(dirName(file));
+    if (loose) root = dirName(file);
     if (root === undefined || !SOURCE_RE.test(file)) continue;
     if (!declared && isNonProductPath(file, config)) continue;
-    sources.push({ file, root, owned: Boolean(result.owner) || Boolean(result.tie) });
+    sources.push({ file, root, loose, owned: Boolean(result.owner) || Boolean(result.tie) });
   }
 
   // The highest directory under the root with no owned file in it; a file in
   // a directory that also holds owned files is reported on its own.
   const unowned = new Set();
   for (const s of sources.filter(x => !x.owned)) {
+    if (s.loose) { unowned.add(s.file); continue; }
     const parts = s.file.split('/');
     let reported = s.file;
     const start = s.root === '' ? 0 : s.root.split('/').length;
@@ -212,6 +233,7 @@ export function ownershipReport(projectDir, config = {}) {
     files,
     tracked,
     roots,
+    looseDirs: [...looseDirs],
     entries: [...perEntry.values()],
     ties: [...ties.values()],
     unowned: [...unowned].sort(),
@@ -239,10 +261,10 @@ export function entryTargetProblem(projectDir, entry) {
 /** The declared owner of `path`, for `docguard_docs_for_path` and `trace --reverse`. */
 export function ownerOf(projectDir, config, path) {
   const map = loadOwnership(projectDir, config);
-  if (!map.present) return { owner: null, reason: 'no ownership map is configured' };
+  if (!map.present) return { owner: null, configured: false, reason: 'no ownership map is configured' };
   if (map.error) return { owner: null, reason: `the ownership map is invalid: ${map.error}` };
   const result = resolveOwner(map, path);
-  if (result.tie) return { owner: null, reason: `${result.tie.length} entries are equally specific for this path: ${result.tie.map(e => e.key).join(', ')}` };
+  if (result.tie) return { owner: null, tie: result.tie.map(e => e.key), reason: `${result.tie.length} entries are equally specific for this path: ${result.tie.map(e => e.key).join(', ')}` };
   if (!result.owner) return { owner: null, reason: 'no ownership entry matches this path' };
   const { key, doc, section, purpose, matchedBy } = result.owner;
   return { owner: { key, doc, section, purpose, matchedBy, source: 'declared' }, reason: null };
