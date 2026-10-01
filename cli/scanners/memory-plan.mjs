@@ -462,13 +462,17 @@ function _buildMemoryPlanUncached(projectDir, config = {}) {
   // ARCHITECTURE — always.
   {
     const sections = [];
-    const stackRows = [
-      ...profile.ecosystems.map(e => [e.dir, e.language, e.framework || '—', e.kind]),
-    ];
+    // A Libraries column (ORM, UI, auth) only when some ecosystem has one, so
+    // a project without any keeps its table byte for byte.
+    // @implements docguard.js-ts-extraction#FR-008
+    const withLibraries = profile.ecosystems.some(e => (e.libraries || []).length > 0);
+    const stackRows = profile.ecosystems.map(e => withLibraries
+      ? [e.dir, e.language, e.framework || '—', (e.libraries || []).join(', ') || '—', e.kind]
+      : [e.dir, e.language, e.framework || '—', e.kind]);
     sections.push({
       id: 'tech-stack',
       source: 'code',
-      body: md.table(['Path', 'Language', 'Framework', 'Kind'], stackRows),
+      body: md.table(withLibraries ? ['Path', 'Language', 'Framework', 'Libraries', 'Kind'] : ['Path', 'Language', 'Framework', 'Kind'], stackRows),
     });
     sections.push(addTask('docs-canonical/ARCHITECTURE.md', 'overview',
       'Write a 2-3 sentence System Overview: what this project does and who uses it.',

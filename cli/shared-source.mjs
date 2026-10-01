@@ -223,6 +223,13 @@ export function resolveSourceRoots(projectDir, config = {}) {
   // 3. conventional roots (only those that exist)
   const conventional = ['src', 'app', 'lib', 'server', 'api', 'functions', 'backend/src', 'backend', 'cli'];
   for (const cr of conventional) add(resolve(projectDir, cr));
+  // Next.js keeps pages and UI at the top level (`src/` forms are already under
+  // `src`). Added only for a Next.js project, so every other project's roots —
+  // and every scanner that reads them — stay unchanged.
+  // @implements docguard.js-ts-extraction#FR-004
+  if (isNextJsProject(projectDir)) {
+    for (const nr of NEXT_JS_ROOTS) add(resolve(projectDir, nr));
+  }
 
   // 4. Fall back to the project root ONLY when nothing else resolved. Adding it
   // unconditionally would pull in examples/, scripts/, and fixtures, producing
@@ -230,6 +237,22 @@ export function resolveSourceRoots(projectDir, config = {}) {
   if (out.size === 0) out.add(resolve(projectDir));
 
   return [...out];
+}
+
+const NEXT_JS_ROOTS = ['pages', 'components', 'hooks', 'utils'];
+const NEXT_CONFIG_FILES = ['next.config.js', 'next.config.mjs', 'next.config.cjs', 'next.config.ts'];
+/** Root files a Next.js app reads env in: edge middleware, instrumentation, config. */
+const NEXT_ROOT_FILES = [
+  'middleware.ts', 'middleware.js', 'middleware.mjs',
+  'instrumentation.ts', 'instrumentation.js',
+  ...NEXT_CONFIG_FILES,
+];
+
+/** A Next.js project: `next` in the root package.json, or a `next.config.*`. */
+export function isNextJsProject(projectDir) {
+  const pkg = safeReadJson(resolve(projectDir, 'package.json'));
+  if (pkg && ((pkg.dependencies && pkg.dependencies.next) || (pkg.devDependencies && pkg.devDependencies.next))) return true;
+  return NEXT_CONFIG_FILES.some(name => existsSync(resolve(projectDir, name)));
 }
 
 /**
@@ -671,6 +694,120 @@ function workerEnvUsageFallback(content, kind, configured) {
   return names;
 }
 
+/** 1-based line of `index`, from a sorted array of line-start offsets. */
+function lineOf(lineStarts, index) {
+  let lo = 0, hi = lineStarts.length - 1;
+  while (lo < hi) {
+    const mid = (lo + hi + 1) >> 1;
+    if (lineStarts[mid] <= index) lo = mid; else hi = mid - 1;
+  }
+  return lo + 1;
+}
+
+/** A literal's source value (`'x'`, `3000`, `false`), or null for any expression. */
+function literalValue(text) {
+  const m = /^\s*(?:'([^'\n]*)'|"([^"\n]*)"|`([^`$\n]*)`|(-?\d[\w.]*|true|false|True|False|None|null))\s*$/.exec(text);
+  return m ? (m[1] ?? m[2] ?? m[3] ?? m[4]) : null;
+}
+
+/**
+ * The fallback a dotted/bracket read supplies, from the text right after it:
+ * JS `?? x` / `|| x` (patterns 0–2), Python's second argument to
+ * `os.environ.get` / `os.getenv` (patterns 4–5). `undefined` = none; a string =
+ * the literal; null = an expression whose value is not a literal.
+ */
+function readFallback(rest, patternIndex) {
+  const leading = (text) => {
+    const m = /^\s*(?:'([^'\n]*)'|"([^"\n]*)"|`([^`$\n]*)`|(-?\d[\w.]*|true|false|True|False|None|null)\b)/.exec(text);
+    return m ? (m[1] ?? m[2] ?? m[3] ?? m[4]) : null;
+  };
+  if (patternIndex <= 2) {
+    const m = /^\s*!?\s*(?:\?\?|\|\|)\s*(?=\S)/.exec(rest);
+    return m ? leading(rest.slice(m[0].length)) : undefined;
+  }
+  if (patternIndex === 4 || patternIndex === 5) {
+    const m = /^['"]\s*,\s*(?=[^\s)])/.exec(rest);
+    return m ? leading(rest.slice(m[0].length)) : undefined;
+  }
+  return undefined;
+}
+
+/** Split `text` at top-level `sep` (outside brackets, strings and comments). */
+function splitTopLevel(text, sep) {
+  const parts = [];
+  let depth = 0, start = 0, quote = null;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (quote) {
+      if (ch === '\\') { i++; continue; }
+      if (ch === quote) quote = null;
+      continue;
+    }
+    if (ch === '"' || ch === "'" || ch === '`') { quote = ch; continue; }
+    if (ch === '/' && text[i + 1] === '/') { while (i < text.length && text[i] !== '\n') i++; continue; }
+    if (ch === '/' && text[i + 1] === '*') { i += 2; while (i < text.length && !(text[i] === '*' && text[i + 1] === '/')) i++; i++; continue; }
+    if ('([{'.includes(ch)) depth++;
+    else if (')]}'.includes(ch)) depth--;
+    else if (ch === sep && depth === 0 && !(sep === '=' && (text[i + 1] === '=' || text[i + 1] === '>' || '!<>='.includes(text[i - 1])))) {
+      parts.push({ text: text.slice(start, i), offset: start });
+      start = i + 1;
+    }
+  }
+  parts.push({ text: text.slice(start), offset: start });
+  return parts;
+}
+
+const ENV_NAME_RE = /^[A-Z][A-Z0-9_]*[A-Z0-9]$/;
+
+/**
+ * Names destructured from `process.env` / `import.meta.env`:
+ * `const { A, B = 'x', C: c, 'D': d = 1, ...rest } = process.env`.
+ * Returns `{ name, index, fallback, vite }` per property (`fallback` as in
+ * readFallback). Lexical, so both parser tiers read it the same way; the
+ * `{ … } = <env>` shape is self-delimiting.
+ * @implements docguard.js-ts-extraction#FR-003
+ */
+function destructuredEnvReads(content, kind) {
+  const out = [];
+  const source = /=\s*(process\s*\.\s*env|import\s*\.\s*meta\s*\.\s*env)\b(?!\s*(?:\.|\[|\?\.))/g;
+  let m;
+  while ((m = source.exec(content)) !== null) {
+    if (kind[m.index] !== 0) continue;
+    let close = m.index - 1;
+    while (close >= 0 && /\s/.test(content[close])) close--;
+    if (content[close] !== '}' || kind[close] !== 0) continue;
+    let depth = 0, open = -1;
+    for (let i = close; i >= 0; i--) {
+      if (kind[i] !== 0) continue;
+      if (content[i] === '}') depth++;
+      else if (content[i] === '{' && --depth === 0) { open = i; break; }
+    }
+    if (open < 0) continue;
+    const before = content.slice(Math.max(0, open - 16), open);
+    if (!/(?:\b(?:const|let|var)|\()\s*$/.test(before)) continue;
+    const inner = content.slice(open + 1, close);
+    for (const part of splitTopLevel(inner, ',')) {
+      const text = part.text;
+      const lead = text.length - text.trimStart().length;
+      const prop = text.trim();
+      if (!prop || prop.startsWith('...')) continue;
+      const key = /^(?:(['"])([^'"]+)\1|([A-Za-z_$][\w$]*))/.exec(prop);
+      if (!key) continue;
+      const name = key[2] ?? key[3];
+      if (!ENV_NAME_RE.test(name)) continue;
+      const afterKey = prop.slice(key[0].length);
+      const assign = splitTopLevel(afterKey, '=');
+      let fallback;
+      if (assign.length > 1) {
+        const value = afterKey.slice(assign[1].offset);
+        fallback = literalValue(value);
+      }
+      out.push({ name, index: open + 1 + part.offset + lead, fallback, vite: /^import/.test(m[1]) });
+    }
+  }
+  return out;
+}
+
 /**
  * Env var names READ in code. `options.within` (a repository-relative directory)
  * restricts the scan to one area, for as-built specs (docguard.as-built-specs#FR-001).
@@ -681,11 +818,18 @@ function workerEnvUsageFallback(content, kind, configured) {
  *   has no env patterns, so a variable read there is unseen
  *   (docguard.fallback-language-coverage#FR-004);
  * - `origins`: name → Set of file extensions it was read from, so a finding
- *   can carry the analyzer tier of the files behind it (FR-002).
+ *   can carry the analyzer tier of the files behind it (FR-002);
+ * - `sites`: name → [{ file, line, defaulted, default }], one per read. A read
+ *   is defaulted when the code supplies a fallback: a destructuring default,
+ *   `?? x` / `|| x`, or a second argument to `os.getenv` / `os.environ.get`.
+ *   `default` is the literal fallback, or null when it is an expression. A
+ *   consumer derives Required from every site.
  *
  * @implements docguard.fallback-language-coverage#FR-003
  * @implements docguard.fallback-language-coverage#FR-004
  * @implements docguard.fallback-language-coverage#FR-005
+ * @implements docguard.js-ts-extraction#FR-003
+ * @implements docguard.js-ts-extraction#FR-004
  */
 export function grepEnvUsage(projectDir, config = {}, options = {}) {
   const within = options.within ? String(options.within).replace(/\\/g, '/').replace(/\/+$/, '') : null;
@@ -693,6 +837,11 @@ export function grepEnvUsage(projectDir, config = {}, options = {}) {
   names.limitations = [];
   names.origins = new Map();
   const unscannedFiles = [];
+  names.sites = new Map();
+  const recordSite = (name, file, line, fallback) => {
+    if (!names.sites.has(name)) names.sites.set(name, []);
+    names.sites.get(name).push({ file, line, defaulted: fallback !== undefined, default: fallback === undefined ? null : fallback });
+  };
   const roots = resolveSourceRoots(projectDir, config);
   const seen = new Set();
   const add = (name, ext) => {
@@ -792,7 +941,16 @@ export function grepEnvUsage(projectDir, config = {}, options = {}) {
     // the access KEYWORD (process/os/import) — for a real read the keyword is
     // code while only the argument 'X' is a string, so the name is still caught.
     const kind = classifyChars(content, ext);
+    const file = rel.replace(/\\/g, '/');
+    const lineStarts = [0];
+    for (let i = 0; i < content.length; i++) if (content[i] === '\n') lineStarts.push(i + 1);
     if (['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs'].includes(ext)) {
+      for (const read of destructuredEnvReads(content, kind)) {
+        if (read.vite && VITE_INTRINSICS.has(read.name)) continue;
+        if (isRunnerEnvVar(read.name)) continue;
+        add(read.name, ext);
+        recordSite(read.name, file, lineOf(lineStarts, read.index), read.fallback);
+      }
       const workerBindings = extractWorkerEnvBindings(content, filePath, workerConfigForFile(projectDir, filePath));
       for (const name of workerBindings) add(name, ext);
       for (const limitation of workerBindings.limitations || []) names.limitations.push({ code: limitation, file: rel.replace(/\\/g, '/') });
@@ -810,6 +968,8 @@ export function grepEnvUsage(projectDir, config = {}, options = {}) {
         if (isViteSource && VITE_INTRINSICS.has(m[1])) continue;
         if (isRunnerEnvVar(m[1])) continue; // v0.27 (#7): runner/CI/SDK var, not product config
         add(m[1], ext);
+        const end = m.index + m[0].length;
+        recordSite(m[1], file, lineOf(lineStarts, m.index), readFallback(content.slice(end, end + 200), i));
       }
     }
 
@@ -828,7 +988,14 @@ export function grepEnvUsage(projectDir, config = {}, options = {}) {
       // camelCase keys, so requiring UPPER_SNAKE keeps this env-specific.
       const keyRe = /^\s*['"]?([A-Z][A-Z0-9_]*[A-Z0-9])['"]?\s*:/gm;
       while ((km = keyRe.exec(content)) !== null) {
-        if (km[1].length >= 3 && !VITE_INTRINSICS.has(km[1]) && !isRunnerEnvVar(km[1])) add(km[1], ext);
+        if (km[1].length >= 3 && !VITE_INTRINSICS.has(km[1]) && !isRunnerEnvVar(km[1])) {
+          add(km[1], ext);
+          const at = km.index + km[0].indexOf(km[1]);
+          const lineText = content.slice(at, content.indexOf('\n', at) >>> 0);
+          const dflt = /\.default\(\s*([^)]*)\)/.exec(lineText);
+          recordSite(km[1], file, lineOf(lineStarts, at),
+            dflt ? literalValue(dflt[1]) : (/\.optional\(\)/.test(lineText) ? null : undefined));
+        }
       }
       // convict: the env var name is the `env:` property value, not the key.
       const convictRe = /\benv\s*:\s*['"]([A-Z][A-Z0-9_]*[A-Z0-9])['"]/g;
@@ -868,6 +1035,14 @@ export function grepEnvUsage(projectDir, config = {}, options = {}) {
   }
 
   for (const root of roots) walk(root);
+  // A Next.js app also reads env in root files: edge middleware,
+  // instrumentation and next.config (docguard.js-ts-extraction#FR-004).
+  if (isNextJsProject(projectDir)) {
+    for (const name of NEXT_ROOT_FILES) {
+      const abs = resolve(projectDir, name);
+      if (existsSync(abs)) visit(abs);
+    }
+  }
   // A language's own layout, and nothing more (FR-005): every directory of a
   // root-level Go module can hold a package, so `cmd/` and `internal/` must be
   // read even when a conventional root such as `api/` exists and would hide
