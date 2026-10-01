@@ -5,14 +5,17 @@ import { docRolePath, resolveDocRole } from '../shared-doc-roles.mjs';
  * Detects schema definition files from popular ORMs/frameworks and validates
  * that table/model names appear in DATA-MODEL.md documentation.
  *
- * Supported: Prisma, Drizzle, Sequelize, TypeORM, Knex, Django, Rails
+ * Supported: Prisma, Drizzle, Sequelize, TypeORM, Knex, Rails, and Python ORM
+ * models (Django, SQLAlchemy, SQLModel) from the scanner generate uses, so
+ * both report the same models (docguard.python-extraction#FR-008).
  *
  * Zero NPM runtime dependencies — pure Node.js built-ins only.
  */
 
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve, relative, basename } from 'node:path';
-import { resolveSourceRoots } from '../shared-source.mjs';
+import { resolveSourceRoots, summarizeTiers } from '../shared-source.mjs';
+import { scanPythonModels } from '../scanners/python-models.mjs';
 import { DEFAULT_IGNORE_DIRS, relPosix, shouldIgnore, walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 
@@ -62,13 +65,6 @@ const SCHEMA_DETECTORS = [
     modelPattern: /createTable\s*\(\s*['"](\w+)['"]/g,
   },
   {
-    name: 'Django',
-    filePattern: /models\.py$/,
-    searchDirs: ['', 'app', 'apps'],
-    // Matches: class User(models.Model):
-    modelPattern: /class\s+(\w+)\s*\(\s*(?:models\.)?Model\s*\)/g,
-  },
-  {
     name: 'Rails',
     filePattern: /\d+_\w+\.rb$/,
     searchDirs: ['db/migrate'],
@@ -100,6 +96,7 @@ export function validateSchemaSync(projectDir, config) {
       findings.push(mkFinding({
         code: 'SCH001',
         validator: 'schemaSync',
+        parserTier: modelsTier(detectedModels),
         severity: 'warn',
         message: `Found ${detectedModels.length} database model(s) (${detectedModels.map(m => m.name).slice(0, 5).join(', ')}${detectedModels.length > 5 ? '...' : ''}) ` +
           `but no DATA-MODEL.md exists. Run \`docguard init\` to create one, then document your schema`,
@@ -138,6 +135,7 @@ export function validateSchemaSync(projectDir, config) {
       findings.push(mkFinding({
         code: 'SCH002',
         validator: 'schemaSync',
+        parserTier: model.tier || 'not-applicable',
         severity: 'warn',
         message: `${model.framework} model "${model.name}" (${model.file}) not documented in DATA-MODEL.md. ` +
           `Add it to the Entity Definitions section`,
@@ -184,7 +182,22 @@ function detectAllModels(projectDir, config = {}) {
     }
   }
 
+  // Python ORM models come from the scanner generate uses: one reading, so
+  // guard and generate cannot disagree on the same project.
+  const PY_FRAMEWORK = { django: 'Django', sqlalchemy: 'SQLAlchemy', sqlmodel: 'SQLModel' };
+  const python = scanPythonModels(projectDir);
+  for (const e of python.entities) {
+    if (!PY_FRAMEWORK[e.source] || isCommonUtilityModel(e.name) || shouldIgnore(e.file, config)) continue;
+    models.push({ name: e.name, framework: PY_FRAMEWORK[e.source], file: e.file, tier: e.tier });
+  }
+
   return models;
+}
+
+/** The parser tier behind a set of detected models (Python models carry one). */
+function modelsTier(models) {
+  const tiered = models.filter(m => m.tier);
+  return tiered.length ? summarizeTiers(tiered).tier : 'not-applicable';
 }
 
 /**

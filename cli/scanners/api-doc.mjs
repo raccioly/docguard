@@ -49,10 +49,13 @@ export function normalizePath(raw) {
   p = p.split(/[?#]/)[0];
   if (!p.startsWith('/')) return '';
   // collapse every param syntax to {}: Next.js [id]/[...slug]/[[...slug]],
-  // OpenAPI {param}, and colon :param (incl. catch-all :param*).
+  // OpenAPI {param}, Django/Flask <int:pk> and <pk> (before the colon rule,
+  // which would otherwise leave `<int{}`), and colon :param (incl. catch-all
+  // :param*). @implements docguard.python-extraction#FR-004
   p = p
     .replace(/\[{1,2}[^\]]*\]{1,2}/g, '{}')
     .replace(/\{[^}/]+\}/g, '{}')
+    .replace(/<(?:[A-Za-z_]\w*:)?[A-Za-z_]\w*>/g, '{}')
     .replace(/:[^/]+/g, '{}');
   // strip trailing slash (but keep root "/")
   if (p.length > 1) p = p.replace(/\/+$/, '');

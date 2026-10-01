@@ -9,8 +9,8 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { resolve, join, relative, basename, extname } from 'node:path';
 import { extractJsSchemaBodies } from './js-ast.mjs';
-import { extractPythonFiles } from './py-ast.mjs';
-import { readScannable, tierFor, summarizeTiers } from '../shared-source.mjs';
+import { scanPythonModels } from './python-models.mjs';
+import { readScannable } from '../shared-source.mjs';
 import { DEFAULT_IGNORE_DIRS as IGNORE_DIRS, shouldIgnore, relPosix } from '../shared-ignore.mjs';
 
 /**
@@ -69,8 +69,11 @@ export function scanSchemasDeep(dir, stack, docTools, config = {}) {
   }
 
   // ── Multi-language model scanners (additive; supports polyglot repos) ──
+  // Python reports the parser tier that read it (python-models.mjs).
+  let scanTier = null;
   for (const scanner of [scanPythonModels, scanRustModels, scanGoModels, scanJpaModels, scanRailsModels]) {
     const result = scanner(dir);
+    if (result.scanTier && result.entities.length > 0) scanTier = result.scanTier;
     if (result.entities.length > 0) {
       entities.push(...result.entities);
       relationships.push(...(result.relationships || []));
@@ -102,6 +105,7 @@ export function scanSchemasDeep(dir, stack, docTools, config = {}) {
     entities: keptEntities,
     relationships: keptRelationships,
     source: keptEntities.length > 0 ? keptEntities[0].source : 'none',
+    ...(scanTier ? { scanTier } : {}),
   };
 }
 
@@ -525,124 +529,6 @@ function mapMongooseType(type) {
   return map[type] || type;
 }
 
-// ── Python: SQLAlchemy + Pydantic ────────────────────────────────────────────
-
-function scanPythonModels(dir) {
-  const entities = [];
-  const relationships = [];
-
-  // Collect .py files first so the AST tier parses them in ONE python3
-  // subprocess. `null` → Python unavailable / subprocess failed → regex
-  // fallback for all; a per-file `ok:false` falls back for that file only.
-  // The AST tier gets every field exactly (no body-capture truncation, no
-  // miss on multi-base classes) — undercounting fields is what makes the
-  // data-model validators falsely pass on a stale DATA-MODEL.md.
-  const pyFiles = [];
-  walkDir(dir, (filePath) => { if (filePath.endsWith('.py')) pyFiles.push(filePath); });
-  const astByFile = extractPythonFiles(pyFiles);
-  // `null` means the whole batch fell back — no usable interpreter. Name it
-  // once so every entity from this scan carries the same accurate reason.
-  // (calibrated-finding-channels#FR-011)
-  const batchReason = astByFile === null ? 'No usable python3 interpreter; models matched by pattern.' : null;
-  const tiers = [];
-
-  for (const filePath of pyFiles) {
-    const parsed = astByFile && astByFile[filePath];
-    const { tier, tierReason } = tierFor(filePath, parsed, batchReason);
-    tiers.push({ tier, tierReason });
-    if (parsed && parsed.ok) {
-      for (const s of parsed.schemas || []) {
-        const fields = (s.fields || []).map(f => ({
-          name: f.name, type: f.type || '', required: f.required !== false, description: '',
-        }));
-        if (fields.length > 0) entities.push({ name: s.name, fields, file: filePath, source: s.kind, tier, tierReason });
-        for (const to of s.rels || []) relationships.push({ from: s.name, to, type: 'related' });
-      }
-      continue;
-    }
-    // The pattern tier undercounts fields on multi-base classes and truncates
-    // captured bodies — which is precisely how a stale DATA-MODEL.md passes.
-    // An entity found here carries that fact with it.
-    const before = entities.length;
-    scanPythonModelsRegex(filePath, entities, relationships);
-    for (let i = before; i < entities.length; i++) Object.assign(entities[i], { tier, tierReason });
-  }
-  if (tiers.length > 0) {
-    const summary = summarizeTiers(tiers);
-    Object.defineProperty(entities, 'scanTier', { value: summary, enumerable: false, configurable: true });
-  }
-  return { entities, relationships };
-}
-
-// Regex (beta) fallback — used per-file when the Python AST tier is unavailable
-// or couldn't parse that file. Identical behavior to the pre-AST scanner.
-function scanPythonModelsRegex(filePath, entities, relationships) {
-  {
-    const content = readFileSafe(filePath);
-    if (!content) return;
-    if (!/class\s+\w+\s*\([^)]*(Base|BaseModel|db\.Model|Model|SQLModel)/.test(content)) return;
-
-    // Django: class X(models.Model): name = models.CharField(...)
-    // (docguard.generated-docs-consistency#FR-010 — SCH002 saw these models,
-    // the entity scanner did not, so generate never documented them.)
-    const djRe = /class\s+(\w+)\s*\(\s*(?:models\.)?Model\s*\):([\s\S]*?)(?=\nclass\s+\w+|\n*$)/g;
-    let dm;
-    while ((dm = djRe.exec(content)) !== null) {
-      const fields = [];
-      const fieldRe = /^\s+(\w+)\s*=\s*(?:models\.)?(\w+(?:Field)|ForeignKey|OneToOneField|ManyToManyField)\s*\(([^\n]*)/gm;
-      let fm;
-      while ((fm = fieldRe.exec(dm[2])) !== null) {
-        fields.push({ name: fm[1], type: fm[2], required: !/\b(?:null|blank)\s*=\s*True/.test(fm[3]), description: '' });
-        if (/^(?:ForeignKey|OneToOneField|ManyToManyField)$/.test(fm[2])) {
-          const target = /^\s*['"]?(\w+)/.exec(fm[3]);
-          if (target) relationships.push({ from: dm[1], to: target[1], type: 'related' });
-        }
-      }
-      if (fields.length > 0) entities.push({ name: dm[1], fields, file: filePath, source: 'django' });
-    }
-
-    // SQLAlchemy ORM: class X(Base): __tablename__ = "x"; id = Column(...)
-    const ormRe = /class\s+(\w+)\s*\([^)]*(?:Base|db\.Model|SQLModel)[^)]*\):([\s\S]*?)(?=\nclass\s+\w+|\n*$)/g;
-    let m;
-    while ((m = ormRe.exec(content)) !== null) {
-      const name = m[1];
-      const body = m[2];
-      const fields = [];
-      const colRe = /^\s*(\w+)\s*=\s*(?:mapped_column|Column)\s*\(\s*([A-Za-z_]+)(?:\([^)]*\))?([^)]*)\)/gm;
-      let cm;
-      while ((cm = colRe.exec(body)) !== null) {
-        const required = !/nullable\s*=\s*True/.test(cm[3]);
-        fields.push({ name: cm[1], type: cm[2], required, description: '' });
-      }
-      const relRe = /(\w+)\s*[:=]\s*(?:Mapped\[[^\]]*?["'](\w+)["']|relationship\s*\(\s*["'](\w+)["'])/g;
-      let rm;
-      while ((rm = relRe.exec(body)) !== null) {
-        relationships.push({ from: name, to: rm[2] || rm[3], type: 'related' });
-      }
-      if (fields.length > 0) entities.push({ name, fields, file: filePath, source: 'sqlalchemy' });
-    }
-
-    // Pydantic / SQLModel: class X(BaseModel): name: str
-    const pydRe = /class\s+(\w+)\s*\([^)]*(?:BaseModel|SQLModel)[^)]*\):([\s\S]*?)(?=\nclass\s+\w+|\n*$)/g;
-    while ((m = pydRe.exec(content)) !== null) {
-      const name = m[1];
-      if (entities.some(e => e.name === name)) continue;
-      const body = m[2];
-      const fields = [];
-      const fieldRe = /^\s{2,}(\w+)\s*:\s*([\w\[\],\s|]+?)(?:\s*=\s*([^\n]+))?$/gm;
-      let fm;
-      while ((fm = fieldRe.exec(body)) !== null) {
-        const fname = fm[1];
-        if (/^[A-Z_]+$/.test(fname)) continue;
-        const type = fm[2].trim();
-        const required = !/Optional|None|None\s*$/.test(type + (fm[3] || ''));
-        fields.push({ name: fname, type, required, description: '' });
-      }
-      if (fields.length > 0) entities.push({ name, fields, file: filePath, source: 'pydantic' });
-    }
-  }
-}
-
 // ── Rust: Diesel `table! { ... }` ─────────────────────────────────────────────
 
 function scanRustModels(dir) {
@@ -854,7 +740,9 @@ export function generateERDiagram(entities, relationships) {
   // Add relationships
   for (const rel of relationships) {
     const arrow = rel.type === 'one-to-many' ? '||--o{' :
-      rel.type === 'many-to-one' ? '}o--||' : '||--||';
+      rel.type === 'many-to-one' ? '}o--||' :
+        rel.type === 'many-to-many' ? '}o--o{' :
+          rel.type === 'related' ? '}o..o{' : '||--||';
     lines.push(`    ${rel.from} ${arrow} ${rel.to} : "${rel.field}"`);
   }
 

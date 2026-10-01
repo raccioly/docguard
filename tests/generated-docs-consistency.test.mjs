@@ -27,7 +27,7 @@ import { parseApiReferenceDoc, compareEndpoints } from '../cli/scanners/api-doc.
 import { diffEntities, diffEnvVars, diffTechStack } from '../cli/commands/diff.mjs';
 import { upsertSection } from '../cli/writers/sections.mjs';
 import { buildMemoryPlan } from '../cli/scanners/memory-plan.mjs';
-import { scanComponents } from '../cli/scanners/inventory.mjs';
+import { scanComponents, scanTestInventory } from '../cli/scanners/inventory.mjs';
 import { scanSchemasDeep } from '../cli/scanners/schemas.mjs';
 import { detectIntegrations } from '../cli/scanners/integrations.mjs';
 import { renderAsBuiltSpec } from '../cli/scanners/as-built.mjs';
@@ -354,6 +354,7 @@ console.log(JSON.stringify(scanSchemasDeep(${JSON.stringify(dir)}, {}, {}, {}).e
     assert.deepEqual([...new Set(scanSchemasDeep(django, {}, {}, {}).entities.map(e => e.file))], ['shop/models.py']);
     const config = loadConfig(django);
     assert.ok(!codes(validateTestSpec(django, config)).includes('TSP007'));
+    assert.ok(scanTestInventory(django, config).files.some(t => t.file === 'shop/tests.py'), 'the plan inventory lists tests.py');
     const go = fixture('go-svc');
     assert.ok(!scanComponents(go, loadConfig(go)).some(m => m.path === 'main_test.go'));
     assert.ok(!codes(validateTestSpec(go, loadConfig(go))).includes('TSP007'));

@@ -18,6 +18,7 @@ import { createRequire } from 'node:module';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, dirname, relative, extname } from 'node:path';
 import { shouldIgnore, isNonProductDir, isNonProductPath, walkFiles } from './shared-ignore.mjs';
+import { pythonEnvNames } from './scanners/py-env.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', '.nuxt', 'dist', 'build', 'out',
@@ -814,6 +815,10 @@ export function grepEnvUsage(projectDir, config = {}, options = {}) {
     const rel = relative(projectDir, filePath);
     const content = readScannable(filePath);
     if (content === null) return; // unreadable, generated, or too large to scan
+    // Python settings classes and `from os import environ` (py-env.mjs).
+    if (extname(filePath) === '.py' && /BaseSettings|environ|getenv/.test(content)) {
+      for (const name of pythonEnvNames(content)) if (!isRunnerEnvVar(name)) names.add(name);
+    }
     if (!/env|Env|ENV/.test(content)) return;
     // v0.26 (Bug #7): classify chars so we count env vars actually READ in code,
     // not ones MENTIONED inside a string literal (a detection signature like

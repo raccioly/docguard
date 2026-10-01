@@ -40,8 +40,9 @@ parses.
   accepts a cited existing source path (FR-004).
 - `cli/validators/environment.mjs`: ENV004 ignores comments (FR-006).
 - `cli/scanners/as-built.mjs`: SC-001 (and SC-002 when tests exist) (FR-004).
-- `cli/scanners/py-ast.mjs`, `cli/scanners/schemas.mjs`: Django models
-  (FR-010).
+- `cli/scanners/schemas.mjs`: entity files cited project-relative. Django
+  models come from spec 046's Python extraction, which this branch first added
+  on its own and dropped when 046 merged (FR-010).
 - `cli/scanners/integrations.mjs`: a JWT auth entry (FR-007).
 - `templates/ARCHITECTURE.md.template`, `templates/REQUIREMENTS.md.template`:
   examples inside comments (FR-006).

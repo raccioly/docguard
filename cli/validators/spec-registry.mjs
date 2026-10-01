@@ -2,7 +2,7 @@ import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { assetPathCovers, projectSpecRegistry, SPEC_REGISTRY_PATH } from '../scanners/spec-registry.mjs';
-import { checkAsBuiltSync } from '../scanners/as-built.mjs';
+import { checkAsBuiltSync, isPatternTier } from '../scanners/as-built.mjs';
 import { danglingRevisions, isShallowRepository } from '../scanners/revision-anchor.mjs';
 import { gitMetadataStatus, listTrackedFiles } from '../shared-git.mjs';
 
@@ -88,17 +88,22 @@ export function validateSpecRegistry(projectDir, config = {}) {
     if (sourcePaths.length === 0) continue;
     let content;
     try { content = readFileSync(resolve(projectDir, spec.path), 'utf8'); } catch { continue; }
-    const { unclaimed, vanished } = checkAsBuiltSync(projectDir, content, sourcePaths, config);
+    const { unclaimed, vanished, tiers } = checkAsBuiltSync(projectDir, content, sourcePaths, config);
+    // A route or entity read by the pattern fallback may be missing only
+    // because the fallback cannot see it: the finding says which analyzer
+    // read it and drops to low confidence (docguard.python-extraction#FR-013).
+    const tierOf = (kind, factTier) => (kind === 'route' || kind === 'entity' ? factTier || tiers?.[kind]?.tier || 'not-applicable' : 'not-applicable');
     const items = [
-      ...unclaimed.map(f => ({ text: `${f.kind} \`${f.key}\`${f.file ? ` (${f.file})` : ''} is in the code under ${sourcePaths.join(', ')} but the spec neither specifies it nor lists it under Out of Scope`, fix: `Add a requirement carrying <!-- docguard:fact ${f.kind} ${f.key} -->, or move that marker under ## Out of Scope with a reason` })),
-      ...vanished.map(id => ({ text: `${id.replace(' ', ' `')}\` is cited by the spec but no longer exists in the code`, fix: 'Update or remove the requirement: the code it described has changed' })),
+      ...unclaimed.map(f => ({ tier: tierOf(f.kind, f.tier), text: `${f.kind} \`${f.key}\`${f.file ? ` (${f.file})` : ''} is in the code under ${sourcePaths.join(', ')} but the spec neither specifies it nor lists it under Out of Scope`, fix: `Add a requirement carrying <!-- docguard:fact ${f.kind} ${f.key} -->, or move that marker under ## Out of Scope with a reason` })),
+      ...vanished.map(id => ({ tier: tierOf(id.split(' ')[0]), text: `${id.replace(' ', ' `')}\` is cited by the spec but no longer exists in the code`, fix: 'Update or remove the requirement: the code it described has changed' })),
     ];
     for (const item of items.slice(0, MAX_PER_SPEC)) {
       findings.push(mkFinding({
         code: 'SPR007',
         validator: 'specRegistry',
+        parserTier: item.tier,
         severity: 'warn',
-        confidence: 'high',
+        confidence: isPatternTier(item.tier) ? 'low' : 'high',
         disposition: 'escalate',
         message: `${spec.specId} (as-built): ${item.text}`,
         location: spec.path,
@@ -106,8 +111,11 @@ export function validateSpecRegistry(projectDir, config = {}) {
       }));
     }
     if (items.length > MAX_PER_SPEC) {
+      const rest = items.slice(MAX_PER_SPEC);
+      const weak = rest.find(item => isPatternTier(item.tier));
       findings.push(mkFinding({
-        code: 'SPR007', validator: 'specRegistry', severity: 'warn', confidence: 'high', disposition: 'escalate',
+        code: 'SPR007', validator: 'specRegistry', severity: 'warn', disposition: 'escalate',
+        parserTier: weak ? weak.tier : 'not-applicable', confidence: weak ? 'low' : 'high',
         message: `${spec.specId} (as-built): …and ${items.length - MAX_PER_SPEC} more drifted fact(s)`,
         location: spec.path,
         suggestion: { kind: 'review', text: 'Resolve the facts above and re-run guard to see the rest' },

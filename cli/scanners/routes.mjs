@@ -21,7 +21,7 @@ import { resolve, join, relative, basename, extname, dirname } from 'node:path';
 import { resolveSourceRoots, readScannable, tierFor, summarizeTiers } from '../shared-source.mjs';
 import { DEFAULT_IGNORE_DIRS as IGNORE_DIRS, shouldIgnore, relPosix, isNonProductPath } from '../shared-ignore.mjs';
 import { extractJsRouteCalls, extractJsRouteObjects, extractJsMountsAndImports } from './js-ast.mjs';
-import { extractPythonFiles } from './py-ast.mjs';
+import { scanPythonWebRoutes } from './python-routes.mjs';
 import { extractGoRoutes } from './go-routes.mjs';
 import { extractSpringRoutes } from './spring-routes.mjs';
 import { extractRailsRoutes } from './rails-routes.mjs';
@@ -81,10 +81,6 @@ export function scanRoutesDeep(dir, stack, docTools, opts = {}) {
     routes.push(...scanHonoRoutes(dir, roots));
   }
 
-  if (framework.includes('Django')) {
-    routes.push(...scanDjangoRoutes(dir, ctx));
-  }
-
   if (named('Spring', 'Java')) {
     patternScan(named('Spring Boot', 'Spring', 'Java'), ['spring-boot'], scanSpringBootRoutes);
   }
@@ -101,8 +97,19 @@ export function scanRoutesDeep(dir, stack, docTools, opts = {}) {
     patternScan(named('Axum', 'Actix', 'Rocket', 'Warp', 'Rust'), ['axum', 'actix', 'rocket'], scanRustWebRoutes);
   }
 
-  if (framework.includes('FastAPI') || framework.includes('Flask')) {
-    routes.push(...scanFastAPIRoutes(dir, ctx));
+  // Python: one scan resolves FastAPI/Flask routers and Django URL
+  // configurations from the same module outlines (python-routes.mjs), and
+  // records each file's parser tier with the scan.
+  let limitations = null;
+  const django = framework.includes('Django');
+  const asgi = framework.includes('FastAPI') || framework.includes('Flask');
+  if (django || asgi) {
+    const pyFiles = findRouteFiles(dir, /\.py$/, { maxFiles });
+    if (pyFiles.truncated) scan.truncated = true;
+    const py = scanPythonWebRoutes(dir, { django, asgi }, { files: pyFiles });
+    scan.tierItems.push(...py.fileTiers);
+    limitations = py.limitations || null;
+    routes.push(...py);
   }
 
   // Deduplicate by method+path, and drop routes that live in non-product dirs
@@ -132,6 +139,7 @@ export function scanRoutesDeep(dir, stack, docTools, opts = {}) {
   // to know about. (calibrated-finding-channels#FR-011)
   const scanTier = scan.tierItems.length ? summarizeTiers(scan.tierItems) : null;
   if (scanTier) Object.defineProperty(kept, 'scanTier', { value: scanTier, enumerable: false });
+  if (limitations?.length) Object.defineProperty(kept, 'limitations', { value: limitations, enumerable: false });
   for (const pf of scan.patternFrameworks) pf.kept = kept.filter(r => pf.sources.includes(r.source)).length;
   Object.defineProperty(kept, 'scan', {
     enumerable: false,
@@ -549,107 +557,6 @@ function scanHonoRoutes(dir, roots = null) {
   return routes;
 }
 
-// ── Django ───────────────────────────────────────────────────────────────────
-
-function scanDjangoRoutes(dir, ctx) {
-  const routes = [];
-  const urlsFiles = findRouteFiles(dir, /urls\.py$/, { maxFiles: ctx.maxFiles });
-  if (urlsFiles.truncated) ctx.scan.truncated = true;
-
-  for (const filePath of urlsFiles) {
-    const content = readFileSafe(filePath);
-    if (!content) continue;
-
-    // Match: path('api/users/', views.user_list, name='user-list')
-    const pathPattern = /path\s*\(\s*['"]([^'"]+)['"]\s*,\s*(\w+[\w.]*)/g;
-    let match;
-    while ((match = pathPattern.exec(content)) !== null) {
-      routes.push({
-        method: 'ALL',
-        path: '/' + match[1],
-        handler: match[2],
-        file: relative(dir, filePath),
-        source: 'django',
-        auth: false,
-        description: '',
-      });
-    }
-  }
-
-  return routes;
-}
-
-// ── FastAPI / Flask ─────────────────────────────────────────────────────────
-
-function scanFastAPIRoutes(dir, ctx) {
-  const routes = [];
-  const pattern = /@(?:app|router)\s*\.\s*(get|post|put|delete|patch)\s*\(\s*['"]([^'"]+)['"]/gi;
-
-  const pyFiles = findRouteFiles(dir, /\.py$/, { maxFiles: ctx.maxFiles });
-  if (pyFiles.truncated) ctx.scan.truncated = true;
-  // AST-first: ONE python3 subprocess parses every file. `null` means Python is
-  // unavailable or the subprocess failed → regex fallback for all files. A
-  // per-file `ok:false` falls back for just that file. The AST form also reads
-  // multi-line decorators and Flask `methods=[...]` arrays the regex misses.
-  const astByFile = extractPythonFiles(pyFiles);
-  // `null` means the whole batch fell back — no usable interpreter. Name that
-  // once here so every route from this scan carries the same accurate reason
-  // rather than a per-file guess. (calibrated-finding-channels#FR-010/011)
-  const batchReason = astByFile === null ? 'No usable python3 interpreter; routes matched by pattern.' : null;
-
-  for (const filePath of pyFiles) {
-    const content = readFileSafe(filePath);
-    if (!content) continue;
-
-    const parsed = astByFile && astByFile[filePath];
-    const { tier, tierReason } = tierFor(filePath, parsed, batchReason);
-    const fileAuth = content.includes('Depends(') && content.includes('auth');
-    if (parsed && parsed.ok) {
-      for (const r of parsed.routes || []) {
-        routes.push({
-          method: r.method,
-          path: r.path,
-          handler: r.func || '',
-          file: relative(dir, filePath),
-          source: 'fastapi',
-          auth: fileAuth,
-          description: r.desc || '',
-          tier,
-          tierReason,
-        });
-      }
-      continue;
-    }
-
-    // The pattern tier. It cannot see a multi-line decorator or a Flask
-    // `methods=[...]` array, so a route may be missing entirely here — which
-    // is exactly why the tier travels with the result instead of staying a
-    // silent implementation detail.
-    let match;
-    const regex = new RegExp(pattern.source, 'gi');
-    while ((match = regex.exec(content)) !== null) {
-      routes.push({
-        method: match[1].toUpperCase(),
-        path: match[2],
-        handler: extractPythonFunctionName(content, match.index),
-        file: relative(dir, filePath),
-        source: 'fastapi',
-        auth: fileAuth,
-        description: extractPythonDocstring(content, match.index),
-        tier,
-        tierReason,
-      });
-    }
-  }
-
-  // A Python file that yielded no route still carries coverage information:
-  // if it was read by the pattern tier, the absence of a route from it is
-  // weak evidence. Record every file's tier with the scan so a caller can
-  // downgrade applicability even when the result list is empty.
-  for (const f of pyFiles) ctx.scan.tierItems.push({ ...tierFor(f, astByFile && astByFile[f], batchReason), file: relative(dir, f) });
-  return routes;
-}
-
 // ── Spring Boot (Java/Kotlin) ────────────────────────────────────────────────
 // What a Java/Kotlin file routes is read by spring-routes.mjs: class-level
 // @RequestMapping bases in every form, method-level mappings and
@@ -906,16 +813,4 @@ function extractNearbyComment(content, index) {
     if (line.startsWith('*') && !line.startsWith('*/')) return line.replace(/^\*\s*/, '');
   }
   return '';
-}
-
-function extractPythonFunctionName(content, index) {
-  const after = content.substring(index, index + 300);
-  const match = after.match(/def\s+(\w+)/);
-  return match ? match[1] : '';
-}
-
-function extractPythonDocstring(content, index) {
-  const after = content.substring(index, index + 500);
-  const match = after.match(/"""([^"]+)"""/);
-  return match ? match[1].trim().split('\n')[0] : '';
 }
