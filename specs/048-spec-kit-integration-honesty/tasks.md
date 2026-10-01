@@ -1,6 +1,14 @@
 # Tasks: Honest Spec Kit Integration
 
-**Status**: Not started.
+**Status**: Complete. Verified with the real `specify` 1.0.13: a generic
+project gets the 12 `speckit.docguard.*` commands in `.agent/commands/` and
+all three mandatory hooks resolve; a Claude project gets
+`.claude/skills/docguard-*` and no `.agent/`, with hooks resolving to
+`/speckit-docguard-*`; a registered 0.40.0 is re-registered to 0.42.1 by
+`init` and by `upgrade --apply`; Gemini gets no skill copies. Claim
+SPEC-KIT-HOOKS-RESOLVE-HONESTLY: 17/17 faults killed (`--confirm 3`); spec
+042's re-anchored F18/F19 re-probed. Full suite 2,755 tests green (one budget
+timing test re-run alone).
 **Spec**: `specs/048-spec-kit-integration-honesty/spec.md`
 **Plan**: `specs/048-spec-kit-integration-honesty/plan.md`
 
