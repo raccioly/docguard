@@ -20,6 +20,7 @@ import { c, PROFILES, CURRENT_SCHEMA_VERSION } from '../shared.mjs';
 import { detectCanonicalLayout, applyDocRoles, mappedDefaultPaths } from '../shared-doc-roles.mjs';
 import { autoDetectProjectType, getProjectTypeDefaults } from '../config.mjs';
 import { hasE2ESuite } from '../shared-source.mjs';
+import { detectProjectProfile } from '../scanners/project-type.mjs';
 import { ensureSkills, detectAgentMode, isSpecKitInitialized } from '../ensure-skills.mjs';
 import { delegateSpecKitInit, MIN_SPEC_KIT_VERSION } from '../spec-kit-delegation.mjs';
 import { safeWrite } from '../writers/generate-io.mjs';
@@ -214,6 +215,8 @@ async function confirmCanonicalLocation(projectDir, flags) {
  *
  * @returns {boolean} true if smart-detection fired and dispatched
  */
+const PYTHON_WEB_FRAMEWORKS = new Set(['Django', 'Flask', 'FastAPI', 'Starlette']);
+
 function shouldRunGenerate(projectDir, flags) {
   if (flags.skeleton)        return false; // explicit opt-out
   if (flags.skipPrompts)     return false; // non-interactive (CI) keeps deterministic skeleton path
@@ -238,6 +241,15 @@ function shouldRunGenerate(projectDir, flags) {
   for (const d of codeDirs) {
     if (existsSync(resolve(projectDir, d))) return true;
   }
+
+  // Python web layouts keep their code in a project package and app packages
+  // (Django: manage.py, mysite/, blog/), not in src/ or app/.
+  // @implements docguard.python-extraction#FR-011
+  if (existsSync(resolve(projectDir, 'manage.py'))) return true;
+  try {
+    const { ecosystems } = detectProjectProfile(projectDir);
+    if (ecosystems.some(e => e.language === 'Python' && PYTHON_WEB_FRAMEWORKS.has(e.framework))) return true;
+  } catch { /* fall through to the file count */ }
 
   // Fallback: count source files at top level (Python / Rust / Go projects
   // often don't use src/ — files live at the root).

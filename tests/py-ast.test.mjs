@@ -13,6 +13,8 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
 import { pyAstAvailable, extractPythonFiles } from '../cli/scanners/py-ast.mjs';
+import { scanPythonWebRoutes } from '../cli/scanners/python-routes.mjs';
+import { scanPythonModels } from '../cli/scanners/python-models.mjs';
 
 const HAS_PY = pyAstAvailable();
 
@@ -29,8 +31,16 @@ describe('py-ast — Python AST extraction', { skip: HAS_PY ? false : 'python3 n
     }
   }
 
+  // Routes and models are resolved from the module outline the extractor
+  // emits (specs/046-python-extraction); these assert through the resolvers.
+  function project(src) {
+    const dir = mkdtempSync(join(tmpdir(), 'docguard-pyast-'));
+    writeFileSync(join(dir, 'mod.py'), src);
+    return dir;
+  }
+
   it('extracts FastAPI/APIRouter routes with handler + docstring', () => {
-    const e = parse(
+    const dir = project(
       'from fastapi import APIRouter\n' +
       'router = APIRouter()\n' +
       '@router.get("/users/{id}")\n' +
@@ -38,47 +48,64 @@ describe('py-ast — Python AST extraction', { skip: HAS_PY ? false : 'python3 n
       '    """Fetch one user."""\n' +
       '    ...\n'
     );
-    assert.ok(e.ok);
-    assert.deepEqual(e.routes, [{ method: 'GET', path: '/users/{id}', func: 'get_user', desc: 'Fetch one user.' }]);
+    try {
+      const routes = scanPythonWebRoutes(dir, { asgi: true });
+      assert.equal(routes.scanTier.tier, 'py-ast');
+      assert.deepEqual(routes.map(r => [r.method, r.path, r.handler, r.description]), [['GET', '/users/{id}', 'get_user', 'Fetch one user.']]);
+    } finally { rmSync(dir, { recursive: true, force: true }); }
   });
 
   it('expands a Flask methods=[...] array into one route per method', () => {
-    const e = parse(
+    const dir = project(
+      'from flask import Flask\n' +
+      'app = Flask(__name__)\n' +
       '@app.route("/legacy", methods=["GET", "POST"])\n' +
       'def legacy(): ...\n'
     );
-    const set = e.routes.map(r => `${r.method} ${r.path}`).sort();
-    assert.deepEqual(set, ['GET /legacy', 'POST /legacy']);
+    try {
+      const set = scanPythonWebRoutes(dir, { asgi: true }).map(r => `${r.method} ${r.path}`).sort();
+      assert.deepEqual(set, ['GET /legacy', 'POST /legacy']);
+    } finally { rmSync(dir, { recursive: true, force: true }); }
   });
 
   it('extracts Pydantic fields with optional detection', () => {
-    const e = parse(
+    const dir = project(
+      'from pydantic import BaseModel\n' +
+      'from typing import Optional\n' +
       'class User(BaseModel):\n' +
       '    id: int\n' +
       '    name: str\n' +
       '    nickname: Optional[str] = None\n'
     );
-    const u = e.schemas.find(s => s.name === 'User');
-    assert.strictEqual(u.kind, 'pydantic');
-    assert.deepEqual(u.fields.map(f => f.name), ['id', 'name', 'nickname']);
-    assert.strictEqual(u.fields.find(f => f.name === 'id').required, true);
-    assert.strictEqual(u.fields.find(f => f.name === 'nickname').required, false);
+    try {
+      const u = scanPythonModels(dir).entities.find(s => s.name === 'User');
+      assert.strictEqual(u.source, 'pydantic');
+      assert.deepEqual(u.fields.map(f => f.name), ['id', 'name', 'nickname']);
+      assert.strictEqual(u.fields.find(f => f.name === 'id').required, true);
+      assert.strictEqual(u.fields.find(f => f.name === 'nickname').required, false);
+    } finally { rmSync(dir, { recursive: true, force: true }); }
   });
 
-  it('extracts SQLAlchemy columns + relationships', () => {
-    const e = parse(
+  it('extracts SQLAlchemy columns; a relationship attribute is a relationship, not a column', () => {
+    const dir = project(
       'class Account(Base):\n' +
       '    __tablename__ = "accounts"\n' +
       '    id = Column(Integer, primary_key=True)\n' +
       '    note = Column(String, nullable=True)\n' +
-      '    owner = relationship("User")\n'
+      '    owner = relationship("User")\n' +
+      'class User(Base):\n' +
+      '    __tablename__ = "users"\n' +
+      '    id = Column(Integer, primary_key=True)\n'
     );
-    const a = e.schemas.find(s => s.name === 'Account');
-    assert.strictEqual(a.kind, 'sqlalchemy');
-    assert.deepEqual(a.fields.map(f => f.name).sort(), ['id', 'note', 'owner']);
-    assert.strictEqual(a.fields.find(f => f.name === 'note').required, false); // nullable=True
-    assert.strictEqual(a.fields.find(f => f.name === 'id').required, true);
-    assert.deepEqual(a.rels, ['User']);
+    try {
+      const r = scanPythonModels(dir);
+      const a = r.entities.find(s => s.name === 'Account');
+      assert.strictEqual(a.source, 'sqlalchemy');
+      assert.deepEqual(a.fields.map(f => f.name).sort(), ['id', 'note']);
+      assert.strictEqual(a.fields.find(f => f.name === 'note').required, false); // nullable=True
+      assert.strictEqual(a.fields.find(f => f.name === 'id').required, true);
+      assert.deepEqual(r.relationships.map(x => [x.from, x.to, x.field]), [['Account', 'User', 'owner']]);
+    } finally { rmSync(dir, { recursive: true, force: true }); }
   });
 
   it('reports ok:false for an unparseable file (caller falls back to regex)', () => {
@@ -87,8 +114,10 @@ describe('py-ast — Python AST extraction', { skip: HAS_PY ? false : 'python3 n
   });
 
   it('does not misclassify a plain class as a model', () => {
-    const e = parse('class Plain:\n    x = 1\n    def m(self): ...\n');
-    assert.deepEqual(e.schemas, []);
+    const dir = project('class Plain:\n    x = 1\n    def m(self): ...\n');
+    try {
+      assert.deepEqual(scanPythonModels(dir).entities, []);
+    } finally { rmSync(dir, { recursive: true, force: true }); }
   });
 
   /** @req docguard.language-repository-coverage#FR-001 */
