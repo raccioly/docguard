@@ -2063,7 +2063,7 @@ Behaviour changes:
     `latest` still works when asked for.
   - The Homebrew tap is published by the release workflow. The formula is
 
-<!-- truncated: 4625 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 4634 more lines — read CHANGELOG.md directly -->
 
 ---
 

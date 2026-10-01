@@ -42,7 +42,9 @@ Three defects appeared on real repositories:
 - **FR-001**: Config loading MUST normalize `requiredFiles.agentFile` to an array (a string becomes a one-element array) so every reader gets one shape.
 - **FR-002**: `resolveDocRole` MUST, when the role has no explicit mapping and its default path does not exist, resolve to the single canonical document whose file name equals the role's default file name; with zero or several, it MUST return the default path.
 - **FR-003**: MET004 MUST read a `Dependencies` table row only when the table's header names that column as a count; non-table label lines keep today's behaviour.
-- **FR-004**: The CHANGELOG MUST describe the three fixes.
+- **FR-004**: The CHANGELOG MUST describe the fixes.
+- **FR-005**: MET004 MUST treat "N external dependencies" as a package count only when the line names software (npm, package, runtime, library, install, …); "zero/no/none external dependencies" and the other qualifiers (runtime, production, npm, package, third-party) keep today's behaviour, except that "no/zero/none … dependency" in the singular describes a change, not the package, and is ignored. (Found on the second dogfood pass: "2 External Dependencies" in a transition-plan template.)
+- **FR-006**: MET003 MUST compare "N tests" with the suite only when the line is about today's whole suite: not pinned to a commit SHA, not a subset (frontend, backend, unit, integration, e2e, …), and not in a Spec Kit artifact under `specs/` or a file named for a date. (Found on the second dogfood pass: "49 frontend files (606 tests) pass on `9c55dac6`", a feature's `research.md`, and a dated remediation plan.)
 
 ## Success Criteria *(mandatory)*
 

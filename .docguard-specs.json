@@ -2812,6 +2812,8 @@
           "docguard.dogfood-findings#FR-002",
           "docguard.dogfood-findings#FR-003",
           "docguard.dogfood-findings#FR-004",
+          "docguard.dogfood-findings#FR-005",
+          "docguard.dogfood-findings#FR-006",
           "docguard.dogfood-findings#SC-001",
           "docguard.dogfood-findings#SC-002"
         ]
@@ -2820,7 +2822,7 @@
         "artifacts": [
           {
             "path": "specs/050-dogfood-findings/spec.md",
-            "digest": "sha256:bf1a0793d0d9b4ee68cb1bdb71443fa67615638200aa61abd109c28266319d76"
+            "digest": "sha256:00263d15848d6c919cd2e9f12cfa111c09f287aafd1b67293d7f7e8d3d61b3e6"
           },
           {
             "path": "specs/050-dogfood-findings/plan.md",
@@ -2828,7 +2830,7 @@
           },
           {
             "path": "specs/050-dogfood-findings/tasks.md",
-            "digest": "sha256:b0ff2a94a897a3a24f4b7c6cf8dfd404d306ece664d0ff855c3e52565638396b"
+            "digest": "sha256:425441987779e817ed6c3aa9454362494e007e1a7b4d515f4863c29080b8ec2d"
           }
         ],
         "taskCompletion": {
@@ -2844,7 +2846,22 @@
           {
             "requirementId": "FR-003",
             "file": "cli/validators/metrics-consistency.mjs",
-            "line": 349
+            "line": 374
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/validators/metrics-consistency.mjs",
+            "line": 353
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/validators/metrics-consistency.mjs",
+            "line": 430
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/validators/metrics-consistency.mjs",
+            "line": 444
           }
         ],
         "testEvidence": [
@@ -2869,14 +2886,24 @@
             "line": 9
           },
           {
-            "requirementId": "SC-001",
+            "requirementId": "FR-005",
             "file": "tests/dogfood-findings.test.mjs",
             "line": 10
           },
           {
-            "requirementId": "SC-002",
+            "requirementId": "FR-006",
             "file": "tests/dogfood-findings.test.mjs",
             "line": 11
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/dogfood-findings.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/dogfood-findings.test.mjs",
+            "line": 13
           }
         ]
       }

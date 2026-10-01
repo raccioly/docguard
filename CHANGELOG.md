@@ -492,6 +492,15 @@ Behaviour changes:
   - Metrics-Consistency read `| Dependencies | 5 |` in a scoring table's
     `Max Points` column as "claims 5 runtime dependencies". A table row now
     counts only when its column header names a count.
+  - Metrics-Consistency read "2 External Dependencies" in a plan template as a
+    package count. A number of "external dependencies" now counts only when
+    its line names software (npm, package, runtime, library, install);
+    "zero external dependencies" is still checked. "No npm dependency" in the
+    singular (a change that added none) is no longer read as the package count.
+  - Metrics-Consistency (MET003) compared every "N tests" with the suite,
+    including a commit-pinned subset ("49 frontend files (606 tests) pass on
+    `9c55dac6`"), a feature's own spec research, and a dated plan. It now
+    checks only claims about today's whole suite.
 
 - **`docguard init` no longer reports a Spec Kit integration that does not
   work** (`specs/048-spec-kit-integration-honesty`, spec 048). Each defect was

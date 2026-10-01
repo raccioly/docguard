@@ -7,6 +7,8 @@
  * @req docguard.dogfood-findings#FR-002
  * @req docguard.dogfood-findings#FR-003
  * @req docguard.dogfood-findings#FR-004
+ * @req docguard.dogfood-findings#FR-005
+ * @req docguard.dogfood-findings#FR-006
  * @req docguard.dogfood-findings#SC-001
  * @req docguard.dogfood-findings#SC-002
  */
@@ -18,7 +20,7 @@ import { dirname, join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { loadConfig } from '../cli/config.mjs';
 import { resolveDocRole } from '../cli/shared-doc-roles.mjs';
-import { validateMetricsConsistency } from '../cli/validators/metrics-consistency.mjs';
+import { validateMetricsConsistency, isWholeSuiteClaim, isSuiteClaimFile } from '../cli/validators/metrics-consistency.mjs';
 
 const CLI = resolve('cli/docguard.mjs');
 const temps = [];
@@ -108,6 +110,48 @@ describe('a dependency count is read only where it is one (FR-003)', () => {
 
   it('a label line still is', () => {
     assert.equal(met004({ 'docs/facts.md': '**Dependencies:** 5\n' }).length, 1);
+  });
+
+  it('"2 External Dependencies" in a plan is not a package count (FR-005)', () => {
+    assert.equal(met004({ 'docs/plan.md': '### 2 External Dependencies\n\nVendor sign-off and network cutover.\n' }).length, 0);
+  });
+
+  it('"no npm dependency" (singular) describes a change, not the package (FR-005)', () => {
+    assert.equal(met004({ 'docs/program.md': 'Use a small built-in map (no npm dependency — adding one is stop-and-ask).\n' }).length, 0);
+    assert.equal(met004({ 'README.md': 'No npm dependencies at runtime.\n' }).length, 1);
+  });
+
+  it('"zero external dependencies" and a software-context count still are (FR-005)', () => {
+    assert.equal(met004({ 'README.md': 'Ships with zero external dependencies.\n' }).length, 1);
+    assert.equal(met004({ 'README.md': 'The package has 2 external dependencies installed from npm.\n' }).length, 1);
+  });
+});
+
+describe('"N tests" is checked only as a claim about today\'s whole suite (FR-006)', () => {
+  it('a commit-pinned or subset count is not a whole-suite claim', () => {
+    assert.equal(isWholeSuiteClaim('Automated: 49 frontend files (606 tests) pass on `9c55dac6`'), false);
+    assert.equal(isWholeSuiteClaim('All 116 tests pass at 9c55dac6e1'), false);
+    assert.equal(isWholeSuiteClaim('The 12 unit tests pass'), false);
+    assert.equal(isWholeSuiteClaim('The suite has 116 tests'), true);
+    assert.equal(isWholeSuiteClaim('`npm test` runs 116 tests'), true);
+  });
+
+  it('spec artifacts and dated records are not suite documents', () => {
+    assert.equal(isSuiteClaimFile('specs/20260928-093212-broadcast/research.md'), false);
+    assert.equal(isSuiteClaimFile('docs-implementation/audits/remediation-plan-2026-07-11.md'), false);
+    assert.equal(isSuiteClaimFile('docs-implementation/TESTING.md'), true);
+    assert.equal(isSuiteClaimFile('README.md'), true);
+  });
+
+  it('end to end: a stale suite count fires, a subset in a spec does not', () => {
+    const files = {
+      'package.json': JSON.stringify({ name: 'acme' }),
+      'tests/a.test.mjs': Array.from({ length: 30 }, (_, i) => `test('t${i}', () => {});`).join('\n'),
+      'README.md': 'The suite has 12 tests. Run `npm test`.\n',
+      'specs/001-x/research.md': 'The suite gained 12 tests here; `npm test` passes.\n',
+    };
+    const found = validateMetricsConsistency(project(files), {}).findings.filter(f => f.code === 'MET003');
+    assert.deepEqual(found.map(f => f.location.split(':')[0]), ['README.md']);
   });
 });
 

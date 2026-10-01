@@ -12,7 +12,7 @@
 
 - [x] T002 `cli/config.mjs`: normalize `requiredFiles.agentFile` (FR-001).
 - [x] T003 `cli/shared-doc-roles.mjs`: unique same-named canonical fallback (FR-002).
-- [x] T004 `cli/validators/metrics-consistency.mjs`: header-qualified dependency rows (FR-003).
+- [x] T004 `cli/validators/metrics-consistency.mjs`: header-qualified dependency rows (FR-003); "external dependencies" counts need software context (FR-005); MET003 whole-suite claims only (FR-006).
 
 ## Phase 3: Docs and verification
 
