@@ -4976,6 +4976,408 @@
           }
         }
       ]
+    },
+    {
+      "id": "JS-TS-EXTRACTION-MATCHES-TRUTH",
+      "statement": "On Express, Next.js and Prisma projects the JS/TS scanners report every route once at its mounted path (router.route() chains included), judge auth per route (own middleware or handler, earlier use(auth), auth mount, Next.js middleware matcher), read destructured env vars and record each read site with file, line and default, scan Next.js pages/components, resolve tsconfig path aliases, find Drizzle and Mongoose schemas once with every field and relation, report Prisma enums apart and each relation once, name ORM/UI/auth libraries, cite as-built facts by file and line without duplicating Next.js handlers, and share one entity discovery between guard and generate.",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/045-js-ts-extraction/spec.md#FR-002"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (spec 045)"
+      },
+      "defendedBy": [
+        "tests/js-ts-extraction.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "router.route() chains are not read (AST tier).",
+          "faultClass": "other",
+          "file": "cli/scanners/js-ast.mjs",
+          "find": "const chain = routeChainBase(callee.object, routeBindings, constants);",
+          "replace": "const chain = null;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "router.route() chains are not read when the file does not parse.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/routes.mjs",
+          "find": "      for (const r of routeChainsByPattern(content)) emit(r);",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "Auth middleware on a mount does not protect the routes under it.",
+          "faultClass": "other",
+          "file": "cli/scanners/routes.mjs",
+          "find": "auth: Boolean(r.auth || target.auth),",
+          "replace": "auth: Boolean(r.auth),",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "The pattern tier judges auth from req.user anywhere in the file.",
+          "faultClass": "other",
+          "file": "cli/scanners/routes.mjs",
+          "find": "emit({ method: match[1], path: match[2], start: match.index, receiver: null, auth: statementAuth(content, match.index) });",
+          "replace": "emit({ method: match[1], path: match[2], start: match.index, receiver: null, auth: /req\\.user/.test(content) });",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "use(auth) protects routes registered before it.",
+          "faultClass": "other",
+          "file": "cli/scanners/js-ast.mjs",
+          "find": "uses.some(u => u.receiver === receiver && u.start < start && prefixCovers(u.prefix, path));",
+          "replace": "uses.some(u => u.receiver === receiver && prefixCovers(u.prefix, path));",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "A Next.js handler is judged by the whole file.",
+          "faultClass": "other",
+          "file": "cli/scanners/routes.mjs",
+          "find": "auth: (viaAst ? viaAst.auth : exportSegmentAuth(content, match.index)) || middlewareAuth(apiPath),",
+          "replace": "auth: AUTH_CHECK_RE.test(content) || middlewareAuth(apiPath),",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F7",
+          "description": "The Next.js middleware matcher is ignored.",
+          "faultClass": "other",
+          "file": "cli/scanners/routes.mjs",
+          "find": "auth: (viaAst ? viaAst.auth : exportSegmentAuth(content, match.index)) || middlewareAuth(apiPath),",
+          "replace": "auth: (viaAst ? viaAst.auth : exportSegmentAuth(content, match.index)),",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F8",
+          "description": "Env names destructured from process.env are not read.",
+          "faultClass": "other",
+          "file": "cli/shared-source.mjs",
+          "find": "for (const read of destructuredEnvReads(content, kind)) {",
+          "replace": "for (const read of []) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F9",
+          "description": "No read site records a default.",
+          "faultClass": "other",
+          "file": "cli/shared-source.mjs",
+          "find": "names.sites.get(name).push({ file, line, defaulted: fallback !== undefined,",
+          "replace": "names.sites.get(name).push({ file, line, defaulted: false,",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F10",
+          "description": "A ?? or || fallback after a dotted read is not recorded.",
+          "faultClass": "other",
+          "file": "cli/shared-source.mjs",
+          "find": "recordSite(m[1], file, lineOf(lineStarts, m.index), readFallback(content.slice(end, end + 200), i));",
+          "replace": "recordSite(m[1], file, lineOf(lineStarts, m.index), undefined);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F11",
+          "description": "Next.js pages/ and components/ are not source roots.",
+          "faultClass": "statement-deleted",
+          "file": "cli/shared-source.mjs",
+          "find": "    for (const nr of NEXT_JS_ROOTS) add(resolve(projectDir, nr));",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F12",
+          "description": "Aliased imports add no edge.",
+          "faultClass": "other",
+          "file": "cli/scanners/import-graph.mjs",
+          "find": "const aliased = resolveAlias(file, imp.spec);",
+          "replace": "const aliased = null;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F13",
+          "description": "tsconfig extends is not followed.",
+          "faultClass": "other",
+          "file": "cli/scanners/ts-paths.mjs",
+          "find": ".map(value => extendsTarget(configFile, value)).filter(Boolean);",
+          "replace": ".map(() => null).filter(Boolean);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F14",
+          "description": "drizzle.config schema is not read.",
+          "faultClass": "other",
+          "file": "cli/scanners/schemas.mjs",
+          "find": "const configured = drizzleConfigFiles(dir);",
+          "replace": "const configured = [];",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F15",
+          "description": "References resolve to the variable, not its table.",
+          "faultClass": "other",
+          "file": "cli/scanners/schemas.mjs",
+          "find": "const varToTable = new Map(tables.map(t => [t.name, t.table]));",
+          "replace": "const varToTable = new Map();",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F16",
+          "description": "Drizzle .references() is dropped.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/schemas.mjs",
+          "find": "    if (ref) field._ref = ref[1];",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F17",
+          "description": "A pgEnum column is typed by its binding name.",
+          "faultClass": "other",
+          "file": "cli/scanners/schemas.mjs",
+          "find": "type: enumVars.has(builder) ? 'enum' : mapDrizzleType(builder),",
+          "replace": "type: mapDrizzleType(builder),",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F18",
+          "description": "Drizzle tables are not read when the file does not parse.",
+          "faultClass": "other",
+          "file": "cli/scanners/schemas.mjs",
+          "find": "const found = extractJsSchemaBodies(content, abs) ?? drizzleTablesByPattern(content);",
+          "replace": "const found = extractJsSchemaBodies(content, abs) ?? [];",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F19",
+          "description": "A Mongoose { type } object is not read as one field.",
+          "faultClass": "other",
+          "file": "cli/scanners/schemas.mjs",
+          "find": "      if (props.has('type')) {",
+          "replace": "      if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F20",
+          "description": "An array of Mongoose refs is not a relation.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/schemas.mjs",
+          "find": "        if (ref) { field._ref = ref; field._many = true; }",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F21",
+          "description": "The Mongoose model name is ignored.",
+          "faultClass": "other",
+          "file": "cli/scanners/schemas.mjs",
+          "find": "const name = models.get(s.name) ?? (bare.charAt(0).toUpperCase() + bare.slice(1));",
+          "replace": "const name = bare.charAt(0).toUpperCase() + bare.slice(1);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F22",
+          "description": "Prisma enums are listed as entities.",
+          "faultClass": "other",
+          "file": "cli/scanners/schemas.mjs",
+          "find": "  entities.push(...orm.prisma.entities);",
+          "replace": "  entities.push(...orm.prisma.entities, ...orm.prisma.enums);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F23",
+          "description": "An implicit many-to-many relation is drawn from both sides.",
+          "faultClass": "other",
+          "file": "cli/scanners/schemas.mjs",
+          "find": "if (f.model < f.target || (f.model === f.target && f.name < other.name)) {",
+          "replace": "if (true) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F24",
+          "description": "A Prisma model ends at the first closing brace.",
+          "faultClass": "other",
+          "file": "cli/scanners/schemas.mjs",
+          "find": "const close = matchingBracket(content, open);\n      if (close < 0) break;",
+          "replace": "const close = content.indexOf('}', open);\n      if (close < 0) break;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F25",
+          "description": "ER types keep their description (\"integer (auto)\").",
+          "faultClass": "other",
+          "file": "cli/scanners/schemas.mjs",
+          "find": "const type = String(f.type || 'unknown').trim().split(/[\\s(]/)[0] || 'unknown';",
+          "replace": "const type = String(f.type || 'unknown');",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F26",
+          "description": "The profile names no libraries.",
+          "faultClass": "other",
+          "file": "cli/scanners/project-type.mjs",
+          "find": "libraries: jsLibraries(lang, deps, cls.framework),",
+          "replace": "libraries: [],",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F27",
+          "description": "The tech-stack table has no Libraries column.",
+          "faultClass": "other",
+          "file": "cli/scanners/memory-plan.mjs",
+          "find": "const withLibraries = profile.ecosystems.some(e => (e.libraries || []).length > 0);",
+          "replace": "const withLibraries = false;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F28",
+          "description": "A Next.js handler export is a second as-built fact.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/as-built.mjs",
+          "find": "      if (handlerExports.has(`${file}#${name}`)) continue;",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F29",
+          "description": "As-built env facts carry no file or line.",
+          "faultClass": "other",
+          "file": "cli/scanners/as-built.mjs",
+          "find": "add('env', name, first?.file ?? null, first?.line ?? null);",
+          "replace": "add('env', name);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F30",
+          "description": "Express routes carry no line.",
+          "faultClass": "other",
+          "file": "cli/scanners/routes.mjs",
+          "find": "line: r.line ?? lineAt(content, r.start),",
+          "replace": "line: null,",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F31",
+          "description": "Guard's schema check does not use the shared discovery.",
+          "faultClass": "other",
+          "file": "cli/validators/schema-sync.mjs",
+          "find": "const orm = scanOrmEntities(projectDir, config);",
+          "replace": "const orm = { prisma: { entities: [] }, drizzle: { entities: [] }, mongoose: { entities: [] } };",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F32",
+          "description": "The DATA-MODEL writer drops the enums the scanner reports apart.",
+          "faultClass": "other",
+          "file": "cli/writers/doc-generators.mjs",
+          "find": "entities = [...deepSchemas.entities, ...(deepSchemas.enums || [])];",
+          "replace": "entities = deepSchemas.entities;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        }
+      ]
     }
   ]
 }

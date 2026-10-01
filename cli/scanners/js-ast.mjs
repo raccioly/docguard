@@ -96,6 +96,69 @@ export function walk(node, visit) {
   }
 }
 
+/**
+ * Split source text at top-level `sep` (outside brackets, strings and
+ * comments). Pure text, so both parser tiers read object bodies the same way.
+ * @returns {string[]}
+ */
+export function splitTopLevel(text, sep = ',') {
+  const parts = [];
+  let depth = 0, start = 0;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === '"' || ch === "'" || ch === '`') {
+      for (i++; i < text.length && text[i] !== ch; i++) if (text[i] === '\\') i++;
+      continue;
+    }
+    if (ch === '/' && text[i + 1] === '/') { while (i < text.length && text[i] !== '\n') i++; continue; }
+    if (ch === '/' && text[i + 1] === '*') { const end = text.indexOf('*/', i + 2); i = end < 0 ? text.length : end + 1; continue; }
+    if (ch === '(' || ch === '[' || ch === '{') depth++;
+    else if (ch === ')' || ch === ']' || ch === '}') depth--;
+    else if (ch === sep && depth === 0) { parts.push(text.slice(start, i)); start = i + 1; }
+  }
+  parts.push(text.slice(start));
+  return parts;
+}
+
+/** Strip `//` and block comments outside strings. */
+export function stripComments(text) {
+  let out = '';
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === '"' || ch === "'" || ch === '`') {
+      const start = i;
+      for (i++; i < text.length && text[i] !== ch; i++) if (text[i] === '\\') i++;
+      out += text.slice(start, i + 1);
+      continue;
+    }
+    if (ch === '/' && text[i + 1] === '/') { while (i < text.length && text[i] !== '\n') i++; out += '\n'; continue; }
+    if (ch === '/' && text[i + 1] === '*') { const end = text.indexOf('*/', i + 2); i = end < 0 ? text.length : end + 1; out += ' '; continue; }
+    out += ch;
+  }
+  return out;
+}
+
+/** Index of the bracket that closes the one at `open` (strings and comments skipped); -1 if none. */
+export function matchingBracket(text, open) {
+  const close = { '(': ')', '[': ']', '{': '}' };
+  const stack = [];
+  for (let i = open; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === '"' || ch === "'" || ch === '`') {
+      for (i++; i < text.length && text[i] !== ch; i++) if (text[i] === '\\') i++;
+      continue;
+    }
+    if (ch === '/' && text[i + 1] === '/') { while (i < text.length && text[i] !== '\n') i++; continue; }
+    if (ch === '/' && text[i + 1] === '*') { const end = text.indexOf('*/', i + 2); if (end < 0) return -1; i = end + 1; continue; }
+    if (close[ch]) stack.push(close[ch]);
+    else if (ch === ')' || ch === ']' || ch === '}') {
+      if (stack.pop() !== ch) return -1;
+      if (stack.length === 0) return i;
+    }
+  }
+  return -1;
+}
+
 /** Inner source text of an ObjectExpression node, i.e. between its `{` and `}`. */
 function objectInner(content, objNode) {
   if (!objNode || objNode.type !== 'ObjectExpression') return '';
@@ -256,6 +319,128 @@ function looksLikeRouteReceiver(name, bindings) {
   return bindings.has(name) || /(?:app|server|router|routes)$/i.test(name);
 }
 
+// ── Auth evidence (docguard.js-ts-extraction#FR-002) ────────────────────────
+//
+// Auth is a property of ONE route. It is read from that route's own middleware
+// arguments, its own handler body, an earlier `use(auth)` on its receiver, or a
+// mount above it — never from text elsewhere in the file, which marked public
+// `login`/`register` routes as protected whenever a sibling read `req.user`.
+
+const AUTH_WORDS = new Set([
+  'auth', 'authn', 'authz', 'authenticate', 'authenticated', 'authentication',
+  'authorize', 'authorized', 'authorization', 'authed', 'jwt', 'protect',
+  'protected', 'passport', 'guard', 'clerk',
+]);
+const AUTH_VERBS = new Set(['require', 'requires', 'ensure', 'verify', 'check', 'is', 'has', 'restrict', 'must']);
+const AUTH_OBJECTS = new Set([
+  'user', 'login', 'logged', 'session', 'role', 'roles', 'admin', 'scope', 'scopes',
+  'permission', 'permissions', 'token', 'signed', 'member', 'owner',
+]);
+const NOT_MIDDLEWARE_TAIL = new Set(['router', 'routes', 'route', 'controller', 'controllers', 'handler', 'handlers', 'service', 'services']);
+
+/**
+ * True when an identifier names auth middleware: `requireAuth`, `authenticate`,
+ * `verifyToken`, `ensureLoggedIn`, `checkJwt`, `requireRole`, `authGuard`, ...
+ * Words are split on camelCase and `_`, so `authorsList` or `oauthCallback`
+ * are not auth, and `authRouter` (a router) is not middleware.
+ * @implements docguard.js-ts-extraction#FR-002
+ */
+export function isAuthMiddlewareName(name) {
+  if (!name || typeof name !== 'string') return false;
+  const words = name.replace(/([a-z0-9])([A-Z])/g, '$1 $2').split(/[\s_\-.$]+/).filter(Boolean).map(w => w.toLowerCase());
+  if (words.length === 0 || NOT_MIDDLEWARE_TAIL.has(words[words.length - 1])) return false;
+  if (words.some(w => AUTH_WORDS.has(w))) return true;
+  if (AUTH_VERBS.has(words[0]) && words.slice(1).some(w => AUTH_OBJECTS.has(w))) return true;
+  return /^(?:adminOnly|loggedIn|restrictTo|expressjwt)$/i.test(name);
+}
+
+/** An auth check inside a handler body (a guard, not a bare `req.user` read). */
+export const AUTH_CHECK_RE = new RegExp([
+  String.raw`\b(?:getServerSession|getSession|getToken|currentUser|verifyIdToken|getAuth|validateRequest)\s*\(`,
+  String.raw`\bauth\s*\(\s*\)`,
+  String.raw`\bjwt\s*\.\s*verify\s*\(`,
+  String.raw`\bverify(?:Token|Jwt|JWT|Session|Auth)\s*\(`,
+  String.raw`\b(?:requireAuth|requireUser|requireSession|ensureAuthenticated|isAuthenticated)\s*\(`,
+  String.raw`\bif\s*\(\s*!\s*(?:(?:req|request|ctx|c)\s*\.\s*)?(?:user|session|auth|token|userId)\b`,
+  String.raw`\bstatus\s*\(\s*40[13]\s*\)`,
+  String.raw`\bstatus\s*:\s*40[13]\b`,
+  String.raw`\bUnauthori[sz]ed(?:Error|Exception)\b`,
+].join('|'));
+
+/** Is this call argument auth middleware (`requireAuth`, `passport.authenticate(...)`, `[auth, admin]`)? */
+function isAuthMiddlewareNode(node) {
+  if (!node) return false;
+  if (node.type === 'Identifier') return isAuthMiddlewareName(node.name);
+  if (node.type === 'MemberExpression' && !node.computed) {
+    return isAuthMiddlewareName(node.property?.name) || (node.object?.type === 'Identifier' && isAuthMiddlewareName(node.object.name));
+  }
+  if (node.type === 'CallExpression') {
+    const callee = node.callee;
+    if (callee?.type === 'Identifier') return isAuthMiddlewareName(callee.name);
+    if (callee?.type === 'MemberExpression' && !callee.computed) {
+      return isAuthMiddlewareName(callee.property?.name) || (callee.object?.type === 'Identifier' && isAuthMiddlewareName(callee.object.name));
+    }
+    return false;
+  }
+  if (node.type === 'ArrayExpression') return (node.elements || []).some(isAuthMiddlewareNode);
+  // Fastify route options: `{ preHandler: [fastify.authenticate] }`, `onRequest`, ...
+  if (node.type === 'ObjectExpression') {
+    return (node.properties || []).some(p => HOOK_KEYS.has(propKeyName(p)) && isAuthMiddlewareNode(p.value));
+  }
+  return false;
+}
+
+const HOOK_KEYS = new Set(['preHandler', 'onRequest', 'preValidation', 'preParsing', 'beforeHandler', 'middleware', 'middlewares']);
+
+const FUNCTION_TYPES = new Set(['FunctionExpression', 'ArrowFunctionExpression', 'FunctionDeclaration']);
+
+/** Same-file function bodies by name: `function x(){}` and `const x = () => {}`. */
+function functionBodies(ast) {
+  const bodies = new Map();
+  walk(ast, node => {
+    if (node.type === 'FunctionDeclaration' && node.id?.name) bodies.set(node.id.name, node);
+    if (node.type === 'VariableDeclarator' && node.id?.type === 'Identifier' && FUNCTION_TYPES.has(node.init?.type)) bodies.set(node.id.name, node.init);
+  });
+  return bodies;
+}
+
+/**
+ * The route's own auth evidence: middleware among `middleware`, or an auth
+ * check in the handler (an inline function, or a same-file named function).
+ */
+function ownAuth(content, middleware, handler, bodies) {
+  if (middleware.some(isAuthMiddlewareNode)) return true;
+  let fn = null;
+  if (handler && FUNCTION_TYPES.has(handler.type)) fn = handler;
+  else if (handler?.type === 'Identifier') fn = bodies.get(handler.name) || null;
+  else if (handler?.type === 'CallExpression' && isAuthMiddlewareNode(handler)) return true; // withAuth(handler)
+  if (!fn) return false;
+  return AUTH_CHECK_RE.test(String(content).slice(fn.start, fn.end));
+}
+
+/** `<receiver>.use([path,] …auth…)` calls: auth applied to later routes. */
+function authUses(ast, constants) {
+  const uses = [];
+  walk(ast, node => {
+    if (node.type !== 'CallExpression' || node.callee?.type !== 'MemberExpression' || node.callee.computed) return;
+    if (node.callee.property?.name !== 'use' || node.callee.object?.type !== 'Identifier') return;
+    const args = node.arguments || [];
+    const prefix = pathArgValue(args[0], constants, false);
+    const hasPrefix = typeof prefix === 'string' && (prefix.startsWith('/') || prefix === '*');
+    const rest = hasPrefix ? args.slice(1) : args;
+    if (rest.some(isAuthMiddlewareNode)) {
+      uses.push({ receiver: node.callee.object.name, prefix: hasPrefix && prefix !== '*' ? prefix : '', start: node.start ?? 0 });
+    }
+  });
+  return uses;
+}
+
+function prefixCovers(prefix, path) {
+  if (!prefix || prefix === '/') return true;
+  const p = prefix.replace(/\/+$/, '');
+  return path === p || path.startsWith(`${p}/`);
+}
+
 /** Extract a statically knowable string path from a call argument. */
 function pathArgValue(node, constants = new Map(), dynamicPlaceholder = true) {
   if (!node) return null;
@@ -296,8 +481,11 @@ function pathArgValue(node, constants = new Map(), dynamicPlaceholder = true) {
  * `.get()` calls (e.g. `map.get('key')`, `headers.get('x')`) out.
  *
  * Returns `null` when the file can't be parsed (caller falls back to regex);
- * otherwise an array of `{ method, path, start }` (start = call node offset, for
- * the caller's comment/handler/auth context lookups).
+ * otherwise an array of `{ method, path, start, receiver, line, auth }` (start =
+ * call node offset, for the caller's comment/handler lookups; `auth` = the
+ * route's own evidence).
+ * @implements docguard.js-ts-extraction#FR-001
+ * @implements docguard.js-ts-extraction#FR-002
  */
 export function extractJsRouteCalls(content, filename = 'file.ts') {
   const { ast, ok } = parseJsTs(content, filename);
@@ -306,6 +494,10 @@ export function extractJsRouteCalls(content, filename = 'file.ts') {
   const out = [];
   const constants = topLevelStaticStrings(ast);
   const routeBindings = expressRouteBindings(ast);
+  const bodies = functionBodies(ast);
+  const uses = authUses(ast, constants);
+  const usedAuth = (receiver, path, start) =>
+    uses.some(u => u.receiver === receiver && u.start < start && prefixCovers(u.prefix, path));
   walk(ast, (node) => {
     if (node.type !== 'CallExpression') return;
     const callee = node.callee;
@@ -314,6 +506,21 @@ export function extractJsRouteCalls(content, filename = 'file.ts') {
     if (!prop || prop.type !== 'Identifier') return;
     const method = prop.name.toLowerCase();
     if (!HTTP_METHOD_NAMES.has(method)) return;
+    const args = node.arguments || [];
+    // `<receiver>.route('/path').get(h).post(h)` (docguard.js-ts-extraction#FR-001):
+    // the method call's object is a chain that bottoms out in `.route(path)` on
+    // a route binding. Each method carries only handlers, no path.
+    const chain = routeChainBase(callee.object, routeBindings, constants);
+    if (chain) {
+      const handler = args[args.length - 1];
+      out.push({
+        method: method.toUpperCase(), path: chain.path, start: chain.start, receiver: chain.receiver,
+        line: prop.loc?.start.line ?? null,
+        handler: handlerName(handler),
+        auth: ownAuth(content, args.slice(0, -1), handler, bodies) || usedAuth(chain.receiver, chain.path, chain.start),
+      });
+      return;
+    }
     // A route receiver must be a stable binding (`app.get`, `router.post`, …).
     // Chained HTTP clients such as `request(app).get('/api/items')` also accept
     // URL-shaped first arguments, but they issue requests rather than register
@@ -321,15 +528,79 @@ export function extractJsRouteCalls(content, filename = 'file.ts') {
     // calls contaminate the product API inventory.
     if (!callee.object || callee.object.type !== 'Identifier') return;
     if (!looksLikeRouteReceiver(callee.object.name, routeBindings)) return;
-    const path = pathArgValue(node.arguments && node.arguments[0], constants);
+    const path = pathArgValue(args[0], constants);
     if (!path || !(path.startsWith('/') || path === '*')) return;
     // `receiver` is the object the method was called on (`router` in
     // `router.get(...)`, `app` in `app.get(...)`). Mount-prefix resolution uses
     // it to apply a same-file `app.use('/api', router)` prefix ONLY to that
     // router's routes — never to sibling `app.get(...)` calls in the same file.
     const receiver = callee.object.name;
-    out.push({ method: method.toUpperCase(), path, start: node.start ?? 0, receiver });
+    const start = node.start ?? 0;
+    const handler = args.length > 1 ? args[args.length - 1] : null;
+    out.push({
+      method: method.toUpperCase(), path, start, receiver,
+      line: node.loc?.start.line ?? null,
+      auth: ownAuth(content, args.slice(1, -1), handler, bodies) || usedAuth(receiver, path, start),
+    });
   });
+  return out;
+}
+
+/** `{ path, receiver, start }` when `node` is `<route binding>.route(path)[.method(...)]*`. */
+function routeChainBase(node, routeBindings, constants) {
+  let cur = node;
+  while (cur?.type === 'CallExpression' && cur.callee?.type === 'MemberExpression' && !cur.callee.computed
+      && HTTP_METHOD_NAMES.has(String(cur.callee.property?.name).toLowerCase())) {
+    cur = cur.callee.object;
+  }
+  if (cur?.type !== 'CallExpression' || cur.callee?.type !== 'MemberExpression' || cur.callee.computed) return null;
+  if (cur.callee.property?.name !== 'route' || cur.callee.object?.type !== 'Identifier') return null;
+  const receiver = cur.callee.object.name;
+  if (!looksLikeRouteReceiver(receiver, routeBindings)) return null;
+  const path = pathArgValue(cur.arguments?.[0], constants);
+  if (!path || !(path.startsWith('/') || path === '*')) return null;
+  return { path, receiver, start: cur.start ?? 0 };
+}
+
+function handlerName(node) {
+  if (!node) return '';
+  if (node.type === 'Identifier') return node.name;
+  if (FUNCTION_TYPES.has(node.type)) return node.id?.name || 'inline';
+  if (node.type === 'MemberExpression' && !node.computed) return node.property?.name || '';
+  return '';
+}
+
+/**
+ * Per-handler auth of a Next.js App Router `route.ts` (docguard.js-ts-extraction#FR-002):
+ * each exported HTTP method is judged by its own body, or by an auth wrapper
+ * (`export const GET = withAuth(async () => …)`). `null` on parse failure.
+ * @implements docguard.js-ts-extraction#FR-009
+ * @returns {Map<string, { line: number|null, auth: boolean }>|null}
+ */
+export function nextRouteHandlers(content, filename = 'route.ts') {
+  const { ast, ok } = parseJsTs(content, filename);
+  if (!ok || !ast) return null;
+  const bodies = functionBodies(ast);
+  const text = String(content);
+  const out = new Map();
+  const judge = (fn) => {
+    if (!fn) return false;
+    if (fn.type === 'CallExpression') return isAuthMiddlewareNode(fn) || (fn.arguments || []).some(a => FUNCTION_TYPES.has(a.type) && AUTH_CHECK_RE.test(text.slice(a.start, a.end)));
+    if (fn.type === 'Identifier') return judge(bodies.get(fn.name) || null);
+    return AUTH_CHECK_RE.test(text.slice(fn.start, fn.end));
+  };
+  for (const statement of ast.program?.body || []) {
+    if (statement.type !== 'ExportNamedDeclaration') continue;
+    const d = statement.declaration;
+    if (d?.type === 'FunctionDeclaration' && d.id?.name) out.set(d.id.name, { line: statement.loc?.start.line ?? null, auth: judge(d) });
+    for (const item of d?.declarations || []) {
+      if (item.id?.type === 'Identifier') out.set(item.id.name, { line: statement.loc?.start.line ?? null, auth: judge(item.init) });
+    }
+    for (const spec of statement.specifiers || []) {
+      const exported = spec.exported?.name ?? spec.exported?.value;
+      if (exported) out.set(exported, { line: statement.loc?.start.line ?? null, auth: judge(spec.local) });
+    }
+  }
   return out;
 }
 
@@ -462,8 +733,11 @@ export function extractJsRouteObjects(content, filename = 'file.ts') {
     }
     if (!path || !(path.startsWith('/') || path === '*') || !methods.length) return;
     const receiver = callee.object && callee.object.type === 'Identifier' ? callee.object.name : null;
+    const handlerProp = (arg.properties || []).find(p => propKeyName(p) === 'handler');
+    const auth = isAuthMiddlewareNode(arg) ||
+      Boolean(handlerProp && FUNCTION_TYPES.has(handlerProp.value?.type) && AUTH_CHECK_RE.test(String(content).slice(handlerProp.value.start, handlerProp.value.end)));
     for (const m of methods) {
-      out.push({ method: String(m).toUpperCase(), path, start: node.start ?? 0, receiver });
+      out.push({ method: String(m).toUpperCase(), path, start: node.start ?? 0, receiver, line: node.loc?.start.line ?? null, auth });
     }
   });
   return out;
@@ -496,6 +770,7 @@ export function extractJsMountsAndImports(content, filename = 'file.ts') {
   const mounts = [];
   const constants = topLevelStaticStrings(ast);
   const routeBindings = expressRouteBindings(ast);
+  const uses = authUses(ast, constants);
 
   walk(ast, (node) => {
     // import X from 'spec' | import { X } from 'spec' | import * as X from 'spec'
@@ -559,7 +834,11 @@ export function extractJsMountsAndImports(content, filename = 'file.ts') {
       for (let i = start; i < args.length; i++) {
         if (args[i]?.type === 'Identifier' && args[i].name !== receiver &&
             (imports[args[i].name] || looksLikeRouteReceiver(args[i].name, routeBindings))) {
-          mounts.push({ prefix, ident: args[i].name, receiver });
+          // Auth middleware passed before the router, or an earlier `use(auth)`
+          // on the same receiver, protects everything mounted here (FR-002).
+          const auth = args.slice(start, i).some(isAuthMiddlewareNode) ||
+            uses.some(u => u.receiver === receiver && u.start < (node.start ?? 0) && prefixCovers(u.prefix, prefix || '/'));
+          mounts.push({ prefix, ident: args[i].name, receiver, auth });
         }
       }
     }
