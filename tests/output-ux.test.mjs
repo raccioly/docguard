@@ -365,6 +365,13 @@ describe('Doc Sections reports as docSections (FR-008, SC-003)', () => {
     }
     const str003 = json(cli(dir, ['guard', '--format', 'json'])).findings.find(f => f.code === 'STR003');
     assert.equal(str003.validator, 'docSections');
+    assert.equal(CODES.STR003.validator, 'docSections');
+    // score --diff rolls both results into its structure category; with one
+    // shared key its Map kept only the last of the two (Doc Sections).
+    const standard = project(t, { ...docs, '.docguard.json': config() });
+    const drill = cli(standard, ['score', '--diff']).stdout;
+    assert.match(drill, /Missing required file: docs-canonical\/SECURITY\.md/);
+    assert.match(drill, /missing section "/);
   });
 
   it('validators.structure: false still turns both off; docSections: false only Doc Sections', t => {
