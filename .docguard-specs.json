@@ -4071,22 +4071,28 @@
       "path": "specs/044-generated-docs-consistency/spec.md",
       "reviewed": {
         "lifecycle": {
-          "approval": "draft",
-          "delivery": "planned",
+          "approval": "approved",
+          "delivery": "implemented",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
-          "persistenceModel": null
+          "persistenceModel": "living"
         },
         "relations": {
-          "extends": [],
+          "extends": [
+            "docguard.as-built-specs",
+            "docguard.code-derived-diagrams",
+            "docguard.language-repository-coverage"
+          ],
           "duplicates": [],
           "conflictsWith": [],
           "supersedes": [],
           "supersededBy": []
         },
         "scope": {
-          "canonicalDocs": []
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md"
+          ]
         },
         "reconciliation": {
           "lastReviewedRevision": null,
