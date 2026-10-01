@@ -14,8 +14,8 @@ import { describe, it, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { readdirSync, rmSync, statSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { existsSync, readdirSync, rmSync, statSync } from 'node:fs';
+import { delimiter, join, resolve } from 'node:path';
 import { PROJECTS, materialize } from './fixtures/generated-docs-projects.mjs';
 
 const run = promisify(execFile);
@@ -23,21 +23,31 @@ const CLI = resolve('cli/docguard.mjs');
 const temps = [];
 after(() => { for (const dir of temps) rmSync(dir, { recursive: true, force: true }); });
 
+// The flows run without the Spec Kit CLI on every machine. With `specify`
+// installed, `init` sets Spec Kit up; without it (as on CI) it cannot, so a
+// developer machine and CI would see different findings. Removing every PATH
+// entry that holds a `specify` makes the outcome the same everywhere.
+const PATH_WITHOUT_SPECIFY = (process.env.PATH || '')
+  .split(delimiter)
+  .filter(dir => dir && !['specify', 'specify.exe', 'specify.cmd'].some(bin => existsSync(join(dir, bin))))
+  .join(delimiter);
+
 async function cli(dir, args) {
   try {
-    const { stdout } = await run(process.execPath, [CLI, ...args], { cwd: dir, maxBuffer: 32 * 1024 * 1024, env: { ...process.env, NO_COLOR: '1' } });
+    const { stdout } = await run(process.execPath, [CLI, ...args], { cwd: dir, maxBuffer: 32 * 1024 * 1024, env: { ...process.env, PATH: PATH_WITHOUT_SPECIFY, NO_COLOR: '1' } });
     return { code: 0, stdout };
   } catch (err) {
     return { code: err.code, stdout: err.stdout || '', stderr: err.stderr || '' };
   }
 }
 
-// SPK001 describes the project: Spec Kit is not initialized. (`init` and
-// `generate --spec` set it up, so it only remains after a bare `generate`.)
-const NO_SPEC_KIT = ['SPK001'];
+// SPK001/SPK002 describe the project: Spec Kit is not initialized, because
+// the flows run without the Spec Kit CLI (see PATH_WITHOUT_SPECIFY). SPK002
+// is the as-built spec's specs/ directory without a .specify/ beside it.
+const NO_SPEC_KIT = ['SPK001', 'SPK002'];
 // After a blank `init`, the templates are empty forms. Requests to fill them
 // in describe work to do, not a defect in what DocGuard wrote.
-const FILL_THE_TEMPLATE = ['DCV003', 'ENV003', 'SCH002', 'DDF001', 'DDF002', 'TRC002'];
+const FILL_THE_TEMPLATE = ['DCV003', 'ENV003', 'SCH002', 'DDF001', 'DDF002', 'TRC002', ...NO_SPEC_KIT];
 
 const FLOWS = {
   generate: { steps: [['generate']], allow: NO_SPEC_KIT, diffClean: true },
@@ -50,7 +60,7 @@ const FLOWS = {
     diffClean: true,
   },
   init: { steps: [['init', '--skip-prompts']], allow: FILL_THE_TEMPLATE, diffClean: false },
-  'init-plan': { steps: [['init', '--skip-prompts'], ['generate', '--plan', '--write']], allow: [], diffClean: true },
+  'init-plan': { steps: [['init', '--skip-prompts'], ['generate', '--plan', '--write']], allow: NO_SPEC_KIT, diffClean: true },
   'init-spec': {
     steps: [['init', '--skip-prompts'], ['generate', '--spec', '<area>', '--write']],
     // TRC004: the as-built candidates have no test annotations yet — true.
