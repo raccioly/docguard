@@ -65,7 +65,8 @@ It targets development teams and AI coding agents that need to maintain document
 | **Agent instruction budget** | Measures every `AGENTS.md` chain from the root to each instruction directory, as Codex loads it (`AGENTS.override.md` replaces `AGENTS.md`), against `agentInstructions.maxBytes` (default 32768) or a per-chain allowance | `cli/scanners/agent-instructions.mjs`, `cli/validators/structure.mjs` | `STR004` is an escalation; `STR005` suggests tightening a slack allowance. Increasing an allowance is a reviewed config change, which the digit-normalized finding baseline could not guarantee |
 | **As-built specs** | `generate --spec <area>` collects deterministic facts under one code area (routes, exported JS/TS symbols, env vars read, entities), renders a Spec Kit spec with one agent-written candidate per fact, and registers it as `origin: as_built` with `sourcePaths`. The Spec-Registry validator re-scans those paths (`SPR007`) | `cli/scanners/as-built.mjs`, `cli/scanners/js-ast.mjs` (`exportedNames`, shared with the symbol map), `cli/commands/generate-as-built.mjs`, `cli/validators/spec-registry.mjs` | DocGuard writes no requirement prose. Facts key on method+path, file+export, name, so line moves never churn them. The registry fields are serialized only when set. `--write` commits the spec and its registry entry in one file transaction |
 | **Spec-first gate** | Classifies a change between the merge base and HEAD as covered, exempt, not governed, uncovered or inconclusive. It reads governed paths from `specFirst` and resolves spec references against `specs/*/spec.md` and the registry | `cli/scanners/spec-first.mjs`, `cli/commands/specs.mjs` | Read-only. An unresolved reference never passes. Git or inventory failure is inconclusive (exit 2), never a pass. The PR body arrives as a file |
-| **Spec Kit delegation** | The only code that invokes the `specify` CLI: reads its documented `init` options, resolves the integration key from `.specify/integration.json` / `init-options.json` / unambiguous agent signals, initializes Spec Kit and registers the packaged DocGuard extension | `cli/spec-kit-delegation.mjs`, `cli/ensure-skills.mjs` | Called only by `docguard init`, and `ensureSkills` runs only from `init` too (the dispatcher installs nothing, so every other command writes only its own outputs, spec 042); argument arrays only; every failure returns a structured result with the CLI's error and a manual command; requires Spec Kit ≥ 0.10.0 to initialize and ≥ 0.11.2 to register the extension (`requires.speckit_version`) |
+| **Spec Kit delegation** | The only code that invokes the `specify` CLI: reads its documented `init` options and `--version`, resolves the integration key from `.specify/integration.json` / `init-options.json` / unambiguous agent signals, initializes Spec Kit, registers the packaged DocGuard extension and re-registers it when the registered version differs; writes the extension commands for the `generic` integration, which Spec Kit registers none for | `cli/spec-kit-delegation.mjs`, `cli/ensure-skills.mjs` | Called only by `docguard init` and `upgrade --apply`, and `ensureSkills` runs only from `init` too (the dispatcher installs nothing, so every other command writes only its own outputs, spec 042); argument arrays only; every failure returns a structured result with the CLI's error and a manual command; requires Spec Kit ≥ 0.11.2, the extension's `requires.speckit_version`, read from the manifest as `MIN_SPEC_KIT_VERSION` and checked before initializing or registering (spec 048) |
+| **Agent surface** | What the project's agent can run: the active integration's command layout, derived from Spec Kit's install manifest (`.specify/integrations/<key>.manifest.json`); where DocGuard's own skills go; whether each mandatory hook in `.specify/extensions.yml` resolves; and command hints that name a slash command only when its file exists | `cli/agent-surface.mjs` | Read-only. No per-agent table: the file Spec Kit wrote for `constitution` gives the directory, shape and separator. Paths from `.specify/*.json` are checked to stay inside the project before any write (spec 048) |
 | **Validators** | Independent validation modules that check specific aspects of CDD compliance — all emitting structured findings with stable codes (the `CODES` registry in `findings.mjs`) | `cli/validators/` | `*.mjs` |
 | **Scanners** | Project file scanners for test discovery, route detection, schema mapping, CDK/IaC, doc-tools, integrations, frontend surface, spec-kit, memory-plan, semantic claims, agent readability | `cli/scanners/` | `*.mjs` |
 | **Writers** | Deterministic doc-mutation and output modules — section-addressable edits, mapped-role ownership authorization, mechanical fix registry, API-Reference writer, generate I/O + doc builders (split from generate.mjs), SARIF emitter (no LLM) | `cli/writers/`, `cli/shared-doc-roles.mjs` | Mapped human docs expose only unique `source=code` sections; new or explicitly generated single-role targets permit whole-document writes; all replacements use backups and `--force` cannot grant ownership |
@@ -1005,7 +1006,7 @@ heuristic claim from the unverified count only through a unique same-line,
 | npm | ≥8 | Included with Node.js |
 | Git | Any | [git-scm.com](https://git-scm.com) |
 | Python 3 | **Optional** — ≥3.8, enables the AST-accurate Python scanning tier; the scanners use regex otherwise | [python.org](https://python.org) |
-| Spec Kit (`specify`) | **Optional** — ≥0.10.0 for `docguard init` to initialize Spec Kit; ≥0.11.2 to register the DocGuard extension | [github/spec-kit](https://github.com/github/spec-kit) |
+| Spec Kit (`specify`) | **Optional** — ≥ 0.11.2 for `docguard init` to initialize Spec Kit and register the DocGuard extension (`requires.speckit_version`; an older `specify` is neither initialized nor registered) | [github/spec-kit](https://github.com/github/spec-kit) |
 
 ## Environment Variables
 
@@ -1696,7 +1697,10 @@ Behaviour changes:
   client should reach.
 - `sync`, `fix` and `generate` no longer run `specify init`. Run `docguard init`
   or `specify init` yourself.
-- The Spec Kit extension requires Spec Kit 0.11.2 or later.
+- The Spec Kit extension requires Spec Kit 0.11.2 or later, and `docguard
+  init` no longer initializes Spec Kit with an older `specify`.
+- In a Claude Code project, `docguard init` installs DocGuard's skills into
+  `.claude/skills/` instead of `.agent/`. An existing `.agent/` is left in place.
 - The manifest key `provides.workflows` moved to `x-docguard.github_workflows`.
 - A `.docguardignore` `dir/` pattern now matches that directory at any depth,
   as in `.gitignore`. This can hide findings that fired before.
@@ -2057,11 +2061,8 @@ Behaviour changes:
     did not pin the CLI. The new `docguard-version` input overrides it, and
     `latest` still works when asked for.
   - The Homebrew tap is published by the release workflow. The formula is
-    rendered from the published npm tarball, verified against npm's
-    `dist.integrity`, and pushed to `raccioly/homebrew-tap` with a deploy key
-    scoped to that repository. The tap had been hand-maintained and stopped at
 
-<!-- truncated: 4426 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 4470 more lines — read CHANGELOG.md directly -->
 
 ---
 
