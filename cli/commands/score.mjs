@@ -88,7 +88,7 @@ export function detectTestRunner(dir, config = {}) {
  * to surface the underlying warnings.
  */
 const _SCORE_TO_VALIDATORS = {
-  structure:    ['structure'],
+  structure:    ['structure', 'docSections'],
   docQuality:   ['docQuality', 'docsCoverage', 'docsSync'],
   testing:      ['testSpec', 'todoTracking'],
   security:     ['security'],

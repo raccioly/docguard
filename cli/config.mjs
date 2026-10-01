@@ -250,7 +250,7 @@ export function getProjectTypeDefaults(type) {
  * normalized blindly: kebab-case→camelCase always.
  */
 const _KNOWN_VALIDATORS = [
-  'structure', 'docsSync', 'drift', 'changelog', 'testSpec', 'environment',
+  'structure', 'docSections', 'docsSync', 'drift', 'changelog', 'testSpec', 'environment',
   'security', 'architecture', 'freshness', 'traceability', 'docsDiff',
   'apiSurface', 'metadataSync', 'docsCoverage', 'docQuality', 'todoTracking',
   'schemaSync', 'specKit', 'crossReference', 'generatedStaleness',

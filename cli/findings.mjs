@@ -148,7 +148,7 @@ export const CODES = {
     suppress: null,
   },
   STR003: {
-    validator: 'structure',
+    validator: 'docSections',
     title: 'Missing required doc section',
     help: 'A canonical doc exists but lacks a section its document type requires. Add the section — or, if it is genuinely not applicable, own the absence with an inline marker: `<!-- docguard:section <slug> n/a — reason -->`.',
     suppress: '<!-- docguard:section <slug> n/a — reason -->',

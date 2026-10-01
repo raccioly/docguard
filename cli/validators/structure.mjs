@@ -198,7 +198,7 @@ export function validateDocSections(projectDir, config) {
       } else {
         findings.push(mkFinding({
           code: 'STR003',
-          validator: 'structure',
+          validator: 'docSections',
           severity: 'warn',
           message: `${file}: missing section "${section}". ` +
             `If genuinely not applicable, add: <!-- docguard:section ${slug} n/a — your reason -->`,
