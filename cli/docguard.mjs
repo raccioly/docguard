@@ -292,13 +292,16 @@ const COMMAND_HELP = {
     examples: ['docguard trace', 'docguard trace --reverse'],
   },
   upgrade: {
-    summary: 'Migrate .docguard.json schema + CLI.',
-    usage: 'docguard upgrade [--apply] [--pr]',
+    // docguard.output-ux#FR-006: two jobs, both named.
+    summary: 'Check npm for a newer DocGuard release and the project\'s .docguard.json schema; --apply installs the release globally (npm install -g) and migrates the schema.',
+    usage: 'docguard upgrade [--check-only] [--apply [--schema-only] [--pr]]',
     flags: [
-      ['--apply', 'Write the migration (default is a preview)'],
-      ['--pr', 'Open a team-wide PR with the migration'],
+      ['--apply', 'Act on what is behind: npm install -g docguard-cli@latest when npm has a newer release, and migrate .docguard.json (default is a report)'],
+      ['--schema-only', 'Migrate .docguard.json only: no npm check, no install'],
+      ['--check-only', 'Report, and exit 1 when the CLI or the schema is behind (CI)'],
+      ['--pr', 'With --apply: open a team-wide PR with the schema migration'],
     ],
-    examples: ['docguard upgrade', 'docguard upgrade --apply'],
+    examples: ['docguard upgrade', 'docguard upgrade --apply --schema-only', 'docguard upgrade --apply'],
   },
   ci: {
     summary: 'Generate CI / pipeline config.',
@@ -526,6 +529,8 @@ async function main() {
       flags.checkOnly = true;
     } else if (args[i] === '--apply') {
       flags.apply = true;
+    } else if (args[i] === '--schema-only') {
+      flags.schemaOnly = true;
     } else if (args[i] === '--changed-only') {
       flags.changedOnly = true;
     } else if (args[i] === '--reverse') {

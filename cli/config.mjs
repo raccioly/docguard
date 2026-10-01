@@ -16,7 +16,7 @@ import { resolve, basename } from 'node:path';
 import { c, PROFILES, SEVERITY_LEVELS } from './shared.mjs';
 import { CODES } from './findings.mjs';
 import { mergeIgnoreFile } from './shared-ignore.mjs';
-import { detectProjectName } from './scanners/project-type.mjs';
+import { detectProjectName, detectProjectProfile } from './scanners/project-type.mjs';
 
 export function loadConfig(projectDir) {
   const configPath = resolve(projectDir, '.docguard.json');
@@ -181,6 +181,7 @@ export function loadConfig(projectDir) {
 /**
  * Auto-detect project type from package.json and file structure.
  * Returns: 'cli' | 'library' | 'webapp' | 'api' | 'unknown'
+ * @implements docguard.output-ux#FR-015
  */
 export function autoDetectProjectType(dir) {
   if (hasWorkerConfig(dir)) return 'api';
@@ -208,6 +209,18 @@ export function autoDetectProjectType(dir) {
   // Python project
   if (existsSync(resolve(dir, 'manage.py'))) return 'webapp';
   if (existsSync(resolve(dir, 'setup.py')) || existsSync(resolve(dir, 'pyproject.toml'))) return 'library';
+
+  // docguard.output-ux#FR-015: the ecosystem detector `generate` uses already
+  // recognises Gin, Spring Boot, Rails and the rest. Init used to record
+  // `unknown` for those projects while generate described them correctly.
+  // JavaScript keeps the package.json rules above unchanged.
+  try {
+    const primary = detectProjectProfile(dir).primary;
+    if (primary && !['JavaScript', 'TypeScript'].includes(primary.language)) {
+      const type = { service: 'api', api: 'api', webapp: 'webapp', cli: 'cli', library: 'library' }[primary.kind];
+      if (type) return type;
+    }
+  } catch { /* detection is best-effort; fall through */ }
 
   return 'unknown';
 }
