@@ -15,6 +15,12 @@ handoffs:
 Perform a read-only semantic review of canonical documentation against the
 repository. Report evidence and recommendations; do not edit files.
 
+## Running DocGuard
+
+Run `docguard` from PATH when it is installed. Otherwise run
+`npx --yes docguard-cli@0.42.1`, the release these instructions ship with, in its
+place. Every `docguard …` command below means one of the two.
+
 ## User Input
 
 ```text
@@ -29,7 +35,7 @@ You **MUST** consider the user input before proceeding when it is not empty.
    since their last review (read-only):
 
    ```bash
-   npx --yes docguard-cli@latest review --format json
+   docguard review --format json
    ```
 
    Report every section that is not `current`. Do not run `review --accept`
@@ -39,11 +45,11 @@ You **MUST** consider the user input before proceeding when it is not empty.
 1. Run the deterministic inventory and quality checks:
 
 ```bash
-npx --yes docguard-cli@latest diagnose $ARGUMENTS
-npx --yes docguard-cli@latest diff $ARGUMENTS
-npx --yes docguard-cli@latest score $ARGUMENTS
-npx --yes docguard-cli@latest verify --evidence --format json $ARGUMENTS
-npx --yes docguard-cli@latest verify --semantic $ARGUMENTS
+docguard diagnose $ARGUMENTS
+docguard diff $ARGUMENTS
+docguard score $ARGUMENTS
+docguard verify --evidence --format json $ARGUMENTS
+docguard verify --semantic $ARGUMENTS
 ```
 
 2. Read the canonical documents and their cited code. Check architecture,

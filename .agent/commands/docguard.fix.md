@@ -13,10 +13,16 @@ handoffs:
 
 You are an AI agent responsible for maintaining documentation quality using DocGuard.
 
+## Running DocGuard
+
+Run `docguard` from PATH when it is installed. Otherwise run
+`npx --yes docguard-cli@0.42.1`, the release these instructions ship with, in its
+place. Every `docguard …` command below means one of the two.
+
 ## Step 1: Mechanical fixes first (no AI judgment needed)
 
 ```bash
-npx docguard-cli fix --write
+docguard fix --write
 ```
 
 This deterministically applies the safe fix class: broken doc anchors, stale
@@ -27,11 +33,11 @@ truth it cannot verify. Doing this first shrinks the issue list you research.
 ## Step 2: Assess what remains
 
 ```bash
-npx docguard-cli diagnose
+docguard diagnose
 ```
 
 Parse the output — issues are categorized with AI-ready fix prompts. Every
-finding carries a stable code; run `npx docguard-cli explain <CODE>` whenever
+finding carries a stable code; run `docguard explain <CODE>` whenever
 the right remediation isn't obvious from the message.
 
 If no issues remain, report "All CDD documentation is up to date" and stop.
@@ -40,12 +46,12 @@ If no issues remain, report "All CDD documentation is up to date" and stop.
 
 | Issue Type | Action |
 |-----------|--------|
-| `missing-file` | Run `npx docguard-cli fix --doc <name>` to generate |
+| `missing-file` | Run `docguard fix --doc <name>` to generate |
 | `empty-doc` / `partial-doc` | Proceed to Step 4 for codebase research |
 | `missing-config` | Create `.docguard.json` based on project type |
 | `stale-doc` | Update `docguard:last-reviewed` date and content |
 | `quality-issue` | Fix negation language, add missing sections |
-| false positive | Suppress at the site: `// docguard:ignore <CODE>` (with a reason comment), and report it: `npx docguard-cli feedback` |
+| false positive | Suppress at the site: `// docguard:ignore <CODE>` (with a reason comment), and report it: `docguard feedback` |
 
 **Doc wrong vs code wrong:** a doc/code mismatch does not automatically mean
 the doc is stale. Canonical docs are the spec — if the code drifted from a
@@ -58,7 +64,7 @@ the doc to match the regression.
 For each document that needs content:
 
 ```bash
-npx docguard-cli fix --doc <name>
+docguard fix --doc <name>
 ```
 
 Where `<name>` is: `architecture`, `data-model`, `security`, `test-spec`, `environment`
@@ -75,8 +81,8 @@ those bodies are regenerated from code by `docguard sync --write`; pin them
 ## Step 5: Verify (iterate up to 3 times)
 
 ```bash
-npx docguard-cli guard
-npx docguard-cli score
+docguard guard
+docguard score
 ```
 
 All checks should pass. If any fail, read the output and fix remaining issues.

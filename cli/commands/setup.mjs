@@ -24,6 +24,7 @@ import { createInterface } from 'node:readline';
 import { c, CURRENT_SCHEMA_VERSION } from '../shared.mjs';
 import { autoDetectProjectType } from '../config.mjs';
 import { ensureSkills, detectAgentMode, isSpecKitInitialized, getDetectedAgent } from '../ensure-skills.mjs';
+import { readAgentSurface, agentCommand, commandHint } from '../agent-surface.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -442,12 +443,15 @@ export async function runSetup(projectDir, config, flags) {
   const agentMode = detectAgentMode(projectDir);
   console.log(`\n  ${c.bold}Next steps:${c.reset} ${c.dim}(${agentMode === 'llm' ? 'LLM mode' : 'CLI mode'})${c.reset}`);
   if (agentMode === 'llm') {
-    if (!isSpecKitInitialized(projectDir)) {
-      console.log(`  ${c.dim}Bootstrap:${c.reset}      ${c.cyan}/speckit.constitution${c.reset}`);
+    // Only commands whose files exist for this agent (docguard.spec-kit-integration-honesty#FR-006).
+    const surface = readAgentSurface(projectDir);
+    const constitution = agentCommand(projectDir, surface, 'constitution', '', { speckit: true });
+    if (constitution) {
+      console.log(`  ${c.dim}Bootstrap:${c.reset}      ${c.cyan}${constitution}${c.reset}`);
     }
-    console.log(`  ${c.dim}Fill docs:${c.reset}      ${c.cyan}/docguard.guard${c.reset}`);
-    console.log(`  ${c.dim}Fix issues:${c.reset}     ${c.cyan}/docguard.fix${c.reset}`);
-    console.log(`  ${c.dim}Review:${c.reset}         ${c.cyan}/docguard.review${c.reset}`);
+    console.log(`  ${c.dim}Fill docs:${c.reset}      ${c.cyan}${commandHint(projectDir, surface, 'guard')}${c.reset}`);
+    console.log(`  ${c.dim}Fix issues:${c.reset}     ${c.cyan}${commandHint(projectDir, surface, 'fix')}${c.reset}`);
+    console.log(`  ${c.dim}Review:${c.reset}         ${c.cyan}${commandHint(projectDir, surface, 'review')}${c.reset}`);
   } else {
     console.log(`  ${c.dim}Fill docs:${c.reset}      ${c.cyan}docguard diagnose${c.reset}`);
     console.log(`  ${c.dim}Validate:${c.reset}       ${c.cyan}docguard guard${c.reset}`);

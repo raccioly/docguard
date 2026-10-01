@@ -4294,8 +4294,8 @@
           "description": "init rewrites every installed skill on each run (no content-equality gate).",
           "faultClass": "other",
           "file": "cli/ensure-skills.mjs",
-          "find": "        if (installedContent !== srcContent) {",
-          "replace": "        if (installedContent !== null || srcContent) {",
+          "find": "    if (existsSync(full) && readFileSync(full, 'utf-8') === content) continue;",
+          "replace": "    // content-equality gate removed",
           "producedBy": {
             "producer": "agent",
             "by": "claude-opus-5.5 (spec 042)"
@@ -4306,8 +4306,8 @@
           "description": "init no longer installs the slash commands.",
           "faultClass": "other",
           "file": "cli/ensure-skills.mjs",
-          "find": "  if (!existsSync(commandsCheck) && existsSync(COMMANDS_SOURCE)) {",
-          "replace": "  if (false && !existsSync(commandsCheck) && existsSync(COMMANDS_SOURCE)) {",
+          "find": "  if (surface.commandsDir && existsSync(COMMANDS_SOURCE)) {",
+          "replace": "  if (false && surface.commandsDir && existsSync(COMMANDS_SOURCE)) {",
           "producedBy": {
             "producer": "agent",
             "by": "claude-opus-5.5 (spec 042)"
@@ -5838,6 +5838,229 @@
           "producedBy": {
             "producer": "agent",
             "by": "claude-opus-5.5 (spec 049)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SPEC-KIT-HOOKS-RESOLVE-HONESTLY",
+      "statement": "docguard init reports Spec Kit workflow hooks as active only when every mandatory DocGuard hook resolves to a command file in the active integration's layout, writing the extension commands the generic integration lacks; it re-registers an extension at another version (keeping priority, never re-enabling a disabled one) and refuses a specify below the manifest floor; upgrade reports stale agent files and --apply refreshes them; DocGuard's skills go where the agent reads them; hints name a slash command only when its file exists; the release sync moves every command pin.",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/048-spec-kit-integration-honesty/spec.md#FR-002"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (spec 048)"
+      },
+      "defendedBy": [
+        "tests/spec-kit-integration-honesty.test.mjs",
+        "tests/release-version-sync.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "The generic integration gets no speckit.docguard.* commands.",
+          "faultClass": "other",
+          "file": "cli/spec-kit-delegation.mjs",
+          "find": "  if (!surface.writesExtensionCommands || !layout) return { written: [], skipped: null };",
+          "replace": "  if (true) return { written: [], skipped: null };",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 048)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "Every mandatory hook counts as resolved.",
+          "faultClass": "other",
+          "file": "cli/agent-surface.mjs",
+          "find": "  return { status: unresolved.length ? 'unresolved' : 'active', resolved, unresolved, reason: null };",
+          "replace": "  return { status: 'active', resolved, unresolved, reason: null };",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 048)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "init prints \"hooks active\" for unresolved hooks.",
+          "faultClass": "other",
+          "file": "cli/commands/init.mjs",
+          "find": "  if (hooks.status === 'active') {",
+          "replace": "  if (hooks.status !== 'unverified') {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 048)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "A registration at another version is treated as current.",
+          "faultClass": "other",
+          "file": "cli/spec-kit-delegation.mjs",
+          "find": "  const stale = entry && typeof entry.version === 'string' && packaged && entry.version !== packaged;",
+          "replace": "  const stale = false;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 048)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "Re-registration drops the recorded priority.",
+          "faultClass": "statement-deleted",
+          "file": "cli/spec-kit-delegation.mjs",
+          "find": "    if (Number.isInteger(entry.priority)) args.push('--priority', String(entry.priority));",
+          "replace": "    // priority dropped",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 048)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "A disabled registration is re-registered.",
+          "faultClass": "other",
+          "file": "cli/spec-kit-delegation.mjs",
+          "find": "  if (entry && entry.enabled === false) {",
+          "replace": "  if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 048)"
+          }
+        },
+        {
+          "id": "F7",
+          "description": "upgrade never sees stale agent files.",
+          "faultClass": "other",
+          "file": "cli/ensure-skills.mjs",
+          "find": "      return existsSync(full) && readFileSync(full, 'utf-8') !== readFileSync(src, 'utf-8');",
+          "replace": "      return false;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 048)"
+          }
+        },
+        {
+          "id": "F8",
+          "description": "upgrade --apply skips the refresh.",
+          "faultClass": "other",
+          "file": "cli/commands/upgrade.mjs",
+          "find": "        agentRefreshFailed = !refreshAgentFiles(projectDir);",
+          "replace": "        agentRefreshFailed = false;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 048)"
+          }
+        },
+        {
+          "id": "F9",
+          "description": "A /docguard.<name> hint is printed whether or not its file exists.",
+          "faultClass": "other",
+          "file": "cli/agent-surface.mjs",
+          "find": "  if (!speckit && surface?.commandsDir && existsSync(resolve(projectDir, surface.commandsDir, `docguard.${name}.md`))) {",
+          "replace": "  if (!speckit && surface?.commandsDir) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 048)"
+          }
+        },
+        {
+          "id": "F10",
+          "description": "A Spec Kit layout alone produces a slash hint.",
+          "faultClass": "other",
+          "file": "cli/agent-surface.mjs",
+          "find": "  if (layout && existsSync(resolve(projectDir, layout.pathFor(id)))) {",
+          "replace": "  if (layout) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 048)"
+          }
+        },
+        {
+          "id": "F11",
+          "description": "The release version sync leaves the extension command pins behind.",
+          "faultClass": "statement-deleted",
+          "file": ".github/scripts/sync-release-version.mjs",
+          "find": "    ...listMarkdown(root, 'extensions/spec-kit-docguard/commands', () => true),",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 048)"
+          }
+        },
+        {
+          "id": "F12",
+          "description": "An old specify is not checked against the floor.",
+          "faultClass": "other",
+          "file": "cli/spec-kit-delegation.mjs",
+          "find": "  const belowFloor = Boolean(version) && compareVersions(version, MIN_SPEC_KIT_VERSION) < 0;",
+          "replace": "  const belowFloor = false;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 048)"
+          }
+        },
+        {
+          "id": "F13",
+          "description": "A skills integration's directory is ignored for DocGuard's skills.",
+          "faultClass": "other",
+          "file": "cli/agent-surface.mjs",
+          "find": "  if (layout && layout.style === 'skills') {",
+          "replace": "  if (layout && layout.style === 'none') {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 048)"
+          }
+        },
+        {
+          "id": "F14",
+          "description": "The summary misses the agent files Spec Kit's manifests list.",
+          "faultClass": "statement-deleted",
+          "file": "cli/commands/init.mjs",
+          "find": "      for (const f of Object.keys(files || {})) seen.add(f);",
+          "replace": "      // manifest files not counted",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 048)"
+          }
+        },
+        {
+          "id": "F15",
+          "description": "diagnose keeps the /docguard.<name> placeholders.",
+          "faultClass": "statement-deleted",
+          "file": "cli/commands/diagnose.mjs",
+          "find": "    if (m) issue.llmCommand = agent(m[1], m[2] || '');",
+          "replace": "    // placeholders kept",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 048)"
+          }
+        },
+        {
+          "id": "F16",
+          "description": "verify names a /docguard.verify command that does not exist.",
+          "faultClass": "other",
+          "file": "cli/commands/verify.mjs",
+          "find": "  const cmd = 'docguard verify --semantic --format json';",
+          "replace": "  const cmd = '/docguard.verify';",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 048)"
+          }
+        },
+        {
+          "id": "F17",
+          "description": "setup offers /speckit.constitution only when it is missing.",
+          "faultClass": "other",
+          "file": "cli/commands/setup.mjs",
+          "find": "    if (constitution) {",
+          "replace": "    if (!constitution) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 048)"
           }
         }
       ]

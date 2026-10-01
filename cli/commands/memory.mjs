@@ -33,6 +33,7 @@ import { buildScoreAssurance } from './score.mjs';
 import { diffRoutes, diffEntities, diffEnvVars, diffTechStack } from './diff.mjs';
 import { buildMemoryPlan } from '../scanners/memory-plan.mjs';
 import { runGuardInternal } from './guard.mjs';
+import { readAgentSurface, commandHint } from '../agent-surface.mjs';
 
 /**
  * Compute an accuracy score for a single domain. Returns:
@@ -292,6 +293,6 @@ export function runMemory(projectDir, config, flags) {
   } else {
     console.log(`\n  ${c.dim}Fix options:${c.reset}`);
     console.log(`    ${c.dim}• Removed-from-code items: ${c.cyan}docguard fix --write${c.dim} (deletes documented-but-absent endpoints)${c.reset}`);
-    console.log(`    ${c.dim}• Missing-from-docs items: ${c.cyan}/docguard.fix --doc <name>${c.dim} (AI fills in the gap)${c.reset}`);
+    console.log(`    ${c.dim}• Missing-from-docs items: ${c.cyan}${commandHint(projectDir, readAgentSurface(projectDir), 'fix', '--doc <name>')}${c.dim} (AI fills in the gap)${c.reset}`);
   }
 }

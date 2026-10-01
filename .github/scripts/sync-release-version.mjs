@@ -59,6 +59,15 @@ function writeWithoutReleaseBackup(filePath, content) {
   return true;
 }
 
+function listMarkdown(root, relDir, accept) {
+  const dir = resolve(root, relDir);
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir, { withFileTypes: true })
+    .filter(entry => entry.isFile() && entry.name.endsWith('.md') && accept(entry.name))
+    .map(entry => `${relDir}/${entry.name}`)
+    .sort();
+}
+
 export function syncReleaseVersion(root = process.cwd()) {
   const packagePath = resolve(root, 'package.json');
   const pkg = JSON.parse(readFileSync(packagePath, 'utf8'));
@@ -123,6 +132,22 @@ export function syncReleaseVersion(root = process.cwd()) {
     });
   }
 
+  // Agent command files pin the release they ship with as their npx fallback
+  // (docguard.spec-kit-integration-honesty#FR-005): exactly one pin each.
+  const commandFiles = [
+    ...listMarkdown(root, 'extensions/spec-kit-docguard/commands', () => true),
+    ...listMarkdown(root, 'commands', name => /^docguard\.[a-z-]+\.md$/.test(name)),
+  ];
+  if (commandFiles.length === 0) throw new Error('agent command files: none found');
+  for (const relPath of commandFiles) {
+    stageText(staged, root, relPath, content => replaceRequired(
+      content,
+      /docguard-cli@\d+\.\d+\.\d+/g,
+      `docguard-cli@${version}`,
+      `${relPath} DocGuard CLI pin`,
+    ));
+  }
+
   // The GitHub Action installs the CLI version it was released with
   // (docguard.release-readiness#FR-003).
   stageText(staged, root, 'action.yml', content => replaceRequired(
@@ -150,6 +175,10 @@ export function syncReleaseVersion(root = process.cwd()) {
       `  version: ${version}`,
       `${relPath} metadata.version`,
     );
+    const pins = (next.match(/docguard-cli@\d+\.\d+\.\d+/g) || []).length;
+    if (pins > 0) {
+      next = replaceRequired(next, /docguard-cli@\d+\.\d+\.\d+/g, `docguard-cli@${version}`, `${relPath} DocGuard CLI pin`, pins);
+    }
     next = replaceRequired(
       next,
       /<!-- docguard:version:\s*\d+\.\d+\.\d+ -->/g,

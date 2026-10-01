@@ -18,6 +18,7 @@ import { c } from '../shared.mjs';
 import { runGuardInternal } from './guard.mjs';
 import { runScoreInternal } from './score.mjs';
 import { detectAgentMode, isSpecKitInitialized } from '../ensure-skills.mjs';
+import { readAgentSurface, agentCommand } from '../agent-surface.mjs';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -175,22 +176,47 @@ const FIX_INSTRUCTIONS = {
     action: 'Reconcile API-REFERENCE.md with the real API surface',
     command: 'docguard fix --write',
     llmCommand: 'docguard fix --write',
-    description: 'Documented-but-absent endpoints can be deleted mechanically with `docguard fix --write`. Undocumented-in-code endpoints need an agent to write the request/response block (`/docguard.fix --doc api-reference`).',
+    description: 'Documented-but-absent endpoints can be deleted mechanically with `docguard fix --write`. Undocumented-in-code endpoints need an agent to write the request/response block (`docguard fix --doc api-reference` prints its research prompt).',
     autoFixable: true,
   },
 };
+
+const cliHint = (name, args = '') => `docguard ${name}${args ? ` ${args}` : ''}`;
+
+/**
+ * Command suggestions for this project: a slash command only when its file
+ * exists for the detected agent, otherwise the CLI command.
+ *
+ * @implements docguard.spec-kit-integration-honesty#FR-006
+ */
+function projectHints(projectDir, agentMode) {
+  if (agentMode !== 'llm') return { hint: cliHint, agent: () => null };
+  const surface = readAgentSurface(projectDir);
+  const agent = (name, args = '') => agentCommand(projectDir, surface, name, args);
+  return { hint: (name, args = '') => agent(name, args) || cliHint(name, args), agent };
+}
+
+/** `/docguard.<name> <args>` in FIX_INSTRUCTIONS → the agent's real command, or null. */
+function resolveLlmCommands(issues, agent) {
+  for (const issue of issues) {
+    const m = typeof issue.llmCommand === 'string' && issue.llmCommand.match(/^\/docguard\.([a-z-]+)(?:\s+(.*))?$/);
+    if (m) issue.llmCommand = agent(m[1], m[2] || '');
+  }
+  return issues;
+}
 
 export function runDiagnose(projectDir, config, flags) {
   if (flags.auto) assertDefaultDocWrites(config);
   // ── Step 0: Detect agent mode (LLM-first) ──
   const agentMode = detectAgentMode(projectDir);
+  const { hint, agent } = projectHints(projectDir, agentMode);
 
   // ── Step 1: Run guard internally ──
   let guardData = runGuardInternal(projectDir, config);
   let scoreData = runScoreInternal(projectDir, config);
 
   // ── Step 2: Collect issues ──
-  let issues = collectIssues(guardData);
+  let issues = resolveLlmCommands(collectIssues(guardData), agent);
 
   // ── Step 3: Auto-fix (only with --auto flag) or suggest fixes ──
   const shouldAutoFix = flags.auto && flags.format !== 'json';
@@ -225,7 +251,7 @@ export function runDiagnose(projectDir, config, flags) {
       // Re-run guard to see what's still broken
       guardData = runGuardInternal(projectDir, config);
       scoreData = runScoreInternal(projectDir, config);
-      issues = collectIssues(guardData);
+      issues = resolveLlmCommands(collectIssues(guardData), agent);
 
       if (!flags.format || flags.format === 'text') {
         const fixedCount = autoFixable.length - issues.filter(i => i.autoFixable).length;
@@ -246,8 +272,8 @@ export function runDiagnose(projectDir, config, flags) {
       if (hasStructural || autoFixable.length > 0) {
         console.log(`  ${c.yellow}💡 ${autoFixable.length + (hasStructural ? 1 : 0)} issue(s) can be scaffolded/regenerated.${c.reset} Run ${c.cyan}docguard diagnose --auto${c.reset} (creates missing docs + applies mechanical fixes), or:`);
         if (agentMode === 'llm') {
-          if (hasStructural) console.log(`     ${c.dim}/docguard.init${c.reset}`);
-          if (autoFixable.length > 0) console.log(`     ${c.dim}/docguard.fix${c.reset}`);
+          if (hasStructural) console.log(`     ${c.dim}${hint('init')}${c.reset}`);
+          if (autoFixable.length > 0) console.log(`     ${c.dim}${hint('fix')}${c.reset}`);
         } else {
           if (hasStructural) console.log(`     ${c.dim}docguard init --dir .${c.reset}`);
           if (autoFixable.length > 0) console.log(`     ${c.dim}docguard generate --dir . --force${c.reset}`);
@@ -262,9 +288,9 @@ export function runDiagnose(projectDir, config, flags) {
   if (flags.format === 'json') {
     outputJSON(guardData, scoreData, issues, assessment);
   } else if (flags.format === 'prompt') {
-    outputPrompt(projectDir, guardData, scoreData, issues, flags, agentMode, assessment);
+    outputPrompt(projectDir, guardData, scoreData, issues, flags, agentMode, assessment, hint);
   } else {
-    outputText(projectDir, guardData, scoreData, issues, flags, agentMode, assessment);
+    outputText(projectDir, guardData, scoreData, issues, flags, agentMode, assessment, hint);
   }
 }
 
@@ -416,7 +442,7 @@ function outputJSON(guardData, scoreData, issues, assessment) {
   console.log(JSON.stringify(result, null, 2));
 }
 
-function outputText(projectDir, guardData, scoreData, issues, flags, agentMode = 'llm', assessment) {
+function outputText(projectDir, guardData, scoreData, issues, flags, agentMode = 'llm', assessment, hint = cliHint) {
   console.log(`${c.bold}🔍 DocGuard Diagnose — ${guardData.project}${c.reset}`);
   console.log(`${c.dim}   Profile: ${guardData.profile} | Structural Maturity: ${scoreData.score}/100 (${scoreData.grade}) | Mode: ${agentMode.toUpperCase()}${c.reset}`);
   console.log(`${c.dim}   Guard:   ${guardData.passed}/${guardData.total} passed | Status: ${guardData.status}${c.reset}\n`);
@@ -426,7 +452,7 @@ function outputText(projectDir, guardData, scoreData, issues, flags, agentMode =
   if (issues.length === 0) {
     console.log(`  ${c.green}${c.bold}✅ All clear!${c.reset} No issues found.\n`);
     if (agentMode === 'llm') {
-      console.log(`  ${c.dim}Your documentation is healthy. Use ${c.cyan}/docguard.guard${c.dim} to re-validate after changes.${c.reset}\n`);
+      console.log(`  ${c.dim}Your documentation is healthy. Use ${c.cyan}${hint('guard')}${c.dim} to re-validate after changes.${c.reset}\n`);
     } else {
       console.log(`  ${c.dim}Your documentation is healthy. Run \`docguard score --tax\` to see maintenance estimate.${c.reset}\n`);
     }
@@ -492,7 +518,7 @@ function outputText(projectDir, guardData, scoreData, issues, flags, agentMode =
     for (let i = 0; i < commands.length; i++) {
       console.log(`  ${c.cyan}${i + 1}. ${commands[i]}${c.reset}`);
     }
-    const verifyCmd = agentMode === 'llm' ? '/docguard.guard' : 'docguard guard';
+    const verifyCmd = hint('guard');
     console.log(`  ${c.cyan}${commands.length + 1}. ${verifyCmd}${c.reset} ${c.dim}← verify fixes${c.reset}`);
     console.log('');
   }
@@ -502,11 +528,11 @@ function outputText(projectDir, guardData, scoreData, issues, flags, agentMode =
     // Multi-perspective debate prompts (AITPG/TRACE-inspired)
     console.log(`  ${c.bold}🤖 Multi-Perspective AI Debate Prompt:${c.reset}`);
     console.log(`  ${c.dim}Copy everything below and paste to your AI agent:${c.reset}\n`);
-    outputDebatePrompt(projectDir, guardData, scoreData, issues, agentMode, assessment);
+    outputDebatePrompt(projectDir, guardData, scoreData, issues, agentMode, assessment, hint);
   } else {
     console.log(`  ${c.bold}🤖 AI-Ready Prompt:${c.reset}`);
     console.log(`  ${c.dim}Copy everything below and paste to your AI agent:${c.reset}\n`);
-    outputPrompt(undefined, guardData, scoreData, issues, flags, agentMode, assessment);
+    outputPrompt(undefined, guardData, scoreData, issues, flags, agentMode, assessment, hint);
   }
 }
 
@@ -526,7 +552,7 @@ function promptCaveat(issue) {
   return parts.length ? ` (${parts.join('; ')})` : '';
 }
 
-function outputPrompt(projectDir, guardData, scoreData, issues, flags, agentMode = 'llm', assessment) {
+function outputPrompt(projectDir, guardData, scoreData, issues, flags, agentMode = 'llm', assessment, hint = cliHint) {
   if (issues.length === 0) {
     console.log('No issues to fix. Documentation is healthy.');
     return;
@@ -606,11 +632,7 @@ function outputPrompt(projectDir, guardData, scoreData, issues, flags, agentMode
 
   lines.push('');
   lines.push('VALIDATION:');
-  if (agentMode === 'llm') {
-    lines.push('After making all fixes, use the /docguard.guard skill to verify');
-  } else {
-    lines.push('After making all fixes, run: docguard guard');
-  }
+  lines.push(`After making all fixes, run: ${hint('guard')}`);
   lines.push('Expected result: Resolve verified defects; explain remaining review signals and unsupported checks. Do not rewrite correct documents merely to remove warnings.');
   if (toReview.length > 0) {
     // Without this an agent treats a non-zero count as failure and keeps
@@ -625,15 +647,9 @@ function outputPrompt(projectDir, guardData, scoreData, issues, flags, agentMode
     lines.push('');
     lines.push('VERIFICATION CHECKLIST (complete each step):');
     lines.push('□ Read each file in docs-canonical/ before editing');
-    if (agentMode === 'llm') {
-      lines.push('□ Run /docguard.guard after each file change');
-      lines.push('□ Confirm 0 errors before moving to next issue');
-      lines.push('□ Run /docguard.score to confirm improvement');
-    } else {
-      lines.push('□ Run `docguard guard` after each file change');
-      lines.push('□ Confirm 0 errors before moving to next issue');
-      lines.push('□ Run `docguard score` to confirm improvement');
-    }
+    lines.push(`□ Run \`${hint('guard')}\` after each file change`);
+    lines.push('□ Confirm 0 errors before moving to next issue');
+    lines.push(`□ Run \`${hint('score')}\` to confirm improvement`);
   }
 
   console.log(lines.join('\n'));
@@ -645,7 +661,7 @@ function outputPrompt(projectDir, guardData, scoreData, issues, flags, agentMode
  * and TRACE adversarial debate (Advocate/Challenger/Mediator/Explainer).
  * Lopez et al., IEEE TSE/TMLCN 2026.
  */
-function outputDebatePrompt(projectDir, guardData, scoreData, issues, agentMode = 'llm', assessment) {
+function outputDebatePrompt(projectDir, guardData, scoreData, issues, agentMode = 'llm', assessment, hint = cliHint) {
   const lines = [];
 
   lines.push('═══════════════════════════════════════════════════════');
@@ -710,7 +726,7 @@ function outputDebatePrompt(projectDir, guardData, scoreData, issues, agentMode 
   lines.push('   a. Which file to edit');
   lines.push('   b. What section to add or modify');
   lines.push('   c. What content to write (be specific, not vague)');
-  const verifyCmd = agentMode === 'llm' ? '/docguard.guard' : 'docguard guard';
+  const verifyCmd = hint('guard');
   lines.push(`4. After all fixes, verify with: ${verifyCmd}`);
   lines.push('5. Verify repaired claims against their evidence and retain unresolved uncertainty. Structural score is a proxy.');
   lines.push('');

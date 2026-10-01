@@ -4,7 +4,7 @@ description: Run DocGuard guard validation against Canonical-Driven Development 
   Parses output, triages severity, suggests targeted fixes, and optionally chains to
   docguard-fix for automated remediation. Use as a quality gate before commits or after
   implementation phases.
-compatibility: Requires DocGuard CLI installed (npm i -g docguard-cli or npx docguard-cli)
+compatibility: Requires DocGuard CLI installed (npm i -g docguard-cli, or npx --yes docguard-cli@0.42.1)
 metadata:
   author: docguard
   version: 0.42.1
@@ -13,6 +13,12 @@ metadata:
 <!-- docguard:version: 0.42.1 -->
 
 # DocGuard Guard Skill
+
+## Running DocGuard
+
+Run `docguard` from PATH when it is installed. Otherwise run
+`npx --yes docguard-cli@0.42.1`, the release these instructions ship with, in its
+place. Every `docguard …` command below means one of the two.
 
 ## User Input
 
@@ -38,7 +44,7 @@ Every finding answers three independent questions. Reading only `severity` confl
 | `evidence.status` | Has the reviewed corpus ever measured this code? | `measured`, `not-measured` |
 | `parserTier` | Which analyzer produced it? | `js-ast`, `py-ast`, `regex-fallback`, `fallback-language`, `mixed`, `not-applicable` |
 
-- **`act`** — DocGuard asserts a defect and names the correction. Safe to apply, including through `/docguard.fix`.
+- **`act`** — DocGuard asserts a defect and names the correction. Safe to apply, including through the `docguard-fix` skill.
 - **`escalate`** — DocGuard observed a signal; the judgement belongs to the reader. **Never auto-fix these.** Read the source, decide which side is wrong, and say so. FRS002 is the canonical example: the commit count is exact and the finding is `confidence: high`, yet it establishes only that a review is DUE, never that the document is stale.
 
 These axes vary independently. A blocking `error` can be an `escalate`; a `high`-confidence finding can still need a human.
@@ -50,8 +56,8 @@ These axes vary independently. A blocking `error` can be an `escalate`; a `high`
 ## Pre-Execution Checks
 
 1. **Verify DocGuard is available**:
-   - Check if `npx docguard-cli --version` succeeds
-   - If not available, check if `node cli/docguard.mjs --help` exists (local dev mode)
+   - Check that `docguard --version` succeeds, run as "Running DocGuard" says
+   - In DocGuard's own repository, `node cli/docguard.mjs` is the local build
    - If neither works: ERROR "DocGuard CLI not found. Install with: npm i -g docguard-cli"
 
 2. **Detect project root**:
@@ -65,7 +71,7 @@ These axes vary independently. A blocking `error` can be an `escalate`; a `high`
 Execute the guard command and capture full output:
 
 ```bash
-npx docguard-cli guard --format json
+docguard guard --format json
 ```
 
 If in a DocGuard development environment (cli/docguard.mjs exists), use:
@@ -173,13 +179,13 @@ For each finding, provide a **specific, actionable fix** — not "fix the issue"
 Based on the triage results:
 
 - **If all PASS**: "All configured validators passed. [C] of [V] validators were able to check; report declared evidence coverage and any remaining heuristic claims. Uncaptured prose is still unverified."
-- **If only `act` warnings**: "Non-blocking warnings found, all of them things DocGuard can name a correction for. Safe to commit; `/docguard.fix` can remediate them."
-- **If any `escalate` findings**: "[M] finding(s) need a human judgement — DocGuard observed a signal, it did not establish a defect. Review these against the source before changing anything; `/docguard.fix` will NOT resolve them."
-- **If HIGH or CRITICAL failures**: "Blocking issues found. Fix these before committing. Suggest running `/docguard.fix --doc [most impactful doc]` next — for the `act` findings only."
+- **If only `act` warnings**: "Non-blocking warnings found, all of them things DocGuard can name a correction for. Safe to commit; the `docguard-fix` skill can remediate them."
+- **If any `escalate` findings**: "[M] finding(s) need a human judgement — DocGuard observed a signal, it did not establish a defect. Review these against the source before changing anything; the `docguard-fix` skill will NOT resolve them."
+- **If HIGH or CRITICAL failures**: "Blocking issues found. Fix these before committing. Suggest running the `docguard-fix` skill with `--doc [most impactful doc]` next — for the `act` findings only."
 
 Present the user with options:
-1. "Fix all automatically" → Suggest: `/docguard.fix`
-2. "Fix specific doc" → Suggest: `/docguard.fix --doc [name]`
+1. "Fix all automatically" → Suggest: the `docguard-fix` skill
+2. "Fix specific doc" → Suggest: the `docguard-fix` skill with `--doc [name]`
 3. "Ignore warnings and proceed" → Warn about CDD compliance gap
 
 ## Behavior Rules

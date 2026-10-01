@@ -10,7 +10,7 @@ import { assertDefaultDocWrites } from '../shared-doc-roles.mjs';
  * with a warning suggesting spec-kit installation.
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync, lstatSync, realpathSync, copyFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync, lstatSync, realpathSync, copyFileSync, statSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { listCanonicalDocs } from '../shared-ignore.mjs';
 import { fileURLToPath } from 'node:url';
@@ -21,8 +21,9 @@ import { detectCanonicalLayout, applyDocRoles, mappedDefaultPaths } from '../sha
 import { autoDetectProjectType, getProjectTypeDefaults } from '../config.mjs';
 import { hasE2ESuite } from '../shared-source.mjs';
 import { detectProjectProfile } from '../scanners/project-type.mjs';
-import { ensureSkills, detectAgentMode, isSpecKitInitialized } from '../ensure-skills.mjs';
+import { ensureSkills, detectAgentMode } from '../ensure-skills.mjs';
 import { delegateSpecKitInit, MIN_SPEC_KIT_VERSION } from '../spec-kit-delegation.mjs';
+import { readAgentSurface, readIntegrationLayout, readExtensionCommands, agentCommand, commandHint } from '../agent-surface.mjs';
 import { safeWrite } from '../writers/generate-io.mjs';
 import { buildMemoryPlan } from '../scanners/memory-plan.mjs';
 
@@ -371,13 +372,87 @@ function renderSpecKitDelegation(result, flags) {
   }
   const ext = result.extension;
   if (ext.status === 'registered') {
-    console.log(`  ${c.green}✅${c.reset} DocGuard extension registered with Spec Kit ${c.dim}(workflow hooks active)${c.reset}`);
+    console.log(`  ${c.green}✅${c.reset} DocGuard extension registered with Spec Kit`);
+  } else if (ext.status === 'refreshed') {
+    console.log(`  ${c.green}✅${c.reset} DocGuard extension updated in Spec Kit ${c.dim}(${ext.from} → ${ext.to})${c.reset}`);
   } else if (ext.status === 'already-registered') {
     console.log(`  ${c.green}✅${c.reset} DocGuard extension already registered with Spec Kit`);
+  } else if (ext.status === 'disabled') {
+    console.log(`  ${c.yellow}⚠️${c.reset}  DocGuard extension is registered but disabled${ext.from ? ` (v${ext.from}; this CLI ships v${ext.to})` : ''}. Re-enable it: ${c.cyan}${ext.manualCommand}${c.reset}`);
+  } else if (ext.status === 'unsupported-version') {
+    console.log(`  ${c.yellow}⚠️${c.reset}  DocGuard extension not registered: ${ext.reason}`);
+    console.log(`     ${c.dim}Upgrade, then re-run docguard init:${c.reset} ${c.cyan}${ext.manualCommand}${c.reset}`);
   } else if (ext.status === 'failed') {
     console.log(`  ${c.red}❌${c.reset} DocGuard extension registration failed: ${ext.reason}`);
     console.log(`     ${c.dim}To retry by hand:${c.reset} ${c.cyan}${ext.manualCommand}${c.reset}`);
   }
+  renderHookStatus(result);
+}
+
+/**
+ * "Hooks active" is said only after every mandatory hook resolved to a file
+ * the agent can run (docguard.spec-kit-integration-honesty#FR-002).
+ *
+ * @implements docguard.spec-kit-integration-honesty#FR-002
+ */
+function renderHookStatus(result) {
+  const commands = result.commands;
+  if (commands?.written?.length) {
+    console.log(`  ${c.green}✅${c.reset} DocGuard's Spec Kit commands written for the generic integration ${c.dim}(${commands.written.length} file${commands.written.length === 1 ? '' : 's'})${c.reset}`);
+  }
+  if (commands?.skipped) console.log(`  ${c.yellow}⚠️${c.reset}  DocGuard's Spec Kit commands not written: ${commands.skipped}`);
+  const hooks = result.hooks;
+  if (!hooks) return;
+  if (hooks.status === 'active') {
+    const list = hooks.resolved.map(h => `${h.event} → ${h.invocation}`).join(', ');
+    console.log(`  ${c.green}✅${c.reset} Workflow hooks active ${c.dim}(${list})${c.reset}`);
+  } else if (hooks.status === 'unresolved' && hooks.unresolved.length) {
+    console.log(`  ${c.yellow}⚠️${c.reset}  Workflow hooks are NOT active — ${hooks.unresolved.length} mandatory hook command(s) have no file:`);
+    for (const h of hooks.unresolved) {
+      console.log(`     ${c.yellow}•${c.reset} ${h.command} ${c.dim}(${h.event}) — expected ${h.path}${c.reset}`);
+    }
+  } else {
+    console.log(`  ${c.yellow}⚠️${c.reset}  Workflow hooks not verified: ${hooks.reason}`);
+  }
+}
+
+/**
+ * Files Spec Kit wrote during this run: everything under `.specify/` plus the
+ * agent files its install manifests and the extension commands name, counted
+ * one by one (docguard.spec-kit-integration-honesty#FR-010).
+ */
+function countSpecKitWrites(projectDir, sinceMs, docguardWritten = []) {
+  const seen = new Set();
+  const walk = (rel) => {
+    let entries;
+    try { entries = readdirSync(resolve(projectDir, rel), { withFileTypes: true }); } catch { return; }
+    for (const e of entries) {
+      const child = `${rel}/${e.name}`;
+      if (e.isDirectory()) walk(child);
+      else if (e.isFile()) seen.add(child);
+    }
+  };
+  walk('.specify');
+  try {
+    for (const name of readdirSync(resolve(projectDir, '.specify', 'integrations'))) {
+      if (!name.endsWith('.manifest.json')) continue;
+      const files = JSON.parse(readFileSync(resolve(projectDir, '.specify', 'integrations', name), 'utf-8'))?.files;
+      for (const f of Object.keys(files || {})) seen.add(f);
+    }
+  } catch { /* no manifests */ }
+  const layout = readIntegrationLayout(projectDir);
+  if (layout) for (const { id } of readExtensionCommands()) seen.add(layout.pathFor(id));
+  for (const rel of docguardWritten) seen.delete(rel);
+  let count = 0;
+  for (const rel of seen) {
+    // ctime, not just mtime: specify copies templates with their packaged
+    // modification times, so only the status-change time shows this run wrote them.
+    try {
+      const st = statSync(resolve(projectDir, rel));
+      if (Math.max(st.mtimeMs, st.ctimeMs) >= sinceMs) count++;
+    } catch { /* absent */ }
+  }
+  return count;
 }
 
 export async function runInit(projectDir, configArg, flags) {
@@ -657,22 +732,42 @@ poetry.lock
   // packaged extension so its workflow hooks run. The subprocess contract lives
   // in cli/spec-kit-delegation.mjs (specs/014-specify-init-delegation); this
   // block only renders its structured result and never reports a failed step as
-  // done. v0.16-P8: --no-spec-kit skips the scaffold entirely.
+  // done. --no-spec-kit skips Spec Kit entirely (no `specify` call, no
+  // .specify/); DocGuard's own skills below still install, because they are
+  // not Spec Kit (docguard.spec-kit-integration-honesty#FR-007).
   //
   // v0.24 (field report #1): the `starter` profile is "minimal, for side
-  // projects" — it skips the heavy Spec Kit framework scaffold (.specify/
-  // templates/scripts/memory, ~30 files) by default. DocGuard's own canonical
-  // docs and its lightweight agent skills/commands still install (ensureSkills
-  // below). Opt back in with --spec-kit. Other profiles are unaffected.
+  // projects" — it skips the heavy Spec Kit framework scaffold by default.
+  // Opt back in with --spec-kit. Other profiles are unaffected.
   const starterSkipsSpecKit = profileName === 'starter' && !flags.specKit;
   const skipSpecKit = Boolean(flags.noSpecKit || starterSkipsSpecKit);
+  const delegationStart = Date.now();
   const delegation = delegateSpecKitInit(projectDir, { skip: skipSpecKit });
   renderSpecKitDelegation(delegation, flags);
-  if (delegation.status === 'initialized') created.push('.specify/ (spec-kit foundation)');
+
+  // DocGuard's own skills and commands, where this project's agent reads them
+  // (docguard.spec-kit-integration-honesty#FR-009). Installed before the
+  // summary and the next steps, so both describe what is now on disk. Thread
+  // the spec-kit skip decision through so ensureSkills doesn't re-trigger the
+  // framework scaffold we just declined.
+  console.log('');
+  const assets = ensureSkills(projectDir, { ...flags, noSpecKit: skipSpecKit, specKitHandled: true }, readAgentSurface(projectDir));
 
   // ── Summary ────────────────────────────────────────────────────────────
+  // Every number is a count of files (docguard.spec-kit-integration-honesty#FR-010).
+  const genericCommands = delegation.commands?.written || [];
+  const agentFiles = assets.written.length + genericCommands.length;
+  const specKitFiles = ['initialized', 'already-initialized'].includes(delegation.status)
+    ? countSpecKitWrites(projectDir, delegationStart, genericCommands)
+    : 0;
   console.log(`\n${c.bold}  ─────────────────────────────────────${c.reset}`);
-  console.log(`  ${c.green}Created:${c.reset} ${created.length} files`);
+  console.log(`  ${c.green}Created:${c.reset} ${created.length} DocGuard file${created.length === 1 ? '' : 's'}`);
+  if (agentFiles > 0) {
+    console.log(`  ${c.green}Agent files:${c.reset} ${agentFiles} installed or updated`);
+  }
+  if (specKitFiles > 0) {
+    console.log(`  ${c.green}Spec Kit:${c.reset} ${specKitFiles} file${specKitFiles === 1 ? '' : 's'} written by specify`);
+  }
   if (skipped.length > 0) {
     console.log(`  ${c.yellow}Skipped:${c.reset} ${skipped.length} files (already exist)`);
   }
@@ -682,8 +777,13 @@ poetry.lock
   console.log(`  ${c.dim}Auto-guard on commit:${c.reset}  ${c.cyan}docguard hooks --type pre-commit${c.reset}`);
   console.log(`  ${c.dim}Auto-guard on push:${c.reset}   ${c.cyan}docguard hooks --type pre-push${c.reset}`);
 
-  // ── Next Steps (LLM-First) ─────────────────────────────────────────────
+  // ── Next Steps ─────────────────────────────────────────────────────────
+  // A slash command is named only when its file exists for this project's
+  // agent; anything else is the CLI command (docguard.spec-kit-integration-
+  // honesty#FR-006).
   const agentMode = detectAgentMode(projectDir);
+  const surface = readAgentSurface(projectDir);
+  const guardHint = commandHint(projectDir, surface, 'guard');
   const createdDocs = created.filter(f => f.startsWith('docs-canonical/'));
 
   if (createdDocs.length > 0) {
@@ -691,12 +791,12 @@ poetry.lock
     console.log(`  ${c.dim}The files above are skeleton templates. Your AI agent should fill them.${c.reset}`);
 
     if (agentMode === 'llm') {
-      // LLM-first: show skill commands
-      console.log(`\n  ${c.bold}Use these skills in your AI agent:${c.reset}`);
-      if (isSpecKitInitialized(projectDir)) {
-        console.log(`  ${c.cyan}1. /speckit.constitution${c.reset} ${c.dim}← establish project principles${c.reset}`);
-      }
-      console.log(`  ${c.cyan}${isSpecKitInitialized(projectDir) ? '2' : '1'}. /docguard.guard${c.reset}    ${c.dim}← validate documentation${c.reset}`);
+      const constitution = agentCommand(projectDir, surface, 'constitution', '', { speckit: true });
+      const steps = [];
+      if (constitution) steps.push([constitution, 'establish project principles']);
+      steps.push([guardHint, 'validate documentation']);
+      console.log(`\n  ${c.bold}In your AI agent:${c.reset}`);
+      steps.forEach(([cmd, why], i) => console.log(`  ${c.cyan}${i + 1}. ${cmd}${c.reset} ${c.dim}← ${why}${c.reset}`));
 
       const docNameMap = {
         'docs-canonical/ARCHITECTURE.md': 'architecture',
@@ -708,12 +808,12 @@ poetry.lock
 
       const fixTargets = createdDocs.map(d => docNameMap[d]).filter(Boolean);
       if (fixTargets.length > 0) {
-        console.log(`\n  ${c.dim}Fix individual docs with the docguard-fix skill:${c.reset}`);
+        console.log(`\n  ${c.dim}Get a research prompt for each document:${c.reset}`);
         for (const target of fixTargets) {
-          console.log(`  ${c.cyan}/docguard.fix --doc ${target}${c.reset}`);
+          console.log(`  ${c.cyan}${commandHint(projectDir, surface, 'fix', `--doc ${target}`)}${c.reset}`);
         }
       }
-      console.log(`\n  ${c.dim}Then verify:${c.reset} ${c.cyan}/docguard.guard${c.reset}`);
+      console.log(`\n  ${c.dim}Then verify:${c.reset} ${c.cyan}${guardHint}${c.reset}`);
     } else {
       // CLI fallback
       console.log(`\n  ${c.dim}Get a full remediation plan:${c.reset}`);
@@ -721,18 +821,11 @@ poetry.lock
       console.log(`  ${c.dim}Then verify:${c.reset} ${c.cyan}docguard guard${c.reset}`);
     }
     console.log('');
+  } else if (agentMode === 'llm') {
+    console.log(`\n  ${c.dim}Use${c.reset} ${c.cyan}${guardHint}${c.reset} ${c.dim}to check for issues.${c.reset}\n`);
   } else {
-    if (agentMode === 'llm') {
-      console.log(`\n  ${c.dim}Use${c.reset} ${c.cyan}/docguard.guard${c.reset} ${c.dim}in your AI agent to check for issues.${c.reset}\n`);
-    } else {
-      console.log(`\n  ${c.dim}Run${c.reset} ${c.cyan}docguard diagnose${c.reset} ${c.dim}to check for issues.${c.reset}\n`);
-    }
+    console.log(`\n  ${c.dim}Run${c.reset} ${c.cyan}docguard diagnose${c.reset} ${c.dim}to check for issues.${c.reset}\n`);
   }
-
-  // Auto-install DocGuard's own skills and commands. Thread the spec-kit skip
-  // decision through so ensureSkills doesn't re-trigger the framework scaffold
-  // we just declined for the starter profile (or --no-spec-kit).
-  ensureSkills(projectDir, { ...flags, noSpecKit: skipSpecKit, specKitHandled: true });
 
   // v0.20: `docguard init --with agents,hooks,ci,badge,llms,publish` runs
   // the named scaffolders after init has finished. Each one runs in sequence

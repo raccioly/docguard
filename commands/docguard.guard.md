@@ -13,10 +13,16 @@ handoffs:
 
 You are an AI agent enforcing Canonical-Driven Development (CDD) compliance using DocGuard.
 
+## Running DocGuard
+
+Run `docguard` from PATH when it is installed. Otherwise run
+`npx --yes docguard-cli@0.42.1`, the release these instructions ship with, in its
+place. Every `docguard …` command below means one of the two.
+
 ## Step 1: Run Guard (machine-readable)
 
 ```bash
-npx docguard-cli guard --format json
+docguard guard --format json
 ```
 
 Read the JSON contract — do not parse prose:
@@ -35,26 +41,26 @@ Read the JSON contract — do not parse prose:
 ## Step 2: Understand each finding before fixing
 
 - Every finding carries a stable code (e.g. `STR001`, `ENV003`, `XRF002`). Run
-  `npx docguard-cli explain <CODE>` for its contract, cause, and remediation.
+  `docguard explain <CODE>` for its contract, cause, and remediation.
 - `confidence: "low"` means the scanner itself is unsure — verify against the
   code before changing anything, and report real false positives with
-  `npx docguard-cli feedback`.
+  `docguard feedback`.
 - A finding's `suggestion` may include a ready-to-run `command` or an inline
   `pragma`. Prefer those over inventing your own fix.
 
 ## Step 3: Fix, suppress, or escalate
 
-1. **Mechanical issues first**: `npx docguard-cli fix --write` applies safe,
+1. **Mechanical issues first**: `docguard fix --write` applies safe,
    provenance-checked fixes (broken anchors, stale counts/versions). Never
    hand-edit what the tool can fix deterministically.
-2. **Prose/content issues**: follow the `/docguard.fix` workflow (research →
+2. **Prose/content issues**: follow the the `docguard-fix` skill workflow (research →
    write real content).
 3. **Genuine false positives**: suppress at the finding site with the code —
    `// docguard:ignore <CODE>` on (or above) the flagged line — or mark a whole
    validator not-applicable in a doc:
    `<!-- docguard:validator <key> n/a — reason -->`. Always include the reason.
    Never suppress to silence a real issue.
-4. If `semanticClaims.count > 0`, offer to run `npx docguard-cli verify --semantic`
+4. If `semanticClaims.count > 0`, offer to run `docguard verify --semantic`
    and check each extracted claim against the code — a green guard asserts
    structure, not the truth of documented numbers.
 
@@ -65,4 +71,4 @@ Show the user:
    validator watches — suggest enrolling or ignoring them)
 2. Each finding fixed (by code), each suppressed (with reason), each reported
    as a false positive
-3. Final score: `npx docguard-cli score`
+3. Final score: `docguard score`
