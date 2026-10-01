@@ -64,7 +64,7 @@ DocGuard enforces **Canonical-Driven Development (CDD)** — a methodology where
 
 DocGuard is an official [GitHub Spec Kit](https://github.com/github/spec-kit) community extension. It validates the artifacts that Spec Kit creates, ensuring your specs stay high-quality throughout the development lifecycle.
 
-🧭 **[How it works (9-page brief)](https://github.com/raccioly/docguard/blob/main/docs/docguard-explained.html)** ([PDF](https://github.com/raccioly/docguard/blob/main/docs/docguard-explained.pdf)) · 📖 **[Philosophy](PHILOSOPHY.md)** · 📋 **[CDD Standard](STANDARD.md)** · ⚖️ **[Comparisons](https://github.com/raccioly/docguard/blob/main/COMPARISONS.md)** · 🔬 **[Validation](https://github.com/raccioly/docguard/blob/main/VALIDATION.md)** · 🗺️ **[Roadmap](https://github.com/raccioly/docguard/blob/main/ROADMAP.md)**
+🧭 **[How it works (9-page brief)](https://raccioly.github.io/docguard/docguard-explained.html)** ([PDF](https://raccioly.github.io/docguard/docguard-explained.pdf)) · 📖 **[Philosophy](PHILOSOPHY.md)** · 📋 **[CDD Standard](STANDARD.md)** · ⚖️ **[Comparisons](https://github.com/raccioly/docguard/blob/main/COMPARISONS.md)** · 🔬 **[Validation](https://github.com/raccioly/docguard/blob/main/VALIDATION.md)** · 🗺️ **[Roadmap](https://github.com/raccioly/docguard/blob/main/ROADMAP.md)**
 
 ### Architecture
 
