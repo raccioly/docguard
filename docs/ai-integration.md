@@ -127,7 +127,7 @@ permissions: { pull-requests: write }
 steps:
   - uses: actions/checkout@v4
     with: { fetch-depth: 0 }
-  - uses: raccioly/docguard@v0.42.1
+  - uses: raccioly/docguard@v0.43.0
     with:
       command: guard
       # both default to 'true':

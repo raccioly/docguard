@@ -4,20 +4,20 @@ description: Run DocGuard guard validation against Canonical-Driven Development 
   Parses output, triages severity, suggests targeted fixes, and optionally chains to
   docguard-fix for automated remediation. Use as a quality gate before commits or after
   implementation phases.
-compatibility: Requires DocGuard CLI installed (npm i -g docguard-cli, or npx --yes docguard-cli@0.42.1)
+compatibility: Requires DocGuard CLI installed (npm i -g docguard-cli, or npx --yes docguard-cli@0.43.0)
 metadata:
   author: docguard
-  version: 0.42.1
+  version: 0.43.0
   source: extensions/spec-kit-docguard/skills/docguard-guard
 ---
-<!-- docguard:version: 0.42.1 -->
+<!-- docguard:version: 0.43.0 -->
 
 # DocGuard Guard Skill
 
 ## Running DocGuard
 
 Run `docguard` from PATH when it is installed. Otherwise run
-`npx --yes docguard-cli@0.42.1`, the release these instructions ship with, in its
+`npx --yes docguard-cli@0.43.0`, the release these instructions ship with, in its
 place. Every `docguard …` command below means one of the two.
 
 ## User Input
