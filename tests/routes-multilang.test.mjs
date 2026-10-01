@@ -1,3 +1,6 @@
+/**
+ * @req docguard.go-spring-rails-routes#FR-001
+ */
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';

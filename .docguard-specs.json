@@ -4071,22 +4071,28 @@
       "path": "specs/044-generated-docs-consistency/spec.md",
       "reviewed": {
         "lifecycle": {
-          "approval": "draft",
-          "delivery": "planned",
+          "approval": "approved",
+          "delivery": "implemented",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
-          "persistenceModel": null
+          "persistenceModel": "living"
         },
         "relations": {
-          "extends": [],
+          "extends": [
+            "docguard.as-built-specs",
+            "docguard.code-derived-diagrams",
+            "docguard.language-repository-coverage"
+          ],
           "duplicates": [],
           "conflictsWith": [],
           "supersedes": [],
           "supersededBy": []
         },
         "scope": {
-          "canonicalDocs": []
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md"
+          ]
         },
         "reconciliation": {
           "lastReviewedRevision": null,
@@ -4166,6 +4172,11 @@
             "requirementId": "FR-004",
             "file": "cli/scanners/as-built.mjs",
             "line": 194
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/shared-trace-patterns.mjs",
+            "line": 13
           },
           {
             "requirementId": "FR-004",
@@ -4283,6 +4294,11 @@
             "requirementId": "FR-012",
             "file": "tests/generated-docs-consistency.test.mjs",
             "line": 17
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/fixtures/generated-docs-projects.mjs",
+            "line": 6
           },
           {
             "requirementId": "SC-001",
@@ -4426,6 +4442,11 @@
             "requirementId": "FR-001",
             "file": "tests/go-spring-rails-routes.test.mjs",
             "line": 12
+          },
+          {
+            "requirementId": "FR-001",
+            "file": "tests/routes-multilang.test.mjs",
+            "line": 2
           },
           {
             "requirementId": "FR-002",
@@ -4869,6 +4890,11 @@
             "requirementId": "FR-011",
             "file": "tests/js-ts-extraction.test.mjs",
             "line": 18
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/fixtures/js-ts-projects.mjs",
+            "line": 8
           },
           {
             "requirementId": "SC-001",
@@ -7464,6 +7490,21 @@
           },
           {
             "requirementId": "FR-005",
+            "file": "cli/commands/memory.mjs",
+            "line": 22
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/writers/fix-memory.mjs",
+            "line": 41
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/writers/history.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-005",
             "file": "cli/writers/state-dir.mjs",
             "line": 11
           },
@@ -8328,6 +8369,11 @@
             "requirementId": "FR-006",
             "file": "cli/commands/diagnose.mjs",
             "line": 190
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/commands/memory.mjs",
+            "line": 23
           },
           {
             "requirementId": "FR-008",

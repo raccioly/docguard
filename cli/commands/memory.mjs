@@ -19,6 +19,8 @@
  *   - Tech:      ARCHITECTURE.md vs detected stack
  *
  * Zero NPM dependencies. Pure orchestration of existing diff helpers.
+ * @implements docguard.read-only-commands#FR-005
+ * @implements docguard.spec-kit-integration-honesty#FR-006
  */
 
 import { buildSymbolMap } from '../scanners/symbol-map.mjs';
