@@ -237,3 +237,9 @@ finding carries `parserTier: "fallback-language"`.
   and Python static import graphs"). A Go-only project reports
   `not-applicable`.
 - **Env reads inside ERB-templated YAML** (Rails `database.yml`): not read.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `d17dee0a5924795582cae3b0fcd97bfdbad93c76` — Reviewed at d17dee0 on main: all 12 tasks are checked and were delivered by #498; the full suite (2909 tests) passes and guard reports 0 errors at this revision. Evidence: `cli/commands/diff.mjs`, `cli/scanners/import-graph.mjs`, `cli/scanners/module-diagram.mjs`, `cli/scanners/routes.mjs`, `cli/scanners/symbol-map.mjs`, `cli/shared-ignore.mjs`, `cli/shared-source.mjs`, `cli/validators/api-surface.mjs`, `cli/validators/environment.mjs`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/DATA-MODEL.md`, `tests/fallback-language-coverage.test.mjs`, `tests/parser-tier.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->

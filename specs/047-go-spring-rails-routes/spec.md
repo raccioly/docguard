@@ -210,3 +210,9 @@ registered through net/http in the same service.
   Rails engines' own route files, `mount`ed Rack apps and `devise_for`.
 - Classifying a Go project that uses only net/http as a web service; its
   framework stays unset (a separate classification change).
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `d17dee0a5924795582cae3b0fcd97bfdbad93c76` — Reviewed at d17dee0 on main: all 10 tasks are checked and were delivered by #500, #508; the full suite (2909 tests) passes and guard reports 0 errors at this revision. Evidence: `cli/scanners/go-routes.mjs`, `cli/scanners/rails-routes.mjs`, `cli/scanners/route-lexing.mjs`, `cli/scanners/spring-routes.mjs`, `docs-canonical/TEST-SPEC.md`, `tests/go-spring-rails-routes.test.mjs`, `tests/routes-multilang.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->

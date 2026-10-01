@@ -246,3 +246,9 @@ A developer runs `docguard generate` on an existing codebase and then
 - Filling the plan's component-map responsibilities in place (a code-owned
   section): unchanged; `pinned` remains the way to keep hand edits.
 - `sync`'s backup policy: unchanged.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `d17dee0a5924795582cae3b0fcd97bfdbad93c76` — Reviewed at d17dee0 on main: all 12 tasks are checked and were delivered by #504, #508; the full suite (2909 tests) passes and guard reports 0 errors at this revision. Evidence: `cli/commands/diff.mjs`, `cli/scanners/api-doc.mjs`, `cli/scanners/as-built.mjs`, `cli/shared-ignore.mjs`, `cli/shared-source.mjs`, `cli/shared-trace-patterns.mjs`, `cli/shared.mjs`, `cli/validators/traceability.mjs`, `cli/writers/doc-generators.mjs`, `cli/writers/generate-io.mjs`, `docs-canonical/ARCHITECTURE.md`, `tests/fixtures/generated-docs-projects.mjs`, `tests/generated-docs-consistency.test.mjs`, `tests/generated-docs-e2e.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->

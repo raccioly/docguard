@@ -166,3 +166,9 @@ JSON by hand.
   adding it is a schema change).
 - Commands for `persistenceModel`, `canonicalDocs` and relations; they stay
   hand-reviewed edits.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `d17dee0a5924795582cae3b0fcd97bfdbad93c76` — Reviewed at d17dee0 on main: all 10 tasks are checked and were delivered by #499; the full suite (2909 tests) passes and guard reports 0 errors at this revision. Evidence: `cli/commands/explain.mjs`, `cli/commands/mcp.mjs`, `cli/commands/specs.mjs`, `cli/findings.mjs`, `cli/scanners/revision-anchor.mjs`, `cli/scanners/spec-first.mjs`, `cli/scanners/spec-registry.mjs`, `docs-canonical/DATA-MODEL.md`, `docs-canonical/SECURITY.md`, `tests/first-spec-preflight.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->

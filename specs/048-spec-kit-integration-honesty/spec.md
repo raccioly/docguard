@@ -233,3 +233,9 @@ active only after checking that.
   in those formats).
 - Deleting a `.agent/` directory earlier releases wrote.
 - Output-stream, `NO_COLOR` and `upgrade` wording fixes (spec 049).
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `d17dee0a5924795582cae3b0fcd97bfdbad93c76` — Reviewed at d17dee0 on main: all 17 tasks are checked and were delivered by #506, #508; the full suite (2909 tests) passes and guard reports 0 errors at this revision. Evidence: `cli/agent-surface.mjs`, `cli/commands/diagnose.mjs`, `cli/commands/init.mjs`, `cli/commands/memory.mjs`, `cli/commands/upgrade.mjs`, `cli/ensure-skills.mjs`, `cli/spec-kit-delegation.mjs`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/ENVIRONMENT.md`, `tests/release-version-sync.test.mjs`, `tests/spec-kit-integration-honesty.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->

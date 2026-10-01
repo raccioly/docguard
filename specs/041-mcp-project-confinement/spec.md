@@ -175,3 +175,9 @@ from another directory. The server refuses and reads nothing.
 - Changing which files the doc tools may read inside a root.
 - The MCP `roots` capability negotiated by clients (rejected: it lets the
   client, the party being confined, choose the boundary).
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `d17dee0a5924795582cae3b0fcd97bfdbad93c76` — Reviewed at d17dee0 on main: all 11 tasks are checked and were delivered by #497; the full suite (2909 tests) passes and guard reports 0 errors at this revision. Evidence: `cli/commands/mcp.mjs`, `cli/docguard.mjs`, `docs-canonical/SECURITY.md`, `tests/mcp-project-confinement.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->
