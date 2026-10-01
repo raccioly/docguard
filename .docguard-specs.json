@@ -7777,22 +7777,26 @@
       "path": "specs/051-release-cut-green/spec.md",
       "reviewed": {
         "lifecycle": {
-          "approval": "draft",
-          "delivery": "planned",
+          "approval": "approved",
+          "delivery": "implemented",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
-          "persistenceModel": null
+          "persistenceModel": "living"
         },
         "relations": {
-          "extends": [],
+          "extends": [
+            "docguard.release-readiness"
+          ],
           "duplicates": [],
           "conflictsWith": [],
           "supersedes": [],
           "supersededBy": []
         },
         "scope": {
-          "canonicalDocs": []
+          "canonicalDocs": [
+            "docs-canonical/CI-RECIPES.md"
+          ]
         },
         "reconciliation": {
           "lastReviewedRevision": null,
@@ -7823,7 +7827,7 @@
           },
           {
             "path": "specs/051-release-cut-green/tasks.md",
-            "digest": "sha256:49455a633672a205be2555bb7ec490278b22bb14d3f4743d3b026e7c632f4881"
+            "digest": "sha256:63cd41b5f03a9b28e09cfd511fc146e54336765cb5a77c7948d7d5c619501b69"
           }
         ],
         "taskCompletion": {
@@ -7877,6 +7881,16 @@
             "requirementId": "FR-006",
             "file": "tests/release-cut-green.test.mjs",
             "line": 6
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/release-cut-green.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/release-cut-green.test.mjs",
+            "line": 8
           }
         ]
       }

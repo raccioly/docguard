@@ -1,6 +1,6 @@
 # Tasks: A Release Cut That Passes Its Own Suite
 
-**Status**: Complete. SC-001: the replayed cut passes 2,918/2,918 tests, guard exits 0, the candidate validates (42 files), and the release add stages every changed file; SC-002: below.
+**Status**: Complete. SC-001: the replayed cut passes 2,919/2,919 tests, guard exits 0, the candidate validates (42 files), and the release add stages every changed file; SC-002: below.
 **Spec**: `specs/051-release-cut-green/spec.md`
 **Plan**: `specs/051-release-cut-green/plan.md`
 

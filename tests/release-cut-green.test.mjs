@@ -4,12 +4,16 @@
  * @req docguard.release-cut-green#FR-004
  * @req docguard.release-cut-green#FR-005
  * @req docguard.release-cut-green#FR-006
+ * @req docguard.release-cut-green#SC-001
+ * @req docguard.release-cut-green#SC-002
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { syncReleaseVersion } from '../.github/scripts/sync-release-version.mjs';
+import { validateReleaseWorkspace } from '../.github/scripts/validate-release-candidate.mjs';
 import { notesSince, notesAsUnreleased } from './fixtures/changelog-notes.mjs';
 import { cutChangelog, inferBump } from '../.github/scripts/release-changelog.mjs';
 import { ensureSkills } from '../cli/ensure-skills.mjs';
@@ -78,6 +82,52 @@ describe('the release commits and admits every synchronized path (FR-006)', () =
     const specs = add.trim().replace(/ 2>\/dev\/null.*$/, '').split(/\s+/).slice(2);
     for (const rel of synchronized) {
       assert.ok(specs.some(s => (s.endsWith('/') ? rel.startsWith(s) : rel === s)), `${rel} is not staged by: ${add.trim()}`);
+    }
+  });
+});
+
+describe("replaying the cut on this repository's release surfaces (SC-001)", () => {
+  it('cuts, synchronizes, validates and stages a candidate whose CHANGELOG checks still hold', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'docguard-release-replay-'));
+    const git = (...args) => execFileSync('git', args, { cwd: dir, encoding: 'utf8' });
+    try {
+      // The tracked release surfaces at HEAD, in a repository of their own.
+      const surfaces = ['package.json', 'package-lock.json', 'pyproject.toml', 'server.json', 'action.yml', 'README.md',
+        'docs/ai-integration.md', 'CHANGELOG.md', 'templates', 'commands', 'extensions', '.agent'];
+      execFileSync('sh', ['-c', `git archive HEAD ${surfaces.join(' ')} | tar -x -C "${dir}"`]);
+      git('init', '-q');
+      git('add', '-A');
+      git('-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qm', 'base');
+
+      const base = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8')).version;
+      const [major, minor] = base.split('.').map(Number);
+      const next = `${major}.${minor + 1}.0`;
+      for (const file of ['package.json', 'package-lock.json']) {
+        const json = JSON.parse(readFileSync(join(dir, file), 'utf8'));
+        json.version = next;
+        if (json.packages?.['']) json.packages[''].version = next;
+        writeFileSync(join(dir, file), `${JSON.stringify(json, null, 2)}\n`);
+      }
+      const changelog = cut(readFileSync(join(dir, 'CHANGELOG.md'), 'utf8'), next, ['abc1234 fix: replay (#1)']);
+      writeFileSync(join(dir, 'CHANGELOG.md'), changelog);
+      syncReleaseVersion(dir);
+
+      const { paths } = validateReleaseWorkspace({ root: dir, baseVersion: base, branch: `release/v${next}`, repository: 'raccioly/docguard' });
+      assert.ok(paths.some(p => p.startsWith('.agent/commands/')) && paths.some(p => p.startsWith('commands/')), paths.join('\n'));
+
+      const add = readFileSync('.github/workflows/scheduled-release.yml', 'utf8').split('\n').find(line => /^\s*git add package\.json /.test(line));
+      git('add', ...add.trim().replace(/ 2>\/dev\/null.*$/, '').split(/\s+/).slice(2));
+      assert.equal(git('diff', '--name-only'), '', 'every synchronized file is staged by the release commit');
+
+      for (const name of ['docguard-guard', 'docguard-fix']) {
+        assert.equal(readFileSync(join(dir, `.agent/skills/${name}/SKILL.md`), 'utf8'),
+          readFileSync(join(dir, `extensions/spec-kit-docguard/skills/${name}/SKILL.md`), 'utf8'), name);
+      }
+      // The notes this release ships are still found after the cut empties [Unreleased].
+      assert.match(notesSince(changelog, '0.42.1'), /specs\/051-release-cut-green/);
+      assert.equal(inferBump(notesAsUnreleased(changelog, '0.42.1')).bump, 'minor');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
     }
   });
 });
