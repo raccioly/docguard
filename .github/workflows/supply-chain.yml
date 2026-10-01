@@ -17,11 +17,11 @@ permissions:
 jobs:
   osv-scan-pr:
     if: github.event_name == 'pull_request'
-    uses: "google/osv-scanner-action/.github/workflows/osv-scanner-reusable-pr.yml@6e4298ebc4db23e847df9b2e2de2939d6f066c67" # v2.5.1
+    uses: "google/osv-scanner-action/.github/workflows/osv-scanner-reusable-pr.yml@a345acffa64b0eaede81a3d9aae6141214d9c8fc" # v2.6.0
 
   osv-scan-scheduled:
     if: github.event_name != 'pull_request'
-    uses: "google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@6e4298ebc4db23e847df9b2e2de2939d6f066c67" # v2.5.1
+    uses: "google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@a345acffa64b0eaede81a3d9aae6141214d9c8fc" # v2.6.0
 
   websec:
     # Dogfoods raccioly/websec-validator: SCA + secrets + IaC misconfig in one
@@ -56,7 +56,7 @@ jobs:
           sudo install -m 0755 osv-scanner /usr/local/bin/osv-scanner
 
       - name: websec-validator
-        uses: raccioly/websec-validator@7b2f945e40f6de79cc078acb137ccfe22bd1e8aa # v0.16.0
+        uses: raccioly/websec-validator@739b09d9ec0d98de5d672feca5a6e4e39a75ec14 # v0.19.0
         with:
           scan: "true"
           scanners: "trivy,osv-scanner"
