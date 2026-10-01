@@ -3501,8 +3501,8 @@
           "description": "Go routes carry no tier.",
           "faultClass": "other",
           "file": "cli/scanners/routes.mjs",
-          "find": "        description: '', tier, tierReason,\n",
-          "replace": "        description: '',\n",
+          "find": "  return extractGoRoutes(sources).map(r => ({ ...r, source: 'go-web', description: '', ...tierFor(resolve(dir, r.file), null) }));",
+          "replace": "  return extractGoRoutes(sources).map(r => ({ ...r, source: 'go-web', description: '' }));",
           "producedBy": {
             "producer": "agent",
             "by": "claude-opus-5.5 (spec 043)"
@@ -4316,6 +4316,1070 @@
       ]
     },
     {
+      "id": "GO-SPRING-RAILS-ROUTES-COMPOSE-PREFIXES",
+      "statement": "Go, Spring and Rails routes are reported at the path the framework serves them under: Go group, sub-router and mount prefixes compose across blocks, functions and files; Spring class-level @RequestMapping bases in every form join every method mapping, with @RequestMapping methods read and Feign clients skipped; Rails namespace, scope, resources options, nesting and member/collection blocks produce the routes rails routes lists. A route whose path or prefix is not literal is omitted, never guessed.",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/047-go-spring-rails-routes/spec.md#FR-001"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (spec 047)"
+      },
+      "defendedBy": [
+        "tests/go-spring-rails-routes.test.mjs",
+        "tests/routes-multilang.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "A Go group prefix is not joined to its parent's.",
+          "faultClass": "other",
+          "file": "cli/scanners/go-routes.mjs",
+          "find": "        out = prefixes(node.parent, visiting).map(p => joinRoutePath(p, node.prefix));",
+          "replace": "        out = [node.prefix];",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 047)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "A group passed to a function is ignored.",
+          "faultClass": "other",
+          "file": "cli/scanners/go-routes.mjs",
+          "find": "        out = callers.length ? callers.flatMap(n => prefixes(n, visiting)) : [''];",
+          "replace": "        out = [''];",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 047)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "_test.go files are read as product routes.",
+          "faultClass": "other",
+          "file": "cli/scanners/go-routes.mjs",
+          "find": "/_test\\.go$/.test(s.file)",
+          "replace": "false",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 047)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "An ambiguous callee receives every caller's prefix.",
+          "faultClass": "other",
+          "file": "cli/scanners/go-routes.mjs",
+          "find": "  const one = list => (list.length <= 1 ? list : AMBIGUOUS);",
+          "replace": "  const one = list => list;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 047)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "A non-literal group prefix is dropped instead of omitting its routes.",
+          "faultClass": "other",
+          "file": "cli/scanners/go-routes.mjs",
+          "find": "      node = typeof prefix === 'string' ? { kind: 'child', parent: node, prefix } : UNRESOLVED;",
+          "replace": "      node = typeof prefix === 'string' ? { kind: 'child', parent: node, prefix } : node;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 047)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "A capitalised verb on an unknown receiver counts as a route.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/go-routes.mjs",
+          "find": "    if (r.requireKnown && !known(r.node)) continue;\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 047)"
+          }
+        },
+        {
+          "id": "F7",
+          "description": "Go 1.22 method patterns are not parsed.",
+          "faultClass": "other",
+          "file": "cli/scanners/go-routes.mjs",
+          "find": "  const m = /^([A-Z]+)\\s+(.*)$/.exec(pattern);",
+          "replace": "  const m = null;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 047)"
+          }
+        },
+        {
+          "id": "F8",
+          "description": "chi Mount is ignored.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/go-routes.mjs",
+          "find": "    if (sub && sub !== UNKNOWN) state.mounts.push({ target: sub, parent: recv, prefix: strOf(args[0]) });\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 047)"
+          }
+        },
+        {
+          "id": "F9",
+          "description": "The class-level @RequestMapping base is ignored.",
+          "faultClass": "other",
+          "file": "cli/scanners/spring-routes.mjs",
+          "find": "      const bases = mapping ? annotationPaths(f, mapping, consts).filter(p => typeof p === 'string') : [''];",
+          "replace": "      const bases = [''];",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 047)"
+          }
+        },
+        {
+          "id": "F10",
+          "description": "path = is not read as the mapping path.",
+          "faultClass": "other",
+          "file": "cli/scanners/spring-routes.mjs",
+          "find": "named[1] === 'value' || named[1] === 'path'",
+          "replace": "named[1] === 'value'",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 047)"
+          }
+        },
+        {
+          "id": "F11",
+          "description": "@RequestMapping(method = …) is ignored.",
+          "faultClass": "other",
+          "file": "cli/scanners/spring-routes.mjs",
+          "find": "    return methods.length ? methods : ['ANY'];",
+          "replace": "    return ['ANY'];",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 047)"
+          }
+        },
+        {
+          "id": "F12",
+          "description": "A Feign client's mappings are reported as routes.",
+          "faultClass": "other",
+          "file": "cli/scanners/spring-routes.mjs",
+          "find": "run.some(a => a.name === 'FeignClient')",
+          "replace": "run.some(a => a.name === 'NoSuchAnnotation')",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 047)"
+          }
+        },
+        {
+          "id": "F13",
+          "description": "A ${…} placeholder path is reported.",
+          "faultClass": "other",
+          "file": "cli/scanners/spring-routes.mjs",
+          "find": "  return out.includes('${') ? null : out;",
+          "replace": "  return out;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 047)"
+          }
+        },
+        {
+          "id": "F14",
+          "description": "Block comments are read as code.",
+          "faultClass": "other",
+          "file": "cli/scanners/route-lexing.mjs",
+          "find": "      blank(i, j);\n      i = j;\n      continue;\n    }\n    if (tripleQuote",
+          "replace": "      i = j;\n      continue;\n    }\n    if (tripleQuote",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 047)"
+          }
+        },
+        {
+          "id": "F15",
+          "description": "A sub-path of \"/\" keeps a trailing slash.",
+          "faultClass": "other",
+          "file": "cli/scanners/route-lexing.mjs",
+          "find": "  const right = (p === '/' || p === '') ? '' : ('/' + p.replace(/^\\/+/, ''));",
+          "replace": "  const right = '/' + p.replace(/^\\/+/, '');",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 047)"
+          }
+        },
+        {
+          "id": "F16",
+          "description": "A Rails namespace adds no path prefix.",
+          "faultClass": "other",
+          "file": "cli/scanners/rails-routes.mjs",
+          "find": "        const segment = optText('path') ?? n;\n        const path = join(scope.path, segment);",
+          "replace": "        const segment = optText('path') ?? n;\n        const path = scope.path;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 047)"
+          }
+        },
+        {
+          "id": "F17",
+          "description": "only: is ignored.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/rails-routes.mjs",
+          "find": "    if (opt('only')) { const only = new Set(names(opt('only'))); actions = actions.filter(a => only.has(a)); }\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 047)"
+          }
+        },
+        {
+          "id": "F18",
+          "description": "A nested resource is not placed under its parent.",
+          "faultClass": "other",
+          "file": "cli/scanners/rails-routes.mjs",
+          "find": "      ...scope, path: nested, shallow,",
+          "replace": "      ...scope, path: scope.path, shallow,",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 047)"
+          }
+        },
+        {
+          "id": "F19",
+          "description": "Update is reported as PATCH only.",
+          "faultClass": "other",
+          "file": "cli/scanners/rails-routes.mjs",
+          "find": "      update: [['PATCH', member], ['PUT', member]],",
+          "replace": "      update: [['PATCH', member]],",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 047)"
+          }
+        },
+        {
+          "id": "F20",
+          "description": "An interpolated Ruby string is read as a path.",
+          "faultClass": "other",
+          "file": "cli/scanners/rails-routes.mjs",
+          "find": "  return { value: dynamic ? null : value, end: j + 1 };",
+          "replace": "  return { value, end: j + 1 };",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 047)"
+          }
+        },
+        {
+          "id": "F21",
+          "description": "A member block places routes on the collection.",
+          "faultClass": "other",
+          "file": "cli/scanners/rails-routes.mjs",
+          "find": "        const path = name === 'member' ? scope.res.member",
+          "replace": "        const path = name === 'member' ? scope.res.collection",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 047)"
+          }
+        },
+        {
+          "id": "F22",
+          "description": "A draw name can be a path.",
+          "faultClass": "other",
+          "file": "cli/scanners/routes.mjs",
+          "find": "    if (!/^[\\w-]+$/.test(name)) return null;\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 047)"
+          }
+        },
+        {
+          "id": "F23",
+          "description": "The Go reader is not called.",
+          "faultClass": "other",
+          "file": "cli/scanners/routes.mjs",
+          "find": "  return extractGoRoutes(sources).map(r => ({ ...r, source: 'go-web', description: '', ...tierFor(resolve(dir, r.file), null) }));",
+          "replace": "  return [];",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 047)"
+          }
+        },
+        {
+          "id": "F24",
+          "description": "A Go module's major-version suffix defeats framework detection.",
+          "faultClass": "other",
+          "file": "cli/scanners/project-type.mjs",
+          "find": ".map(k => k.toLowerCase().replace(/\\/v\\d+$/, ''));",
+          "replace": ".map(k => k.toLowerCase());",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 047)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "PYTHON-EXTRACTION-IS-ACCURATE",
+      "statement": "On standard FastAPI, Flask and Django layouts, both parser tiers report every route with its composed prefix and authentication, the ORM models (not the Pydantic payloads) with relationship cardinality and base types, and BaseSettings environment variables; guard and generate count the same models; one detector types the project and init recognises Python web layouts; pattern-tier facts are reported with their tier and low confidence.",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/046-python-extraction/spec.md#FR-001"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (spec 046)"
+      },
+      "defendedBy": [
+        "tests/python-extraction.test.mjs",
+        "tests/py-ast.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "An include_router/mount prefix is dropped.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/python-routes.mjs",
+          "find": "        next = evalPrefix(obj, e.prefix, base);",
+          "replace": "        next = base;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 046)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "A router's own APIRouter(prefix=) is ignored.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/python-routes.mjs",
+          "find": "    const base = obj.kind === 'APIRouter' ? evalPrefix(obj, obj.prefix, acc) : acc;",
+          "replace": "    const base = acc;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 046)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "Router-level authentication dependencies do not mark routes.",
+          "faultClass": "return-altered",
+          "file": "cli/scanners/python-routes.mjs",
+          "find": "    const guarded = auth || authFrom(obj.deps);",
+          "replace": "    const guarded = auth;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 046)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "A Django include() mount is reported as an endpoint instead of followed.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/python-routes.mjs",
+          "find": "      if (view.t === 'call' && refTail(view.fn) === 'include') {",
+          "replace": "      if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 046)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "DRF viewset list/detail routes are never generated.",
+          "faultClass": "return-altered",
+          "file": "cli/scanners/python-routes.mjs",
+          "find": "      for (const action of vs.actions) {",
+          "replace": "      for (const action of []) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 046)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "re_path regexes are reported verbatim.",
+          "faultClass": "return-altered",
+          "file": "cli/scanners/python-routes.mjs",
+          "find": "      const converted = fn === 'path' ? { path: convertPath(route), incomplete: false } : convertRegex(route);",
+          "replace": "      const converted = { path: route, incomplete: false };",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 046)"
+          }
+        },
+        {
+          "id": "F7",
+          "description": "SQLAlchemy relationship() attributes are not read.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/python-models.mjs",
+          "find": "  if (fn && SQLA_RELATION.has(fn)) {",
+          "replace": "  if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 046)"
+          }
+        },
+        {
+          "id": "F8",
+          "description": "Pydantic payloads are listed as entities beside the ORM models.",
+          "faultClass": "return-altered",
+          "file": "cli/scanners/python-models.mjs",
+          "find": "  const modelEntities = entities.length ? entities : schemas;",
+          "replace": "  const modelEntities = [...entities, ...schemas];",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 046)"
+          }
+        },
+        {
+          "id": "F9",
+          "description": "Many-to-many relationships lose their cardinality.",
+          "faultClass": "return-altered",
+          "file": "cli/scanners/python-models.mjs",
+          "find": "    const m2m = list.find(e => e.m2m);",
+          "replace": "    const m2m = null;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 046)"
+          }
+        },
+        {
+          "id": "F10",
+          "description": "Optional[X] is not unwrapped to its base type.",
+          "faultClass": "return-altered",
+          "file": "cli/scanners/python-models.mjs",
+          "find": "      if (tail === 'Optional') return { ...pythonType(inner[0]), optional: true };",
+          "replace": "      if (tail === 'Optional') return { type: 'Optional', optional: false, collection: false, target: null };",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 046)"
+          }
+        },
+        {
+          "id": "F11",
+          "description": "BaseSettings env_prefix is ignored.",
+          "faultClass": "return-altered",
+          "file": "cli/scanners/py-env.mjs",
+          "find": "        const names = aliases.length ? aliases : [`${prefix}${field}`];",
+          "replace": "        const names = aliases.length ? aliases : [field];",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 046)"
+          }
+        },
+        {
+          "id": "F12",
+          "description": "Python settings and os-import reads never reach grepEnvUsage.",
+          "faultClass": "statement-deleted",
+          "file": "cli/shared-source.mjs",
+          "find": "      for (const name of pythonEnvNames(content)) if (!isRunnerEnvVar(name)) names.add(name);",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 046)"
+          }
+        },
+        {
+          "id": "F13",
+          "description": "Guard counts Python models without the shared scanner.",
+          "faultClass": "return-altered",
+          "file": "cli/validators/schema-sync.mjs",
+          "find": "  const python = scanPythonModels(projectDir);",
+          "replace": "  const python = { entities: [] };",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 046)"
+          }
+        },
+        {
+          "id": "F14",
+          "description": "A Django <int:pk> segment is not a path parameter in comparison.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/api-doc.mjs",
+          "find": "    .replace(/<(?:[A-Za-z_]\\w*:)?[A-Za-z_]\\w*>/g, '{}')\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 046)"
+          }
+        },
+        {
+          "id": "F15",
+          "description": "Every detected project is typed as a library.",
+          "faultClass": "return-altered",
+          "file": "cli/config.mjs",
+          "find": "  return KIND_TO_PROJECT_TYPE[pick.kind] || 'unknown';",
+          "replace": "  return 'library';",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 046)"
+          }
+        },
+        {
+          "id": "F16",
+          "description": "A Django layout is not recognised as an existing codebase.",
+          "faultClass": "statement-deleted",
+          "file": "cli/commands/init.mjs",
+          "find": "  if (existsSync(resolve(projectDir, 'manage.py'))) return true;\n  try {\n    const { ecosystems } = detectProjectProfile(projectDir);\n    if (ecosystems.some(e => e.language === 'Python' && PYTHON_WEB_FRAMEWORKS.has(e.framework))) return true;\n  } catch { /* fall through to the file count */ }\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 046)"
+          }
+        },
+        {
+          "id": "F17",
+          "description": "A dependency with extras ends the PEP 621 list.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/project-type.mjs",
+          "find": "    if (ch === '\"' || ch === \"'\") {",
+          "replace": "    if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 046)"
+          }
+        },
+        {
+          "id": "F18",
+          "description": "Pattern-tier plans keep normal confidence and no note.",
+          "faultClass": "return-altered",
+          "file": "cli/scanners/memory-plan.mjs",
+          "find": "  parserTiers.degraded = parserTiers.endpoints.degraded || parserTiers.entities.degraded;",
+          "replace": "  parserTiers.degraded = false;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 046)"
+          }
+        },
+        {
+          "id": "F19",
+          "description": "Pattern-tier sections are not marked partial.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/memory-plan.mjs",
+          "find": "  const partial = which => (parserTiers[which].degraded",
+          "replace": "  const partial = which => (false",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 046)"
+          }
+        },
+        {
+          "id": "F20",
+          "description": "SPR007 keeps high confidence on pattern-tier facts.",
+          "faultClass": "return-altered",
+          "file": "cli/validators/spec-registry.mjs",
+          "find": "        confidence: isPatternTier(item.tier) ? 'low' : 'high',",
+          "replace": "        confidence: 'high',",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 046)"
+          }
+        },
+        {
+          "id": "F21",
+          "description": "generate --spec reports high confidence on pattern-tier facts.",
+          "faultClass": "return-altered",
+          "file": "cli/commands/generate-as-built.mjs",
+          "find": "    parserTier: tier.tier, confidence: lowConfidence ? 'low' : 'high', notes,",
+          "replace": "    parserTier: tier.tier, confidence: 'high', notes,",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 046)"
+          }
+        },
+        {
+          "id": "F22",
+          "description": "A missing interpreter reads as \"No source modules found\".",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/module-diagram.mjs",
+          "find": "    ? (partialReason\n      ? `_Module graph not drawn: ${partialReason}._`\n      : unanalysedText",
+          "replace": "    ? (false\n      ? `_Module graph not drawn: ${partialReason}._`\n      : unanalysedText",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 046)"
+          }
+        },
+        {
+          "id": "F23",
+          "description": "__init__.py and conftest.py are listed as tests.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/as-built.mjs",
+          "find": "    if (/(?:^|\\/)(?:__init__|conftest)\\.py$/.test(file)) return;\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 046)"
+          }
+        },
+        {
+          "id": "F24",
+          "description": "The pattern tier ends a logical line inside brackets.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/py-outline.mjs",
+          "find": "      if (depth === 0) flush();",
+          "replace": "      flush();",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 046)"
+          }
+        },
+        {
+          "id": "F25",
+          "description": "The AST tier emits no module outline.",
+          "faultClass": "return-altered",
+          "file": "cli/scanners/py-ast.mjs",
+          "find": "\"outline\": {\"aliases\": aliases_of(tree), \"body\": outline_of(tree.body, \"module\")},",
+          "replace": "\"outline\": {\"aliases\": [], \"body\": []},",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 046)"
+          }
+        },
+        {
+          "id": "F26",
+          "description": "Without an interpreter no file gets a pattern-tier outline.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/py-sources.mjs",
+          "find": "  try { outline = outlineFromSource(source); } catch { outline = null; }",
+          "replace": "  outline = null;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 046)"
+          }
+        },
+        {
+          "id": "F27",
+          "description": "Django routes are never scanned.",
+          "faultClass": "literal-changed",
+          "file": "cli/scanners/routes.mjs",
+          "find": "    const py = scanPythonWebRoutes(dir, { django, asgi }, { files: pyFiles });",
+          "replace": "    const py = scanPythonWebRoutes(dir, { django: false, asgi }, { files: pyFiles });",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 046)"
+          }
+        },
+        {
+          "id": "F28",
+          "description": "Unresolved includes are dropped from the scan result silently.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/routes.mjs",
+          "find": "  if (limitations?.length) Object.defineProperty(kept, 'limitations', { value: limitations, enumerable: false });\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 046)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "JS-TS-EXTRACTION-MATCHES-TRUTH",
+      "statement": "On Express, Next.js and Prisma projects the JS/TS scanners report every route once at its mounted path (router.route() chains included), judge auth per route (own middleware or handler, earlier use(auth), auth mount, Next.js middleware matcher), read destructured env vars and record each read site with file, line and default, scan Next.js pages/components, resolve tsconfig path aliases, find Drizzle and Mongoose schemas once with every field and relation, report Prisma enums apart and each relation once, name ORM/UI/auth libraries, cite as-built facts by file and line without duplicating Next.js handlers, and share one entity discovery between guard and generate.",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/045-js-ts-extraction/spec.md#FR-002"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (spec 045)"
+      },
+      "defendedBy": [
+        "tests/js-ts-extraction.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "router.route() chains are not read (AST tier).",
+          "faultClass": "other",
+          "file": "cli/scanners/js-ast.mjs",
+          "find": "const chain = routeChainBase(callee.object, routeBindings, constants);",
+          "replace": "const chain = null;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "router.route() chains are not read when the file does not parse.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/routes.mjs",
+          "find": "      for (const r of routeChainsByPattern(content)) emit(r);",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "Auth middleware on a mount does not protect the routes under it.",
+          "faultClass": "other",
+          "file": "cli/scanners/routes.mjs",
+          "find": "auth: Boolean(r.auth || target.auth),",
+          "replace": "auth: Boolean(r.auth),",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "The pattern tier judges auth from req.user anywhere in the file.",
+          "faultClass": "other",
+          "file": "cli/scanners/routes.mjs",
+          "find": "emit({ method: match[1], path: match[2], start: match.index, receiver: null, auth: statementAuth(content, match.index) });",
+          "replace": "emit({ method: match[1], path: match[2], start: match.index, receiver: null, auth: /req\\.user/.test(content) });",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "use(auth) protects routes registered before it.",
+          "faultClass": "other",
+          "file": "cli/scanners/js-ast.mjs",
+          "find": "uses.some(u => u.receiver === receiver && u.start < start && prefixCovers(u.prefix, path));",
+          "replace": "uses.some(u => u.receiver === receiver && prefixCovers(u.prefix, path));",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "A Next.js handler is judged by the whole file.",
+          "faultClass": "other",
+          "file": "cli/scanners/routes.mjs",
+          "find": "auth: (viaAst ? viaAst.auth : exportSegmentAuth(content, match.index)) || middlewareAuth(apiPath),",
+          "replace": "auth: AUTH_CHECK_RE.test(content) || middlewareAuth(apiPath),",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F7",
+          "description": "The Next.js middleware matcher is ignored.",
+          "faultClass": "other",
+          "file": "cli/scanners/routes.mjs",
+          "find": "auth: (viaAst ? viaAst.auth : exportSegmentAuth(content, match.index)) || middlewareAuth(apiPath),",
+          "replace": "auth: (viaAst ? viaAst.auth : exportSegmentAuth(content, match.index)),",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F8",
+          "description": "Env names destructured from process.env are not read.",
+          "faultClass": "other",
+          "file": "cli/shared-source.mjs",
+          "find": "for (const read of destructuredEnvReads(content, kind)) {",
+          "replace": "for (const read of []) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F9",
+          "description": "No read site records a default.",
+          "faultClass": "other",
+          "file": "cli/shared-source.mjs",
+          "find": "names.sites.get(name).push({ file, line, defaulted: fallback !== undefined,",
+          "replace": "names.sites.get(name).push({ file, line, defaulted: false,",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F10",
+          "description": "A ?? or || fallback after a dotted read is not recorded.",
+          "faultClass": "other",
+          "file": "cli/shared-source.mjs",
+          "find": "recordSite(m[1], file, lineOf(lineStarts, m.index), readFallback(content.slice(end, end + 200), i));",
+          "replace": "recordSite(m[1], file, lineOf(lineStarts, m.index), undefined);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F11",
+          "description": "Next.js pages/ and components/ are not source roots.",
+          "faultClass": "statement-deleted",
+          "file": "cli/shared-source.mjs",
+          "find": "    for (const nr of NEXT_JS_ROOTS) add(resolve(projectDir, nr));",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F12",
+          "description": "Aliased imports add no edge.",
+          "faultClass": "other",
+          "file": "cli/scanners/import-graph.mjs",
+          "find": "const aliased = resolveAlias(file, imp.spec);",
+          "replace": "const aliased = null;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F13",
+          "description": "tsconfig extends is not followed.",
+          "faultClass": "other",
+          "file": "cli/scanners/ts-paths.mjs",
+          "find": ".map(value => extendsTarget(configFile, value)).filter(Boolean);",
+          "replace": ".map(() => null).filter(Boolean);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F14",
+          "description": "drizzle.config schema is not read.",
+          "faultClass": "other",
+          "file": "cli/scanners/schemas.mjs",
+          "find": "const configured = drizzleConfigFiles(dir);",
+          "replace": "const configured = [];",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F15",
+          "description": "References resolve to the variable, not its table.",
+          "faultClass": "other",
+          "file": "cli/scanners/schemas.mjs",
+          "find": "const varToTable = new Map(tables.map(t => [t.name, t.table]));",
+          "replace": "const varToTable = new Map();",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F16",
+          "description": "Drizzle .references() is dropped.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/schemas.mjs",
+          "find": "    if (ref) field._ref = ref[1];",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F17",
+          "description": "A pgEnum column is typed by its binding name.",
+          "faultClass": "other",
+          "file": "cli/scanners/schemas.mjs",
+          "find": "type: enumVars.has(builder) ? 'enum' : mapDrizzleType(builder),",
+          "replace": "type: mapDrizzleType(builder),",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F18",
+          "description": "Drizzle tables are not read when the file does not parse.",
+          "faultClass": "other",
+          "file": "cli/scanners/schemas.mjs",
+          "find": "const found = extractJsSchemaBodies(content, abs) ?? drizzleTablesByPattern(content);",
+          "replace": "const found = extractJsSchemaBodies(content, abs) ?? [];",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F19",
+          "description": "A Mongoose { type } object is not read as one field.",
+          "faultClass": "other",
+          "file": "cli/scanners/schemas.mjs",
+          "find": "      if (props.has('type')) {",
+          "replace": "      if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F20",
+          "description": "An array of Mongoose refs is not a relation.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/schemas.mjs",
+          "find": "        if (ref) { field._ref = ref; field._many = true; }",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F21",
+          "description": "The Mongoose model name is ignored.",
+          "faultClass": "other",
+          "file": "cli/scanners/schemas.mjs",
+          "find": "const name = models.get(s.name) ?? (bare.charAt(0).toUpperCase() + bare.slice(1));",
+          "replace": "const name = bare.charAt(0).toUpperCase() + bare.slice(1);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F22",
+          "description": "Prisma enums are listed as entities.",
+          "faultClass": "other",
+          "file": "cli/scanners/schemas.mjs",
+          "find": "  entities.push(...orm.prisma.entities);",
+          "replace": "  entities.push(...orm.prisma.entities, ...orm.prisma.enums);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F23",
+          "description": "An implicit many-to-many relation is drawn from both sides.",
+          "faultClass": "other",
+          "file": "cli/scanners/schemas.mjs",
+          "find": "if (f.model < f.target || (f.model === f.target && f.name < other.name)) {",
+          "replace": "if (true) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F24",
+          "description": "A Prisma model ends at the first closing brace.",
+          "faultClass": "other",
+          "file": "cli/scanners/schemas.mjs",
+          "find": "const close = matchingBracket(content, open);\n      if (close < 0) break;",
+          "replace": "const close = content.indexOf('}', open);\n      if (close < 0) break;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F25",
+          "description": "ER types keep their description (\"integer (auto)\").",
+          "faultClass": "other",
+          "file": "cli/scanners/schemas.mjs",
+          "find": "const type = String(f.type || 'unknown').trim().split(/[\\s(]/)[0] || 'unknown';",
+          "replace": "const type = String(f.type || 'unknown');",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F26",
+          "description": "The profile names no libraries.",
+          "faultClass": "other",
+          "file": "cli/scanners/project-type.mjs",
+          "find": "libraries: jsLibraries(lang, deps, cls.framework),",
+          "replace": "libraries: [],",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F27",
+          "description": "The tech-stack table has no Libraries column.",
+          "faultClass": "other",
+          "file": "cli/scanners/memory-plan.mjs",
+          "find": "const withLibraries = profile.ecosystems.some(e => (e.libraries || []).length > 0);",
+          "replace": "const withLibraries = false;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F28",
+          "description": "A Next.js handler export is a second as-built fact.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/as-built.mjs",
+          "find": "      if (handlerExports.has(`${file}#${name}`)) continue;",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F29",
+          "description": "As-built env facts carry no file or line.",
+          "faultClass": "other",
+          "file": "cli/scanners/as-built.mjs",
+          "find": "add('env', name, first?.file ?? null, first?.line ?? null);",
+          "replace": "add('env', name);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F30",
+          "description": "Express routes carry no line.",
+          "faultClass": "other",
+          "file": "cli/scanners/routes.mjs",
+          "find": "line: r.line ?? lineAt(content, r.start),",
+          "replace": "line: null,",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F31",
+          "description": "Guard's schema check does not use the shared discovery.",
+          "faultClass": "other",
+          "file": "cli/validators/schema-sync.mjs",
+          "find": "const orm = scanOrmEntities(projectDir, config);",
+          "replace": "const orm = { prisma: { entities: [] }, drizzle: { entities: [] }, mongoose: { entities: [] } };",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        },
+        {
+          "id": "F32",
+          "description": "The DATA-MODEL writer drops the enums the scanner reports apart.",
+          "faultClass": "other",
+          "file": "cli/writers/doc-generators.mjs",
+          "find": "entities = [...deepSchemas.entities, ...(deepSchemas.enums || [])];",
+          "replace": "entities = deepSchemas.entities;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 045)"
+          }
+        }
+      ]
+    },
+    {
       "id": "OUTPUT-UX-TRUTHFUL",
       "statement": "Machine output modes print only the artifact; colour follows NO_COLOR, FORCE_COLOR and the TTY; every sync, GST002 and upgrade message names a command that does what it says; smart init writes its config; Doc Sections has its own key while honouring structure settings; ownership checks root-level files and names ties; Claude Code @imports count toward instruction budgets and are checked; review, glob fingerprints, doc_structure bytes, project types and REF001 locations report the truth.",
       "source": {
@@ -4517,18 +5581,6 @@
         },
         {
           "id": "F16",
-          "description": "Init records unknown for Go, Java and Ruby projects.",
-          "faultClass": "other",
-          "file": "cli/config.mjs",
-          "find": "      if (type) return type;",
-          "replace": "      if (false) return type;",
-          "producedBy": {
-            "producer": "agent",
-            "by": "claude-opus-5.5 (spec 049)"
-          }
-        },
-        {
-          "id": "F17",
           "description": "Doc Sections shares the structure key again.",
           "faultClass": "other",
           "file": "cli/commands/guard.mjs",
@@ -4540,7 +5592,7 @@
           }
         },
         {
-          "id": "F18",
+          "id": "F17",
           "description": "validators.structure: false no longer turns Doc Sections off.",
           "faultClass": "other",
           "file": "cli/commands/guard.mjs",
@@ -4552,7 +5604,7 @@
           }
         },
         {
-          "id": "F19",
+          "id": "F18",
           "description": "severity.structure no longer applies to STR003.",
           "faultClass": "other",
           "file": "cli/commands/guard.mjs",
@@ -4564,7 +5616,7 @@
           }
         },
         {
-          "id": "F20",
+          "id": "F19",
           "description": "A structure N/A marker no longer covers Doc Sections.",
           "faultClass": "other",
           "file": "cli/commands/guard.mjs",
@@ -4576,7 +5628,7 @@
           }
         },
         {
-          "id": "F21",
+          "id": "F20",
           "description": "STR003 findings name the wrong validator.",
           "faultClass": "other",
           "file": "cli/validators/structure.mjs",
@@ -4588,7 +5640,7 @@
           }
         },
         {
-          "id": "F22",
+          "id": "F21",
           "description": "The registry files STR003 under structure.",
           "faultClass": "other",
           "file": "cli/findings.mjs",
@@ -4600,7 +5652,7 @@
           }
         },
         {
-          "id": "F23",
+          "id": "F22",
           "description": "score --diff drops Doc Sections warnings.",
           "faultClass": "other",
           "file": "cli/commands/score.mjs",
@@ -4612,7 +5664,7 @@
           }
         },
         {
-          "id": "F24",
+          "id": "F23",
           "description": "Root-level source files are never checked for an owner.",
           "faultClass": "other",
           "file": "cli/scanners/doc-ownership.mjs",
@@ -4624,7 +5676,7 @@
           }
         },
         {
-          "id": "F25",
+          "id": "F24",
           "description": "--suggest assigns paths to documents that do not exist.",
           "faultClass": "other",
           "file": "cli/commands/trace.mjs",
@@ -4636,7 +5688,7 @@
           }
         },
         {
-          "id": "F26",
+          "id": "F25",
           "description": "trace --reverse hides a tie.",
           "faultClass": "statement-deleted",
           "file": "cli/commands/trace.mjs",
@@ -4648,7 +5700,7 @@
           }
         },
         {
-          "id": "F27",
+          "id": "F26",
           "description": "A package name in prose is taken for an import.",
           "faultClass": "other",
           "file": "cli/scanners/instruction-scopes.mjs",
@@ -4660,7 +5712,7 @@
           }
         },
         {
-          "id": "F28",
+          "id": "F27",
           "description": "An @path inside a code span is imported.",
           "faultClass": "other",
           "file": "cli/scanners/instruction-scopes.mjs",
@@ -4672,7 +5724,7 @@
           }
         },
         {
-          "id": "F29",
+          "id": "F28",
           "description": "Imports are followed past 5 hops.",
           "faultClass": "other",
           "file": "cli/scanners/instruction-scopes.mjs",
@@ -4684,7 +5736,7 @@
           }
         },
         {
-          "id": "F30",
+          "id": "F29",
           "description": "rules --for ignores Claude Code imports.",
           "faultClass": "other",
           "file": "cli/scanners/instruction-scopes.mjs",
@@ -4696,7 +5748,7 @@
           }
         },
         {
-          "id": "F31",
+          "id": "F30",
           "description": "A missing import is not reported.",
           "faultClass": "statement-deleted",
           "file": "cli/validators/path-scoped-rules.mjs",
@@ -4708,7 +5760,7 @@
           }
         },
         {
-          "id": "F32",
+          "id": "F31",
           "description": "docs_for_path reads only the root agent files.",
           "faultClass": "other",
           "file": "cli/scanners/doc-references.mjs",
@@ -4720,7 +5772,7 @@
           }
         },
         {
-          "id": "F33",
+          "id": "F32",
           "description": "Instruction hits carry no text.",
           "faultClass": "other",
           "file": "cli/scanners/doc-references.mjs",
@@ -4732,7 +5784,7 @@
           }
         },
         {
-          "id": "F34",
+          "id": "F33",
           "description": "doc_structure counts a byte for the missing final newline.",
           "faultClass": "other",
           "file": "cli/scanners/doc-references.mjs",
@@ -4744,7 +5796,7 @@
           }
         },
         {
-          "id": "F35",
+          "id": "F34",
           "description": "review --suggest without a document gives no usage message.",
           "faultClass": "statement-deleted",
           "file": "cli/commands/review.mjs",
@@ -4756,7 +5808,7 @@
           }
         },
         {
-          "id": "F36",
+          "id": "F35",
           "description": "An empty prune prints a bare status.",
           "faultClass": "other",
           "file": "cli/commands/review.mjs",
@@ -4768,7 +5820,7 @@
           }
         },
         {
-          "id": "F37",
+          "id": "F36",
           "description": "An untracked file changes a glob fingerprint.",
           "faultClass": "other",
           "file": "cli/scanners/doc-deps.mjs",
@@ -4780,7 +5832,7 @@
           }
         },
         {
-          "id": "F38",
+          "id": "F37",
           "description": "REF001 locates a nested doc by basename.",
           "faultClass": "other",
           "file": "cli/validators/reference-existence.mjs",

@@ -96,13 +96,46 @@ function tomlSectionDeps(content, sections) {
   return deps;
 }
 
+/**
+ * The strings of a TOML array starting at `open` (the index of its `[`).
+ * Quote- and comment-aware, so `"uvicorn[standard]"` does not end the array.
+ * @implements docguard.python-extraction#FR-017
+ */
+function tomlArrayStrings(content, open) {
+  const out = [];
+  let depth = 0;
+  for (let i = open; i < content.length; i++) {
+    const ch = content[i];
+    if (ch === '#') { while (i < content.length && content[i] !== '\n') i++; continue; }
+    if (ch === '"' || ch === "'") {
+      const triple = content.startsWith(ch.repeat(3), i);
+      const delim = triple ? ch.repeat(3) : ch;
+      let j = i + delim.length;
+      let value = '';
+      while (j < content.length && !content.startsWith(delim, j)) {
+        if (ch === '"' && content[j] === '\\') { value += content[j + 1] || ''; j += 2; continue; }
+        value += content[j++];
+      }
+      if (depth === 1) out.push(value);
+      i = j + delim.length - 1;
+      continue;
+    }
+    if (ch === '[') depth++;
+    else if (ch === ']' && --depth === 0) break;
+  }
+  return out;
+}
+
 /** pyproject [project] dependencies = ["pkg>=1", ...] and poetry table form. */
 function pyprojectDeps(content) {
   const deps = {};
   // PEP 621 array form
-  const arr = content.match(/dependencies\s*=\s*\[([\s\S]*?)\]/);
+  const arr = /(?:^|\n)\s*dependencies\s*=\s*\[/.exec(content);
   if (arr) {
-    for (const m of arr[1].matchAll(/["']([A-Za-z0-9_.\-]+)\s*[><=~!\[]?/g)) deps[m[1]] = '*';
+    for (const spec of tomlArrayStrings(content, arr.index + arr[0].length - 1)) {
+      const m = spec.match(/^\s*([A-Za-z0-9_.\-]+)/);
+      if (m) deps[m[1]] = '*';
+    }
   }
   // Poetry table form
   Object.assign(deps, tomlSectionDeps(content, ['tool.poetry.dependencies']));
@@ -165,7 +198,9 @@ function csprojDeps(content) {
 // ── Framework + kind classification per ecosystem ────────────────────────────
 
 function has(deps, ...names) {
-  const keys = Object.keys(deps).map(k => k.toLowerCase());
+  // A Go module's major version is a path suffix (`github.com/labstack/echo/v4`);
+  // match on the module without it (docguard.go-spring-rails-routes#FR-007).
+  const keys = Object.keys(deps).map(k => k.toLowerCase().replace(/\/v\d+$/, ''));
   return names.some(n => keys.some(k => k === n.toLowerCase() || k.endsWith('/' + n.toLowerCase()) || k.endsWith(':' + n.toLowerCase())));
 }
 
@@ -197,6 +232,7 @@ function classify(lang, dir, deps) {
     else if (has(deps, 'echo', 'labstack/echo')) { framework = 'Echo'; kind = 'service'; }
     else if (has(deps, 'chi', 'go-chi/chi')) { framework = 'Chi'; kind = 'service'; }
     else if (has(deps, 'fiber', 'gofiber/fiber')) { framework = 'Fiber'; kind = 'service'; }
+    else if (has(deps, 'gorilla/mux')) { framework = 'Gorilla Mux'; kind = 'service'; }
     else if (existsSync(join(dir, 'main.go')) || existsSync(join(dir, 'cmd'))) kind = 'service';
   } else if (lang === 'Java' || lang === 'Kotlin') {
     if (has(deps, 'spring-boot-starter-web', 'spring-boot-starter', 'org.springframework.boot:spring-boot-starter-web')) { framework = 'Spring Boot'; kind = 'api'; }
@@ -211,6 +247,38 @@ function classify(lang, dir, deps) {
   }
 
   return { framework, kind };
+}
+
+// ORM, UI and auth libraries worth naming next to the framework
+// (docguard.js-ts-extraction#FR-008): a Next.js app's React, its Drizzle or
+// Prisma, its NextAuth. Order is the output order after sorting by name.
+const JS_LIBRARIES = [
+  ['Prisma', ['prisma', '@prisma/client']],
+  ['Drizzle', ['drizzle-orm']],
+  ['Mongoose', ['mongoose']],
+  ['TypeORM', ['typeorm']],
+  ['Sequelize', ['sequelize']],
+  ['Knex', ['knex']],
+  ['React', ['react']],
+  ['Vue', ['vue']],
+  ['Svelte', ['svelte']],
+  ['NextAuth.js', ['next-auth', '@auth/core']],
+  ['Passport.js', ['passport']],
+  ['Clerk', ['@clerk/nextjs', '@clerk/clerk-sdk-node', '@clerk/express']],
+  ['Lucia', ['lucia']],
+];
+
+/**
+ * Libraries a JS/TS ecosystem declares, other than its framework.
+ * @implements docguard.js-ts-extraction#FR-008
+ */
+function jsLibraries(lang, deps, framework) {
+  if (lang !== 'JavaScript' && lang !== 'TypeScript') return [];
+  const names = Object.keys(deps || {});
+  return JS_LIBRARIES
+    .filter(([label, packages]) => label !== framework && packages.some(p => names.includes(p)))
+    .map(([label]) => label)
+    .sort((a, b) => a.localeCompare(b));
 }
 
 // ── Per-manifest ecosystem builder ───────────────────────────────────────────
@@ -260,6 +328,7 @@ function buildEcosystem(projectDir, m) {
     manifest: relative(resolve(projectDir), path) || m.file,
     dir: relative(resolve(projectDir), m.absDir) || '.',
     framework: cls.framework,
+    libraries: jsLibraries(lang, deps, cls.framework),
     kind: kind || cls.kind || 'library',
     deps,
     entryPoints,
@@ -269,7 +338,7 @@ function buildEcosystem(projectDir, m) {
 /**
  * Detect every ecosystem present in the repo (polyglot-aware).
  * Multiple manifests in the same dir+language merge into one ecosystem.
- * @returns {Array<{ language, manifest, dir, framework, kind, deps, entryPoints }>}
+ * @returns {Array<{ language, manifest, dir, framework, libraries, kind, deps, entryPoints }>}
  */
 export function detectEcosystems(projectDir, config = {}) {
   const manifests = findManifests(projectDir, 4, config);
@@ -291,6 +360,7 @@ export function detectEcosystems(projectDir, config = {}) {
       // Re-classify with merged deps.
       const cls = classify(cur.language, join(resolve(projectDir), cur.dir === '.' ? '' : cur.dir), cur.deps);
       if (!cur.framework) cur.framework = cls.framework;
+      cur.libraries = jsLibraries(cur.language, cur.deps, cur.framework);
     } else {
       byKey.set(key, eco);
     }

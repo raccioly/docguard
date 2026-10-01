@@ -179,50 +179,39 @@ export function loadConfig(projectDir) {
 // PROFILES is exported from shared.mjs (re-exported at line 43)
 
 /**
- * Auto-detect project type from package.json and file structure.
- * Returns: 'cli' | 'library' | 'webapp' | 'api' | 'unknown'
+ * Auto-detect project type: 'cli' | 'library' | 'webapp' | 'api' | 'unknown'.
+ *
+ * One detector: the ecosystem profile (scanners/project-type.mjs), which
+ * reads every manifest DocGuard supports. A root ecosystem that names a
+ * framework or a kind wins over a root `library` (a Python service with a
+ * package.json for tooling), and a `service` with a web framework is an
+ * `api`. A Worker config is checked first, as before.
+ * @implements docguard.python-extraction#FR-010
  * @implements docguard.output-ux#FR-015
  */
+const KIND_TO_PROJECT_TYPE = { cli: 'cli', library: 'library', webapp: 'webapp', api: 'api', service: 'api' };
+
 export function autoDetectProjectType(dir) {
   if (hasWorkerConfig(dir)) return 'api';
-  const pkgPath = resolve(dir, 'package.json');
-  if (existsSync(pkgPath)) {
-    try {
-      const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
-      const allDeps = { ...(pkg.dependencies || {}), ...(pkg.devDependencies || {}) };
+  let profile;
+  try { profile = detectProjectProfile(dir); } catch { return 'unknown'; }
+  const roots = profile.ecosystems.filter(e => e.dir === '.');
+  const pick = roots.find(e => e.kind !== 'library') || profile.primary;
+  if (!pick) return 'unknown';
+  // A package.json with no entry point, no bin and no framework is not
+  // evidence of a library; keep the historical 'unknown' for it.
+  if (pick.kind === 'library' && pick.manifest === 'package.json' && !hasLibraryEntry(dir)) return 'unknown';
+  // A `service` is an API only when a web framework says so; a bare Go
+  // main package stays 'unknown', as before.
+  if (pick.kind === 'service' && !pick.framework) return 'unknown';
+  return KIND_TO_PROJECT_TYPE[pick.kind] || 'unknown';
+}
 
-      // CLI tool: has "bin" field
-      if (pkg.bin) return 'cli';
-
-      // Web app: has a frontend framework
-      if (allDeps.next || allDeps.react || allDeps.vue || allDeps['@angular/core'] ||
-          allDeps.svelte || allDeps.nuxt || allDeps['@sveltejs/kit']) return 'webapp';
-
-      // API: has a server framework but no frontend
-      if (allDeps.express || allDeps.fastify || allDeps.hono || allDeps.koa) return 'api';
-
-      // Library: has "main" or "exports" and no framework
-      if (pkg.main || pkg.exports || pkg.module) return 'library';
-    } catch { /* fall through */ }
-  }
-
-  // Python project
-  if (existsSync(resolve(dir, 'manage.py'))) return 'webapp';
-  if (existsSync(resolve(dir, 'setup.py')) || existsSync(resolve(dir, 'pyproject.toml'))) return 'library';
-
-  // docguard.output-ux#FR-015: the ecosystem detector `generate` uses already
-  // recognises Gin, Spring Boot, Rails and the rest. Init used to record
-  // `unknown` for those projects while generate described them correctly.
-  // JavaScript keeps the package.json rules above unchanged.
+function hasLibraryEntry(dir) {
   try {
-    const primary = detectProjectProfile(dir).primary;
-    if (primary && !['JavaScript', 'TypeScript'].includes(primary.language)) {
-      const type = { service: 'api', api: 'api', webapp: 'webapp', cli: 'cli', library: 'library' }[primary.kind];
-      if (type) return type;
-    }
-  } catch { /* detection is best-effort; fall through */ }
-
-  return 'unknown';
+    const pkg = JSON.parse(readFileSync(resolve(dir, 'package.json'), 'utf-8'));
+    return !!(pkg.main || pkg.exports || pkg.module);
+  } catch { return false; }
 }
 
 /**

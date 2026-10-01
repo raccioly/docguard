@@ -6,12 +6,12 @@
  * Priority: OpenAPI schemas > ORM schemas > Validation schemas
  */
 
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
-import { resolve, join, relative, basename, extname } from 'node:path';
-import { extractJsSchemaBodies } from './js-ast.mjs';
-import { extractPythonFiles } from './py-ast.mjs';
-import { readScannable, tierFor, summarizeTiers } from '../shared-source.mjs';
-import { DEFAULT_IGNORE_DIRS as IGNORE_DIRS, shouldIgnore, relPosix } from '../shared-ignore.mjs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { resolve, join, relative, sep } from 'node:path';
+import { extractJsSchemaBodies, splitTopLevel, stripComments, matchingBracket } from './js-ast.mjs';
+import { scanPythonModels } from './python-models.mjs';
+import { readScannable, resolveSourceRoots, getWorkspaceDirs } from '../shared-source.mjs';
+import { DEFAULT_IGNORE_DIRS as IGNORE_DIRS, shouldIgnore, relPosix, isNonProductPath } from '../shared-ignore.mjs';
 
 /**
  * Deep scan schemas from ORM definitions, validation libraries, and OpenAPI specs.
@@ -36,24 +36,19 @@ export function scanSchemasDeep(dir, stack, docTools, config = {}) {
     };
   }
 
-  // Priority 2: ORM-specific scanning
-  const orm = stack?.orm || '';
+  // Priority 2: ORM-specific scanning. Prisma, Drizzle and Mongoose come from
+  // the discovery guard's schema check also uses (docguard.js-ts-extraction#FR-010).
   const entities = [];
   const relationships = [];
+  const orm = scanOrmEntities(dir, config);
 
-  // Prisma
-  const prismaResult = scanPrismaDeep(dir);
-  if (prismaResult.entities.length > 0) {
-    entities.push(...prismaResult.entities);
-    relationships.push(...prismaResult.relationships);
-  }
+  // Prisma (enums are reported apart from entities: FR-008)
+  entities.push(...orm.prisma.entities);
+  relationships.push(...orm.prisma.relationships);
 
   // Drizzle
-  const drizzleResult = scanDrizzleSchemas(dir);
-  if (drizzleResult.entities.length > 0) {
-    entities.push(...drizzleResult.entities);
-    relationships.push(...drizzleResult.relationships);
-  }
+  entities.push(...orm.drizzle.entities);
+  relationships.push(...orm.drizzle.relationships);
 
   // Zod (if no ORM found, Zod schemas are the data model)
   if (entities.length === 0) {
@@ -62,15 +57,15 @@ export function scanSchemasDeep(dir, stack, docTools, config = {}) {
   }
 
   // Mongoose
-  const mongooseResult = scanMongooseSchemas(dir);
-  if (mongooseResult.entities.length > 0) {
-    entities.push(...mongooseResult.entities);
-    relationships.push(...mongooseResult.relationships);
-  }
+  entities.push(...orm.mongoose.entities);
+  relationships.push(...orm.mongoose.relationships);
 
   // ── Multi-language model scanners (additive; supports polyglot repos) ──
+  // Python reports the parser tier that read it (python-models.mjs).
+  let scanTier = null;
   for (const scanner of [scanPythonModels, scanRustModels, scanGoModels, scanJpaModels, scanRailsModels]) {
     const result = scanner(dir);
+    if (result.scanTier && result.entities.length > 0) scanTier = result.scanTier;
     if (result.entities.length > 0) {
       entities.push(...result.entities);
       relationships.push(...(result.relationships || []));
@@ -92,105 +87,267 @@ export function scanSchemasDeep(dir, stack, docTools, config = {}) {
   return {
     entities: keptEntities,
     relationships: keptRelationships,
+    enums: orm.prisma.enums.filter(e => !shouldIgnore(relPosix(dir, resolve(dir, e.file)), config)),
     source: keptEntities.length > 0 ? keptEntities[0].source : 'none',
+    ...(scanTier ? { scanTier } : {}),
+  };
+}
+
+// ── Shared ORM entity discovery (docguard.js-ts-extraction#FR-010) ─────────
+//
+// Guard's schema check (validators/schema-sync.mjs) and generate both read
+// Prisma, Drizzle and Mongoose entities through scanOrmEntities(). Two
+// independent directory lists used to drift: guard found Drizzle tables under
+// `lib/db` while generate reported none.
+
+const JS_SCHEMA_FILE_RE = /\.(?:[cm]?[jt]s|[jt]sx)$/;
+// Conventional top-level schema dirs, searched besides the source roots.
+const ORM_SEARCH_DIRS = ['db', 'database', 'schema', 'schemas', 'drizzle', 'models', 'model'];
+const DRIZZLE_CONFIG_FILES = ['drizzle.config.ts', 'drizzle.config.js', 'drizzle.config.mjs', 'drizzle.config.cjs', 'drizzle.config.mts', 'drizzle.config.json'];
+// A table builder called with a literal table name: specific to Drizzle.
+const DRIZZLE_TABLE_RE = /\b(?:pg|mysql|sqlite)Table\s*\(\s*['"`]\w+['"`]/;
+const MONGOOSE_SCHEMA_RE = /\bnew\s+(?:mongoose\s*\.\s*)?Schema\s*(?:<[^>]*>)?\s*\(/;
+
+function isDir(p) {
+  try { return statSync(p).isDirectory(); } catch { return false; }
+}
+
+function isFileSync(p) {
+  try { return statSync(p).isFile(); } catch { return false; }
+}
+
+/** Package roots: the project and its workspaces (where ORM configs live). */
+function packageRoots(dir) {
+  return [...new Set([resolve(dir), ...getWorkspaceDirs(dir)])];
+}
+
+/** Dirs to search, deduplicated, with any dir inside another dropped (it is walked once). */
+function ormSearchBases(dir, config) {
+  const candidates = [
+    ...ORM_SEARCH_DIRS.map(d => resolve(dir, d)),
+    ...resolveSourceRoots(dir, config),
+  ].filter(isDir);
+  const unique = [...new Set(candidates)].sort((x, y) => x.length - y.length);
+  return unique.filter((base, i) => !unique.slice(0, i).some(outer => base === outer || base.startsWith(outer + sep)));
+}
+
+function keepSchemaFile(dir, file, config) {
+  const rel = relPosix(dir, file);
+  return !isNonProductPath(rel, config) && !shouldIgnore(rel, config);
+}
+
+/** Files a glob, directory or file entry of drizzle.config `schema` names. */
+function expandSchemaEntry(baseDir, entry) {
+  const cleaned = String(entry).replace(/^\.\//, '');
+  if (!/[*?]/.test(cleaned)) {
+    const abs = resolve(baseDir, cleaned);
+    if (isDir(abs)) return freshFiles(abs).filter(f => JS_SCHEMA_FILE_RE.test(f));
+    for (const candidate of [abs, ...['.ts', '.js', '.mjs', '.cjs', '.mts'].map(ext => abs + ext)]) if (isFileSync(candidate)) return [candidate];
+    return [];
+  }
+  const segments = cleaned.split('/');
+  const staticParts = [];
+  for (const seg of segments) { if (/[*?]/.test(seg)) break; staticParts.push(seg); }
+  const root = resolve(baseDir, staticParts.join('/'));
+  const rest = segments.slice(staticParts.length).join('/');
+  const source = rest.split('/').map(seg => seg === '**' ? '(?:.*/)?' : seg.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '[^/]*').replace(/\?/g, '[^/]') + '/')
+    .join('').replace(/\/$/, '').replace(/\(\?:\.\*\/\)\?\//g, '(?:.*/)?');
+  let re;
+  try { re = new RegExp(`^${source}$`); } catch { return []; }
+  return freshFiles(root).filter(f => JS_SCHEMA_FILE_RE.test(f) && re.test(relPosix(root, f)));
+}
+
+/**
+ * A fresh walk (not the per-process walkDir cache): guard's schema check runs
+ * in long-lived processes (MCP server, `watch`), where a cached listing would
+ * hide a schema file added after the first run.
+ */
+function freshFiles(dir) {
+  const out = [];
+  _collectFiles(dir, out);
+  return out;
+}
+
+/** `schema` entries of every drizzle.config.* under the package roots. */
+function drizzleConfigFiles(dir) {
+  const files = [];
+  for (const root of packageRoots(dir)) {
+    for (const name of DRIZZLE_CONFIG_FILES) {
+      const abs = join(root, name);
+      if (!isFileSync(abs)) continue;
+      const content = readFileSafe(abs);
+      if (!content) continue;
+      const m = /["']?\bschema["']?\s*:\s*(\[[^\]]*\]|'[^']*'|"[^"]*"|`[^`$]*`)/.exec(content);
+      if (!m) continue;
+      for (const entry of m[1].matchAll(/(['"`])([^'"`]+)\1/g)) files.push(...expandSchemaEntry(root, entry[2]));
+    }
+  }
+  return files;
+}
+
+/**
+ * Where Prisma, Drizzle and Mongoose schemas live.
+ * - Prisma: `prisma/*.prisma` and `prisma/schema/*.prisma` under the project,
+ *   its workspaces and source roots, plus package.json `prisma.schema`.
+ * - Drizzle: drizzle.config.* `schema` first; otherwise a search of the
+ *   conventional dirs and source roots for files that call a table builder
+ *   (`pgTable('users', …)`).
+ * - Mongoose: the same search, for files that construct a mongoose Schema.
+ * Every file appears once (absolute paths), so `src/db` inside `src` is not
+ * scanned twice.
+ * @implements docguard.js-ts-extraction#FR-006
+ * @implements docguard.js-ts-extraction#FR-007
+ * @implements docguard.js-ts-extraction#FR-010
+ * @returns {{ prisma: string[], drizzle: string[], mongoose: string[] }}
+ */
+export function discoverOrmSchemaFiles(dir, config = {}) {
+  const prisma = new Set();
+  const prismaDirs = new Set([...packageRoots(dir), ...resolveSourceRoots(dir, config)]);
+  for (const root of prismaDirs) {
+    for (const sub of ['prisma', join('prisma', 'schema')]) {
+      const d = join(root, sub);
+      if (!isDir(d)) continue;
+      try {
+        for (const e of readdirSync(d, { withFileTypes: true })) if (e.isFile() && e.name.endsWith('.prisma')) prisma.add(join(d, e.name));
+      } catch { /* unreadable */ }
+    }
+    try {
+      const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
+      const declared = pkg?.prisma?.schema;
+      if (typeof declared === 'string') {
+        const abs = resolve(root, declared);
+        if (isFileSync(abs)) prisma.add(abs);
+        else if (isDir(abs)) for (const e of readdirSync(abs)) if (e.endsWith('.prisma')) prisma.add(join(abs, e));
+      }
+    } catch { /* no package.json */ }
+  }
+
+  const configured = drizzleConfigFiles(dir);
+  const drizzle = new Set(configured.filter(f => keepSchemaFile(dir, f, config)));
+  const mongoose = new Set();
+  for (const base of ormSearchBases(dir, config)) {
+    for (const file of freshFiles(base)) {
+      if (!JS_SCHEMA_FILE_RE.test(file) || !keepSchemaFile(dir, file, config)) continue;
+      const content = readFileSafe(file);
+      if (!content) continue;
+      if (configured.length === 0 && DRIZZLE_TABLE_RE.test(content)) drizzle.add(file);
+      if (content.includes('mongoose') && MONGOOSE_SCHEMA_RE.test(content)) mongoose.add(file);
+    }
+  }
+  const order = list => [...list].filter(f => keepSchemaFile(dir, f, config)).sort();
+  return { prisma: order(prisma), drizzle: order(drizzle), mongoose: order(mongoose) };
+}
+
+/**
+ * Prisma, Drizzle and Mongoose entities, relationships and (Prisma) enums —
+ * the one discovery and parse both guard and generate use.
+ * @implements docguard.js-ts-extraction#FR-010
+ */
+export function scanOrmEntities(dir, config = {}) {
+  const files = discoverOrmSchemaFiles(dir, config);
+  return {
+    prisma: scanPrismaDeep(dir, files.prisma),
+    drizzle: scanDrizzleSchemas(dir, files.drizzle),
+    mongoose: scanMongooseSchemas(dir, files.mongoose),
   };
 }
 
 // ── Prisma Deep Parser ──────────────────────────────────────────────────────
 
-function scanPrismaDeep(dir) {
+/** A Prisma line without its `//` comment (a `//` inside a string is kept). */
+function prismaCode(line) {
+  let inString = false;
+  for (let i = 0; i < line.length; i++) {
+    if (line[i] === '"' && line[i - 1] !== '\\') inString = !inString;
+    if (!inString && line[i] === '/' && line[i + 1] === '/') return line.slice(0, i);
+  }
+  return line;
+}
+
+/**
+ * Prisma models and enums. A block ends at its matching brace (strings and
+ * comments skipped), so attributes that contain braces (`@default("{}")`)
+ * never cut a model short. Relation fields and
+ * back-references are relationships, not columns; each relation is reported
+ * once, from the side that holds `@relation(fields: …)`, and an implicit
+ * many-to-many once (docguard.js-ts-extraction#FR-008).
+ */
+function scanPrismaDeep(dir, schemaFiles = []) {
   const entities = [];
   const relationships = [];
+  const enums = [];
+  const blocks = [];
+  for (const abs of schemaFiles) {
+    const content = readFileSafe(abs);
+    if (!content) continue;
+    const file = relPosix(dir, abs);
+    const head = /^[ \t]*(model|enum)\s+(\w+)\s*\{/gm;
+    let m;
+    while ((m = head.exec(content)) !== null) {
+      const open = m.index + m[0].length - 1;
+      const close = matchingBracket(content, open);
+      if (close < 0) break;
+      const lines = content.slice(open + 1, close).split('\n')
+        .map(raw => ({ raw, text: prismaCode(raw).trim() }))
+        .filter(l => l.text);
+      blocks.push({ kind: m[1], name: m[2], file, lines });
+      head.lastIndex = close + 1;
+    }
+  }
+  const models = new Set(blocks.filter(b => b.kind === 'model').map(b => b.name));
+  const relationFields = [];
 
-  const schemaPath = resolve(dir, 'prisma/schema.prisma');
-  if (!existsSync(schemaPath)) return { entities, relationships };
-
-  const content = readFileSync(schemaPath, 'utf-8');
-
-  // Parse all models
-  const modelRegex = /model\s+(\w+)\s*\{([^}]+)\}/g;
-  let modelMatch;
-
-  while ((modelMatch = modelRegex.exec(content)) !== null) {
-    const modelName = modelMatch[1];
-    const body = modelMatch[2];
+  for (const block of blocks) {
+    if (block.kind === 'enum') {
+      const values = block.lines.map(l => l.text).filter(t => /^\w+/.test(t) && !t.startsWith('@@')).map(t => t.match(/^(\w+)/)[1]);
+      enums.push({
+        name: block.name, values, file: block.file, source: 'prisma-enum',
+        fields: values.map(v => ({ name: v, type: 'enum_value', required: true })),
+        description: `Enum with ${values.length} values`,
+      });
+      continue;
+    }
     const fields = [];
-
-    const lines = body.split('\n');
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed || trimmed.startsWith('//') || trimmed.startsWith('@@')) continue;
-
-      // Parse field: name Type @modifiers
-      const fieldMatch = trimmed.match(/^(\w+)\s+([\w\[\]?]+)(\s+.*)?$/);
-      if (!fieldMatch) continue;
-
-      const fieldName = fieldMatch[1];
-      const rawType = fieldMatch[2];
-      const modifiers = fieldMatch[3] || '';
-
-      // Skip relation fields for field list (but track relationships)
-      const isRelation = rawType.endsWith('[]') || modifiers.includes('@relation');
-
-      if (isRelation && rawType.endsWith('[]')) {
-        relationships.push({
-          from: modelName,
-          to: rawType.replace('[]', '').replace('?', ''),
-          type: 'one-to-many',
-          field: fieldName,
-        });
+    for (const { text, raw } of block.lines) {
+      if (text.startsWith('@@')) continue;
+      const m = /^(\w+)\s+(\w+)(\([^)]*\))?(\[\])?(\?)?(?:\s+(.*))?$/.exec(text);
+      if (!m) continue;
+      const [, name, base, , list, optional, modifiers = ''] = m;
+      if (models.has(base)) {
+        const rel = /@relation\(([^)]*)\)/.exec(modifiers);
+        const relName = rel ? ((/^\s*"([^"]+)"/.exec(rel[1]) || /name\s*:\s*"([^"]+)"/.exec(rel[1]) || [])[1] || null) : null;
+        relationFields.push({ model: block.name, name, target: base, list: Boolean(list), owner: Boolean(rel && /\bfields\s*:/.test(rel[1])), relName });
         continue;
       }
-
-      if (isRelation && !rawType.endsWith('[]') && modifiers.includes('@relation')) {
-        relationships.push({
-          from: modelName,
-          to: rawType.replace('?', ''),
-          type: 'many-to-one',
-          field: fieldName,
-        });
-        continue;
-      }
-
       fields.push({
-        name: fieldName,
-        type: mapPrismaType(rawType),
-        required: !rawType.includes('?'),
-        primaryKey: modifiers.includes('@id'),
-        unique: modifiers.includes('@unique'),
+        name,
+        type: mapPrismaType(base) + (list ? '[]' : ''),
+        required: !optional && !list,
+        primaryKey: /@id\b/.test(modifiers),
+        unique: /@unique\b/.test(modifiers),
         default: extractPrismaDefault(modifiers),
-        description: extractInlineComment(line),
+        description: extractInlineComment(raw),
       });
     }
-
-    entities.push({
-      name: modelName,
-      fields,
-      file: 'prisma/schema.prisma',
-      source: 'prisma',
-      description: '',
-    });
+    entities.push({ name: block.name, fields, file: block.file, source: 'prisma', description: '' });
   }
 
-  // Parse enums
-  const enumRegex = /enum\s+(\w+)\s*\{([^}]+)\}/g;
-  let enumMatch;
-  while ((enumMatch = enumRegex.exec(content)) !== null) {
-    const enumName = enumMatch[1];
-    const values = enumMatch[2].trim().split('\n')
-      .map(l => l.trim())
-      .filter(l => l && !l.startsWith('//'));
-
-    entities.push({
-      name: enumName,
-      fields: values.map(v => ({ name: v, type: 'enum_value', required: true })),
-      file: 'prisma/schema.prisma',
-      source: 'prisma-enum',
-      description: `Enum with ${values.length} values`,
-    });
+  const otherSide = (f) => relationFields.find(o => o !== f && o.model === f.target && o.target === f.model && o.relName === f.relName);
+  for (const f of relationFields) {
+    const other = otherSide(f);
+    if (f.owner) {
+      relationships.push({ from: f.model, to: f.target, type: other && !other.list ? 'one-to-one' : 'many-to-one', field: f.name });
+    } else if (f.list && other && other.list && !other.owner) {
+      // Implicit many-to-many: one edge, from the alphabetically first side.
+      if (f.model < f.target || (f.model === f.target && f.name < other.name)) {
+        relationships.push({ from: f.model, to: f.target, type: 'many-to-many', field: f.name });
+      }
+    } else if (f.list && !other) {
+      relationships.push({ from: f.model, to: f.target, type: 'one-to-many', field: f.name });
+    }
+    // Any other field is the back-reference of an owned relation: already drawn.
   }
-
-  return { entities, relationships };
+  return { entities, relationships, enums };
 }
 
 function mapPrismaType(rawType) {
@@ -204,121 +361,125 @@ function mapPrismaType(rawType) {
 }
 
 function extractPrismaDefault(modifiers) {
-  const match = modifiers.match(/@default\(([^)]+)\)/);
-  if (!match) return '—';
-  return match[1];
+  const at = modifiers.indexOf('@default(');
+  if (at < 0) return '—';
+  const open = at + '@default'.length;
+  const close = matchingBracket(modifiers, open);
+  return close < 0 ? '—' : modifiers.slice(open + 1, close);
 }
 
 function extractInlineComment(line) {
-  const match = line.match(/\/\/\s*(.+)$/);
+  const code = prismaCode(line);
+  const match = line.slice(code.length).match(/^\/\/\/?\s*(.+)$/);
   return match ? match[1].trim() : '';
 }
 
 // ── Drizzle Scanner ─────────────────────────────────────────────────────────
 
-function scanDrizzleSchemas(dir) {
+/** `name = pgTable('table', {` … balanced body, by pattern (the regex tier). */
+function drizzleTablesByPattern(content) {
+  const out = [];
+  const re = /\b([A-Za-z_$][\w$]*)\s*=\s*(?:pg|mysql|sqlite)Table\s*\(\s*(['"`])(\w+)\2\s*,\s*\{/g;
+  let m;
+  while ((m = re.exec(content)) !== null) {
+    const open = m.index + m[0].length - 1;
+    const close = matchingBracket(content, open);
+    if (close < 0) continue;
+    out.push({ kind: 'drizzle', name: m[1], table: m[3], body: content.slice(open + 1, close) });
+  }
+  return out;
+}
+
+/**
+ * Drizzle tables with every column. A variable → table map across all schema
+ * files resolves `.references(() => users.id)` to the table name, and pgEnum
+ * bindings type their columns `enum` (docguard.js-ts-extraction#FR-006).
+ */
+function scanDrizzleSchemas(dir, schemaFiles = []) {
   const entities = [];
   const relationships = [];
-
-  const schemaDirs = ['src/db', 'src/schema', 'db', 'schema', 'drizzle', 'src/drizzle', 'src'];
-  const tablePattern = /(?:export\s+(?:const|let)\s+)?(\w+)\s*=\s*(?:pg|mysql|sqlite)Table\s*\(\s*['"`](\w+)['"`]\s*,\s*\{([^}]+)\}/g;
-
-  for (const schemaDir of schemaDirs) {
-    const fullDir = resolve(dir, schemaDir);
-    if (!existsSync(fullDir)) continue;
-
-    walkDir(fullDir, (filePath) => {
-      const content = readFileSafe(filePath);
-      if (!content || !content.includes('Table(')) return;
-
-      // Emit one entity from a (tableName, body) pair. `body` is the balanced
-      // inner text of the table's column object.
-      const emit = (tableName, body) => {
-        const fields = parseDrizzleColumns(body);
-        for (const field of fields) {
-          if (field._ref) {
-            relationships.push({ from: tableName, to: field._ref, type: 'many-to-one', field: field.name });
-          }
-        }
-        entities.push({
-          name: tableName,
-          fields: fields.map(f => ({ ...f, _ref: undefined })),
-          file: relative(dir, filePath),
-          source: 'drizzle',
-          description: '',
-        });
-      };
-
-      // Full-support tier: AST extraction (nested braces handled). Falls back
-      // to the legacy regex only when @babel/parser can't parse the file.
-      const ast = extractJsSchemaBodies(content, filePath);
-      if (ast) {
-        for (const s of ast) if (s.kind === 'drizzle') emit(s.table, s.body);
-      } else {
-        let match;
-        const regex = new RegExp(tablePattern.source, 'g');
-        while ((match = regex.exec(content)) !== null) emit(match[2], match[3]);
-      }
+  const tables = [];
+  const enumVars = new Set();
+  for (const abs of schemaFiles) {
+    const content = readFileSafe(abs);
+    if (!content) continue;
+    for (const m of content.matchAll(/\b([A-Za-z_$][\w$]*)\s*=\s*(?:pg|mysql)Enum\s*\(/g)) enumVars.add(m[1]);
+    // Full-support tier: AST extraction (balanced bodies). The pattern tier
+    // reads the same bodies by bracket matching when the file does not parse.
+    const found = extractJsSchemaBodies(content, abs) ?? drizzleTablesByPattern(content);
+    for (const t of found) if (t.kind === 'drizzle') tables.push({ ...t, file: relPosix(dir, abs) });
+  }
+  const varToTable = new Map(tables.map(t => [t.name, t.table]));
+  for (const t of tables) {
+    const fields = parseDrizzleColumns(t.body, enumVars);
+    for (const field of fields) {
+      if (field._ref) relationships.push({ from: t.table, to: varToTable.get(field._ref) ?? field._ref, type: 'many-to-one', field: field.name });
+    }
+    entities.push({
+      name: t.table,
+      fields: fields.map(({ _ref, ...f }) => f),
+      file: t.file,
+      source: 'drizzle',
+      description: '',
     });
   }
-
   return { entities, relationships };
 }
 
-function parseDrizzleColumns(body) {
+const PROPERTY_RE = /^\s*(?:(['"])([^'"]+)\1|([A-Za-z_$][\w$]*))\s*:\s*([\s\S]*)$/;
+
+function parseDrizzleColumns(body, enumVars = new Set()) {
   const fields = [];
-  const lines = body.split('\n');
-
-  for (const line of lines) {
-    const trimmed = line.trim().replace(/,$/, '');
-    if (!trimmed || trimmed.startsWith('//')) continue;
-
-    // Match: fieldName: type('column_name')
-    const colMatch = trimmed.match(/(\w+)\s*:\s*(\w+)\s*\(\s*['"`]?(\w+)?['"`]?\s*\)/);
-    if (!colMatch) continue;
-
-    const fieldName = colMatch[1];
-    const drizzleType = colMatch[2];
-
+  for (const part of splitTopLevel(stripComments(body), ',')) {
+    const prop = PROPERTY_RE.exec(part);
+    if (!prop) continue;
+    const name = prop[2] ?? prop[3];
+    const value = prop[4].trim();
+    const call = /^([A-Za-z_$][\w$]*)\s*(?:<[^>]*>)?\s*\(/.exec(value);
+    if (!call) continue;
+    const builder = call[1];
+    const close = matchingBracket(value, call[0].length - 1);
+    const chain = close < 0 ? '' : value.slice(close + 1);
+    const primaryKey = /\.primaryKey\s*\(/.test(chain) || builder === 'serial';
     const field = {
-      name: fieldName,
-      type: mapDrizzleType(drizzleType),
-      required: !trimmed.includes('.notNull()') ? false : true,
-      primaryKey: trimmed.includes('.primaryKey()') || drizzleType === 'serial',
-      unique: trimmed.includes('.unique()'),
-      default: extractDrizzleDefault(trimmed),
+      name,
+      type: enumVars.has(builder) ? 'enum' : mapDrizzleType(builder),
+      required: /\.notNull\s*\(/.test(chain) || primaryKey,
+      primaryKey,
+      unique: /\.unique\s*\(/.test(chain),
+      default: extractDrizzleDefault(chain),
       description: '',
     };
-
-    // Check for references
-    const refMatch = trimmed.match(/\.references\(\s*\(\)\s*=>\s*(\w+)\.\w+\)/);
-    if (refMatch) {
-      field._ref = refMatch[1];
-    }
-
+    const ref = /\.references\s*\(\s*\(\s*\)\s*(?::\s*[\w$.<>[\]]+\s*)?=>\s*\(?\s*([A-Za-z_$][\w$]*)\s*\.\s*[A-Za-z_$][\w$]*/.exec(chain);
+    if (ref) field._ref = ref[1];
     fields.push(field);
   }
-
   return fields;
 }
 
 function mapDrizzleType(type) {
   const map = {
-    'serial': 'integer (auto)', 'integer': 'integer', 'bigint': 'bigint',
+    'serial': 'serial', 'bigserial': 'bigserial', 'smallserial': 'smallserial',
+    'integer': 'integer', 'int': 'integer', 'bigint': 'bigint',
     'smallint': 'smallint', 'text': 'string', 'varchar': 'string',
     'char': 'string', 'boolean': 'boolean', 'timestamp': 'datetime',
     'date': 'date', 'time': 'time', 'json': 'json', 'jsonb': 'json',
-    'real': 'float', 'doublePrecision': 'double', 'numeric': 'decimal',
-    'uuid': 'uuid',
+    'real': 'float', 'doublePrecision': 'double', 'double': 'double', 'numeric': 'decimal',
+    'decimal': 'decimal', 'uuid': 'uuid', 'blob': 'bytes',
   };
   return map[type] || type;
 }
 
-function extractDrizzleDefault(line) {
-  const match = line.match(/\.default\(([^)]+)\)/);
-  if (match) return match[1].replace(/['"`]/g, '');
-  if (line.includes('.defaultNow()')) return 'now()';
-  if (line.includes('.defaultRandom()')) return 'random()';
+function extractDrizzleDefault(chain) {
+  const at = chain.search(/\.default\s*\(/);
+  if (at >= 0) {
+    const open = chain.indexOf('(', at);
+    const close = matchingBracket(chain, open);
+    if (close > open) return chain.slice(open + 1, close).trim().replace(/['"`]/g, '');
+  }
+  if (/\.defaultNow\s*\(/.test(chain)) return 'now()';
+  if (/\.defaultRandom\s*\(/.test(chain)) return 'random()';
+  if (/\.\$defaultFn\s*\(/.test(chain)) return 'generated';
   return '—';
 }
 
@@ -411,99 +572,105 @@ function mapZodType(type) {
 
 // ── Mongoose Scanner ────────────────────────────────────────────────────────
 
-function scanMongooseSchemas(dir) {
-  const entities = [];
-  const relationships = [];
-
-  const schemaDirs = ['src/models', 'models', 'src/schema', 'schema'];
-  const schemaPattern = /(?:const|let|var)\s+(\w+)(?:Schema)?\s*=\s*new\s+(?:mongoose\.)?Schema\s*\(\s*\{([^}]+)\}/g;
-
-  for (const schemaDir of schemaDirs) {
-    const fullDir = resolve(dir, schemaDir);
-    if (!existsSync(fullDir)) continue;
-
-    walkDir(fullDir, (filePath) => {
-      const content = readFileSafe(filePath);
-      if (!content || !content.includes('Schema(')) return;
-
-      const emit = (rawName, body) => {
-        const schemaName = rawName.replace(/Schema$/i, '');
-        const fields = parseMongooseFields(body);
-        for (const field of fields) {
-          if (field._ref) {
-            relationships.push({ from: schemaName, to: field._ref, type: 'many-to-one', field: field.name });
-          }
-        }
-        entities.push({
-          name: schemaName.charAt(0).toUpperCase() + schemaName.slice(1),
-          fields: fields.map(f => ({ ...f, _ref: undefined })),
-          file: relative(dir, filePath),
-          source: 'mongoose',
-          description: '',
-        });
-      };
-
-      const ast = extractJsSchemaBodies(content, filePath);
-      if (ast) {
-        for (const s of ast) if (s.kind === 'mongoose') emit(s.name, s.body);
-      } else {
-        let match;
-        const regex = new RegExp(schemaPattern.source, 'g');
-        while ((match = regex.exec(content)) !== null) emit(match[1], match[2]);
-      }
-    });
+/** `name = new Schema({` … balanced body, by pattern (the regex tier). */
+function mongooseSchemasByPattern(content) {
+  const out = [];
+  const re = /\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*(?::\s*[^=]+)?=\s*new\s+(?:mongoose\s*\.\s*)?Schema\s*(?:<[^>]*>)?\s*\(\s*\{/g;
+  let m;
+  while ((m = re.exec(content)) !== null) {
+    const open = m.index + m[0].length - 1;
+    const close = matchingBracket(content, open);
+    if (close < 0) continue;
+    out.push({ kind: 'mongoose', name: m[1], body: content.slice(open + 1, close) });
   }
-
-  return { entities, relationships };
+  return out;
 }
 
-function parseMongooseFields(body) {
-  const fields = [];
-  const lines = body.split('\n');
-
-  for (const line of lines) {
-    const trimmed = line.trim().replace(/,$/, '');
-    if (!trimmed || trimmed.startsWith('//')) continue;
-
-    // Match: fieldName: Type or fieldName: { type: Type }
-    const simpleMatch = trimmed.match(/(\w+)\s*:\s*(\w+)/);
-    if (!simpleMatch) continue;
-
-    const fieldName = simpleMatch[1];
-    const typeOrKey = simpleMatch[2];
-
-    if (typeOrKey === 'type') {
-      // Complex field: { type: String, required: true }
-      const typeMatch = trimmed.match(/type\s*:\s*(\w+)/);
-      const required = trimmed.includes('required: true') || trimmed.includes("required: 'true'");
-      const unique = trimmed.includes('unique: true');
-      const refMatch = trimmed.match(/ref\s*:\s*['"](\w+)['"]/);
-
-      fields.push({
-        name: fieldName,
-        type: mapMongooseType(typeMatch ? typeMatch[1] : 'Mixed'),
-        required,
-        primaryKey: fieldName === '_id',
-        unique,
-        default: '—',
-        description: '',
-        _ref: refMatch ? refMatch[1] : null,
-      });
-    } else {
-      // Simple field: fieldName: String
-      fields.push({
-        name: fieldName,
-        type: mapMongooseType(typeOrKey),
-        required: false,
-        primaryKey: fieldName === '_id',
-        unique: false,
-        default: '—',
+/**
+ * Mongoose schemas, named by `model('Name', schema)` when the file registers
+ * one. Fields come from the top-level keys only: a `{ type, required, ref }`
+ * object is one field, a nested object without `type` is one `object` field,
+ * and `[{ type: ObjectId, ref: 'X' }]` is an array relation
+ * (docguard.js-ts-extraction#FR-007).
+ */
+function scanMongooseSchemas(dir, schemaFiles = []) {
+  const entities = [];
+  const relationships = [];
+  for (const abs of schemaFiles) {
+    const content = readFileSafe(abs);
+    if (!content) continue;
+    const models = new Map();
+    for (const m of content.matchAll(/\bmodel\s*(?:<[^>]*>)?\s*\(\s*(['"`])(\w+)\1\s*,\s*([A-Za-z_$][\w$]*)/g)) models.set(m[3], m[2]);
+    const found = extractJsSchemaBodies(content, abs) ?? mongooseSchemasByPattern(content);
+    for (const s of found) {
+      if (s.kind !== 'mongoose') continue;
+      const bare = s.name.replace(/Schema$/i, '') || s.name;
+      const name = models.get(s.name) ?? (bare.charAt(0).toUpperCase() + bare.slice(1));
+      const fields = parseMongooseFields(s.body);
+      for (const field of fields) {
+        if (field._ref) relationships.push({ from: name, to: field._ref, type: field._many ? 'one-to-many' : 'many-to-one', field: field.name });
+      }
+      entities.push({
+        name,
+        fields: fields.map(({ _ref, _many, ...f }) => f),
+        file: relPosix(dir, abs),
+        source: 'mongoose',
         description: '',
       });
     }
   }
+  return { entities, relationships };
+}
 
+/** Top-level `key: value` pairs of an object literal's inner text. */
+function objectProps(inner) {
+  const props = new Map();
+  for (const part of splitTopLevel(stripComments(inner), ',')) {
+    const m = PROPERTY_RE.exec(part);
+    if (m) props.set(m[2] ?? m[3], m[4].trim());
+  }
+  return props;
+}
+
+const unquote = (text) => (/^(['"`])([^'"`]*)\1$/.exec(String(text || '').trim()) || [])[2];
+
+function parseMongooseFields(body) {
+  const fields = [];
+  for (const [name, value] of objectProps(body)) {
+    const field = { name, type: 'mixed', required: false, primaryKey: name === '_id', unique: false, default: '—', description: '' };
+    if (value.startsWith('{')) {
+      const props = objectProps(value.slice(1, value.lastIndexOf('}')));
+      if (props.has('type')) {
+        const typeText = props.get('type');
+        field.type = mongooseTypeName(typeText);
+        field.required = /^(?:true|\[\s*true)/.test(props.get('required') || '');
+        field.unique = /^true/.test(props.get('unique') || '');
+        if (props.has('default')) field.default = unquote(props.get('default')) ?? props.get('default');
+        const ref = unquote(props.get('ref'));
+        if (ref) { field._ref = ref; field._many = typeText.trim().startsWith('['); }
+      } else {
+        field.type = 'object'; // a nested path: its keys are not top-level fields
+      }
+    } else if (value.startsWith('[')) {
+      field.type = 'array';
+      const element = value.slice(1, value.lastIndexOf(']')).trim();
+      if (element.startsWith('{')) {
+        const ref = unquote(objectProps(element.slice(1, element.lastIndexOf('}'))).get('ref'));
+        if (ref) { field._ref = ref; field._many = true; }
+      }
+    } else {
+      field.type = mongooseTypeName(value);
+    }
+    fields.push(field);
+  }
   return fields;
+}
+
+function mongooseTypeName(text) {
+  const t = String(text || '').trim();
+  if (t.startsWith('[')) return 'array';
+  const last = t.split('.').pop().replace(/[^\w$]/g, '');
+  return mapMongooseType(last || 'Mixed');
 }
 
 function mapMongooseType(type) {
@@ -511,108 +678,9 @@ function mapMongooseType(type) {
     'String': 'string', 'Number': 'number', 'Boolean': 'boolean',
     'Date': 'date', 'Buffer': 'buffer', 'ObjectId': 'ObjectId',
     'Array': 'array', 'Map': 'map', 'Mixed': 'mixed',
-    'Schema': 'embedded',
+    'Schema': 'embedded', 'Decimal128': 'decimal', 'BigInt': 'bigint', 'UUID': 'uuid',
   };
   return map[type] || type;
-}
-
-// ── Python: SQLAlchemy + Pydantic ────────────────────────────────────────────
-
-function scanPythonModels(dir) {
-  const entities = [];
-  const relationships = [];
-
-  // Collect .py files first so the AST tier parses them in ONE python3
-  // subprocess. `null` → Python unavailable / subprocess failed → regex
-  // fallback for all; a per-file `ok:false` falls back for that file only.
-  // The AST tier gets every field exactly (no body-capture truncation, no
-  // miss on multi-base classes) — undercounting fields is what makes the
-  // data-model validators falsely pass on a stale DATA-MODEL.md.
-  const pyFiles = [];
-  walkDir(dir, (filePath) => { if (filePath.endsWith('.py')) pyFiles.push(filePath); });
-  const astByFile = extractPythonFiles(pyFiles);
-  // `null` means the whole batch fell back — no usable interpreter. Name it
-  // once so every entity from this scan carries the same accurate reason.
-  // (calibrated-finding-channels#FR-011)
-  const batchReason = astByFile === null ? 'No usable python3 interpreter; models matched by pattern.' : null;
-  const tiers = [];
-
-  for (const filePath of pyFiles) {
-    const parsed = astByFile && astByFile[filePath];
-    const { tier, tierReason } = tierFor(filePath, parsed, batchReason);
-    tiers.push({ tier, tierReason });
-    if (parsed && parsed.ok) {
-      for (const s of parsed.schemas || []) {
-        const fields = (s.fields || []).map(f => ({
-          name: f.name, type: f.type || '', required: f.required !== false, description: '',
-        }));
-        if (fields.length > 0) entities.push({ name: s.name, fields, file: filePath, source: s.kind, tier, tierReason });
-        for (const to of s.rels || []) relationships.push({ from: s.name, to, type: 'related' });
-      }
-      continue;
-    }
-    // The pattern tier undercounts fields on multi-base classes and truncates
-    // captured bodies — which is precisely how a stale DATA-MODEL.md passes.
-    // An entity found here carries that fact with it.
-    const before = entities.length;
-    scanPythonModelsRegex(filePath, entities, relationships);
-    for (let i = before; i < entities.length; i++) Object.assign(entities[i], { tier, tierReason });
-  }
-  if (tiers.length > 0) {
-    const summary = summarizeTiers(tiers);
-    Object.defineProperty(entities, 'scanTier', { value: summary, enumerable: false, configurable: true });
-  }
-  return { entities, relationships };
-}
-
-// Regex (beta) fallback — used per-file when the Python AST tier is unavailable
-// or couldn't parse that file. Identical behavior to the pre-AST scanner.
-function scanPythonModelsRegex(filePath, entities, relationships) {
-  {
-    const content = readFileSafe(filePath);
-    if (!content) return;
-    if (!/class\s+\w+\s*\([^)]*(Base|BaseModel|db\.Model|Model|SQLModel)/.test(content)) return;
-
-    // SQLAlchemy ORM: class X(Base): __tablename__ = "x"; id = Column(...)
-    const ormRe = /class\s+(\w+)\s*\([^)]*(?:Base|db\.Model|SQLModel)[^)]*\):([\s\S]*?)(?=\nclass\s+\w+|\n*$)/g;
-    let m;
-    while ((m = ormRe.exec(content)) !== null) {
-      const name = m[1];
-      const body = m[2];
-      const fields = [];
-      const colRe = /^\s*(\w+)\s*=\s*(?:mapped_column|Column)\s*\(\s*([A-Za-z_]+)(?:\([^)]*\))?([^)]*)\)/gm;
-      let cm;
-      while ((cm = colRe.exec(body)) !== null) {
-        const required = !/nullable\s*=\s*True/.test(cm[3]);
-        fields.push({ name: cm[1], type: cm[2], required, description: '' });
-      }
-      const relRe = /(\w+)\s*[:=]\s*(?:Mapped\[[^\]]*?["'](\w+)["']|relationship\s*\(\s*["'](\w+)["'])/g;
-      let rm;
-      while ((rm = relRe.exec(body)) !== null) {
-        relationships.push({ from: name, to: rm[2] || rm[3], type: 'related' });
-      }
-      if (fields.length > 0) entities.push({ name, fields, file: filePath, source: 'sqlalchemy' });
-    }
-
-    // Pydantic / SQLModel: class X(BaseModel): name: str
-    const pydRe = /class\s+(\w+)\s*\([^)]*(?:BaseModel|SQLModel)[^)]*\):([\s\S]*?)(?=\nclass\s+\w+|\n*$)/g;
-    while ((m = pydRe.exec(content)) !== null) {
-      const name = m[1];
-      if (entities.some(e => e.name === name)) continue;
-      const body = m[2];
-      const fields = [];
-      const fieldRe = /^\s{2,}(\w+)\s*:\s*([\w\[\],\s|]+?)(?:\s*=\s*([^\n]+))?$/gm;
-      let fm;
-      while ((fm = fieldRe.exec(body)) !== null) {
-        const fname = fm[1];
-        if (/^[A-Z_]+$/.test(fname)) continue;
-        const type = fm[2].trim();
-        const required = !/Optional|None|None\s*$/.test(type + (fm[3] || ''));
-        fields.push({ name: fname, type, required, description: '' });
-      }
-      if (fields.length > 0) entities.push({ name, fields, file: filePath, source: 'pydantic' });
-    }
-  }
 }
 
 // ── Rust: Diesel `table! { ... }` ─────────────────────────────────────────────
@@ -816,18 +884,26 @@ export function generateERDiagram(entities, relationships) {
       .map(f => {
         const pk = f.primaryKey ? ' PK' : '';
         const uk = f.unique ? ' UK' : '';
-        return `        ${String(f.type || 'unknown').replace(/[^a-zA-Z0-9]/g, '_')} ${f.name}${pk}${uk}`;
+        // The first word of the type, Mermaid-safe: `integer (auto)` → `integer`.
+        const type = String(f.type || 'unknown').trim().split(/[\s(]/)[0] || 'unknown';
+        return `        ${type.replace(/[^a-zA-Z0-9]/g, '_')} ${f.name}${pk}${uk}`;
       });
     lines.push(`    ${entity.name} {`);
     lines.push(...fieldLines);
     lines.push(`    }`);
   }
 
-  // Add relationships
+  // Add relationships (each once)
+  const drawn = new Set();
   for (const rel of relationships) {
     const arrow = rel.type === 'one-to-many' ? '||--o{' :
-      rel.type === 'many-to-one' ? '}o--||' : '||--||';
-    lines.push(`    ${rel.from} ${arrow} ${rel.to} : "${rel.field}"`);
+      rel.type === 'many-to-one' ? '}o--||' :
+      rel.type === 'many-to-many' ? '}o--o{' :
+        rel.type === 'related' ? '}o..o{' : '||--||';
+    const line = `    ${rel.from} ${arrow} ${rel.to} : "${rel.field}"`;
+    if (drawn.has(line)) continue;
+    drawn.add(line);
+    lines.push(line);
   }
 
   return lines.join('\n');

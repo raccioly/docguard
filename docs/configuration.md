@@ -309,16 +309,27 @@ many ranked files it left out. About 4 bytes stand for one token.
 
 ## Project Type Detection
 
-DocGuard auto-detects your project type from `package.json`:
+DocGuard auto-detects your project type from the manifest at the project root
+(`package.json`, `pyproject.toml`, `requirements.txt`, `setup.py`, `Pipfile`,
+`Cargo.toml`, `go.mod`, …). `init`, `generate` and a project without a
+`.docguard.json` all use the same detector:
 
 | Signal | Detected Type |
 |--------|--------------|
+| A Cloudflare Worker config | `api` |
 | `bin` field | `cli` |
 | `next`, `react`, `vue`, `angular`, `svelte` | `webapp` |
-| `express`, `fastify`, `hono`, `koa` | `api` |
+| `express`, `fastify`, `hono`, `koa`, `@nestjs/core` | `api` |
 | `main`, `exports`, `module` | `library` |
-| `manage.py` | `webapp` (Django) |
-| `pyproject.toml` | `library` (Python) |
+| `django` dependency or `manage.py` | `webapp` (Django) |
+| `fastapi`, `flask` or `starlette` dependency | `api` |
+| `click` or `typer` dependency | `cli` |
+| Web framework in Rust or Go (`axum`, `actix-web`, `gin`, …) | `api` |
+| `clap` (Rust) or a Rust binary crate | `cli` |
+| Any other package | `library` |
+
+When the root holds two manifests (a Python service with a `package.json` for
+tooling), the one that names a framework wins.
 
 ## Project Type Defaults
 

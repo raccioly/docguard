@@ -20,8 +20,12 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, relative, basename, extname, dirname } from 'node:path';
 import { resolveSourceRoots, readScannable, tierFor, summarizeTiers } from '../shared-source.mjs';
 import { DEFAULT_IGNORE_DIRS as IGNORE_DIRS, shouldIgnore, relPosix, isNonProductPath } from '../shared-ignore.mjs';
-import { extractJsRouteCalls, extractJsRouteObjects, extractJsMountsAndImports } from './js-ast.mjs';
-import { extractPythonFiles } from './py-ast.mjs';
+import { extractJsRouteCalls, extractJsRouteObjects, extractJsMountsAndImports, nextRouteHandlers, isAuthMiddlewareName, AUTH_CHECK_RE, matchingBracket } from './js-ast.mjs';
+import { createAliasResolver } from './ts-paths.mjs';
+import { scanPythonWebRoutes } from './python-routes.mjs';
+import { extractGoRoutes } from './go-routes.mjs';
+import { extractSpringRoutes } from './spring-routes.mjs';
+import { extractRailsRoutes } from './rails-routes.mjs';
 
 /**
  * Scan routes from source code with framework-aware parsing.
@@ -78,10 +82,6 @@ export function scanRoutesDeep(dir, stack, docTools, opts = {}) {
     routes.push(...scanHonoRoutes(dir, roots));
   }
 
-  if (framework.includes('Django')) {
-    routes.push(...scanDjangoRoutes(dir, ctx));
-  }
-
   if (named('Spring', 'Java')) {
     patternScan(named('Spring Boot', 'Spring', 'Java'), ['spring-boot'], scanSpringBootRoutes);
   }
@@ -98,8 +98,19 @@ export function scanRoutesDeep(dir, stack, docTools, opts = {}) {
     patternScan(named('Axum', 'Actix', 'Rocket', 'Warp', 'Rust'), ['axum', 'actix', 'rocket'], scanRustWebRoutes);
   }
 
-  if (framework.includes('FastAPI') || framework.includes('Flask')) {
-    routes.push(...scanFastAPIRoutes(dir, ctx));
+  // Python: one scan resolves FastAPI/Flask routers and Django URL
+  // configurations from the same module outlines (python-routes.mjs), and
+  // records each file's parser tier with the scan.
+  let limitations = null;
+  const django = framework.includes('Django');
+  const asgi = framework.includes('FastAPI') || framework.includes('Flask');
+  if (django || asgi) {
+    const pyFiles = findRouteFiles(dir, /\.py$/, { maxFiles });
+    if (pyFiles.truncated) scan.truncated = true;
+    const py = scanPythonWebRoutes(dir, { django, asgi }, { files: pyFiles });
+    scan.tierItems.push(...py.fileTiers);
+    limitations = py.limitations || null;
+    routes.push(...py);
   }
 
   // Deduplicate by method+path, and drop routes that live in non-product dirs
@@ -129,6 +140,7 @@ export function scanRoutesDeep(dir, stack, docTools, opts = {}) {
   // to know about. (calibrated-finding-channels#FR-011)
   const scanTier = scan.tierItems.length ? summarizeTiers(scan.tierItems) : null;
   if (scanTier) Object.defineProperty(kept, 'scanTier', { value: scanTier, enumerable: false });
+  if (limitations?.length) Object.defineProperty(kept, 'limitations', { value: limitations, enumerable: false });
   for (const pf of scan.patternFrameworks) pf.kept = kept.filter(r => pf.sources.includes(r.source)).length;
   Object.defineProperty(kept, 'scan', {
     enumerable: false,
@@ -148,6 +160,7 @@ export function scanRoutesDeep(dir, stack, docTools, opts = {}) {
 
 function scanNextJsRoutes(dir) {
   const routes = [];
+  const middlewareAuth = nextMiddlewareAuth(dir);
 
   // App Router: app/api/**/route.{ts,js}
   const appDirs = ['app/api', 'src/app/api'];
@@ -182,7 +195,11 @@ function scanNextJsRoutes(dir) {
         .replace(/\[\.\.\.(\w+)\]/g, ':$1*')        // Catch-all [...slug]
         .replace(/\[(\w+)\]/g, ':$1');               // Dynamic [id]
 
-      // Extract exported HTTP methods
+      // Extract exported HTTP methods. Each handler is judged by its own body
+      // (AST), or by its own export's text when the file does not parse, plus
+      // a `middleware` file whose matcher covers the path
+      // (docguard.js-ts-extraction#FR-002).
+      const handlers = nextRouteHandlers(content, filePath);
       const methods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS'];
       for (const method of methods) {
         // Match: export async function GET, export function GET, export const GET
@@ -191,14 +208,17 @@ function scanNextJsRoutes(dir) {
           new RegExp(`export\\s+(?:const|let)\\s+${method}\\s*=`),
         ];
         for (const pattern of patterns) {
-          if (pattern.test(content)) {
+          const match = pattern.exec(content);
+          const viaAst = handlers?.get(method);
+          if (match || viaAst) {
             routes.push({
               method,
               path: apiPath,
               handler: method,
               file: relative(dir, filePath),
+              line: viaAst?.line ?? (match ? lineAt(content, match.index) : null),
               source: 'nextjs-app-router',
-              auth: hasAuthCheck(content),
+              auth: (viaAst ? viaAst.auth : exportSegmentAuth(content, match.index)) || middlewareAuth(apiPath),
               description: extractJSDocDescription(content, method),
             });
             break;
@@ -236,14 +256,16 @@ function scanNextJsRoutes(dir) {
       // Detect methods from req.method checks
       const detectedMethods = detectMethodsFromHandler(content);
 
+      const defaultExport = /export\s+default\b/.exec(content);
       for (const method of detectedMethods) {
         routes.push({
           method,
           path: apiPath || '/api',
           handler: `${name}Handler`,
           file: relative(dir, filePath),
+          line: defaultExport ? lineAt(content, defaultExport.index) : null,
           source: 'nextjs-pages-router',
-          auth: hasAuthCheck(content),
+          auth: hasAuthCheck(content) || middlewareAuth(apiPath || '/api'),
           description: extractJSDocDescription(content),
         });
       }
@@ -294,40 +316,190 @@ function scanExpressRoutes(dir, roots = null) {
   // non-null receiver means it applies only to routes whose receiver matches
   // (a same-file `const r = Router(); app.use('/api', r)` — so a sibling
   // `app.get('/health')` in the same file is NOT wrongly prefixed).
-  const mountMap = buildExpressMountMap(files);
+  const mountMap = buildExpressMountMap(files, createAliasResolver(dir));
 
   // ── Phase 2: emit routes, prefixing by mount where known ────────────────────
+  // Auth is per route (docguard.js-ts-extraction#FR-002): the route's own
+  // evidence, or auth middleware on a mount above it.
   const routes = [];
   for (const { content, filePath, fileLabel } of files) {
     const mounts = mountMap.get(filePath) || [];
-    const emit = (method, path, index, receiver) => {
-      const prefixes = mounts
-        .filter(m => m.receiver === null || m.receiver === receiver)
-        .map(m => m.prefix);
-      const finalPaths = prefixes.length ? prefixes.map(p => joinRoutePath(p, path)) : [path];
-      for (const fullPath of finalPaths) {
+    const emit = (r) => {
+      const applicable = mounts.filter(m => m.receiver === null || m.receiver === r.receiver);
+      const targets = applicable.length
+        ? applicable.map(m => ({ path: joinRoutePath(m.prefix, r.path), auth: m.auth }))
+        : [{ path: r.path, auth: false }];
+      for (const target of targets) {
         routes.push({
-          method: method.toUpperCase(),
-          path: fullPath,
-          handler: extractHandlerName(content, index),
+          method: r.method.toUpperCase(),
+          path: target.path,
+          handler: r.handler ?? extractHandlerName(content, r.start),
           file: fileLabel,
+          line: r.line ?? lineAt(content, r.start),
           source: 'express',
-          auth: hasAuthMiddleware(content, path),
-          description: extractNearbyComment(content, index),
+          auth: Boolean(r.auth || target.auth),
+          description: extractNearbyComment(content, r.start),
         });
       }
     };
     const ast = extractJsRouteCalls(content, filePath);
     if (ast) {
-      for (const r of ast) emit(r.method, r.path, r.start, r.receiver ?? null);
+      for (const r of ast) emit({ ...r, receiver: r.receiver ?? null });
     } else {
       const regex = new RegExp(routePattern.source, 'gi');
       let match;
-      while ((match = regex.exec(content)) !== null) emit(match[1], match[2], match.index, null);
+      while ((match = regex.exec(content)) !== null) {
+        emit({ method: match[1], path: match[2], start: match.index, receiver: null, auth: statementAuth(content, match.index) });
+      }
+      for (const r of routeChainsByPattern(content)) emit(r);
     }
   }
 
   return routes;
+}
+
+// ── Pattern-tier route chains and auth (docguard.js-ts-extraction#FR-001/002) ─
+
+/** Top-level comma-separated argument texts of the call whose `(` is at `open`. */
+function callArgs(content, open) {
+  const close = matchingBracket(content, open);
+  if (close < 0) return null;
+  const args = [];
+  let depth = 0, start = open + 1;
+  for (let i = open + 1; i < close; i++) {
+    const ch = content[i];
+    if (ch === '"' || ch === "'" || ch === '`') { for (i++; i < close && content[i] !== ch; i++) if (content[i] === '\\') i++; continue; }
+    if ('([{'.includes(ch)) depth++;
+    else if (')]}'.includes(ch)) depth--;
+    else if (ch === ',' && depth === 0) { args.push(content.slice(start, i).trim()); start = i + 1; }
+  }
+  const last = content.slice(start, close).trim();
+  if (last) args.push(last);
+  return { args, close };
+}
+
+/** Pattern-tier auth of one call's arguments (middleware + handler), text only. */
+function argsAuth(content, middleware, handler) {
+  const isAuthArg = (text) => {
+    const m = /^([A-Za-z_$][\w$]*)(?:\s*\.\s*([A-Za-z_$][\w$]*))?/.exec(text || '');
+    return Boolean(m) && (isAuthMiddlewareName(m[1]) || isAuthMiddlewareName(m[2]));
+  };
+  if (middleware.some(text => text.startsWith('[') ? text.slice(1, -1).split(',').some(t => isAuthArg(t.trim())) : isAuthArg(text))) return true;
+  if (!handler) return false;
+  if (/^[A-Za-z_$][\w$]*$/.test(handler)) {
+    const decl = new RegExp(`(?:function\\s+${handler}\\s*\\(|(?:const|let|var)\\s+${handler}\\s*=\\s*(?:async\\s*)?(?:function\\b|\\([^)]*\\)\\s*=>|[A-Za-z_$][\\w$]*\\s*=>))`).exec(content);
+    if (!decl) return false;
+    const brace = content.indexOf('{', decl.index + decl[0].length);
+    const end = brace < 0 ? -1 : matchingBracket(content, brace);
+    return end > 0 && AUTH_CHECK_RE.test(content.slice(decl.index, end + 1));
+  }
+  return AUTH_CHECK_RE.test(handler);
+}
+
+/**
+ * Auth of the `<receiver>.<method>('/path', …)` call starting at `index` (pattern tier).
+ * @implements docguard.js-ts-extraction#FR-002
+ */
+function statementAuth(content, index) {
+  const open = content.indexOf('(', index);
+  const call = open < 0 ? null : callArgs(content, open);
+  if (!call || call.args.length < 2) return false;
+  return argsAuth(content, call.args.slice(1, -1), call.args[call.args.length - 1]);
+}
+
+/**
+ * `<x>.route('/p').get(…).post(…)` chains read by pattern when the file does not parse.
+ * @implements docguard.js-ts-extraction#FR-001
+ */
+function routeChainsByPattern(content) {
+  const out = [];
+  const re = /\b([A-Za-z_$][\w$]*)\s*\.\s*route\s*\(\s*(['"`])([^'"`]+)\2\s*\)/g;
+  let m;
+  while ((m = re.exec(content)) !== null) {
+    if (!/(?:app|server|router|routes)$/i.test(m[1])) continue;
+    const path = m[3];
+    if (!(path.startsWith('/') || path === '*')) continue;
+    let i = m.index + m[0].length;
+    for (;;) {
+      const next = /^\s*\.\s*(get|post|put|delete|patch|head|options|all)\s*\(/i.exec(content.slice(i));
+      if (!next) break;
+      const open = i + next[0].length - 1;
+      const call = callArgs(content, open);
+      if (!call) break;
+      const handler = call.args[call.args.length - 1];
+      out.push({
+        method: next[1], path, start: m.index, receiver: null,
+        line: lineAt(content, i + next[0].indexOf(next[1])),
+        handler: /^[A-Za-z_$][\w$]*$/.test(handler || '') ? handler : 'inline',
+        auth: argsAuth(content, call.args.slice(0, -1), handler),
+      });
+      i = call.close + 1;
+    }
+  }
+  return out;
+}
+
+/** 1-based line of a character offset. */
+function lineAt(content, index) {
+  if (typeof index !== 'number' || index < 0) return null;
+  let line = 1;
+  for (let i = 0; i < index && i < content.length; i++) if (content[i] === '\n') line++;
+  return line;
+}
+
+/** Pattern-tier auth of one Next.js export: its text up to the next export. */
+function exportSegmentAuth(content, index) {
+  const rest = content.slice(index + 6);
+  const next = rest.search(/\nexport\s/);
+  return AUTH_CHECK_RE.test(content.slice(index, next < 0 ? content.length : index + 6 + next));
+}
+
+const NEXT_MIDDLEWARE_FILES = ['middleware.ts', 'middleware.js', 'src/middleware.ts', 'src/middleware.js'];
+const MIDDLEWARE_AUTH_RE = /next-auth\/middleware|\bwithAuth\b|\bclerkMiddleware\b|\bauthMiddleware\b|\bgetToken\s*\(|\bauth\s*\(|\bauth\s+as\s+middleware\b|\bjwtVerify\s*\(|\bjwt\s*\.\s*verify\s*\(|\bverifyToken\s*\(|\bgetServerSession\s*\(|\bgetSession\s*\(/;
+
+/**
+ * A predicate for "a Next.js `middleware` file with auth covers this path"
+ * (docguard.js-ts-extraction#FR-002). No auth in the middleware → never. Auth
+ * with no literal matcher → every path. Matchers use Next's path syntax
+ * (`/api/admin/:path*`); only string literals are read.
+ * @implements docguard.js-ts-extraction#FR-002
+ */
+function nextMiddlewareAuth(dir) {
+  for (const rel of NEXT_MIDDLEWARE_FILES) {
+    const abs = resolve(dir, rel);
+    if (!existsSync(abs)) continue;
+    const content = readFileSafe(abs);
+    if (!content || !MIDDLEWARE_AUTH_RE.test(content)) return () => false;
+    const matcher = /\bmatcher\s*:\s*(\[[^\]]*\]|'[^']*'|"[^"]*"|`[^`]*`)/.exec(content);
+    if (!matcher) return () => true;
+    const patterns = [...matcher[1].matchAll(/(['"`])([^'"`]+)\1/g)].map(m => matcherRegex(m[2])).filter(Boolean);
+    return (path) => patterns.some(re => re.test(path));
+  }
+  return () => false;
+}
+
+function matcherRegex(pattern) {
+  let source = '';
+  for (let i = 0; i < pattern.length;) {
+    const param = /^\/:(\w+)([*+?]?)/.exec(pattern.slice(i));
+    if (param) {
+      source += param[2] === '*' ? '(?:/.*)?' : param[2] === '+' ? '/.+' : param[2] === '?' ? '(?:/[^/]+)?' : '/[^/]+';
+      i += param[0].length;
+      continue;
+    }
+    const ch = pattern[i];
+    // A regex group such as `((?!_next).*)` is passed through as written.
+    if (ch === '(') {
+      const end = matchingBracket(pattern, i);
+      if (end < 0) return null;
+      source += pattern.slice(i, end + 1);
+      i = end + 1;
+      continue;
+    }
+    source += /[.+?^${}|[\]\\]/.test(ch) ? `\\${ch}` : ch === '*' ? '.*' : ch;
+    i++;
+  }
+  try { return new RegExp(`^${source}/?$`); } catch { return null; }
 }
 
 /**
@@ -341,13 +513,17 @@ function scanExpressRoutes(dir, roots = null) {
  * Imported-router mounts are composed transitively, so
  * `app.use('/api', api)` plus `api.use('/x', x)` yields `/api/x`. Dynamic mount
  * paths (non-string-literal prefixes) are skipped. Unmounted files keep their
- * bare paths — exactly the pre-mount-map behavior.
+ * bare paths — exactly the pre-mount-map behavior. Each prefix carries whether
+ * auth middleware guards every mount chain to it, and imports resolve through
+ * tsconfig/jsconfig aliases.
+ * @implements docguard.js-ts-extraction#FR-002
+ * @implements docguard.js-ts-extraction#FR-005
  */
-function buildExpressMountMap(files) {
+function buildExpressMountMap(files, resolveAlias = null) {
   const map = new Map();
-  const add = (absFile, receiver, prefix) => {
+  const add = (absFile, receiver, prefix, auth) => {
     if (!map.has(absFile)) map.set(absFile, []);
-    map.get(absFile).push({ receiver, prefix });
+    map.get(absFile).push({ receiver, prefix, auth });
   };
   const metadata = new Map();
   for (const { content, filePath } of files) {
@@ -359,10 +535,10 @@ function buildExpressMountMap(files) {
   for (const { filePath } of files) {
     const mi = metadata.get(filePath);
     if (!mi) continue;
-    for (const { prefix, ident, receiver } of mi.mounts) {
+    for (const { prefix, ident, receiver, auth } of mi.mounts) {
       const spec = mi.imports[ident];
       if (spec) {
-        const target = resolveLocalImport(filePath, spec);
+        const target = resolveLocalImport(filePath, spec, resolveAlias);
         const targetMeta = target ? metadata.get(target) : null;
         if (!targetMeta) continue;
         const importedSymbol = mi.importSymbols?.[ident];
@@ -381,6 +557,7 @@ function buildExpressMountMap(files) {
           from: { file: filePath, receiver },
           to: { file: target, receiver: targetReceiver },
           prefix,
+          auth: Boolean(auth),
         });
       } else {
         const routeReceivers = new Set(mi.routeReceivers || []);
@@ -390,6 +567,7 @@ function buildExpressMountMap(files) {
           from: { file: filePath, receiver },
           to: { file: filePath, receiver: ident },
           prefix,
+          auth: Boolean(auth),
         });
       }
     }
@@ -404,6 +582,9 @@ function buildExpressMountMap(files) {
     if (!incoming.has(key)) incoming.set(key, []);
     incoming.get(key).push(edge);
   }
+  // Each effective prefix carries whether auth middleware sits on EVERY mount
+  // chain that reaches it: a router reachable at the same prefix without auth
+  // is reachable without auth (docguard.js-ts-extraction#FR-002).
   const memo = new Map();
   const effectivePrefixes = (node, visiting = new Set(), depth = 0) => {
     const key = nodeKey(node);
@@ -412,33 +593,38 @@ function buildExpressMountMap(files) {
     const nodeEdges = incoming.get(key) || [];
     if (nodeEdges.length === 0) return [];
     const nextVisiting = new Set(visiting).add(key);
-    const prefixes = new Set();
+    const prefixes = new Map(); // prefix -> auth
     for (const edge of nodeEdges) {
       const parentKey = nodeKey(edge.from);
       const parentHasIncoming = (incoming.get(parentKey) || []).length > 0;
       const parentPrefixes = parentHasIncoming
         ? effectivePrefixes(edge.from, nextVisiting, depth + 1)
-        : [''];
-      for (const parentPrefix of parentPrefixes) {
-        prefixes.add(joinRoutePath(parentPrefix, edge.prefix));
+        : [{ prefix: '', auth: false }];
+      for (const parent of parentPrefixes) {
+        const prefix = joinRoutePath(parent.prefix, edge.prefix);
+        const auth = parent.auth || edge.auth;
+        prefixes.set(prefix, prefixes.has(prefix) ? prefixes.get(prefix) && auth : auth);
         if (prefixes.size >= 256) break;
       }
       if (prefixes.size >= 256) break;
     }
-    const resolved = [...prefixes];
+    const resolved = [...prefixes].map(([prefix, auth]) => ({ prefix, auth }));
     memo.set(key, resolved);
     return resolved;
   };
 
   for (const node of nodes.values()) {
-    for (const prefix of effectivePrefixes(node)) add(node.file, node.receiver, prefix);
+    for (const { prefix, auth } of effectivePrefixes(node)) add(node.file, node.receiver, prefix, auth);
   }
   return map;
 }
 
-/** Resolve a RELATIVE import specifier to an absolute file path (best effort). */
-function resolveLocalImport(fromFile, spec) {
-  if (!spec.startsWith('.')) return null; // bare/node_modules specifiers aren't our routers
+/**
+ * Resolve a relative, or tsconfig/jsconfig-aliased, import specifier to an
+ * absolute file path (best effort). Bare package specifiers are not our routers.
+ */
+function resolveLocalImport(fromFile, spec, resolveAlias = null) {
+  if (!spec.startsWith('.')) return resolveAlias ? resolveAlias(fromFile, spec) : null;
   const base = resolve(dirname(fromFile), spec);
   for (const ext of ['', '.ts', '.js', '.mjs', '.cjs', '.tsx', '.jsx']) {
     const cand = base + ext;
@@ -474,28 +660,30 @@ function scanFastifyRoutes(dir, roots = null) {
       const content = readFileSafe(filePath);
       if (!content) return;
 
-      const emit = (method, path, index) => routes.push({
+      const emit = (method, path, index, auth, line) => routes.push({
         method: method.toUpperCase(),
         path,
         handler: extractHandlerName(content, index),
         file: relative(dir, filePath),
+        line: line ?? lineAt(content, index),
         source: 'fastify',
-        auth: hasAuthCheck(content),
+        auth: Boolean(auth),
         description: extractNearbyComment(content, index),
       });
 
       // AST-first: method shorthand (fastify.get('/x')) AND the declarative
       // object form (fastify.route({ method, url })) the regex never matched.
-      // Both return null only on parse failure → regex fallback.
+      // Both return null only on parse failure → regex fallback. Auth is the
+      // route's own evidence (docguard.js-ts-extraction#FR-002).
       const calls = extractJsRouteCalls(content, filePath);
       const objs = extractJsRouteObjects(content, filePath);
       if (calls || objs) {
-        for (const r of calls || []) emit(r.method, r.path, r.start);
-        for (const r of objs || []) emit(r.method, r.path, r.start);
+        for (const r of calls || []) emit(r.method, r.path, r.start, r.auth, r.line);
+        for (const r of objs || []) emit(r.method, r.path, r.start, r.auth, r.line);
       } else {
         let match;
         const regex = new RegExp(pattern.source, 'gi');
-        while ((match = regex.exec(content)) !== null) emit(match[1], match[2], match.index);
+        while ((match = regex.exec(content)) !== null) emit(match[1], match[2], match.index, statementAuth(content, match.index));
       }
     });
   }
@@ -520,235 +708,79 @@ function scanHonoRoutes(dir, roots = null) {
       const content = readFileSafe(filePath);
       if (!content) return;
 
-      const emit = (method, path, index) => routes.push({
+      const emit = (method, path, index, auth, line) => routes.push({
         method: method.toUpperCase(),
         path,
         handler: '',
         file: relative(dir, filePath),
+        line: line ?? lineAt(content, index),
         source: 'hono',
-        auth: hasAuthCheck(content),
+        auth: Boolean(auth),
         description: extractNearbyComment(content, index),
       });
 
       // AST-first (any receiver, multi-line, template paths — Hono/Koa method
-      // shorthand `app.get('/x')` / `router.get('/x')`); regex fallback.
+      // shorthand `app.get('/x')` / `router.get('/x')`); regex fallback. Auth
+      // is the route's own evidence (docguard.js-ts-extraction#FR-002).
       const calls = extractJsRouteCalls(content, filePath);
       if (calls) {
-        for (const r of calls) emit(r.method, r.path, r.start);
+        for (const r of calls) emit(r.method, r.path, r.start, r.auth, r.line);
       } else {
         let match;
         const regex = new RegExp(pattern.source, 'gi');
-        while ((match = regex.exec(content)) !== null) emit(match[1], match[2], match.index);
+        while ((match = regex.exec(content)) !== null) emit(match[1], match[2], match.index, statementAuth(content, match.index));
       }
     });
   }
 
-  return routes;
-}
-
-// ── Django ───────────────────────────────────────────────────────────────────
-
-function scanDjangoRoutes(dir, ctx) {
-  const routes = [];
-  const urlsFiles = findRouteFiles(dir, /urls\.py$/, { maxFiles: ctx.maxFiles });
-  if (urlsFiles.truncated) ctx.scan.truncated = true;
-
-  for (const filePath of urlsFiles) {
-    const content = readFileSafe(filePath);
-    if (!content) continue;
-
-    // Match: path('api/users/', views.user_list, name='user-list')
-    const pathPattern = /path\s*\(\s*['"]([^'"]+)['"]\s*,\s*(\w+[\w.]*)/g;
-    let match;
-    while ((match = pathPattern.exec(content)) !== null) {
-      routes.push({
-        method: 'ALL',
-        path: '/' + match[1],
-        handler: match[2],
-        file: relative(dir, filePath),
-        source: 'django',
-        auth: false,
-        description: '',
-      });
-    }
-  }
-
-  return routes;
-}
-
-// ── FastAPI / Flask ─────────────────────────────────────────────────────────
-
-function scanFastAPIRoutes(dir, ctx) {
-  const routes = [];
-  const pattern = /@(?:app|router)\s*\.\s*(get|post|put|delete|patch)\s*\(\s*['"]([^'"]+)['"]/gi;
-
-  const pyFiles = findRouteFiles(dir, /\.py$/, { maxFiles: ctx.maxFiles });
-  if (pyFiles.truncated) ctx.scan.truncated = true;
-  // AST-first: ONE python3 subprocess parses every file. `null` means Python is
-  // unavailable or the subprocess failed → regex fallback for all files. A
-  // per-file `ok:false` falls back for just that file. The AST form also reads
-  // multi-line decorators and Flask `methods=[...]` arrays the regex misses.
-  const astByFile = extractPythonFiles(pyFiles);
-  // `null` means the whole batch fell back — no usable interpreter. Name that
-  // once here so every route from this scan carries the same accurate reason
-  // rather than a per-file guess. (calibrated-finding-channels#FR-010/011)
-  const batchReason = astByFile === null ? 'No usable python3 interpreter; routes matched by pattern.' : null;
-
-  for (const filePath of pyFiles) {
-    const content = readFileSafe(filePath);
-    if (!content) continue;
-
-    const parsed = astByFile && astByFile[filePath];
-    const { tier, tierReason } = tierFor(filePath, parsed, batchReason);
-    const fileAuth = content.includes('Depends(') && content.includes('auth');
-    if (parsed && parsed.ok) {
-      for (const r of parsed.routes || []) {
-        routes.push({
-          method: r.method,
-          path: r.path,
-          handler: r.func || '',
-          file: relative(dir, filePath),
-          source: 'fastapi',
-          auth: fileAuth,
-          description: r.desc || '',
-          tier,
-          tierReason,
-        });
-      }
-      continue;
-    }
-
-    // The pattern tier. It cannot see a multi-line decorator or a Flask
-    // `methods=[...]` array, so a route may be missing entirely here — which
-    // is exactly why the tier travels with the result instead of staying a
-    // silent implementation detail.
-    let match;
-    const regex = new RegExp(pattern.source, 'gi');
-    while ((match = regex.exec(content)) !== null) {
-      routes.push({
-        method: match[1].toUpperCase(),
-        path: match[2],
-        handler: extractPythonFunctionName(content, match.index),
-        file: relative(dir, filePath),
-        source: 'fastapi',
-        auth: fileAuth,
-        description: extractPythonDocstring(content, match.index),
-        tier,
-        tierReason,
-      });
-    }
-  }
-
-  // A Python file that yielded no route still carries coverage information:
-  // if it was read by the pattern tier, the absence of a route from it is
-  // weak evidence. Record every file's tier with the scan so a caller can
-  // downgrade applicability even when the result list is empty.
-  for (const f of pyFiles) ctx.scan.tierItems.push({ ...tierFor(f, astByFile && astByFile[f], batchReason), file: relative(dir, f) });
   return routes;
 }
 
 // ── Spring Boot (Java/Kotlin) ────────────────────────────────────────────────
+// What a Java/Kotlin file routes is read by spring-routes.mjs: class-level
+// @RequestMapping bases in every form, method-level mappings and
+// @RequestMapping(method = …), constants, Feign clients skipped
+// (docguard.go-spring-rails-routes#FR-003/004). Constants may live in files
+// without a mapping, so every file is handed over.
 
 function scanSpringBootRoutes(dir, ctx) {
-  const routes = [];
-  // Method-level verb annotations (NOT @RequestMapping — that's class-level base).
-  // Optional path; bare `@PostMapping` means "base path only".
-  const verbMap = /@(Get|Post|Put|Delete|Patch)Mapping(?:\s*\(\s*(?:value\s*=\s*)?["']([^"']*)["'])?/g;
-  const classBase = /@RequestMapping\s*\(\s*(?:value\s*=\s*)?["']([^"']+)["'][^)]*\)\s*[\r\n][\s\S]*?(?:public\s+)?class\s+\w+/;
-
-  const javaFiles = readPatternFiles(ctx, /\.(java|kt)$/);
-  for (const filePath of javaFiles) {
-    const content = readFileSafe(filePath);
-    if (!content || !content.includes('Mapping')) continue;
-    const { tier, tierReason } = tierFor(filePath, null);
-
-    // Class-level base path, if any.
-    const cb = classBase.exec(content);
-    const basePath = cb ? cb[1] : '';
-    const authPresent = /@PreAuthorize|@Secured|SecurityContext/.test(content);
-
-    let match;
-    const re = new RegExp(verbMap.source, 'g');
-    while ((match = re.exec(content)) !== null) {
-      const method = match[1].toUpperCase();
-      const sub = match[2] || '';
-      const path = (basePath + sub).replace(/\/+/g, '/') || '/';
-      routes.push({
-        method, path,
-        handler: '', file: relative(dir, filePath), source: 'spring-boot',
-        auth: authPresent, description: '', tier, tierReason,
-      });
-    }
-  }
-  return routes;
+  // docguard.fallback-language-coverage: files are listed (and counted for
+  // coverage) by readPatternFiles; each route carries its pattern tier.
+  const files = readPatternFiles(ctx, /\.(java|kt)$/);
+  const sources = files.map(f => ({ file: relative(dir, f), content: readFileSafe(f) }));
+  return extractSpringRoutes(sources).map(r => ({ ...r, source: 'spring-boot', description: '', ...tierFor(resolve(dir, r.file), null) }));
 }
 
 // ── Rails (Ruby) — config/routes.rb ──────────────────────────────────────────
+// rails-routes.mjs reads namespace/scope prefixes, resources/resource with
+// only/except, nesting, member/collection, verbs, match, root, concerns and
+// `draw` files (docguard.go-spring-rails-routes#FR-005).
 
 function scanRailsRoutes(dir, ctx) {
-  const routes = [];
   const routesFile = resolve(dir, 'config/routes.rb');
-  if (!existsSync(routesFile)) return routes;
+  if (!existsSync(routesFile)) return [];
   recordPatternFiles(ctx, [routesFile]);
-  const content = readFileSafe(routesFile);
-  if (!content) return routes;
   const { tier, tierReason } = tierFor(routesFile, null);
-
-  // Verb DSL: get '/x', post '/x', etc.  AND  resources :things (RESTful 7 actions)
-  const verbDsl = /^\s*(get|post|put|patch|delete)\s+['"]([^'"]+)['"]/gm;
-  let m;
-  while ((m = verbDsl.exec(content)) !== null) {
-    routes.push({
-      method: m[1].toUpperCase(),
-      path: m[2].startsWith('/') ? m[2] : '/' + m[2],
-      handler: '', file: 'config/routes.rb', source: 'rails', auth: false, description: '', tier, tierReason,
-    });
-  }
-  // resources :users → 7 standard RESTful routes.
-  const resourcesRe = /^\s*resources\s+:([a-z_]+)/gm;
-  while ((m = resourcesRe.exec(content)) !== null) {
-    const r = m[1];
-    const base = `/${r}`;
-    const seven = [
-      ['GET', base], ['GET', `${base}/new`], ['POST', base],
-      ['GET', `${base}/:id`], ['GET', `${base}/:id/edit`],
-      ['PATCH', `${base}/:id`], ['DELETE', `${base}/:id`],
-    ];
-    for (const [method, path] of seven) {
-      routes.push({ method, path, handler: '', file: 'config/routes.rb', source: 'rails', auth: false, description: '', tier, tierReason });
-    }
-  }
-  return routes;
+  // `draw :admin` loads config/routes/admin.rb; a name is never a path.
+  const readDraw = name => {
+    if (!/^[\w-]+$/.test(name)) return null;
+    const drawFile = resolve(dir, 'config/routes', `${name}.rb`);
+    if (existsSync(drawFile)) recordPatternFiles(ctx, [drawFile]);
+    return readFileSafe(drawFile);
+  };
+  return extractRailsRoutes(readFileSafe(routesFile), { file: 'config/routes.rb', readDraw })
+    .map(r => ({ ...r, source: 'rails', description: '', tier, tierReason }));
 }
 
-// ── Go web frameworks (Gin / Echo / Chi / Fiber / std mux) ───────────────────
+// ── Go web frameworks (Gin / Echo / Chi / Fiber / gorilla/mux / net/http) ────
+// go-routes.mjs composes group, sub-router and mount prefixes across blocks,
+// functions and files, and reads every registration form of those routers
+// (docguard.go-spring-rails-routes#FR-001/002).
 
 function scanGoWebRoutes(dir, ctx) {
-  const routes = [];
-  // Generic: <recv>.<METHOD>("/path", handler)  for Gin/Echo/Chi/Fiber/mux.Router
-  const pattern = /\.(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS|HandleFunc|Handle)\s*\(\s*["']([^"']+)["']/g;
-  const goFiles = readPatternFiles(ctx, /\.go$/);
-  for (const filePath of goFiles) {
-    const content = readFileSafe(filePath);
-    if (!content) continue;
-    const { tier, tierReason } = tierFor(filePath, null);
-    let m;
-    const re = new RegExp(pattern.source, 'g');
-    while ((m = re.exec(content)) !== null) {
-      const verb = m[1];
-      // HandleFunc / Handle are method-agnostic.
-      const method = ['HandleFunc', 'Handle'].includes(verb) ? 'ANY' : verb;
-      const path = m[2];
-      if (!path.startsWith('/')) continue;
-      routes.push({
-        method, path,
-        handler: '', file: relative(dir, filePath), source: 'go-web',
-        auth: /Authorization|jwt\.|middleware\.Auth/.test(content),
-        description: '', tier, tierReason,
-      });
-    }
-  }
-  return routes;
+  const files = readPatternFiles(ctx, /\.go$/);
+  const sources = files.map(f => ({ file: relative(dir, f), content: readFileSafe(f) }));
+  return extractGoRoutes(sources).map(r => ({ ...r, source: 'go-web', description: '', ...tierFor(resolve(dir, r.file), null) }));
 }
 
 // ── Rust web frameworks (Axum / Actix / Rocket / Warp) ───────────────────────
@@ -877,15 +909,6 @@ function hasAuthCheck(content) {
   return authPatterns.some(p => p.test(content));
 }
 
-function hasAuthMiddleware(content, routePath) {
-  // Check if route has auth middleware before handler
-  const pattern = new RegExp(
-    `['"\`]${routePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}['"\`]\\s*,\\s*(auth|protect|requireAuth|isAuthenticated|authenticate)`,
-    'i'
-  );
-  return pattern.test(content) || hasAuthCheck(content);
-}
-
 function detectMethodsFromHandler(content) {
   const methods = new Set();
   if (/req\.method\s*===?\s*['"]GET['"]/i.test(content) || /case\s+['"]GET['"]/i.test(content)) methods.add('GET');
@@ -924,16 +947,4 @@ function extractNearbyComment(content, index) {
     if (line.startsWith('*') && !line.startsWith('*/')) return line.replace(/^\*\s*/, '');
   }
   return '';
-}
-
-function extractPythonFunctionName(content, index) {
-  const after = content.substring(index, index + 300);
-  const match = after.match(/def\s+(\w+)/);
-  return match ? match[1] : '';
-}
-
-function extractPythonDocstring(content, index) {
-  const after = content.substring(index, index + 500);
-  const match = after.match(/"""([^"]+)"""/);
-  return match ? match[1].trim().split('\n')[0] : '';
 }
