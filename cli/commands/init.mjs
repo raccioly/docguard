@@ -720,7 +720,7 @@ poetry.lock
   // the spec-kit skip decision through so ensureSkills doesn't re-trigger the
   // framework scaffold we just declined.
   console.log('');
-  const assets = ensureSkills(projectDir, { ...flags, noSpecKit: skipSpecKit, specKitHandled: true });
+  const assets = ensureSkills(projectDir, { ...flags, noSpecKit: skipSpecKit, specKitHandled: true }, readAgentSurface(projectDir));
 
   // ── Summary ────────────────────────────────────────────────────────────
   // Every number is a count of files (docguard.spec-kit-integration-honesty#FR-010).

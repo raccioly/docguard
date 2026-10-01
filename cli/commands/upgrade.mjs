@@ -434,7 +434,7 @@ export function agentFilesStatus(projectDir) {
 
 /** `upgrade --apply`: the installer and extension refresh `init` uses. */
 function refreshAgentFiles(projectDir) {
-  const assets = installAgentAssets(projectDir);
+  const assets = installAgentAssets(projectDir, readAgentSurface(projectDir));
   console.log(`  ${c.green}✓ Agent files refreshed:${c.reset} ${assets.written.length} file(s) updated${assets.written.length ? ` ${c.dim}(${[assets.skillsDir, assets.commandsDir].filter(Boolean).join(', ')})${c.reset}` : ''}.`);
   if (!readRegistryEntry(projectDir)) return true;
   const { extension, hooks } = refreshSpecKitExtension(projectDir);

@@ -21,7 +21,6 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execSync, execFileSync } from 'node:child_process';
 import { c } from './shared.mjs';
-import { readAgentSurface } from './agent-surface.mjs';
 
 /**
  * v0.21.1 (security): cross-platform safe spawn for the `specify` CLI.
@@ -248,6 +247,7 @@ export function ensureSpecKit(projectDir, flags = {}) {
 
 /** Bundled files DocGuard installs, as `{ src, dest }` pairs for this project's surface. */
 function plannedAssets(surface) {
+  if (!surface) throw new TypeError('plannedAssets(surface): pass readAgentSurface(projectDir)');
   const planned = [];
   if (surface.skillsDir && existsSync(SKILLS_SOURCE)) {
     for (const skillDir of readdirSync(SKILLS_SOURCE).sort()) {
@@ -272,7 +272,7 @@ function plannedAssets(surface) {
  * @implements docguard.spec-kit-integration-honesty#FR-004
  * @returns {string[]} repository-relative paths
  */
-export function staleAgentAssets(projectDir, surface = readAgentSurface(projectDir)) {
+export function staleAgentAssets(projectDir, surface) {
   return plannedAssets(surface)
     .filter(({ src, dest }) => {
       const full = resolve(projectDir, dest);
@@ -293,7 +293,7 @@ export function staleAgentAssets(projectDir, surface = readAgentSurface(projectD
  * @implements docguard.spec-kit-integration-honesty#FR-010
  * @returns {{ written: string[], skillsDir: string|null, commandsDir: string|null, reason: string|null }}
  */
-export function installAgentAssets(projectDir, surface = readAgentSurface(projectDir)) {
+export function installAgentAssets(projectDir, surface) {
   const written = [];
   for (const { src, dest } of plannedAssets(surface)) {
     const full = resolve(projectDir, dest);
@@ -312,14 +312,16 @@ export function installAgentAssets(projectDir, surface = readAgentSurface(projec
  *
  * @param {string} projectDir - The project root directory
  * @param {object} flags - CLI flags (format, etc.)
+ * @param {object} surface - readAgentSurface(projectDir) from cli/agent-surface.mjs (passed in,
+ *   because agent-surface reads this module's agent detection)
  * @returns {{ skillsInstalled: boolean, commandsInstalled: boolean, specKitReady: boolean, written: string[] }}
  */
-export function ensureSkills(projectDir, flags = {}) {
+export function ensureSkills(projectDir, flags = {}, surface) {
   const silent = flags.format === 'json';
   const { specKitReady } = ensureSpecKit(projectDir, flags);
   let assets = { written: [], skillsDir: null, commandsDir: null, reason: null };
   try {
-    assets = installAgentAssets(projectDir);
+    assets = installAgentAssets(projectDir, surface);
   } catch (err) {
     if (!silent) console.log(`  ${c.yellow}⚠️  DocGuard agent files not installed: ${err.message}${c.reset}`);
   }
