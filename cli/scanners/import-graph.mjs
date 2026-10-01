@@ -16,6 +16,7 @@ import { resolve, join, extname, relative, dirname } from 'node:path';
 import { shouldIgnore, isNonProductPath, walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
 import { getWorkspaceDirs, languageOf } from '../shared-source.mjs';
 import { extractPythonFiles } from './py-ast.mjs';
+import { createAliasResolver } from './ts-paths.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build',
@@ -46,6 +47,7 @@ export const JS_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.mjs', '.cjs', '.js
  * validator's coverage is unchanged.
  *
  * @implements docguard.fallback-language-coverage#FR-010
+ * @implements docguard.js-ts-extraction#FR-005
  * @returns {{files: string[], edges: {from,to,dynamic,language}[], fileMap: Map<string,string[]>, unsupportedFiles: string[], unanalysedFiles: string[], limitations: object[]}}
  */
 export function buildImportGraph(projectDir, config) {
@@ -124,6 +126,9 @@ function buildUncached(projectDir, config, allFiles) {
     .filter(f => extname(f) === '.py' && !isNonProductPath(relative(projectDir, f).replace(/\\/g, '/'), config))
     .filter(f => !(config && shouldIgnore(relative(projectDir, f), config)));
   const codeFiles = allFiles.filter(f => JS_EXTENSIONS.has(extname(f)));
+  // `@/lib/x` and other tsconfig/jsconfig aliases name project files as surely
+  // as `./lib/x` does (docguard.js-ts-extraction#FR-005).
+  const resolveAlias = createAliasResolver(projectDir);
 
   for (const file of codeFiles) {
     const relPath = relative(projectDir, file);
@@ -139,11 +144,13 @@ function buildUncached(projectDir, config, allFiles) {
 
       const resolvedImports = [];
       for (const imp of imports) {
-        if (!imp.spec.startsWith('.') && !imp.spec.startsWith('/')) continue;
-
-        // Resolve relative imports
-        const fromDir = dirname(file);
-        const resolved = resolveImport(fromDir, imp.spec, projectDir);
+        let resolved = null;
+        if (imp.spec.startsWith('.') || imp.spec.startsWith('/')) {
+          resolved = resolveImport(dirname(file), imp.spec, projectDir);
+        } else {
+          const aliased = resolveAlias(file, imp.spec);
+          if (aliased) resolved = relative(projectDir, aliased);
+        }
         if (resolved) {
           graph.edges.push({ from: relPath, to: resolved, dynamic: imp.dynamic, language: 'javascript' });
           // v0.28 (field report #2): a dynamic `await import()` does NOT create a

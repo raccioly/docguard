@@ -350,7 +350,9 @@ export function generateDataModel(dir, config, stack, scan, flags, deepSchemas) 
   let schemaSource = 'file scan';
 
   if (deepSchemas && deepSchemas.entities.length > 0) {
-    entities = deepSchemas.entities;
+    // Enums arrive apart from entities (docguard.js-ts-extraction#FR-008); the
+    // tables below already route `prisma-enum` items to the Enums section.
+    entities = [...deepSchemas.entities, ...(deepSchemas.enums || [])];
     relationships = deepSchemas.relationships;
     schemaSource = deepSchemas.source;
   } else {

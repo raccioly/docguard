@@ -86,7 +86,10 @@ export function runGeneratePlan(projectDir, config, flags) {
         frameworks: plan.profile.frameworks,
         polyglot: plan.profile.polyglot,
         kind: plan.profile.kind,
-        ecosystems: plan.profile.ecosystems.map(e => ({ dir: e.dir, language: e.language, framework: e.framework, kind: e.kind })),
+        ecosystems: plan.profile.ecosystems.map(e => ({
+          dir: e.dir, language: e.language, framework: e.framework,
+          ...(e.libraries?.length ? { libraries: e.libraries } : {}), kind: e.kind,
+        })),
       },
       surface: {
         endpoints: plan.surface.endpoints.length,

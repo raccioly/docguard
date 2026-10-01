@@ -700,6 +700,43 @@ Behaviour changes:
   new ENV findings for settings fields that DATA-MODEL.md or ENVIRONMENT.md
   do not document yet.
 
+- **JS/TS extraction matches Express and Next.js projects**
+  (`specs/045-js-ts-extraction`). On two scratch projects with a hand-written
+  ground truth, DocGuard found 1 of 8 Express routes, 0 of 6 entities, 3 of 9
+  env vars and 6 of 16 import edges. Now every count matches:
+  - `router.route('/x').get().post()` chains are routes, and a router imported
+    through a `tsconfig` path alias keeps its mount prefix.
+  - Auth is judged per route: its own middleware or handler, an earlier
+    `use(auth)`, auth middleware on the mount above it, or a Next.js
+    `middleware` matcher. A `req.user` read in one handler no longer marks
+    every route in the file, and each Next.js handler is judged by its own
+    body.
+  - Env vars read by destructuring (`const { A, B = 'x' } = process.env`) are
+    found. Every read records its file, line and default on `grepEnvUsage`'s
+    `sites`. Next.js `pages/`, `components/`, `hooks/`, `utils/`,
+    `middleware.*` and `next.config.*` are scanned.
+  - The import graph (and so the symbol map, `impact` and the module diagram)
+    resolves `compilerOptions.paths` and `baseUrl` aliases, following
+    `extends`.
+  - Drizzle schemas are found from `drizzle.config.*` or a search of the source
+    roots, each file once. Columns with options, multi-line chains and
+    `.references(..., { onDelete })` are kept; types read `serial` and `enum`.
+  - Mongoose `{ type, required, ref }` fields, nested objects, arrays of refs
+    and `lib/models` are read.
+  - Prisma enums are reported apart from entities; each relation is drawn once;
+    a `@default("{}")` no longer cuts a model short.
+  - The plan's tech-stack table lists ORM, UI and auth libraries (Prisma,
+    Drizzle, React, NextAuth.js, …) when there are any.
+  - As-built specs list a Next.js handler once, as its route. Route and env
+    facts cite a file and line.
+  - Guard's schema check and `generate` discover entities through one
+    function, so they agree. Guard now also checks Mongoose models.
+
+  Upgrading can change findings on JS/TS projects: SCH002 for Mongoose models
+  or Drizzle tables not yet in DATA-MODEL.md, ENV003 for env vars now found,
+  GST002 for tech-stack and entity-diagram sections drawn from the corrected
+  facts, and fewer 🔒 routes where auth was inferred from unrelated text.
+
 - **STR005 is informational, as spec 017 requires.** The validator asked for
   `severity: 'info'`, which the finding constructor only accepts as `error` or
   `warn`, so it became a warning: slack in an instruction allowance turned
