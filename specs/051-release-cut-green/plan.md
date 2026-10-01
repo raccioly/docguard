@@ -6,7 +6,8 @@
 
 - `tests/fixtures/changelog-notes.mjs` (new): `notesSince(text, version)` returns the CHANGELOG from `## [Unreleased]` down to `## [<version>]`. The nine CHANGELOG tests and the SC-001 bump check use it with `0.42.1` (FR-001, FR-002).
 - `.github/scripts/sync-release-version.mjs`: after staging the sources, it stages each `.agent/` mirror from the staged (or current) source and writes everything in the existing loop. Missing mirrors are created (FR-003).
-- `.github/workflows/scheduled-release.yml`: the `ensureSkills` one-liner is removed (FR-004).
+- `.github/workflows/scheduled-release.yml`: the `ensureSkills` one-liner is removed (FR-004), and the release commit stages `commands/` (FR-006).
+- `cli/release-pr-policy.mjs`: `RELEASE_PATH_ALLOWLIST` admits `.agent/commands/docguard.*.md` (FR-006).
 - `cli/ensure-skills.mjs`: `ensureSkills` throws a `TypeError` when `surface` is missing (FR-005).
 
 ## Technical Context
@@ -41,6 +42,7 @@ tests/release-version-sync.test.mjs        # mirror cases
 .github/scripts/sync-release-version.mjs  # .agent mirrors
 .github/workflows/scheduled-release.yml   # drop the ensureSkills call
 cli/ensure-skills.mjs                     # surface required
+cli/release-pr-policy.mjs                 # allowlist admits .agent/commands
 tests/{dogfood-findings,fallback-language-coverage,first-spec-preflight,generated-docs-consistency,js-ts-extraction,mcp-project-confinement,output-ux,read-only-commands,spec-kit-integration-honesty,release-readiness}.test.mjs
 CHANGELOG.md
 ```

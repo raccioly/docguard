@@ -7,6 +7,7 @@
  * @implements docguard.tokenless-scheduled-releases#FR-008
  * @implements docguard.tokenless-scheduled-releases#FR-011
  * @implements docguard.release-readiness#FR-003
+ * @implements docguard.release-cut-green#FR-006
  */
 
 export const REQUIRED_RELEASE_JOBS = Object.freeze([
@@ -16,7 +17,7 @@ export const REQUIRED_RELEASE_JOBS = Object.freeze([
   'test (24)',
 ]);
 
-export const RELEASE_PATH_ALLOWLIST = /^(package(-lock)?\.json|pyproject\.toml|server\.json|action\.yml|README\.md|docs\/ai-integration\.md|CHANGELOG\.md|templates\/ci\/github-actions\.yml|commands\/docguard\.[a-z-]+\.md|extensions\/spec-kit-docguard\/(extension\.yml|commands\/[a-z-]+\.md|templates\/github-workflows\/(docguard-guard|docguard-autofix)\.yml|skills\/docguard-(fix|guard|review|score|sync)\/SKILL\.md)|\.agent\/skills\/docguard-(fix|guard|review|score|sync)\/SKILL\.md)$/;
+export const RELEASE_PATH_ALLOWLIST = /^(package(-lock)?\.json|pyproject\.toml|server\.json|action\.yml|README\.md|docs\/ai-integration\.md|CHANGELOG\.md|templates\/ci\/github-actions\.yml|commands\/docguard\.[a-z-]+\.md|extensions\/spec-kit-docguard\/(extension\.yml|commands\/[a-z-]+\.md|templates\/github-workflows\/(docguard-guard|docguard-autofix)\.yml|skills\/docguard-(fix|guard|review|score|sync)\/SKILL\.md)|\.agent\/skills\/docguard-(fix|guard|review|score|sync)\/SKILL\.md|\.agent\/commands\/docguard\.[a-z-]+\.md)$/;
 
 const VERSION_PATTERN = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
 

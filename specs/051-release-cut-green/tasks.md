@@ -18,6 +18,7 @@
 - [x] T003 `.github/scripts/sync-release-version.mjs`: `.agent/` mirrors (FR-003).
 - [x] T004 `.github/workflows/scheduled-release.yml`: remove the `ensureSkills` refresh (FR-004).
 - [x] T005 `cli/ensure-skills.mjs`: required `surface` (FR-005).
+- [ ] T008 Workflow `git add` includes `commands/`; `RELEASE_PATH_ALLOWLIST` admits `.agent/commands`; tests check that every synchronized path is staged and admitted (FR-006).
 
 ## Phase 3: Docs and verification
 

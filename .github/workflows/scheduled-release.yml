@@ -210,7 +210,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -b "$BRANCH"
-          git add package.json package-lock.json pyproject.toml server.json action.yml README.md docs/ai-integration.md CHANGELOG.md templates/ extensions/ .agent/ 2>/dev/null || true
+          git add package.json package-lock.json pyproject.toml server.json action.yml README.md docs/ai-integration.md CHANGELOG.md templates/ commands/ extensions/ .agent/ 2>/dev/null || true
           git commit -m "release: v${NEW_VERSION} — automated weekly batch
 
           Cut by .github/workflows/scheduled-release.yml. Publishing itself is

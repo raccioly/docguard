@@ -488,6 +488,11 @@ Behaviour changes:
     failed, and JSON mode hid the error. `sync-release-version.mjs` now writes
     the `.agent/skills` and `.agent/commands` mirrors in its own fail-closed
     transaction. `ensureSkills` throws when that argument is missing.
+  - The release commit also left out `commands/`, whose pins the sync
+    rewrites, so the release pull request would have failed its own pin test.
+    The release-candidate policy rejected the `.agent/commands` mirrors. Both
+    are fixed, and a replay of the cut on main's tree passes the full suite and
+    the candidate validation.
 - **Fixes found by running this release against ten real repositories**
   (`specs/050-dogfood-findings`).
   - `score` and `fix` crashed with "agentFile.some is not a function" when

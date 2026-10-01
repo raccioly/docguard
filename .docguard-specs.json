@@ -7806,6 +7806,7 @@
           "docguard.release-cut-green#FR-003",
           "docguard.release-cut-green#FR-004",
           "docguard.release-cut-green#FR-005",
+          "docguard.release-cut-green#FR-006",
           "docguard.release-cut-green#SC-001",
           "docguard.release-cut-green#SC-002"
         ]
@@ -7814,29 +7815,44 @@
         "artifacts": [
           {
             "path": "specs/051-release-cut-green/spec.md",
-            "digest": "sha256:a2917d0153a76f87a05e7d1e5bdd86838b9d08a58c1a0e634fc9394d4321761c"
+            "digest": "sha256:514a8f287d70bb4bca44511159c4f1ea7dad8c1ab64db1bcb295011985dbd672"
           },
           {
             "path": "specs/051-release-cut-green/plan.md",
-            "digest": "sha256:559f0dc6f486cd72c066cbb3d018d3ad4e9cb1701b8d2756c487047fe1ce661e"
+            "digest": "sha256:1618e02a065495e40925fc64ecba5bb9e9b869e8c5238565f0af5fd7ce6d4a17"
           },
           {
             "path": "specs/051-release-cut-green/tasks.md",
-            "digest": "sha256:aca5841e4642aca52f49a9817f7d5fc2dfdb3b8a241245c605762be3dd4358f9"
+            "digest": "sha256:8821b42ccb23d539870452816472adda02626451d5fc6b2a1b402ae1e129d8e6"
           }
         ],
         "taskCompletion": {
-          "checked": 0,
-          "total": 7
+          "checked": 5,
+          "total": 8
         },
         "implementationEvidence": [
           {
             "requirementId": "FR-003",
             "file": ".github/scripts/sync-release-version.mjs",
             "line": 11
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/release-pr-policy.mjs",
+            "line": 10
           }
         ],
         "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/release-cut-green.test.mjs",
+            "line": 2
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/release-cut-green.test.mjs",
+            "line": 3
+          },
           {
             "requirementId": "FR-003",
             "file": "tests/release-version-sync.test.mjs",
@@ -7846,6 +7862,21 @@
             "requirementId": "FR-003",
             "file": "tests/release-version-sync.test.mjs",
             "line": 79
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/release-cut-green.test.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/release-cut-green.test.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/release-cut-green.test.mjs",
+            "line": 6
           }
         ]
       }

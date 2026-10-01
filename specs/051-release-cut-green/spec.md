@@ -17,7 +17,7 @@
 The cut moves `[Unreleased]` under the new version, synchronizes release surfaces, and then runs the full suite. Two kinds of failure stop it:
 
 1. **Tests read only `[Unreleased]`.** Nine tests check that the CHANGELOG describes their change by reading the `[Unreleased]` section. After the cut that section is empty, so they fail on the exact commit being released, and they would fail again on every later cut.
-2. **The `.agent/` mirrors are not refreshed.** The workflow refreshes the checked-in `.agent/skills` copies by calling `ensureSkills(root, flags)`. Since spec 048 that function needs a third `surface` argument. The call throws, the JSON-mode caller swallows the error, and the copies keep the old version marker. The parity test then fails. `.agent/commands` mirrors `commands/` and is never refreshed, so its `docguard-cli@` pins go stale without any test noticing.
+2. **The `.agent/` mirrors are not refreshed, and the release commit leaves files out.** The workflow refreshes the checked-in `.agent/skills` copies by calling `ensureSkills(root, flags)`. Since spec 048 that function needs a third `surface` argument. The call throws, the JSON-mode caller swallows the error, and the copies keep the old version marker. The parity test then fails. `.agent/commands` mirrors `commands/` and is never refreshed, so its `docguard-cli@` pins go stale without any test noticing. The release commit's `git add` also omits `commands/`, whose pins the synchronization rewrites. The release PR's own CI would then fail the pin test.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -38,10 +38,11 @@ The cut moves `[Unreleased]` under the new version, synchronizes release surface
 - **FR-003**: `sync-release-version.mjs` MUST write the `.agent/skills` and `.agent/commands` mirrors from the synchronized sources in the same fail-closed transaction. If `.agent/` is absent, it MUST skip the mirrors.
 - **FR-004**: The release workflow MUST NOT call `ensureSkills` to refresh repository mirrors.
 - **FR-005**: `ensureSkills` MUST reject a missing `surface` argument with an error, instead of swallowing the resulting failure.
+- **FR-006**: The release commit MUST stage, and the release-candidate policy MUST admit, every path the synchronization rewrites. That includes `commands/docguard.*.md` (pinned since spec 048 but never staged) and both `.agent/` mirrors.
 
 ## Success Criteria *(mandatory)*
 
-- **SC-001**: Replaying the cut locally (version bump, `release-changelog.mjs cut`, `sync-release-version.mjs`) on a scratch copy of main gives a full suite with 0 failures.
+- **SC-001**: Replaying the cut locally (version bump, `release-changelog.mjs cut`, `sync-release-version.mjs`) on a scratch copy of main gives a full suite with 0 failures. `validate-release-candidate.mjs` accepts the resulting diff.
 - **SC-002**: The full suite passes on main, and guard on this repository is unchanged.
 
 ## Out of Scope
