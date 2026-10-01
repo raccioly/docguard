@@ -53,7 +53,7 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "@babel/parser": "7.29.8"
+    "@babel/parser": "7.29.9"
   },
   "files": [
     "cli/",
