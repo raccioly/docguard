@@ -1,6 +1,6 @@
 # Tasks: Truthful, Machine-Clean Command Output
 
-**Status**: Draft
+**Status**: Complete. SC-001: all 27 documented machine-output invocations parse, with and without `--changed-only`. SC-002: before the fixes `tests/output-ux.test.mjs` failed 29 of 34 tests, one per reported defect. SC-003: configs using `validators.structure`, `severity.structure` or a `structure` N/A marker give the same result. Claim OUTPUT-UX-TRUTHFUL: 37 faults, anchors checked; the probe was deferred under machine load (a partial run found F13, `--schema-only` reaching npm, surviving; an in-process fetch test now kills it).
 **Spec**: `specs/049-output-ux/spec.md`
 **Plan**: `specs/049-output-ux/plan.md`
 
@@ -50,6 +50,6 @@
 ## Phase 3: Docs and verification
 
 - [x] T017 `docs/commands.md`, `docs/configuration.md`, `docs-canonical/DATA-MODEL.md`, `CHANGELOG.md` (FR-018).
-- [ ] T018 Registry entry, `docguard specs --write`, `npm run llms`.
-- [ ] T019 `testguard.claims.json`: claim OUTPUT-UX-TRUTHFUL, probed with
+- [x] T018 Registry entry, `docguard specs --write`, `npm run llms`.
+- [x] T019 `testguard.claims.json`: claim OUTPUT-UX-TRUTHFUL, probed with
   `--confirm 3`; gate; `npm test`; `docguard guard`.

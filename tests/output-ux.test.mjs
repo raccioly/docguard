@@ -41,6 +41,7 @@ import { fileURLToPath } from 'node:url';
 import { colorEnabled } from '../cli/shared.mjs';
 import { BLOCKER_CODES, CODES } from '../cli/findings.mjs';
 import { runExplain } from '../cli/commands/explain.mjs';
+import { runUpgrade } from '../cli/commands/upgrade.mjs';
 import { autoDetectProjectType } from '../cli/config.mjs';
 import { docsForPath, docStructure } from '../cli/scanners/doc-references.mjs';
 import { rulesFor } from '../cli/commands/rules.mjs';
@@ -315,6 +316,24 @@ describe('upgrade, smart init and guard exit codes (FR-006, FR-007)', () => {
     assert.doesNotMatch(r.stdout, /latest:/, 'no npm check');
     assert.doesNotMatch(r.stdout, /npm install -g/);
     assert.equal(JSON.parse(readFileSync(join(dir, '.docguard.json'), 'utf8')).version, '0.6');
+  });
+
+  it('upgrade --schema-only never calls fetch; plain upgrade does', async t => {
+    const dir = project(t, { '.docguard.json': `${JSON.stringify({ projectName: 'x', version: '0.6' })}\n` }, { git: false });
+    const calls = [];
+    const realFetch = globalThis.fetch;
+    const realLog = console.log;
+    globalThis.fetch = async url => { calls.push(String(url)); throw new Error('offline'); };
+    console.log = () => {};
+    try {
+      await runUpgrade(dir, {}, { schemaOnly: true });
+      assert.deepEqual(calls, []);
+      await runUpgrade(dir, {}, {});
+      assert.equal(calls.length, 1, 'the plain report checks npm');
+    } finally {
+      globalThis.fetch = realFetch;
+      console.log = realLog;
+    }
   });
 
   it('smart init writes the config it inferred, so guard no longer reports an uninitialised project', t => {
