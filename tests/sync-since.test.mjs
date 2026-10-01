@@ -12,6 +12,7 @@
  * @req SC-L1-005 — null/empty changed-files list means "sync everything"
  * @req docguard.sync-section-scope#FR-001
  * @req docguard.sync-section-scope#SC-001
+ * @req docguard.output-ux#FR-004
  */
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
@@ -52,7 +53,7 @@ function commitAll(dir, msg) {
 }
 
 describe('sync --since — banner reflects scoping', () => {
-  it('runs cleanly when --since target is invalid (no crash)', () => {
+  it('fails clearly when the --since target does not resolve (docguard.output-ux#FR-004)', () => {
     const dir = makeRepo({
       'package.json': JSON.stringify({ name: 't', version: '0.0.0' }),
       'docs-canonical/ARCHITECTURE.md': '# A\nstub.\n',
@@ -61,8 +62,9 @@ describe('sync --since — banner reflects scoping', () => {
     try {
       gitInit(dir);
       const r = spawnSync('node', [CLI, 'sync', '--since', 'nonexistent-ref'], { cwd: dir, encoding: 'utf-8' });
-      // No crash; output mentions git unavailable OR the (empty) diff
-      assert.ok(r.status === 0 || r.status === 2, `expected clean exit, got ${r.status}`);
+      // A bad ref used to print "git unavailable", run a full sync and exit 0.
+      assert.equal(r.status, 1);
+      assert.match(r.stderr, /--since nonexistent-ref: git cannot resolve that ref/);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
