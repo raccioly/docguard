@@ -7778,7 +7778,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "implemented",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -7799,8 +7799,22 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "f130626775eb829f12f5ed8795b0f091af29bbc5",
+          "outcomes": [
+            {
+              "revision": "f130626775eb829f12f5ed8795b0f091af29bbc5",
+              "reason": "Reviewed at f130626 on main: all 9 tasks are checked and were delivered by #510; the full suite (2920 tests) passes on Node 18, 20, 22 and 24 in CI, a local replay of the v0.43.0 cut passes the suite, guard and the candidate validation, and guard reports 0 errors at this revision.",
+              "evidence": [
+                ".github/scripts/sync-release-version.mjs",
+                "cli/release-pr-policy.mjs",
+                "docs-canonical/CI-RECIPES.md",
+                "tests/release-cut-green.test.mjs",
+                "tests/release-version-sync.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -7820,7 +7834,7 @@
         "artifacts": [
           {
             "path": "specs/051-release-cut-green/spec.md",
-            "digest": "sha256:02bd8dc68c4d4463844178035bee6004a747592a5e74e20b7efa3ab4305c9e85"
+            "digest": "sha256:3ccd65896904f205bd568b1dba17ab3b15938e8df5c45e0a19c7fbb414ea58ff"
           },
           {
             "path": "specs/051-release-cut-green/plan.md",

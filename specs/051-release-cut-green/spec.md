@@ -49,3 +49,9 @@ The cut moves `[Unreleased]` under the new version, synchronizes release surface
 ## Out of Scope
 
 - Changing what the CHANGELOG says, or the cut's ordering of steps.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `f130626775eb829f12f5ed8795b0f091af29bbc5` — Reviewed at f130626 on main: all 9 tasks are checked and were delivered by #510; the full suite (2920 tests) passes on Node 18, 20, 22 and 24 in CI, a local replay of the v0.43.0 cut passes the suite, guard and the candidate validation, and guard reports 0 errors at this revision. Evidence: `.github/scripts/sync-release-version.mjs`, `cli/release-pr-policy.mjs`, `docs-canonical/CI-RECIPES.md`, `tests/release-cut-green.test.mjs`, `tests/release-version-sync.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->
