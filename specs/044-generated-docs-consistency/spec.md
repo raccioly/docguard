@@ -241,8 +241,8 @@ A developer runs `docguard generate` on an existing codebase and then
 
 ## Out of Scope
 
-- Django `include()` prefix composition (`/shop/` + `/products/`): generate
-  and guard now agree on the same, still uncomposed, routes.
+- Django `include()` prefix composition: owned by spec 046, which composes
+  them; generate and guard read the same composed routes.
 - Filling the plan's component-map responsibilities in place (a code-owned
   section): unchanged; `pinned` remains the way to keep hand edits.
 - `sync`'s backup policy: unchanged.

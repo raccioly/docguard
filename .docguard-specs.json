@@ -3985,7 +3985,7 @@
         "artifacts": [
           {
             "path": "specs/044-generated-docs-consistency/spec.md",
-            "digest": "sha256:1cc88c116c2f53446bbb06f925384ff7f9526a5e151f18e7f3790c6a30717845"
+            "digest": "sha256:9aa8d740016b5830d437317f0095a72e4c55fde79fb54218b9bd8d305a37e45f"
           },
           {
             "path": "specs/044-generated-docs-consistency/plan.md",
