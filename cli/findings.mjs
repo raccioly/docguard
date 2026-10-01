@@ -763,7 +763,7 @@ export const CODES = {
   GST001: {
     validator: 'generatedStaleness',
     title: 'Generated doc stuck in draft',
-    help: 'A docguard:generated doc has sat in `status: draft` beyond the staleness window (default 14 days; `draftStalenessDays` in .docguard.json). Draft the prose (e.g. `/docguard.fix --doc <name>`) and promote it to status:current, or delete the forgotten skeleton.',
+    help: 'A docguard:generated doc has sat in `status: draft` beyond the staleness window (default 14 days; `draftStalenessDays` in .docguard.json). Draft the prose (`docguard fix --doc <name>` prints a research prompt) and promote it to status:current, or delete the forgotten skeleton.',
     suppress: null,
   },
   GST002: {

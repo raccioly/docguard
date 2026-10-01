@@ -1020,12 +1020,12 @@
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 634
+            "line": 635
           },
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 661
+            "line": 662
           },
           {
             "requirementId": "FR-021",
@@ -5412,7 +5412,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/docguard.mjs",
-            "line": 669
+            "line": 671
           },
           {
             "requirementId": "FR-006",
@@ -5734,7 +5734,7 @@
           {
             "requirementId": "FR-003",
             "file": "cli/commands/sync.mjs",
-            "line": 70
+            "line": 71
           },
           {
             "requirementId": "FR-003",
@@ -5744,12 +5744,12 @@
           {
             "requirementId": "FR-004",
             "file": "cli/commands/sync.mjs",
-            "line": 71
+            "line": 72
           },
           {
             "requirementId": "FR-005",
             "file": "cli/commands/sync.mjs",
-            "line": 72
+            "line": 73
           },
           {
             "requirementId": "FR-006",
@@ -5759,7 +5759,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/commands/init.mjs",
-            "line": 201
+            "line": 202
           },
           {
             "requirementId": "FR-008",
@@ -6855,7 +6855,7 @@
           {
             "requirementId": "FR-011",
             "file": "cli/commands/init.mjs",
-            "line": 310
+            "line": 311
           },
           {
             "requirementId": "FR-012",
@@ -7073,7 +7073,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/docguard.mjs",
-            "line": 839
+            "line": 841
           },
           {
             "requirementId": "FR-001",
@@ -7083,17 +7083,17 @@
           {
             "requirementId": "FR-002",
             "file": "cli/docguard.mjs",
-            "line": 840
+            "line": 842
           },
           {
             "requirementId": "FR-003",
             "file": "cli/docguard.mjs",
-            "line": 841
+            "line": 843
           },
           {
             "requirementId": "FR-004",
             "file": "cli/docguard.mjs",
-            "line": 842
+            "line": 844
           },
           {
             "requirementId": "FR-005",
@@ -7833,6 +7833,256 @@
       }
     },
     {
+      "specId": "docguard.spec-kit-integration-honesty",
+      "path": "specs/048-spec-kit-integration-honesty/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "approved",
+          "delivery": "implemented",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": "living"
+        },
+        "relations": {
+          "extends": [
+            "docguard.extension-manifest-hygiene",
+            "docguard.read-only-commands",
+            "docguard.specify-init-delegation"
+          ],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md",
+            "docs-canonical/ENVIRONMENT.md"
+          ]
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.spec-kit-integration-honesty#FR-001",
+          "docguard.spec-kit-integration-honesty#FR-002",
+          "docguard.spec-kit-integration-honesty#FR-003",
+          "docguard.spec-kit-integration-honesty#FR-004",
+          "docguard.spec-kit-integration-honesty#FR-005",
+          "docguard.spec-kit-integration-honesty#FR-006",
+          "docguard.spec-kit-integration-honesty#FR-007",
+          "docguard.spec-kit-integration-honesty#FR-008",
+          "docguard.spec-kit-integration-honesty#FR-009",
+          "docguard.spec-kit-integration-honesty#FR-010",
+          "docguard.spec-kit-integration-honesty#FR-011",
+          "docguard.spec-kit-integration-honesty#SC-001",
+          "docguard.spec-kit-integration-honesty#SC-002",
+          "docguard.spec-kit-integration-honesty#SC-003",
+          "docguard.spec-kit-integration-honesty#SC-004",
+          "docguard.spec-kit-integration-honesty#SC-005",
+          "docguard.spec-kit-integration-honesty#SC-006"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/048-spec-kit-integration-honesty/spec.md",
+            "digest": "sha256:f353753f118d3221746dcc2a3712f9c3974d94682fd1b1ee9e5773a0394db85d"
+          },
+          {
+            "path": "specs/048-spec-kit-integration-honesty/plan.md",
+            "digest": "sha256:dfdb2da7ae4571a34775a5fa0b80ec209be31ddf6ab193531889b663fd3c09e0"
+          },
+          {
+            "path": "specs/048-spec-kit-integration-honesty/tasks.md",
+            "digest": "sha256:362d25c3fe390f32854eec9454cb8a15cb8afa6e1a0fddd913cb36f8f7307675"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 17,
+          "total": 17
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/spec-kit-delegation.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-001",
+            "file": "cli/spec-kit-delegation.mjs",
+            "line": 245
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/agent-surface.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/commands/init.mjs",
+            "line": 394
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/commands/init.mjs",
+            "line": 396
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/spec-kit-delegation.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/spec-kit-delegation.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/commands/upgrade.mjs",
+            "line": 433
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/ensure-skills.mjs",
+            "line": 272
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/agent-surface.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/commands/diagnose.mjs",
+            "line": 190
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "cli/spec-kit-delegation.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "cli/agent-surface.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "cli/ensure-skills.mjs",
+            "line": 286
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "cli/ensure-skills.mjs",
+            "line": 292
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/ensure-skills.mjs",
+            "line": 293
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/spec-kit-integration-honesty.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/spec-kit-integration-honesty.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/spec-kit-integration-honesty.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/spec-kit-integration-honesty.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/release-version-sync.test.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/spec-kit-integration-honesty.test.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/spec-kit-integration-honesty.test.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/spec-kit-integration-honesty.test.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/spec-kit-integration-honesty.test.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "tests/spec-kit-integration-honesty.test.mjs",
+            "line": 20
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "tests/spec-kit-integration-honesty.test.mjs",
+            "line": 21
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "tests/spec-kit-integration-honesty.test.mjs",
+            "line": 22
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/spec-kit-integration-honesty.test.mjs",
+            "line": 23
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/spec-kit-integration-honesty.test.mjs",
+            "line": 24
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/spec-kit-integration-honesty.test.mjs",
+            "line": 25
+          },
+          {
+            "requirementId": "SC-004",
+            "file": "tests/spec-kit-integration-honesty.test.mjs",
+            "line": 26
+          },
+          {
+            "requirementId": "SC-005",
+            "file": "tests/spec-kit-integration-honesty.test.mjs",
+            "line": 27
+          },
+          {
+            "requirementId": "SC-006",
+            "file": "tests/spec-kit-integration-honesty.test.mjs",
+            "line": 28
+          }
+        ]
+      }
+    },
+    {
       "specId": "docguard.specify-init-delegation",
       "path": "specs/014-specify-init-delegation/spec.md",
       "reviewed": {
@@ -7956,7 +8206,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/commands/init.mjs",
-            "line": 334
+            "line": 335
           },
           {
             "requirementId": "FR-007",
@@ -7966,7 +8216,7 @@
           {
             "requirementId": "FR-008",
             "file": "cli/commands/init.mjs",
-            "line": 335
+            "line": 336
           },
           {
             "requirementId": "FR-008",
@@ -7981,7 +8231,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/commands/init.mjs",
-            "line": 336
+            "line": 337
           },
           {
             "requirementId": "FR-010",
@@ -7991,7 +8241,7 @@
           {
             "requirementId": "FR-011",
             "file": "cli/commands/init.mjs",
-            "line": 337
+            "line": 338
           },
           {
             "requirementId": "FR-012",
@@ -8623,7 +8873,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/docguard.mjs",
-            "line": 929
+            "line": 931
           },
           {
             "requirementId": "FR-011",

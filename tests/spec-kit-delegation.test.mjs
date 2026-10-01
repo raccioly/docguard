@@ -37,6 +37,7 @@ import { spawnSync } from 'node:child_process';
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
+import { MIN_SPEC_KIT_VERSION } from '../cli/spec-kit-delegation.mjs';
 
 const CLI = resolve('cli/docguard.mjs');
 const posix = process.platform !== 'win32';
@@ -210,7 +211,7 @@ describe('Spec Kit delegation failures are reported, never swallowed', { skip: !
     try {
       const { out, calls } = run(dir, ['init', '--skip-prompts'], 'legacy-help');
       assert.equal(initCall(calls), undefined);
-      assert.match(out, /0\.10\.0/);
+      assert.ok(out.includes(`>= ${MIN_SPEC_KIT_VERSION}`), out);
       assert.match(out, /specify self upgrade|uv tool install specify-cli/);
     } finally { rmSync(dir, { recursive: true, force: true }); }
   });
@@ -250,12 +251,15 @@ describe('Spec Kit delegation failures are reported, never swallowed', { skip: !
 });
 
 describe('DocGuard\'s own skills still install without Spec Kit (FR-011)', { skip: !posix && 'POSIX stub' }, () => {
-  it('--no-spec-kit installs .agent/ skills and never invokes specify', () => {
+  it('--no-spec-kit installs the agent\'s skills and never invokes specify', () => {
     const dir = fixture();
     try {
       const { calls } = run(dir, ['init', '--skip-prompts', '--no-spec-kit']);
       assert.deepEqual(calls, []);
-      assert.ok(existsSync(join(dir, '.agent/skills/docguard-guard/SKILL.md')));
+      // CLAUDE.md signals Claude Code, which reads .claude/skills/, never .agent/
+      // (docguard.spec-kit-integration-honesty#FR-009).
+      assert.ok(existsSync(join(dir, '.claude/skills/docguard-guard/SKILL.md')));
+      assert.equal(existsSync(join(dir, '.agent')), false);
       assert.equal(existsSync(join(dir, '.specify')), false);
     } finally { rmSync(dir, { recursive: true, force: true }); }
   });

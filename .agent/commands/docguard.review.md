@@ -13,29 +13,30 @@ handoffs:
 
 You are an AI agent reviewing documentation quality and detecting drift between docs and code.
 
+## Running DocGuard
+
+Run `docguard` from PATH when it is installed. Otherwise run
+`npx --yes docguard-cli@0.42.1`, the release these instructions ship with, in its
+place. Every `docguard …` command below means one of the two.
+
 ## Step 1: Run Diagnostics
 
 ```bash
-npx docguard-cli diagnose
-npx docguard-cli diff
-npx docguard-cli score
+docguard diagnose
+docguard diff
+docguard score
 ```
 
 Read all output. Identify where documentation no longer matches the codebase.
-Findings carry stable codes — `npx docguard-cli explain <CODE>` when unclear.
+Findings carry stable codes — `docguard explain <CODE>` when unclear.
 
 ## Step 2: Verify Documented Claims Against Code
 
 ```bash
-npx docguard-cli verify --evidence --format json
-npx docguard-cli verify --semantic
+docguard verify --semantic
 ```
 
-Review exact declaration states first. A contradiction may indicate a code
-regression from approved intent; stale evidence requires regenerating the saved
-upstream report. A scoped pass does not verify its containing document.
-
-The semantic command then extracts remaining checkable claims in the canonical docs — counts, limits,
+This extracts every checkable claim in the canonical docs — counts, limits,
 rate numbers, retention windows, status enums — as a task list with the nearest
 cited code path. **You perform each verification**: read the cited code, compare
 the value, and report every mismatch with both values. This is the highest-value
@@ -61,7 +62,7 @@ For each stale or drifted document:
    `// DRIFT: reason` + DRIFT-LOG.md entry); don't rewrite the doc to match a
    regression.
 2. Sections inside `<!-- docguard:section ... source=code -->` markers are
-   regenerated — run `npx docguard-cli sync --write` instead of editing by hand.
+   regenerated — run `docguard sync --write` instead of editing by hand.
 3. For hand-maintained sections: read the relevant source, update the specific
    section, refresh `docguard:last-reviewed` to today.
 4. Add entry to CHANGELOG.md under [Unreleased].
@@ -69,8 +70,8 @@ For each stale or drifted document:
 ## Step 5: Verify
 
 ```bash
-npx docguard-cli guard
-npx docguard-cli score
+docguard guard
+docguard score
 ```
 
 Report findings, changes made, and the final score.

@@ -3,7 +3,7 @@ name: docguard-score
 description: CDD maturity assessment with category-aware improvement roadmap. Runs scoring
   engine, analyzes category breakdown, identifies highest-impact improvements, and
   generates a before/after improvement plan with projected score gains.
-compatibility: Requires DocGuard CLI installed (npm i -g docguard-cli or npx docguard-cli)
+compatibility: Requires DocGuard CLI installed (npm i -g docguard-cli, or npx --yes docguard-cli@0.42.1)
 metadata:
   author: docguard
   version: 0.42.1
@@ -12,6 +12,12 @@ metadata:
 <!-- docguard:version: 0.42.1 -->
 
 # DocGuard Score Skill
+
+## Running DocGuard
+
+Run `docguard` from PATH when it is installed. Otherwise run
+`npx --yes docguard-cli@0.42.1`, the release these instructions ship with, in its
+place. Every `docguard …` command below means one of the two.
 
 ## User Input
 
@@ -32,8 +38,8 @@ Run DocGuard's CDD maturity scoring engine, analyze the category breakdown, iden
 Execute both tools for comprehensive data:
 
 ```bash
-npx docguard-cli score 2>&1
-npx docguard-cli guard 2>&1
+docguard score 2>&1
+docguard guard 2>&1
 ```
 
 If in DocGuard dev environment:
@@ -169,9 +175,9 @@ If user has run score before (check git log for score badge changes):
 [Analysis from Step 5]
 
 ### Suggested Next Steps
-- `/docguard.fix` — Fix the top [N] issues automatically
-- `/docguard.review` — Deep semantic analysis for accuracy verification
-- `/docguard.guard` — Verify fixes pass all validators
+- the `docguard-fix` skill — Fix the top [N] issues automatically
+- the `docguard-review` skill — Deep semantic analysis for accuracy verification
+- the `docguard-guard` skill — Verify fixes pass all validators
 ```
 
 ## Behavior Rules

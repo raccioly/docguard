@@ -1,7 +1,7 @@
 ---
 name: docguard-sync
 description: Keep canonical documentation ALWAYS UP TO DATE. Refreshes code-truth doc sections in place (mechanical, idempotent, preserves human prose) and flags the prose sections you must review when code changes.
-compatibility: Requires DocGuard CLI installed (npm i -g docguard-cli or npx docguard-cli)
+compatibility: Requires DocGuard CLI installed (npm i -g docguard-cli, or npx --yes docguard-cli@0.42.1)
 metadata:
   author: docguard
   version: 0.42.1
@@ -10,6 +10,12 @@ metadata:
 <!-- docguard:version: 0.42.1 -->
 
 # DocGuard Sync Skill
+
+## Running DocGuard
+
+Run `docguard` from PATH when it is installed. Otherwise run
+`npx --yes docguard-cli@0.42.1`, the release these instructions ship with, in its
+place. Every `docguard …` command below means one of the two.
 
 ## User Input
 
@@ -41,7 +47,7 @@ human-written prose** in the same docs so it still describes reality.
 ### Step 1 — Preview what's stale
 
 ```bash
-npx --yes docguard-cli@latest sync 2>&1
+docguard sync 2>&1
 ```
 
 Reads:
@@ -51,7 +57,7 @@ Reads:
 ### Step 2 — Apply the mechanical refresh
 
 ```bash
-npx --yes docguard-cli@latest sync --write 2>&1
+docguard sync --write 2>&1
 ```
 
 Re-derives every code-truth section from the current code and rewrites only those
@@ -75,8 +81,8 @@ For each `🤖 Prose to review` entry:
 ### Step 4 — Verify
 
 ```bash
-npx --yes docguard-cli@latest guard
-npx --yes docguard-cli@latest verify --evidence
+docguard guard
+docguard verify --evidence
 ```
 
 Confirm there are no errors. If the API surface drifted (`API-Surface` failures),

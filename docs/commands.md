@@ -152,6 +152,45 @@ npx docguard-cli init --skip-prompts            # No AI prompt output
 | `standard` | All 5 canonical + tracking | Most validators (default) |
 | `enterprise` | All docs | All validators + freshness |
 
+**Spec Kit** (`specify` ≥ 0.11.2 on PATH):
+
+```bash
+npx docguard-cli init --no-spec-kit             # Skip Spec Kit: no specify call, no .specify/
+npx docguard-cli init --profile starter --spec-kit   # Starter skips Spec Kit unless asked
+```
+
+- `init` initializes Spec Kit for the detected agent, registers the packaged
+  extension, and re-registers it (`specify extension add <dir> --dev --force`)
+  when the registered version differs from this CLI's. A disabled registration
+  is left disabled.
+- For Spec Kit's `generic` integration, which registers no extension
+  commands, `init` writes the `speckit.docguard.*` commands into the generic
+  commands directory.
+- "Workflow hooks active" is printed only after every mandatory hook in
+  `.specify/extensions.yml` resolves to a command file; otherwise each missing
+  hook and its expected path is listed.
+- DocGuard's own skills go to the agent's skills directory (`.claude/skills/`
+  for Claude Code), to `.agent/` for `generic` or an unknown agent, and nowhere
+  for a commands-only integration. `--no-spec-kit` still installs them.
+- The summary counts DocGuard's files, the agent files it installed, and the
+  files `specify` wrote, each one by one.
+
+### `docguard upgrade`
+
+**Check the CLI, the `.docguard.json` schema and the installed agent files.**
+
+```bash
+npx docguard-cli upgrade              # Report only; writes nothing
+npx docguard-cli upgrade --check-only # Exit 1 when anything is behind
+npx docguard-cli upgrade --apply      # Install the CLI, migrate the schema, refresh agent files
+```
+
+`upgrade --apply` refreshes agent files the way `init` installs them: DocGuard's
+skills and commands that differ from this CLI's copies, and a Spec Kit extension
+registered at another version. When the same run installs a newer CLI globally,
+the running process still holds the old files, so it skips the refresh and asks
+you to run `docguard upgrade --apply` (or `docguard init`) again.
+
 ### `docguard generate`
 
 **Reverse-engineer docs from existing code.** Scans your codebase and creates pre-filled documentation.

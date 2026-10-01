@@ -43,3 +43,10 @@ The write records the outcome, advances delivery through `implemented` to
 post-validated set. In-process write or validation failures roll the set back;
 the command does not claim a durable journal across power loss or forced
 termination.
+
+
+## Running DocGuard
+
+Run `docguard` from PATH when it is installed. Otherwise run
+`npx --yes docguard-cli@0.42.1`, the release these instructions ship with, in its
+place. Every `docguard …` command below means one of the two.

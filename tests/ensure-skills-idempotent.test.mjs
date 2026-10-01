@@ -27,9 +27,10 @@ function makeRepo() {
   const dir = mkdtempSync(join(tmpdir(), 'docguard-skills-'));
   mkdirSync(join(dir, 'docs-canonical'), { recursive: true });
   // Mark spec-kit as already initialized so ensureSpecKit early-returns and
-  // doesn't scaffold (keeps this test about skills only).
+  // doesn't scaffold (keeps this test about skills only). The generic
+  // integration installs into `.agent/` (docguard.spec-kit-integration-honesty#FR-009).
   mkdirSync(join(dir, '.specify'), { recursive: true });
-  writeFileSync(join(dir, '.specify/init-options.json'), JSON.stringify({ ai: 'claude' }));
+  writeFileSync(join(dir, '.specify/init-options.json'), JSON.stringify({ ai: 'generic' }));
   writeFileSync(join(dir, 'package.json'), JSON.stringify({ name: 't', version: '0.0.1' }));
   writeFileSync(join(dir, 'docs-canonical/ARCHITECTURE.md'), '# A\nstub\n');
   writeFileSync(join(dir, 'CHANGELOG.md'), '# Changelog\n## [Unreleased]\n');

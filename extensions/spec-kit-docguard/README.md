@@ -20,10 +20,15 @@ Enterprise-grade Canonical-Driven Development (CDD) enforcement and **AI-readabl
 npm install -g docguard-cli
 ```
 
-Spec Kit orchestration scripts require a local `node_modules/docguard-cli` installation or `docguard` on PATH; they do not implicitly download a CLI. Direct CLI use via npx remains available:
-```bash
-npx docguard-cli guard
-```
+Requires Spec Kit ≥ 0.11.2 (`requires.speckit_version`). `docguard init` registers
+this extension from the installed package and re-registers it when its version
+differs from the CLI's; `docguard upgrade --apply` does the same.
+
+The command and skill files run `docguard` from PATH when it is installed, and
+otherwise `npx --yes docguard-cli@<version>`, pinned to the release they ship
+with. They never fetch `@latest`. The orchestration scripts require a local
+`node_modules/docguard-cli` installation or `docguard` on PATH; they do not
+download a CLI.
 
 ## Quick Start
 
@@ -43,9 +48,16 @@ docguard score
 
 ## Commands
 
+Agents invoke these in their own form: `/speckit-docguard-guard` in Claude Code
+and other skills-based agents, `/speckit.docguard.guard` for the generic
+integration. Spec Kit registers no extension command for `generic`, so
+`docguard init` writes them into the generic commands directory. The alias
+column lists DocGuard's own commands, installed only for `generic` or an agent
+DocGuard cannot place.
+
 | Command | Alias | Purpose |
 |---------|-------|---------|
-| `speckit.docguard.init` | `docguard.init` | Initialize CDD in a project |
+| `speckit.docguard.init` | — | Initialize CDD in a project |
 | `speckit.docguard.guard` | `docguard.guard` | Run configurable quality gate with severity triage |
 | `speckit.docguard.fix` | `docguard.fix` | AI-driven documentation repair with codebase research |
 | `speckit.docguard.review` | `docguard.review` | Cross-document semantic consistency analysis (read-only) |
@@ -92,6 +104,9 @@ hooks:
   after_tasks:       # Optional — show score after tasks
     command: speckit.docguard.score
 ```
+
+`docguard init` reports the hooks as active only after each mandatory hook
+resolves to a command file the agent can run.
 
 The hooks call the deterministic CLI contract. The pre-specification hook emits
 a current-intent briefing; the pre-task hook checks the actual generated spec.

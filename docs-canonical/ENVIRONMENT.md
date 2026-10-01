@@ -23,7 +23,7 @@
 | npm | ≥8 | Included with Node.js |
 | Git | Any | [git-scm.com](https://git-scm.com) |
 | Python 3 | **Optional** — ≥3.8, enables the AST-accurate Python scanning tier; the scanners use regex otherwise | [python.org](https://python.org) |
-| Spec Kit (`specify`) | **Optional** — ≥0.10.0 for `docguard init` to initialize Spec Kit; ≥0.11.2 to register the DocGuard extension | [github/spec-kit](https://github.com/github/spec-kit) |
+| Spec Kit (`specify`) | **Optional** — ≥ 0.11.2 for `docguard init` to initialize Spec Kit and register the DocGuard extension (`requires.speckit_version`; an older `specify` is neither initialized nor registered) | [github/spec-kit](https://github.com/github/spec-kit) |
 
 ## Environment Variables
 
