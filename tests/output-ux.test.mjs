@@ -337,7 +337,7 @@ describe('upgrade, smart init and guard exit codes (FR-006, FR-007)', () => {
 
   it('the command reference lists every guard exit code', () => {
     const doc = readFileSync(join(ROOT, 'docs/commands.md'), 'utf8');
-    const line = doc.split('\n').find(l => l.startsWith('**Exit codes:**'));
+    const line = doc.slice(doc.indexOf('**Exit codes:**')).split('\n\n')[0];
     for (const code of ['`0`', '`1`', '`2`', '`3`']) assert.ok(line.includes(code), `${code} in: ${line}`);
   });
 });

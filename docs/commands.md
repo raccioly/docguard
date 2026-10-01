@@ -54,7 +54,16 @@ npx docguard-cli guard --verbose         # Show all check details
 npx docguard-cli guard --changed-only    # Pre-commit lite mode (fast subset)
 ```
 
-**Exit codes:** `0` (pass), `1` (errors), `2` (warnings)
+**Exit codes:** `0` (pass), `1` (errors, or an invalid flag combination such
+as `--update-baseline --changed-only`), `2` (warnings only), `3` (errors in a
+project with no `.docguard.json`: DocGuard has not been adopted there, so a Git
+hook can tell "not initialised" from "failed"). Run `docguard init` to adopt;
+smart-mode `init` on an existing codebase writes the `.docguard.json` it
+inferred.
+
+With `--format json|sarif|junit`, stdout is only the artifact. The
+`--changed-only` note ("N file(s) changed since HEAD~1") goes to stderr in those
+formats.
 
 When issues are found, guard outputs: `Run docguard diagnose to get AI fix prompts.`
 
@@ -288,6 +297,11 @@ npx docguard-cli review --prune                           # drop entries whose s
 npx docguard-cli review --suggest docs-canonical/ARCHITECTURE.md   # propose covers= (low confidence)
 ```
 
+`review --suggest` needs a document; without one it exits 1. A glob in
+`covers=` fingerprints tracked files only (the working tree outside git), so an
+untracked scratch file inside the glob does not change the fingerprint until it
+is added.
+
 Guard then reports **DLK001** when a covered symbol's code changes
 semantically. Reformatting, comments and moving the function do not count; a
 same-size edit such as `0.9` → `0.8` does. The finding carries the `git diff`
@@ -315,11 +329,18 @@ The path need not exist yet. It must be project-relative: an absolute path,
 or gitignored) are listed and marked `local`. Skills and rules that load by
 description or keyword are counted as not path-scoped. Read-only.
 
+For Claude Code, `rules --for` follows `@path` imports the way Claude Code
+does: relative to the importing file, up to 5 hops, never inside a code span or
+fenced block. Each imported file is listed (`imported by CLAUDE.md`) and its
+bytes count toward the total and toward PSR003. Only a token ending in a file
+extension is an import, so `@babel/parser` in prose is not one.
+
 Guard's **Path-Scoped-Rules** validator checks the same files, tracked ones
 only:
 - **PSR001**: a scope pattern matches no tracked file (the rule never loads);
 - **PSR002**: an instruction file points at a path that does not exist,
-  including routing-table rows and Markdown links;
+  including routing-table rows, Markdown links and a Claude Code `@path`
+  import;
 - **PSR003**: the instructions one harness loads for some path exceed
   `agentInstructions.maxBytes`;
 - **PSR004**: a scope the harness cannot read, or reads differently than
@@ -341,9 +362,14 @@ npx docguard-cli trace --owners --suggest      # a draft ownership block; never 
 
 `--owners` reads the `ownership` block in `.docguard.json`
 ([configuration](configuration.md#doc-ownership--ownership)). `--suggest` builds
-a draft from the top-level source modules, their `@doc` annotations and the
-built-in doc patterns, and leaves every `purpose` as a placeholder for a person.
-With a map, `trace --reverse` prints the owner first, labelled `declared`.
+a draft from the top-level source modules, the source files directly beside
+them (`src/pricing.mjs` next to `src/api/`), their `@doc` annotations and the
+built-in doc patterns. It assigns paths only to documents that exist (falling
+back to `ARCHITECTURE.md`), and leaves every `purpose` as a placeholder for a
+person. Without declared `roots`, the validator checks those root-level files
+too. With a map, `trace --reverse` prints the owner first, labelled `declared`;
+when two entries are equally specific it prints `Owner: none` and names them
+(`ownerReason` and `tie` in JSON).
 
 Guard's **Doc-Ownership** validator reports:
 - **OWN001**: an unowned source directory;
@@ -397,7 +423,7 @@ npx docguard-cli fix --doc test-spec
 npx docguard-cli fix --doc environment
 ```
 
-**Output includes:** TASK, PURPOSE, RESEARCH STEPS (what to grep/read), WRITE THE DOCUMENT (expected sections).
+**Output includes:** TASK, PURPOSE, RESEARCH STEPS (what to grep/read), WRITE THE DOCUMENT (expected sections). With `--format json` the prompt comes back as `{ doc, action, projectType, prompt }`.
 
 ### `docguard agent`
 
@@ -557,6 +583,42 @@ npx docguard-cli badge
 npx docguard-cli badge --format json
 ```
 
+### `docguard sync`
+
+**Refresh code-truth sections** (`source=code`) from the scanners. A dry run by
+default; `--write` applies. Only documents marked `<!-- docguard:generated true
+-->` (or mapped through `docs.roles`) are written unless `--force` is given, and
+a section drawn from partial evidence needs `--allow-partial`.
+
+```bash
+npx docguard-cli sync                         # preview
+npx docguard-cli sync --write                 # apply
+npx docguard-cli sync --write --force         # also documents not marked generated
+npx docguard-cli sync --since main            # only sections whose sources changed
+```
+
+Sync never says "up to date" when it skipped a stale section: it names each
+skipped section and the exact command that writes it. GST002 suggests the same
+command (`--force` for an unmarked document). "Prose to review" names only the
+prose sections a document has, or the document itself. `--since <ref>` exits 1
+when git cannot resolve the ref; outside a git repository it notes "git
+unavailable" and syncs everything.
+
+### `docguard upgrade`
+
+**Two jobs.** It checks npm for a newer DocGuard release, and it checks whether
+the project's `.docguard.json` schema is behind the CLI.
+
+```bash
+npx docguard-cli upgrade                          # report both; contacts npm
+npx docguard-cli upgrade --check-only             # same, exit 1 when either is behind (CI)
+npx docguard-cli upgrade --apply --schema-only    # migrate .docguard.json only: offline, installs nothing
+npx docguard-cli upgrade --apply                  # npm install -g docguard-cli@latest if newer, and migrate
+```
+
+`--apply` alone installs the newer release globally. Guard's "schema is behind"
+note suggests `--apply --schema-only`, which never contacts npm.
+
 ### `docguard diff`
 
 **Show gaps** between documentation and actual codebase.
@@ -585,6 +647,12 @@ npx docguard-cli diff
 | `--force` | Overwrite existing files |
 | `--help` | Show help |
 | `--version` | Show version |
+
+**Colour.** DocGuard prints ANSI colour only when stdout is a terminal. A
+non-empty `NO_COLOR` ([no-color.org](https://no-color.org)) turns it off;
+`FORCE_COLOR` turns it on even in a pipe (`FORCE_COLOR=0` turns it off) and
+wins over `NO_COLOR`, as in Node. `--stdout` (`memory --pack`, `llms`) prints
+the artifact with no banner.
 
 Without `--dir`, a command remains scoped to the current directory. DocGuard
 reads only bounded ancestors for an owning `.docguard.json`, npm `workspaces`, or
