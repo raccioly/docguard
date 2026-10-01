@@ -478,6 +478,25 @@ Behaviour changes:
 
 ### Fixed
 
+- **The release cut passes its own suite** (`specs/051-release-cut-green`).
+  - The first v0.43.0 cut failed before tagging, so nothing was published.
+    Nine tests checked the CHANGELOG by reading only `[Unreleased]`, which the
+    cut empties. They now read the notes added since the previous release, the
+    same way before and after a cut.
+  - The cut did not refresh this repository's `.agent/` skill copies. The
+    `ensureSkills` call it used now needs a third argument; without it the call
+    failed, and JSON mode hid the error. `sync-release-version.mjs` now writes
+    the `.agent/skills` and `.agent/commands` mirrors in its own fail-closed
+    transaction. `ensureSkills` throws when that argument is missing.
+  - The release commit also left out `commands/`, whose pins the sync
+    rewrites, so the release pull request would have failed its own pin test.
+    The release-candidate policy rejected the `.agent/commands` mirrors. Both
+    are fixed, and a replay of the cut on main's tree passes the full suite and
+    the candidate validation.
+  - CI's test runtime budget rises from 240s to 360s. The end-to-end tests of
+    specs 040–050 put Node 18 at 211–241s through CPU contention between
+    parallel test files; `guard` itself grew about 20%. A run failed at 241.5s
+    with every test passing. 360s still trips on a PR #328-class runaway.
 - **Fixes found by running this release against ten real repositories**
   (`specs/050-dogfood-findings`).
   - `score` and `fix` crashed with "agentFile.some is not a function" when

@@ -6090,7 +6090,7 @@
           {
             "requirementId": "FR-004",
             "file": ".github/workflows/ci.yml",
-            "line": 226
+            "line": 231
           },
           {
             "requirementId": "FR-004",
@@ -7768,6 +7768,135 @@
             "requirementId": "SC-003",
             "file": "tests/read-only-commands.test.mjs",
             "line": 18
+          }
+        ]
+      }
+    },
+    {
+      "specId": "docguard.release-cut-green",
+      "path": "specs/051-release-cut-green/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "approved",
+          "delivery": "implemented",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": "living"
+        },
+        "relations": {
+          "extends": [
+            "docguard.release-readiness"
+          ],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": [
+            "docs-canonical/CI-RECIPES.md"
+          ]
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.release-cut-green#FR-001",
+          "docguard.release-cut-green#FR-002",
+          "docguard.release-cut-green#FR-003",
+          "docguard.release-cut-green#FR-004",
+          "docguard.release-cut-green#FR-005",
+          "docguard.release-cut-green#FR-006",
+          "docguard.release-cut-green#FR-007",
+          "docguard.release-cut-green#SC-001",
+          "docguard.release-cut-green#SC-002"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/051-release-cut-green/spec.md",
+            "digest": "sha256:02bd8dc68c4d4463844178035bee6004a747592a5e74e20b7efa3ab4305c9e85"
+          },
+          {
+            "path": "specs/051-release-cut-green/plan.md",
+            "digest": "sha256:7b6af60c85424f6c9073489a690e08f726e196e8522d0fbf79de4d95fb2cf18c"
+          },
+          {
+            "path": "specs/051-release-cut-green/tasks.md",
+            "digest": "sha256:64457e085a0b1757b537e53c1c7c7d6627efe1c07b43618349a0f7f97fbaac1c"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 9,
+          "total": 9
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-003",
+            "file": ".github/scripts/sync-release-version.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/release-pr-policy.mjs",
+            "line": 10
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/release-cut-green.test.mjs",
+            "line": 2
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/release-cut-green.test.mjs",
+            "line": 3
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/release-version-sync.test.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/release-version-sync.test.mjs",
+            "line": 79
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/release-cut-green.test.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/release-cut-green.test.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/release-cut-green.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/release-cut-green.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/release-cut-green.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/release-cut-green.test.mjs",
+            "line": 9
           }
         ]
       }

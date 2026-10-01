@@ -1,6 +1,7 @@
 /**
  * @req docguard.release-readiness#FR-003
  * @req docguard.spec-kit-integration-honesty#FR-005
+ * @req docguard.release-cut-green#FR-003
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -15,7 +16,7 @@ function write(root, relPath, content) {
   writeFileSync(fullPath, content);
 }
 
-function fixture({ brokenTemplate = false } = {}) {
+function fixture({ brokenTemplate = false, agentMirrors = false } = {}) {
   const root = mkdtempSync(join(tmpdir(), 'docguard-release-version-'));
   write(root, 'package.json', '{"name":"docguard-cli","version":"9.8.7"}\n');
   write(root, 'pyproject.toml', '[project]\nname = "docguard-cli"\nversion = "0.37.0"\n');
@@ -39,6 +40,11 @@ function fixture({ brokenTemplate = false } = {}) {
   write(root, 'docs/ai-integration.md', '- uses: raccioly/docguard@v0.12.0\n');
   write(root, 'action.yml', "    - name: Install DocGuard\n      env:\n        DOCGUARD_RELEASED_VERSION: '0.37.0'\n");
   write(root, 'CHANGELOG.md', 'Released v0.37.0 remains historical.\n');
+  if (agentMirrors) {
+    // A stale skill mirror, a stale command mirror, and no mirror yet for docguard-sync.
+    write(root, '.agent/skills/docguard-guard/SKILL.md', 'stale skill\n');
+    write(root, '.agent/commands/docguard.guard.md', '# Guard\n\nOtherwise run `npx --yes docguard-cli@0.30.0`.\n');
+  }
   return root;
 }
 
@@ -65,6 +71,37 @@ describe('release version synchronization', () => {
         assert.equal(existsSync(join(root, `${relPath}.bak`)), false);
       }
       assert.equal(readFileSync(join(root, 'CHANGELOG.md'), 'utf8'), 'Released v0.37.0 remains historical.\n');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('writes the .agent mirrors from the synchronized sources (docguard.release-cut-green#FR-003)', () => {
+    const root = fixture({ agentMirrors: true });
+    try {
+      const result = syncReleaseVersion(root);
+      for (const name of ['docguard-guard', 'docguard-sync']) {
+        const source = readFileSync(join(root, `extensions/spec-kit-docguard/skills/${name}/SKILL.md`), 'utf8');
+        assert.match(source, /docguard:version: 9\.8\.7/);
+        assert.equal(readFileSync(join(root, `.agent/skills/${name}/SKILL.md`), 'utf8'), source, `${name} mirror`);
+        assert.ok(result.changed.includes(`.agent/skills/${name}/SKILL.md`));
+      }
+      const command = readFileSync(join(root, 'commands/docguard.guard.md'), 'utf8');
+      assert.equal(readFileSync(join(root, '.agent/commands/docguard.guard.md'), 'utf8'), command);
+      assert.match(command, /docguard-cli@9\.8\.7/);
+      assert.equal(result.changed.length, 16);
+      assert.equal(existsSync(join(root, '.agent/skills/docguard-guard/SKILL.md.bak')), false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('leaves the mirrors untouched when synchronization fails', () => {
+    const root = fixture({ brokenTemplate: true, agentMirrors: true });
+    try {
+      assert.throws(() => syncReleaseVersion(root));
+      assert.equal(readFileSync(join(root, '.agent/skills/docguard-guard/SKILL.md'), 'utf8'), 'stale skill\n');
+      assert.equal(existsSync(join(root, '.agent/skills/docguard-sync/SKILL.md')), false);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

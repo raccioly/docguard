@@ -48,6 +48,7 @@ import { rulesFor } from '../cli/commands/rules.mjs';
 import { validatePathScopedRules } from '../cli/validators/path-scoped-rules.mjs';
 import { createContext, fingerprint } from '../cli/scanners/doc-deps.mjs';
 import { validateReferenceExistence } from '../cli/validators/reference-existence.mjs';
+import { notesSince } from './fixtures/changelog-notes.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const CLI = join(ROOT, 'cli', 'docguard.mjs');
@@ -643,7 +644,7 @@ describe('documentation (FR-018)', () => {
     const model = read('docs-canonical/DATA-MODEL.md');
     assert.match(model, /docSections/);
     assert.match(model, /@path/);
-    const unreleased = read('CHANGELOG.md').split(/^## \[/m)[1];
+    const unreleased = notesSince(read('CHANGELOG.md'), '0.42.1');
     for (const term of ['NO_COLOR', '--schema-only', 'docSections', '--changed-only']) assert.ok(unreleased.includes(term), `CHANGELOG: ${term}`);
   });
 });

@@ -44,6 +44,7 @@ import { validateTestSpec } from '../cli/validators/test-spec.mjs';
 import { validateSpecKitIntegration } from '../cli/scanners/speckit.mjs';
 import { collectRequirementIdsFromContent } from '../cli/shared-requirements.mjs';
 import { PROJECTS, materialize } from './fixtures/generated-docs-projects.mjs';
+import { notesSince } from './fixtures/changelog-notes.mjs';
 
 const CLI = resolve('cli/docguard.mjs');
 const temps = [];
@@ -399,7 +400,7 @@ describe('FR-012: the docs describe the change', () => {
     assert.match(arch, /writeOwnedSections/);
     assert.match(arch, /collectEnvVars/);
     const changelog = readFileSync('CHANGELOG.md', 'utf8');
-    const unreleased = changelog.slice(changelog.indexOf('## [Unreleased]'), changelog.indexOf('\n## [', changelog.indexOf('## [Unreleased]') + 5));
+    const unreleased = notesSince(changelog, '0.42.1');
     assert.match(unreleased, /### Fixed[\s\S]*generate/);
   });
 });

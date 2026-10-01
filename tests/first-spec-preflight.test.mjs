@@ -35,6 +35,7 @@ import { approveSpec, completeSpec, planSpecCompletion, reanchorSpec } from '../
 import { resolveCommit } from '../cli/scanners/revision-anchor.mjs';
 import { classifySpecFirst } from '../cli/scanners/spec-first.mjs';
 import { BLOCKER_CODES, CODES } from '../cli/findings.mjs';
+import { notesSince } from './fixtures/changelog-notes.mjs';
 
 const CLI = resolve('cli/docguard.mjs');
 const passingGuard = { status: 'PASS', errors: 0, warnings: 0 };
@@ -485,9 +486,9 @@ describe('the docs describe the fix (FR-011)', () => {
   it('README.md', () => assert.match(read('README.md'), /specs approve/));
   it('DATA-MODEL.md', () => assert.match(read('docs-canonical/DATA-MODEL.md'), /specs approve/));
   it('SECURITY.md', () => assert.match(read('docs-canonical/SECURITY.md'), /specs approve --write/));
-  it('CHANGELOG.md, under Unreleased', () => {
+  it('CHANGELOG.md, in the notes since 0.42.1', () => {
     const text = read('CHANGELOG.md');
-    const unreleased = text.slice(text.indexOf('## [Unreleased]'), text.indexOf('\n## [', text.indexOf('## [Unreleased]') + 5));
+    const unreleased = notesSince(text, '0.42.1');
     assert.match(unreleased, /first spec/i);
     assert.match(unreleased, /specs approve/);
   });

@@ -8,10 +8,11 @@
  * completed specifications must remain untouched.
  *
  * @implements docguard.release-readiness#FR-003
+ * @implements docguard.release-cut-green#FR-003
  */
 
 import { existsSync, readFileSync, readdirSync, unlinkSync } from 'node:fs';
-import { dirname, join, relative, resolve } from 'node:path';
+import { basename, dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { safeWrite } from '../../cli/writers/generate-io.mjs';
 
@@ -49,7 +50,7 @@ function stageJson(staged, root, relPath, transform) {
 }
 
 function writeWithoutReleaseBackup(filePath, content) {
-  const previous = readFileSync(filePath, 'utf8');
+  const previous = existsSync(filePath) ? readFileSync(filePath, 'utf8') : null;
   if (previous === content) return false;
   safeWrite(filePath, content);
   // Git is the durable backup for these tracked release surfaces. Remove the
@@ -186,6 +187,18 @@ export function syncReleaseVersion(root = process.cwd()) {
       `${relPath} docguard version marker`,
     );
     staged.set(fullPath, next);
+  }
+
+  // The checked-in `.agent/` copies mirror their sources byte for byte, so they
+  // move in this same transaction (docguard.release-cut-green#FR-003). A
+  // repository without `.agent/` has no mirrors to keep.
+  if (existsSync(resolve(root, '.agent'))) {
+    const mirrors = [
+      ...skillFiles.map(source => [source, resolve(root, '.agent/skills', basename(dirname(source)), 'SKILL.md')]),
+      ...listMarkdown(root, 'commands', name => /^docguard\.[a-z-]+\.md$/.test(name))
+        .map(relPath => [resolve(root, relPath), resolve(root, '.agent/commands', basename(relPath))]),
+    ];
+    for (const [source, mirror] of mirrors) staged.set(mirror, staged.get(source) ?? readFileSync(source, 'utf8'));
   }
 
   // All parsing and cardinality checks finish before the first write. A missing

@@ -69,12 +69,17 @@ jobs:
       # on this gate existing. Budget is deliberately loose — it catches
       # catastrophes, not jitter. Set at 120s when normal runs were 33-51s; by
       # 2026-09-29 the suite had doubled and normal runs ranged 64-122s across
-      # identical code, so 120s tripped on runner noise (#467). 240s restores
-      # the ~2x margin and still catches the PR #328 class (+165s).
+      # identical code, so 120s tripped on runner noise (#467). 240s restored
+      # the ~2x margin then. By 2026-10-01 the end-to-end tests of specs
+      # 040-050 put Node 18 at 211-241s (#505-#510): guard on this repository
+      # grew only ~20% (9.4s to 11.4s); the rest is CPU contention between
+      # parallel test files that spawn the CLI. #510 failed at 241.5s with
+      # every test passing. 360s restores headroom over that, and the PR #328
+      # class (+165s on ~235s) still trips it (docguard.release-cut-green#FR-007).
       - name: Run Tests (with runtime budget)
         shell: bash
         env:
-          TEST_BUDGET_MS: 240000
+          TEST_BUDGET_MS: 360000
         run: |
           set -o pipefail
           node --test --test-reporter=tap tests/*.test.mjs 2>&1 | tee /tmp/test-output.txt

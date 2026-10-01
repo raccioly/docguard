@@ -22,6 +22,7 @@ import { resolve } from 'node:path';
 import { cutChangelog, inferBump, nextVersion, populatedHeadings } from '../.github/scripts/release-changelog.mjs';
 import { fetchPublished, renderFormula, sha256Of, verifyIntegrity } from '../.github/scripts/homebrew-formula.mjs';
 import { CODES } from '../cli/findings.mjs';
+import { notesAsUnreleased } from './fixtures/changelog-notes.mjs';
 
 const CLI = resolve('cli/docguard.mjs');
 const strip = s => s.replace(/\x1b\[[0-9;]*m/g, '');
@@ -55,8 +56,10 @@ describe('the scheduler infers the bump from the curated changelog (FR-001)', ()
     assert.throws(() => nextVersion('0.42.1-rc.1', 'patch'), /stable/);
   });
 
-  it("this repository's [Unreleased] section cuts a minor release (SC-001)", () => {
-    assert.equal(inferBump(readFileSync('CHANGELOG.md', 'utf8')).bump, 'minor');
+  it("this repository's notes since 0.42.1 cut a minor release (SC-001)", () => {
+    // Read the same way before and after the cut empties [Unreleased]
+    // (docguard.release-cut-green#FR-002).
+    assert.equal(inferBump(notesAsUnreleased(readFileSync('CHANGELOG.md', 'utf8'), '0.42.1')).bump, 'minor');
   });
 
   it('the scheduler defaults to auto and uses the script, not an inline patch default', () => {

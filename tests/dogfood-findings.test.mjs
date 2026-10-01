@@ -21,6 +21,7 @@ import { tmpdir } from 'node:os';
 import { loadConfig } from '../cli/config.mjs';
 import { resolveDocRole } from '../cli/shared-doc-roles.mjs';
 import { validateMetricsConsistency, isWholeSuiteClaim, isSuiteClaimFile } from '../cli/validators/metrics-consistency.mjs';
+import { notesSince } from './fixtures/changelog-notes.mjs';
 
 const CLI = resolve('cli/docguard.mjs');
 const temps = [];
@@ -158,7 +159,7 @@ describe('"N tests" is checked only as a claim about today\'s whole suite (FR-00
 describe('the CHANGELOG describes the fixes (FR-004)', () => {
   it('names the string agent file, the nested role and the scoring table', () => {
     const text = readFileSync(resolve('CHANGELOG.md'), 'utf8');
-    const unreleased = text.slice(text.indexOf('## [Unreleased]'), text.indexOf('\n## [', text.indexOf('## [Unreleased]') + 5));
+    const unreleased = notesSince(text, '0.42.1');
     assert.match(unreleased, /agentFile/);
     assert.match(unreleased, /nested DATA-MODEL\.md|nested canonical/);
     assert.match(unreleased, /scoring table/);
