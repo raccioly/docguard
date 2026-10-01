@@ -478,6 +478,30 @@ Behaviour changes:
 
 ### Fixed
 
+- **Fixes found by running this release against ten real repositories**
+  (`specs/050-dogfood-findings`).
+  - `score` and `fix` crashed with "agentFile.some is not a function" when
+    `.docguard.json` set `requiredFiles.agentFile` to a string, which the
+    config schema allows. Config loading now turns it into a list.
+  - Schema-Sync reported "no DATA-MODEL.md exists" for a project whose
+    nested DATA-MODEL.md (`docs-canonical/03-architecture/DATA-MODEL.md`)
+    was listed in its config. A document role now resolves to the one
+    canonical document with its file name when the default path is missing;
+    two such documents keep the default, and an explicit `docs.roles` mapping
+    still wins.
+  - Metrics-Consistency read `| Dependencies | 5 |` in a scoring table's
+    `Max Points` column as "claims 5 runtime dependencies". A table row now
+    counts only when its column header names a count.
+  - Metrics-Consistency read "2 External Dependencies" in a plan template as a
+    package count. A number of "external dependencies" now counts only when
+    its line names software (npm, package, runtime, library, install);
+    "zero external dependencies" is still checked. "No npm dependency" in the
+    singular (a change that added none) is no longer read as the package count.
+  - Metrics-Consistency (MET003) compared every "N tests" with the suite,
+    including a commit-pinned subset ("49 frontend files (606 tests) pass on
+    `9c55dac6`"), a feature's own spec research, and a dated plan. It now
+    checks only claims about today's whole suite.
+
 - **`docguard init` no longer reports a Spec Kit integration that does not
   work** (`specs/048-spec-kit-integration-honesty`, spec 048). Each defect was
   reproduced with `specify` 1.0.13.

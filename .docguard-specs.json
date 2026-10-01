@@ -2778,6 +2778,137 @@
       }
     },
     {
+      "specId": "docguard.dogfood-findings",
+      "path": "specs/050-dogfood-findings/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "approved",
+          "delivery": "implemented",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": "living"
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": [
+            "docs-canonical/DATA-MODEL.md"
+          ]
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.dogfood-findings#FR-001",
+          "docguard.dogfood-findings#FR-002",
+          "docguard.dogfood-findings#FR-003",
+          "docguard.dogfood-findings#FR-004",
+          "docguard.dogfood-findings#FR-005",
+          "docguard.dogfood-findings#FR-006",
+          "docguard.dogfood-findings#SC-001",
+          "docguard.dogfood-findings#SC-002"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/050-dogfood-findings/spec.md",
+            "digest": "sha256:00263d15848d6c919cd2e9f12cfa111c09f287aafd1b67293d7f7e8d3d61b3e6"
+          },
+          {
+            "path": "specs/050-dogfood-findings/plan.md",
+            "digest": "sha256:398d1d7086511881f56354c219d960d32219b7ceaa9066ab7c231d46843df274"
+          },
+          {
+            "path": "specs/050-dogfood-findings/tasks.md",
+            "digest": "sha256:425441987779e817ed6c3aa9454362494e007e1a7b4d515f4863c29080b8ec2d"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 5,
+          "total": 5
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-002",
+            "file": "cli/shared-doc-roles.mjs",
+            "line": 25
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/validators/metrics-consistency.mjs",
+            "line": 374
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/validators/metrics-consistency.mjs",
+            "line": 353
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/validators/metrics-consistency.mjs",
+            "line": 430
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/validators/metrics-consistency.mjs",
+            "line": 444
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/dogfood-findings.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/dogfood-findings.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/dogfood-findings.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/dogfood-findings.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/dogfood-findings.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/dogfood-findings.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/dogfood-findings.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/dogfood-findings.test.mjs",
+            "line": 13
+          }
+        ]
+      }
+    },
+    {
       "specId": "docguard.evidence-scoped-verification",
       "path": "specs/008-evidence-scoped-verification/spec.md",
       "reviewed": {
@@ -3993,7 +4124,7 @@
           },
           {
             "path": "specs/044-generated-docs-consistency/tasks.md",
-            "digest": "sha256:099f462200d37b30224dca17f717c61f2212363d47a5a8ab36d7dbdf5bafe518"
+            "digest": "sha256:4faee3bde521438b773e79341a34448bb58d5f530280cf80571f1c1cfeb1d5a2"
           }
         ],
         "taskCompletion": {
@@ -4978,7 +5109,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/shared-doc-roles.mjs",
-            "line": 71
+            "line": 83
           },
           {
             "requirementId": "FR-010",
@@ -5003,7 +5134,7 @@
           {
             "requirementId": "FR-011",
             "file": "cli/shared-doc-roles.mjs",
-            "line": 72
+            "line": 84
           },
           {
             "requirementId": "FR-011",
@@ -6060,7 +6191,7 @@
           {
             "requirementId": "FR-015",
             "file": "cli/config.mjs",
-            "line": 190
+            "line": 193
           },
           {
             "requirementId": "FR-016",
@@ -7086,7 +7217,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/config.mjs",
-            "line": 189
+            "line": 192
           },
           {
             "requirementId": "FR-011",

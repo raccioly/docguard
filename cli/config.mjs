@@ -114,6 +114,9 @@ export function loadConfig(projectDir) {
       // user can write either kebab-case (`test-spec`) or camelCase (`testSpec`)
       // and the internal lookups (always camelCase) still hit.
       const merged = deepMerge(withProfile, normalizeConfig(userConfig));
+      // The schema allows one agent file as a string; every reader expects a
+      // list (docguard.dogfood-findings#FR-001).
+      if (typeof merged.requiredFiles?.agentFile === 'string') merged.requiredFiles.agentFile = [merged.requiredFiles.agentFile];
       merged.profile = profileName;
 
       // v0.24: severity accepts only high|medium|low and changes EXIT-CODE

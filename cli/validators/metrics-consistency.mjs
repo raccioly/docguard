@@ -102,7 +102,7 @@ export function validateMetricsConsistency(projectDir, config, guardResults) {
     // number may carry thousands separators ("1,733 tests"); the digit
     // alternation and the lookbehind keep "1,733" from matching as "733".
     // lowerBound: drift only when the doc's number is BELOW the declared count.
-    { key: 'tests', regex: /(?<![\d,])(\d{1,3}(?:,\d{3})+|\d{2,})\s+tests?\b/gi, label: 'tests', bind: isTestSuiteBound, lowerBound: true, actualSource: 'docguard.project.testCases' },
+    { key: 'tests', regex: /(?<![\d,])(\d{1,3}(?:,\d{3})+|\d{2,})\s+tests?\b/gi, label: 'tests', bind: isWholeSuiteClaim, fileScope: isSuiteClaimFile, lowerBound: true, actualSource: 'docguard.project.testCases' },
   ];
 
   // v0.29 (field report #6): project-declared collections. `config.collections`
@@ -156,9 +156,10 @@ export function validateMetricsConsistency(projectDir, config, guardResults) {
     let content;
     try { content = readFileSync(mdFile, 'utf-8'); } catch { continue; }
 
-    for (const { key, regex, label, requireBind, bind, lowerBound, subject, actualSource, isCollection, glob } of patterns) {
+    for (const { key, regex, label, requireBind, bind, fileScope, lowerBound, subject, actualSource, isCollection, glob } of patterns) {
       if (actuals[key] === undefined) continue;
 
+      if (fileScope && !fileScope(relPath)) continue;
       regex.lastIndex = 0;
       let match;
       // Collect distinct (found-value) instances within THIS file first,
@@ -308,6 +309,12 @@ function checkDependencyClaims(projectDir, mdFiles, isIgnored) {
       let match;
       while ((match = regex.exec(content)) !== null) {
         if (isHistoricalMetricContext(content, match.index)) continue;
+        // A `| Dependencies | 5 |` row is a count only when its column says so:
+        // a scoring table's `Max Points` column is not (docguard.dogfood-findings#FR-003).
+        if (regex === DEP_LABEL_RE && !tableRowIsCount(content, match.index)) continue;
+        // "External dependencies" is software wording only in software context:
+        // "2 External Dependencies" in a plan template counts workstreams.
+        if (regex === DEP_QUALIFIED_RE && !externalCountIsSoftware(content, match)) continue;
         const word = match[1].toLowerCase();
         const claimed = word in NUMBER_WORDS ? NUMBER_WORDS[word] : parseInt(word, 10);
         const key = `${relPath}|${claimed}`;
@@ -335,6 +342,56 @@ function checkDependencyClaims(projectDir, mdFiles, isIgnored) {
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
+
+const SOFTWARE_CONTEXT = /\b(?:npm|pnpm|yarn|package(?:\.json|s)?|runtime|librar(?:y|ies)|install|node_modules|import|bundle|pip|crate|module)\b/i;
+
+/**
+ * "N external dependencies" is a package count only when its line says so.
+ * "zero/no/none external dependencies" stays a claim: that wording is the
+ * usual package boast. Other qualifiers (runtime, npm, …) are unaffected.
+ *
+ * @implements docguard.dogfood-findings#FR-005
+ */
+function externalCountIsSoftware(content, match) {
+  // "no npm dependency" (singular) says a change added none, not that the
+  // package has none: "a small built-in map (no npm dependency)".
+  if (/^(?:zero|no|none)$/i.test(match[1]) && /dependency\b/i.test(match[0])) return false;
+  if (!/\bexternal\s+dependenc/i.test(match[0])) return true;
+  if (/^(?:zero|no|none)$/i.test(match[1])) return true;
+  const lineStart = content.lastIndexOf('\n', match.index) + 1;
+  const lineEnd = content.indexOf('\n', match.index);
+  const line = content.slice(lineStart, lineEnd === -1 ? undefined : lineEnd).replace(match[0], '');
+  return SOFTWARE_CONTEXT.test(line);
+}
+
+const COUNT_HEADER = /^(?:count|value|total|number|no\.?|#|amount|qty|quantity|dependencies)$/i;
+
+/**
+ * For a match on a Markdown table row, true only when the table's header cell
+ * above the value names a count. A match outside a table is a label line and
+ * always counts.
+ *
+ * @implements docguard.dogfood-findings#FR-003
+ */
+function tableRowIsCount(content, index) {
+  const lineStart = content.lastIndexOf('\n', index) + 1;
+  const lineEnd = content.indexOf('\n', index);
+  const row = content.slice(lineStart, lineEnd === -1 ? undefined : lineEnd);
+  if (!row.trimStart().startsWith('|')) return true;
+  const lines = content.slice(0, lineStart).split('\n');
+  lines.pop();
+  let header = null;
+  for (let i = lines.length - 1; i >= 0; i--) {
+    if (!lines[i].trimStart().startsWith('|')) break;
+    header = lines[i];
+  }
+  if (!header) return false;
+  const cells = s => s.trim().replace(/^\||\|$/g, '').split('|').map(c => c.trim().replace(/[*_`]/g, ''));
+  const rowCells = cells(row);
+  const valueColumn = rowCells.findIndex((c, i) => i > 0 && /^(none|zero|no|\d+)$/i.test(c));
+  if (valueColumn < 1) return false;
+  return COUNT_HEADER.test(cells(header)[valueColumn] || '');
+}
 
 /**
  * Bug #2 — subject binding. A "N checks/validators" claim is DocGuard's to
@@ -365,6 +422,33 @@ function lineAt(content, index) {
  * "TEST-SPEC.md (45 tests, …)") is out of scope — comparing it to the declared
  * count would be a false positive.
  */
+/**
+ * A suite-bound "N tests" that is about the whole suite today: not pinned to a
+ * commit ("pass on `9c55dac6`"), and not a subset ("49 frontend files (606
+ * tests)", "12 unit tests").
+ *
+ * @implements docguard.dogfood-findings#FR-006
+ */
+export function isWholeSuiteClaim(line) {
+  if (!isTestSuiteBound(line)) return false;
+  if (/`[0-9a-f]{7,40}`|\b(?:at|on|commit)\s+[0-9a-f]{7,40}\b/i.test(line)) return false;
+  return !/\b(?:frontend|backend|front-end|back-end|unit|integration|e2e|end-to-end|smoke|ui|api|component|regression|new|added|feature|spec)\s+(?:test\s+)?(?:files?\s*\(\s*)?(?:\d[\d,]*\s+)?tests?\b/i.test(line)
+    && !/\b(?:frontend|backend|front-end|back-end|unit|integration|e2e|end-to-end)\b[^.]{0,40}\(\s*\d[\d,]*\s+tests?\s*\)/i.test(line);
+}
+
+/**
+ * Files whose "N tests" describe something other than today's suite: Spec Kit
+ * artifacts (a feature's own tests) and dated records (an audit or plan named
+ * for its date).
+ *
+ * @implements docguard.dogfood-findings#FR-006
+ */
+export function isSuiteClaimFile(relPath) {
+  const path = String(relPath).replace(/\\/g, '/');
+  if (/(?:^|\/)specs\/[^/]+\//.test(path)) return false;
+  return !/(?:^|[^\d])\d{4}-\d{2}-\d{2}(?:[^\d]|$)/.test(path.split('/').pop());
+}
+
 export function isTestSuiteBound(line) {
   return /\b(?:npm|pnpm|yarn|bun)\s+(?:run\s+)?test\b|\bnode\s+--test\b|\b(?:pytest|unittest|vitest|jest|mocha|ava|tap|cargo\s+test|go\s+test|node:test)\b|\btest\s+suite\b|\bsuite\b|\bpass(?:ed|es|ing)?\b/i.test(line);
 }
