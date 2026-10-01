@@ -8,6 +8,12 @@ allowed-tools: Bash, Read, Edit
 Run after the specification exists and before planning or task generation. The
 generated draft is the reviewable artifact that DocGuard can gate.
 
+## Running DocGuard
+
+Run `docguard` from PATH when it is installed. Otherwise run
+`npx --yes docguard-cli@0.42.1`, the release these instructions ship with, in its
+place. Every `docguard …` command below means one of the two.
+
 ## User Input
 
 $ARGUMENTS
@@ -31,7 +37,7 @@ $ARGUMENTS
 3. Run the read-only generated-spec gate:
 
 ```bash
-npx --yes docguard-cli@latest specs preflight --path <feature-spec.md> --format json
+docguard specs preflight --path <feature-spec.md> --format json
 ```
 
 4. If the result is `BLOCKED`, stop before task generation. Fix duplicate or
@@ -48,5 +54,5 @@ npx --yes docguard-cli@latest specs preflight --path <feature-spec.md> --format 
    identities:
 
 ```bash
-npx --yes docguard-cli@latest specs --write
+docguard specs --write
 ```

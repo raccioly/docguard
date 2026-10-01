@@ -21,6 +21,7 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execSync, execFileSync } from 'node:child_process';
 import { c } from './shared.mjs';
+import { readAgentSurface } from './agent-surface.mjs';
 
 /**
  * v0.21.1 (security): cross-platform safe spawn for the `specify` CLI.
@@ -52,12 +53,10 @@ const __dirname = dirname(__filename);
 const SKILLS_SOURCE = resolve(__dirname, '..', 'extensions', 'spec-kit-docguard', 'skills');
 const COMMANDS_SOURCE = resolve(__dirname, '..', 'commands');
 
-// Destination in the user's project. Commands live UNDER `.agent/` alongside
-// skills (was root `commands/`, which polluted the project namespace and got
-// mis-scanned as source). `.agent/commands/` is the generic spec-kit convention
-// agents already discover, and keeps DocGuard's footprint in one place.
-const SKILLS_DEST = '.agent/skills';
-const COMMANDS_DEST = '.agent/commands';
+// Destinations depend on the project's agent: see readAgentSurface in
+// cli/agent-surface.mjs (docguard.spec-kit-integration-honesty#FR-009).
+// `.agent/` remains the convention for the generic integration and for an
+// agent DocGuard cannot place.
 
 // ── Agent Mode Detection ────────────────────────────────────────────────
 
@@ -247,87 +246,91 @@ export function ensureSpecKit(projectDir, flags = {}) {
 
 // ── Skill Installation ──────────────────────────────────────────────────
 
+/** Bundled files DocGuard installs, as `{ src, dest }` pairs for this project's surface. */
+function plannedAssets(surface) {
+  const planned = [];
+  if (surface.skillsDir && existsSync(SKILLS_SOURCE)) {
+    for (const skillDir of readdirSync(SKILLS_SOURCE).sort()) {
+      const src = resolve(SKILLS_SOURCE, skillDir, 'SKILL.md');
+      if (skillDir.startsWith('docguard-') && existsSync(src)) {
+        planned.push({ kind: 'skill', src, dest: `${surface.skillsDir}/${skillDir}/SKILL.md` });
+      }
+    }
+  }
+  if (surface.commandsDir && existsSync(COMMANDS_SOURCE)) {
+    for (const file of readdirSync(COMMANDS_SOURCE).filter(f => f.endsWith('.md')).sort()) {
+      planned.push({ kind: 'command', src: resolve(COMMANDS_SOURCE, file), dest: `${surface.commandsDir}/${file}` });
+    }
+  }
+  return planned;
+}
+
 /**
- * Silently ensure DocGuard skills and commands are installed in the project.
- * Also checks spec-kit integration and auto-updates stale skills.
+ * Read-only: installed DocGuard skills and commands whose content differs from
+ * this CLI's bundled copy. A missing file is not "stale" — `init` installs it.
+ *
+ * @implements docguard.spec-kit-integration-honesty#FR-004
+ * @returns {string[]} repository-relative paths
+ */
+export function staleAgentAssets(projectDir, surface = readAgentSurface(projectDir)) {
+  return plannedAssets(surface)
+    .filter(({ src, dest }) => {
+      const full = resolve(projectDir, dest);
+      return existsSync(full) && readFileSync(full, 'utf-8') !== readFileSync(src, 'utf-8');
+    })
+    .map(({ dest }) => dest);
+}
+
+/**
+ * Install DocGuard's skills and commands where the project's agent reads them
+ * (docguard.spec-kit-integration-honesty#FR-009): a skills integration's
+ * skills directory, `.agent/` for generic or an unknown agent, and nothing
+ * for a commands-style integration Spec Kit already registered DocGuard in.
+ * Content-equality gated, so an identical rerun writes nothing (field report,
+ * Issue D: a version-marker gate rewrote skills on every command).
+ *
+ * @implements docguard.spec-kit-integration-honesty#FR-009
+ * @implements docguard.spec-kit-integration-honesty#FR-010
+ * @returns {{ written: string[], skillsDir: string|null, commandsDir: string|null, reason: string|null }}
+ */
+export function installAgentAssets(projectDir, surface = readAgentSurface(projectDir)) {
+  const written = [];
+  for (const { src, dest } of plannedAssets(surface)) {
+    const full = resolve(projectDir, dest);
+    const content = readFileSync(src, 'utf-8');
+    if (existsSync(full) && readFileSync(full, 'utf-8') === content) continue;
+    mkdirSync(dirname(full), { recursive: true });
+    writeFileSync(full, content, 'utf-8');
+    written.push(dest);
+  }
+  return { written, skillsDir: surface.skillsDir, commandsDir: surface.commandsDir, reason: surface.reason };
+}
+
+/**
+ * Install DocGuard's skills and commands for this project. Called only by
+ * `docguard init` (docguard.read-only-commands#FR-001) and `upgrade --apply`.
  *
  * @param {string} projectDir - The project root directory
  * @param {object} flags - CLI flags (format, etc.)
- * @returns {{ skillsInstalled: boolean, commandsInstalled: boolean, specKitReady: boolean }}
+ * @returns {{ skillsInstalled: boolean, commandsInstalled: boolean, specKitReady: boolean, written: string[] }}
  */
 export function ensureSkills(projectDir, flags = {}) {
-  const result = { skillsInstalled: false, commandsInstalled: false, specKitReady: false };
   const silent = flags.format === 'json';
-
-  // ── Spec-Kit Gate ─────────────────────────────────────────────────────
-  const specKitResult = ensureSpecKit(projectDir, flags);
-  result.specKitReady = specKitResult.specKitReady;
-
-  // ── DocGuard Skills (install + auto-update) ───────────────────────────
-  if (existsSync(SKILLS_SOURCE)) {
-    try {
-      const skillDirs = readdirSync(SKILLS_SOURCE).filter(d =>
-        d.startsWith('docguard-') && existsSync(resolve(SKILLS_SOURCE, d, 'SKILL.md'))
-      );
-
-      for (const skillDir of skillDirs) {
-        const destDir = resolve(projectDir, SKILLS_DEST, skillDir);
-        const srcSkill = resolve(SKILLS_SOURCE, skillDir, 'SKILL.md');
-        const destSkill = resolve(destDir, 'SKILL.md');
-
-        const srcContent = readFileSync(srcSkill, 'utf-8');
-        const installedContent = existsSync(destSkill) ? readFileSync(destSkill, 'utf-8') : null;
-
-        // Content-equality gate: write only when the bundled skill differs from
-        // what's on disk. Covers a fresh install AND a genuine update, but stops
-        // the per-command rewrite churn the old version-marker gate caused — a
-        // skill whose SKILL.md lacked a `docguard:version:` marker compared as
-        // '0.0.0', so it was rewritten (and announced) on EVERY command, even
-        // read-only ones like `explain`/`score` (field report, Issue D).
-        if (installedContent !== srcContent) {
-          if (!existsSync(destDir)) mkdirSync(destDir, { recursive: true });
-          writeFileSync(destSkill, srcContent, 'utf-8');
-          result.skillsInstalled = true;
-        }
-      }
-
-      if (result.skillsInstalled && !silent) {
-        console.log(`  ${c.cyan}✨ DocGuard AI skills installed/updated → ${SKILLS_DEST}/${c.reset}`);
-      }
-    } catch {
-      // Silent failure — skills are optional enhancement
+  const { specKitReady } = ensureSpecKit(projectDir, flags);
+  let assets = { written: [], skillsDir: null, commandsDir: null, reason: null };
+  try {
+    assets = installAgentAssets(projectDir);
+  } catch (err) {
+    if (!silent) console.log(`  ${c.yellow}⚠️  DocGuard agent files not installed: ${err.message}${c.reset}`);
+  }
+  const skills = assets.written.filter(p => p.endsWith('/SKILL.md'));
+  const commands = assets.written.filter(p => !p.endsWith('/SKILL.md'));
+  if (!silent) {
+    if (skills.length) console.log(`  ${c.cyan}✨ DocGuard AI skills installed/updated → ${assets.skillsDir}/ (${skills.length} file${skills.length === 1 ? '' : 's'})${c.reset}`);
+    if (commands.length) console.log(`  ${c.cyan}✨ DocGuard slash commands installed/updated → ${assets.commandsDir}/ (${commands.length} file${commands.length === 1 ? '' : 's'})${c.reset}`);
+    if (assets.reason && !assets.skillsDir && !assets.commandsDir) {
+      console.log(`  ${c.dim}DocGuard's own skills are not copied: ${assets.reason}.${c.reset}`);
     }
   }
-
-  // ── Slash Commands ────────────────────────────────────────────────────
-  const commandsCheck = resolve(projectDir, COMMANDS_DEST, 'docguard.guard.md');
-  if (!existsSync(commandsCheck) && existsSync(COMMANDS_SOURCE)) {
-    try {
-      const commandFiles = readdirSync(COMMANDS_SOURCE).filter(f => f.endsWith('.md'));
-
-      if (commandFiles.length > 0) {
-        const destDir = resolve(projectDir, COMMANDS_DEST);
-        if (!existsSync(destDir)) {
-          mkdirSync(destDir, { recursive: true });
-        }
-
-        for (const file of commandFiles) {
-          const destPath = resolve(destDir, file);
-          if (!existsSync(destPath)) {
-            writeFileSync(destPath, readFileSync(resolve(COMMANDS_SOURCE, file), 'utf-8'), 'utf-8');
-          }
-        }
-
-        result.commandsInstalled = true;
-        if (!silent) {
-          console.log(`  ${c.cyan}✨ DocGuard slash commands installed → ${COMMANDS_DEST}/${c.reset}`);
-        }
-      }
-    } catch {
-      // Silent failure — commands are optional enhancement
-    }
-  }
-
-  return result;
+  return { skillsInstalled: skills.length > 0, commandsInstalled: commands.length > 0, specKitReady, written: assets.written };
 }
-

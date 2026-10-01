@@ -16,16 +16,22 @@ handoffs:
 
 Calculate and display the project's Canonical-Driven Development maturity score with ROI-based improvement roadmap.
 
+## Running DocGuard
+
+Run `docguard` from PATH when it is installed. Otherwise run
+`npx --yes docguard-cli@0.42.1`, the release these instructions ship with, in its
+place. Every `docguard …` command below means one of the two.
+
 ## What to do
 
 1. **Run the scoring engine**:
 ```bash
-npx docguard-cli score
+docguard score
 ```
 
 2. **For JSON output** (CI/CD integration):
 ```bash
-npx docguard-cli score --format json
+docguard score --format json
 ```
 
 3. **Interpret the grade**:

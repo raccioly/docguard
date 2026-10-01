@@ -25,7 +25,6 @@
 
 import { basename } from 'node:path';
 import { c } from '../shared.mjs';
-import { detectAgentMode } from '../ensure-skills.mjs';
 import { extractSemanticClaims, buildSemanticVerifyTasks } from '../scanners/semantic-claims.mjs';
 import { auditInstructions } from '../scanners/instruction-audit.mjs';
 import { isGitRepo, getDiffText } from '../shared-git.mjs';
@@ -161,8 +160,8 @@ export function runVerify(projectDir, config, flags) {
     console.log('');
   }
 
-  const mode = detectAgentMode(projectDir);
-  const cmd = mode === 'llm' ? '/docguard.verify' : 'docguard verify --semantic --format json';
+  // No agent command runs `verify`; name the CLI (docguard.spec-kit-integration-honesty#FR-006).
+  const cmd = 'docguard verify --semantic --format json';
   console.log(`  ${c.dim}This is the highest-value bug class and DocGuard can't judge it — an agent must.${c.reset}`);
   console.log(`  ${c.dim}Get the machine task list: ${c.cyan}${cmd}${c.dim}, then read each cited file and confirm the value.${c.reset}\n`);
 }
@@ -284,8 +283,7 @@ function runInstructionAudit(projectDir, config, flags) {
       console.log('');
     }
 
-    const mode = detectAgentMode(projectDir);
-    const cmd = mode === 'llm' ? '/docguard.verify' : 'docguard verify --instructions --format json';
+    const cmd = 'docguard verify --instructions --format json';
     console.log(`  ${c.dim}Whether clustered rules contradict in practice is judgment DocGuard can't make — an agent must.${c.reset}`);
     console.log(`  ${c.dim}Get the machine task list: ${c.cyan}${cmd}${c.dim}, then judge each pair and report which rule should win.${c.reset}\n`);
   } else if (findingCount === 0) {

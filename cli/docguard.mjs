@@ -194,7 +194,7 @@ ${c.bold}Learn more:${c.reset}
 const COMMAND_HELP = {
   init: {
     summary: 'Bootstrap CDD docs — smart-scans existing code, or writes blank templates.',
-    usage: 'docguard init [--skeleton|--wizard] [--profile <p>] [--with <name>] [--fix]',
+    usage: 'docguard init [--skeleton|--wizard] [--profile <p>] [--with <name>] [--fix] [--no-spec-kit|--spec-kit]',
     flags: [
       ['--skeleton', 'Blank templates instead of the smart scan-and-propose'],
       ['--wizard', 'Guided interactive onboarding'],
@@ -203,8 +203,10 @@ const COMMAND_HELP = {
       ['--skip-prompts', 'Non-interactive; create the profile defaults (CI)'],
       ['--fix', 'Headless: create any missing required docs from templates'],
       ['--force', 'Overwrite existing files (.bak backup kept)'],
+      ['--no-spec-kit', 'Skip Spec Kit: no `specify` call, no .specify/ (DocGuard\'s own agent skills still install)'],
+      ['--spec-kit', 'With --profile starter: initialize Spec Kit too (starter skips it by default)'],
     ],
-    examples: ['docguard init', 'docguard init --skeleton', 'docguard init --profile starter --skip-prompts', 'docguard init --with ci'],
+    examples: ['docguard init', 'docguard init --skeleton', 'docguard init --profile starter --skip-prompts', 'docguard init --no-spec-kit', 'docguard init --with ci'],
   },
   generate: {
     summary: 'Reverse-engineer canonical docs from existing code.',
@@ -570,8 +572,8 @@ async function main() {
       flags.quiet = true;
     } else if (args[i] === '--no-spec-kit') {
       // v0.16-P8: opt-out of automatic Spec Kit init during `docguard init`.
-      // Default stays on (discoverability), but lets minimalist library
-      // projects skip the .specify/.agent/commands scaffolding.
+      // Skips Spec Kit only (no `specify` call, no .specify/); DocGuard's own
+      // agent skills still install (docguard.spec-kit-integration-honesty#FR-007).
       flags.noSpecKit = true;
     } else if (args[i] === '--spec-kit') {
       // v0.24: explicit opt-IN to the Spec Kit framework scaffold. The

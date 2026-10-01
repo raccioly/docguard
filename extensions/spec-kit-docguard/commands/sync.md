@@ -12,6 +12,12 @@ is never touched** — it lives outside markers or in `source=human` sections.
 
 When a code section changes, the prose sections in that doc are flagged for agent review.
 
+## Running DocGuard
+
+Run `docguard` from PATH when it is installed. Otherwise run
+`npx --yes docguard-cli@0.42.1`, the release these instructions ship with, in its
+place. Every `docguard …` command below means one of the two.
+
 ## User Input
 
 ```text
@@ -25,13 +31,13 @@ You **MUST** consider the user input before proceeding (if not empty).
 1. Preview what will change (dry run, never writes):
 
 ```bash
-npx --yes docguard-cli@latest sync $ARGUMENTS
+docguard sync $ARGUMENTS
 ```
 
 2. If only `source=code` sections are stale, apply the mechanical refresh:
 
 ```bash
-npx --yes docguard-cli@latest sync --write $ARGUMENTS
+docguard sync --write $ARGUMENTS
 ```
 
 3. For each "prose to review" line, **read the affected doc and update the
@@ -39,7 +45,7 @@ npx --yes docguard-cli@latest sync --write $ARGUMENTS
    endpoints table grew, update the API overview prose). Then re-run guard:
 
 ```bash
-npx --yes docguard-cli@latest guard
+docguard guard
 ```
 
 ## Flags

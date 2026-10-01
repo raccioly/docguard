@@ -16,6 +16,7 @@ import { walkFiles, buildIgnoreFilter } from '../shared-ignore.mjs';
 import { CODES, mkFinding, resultFromFindings } from '../findings.mjs';
 import { loadValidatorSuppressions } from '../validator-markers.mjs';
 import { detectAgentMode, isSpecKitInitialized } from '../ensure-skills.mjs';
+import { readAgentSurface, agentCommand, commandHint } from '../agent-surface.mjs';
 import { findConstitution } from '../scanners/speckit.mjs';
 import { checkUpgradeStatus } from './upgrade.mjs';
 import { changedFilesSince, isGitRepo } from '../shared-git.mjs';
@@ -960,8 +961,11 @@ export function runGuard(projectDir, config, flags) {
   // suggest what to do next; on a clean run it points at the next workflow step
   // rather than nagging. JSON consumers read this off the `nextStep`/`reportable`
   // contract fields instead of this prose.
+  // A slash command only when its file exists for this project's agent,
+  // otherwise the CLI command (docguard.spec-kit-integration-honesty#FR-006).
   const agentMode = detectAgentMode(projectDir);
-  const skill = (name) => (agentMode === 'llm' ? `/docguard.${name}` : `docguard ${name}`);
+  const surface = readAgentSurface(projectDir);
+  const skill = (name) => commandHint(projectDir, surface, name);
 
   if (data.status !== 'PASS') {
     console.log(`  ${c.dim}Next: run ${c.cyan}${skill('diagnose')}${c.dim} to get AI fix prompts that resolve the issues above.${c.reset}`);
@@ -996,10 +1000,10 @@ export function runGuard(projectDir, config, flags) {
     }
   }
 
-  // Read-only skills nudge (never writes — that's `init`'s job). If the agent
-  // has no /docguard.* commands installed yet, say how to get them.
-  if (agentMode === 'llm' && !existsSync(resolvePath(projectDir, '.agent', 'skills', 'docguard-guard'))) {
-    console.log(`  ${c.dim}💡 Install ${c.cyan}/docguard.*${c.dim} commands for your agent: ${c.cyan}docguard init${c.reset}`);
+  // Read-only nudge (never writes — that's `init`'s job). If the agent has no
+  // DocGuard command installed yet, say how to get one.
+  if (agentMode === 'llm' && !agentCommand(projectDir, surface, 'guard')) {
+    console.log(`  ${c.dim}💡 Install DocGuard's commands for your agent: ${c.cyan}docguard init${c.reset}`);
   }
 
   // ── Coverage + claim visibility (v0.29, field report #6) ──

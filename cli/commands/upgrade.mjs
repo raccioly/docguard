@@ -22,6 +22,9 @@ import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
 import { c, CURRENT_SCHEMA_VERSION, compareVersions } from '../shared.mjs';
+import { installAgentAssets, staleAgentAssets } from '../ensure-skills.mjs';
+import { readAgentSurface } from '../agent-surface.mjs';
+import { packagedExtensionVersion, readRegistryEntry, refreshSpecKitExtension } from '../spec-kit-delegation.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PKG = JSON.parse(readFileSync(resolve(__dirname, '..', '..', 'package.json'), 'utf-8'));
@@ -282,10 +285,20 @@ export async function runUpgrade(projectDir, _config, flags) {
     console.log(`         current:   v${CURRENT_SCHEMA_VERSION} ${c.dim}— run ${c.cyan}docguard init${c.dim} to create one${c.reset}`);
   }
 
+  const agentFiles = agentFilesStatus(projectDir);
+  const extensionNote = agentFiles.extensionStale
+    ? `; Spec Kit extension v${agentFiles.registered}, this CLI ships v${agentFiles.packaged}`
+    : '';
+  if (agentFiles.behind) {
+    console.log(`  ${c.cyan}Agent${c.reset}  files:     ${c.yellow}${agentFiles.stale.length} out of date${extensionNote}${c.reset}`);
+  } else {
+    console.log(`  ${c.cyan}Agent${c.reset}  files:     ${c.green}current${c.reset}`);
+  }
+
   console.log();
 
   // ── Decide what to do ───────────────────────────────────────────────────
-  const anythingBehind = cliBehind || schemaBehind;
+  const anythingBehind = cliBehind || schemaBehind || agentFiles.behind;
   if (!anythingBehind) {
     console.log(`  ${c.green}✅ Everything is up to date.${c.reset}`);
     return;
@@ -298,6 +311,9 @@ export async function runUpgrade(projectDir, _config, flags) {
   }
   if (schemaBehind) {
     console.log(`    ${c.yellow}•${c.reset} Migrate schema: ${c.cyan}docguard upgrade --apply${c.reset} ${c.dim}(or hand-edit .docguard.json)${c.reset}`);
+  }
+  if (agentFiles.behind) {
+    console.log(`    ${c.yellow}•${c.reset} Refresh agent files: ${c.cyan}docguard upgrade --apply${c.reset} ${c.dim}(or docguard init)${c.reset}`);
   }
   console.log();
 
@@ -372,14 +388,71 @@ export async function runUpgrade(projectDir, _config, flags) {
       }
     }
 
+    // Agent files come from THIS process's package. After a successful global
+    // CLI upgrade those are the old version's files, so refreshing now would
+    // install stale copies under a "refreshed" message.
+    let agentRefreshFailed = false;
+    if (agentFiles.behind) {
+      if (cliBehind && !cliUpgradeFailed) {
+        console.log(`  ${c.yellow}ℹ  Agent files were not refreshed: this process still carries v${INSTALLED_VERSION}'s copies.${c.reset}`);
+        console.log(`     Run ${c.cyan}docguard upgrade --apply${c.reset} again (or ${c.cyan}docguard init${c.reset}) with the new CLI.`);
+      } else {
+        agentRefreshFailed = !refreshAgentFiles(projectDir);
+      }
+    }
+
     // The schema migration still ran and still counts; the exit code reports the
     // CLI install that did not, so CI cannot read a partial upgrade as a full one.
+    if (agentRefreshFailed && !cliUpgradeFailed) {
+      console.error(`\n  ${c.yellow}⚠ The other upgrades completed; the Spec Kit extension refresh did not.${c.reset}`);
+      process.exit(1);
+    }
     if (cliUpgradeFailed) {
       console.error(`\n  ${c.yellow}⚠ Schema work above completed; the CLI upgrade did not.${c.reset}`);
       process.exit(1);
     }
     console.log(`\n  ${c.green}✅ Upgrade complete.${c.reset} Run ${c.cyan}docguard guard${c.reset} to verify.`);
   }
+}
+
+/**
+ * Read-only: DocGuard files installed for the project's agent that differ from
+ * this CLI's, and a registered Spec Kit extension at another version. Spec 042
+ * made `init` the only installer, so nothing else refreshes these after a CLI
+ * upgrade.
+ *
+ * @implements docguard.spec-kit-integration-honesty#FR-004
+ */
+export function agentFilesStatus(projectDir) {
+  const stale = staleAgentAssets(projectDir, readAgentSurface(projectDir));
+  const entry = readRegistryEntry(projectDir);
+  const packaged = packagedExtensionVersion();
+  const registered = typeof entry?.version === 'string' ? entry.version : null;
+  const extensionStale = Boolean(registered && packaged && registered !== packaged && entry.enabled !== false);
+  return { stale, registered, packaged, extensionStale, behind: stale.length > 0 || extensionStale };
+}
+
+/** `upgrade --apply`: the installer and extension refresh `init` uses. */
+function refreshAgentFiles(projectDir) {
+  const assets = installAgentAssets(projectDir);
+  console.log(`  ${c.green}✓ Agent files refreshed:${c.reset} ${assets.written.length} file(s) updated${assets.written.length ? ` ${c.dim}(${[assets.skillsDir, assets.commandsDir].filter(Boolean).join(', ')})${c.reset}` : ''}.`);
+  if (!readRegistryEntry(projectDir)) return true;
+  const { extension, hooks } = refreshSpecKitExtension(projectDir);
+  if (extension.status === 'refreshed') {
+    console.log(`  ${c.green}✓ DocGuard extension updated in Spec Kit${c.reset} ${c.dim}(${extension.from} → ${extension.to})${c.reset}`);
+  } else if (extension.status === 'failed' || extension.status === 'unsupported-version') {
+    console.error(`  ${c.red}✗ DocGuard extension not updated:${c.reset} ${extension.reason}`);
+    if (extension.manualCommand) console.log(`     ${c.dim}To retry by hand:${c.reset} ${c.cyan}${extension.manualCommand}${c.reset}`);
+    return false;
+  } else if (extension.status === 'not-attempted') {
+    console.log(`  ${c.yellow}⚠ DocGuard extension not updated: the specify CLI is not on PATH.${c.reset}`);
+    return false;
+  }
+  if (hooks && hooks.status !== 'active') {
+    const why = hooks.unresolved.length ? hooks.unresolved.map(h => `${h.command} (expected ${h.path})`).join(', ') : hooks.reason;
+    console.log(`  ${c.yellow}⚠ Workflow hooks are not active: ${why}${c.reset}`);
+  }
+  return true;
 }
 
 /**

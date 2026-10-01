@@ -259,12 +259,29 @@ DocGuard is a [community extension](https://github.com/github/spec-kit/blob/main
 
 ### Installing as a Spec Kit Extension
 
-`docguard init` does this for you: when the `specify` CLI (Spec Kit ≥ 0.10.0) is on your
-PATH, it initializes Spec Kit for the coding agent the repository already uses, then registers
-the DocGuard extension shipped inside the installed package, so the registered version always
-matches your CLI and nothing is downloaded. Every failure is printed with Spec Kit's own error
-and the command to run by hand. Only `init` touches Spec Kit; other commands print a one-line
-hint at most.
+`docguard init` does this for you: when the `specify` CLI (Spec Kit ≥ 0.11.2, the floor the
+extension declares) is on your PATH, it initializes Spec Kit for the coding agent the repository
+already uses, then registers the DocGuard extension shipped inside the installed package. Nothing
+is downloaded for the registration. If a project's registered extension is from another DocGuard
+release, `init` re-registers it when the versions differ (keeping its priority), and
+`docguard upgrade --apply` does the same. `init` says the workflow hooks are active only after each mandatory hook
+(`speckit.docguard.brief` before specify, `speckit.docguard.preflight` before tasks,
+`speckit.docguard.guard` after implement) resolves to a command file your agent can run; otherwise
+it names the missing one. Spec Kit registers no extension commands for its `generic` integration,
+so for `generic` DocGuard writes them next to Spec Kit's own commands (`.agent/commands/` by
+default). Every failure is printed with Spec Kit's own error and the command to run by hand. Only
+`init` and `upgrade --apply` touch Spec Kit; other commands print a one-line hint at most.
+
+DocGuard's own skills go where your agent reads them: `.claude/skills/` for Claude Code (or the
+skills directory of another skills-based integration), `.agent/` for the generic integration or
+an agent DocGuard cannot place. A commands-only integration such as Gemini gets Spec Kit's
+`speckit.docguard.*` commands and no extra copies. The command and skill files run `docguard` from
+your PATH when it is installed, and otherwise `npx --yes docguard-cli@<version>`, pinned to the
+release they shipped with; they never fetch `@latest`.
+
+Suggestions DocGuard prints (`Next: …`, `Fix: …`) name a slash command only when its file exists
+for your agent, in its form (`/speckit-docguard-guard` in Claude Code, `/speckit.docguard.guard`
+for `generic`); otherwise they print the CLI command.
 
 To register it yourself, from the catalog or a local checkout:
 
@@ -373,7 +390,8 @@ require current SHA-256 identities for every declared repository input.
 | `--force` | Overwrite existing files (creates `.bak` backups) | generate, agents, init |
 | `--force-redo` | Bypass ping-pong suppression in `.docguard/fixed.json` | fix --write |
 | `--profile <name>` | Starter / standard / enterprise | init |
-| `--no-spec-kit` | Skip auto-init of `.specify/` / `.agent/` scaffolding | init |
+| `--no-spec-kit` | Skip Spec Kit: no `specify` call and no `.specify/`; DocGuard's own agent skills still install | init |
+| `--spec-kit` | With `--profile starter`, initialize Spec Kit too (starter skips it by default) | init |
 | `--changed-only [--since <ref>]` | Pre-commit lite mode: the fast validators (including covered-doc dependencies) on changed files only | guard |
 | `--timings` | Per-validator wall-time profile (slowest first) | guard |
 | `--show-failing` | Show warnings/errors even when status is PASS | guard |

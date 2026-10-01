@@ -13,6 +13,12 @@ handoffs:
 
 Generate a requirements traceability matrix mapping canonical docs ↔ source code ↔ tests. Config-aware — respects `.docguard.json` exclusions and detects orphaned files.
 
+## Running DocGuard
+
+Run `docguard` from PATH when it is installed. Otherwise run
+`npx --yes docguard-cli@0.42.1`, the release these instructions ship with, in its
+place. Every `docguard …` command below means one of the two.
+
 ## User Input
 
 $ARGUMENTS
@@ -22,7 +28,7 @@ $ARGUMENTS
 1. Run DocGuard trace on the current project:
 
 ```bash
-npx --yes docguard-cli@latest trace $ARGUMENTS
+docguard trace $ARGUMENTS
 ```
 
 2. Review the matrix. Each canonical doc gets a coverage signal:

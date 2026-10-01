@@ -16,6 +16,12 @@ handoffs:
 
 Validate your project against its canonical documentation. Runs every enabled validator; `docguard --help` and the guard output report what ran.
 
+## Running DocGuard
+
+Run `docguard` from PATH when it is installed. Otherwise run
+`npx --yes docguard-cli@0.42.1`, the release these instructions ship with, in its
+place. Every `docguard …` command below means one of the two.
+
 ## User Input
 
 ```text
@@ -28,7 +34,7 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 1. Run DocGuard guard validation:
 ```bash
-npx --yes docguard-cli@latest guard --format json $ARGUMENTS
+docguard guard --format json $ARGUMENTS
 ```
 
 2. Parse each validator's result and build a severity-ranked findings table. Status glyphs: ✅ pass, ⚠️ warning, ❌ fail, ➖ N/A (nothing to validate — NOT a pass; the dimension was not assessed).

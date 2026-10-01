@@ -1,5 +1,6 @@
 /**
  * @req docguard.release-readiness#FR-003
+ * @req docguard.spec-kit-integration-honesty#FR-005
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -32,6 +33,8 @@ function fixture({ brokenTemplate = false } = {}) {
       '<!-- docguard:version: 0.37.0 -->', '', '# Skill', '',
     ].join('\n'));
   }
+  write(root, 'extensions/spec-kit-docguard/commands/guard.md', '# Guard\n\nOtherwise run `npx --yes docguard-cli@0.37.0`.\n');
+  write(root, 'commands/docguard.guard.md', '# Guard\n\nOtherwise run `npx --yes docguard-cli@0.37.0`.\n');
   write(root, 'README.md', 'uses: raccioly/docguard@v0.12.0\nuses: raccioly/docguard@v0.30.0\nReleased in v0.37.0.\n');
   write(root, 'docs/ai-integration.md', '- uses: raccioly/docguard@v0.12.0\n');
   write(root, 'action.yml', "    - name: Install DocGuard\n      env:\n        DOCGUARD_RELEASED_VERSION: '0.37.0'\n");
@@ -45,7 +48,10 @@ describe('release version synchronization', () => {
     try {
       const result = syncReleaseVersion(root);
       assert.equal(result.version, '9.8.7');
-      assert.equal(result.changed.length, 11);
+      // docguard.spec-kit-integration-honesty#FR-005: command files move their pin too.
+      assert.equal(result.changed.length, 13);
+      assert.ok(result.changed.includes('extensions/spec-kit-docguard/commands/guard.md'));
+      assert.ok(result.changed.includes('commands/docguard.guard.md'));
       // Copyable Action examples move; prose history in the same file does not.
       assert.equal(readFileSync(join(root, 'README.md'), 'utf8'), 'uses: raccioly/docguard@v9.8.7\nuses: raccioly/docguard@v9.8.7\nReleased in v0.37.0.\n');
       // docguard.release-readiness#FR-003: a pinned action ref installs its own CLI.

@@ -27,6 +27,7 @@ import { applyMechanicalFixes } from '../writers/mechanical.mjs';
 import { loadFixMemory } from '../writers/fix-memory.mjs';
 import { safeWrite } from '../writers/generate-io.mjs';
 import { runGuardInternal } from './guard.mjs';
+import { readAgentSurface, commandHint } from '../agent-surface.mjs';
 
 /**
  * Compatibility entry point for the former API deletion writer.
@@ -341,7 +342,7 @@ function runWriteMode(projectDir, config, flags) {
   if (skipped.length) {
     for (const s of skipped) console.log(`     ${c.yellow}⚠ ${s.type}: ${s.reason}${c.reset}`);
   }
-  console.log(`\n  ${c.dim}Verify with ${c.cyan}docguard guard${c.dim}, then commit. Prose rewrites still need an AI agent (${c.cyan}/docguard.fix${c.dim}).${c.reset}\n`);
+  console.log(`\n  ${c.dim}Verify with ${c.cyan}docguard guard${c.dim}, then commit. Prose rewrites still need an AI agent (${c.cyan}${commandHint(projectDir, readAgentSurface(projectDir), 'fix', '--doc <name>')}${c.dim}).${c.reset}\n`);
 }
 
 // ── Main Entry ─────────────────────────────────────────────────────────────

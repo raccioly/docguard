@@ -27,6 +27,7 @@ import {
   generateArchitecture, generateApiReference, generateDataModel,
   generateEnvironment, generateTestSpec, generateSecurity, generateRootFiles,
 } from '../writers/doc-generators.mjs';
+import { readAgentSurface, commandHint } from '../agent-surface.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build', 'coverage',
@@ -144,7 +145,7 @@ export function runGeneratePlan(projectDir, config, flags) {
     for (const note of plan.notes || []) {
       console.log(`  ${c.yellow}ℹ️  ${note}${c.reset}`);
     }
-    console.log(`  ${c.dim}Now run your AI agent (/docguard.fix) to write the prose sections, then ${c.cyan}docguard guard${c.dim}.${c.reset}\n`);
+    console.log(`  ${c.dim}Now have your AI agent write the prose sections (${c.cyan}${commandHint(projectDir, readAgentSurface(projectDir), 'fix', '--doc <name>')}${c.dim} gives the prompt), then ${c.cyan}docguard guard${c.dim}.${c.reset}\n`);
     return;
   }
 

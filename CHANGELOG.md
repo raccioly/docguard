@@ -34,7 +34,10 @@ Behaviour changes:
   client should reach.
 - `sync`, `fix` and `generate` no longer run `specify init`. Run `docguard init`
   or `specify init` yourself.
-- The Spec Kit extension requires Spec Kit 0.11.2 or later.
+- The Spec Kit extension requires Spec Kit 0.11.2 or later, and `docguard
+  init` no longer initializes Spec Kit with an older `specify`.
+- In a Claude Code project, `docguard init` installs DocGuard's skills into
+  `.claude/skills/` instead of `.agent/`. An existing `.agent/` is left in place.
 - The manifest key `provides.workflows` moved to `x-docguard.github_workflows`.
 - A `.docguardignore` `dir/` pattern now matches that directory at any depth,
   as in `.gitignore`. This can hide findings that fired before.
@@ -474,6 +477,47 @@ Behaviour changes:
   paraphrasing it as "ships N".
 
 ### Fixed
+
+- **`docguard init` no longer reports a Spec Kit integration that does not
+  work** (`specs/048-spec-kit-integration-honesty`, spec 048). Each defect was
+  reproduced with `specify` 1.0.13.
+  - With Spec Kit's `generic` integration (the default when no agent is
+    detected), the mandatory hooks `speckit.docguard.brief` and
+    `speckit.docguard.preflight` named commands that existed nowhere, because
+    Spec Kit registers no extension command for `generic`. `init` now writes
+    the `speckit.docguard.*` commands into the generic commands directory, and
+    says "Workflow hooks active" only after every mandatory hook in
+    `.specify/extensions.yml` resolves to a file. A missing one is named with
+    its expected path.
+  - A registered extension from an older DocGuard was reported as "already
+    registered" forever. `init` now re-registers it when the version differs
+    (keeping its priority); a disabled registration is left disabled.
+    `docguard upgrade` reports out-of-date agent files and extension, and
+    `upgrade --apply` refreshes them.
+  - The command files ran `npx --yes docguard-cli@latest`, an unpinned
+    download, and the skills ran `npx docguard-cli`. Every command and skill
+    file now runs `docguard` from PATH, and otherwise
+    `npx --yes docguard-cli@<version>` pinned to its release; the release
+    version sync moves the pin.
+  - Suggestions named commands that do not exist (`/docguard.diagnose`,
+    `/docguard.verify`, `/docguard.feedback`, `/docguard.init`). They now name a
+    slash command only when its file exists for the project's agent, in that
+    agent's form (`/speckit-docguard-guard` in Claude Code), and print the CLI
+    command otherwise. `setup` no longer offers `/speckit.constitution` only
+    when Spec Kit is missing.
+  - In a Claude Code project `init` wrote `.agent/skills/` and
+    `.agent/commands/`, which Claude Code does not read. DocGuard's skills now
+    go to `.claude/skills/` (or another skills integration's directory); `.agent/`
+    is used only for `generic` or an agent DocGuard cannot place.
+  - The summary said "Created: 12 files" and counted `.specify/` as one. It
+    now counts DocGuard's files, the agent files and the files `specify` wrote,
+    one by one.
+  - One Spec Kit floor, 0.11.2: `init` read 0.10.0 while the manifest required
+    0.11.2, so on 0.10.x–0.11.1 it initialized Spec Kit and then failed to
+    register. `init` now checks `specify --version` first.
+  - `init --help` lists `--no-spec-kit` and `--spec-kit`. The README said
+    `--no-spec-kit` skips `.agent/`; it skips Spec Kit only, and DocGuard's own
+    skills still install.
 
 - **Go, Spring and Rails routes are reported at the path they are served
   under** (`specs/047-go-spring-rails-routes`). On eight reference projects the

@@ -3,7 +3,7 @@ name: docguard-review
 description: Cross-document consistency analysis and quality assessment. Performs read-only
   analysis across all canonical docs, identifies drift, coverage gaps, and quality issues.
   Produces a structured report with severity-ranked findings. Modeled after speckit-analyze.
-compatibility: Requires DocGuard CLI installed (npm i -g docguard-cli or npx docguard-cli)
+compatibility: Requires DocGuard CLI installed (npm i -g docguard-cli, or npx --yes docguard-cli@0.42.1)
 metadata:
   author: docguard
   version: 0.42.1
@@ -12,6 +12,12 @@ metadata:
 <!-- docguard:version: 0.42.1 -->
 
 # DocGuard Review Skill
+
+## Running DocGuard
+
+Run `docguard` from PATH when it is installed. Otherwise run
+`npx --yes docguard-cli@0.42.1`, the release these instructions ship with, in its
+place. Every `docguard …` command below means one of the two.
 
 ## User Input
 
@@ -23,7 +29,7 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 ## Goal
 
-Perform a comprehensive, **read-only** analysis of the project's documentation health. Unlike `/docguard.guard` (which runs CLI validators), this skill performs **semantic analysis** — checking whether documentation actually matches the codebase, whether cross-references are consistent, and whether the documentation tells a coherent story.
+Perform a comprehensive, **read-only** analysis of the project's documentation health. Unlike the `docguard-guard` skill (which runs CLI validators), this skill performs **semantic analysis** — checking whether documentation actually matches the codebase, whether cross-references are consistent, and whether the documentation tells a coherent story.
 
 ## Operating Constraints
 
@@ -49,11 +55,11 @@ Perform a comprehensive, **read-only** analysis of the project's documentation h
 Execute DocGuard's diagnostic and scoring tools:
 
 ```bash
-npx docguard-cli diagnose 2>&1
-npx docguard-cli score 2>&1
-npx docguard-cli guard --format json
-npx docguard-cli verify --evidence --format json
-npx docguard-cli verify --semantic --format json
+docguard diagnose 2>&1
+docguard score 2>&1
+docguard guard --format json
+docguard verify --evidence --format json
+docguard verify --semantic --format json
 ```
 
 Record:
@@ -191,10 +197,10 @@ Output a structured markdown report (do NOT write to disk):
 ### Step 7: Offer Next Actions
 
 Based on findings:
-- **If CRITICAL issues**: "Run `/docguard.fix --doc [name]` to resolve blocking issues"
+- **If CRITICAL issues**: "Run the `docguard-fix` skill with `--doc [name]` to resolve blocking issues"
 - **If spec-related gaps**: "Run `/speckit.specify` to update specifications" or "/speckit.clarify to resolve ambiguities"
 - **If architecture drift**: "Run `/speckit.plan` to realign implementation plan with codebase"
-- **If only LOW/MEDIUM**: "Documentation is healthy. Consider `/docguard.fix` for polish"
+- **If only LOW/MEDIUM**: "Documentation is healthy. Consider the `docguard-fix` skill for polish"
 - **If constitution missing**: "Run `/speckit.constitution` to establish project principles"
 - **If all clean**: "Documentation is excellent. No action needed."
 

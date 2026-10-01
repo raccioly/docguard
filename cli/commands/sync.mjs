@@ -26,6 +26,7 @@ import { safeWrite } from '../writers/generate-io.mjs';
 import { hasGeneratedMarker } from '../writers/api-reference.mjs';
 import { runSyncTests } from './sync-tests.mjs';
 import { sectionTouchedByChanges } from '../shared-sync-scope.mjs';
+import { readAgentSurface, commandHint } from '../agent-surface.mjs';
 
 function gitChangedFiles(projectDir, since) {
   const run = (args) => {
@@ -165,7 +166,7 @@ export function runSync(projectDir, config, flags) {
     if (reviews.length > 0) {
       console.log(`\n  ${c.bold}🤖 Prose to review (${reviews.length}) — code changed near these sections:${c.reset}`);
       for (const r of reviews) console.log(`     ${c.dim}• ${r.doc} → ${r.section}${c.reset}`);
-      console.log(`  ${c.dim}Run your AI agent (/docguard.fix) to refresh the prose, then ${c.cyan}docguard guard${c.dim}.${c.reset}`);
+      console.log(`  ${c.dim}Refresh the prose with your AI agent (${c.cyan}${commandHint(projectDir, readAgentSurface(projectDir), 'fix', '--doc <name>')}${c.dim}), then ${c.cyan}docguard guard${c.dim}.${c.reset}`);
     }
     if (!apply) console.log(`\n  ${c.dim}Apply mechanical refreshes: ${c.cyan}docguard sync --write${c.reset}`);
     console.log('');

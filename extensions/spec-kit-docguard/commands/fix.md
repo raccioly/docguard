@@ -13,6 +13,12 @@ DocGuard splits drift into two kinds and is explicit about which is which.
 - **Agent** (needs judgment): content rewrites — e.g. updating an X-Ray section to
   CloudWatch, writing a new endpoint's request/response block.
 
+## Running DocGuard
+
+Run `docguard` from PATH when it is installed. Otherwise run
+`npx --yes docguard-cli@0.42.1`, the release these instructions ship with, in its
+place. Every `docguard …` command below means one of the two.
+
 ## User Input
 
 ```text
@@ -26,7 +32,7 @@ You **MUST** consider the user input before proceeding (if not empty).
 ### Step 1 — Apply mechanical fixes (fast, safe, no AI)
 
 ```bash
-npx --yes docguard-cli@latest fix --write
+docguard fix --write
 ```
 
 Output lists every applied fix. Idempotent: re-running is a no-op if nothing changed.
@@ -37,7 +43,7 @@ ownership.
 ### Step 2 — Identify remaining issues by kind
 
 ```bash
-npx --yes docguard-cli@latest diagnose --format json
+docguard diagnose --format json
 ```
 
 Each issue is tagged `fixKind: mechanical` (mostly handled by step 1) or
@@ -48,12 +54,12 @@ Each issue is tagged `fixKind: mechanical` (mostly handled by step 1) or
 For each affected canonical doc, get a research-grounded prompt:
 
 ```bash
-npx --yes docguard-cli@latest fix --doc architecture
-npx --yes docguard-cli@latest fix --doc data-model
-npx --yes docguard-cli@latest fix --doc api-reference
-npx --yes docguard-cli@latest fix --doc security
-npx --yes docguard-cli@latest fix --doc test-spec
-npx --yes docguard-cli@latest fix --doc environment
+docguard fix --doc architecture
+docguard fix --doc data-model
+docguard fix --doc api-reference
+docguard fix --doc security
+docguard fix --doc test-spec
+docguard fix --doc environment
 ```
 
 Execute the research steps in each prompt: read actual code files, map modules,
@@ -63,7 +69,7 @@ sections — using real file paths, real module names, real dependencies. No pla
 ### Step 4 — Verify
 
 ```bash
-npx --yes docguard-cli@latest guard
+docguard guard
 ```
 
 Iterate until clean (max 3 rounds; if still failing, report remaining issues).

@@ -23,13 +23,19 @@ receive a full document. Existing human documents receive only bounded updates
 inside unique `source=code` sections. Shared roles and malformed markers fail
 before any mapped document is written, even with `--force`.
 
+## Running DocGuard
+
+Run `docguard` from PATH when it is installed. Otherwise run
+`npx --yes docguard-cli@0.42.1`, the release these instructions ship with, in its
+place. Every `docguard …` command below means one of the two.
+
 ## As-built specs for code that has none
 
 `--spec <area>` reverse-engineers a **Spec Kit spec** for one directory of existing code:
 
 ```bash
-npx --yes docguard-cli@latest generate --spec src/billing            # preview the candidates
-npx --yes docguard-cli@latest generate --spec src/billing --write    # create specs/NNN-as-built-src-billing/spec.md
+docguard generate --spec src/billing            # preview the candidates
+docguard generate --spec src/billing --write    # create specs/NNN-as-built-src-billing/spec.md
 ```
 
 - DocGuard proposes one `FR-NNN` candidate per fact it can establish without an LLM: routes,
@@ -53,25 +59,25 @@ $ARGUMENTS
 1. **Preview the plan** — what code-truth facts were captured + what the agent will write:
 
 ```bash
-npx --yes docguard-cli@latest generate --plan $ARGUMENTS
+docguard generate --plan $ARGUMENTS
 ```
 
 2. **Scaffold the skeleton docs** (marked sections filled with code-truth, prose sections as agent-task placeholders):
 
 ```bash
-npx --yes docguard-cli@latest generate --plan --write $ARGUMENTS
+docguard generate --plan --write $ARGUMENTS
 ```
 
 3. **Or get the machine-readable manifest** to drive an agent:
 
 ```bash
-npx --yes docguard-cli@latest generate --plan --format json $ARGUMENTS
+docguard generate --plan --format json $ARGUMENTS
 ```
 
 4. **Fallback** (no AI, deterministic generation):
 
 ```bash
-npx --yes docguard-cli@latest generate $ARGUMENTS
+docguard generate $ARGUMENTS
 ```
 
 2. Review the generated docs in `docs-canonical/`. Each document includes:

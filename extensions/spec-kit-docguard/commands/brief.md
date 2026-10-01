@@ -9,12 +9,18 @@ Read the committed spec lifecycle registry before creating a new specification.
 This command is a deterministic history gate. It does not decide whether two
 features are semantically equivalent.
 
+## Running DocGuard
+
+Run `docguard` from PATH when it is installed. Otherwise run
+`npx --yes docguard-cli@0.42.1`, the release these instructions ship with, in its
+place. Every `docguard …` command below means one of the two.
+
 ## Execution
 
 1. Run the read-only briefing:
 
 ```bash
-npx --yes docguard-cli@latest specs preflight --format json
+docguard specs preflight --format json
 ```
 
 2. If the result is `BLOCKED`, stop specification work. Report every blocker and

@@ -3,7 +3,7 @@ name: docguard-fix
 description: AI-driven documentation repair with structured research workflow, template-aware
   generation, and quality validation loops. Generates or fixes canonical documentation
   by researching the actual codebase, not using placeholders. Iterates until guard passes.
-compatibility: Requires DocGuard CLI installed (npm i -g docguard-cli or npx docguard-cli)
+compatibility: Requires DocGuard CLI installed (npm i -g docguard-cli, or npx --yes docguard-cli@0.42.1)
 metadata:
   author: docguard
   version: 0.42.1
@@ -12,6 +12,12 @@ metadata:
 <!-- docguard:version: 0.42.1 -->
 
 # DocGuard Fix Skill
+
+## Running DocGuard
+
+Run `docguard` from PATH when it is installed. Otherwise run
+`npx --yes docguard-cli@0.42.1`, the release these instructions ship with, in its
+place. Every `docguard …` command below means one of the two.
 
 ## User Input
 
@@ -48,7 +54,7 @@ Also read `parserTier`: a finding produced by `regex-fallback` or `fallback-lang
 ### Step 0: Apply Mechanical Fixes First (no AI needed)
 
 ```bash
-npx docguard-cli fix --write 2>&1
+docguard fix --write 2>&1
 ```
 
 Removes endpoints documented in `docs-canonical/API-REFERENCE.md` that the OpenAPI
@@ -62,7 +68,7 @@ idempotent and prints what changed. Don't hand-edit generated sections.
 Run the diagnostic to identify all issues (each tagged `mechanical` or `agent`):
 
 ```bash
-npx docguard-cli diagnose 2>&1
+docguard diagnose 2>&1
 ```
 
 Parse the output to build an issue inventory:
@@ -181,7 +187,7 @@ After writing/fixing each document:
 
 1. **Run guard on the specific validator**:
    ```bash
-   npx docguard-cli guard 2>&1
+   docguard guard 2>&1
    ```
 
 2. **Parse results** for the affected validators
@@ -214,7 +220,7 @@ After all fixes are applied, output:
 - [Issue description] — [Why it couldn't be auto-fixed]
 
 ### Suggested Next Steps
-- Run `/docguard.guard` to verify full compliance
+- Run the `docguard-guard` skill to verify full compliance
 - Review generated content for accuracy
 - Commit with: `docs: fix CDD documentation [list of docs fixed]`
 ```
