@@ -641,7 +641,7 @@ client retries on any 5xx; see ADR-007 for the rejected alternative.   <span cla
           <circle cx="443" cy="60" r="4" fill="#d97757"/><text class="s-lbl" x="480" y="98" style="fill:#b85636">v0.29 · Jul 3</text><text class="s-sub" x="480" y="109">report #6: a wrong “16 extractors”</text><text class="s-sub" x="480" y="119">shipped past a green guard</text>
           <circle cx="722" cy="60" r="4" fill="#d97757"/><text class="s-lbl" x="620" y="98" style="fill:#b85636">Sep 17–22</text><text class="s-sub" x="620" y="109">reports 0415 / 0420; and the</text><text class="s-sub" x="620" y="119">tool's own README (below)</text>
         </g>
-        <text class="s-tiny" x="30" y="143">195 test files · 2,085 tests at v0.42.0 → 233 test files · 2,909 tests at v0.43.0 · Node 18 / 20 / 22 / 24 on every push</text>
+        <text class="s-tiny" x="30" y="143">195 test files · 2,085 tests at v0.42.0 → 234 test files · 2,918 tests at v0.43.0 · Node 18 / 20 / 22 / 24 on every push</text>
       </svg>
       <p class="figcap">Fig. 6 — Blue above the line: capability. Clay below: something real broke, and became a test.</p>
     </figure>
@@ -692,14 +692,14 @@ It carries <span class="bad">no mechanical fix</span>: writing the floor would r
     <h2>From checking the map to governing how it changes</h2>
     <p class="lede">Through 0.42, DocGuard asked one question: <em>does the documentation still match the code?</em>
     Version 0.43 adds the questions around it — which section a change should have touched, whether a feature went
-    through its spec first, what an agent needs to read, and whether the tool got slower or noisier. Thirty-seven specs (014–050) were written, planned and tasked before
+    through its spec first, what an agent needs to read, and whether the tool got slower or noisier. Thirty-eight specs (014–051) were written, planned and tasked before
     their code; thirty-four carry TestGuard claims probed with planted faults (044 and 048 after this release).</p>
 
     <div class="statband four">
-      <div><div class="fig indigo">37</div><div class="cap">specs delivered through the Spec Kit pipeline since 0.42</div><div class="src">specs/014 – specs/050</div></div>
+      <div><div class="fig indigo">38</div><div class="cap">specs delivered through the Spec Kit pipeline since 0.42</div><div class="src">specs/014 – specs/051</div></div>
       <div><div class="fig sage">55%</div><div class="cap">smaller MCP guard response: each fact once, nothing lost</div><div class="src">spec 037 · budget fixture</div></div>
       <div><div class="fig sage">10%</div><div class="cap">growth in agent-facing bytes or package size before a PR must state a reason (guard time: 15%)</div><div class="src">spec 031 · every PR</div></div>
-      <div><div class="fig indigo">2,909</div><div class="cap">tests on Node 18, 20, 22 and 24 at v0.43.0</div><div class="src">npm test</div></div>
+      <div><div class="fig indigo">2,918</div><div class="cap">tests on Node 18, 20, 22 and 24 at v0.43.0</div><div class="src">npm test</div></div>
     </div>
   </section>
 
@@ -733,7 +733,7 @@ It carries <span class="bad">no mechanical fix</span>: writing the floor would r
 
   <div class="pull">
     <p>Every feature in this release started as a written spec, and nearly every one ended as a probed claim.</p>
-    <div class="attrib">specs/014 – specs/050 · testguard.claims.json</div>
+    <div class="attrib">specs/014 – specs/051 · testguard.claims.json</div>
   </div>
 
   <div class="footer"><span>DocGuard — Technical Brief</span><span>Page 8 of 9 · What 0.43 adds</span></div>

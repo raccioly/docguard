@@ -7823,11 +7823,11 @@
           },
           {
             "path": "specs/051-release-cut-green/tasks.md",
-            "digest": "sha256:8821b42ccb23d539870452816472adda02626451d5fc6b2a1b402ae1e129d8e6"
+            "digest": "sha256:49455a633672a205be2555bb7ec490278b22bb14d3f4743d3b026e7c632f4881"
           }
         ],
         "taskCompletion": {
-          "checked": 5,
+          "checked": 8,
           "total": 8
         },
         "implementationEvidence": [
