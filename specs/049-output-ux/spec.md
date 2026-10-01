@@ -197,6 +197,8 @@ A user follows GST002's advice, and every suggestion they are given works.
 - **FR-008**: Doc Sections MUST report under key `docSections`. A config's
   `validators.structure: false`, `severity.structure` and a `structure` N/A
   marker MUST keep applying to it unless the config sets `docSections`.
+  `score --diff` MUST show both validators' messages under its structure
+  category.
 - **FR-009**: Default ownership roots MUST include source files directly in
   the parent directory of a detected module. `--suggest` MUST cover them and
   MUST assign paths only to existing documents (falling back to
