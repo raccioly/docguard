@@ -20,6 +20,7 @@ import { detectDocTools } from '../scanners/doc-tools.mjs';
 import { scanRoutesDeep } from '../scanners/routes.mjs';
 import { scanSchemasDeep } from '../scanners/schemas.mjs';
 import { buildMemoryPlan } from '../scanners/memory-plan.mjs';
+import { detectProjectProfile } from '../scanners/project-type.mjs';
 import { assertOwnedCodeSection, replaceSection, upsertSection } from '../writers/sections.mjs';
 import { safeWrite, registerGeneratedCanonicalDocs, surfaceConfidence } from '../writers/generate-io.mjs';
 import {
@@ -93,7 +94,10 @@ export function runGeneratePlan(projectDir, config, flags) {
         modules: plan.surface.modules.length,
         tests: { files: plan.surface.tests.totalFiles, cases: plan.surface.tests.totalCases },
         envVars: plan.surface.envVars.length,
-        confidence: surfaceConfidence(plan.profile.kind),
+        // Pattern-tier facts lower confidence whatever the kind
+        // (docguard.python-extraction#FR-012).
+        confidence: plan.surface.parserTiers?.degraded ? 'low' : surfaceConfidence(plan.profile.kind),
+        parserTiers: plan.surface.parserTiers,
       },
       docs: plan.docs.map(d => ({
         path: d.path,
@@ -151,6 +155,11 @@ export function runGeneratePlan(projectDir, config, flags) {
   console.log(`${c.bold}🔮 DocGuard Generate Plan — ${config.projectName}${c.reset}`);
   console.log(`${c.dim}   ${plan.profile.polyglot ? 'Polyglot' : 'Single-language'}: ${plan.profile.languages.join(', ')} | frameworks: ${plan.profile.frameworks.join(', ') || '—'} | kind: ${plan.profile.kind}${c.reset}\n`);
   console.log(`  ${c.bold}Code-truth surface:${c.reset} ${plan.surface.modules.length} modules · ${plan.surface.tests.totalFiles} test files (${plan.surface.tests.totalCases} cases) · ${plan.surface.endpoints.length} endpoints · ${plan.surface.entities.length} entities · ${plan.surface.screens.length} screens · ${plan.surface.envVars.length} env vars\n`);
+  const tiers = plan.surface.parserTiers;
+  if (tiers && (tiers.endpoints.tier !== 'not-applicable' || tiers.entities.tier !== 'not-applicable')) {
+    const color = tiers.degraded ? c.yellow : c.dim;
+    console.log(`  ${color}Parser tier: endpoints ${tiers.endpoints.tier} · entities ${tiers.entities.tier}${tiers.degraded ? ' (low confidence)' : ''}${c.reset}\n`);
+  }
   const webSurface = plan.surface.endpoints.length + plan.surface.entities.length + plan.surface.screens.length + plan.surface.components.length;
   if (surfaceConfidence(plan.profile.kind) === 'low' && webSurface > 0) {
     console.log(`  ${c.yellow}⚠️  Low-confidence surface:${c.reset} ${c.dim}this looks like a ${plan.profile.kind} (not a web app), so the HTTP/SDK/route surface above may be pattern-matches in your OWN source — not real usage. Verify before documenting; pin any corrected code section with ${c.cyan}pinned="reason"${c.dim}.${c.reset}\n`);
@@ -377,7 +386,12 @@ function detectStack(dir) {
   // Check for Python
   if (existsSync(resolve(dir, 'requirements.txt')) || existsSync(resolve(dir, 'pyproject.toml'))) {
     stack.language = 'Python';
-    if (existsSync(resolve(dir, 'manage.py'))) stack.framework = 'Django';
+    // The framework comes from the same detector as init and generate --plan
+    // (docguard.python-extraction#FR-010), so an app under app/main.py is
+    // still scanned for routes.
+    const eco = detectProjectProfile(dir).ecosystems.find(e => e.language === 'Python' && e.framework);
+    if (eco) stack.framework = eco.framework;
+    else if (existsSync(resolve(dir, 'manage.py'))) stack.framework = 'Django';
     else if (existsSync(resolve(dir, 'app.py')) || existsSync(resolve(dir, 'main.py'))) stack.framework = 'FastAPI/Flask';
   }
 

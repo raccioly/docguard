@@ -40,6 +40,7 @@ It targets development teams and AI coding agents that need to maintain document
 | **Spec lifecycle registry** | Projects immutable spec identities, reviewed lifecycle/lineage/scope, artifact digests, task state, qualified implementation/test evidence, bounded outcomes, and recovery tombstones into one byte-stable control file | `cli/scanners/spec-registry.mjs`, `cli/scanners/requirement-evidence.mjs`, `cli/scanners/revision-anchor.mjs`, `cli/validators/spec-registry.mjs`, `cli/commands/specs.mjs` | `specs --write` preserves reviewed fields; stale checks identify bounded field paths and distinguish canonical ordering from changed content; only committed, clean, digest-current lifecycle entries can defer traceability, while a current planned entry that is new, removed from the index, or modified pending commit remains advisory; `specs complete` is the only verified-delivery writer |
 | **Reconciliation graph** | Inventories changed paths independently from bounded patch text, maps them to direct spec evidence or to a requirement declared in a canonical document (`docs-canonical/<doc>.md#<ID>`), and keeps mechanical facts, approved intent, decisions, unrelated changes, and unsupported evidence separate | `cli/shared-git.mjs`, `cli/scanners/reconciliation.mjs`, `cli/commands/reconcile.mjs` | Timeout, overflow, parse failure, or incomplete inventory blocks a ready result; planning is read-only and `--write` never rewrites requirements |
 | **Analyzer tier** | Decides which analyzer produced each piece of evidence at the two entry points (`parseJsTs`, `extractPythonFiles`), carries `tier`/`tierReason` on scanned items, reports `parserTier` on every finding, and downgrades a validator to `partial` when an AST-capable language was read by the pattern fallback (`regex-fallback`) or when a language with no AST tier was read by pattern (`fallback-language`: Go, Java, Kotlin, Ruby, Rust, PHP, C#). The Environment validator is `partial` when a source language has no env patterns. The symbol map and module graph name the languages the import graph does not read | `cli/shared-source.mjs` (`tierFor`, `summarizeTiers`, `tierApplicability`, `grepEnvUsage`, `LANGUAGE_NAMES`), `cli/scanners/routes.mjs`, `cli/validators/api-surface.mjs`, `cli/validators/environment.mjs` | Findings are retained; only coverage is downgraded. The two tiers give different reasons: a parser was unavailable, or none exists. A package segment (`src/main/java/com/example`) is product code, not an examples directory (specs/043-fallback-language-coverage) |
+| **Python web extraction** | One module outline per Python file, from the `python3` AST tier or the pattern tier when no interpreter is available; the resolvers compose FastAPI/Flask router prefixes across modules, follow Django URL configurations from `ROOT_URLCONF` (including DRF router registrations), classify ORM models (SQLAlchemy, Django, SQLModel) with relationship cardinality, and read `BaseSettings` environment variables | `cli/scanners/py-outline.mjs`, `cli/scanners/py-sources.mjs`, `cli/scanners/python-routes.mjs`, `cli/scanners/python-models.mjs`, `cli/scanners/py-env.mjs`, `cli/scanners/py-ast.mjs` | Both tiers share the resolvers, so they differ only in what they can read; pattern-tier facts keep `parserTier: regex-fallback`, lower `generate` confidence and mark their sections partial. Unresolved prefixes and includes are flagged, never guessed. Schema-Sync reads the same model scanner as `generate` |
 | **Spec Kit artifact coverage** | Treats Spec Kit's own documents as governed. Coverage counts top-level `specs/<feature>/**/*.md` and the constitution under a `specKit` tier. Metrics-Consistency (including `MET004` dependency claims) and Reference-Existence read the constitution | `cli/scanners/speckit.mjs` (`findConstitution`), `cli/commands/guard.mjs`, `cli/validators/metrics-consistency.mjs`, `cli/validators/reference-existence.mjs` | The constitution usually lives in a dot directory the walkers skip, so it is located explicitly. Nested fixture `specs/` trees are not the project's artifacts |
 | **Headline coverage** | Reports how many validators actually checked beside the passed/total check count, and caps the badge colour at `green` when any active validator was partial, unsupported, missing a prerequisite, or errored | `cli/commands/guard.mjs` (`badgeColor`, `incompleteCoverage`) | `no-matches` keeps the top grade: a validator that ran and found nothing applicable completed its job |
 | **Finding channels** | Separates the three questions a finding answers — does CI block (`severity`), who decides (`disposition`), how well is the code measured (`evidence`), and which analyzer produced it (`parserTier`) — so a certain observation is never labelled uncertain and the feedback loop samples the labels that have never been validated | `cli/findings.mjs`, `cli/precision-evidence.mjs`, `cli/writers/sarif.mjs` | Channels are additive to the published finding contract; `confidence` keeps its meaning as the detector's certainty in its own observation |
@@ -115,7 +116,7 @@ The architecture separates command orchestration, validation, extraction, output
 | **Scanners** (`cli/scanners/`) | Project intelligence — detect routes, schemas, IaC, frontend surface | Shared utilities, the pure parsers in `writers/sections.mjs` and `writers/spec-outcomes.mjs`, Node.js built-ins | Validators, Commands, and any writer that touches the file system |
 | **Writers** (`cli/writers/`) | Mutate canonical docs surgically (section-addressable, no LLM) | Shared helpers, Scanners for generated content, Node.js built-ins | Cannot import from Commands or Validators |
 | **Shared** (`cli/shared-*.mjs`) | Cross-cutting utilities: ignore/glob filters, source-root resolution, static Worker/Pages binding scopes, git helpers, shared trace patterns | Node.js built-ins plus optional direct parser loading where documented | Cannot import from Validators, Commands, or Writers |
-| **Config** (`cli/config.mjs`) | `loadConfig` + defaults/profile merge + project-type detection | Shared utilities, Node.js built-ins | Cannot import from Commands (extracted so `demo`→`docguard` is no longer a cycle) |
+| **Config** (`cli/config.mjs`) | `loadConfig` + defaults/profile merge + project-type detection, which maps the ecosystem profile from `scanners/project-type.mjs` (the detector `init` and `generate` use) | Shared utilities, the project-type scanner, Node.js built-ins | Cannot import from Commands (extracted so `demo`→`docguard` is no longer a cycle) |
 | **Entry Point** (`cli/docguard.mjs`) | ANSI colors, argument parsing, command dispatch, banner/help | Commands, Config (`loadConfig`) | Calls validators only through commands |
 
 ### Key rule
@@ -1096,7 +1097,13 @@ What must be visible:
 - **`python3` (optional).** It provides AST-accurate Python analysis. Without it, the regex
   tier runs, and each affected validator reports the degraded parser tier. A doc section that
   covers a Python symbol cannot be compared, so the doc-dependency check reports `partial`, and
-  the generated module graph marks itself partial instead of drawing Python edges it cannot see.
+  the generated module graph says the interpreter was unavailable instead of drawing Python
+  edges it cannot see. `generate --plan` names the parser tier of its endpoints and entities,
+  reports `low` confidence with a note, and marks those sections partial; `generate --spec`
+  reports the tier and `low` confidence; SPR007 findings on routes and entities carry
+  `parserTier: regex-fallback` and `low` confidence. The pattern tier still composes router
+  prefixes and Django URL configurations the same way, so on standard layouts it reports the
+  same facts.
 - **The `specify` CLI (optional).** It is only needed for `docguard init` to set up Spec Kit.
 
 ## Revision History
@@ -1679,6 +1686,9 @@ non-zero exit as failure. Most likely triggers:
 - **ENV003 on Go, Java, Kotlin, Ruby, Rust, PHP and C# projects:** env reads in
   those languages (and Spring `${X}` placeholders) are now found, so an
   undocumented variable is reported where it was invisible before.
+- **SCH002 and ENV findings on Python projects:** SQLAlchemy models and
+  pydantic `BaseSettings` fields are now read, so ones the docs do not
+  mention yet are reported.
 
 Behaviour changes:
 
@@ -2051,11 +2061,8 @@ Behaviour changes:
     rendered from the published npm tarball, verified against npm's
     `dist.integrity`, and pushed to `raccioly/homebrew-tap` with a deploy key
     scoped to that repository. The tap had been hand-maintained and stopped at
-    0.40.0. It needs a one-time `HOMEBREW_TAP_DEPLOY_KEY` secret; until then
-    the job warns and skips.
-  - The top-level `--help` names `generate --spec` and `specs
 
-<!-- truncated: 4425 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 4463 more lines — read CHANGELOG.md directly -->
 
 ---
 
