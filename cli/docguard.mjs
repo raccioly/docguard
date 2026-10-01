@@ -292,13 +292,16 @@ const COMMAND_HELP = {
     examples: ['docguard trace', 'docguard trace --reverse'],
   },
   upgrade: {
-    summary: 'Migrate .docguard.json schema + CLI.',
-    usage: 'docguard upgrade [--apply] [--pr]',
+    // docguard.output-ux#FR-006: two jobs, both named.
+    summary: 'Check npm for a newer DocGuard release and the project\'s .docguard.json schema; --apply installs the release globally (npm install -g) and migrates the schema.',
+    usage: 'docguard upgrade [--check-only] [--apply [--schema-only] [--pr]]',
     flags: [
-      ['--apply', 'Write the migration (default is a preview)'],
-      ['--pr', 'Open a team-wide PR with the migration'],
+      ['--apply', 'Act on what is behind: npm install -g docguard-cli@latest when npm has a newer release, and migrate .docguard.json (default is a report)'],
+      ['--schema-only', 'Migrate .docguard.json only: no npm check, no install'],
+      ['--check-only', 'Report, and exit 1 when the CLI or the schema is behind (CI)'],
+      ['--pr', 'With --apply: open a team-wide PR with the schema migration'],
     ],
-    examples: ['docguard upgrade', 'docguard upgrade --apply'],
+    examples: ['docguard upgrade', 'docguard upgrade --apply --schema-only', 'docguard upgrade --apply'],
   },
   ci: {
     summary: 'Generate CI / pipeline config.',
@@ -526,6 +529,8 @@ async function main() {
       flags.checkOnly = true;
     } else if (args[i] === '--apply') {
       flags.apply = true;
+    } else if (args[i] === '--schema-only') {
+      flags.schemaOnly = true;
     } else if (args[i] === '--changed-only') {
       flags.changedOnly = true;
     } else if (args[i] === '--reverse') {
@@ -682,9 +687,11 @@ async function main() {
     } else if (args[i] === '--accept' && args[i + 1] && command === 'review') {
       flags.accept = args[i + 1];
       i++;
-    } else if (args[i] === '--suggest' && args[i + 1] && command === 'review') {
-      flags.suggest = args[i + 1];
-      i++;
+    } else if (args[i] === '--suggest' && command === 'review') {
+      // docguard.output-ux#FR-012: `--suggest` with no document is a usage
+      // error, not a silent fall-through to the status view.
+      if (args[i + 1] && !args[i + 1].startsWith('--')) { flags.suggest = args[i + 1]; i++; }
+      else flags.suggest = true;
     } else if (args[i] === '--prune' && command === 'review') {
       flags.prune = true;
     } else if (args[i] === '--from' && args[i + 1] && command === 'specs') {
@@ -794,7 +801,9 @@ async function main() {
   // byte corrupts the JSON the hook runner parses.
   // `report`: stdout IS the evidence artifact (markdown or JSON) — banner
   // bytes would corrupt it for redirection/piping in both formats.
-  const headless = jsonMode || flags.write || flags.checkOnly || flags.changedOnly || flags.quiet || flags.plan || command === 'agent' || command === 'mcp' || command === 'nudge-hook' || command === 'report';
+  // `--stdout` (memory --pack, llms): stdout IS the artifact, so no banner
+  // (docguard.output-ux#FR-001).
+  const headless = jsonMode || flags.stdout || flags.write || flags.checkOnly || flags.changedOnly || flags.quiet || flags.plan || command === 'agent' || command === 'mcp' || command === 'nudge-hook' || command === 'report';
 
   if (!headless) printBanner();
 

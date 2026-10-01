@@ -24,6 +24,7 @@ import { detectProjectProfile } from '../scanners/project-type.mjs';
 import { ensureSkills, detectAgentMode, isSpecKitInitialized } from '../ensure-skills.mjs';
 import { delegateSpecKitInit, MIN_SPEC_KIT_VERSION } from '../spec-kit-delegation.mjs';
 import { safeWrite } from '../writers/generate-io.mjs';
+import { buildMemoryPlan } from '../scanners/memory-plan.mjs';
 
 // v0.20: scaffolder names that can be passed via `init --with <name>` and
 // dispatched to their writers. CI scaffolding is distinct from the standalone
@@ -193,6 +194,68 @@ async function confirmCanonicalLocation(projectDir, flags) {
 
 // ── Init Command ─────────────────────────────────────────────────────────
 
+
+/**
+ * The `.docguard.json` init writes: one shape for the skeleton path and the
+ * smart path, so both record the same facts.
+ * @implements docguard.output-ux#FR-007
+ */
+function buildInitConfig({ projectDir, config, profileName, profile, detectedType, canonical, adoptedOrConfiguredRoles = {} }) {
+  // Shared with runtime config loading, so a type means the same thing wherever
+  // it is decided. Only the four documented booleans are written.
+  const shared = getProjectTypeDefaults(detectedType);
+  const ptc = {
+    needsEnvVars: shared.needsEnvVars,
+    needsEnvExample: shared.needsEnvExample,
+    // A detected suite outranks the type default, which is only a guess.
+    needsE2E: shared.needsE2E || hasE2ESuite(projectDir),
+    needsDatabase: shared.needsDatabase,
+  };
+
+  const defaultConfig = {
+    // v0.15-P4: $schema reference enables VS Code / IDE autocomplete +
+    // validation for .docguard.json fields. Picked up by any
+    // JSON-Schema-aware editor; ignored by DocGuard itself.
+    $schema: 'https://raccioly.github.io/docguard/schemas/docguard-config.schema.json',
+    projectName: config.projectName,
+    version: CURRENT_SCHEMA_VERSION, // single source of truth (shared.mjs) — never hardcode
+    profile: profileName,
+    projectType: detectedType,
+    projectTypeConfig: ptc,
+    // Present only for a mapped layout; a default layout needs no docs.roles.
+    ...(Object.keys(adoptedOrConfiguredRoles).length
+      ? { docs: { ...(config.docs || {}), roles: { ...adoptedOrConfiguredRoles } } }
+      : {}),
+    // Mapped documents are canonical too: list them beside the scaffolded ones,
+    // or adoption silently drops them from every check.
+    requiredFiles: {
+      canonical: [...canonical, ...Object.values(adoptedOrConfiguredRoles)].sort(),
+    },
+    validators: profile.validators || {
+      structure: true,
+      docsSync: true,
+      drift: true,
+      changelog: true,
+      architecture: false,
+      testSpec: true,
+      security: false,
+      environment: true,
+      freshness: true,
+    },
+    // Per-validator severity overrides (v0.5+).
+    //   'high':   warnings from this validator fail CI (exit 1)
+    //   'medium': default — warnings exit 2 (informational)
+    //   'low':    warnings ignored for exit code (exit 0)
+    // Empty by default — every validator uses 'medium'. Add entries to dial
+    // strictness up (CI-critical checks) or down (experimental validators).
+    severity: {},
+    // Exact stable-code overrides. Use this when one rule needs a different
+    // policy without weakening or escalating every finding in its validator.
+    findingSeverity: {},
+  };
+
+  return defaultConfig;
+}
 
 /**
  * v0.21 — Smart first-run detection.
@@ -371,6 +434,23 @@ export async function runInit(projectDir, configArg, flags) {
     console.log(`${c.dim}   (Opt out: ${c.cyan}docguard init --skeleton${c.dim} for the blank-template path.)${c.reset}\n`);
     const { runGenerate } = await import('./generate.mjs');
     const result = await runGenerate(projectDir, config, { ...flags, plan: true });
+    // docguard.output-ux#FR-007: the plan is a preview, but the project is now
+    // adopted. Without a config every later command said "run docguard init"
+    // and guard exited 3 for a project that had just run it.
+    const smartConfigPath = resolve(projectDir, '.docguard.json');
+    if (!existsSync(smartConfigPath)) {
+      const plan = buildMemoryPlan(projectDir, config);
+      const canonical = plan.docs.map(d => d.path).filter(p => p.startsWith('docs-canonical/'));
+      const detectedType = autoDetectProjectType(projectDir);
+      const inferred = buildInitConfig({
+        projectDir, config, profileName: 'standard', profile: PROFILES.standard, detectedType, canonical,
+        adoptedOrConfiguredRoles: { ...(config.docs?.roles || {}) },
+      });
+      writeFileSync(smartConfigPath, JSON.stringify(inferred, null, 2) + '\n', 'utf-8');
+      console.log(`  ${c.green}✅${c.reset} Created: ${c.cyan}.docguard.json${c.reset} ${c.dim}(profile: standard, type: ${detectedType}, ${canonical.length} canonical doc(s) from the plan)${c.reset}\n`);
+    } else {
+      console.log(`  ${c.yellow}⏭️${c.reset}  .docguard.json ${c.dim}(already exists)${c.reset}\n`);
+    }
     // Smart init still honors explicit workflow/scaffolder requests after the
     // plan, with the same ordering and stop-on-failure semantics as skeletons.
     if (Array.isArray(flags.with) && flags.with.length > 0) {
@@ -502,59 +582,10 @@ export async function runInit(projectDir, configArg, flags) {
   // ── Create .docguard.json ──────────────────────────────────────────────
   const configPath = resolve(projectDir, '.docguard.json');
   if (!existsSync(configPath)) {
-    // Shared with runtime config loading, so a type means the same thing wherever
-    // it is decided. Only the four documented booleans are written.
-    const shared = getProjectTypeDefaults(detectedType);
-    const ptc = {
-      needsEnvVars: shared.needsEnvVars,
-      needsEnvExample: shared.needsEnvExample,
-      // A detected suite outranks the type default, which is only a guess.
-      needsE2E: shared.needsE2E || hasE2ESuite(projectDir),
-      needsDatabase: shared.needsDatabase,
-    };
-
-    const defaultConfig = {
-      // v0.15-P4: $schema reference enables VS Code / IDE autocomplete +
-      // validation for .docguard.json fields. Picked up by any
-      // JSON-Schema-aware editor; ignored by DocGuard itself.
-      $schema: 'https://raccioly.github.io/docguard/schemas/docguard-config.schema.json',
-      projectName: config.projectName,
-      version: CURRENT_SCHEMA_VERSION, // single source of truth (shared.mjs) — never hardcode
-      profile: profileName,
-      projectType: detectedType,
-      projectTypeConfig: ptc,
-      // Present only for a mapped layout; a default layout needs no docs.roles.
-      ...(Object.keys(adoptedOrConfiguredRoles).length
-        ? { docs: { ...(config.docs || {}), roles: { ...adoptedOrConfiguredRoles } } }
-        : {}),
-      // Mapped documents are canonical too: list them beside the scaffolded ones,
-      // or adoption silently drops them from every check.
-      requiredFiles: {
-        canonical: [...selectedDocs.map(d => d.file), ...Object.values(adoptedOrConfiguredRoles)].sort(),
-      },
-      validators: profile.validators || {
-        structure: true,
-        docsSync: true,
-        drift: true,
-        changelog: true,
-        architecture: false,
-        testSpec: true,
-        security: false,
-        environment: true,
-        freshness: true,
-      },
-      // Per-validator severity overrides (v0.5+).
-      //   'high':   warnings from this validator fail CI (exit 1)
-      //   'medium': default — warnings exit 2 (informational)
-      //   'low':    warnings ignored for exit code (exit 0)
-      // Empty by default — every validator uses 'medium'. Add entries to dial
-      // strictness up (CI-critical checks) or down (experimental validators).
-      severity: {},
-      // Exact stable-code overrides. Use this when one rule needs a different
-      // policy without weakening or escalating every finding in its validator.
-      findingSeverity: {},
-    };
-
+    const defaultConfig = buildInitConfig({
+      projectDir, config, profileName, profile, detectedType,
+      canonical: selectedDocs.map(d => d.file), adoptedOrConfiguredRoles,
+    });
     writeFileSync(configPath, JSON.stringify(defaultConfig, null, 2) + '\n', 'utf-8');
     created.push('.docguard.json');
     console.log(`  ${c.green}✅${c.reset} Created: ${c.cyan}.docguard.json${c.reset} ${c.dim}(${selectedDocs.length} docs selected, type: ${detectedType})${c.reset}`);

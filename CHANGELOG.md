@@ -475,6 +475,50 @@ Behaviour changes:
 
 ### Fixed
 
+- **Command output is true and machine-clean** (`specs/049-output-ux`).
+  - `guard --changed-only --format json` (and `sarif`, `junit`) printed its
+    "N file(s) changed" note on stdout before the payload, so JSON consumers
+    failed. The note now goes to stderr in machine formats.
+    `memory --pack --stdout` and `llms --stdout` no longer print the banner,
+    and `fix --doc <name> --format json` returns JSON.
+  - `NO_COLOR` is honoured, and colour is off when stdout is not a terminal.
+    `FORCE_COLOR` turns it back on (`FORCE_COLOR=0` off).
+  - The sync loop ends. GST002 now suggests `docguard sync --write --force`
+    for a document not marked `docguard:generated`, and that command
+    refreshes it. `sync` no longer says "up to date" when it skipped a stale
+    section: it names the section and the command that writes it (including
+    `--allow-partial` for a partial graph). A `--force` preview suggests
+    `--write --force`. `sync --since <ref>` exits 1 when git cannot resolve
+    the ref, and "Prose to review" names only sections the document has.
+  - `upgrade --help` describes both jobs: the npm release check and the
+    schema migration, and that `--apply` installs the release globally. The
+    new `--schema-only` migrates `.docguard.json` without contacting npm; the
+    schema-behind note suggests it.
+  - Smart-mode `init` writes the `.docguard.json` it inferred, so later
+    commands stop asking for `init` and `guard` stops exiting 3. The command
+    reference lists all four guard exit codes (0, 1, 2, 3).
+  - Doc Sections reports under its own key, `docSections` (with
+    `parent: "structure"`), instead of sharing `structure` with the Structure
+    validator. Existing configs keep working: unless a config names
+    `docSections`, `validators.structure`, `severity.structure` and a
+    `structure` N/A marker still apply to it. STR003 findings carry
+    `validator: "docSections"`.
+  - Doc ownership checks source files at the root of a source directory
+    (`src/pricing.mjs` beside `src/api/`) under default roots.
+    `trace --owners --suggest` covers them and names only documents that
+    exist. `trace --reverse` names the entries of a tie.
+  - `docguard_docs_for_path` searches every agent instruction file (nested
+    `AGENTS.md`, `.claude/rules`, `.cursor/rules`, `.github/instructions`),
+    and each item carries the line's `text`. `rules --for` follows Claude
+    Code `@path` imports (5 hops) and counts their bytes, PSR003 counts them,
+    and a missing import is PSR002.
+  - Smaller fixes:
+    - `review --prune` with nothing to prune says so;
+    - `review --suggest` without a document exits 1;
+    - a `covers=` glob fingerprints tracked files only;
+    - `doc_structure` no longer counts one byte too many for the last heading;
+    - REF001's location is the document's project-relative path.
+
 - **Go, Spring and Rails routes are reported at the path they are served
   under** (`specs/047-go-spring-rails-routes`). On eight reference projects the
   scanner found 6 of 80 routes and reported 43 that do not exist; it now reports

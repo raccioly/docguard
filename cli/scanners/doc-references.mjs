@@ -18,6 +18,8 @@
  * @implements docguard.mcp-doc-tools#FR-005
  * @implements docguard.mcp-doc-tools#FR-007
  * @implements docguard.mcp-doc-tools#FR-008
+ * @implements docguard.output-ux#FR-010
+ * @implements docguard.output-ux#FR-014
  */
 
 import { ownerOf } from './doc-ownership.mjs';
@@ -28,6 +30,8 @@ import { extractHeadingLines } from '../shared-headings.mjs';
 import { inspectSections } from '../writers/sections.mjs';
 import { createEvidenceReader } from './semantic-claims.mjs';
 import { coveredSections, docLockStatus } from './doc-deps.mjs';
+import { instructionFilesOnDisk, instructionKind, safeProjectPath } from './instruction-scopes.mjs';
+import { listTrackedFiles } from '../shared-git.mjs';
 
 export const AGENT_FILES = ['AGENTS.md', 'CLAUDE.md', 'GEMINI.md'];
 export const READ_DEFAULT_BYTES = 8 * 1024;
@@ -146,13 +150,25 @@ export function docsForPath(projectDir, config, path) {
       references.push({ ...ref, text: lines[ref.line - 1].trim().slice(0, LINE_TEXT_MAX), heading: headingAt(headings, ref.line), section: sectionAt(sections, ref.line) });
     }
   }
+  // docguard.output-ux#FR-010: every instruction file a harness can load
+  // (nested AGENTS.md, .claude/rules, .cursor/rules, .github/instructions, …),
+  // not only the root ones, and each hit carries its line like `references`.
   const agentInstructions = [];
-  for (const file of AGENT_FILES) {
+  const tracked = listTrackedFiles(projectDir) || [];
+  const instructionFiles = [...new Set([
+    ...AGENT_FILES,
+    ...tracked.filter(f => instructionKind(f)),
+    ...instructionFilesOnDisk(projectDir).files,
+  ])].sort();
+  for (const file of instructionFiles) {
+    if (safeProjectPath(projectDir, file) === null) continue;
     const abs = resolve(projectDir, file);
     if (!existsSync(abs)) continue;
     let lines;
     try { lines = readFileSync(abs, 'utf8').split('\n'); } catch { continue; }
-    for (const ref of findReferences(normalized, [[file, lines]])) agentInstructions.push(ref);
+    for (const ref of findReferences(normalized, [[file, lines]])) {
+      agentInstructions.push({ ...ref, text: lines[ref.line - 1].trim().slice(0, LINE_TEXT_MAX) });
+    }
   }
   const requirements = [];
   const docAnnotations = [];
@@ -197,7 +213,9 @@ export function docStructure(projectDir, config, doc) {
   const content = requireMarkdown(projectDir, doc);
   const lines = content.split('\n');
   const headings = extractHeadingLines(content);
-  const lineBytes = lines.map(l => Buffer.byteLength(l) + 1);
+  // docguard.output-ux#FR-014: the last line has no newline after it (a
+  // trailing newline leaves an empty last element), so sums equal the file size.
+  const lineBytes = lines.map((l, i) => Buffer.byteLength(l) + (i < lines.length - 1 ? 1 : 0));
   const bytesBetween = (from, to) => lineBytes.slice(from - 1, to).reduce((a, b) => a + b, 0);
   const outline = headings.map((h, i) => {
     const next = headings.slice(i + 1).find(o => o.level <= h.level);

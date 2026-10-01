@@ -210,7 +210,21 @@ export function compareVersions(a, b) {
 }
 
 // ── Colors (ANSI escape codes, zero deps) ──────────────────────────────────
-export const c = {
+/**
+ * Whether to print ANSI colour (docguard.output-ux#FR-002). `FORCE_COLOR`
+ * wins, as in Node itself: any value but `0` forces colour on, `0` turns it
+ * off. Otherwise a non-empty `NO_COLOR` (no-color.org) turns it off, and so
+ * does a stdout that is not a terminal: the artifacts colour corrupts (piped
+ * output, redirected files) are on stdout.
+ * @implements docguard.output-ux#FR-002
+ */
+export function colorEnabled(env = process.env, stream = process.stdout) {
+  if (env.FORCE_COLOR !== undefined) return env.FORCE_COLOR !== '0';
+  if (env.NO_COLOR) return false;
+  return Boolean(stream && stream.isTTY);
+}
+
+const ANSI_CODES = {
   reset: '\x1b[0m',
   bold: '\x1b[1m',
   dim: '\x1b[2m',
@@ -224,6 +238,11 @@ export const c = {
   bgGreen: '\x1b[42m',
   bgYellow: '\x1b[43m',
 };
+
+/** The palette every command prints through: empty strings when colour is off. */
+export const c = colorEnabled()
+  ? { ...ANSI_CODES }
+  : Object.fromEntries(Object.keys(ANSI_CODES).map(key => [key, '']));
 
 // ── Compliance Profiles ───────────────────────────────────────────────────
 export const PROFILES = {

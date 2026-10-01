@@ -5,6 +5,7 @@
  *
  * @req docguard.mcp-doc-tools#FR-001
  * @req docguard.mcp-doc-tools#FR-002
+ * @req docguard.output-ux#FR-010
  * @req docguard.mcp-doc-tools#FR-003
  * @req docguard.mcp-doc-tools#FR-004
  * @req docguard.mcp-doc-tools#FR-005
@@ -119,7 +120,8 @@ describe('docguard_docs_for_path (FR-002, FR-003, FR-008)', () => {
     assert.equal(raw[0], raw[1], 'deterministic');
     // The marker line itself names the file in covers=, as trace --reverse also reports.
     assert.deepEqual(r.references.items.map(x => [x.line, x.kind, x.heading?.anchor, x.section]), [[6, 'path', 'pricing', 'pricing'], [7, 'path', 'pricing', 'pricing'], [12, 'basename', 'limits', null]]);
-    assert.deepEqual(r.agentInstructions.items, [{ doc: 'AGENTS.md', line: 3, kind: 'path' }]);
+    // docguard.output-ux#FR-010: an instruction hit carries its line, like a doc reference.
+    assert.deepEqual(r.agentInstructions.items, [{ doc: 'AGENTS.md', line: 3, kind: 'path', text: 'Pricing rules are in src/pricing.mjs.' }]);
     assert.deepEqual(r.requirements.items, [{ kind: 'implements', id: 'acme.pricing#FR-001' }]);
     assert.deepEqual(r.docAnnotations.items, ['ARCHITECTURE.md']);
     assert.deepEqual(r.covers.items, [{ section: 'docs-canonical/ARCHITECTURE.md#pricing', ref: 'src/pricing.mjs#discount', state: 'unaccepted' }]);

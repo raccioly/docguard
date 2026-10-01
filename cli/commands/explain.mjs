@@ -633,10 +633,11 @@ export function runExplain(projectDir, _config, flags) {
 
   // v0.24: surface how to mute/tune from config — there was no in-tool way to
   // discover this, so users reached for severity:"off" (a no-op) instead of
-  // the real switch (field report). docSections is reported under the
-  // `structure` key in guard, so it disables via that key.
-  const cfgKey = match.key === 'docSections' ? 'structure' : match.key;
+  // the real switch (field report). docSections has its own key and falls
+  // back to `structure` when the config does not name it.
+  const cfgKey = match.key;
   console.log(`\n${c.bold}Tune it${c.reset} ${c.dim}(.docguard.json):${c.reset}`);
+  if (cfgKey === 'docSections') console.log(`  ${c.dim}Unset, docSections follows validators.structure and severity.structure.${c.reset}`);
   console.log(`  ${c.cyan}validators.${cfgKey}: false${c.reset} ${c.dim}— disable this validator entirely${c.reset}`);
   console.log(`  ${c.cyan}severity.${cfgKey}: "high" | "low"${c.reset} ${c.dim}— change exit-code weight (low = warn-only). Severity never hides the warning from output.${c.reset}`);
 }

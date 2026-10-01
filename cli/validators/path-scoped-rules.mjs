@@ -15,6 +15,7 @@
  * @implements docguard.path-scoped-rules#FR-003
  * @implements docguard.path-scoped-rules#FR-004
  * @implements docguard.path-scoped-rules#FR-007
+ * @implements docguard.output-ux#FR-011
  */
 
 import { posix } from 'node:path';
@@ -117,6 +118,19 @@ export function validatePathScopedRules(projectDir, config = {}) {
       unresolved.push({ e, line, path, candidate: local ?? rooted });
     }
   }
+  // docguard.output-ux#FR-011: a Claude Code `@path` import that names nothing.
+  const missingImports = new Map();
+  for (const e of entries) {
+    if (e.generated || e.scope === 'not-loaded') continue;
+    for (const m of e.missingImports || []) {
+      const key = `${m.from}\0${m.line}\0${m.path}`;
+      if (missingImports.has(key)) continue;
+      total++;
+      const candidate = posix.normalize(posix.join(m.from.includes('/') ? m.from.slice(0, m.from.lastIndexOf('/')) : '', m.path));
+      missingImports.set(key, { e: { file: m.from }, line: m.line, path: m.path, candidate, isImport: true });
+    }
+  }
+  unresolved.push(...missingImports.values());
   const ignoredByGit = gitIgnoredPaths(projectDir, [...new Set(unresolved.map(u => u.candidate))]);
   let reported = 0;
   for (const u of unresolved) {
@@ -125,7 +139,7 @@ export function validatePathScopedRules(projectDir, config = {}) {
     if (++reported > MAX_POINTER_FINDINGS) continue;
     findings.push(mkFinding({
       code: 'PSR002', validator: 'pathScopedRules', severity: 'warn', disposition: 'act', confidence: 'high',
-      message: `${u.e.file}:${u.line} points at ${u.path}, which does not exist`,
+      message: u.isImport ? `${u.e.file}:${u.line} imports @${u.path}, which does not exist` : `${u.e.file}:${u.line} points at ${u.path}, which does not exist`,
       location: { file: u.e.file, line: u.line },
       suggestion: { kind: 'fix', text: 'Point it at the file that replaced it, or remove the reference' },
     }));
