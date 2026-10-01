@@ -308,6 +308,9 @@ describe('hints name only commands that exist (FR-006, SC-004)', { skip: !posix 
     try {
       const init = run(dir, ['init', '--skip-prompts']);
       assert.match(init.out, /1\. \/speckit-constitution/);
+      // `verify` has no agent command; a layout alone must not invent one.
+      assert.equal(commandHint(dir, readAgentSurface(dir), 'verify', '--semantic'), 'docguard verify --semantic');
+      assert.equal(commandHint(dir, readAgentSurface(dir), 'diagnose'), '/speckit-docguard-diagnose');
       assert.match(init.out, /\/speckit-docguard-fix --doc architecture/);
       const guard = run(dir, ['guard']);
       assert.match(guard.out, /Next: (run )?\/speckit-docguard-(diagnose|score)/);
