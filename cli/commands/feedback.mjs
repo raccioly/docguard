@@ -24,6 +24,7 @@ import { fileURLToPath } from 'node:url';
 import { c } from '../shared.mjs';
 import { CODES } from '../findings.mjs';
 import { safeWrite } from '../writers/generate-io.mjs';
+import { ensureStateDir } from '../writers/state-dir.mjs';
 import { runGuardInternal } from './guard.mjs';
 import {
   buildTestOnlyContribution, feedbackFindingIdentity, feedbackSearchUrls, parseFeedbackFixture,
@@ -166,6 +167,7 @@ function runFixtureFeedback(projectDir, flags) {
   try {
     if (!flags.preview) {
       record = resolve(feedbackDir, `${searches.identity}.fixture.json`);
+      ensureStateDir(projectDir);
       safeWrite(record, `${JSON.stringify(manifest, null, 2)}\n`);
     }
     if (flags.contribution) {
@@ -255,6 +257,7 @@ export function runFeedback(projectDir, config, flags) {
   let wrote = 0;
   for (const it of flags.preview ? [] : items) {
     try {
+      ensureStateDir(projectDir);
       if (!existsSync(feedbackDir)) mkdirSync(feedbackDir, { recursive: true });
       safeWrite(it.filePath, JSON.stringify({
         capturedBy: `docguard feedback (v${CLI_VERSION})`,

@@ -55,9 +55,19 @@ const ALWAYS_REJECT_PATH_RE =
  *
  * SCOPE: detection/generate scanners ONLY — deliberately NOT guard's structural
  * validators. A user's real `examples/` dir still counts toward docs coverage.
- * Anti-false-green: when a surface signal appears ONLY under these dirs, callers
- * SHOULD surface a low-confidence "confirm these are fixtures" note rather than
- * silently drop it. Override via `config.detection.includeNonProduct = true`.
+ * Override via `config.detection.includeNonProduct = true`.
+ *
+ * What callers do with a signal found ONLY under these dirs: the API-surface
+ * validator counts the routes it dropped and, when none remain, reports
+ * `partial` with that count and the override, so an empty surface never reads
+ * as "no routes" (docguard.fallback-language-coverage#FR-007). The env scan
+ * prunes these dirs without reading them, so it cannot count what it skipped;
+ * the other detectors drop such files silently.
+ *
+ * A segment that is a PACKAGE name is not a directory of examples:
+ * Spring Initializr's default package is `com.example`, so
+ * `src/main/java/com/example/…` is the product, and so is a Go
+ * `internal/example` package (see `isPackageSegment`).
  */
 export const DEFAULT_DETECTION_IGNORE_DIRS = new Set([
   'fixtures', '__fixtures__', 'test-fixtures', 'testfixtures', 'testdata',
@@ -84,20 +94,59 @@ export function isDocguardOwnedDir(projectDir, relDir) {
   } catch { return false; }
 }
 
-/** True if `dirName` is a non-product dir detection should skip by default. */
-export function isNonProductDir(dirName, config = {}) {
+/** JVM source roots: below `src/main/<one of these>/` every segment is a package. */
+const JVM_SOURCE_LANGUAGES = new Set(['java', 'kotlin', 'scala', 'groovy']);
+/** First segments of a reverse-domain package name (`com.example`, `org.samples`). */
+const REVERSE_DOMAIN_ROOTS = new Set([
+  'com', 'org', 'net', 'io', 'dev', 'edu', 'gov', 'mil', 'info', 'biz', 'co', 'eu',
+  'uk', 'de', 'fr', 'br', 'nl', 'ch', 'se', 'fi', 'dk', 'jp', 'cn', 'au', 'ca', 'ru', 'es', 'pl',
+]);
+const EXAMPLE_NAMES = new Set(['example', 'examples', 'sample', 'samples']);
+
+/**
+ * Is `segments[index]` a package name rather than a directory of its own kind?
+ * - anything below `src/main/{java,kotlin,scala,groovy}/`: Maven and Gradle
+ *   main sources are product code by construction (tests live in `src/test`);
+ * - `example(s)`/`sample(s)` right after a reverse-domain root (`com/example`)
+ *   or after Go's `internal` (`internal/example`).
+ *
+ * @implements docguard.fallback-language-coverage#FR-006
+ */
+function isPackageSegment(segments, index) {
+  for (let j = 0; j + 2 < index; j++) {
+    if (segments[j] === 'src' && segments[j + 1] === 'main' && JVM_SOURCE_LANGUAGES.has(segments[j + 2])) return true;
+  }
+  if (index > 0 && EXAMPLE_NAMES.has(segments[index])) {
+    const before = segments[index - 1];
+    if (REVERSE_DOMAIN_ROOTS.has(before) || before === 'internal') return true;
+  }
+  return false;
+}
+
+/**
+ * True if `dirName` is a non-product dir detection should skip by default.
+ * Pass `parentRel` (the POSIX project-relative path of the directory that
+ * contains it) so a package segment is recognised the way `isNonProductPath`
+ * recognises it; without it, only the name is judged.
+ */
+export function isNonProductDir(dirName, config = {}, parentRel = null) {
   if (config?.detection?.includeNonProduct) return false;
-  return DEFAULT_DETECTION_IGNORE_DIRS.has(dirName);
+  if (!DEFAULT_DETECTION_IGNORE_DIRS.has(dirName)) return false;
+  if (!parentRel) return true;
+  const segments = [...String(parentRel).split('/').filter(s => s && s !== '.'), dirName];
+  return !isPackageSegment(segments, segments.length - 1);
 }
 
 /**
  * True if ANY path segment of `relPath` (POSIX, project-relative) is a
  * non-product detection dir — for filtering file-level detection results.
+ * Package segments (`src/main/java/com/example/…`) do not count.
  */
 export function isNonProductPath(relPath, config = {}) {
   if (config?.detection?.includeNonProduct) return false;
   if (!relPath) return false;
-  return relPath.split('/').some(seg => DEFAULT_DETECTION_IGNORE_DIRS.has(seg));
+  const segments = relPath.split('/');
+  return segments.some((seg, i) => DEFAULT_DETECTION_IGNORE_DIRS.has(seg) && !isPackageSegment(segments, i));
 }
 
 /**

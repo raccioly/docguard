@@ -1,6 +1,7 @@
 /**
  * @implements docguard.evidence-scoped-verification#FR-009
  * @implements docguard.evidence-scoped-verification#FR-012
+ * @implements docguard.first-spec-preflight#FR-007
  * @implements docguard.mcp-project-confinement#FR-001
  * @implements docguard.mcp-project-confinement#FR-002
  * @implements docguard.mcp-project-confinement#FR-003
@@ -40,7 +41,7 @@ import { runGuardInternal } from './guard.mjs';
 import { runScoreInternal } from './score.mjs';
 import { buildReport } from './report.mjs';
 import { loadConfig } from '../config.mjs';
-import { CODES } from '../findings.mjs';
+import { BLOCKER_CODES, CODES } from '../findings.mjs';
 import { extractSemanticClaims, buildSemanticVerifyTasks } from '../scanners/semantic-claims.mjs';
 import { coverSemanticClaims, evaluateEvidence } from '../evidence/evaluate.mjs';
 import { docsForPath, docStructure, readSection, READ_DEFAULT_BYTES, READ_MAX_BYTES } from '../scanners/doc-references.mjs';
@@ -333,6 +334,9 @@ const TOOL_HANDLERS = {
     const code = String((args && args.code) || '').trim().toUpperCase();
     if (!code) throw new Error('Missing required argument "code" (a stable finding code, e.g. STR001).');
     const entry = CODES[code];
+    // docguard.first-spec-preflight#FR-007: lifecycle command blockers too.
+    const blocker = BLOCKER_CODES[code];
+    if (!entry && blocker) return { code, kind: 'blocker', title: blocker.title, help: blocker.help, command: blocker.command };
     if (!entry) {
       throw new Error(`Unknown finding code "${code}". Codes are the stable handles guard prints next to each finding (e.g. STR001, ENV003) — run docguard_guard and use a code from its findings.`);
     }

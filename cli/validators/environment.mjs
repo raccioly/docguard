@@ -2,6 +2,8 @@
  * @implements docguard.language-repository-coverage#FR-006
  * @implements docguard.language-repository-coverage#FR-007
  * @implements docguard.language-repository-coverage#FR-008
+ * @implements docguard.fallback-language-coverage#FR-002
+ * @implements docguard.fallback-language-coverage#FR-004
  */
 import { docRolePath, resolveDocRole } from '../shared-doc-roles.mjs';
 /**
@@ -16,7 +18,7 @@ import { docRolePath, resolveDocRole } from '../shared-doc-roles.mjs';
 
 import { existsSync, lstatSync, readFileSync } from 'node:fs';
 import { dirname, isAbsolute, relative, resolve, sep } from 'node:path';
-import { grepEnvUsage, resolveSourceRoots } from '../shared-source.mjs';
+import { describeLanguageCounts, grepEnvUsage, resolveSourceRoots, summarizeTiers, tierFor } from '../shared-source.mjs';
 import { shouldIgnore } from '../shared-ignore.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 
@@ -177,13 +179,20 @@ export function validateEnvironment(projectDir, config) {
     }
 
     const codeUsed = grepEnvUsage(projectDir, config);
+    const gaps = [];
     if (codeUsed.limitations?.length) {
       const forms = [...new Set(codeUsed.limitations.map(item => item.code))].join(', ');
-      applicability = {
-        status: 'partial',
-        reason: `Environment findings are retained; the parser fallback cannot verify these Worker forms: ${forms}`,
-      };
+      gaps.push(`Environment findings are retained; the parser fallback cannot verify these Worker forms: ${forms}`);
     }
+    // A source language with no env patterns is not "nothing to check": a
+    // variable read there is unseen, and an empty result used to skip the
+    // comparison as vacuous while the validator still said `checked`
+    // (docguard.fallback-language-coverage#FR-004).
+    if (codeUsed.unscanned?.length) {
+      const total = codeUsed.unscanned.reduce((sum, item) => sum + item.files, 0);
+      gaps.push(`Env reads are matched by pattern in JS/TS, Python, Go, Java, Kotlin, Ruby, PHP, C# and Rust, and in Spring config files; ${describeLanguageCounts(codeUsed.unscanned)} ${total === 1 ? 'has' : 'have'} no env patterns, so a variable read there is not seen and cannot be checked against ${envDoc}.`);
+    }
+    if (gaps.length) applicability = { status: 'partial', reason: gaps.join(' ') };
 
     // Only assess when code actually reads env vars — otherwise the check is
     // vacuous (always passes) and would just inflate the count.
@@ -195,9 +204,20 @@ export function validateEnvironment(projectDir, config) {
       } else {
         const shown = usedButUndocumented.slice(0, 10).join(', ');
         const more = usedButUndocumented.length > 10 ? ` (+${usedButUndocumented.length - 10} more)` : '';
+        // The finding carries the analyzer tier of the files behind it: a
+        // variable read in Go or Java was matched in a language with no
+        // syntax tree (docguard.fallback-language-coverage#FR-002).
+        const tierItems = [];
+        for (const name of usedButUndocumented) {
+          for (const ext of codeUsed.origins?.get(name) || []) {
+            const item = tierFor(`file${ext}`, null);
+            if (item.tier === 'fallback-language') tierItems.push({ ...item, file: `file${ext}` });
+          }
+        }
         findings.push(mkFinding({
           code: 'ENV003',
           validator: 'environment',
+          parserTier: summarizeTiers(tierItems).tier,
           severity: 'warn',
           message: `${usedButUndocumented.length} env var(s) used in code but not documented in ENVIRONMENT.md / .env.example: ${shown}${more}`,
           location: envDoc,

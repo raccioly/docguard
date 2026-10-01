@@ -1,13 +1,13 @@
 # Data Model
 
-<!-- docguard:version 0.11.0 -->
+<!-- docguard:version 0.12.0 -->
 <!-- docguard:status active -->
 <!-- docguard:last-reviewed 2026-09-30 -->
 
 | Metadata | Value |
 |----------|-------|
 | **Status** | ![Status](https://img.shields.io/badge/status-active-brightgreen) |
-| **Version** | `0.11.0` |
+| **Version** | `0.12.0` |
 | **Database** | None — DocGuard is a stateless CLI tool |
 | **Storage** | File-system only (reads project files, writes generated docs) |
 
@@ -57,6 +57,7 @@ The primary data structure. Controls all CLI behavior.
 | `agentInstructions.allowances.<file>` | `integer` | No | — | Per-chain allowance keyed by the chain's deepest file; slack of 1 KiB or more reports STR005 |
 | `specFirst.paths` / `specFirst.exemptKinds` | `string[]` | No | Everything except Markdown, `specs/**` and tests / `release, deps, typo, test-only` | Governed paths and allowed `Spec-Exempt` kinds for `specs require` |
 | `validators.docDependency` / `pathScopedRules` / `docOwnership` | `boolean` | No | `true` | Each applies only when its input exists: a `covers=` declaration, agent instruction files, an `ownership` block or `.devin/wiki.json` |
+| `detection.includeNonProduct` | `boolean` | No | `false` | Read test, fixture, example and mock directories as product code during surface detection (routes, env vars, frameworks). Package segments such as `src/main/java/com/example` are always product code |
 | `diagrams.moduleGraph.depth` / `maxNodes` / `include` | `integer` / `integer` / `string[]` | No | `2` / `30` (cap 60) / every product source file | Shape of the `module-graph` section |
 | `memory.symbolMap.maxBytes` | `integer` | No | `4096` (256–16384) | Budget of the symbol map `memory --pack --symbols` adds |
 | `devinWiki.maxPages` | `integer` | No | `30` (up to 80) | Page cap for linting `.devin/wiki.json`; 80 on Devin enterprise plans |
@@ -142,7 +143,7 @@ normative JSON Schema is `schemas/docguard-specs.schema.json`.
 | `$schema`, `schemaVersion` | Contract | Exact schema URL and version `2`; version 1 is read for migration and projects stale until refreshed |
 | `specs[].specId` | Spec metadata | Immutable lowercase namespaced identity; never generated or reused |
 | `specs[].path` | Projection | Current spec path or former path for a retired record |
-| `specs[].reviewed.lifecycle` | Human review | Orthogonal approval, delivery, context, retirement reason, storage, and persistence policy |
+| `specs[].reviewed.lifecycle` | Human review | Orthogonal approval, delivery, context, retirement reason, storage, and persistence policy. `specs approve` records approval and a `planned`, `in_progress` or `implemented` delivery; `specs complete` records `verified` |
 | `specs[].reviewed.relations` | Human review | `extends`, `duplicates`, `conflictsWith`, `supersedes`, and `supersededBy` spec-ID edges |
 | `specs[].reviewed.scope.canonicalDocs` | Human review | Canonical documents affected by the specification |
 | `specs[].reviewed.scope.sourcePaths` | `generate --spec --write` | Optional. Code areas an as-built spec describes; SPR007 re-scans them. Serialized only when set |
@@ -167,7 +168,8 @@ can compare a byte-stable result in CI. A non-current projection exposes up to
 Order-only differences use kind `order`; changed, missing, and unexpected
 content remain distinct. Additional differences are reported as truncated.
 
-`docguard specs complete` requires a clean Git revision, coverage for every
+`docguard specs complete` requires a clean Git revision (changes confined to DocGuard's
+own `.docguard/` state directory still count as clean), coverage for every
 requirement through qualified implementation or test evidence, existing affected
 canonical documents, a supported reconciliation plan, and a guard result without
 errors. Declared task ledgers must be non-empty and fully checked. An approved
@@ -234,6 +236,8 @@ lookup reports that error until the block is fixed.
 | `.docguard/plan.cache.json` | the memory plan (guard, sync, generate) | `{ v, configKey, treeHash, plan, writtenAt }`. `v` is `"3"`: code sections may carry `completeness: "partial"` and a `partialReason`. A cache with another version, config key or tree hash is a miss and is rebuilt |
 | `budgets.json` | maintainers | `schemaVersion: 1`; sample count, guard targets, the time and byte budgets, and the agent tasks and MCP calls `tools/budget.mjs` measures |
 | `benchmarks/agent-context/manifest-v2.json` | frozen once, before any run | Agent-context protocol v2: conditions `task-only`, `context-pack`, `context-pack-symbols`, six tasks with fixture and hidden-evaluator digests, and the promotion rule. `run.mjs` holds its digest and loads it only while every byte matches. Schemas: `docguard-agent-context-benchmark-v2.schema.json`, `docguard-agent-context-result-v2.schema.json` |
+
+`.docguard/` holds only local state: the plan cache above, score history, fix memory, feedback records, the nudge throttle, the context pack and the active context. It ignores itself: the first write creates `.docguard/.gitignore` containing `*` and keeps an existing one, so the project's own `.gitignore` stays as the project wrote it. `git rm -r --cached .docguard` untracks files that an earlier version let a project commit. DocGuard's dirty checks leave `.docguard/` out either way.
 
 ## Task Context Packet
 
@@ -357,6 +361,7 @@ The `score --format json` output:
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 0.12.0 | 2026-09-30 | DocGuard Team | `.docguard/` ignores itself, and dirty checks leave it out (spec 042) |
 | 0.11.0 | 2026-09-30 | DocGuard Team | Freshness review for specs 028–037: configuration keys for the doc lock, path-scoped rules, ownership, diagrams and the symbol map; `review --prune` as a doc-lock writer; the plan cache (version 3), `budgets.json` and the frozen agent-context protocol v2 |
 | 0.10.0 | 2026-09-29 | DocGuard Team | Add registry `lifecycle.origin` / `scope.sourcePaths` for as-built specs, the `specKit` coverage tier, and the `agentInstructions` and `specFirst` configuration |
 | 0.9.0 | 2026-09-15 | DocGuard Team | Add bounded field-level spec-registry differences and direct evidence verification exit semantics |

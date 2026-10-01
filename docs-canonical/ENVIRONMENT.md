@@ -2,7 +2,7 @@
 
 <!-- docguard:quality negation-load off — an environment doc precisely describes the ABSENCE of requirements (no install step, no database, no credential for the CLI); the prohibitive phrasing is accurate and intentional, not sloppy writing -->
 
-<!-- docguard:version 0.11.0 -->
+<!-- docguard:version 0.12.0 -->
 <!-- docguard:status active -->
 <!-- docguard:last-reviewed 2026-09-30 -->
 
@@ -11,7 +11,7 @@
 | Metadata | Value |
 |----------|-------|
 | **Status** | ![Status](https://img.shields.io/badge/status-active-brightgreen) |
-| **Version** | `0.11.0` |
+| **Version** | `0.12.0` |
 
 ---
 
@@ -95,8 +95,11 @@ node cli/docguard.mjs ci --threshold 70 --format json
 
 DocGuard needs no network access and no credentials, so a sandbox such as ai-jail can run it
 with the default read-write project mount. `docguard guard` runs fine under `--lockdown`, which
-makes everything read-only. `fix --write`, `sync`, `init`, `review --accept` / `--prune`,
-`specs --write` and `memory --pack` write into the project, so they need the normal mount.
+makes everything read-only. `fix --write`, `sync --write`, `init`, `review --accept` /
+`--prune`, `specs --write` and `memory --pack` write into the project, so they need the normal
+mount. Read and preview modes (`sync` and `generate --spec` without `--write`, `rules --for`)
+write at most the plan cache and other local state in `.docguard/`, which is best-effort and
+ignores itself.
 
 What must be visible:
 
@@ -118,6 +121,7 @@ What must be visible:
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 0.12.0 | 2026-09-30 | DocGuard Team | `sync --write`, not a bare `sync`, writes into the project; read and preview modes write only the self-ignoring `.docguard/` (spec 042) |
 | 0.11.0 | 2026-09-30 | DocGuard Team | `DOCGUARD_NO_UPDATE_HINT` and the `CI` rule for the version-age note (spec 038) |
 | 0.10.0 | 2026-09-30 | DocGuard Team | Freshness review: `npm run budget`; the full list of commands that write; how path-scoped rules and ownership read git; what a missing `python3` makes partial (specs 030, 033, 034, 035) |
 | 0.9.0 | 2026-09-29 | DocGuard Team | Freshness review: documented `DOCGUARD_SPECIFY_TIMEOUT_MS` and the optional Spec Kit prerequisite; the agent-sandbox section (spec 022) is recorded here |

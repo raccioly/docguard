@@ -7,6 +7,10 @@
  * @implements docguard.document-lifecycle#FR-013
  * @implements docguard.document-lifecycle#FR-016
  * @implements docguard.as-built-specs#FR-004
+ * @implements docguard.first-spec-preflight#FR-001
+ * @implements docguard.first-spec-preflight#FR-002
+ * @implements docguard.first-spec-preflight#FR-003
+ * @implements docguard.first-spec-preflight#FR-004
  */
 
 import { createHash } from 'node:crypto';
@@ -617,7 +621,6 @@ export function projectSpecRegistry(projectDir, config = {}, options = {}) {
 
   for (const feature of detected.specs.filter(item => item.hasSpec)) {
     const path = posix(relative(projectDir, feature.specPath));
-    if (path === options.excludeSpecPath) continue;
     const artifactsForFeature = [feature.specPath, feature.planPath, feature.tasksPath].filter(Boolean);
     const unsafeArtifact = artifactsForFeature.find(artifact => !isSafeFile(projectDir, artifact));
     if (unsafeArtifact) {
@@ -678,6 +681,8 @@ export function projectSpecRegistry(projectDir, config = {}, options = {}) {
   const archivedPaths = new Set(archive.entries.map(entry => entry.path));
   for (const entry of existing.value?.specs || []) {
     if (ids.has(entry.specId)) continue;
+    // The draft's own entry under an earlier Spec ID: not a vanished spec.
+    if (options.draftPath && entry?.path === options.draftPath) continue;
     const control = validatedControl(entry, issues);
     if (control.reviewed.lifecycle.context !== 'retired' || control.reviewed.lifecycle.storage !== 'git_history'
       || !control.reviewed.lifecycle.retirementReason || !archivedPaths.has(entry.path)) {
@@ -714,10 +719,26 @@ export function projectSpecRegistry(projectDir, config = {}, options = {}) {
   const differences = existing.exists && !existing.error
     ? registryDifferences(reconciled.value, projected)
     : [];
+  // Preflight asks whether the registry is current for every spec except the
+  // draft it gates: the draft's own entry may be absent, or stale while the
+  // draft is being written (docguard.first-spec-preflight#FR-001). With no
+  // registry that holds only when the draft is the project's first spec and
+  // nothing was retired before it (FR-002).
+  let currentExceptDraft;
+  if (options.draftPath) {
+    const withoutDraft = value => `${JSON.stringify({
+      ...value,
+      specs: (Array.isArray(value?.specs) ? value.specs : []).filter(entry => entry?.path !== options.draftPath),
+    }, null, 2)}\n`;
+    currentExceptDraft = existing.exists
+      ? !existing.error && withoutDraft(reconciled.value) === withoutDraft(projected)
+      : projected.tombstones.length === 0 && projected.specs.every(entry => entry.path === options.draftPath);
+  }
   return {
     registry: projected,
     serialized,
     current,
+    ...(options.draftPath ? { currentExceptDraft } : {}),
     differences,
     // Non-empty when the committed registry still uses an older encoding. Not a
     // finding: the content is provably unchanged, and `specs --write` migrates it.
@@ -749,7 +770,7 @@ export function preflightSpec(projectDir, config = {}, draftPath = null) {
     absolute = resolve(projectDir, draftPath);
     rel = posix(relative(projectDir, absolute));
   }
-  const projection = projectSpecRegistry(projectDir, config, { excludeSpecPath: rel });
+  const projection = projectSpecRegistry(projectDir, config, rel ? { draftPath: rel } : {});
   const briefing = projection.registry.specs
     .filter(entry => entry.reviewed.lifecycle.context === 'current')
     .map(entry => ({
@@ -774,7 +795,9 @@ export function preflightSpec(projectDir, config = {}, draftPath = null) {
     };
   }
 
-  const blockers = [...projection.issues];
+  // The draft's identity is checked below, once; the projection's own report
+  // of it would be a duplicate.
+  const blockers = projection.issues.filter(issue => !(issue.code === 'SPR002' && issue.path === rel));
   let safeDraft = false;
   try {
     const root = realpathSync(projectDir);
@@ -788,7 +811,7 @@ export function preflightSpec(projectDir, config = {}, draftPath = null) {
     blockers.push({ code: 'SPR003', path: draftPath, message: 'Preflight path must name a readable spec inside the project.' });
     return { status: 'BLOCKED', briefing, blockers, overlaps: [] };
   }
-  if (!projection.current) blockers.push({ code: 'SPR001', path: SPEC_REGISTRY_PATH, message: 'Refresh the committed registry before planning a new spec.' });
+  if (!projection.currentExceptDraft) blockers.push({ code: 'SPR001', path: SPEC_REGISTRY_PATH, message: 'Refresh the committed registry before planning a new spec.' });
   const content = readFileSync(absolute, 'utf8');
   const specId = parseSpecId(content);
   if (!specId || !SPEC_ID_RE.test(specId)) blockers.push({ code: 'SPR002', path: rel, message: 'Draft needs a valid immutable Spec ID.' });

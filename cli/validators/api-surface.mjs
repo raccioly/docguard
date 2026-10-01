@@ -24,6 +24,9 @@ import { docRolePath, resolveDocRole } from '../shared-doc-roles.mjs';
  * OpenAPI discovery lives in cli/shared-openapi.mjs so no validator imports
  * another (Constitution IV).
  * @implements docguard.spec-kit-artifact-coverage#FR-007
+ * @implements docguard.fallback-language-coverage#FR-001
+ * @implements docguard.fallback-language-coverage#FR-007
+ * @implements docguard.fallback-language-coverage#FR-009
  */
 
 import { existsSync, readFileSync } from 'node:fs';
@@ -154,17 +157,55 @@ export function resolveApiSurface(projectDir, config) {
   // zero routes — the pattern fallback cannot match `@app.route(...)` at all —
   // and an empty surface is indistinguishable from a project with no routes
   // unless the tier says which one this is.
+  //
+  // Coverage comes from every file the scan READ (routes.scanTier), not only
+  // from the files that yielded a route: a Go file with no match is as unseen
+  // as one with a route the patterns got wrong. Scanners with no tier
+  // (Express, Next.js) fall back to the routes' own tiers, as before.
   const scanTier = routes.scanTier || null;
+  const scan = routes.scan || null;
   if (routes.length) {
     return {
       endpoints: routes.map(r => ({ method: r.method, path: r.path })),
       confidence: 'code',
       source: 'code-scan',
-      tier: summarizeTiers(routes),
+      tier: scanTier || summarizeTiers(routes),
+      scan,
     };
   }
 
-  return { endpoints: [], confidence: 'none', source: null, tier: scanTier };
+  return { endpoints: [], confidence: 'none', source: null, tier: scanTier, scan };
+}
+
+/**
+ * What a route scan could not establish, as coverage reasons
+ * (docguard.fallback-language-coverage#FR-007/008/009):
+ * - a detected pattern-only framework whose patterns matched nothing — the
+ *   surface is unknown, not empty;
+ * - routes found only in test/fixture/example paths, when none remain;
+ * - a walk stopped by the file cap.
+ *
+ * @param {object|null} scan  the non-enumerable `scan` record of scanRoutesDeep
+ * @param {number} kept       product routes the scan kept
+ * @returns {string[]}
+ */
+export function routeScanGaps(scan, kept = 0) {
+  if (!scan) return [];
+  const out = [];
+  const n = (count, noun) => `${count} ${noun}${count === 1 ? '' : 's'}`;
+  for (const pf of scan.patternFrameworks || []) {
+    if (pf.routes === 0) {
+      out.push(`Detected ${pf.name}, but its route patterns matched no route in ${n(pf.files, 'file')}; a route registered in a form the patterns do not match is not seen, so the API surface was not compared with code.`);
+    }
+  }
+  if (scan.excludedNonProduct > 0 && kept === 0) {
+    const one = scan.excludedNonProduct === 1;
+    out.push(`${n(scan.excludedNonProduct, 'route')} ${one ? 'was' : 'were'} found only under test, fixture or example paths and ${one ? 'was' : 'were'} excluded; if ${one ? 'it is' : 'they are'} product code, set detection.includeNonProduct to true in .docguard.json.`);
+  }
+  if (scan.truncated) {
+    out.push(`Route discovery stopped at the ${Number(scan.cap).toLocaleString('en-US')}-file cap; files beyond it were not read.`);
+  }
+  return out;
 }
 
 /**
@@ -186,7 +227,8 @@ export function computeApiSurfaceDrift(projectDir, config) {
 
   if (surface.confidence === 'none' || documented.length === 0) {
     return { applicable: false, confidence: surface.confidence, source: surface.source,
-      documented, documentedButAbsent: [], presentButUndocumented: [], matched: [], tier: surface.tier || null };
+      documented, documentedButAbsent: [], presentButUndocumented: [], matched: [], tier: surface.tier || null,
+      scan: surface.scan || null, routeCount: surface.confidence === 'code' ? surface.endpoints.length : 0 };
   }
 
   const tier = surface.tier || null;
@@ -222,6 +264,8 @@ export function computeApiSurfaceDrift(projectDir, config) {
     presentButUndocumented: cmp.presentButUndocumented,
     matched: cmp.matched,
     tier,
+    scan: surface.scan || null,
+    routeCount: surface.confidence === 'code' ? surface.endpoints.length : 0,
   };
 }
 
@@ -320,6 +364,11 @@ export function validateApiSurface(projectDir, config) {
   // tier is exactly the case that used to look like a clean "no routes".
   // (calibrated-finding-channels#FR-012)
   const tierGap = tierApplicability(drift.tier, 'source file');
+  // What the scan itself could not establish: a detected framework whose
+  // patterns matched nothing, routes that exist only in fixtures, a capped
+  // walk. Any of these makes an empty or thin surface a gap, never a pass.
+  const gapReasons = [tierGap?.reason, ...routeScanGaps(drift.scan, drift.routeCount || 0)].filter(Boolean);
+  const coverage = gapReasons.length ? { status: 'partial', reason: gapReasons.join(' ') } : null;
   // Findings drawn from the code scan carry the tier that produced them, so a
   // reader can tell a conclusion built on a syntax tree from one built on a
   // pattern match without going back to the validator's coverage line.
@@ -395,7 +444,7 @@ export function validateApiSurface(projectDir, config) {
       ...resultFromFindings(findings, { passed: specRoutePassed, total: specRouteTotal }),
       fixes,
       authoritativeSpec: drift.source || specRoute.specPath,
-      ...(tierGap ? { applicability: tierGap } : {}),
+      ...(coverage ? { applicability: coverage } : {}),
     };
   }
 
@@ -491,6 +540,6 @@ export function validateApiSurface(projectDir, config) {
     ...resultFromFindings(findings, { passed, total }),
     fixes,
     authoritativeSpec: source,
-    ...(tierGap ? { applicability: tierGap } : {}),
+    ...(coverage ? { applicability: coverage } : {}),
   };
 }

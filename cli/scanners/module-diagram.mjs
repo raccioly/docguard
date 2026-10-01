@@ -12,10 +12,12 @@
  * @implements docguard.code-derived-diagrams#FR-002
  * @implements docguard.code-derived-diagrams#FR-003
  * @implements docguard.code-derived-diagrams#FR-004
+ * @implements docguard.fallback-language-coverage#FR-010
  */
 
 import { createHash } from 'node:crypto';
 import { isNonProductPath } from '../shared-ignore.mjs';
+import { countLanguages, describeLanguageCounts } from '../shared-source.mjs';
 
 export const MODULE_GRAPH_DEFAULTS = Object.freeze({ depth: 2, maxNodes: 30 });
 export const MAX_NODES_CAP = 60;
@@ -77,6 +79,14 @@ export function renderModuleGraph(graph, config = {}) {
     && (options.include.length === 0 || options.include.some(p => file === p || file.startsWith(`${p}/`)));
   const files = [...new Set((graph.files || []).map(posix).filter(inScope))].sort();
   const fileSet = new Set(files);
+  // Files in a language the graph does not read are named, as a caption: the
+  // gap is the same on every machine, so it is not `partial`
+  // (docguard.fallback-language-coverage#FR-010).
+  const unanalysed = countLanguages((graph.unanalysedFiles || []).map(posix).filter(inScope));
+  const unanalysedTotal = unanalysed.reduce((sum, item) => sum + item.files, 0);
+  const unanalysedText = unanalysed.length
+    ? `${describeLanguageCounts(unanalysed)} ${unanalysedTotal === 1 ? 'is' : 'are'} not analysed`
+    : null;
   const imports = (graph.edges || [])
     .map(e => ({ from: posix(e.from), to: posix(e.to), dynamic: !!e.dynamic }))
     .filter(e => fileSet.has(e.from) && fileSet.has(e.to));
@@ -155,12 +165,15 @@ export function renderModuleGraph(graph, config = {}) {
     const one = undrawn.size === 1;
     notes.push(`${undrawn.size} Python file${one ? ' imports' : 's import'} dynamically or ${one ? 'changes' : 'change'} \`sys.path\`; those imports are not drawn`);
   }
+  if (unanalysedText) notes.push(`${unanalysedText} (the import graph reads JS/TS and Python only)`);
   if (partialReason) notes.push(`partial: ${partialReason}`);
 
   const body = files.length === 0
     // Stated positively: generated text must pass DocGuard's own prose checks
     // (DQ007 negation load; docguard.generated-docs-consistency#FR-011).
-    ? '_Module graph: empty. The import scanner reads JavaScript, TypeScript and Python files and found zero here._'
+    ? (unanalysedText
+      ? `_Module graph: empty. The import graph reads JS/TS and Python only, and ${unanalysedText}._`
+      : '_Module graph: empty. The import scanner reads JavaScript, TypeScript and Python files and found zero here._')
     : `${lines.join('\n')}${notes.length ? `\n\n_Module graph: ${notes.join('; ')}._` : ''}`;
   return {
     body,

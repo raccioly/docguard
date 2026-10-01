@@ -42,7 +42,7 @@ const md = {
  */
 import { createHash, randomUUID } from 'node:crypto';
 import {
-  existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync, lstatSync,
+  existsSync, readFileSync, writeFileSync, readdirSync, lstatSync,
   openSync, closeSync, readSync, fstatSync, renameSync, unlinkSync, constants,
 } from 'node:fs';
 import { resolve as resolvePath, join as joinPath, relative, isAbsolute } from 'node:path';
@@ -50,6 +50,7 @@ import { fileURLToPath } from 'node:url';
 import { DEFAULT_IGNORE_DIRS, buildIgnoreFilter } from '../shared-ignore.mjs';
 import { astTierAvailable } from './js-ast.mjs';
 import { pyAstAvailable } from './py-ast.mjs';
+import { ensureStateDir } from '../writers/state-dir.mjs';
 
 const _memoryPlanCache = new Map(); // config key → { treeHash, plan }
 const _DISK_CACHE_PATH = '.docguard/plan.cache.json';
@@ -273,8 +274,7 @@ function _writeDiskCache(projectDir, configKey, treeHash, plan) {
   let temporary;
   try {
     const dir = joinPath(projectDir, '.docguard');
-    if (!existsSync(dir)) mkdirSync(dir);
-    if (!_cacheDirectorySafe(projectDir)) return;
+    if (!ensureStateDir(projectDir)) return;
     const path = resolvePath(projectDir, _DISK_CACHE_PATH);
     // Never read or overwrite the target of a pre-existing cache symlink.
     try { if (!lstatSync(path).isFile()) return; }

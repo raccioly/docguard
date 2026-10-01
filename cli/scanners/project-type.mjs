@@ -61,7 +61,8 @@ function findManifests(projectDir, maxDepth = 4, config = {}) {
         // DEFAULT. A fixture `package.json` declaring express or a `py_app`
         // requirements.txt with flask must never set the PROJECT's stack/kind.
         // This is the first-run fix — it needs no `.docguardignore`.
-        if (isNonProductDir(e.name, config)) continue;
+        // The parent path lets a package segment (`com/example`) through.
+        if (isNonProductDir(e.name, config, relPosix(root, dir))) continue;
         // Also honor explicit config.ignore / .docguardignore patterns.
         if (shouldIgnore(relPosix(root, join(dir, e.name)), config)) continue;
         walk(join(dir, e.name), depth + 1);
@@ -164,7 +165,9 @@ function csprojDeps(content) {
 // ── Framework + kind classification per ecosystem ────────────────────────────
 
 function has(deps, ...names) {
-  const keys = Object.keys(deps).map(k => k.toLowerCase());
+  // A Go module's major version is a path suffix (`github.com/labstack/echo/v4`);
+  // match on the module without it (docguard.go-spring-rails-routes#FR-007).
+  const keys = Object.keys(deps).map(k => k.toLowerCase().replace(/\/v\d+$/, ''));
   return names.some(n => keys.some(k => k === n.toLowerCase() || k.endsWith('/' + n.toLowerCase()) || k.endsWith(':' + n.toLowerCase())));
 }
 
@@ -196,6 +199,7 @@ function classify(lang, dir, deps) {
     else if (has(deps, 'echo', 'labstack/echo')) { framework = 'Echo'; kind = 'service'; }
     else if (has(deps, 'chi', 'go-chi/chi')) { framework = 'Chi'; kind = 'service'; }
     else if (has(deps, 'fiber', 'gofiber/fiber')) { framework = 'Fiber'; kind = 'service'; }
+    else if (has(deps, 'gorilla/mux')) { framework = 'Gorilla Mux'; kind = 'service'; }
     else if (existsSync(join(dir, 'main.go')) || existsSync(join(dir, 'cmd'))) kind = 'service';
   } else if (lang === 'Java' || lang === 'Kotlin') {
     if (has(deps, 'spring-boot-starter-web', 'spring-boot-starter', 'org.springframework.boot:spring-boot-starter-web')) { framework = 'Spring Boot'; kind = 'api'; }
