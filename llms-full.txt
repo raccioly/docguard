@@ -622,11 +622,12 @@ The primary data structure. Controls all CLI behavior.
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
 | `validators.*` | `boolean` | No | `true` | Enable/disable individual validators |
+| `validators.docSections` / `severity.docSections` | `boolean` / `string` | No | follows `structure` | Doc Sections (STR003). Unset, the `structure` switch, severity and N/A marker apply to it |
 | `collections.*` | `string` (glob) | No | — | Binds a documentation noun to a code collection: `"extractors": "src/extractors/*.py"` lets Metrics-Consistency flag a documented count that disagrees with the file count |
 | `docs.dirs` | `string[]` | No | Auto-detected | EXTENDS the auto-detected documentation homes (docs/, documentation/, guides/, …) with non-standard dirs; exclude via `.docguardignore` |
 | `severity.*` | `"high" \| "medium" \| "low"` | No | `"medium"` | Per-validator exit-code weight — `high` promotes warnings to blocking, `low` demotes them (display unchanged) |
 | `findingSeverity.<CODE>` | `"high" \| "medium" \| "low"` | No | — | Exact stable-code enforcement; takes precedence over validator policy. Intrinsic errors require an exact code entry to be demoted. |
-| `agentInstructions.maxBytes` | `integer` | No | `32768` | Byte budget per `AGENTS.md` chain (STR004) |
+| `agentInstructions.maxBytes` | `integer` | No | `32768` | Byte budget per `AGENTS.md` chain (STR004) and per harness and path (PSR003). For Claude Code the total includes files pulled in by `@path` imports (relative to the importing file, up to 5 hops); a missing import is PSR002 |
 | `agentInstructions.allowances.<file>` | `integer` | No | — | Per-chain allowance keyed by the chain's deepest file; slack of 1 KiB or more reports STR005 |
 | `specFirst.paths` / `specFirst.exemptKinds` | `string[]` | No | Everything except Markdown, `specs/**` and tests / `release, deps, typo, test-only` | Governed paths and allowed `Spec-Exempt` kinds for `specs require` |
 | `validators.docDependency` / `pathScopedRules` / `docOwnership` | `boolean` | No | `true` | Each applies only when its input exists: a `covers=` declaration, agent instruction files, an `ownership` block or `.devin/wiki.json` |
@@ -775,7 +776,7 @@ review and `--prune` removes entries whose section dropped its `covers` attribut
 | Field | Meaning |
 |---|---|
 | `schemaVersion` | `1` |
-| `sections["<doc>#<id>"].dependencies["<covers entry>"]` | `{ tier, fingerprint }`: `ast` (normalized JS/TS AST of the symbol; formatting, comments and line moves do not change it), `python-ast` (`ast.dump` of the definition), `content` (sha256 of the file), or `glob` (hash of the sorted per-file fingerprints) |
+| `sections["<doc>#<id>"].dependencies["<covers entry>"]` | `{ tier, fingerprint }`: `ast` (normalized JS/TS AST of the symbol; formatting, comments and line moves do not change it), `python-ast` (`ast.dump` of the definition), `content` (sha256 of the file), or `glob` (hash of the sorted per-file fingerprints of the tracked files it matches; the working tree outside git) |
 | `sections[…].reviewedRevision` | HEAD at acceptance, or `null`; used only to print the diff command, so squash merges and shallow clones do not break comparison |
 | `sections[…].reviewedAt` | UTC date of acceptance |
 | `sections[…].reason` | What the reviewer checked (8–500 characters) |
@@ -861,6 +862,8 @@ Validators emit findings and aggregate counts. The guard adapter adds names and 
 | Field | Type | Description |
 |-------|------|-------------|
 | `name` | `string` | Validator name (e.g., `"structure"`, `"changelog"`) |
+| `key` | `string` | Stable result key, unique per result (`structure`, `docSections`, `changelog`, …) |
+| `parent` | `string` | Present on a result a validator module emits beside its own (Doc Sections: `"structure"`); such a result is a check, not a separate validator module |
 | `status` | `string` | `"pass"`, `"warn"`, or `"fail"` |
 | `findings` | `object[]` | Stable code, validator, intrinsic `severity`, `effectiveSeverity`, enforcement source/key, `confidence`, `disposition`, `evidence`, `parserTier`, location, message, and normalized suggestion |
 | `passed`, `total` | `number` | Applicable check counts |
@@ -934,6 +937,7 @@ The `score --format json` output:
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 0.13.0 | 2026-09-30 | DocGuard Team | Guard result `key`/`parent` and the `docSections` key; Claude Code `@path` imports in instruction budgets; tracked-only `glob` fingerprints (spec 049) |
 | 0.12.0 | 2026-09-30 | DocGuard Team | `.docguard/` ignores itself, and dirty checks leave it out (spec 042) |
 | 0.11.0 | 2026-09-30 | DocGuard Team | Freshness review for specs 028–037: configuration keys for the doc lock, path-scoped rules, ownership, diagrams and the symbol map; `review --prune` as a doc-lock writer; the plan cache (version 3), `budgets.json` and the frozen agent-context protocol v2 |
 | 0.10.0 | 2026-09-29 | DocGuard Team | Add registry `lifecycle.origin` / `scope.sourcePaths` for as-built specs, the `specKit` coverage tier, and the `agentInstructions` and `specFirst` configuration |
@@ -967,12 +971,8 @@ Every result contains the declaration ID, stable claim and evidence identities,
 document location, adapter, predicate, captured input hashes, evidence hash,
 reason code, and scope limitation. The state is exactly one of
 `verified-within-scope`, `contradicted`, `stale`, `inconclusive`, or
-`unsupported`. Line movement and unrelated file edits preserve identity;
-changes to the selected statement, declaration, source, report, producer
-metadata, or declared inputs invalidate it. A verified declaration removes a
-heuristic claim from the unverified count only through a unique same-line,
 
-<!-- truncated: 63 more lines — read docs-canonical/DATA-MODEL.md directly -->
+<!-- truncated: 67 more lines — read docs-canonical/DATA-MODEL.md directly -->
 
 ---
 
@@ -2044,7 +2044,7 @@ Behaviour changes:
     the job warns and skips.
   - The top-level `--help` names `generate --spec` and `specs
 
-<!-- truncated: 4361 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 4407 more lines — read CHANGELOG.md directly -->
 
 ---
 
@@ -2432,8 +2432,8 @@ code-truth sections), `score` (CDD maturity 0-100).
 `review` (doc sections whose covered code changed; `--accept`, `--prune`, `--suggest`),
 `rules` (which instruction files each agent harness loads for a path; `--for <path>`),
 `explain` (explain a validator/warning), `verify` (declared evidence; `--semantic` claims), `feedback` (report false positives), `mcp` (MCP server; stdio or loopback HTTP), `report` (compliance bundle), `ci` (guard + score gate), `memory` (what DocGuard
-remembers; `--pack [--symbols]` for the context pack), `trace` (requirements traceability; `--reverse`; `--owners` for the doc ownership map), `upgrade` (migrate
-config/CLI), `watch` (live re-guard).
+remembers; `--pack [--symbols]` for the context pack), `trace` (requirements traceability; `--reverse`; `--owners` for the doc ownership map), `upgrade` (check npm for a newer
+release and migrate the config schema; `--apply --schema-only` stays offline), `watch` (live re-guard).
 
 **`init --with <name>`** scaffolders — `agents`, `hooks`, `ci`, `badge`, `llms`,
 `publish` (also reachable as standalone deprecation aliases).
