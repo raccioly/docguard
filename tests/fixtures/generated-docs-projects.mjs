@@ -3,6 +3,7 @@
  * consistency tests (specs/044-generated-docs-consistency). Each exercises the
  * shapes that broke: a root route, a catch-all method, a handler written
  * inline, env vars with and without defaults, a JWT library, entities, tests.
+ * @req docguard.generated-docs-consistency#SC-001
  */
 import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';

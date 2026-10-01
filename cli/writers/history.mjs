@@ -13,6 +13,7 @@
  * Local-first by design: `.docguard/` is gitignored, so history accumulates
  * per checkout. In ephemeral CI, persist it across runs with a cache/artifact
  * step (see CI-RECIPES) — the file format is stable and merge-friendly.
+ * @implements docguard.read-only-commands#FR-005
  */
 
 import { appendFileSync, existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from 'node:fs';

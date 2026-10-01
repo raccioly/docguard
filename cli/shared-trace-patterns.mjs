@@ -10,6 +10,7 @@
  *
  * The API-REFERENCE entry additionally carries the explicit Next.js App Router
  * pattern (app/api, pages/api) preserved from the v0.22.0 #195 fix.
+ * @implements docguard.generated-docs-consistency#FR-004
  */
 
 /**

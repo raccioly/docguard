@@ -5,6 +5,7 @@
  * Each writer builds a small but realistic project in a directory the caller
  * owns (a fresh temp dir), and each TRUTH object states, by hand, what a
  * correct scan of that project reports. Nothing here reads repository state.
+ * @req docguard.js-ts-extraction#SC-001
  */
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';

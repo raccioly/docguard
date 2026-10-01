@@ -38,6 +38,7 @@
  * @req SC-M2-003 — appendFixes is idempotent (same fix logged twice → one entry)
  * @req SC-M2-004 — fingerprint dedupes by type+file+summary (not timestamp)
  * @req SC-M2-005 — entries are capped at MAX_ENTRIES (oldest dropped)
+ * @implements docguard.read-only-commands#FR-005
  */
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
