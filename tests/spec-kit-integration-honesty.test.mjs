@@ -38,6 +38,7 @@ import { tmpdir } from 'node:os';
 import { MIN_SPEC_KIT_VERSION, PACKAGED_EXTENSION_DIR, packagedExtensionVersion } from '../cli/spec-kit-delegation.mjs';
 import { readAgentSurface, readExtensionCommands, verifyHooks, commandHint } from '../cli/agent-surface.mjs';
 import { RELEASE_PATH_ALLOWLIST } from '../cli/release-pr-policy.mjs';
+import { notesSince } from './fixtures/changelog-notes.mjs';
 
 const ROOT = resolve('.');
 const CLI = resolve('cli/docguard.mjs');
@@ -471,8 +472,7 @@ describe('the docs describe the integration as it behaves (FR-011)', () => {
     assert.match(commands, /upgrade --apply[^\n]*agent files/i);
     assert.match(read('extensions/spec-kit-docguard/README.md'), /npx --yes docguard-cli@<version>/);
     assert.match(read('docs-canonical/ARCHITECTURE.md'), /cli\/agent-surface\.mjs/);
-    const unreleased = read('CHANGELOG.md').split(/^## \[/m)[1];
-    assert.match(unreleased, /^Unreleased\]/);
+    const unreleased = notesSince(read('CHANGELOG.md'), '0.42.1');
     assert.match(unreleased, /spec 048/);
   });
 });

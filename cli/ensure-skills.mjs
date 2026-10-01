@@ -317,6 +317,11 @@ export function installAgentAssets(projectDir, surface) {
  * @returns {{ skillsInstalled: boolean, commandsInstalled: boolean, specKitReady: boolean, written: string[] }}
  */
 export function ensureSkills(projectDir, flags = {}, surface) {
+  // A missing surface used to throw inside the try below, where JSON mode
+  // swallowed it and installed nothing (docguard.release-cut-green#FR-005).
+  if (!surface || typeof surface !== 'object') {
+    throw new TypeError('ensureSkills: pass the agent surface (readAgentSurface(projectDir)) as the third argument');
+  }
   const silent = flags.format === 'json';
   const { specKitReady } = ensureSpecKit(projectDir, flags);
   let assets = { written: [], skillsDir: null, commandsDir: null, reason: null };

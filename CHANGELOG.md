@@ -478,6 +478,16 @@ Behaviour changes:
 
 ### Fixed
 
+- **The release cut passes its own suite** (`specs/051-release-cut-green`).
+  - The first v0.43.0 cut failed before tagging, so nothing was published.
+    Nine tests checked the CHANGELOG by reading only `[Unreleased]`, which the
+    cut empties. They now read the notes added since the previous release, the
+    same way before and after a cut.
+  - The cut did not refresh this repository's `.agent/` skill copies. The
+    `ensureSkills` call it used now needs a third argument; without it the call
+    failed, and JSON mode hid the error. `sync-release-version.mjs` now writes
+    the `.agent/skills` and `.agent/commands` mirrors in its own fail-closed
+    transaction. `ensureSkills` throws when that argument is missing.
 - **Fixes found by running this release against ten real repositories**
   (`specs/050-dogfood-findings`).
   - `score` and `fix` crashed with "agentFile.some is not a function" when

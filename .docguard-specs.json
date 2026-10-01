@@ -7773,6 +7773,84 @@
       }
     },
     {
+      "specId": "docguard.release-cut-green",
+      "path": "specs/051-release-cut-green/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.release-cut-green#FR-001",
+          "docguard.release-cut-green#FR-002",
+          "docguard.release-cut-green#FR-003",
+          "docguard.release-cut-green#FR-004",
+          "docguard.release-cut-green#FR-005",
+          "docguard.release-cut-green#SC-001",
+          "docguard.release-cut-green#SC-002"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/051-release-cut-green/spec.md",
+            "digest": "sha256:a2917d0153a76f87a05e7d1e5bdd86838b9d08a58c1a0e634fc9394d4321761c"
+          },
+          {
+            "path": "specs/051-release-cut-green/plan.md",
+            "digest": "sha256:559f0dc6f486cd72c066cbb3d018d3ad4e9cb1701b8d2756c487047fe1ce661e"
+          },
+          {
+            "path": "specs/051-release-cut-green/tasks.md",
+            "digest": "sha256:aca5841e4642aca52f49a9817f7d5fc2dfdb3b8a241245c605762be3dd4358f9"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 0,
+          "total": 7
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-003",
+            "file": ".github/scripts/sync-release-version.mjs",
+            "line": 11
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-003",
+            "file": "tests/release-version-sync.test.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/release-version-sync.test.mjs",
+            "line": 79
+          }
+        ]
+      }
+    },
+    {
       "specId": "docguard.release-dispatch-window",
       "path": "specs/023-release-dispatch-window/spec.md",
       "reviewed": {

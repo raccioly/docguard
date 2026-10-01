@@ -42,6 +42,7 @@ import { buildMemoryPlan, clearMemoryPlanCache } from '../cli/scanners/memory-pl
 import { collectAreaFacts, checkAsBuiltSync } from '../cli/scanners/as-built.mjs';
 import { validateSchemaSync } from '../cli/validators/schema-sync.mjs';
 import { generateDataModel } from '../cli/writers/doc-generators.mjs';
+import { notesSince } from './fixtures/changelog-notes.mjs';
 
 const dirs = [];
 afterEach(() => {
@@ -475,8 +476,7 @@ describe('FR-011: the docs describe the scanned forms', () => {
   });
 
   it('the CHANGELOG records the fix', () => {
-    const unreleased = read('CHANGELOG.md').split(/^## \[/m)[1];
-    assert.match(unreleased, /^Unreleased\]/);
+    const unreleased = notesSince(read('CHANGELOG.md'), '0.42.1');
     assert.match(unreleased, /js-ts-extraction/);
   });
 });

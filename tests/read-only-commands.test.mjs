@@ -28,6 +28,7 @@ import {
 import { dirname, join, resolve } from 'node:path';
 import { devNull, tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
+import { notesSince } from './fixtures/changelog-notes.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const CLI = join(ROOT, 'cli', 'docguard.mjs');
@@ -425,9 +426,9 @@ describe('the documentation states the rule (FR-007)', () => {
     assert.match(read('docs-canonical/ARCHITECTURE.md'), /`ensureSkills` runs only from `init`/);
   });
 
-  it('CHANGELOG.md records the fix under Unreleased', () => {
+  it('CHANGELOG.md records the fix in the notes since 0.42.1', () => {
     const changelog = read('CHANGELOG.md');
-    const unreleased = changelog.slice(changelog.indexOf('## [Unreleased]'), changelog.indexOf('\n## [', changelog.indexOf('## [Unreleased]') + 1));
+    const unreleased = notesSince(changelog, '0.42.1');
     assert.match(unreleased, /### Fixed[\s\S]*`rules --for`[\s\S]*`\.docguard\/`/);
   });
 });

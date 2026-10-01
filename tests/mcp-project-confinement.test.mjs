@@ -21,6 +21,7 @@ import { join, posix, win32 } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { isWithinRoot } from '../cli/commands/mcp.mjs';
+import { notesSince } from './fixtures/changelog-notes.mjs';
 
 const REPO = fileURLToPath(new URL('..', import.meta.url));
 const CLI = join(REPO, 'cli', 'docguard.mjs');
@@ -251,8 +252,7 @@ describe('the docs describe the boundary and --root (FR-007)', () => {
     for (const rel of ['docs/ai-integration.md', 'docs/commands.md', 'README.md', 'mcpb/manifest.template.json', 'smithery.yaml']) {
       assert.match(read(rel), /--root/, rel);
     }
-    const unreleased = read('CHANGELOG.md').split(/\n## \[/)[1];
-    assert.match(unreleased, /^Unreleased\]/);
+    const unreleased = notesSince(read('CHANGELOG.md'), '0.42.1');
     assert.match(unreleased, /projectDir/);
     assert.match(unreleased, /--root/);
   });

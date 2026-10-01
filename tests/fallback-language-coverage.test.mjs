@@ -89,6 +89,7 @@ func main() {
 }
 `,
 });
+import { notesSince } from './fixtures/changelog-notes.mjs';
 
 // A standard Maven layout: the controller sits seven directories deep, in
 // Spring Initializr's default `com.example` package.
@@ -505,7 +506,7 @@ describe('docs describe the behaviour (FR-011)', () => {
     assert.match(read('cli/findings.mjs'), /System\.getenv/);
 
     const changelog = read('CHANGELOG.md');
-    const unreleased = changelog.slice(changelog.indexOf('## [Unreleased]'), changelog.indexOf('\n## [', changelog.indexOf('## [Unreleased]') + 5));
+    const unreleased = notesSince(changelog, '0.42.1');
     assert.match(unreleased, /specs\/043-fallback-language-coverage/);
   });
 });
