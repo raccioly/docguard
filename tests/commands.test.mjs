@@ -10,6 +10,8 @@ import { mkdtempSync, mkdirSync, rmSync, existsSync, writeFileSync, readFileSync
 import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
+import { runCI } from '../cli/commands/ci.mjs';
+import { runSpecs } from '../cli/commands/specs.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const CLI = join(__dirname, '..', 'cli', 'docguard.mjs');
@@ -1038,5 +1040,12 @@ describe('docguard watch', () => {
       if (child) child.kill('SIGINT');
       rmSync(tmpDir, { recursive: true, force: true });
     }
+  });
+});
+
+describe('Unreferenced cli exports', () => {
+  it('should export runCI and runSpecs', () => {
+    assert.equal(typeof runCI, 'function');
+    assert.equal(typeof runSpecs, 'function');
   });
 });
