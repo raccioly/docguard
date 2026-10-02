@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
 import { runSync } from '../cli/commands/sync.mjs';
+import { discoverTestPairs, runSyncTests } from '../cli/commands/sync-tests.mjs';
 
 // Silence command console output during tests.
 function quiet(fn) {
@@ -152,6 +153,27 @@ describe('docguard sync', () => {
       assert.throws(() => quiet(() => runSync(dir, mappedConfig, { write: true, force: true })), /malformed|source=human/);
       assert.equal(read(mapped), before);
       assert.equal(existsSync(join(dir, mapped + '.bak')), false, 'failed sync creates no backup side effect');
+    }
+  });
+});
+
+describe('sync-tests cli commands', () => {
+  it('should export discoverTestPairs and runSyncTests', () => {
+    assert.equal(typeof discoverTestPairs, 'function');
+    assert.equal(typeof runSyncTests, 'function');
+  });
+
+  it('discoverTestPairs should find basic pairs', () => {
+    const tmp = mkdtempSync(join(tmpdir(), 'docguard-test-'));
+    try {
+      writeFileSync(join(tmp, 'index.js'), 'export const a = 1;');
+      writeFileSync(join(tmp, 'index.test.js'), 'import { a } from "./index.js";');
+      const pairs = discoverTestPairs(tmp, {});
+      assert.equal(pairs.length, 1);
+      assert.equal(pairs[0].source, 'index.js');
+      assert.equal(pairs[0].test, 'index.test.js');
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
     }
   });
 });
