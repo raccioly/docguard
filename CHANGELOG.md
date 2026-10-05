@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.43.1] - 2026-10-05
+
+Automated weekly release — batches everything merged since `v0.43.0`.
+
+### Commits
+
+- test: add missing tests for cli command exports (#516)
+- docs: link the README's brief to its rendered GitHub Pages copy (#515)
+- chore(deps): bump @babel/parser (#513)
+
 ## [0.43.0] - 2026-10-01
 
 **Upgrading from 0.42.x.** No new check fails a build: every new finding is a
