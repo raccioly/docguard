@@ -436,7 +436,7 @@ const EXPLAINERS = {
   },
   schemaSync: {
     title: 'Schema-Sync — DB models in code are documented in DATA-MODEL.md',
-    what: 'Detects schema files for 7 ORMs/frameworks (Prisma, Drizzle, Sequelize, TypeORM, Knex, Django, Rails), extracts the model/table names, and checks each appears (case-insensitive, singular/plural aware) in docs-canonical/DATA-MODEL.md. Migration/utility tables are filtered out. No schema files → passes silently.',
+    what: 'Reads models from Prisma, Drizzle, Mongoose, TypeORM and Sequelize (the scanner `generate` uses), Django, SQLAlchemy and SQLModel, and table names from Knex and Rails migrations, then checks each appears (case-insensitive, singular/plural aware) in docs-canonical/DATA-MODEL.md. Migration/utility tables are filtered out. No schema files → passes silently.',
     why:  'An undocumented table is a data model only the code knows — exactly the institutional memory CDD exists to preserve.',
     triggers: [
       ['not documented in DATA-MODEL.md', 'Add the model to DATA-MODEL.md\'s Entity Definitions section.'],

@@ -506,7 +506,7 @@ Marker:
 
 ### SCH001: Database models found but no DATA-MODEL.md
 
-Schema definitions were detected (Prisma/Drizzle/TypeORM/Sequelize/Knex/Django/Rails) but docs-canonical/DATA-MODEL.md does not exist, so the schema is undocumented. Run `docguard init` to create it, then document the models.
+Database models were detected (Prisma, Drizzle, Mongoose, TypeORM, Sequelize, Django, SQLAlchemy or SQLModel models, or Knex and Rails migration tables) but docs-canonical/DATA-MODEL.md does not exist, so the schema is undocumented. Run `docguard init` to create it, then document the models.
 
 ### SCH002: Model not documented in DATA-MODEL.md
 

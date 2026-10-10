@@ -259,10 +259,20 @@ DocGuard's own output:
     the source roots;
   - Mongoose schemas (nested `{ type, ref }` fields, arrays of refs, the
     `model('Name', schema)` name), anywhere under the source roots, including
-    `lib/models`.
+    `lib/models`;
+  - TypeORM `@Entity` classes whose decorators come from `typeorm`, directly
+    or through a project barrel that re-exports it: columns with
+    their type, nullability, primary key, `unique` and default, columns
+    inherited from a base class, and each relation drawn once from its owning
+    side (`@ManyToOne`, the `@JoinColumn` or `@JoinTable` side);
+  - Sequelize models from `sequelize.define('Name', …)` and
+    `Model.init(…, { sequelize })`, with their declared attributes and
+    `belongsTo`, `hasMany`, `hasOne` and `belongsToMany` associations.
 
   Guard's schema check reads these through the same discovery, so it and
-  `generate` name the same entities.
+  `generate` name the same entities. Zod object schemas are the data model
+  only when none of these is found. An entity read by pattern, because its
+  file does not parse, marks the plan's entity surface partial.
 
 #### How routes are read
 
@@ -717,9 +727,11 @@ npx docguard-cli memory --pack --symbols   # …plus a symbol map (opt-in)
 `--symbols` adds a `## Symbol map`: the source files most central in the static
 import graph (PageRank), each with the names it exports, cut to
 `memory.symbolMap.maxBytes` (default 4096) at a whole line. It is byte-identical
-for the same tree and names what it left out. It stays opt-in until the v2
-agent-context benchmark decides whether the extra bytes pay for themselves
-(`benchmarks/agent-context/results/README-v2.md`).
+for the same tree and names what it left out. It stays opt-in: the frozen
+agent-context benchmark (protocol v3, 54 trials, 2026-10-10) found no
+regression, but none of the gains the protocol required in advance, so the
+extra bytes are not added to every session
+(`benchmarks/agent-context/results/README-v3.md`).
 
 ---
 

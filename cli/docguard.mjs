@@ -322,7 +322,7 @@ const COMMAND_HELP = {
       ['--diff', 'Drill into drift between memory and code'],
       ['--pack', 'Write .docguard/context-pack.md, a session-start snapshot for an agent'],
       ['--stdout', 'With --pack: print the pack instead of writing it'],
-      ['--symbols', 'With --pack: add a symbol map (the most central files and their exported names, within memory.symbolMap.maxBytes). Opt-in until a benchmark promotes it'],
+      ['--symbols', 'With --pack: add a symbol map (the most central files and their exported names, within memory.symbolMap.maxBytes). Opt-in: the agent-context benchmark found no benefit'],
     ],
     examples: ['docguard memory', 'docguard memory --diff', 'docguard memory --pack --symbols'],
   },

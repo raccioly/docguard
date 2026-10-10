@@ -156,9 +156,12 @@ and degrade gracefully on fork tokens and shallow clones.
 
 Load the context pack at agent session start; regenerate any time — it is
 never hand-edited. `memory --pack --symbols` adds a symbol map, which names the
-most central files and their exports within a byte budget. It stays opt-in until
-the predeclared v2 benchmark measures it against the plain pack: default-on
-needs no regression and a benefit, and a regression means it is not released.
+most central files and their exports within a byte budget. It stays opt-in. The
+predeclared agent-context benchmark measured it against the plain pack
+(protocol v3, 54 trials, 2026-10-10). It found no regression, but no benefit
+either: every condition solved every task, and on the navigation tasks median
+steps did not change while median latency fell 6%, short of the 15% bar
+(`benchmarks/agent-context/results/README-v3.md`).
 
 For a concrete change, task context can reduce discovery steps:
 

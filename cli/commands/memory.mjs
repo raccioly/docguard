@@ -161,8 +161,8 @@ function runMemoryPack(projectDir, config, flags) {
     } catch { /* ignore */ }
   }
 
-  // docguard.symbol-map#FR-004: opt-in until the v2 agent-context benchmark
-  // promotes it (FR-008); without the flag the pack is unchanged.
+  // docguard.symbol-map#FR-004: opt-in. The agent-context benchmark (protocol
+  // v3, FR-008/FR-011) computed `opt-in`; without the flag the pack is unchanged.
   if (flags.symbols) {
     lines.push(...buildSymbolMap(projectDir, config).text.split('\n'));
     lines.push('');

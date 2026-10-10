@@ -30,6 +30,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and no reason is invented. The claimspec `ignore` and `common` schemas are
   vendored from raccioly/testguard and every document is validated before it
   is printed.
+- **The symbol map's benchmark has run, and it stays opt-in**
+  (`specs/036-symbol-map`). Agent-context protocol v2 could not run: its pinned
+  Codex CLI is no longer installed, and its model is refused for
+  ChatGPT-account Codex. Protocol v3 (`benchmarks/agent-context/manifest-v3.json`)
+  changes only that executable pin, to `codex-cli 0.162.0-alpha.17.2` and
+  `gpt-6.1-sol` at low reasoning. It was frozen and committed before the first
+  trial, and the runner rejects a v3 manifest that differs from v2 anywhere
+  else (`--protocol v3`). All 54 trials succeeded. With the map, median
+  uncached input rose 1.0% and median steps did not change. On the
+  navigation-bound tasks, median latency fell 6.0%, short of the 15% threshold.
+  The frozen rule therefore computed `opt-in`: `memory --pack --symbols` stays
+  available, and the default pack is unchanged
+  (`benchmarks/agent-context/results/README-v3.md`).
 
 - **A documentation site with the guides a larger project ships**
   (`specs/053-user-documentation`). The GitHub Pages site
@@ -73,6 +86,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   --format claimspec` now exports the reasoned entries that read the same in
   both syntaxes. The `documentLifecycle` array is now in the config schema and
   the configuration guide.
+- **TypeORM and Sequelize models reach `generate`, `generate --plan` and
+  `diff`** (`specs/056-typeorm-models`, #520). Only guard's schema check read
+  them, by a pattern that missed common layouts, so a TypeORM or Sequelize
+  project got an empty entity table and ER diagram. Both ORMs now go through
+  the discovery Prisma, Drizzle and Mongoose use, so guard, `generate`, the
+  plan, as-built specs and `diff` read the same models:
+  - TypeORM: `@Entity` classes in any file that imports `typeorm`
+    (`src/entity/User.ts` from `typeorm init` and NestJS's
+    `src/users/user.entity.ts` included), named by class with the table name
+    kept. Columns carry their type, nullability, primary key, `unique`,
+    default and comment; columns declared on a base class are inherited; each
+    relation is drawn once, from its owning side.
+  - Sequelize: `sequelize.define('Name', …)` and `Model.init(…, { sequelize })`
+    models with their declared attributes. Guard used to miss every `init`
+    model. `belongsTo`, `hasMany`, `hasOne` and `belongsToMany` associations
+    are drawn once.
+  - An entity whose decorators come through a project barrel that
+    re-exports `typeorm` (relative, tsconfig path alias or workspace package)
+    is read; one whose barrel re-exports MikroORM is not.
+  - A file that does not parse is read by pattern into the same entities,
+    which then report the `regex-fallback` tier. Drizzle and Mongoose entities
+    now report their tier too, so a pattern-read schema marks the plan's
+    entity surface partial.
+  - Zod schemas are the data model only when no ORM entity is found; a
+    Mongoose project with Zod schemas used to report both. A Zod-only project
+    listed each schema twice; it now lists each once.
+  - SCH001's help names every model source guard reads.
+
+  Guard now names a TypeORM entity by its class and accepts the class or the
+  table name in DATA-MODEL.md. Knex is still read by guard only, by table name.
+- **The watch reliability tests no longer depend on wall-clock timing**
+  (`specs/055-watch-deterministic`, #523). `tests/watch-reliability.test.mjs`
+  slept 300–600 ms around the 500 ms debounce and let the watcher print to
+  stdout, which the test runner also reads its own messages from; it failed
+  intermittently in full local runs on a loaded machine. The tests now drive
+  the debounce with a fake clock through two new optional `runWatch` runtime
+  hooks (`setTimeout`, `clearTimeout`, defaulting to the global timers),
+  observe check completion by draining queued promise callbacks, and capture
+  console output. They assert the coalescing at the exact window edge, and a
+  new case covers a save that lands while a queued check's window is still
+  open. The file runs in about 0.1 s instead of 4 s. `docguard watch` itself
+  is unchanged.
+
 - **Defects found while documenting DocGuard** (`specs/054-docs-verification-findings`).
   Running every documented flow on scratch projects turned up:
   - A Koa project was labelled Hono. It is now labelled Koa. Its routes are

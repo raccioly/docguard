@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raccioly.github.io/docguard/schemas/docguard-agent-context-benchmark-v2.schema.json",
-  "title": "DocGuard agent-context benchmark, protocol v2 (symbol map)",
+  "title": "DocGuard agent-context benchmark, protocols v2 and v3 (symbol map)",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -33,7 +33,11 @@
       ],
       "properties": {
         "id": {
-          "const": "docguard-agent-context-v2"
+          "enum": [
+            "docguard-agent-context-v2",
+            "docguard-agent-context-v3"
+          ],
+          "description": "v3 is v2 with only the executable pin (CLI version and model id) changed; both use this format."
         },
         "frozenAt": {
           "type": "string",
