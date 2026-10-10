@@ -209,3 +209,9 @@ files the application loads is reported at the URI Laravel serves it under.
   SignalR hubs, gRPC services, `MapIdentityApi`, `FallbackPolicy`, and
   `ApiExplorer`/OpenAPI generation at runtime.
 - Routes registered from runtime data (loops, configuration, reflection).
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `1c3268b169b1e904b70d0ac6cb22d86065a46e01` — Reviewed at 1c3268b on main: all 7 tasks are checked and were delivered by #533, #539; the full suite (3279 tests) passes on Node 18, 20, 22 and 24 in CI, and guard reports 0 errors. Evidence: `cli/scanners/dotnet-routes.mjs`, `cli/scanners/php-routes.mjs`, `cli/scanners/project-type.mjs`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/TEST-SPEC.md`, `tests/php-dotnet-routes.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->

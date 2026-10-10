@@ -2085,7 +2085,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "implemented",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -2112,8 +2112,34 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "1c3268b169b1e904b70d0ac6cb22d86065a46e01",
+          "outcomes": [
+            {
+              "revision": "1c3268b169b1e904b70d0ac6cb22d86065a46e01",
+              "reason": "Reviewed at 1c3268b on main: all 13 tasks are checked and were delivered by #537, #538, #539; the full suite (3279 tests) passes on Node 18, 20, 22 and 24 in CI, and guard reports 0 errors.",
+              "evidence": [
+                "cli/commands/diff.mjs",
+                "cli/commands/generate-as-built.mjs",
+                "cli/commands/generate.mjs",
+                "cli/scanners/api-doc.mjs",
+                "cli/scanners/as-built.mjs",
+                "cli/scanners/inventory.mjs",
+                "cli/scanners/memory-plan.mjs",
+                "cli/scanners/route-case.mjs",
+                "cli/scanners/routes.mjs",
+                "cli/scanners/schemas.mjs",
+                "cli/scanners/tech-stack.mjs",
+                "cli/shared-ignore.mjs",
+                "cli/shared-source.mjs",
+                "cli/validators/api-surface.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/DATA-MODEL.md",
+                "tests/coverage-followups.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -2136,7 +2162,7 @@
         "artifacts": [
           {
             "path": "specs/063-coverage-followups/spec.md",
-            "digest": "sha256:36bb3a49da85c5c5ebcc89c95d86010e77ba1663ae0cd9b1168d221ece5f959f"
+            "digest": "sha256:1185fc4d0930dcfc5f6448920dae5bbff4f3359a2d7c8507c05b6428c8760b95"
           },
           {
             "path": "specs/063-coverage-followups/plan.md",
@@ -8583,7 +8609,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "implemented",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -8606,8 +8632,23 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "1c3268b169b1e904b70d0ac6cb22d86065a46e01",
+          "outcomes": [
+            {
+              "revision": "1c3268b169b1e904b70d0ac6cb22d86065a46e01",
+              "reason": "Reviewed at 1c3268b on main: all 7 tasks are checked and were delivered by #533, #539; the full suite (3279 tests) passes on Node 18, 20, 22 and 24 in CI, and guard reports 0 errors.",
+              "evidence": [
+                "cli/scanners/dotnet-routes.mjs",
+                "cli/scanners/php-routes.mjs",
+                "cli/scanners/project-type.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/php-dotnet-routes.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -8631,7 +8672,7 @@
         "artifacts": [
           {
             "path": "specs/059-php-dotnet-routes/spec.md",
-            "digest": "sha256:68028a6fdb936e16209c2f1f1ba59c643c27925a5a66c4e6a9f37fbbe899b9d3"
+            "digest": "sha256:8c8a6b5f1fa7afa7dbfae5512496c695e5e69f4dd36ddd359fbb1249ed28f570"
           },
           {
             "path": "specs/059-php-dotnet-routes/plan.md",
