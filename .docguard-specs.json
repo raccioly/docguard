@@ -643,7 +643,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/shared-source.mjs",
-            "line": 823
+            "line": 878
           },
           {
             "requirementId": "FR-002",
@@ -2157,12 +2157,12 @@
           {
             "requirementId": "FR-001",
             "file": "cli/shared-source.mjs",
-            "line": 1315
+            "line": 1370
           },
           {
             "requirementId": "FR-001",
             "file": "cli/shared-source.mjs",
-            "line": 1318
+            "line": 1373
           },
           {
             "requirementId": "FR-002",
@@ -2172,7 +2172,7 @@
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/routes.mjs",
-            "line": 22
+            "line": 23
           },
           {
             "requirementId": "FR-002",
@@ -2202,7 +2202,7 @@
           {
             "requirementId": "FR-003",
             "file": "cli/scanners/routes.mjs",
-            "line": 23
+            "line": 24
           },
           {
             "requirementId": "FR-003",
@@ -2212,7 +2212,7 @@
           {
             "requirementId": "FR-004",
             "file": "cli/scanners/routes.mjs",
-            "line": 24
+            "line": 25
           },
           {
             "requirementId": "FR-004",
@@ -2247,7 +2247,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/shared-source.mjs",
-            "line": 1319
+            "line": 1374
           },
           {
             "requirementId": "FR-009",
@@ -2262,7 +2262,7 @@
           {
             "requirementId": "FR-009",
             "file": "cli/scanners/routes.mjs",
-            "line": 25
+            "line": 26
           },
           {
             "requirementId": "FR-010",
@@ -2272,12 +2272,12 @@
           {
             "requirementId": "FR-010",
             "file": "cli/shared-source.mjs",
-            "line": 1270
+            "line": 1325
           },
           {
             "requirementId": "FR-010",
             "file": "cli/shared-source.mjs",
-            "line": 1298
+            "line": 1353
           }
         ],
         "testEvidence": [
@@ -4432,12 +4432,12 @@
           {
             "requirementId": "FR-001",
             "file": "cli/shared-source.mjs",
-            "line": 1227
+            "line": 1282
           },
           {
             "requirementId": "FR-001",
             "file": "cli/shared-source.mjs",
-            "line": 1233
+            "line": 1288
           },
           {
             "requirementId": "FR-001",
@@ -4447,12 +4447,12 @@
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/routes.mjs",
-            "line": 14
+            "line": 15
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/routes.mjs",
-            "line": 16
+            "line": 17
           },
           {
             "requirementId": "FR-002",
@@ -4462,7 +4462,7 @@
           {
             "requirementId": "FR-003",
             "file": "cli/shared-source.mjs",
-            "line": 838
+            "line": 893
           },
           {
             "requirementId": "FR-004",
@@ -4472,12 +4472,12 @@
           {
             "requirementId": "FR-004",
             "file": "cli/shared-source.mjs",
-            "line": 829
+            "line": 884
           },
           {
             "requirementId": "FR-004",
             "file": "cli/shared-source.mjs",
-            "line": 839
+            "line": 894
           },
           {
             "requirementId": "FR-004",
@@ -4487,7 +4487,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/shared-source.mjs",
-            "line": 840
+            "line": 895
           },
           {
             "requirementId": "FR-006",
@@ -4497,7 +4497,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/scanners/routes.mjs",
-            "line": 17
+            "line": 18
           },
           {
             "requirementId": "FR-007",
@@ -4507,12 +4507,12 @@
           {
             "requirementId": "FR-008",
             "file": "cli/scanners/routes.mjs",
-            "line": 18
+            "line": 19
           },
           {
             "requirementId": "FR-008",
             "file": "cli/scanners/routes.mjs",
-            "line": 1093
+            "line": 1204
           },
           {
             "requirementId": "FR-009",
@@ -5132,7 +5132,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/shared-source.mjs",
-            "line": 843
+            "line": 898
           },
           {
             "requirementId": "FR-007",
@@ -5142,12 +5142,12 @@
           {
             "requirementId": "FR-008",
             "file": "cli/shared-source.mjs",
-            "line": 844
+            "line": 899
           },
           {
             "requirementId": "FR-008",
             "file": "cli/shared-source.mjs",
-            "line": 1081
+            "line": 1136
           },
           {
             "requirementId": "FR-009",
@@ -5953,7 +5953,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/scanners/router-routes.mjs",
-            "line": 19
+            "line": 34
           },
           {
             "requirementId": "FR-006",
@@ -5968,12 +5968,12 @@
           {
             "requirementId": "FR-006",
             "file": "cli/scanners/router-routes.mjs",
-            "line": 20
+            "line": 35
           },
           {
             "requirementId": "FR-006",
             "file": "cli/scanners/routes.mjs",
-            "line": 21
+            "line": 22
           },
           {
             "requirementId": "FR-006",
@@ -6041,6 +6041,257 @@
             "requirementId": "SC-002",
             "file": "tests/node18-compat.test.mjs",
             "line": 7
+          }
+        ]
+      }
+    },
+    {
+      "specId": "docguard.js-route-shapes",
+      "path": "specs/064-js-route-shapes/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "approved",
+          "delivery": "implemented",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": "living"
+        },
+        "relations": {
+          "extends": [
+            "docguard.docs-verification-findings",
+            "docguard.go-spring-rails-routes",
+            "docguard.js-framework-routes"
+          ],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md",
+            "docs-canonical/DATA-MODEL.md"
+          ]
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.js-route-shapes#FR-001",
+          "docguard.js-route-shapes#FR-002",
+          "docguard.js-route-shapes#FR-003",
+          "docguard.js-route-shapes#FR-004",
+          "docguard.js-route-shapes#FR-005",
+          "docguard.js-route-shapes#FR-006",
+          "docguard.js-route-shapes#FR-007",
+          "docguard.js-route-shapes#FR-008",
+          "docguard.js-route-shapes#FR-009",
+          "docguard.js-route-shapes#FR-010",
+          "docguard.js-route-shapes#FR-011",
+          "docguard.js-route-shapes#SC-001",
+          "docguard.js-route-shapes#SC-002"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/064-js-route-shapes/spec.md",
+            "digest": "sha256:c1c4a830933111f2eae316e3abdd36ce809db99d7f606b985e6e9a221f04cb7d"
+          },
+          {
+            "path": "specs/064-js-route-shapes/plan.md",
+            "digest": "sha256:5ede24f7bdd52bae08c6898f1267c50f875b2d408073d75d877343f5b4f7937e"
+          },
+          {
+            "path": "specs/064-js-route-shapes/tasks.md",
+            "digest": "sha256:ed002f647595ebb1187eae7c4f96e5091b5d8a6c6ed4a1f73cefffa5ffd11235"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 19,
+          "total": 19
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/scanners/router-routes.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "FR-001",
+            "file": "cli/scanners/router-routes.mjs",
+            "line": 36
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/shared-source.mjs",
+            "line": 452
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/scanners/pages-routes.mjs",
+            "line": 2
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/scanners/pages-routes.mjs",
+            "line": 26
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/scanners/router-routes.mjs",
+            "line": 27
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/scanners/router-routes.mjs",
+            "line": 37
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/scanners/pages-routes.mjs",
+            "line": 27
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/scanners/router-routes.mjs",
+            "line": 38
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/scanners/js-ast.mjs",
+            "line": 622
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/scanners/js-ast.mjs",
+            "line": 631
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/scanners/routes.mjs",
+            "line": 375
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "cli/scanners/pages-routes.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "cli/scanners/pages-routes.mjs",
+            "line": 28
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "cli/shared-source.mjs",
+            "line": 434
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "cli/scanners/router-routes.mjs",
+            "line": 39
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/scanners/routes.mjs",
+            "line": 636
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/scanners/routes.mjs",
+            "line": 642
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "cli/scanners/js-ast.mjs",
+            "line": 1060
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "cli/scanners/js-ast.mjs",
+            "line": 1102
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "cli/scanners/routes.mjs",
+            "line": 784
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/js-route-shapes.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/js-route-shapes.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/js-route-shapes.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/js-route-shapes.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/js-route-shapes.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/js-route-shapes.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/js-route-shapes.test.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/js-route-shapes.test.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "tests/js-route-shapes.test.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "tests/js-route-shapes.test.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "tests/js-route-shapes.test.mjs",
+            "line": 20
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/fixtures/js-route-shape-projects.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/js-route-shapes.test.mjs",
+            "line": 21
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/js-route-shapes.test.mjs",
+            "line": 22
           }
         ]
       }
@@ -6142,12 +6393,12 @@
           {
             "requirementId": "FR-001",
             "file": "cli/scanners/js-ast.mjs",
-            "line": 617
+            "line": 629
           },
           {
             "requirementId": "FR-001",
             "file": "cli/scanners/routes.mjs",
-            "line": 496
+            "line": 530
           },
           {
             "requirementId": "FR-002",
@@ -6157,42 +6408,42 @@
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/js-ast.mjs",
-            "line": 618
+            "line": 630
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/js-ast.mjs",
-            "line": 704
+            "line": 737
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/routes.mjs",
-            "line": 485
+            "line": 519
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/routes.mjs",
-            "line": 546
+            "line": 580
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/routes.mjs",
-            "line": 549
+            "line": 583
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/routes.mjs",
-            "line": 603
+            "line": 640
           },
           {
             "requirementId": "FR-003",
             "file": "cli/shared-source.mjs",
-            "line": 778
+            "line": 833
           },
           {
             "requirementId": "FR-003",
             "file": "cli/shared-source.mjs",
-            "line": 841
+            "line": 896
           },
           {
             "requirementId": "FR-004",
@@ -6202,7 +6453,7 @@
           {
             "requirementId": "FR-004",
             "file": "cli/shared-source.mjs",
-            "line": 842
+            "line": 897
           },
           {
             "requirementId": "FR-005",
@@ -6212,7 +6463,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/scanners/routes.mjs",
-            "line": 604
+            "line": 641
           },
           {
             "requirementId": "FR-005",
@@ -6247,7 +6498,7 @@
           {
             "requirementId": "FR-008",
             "file": "cli/scanners/project-type.mjs",
-            "line": 324
+            "line": 327
           },
           {
             "requirementId": "FR-009",
@@ -6257,7 +6508,7 @@
           {
             "requirementId": "FR-009",
             "file": "cli/scanners/js-ast.mjs",
-            "line": 707
+            "line": 740
           },
           {
             "requirementId": "FR-010",
@@ -6525,7 +6776,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/shared-source.mjs",
-            "line": 453
+            "line": 508
           },
           {
             "requirementId": "FR-006",
@@ -6535,7 +6786,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/shared-source.mjs",
-            "line": 454
+            "line": 509
           },
           {
             "requirementId": "FR-007",
@@ -7417,7 +7668,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/scanners/routes.mjs",
-            "line": 19
+            "line": 20
           },
           {
             "requirementId": "FR-005",
@@ -7437,7 +7688,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/scanners/routes.mjs",
-            "line": 20
+            "line": 21
           }
         ],
         "testEvidence": [

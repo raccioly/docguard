@@ -432,10 +432,13 @@ Koa, Fastify and NestJS routes as their settings decide
 comparison (`compareEndpoints` in `cli/scanners/api-doc.mjs`) folds case only
 for such a route. The non-enumerable `scan.unresolved` lists every route a
 reader saw and left out of the surface, as `{ framework, code, file, line, target }`:
-the NestJS, Worker and router-library readers' limitations and the Python
-reader's (`python-unresolved-route-path`, `python-unresolved-include`,
+the NestJS, Worker, Cloudflare Pages and router-library (Hono, itty-router,
+Koa) readers' limitations, Express and Fastify route paths and Express mount
+prefixes that are not literal (`route-unresolved-path`,
+`route-unresolved-prefix`), and the Python reader's
+(`python-unresolved-route-path`, `python-unresolved-include`,
 `django-unresolved-route`, `django-unresolved-include`), minus those in test,
-fixture, example or ignored files (specs 058, 063). `scan.caseNotes` lists
+fixture, example or ignored files (specs 058, 063, 064). `scan.caseNotes` lists
 each case setting whose value is an expression rather than a literal, as
 `{ framework, file, line, reason }`; the routes it may govern compare exactly.
 

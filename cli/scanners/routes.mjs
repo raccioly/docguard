@@ -3,7 +3,8 @@
  * @req docguard.adoption-workflow-integrity#FR-013
  * Parses actual route definitions from source code across frameworks.
  * Supports: Next.js (App Router + Pages), Express, Fastify, Hono, Koa, NestJS,
- * Cloudflare Workers (fetch dispatch, itty-router), Django, FastAPI, Flask,
+ * Cloudflare Workers (fetch dispatch, itty-router), Cloudflare Pages Functions,
+ * Hono OpenAPI routes, Django, FastAPI, Flask,
  * Starlette, Spring Boot, Rails, Sinatra, Gin/Echo/Chi/Fiber/net/http,
  * Axum/Actix/Rocket/Warp/Tide, Laravel, Symfony, ASP.NET Core
  *
@@ -36,9 +37,9 @@ function takeCaseNotes(scan, found) {
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, relative, basename, extname, dirname } from 'node:path';
-import { resolveSourceRoots, readScannable, tierFor, summarizeTiers, collectPackageJsons } from '../shared-source.mjs';
+import { resolveSourceRoots, readScannable, tierFor, summarizeTiers, collectPackageJsons, pagesOutputDir } from '../shared-source.mjs';
 import { shouldIgnore, relPosix, isNonProductPath, isIgnoredDirEntry } from '../shared-ignore.mjs';
-import { extractJsRouteCalls, extractJsRouteObjects, extractJsMountsAndImports, nextRouteHandlers, isAuthMiddlewareName, AUTH_CHECK_RE, matchingBracket } from './js-ast.mjs';
+import { extractJsRouteCalls, extractJsRouteObjects, extractJsMountsAndImports, importedStaticStrings, nextRouteHandlers, isAuthMiddlewareName, AUTH_CHECK_RE, matchingBracket } from './js-ast.mjs';
 import { createAliasResolver } from './ts-paths.mjs';
 import { scanPythonWebRoutes } from './python-routes.mjs';
 import { extractGoRoutes } from './go-routes.mjs';
@@ -51,6 +52,7 @@ import { extractAspNetRoutes } from './dotnet-routes.mjs';
 import { extractNestRoutes } from './nest-routes.mjs';
 import { extractWorkerRoutes } from './worker-routes.mjs';
 import { extractRouterRoutes } from './router-routes.mjs';
+import { extractPagesRoutes, functionsLocation, isAdvancedWorkerFile, parseRoutesJson, servedByRoutesJson } from './pages-routes.mjs';
 import { createImportResolver } from './js-route-support.mjs';
 import { expressCaseModel, koaCaseModel, fastifyCaseMode, nestCaseMode } from './route-case.mjs';
 
@@ -106,12 +108,14 @@ export function scanRoutesDeep(dir, stack, docTools, opts = {}) {
     routes.push(...scanNextJsRoutes(dir));
   }
 
+  // A path these scanners cannot read is recorded with the scan, never
+  // reported at a `:param` placeholder (docguard.js-route-shapes#FR-007).
   if (framework.includes('Express') || !framework) {
-    routes.push(...takeCaseNotes(scan, scanExpressRoutes(dir, roots)));
+    routes.push(...takeCaseNotes(scan, scanExpressRoutes(dir, roots, scan.unresolved)));
   }
 
   if (framework.includes('Fastify')) {
-    routes.push(...takeCaseNotes(scan, scanFastifyRoutes(dir, roots)));
+    routes.push(...takeCaseNotes(scan, scanFastifyRoutes(dir, roots, scan.unresolved)));
   }
 
   // NestJS decorators, Cloudflare Worker dispatch and Hono/itty-router
@@ -126,10 +130,17 @@ export function scanRoutesDeep(dir, stack, docTools, opts = {}) {
   } else if (framework.includes('Hono')) {
     patternScan('Hono', ['hono', 'itty-router'], scanHonoRouterRoutes);
   }
-  // Koa (with @koa/router) declares routes with the same method shorthand as
-  // Hono, so the shorthand scanner reads it (docguard.docs-verification-findings#FR-001).
+  // Cloudflare Pages Functions are routed by file; a Pages project may also
+  // serve a Hono or itty-router app from one Function
+  // (docguard.js-route-shapes#FR-003).
+  if (framework.includes('Cloudflare Pages')) {
+    patternScan('Cloudflare Pages', ['cloudflare-pages', 'hono', 'itty-router'], scanPagesRoutes);
+  }
+  // Koa routers compose prefixes across files like Hono's, so the router
+  // reader reads them (docguard.js-route-shapes#FR-001; labelled Koa since
+  // docguard.docs-verification-findings#FR-001).
   if (framework.includes('Koa')) {
-    routes.push(...takeCaseNotes(scan, scanHonoRoutes(dir, roots, 'koa')));
+    patternScan('Koa', ['koa'], scanKoaRouterRoutes);
   }
 
   if (named('Spring', 'Java')) {
@@ -355,7 +366,20 @@ function scanNextJsRoutes(dir) {
 
 // ── Express / Generic Node.js ───────────────────────────────────────────────
 
-function scanExpressRoutes(dir, roots = null) {
+/** A pattern-tier path still holding a `${…}` substitution: not literal. */
+const TEMPLATE_SUBSTITUTION = /\$\{/;
+
+/**
+ * Record a route registration whose path is not literal (from the syntax
+ * tree's `unresolved`, or a pattern-tier `${…}` path) in the scan's sink.
+ * @implements docguard.js-route-shapes#FR-007
+ */
+function recordUnresolvedPaths(sink, framework, file, items) {
+  if (!sink) return;
+  for (const u of items || []) sink.push({ framework, code: 'route-unresolved-path', file, line: u.line, target: u.target || '' });
+}
+
+function scanExpressRoutes(dir, roots = null, unresolved = null) {
   // Regex is the FALLBACK (used only when @babel/parser can't parse a file).
   // It hardcodes app/router/server receivers; the AST path matches any receiver.
   const routePattern = /(?:app|router|server)\s*\.\s*(get|post|put|delete|patch|head|options)\s*\(\s*['"`]([^'"`]+)['"`]/gi;
@@ -396,7 +420,7 @@ function scanExpressRoutes(dir, roots = null) {
   // `app.get('/health')` in the same file is NOT wrongly prefixed).
   // Whether each router matches ignoring case (docguard.coverage-followups#FR-009).
   const caseModel = expressCaseModel(files);
-  const mountMap = buildExpressMountMap(files, createAliasResolver(dir), caseModel.modeOf);
+  const mountMap = buildExpressMountMap(files, createAliasResolver(dir), caseModel.modeOf, unresolved);
 
   // ── Phase 2: emit routes, prefixing by mount where known ────────────────────
   // Auth is per route (docguard.js-ts-extraction#FR-002): the route's own
@@ -405,7 +429,11 @@ function scanExpressRoutes(dir, roots = null) {
   for (const { content, filePath, fileLabel } of files) {
     const mounts = mountMap.get(filePath) || [];
     const emit = (r) => {
-      const applicable = mounts.filter(m => m.receiver === null || m.receiver === r.receiver);
+      const matching = mounts.filter(m => m.receiver === null || m.receiver === r.receiver);
+      const applicable = matching.filter(m => !m.omitted);
+      // Mounted only under prefixes that cannot be read: the served path is
+      // unknown, so the route is omitted (docguard.js-route-shapes#FR-010).
+      if (matching.length && !applicable.length) return;
       // Case-insensitive only when the route's own router is, and every router
       // that matched a mount prefix above it is.
       const own = caseModel.modeOf(filePath, r.receiver) === 'insensitive';
@@ -425,16 +453,22 @@ function scanExpressRoutes(dir, roots = null) {
         }, target.insensitive));
       }
     };
-    const ast = extractJsRouteCalls(content, filePath);
+    const ast = extractJsRouteCalls(content, filePath, mountMap.importedConstants?.get(filePath));
     if (ast) {
       for (const r of ast) emit({ ...r, receiver: r.receiver ?? null });
+      recordUnresolvedPaths(unresolved, 'Express', fileLabel, ast.unresolved);
     } else {
+      const found = [];
       const regex = new RegExp(routePattern.source, 'gi');
       let match;
       while ((match = regex.exec(content)) !== null) {
-        emit({ method: match[1], path: match[2], start: match.index, receiver: null, auth: statementAuth(content, match.index) });
+        found.push({ method: match[1], path: match[2], start: match.index, receiver: null, auth: statementAuth(content, match.index) });
       }
-      for (const r of routeChainsByPattern(content)) emit(r);
+      found.push(...routeChainsByPattern(content));
+      for (const r of found) {
+        if (TEMPLATE_SUBSTITUTION.test(r.path)) recordUnresolvedPaths(unresolved, 'Express', fileLabel, [{ line: r.line ?? lineAt(content, r.start), target: r.path }]);
+        else emit(r);
+      }
     }
   }
 
@@ -595,19 +629,23 @@ function matcherRegex(pattern) {
  *     routes whose receiver matches (receiver: ident).
  *
  * Imported-router mounts are composed transitively, so
- * `app.use('/api', api)` plus `api.use('/x', x)` yields `/api/x`. Dynamic mount
- * paths (non-string-literal prefixes) are skipped. Unmounted files keep their
+ * `app.use('/api', api)` plus `api.use('/x', x)` yields `/api/x`. A prefix
+ * built from same-file or imported `const` strings is resolved; any other
+ * prefix that is not literal is recorded once in `unresolved`, and a router
+ * reachable only through such mounts is marked `omitted`, so its routes are not
+ * reported at the root (docguard.js-route-shapes#FR-010). Unmounted files keep their
  * bare paths — exactly the pre-mount-map behavior. Each prefix carries whether
  * auth middleware guards every mount chain to it, and imports resolve through
  * tsconfig/jsconfig aliases.
  * @implements docguard.js-ts-extraction#FR-002
  * @implements docguard.js-ts-extraction#FR-005
+ * @implements docguard.js-route-shapes#FR-010
  */
-function buildExpressMountMap(files, resolveAlias = null, modeOf = null) {
+function buildExpressMountMap(files, resolveAlias = null, modeOf = null, unresolved = null) {
   const map = new Map();
-  const add = (absFile, receiver, prefix, auth, insensitive) => {
+  const add = (absFile, receiver, prefix, auth, insensitive, omitted = false) => {
     if (!map.has(absFile)) map.set(absFile, []);
-    map.get(absFile).push({ receiver, prefix, auth, insensitive });
+    map.get(absFile).push({ receiver, prefix, auth, insensitive, omitted });
   };
   // The router that matches a mount prefix is the mount's receiver
   // (docguard.coverage-followups#FR-009).
@@ -617,12 +655,29 @@ function buildExpressMountMap(files, resolveAlias = null, modeOf = null) {
     const mi = extractJsMountsAndImports(content, filePath);
     if (mi) metadata.set(filePath, mi);
   }
+  // A file that imports `const` strings is read again with them, so its
+  // prefixes, paths and route receivers see their values
+  // (docguard.js-route-shapes#FR-010, FR-011).
+  const importedConstants = importedConstantsByFile(files, metadata, resolveAlias);
+  for (const { content, filePath } of files) {
+    const imported = importedConstants.get(filePath);
+    if (imported) metadata.set(filePath, extractJsMountsAndImports(content, filePath, imported) || metadata.get(filePath));
+  }
+  const labels = new Map(files.map(f => [f.filePath, f.fileLabel]));
+  const recorded = new Set();
+  const recordPrefix = (filePath, mount) => {
+    const at = `${filePath}:${mount.line}`;
+    if (!unresolved || recorded.has(at)) return;
+    recorded.add(at);
+    unresolved.push({ framework: 'Express', code: 'route-unresolved-prefix', file: labels.get(filePath) || filePath, line: mount.line, target: mount.target || '' });
+  };
 
   const edges = [];
   for (const { filePath } of files) {
     const mi = metadata.get(filePath);
     if (!mi) continue;
-    for (const { prefix, ident, receiver, auth } of mi.mounts) {
+    for (const mount of mi.mounts) {
+      const { prefix, ident, receiver, auth } = mount;
       const spec = mi.imports[ident];
       if (spec) {
         const target = resolveLocalImport(filePath, spec, resolveAlias);
@@ -640,6 +695,7 @@ function buildExpressMountMap(files, resolveAlias = null, modeOf = null) {
             !targetRouteReceivers.has(targetReceiver) &&
             !targetMountReceivers.has(targetReceiver)) continue;
         if (targetReceiver === null && targetRouteReceivers.size === 0 && targetMountReceivers.size === 0) continue;
+        if (prefix === null) recordPrefix(filePath, mount);
         edges.push({
           from: { file: filePath, receiver },
           to: { file: target, receiver: targetReceiver },
@@ -650,6 +706,7 @@ function buildExpressMountMap(files, resolveAlias = null, modeOf = null) {
         const routeReceivers = new Set(mi.routeReceivers || []);
         const mountReceivers = new Set((mi.mounts || []).map(mount => mount.receiver));
         if (!routeReceivers.has(ident) && !mountReceivers.has(ident)) continue;
+        if (prefix === null) recordPrefix(filePath, mount);
         edges.push({
           from: { file: filePath, receiver },
           to: { file: filePath, receiver: ident },
@@ -682,6 +739,7 @@ function buildExpressMountMap(files, resolveAlias = null, modeOf = null) {
     const nextVisiting = new Set(visiting).add(key);
     const prefixes = new Map(); // prefix -> { auth, insensitive }
     for (const edge of nodeEdges) {
+      if (edge.prefix === null) continue; // an unreadable prefix serves nothing we can name
       const parentKey = nodeKey(edge.from);
       const parentHasIncoming = (incoming.get(parentKey) || []).length > 0;
       const parentPrefixes = parentHasIncoming
@@ -703,10 +761,41 @@ function buildExpressMountMap(files, resolveAlias = null, modeOf = null) {
     return resolved;
   };
 
+  // Is every mount chain to this router cut by a prefix that cannot be read?
+  const blocked = (node, seen = new Set()) => {
+    const key = nodeKey(node);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return (incoming.get(key) || []).some(edge => edge.prefix === null || blocked(edge.from, seen));
+  };
   for (const node of nodes.values()) {
-    for (const { prefix, auth, insensitive } of effectivePrefixes(node)) add(node.file, node.receiver, prefix, auth, insensitive);
+    const found = effectivePrefixes(node);
+    for (const { prefix, auth, insensitive } of found) add(node.file, node.receiver, prefix, auth, insensitive);
+    if (!found.length && blocked(node)) add(node.file, node.receiver, null, false, false, true);
   }
+  Object.defineProperty(map, 'importedConstants', { value: importedConstants, enumerable: false });
   return map;
+}
+
+/**
+ * For each file, the `const` strings it imports from other project files
+ * (named, namespace, `require()` and destructured `require()`), read from the
+ * targets' exports; files that import none are absent.
+ * @implements docguard.js-route-shapes#FR-011
+ */
+function importedConstantsByFile(files, metadata, resolveAlias = null) {
+  const out = new Map();
+  for (const { filePath } of files) {
+    const mi = metadata.get(filePath);
+    if (!mi?.constantBindings?.length) continue;
+    const bindings = mi.constantBindings.map(b => {
+      const target = resolveLocalImport(filePath, b.spec, resolveAlias);
+      return { ...b, exported: target ? metadata.get(target)?.exportedConstants : null };
+    });
+    const map = importedStaticStrings(bindings);
+    if (map.size) out.set(filePath, map);
+  }
+  return out;
 }
 
 /**
@@ -738,111 +827,64 @@ function joinRoutePath(prefix, p) {
 
 // ── Fastify ─────────────────────────────────────────────────────────────────
 
-function scanFastifyRoutes(dir, roots = null) {
+function scanFastifyRoutes(dir, roots = null, unresolved = null) {
   const routes = [];
-  const read = []; // { fileLabel, content } — for the case-sensitivity setting
   const pattern = /(?:fastify|server|app)\s*\.\s*(get|post|put|delete|patch)\s*\(\s*['"`]([^'"`]+)['"`]/gi;
 
   const searchTargets = roots && roots.length ? roots : [resolve(dir, 'src')];
+  const found = []; // { filePath, fileLabel, content }
   for (const fullDir of searchTargets) {
     if (!existsSync(fullDir)) continue;
     walkRouteDirs(fullDir, (filePath) => {
       if (!isJSFile(filePath)) return;
       const content = readFileSafe(filePath);
-      if (!content) return;
-      read.push({ fileLabel: relative(dir, filePath), content });
-
-      const emit = (method, path, index, auth, line) => routes.push({
-        method: method.toUpperCase(),
-        path,
-        handler: extractHandlerName(content, index),
-        file: relative(dir, filePath),
-        line: line ?? lineAt(content, index),
-        source: 'fastify',
-        auth: Boolean(auth),
-        description: extractNearbyComment(content, index),
-      });
-
-      // AST-first: method shorthand (fastify.get('/x')) AND the declarative
-      // object form (fastify.route({ method, url })) the regex never matched.
-      // Both return null only on parse failure → regex fallback. Auth is the
-      // route's own evidence (docguard.js-ts-extraction#FR-002).
-      const calls = extractJsRouteCalls(content, filePath);
-      const objs = extractJsRouteObjects(content, filePath);
-      if (calls || objs) {
-        for (const r of calls || []) emit(r.method, r.path, r.start, r.auth, r.line);
-        for (const r of objs || []) emit(r.method, r.path, r.start, r.auth, r.line);
-      } else {
-        let match;
-        const regex = new RegExp(pattern.source, 'gi');
-        while ((match = regex.exec(content)) !== null) emit(match[1], match[2], match.index, statementAuth(content, match.index));
-      }
+      if (content) found.push({ filePath, fileLabel: relative(dir, filePath), content });
     });
+  }
+  // `const` strings imported from other project files (docguard.js-route-shapes#FR-011).
+  const metadata = new Map();
+  for (const { filePath, content } of found) {
+    const mi = extractJsMountsAndImports(content, filePath);
+    if (mi) metadata.set(filePath, mi);
+  }
+  const importedConstants = importedConstantsByFile(found, metadata, createAliasResolver(dir));
+  for (const { filePath, fileLabel, content } of found) {
+    const emit = (method, path, index, auth, line) => routes.push({
+      method: method.toUpperCase(),
+      path,
+      handler: extractHandlerName(content, index),
+      file: fileLabel,
+      line: line ?? lineAt(content, index),
+      source: 'fastify',
+      auth: Boolean(auth),
+      description: extractNearbyComment(content, index),
+    });
+
+    // AST-first: method shorthand (fastify.get('/x')) AND the declarative
+    // object form (fastify.route({ method, url })) the regex never matched.
+    // Both return null only on parse failure → regex fallback. Auth is the
+    // route's own evidence (docguard.js-ts-extraction#FR-002).
+    const calls = extractJsRouteCalls(content, filePath, importedConstants.get(filePath));
+    const objs = extractJsRouteObjects(content, filePath);
+    if (calls || objs) {
+      for (const r of calls || []) emit(r.method, r.path, r.start, r.auth, r.line);
+      for (const r of objs || []) emit(r.method, r.path, r.start, r.auth, r.line);
+      recordUnresolvedPaths(unresolved, 'Fastify', fileLabel, [...(calls?.unresolved || []), ...(objs?.unresolved || [])]);
+    } else {
+      let match;
+      const regex = new RegExp(pattern.source, 'gi');
+      while ((match = regex.exec(content)) !== null) {
+        if (TEMPLATE_SUBSTITUTION.test(match[2])) recordUnresolvedPaths(unresolved, 'Fastify', fileLabel, [{ line: lineAt(content, match.index), target: match[2] }]);
+        else emit(match[1], match[2], match.index, statementAuth(content, match.index));
+      }
+    }
   }
 
   // find-my-way is case-sensitive unless every server sets a literal
   // `caseSensitive: false` (docguard.coverage-followups#FR-009).
-  const fastifyCase = fastifyCaseMode(read);
+  const fastifyCase = fastifyCaseMode(found);
   const marked = routes.map(r => withCase(r, fastifyCase.mode === 'insensitive'));
   Object.defineProperty(marked, 'caseNotes', { value: fastifyCase.notes, enumerable: false });
-  return marked;
-}
-
-// ── Hono ────────────────────────────────────────────────────────────────────
-
-function scanHonoRoutes(dir, roots = null, source = 'hono') {
-  const routes = [];
-  const read = []; // { filePath, fileLabel, content } — Koa's router options
-  const receivers = new WeakMap(); // route → [filePath, receiver]
-  const pattern = /(?:app|router)\s*\.\s*(get|post|put|delete|patch)\s*\(\s*['"`]([^'"`]+)['"`]/gi;
-
-  const searchTargets = roots && roots.length
-    ? roots
-    : ['src', '.'].map(d => resolve(dir, d));
-  for (const fullDir of searchTargets) {
-    if (!existsSync(fullDir)) continue;
-
-    walkRouteDirs(fullDir, (filePath) => {
-      if (!isJSFile(filePath)) return;
-      const content = readFileSafe(filePath);
-      if (!content) return;
-
-      read.push({ filePath, fileLabel: relative(dir, filePath), content });
-      const emit = (method, path, index, auth, line, receiver = null) => {
-        const route = {
-          method: method.toUpperCase(),
-          path,
-          handler: '',
-          file: relative(dir, filePath),
-          line: line ?? lineAt(content, index),
-          source,
-          auth: Boolean(auth),
-          description: extractNearbyComment(content, index),
-        };
-        receivers.set(route, [filePath, receiver]);
-        routes.push(route);
-      };
-
-      // AST-first (any receiver, multi-line, template paths — Hono/Koa method
-      // shorthand `app.get('/x')` / `router.get('/x')`); regex fallback. Auth
-      // is the route's own evidence (docguard.js-ts-extraction#FR-002).
-      const calls = extractJsRouteCalls(content, filePath);
-      if (calls) {
-        for (const r of calls) emit(r.method, r.path, r.start, r.auth, r.line, r.receiver ?? null);
-      } else {
-        let match;
-        const regex = new RegExp(pattern.source, 'gi');
-        while ((match = regex.exec(content)) !== null) emit(match[1], match[2], match.index, statementAuth(content, match.index));
-      }
-    });
-  }
-
-  // Hono matches exactly. A Koa router matches ignoring case unless created
-  // with `sensitive: true` (docguard.coverage-followups#FR-009).
-  if (source !== 'koa') return routes;
-  const koaCase = koaCaseModel(read);
-  const marked = routes.map(r => withCase(r, koaCase.modeOf(...receivers.get(r)) === 'insensitive'));
-  Object.defineProperty(marked, 'caseNotes', { value: koaCase.notes, enumerable: false });
   return marked;
 }
 
@@ -873,7 +915,9 @@ function recordReader(ctx, found) {
 }
 
 const NEST_MARKER = /@Controller\b|@Module\s*\(|setGlobalPrefix|enableVersioning|useGlobalGuards|APP_GUARD|RouterModule/;
-const ROUTER_MARKER = /\.\s*(?:get|post|put|delete|patch|head|options|all|on|route|use|basePath)\s*\(/;
+// Router calls, plus zod-openapi route definitions (`createRoute`) that may
+// sit in a file with no router call (docguard.js-route-shapes#FR-004).
+const ROUTER_MARKER = /\.\s*(?:get|post|put|delete|del|patch|head|options|all|on|route|use|basePath|prefix|openapi|doc|doc31)\s*\(|\bcreateRoute\s*\(/;
 
 function scanNestRoutes(dir, ctx) {
   const all = readJsSources(ctx);
@@ -889,14 +933,81 @@ function scanNestRoutes(dir, ctx) {
 }
 
 function scanHonoRouterRoutes(dir, ctx) {
-  return recordReader(ctx, extractRouterRoutes(readJsSources(ctx, ROUTER_MARKER), createImportResolver(dir), { framework: 'Hono', defaultSource: 'hono' }));
+  return recordReader(ctx, extractRouterRoutes(readJsSources(ctx, ROUTER_MARKER), createImportResolver(dir), { framework: 'Hono', defaultSource: 'hono', loadSource: readFileSafe }));
+}
+
+function scanKoaRouterRoutes(dir, ctx) {
+  const all = readJsSources(ctx);
+  // A Koa router matches ignoring case unless created with `sensitive: true`
+  // (docguard.coverage-followups#FR-009), read per router across the project.
+  const koaCase = koaCaseModel(all.map(s => ({ filePath: s.abs, fileLabel: s.file, content: s.content })));
+  for (const n of koaCase.notes) ctx.scan.caseNotes.push(n);
+  return recordReader(ctx, extractRouterRoutes(all.filter(s => ROUTER_MARKER.test(s.content)), createImportResolver(dir), {
+    framework: 'Koa', defaultSource: 'koa', loadSource: readFileSafe, caseModeOf: koaCase.modeOf,
+  }));
+}
+
+/**
+ * A Pages project's routes: its Functions (filtered by `_routes.json`), or,
+ * in advanced mode, its `_worker.js` read as a Worker fetch entry, which
+ * replaces Functions; plus the router-library routes served through them
+ * (docguard.js-route-shapes#FR-003, FR-008).
+ */
+function scanPagesRoutes(dir, ctx) {
+  const sources = readJsSources(ctx);
+  const resolveImport = createImportResolver(dir);
+  const outDir = pagesOutputDir(dir);
+  // The output directory is often a build directory the walk skips; its
+  // `_worker.js` (a file or a directory) is what Pages deploys.
+  const known = new Set(sources.map(s => s.abs));
+  if (outDir) {
+    const worker = resolve(dir, outDir, '_worker.js');
+    const files = existsSync(worker) && statSync(worker).isDirectory()
+      ? findRouteFiles(worker, JS_SOURCE_RE, { maxFiles: ctx.maxFiles })
+      : existsSync(worker) ? [worker] : [];
+    for (const abs of files) {
+      const content = known.has(abs) ? null : readFileSafe(abs);
+      if (content) { sources.push({ file: relPosix(dir, abs), abs, content }); known.add(abs); }
+    }
+  }
+  const isWorker = s => isAdvancedWorkerFile(s.file) && !isNonProductPath(s.file, ctx.config);
+  const advanced = sources.some(isWorker);
+  const limitations = [];
+  let found;
+  let tiers;
+  if (advanced) {
+    const worker = extractWorkerRoutes(sources, resolveImport, { isEntry: isWorker, framework: 'Cloudflare Pages', source: 'cloudflare-pages' });
+    // Pages ignores `functions/` in advanced mode; routers there are not served.
+    const routers = extractRouterRoutes(sources.filter(s => ROUTER_MARKER.test(s.content) && !functionsLocation(s.file)), resolveImport, { framework: 'Cloudflare Pages', defaultSource: 'cloudflare-pages', loadSource: readFileSafe });
+    found = [...worker, ...routers];
+    tiers = [...worker.fileTiers, ...routers.fileTiers];
+    limitations.push(...worker.limitations, ...routers.limitations);
+  } else {
+    const functions = extractPagesRoutes(sources);
+    const routers = extractRouterRoutes(sources.filter(s => ROUTER_MARKER.test(s.content)), resolveImport, { framework: 'Cloudflare Pages', defaultSource: 'cloudflare-pages', loadSource: readFileSafe });
+    found = [...functions, ...routers];
+    tiers = [...functions.fileTiers, ...routers.fileTiers];
+    limitations.push(...functions.limitations, ...routers.limitations);
+    // `_routes.json` decides which requests invoke Functions at all.
+    const routesJson = [outDir && join(outDir, '_routes.json'), '_routes.json', 'public/_routes.json', 'static/_routes.json']
+      .filter(Boolean).map(rel => resolve(dir, rel)).find(abs => existsSync(abs));
+    if (routesJson) {
+      const rules = parseRoutesJson(readFileSafe(routesJson) || '');
+      if (rules) found = found.filter(r => servedByRoutesJson(r.path, rules));
+      else limitations.push({ framework: 'Cloudflare Pages', code: 'pages-unresolved-routes-json', file: relPosix(dir, routesJson), line: 1, target: '_routes.json' });
+    }
+  }
+  const byFile = new Map();
+  for (const t of tiers) byFile.set(t.file, t);
+  recordReader(ctx, { fileTiers: [...byFile.values()], limitations });
+  return found;
 }
 
 function scanWorkerRoutes(dir, ctx) {
   const sources = readJsSources(ctx);
   const resolveImport = createImportResolver(dir);
   const dispatch = extractWorkerRoutes(sources, resolveImport);
-  const routers = extractRouterRoutes(sources.filter(s => ROUTER_MARKER.test(s.content)), resolveImport, { framework: 'Cloudflare Workers', defaultSource: 'cloudflare-workers' });
+  const routers = extractRouterRoutes(sources.filter(s => ROUTER_MARKER.test(s.content)), resolveImport, { framework: 'Cloudflare Workers', defaultSource: 'cloudflare-workers', loadSource: readFileSafe });
   // One tier record per file, whichever reader read it.
   const tiers = new Map();
   for (const t of [...dispatch.fileTiers, ...routers.fileTiers]) tiers.set(t.file, t);

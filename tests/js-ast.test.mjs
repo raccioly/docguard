@@ -107,7 +107,9 @@ describe('extractJsRouteCalls — AST route registration (the routes migration)'
     assert.deepEqual(set, ['DELETE /users/:id', 'GET /users', 'POST /users']);
   });
 
-  it('survives multi-line calls and reads template-literal paths', () => {
+  // A template with a non-constant expression is unresolved, not `:param`
+  // (docguard.js-route-shapes#FR-007).
+  it('survives multi-line calls and lists a dynamic template path as unresolved', () => {
     const src = [
       'app.put(',
       '  "/items/:id",',
@@ -116,8 +118,9 @@ describe('extractJsRouteCalls — AST route registration (the routes migration)'
       ');',
       'app.get(`/items/${kind}`, list);',
     ].join('\n');
-    const set = extractJsRouteCalls(src, 'r.ts').map(x => `${x.method} ${x.path}`).sort();
-    assert.deepEqual(set, ['GET /items/:param', 'PUT /items/:id']);
+    const got = extractJsRouteCalls(src, 'r.ts');
+    assert.deepEqual(got.map(x => `${x.method} ${x.path}`).sort(), ['PUT /items/:id']);
+    assert.deepEqual(got.unresolved.map(u => u.line), [6]);
   });
 
   it('excludes non-route .get()/.post() (path must start with / or be *)', () => {

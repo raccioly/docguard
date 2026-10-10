@@ -423,6 +423,61 @@ export function hasWorkerConfig(dir) {
   });
 }
 
+const WRANGLER_FILES = ['wrangler.toml', 'wrangler.json', 'wrangler.jsonc'];
+/** A Wrangler key (TOML `key =`, JSON `"key":`) at the start of a line or after `{`/`,`. */
+const PAGES_OUTPUT_KEY = /(?:^|[{,])[ \t]*"?pages_build_output_dir"?[ \t]*[=:]/m;
+/** An exported Pages Function handler (`export const onRequestGet`, `export { x as onRequest }`). */
+const PAGES_HANDLER_EXPORT = /\bexport\s+(?:async\s+)?(?:function\s*\*?\s*|(?:const|let|var)\s+)onRequest(?:Get|Post|Put|Patch|Delete|Head|Options)?\b|\bexport\s*\{[^}]*\bonRequest(?:Get|Post|Put|Patch|Delete|Head|Options)?\s*[,}]/;
+
+/**
+ * The `pages_build_output_dir` a Wrangler file sets in `dir`, or null.
+ * @implements docguard.js-route-shapes#FR-008
+ */
+export function pagesOutputDir(dir) {
+  for (const name of WRANGLER_FILES) {
+    let text;
+    try { text = readFileSync(join(dir, name), 'utf8'); } catch { continue; }
+    const m = /(?:^|[{,])[ \t]*"?pages_build_output_dir"?[ \t]*[=:][ \t]*["']([^"'\n]+)["']/m.exec(text);
+    if (m) return m[1];
+  }
+  return null;
+}
+
+/**
+ * Is `dir` a Cloudflare Pages project? Its Wrangler file sets
+ * `pages_build_output_dir`, or it has no Wrangler file and its `functions/`
+ * directory exports a Pages Function handler. A Wrangler file without that key
+ * configures a Worker, and a Firebase `functions/` directory exports handlers
+ * under other names (`export const api = onRequest(app)`).
+ * @implements docguard.js-route-shapes#FR-002
+ */
+export function isPagesProject(dir) {
+  for (const name of WRANGLER_FILES) {
+    let text;
+    try { text = readFileSync(join(dir, name), 'utf8'); } catch { continue; }
+    if (PAGES_OUTPUT_KEY.test(text)) return true;
+  }
+  if (hasWorkerConfig(dir)) return false;
+  let seen = 0;
+  const walk = (d, depth) => {
+    if (depth > 8) return false;
+    let entries;
+    try { entries = readdirSync(d, { withFileTypes: true }); } catch { return false; }
+    for (const e of entries) {
+      if (e.name === 'node_modules' || e.name.startsWith('.')) continue;
+      const p = join(d, e.name);
+      if (e.isDirectory()) { if (walk(p, depth + 1)) return true; continue; }
+      if (!e.isFile() || !/\.(?:[cm]?[jt]s|[jt]sx)$/.test(e.name) || /\.d\.[cm]?ts$/.test(e.name)) continue;
+      if (++seen > 500) return false;
+      let text = '';
+      try { text = readFileSync(p, 'utf8'); } catch { /* unreadable */ }
+      if (PAGES_HANDLER_EXPORT.test(text)) return true;
+    }
+    return false;
+  };
+  return walk(join(dir, 'functions'), 0);
+}
+
 function workerConfigForFile(projectDir, file) {
   const root = resolve(projectDir);
   let dir = dirname(file);
