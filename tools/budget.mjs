@@ -163,21 +163,35 @@ export function measure(tree, budgets = loadBudgets(), { samples = budgets.sampl
   return { ...staticMeasures(root, budgets), guard: summarizeGuard(runs, targets, root) };
 }
 
+/**
+ * Guard wall time for base and head: `samples` rounds, interleaved, each
+ * tree's median per target. Medians of N interleaved samples ignore up to
+ * (N - 1) / 2 slowed samples of either tree, and a steady load drift moves the
+ * two medians at most one sample apart. A single sample has no such margin.
+ * `sample` is the timing source; tests pass a scripted one.
+ *
+ * @implements docguard.budget-deterministic#FR-004
+ */
+export function guardPair(base, head, targets, { samples, sample = guardSample } = {}) {
+  const baseRuns = [];
+  const headRuns = [];
+  for (let i = 0; i < samples; i++) {
+    // Alternate which tree goes first so warm caches favour neither.
+    if (i % 2 === 0) { baseRuns.push(sample(base, targets)); headRuns.push(sample(head, targets)); }
+    else { headRuns.push(sample(head, targets)); baseRuns.push(sample(base, targets)); }
+  }
+  return { base: summarizeGuard(baseRuns, targets, head), head: summarizeGuard(headRuns, targets, head) };
+}
+
 /** Base and head, guard samples interleaved over the head's targets. */
 export function measurePair(baseTree, headTree, budgets = loadBudgets(), { samples = budgets.samples } = {}) {
   const base = resolve(baseTree);
   const head = resolve(headTree);
   const targets = budgets.guardTargets.map(t => resolve(head, t));
-  const baseRuns = [];
-  const headRuns = [];
-  for (let i = 0; i < samples; i++) {
-    // Alternate which tree goes first so warm caches favour neither.
-    if (i % 2 === 0) { baseRuns.push(guardSample(base, targets)); headRuns.push(guardSample(head, targets)); }
-    else { headRuns.push(guardSample(head, targets)); baseRuns.push(guardSample(base, targets)); }
-  }
+  const guard = guardPair(base, head, targets, { samples });
   return {
-    base: { ...staticMeasures(base, budgets), guard: summarizeGuard(baseRuns, targets, head) },
-    head: { ...staticMeasures(head, budgets), guard: summarizeGuard(headRuns, targets, head) },
+    base: { ...staticMeasures(base, budgets), guard: guard.base },
+    head: { ...staticMeasures(head, budgets), guard: guard.head },
   };
 }
 

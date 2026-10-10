@@ -1,6 +1,6 @@
 # Test Specification
 
-<!-- docguard:version 1.4.1 -->
+<!-- docguard:version 1.4.2 -->
 <!-- docguard:status active -->
 <!-- docguard:last-reviewed 2026-10-10 -->
 
@@ -142,6 +142,12 @@ of empty repeats driven only by generated lifecycle artifacts.
 > tests in `tests/commands.test.mjs` cover real `fs.watch` events and real timers end to end.
 > Manual checks supplement platform-specific event behavior.
 
+> **Note**: `tools/budget.mjs` compares guard wall time between two trees. `tests/budget.test.mjs`
+> decides every guard-time verdict on a scripted timing source (the `sample` option of `guardPair`):
+> seeded load bursts, a 30% slowdown, the interleaving order and a steady drift, so no assertion
+> depends on machine load (spec 062). One test spawns real stub trees and asserts only that each
+> median is at least the stub's busy-wait. The CI `budget` job exercises the real path on every PR.
+
 ## Critical CLI Flows
 
 | # | Flow | Test File | Status |
@@ -164,6 +170,7 @@ of empty repeats driven only by generated lifecycle artifacts.
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 1.4.2 | 2026-10-10 | DocGuard Team | Record the scripted timing source behind the budget tests (spec 062) |
 | 1.4.1 | 2026-10-10 | DocGuard Team | Map `watch.mjs` to its deterministic reliability tests (spec 055) |
 | 1.4.0 | 2026-10-10 | DocGuard Team | Freshness review for specs 038–053: map the modules those specs added or changed to their tests; record the 360-second CI runtime budget (spec 051) |
 | 1.3.0 | 2026-09-30 | DocGuard Team | Freshness review: map the MCP server and the compact guard response to their tests; describe the frozen v2 agent-context protocol beside v1 |
