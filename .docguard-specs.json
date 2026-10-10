@@ -2339,6 +2339,126 @@
       }
     },
     {
+      "specId": "docguard.docs-verification-findings",
+      "path": "specs/054-docs-verification-findings/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.docs-verification-findings#FR-001",
+          "docguard.docs-verification-findings#FR-002",
+          "docguard.docs-verification-findings#FR-003",
+          "docguard.docs-verification-findings#FR-004",
+          "docguard.docs-verification-findings#FR-005",
+          "docguard.docs-verification-findings#FR-006",
+          "docguard.docs-verification-findings#FR-007",
+          "docguard.docs-verification-findings#SC-001",
+          "docguard.docs-verification-findings#SC-002"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/054-docs-verification-findings/spec.md",
+            "digest": "sha256:a1a75dafc6dd5d9556b76cb4fb29342e4bfc297392a1253bf5e28087d9cca0a8"
+          },
+          {
+            "path": "specs/054-docs-verification-findings/plan.md",
+            "digest": "sha256:c2e82bb9a3d6cec61b923ce3f39a03974e90dfdc0c0758e89e71147e376b9ec5"
+          },
+          {
+            "path": "specs/054-docs-verification-findings/tasks.md",
+            "digest": "sha256:69c46141b24f9284dcee6e6b8d54706e9977d25e6e00e4b39f623e53df809209"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 7,
+          "total": 7
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-005",
+            "file": ".github/scripts/sync-release-version.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/release-pr-policy.mjs",
+            "line": 11
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/docs-verification-findings.test.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/docs-verification-findings.test.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/docs-verification-findings.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/docs-verification-findings.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/release-version-sync.test.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/docs-verification-findings.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/docs-verification-findings.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/docs-verification-findings.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/docs-verification-findings.test.mjs",
+            "line": 11
+          }
+        ]
+      }
+    },
+    {
       "specId": "docguard.document-lifecycle",
       "path": "specs/006-document-lifecycle/spec.md",
       "reviewed": {
@@ -3785,7 +3905,7 @@
           {
             "requirementId": "FR-008",
             "file": "cli/scanners/routes.mjs",
-            "line": 862
+            "line": 867
           },
           {
             "requirementId": "FR-009",
@@ -4968,7 +5088,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/scanners/routes.mjs",
-            "line": 412
+            "line": 417
           },
           {
             "requirementId": "FR-002",
@@ -4988,22 +5108,22 @@
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/routes.mjs",
-            "line": 401
+            "line": 406
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/routes.mjs",
-            "line": 462
+            "line": 467
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/routes.mjs",
-            "line": 465
+            "line": 470
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/routes.mjs",
-            "line": 519
+            "line": 524
           },
           {
             "requirementId": "FR-003",
@@ -5033,7 +5153,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/scanners/routes.mjs",
-            "line": 520
+            "line": 525
           },
           {
             "requirementId": "FR-005",
@@ -8012,7 +8132,7 @@
           {
             "requirementId": "FR-003",
             "file": "tests/release-version-sync.test.mjs",
-            "line": 79
+            "line": 94
           },
           {
             "requirementId": "FR-004",
@@ -9785,7 +9905,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/docguard.mjs",
-            "line": 930
+            "line": 931
           },
           {
             "requirementId": "FR-011",
@@ -10501,11 +10621,11 @@
           },
           {
             "path": "specs/053-user-documentation/tasks.md",
-            "digest": "sha256:867532aa38d451124572f93f4c61d84eb963c956dad584c92d2ea527085ff7a6"
+            "digest": "sha256:c2f6510fcfcd5cd1d547f09389befdb3b2f7d5817439ba4dcb4fd8a540239606"
           }
         ],
         "taskCompletion": {
-          "checked": 9,
+          "checked": 10,
           "total": 10
         },
         "implementationEvidence": [

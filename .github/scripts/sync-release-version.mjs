@@ -9,6 +9,7 @@
  *
  * @implements docguard.release-readiness#FR-003
  * @implements docguard.release-cut-green#FR-003
+ * @implements docguard.docs-verification-findings#FR-005
  */
 
 import { existsSync, readFileSync, readdirSync, unlinkSync } from 'node:fs';
@@ -129,9 +130,27 @@ export function syncReleaseVersion(root = process.cwd()) {
     stageText(staged, root, relPath, content => {
       const count = (content.match(/raccioly\/docguard@v\d+\.\d+\.\d+/g) || []).length;
       if (count === 0) throw new Error(`${relPath}: expected at least one raccioly/docguard@vX.Y.Z example, found 0`);
-      return replaceRequired(content, /raccioly\/docguard@v\d+\.\d+\.\d+/g, `raccioly/docguard@v${version}`, `${relPath} action example`, count);
+      let next = replaceRequired(content, /raccioly\/docguard@v\d+\.\d+\.\d+/g, `raccioly/docguard@v${version}`, `${relPath} action example`, count);
+      // The pre-commit example pins this repository by tag (rev: vX.Y.Z), on the
+      // line after `repo: https://github.com/raccioly/docguard`.
+      const precommit = /(repo: https:\/\/github\.com\/raccioly\/docguard\n\s+rev: )v\d+\.\d+\.\d+/g;
+      const revs = (next.match(precommit) || []).length;
+      if (revs > 0) next = replaceRequired(next, precommit, (_m, before) => `${before}v${version}`, `${relPath} pre-commit rev`, revs);
+      return next;
     });
   }
+
+  // Copyable pre-commit and GitLab examples pin the release they ship with.
+  stageText(staged, root, '.pre-commit-hooks.yaml', content => {
+    const count = (content.match(/rev: v\d+\.\d+\.\d+/g) || []).length;
+    if (count === 0) throw new Error('.pre-commit-hooks.yaml: expected at least one rev: vX.Y.Z example, found 0');
+    return replaceRequired(content, /rev: v\d+\.\d+\.\d+/g, `rev: v${version}`, '.pre-commit-hooks.yaml rev example', count);
+  });
+  stageText(staged, root, 'templates/ci/gitlab-component.yml', content => {
+    let next = replaceRequired(content, /(docguard-component\/docguard@)\d+\.\d+\.\d+/g, (_m, before) => `${before}${version}`, 'templates/ci/gitlab-component.yml component example');
+    next = replaceRequired(next, /(raccioly\/docguard\/)v\d+\.\d+\.\d+(\/)/g, (_m, before, after) => `${before}v${version}${after}`, 'templates/ci/gitlab-component.yml remote example');
+    return replaceRequired(next, /^(\s+default: ')\d+\.\d+\.\d+(')/m, (_m, before, after) => `${before}${version}${after}`, 'templates/ci/gitlab-component.yml version default');
+  });
 
   // Agent command files pin the release they ship with as their npx fallback
   // (docguard.spec-kit-integration-honesty#FR-005): exactly one pin each.

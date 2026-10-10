@@ -204,14 +204,14 @@ docguard agents --check    # exit 2 when a marked file is older than AGENTS.md
 
 Two things to know:
 
-- The files `init --with agents` writes carry no marker, so `--sync` skips
-  them. Run `docguard agents --sync --force` once to adopt them. `--force`
-  replaces every one of the six files, including one you wrote by hand; add
-  `--agent <key>` to limit it to one. It does not overwrite your canonical
-  documents.
-- `agents` is a deprecated alias of `init --with agents`. `agents --sync` runs
-  through `init`, including its Spec Kit step; add `--no-spec-kit` to skip that.
-  `agents --check` does not.
+- Files `init --with agents` writes carry the marker, so `--sync` keeps them
+  current. Files written by DocGuard before v0.44 carry none: run
+  `docguard agents --sync --force` once to adopt them. `--force` replaces every
+  one of the six files, including one you wrote by hand; add `--agent <key>` to
+  limit it to one. It does not overwrite your canonical documents.
+- `agents` is a deprecated alias of `init --with agents`, but `agents --sync`
+  and `agents --check` run only the agent-file sync: no scaffolding, skill
+  installation or Spec Kit step.
 
 ## What each harness loads
 

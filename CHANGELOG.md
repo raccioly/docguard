@@ -35,6 +35,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Defects found while documenting DocGuard** (`specs/054-docs-verification-findings`).
+  Running every documented flow on scratch projects turned up:
+  - A Koa project was labelled Hono. It is now labelled Koa. Its routes are
+    read as before, by the same method-shorthand scanner, and carry
+    `source: koa`.
+  - Agent files written by `init --with agents` carried no sync marker, so
+    `agents --sync` skipped every one of them. They are now marked. Files
+    written before this release still need one `agents --sync --force`.
+  - `agents --sync` re-ran the whole `init`, Spec Kit step included. It now
+    runs only the agent-file sync, like `agents --check`.
+  - The config schema rejected an array `sourceRoot`, which the CLI accepts.
+  - PSR002 reported a file excluded by `.docguardignore` as missing. Ignoring a
+    file keeps it out of validation; pointers to it still resolve.
+  - Pinned examples (the README's pre-commit `rev:`, `.pre-commit-hooks.yaml`,
+    the GitLab component) said 0.29.0. They now say the current release, and
+    the release sync keeps them current.
+  - The MCP server's Origin check comment said it applied on loopback binds
+    only. It applies on every bind.
+
 - **Adding a test file no longer brings back baselined TRC004 findings**
   (`specs/052-baseline-stable-fingerprint`, #478). A baseline fingerprint
   hashed the whole message, including TRC004's ` — IR soft-match: …` hint,

@@ -36,12 +36,14 @@ const SKILL_DIRS_RE = /^(\.\/)?(scripts|references|assets)\//;
 export function validatePathScopedRules(projectDir, config = {}) {
   const tracked = listTrackedFiles(projectDir);
   const ignored = buildIgnoreFilter([...(config.ignore || []), ...loadDocguardIgnore(projectDir)]);
-  let projectFiles = tracked;
-  if (projectFiles === null) {
-    projectFiles = [];
-    walkFiles(projectDir, full => { projectFiles.push(relPosix(projectDir, full)); });
+  let allFiles = tracked;
+  if (allFiles === null) {
+    allFiles = [];
+    walkFiles(projectDir, full => { allFiles.push(relPosix(projectDir, full)); });
   }
-  projectFiles = projectFiles.filter(f => !ignored(f));
+  // `.docguardignore` decides which files are validated; whether a pointer's
+  // target exists is checked against every file (docguard.docs-verification-findings#FR-007).
+  let projectFiles = allFiles.filter(f => !ignored(f));
 
   const { entries: all, files: instructionFiles, skipped } = instructionScopes(projectDir, projectFiles);
   const entries = all.filter(e => !isNonProductPath(e.file, config));
@@ -91,9 +93,9 @@ export function validatePathScopedRules(projectDir, config = {}) {
   }
 
   // ── PSR002: pointers that resolve to nothing ──
-  const fileSet = new Set(projectFiles);
+  const fileSet = new Set(allFiles);
   const dirSet = new Set();
-  for (const f of projectFiles) {
+  for (const f of allFiles) {
     for (let i = f.indexOf('/'); i !== -1; i = f.indexOf('/', i + 1)) dirSet.add(f.slice(0, i));
   }
   const exists = p => fileSet.has(p) || dirSet.has(p);

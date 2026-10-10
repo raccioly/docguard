@@ -54,8 +54,17 @@ for (const state of ['unmanaged', 'fresh', 'stale']) {
 }
 test('explicit agent setup retains its setup path', t => {
   const { project, log, run } = fixture(t);
-  const result = run(['agents', '--sync']);
+  const result = run(['agents']);
   assert.equal(result.status, 0, result.stderr + result.stdout);
   assert.equal(existsSync(log), true, 'setup control must exercise the installed tooling trap');
   assert.equal(existsSync(join(project, 'CLAUDE.md')), true);
+});
+
+// docguard.docs-verification-findings#FR-003: a sync, like a check, is not setup.
+test('agents --sync writes the agent files without host setup tooling', t => {
+  const { project, log, run } = fixture(t);
+  const result = run(['agents', '--sync']);
+  assert.equal(result.status, 0, result.stderr + result.stdout);
+  assert.equal(existsSync(join(project, 'CLAUDE.md')), true);
+  assert.equal(existsSync(log), false, 'a sync must not invoke host setup tooling');
 });

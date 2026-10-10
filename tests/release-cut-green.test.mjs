@@ -68,8 +68,8 @@ describe('ensureSkills requires the agent surface (FR-005)', () => {
 
 describe('the release commits and admits every synchronized path (FR-006)', () => {
   // The files sync-release-version.mjs rewrites in this repository, mirrors included.
-  const synchronized = execFileSync('git', ['ls-files', 'commands', 'extensions/spec-kit-docguard', '.agent/skills', '.agent/commands', 'templates/ci'], { encoding: 'utf8' })
-    .split('\n').filter(p => /^(commands\/docguard\.[a-z-]+\.md|extensions\/spec-kit-docguard\/(extension\.yml|commands\/.+\.md|skills\/[^/]+\/SKILL\.md|templates\/github-workflows\/.+\.yml)|\.agent\/(skills\/[^/]+\/SKILL\.md|commands\/docguard\..+\.md)|templates\/ci\/github-actions\.yml)$/.test(p));
+  const synchronized = execFileSync('git', ['ls-files', 'commands', 'extensions/spec-kit-docguard', '.agent/skills', '.agent/commands', 'templates/ci', '.pre-commit-hooks.yaml'], { encoding: 'utf8' })
+    .split('\n').filter(p => /^(commands\/docguard\.[a-z-]+\.md|extensions\/spec-kit-docguard\/(extension\.yml|commands\/.+\.md|skills\/[^/]+\/SKILL\.md|templates\/github-workflows\/.+\.yml)|\.agent\/(skills\/[^/]+\/SKILL\.md|commands\/docguard\..+\.md)|templates\/ci\/(github-actions|gitlab-component)\.yml|\.pre-commit-hooks\.yaml)$/.test(p));
 
   it('the release-candidate policy admits each one', () => {
     assert.ok(synchronized.some(p => p.startsWith('.agent/commands/')), 'fixture: .agent/commands is tracked');
@@ -94,7 +94,7 @@ describe("replaying the cut on this repository's release surfaces (SC-001)", () 
     try {
       // The tracked release surfaces at HEAD, in a repository of their own.
       const surfaces = ['package.json', 'package-lock.json', 'pyproject.toml', 'server.json', 'action.yml', 'README.md',
-        'docs/ai-integration.md', 'CHANGELOG.md', 'templates', 'commands', 'extensions', '.agent'];
+        'docs/ai-integration.md', 'CHANGELOG.md', '.pre-commit-hooks.yaml', 'templates', 'commands', 'extensions', '.agent'];
       execFileSync('sh', ['-c', `git archive HEAD ${surfaces.join(' ')} | tar -x -C "${dir}"`]);
       git('init', '-q');
       git('add', '-A');

@@ -46,8 +46,11 @@
       "additionalProperties": true
     },
     "sourceRoot": {
-      "type": "string",
-      "description": "Subdirectory containing the project's source files (e.g. `backend/src`). Validators scope to this when set."
+      "oneOf": [
+        { "type": "string" },
+        { "type": "array", "items": { "type": "string" } }
+      ],
+      "description": "Subdirectory, or list of subdirectories, containing the project's source files (e.g. `backend/src` or `[\"api/src\", \"web/src\"]`). Validators scope to these when set."
     },
     "ignore": {
       "type": "array",

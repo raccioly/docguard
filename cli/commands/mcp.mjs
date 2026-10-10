@@ -547,9 +547,10 @@ export function runMcp(projectDir, _config, flags = {}) {
 //     read access to the whole network.
 //   - When an api-key is set, every request must carry it
 //     (`Authorization: Bearer <key>` or `X-API-Key: <key>`) → else 401.
-//   - Origin allow-list on loopback binds (DNS-rebinding guard per the MCP
-//     Streamable HTTP security notes): browser-originated cross-site requests
-//     are rejected; non-browser clients send no Origin and pass.
+//   - Origin allow-list on every bind (DNS-rebinding guard per the MCP
+//     Streamable HTTP security notes): a request whose Origin is not a
+//     loopback host gets 403; non-browser clients send no Origin and pass
+//     (docguard.docs-verification-findings#FR-006).
 
 const HTTP_BODY_CAP = 4 * 1024 * 1024; // 4 MiB — guard payloads are large but bounded
 
