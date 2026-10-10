@@ -2,6 +2,7 @@
  * @req docguard.release-readiness#FR-003
  * @req docguard.spec-kit-integration-honesty#FR-005
  * @req docguard.release-cut-green#FR-003
+ * @req docguard.docs-verification-findings#FR-005
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -36,7 +37,13 @@ function fixture({ brokenTemplate = false, agentMirrors = false } = {}) {
   }
   write(root, 'extensions/spec-kit-docguard/commands/guard.md', '# Guard\n\nOtherwise run `npx --yes docguard-cli@0.37.0`.\n');
   write(root, 'commands/docguard.guard.md', '# Guard\n\nOtherwise run `npx --yes docguard-cli@0.37.0`.\n');
-  write(root, 'README.md', 'uses: raccioly/docguard@v0.12.0\nuses: raccioly/docguard@v0.30.0\nReleased in v0.37.0.\n');
+  write(root, 'README.md', 'uses: raccioly/docguard@v0.12.0\nuses: raccioly/docguard@v0.30.0\nReleased in v0.37.0.\n    - repo: https://github.com/raccioly/docguard\n      rev: v0.29.0\n');
+  write(root, '.pre-commit-hooks.yaml', '#         rev: v0.29.0\n- id: docguard-guard\n#         rev: v0.29.0\n');
+  write(root, 'templates/ci/gitlab-component.yml', [
+    '#       - component: gitlab.com/raccioly/docguard-component/docguard@0.29.0',
+    '#       - remote: https://raw.githubusercontent.com/raccioly/docguard/v0.29.0/templates/ci/gitlab-component.yml',
+    "      default: '0.29.0'", '',
+  ].join('\n'));
   write(root, 'docs/ai-integration.md', '- uses: raccioly/docguard@v0.12.0\n');
   write(root, 'action.yml', "    - name: Install DocGuard\n      env:\n        DOCGUARD_RELEASED_VERSION: '0.37.0'\n");
   write(root, 'CHANGELOG.md', 'Released v0.37.0 remains historical.\n');
@@ -55,11 +62,19 @@ describe('release version synchronization', () => {
       const result = syncReleaseVersion(root);
       assert.equal(result.version, '9.8.7');
       // docguard.spec-kit-integration-honesty#FR-005: command files move their pin too.
-      assert.equal(result.changed.length, 13);
+      // docguard.docs-verification-findings#FR-005: pre-commit and GitLab examples move too.
+      assert.equal(result.changed.length, 15);
+      assert.ok(result.changed.includes('.pre-commit-hooks.yaml'));
+      assert.ok(result.changed.includes('templates/ci/gitlab-component.yml'));
+      assert.equal(readFileSync(join(root, '.pre-commit-hooks.yaml'), 'utf8'), '#         rev: v9.8.7\n- id: docguard-guard\n#         rev: v9.8.7\n');
+      const gitlab = readFileSync(join(root, 'templates/ci/gitlab-component.yml'), 'utf8');
+      assert.match(gitlab, /docguard-component\/docguard@9\.8\.7/);
+      assert.match(gitlab, /raccioly\/docguard\/v9\.8\.7\//);
+      assert.match(gitlab, /default: '9\.8\.7'/);
       assert.ok(result.changed.includes('extensions/spec-kit-docguard/commands/guard.md'));
       assert.ok(result.changed.includes('commands/docguard.guard.md'));
       // Copyable Action examples move; prose history in the same file does not.
-      assert.equal(readFileSync(join(root, 'README.md'), 'utf8'), 'uses: raccioly/docguard@v9.8.7\nuses: raccioly/docguard@v9.8.7\nReleased in v0.37.0.\n');
+      assert.equal(readFileSync(join(root, 'README.md'), 'utf8'), 'uses: raccioly/docguard@v9.8.7\nuses: raccioly/docguard@v9.8.7\nReleased in v0.37.0.\n    - repo: https://github.com/raccioly/docguard\n      rev: v9.8.7\n');
       // docguard.release-readiness#FR-003: a pinned action ref installs its own CLI.
       assert.match(readFileSync(join(root, 'action.yml'), 'utf8'), /DOCGUARD_RELEASED_VERSION: '9\.8\.7'/);
       assert.match(readFileSync(join(root, 'pyproject.toml'), 'utf8'), /version = "9\.8\.7"/);
@@ -89,7 +104,7 @@ describe('release version synchronization', () => {
       const command = readFileSync(join(root, 'commands/docguard.guard.md'), 'utf8');
       assert.equal(readFileSync(join(root, '.agent/commands/docguard.guard.md'), 'utf8'), command);
       assert.match(command, /docguard-cli@9\.8\.7/);
-      assert.equal(result.changed.length, 16);
+      assert.equal(result.changed.length, 18);
       assert.equal(existsSync(join(root, '.agent/skills/docguard-guard/SKILL.md.bak')), false);
     } finally {
       rmSync(root, { recursive: true, force: true });

@@ -917,8 +917,9 @@ async function main() {
       }
       break;
     case 'agents':
-      // A staleness check must bypass init's scaffolding and skill installation.
-      if (flags.check) runAgents(projectDir, config, flags);
+      // A staleness check or a sync must bypass init's scaffolding, skill
+      // installation and Spec Kit step (docguard.docs-verification-findings#FR-003).
+      if (flags.check || flags.sync) runAgents(projectDir, config, flags);
       else await runInit(projectDir, config, { ...flags, with: ['agents'], skipPrompts: true });
       break;
     case 'generate':

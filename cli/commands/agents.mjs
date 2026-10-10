@@ -134,7 +134,10 @@ export function runAgents(projectDir, config, flags) {
       continue;
     }
 
-    const content = target.generate(agentsContent, config);
+    // A file DocGuard generates from AGENTS.md is DocGuard's to regenerate, so it
+    // carries the marker `agents --sync` and `--check` look for
+    // (docguard.docs-verification-findings#FR-002).
+    const content = stampMarker(target.generate(agentsContent, config), sourceHash(agentsContent), target.path);
 
     // Create directories
     const dir = dirname(targetPath);

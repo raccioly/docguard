@@ -78,8 +78,13 @@ export function scanRoutesDeep(dir, stack, docTools, opts = {}) {
     routes.push(...scanFastifyRoutes(dir, roots));
   }
 
+  // Koa (with @koa/router) declares routes with the same method shorthand as
+  // Hono, so one scanner reads both (docguard.docs-verification-findings#FR-001).
   if (framework.includes('Hono')) {
     routes.push(...scanHonoRoutes(dir, roots));
+  }
+  if (framework.includes('Koa')) {
+    routes.push(...scanHonoRoutes(dir, roots, 'koa'));
   }
 
   if (named('Spring', 'Java')) {
@@ -693,7 +698,7 @@ function scanFastifyRoutes(dir, roots = null) {
 
 // ── Hono ────────────────────────────────────────────────────────────────────
 
-function scanHonoRoutes(dir, roots = null) {
+function scanHonoRoutes(dir, roots = null, source = 'hono') {
   const routes = [];
   const pattern = /(?:app|router)\s*\.\s*(get|post|put|delete|patch)\s*\(\s*['"`]([^'"`]+)['"`]/gi;
 
@@ -714,7 +719,7 @@ function scanHonoRoutes(dir, roots = null) {
         handler: '',
         file: relative(dir, filePath),
         line: line ?? lineAt(content, index),
-        source: 'hono',
+        source,
         auth: Boolean(auth),
         description: extractNearbyComment(content, index),
       });

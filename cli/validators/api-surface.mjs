@@ -123,6 +123,7 @@ function detectFramework(projectDir, config) {
   if (deps.express) return 'Express';
   if (deps.fastify) return 'Fastify';
   if (deps.hono) return 'Hono';
+  if (deps.koa) return 'Koa';
   return '';
 }
 

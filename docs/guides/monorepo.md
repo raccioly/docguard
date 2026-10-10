@@ -91,9 +91,8 @@ The repository root itself is scanned only when none of these exist.
 { "sourceRoot": "services/backend/src" }
 ```
 
-> **Note:** The CLI also accepts an array for `sourceRoot`, but the published
-> JSON schema declares a string. An editor that validates `.docguard.json`
-> against the schema flags an array.
+> **Note:** `sourceRoot` also accepts an array of directories, for example
+> `["services/api/src", "services/web/src"]`.
 
 ### Project type
 
