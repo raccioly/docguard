@@ -64,3 +64,9 @@
 
 - Route extraction for frameworks DocGuard detects but does not read (NestJS, Laravel, Symfony, ASP.NET Core, Sinatra, Starlette, Warp, Tide, Cloudflare Workers, net/http-only Go).
 - TypeORM entities in `generate` and `diff` (guard's schema check already reads them).
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `7cec55ca733564288914c53e7b63dbb7e4bdb97c` — Reviewed at 7cec55c on main: all 7 tasks are checked and were delivered by #522; the full suite (2958 tests) passes on Node 18, 20, 22 and 24 in CI, and guard reports 0 errors at this revision. Evidence: `.github/scripts/sync-release-version.mjs`, `cli/release-pr-policy.mjs`, `docs-canonical/ARCHITECTURE.md`, `tests/docs-verification-findings.test.mjs`, `tests/release-version-sync.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->
