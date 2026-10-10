@@ -153,6 +153,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     (`/api/Users`) documented as `/api/users` showed a false gap in guard and
     `diff`. ASP.NET Core routes now carry `caseInsensitive: true` and compare
     ignoring case; Spring, Laravel and every other framework compare exactly.
+  - Express and Koa routers match ignoring case by default, but their routes
+    compared exactly. Each route is now marked from its own router's options
+    (`express.Router({ caseSensitive })`, Koa `new Router({ sensitive })`),
+    the Express app's `case sensitive routing` setting for app routes and the
+    mount prefixes the app matches, Fastify's `caseSensitive: false`, and
+    NestJS's adapter (`cli/scanners/route-case.mjs`). A setting whose value is
+    not a literal leaves its routes compared exactly, and `diff` names it.
   - Python route paths, prefixes and includes the reader could not resolve
     never lowered coverage. They now make the API-surface check `partial`
     with the count, the framework and the first location, as NestJS and
@@ -165,6 +172,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `diff` read `docs-canonical/API-REFERENCE.md`, `ARCHITECTURE.md`,
     `DATA-MODEL.md` and `ENVIRONMENT.md` by fixed path. It now resolves each
     with `docs.roles` and nested canonical documents, as guard does.
+  - The pattern-fallback note of `generate --plan` and `generate --spec` said
+    "Install python3 (or fix the parse error)" even for a TypeScript file that
+    did not parse. It now names only what the affected files lack: `python3` on
+    `PATH`, a Python or JavaScript/TypeScript syntax fix, or a reinstall so
+    `@babel/parser` loads.
 
 - **The non-regression budget tests no longer decide verdicts on wall-clock
   timing** (`specs/062-budget-deterministic`). "ten base-vs-base comparisons

@@ -18,7 +18,7 @@ import { detectDocTools } from './doc-tools.mjs';
 import { scanRoutesDeep } from './routes.mjs';
 import { scanSchemasDeep, generateERDiagram } from './schemas.mjs';
 import { scanFrontend } from './frontend.mjs';
-import { collectEnvVars, patternChannels, summarizeTiers } from '../shared-source.mjs';
+import { collectEnvVars, patternChannels, patternFallbackAdvice, summarizeTiers } from '../shared-source.mjs';
 import { detectCodeTechnologies } from './tech-stack.mjs';
 import { detectIntegrations } from './integrations.mjs';
 import { PROFILES } from '../shared.mjs';
@@ -369,7 +369,11 @@ function surfaceTier(scanTier, items) {
     : patternRead
       ? `No parser exists for ${patternLanguages.length ? patternLanguages.join(', ') : 'this language'}; matched by pattern.`
       : null;
-  return { tier: summary.tier, reason, degraded, patternRead, patternLanguages };
+  const result = { tier: summary.tier, reason, degraded, patternRead, patternLanguages };
+  // Why the fallback read it, for the note's advice; not part of the JSON
+  // contract (docguard.coverage-followups#FR-010).
+  Object.defineProperty(result, 'regexCauses', { value: summary.regexCauses || [], enumerable: false });
+  return result;
 }
 
 /**
@@ -468,7 +472,10 @@ function _buildMemoryPlanUncached(projectDir, config = {}) {
   if (parserTiers.degraded) {
     const read = ['endpoints', 'entities'].filter(k => parserTiers[k].degraded);
     const reason = parserTiers[read[0]].reason;
-    notes.push(`The ${read.join(' and ')} were read by the pattern fallback, not a syntax tree${reason ? ` (${reason})` : ''}. What it cannot see is missing, so those sections are marked partial. Install python3 (or fix the parse error) and re-run for exact extraction.`);
+    // The advice names what the affected files lack: python3, @babel/parser,
+    // or a syntax fix (docguard.coverage-followups#FR-010).
+    const advice = patternFallbackAdvice(read.flatMap(k => parserTiers[k].regexCauses || []));
+    notes.push(`The ${read.join(' and ')} were read by the pattern fallback, not a syntax tree${reason ? ` (${reason})` : ''}. What it cannot see is missing, so those sections are marked partial. ${advice}`);
   }
   if (parserTiers.patternRead) {
     const read = ['endpoints', 'entities'].filter(k => parserTiers[k].patternRead && !parserTiers[k].degraded);

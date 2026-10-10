@@ -6,6 +6,7 @@
  * @implements docguard.dogfood-round-2#FR-004
  * @implements docguard.dogfood-round-2#FR-008
  * @implements docguard.coverage-followups#FR-006
+ * @implements docguard.coverage-followups#FR-009
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
@@ -133,12 +134,19 @@ export function diffRoutes(dir, config = {}) {
     compareEndpoints(documented, surface.endpoints);
 
   const fmt = (e) => `${e.method} ${e.path}`;
+  // A case setting the reader could not read leaves those routes compared
+  // exactly; say where (docguard.coverage-followups#FR-009).
+  const notes = surface.scan?.caseNotes || [];
+  const limitation = notes.length
+    ? `Compared case-sensitively because a setting could not be read: ${notes.slice(0, 3).map(n => `${n.framework} ${n.file}:${n.line} (${n.reason})`).join('; ')}${notes.length > 3 ? '; …' : ''}.`
+    : null;
   return {
     title: 'API Routes',
     icon: '🛣️',
     onlyInDocs: documentedButAbsent.map(fmt),
     onlyInCode: presentButUndocumented.map(fmt),
     matched: matched.map(fmt),
+    ...(limitation ? { limitation } : {}),
   };
 }
 

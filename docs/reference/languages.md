@@ -44,9 +44,12 @@ What a degraded tier changes:
 - **`generate` says which facts were read by pattern.** `generate --plan`
   reports a tier for its endpoints and entities, with two separate flags:
   - `degraded`: a file whose language has a parser was read by
-    `regex-fallback`. The surface confidence is `low`, a note says how to get
-    exact output (install `python3`, fix the parse error), and the endpoint,
-    entity and diagram sections are marked partial.
+    `regex-fallback`. The surface confidence is `low`, the endpoint, entity
+    and diagram sections are marked partial, and a note says how to get exact
+    output, naming only what the affected files lack: put `python3` on `PATH`
+    (Python, no interpreter), fix the Python syntax error, reinstall
+    docguard-cli so `@babel/parser` loads (JavaScript/TypeScript, parser
+    missing), or fix the JavaScript/TypeScript syntax error.
   - `patternRead`, with `patternLanguages`: facts in a `fallback-language`
     language. There is nothing to install, so confidence is unchanged, but the
     same sections are marked partial and a note names the languages.
@@ -201,18 +204,32 @@ the code scan (`cli/scanners/doc-tools.mjs`).
 A Sinatra app inside a Rails project is not read: the project is classified
 Rails and only `config/routes.rb` is read.
 
-ASP.NET Core routes compare case-insensitively, as ASP.NET Core matches them:
-`[controller]` keeps the class's case (`/api/Users`), and a document that
-writes `/api/users` matches it in `guard` and `diff`. Each ASP.NET Core route
-carries `caseInsensitive: true`. Every other framework's routes compare
-exactly, case included: Spring, Laravel, Symfony, Rails, Django, Flask, FastAPI
-and the Go and Rust frameworks match case-sensitively. Express and Koa match
-case-insensitively by default, but an application or router can switch that
-off, so their routes still compare exactly.
-
 Routes in test, fixture and example directories are dropped by default. When
 that leaves no route, the API-surface reason says how many were excluded and
 names the `detection.includeNonProduct` setting.
+
+### Case-sensitive route matching
+
+`guard` and `diff` compare a documented path with a code route
+case-insensitively only when the framework itself matches that route ignoring
+case. Such a route
+carries `caseInsensitive: true` (`cli/scanners/route-case.mjs`, and the
+ASP.NET Core reader). Every other route compares exactly, case included.
+
+| Framework | Matches ignoring case | What DocGuard reads |
+|---|---|---|
+| ASP.NET Core | Always | Every route is marked. `[controller]` keeps the class's case (`/api/Users`), so `/api/users` in a document matches it |
+| Express | By default | A router made with `Router()` or `express.Router(opts)` is case-sensitive only with `caseSensitive: true`. Routes on an `express()` app follow `app.set('case sensitive routing', true\|false)`, `app.enable(...)` and `app.disable(...)`. A separately created router does not inherit the app setting, but the app setting governs a mount prefix the app matches (`app.use('/API', router)`), so a mounted route is marked only when its router and every router above it match ignoring case. A route on a receiver its file does not declare (a parameter, an import) is marked only when no router or app setting in the project is, or may be, case-sensitive. Several apps in one project are not told apart |
+| Koa (`@koa/router`, `koa-router`) | By default | A router made with `new Router({ sensitive: true })` is case-sensitive |
+| Fastify | Only with `caseSensitive: false` | Marked only when every server the project creates (`fastify(...)`, `Fastify(...)`, `require('fastify')(...)`) passes a literal `caseSensitive: false` |
+| NestJS | On the Express adapter (default) | Follows the Express app setting. With `@nestjs/platform-fastify` or a `FastifyAdapter`, case-sensitive |
+| Hono, itty-router, Cloudflare Worker dispatch, Next.js | Never | Not marked. Hono's routers do not fold case; a custom `getPath` is code, not a setting |
+| Spring, Laravel, Symfony, Rails, Sinatra, Django, Flask, FastAPI, Starlette, the Go and Rust frameworks | Never (by default) | Not marked |
+
+A setting or option whose value is not a literal (`app.set('case sensitive
+routing', process.env.CS === '1')`, `new Router(options)`) leaves the routes it
+may govern compared exactly, so a gap is never hidden. `diff` names each such
+setting under API Routes, with its file and line.
 
 ### Data models
 

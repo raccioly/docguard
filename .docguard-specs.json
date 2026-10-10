@@ -1664,7 +1664,7 @@
           {
             "requirementId": "FR-008",
             "file": "cli/scanners/memory-plan.mjs",
-            "line": 379
+            "line": 383
           },
           {
             "requirementId": "FR-009",
@@ -2113,6 +2113,8 @@
           "docguard.coverage-followups#FR-006",
           "docguard.coverage-followups#FR-007",
           "docguard.coverage-followups#FR-008",
+          "docguard.coverage-followups#FR-009",
+          "docguard.coverage-followups#FR-010",
           "docguard.coverage-followups#SC-001",
           "docguard.coverage-followups#SC-002"
         ]
@@ -2121,20 +2123,20 @@
         "artifacts": [
           {
             "path": "specs/063-coverage-followups/spec.md",
-            "digest": "sha256:3372880b1466030dbf27c4c6ead15cc08f91759d5b0264707168da128e78601e"
+            "digest": "sha256:36bb3a49da85c5c5ebcc89c95d86010e77ba1663ae0cd9b1168d221ece5f959f"
           },
           {
             "path": "specs/063-coverage-followups/plan.md",
-            "digest": "sha256:853a1c81f3de6bf41cb892ead81653764876bdbce6bc59367416499944df5c23"
+            "digest": "sha256:5996d62838cf239a0d887fd5804c98c314f7eb8680b1b1617cb3dc401b50b772"
           },
           {
             "path": "specs/063-coverage-followups/tasks.md",
-            "digest": "sha256:0c46fb30b119ca8f3818a00e52a4250495c1ff6b2b0cf67f769ef2b59cd01deb"
+            "digest": "sha256:b6d493a28577f4b6f9c71a2b6adc18161859b56a1d6aef62bcddd335c941528b"
           }
         ],
         "taskCompletion": {
-          "checked": 9,
-          "total": 10
+          "checked": 12,
+          "total": 13
         },
         "implementationEvidence": [
           {
@@ -2155,12 +2157,12 @@
           {
             "requirementId": "FR-001",
             "file": "cli/shared-source.mjs",
-            "line": 1261
+            "line": 1315
           },
           {
             "requirementId": "FR-001",
             "file": "cli/shared-source.mjs",
-            "line": 1264
+            "line": 1318
           },
           {
             "requirementId": "FR-002",
@@ -2240,12 +2242,42 @@
           {
             "requirementId": "FR-007",
             "file": "cli/scanners/as-built.mjs",
-            "line": 144
+            "line": 154
           },
           {
             "requirementId": "FR-007",
             "file": "cli/shared-source.mjs",
-            "line": 1265
+            "line": 1319
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "cli/commands/diff.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "cli/scanners/route-case.mjs",
+            "line": 29
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "cli/scanners/routes.mjs",
+            "line": 25
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/commands/generate-as-built.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/shared-source.mjs",
+            "line": 1270
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/shared-source.mjs",
+            "line": 1298
           }
         ],
         "testEvidence": [
@@ -2290,14 +2322,24 @@
             "line": 14
           },
           {
-            "requirementId": "SC-001",
+            "requirementId": "FR-009",
             "file": "tests/coverage-followups.test.mjs",
             "line": 15
           },
           {
-            "requirementId": "SC-002",
+            "requirementId": "FR-010",
             "file": "tests/coverage-followups.test.mjs",
             "line": 16
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/coverage-followups.test.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/coverage-followups.test.mjs",
+            "line": 18
           }
         ]
       }
@@ -4390,12 +4432,12 @@
           {
             "requirementId": "FR-001",
             "file": "cli/shared-source.mjs",
-            "line": 1220
+            "line": 1227
           },
           {
             "requirementId": "FR-001",
             "file": "cli/shared-source.mjs",
-            "line": 1226
+            "line": 1233
           },
           {
             "requirementId": "FR-001",
@@ -4470,7 +4512,7 @@
           {
             "requirementId": "FR-008",
             "file": "cli/scanners/routes.mjs",
-            "line": 1038
+            "line": 1093
           },
           {
             "requirementId": "FR-009",
@@ -5040,7 +5082,7 @@
           {
             "requirementId": "FR-002",
             "file": "cli/commands/diff.mjs",
-            "line": 156
+            "line": 164
           },
           {
             "requirementId": "FR-003",
@@ -5060,12 +5102,12 @@
           {
             "requirementId": "FR-004",
             "file": "cli/scanners/as-built.mjs",
-            "line": 209
+            "line": 219
           },
           {
             "requirementId": "FR-004",
             "file": "cli/scanners/as-built.mjs",
-            "line": 210
+            "line": 220
           },
           {
             "requirementId": "FR-004",
@@ -5085,7 +5127,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/commands/diff.mjs",
-            "line": 317
+            "line": 325
           },
           {
             "requirementId": "FR-007",
@@ -6105,7 +6147,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/scanners/routes.mjs",
-            "line": 476
+            "line": 496
           },
           {
             "requirementId": "FR-002",
@@ -6125,22 +6167,22 @@
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/routes.mjs",
-            "line": 465
+            "line": 485
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/routes.mjs",
-            "line": 526
+            "line": 546
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/routes.mjs",
-            "line": 529
+            "line": 549
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/routes.mjs",
-            "line": 583
+            "line": 603
           },
           {
             "requirementId": "FR-003",
@@ -6170,7 +6212,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/scanners/routes.mjs",
-            "line": 584
+            "line": 604
           },
           {
             "requirementId": "FR-005",
@@ -6200,7 +6242,7 @@
           {
             "requirementId": "FR-008",
             "file": "cli/scanners/memory-plan.mjs",
-            "line": 506
+            "line": 513
           },
           {
             "requirementId": "FR-008",
@@ -9094,7 +9136,7 @@
           {
             "requirementId": "FR-013",
             "file": "cli/scanners/as-built.mjs",
-            "line": 134
+            "line": 144
           },
           {
             "requirementId": "FR-014",
@@ -9104,7 +9146,7 @@
           {
             "requirementId": "FR-015",
             "file": "cli/scanners/as-built.mjs",
-            "line": 157
+            "line": 167
           },
           {
             "requirementId": "FR-016",

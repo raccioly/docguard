@@ -1185,11 +1185,12 @@ export function tierFor(filePath, parsed, batchReason = null) {
  *
  * @param {Array<{tier?: string, tierReason?: string|null, file?: string}>} items
  * @returns {{tier: string, tierReason: string|null, degraded: number,
- *   patternOnly: number, fallbackLanguages: string[], regexReason: string|null}}
+ *   patternOnly: number, fallbackLanguages: string[], regexReason: string|null,
+ *   regexCauses: string[]}}
  */
 export function summarizeTiers(items) {
   const list = (items || []).filter(item => item && typeof item.tier === 'string' && PARSER_TIERS.includes(item.tier));
-  if (list.length === 0) return { tier: 'not-applicable', tierReason: null, degraded: 0, patternOnly: 0, fallbackLanguages: [], regexReason: null };
+  if (list.length === 0) return { tier: 'not-applicable', tierReason: null, degraded: 0, patternOnly: 0, fallbackLanguages: [], regexReason: null, regexCauses: [] };
   const tiers = new Set(list.map(item => item.tier));
   const degraded = list.filter(item => !FULL_TIERS.has(item.tier) && item.tier !== 'not-applicable').length;
   const patternItems = list.filter(item => item.tier === 'fallback-language');
@@ -1197,6 +1198,12 @@ export function summarizeTiers(items) {
     patternOnly: patternItems.length,
     fallbackLanguages: [...new Set(patternItems.map(item => item.file && languageOf(item.file)).filter(Boolean))].sort(),
     regexReason: list.find(item => item.tier === 'regex-fallback' && item.tierReason)?.tierReason || null,
+    // Why the fallback read each item, so advice can name the missing
+    // prerequisite (docguard.coverage-followups#FR-010). A nested summary
+    // passes its own causes up.
+    regexCauses: [...new Set(list.flatMap(item => (Array.isArray(item.regexCauses)
+      ? item.regexCauses
+      : item.tier === 'regex-fallback' ? [regexCause(item)] : [])))].sort(),
   };
   if (tiers.size === 1) {
     const [only] = tiers;
@@ -1250,6 +1257,53 @@ export function tierApplicability(summary, noun = 'input') {
     status: 'partial',
     reason: `Findings are retained; ${plural(regex)} read by the pattern fallback rather than a syntax tree${alsoPattern}, so absence of a finding there is weak evidence.${reason}`,
   };
+}
+
+const JS_EXT_RE = /\.(?:[cm]?jsx?|[cm]?tsx?)$/i;
+
+/**
+ * Why one `regex-fallback` item was read by pattern:
+ * - `python-interpreter-missing`: no usable python3 on PATH;
+ * - `js-parser-missing`: `@babel/parser` could not be loaded;
+ * - `python-parse-error` / `js-parse-error`: that file did not parse;
+ * - `parse-error`: a parse failure whose language is not known.
+ * @implements docguard.coverage-followups#FR-010
+ */
+export function regexCause(item) {
+  const reason = String(item?.tierReason || '');
+  const file = String(item?.file || '');
+  if (/python3? interpreter|No usable python/i.test(reason)) return 'python-interpreter-missing';
+  if (/JavaScript\/TypeScript parser unavailable|@babel\/parser/i.test(reason)) return 'js-parser-missing';
+  if (/\.py$/i.test(file)) return 'python-parse-error';
+  if (JS_EXT_RE.test(file)) return 'js-parse-error';
+  return 'parse-error';
+}
+
+const CAUSE_ADVICE = {
+  'python-interpreter-missing': 'put python3 (or a Python 3 `python`) on PATH',
+  'js-parser-missing': 'reinstall docguard-cli so its `@babel/parser` dependency loads',
+  'python-parse-error': 'fix the Python syntax error',
+  'js-parse-error': 'fix the JavaScript/TypeScript syntax error',
+  'parse-error': 'fix the parse error',
+};
+const CAUSE_ORDER = Object.keys(CAUSE_ADVICE);
+
+/**
+ * The one sentence that tells a user how to get exact extraction back, naming
+ * only the prerequisites the affected files actually lack: `python3` for
+ * Python, `@babel/parser` for JavaScript/TypeScript, or the file's syntax
+ * error. Before, every note said "Install python3 (or fix the parse error)",
+ * also for a TypeScript file that did not parse.
+ *
+ * @implements docguard.coverage-followups#FR-010
+ * @param {string[]} causes - `regexCause` values (a summary's `regexCauses`)
+ * @returns {string}
+ */
+export function patternFallbackAdvice(causes) {
+  const steps = CAUSE_ORDER.filter(c => (causes || []).includes(c)).map(c => CAUSE_ADVICE[c]);
+  const list = steps.length ? steps : [CAUSE_ADVICE['parse-error']];
+  const text = list.length === 1 ? list[0] : `${list.slice(0, -1).join(', ')} and ${list[list.length - 1]}`;
+  return `${text[0].toUpperCase()}${text.slice(1)}, then re-run for exact extraction.`;
 }
 
 /**

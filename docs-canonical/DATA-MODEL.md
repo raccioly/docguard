@@ -426,21 +426,25 @@ A finding answers three independent questions, one field each. A single `confide
 A route the scanners report (`scanRoutesDeep` in `cli/scanners/routes.mjs`)
 carries `method`, `path`, `file`, `source`, `auth`, its file's `tier` and
 `tierReason` when its reader records one, and `caseInsensitive: true` when its
-framework matches routes ignoring case (ASP.NET Core only). Endpoint
+framework matches it ignoring case: every ASP.NET Core route, and Express,
+Koa, Fastify and NestJS routes as their settings decide
+(`cli/scanners/route-case.mjs`). Endpoint
 comparison (`compareEndpoints` in `cli/scanners/api-doc.mjs`) folds case only
 for such a route. The non-enumerable `scan.unresolved` lists every route a
-reader saw but could not read, as `{ framework, code, file, line, target }`:
+reader saw and left out of the surface, as `{ framework, code, file, line, target }`:
 the NestJS, Worker and router-library readers' limitations and the Python
 reader's (`python-unresolved-route-path`, `python-unresolved-include`,
 `django-unresolved-route`, `django-unresolved-include`), minus those in test,
-fixture, example or ignored files (specs 058, 063).
+fixture, example or ignored files (specs 058, 063). `scan.caseNotes` lists
+each case setting whose value is an expression rather than a literal, as
+`{ framework, file, line, reason }`; the routes it may govern compare exactly.
 
 `generate --plan --format json` reports `surface.parserTiers` with one entry
 per surface (`endpoints`, `entities`) and three plan-wide fields (spec 063):
 
 | Field | Meaning |
 |---|---|
-| `tier`, `reason` | The surface's tier, and why when it is not a full syntax tree |
+| `tier`, `reason` | The surface's tier, and the reason for any tier below a full syntax tree |
 | `degraded` | A file whose language has a parser was read by `regex-fallback`; `surface.confidence` is `low` |
 | `patternRead`, `patternLanguages` | Facts in a language with no parser (`fallback-language`), and those languages; coverage is partial, confidence unchanged |
 
@@ -484,7 +488,7 @@ The `score --format json` output:
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
-| 0.16.0 | 2026-10-10 | DocGuard Team | Route records' `caseInsensitive` flag and `scan.unresolved` with Python limitations; the plan's `patternRead`/`patternLanguages` beside `degraded` (spec 063) |
+| 0.16.0 | 2026-10-10 | DocGuard Team | Route records' `caseInsensitive` flag (ASP.NET Core, Express, Koa, Fastify, NestJS), `scan.caseNotes`, and `scan.unresolved` with Python limitations; the plan's `patternRead`/`patternLanguages` beside `degraded` (spec 063) |
 | 0.15.0 | 2026-10-10 | DocGuard Team | `.docguardignore` reasons and expiries, the suppression model, the claimspec `ignore` export, `validators.suppressions` and `suppressions.requireReason` (spec 057) |
 | 0.14.0 | 2026-10-10 | DocGuard Team | Freshness review for specs 038–053: the adoption baseline file and its fingerprint preimage, including the advisory-tail exclusion and legacy match (spec 052); the `baseline` key; `requiredFiles.agentFile` as a string (spec 050); Go `internal/example` as product code |
 | 0.13.0 | 2026-09-30 | DocGuard Team | Guard result `key`/`parent` and the `docSections` key; Claude Code `@path` imports in instruction budgets; tracked-only `glob` fingerprints (spec 049) |

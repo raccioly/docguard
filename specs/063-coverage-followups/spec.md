@@ -10,7 +10,7 @@
 
 **Lineage**: Verified follow-ups reported while building specs 056–061. Extends `docguard.python-extraction` (046, FR-012: the plan's parser tier), `docguard.fallback-language-coverage` (043: pattern-only languages are partial coverage), `docguard.js-framework-routes` (058: `scan.unresolved`), `docguard.php-dotnet-routes` (059: ASP.NET Core routes), `docguard.more-route-frameworks` (060: Python route limitations) and `docguard.dogfood-round-2` (061: tech-stack detection, `diff` document roles).
 
-**Input**: "These are verified follow-ups reported by the agents that built specs 056–061. Each is one FR with a failing-first test."
+**Input**: "These are verified follow-ups reported by the agents that built specs 056–061. Each is one FR with a failing-first test." Then: "Express and Koa case sensitivity, done properly … resolve the opt-out per router" and "make the advice name the missing prerequisite for the language actually affected".
 
 ## Problem
 
@@ -21,6 +21,9 @@
 5. **Angular and Svelte are never detected.** Both are in the tech-stack vocabulary with no dependency mapping, so a Node project that documents them always gets DDF001 "documented but not found". The same happens for the official MongoDB driver (`mongodb`), the `mysql` client and the `postgres` client, which map to nothing.
 6. **`generate --spec` has the same conflation.** It lowers confidence whenever the facts' summary tier is `mixed`, so an area with JavaScript routes and Go entities is reported `low` and told to install `python3`.
 7. **`diff` reads fixed document paths.** Its route section reads `docs-canonical/API-REFERENCE.md` (falling back to `ARCHITECTURE.md`), its entity section `docs-canonical/DATA-MODEL.md`, and its environment section `docs-canonical/ENVIRONMENT.md`, ignoring `docs.roles` mappings and nested canonical documents that `guard` resolves with `resolveDocRole`.
+
+8. **Express, Koa, Fastify and NestJS routes all compare case-sensitively.** Express and Koa routers match ignoring case by default, so a document that writes `/users` for `app.get('/Users')` showed a false gap. Fastify and NestJS have their own rules.
+9. **The fallback advice always says "Install python3".** The `generate --plan` and `generate --spec` notes said "Install python3 (or fix the parse error)" whatever the affected file was, including a TypeScript file that did not parse or an install whose `@babel/parser` did not load.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -57,16 +60,37 @@
 
 1. **Given** `docs.roles` mapping the API reference, data model and environment documents, **Then** `diff` compares routes, entities and environment variables against the mapped files.
 
+### User Story 8 - JavaScript frameworks compare routes the way they match them (Priority: P1)
+
+1. **Given** an Express app and a router mounted on it, both with default settings, **Then** a lower-case document matches their routes.
+2. **Given** `app.set('case sensitive routing', true)` or `app.enable('case sensitive routing')`, **Then** the app's routes and the routes under a prefix it matches compare exactly.
+3. **Given** `express.Router({ caseSensitive: true })`, **Then** that router's routes compare exactly and the app's do not.
+4. **Given** a setting whose value is not a literal, **Then** the routes it may govern compare exactly and `diff` names the setting's location.
+5. **Given** `new Router({ sensitive: true })` in Koa, a Fastify server without `caseSensitive: false`, or NestJS on the Fastify adapter, **Then** their routes compare exactly; Koa's default router and NestJS on Express match ignoring case.
+
+### User Story 9 - The advice names what is missing (Priority: P2)
+
+1. **Given** a TypeScript file that does not parse, **Then** the note says to fix its syntax and does not mention `python3`.
+2. **Given** no Python interpreter, **Then** the note says to put `python3` on `PATH`; **given** a Python syntax error, it says to fix it; **given** `@babel/parser` not loading, it says to reinstall docguard-cli.
+
 ## Requirements *(mandatory)*
 
 - **FR-001**: `generate --plan` MUST report, per surface (`endpoints`, `entities`) and overall, `patternRead: true` when any fact was read in a language with no parser (`fallback-language`), with `patternLanguages` naming the languages. `degraded` MUST keep its meaning: true only when a file whose language has a parser was read by the pattern fallback (`regex-fallback`), never because a pattern-only language is present. A pattern-read surface MUST be marked partial with a reason that says no parser exists for the language, and the plan MUST carry a note saying so; `surface.confidence` is unchanged by `fallback-language` alone. The text output MUST say which surfaces were read by pattern. Go, Java/Kotlin (JPA), Rails and Rust entities MUST carry their file's tier, as their routes already do.
 - **FR-002**: The default ignored directories MUST include `obj` (.NET and C intermediate output) and `_build` (Mix, dune and Sphinx output). A directory named `bin` MUST be skipped only when its parent directory holds a .NET project file (`*.csproj`, `*.fsproj`, `*.vbproj`); every other `bin/` (a Node CLI, Ruby binstubs, shell scripts) MUST still be read. The rule MUST apply in the shared file walker and in the route, schema, environment and module walkers.
-- **FR-003**: A route reader whose framework matches routes case-insensitively MUST mark its routes `caseInsensitive: true`. Only the ASP.NET Core reader does. Endpoint comparison (`guard`'s API-surface check, including the OpenAPI-versus-code check, and `diff`) MUST compare a marked route's path ignoring case. Unmarked routes (Spring, Laravel, Symfony, Rails, Django, Flask, FastAPI, Go, Rust, Next.js, Fastify, Hono, NestJS, Express, Koa) MUST compare exactly as before.
+- **FR-003**: A route reader whose framework matches routes case-insensitively MUST mark its routes `caseInsensitive: true`. The ASP.NET Core reader marks every route; FR-009 decides for Express, Koa, Fastify and NestJS. Endpoint comparison (`guard`'s API-surface check, including the OpenAPI-versus-code check, and `diff`) MUST compare a marked route's path ignoring case. Unmarked routes (Spring, Laravel, Symfony, Rails, Sinatra, Django, Flask, FastAPI, Starlette, Go, Rust, Next.js, Hono) MUST compare exactly as before.
 - **FR-004**: Every Python route limitation MUST reach the scan's `unresolved` list with the framework that produced it (Django for `django-*` codes, otherwise the detected FastAPI, Flask or Starlette framework), so the API-surface check reports `partial` coverage with the count, the framework and the first location. Limitations in test, fixture, example or ignored files MUST NOT count, as for the other readers. `routes.limitations` MUST still list every Python limitation.
 - **FR-005**: Every technology in the tech-stack vocabulary MUST have at least one detection path. `@angular/core` MUST map to Angular; `svelte` and `@sveltejs/kit` to Svelte; `mongodb` to MongoDB; `mysql` to MySQL; `postgres` to PostgreSQL. A test MUST fail when a vocabulary name has no detection path.
 - **FR-006**: `diff` MUST resolve the documents it compares with `resolveDocRole`, as `guard` does: the API reference (falling back to the architecture document when the API reference does not exist), the data model and the environment document.
 - **FR-007**: `generate --spec` MUST lower its confidence and add its pattern-fallback note only when a route or entity fact, or the scan behind it, was read by `regex-fallback`. An area whose facts mix a parsed language with a pattern-only one (summary tier `mixed`) MUST NOT be reported `low` for that reason alone.
-- **FR-008**: The user documentation (`docs/reference/languages.md`, `docs/commands.md`, `docs/configuration.md`) and the canonical architecture and data-model documents MUST describe the new fields and rules.
+- **FR-008**: The user documentation (`docs/reference/languages.md`, including the case-sensitivity matrix, `docs/commands.md`, `docs/configuration.md`) and the canonical architecture and data-model documents MUST describe the new fields and rules.
+- **FR-009**: Express, Koa, Fastify and NestJS routes MUST be marked `caseInsensitive: true` exactly when the framework matches them ignoring case, resolved per router from the sources:
+  - Express: a router created with `Router()` or `express.Router(opts)` matches ignoring case unless `opts.caseSensitive` is `true`; routes on an `express()` app follow the `case sensitive routing` setting (`app.set(name, true|false)`, `app.enable(name)`, `app.disable(name)`). A separately created router does not inherit the app setting (Express `application.js` passes it only to the app's own router); a mounted route is case-insensitive only when its router and every router that matched a mount prefix above it are. A route whose receiver is not declared in its file (a parameter, an import) is case-insensitive only when no router or app setting in the project is, or may be, case-sensitive.
+  - Koa (`@koa/router`, `koa-router`): a router matches ignoring case unless created with `sensitive: true`.
+  - Fastify: case-sensitive unless every server the project creates passes a literal `caseSensitive: false`.
+  - NestJS: the Express adapter (default) follows the Express app setting; the Fastify adapter (`@nestjs/platform-fastify` or `FastifyAdapter`) is case-sensitive.
+  - Hono, itty-router, Cloudflare Worker dispatch and Next.js MUST NOT be marked.
+  An option or setting whose value is not a literal MUST leave the routes it may govern case-sensitive and MUST be recorded with its file and line in the scan's `caseNotes`, which `diff` shows.
+- **FR-010**: The pattern-fallback note of `generate --plan` and `generate --spec` MUST name only the prerequisites the affected files lack: put `python3` on `PATH` (Python, no interpreter), fix the Python syntax error (a Python file that did not parse), reinstall docguard-cli so `@babel/parser` loads (JavaScript/TypeScript, parser missing), or fix the JavaScript/TypeScript syntax error (a JS/TS file that did not parse).
 
 ## Success Criteria *(mandatory)*
 
@@ -75,5 +99,6 @@
 
 ## Out of Scope
 
-- Express and Koa (and NestJS on the Express adapter) match routes case-insensitively by default, but an application or router can turn that off (`app.set('case sensitive routing', true)`, `Router({ caseSensitive: true })`, `sensitive: true`). Marking their routes needs the setting resolved per router; marking them unconditionally would hide real gaps in projects that enabled it.
+- Several Express apps in one project are not told apart: one app enabling `case sensitive routing` makes every app's routes compare exactly (conservative).
+- Fastify `routerOptions`, and an option object built elsewhere and passed by name, are not read: those servers compare exactly.
 - `docs-sync` (DSY003) already lowercases both sides of its JavaScript route-file comparison; it reads no ASP.NET Core route.

@@ -12,6 +12,8 @@
  * @req docguard.coverage-followups#FR-006
  * @req docguard.coverage-followups#FR-007
  * @req docguard.coverage-followups#FR-008
+ * @req docguard.coverage-followups#FR-009
+ * @req docguard.coverage-followups#FR-010
  * @req docguard.coverage-followups#SC-001
  * @req docguard.coverage-followups#SC-002
  */
@@ -28,7 +30,11 @@ import { scanRoutesDeep, findRouteFiles } from '../cli/scanners/routes.mjs';
 import { detectProjectProfile } from '../cli/scanners/project-type.mjs';
 import { scanSchemasDeep } from '../cli/scanners/schemas.mjs';
 import { walkFiles, relPosix } from '../cli/shared-ignore.mjs';
-import { grepEnvUsage } from '../cli/shared-source.mjs';
+import { grepEnvUsage, summarizeTiers, tierFor } from '../cli/shared-source.mjs';
+import * as sharedSource from '../cli/shared-source.mjs';
+import { pyAstAvailable } from '../cli/scanners/py-ast.mjs';
+import { NEST_FILES, UNPARSEABLE } from './fixtures/js-framework-projects.mjs';
+import { symlinkSync } from 'node:fs';
 import { scanTestInventory } from '../cli/scanners/inventory.mjs';
 import { validateApiSurface } from '../cli/validators/api-surface.mjs';
 import { compareEndpoints } from '../cli/scanners/api-doc.mjs';
@@ -410,7 +416,156 @@ describe('documentation (FR-008)', () => {
     assert.match(read('docs/commands.md'), /patternRead/);
     assert.match(read('docs/reference/languages.md'), /patternRead/);
     assert.match(read('docs/reference/languages.md'), /case-insensitive/i);
+    assert.match(read('docs/reference/languages.md'), /### Case-sensitive route matching[\s\S]*Express[\s\S]*caseSensitive[\s\S]*Koa[\s\S]*sensitive: true[\s\S]*Fastify[\s\S]*NestJS/);
+    assert.match(read('docs/reference/languages.md'), /@babel\/parser. loads/);
     assert.match(read('docs/configuration.md'), /`obj`/);
     assert.match(read('docs/configuration.md'), /\.csproj/);
+  });
+});
+
+// ── FR-009: Express, Koa, Fastify and NestJS case sensitivity ────────────────
+
+const caseOf = routes => Object.fromEntries(routes.map(r => [key(r), r.caseInsensitive === true]).sort(([a], [b]) => a.localeCompare(b)));
+const expressPkg = { 'package.json': JSON.stringify({ dependencies: { express: '5.1.0' } }) };
+const EXPRESS_ROUTER = "const express = require('express');\nconst router = express.Router();\nrouter.get('/List', (req, res) => res.send('x'));\nmodule.exports = router;\n";
+const expressApp = (setting = '') => "const express = require('express');\nconst items = require('./routes/items');\nconst app = express();\n" +
+  setting + "app.get('/Users', (req, res) => res.send('x'));\napp.use('/API', items);\napp.listen(3000);\n";
+
+describe('Express, Koa, Fastify and NestJS route case sensitivity (FR-009)', () => {
+  it('Express matches ignoring case by default, through a mount', () => {
+    const dir = project({ ...expressPkg, 'src/app.js': expressApp(), 'src/routes/items.js': EXPRESS_ROUTER,
+      'docs-canonical/API-REFERENCE.md': '#### GET `/users`\n\n#### GET `/api/list`\n' });
+    assert.deepEqual(caseOf(routesOf(dir)), { 'GET /API/List': true, 'GET /Users': true });
+    const r = diffRoutes(dir, {});
+    assert.deepEqual(r.onlyInDocs, []);
+    assert.deepEqual(r.onlyInCode, []);
+  });
+
+  for (const [label, setting] of [['app.set(..., true)', "app.set('case sensitive routing', true);\n"], ['app.enable(...)', "app.enable('case sensitive routing');\n"]]) {
+    it(`${label} makes the app's routes and the prefixes it matches case-sensitive`, () => {
+      const dir = project({ ...expressPkg, 'src/app.js': expressApp(setting), 'src/routes/items.js': EXPRESS_ROUTER });
+      assert.deepEqual(caseOf(routesOf(dir)), { 'GET /API/List': false, 'GET /Users': false });
+    });
+  }
+
+  it('app.disable(...) and app.set(..., false) keep the default', () => {
+    const dir = project({ ...expressPkg, 'src/app.js': expressApp("app.disable('case sensitive routing');\n"), 'src/routes/items.js': EXPRESS_ROUTER });
+    assert.deepEqual(caseOf(routesOf(dir)), { 'GET /API/List': true, 'GET /Users': true });
+  });
+
+  it('Router({ caseSensitive: true }) is case-sensitive; the app keeps its own setting', () => {
+    const dir = project({ ...expressPkg, 'src/app.js': expressApp(),
+      'src/routes/items.js': EXPRESS_ROUTER.replace('express.Router()', 'express.Router({ caseSensitive: true })') });
+    assert.deepEqual(caseOf(routesOf(dir)), { 'GET /API/List': false, 'GET /Users': true });
+  });
+
+  it('a setting that is not a literal leaves the routes case-sensitive and is noted', () => {
+    const dir = project({ ...expressPkg, 'src/app.js': expressApp("app.set('case sensitive routing', process.env.CS === '1');\n"),
+      'src/routes/items.js': EXPRESS_ROUTER, 'docs-canonical/API-REFERENCE.md': '#### GET `/users`\n' });
+    const routes = routesOf(dir);
+    assert.deepEqual(caseOf(routes), { 'GET /API/List': false, 'GET /Users': false });
+    assert.deepEqual(routes.scan.caseNotes.map(n => [n.framework, n.file, n.line]), [['Express', 'src/app.js', 4]]);
+    assert.match(diffRoutes(dir, {}).limitation, /Express src\/app\.js:4/);
+  });
+
+  it('Koa routers match ignoring case unless sensitive: true; unreadable options are case-sensitive', () => {
+    const koa = (opts) => ({
+      'package.json': JSON.stringify({ dependencies: { koa: '2.15.0', '@koa/router': '12.0.1' } }),
+      'src/server.js': `const Koa = require('koa');\nconst Router = require('@koa/router');\nconst app = new Koa();\nconst router = new Router(${opts});\nrouter.get('/Users', ctx => {});\napp.use(router.routes());\n`,
+    });
+    assert.deepEqual(caseOf(routesOf(project(koa('')))), { 'GET /Users': true });
+    assert.deepEqual(caseOf(routesOf(project(koa('{ sensitive: true }')))), { 'GET /Users': false });
+    assert.deepEqual(caseOf(routesOf(project(koa('{ prefix: "" }')))), { 'GET /Users': true });
+    const unread = routesOf(project(koa('options')));
+    assert.deepEqual(caseOf(unread), { 'GET /Users': false });
+    assert.equal(unread.scan.caseNotes[0].framework, 'Koa');
+  });
+
+  it('Fastify is case-sensitive unless the server sets caseSensitive: false', () => {
+    const fastify = (opts) => ({
+      'package.json': JSON.stringify({ dependencies: { fastify: '5.2.1' } }),
+      'src/server.js': `const fastify = require('fastify')(${opts});\nfastify.get('/Users', async () => ({}));\nfastify.listen({ port: 3000 });\n`,
+    });
+    assert.deepEqual(caseOf(routesOf(project(fastify('')))), { 'GET /Users': false });
+    assert.deepEqual(caseOf(routesOf(project(fastify('{ caseSensitive: false }')))), { 'GET /Users': true });
+  });
+
+  it('NestJS follows its adapter: Express by default, Fastify case-sensitive', () => {
+    const express = routesOf(project(NEST_FILES));
+    assert.ok(express.length > 0 && express.every(r => r.caseInsensitive === true));
+    const pkg = JSON.parse(NEST_FILES['package.json']);
+    pkg.dependencies['@nestjs/platform-fastify'] = '10.3.8';
+    const fastify = routesOf(project({ ...NEST_FILES, 'package.json': JSON.stringify(pkg) }));
+    assert.ok(fastify.length > 0 && fastify.every(r => !r.caseInsensitive));
+  });
+
+  it('Hono and Next.js routes are never marked', () => {
+    assert.ok(routesOf(project(HONO)).every(r => !r.caseInsensitive));
+    const next = routesOf(project({
+      'package.json': JSON.stringify({ dependencies: { next: '14.2.0', react: '18.3.1' } }),
+      'app/api/Users/route.ts': 'export async function GET() { return Response.json([]); }\n',
+    }));
+    assert.ok(next.length > 0 && next.every(r => !r.caseInsensitive));
+  });
+});
+
+// ── FR-010: the fallback advice names what is missing ────────────────────────
+
+let noPython = null;
+function pathWithoutPython() {
+  if (noPython) return noPython;
+  noPython = mkdtempSync(join(tmpdir(), 'docguard-063-nopy-'));
+  dirs.push(noPython);
+  for (const bin of ['node', 'git']) {
+    const which = spawnSync('command', ['-v', bin], { shell: true, encoding: 'utf8' }).stdout.trim();
+    if (which) symlinkSync(which, join(noPython, bin));
+  }
+  return noPython;
+}
+const planNotes = (dir, env = process.env) => {
+  const r = spawnSync(process.execPath, [CLI, 'generate', '--plan', '--format', 'json'], { cwd: dir, encoding: 'utf8', env: { ...env, NO_COLOR: '1' }, timeout: 60000 });
+  return JSON.parse(r.stdout.slice(r.stdout.indexOf('{'))).notes.join('\n');
+};
+const FASTAPI = {
+  'requirements.txt': 'fastapi\n',
+  'app/main.py': 'from fastapi import FastAPI\napp = FastAPI()\n\n@app.get("/items")\ndef items():\n    return []\n',
+};
+
+describe('the pattern-fallback advice names the missing prerequisite (FR-010)', () => {
+  it('a TypeScript file that does not parse: fix its syntax, not install python3', () => {
+    const notes = planNotes(project({ ...HONO, 'src/app.ts': HONO['src/app.ts'] + UNPARSEABLE }));
+    assert.match(notes, /pattern fallback/);
+    assert.match(notes, /JavaScript\/TypeScript syntax error/);
+    assert.doesNotMatch(notes, /python3/);
+  });
+
+  it('Python without an interpreter: put python3 on PATH', () => {
+    const notes = planNotes(project(FASTAPI), { ...process.env, PATH: pathWithoutPython() });
+    assert.match(notes, /python3/);
+    assert.doesNotMatch(notes, /@babel\/parser|JavaScript/);
+  });
+
+  it('a Python file that does not parse: fix the Python syntax error', { skip: pyAstAvailable() ? false : 'python3 not on PATH' }, () => {
+    const notes = planNotes(project({ ...FASTAPI, 'app/broken.py': 'from fastapi import APIRouter\nrouter = APIRouter()\n@router.get("/x")\ndef x(:\n' }));
+    assert.match(notes, /Python syntax error/);
+    assert.doesNotMatch(notes, /python3 \(or/);
+  });
+
+  it('@babel/parser missing: reinstall docguard-cli', () => {
+    const advice = sharedSource.patternFallbackAdvice;
+    assert.equal(typeof advice, 'function');
+    const summary = summarizeTiers([{ ...tierFor('src/a.ts', null), file: 'src/a.ts' }]);
+    assert.match(advice(summary.regexCauses), /@babel\/parser/);
+    assert.doesNotMatch(advice(summary.regexCauses), /python3/);
+    const both = summarizeTiers([summary, { ...tierFor('app/x.py', null, 'No usable python3 interpreter; routes matched by pattern.'), file: 'app/x.py' }]);
+    assert.match(advice(both.regexCauses), /python3.*@babel\/parser/);
+  });
+
+  it('generate --spec gives the same advice', () => {
+    const dir = project({ ...HONO, 'src/app.ts': HONO['src/app.ts'] + UNPARSEABLE });
+    const r = jsonOut(cli(dir, ['generate', '--spec', 'src', '--format', 'json']));
+    assert.equal(r.confidence, 'low');
+    assert.match(r.notes.join(' '), /JavaScript\/TypeScript syntax error/);
+    assert.doesNotMatch(r.notes.join(' '), /python3/);
   });
 });

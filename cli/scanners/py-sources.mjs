@@ -51,7 +51,8 @@ export function loadPythonOutlines(files, noun = 'facts', wanted = null) {
   for (const [file, source] of sources) {
     const parsed = ast && ast[file];
     const { tier, tierReason } = tierFor(file, parsed, batchReason);
-    tiers.push({ tier, tierReason });
+    // The file lets a parse failure name its language (docguard.coverage-followups#FR-010).
+    tiers.push({ tier, tierReason, file });
     const outline = parsed && parsed.ok && parsed.outline ? parsed.outline : patternOutline(file, source);
     if (outline) byFile.set(file, { outline, tier, tierReason });
   }

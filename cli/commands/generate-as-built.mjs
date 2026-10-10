@@ -11,11 +11,13 @@
  * @implements docguard.as-built-specs#FR-001
  * @implements docguard.as-built-specs#FR-003
  * @implements docguard.coverage-followups#FR-007
+ * @implements docguard.coverage-followups#FR-010
  */
 
 import { existsSync, rmdirSync } from 'node:fs';
 import { basename, dirname, resolve } from 'node:path';
 import { c } from '../shared.mjs';
+import { patternFallbackAdvice } from '../shared-source.mjs';
 import { areaTests, collectAreaFacts, factsTier, nextFeatureDir, renderAsBuiltSpec, resolveArea, slugFor } from '../scanners/as-built.mjs';
 import { projectSpecRegistry, SPEC_REGISTRY_PATH } from '../scanners/spec-registry.mjs';
 import { commitFileTransaction } from '../writers/file-transaction.mjs';
@@ -58,7 +60,7 @@ export function runGenerateAsBuilt(projectDir, config, flags) {
   // (docguard.coverage-followups#FR-007).
   const lowConfidence = tier.regexRead;
   const notes = lowConfidence
-    ? [`Routes and entities were read by the pattern fallback, not a syntax tree (${tier.tierReason || 'no parser'}); a candidate it cannot see is missing. Install python3 (or fix the parse error) and re-run for exact facts.`]
+    ? [`Routes and entities were read by the pattern fallback, not a syntax tree (${tier.tierReason || 'no parser'}); a candidate it cannot see is missing. ${patternFallbackAdvice(tier.regexCauses)}`]
     : [];
   const result = {
     command: 'generate --spec', status: 'PLANNED', area: area.rel, specId, path: specPath, facts, tests, written: false,

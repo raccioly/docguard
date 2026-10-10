@@ -387,7 +387,9 @@ The JSON result carries `parserTier` and `confidence` (`low` when routes or
 entities in a language with a parser were read by the pattern fallback,
 `regex-fallback`; facts in a pattern-only language such as Go, which make the
 tier `fallback-language` or `mixed`, do not lower it), and SPR007 findings
-carry the tier of the facts they concern.
+carry the tier of the facts they concern. Its note, like `generate --plan`'s,
+names what the affected files lack: `python3` on `PATH`, a Python or
+JavaScript/TypeScript syntax fix, or a reinstall so `@babel/parser` loads.
 
 `--write` creates the spec in the next free feature directory (honouring Spec
 Kit's `feature_numbering`) and registers it with `origin: as_built` and its
@@ -895,8 +897,11 @@ Every section reads the document guard reads for it: the API reference
 model and the environment document, each from its `docs.roles` mapping, or,
 when the default path is missing, the one canonical document with that file
 name in a subfolder (`docs-canonical/04-api/API-REFERENCE.md`). Routes compare
-as guard compares them, so an ASP.NET Core route matches a documented path
-that differs only in case.
+as guard compares them: case-insensitively only where the framework matches
+that way (ASP.NET Core; Express and Koa routers unless configured otherwise;
+see [case-sensitive route matching](reference/languages.md#case-sensitive-route-matching)).
+A case setting DocGuard cannot read is listed under API Routes with its file
+and line, and those routes compare exactly.
 
 ---
 

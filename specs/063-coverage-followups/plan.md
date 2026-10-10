@@ -13,6 +13,8 @@
 | FR-005 | `cli/scanners/tech-stack.mjs` `TECH_DEPENDENCIES` gains `@angular/core`, `svelte`, `@sveltejs/kit`, `mongodb`, `mysql`, `postgres`. |
 | FR-006 | `cli/commands/diff.mjs` resolves `apiReference`, `architecture`, `dataModel` and `environment` with `resolveDocRole`. |
 | FR-007 | `cli/scanners/as-built.mjs` `factsTier` reports `regexRead`; `cli/commands/generate-as-built.mjs` lowers confidence on it instead of on `mixed`. |
+| FR-009 | New `cli/scanners/route-case.mjs` reads each framework's case setting. `cli/scanners/routes.mjs` marks Express routes per receiver and through the mount chain (`buildExpressMountMap` carries whether every router that matched a prefix is case-insensitive), Koa routes per router, Fastify routes per project, NestJS routes per adapter; unreadable settings go to `scan.caseNotes`, which `cli/commands/diff.mjs` prints. |
+| FR-010 | `cli/shared-source.mjs`: `summarizeTiers` carries `regexCauses`, `regexCause` classifies one item, `patternFallbackAdvice` writes the sentence. `cli/scanners/py-sources.mjs` keeps each file on its tier item. `memory-plan.mjs`, `as-built.mjs` and `generate-as-built.mjs` use the advice. |
 | FR-008 | `docs/reference/languages.md`, `docs/commands.md`, `docs/configuration.md`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/DATA-MODEL.md`, `CHANGELOG.md`. |
 
 ## Technical Context
@@ -31,6 +33,9 @@
 - **FR-004: one coverage mechanism.** Spec 058's `scan.unresolved` already counts, locates and filters non-product paths; Python limitations join it rather than gaining a parallel channel.
 - **FR-005: the official clients.** Besides Angular and Svelte, `mongodb` (the official driver), `mysql` and `postgres` are the default Node clients of technologies already in the vocabulary, and a Node project using them got the same "documented but not found". `angular` (AngularJS) is a different framework and is not mapped.
 - **FR-006: all of `diff`'s document reads.** Spec 061 moved the test-spec read to `resolveDocRole`; the route, entity and environment reads had the same fixed paths, so all move together. The route section keeps its architecture fallback, now through the `architecture` role.
+- **FR-009: verified against the frameworks' sources.** Express 5.2.1: `application.js` creates the app's router with `caseSensitive: this.enabled('case sensitive routing')`; `router` 2.2.0 passes `sensitive: this.caseSensitive` to both route and `use` layers; path-to-regexp adds the `i` flag when `sensitive` is false. So a separately created `express.Router()` does NOT inherit the app setting (the request asked for that inheritance; the source says otherwise), and the app's setting governs the mount prefix it matches. A mounted route is therefore case-insensitive only when its own router and every router above it are. `@koa/router` 12: `sensitive: opts.sensitive || this.opts.sensitive || false`. Fastify 5.2.1 passes `options.caseSensitive` to find-my-way, whose default is `true`. Hono 4 routers do not fold case (a custom `getPath` could, but it is code, not a setting). itty-router 5 builds its `RegExp` with no flags. Rejected: marking Express/Koa unconditionally (hides gaps where the setting is on); treating an unknown receiver as insensitive regardless of project settings (a router passed as a parameter may be the case-sensitive one).
+- **FR-009: unreadable means case-sensitive.** A non-literal value (`process.env.X === '1'`, an options variable) may make matching case-sensitive; comparing exactly can only show a gap that is not real, never hide one that is. The location is recorded so `diff` can say why.
+- **FR-010: causes, not one reason.** `summarizeTiers` kept only the first `regex-fallback` reason, so a project with a Python interpreter missing and a TypeScript parse error could name one. It now keeps the set of causes (interpreter missing, parser missing, Python or JS/TS parse error), classified from each item's reason and file; nested summaries pass theirs up. `generate --spec` facts keep only their tier, so their cause comes from the file's language and which parser this install lacks.
 - **Plan schema.** `schemas/` holds no `generate --plan` schema; the JSON shape is documented in `docs/commands.md`.
 
 ## Constitution Check
@@ -54,6 +59,8 @@ cli/scanners/routes.mjs                                  # FR-004
 cli/scanners/tech-stack.mjs                              # FR-005
 cli/commands/diff.mjs                                    # FR-006
 cli/scanners/as-built.mjs, cli/commands/generate-as-built.mjs   # FR-007
+cli/scanners/route-case.mjs (NEW), cli/scanners/routes.mjs, cli/commands/diff.mjs   # FR-009
+cli/shared-source.mjs, cli/scanners/py-sources.mjs, cli/scanners/memory-plan.mjs, cli/scanners/as-built.mjs, cli/commands/generate-as-built.mjs   # FR-010
 docs/reference/languages.md, docs/commands.md, docs/configuration.md, docs-canonical/ARCHITECTURE.md, docs-canonical/DATA-MODEL.md, CHANGELOG.md   # FR-008
 tests/coverage-followups.test.mjs                        # NEW
 ```
