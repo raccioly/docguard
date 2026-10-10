@@ -3924,7 +3924,7 @@
           {
             "requirementId": "FR-008",
             "file": "cli/scanners/routes.mjs",
-            "line": 867
+            "line": 912
           },
           {
             "requirementId": "FR-009",
@@ -5107,7 +5107,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/scanners/routes.mjs",
-            "line": 417
+            "line": 426
           },
           {
             "requirementId": "FR-002",
@@ -5127,22 +5127,22 @@
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/routes.mjs",
-            "line": 406
+            "line": 415
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/routes.mjs",
-            "line": 467
+            "line": 476
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/routes.mjs",
-            "line": 470
+            "line": 479
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/routes.mjs",
-            "line": 524
+            "line": 533
           },
           {
             "requirementId": "FR-003",
@@ -5172,7 +5172,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/scanners/routes.mjs",
-            "line": 525
+            "line": 534
           },
           {
             "requirementId": "FR-005",
@@ -5197,7 +5197,7 @@
           {
             "requirementId": "FR-008",
             "file": "cli/scanners/project-type.mjs",
-            "line": 273
+            "line": 288
           },
           {
             "requirementId": "FR-009",
@@ -6986,6 +6986,185 @@
             "requirementId": "SC-004",
             "file": "tests/path-scoped-rules.test.mjs",
             "line": 19
+          }
+        ]
+      }
+    },
+    {
+      "specId": "docguard.php-dotnet-routes",
+      "path": "specs/059-php-dotnet-routes/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.php-dotnet-routes#FR-001",
+          "docguard.php-dotnet-routes#FR-002",
+          "docguard.php-dotnet-routes#FR-003",
+          "docguard.php-dotnet-routes#FR-004",
+          "docguard.php-dotnet-routes#FR-005",
+          "docguard.php-dotnet-routes#FR-006",
+          "docguard.php-dotnet-routes#FR-007",
+          "docguard.php-dotnet-routes#FR-008",
+          "docguard.php-dotnet-routes#FR-009",
+          "docguard.php-dotnet-routes#FR-010",
+          "docguard.php-dotnet-routes#SC-001",
+          "docguard.php-dotnet-routes#SC-002",
+          "docguard.php-dotnet-routes#SC-003"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/059-php-dotnet-routes/spec.md",
+            "digest": "sha256:68028a6fdb936e16209c2f1f1ba59c643c27925a5a66c4e6a9f37fbbe899b9d3"
+          },
+          {
+            "path": "specs/059-php-dotnet-routes/plan.md",
+            "digest": "sha256:59ee379b5b3ac36f7eebfbf611c153d41c2c45d10d0895b9c571492ad500ec6f"
+          },
+          {
+            "path": "specs/059-php-dotnet-routes/tasks.md",
+            "digest": "sha256:05de1876898baa33c11389ac8f846e414ba3febc770dc93a4674a1bd3b45b273"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 6,
+          "total": 7
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/scanners/php-routes.mjs",
+            "line": 20
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/scanners/php-routes.mjs",
+            "line": 21
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/scanners/php-routes.mjs",
+            "line": 22
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/scanners/dotnet-routes.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/scanners/dotnet-routes.mjs",
+            "line": 20
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/scanners/dotnet-routes.mjs",
+            "line": 21
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/scanners/dotnet-routes.mjs",
+            "line": 22
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/scanners/php-routes.mjs",
+            "line": 23
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "cli/scanners/project-type.mjs",
+            "line": 203
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/php-dotnet-routes.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/php-dotnet-routes.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/php-dotnet-routes.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/php-dotnet-routes.test.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/php-dotnet-routes.test.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/php-dotnet-routes.test.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/php-dotnet-routes.test.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/php-dotnet-routes.test.mjs",
+            "line": 20
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "tests/php-dotnet-routes.test.mjs",
+            "line": 21
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "tests/php-dotnet-routes.test.mjs",
+            "line": 22
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/php-dotnet-routes.test.mjs",
+            "line": 23
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/php-dotnet-routes.test.mjs",
+            "line": 24
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/php-dotnet-routes.test.mjs",
+            "line": 25
           }
         ]
       }

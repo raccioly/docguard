@@ -113,6 +113,7 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/scanners/import-graph.mjs`, `cli/scanners/module-diagram.mjs` (module and entity diagrams) | `tests/code-derived-diagrams.test.mjs`, `tests/architecture.test.mjs`, `tests/python-import-graph.test.mjs` | ✅ |
 | `cli/scanners/symbol-map.mjs`, `benchmarks/agent-context/run.mjs` (symbol map, agent-context protocol v2) | `tests/symbol-map.test.mjs`, `tests/agent-context-benchmark.test.mjs` | ✅ |
 | `cli/scanners/go-routes.mjs`, `cli/scanners/spring-routes.mjs`, `cli/scanners/rails-routes.mjs`, `cli/scanners/route-lexing.mjs` (Go, Spring and Rails routes) | `tests/go-spring-rails-routes.test.mjs`, `tests/routes-multilang.test.mjs` | ✅ |
+| `cli/scanners/php-routes.mjs`, `cli/scanners/dotnet-routes.mjs` (Laravel, Symfony and ASP.NET Core routes) | `tests/php-dotnet-routes.test.mjs` | ✅ |
 | `cli/writers/baseline.mjs` (adoption baseline, stable fingerprints and legacy match) | `tests/baseline.test.mjs`, `tests/baseline-stable-fingerprint.test.mjs` | ✅ |
 | `cli/scanners/reconciliation.mjs`, `cli/validators/spec-registry.mjs` (reviewed `assetPaths`, SPR009) | `tests/asset-path-attribution.test.mjs` | ✅ |
 | `cli/shared-source.mjs`, `cli/shared-ignore.mjs` (`fallback-language` tier, product-code package segments) | `tests/fallback-language-coverage.test.mjs`, `tests/parser-tier.test.mjs` | ✅ |

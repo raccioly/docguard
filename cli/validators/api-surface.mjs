@@ -183,6 +183,8 @@ export function resolveApiSurface(projectDir, config) {
  * (docguard.fallback-language-coverage#FR-007/008/009):
  * - a detected pattern-only framework whose patterns matched nothing — the
  *   surface is unknown, not empty;
+ * - route registrations a reader omitted because their path is not literal
+ *   (docguard.php-dotnet-routes#FR-007);
  * - routes found only in test/fixture/example paths, when none remain;
  * - a walk stopped by the file cap.
  *
@@ -195,8 +197,15 @@ export function routeScanGaps(scan, kept = 0) {
   const out = [];
   const n = (count, noun) => `${count} ${noun}${count === 1 ? '' : 's'}`;
   for (const pf of scan.patternFrameworks || []) {
-    if (pf.routes === 0) {
+    if (pf.routes === 0 && !pf.omitted) {
       out.push(`Detected ${pf.name}, but its route patterns matched no route in ${n(pf.files, 'file')}; a route registered in a form the patterns do not match is not seen, so the API surface was not compared with code.`);
+    }
+    // docguard.php-dotnet-routes#FR-007: a registration whose path is not
+    // literal is omitted, never guessed; say how many and where.
+    if (pf.omitted > 0) {
+      const one = pf.omitted === 1;
+      const where = (pf.omittedAt || []).join(', ');
+      out.push(`${pf.name}: ${n(pf.omitted, 'route registration')} had a path or prefix that is not literal text and ${one ? 'was' : 'were'} omitted, not guessed${where ? ` (${where}${pf.omitted > (pf.omittedAt || []).length ? ', …' : ''})` : ''}.`);
     }
   }
   if (scan.excludedNonProduct > 0 && kept === 0) {

@@ -195,6 +195,20 @@ function csprojDeps(content) {
   return deps;
 }
 
+/**
+ * Whether a project file builds an ASP.NET Core app: the web SDK (as the
+ * `Sdk` attribute or an `<Sdk>` element), the `Microsoft.AspNetCore.App`
+ * framework reference, or a `Microsoft.AspNetCore.*` package. A
+ * `dotnet new webapi` project has only the first.
+ * @implements docguard.php-dotnet-routes#FR-008
+ */
+function isAspNetCoreProject(content) {
+  return /\bSdk\s*=\s*"Microsoft\.NET\.Sdk\.Web(?:\/[^"]*)?"/.test(content)
+    || /<Sdk\s+Name\s*=\s*"Microsoft\.NET\.Sdk\.Web"/.test(content)
+    || /<FrameworkReference\s+Include\s*=\s*"Microsoft\.AspNetCore\.App"/.test(content)
+    || /<PackageReference\s+Include\s*=\s*"Microsoft\.AspNetCore(?:\.[^"]*)?"/.test(content);
+}
+
 // ── Framework + kind classification per ecosystem ────────────────────────────
 
 function has(deps, ...names) {
@@ -204,7 +218,7 @@ function has(deps, ...names) {
   return names.some(n => keys.some(k => k === n.toLowerCase() || k.endsWith('/' + n.toLowerCase()) || k.endsWith(':' + n.toLowerCase())));
 }
 
-function classify(lang, dir, deps) {
+function classify(lang, dir, deps, { webSdk = false } = {}) {
   let framework = null;
   let kind = 'library';
 
@@ -243,7 +257,8 @@ function classify(lang, dir, deps) {
     if (has(deps, 'laravel/framework')) { framework = 'Laravel'; kind = 'webapp'; }
     else if (has(deps, 'symfony/framework-bundle')) { framework = 'Symfony'; kind = 'webapp'; }
   } else if (lang === 'C#') {
-    if (has(deps, 'Microsoft.AspNetCore.App') || /Sdk="Microsoft\.NET\.Sdk\.Web"/.test('')) { framework = 'ASP.NET Core'; kind = 'api'; }
+    // The regex used to be tested against '' and never matched (docguard.php-dotnet-routes#FR-008).
+    if (webSdk || has(deps, 'Microsoft.AspNetCore.App')) { framework = 'ASP.NET Core'; kind = 'api'; }
   }
 
   return { framework, kind };
@@ -322,7 +337,7 @@ function buildEcosystem(projectDir, m) {
     deps = csprojDeps(content);
   }
 
-  const cls = classify(lang, m.absDir, deps);
+  const cls = classify(lang, m.absDir, deps, { webSdk: m.file.endsWith('.csproj') && isAspNetCoreProject(content) });
   return {
     language: lang,
     manifest: relative(resolve(projectDir), path) || m.file,
