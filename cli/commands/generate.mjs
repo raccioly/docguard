@@ -2,6 +2,7 @@
  * @implements docguard.language-repository-coverage#FR-009
  * @implements docguard.language-repository-coverage#FR-010
  * @implements docguard.language-repository-coverage#FR-011
+ * @implements docguard.coverage-followups#FR-001
  */
 import { assertMappedFullDocumentWrites, docRolePath, isMappedDocPath, mappedRolesForPath, resolveDocRole } from '../shared-doc-roles.mjs';
 /**
@@ -178,8 +179,14 @@ export function runGeneratePlan(projectDir, config, flags) {
   console.log(`  ${c.bold}Code-truth surface:${c.reset} ${plan.surface.modules.length} modules · ${plan.surface.tests.totalFiles} test files (${plan.surface.tests.totalCases} cases) · ${plan.surface.endpoints.length} endpoints · ${plan.surface.entities.length} entities · ${plan.surface.screens.length} screens · ${plan.surface.envVars.length} env vars\n`);
   const tiers = plan.surface.parserTiers;
   if (tiers && (tiers.endpoints.tier !== 'not-applicable' || tiers.entities.tier !== 'not-applicable')) {
-    const color = tiers.degraded ? c.yellow : c.dim;
-    console.log(`  ${color}Parser tier: endpoints ${tiers.endpoints.tier} · entities ${tiers.entities.tier}${tiers.degraded ? ' (low confidence)' : ''}${c.reset}\n`);
+    const color = tiers.degraded || tiers.patternRead ? c.yellow : c.dim;
+    // docguard.coverage-followups#FR-001: say which surfaces a pattern read
+    // because their language has no parser — partial, not low confidence.
+    const patternRead = ['endpoints', 'entities'].filter(k => tiers[k].patternRead);
+    const patternNote = patternRead.length
+      ? ` (${patternRead.join(' and ')} read by pattern: no parser for ${(tiers.patternLanguages || []).join(', ') || 'that language'}; partial)`
+      : '';
+    console.log(`  ${color}Parser tier: endpoints ${tiers.endpoints.tier} · entities ${tiers.entities.tier}${tiers.degraded ? ' (low confidence)' : ''}${patternNote}${c.reset}\n`);
   }
   const webSurface = plan.surface.endpoints.length + plan.surface.entities.length + plan.surface.screens.length + plan.surface.components.length;
   if (surfaceConfidence(plan.profile.kind) === 'low' && webSurface > 0) {

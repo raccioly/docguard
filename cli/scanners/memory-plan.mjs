@@ -18,7 +18,7 @@ import { detectDocTools } from './doc-tools.mjs';
 import { scanRoutesDeep } from './routes.mjs';
 import { scanSchemasDeep, generateERDiagram } from './schemas.mjs';
 import { scanFrontend } from './frontend.mjs';
-import { collectEnvVars, summarizeTiers } from '../shared-source.mjs';
+import { collectEnvVars, patternChannels, patternFallbackAdvice, summarizeTiers } from '../shared-source.mjs';
 import { detectCodeTechnologies } from './tech-stack.mjs';
 import { detectIntegrations } from './integrations.mjs';
 import { PROFILES } from '../shared.mjs';
@@ -344,16 +344,36 @@ export function buildMemoryPlan(projectDir, config = {}, opts = {}) {
 
 /**
  * @implements docguard.python-extraction#FR-012
+ * @implements docguard.coverage-followups#FR-001
  * The parser tier behind one surface: the scan's own summary when the scanner
- * reports one (Python), combined with the tiers its items carry. Degraded when
- * a file an AST could read was read by the pattern fallback.
+ * reports one, combined with the tiers its items carry. Two channels, never
+ * conflated (spec 043):
+ * - `degraded`: a file whose language HAS a parser was read by the pattern
+ *   fallback (`regex-fallback`). Installing python3 or fixing the parse error
+ *   gives exact output; confidence is low until then.
+ * - `patternRead`: facts in a language with NO parser (`fallback-language`:
+ *   Go, Java, Kotlin, Ruby, Rust, PHP, C#). Nothing is missing to install, but
+ *   a form the patterns do not match is not seen, so coverage is partial.
+ * A `mixed` summary only says the items disagree, so it sets neither.
  */
 function surfaceTier(scanTier, items) {
   const tiered = (items || []).filter(i => i && i.tier);
   const summary = summarizeTiers([...(scanTier ? [scanTier] : []), ...tiered]);
-  const degraded = (!!scanTier && ['regex-fallback', 'mixed'].includes(scanTier.tier))
-    || tiered.some(i => i.tier === 'regex-fallback');
-  return { tier: summary.tier, reason: degraded ? summary.tierReason || (scanTier && scanTier.tierReason) || null : null, degraded };
+  const scan = patternChannels(scanTier);
+  const own = patternChannels(summarizeTiers(tiered));
+  const degraded = scan.regexRead > 0 || own.regexRead > 0;
+  const patternRead = scan.patternRead > 0 || own.patternRead > 0;
+  const patternLanguages = [...new Set([...scan.patternLanguages, ...own.patternLanguages])].sort();
+  const reason = degraded
+    ? summary.tierReason || (scanTier && scanTier.tierReason) || null
+    : patternRead
+      ? `No parser exists for ${patternLanguages.length ? patternLanguages.join(', ') : 'this language'}; matched by pattern.`
+      : null;
+  const result = { tier: summary.tier, reason, degraded, patternRead, patternLanguages };
+  // Why the fallback read it, for the note's advice; not part of the JSON
+  // contract (docguard.coverage-followups#FR-010).
+  Object.defineProperty(result, 'regexCauses', { value: summary.regexCauses || [], enumerable: false });
+  return result;
 }
 
 /**
@@ -403,9 +423,16 @@ function _buildMemoryPlanUncached(projectDir, config = {}) {
     entities: surfaceTier(schemas.scanTier, entities),
   };
   parserTiers.degraded = parserTiers.endpoints.degraded || parserTiers.entities.degraded;
-  const partial = which => (parserTiers[which].degraded
-    ? { completeness: 'partial', partialReason: `${which} read by the pattern fallback: ${parserTiers[which].reason || 'no syntax tree'}` }
-    : {});
+  // docguard.coverage-followups#FR-001: pattern-only languages are partial
+  // coverage too, for a different reason than a missing parser.
+  parserTiers.patternRead = parserTiers.endpoints.patternRead || parserTiers.entities.patternRead;
+  parserTiers.patternLanguages = [...new Set([...parserTiers.endpoints.patternLanguages, ...parserTiers.entities.patternLanguages])].sort();
+  const partial = which => {
+    const t = parserTiers[which];
+    if (t.degraded) return { completeness: 'partial', partialReason: `${which} read by the pattern fallback: ${t.reason || 'no syntax tree'}` };
+    if (t.patternRead) return { completeness: 'partial', partialReason: `${which} read by pattern: no parser exists for ${t.patternLanguages.join(', ') || 'this language'}, so a form the patterns do not match is missing` };
+    return {};
+  };
 
   const surface = {
     profile,
@@ -445,7 +472,17 @@ function _buildMemoryPlanUncached(projectDir, config = {}) {
   if (parserTiers.degraded) {
     const read = ['endpoints', 'entities'].filter(k => parserTiers[k].degraded);
     const reason = parserTiers[read[0]].reason;
-    notes.push(`The ${read.join(' and ')} were read by the pattern fallback, not a syntax tree${reason ? ` (${reason})` : ''}. What it cannot see is missing, so those sections are marked partial. Install python3 (or fix the parse error) and re-run for exact extraction.`);
+    // The advice names what the affected files lack: python3, @babel/parser,
+    // or a syntax fix (docguard.coverage-followups#FR-010).
+    const advice = patternFallbackAdvice(read.flatMap(k => parserTiers[k].regexCauses || []));
+    notes.push(`The ${read.join(' and ')} were read by the pattern fallback, not a syntax tree${reason ? ` (${reason})` : ''}. What it cannot see is missing, so those sections are marked partial. ${advice}`);
+  }
+  if (parserTiers.patternRead) {
+    const read = ['endpoints', 'entities'].filter(k => parserTiers[k].patternRead && !parserTiers[k].degraded);
+    if (read.length) {
+      const langs = [...new Set(read.flatMap(k => parserTiers[k].patternLanguages))].sort();
+      notes.push(`The ${read.join(' and ')} in ${langs.join(', ') || 'a language without a parser'} were read by pattern: no parser exists for ${langs.length === 1 ? 'that language' : 'those languages'}, so a route or model written in a form the patterns do not match is missing, and those sections are marked partial. Check them against the code.`);
+    }
   }
   if (constrainedProfile) {
     if (surface.endpoints.length > 0 && !allowedCanonical.has('docs-canonical/API-REFERENCE.md')) {

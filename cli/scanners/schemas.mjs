@@ -10,6 +10,8 @@
  *
  * Priority: OpenAPI schemas > ORM schemas > Validation schemas
  * @implements docguard.typeorm-models#FR-008
+ * @implements docguard.coverage-followups#FR-001
+ * @implements docguard.coverage-followups#FR-002
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
@@ -21,7 +23,7 @@ import {
 } from './js-ast.mjs';
 import { scanPythonModels } from './python-models.mjs';
 import { readScannable, resolveSourceRoots, getWorkspaceDirs, tierFor } from '../shared-source.mjs';
-import { DEFAULT_IGNORE_DIRS as IGNORE_DIRS, shouldIgnore, relPosix, isNonProductPath } from '../shared-ignore.mjs';
+import { shouldIgnore, relPosix, isNonProductPath, isIgnoredDirEntry } from '../shared-ignore.mjs';
 
 /**
  * Deep scan schemas from ORM definitions, validation libraries, and OpenAPI specs.
@@ -80,6 +82,12 @@ export function scanSchemasDeep(dir, stack, docTools, config = {}) {
   for (const scanner of [scanPythonModels, scanRustModels, scanGoModels, scanJpaModels, scanRailsModels]) {
     const result = scanner(dir);
     if (result.scanTier && result.entities.length > 0) scanTier = result.scanTier;
+    // Go, Rust, JPA and Rails models are read by pattern, like their routes;
+    // each carries its file's tier so the plan can say so
+    // (docguard.coverage-followups#FR-001).
+    if (scanner !== scanPythonModels) {
+      for (const e of result.entities) if (!e.tier && e.file) Object.assign(e, tierFor(e.file, null));
+    }
     if (result.entities.length > 0) {
       entities.push(...result.entities);
       relationships.push(...(result.relationships || []));
@@ -1453,7 +1461,7 @@ function _collectFiles(dir, out) {
   let entries;
   try { entries = readdirSync(dir, { withFileTypes: true }); } catch { return; }
   for (const entry of entries) {
-    if (IGNORE_DIRS.has(entry.name) || entry.name.startsWith('.')) continue;
+    if (isIgnoredDirEntry(entry.name, entries) || entry.name.startsWith('.')) continue;
     const fullPath = join(dir, entry.name);
     if (entry.isDirectory()) {
       _collectFiles(fullPath, out);

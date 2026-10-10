@@ -354,8 +354,16 @@ only when there is no ORM. Environment variables include pydantic
 
 Without `python3`, the pattern fallback reads the same facts from standard
 layouts, and `generate --plan` says so: `surface.parserTiers` names the tier
-of the endpoints and entities, `surface.confidence` is `low`, a note explains
-why, and those code sections are marked partial.
+of the endpoints and entities and sets `degraded: true`, `surface.confidence`
+is `low`, a note explains why, and those code sections are marked partial.
+
+Endpoints and entities in a language DocGuard has no parser for (Go, Java,
+Kotlin, Ruby, Rust, PHP, C#) are read by pattern too, for a different reason:
+there is nothing to install. `surface.parserTiers` reports `patternRead: true`
+with `patternLanguages` (for example `["Go"]`) per surface and for the plan,
+leaves `degraded` false and the confidence unchanged, marks the endpoint,
+entity and diagram sections partial, and adds a note naming the languages. The
+text output says which surfaces were read by pattern.
 
 #### As-built specs: `docguard generate --spec <area>`
 
@@ -376,8 +384,12 @@ npx docguard-cli generate --spec src/billing --id acme.billing --write --format 
 ```
 
 The JSON result carries `parserTier` and `confidence` (`low` when routes or
-entities were read by the pattern fallback), and SPR007 findings carry the
-tier of the facts they concern.
+entities in a language with a parser were read by the pattern fallback,
+`regex-fallback`; facts in a pattern-only language such as Go, which make the
+tier `fallback-language` or `mixed`, do not lower it), and SPR007 findings
+carry the tier of the facts they concern. Its note, like `generate --plan`'s,
+names what the affected files lack: `python3` on `PATH`, a Python or
+JavaScript/TypeScript syntax fix, or a reinstall so `@babel/parser` loads.
 
 `--write` creates the spec in the next free feature directory (honouring Spec
 Kit's `feature_numbering`) and registers it with `origin: as_built` and its
@@ -879,6 +891,17 @@ each detected technology, for example `+ Docker  (start.sh: docker run)`, and
 DDF002 reads them, from the test-spec document `docs.roles` maps (by
 default `docs-canonical/TEST-SPEC.md`), including names that match
 `testPatterns`.
+
+Every section reads the document guard reads for it: the API reference
+(falling back to the architecture document when there is none), the data
+model and the environment document, each from its `docs.roles` mapping, or,
+when the default path is missing, the one canonical document with that file
+name in a subfolder (`docs-canonical/04-api/API-REFERENCE.md`). Routes compare
+as guard compares them: case-insensitively only where the framework matches
+that way (ASP.NET Core; Express and Koa routers unless configured otherwise;
+see [case-sensitive route matching](reference/languages.md#case-sensitive-route-matching)).
+A case setting DocGuard cannot read is listed under API Routes with its file
+and line, and those routes compare exactly.
 
 ---
 
