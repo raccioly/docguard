@@ -3,7 +3,8 @@
  * @req docguard.adoption-workflow-integrity#FR-013
  * Parses actual route definitions from source code across frameworks.
  * Supports: Next.js (App Router + Pages), Express, Fastify, Hono, Koa, NestJS,
- * Cloudflare Workers (fetch dispatch, itty-router), Django, FastAPI, Flask,
+ * Cloudflare Workers (fetch dispatch, itty-router), Cloudflare Pages Functions,
+ * Hono OpenAPI routes, Django, FastAPI, Flask,
  * Starlette, Spring Boot, Rails, Sinatra, Gin/Echo/Chi/Fiber/net/http,
  * Axum/Actix/Rocket/Warp/Tide, Laravel, Symfony, ASP.NET Core
  *
@@ -38,6 +39,7 @@ import { extractAspNetRoutes } from './dotnet-routes.mjs';
 import { extractNestRoutes } from './nest-routes.mjs';
 import { extractWorkerRoutes } from './worker-routes.mjs';
 import { extractRouterRoutes } from './router-routes.mjs';
+import { extractPagesRoutes } from './pages-routes.mjs';
 import { createImportResolver } from './js-route-support.mjs';
 
 /**
@@ -112,10 +114,17 @@ export function scanRoutesDeep(dir, stack, docTools, opts = {}) {
   } else if (framework.includes('Hono')) {
     patternScan('Hono', ['hono', 'itty-router'], scanHonoRouterRoutes);
   }
-  // Koa (with @koa/router) declares routes with the same method shorthand as
-  // Hono, so the shorthand scanner reads it (docguard.docs-verification-findings#FR-001).
+  // Cloudflare Pages Functions are routed by file; a Pages project may also
+  // serve a Hono or itty-router app from one Function
+  // (docguard.js-route-shapes#FR-003).
+  if (framework.includes('Cloudflare Pages')) {
+    patternScan('Cloudflare Pages', ['cloudflare-pages', 'hono', 'itty-router'], scanPagesRoutes);
+  }
+  // Koa routers compose prefixes across files like Hono's, so the router
+  // reader reads them (docguard.js-route-shapes#FR-001; labelled Koa since
+  // docguard.docs-verification-findings#FR-001).
   if (framework.includes('Koa')) {
-    routes.push(...scanHonoRoutes(dir, roots, 'koa'));
+    patternScan('Koa', ['koa'], scanKoaRouterRoutes);
   }
 
   if (named('Spring', 'Java')) {
@@ -741,51 +750,6 @@ function scanFastifyRoutes(dir, roots = null) {
   return routes;
 }
 
-// ── Hono ────────────────────────────────────────────────────────────────────
-
-function scanHonoRoutes(dir, roots = null, source = 'hono') {
-  const routes = [];
-  const pattern = /(?:app|router)\s*\.\s*(get|post|put|delete|patch)\s*\(\s*['"`]([^'"`]+)['"`]/gi;
-
-  const searchTargets = roots && roots.length
-    ? roots
-    : ['src', '.'].map(d => resolve(dir, d));
-  for (const fullDir of searchTargets) {
-    if (!existsSync(fullDir)) continue;
-
-    walkRouteDirs(fullDir, (filePath) => {
-      if (!isJSFile(filePath)) return;
-      const content = readFileSafe(filePath);
-      if (!content) return;
-
-      const emit = (method, path, index, auth, line) => routes.push({
-        method: method.toUpperCase(),
-        path,
-        handler: '',
-        file: relative(dir, filePath),
-        line: line ?? lineAt(content, index),
-        source,
-        auth: Boolean(auth),
-        description: extractNearbyComment(content, index),
-      });
-
-      // AST-first (any receiver, multi-line, template paths — Hono/Koa method
-      // shorthand `app.get('/x')` / `router.get('/x')`); regex fallback. Auth
-      // is the route's own evidence (docguard.js-ts-extraction#FR-002).
-      const calls = extractJsRouteCalls(content, filePath);
-      if (calls) {
-        for (const r of calls) emit(r.method, r.path, r.start, r.auth, r.line);
-      } else {
-        let match;
-        const regex = new RegExp(pattern.source, 'gi');
-        while ((match = regex.exec(content)) !== null) emit(match[1], match[2], match.index, statementAuth(content, match.index));
-      }
-    });
-  }
-
-  return routes;
-}
-
 // ── NestJS, Cloudflare Workers, Hono/itty-router (docguard.js-framework-routes) ─
 // The readers are pure functions of file contents (nest-routes.mjs,
 // worker-routes.mjs, router-routes.mjs); here they get their files, and the scan
@@ -813,7 +777,9 @@ function recordReader(ctx, found) {
 }
 
 const NEST_MARKER = /@Controller\b|@Module\s*\(|setGlobalPrefix|enableVersioning|useGlobalGuards|APP_GUARD|RouterModule/;
-const ROUTER_MARKER = /\.\s*(?:get|post|put|delete|patch|head|options|all|on|route|use|basePath)\s*\(/;
+// Router calls, plus zod-openapi route definitions (`createRoute`) that may
+// sit in a file with no router call (docguard.js-route-shapes#FR-004).
+const ROUTER_MARKER = /\.\s*(?:get|post|put|delete|del|patch|head|options|all|on|route|use|basePath|prefix|openapi|doc|doc31)\s*\(|\bcreateRoute\s*\(/;
 
 function scanNestRoutes(dir, ctx) {
   return recordReader(ctx, extractNestRoutes(readJsSources(ctx, NEST_MARKER), { config: ctx.config }));
@@ -821,6 +787,20 @@ function scanNestRoutes(dir, ctx) {
 
 function scanHonoRouterRoutes(dir, ctx) {
   return recordReader(ctx, extractRouterRoutes(readJsSources(ctx, ROUTER_MARKER), createImportResolver(dir), { framework: 'Hono', defaultSource: 'hono' }));
+}
+
+function scanKoaRouterRoutes(dir, ctx) {
+  return recordReader(ctx, extractRouterRoutes(readJsSources(ctx, ROUTER_MARKER), createImportResolver(dir), { framework: 'Koa', defaultSource: 'koa' }));
+}
+
+function scanPagesRoutes(dir, ctx) {
+  const sources = readJsSources(ctx);
+  const functions = extractPagesRoutes(sources);
+  const routers = extractRouterRoutes(sources.filter(s => ROUTER_MARKER.test(s.content)), createImportResolver(dir), { framework: 'Cloudflare Pages', defaultSource: 'cloudflare-pages' });
+  const tiers = new Map();
+  for (const t of [...functions.fileTiers, ...routers.fileTiers]) tiers.set(t.file, t);
+  recordReader(ctx, { fileTiers: [...tiers.values()], limitations: [...functions.limitations, ...routers.limitations] });
+  return [...functions, ...routers];
 }
 
 function scanWorkerRoutes(dir, ctx) {

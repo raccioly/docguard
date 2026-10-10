@@ -16,7 +16,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, relative, dirname, basename } from 'node:path';
 import { shouldIgnore, relPosix, isNonProductDir } from '../shared-ignore.mjs';
-import { hasWorkerConfig } from '../shared-source.mjs';
+import { hasWorkerConfig, isPagesProject } from '../shared-source.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build', 'coverage', 'target',
@@ -256,7 +256,10 @@ function classify(lang, dir, deps, { webSdk = false } = {}) {
   let kind = 'library';
 
   if (lang === 'JavaScript' || lang === 'TypeScript') {
-    if (hasWorkerConfig(dir)) { framework = 'Cloudflare Workers'; kind = 'service'; }
+    // A Pages project may carry a Wrangler file too; its Functions are not a
+    // Worker's fetch entry (docguard.js-route-shapes#FR-002).
+    if (isPagesProject(dir)) { framework = 'Cloudflare Pages'; kind = 'service'; }
+    else if (hasWorkerConfig(dir)) { framework = 'Cloudflare Workers'; kind = 'service'; }
     else if (has(deps, 'next')) { framework = 'Next.js'; kind = 'webapp'; }
     else if (has(deps, 'react', 'vue', '@angular/core', 'svelte', '@sveltejs/kit', 'nuxt')) { framework = has(deps,'react')?'React':has(deps,'vue')?'Vue':'Frontend'; kind = 'webapp'; }
     // NestJS first: a Nest app on the Express platform often lists `express`

@@ -72,7 +72,7 @@ It targets development teams and AI coding agents that need to maintain document
 | **Sinatra, Starlette, Warp and Tide routes** | Reads the frameworks spec 060 added (#519). Sinatra: classic and modular apps (classes inheriting from `Sinatra::Base` across files), `namespace` prefixes, `register`ed extensions, and the prefixes `config.ru` maps or a host app `use`s. Starlette: `Starlette`/`Router` objects join the FastAPI/Flask graph, with their `routes=` lists, `Mount` children and `add_route`. Warp: filter expressions evaluated to path/method alternatives through `and`/`or`, `let` bindings and functions across files, from what `warp::serve` runs. Tide: `at()` trees and `nest()` mounts resolved after every file is read. A Go module with only `net/http` is classified so `go-routes.mjs` runs | `cli/scanners/sinatra-routes.mjs`, `cli/scanners/rust-routes.mjs`, `cli/scanners/python-routes.mjs`, `cli/scanners/project-type.mjs`, `cli/scanners/routes.mjs` | No parser for Ruby or Rust: a tokenizer (Ruby) or the shared lexer (Rust) masks comments and strings first. Ruby and Rust routes carry `parserTier: fallback-language`, Starlette routes the Python tier. A path that is not literal is omitted, and the API-surface coverage reason counts the omissions (specs/060-more-route-frameworks) |
 | **Laravel, Symfony and ASP.NET Core routes** | Reports each route at the path it is served under. Laravel: the route files the app loads (`bootstrap/app.php` `withRouting`, else `RouteServiceProvider` mappings, else `routes/web.php` and `routes/api.php` under `/api`), with `prefix`/`middleware`/`group` chains and resource expansion. Symfony: `#[Route]` attributes and `@Route` annotations under the class-level route, and `config/routes.yaml` routes and prefixed imports. ASP.NET Core: attribute-routed controllers (inherited class routes, verb attributes, `[controller]`/`[action]`/`[area]` tokens) and minimal APIs (`Map*` under `MapGroup` prefixes, followed into the methods a group is passed to). The classifier labels a `Microsoft.NET.Sdk.Web` project ASP.NET Core | `cli/scanners/php-routes.mjs`, `cli/scanners/dotnet-routes.mjs`, `cli/scanners/routes.mjs`, `cli/scanners/project-type.mjs`, `cli/validators/api-surface.mjs` | No parser: per-language lexers mask comments and strings (PHP `#` comments, heredocs, interpolation; C# verbatim, interpolated and raw strings) and reuse the shared bracket pairing. Routes carry `parserTier: fallback-language`. A path or prefix that is not literal is omitted, counted, and reported in the API-surface coverage reason with its first locations (specs/059-php-dotnet-routes) |
 | **JS/TS extraction** | Router `.route('/x').get().post()` chains with mount prefixes; per-route auth from the route's own middleware and handler, an earlier `use(auth)`, an auth mount above it, or an App Router `middleware` matcher; env reads including destructuring, each read site recorded with file, line and default; the App Router `pages/` and `components/` roots; ORM entities (schema files, table builders, document schemas, decorated entity classes with inherited columns, `define`/`init` models) through one discovery (`scanOrmEntities`) that guard's schema check, `generate` and `diff` share | `cli/scanners/js-ast.mjs`, `cli/scanners/routes.mjs`, `cli/shared-source.mjs` (`grepEnvUsage`), `cli/scanners/schemas.mjs`, `cli/validators/schema-sync.mjs`, `cli/scanners/project-type.mjs` | Auth is recognised by name (`requireAuth`, `verifyToken`, `passport.authenticate(...)`, `getServerSession`); text elsewhere in a file never marks a route. Table schemas come from their ORM config first, else a bounded search; every schema file is read once. The regex fallback reads route chains, per-statement auth, and table and document-schema fields from the same object text; decorated entity classes and model-definition calls are read as decorator and argument text by both tiers and interpreted once; every table, document schema and entity class read records the tier that read it. Framework and ORM names are listed in `docs/commands.md` (`generate`) |
-| **NestJS, Workers and router-library routes** | Reports the routes of NestJS controllers (`@Controller` + method decorators under `setGlobalPrefix`, URI versioning and `RouterModule` paths, auth from guards), of a Cloudflare Worker's `fetch` entry (pathname comparisons, `switch`, keyed tables and `URLPattern` in the entry and the modules it imports, methods from the `request.method` checks around them), and of the small edge routers (`basePath`, `base`, `route()` mounts across files). Each reader is a pure function of file contents; `routes.mjs` gives them their files and records each file's tier and every path a reader could not resolve (`scan.unresolved`) | `cli/scanners/nest-routes.mjs`, `cli/scanners/worker-routes.mjs`, `cli/scanners/router-routes.mjs`, `cli/scanners/js-route-support.mjs`, `cli/scanners/routes.mjs`, `cli/validators/api-surface.mjs` (`routeScanGaps`) | Syntax tree first, pattern fallback per file; routes carry `tier`. A path that is not literal or a same-file constant is omitted and makes the API-surface check `partial`, naming the framework, count and first location. Durable Object classes, browser `location.pathname` and modules the Worker entry never imports are not read. Framework names are listed in `docs/reference/languages.md` (specs/058-js-framework-routes) |
+| **NestJS, Workers and router-library routes** | Reports the routes of NestJS controllers (`@Controller` + method decorators under `setGlobalPrefix`, URI versioning and `RouterModule` paths, auth from guards), of a Cloudflare Worker's `fetch` entry (pathname comparisons, `switch`, keyed tables and `URLPattern` in the entry and the modules it imports, methods from the `request.method` checks around them), of the small edge and Node routers (`basePath`, `base`, `prefix`, `route()` and `use(sub.routes())` mounts and application mounts across files, through `import` and `require`, and OpenAPI route definitions whose `{param}` segments become `:param`), and of file-routed edge functions (each `onRequest*` export of a file under `functions/` at the path its location names, with `_middleware` files as auth evidence for the routes below them). Each reader is a pure function of file contents; `routes.mjs` gives them their files and records each file's tier and every path a reader could not resolve (`scan.unresolved`) | `cli/scanners/nest-routes.mjs`, `cli/scanners/worker-routes.mjs`, `cli/scanners/router-routes.mjs`, `cli/scanners/pages-routes.mjs`, `cli/scanners/js-route-support.mjs`, `cli/scanners/routes.mjs`, `cli/validators/api-surface.mjs` (`routeScanGaps`) | Syntax tree first, pattern fallback per file; routes carry `tier`. A path that is not literal or a same-file constant is omitted and makes the API-surface check `partial`, naming the framework, count and first location. Durable Object classes, browser `location.pathname` and modules the Worker entry never imports are not read. A router below a prefix that is not literal reports no route. Framework names are listed in `docs/reference/languages.md` (specs/058-js-framework-routes, specs/064-js-route-shapes) |
 | **Spec-first gate** | Classifies a change between the merge base and HEAD as covered, exempt, not governed, uncovered or inconclusive. It reads governed paths from `specFirst` and resolves spec references against `specs/*/spec.md` and the registry | `cli/scanners/spec-first.mjs`, `cli/commands/specs.mjs` | Read-only. An unresolved reference never passes. Git or inventory failure is inconclusive (exit 2), never a pass. The PR body arrives as a file |
 | **Spec Kit delegation** | The only code that invokes the `specify` CLI: reads its documented `init` options and `--version`, resolves the integration key from `.specify/integration.json` / `init-options.json` / unambiguous agent signals, initializes Spec Kit, registers the packaged DocGuard extension and re-registers it when the registered version differs; writes the extension commands for the `generic` integration, which Spec Kit registers none for | `cli/spec-kit-delegation.mjs`, `cli/ensure-skills.mjs` | Called only by `docguard init` and `upgrade --apply`, and `ensureSkills` runs only from `init` too (the dispatcher installs nothing, so every other command writes only its own outputs, spec 042); argument arrays only; every failure returns a structured result with the CLI's error and a manual command; requires Spec Kit ≥ 0.11.2, the extension's `requires.speckit_version`, read from the manifest as `MIN_SPEC_KIT_VERSION` and checked before initializing or registering (spec 048) |
 | **Agent surface** | What the project's agent can run: the active integration's command layout, derived from Spec Kit's install manifest (`.specify/integrations/<key>.manifest.json`); where DocGuard's own skills go; whether each mandatory hook in `.specify/extensions.yml` resolves; and command hints that name a slash command only when its file exists | `cli/agent-surface.mjs` | Read-only. No per-agent table: the file Spec Kit wrote for `constitution` gives the directory, shape and separator. Paths from `.specify/*.json` are checked to stay inside the project before any write (spec 048) |
@@ -1759,6 +1759,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Koa mounts, Cloudflare Pages Functions and `@hono/zod-openapi` routes
+  are read** (`specs/064-js-route-shapes`, part of #519). Three JavaScript
+  route shapes spec 058 left out:
+  - Koa: routers move to the router reader, so `new Router({ prefix })`,
+    `router.prefix()`, nested `router.use('/users', users.routes())` and
+    koa-mount `mount('/admin', admin)` compose across files (also through
+    `require`/`module.exports`); `router.del()` and named routes are read,
+    a `use()` path guards everything under it, and routes now carry their
+    tier. Every literal-path route the old scanner found is still reported.
+  - Cloudflare Pages: a Wrangler file with `pages_build_output_dir`, or a
+    `functions/` tree exporting `onRequest` handlers, is labelled Cloudflare
+    Pages (a Wrangler file without that key stays a Worker). Each
+    `onRequest*` export is a route at the path its file serves (`[id]` as
+    `:id`, `[[path]]` as `:path*`, `index` for its directory), and a
+    `_middleware` file that checks credentials marks the routes below it as
+    auth (`cli/scanners/pages-routes.mjs`).
+  - `@hono/zod-openapi`: `app.openapi(createRoute({ method, path }), h)`,
+    with the definition inline, in a variable or imported from another file,
+    is read under `basePath()` and `route()` mounts, `{id}` as `:id`; `doc()`
+    serves `GET` at its path.
+
+  A prefix, mount path, route definition or Pages export that is not literal
+  is recorded and makes the API-surface check `partial`; the routes below an
+  unresolved Koa, Hono or itty-router prefix are no longer reported at the
+  root.
 - **Routes for Sinatra, Starlette, Warp, Tide and Go `net/http`-only
   services** (`specs/060-more-route-frameworks`, part of #519). These
   frameworks were classified but no scanner read them, so `generate`, `diff`
@@ -2123,33 +2148,8 @@ Behaviour changes:
   - Each tracked file has at most one owner. An exact path beats any glob, a
     longer literal directory prefix beats a shorter one, and anything else is
     a tie.
-  - `trace --reverse`, `review --suggest` and the MCP tool
-    `docguard_docs_for_path` now report the declared owner.
-  - `trace --owners` lists the map; `trace --owners --suggest` drafts one and
-    never writes it.
-  - The **Doc-Ownership** validator reports unowned source directories (at
-    their highest level), ties, patterns and roots that match nothing, and
-    entries naming a missing doc or section (OWN001–OWN004). A broken block is
-    an error (OWN007), never a pass.
-  - A committed `.devin/wiki.json` is linted against Devin's documented rules
-    (checked 2026-09-30): 30 pages (80 on enterprise, via
-    `devinWiki.maxPages`), 100 notes counted together, 10,000 characters per
-    note, required keys, unique titles (OWN005). Paths its notes name that are
-    no longer in the repository are OWN006.
-  - This repository maps `cli/`, `extensions/`, `tools/`, `benchmarks/` and
-    `tests/`: every source file has exactly one owner, checked in 25 ms.
-- **Path-scoped agent rules** (`specs/033-path-scoped-rules`). Agents load
-  instructions by path, and each harness does it differently. DocGuard now
-  reads them the way each one does: Codex, Claude Code, Cursor, Copilot and
-  OpenHands. The formats were checked against each vendor's documentation on
-  2026-09-30 and recorded in `docs/ai-integration.md`.
-  - `docguard rules --for <path>` lists, per harness, the files an agent loads
-    for a path, why (always, the directory chain, or the pattern that matched)
-    and the bytes. Machine-local rules are included and marked.
-  - The **Path-Scoped-Rules** validator reports:
-    - PSR001: a scope pattern that matches no tracked file, so the rule never
 
-<!-- truncated: 4993 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 5018 more lines — read CHANGELOG.md directly -->
 
 ---
 

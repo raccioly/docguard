@@ -206,7 +206,7 @@ npx docguard-cli generate
 npx docguard-cli generate --dir ./my-project
 ```
 
-**Detects:** Next.js, React, Vue, Angular, Express, Fastify, Hono, NestJS, Cloudflare Workers, Django, FastAPI, SvelteKit, and more.
+**Detects:** Next.js, React, Vue, Angular, Express, Fastify, Hono, Koa, NestJS, Cloudflare Workers, Cloudflare Pages, Django, FastAPI, SvelteKit, and more.
 
 What `generate` writes is read back by the same scanners `guard` and `diff`
 use, so running them straight after `generate` reports nothing about
@@ -235,7 +235,18 @@ DocGuard's own output:
   - `app.get('/x', …)` and `router.route('/x').get(…).post(…)` chains;
   - mount prefixes from `app.use('/api', router)`, including routers imported
     through a `tsconfig`/`jsconfig` path alias (`@/routes`);
-  - the Next.js App and Pages routers.
+  - the Next.js App and Pages routers;
+  - Koa routers with their `prefix` (option or `router.prefix()`), nested
+    with `router.use('/users', users.routes())` and mounted on applications
+    with `app.use(router.routes())` or koa-mount's `mount('/admin', admin)`,
+    across files through `import` and `require`;
+  - Cloudflare Pages Functions: each `onRequest*` export of a file under
+    `functions/`, at the path the file serves (`functions/api/users/[id].ts`
+    is `/api/users/:id`), with a `_middleware` file's auth check covering its
+    directory;
+  - `@hono/zod-openapi` routes, `app.openapi(createRoute({ method, path }), h)`,
+    with the definition inline or imported, `{id}` read as `:id`, under the
+    app's `basePath()` and `route()` mounts.
 - **Auth** is judged per route:
   - the route's own middleware (`requireAuth`, `passport.authenticate(...)`);
   - an auth check in its own handler;

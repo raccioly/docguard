@@ -9,6 +9,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Koa mounts, Cloudflare Pages Functions and `@hono/zod-openapi` routes
+  are read** (`specs/064-js-route-shapes`, part of #519). Three JavaScript
+  route shapes spec 058 left out:
+  - Koa: routers move to the router reader, so `new Router({ prefix })`,
+    `router.prefix()`, nested `router.use('/users', users.routes())` and
+    koa-mount `mount('/admin', admin)` compose across files (also through
+    `require`/`module.exports`); `router.del()` and named routes are read,
+    a `use()` path guards everything under it, and routes now carry their
+    tier. Every literal-path route the old scanner found is still reported.
+  - Cloudflare Pages: a Wrangler file with `pages_build_output_dir`, or a
+    `functions/` tree exporting `onRequest` handlers, is labelled Cloudflare
+    Pages (a Wrangler file without that key stays a Worker). Each
+    `onRequest*` export is a route at the path its file serves (`[id]` as
+    `:id`, `[[path]]` as `:path*`, `index` for its directory), and a
+    `_middleware` file that checks credentials marks the routes below it as
+    auth (`cli/scanners/pages-routes.mjs`).
+  - `@hono/zod-openapi`: `app.openapi(createRoute({ method, path }), h)`,
+    with the definition inline, in a variable or imported from another file,
+    is read under `basePath()` and `route()` mounts, `{id}` as `:id`; `doc()`
+    serves `GET` at its path.
+
+  A prefix, mount path, route definition or Pages export that is not literal
+  is recorded and makes the API-surface check `partial`; the routes below an
+  unresolved Koa, Hono or itty-router prefix are no longer reported at the
+  root.
 - **Routes for Sinatra, Starlette, Warp, Tide and Go `net/http`-only
   services** (`specs/060-more-route-frameworks`, part of #519). These
   frameworks were classified but no scanner read them, so `generate`, `diff`
