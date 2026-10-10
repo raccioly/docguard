@@ -28,7 +28,7 @@ const IGNORE_DIRS = new Set([
 ]);
 
 /** Extensions the env scan reads (docguard.fallback-language-coverage#FR-003). */
-const CODE_EXTENSIONS = new Set([
+export const CODE_EXTENSIONS = new Set([
   '.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx',
   '.py', '.java', '.go', '.rs', '.rb', '.php',
   '.kt', '.kts', '.cs',
@@ -279,6 +279,11 @@ export function collectPackageJsons(projectDir, config = {}) {
 
 /** Detect whether the project ships a Docker setup. */
 export function detectDocker(projectDir, config = {}) {
+  return findDockerManifest(projectDir, config) !== null;
+}
+
+/** The project-relative path of the Docker manifest `detectDocker` finds, or null. */
+export function findDockerManifest(projectDir, config = {}) {
   const candidates = ['Dockerfile', 'docker-compose.yml', 'docker-compose.yaml', '.dockerignore'];
   const root = resolve(projectDir);
   const dirs = new Set([root]);
@@ -298,10 +303,10 @@ export function detectDocker(projectDir, config = {}) {
 
   for (const dir of dirs) {
     for (const f of candidates) {
-      if (existsSync(join(dir, f))) return true;
+      if (existsSync(join(dir, f))) return relative(root, join(dir, f)).split('\\').join('/');
     }
   }
-  return false;
+  return null;
 }
 
 const HASH_COMMENT_EXTS = new Set(['.py', '.rb', '.php', '.sh']);
@@ -1058,47 +1063,6 @@ export function grepEnvUsage(projectDir, config = {}, options = {}) {
   }
   return finish();
 }
-
-/** Technologies the tech-stack drift check (DDF001) and `diff` recognise by name. */
-export const TECH_PATTERNS = ['React', 'Next.js', 'Vue', 'Angular', 'Svelte', 'Express', 'Fastify', 'Hono',
-  'PostgreSQL', 'MySQL', 'MongoDB', 'DynamoDB', 'Redis', 'Prisma', 'Drizzle',
-  'TypeScript', 'Tailwind', 'Docker', 'Terraform'];
-
-const TECH_DEPENDENCIES = {
-  'react': 'React', 'next': 'Next.js', 'vue': 'Vue', 'express': 'Express',
-  'fastify': 'Fastify', 'hono': 'Hono', 'prisma': 'Prisma', '@prisma/client': 'Prisma',
-  'drizzle-orm': 'Drizzle', 'typescript': 'TypeScript', 'tailwindcss': 'Tailwind',
-  'redis': 'Redis', 'ioredis': 'Redis', 'pg': 'PostgreSQL', 'mysql2': 'MySQL',
-  'mongoose': 'MongoDB', '@aws-sdk/client-dynamodb': 'DynamoDB',
-};
-
-/**
- * Technologies the code declares: package.json dependencies (root, source
- * root and workspaces), a Dockerfile/compose file, and `.tf` files. One
- * function for the check (DDF001, `diff`) and the writer (`generate`), so the
- * generated tech stack names exactly what the check looks for.
- * @implements docguard.generated-docs-consistency#FR-010
- * @returns {string[]} in TECH_PATTERNS order
- */
-export function detectCodeTechnologies(dir, config = {}) {
-  const found = new Set();
-  const deps = {};
-  for (const { pkg } of collectPackageJsons(dir, config)) Object.assign(deps, pkg.dependencies || {}, pkg.devDependencies || {});
-  for (const [dep, tech] of Object.entries(TECH_DEPENDENCIES)) if (deps[dep]) found.add(tech);
-  if (detectDocker(dir, config)) found.add('Docker');
-  let terraform = false;
-  walkFiles(dir, (full) => {
-    if (terraform || extname(full) !== '.tf') return;
-    if (!shouldIgnore(relative(dir, full), config)) terraform = true;
-  }, { ignoreDirs: TECH_WALK_IGNORE });
-  if (terraform) found.add('Terraform');
-  return TECH_PATTERNS.filter(t => found.has(t));
-}
-
-const TECH_WALK_IGNORE = new Set([
-  'node_modules', '.git', '.next', 'dist', 'build', 'coverage', '.cache', '__pycache__', '.venv', 'vendor',
-  'docs-canonical', 'docs-implementation', 'templates',
-]);
 
 /** Env template files read at the project root, in precedence order. */
 export const ENV_TEMPLATE_FILES = ['.env.example', '.env.template'];

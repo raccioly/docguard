@@ -163,6 +163,7 @@ import { validateDiffSuspicion } from '../validators/diff-suspicion.mjs';
 import { validateReferenceExistence } from '../validators/reference-existence.mjs';
 import { validateApiDocSmells } from '../validators/api-doc-smells.mjs';
 import { validateDocumentLifecycle } from '../validators/document-lifecycle.mjs';
+import { validateSuppressions } from '../validators/suppressions.mjs';
 import { validateSpecRegistry } from '../validators/spec-registry.mjs';
 import { validateDocDependency } from '../validators/doc-dependency.mjs';
 import { validatePathScopedRules } from '../validators/path-scoped-rules.mjs';
@@ -377,6 +378,8 @@ export function runGuardInternal(projectDir, config) {
     { key: 'crossReference', name: 'Cross-Reference', fn: () => validateCrossReferences(projectDir, config) },
     { key: 'generatedStaleness', name: 'Generated-Staleness', fn: () => validateGeneratedStaleness(projectDir, config) },
     { key: 'surfaceSync', name: 'Surface-Sync', fn: () => validateSurfaceSync(projectDir, config) },
+    // docguard.ignore-reasons#FR-005: expired, unreadable and (opt-in) reason-less .docguardignore entries.
+    { key: 'suppressions', name: 'Suppressions', fn: () => validateSuppressions(projectDir, config) },
     // v0.31.0 — change-driven + smell detectors (all confidence:low / soft).
     { key: 'diffSuspicion', name: 'Diff-Suspicion', fn: () => validateDiffSuspicion(projectDir, config) },
     { key: 'referenceExistence', name: 'Reference-Existence', fn: () => validateReferenceExistence(projectDir, config) },
@@ -705,7 +708,7 @@ export function liteValidatorsConfig(config = {}) {
     'schemaSync', 'specKit', 'crossReference', 'generatedStaleness',
     'canonicalSync', 'surfaceSync', 'metricsConsistency', 'documentLifecycle',
     'specRegistry', 'diffSuspicion', 'referenceExistence', 'apiDocSmells',
-    'evidence', 'docDependency', 'pathScopedRules', 'docOwnership',
+    'evidence', 'docDependency', 'pathScopedRules', 'docOwnership', 'suppressions',
   ];
   const userValidators = (config && config.validators) || {};
   const exactHighValidators = new Set(

@@ -9,6 +9,104 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Routes for Sinatra, Starlette, Warp, Tide and Go `net/http`-only
+  services** (`specs/060-more-route-frameworks`, part of #519). These
+  frameworks were classified but no scanner read them, so `generate`, `diff`
+  and guard's API-surface check saw no endpoint. Now:
+  - Sinatra: classic and modular apps across files, nested `namespace`
+    prefixes, `register`ed extensions, and `config.ru` `map`/`Rack::URLMap`
+    mounts (`cli/scanners/sinatra-routes.mjs`).
+  - Starlette: `Route`, `Mount`, `Router` and `Starlette(routes=...)` lists,
+    `add_route` and `@app.route`, in the same graph as FastAPI and Flask, at the
+    Python parser tier (`cli/scanners/python-routes.mjs`).
+  - Warp: filter chains evaluated through `and`/`or`, `let` bindings and
+    functions in other files; Tide: `at()` trees and `nest()` mounts
+    (`cli/scanners/rust-routes.mjs`).
+  - Go: a module with no router dependency that serves HTTP with `net/http` is
+    classified `net/http`, so its routes are read.
+
+  A route whose path is not literal text is omitted, never guessed, and the
+  API-surface coverage reason says how many were omitted.
+- **Laravel, Symfony and ASP.NET Core routes are read**
+  (`specs/059-php-dotnet-routes`, part of #519). These frameworks were
+  classified but no scanner read their routes, so guard's API-surface check,
+  `diff` and `generate` saw no endpoints. Two new pattern readers
+  (`php-routes.mjs`, `dotnet-routes.mjs`) now report:
+  - Laravel routes from the files the app loads (`routes/web.php`, and
+    `routes/api.php` under `/api`, or what `bootstrap/app.php` or
+    `RouteServiceProvider` maps), with `prefix`/`middleware`/`group` chains
+    and `resource`, `apiResource` and `singleton` expanded; `auth` and `can:`
+    middleware count as auth evidence;
+  - Symfony `#[Route]` attributes and `@Route` annotations under their class
+    route, and `config/routes.yaml` routes and prefixed imports;
+  - ASP.NET Core attribute-routed controllers (with `[controller]`,
+    `[action]` and `[area]` tokens and `[Authorize]`/`[AllowAnonymous]`) and
+    minimal APIs (`MapGet` and the other `Map*` calls under `MapGroup`
+    prefixes, including groups passed to extension methods).
+
+  A route whose path is not literal text is omitted, never guessed, and the
+  API-surface check now reports how many were omitted and where. A `.csproj`
+  using the `Microsoft.NET.Sdk.Web` SDK (every `dotnet new webapi` project)
+  is now labelled ASP.NET Core; before, the check tested the wrong string and
+  never matched.
+- **Routes for NestJS and Cloudflare Workers** (`specs/058-js-framework-routes`,
+  part of #519). Both were detected but their routes were not read, so the
+  API-surface check, `diff` and `generate` saw no endpoints.
+  - NestJS: `@Controller` paths joined with `@Get`, `@Post` and the other
+    method decorators, under `setGlobalPrefix` (with `exclude`), URI versioning
+    (`@Version`, `defaultVersion`, `VERSION_NEUTRAL`) and `RouterModule`
+    paths. `@UseGuards` with an auth guard, a global auth guard and
+    `@Public()`-style opt-outs set each route's auth; `ThrottlerGuard` is not
+    auth. A NestJS project that also lists `express` is now labelled NestJS.
+  - Cloudflare Workers: the paths a Worker's `fetch` entry tests
+    (`url.pathname === '/x'`, `switch`, tables keyed by pathname, `URLPattern`),
+    with methods from the `request.method` checks around them. A Durable
+    Object's `fetch` is not public and is not read.
+  - itty-router (with `base`) and Hono on Workers. Hono now applies
+    `basePath()` and `app.route('/prefix', subApp)` across files, with or
+    without Wrangler, and reads routers with any name.
+
+  These routes carry the tier they were read at (`js-ast`, or
+  `regex-fallback` for a file that does not parse). A path DocGuard cannot
+  read statically, such as an imported constant or a `startsWith` dispatch, is
+  left out, and the API-surface check reports `partial` with the count and the
+  first location.
+
+- **Suppressions that say why, and until when** (`specs/057-ignore-reasons`,
+  #420). A `.docguardignore` line can now end with an expiry and a reason:
+  `src/legacy/**  expires:2026-12-31  # removed with the v2 API`. A `#` starts
+  the reason only after whitespace, so `C#/` is still a pattern, and a line
+  without the new parts reads exactly as before; a line such as
+  `fixtures/ # test data`, which used to match nothing, now excludes
+  `fixtures/`. An entry applies through its expiry day (UTC) and then excludes
+  nothing. A new Suppressions validator reports an expired entry (IGN001), an
+  entry whose expiry is not a calendar date, which also excludes nothing
+  (IGN003), and, with `"suppressions": { "requireReason": true }`, an entry
+  without a reason (IGN002). `docguard ignore` lists every suppression the
+  project has (ignore file, `.docguard.json` arrays, inline `docguard:ignore`
+  pragmas with the reason written after the codes, validator and section N/A
+  markers, baseline fingerprints) with its reason, expiry and state, and
+  writes nothing. `docguard ignore --format claimspec` prints a claimspec v1
+  `ignore` document holding only the `.docguardignore` entries whose reason
+  (8 to 2000 characters), expiry and scope survive exactly; every other
+  suppression is listed or counted on stderr with the reason it was left out,
+  and no reason is invented. The claimspec `ignore` and `common` schemas are
+  vendored from raccioly/testguard and every document is validated before it
+  is printed.
+- **The symbol map's benchmark has run, and it stays opt-in**
+  (`specs/036-symbol-map`). Agent-context protocol v2 could not run: its pinned
+  Codex CLI is no longer installed, and its model is refused for
+  ChatGPT-account Codex. Protocol v3 (`benchmarks/agent-context/manifest-v3.json`)
+  changes only that executable pin, to `codex-cli 0.162.0-alpha.17.2` and
+  `gpt-6.1-sol` at low reasoning. It was frozen and committed before the first
+  trial, and the runner rejects a v3 manifest that differs from v2 anywhere
+  else (`--protocol v3`). All 54 trials succeeded. With the map, median
+  uncached input rose 1.0% and median steps did not change. On the
+  navigation-bound tasks, median latency fell 6.0%, short of the 15% threshold.
+  The frozen rule therefore computed `opt-in`: `memory --pack --symbols` stays
+  available, and the default pack is unchanged
+  (`benchmarks/agent-context/results/README-v3.md`).
+
 - **A documentation site with the guides a larger project ships**
   (`specs/053-user-documentation`). The GitHub Pages site
   (raccioly.github.io/docguard) now has a landing page, sidebar navigation and
@@ -51,6 +149,88 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   instead of 15 s. `docs-canonical/CI-RECIPES.md` Recipe 3e states which
   noise the guard-time verdict absorbs.
 
+- **False positives found by dogfooding, round 2** (`specs/061-dogfood-round-2`).
+  - DDF002 read documented tests only when they were named `*.test.*` or
+    `*.spec.*`, while the code side also used `testPattern`. A TEST-SPEC
+    listing `test_bot.mjs` under `"testPattern": "test_*.mjs"` never matched.
+    Both sides, and `diff`, now use the configured patterns; a bare name is
+    compared with the pattern's last segment (#525).
+  - DDF001 found technologies only in manifests, so DynamoDB called through
+    a hand-signed HTTP client and Docker run from `start.sh` were always
+    "documented but not found in code". It now also reads unambiguous source
+    text in product files: a DynamoDB API target, endpoint or `DDB_ENDPOINT`
+    setting, the DynamoDB Local image, `AWS.DynamoDB`, boto3's
+    `client('dynamodb')`, the `@aws-sdk/lib-dynamodb` dependency; and
+    `docker run`, `docker build` or `docker compose` in a shell script,
+    Makefile or CI workflow, or a compose file anywhere. A technology found
+    this way names its file in the DDF001 message, and `diff` names the file
+    behind every technology (`evidence` in JSON). Tests, fixtures and
+    commented lines are not evidence. Suppressing a document-level finding
+    with a reason, also asked for in #526, is spec 057's.
+  - DDF001 now names TypeORM and Sequelize, as it names Prisma and Drizzle.
+    Mongoose still counts as MongoDB.
+  - DDF001 ran only when a `package.json` existed, so Python, Go, Ruby, Rust,
+    PHP, C# and Java projects had no tech-stack check. It now reads every
+    manifest `generate` reads. A documented technology is reported missing
+    only where a manifest could have shown it, so a Python project naming
+    React or DynamoDB (through boto3) is not told they are absent;
+    `docs/reference/languages.md` lists what each ecosystem proves. Node
+    projects get the same results. Technology detection moved to
+    `cli/scanners/tech-stack.mjs`.
+  - `diff` read `docs-canonical/TEST-SPEC.md` even when `docs.roles.testSpec`
+    pointed elsewhere. It now reads the mapped document, like DDF002.
+  - SEC001 reported translation-catalog entries such as
+    `f_password: 'Password'` as hardcoded passwords. A capitalised word for
+    "password" in a common language, a short phrase containing one
+    (`Confirm Password`), or the key's own words is now skipped, unless the
+    key is an all-caps constant such as `DB_PASSWORD`. `password: 'password'`
+    and other credentials are still reported (#527).
+- **Ignore patterns read gitignore syntax correctly** (`specs/057-ignore-reasons`
+  FR-010–FR-012, #420). The matcher behind `.docguardignore`, `ignore`,
+  `securityIgnore`, `todoIgnore` and `documentLifecycle` passed `?`, `[`, `(`,
+  `+`, `|` and the other regular-expression characters straight into a regular
+  expression: `foo?` matched `fo`, `a|b` excluded unrelated files (176 in this
+  repository), and an unclosed `[` made five validators fail with a
+  regular-expression error. It now reads `?` as one character, `[…]` as a
+  gitignore bracket expression (`[!ab]` negates), `\x` as a literal `x` and
+  every other character literally. `**/fixtures/**` now also matches a
+  top-level `fixtures/`, `a/**/b` matches `a/b`, and a leading `/` anchors to
+  the project root instead of matching nothing. A pattern without those
+  characters and without `**/` matches exactly what it did before (checked
+  against every tracked file for this repository's patterns). `docguard ignore
+  --format claimspec` now exports the reasoned entries that read the same in
+  both syntaxes. The `documentLifecycle` array is now in the config schema and
+  the configuration guide.
+- **TypeORM and Sequelize models reach `generate`, `generate --plan` and
+  `diff`** (`specs/056-typeorm-models`, #520). Only guard's schema check read
+  them, by a pattern that missed common layouts, so a TypeORM or Sequelize
+  project got an empty entity table and ER diagram. Both ORMs now go through
+  the discovery Prisma, Drizzle and Mongoose use, so guard, `generate`, the
+  plan, as-built specs and `diff` read the same models:
+  - TypeORM: `@Entity` classes in any file that imports `typeorm`
+    (`src/entity/User.ts` from `typeorm init` and NestJS's
+    `src/users/user.entity.ts` included), named by class with the table name
+    kept. Columns carry their type, nullability, primary key, `unique`,
+    default and comment; columns declared on a base class are inherited; each
+    relation is drawn once, from its owning side.
+  - Sequelize: `sequelize.define('Name', …)` and `Model.init(…, { sequelize })`
+    models with their declared attributes. Guard used to miss every `init`
+    model. `belongsTo`, `hasMany`, `hasOne` and `belongsToMany` associations
+    are drawn once.
+  - An entity whose decorators come through a project barrel that
+    re-exports `typeorm` (relative, tsconfig path alias or workspace package)
+    is read; one whose barrel re-exports MikroORM is not.
+  - A file that does not parse is read by pattern into the same entities,
+    which then report the `regex-fallback` tier. Drizzle and Mongoose entities
+    now report their tier too, so a pattern-read schema marks the plan's
+    entity surface partial.
+  - Zod schemas are the data model only when no ORM entity is found; a
+    Mongoose project with Zod schemas used to report both. A Zod-only project
+    listed each schema twice; it now lists each once.
+  - SCH001's help names every model source guard reads.
+
+  Guard now names a TypeORM entity by its class and accepts the class or the
+  table name in DATA-MODEL.md. Knex is still read by guard only, by table name.
 - **The watch reliability tests no longer depend on wall-clock timing**
   (`specs/055-watch-deterministic`, #523). `tests/watch-reliability.test.mjs`
   slept 300–600 ms around the 500 ms debounce and let the watcher print to

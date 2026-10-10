@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "entries": [
+    {
+      "kind": "path",
+      "pattern": "src/**",
+      "reason": "meh"
+    }
+  ]
+}

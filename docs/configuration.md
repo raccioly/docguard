@@ -67,7 +67,10 @@ DocGuard is configured via `.docguard.json` in the project root. If no config fi
   "findingSeverity": {
     "TRC004": "low",
     "SEC001": "high"
-  }
+  },
+  "ignore": ["generated/"],
+  "securityIgnore": ["tests/fixtures/"],
+  "suppressions": { "requireReason": false }
 }
 ```
 
@@ -97,6 +100,7 @@ See [Profiles](./profiles.md) for details.
 | `security` | varies | Auth, secrets, RBAC documentation |
 | `environment` | `true` | Setup steps, env vars, prerequisites, .env.example |
 | `freshness` | varies | Docs updated recently relative to code changes (git-based) |
+| `suppressions` | `true` | `.docguardignore` entries that expired (IGN001), cannot be read (IGN003), or have no reason while `suppressions.requireReason` is set (IGN002) |
 
 ## Severity overrides
 
@@ -114,6 +118,21 @@ them informational, and `findingSeverity.<CODE>` can still promote them.
 Machine outputs preserve `severity` and add `effectiveSeverity` plus the
 enforcement source so audit consumers can distinguish detection from policy.
 
+## Test files — `testPatterns`
+
+DocGuard finds test files named `*.test.*` or `*.spec.*` on its own. When
+yours follow another convention, list globs for them:
+
+```json
+{ "testPatterns": ["test_*.mjs", "tests/**/test_*.py"] }
+```
+
+`testPattern` (one string) is the older form and is merged into the list. The
+patterns apply to both sides of Test Files drift (DDF002): files on disk that
+match are tests, and a backticked name in TEST-SPEC.md that matches is a
+documented test. A bare file name such as `test_bot.mjs` is compared with the
+pattern's last segment, so `tests/**/test_*.py` accepts `test_api.py`.
+
 ## Collections — verify documented counts against code
 
 `collections` binds a documentation noun to a glob whose **file count is the
@@ -130,6 +149,82 @@ Conventional doc folders (`docs/`, `doc/`, `documentation/`, `guides/`,
 **auto-detected** and claim-scanned without enrollment. `docs.dirs` EXTENDS
 that set with non-standard homes — it never replaces auto-detection. To exclude
 a conventional dir, list it in `.docguardignore`.
+
+## Excluding paths — `.docguardignore`
+
+`.docguardignore`, at the project root, lists paths no validator should read.
+One pattern per line, gitignore-style: `#` at the start of a line is a comment,
+blank lines are skipped, and a pattern matches at a path-segment boundary at
+any depth (`fixtures/` excludes `fixtures/` and `packages/a/fixtures/`).
+
+Pattern syntax, shared by `.docguardignore` and every `.docguard.json` array
+below:
+
+| Syntax | Meaning |
+|---|---|
+| `*` | Any characters except `/` |
+| `?` | One character except `/` |
+| `[abc]`, `[a-z]`, `[!abc]` / `[^abc]` | One character from (or, negated, not from) the set; never `/`. An unclosed `[` is a literal `[`. POSIX classes such as `[[:alpha:]]` are not supported |
+| `**/` at the start or after `/` | Zero or more directories: `**/fixtures/**` excludes `fixtures/x` and `a/fixtures/x`; `a/**/b` excludes `a/b` and `a/x/y/b` |
+| `/**` at the end | Everything inside |
+| Any other `**` (`a**`) | Any characters, `/` included |
+| `\x` | The literal character `x` (`\*.md` is the file `*.md`) |
+| Leading `/` | Anchors to the project root: `/build` excludes `build/` but not `src/build/` |
+| Trailing `/` | Dropped: `dir/` also excludes a file named `dir` |
+| Anything else | Literal, including `( ) + ^ $ \| { } .` (no `{a,b}` alternation) |
+
+Unlike gitignore, a slash in the middle does not anchor (`docs/old` also
+excludes `site/docs/old`), and a leading `!` is a literal character: negation is
+not supported. Before v0.44, `?`, `[`, `(`, `+`, `|` and the other regular
+expression characters were passed through unescaped (`a|b` was read as an
+alternation and excluded unrelated paths, and an unclosed `[` made the checks
+that read the ignore list fail with a regular-expression error), and `**/x` did
+not match a top-level `x`. A pattern without those
+characters and without `**/` matches exactly what it matched before.
+
+An entry can say why it exists and when it ends:
+
+```gitignore
+# pattern            [expires:YYYY-MM-DD]   [# reason]
+build/                                      # generated output of the build
+src/legacy/**        expires:2026-12-31     # removed with the v2 API
+docs/archive/
+```
+
+- **Reason.** Text after a `#` that follows whitespace. A `#` inside a pattern
+  (`C#/`, `notes#1.md`) is still part of the pattern.
+- **Expiry.** `expires:YYYY-MM-DD` as the last word before the reason. The
+  entry applies through the end of that day (UTC). From the next day it
+  excludes nothing, and guard reports IGN001 so you can renew or delete it.
+- **Unreadable expiry.** A date that is not a real `YYYY-MM-DD` day (for
+  example `expires:2026-02-30`), or a line with an expiry or reason and no
+  pattern, excludes nothing and is reported as IGN003: DocGuard cannot tell
+  when it should end.
+
+A line with no whitespace-then-`#` and no trailing `expires:` word means exactly
+what it meant before v0.44. One that has them was read before as a pattern
+containing that text, which matched nothing.
+
+To require a reason on every entry:
+
+```json
+{ "suppressions": { "requireReason": true } }
+```
+
+Guard then reports IGN002 for each entry without one. The entry still applies.
+Raise it to blocking with `"findingSeverity": { "IGN002": "high" }`.
+
+`.docguard.json` has its own arrays: `ignore` (every validator; merged with
+`.docguardignore` at load), `securityIgnore` (Security only) and `todoIgnore`
+(TODO-Tracking only), and `documentLifecycle` (paths the Document-Lifecycle
+check skips when it looks for terminal-status documents and completed specs).
+They hold plain patterns and cannot carry a reason or an expiry;
+`suppressions.requireReason` does not apply to them.
+
+`docguard ignore` lists every suppression the project has, including inline
+pragmas, N/A markers and the baseline, with its reason and state;
+`docguard ignore --format claimspec` exports the reasoned `.docguardignore`
+entries as a claimspec `ignore` document ([commands](commands.md#docguard-ignore)).
 
 ## Adoption baseline — `baseline`
 
@@ -316,7 +411,9 @@ The `entity-diagram` section has no options.
 
 `memory --pack --symbols` stops the symbol map at `memory.symbolMap.maxBytes`
 bytes (default 4096, between 256 and 16384), at a whole line, and states how
-many ranked files it left out. About 4 bytes stand for one token.
+many ranked files it left out. About 4 bytes stand for one token. The section
+is opt-in, and the agent-context benchmark kept it that way
+(`benchmarks/agent-context/results/README-v3.md`).
 
 ```json
 { "memory": { "symbolMap": { "maxBytes": 4096 } } }
