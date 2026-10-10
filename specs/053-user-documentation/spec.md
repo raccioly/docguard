@@ -84,3 +84,9 @@ A reference page lists every finding and blocker code with its title, explanatio
 
 - Full translations of every guide.
 - A docs build tool or framework in the repository.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `7cec55ca733564288914c53e7b63dbb7e4bdb97c` — Reviewed at 7cec55c on main: all 10 tasks are checked and were delivered by #521, #522; the full suite (2958 tests) passes on Node 18, 20, 22 and 24 in CI, the Pages build succeeds, and guard reports 0 errors at this revision. Evidence: `docs-canonical/ARCHITECTURE.md`, `tests/user-docs.test.mjs`, `tools/generate-docs-reference.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->

@@ -2344,7 +2344,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "implemented",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -2366,8 +2366,22 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "7cec55ca733564288914c53e7b63dbb7e4bdb97c",
+          "outcomes": [
+            {
+              "revision": "7cec55ca733564288914c53e7b63dbb7e4bdb97c",
+              "reason": "Reviewed at 7cec55c on main: all 7 tasks are checked and were delivered by #522; the full suite (2958 tests) passes on Node 18, 20, 22 and 24 in CI, and guard reports 0 errors at this revision.",
+              "evidence": [
+                ".github/scripts/sync-release-version.mjs",
+                "cli/release-pr-policy.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "tests/docs-verification-findings.test.mjs",
+                "tests/release-version-sync.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -2387,7 +2401,7 @@
         "artifacts": [
           {
             "path": "specs/054-docs-verification-findings/spec.md",
-            "digest": "sha256:a1a75dafc6dd5d9556b76cb4fb29342e4bfc297392a1253bf5e28087d9cca0a8"
+            "digest": "sha256:0242e4e2a4fece061aede01fe05123edb40a188d78466ef744499e8f2c0e1ea0"
           },
           {
             "path": "specs/054-docs-verification-findings/plan.md",
@@ -10576,7 +10590,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "implemented",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -10595,8 +10609,20 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "7cec55ca733564288914c53e7b63dbb7e4bdb97c",
+          "outcomes": [
+            {
+              "revision": "7cec55ca733564288914c53e7b63dbb7e4bdb97c",
+              "reason": "Reviewed at 7cec55c on main: all 10 tasks are checked and were delivered by #521, #522; the full suite (2958 tests) passes on Node 18, 20, 22 and 24 in CI, the Pages build succeeds, and guard reports 0 errors at this revision.",
+              "evidence": [
+                "docs-canonical/ARCHITECTURE.md",
+                "tests/user-docs.test.mjs",
+                "tools/generate-docs-reference.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -10618,7 +10644,7 @@
         "artifacts": [
           {
             "path": "specs/053-user-documentation/spec.md",
-            "digest": "sha256:219e8bb8e103b5c30e6e475d048bbfcbd3606a38d2dcd4a6b42b806304441e44"
+            "digest": "sha256:d39e77c05916cc9c9c0fbf68ce4745bf0c3ceae25ff03161c22d886134d8cb9d"
           },
           {
             "path": "specs/053-user-documentation/plan.md",
