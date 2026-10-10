@@ -1,0 +1,1646 @@
+{
+  "$schema": "https://raccioly.github.io/docguard/schemas/docguard-agent-context-result-v2.schema.json",
+  "schemaVersion": 2,
+  "core": {
+    "protocolId": "docguard-agent-context-v3",
+    "manifestDigest": "sha256:73f78dad22dbe8b980b847594202ddb66dfac27479bbcf508879220d411a49bd",
+    "harnessDigest": "sha256:f9d3a2adef8d44a24966b956ed8d08b9e2f38568e522f16962e6e3914e1c72a3",
+    "analysisDigest": "sha256:f9d3a2adef8d44a24966b956ed8d08b9e2f38568e522f16962e6e3914e1c72a3",
+    "selectorDigest": "sha256:331806c993fe169ccbb1a0f7cdccaad89ba702295ccb8ccb0cd67bb1bf8b8d28",
+    "fixtureDigests": {
+      "status-alias": "sha256:215b12c33b17a4b42a3aee79fe6f090c1774a0539eb6557dbeee3ec8ffe4fdef",
+      "python-config": "sha256:0c5e5e4976948b8efb356dbfdbf95baeb1d1ccb4f8bc1637d106152cc6ac80aa",
+      "option-migration": "sha256:20939ded1205f0984367fe0a4d93fce75722ea4600565b329106d401e2abf2ce",
+      "ledger-rounding": "sha256:d5e3110afa547acdea3e8f12dafaebda1fe76d6544453644a2e41c47ee9a5a68",
+      "ledger-late-fee": "sha256:d5e3110afa547acdea3e8f12dafaebda1fe76d6544453644a2e41c47ee9a5a68",
+      "ledger-redaction": "sha256:d5e3110afa547acdea3e8f12dafaebda1fe76d6544453644a2e41c47ee9a5a68"
+    },
+    "trialOrder": [
+      "ledger-rounding:context-pack:2",
+      "python-config:context-pack-symbols:1",
+      "ledger-redaction:context-pack:3",
+      "ledger-rounding:context-pack-symbols:2",
+      "ledger-redaction:context-pack:1",
+      "python-config:task-only:3",
+      "ledger-redaction:context-pack-symbols:1",
+      "option-migration:context-pack-symbols:2",
+      "python-config:context-pack-symbols:2",
+      "ledger-late-fee:task-only:1",
+      "status-alias:context-pack-symbols:3",
+      "python-config:task-only:1",
+      "ledger-redaction:context-pack-symbols:3",
+      "ledger-rounding:context-pack-symbols:3",
+      "option-migration:context-pack:1",
+      "python-config:context-pack:3",
+      "python-config:task-only:2",
+      "ledger-late-fee:context-pack:3",
+      "ledger-late-fee:context-pack-symbols:3",
+      "ledger-rounding:task-only:2",
+      "python-config:context-pack-symbols:3",
+      "option-migration:context-pack:2",
+      "python-config:context-pack:1",
+      "ledger-rounding:task-only:1",
+      "status-alias:context-pack:1",
+      "status-alias:context-pack-symbols:1",
+      "status-alias:task-only:1",
+      "option-migration:context-pack:3",
+      "ledger-redaction:task-only:3",
+      "option-migration:task-only:2",
+      "ledger-redaction:task-only:1",
+      "python-config:context-pack:2",
+      "ledger-rounding:context-pack-symbols:1",
+      "ledger-late-fee:context-pack:1",
+      "status-alias:task-only:2",
+      "ledger-late-fee:context-pack-symbols:2",
+      "option-migration:context-pack-symbols:3",
+      "status-alias:task-only:3",
+      "ledger-rounding:context-pack:1",
+      "option-migration:task-only:3",
+      "status-alias:context-pack:3",
+      "ledger-late-fee:context-pack:2",
+      "ledger-late-fee:context-pack-symbols:1",
+      "option-migration:task-only:1",
+      "ledger-rounding:context-pack:3",
+      "ledger-redaction:context-pack-symbols:2",
+      "ledger-late-fee:task-only:2",
+      "status-alias:context-pack-symbols:2",
+      "ledger-late-fee:task-only:3",
+      "ledger-redaction:task-only:2",
+      "ledger-redaction:context-pack:2",
+      "ledger-rounding:task-only:3",
+      "option-migration:context-pack-symbols:1",
+      "status-alias:context-pack:2"
+    ],
+    "aggregate": {
+      "task-only": {
+        "runs": 18,
+        "completedRuns": 18,
+        "infrastructureFailures": 0,
+        "timedOut": 0,
+        "agentFailures": 0,
+        "successes": 18,
+        "failures": 0,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "medianSteps": 8,
+        "medianUncachedInputTokens": 18261,
+        "medianLatencyMs": 28101
+      },
+      "context-pack": {
+        "runs": 18,
+        "completedRuns": 18,
+        "infrastructureFailures": 0,
+        "timedOut": 0,
+        "agentFailures": 0,
+        "successes": 18,
+        "failures": 0,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "medianSteps": 8,
+        "medianUncachedInputTokens": 21287,
+        "medianLatencyMs": 29282.5
+      },
+      "context-pack-symbols": {
+        "runs": 18,
+        "completedRuns": 18,
+        "infrastructureFailures": 0,
+        "timedOut": 0,
+        "agentFailures": 0,
+        "successes": 18,
+        "failures": 0,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "medianSteps": 8,
+        "medianUncachedInputTokens": 21508.5,
+        "medianLatencyMs": 27076
+      }
+    },
+    "navigationAggregate": {
+      "task-only": {
+        "runs": 9,
+        "completedRuns": 9,
+        "infrastructureFailures": 0,
+        "timedOut": 0,
+        "agentFailures": 0,
+        "successes": 9,
+        "failures": 0,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "medianSteps": 9,
+        "medianUncachedInputTokens": 20142,
+        "medianLatencyMs": 28682
+      },
+      "context-pack": {
+        "runs": 9,
+        "completedRuns": 9,
+        "infrastructureFailures": 0,
+        "timedOut": 0,
+        "agentFailures": 0,
+        "successes": 9,
+        "failures": 0,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "medianSteps": 8,
+        "medianUncachedInputTokens": 21480,
+        "medianLatencyMs": 29568
+      },
+      "context-pack-symbols": {
+        "runs": 9,
+        "completedRuns": 9,
+        "infrastructureFailures": 0,
+        "timedOut": 0,
+        "agentFailures": 0,
+        "successes": 9,
+        "failures": 0,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "medianSteps": 8,
+        "medianUncachedInputTokens": 21554,
+        "medianLatencyMs": 27797
+      }
+    },
+    "decision": {
+      "status": "opt-in",
+      "reasons": [
+        "No regression, but no predeclared benefit: the section stays behind --symbols."
+      ],
+      "reductions": {
+        "steps": 0,
+        "latency": 5.989583333333334
+      },
+      "increases": {
+        "uncachedInputTokens": 1.0405411753652463,
+        "steps": 0
+      }
+    }
+  },
+  "observations": {
+    "generatedAt": "2026-10-10T21:05:47.927Z",
+    "environment": {
+      "platform": "darwin",
+      "arch": "arm64",
+      "node": "v24.18.0",
+      "codex": "codex-cli 0.162.0-alpha.17.2"
+    },
+    "trials": [
+      {
+        "id": "ledger-rounding:context-pack:2",
+        "task": "ledger-rounding",
+        "condition": "context-pack",
+        "repetition": 2,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 11,
+        "requirementsTotal": 11,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/currency/rounding.mjs"
+        ],
+        "steps": 8,
+        "usage": {
+          "inputTokens": 124911,
+          "cachedInputTokens": 97408,
+          "uncachedInputTokens": 27503,
+          "outputTokens": 1104,
+          "reasoningTokens": null
+        },
+        "latencyMs": 32829,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:ee8400b7f65b853cdda4cc7f64c7b95d69e6485eb4cf9a778ce0b317ea2788dd",
+        "failure": null
+      },
+      {
+        "id": "python-config:context-pack-symbols:1",
+        "task": "python-config",
+        "condition": "context-pack-symbols",
+        "repetition": 1,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 8,
+        "requirementsTotal": 8,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "config_loader.py"
+        ],
+        "steps": 6,
+        "usage": {
+          "inputTokens": 120717,
+          "cachedInputTokens": 101888,
+          "uncachedInputTokens": 18829,
+          "outputTokens": 1282,
+          "reasoningTokens": null
+        },
+        "latencyMs": 29858,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:d7c360091461ca9fd6cafbf3023bd3e656c02a652226a81424ee4a6622683f0c",
+        "failure": null
+      },
+      {
+        "id": "ledger-redaction:context-pack:3",
+        "task": "ledger-redaction",
+        "condition": "context-pack",
+        "repetition": 3,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 8,
+        "requirementsTotal": 8,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/audit/redact.mjs"
+        ],
+        "steps": 8,
+        "usage": {
+          "inputTokens": 126152,
+          "cachedInputTokens": 97664,
+          "uncachedInputTokens": 28488,
+          "outputTokens": 1718,
+          "reasoningTokens": null
+        },
+        "latencyMs": 37924,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:e7af48684b5bbae84c6cdf151d561c653b23846a788c53320926e67a31a993cd",
+        "failure": null
+      },
+      {
+        "id": "ledger-rounding:context-pack-symbols:2",
+        "task": "ledger-rounding",
+        "condition": "context-pack-symbols",
+        "repetition": 2,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 11,
+        "requirementsTotal": 11,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/currency/rounding.mjs"
+        ],
+        "steps": 10,
+        "usage": {
+          "inputTokens": 157377,
+          "cachedInputTokens": 134656,
+          "uncachedInputTokens": 22721,
+          "outputTokens": 1714,
+          "reasoningTokens": null
+        },
+        "latencyMs": 41592,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:fd634f667fe1e99be854c49f8192ef5d303c3c48a626c632dc2f5d4e77d0286e",
+        "failure": null
+      },
+      {
+        "id": "ledger-redaction:context-pack:1",
+        "task": "ledger-redaction",
+        "condition": "context-pack",
+        "repetition": 1,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 8,
+        "requirementsTotal": 8,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/audit/redact.mjs"
+        ],
+        "steps": 6,
+        "usage": {
+          "inputTokens": 124197,
+          "cachedInputTokens": 96896,
+          "uncachedInputTokens": 27301,
+          "outputTokens": 1079,
+          "reasoningTokens": null
+        },
+        "latencyMs": 29568,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:184bfa933d5e629dec9cd7a0efd6e43846c04985805e474299822aa0a4ca6915",
+        "failure": null
+      },
+      {
+        "id": "python-config:task-only:3",
+        "task": "python-config",
+        "condition": "task-only",
+        "repetition": 3,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 8,
+        "requirementsTotal": 8,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "config_loader.py"
+        ],
+        "steps": 6,
+        "usage": {
+          "inputTokens": 118505,
+          "cachedInputTokens": 99968,
+          "uncachedInputTokens": 18537,
+          "outputTokens": 1352,
+          "reasoningTokens": null
+        },
+        "latencyMs": 35109,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:35f120c2b525497350ce5462c7df39be9731dd196671d78b626193c956feb6a7",
+        "failure": null
+      },
+      {
+        "id": "ledger-redaction:context-pack-symbols:1",
+        "task": "ledger-redaction",
+        "condition": "context-pack-symbols",
+        "repetition": 1,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 8,
+        "requirementsTotal": 8,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/audit/redact.mjs"
+        ],
+        "steps": 5,
+        "usage": {
+          "inputTokens": 99983,
+          "cachedInputTokens": 72704,
+          "uncachedInputTokens": 27279,
+          "outputTokens": 1159,
+          "reasoningTokens": null
+        },
+        "latencyMs": 27035,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:055ec118a874124a4d45c97d0b76e11a2e20649cd68c63151ceb0549368fcb61",
+        "failure": null
+      },
+      {
+        "id": "option-migration:context-pack-symbols:2",
+        "task": "option-migration",
+        "condition": "context-pack-symbols",
+        "repetition": 2,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 7,
+        "requirementsTotal": 7,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/options.mjs"
+        ],
+        "steps": 9,
+        "usage": {
+          "inputTokens": 95688,
+          "cachedInputTokens": 60544,
+          "uncachedInputTokens": 35144,
+          "outputTokens": 755,
+          "reasoningTokens": null
+        },
+        "latencyMs": 21843,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:ded48dbcdd1c5668392beee60054362d1c8210695019a22a285af45514bad3bd",
+        "failure": null
+      },
+      {
+        "id": "python-config:context-pack-symbols:2",
+        "task": "python-config",
+        "condition": "context-pack-symbols",
+        "repetition": 2,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 8,
+        "requirementsTotal": 8,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "config_loader.py"
+        ],
+        "steps": 6,
+        "usage": {
+          "inputTokens": 120852,
+          "cachedInputTokens": 94592,
+          "uncachedInputTokens": 26260,
+          "outputTokens": 1408,
+          "reasoningTokens": null
+        },
+        "latencyMs": 34869,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:8721c2079e9bda6e5c537b6d212ff306ecbef818cabde805cb9d7250db86fcb4",
+        "failure": null
+      },
+      {
+        "id": "ledger-late-fee:task-only:1",
+        "task": "ledger-late-fee",
+        "condition": "task-only",
+        "repetition": 1,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 7,
+        "requirementsTotal": 7,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/invoices/late-fee.mjs"
+        ],
+        "steps": 9,
+        "usage": {
+          "inputTokens": 123183,
+          "cachedInputTokens": 109568,
+          "uncachedInputTokens": 13615,
+          "outputTokens": 900,
+          "reasoningTokens": null
+        },
+        "latencyMs": 28682,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:55286e0527d6aaab4ca488a484cf944d2071ecde4f3cc97ca0c2a5f1feb2994c",
+        "failure": null
+      },
+      {
+        "id": "status-alias:context-pack-symbols:3",
+        "task": "status-alias",
+        "condition": "context-pack-symbols",
+        "repetition": 3,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 7,
+        "requirementsTotal": 7,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/status.mjs"
+        ],
+        "steps": 8,
+        "usage": {
+          "inputTokens": 95198,
+          "cachedInputTokens": 77056,
+          "uncachedInputTokens": 18142,
+          "outputTokens": 687,
+          "reasoningTokens": null
+        },
+        "latencyMs": 19034,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:46eeb5ea0faa70557bb7c5971fd0d5ddd709cfcb58d4af870882cc1b3b723346",
+        "failure": null
+      },
+      {
+        "id": "python-config:task-only:1",
+        "task": "python-config",
+        "condition": "task-only",
+        "repetition": 1,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 8,
+        "requirementsTotal": 8,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "config_loader.py"
+        ],
+        "steps": 7,
+        "usage": {
+          "inputTokens": 118357,
+          "cachedInputTokens": 92672,
+          "uncachedInputTokens": 25685,
+          "outputTokens": 1388,
+          "reasoningTokens": null
+        },
+        "latencyMs": 34754,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:38bc41e62e44d55f53fd313cbacf53f130ed3a2353e9da88fa5b8913b8bb60da",
+        "failure": null
+      },
+      {
+        "id": "ledger-redaction:context-pack-symbols:3",
+        "task": "ledger-redaction",
+        "condition": "context-pack-symbols",
+        "repetition": 3,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 8,
+        "requirementsTotal": 8,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/audit/redact.mjs"
+        ],
+        "steps": 5,
+        "usage": {
+          "inputTokens": 100863,
+          "cachedInputTokens": 80512,
+          "uncachedInputTokens": 20351,
+          "outputTokens": 1081,
+          "reasoningTokens": null
+        },
+        "latencyMs": 29220,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:184bfa933d5e629dec9cd7a0efd6e43846c04985805e474299822aa0a4ca6915",
+        "failure": null
+      },
+      {
+        "id": "ledger-rounding:context-pack-symbols:3",
+        "task": "ledger-rounding",
+        "condition": "context-pack-symbols",
+        "repetition": 3,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 11,
+        "requirementsTotal": 11,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/currency/rounding.mjs"
+        ],
+        "steps": 10,
+        "usage": {
+          "inputTokens": 129330,
+          "cachedInputTokens": 107776,
+          "uncachedInputTokens": 21554,
+          "outputTokens": 1548,
+          "reasoningTokens": null
+        },
+        "latencyMs": 41753,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:e3d3fbb41975b05d9cdc13ab4852ce942d7fb599035926973ca693f881b481b1",
+        "failure": null
+      },
+      {
+        "id": "option-migration:context-pack:1",
+        "task": "option-migration",
+        "condition": "context-pack",
+        "repetition": 1,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 7,
+        "requirementsTotal": 7,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/options.mjs"
+        ],
+        "steps": 6,
+        "usage": {
+          "inputTokens": 121508,
+          "cachedInputTokens": 94976,
+          "uncachedInputTokens": 26532,
+          "outputTokens": 827,
+          "reasoningTokens": null
+        },
+        "latencyMs": 22907,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:ded48dbcdd1c5668392beee60054362d1c8210695019a22a285af45514bad3bd",
+        "failure": null
+      },
+      {
+        "id": "python-config:context-pack:3",
+        "task": "python-config",
+        "condition": "context-pack",
+        "repetition": 3,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 8,
+        "requirementsTotal": 8,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "config_loader.py"
+        ],
+        "steps": 8,
+        "usage": {
+          "inputTokens": 120553,
+          "cachedInputTokens": 94336,
+          "uncachedInputTokens": 26217,
+          "outputTokens": 1298,
+          "reasoningTokens": null
+        },
+        "latencyMs": 32103,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:1e0d55e689cb5dfe94cd9980d07f72a5960326dc58fa98773f8b8bf2d69494a4",
+        "failure": null
+      },
+      {
+        "id": "python-config:task-only:2",
+        "task": "python-config",
+        "condition": "task-only",
+        "repetition": 2,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 8,
+        "requirementsTotal": 8,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "config_loader.py"
+        ],
+        "steps": 6,
+        "usage": {
+          "inputTokens": 118558,
+          "cachedInputTokens": 99968,
+          "uncachedInputTokens": 18590,
+          "outputTokens": 1344,
+          "reasoningTokens": null
+        },
+        "latencyMs": 33435,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:4438536cc6a2766f2cf19dfbc6276ab2f25dbe93955f2adae398792d7c0a3233",
+        "failure": null
+      },
+      {
+        "id": "ledger-late-fee:context-pack:3",
+        "task": "ledger-late-fee",
+        "condition": "context-pack",
+        "repetition": 3,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 7,
+        "requirementsTotal": 7,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/invoices/late-fee.mjs"
+        ],
+        "steps": 10,
+        "usage": {
+          "inputTokens": 126272,
+          "cachedInputTokens": 105088,
+          "uncachedInputTokens": 21184,
+          "outputTokens": 996,
+          "reasoningTokens": null
+        },
+        "latencyMs": 24830,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:55286e0527d6aaab4ca488a484cf944d2071ecde4f3cc97ca0c2a5f1feb2994c",
+        "failure": null
+      },
+      {
+        "id": "ledger-late-fee:context-pack-symbols:3",
+        "task": "ledger-late-fee",
+        "condition": "context-pack-symbols",
+        "repetition": 3,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 7,
+        "requirementsTotal": 7,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/invoices/late-fee.mjs"
+        ],
+        "steps": 6,
+        "usage": {
+          "inputTokens": 127735,
+          "cachedInputTokens": 99456,
+          "uncachedInputTokens": 28279,
+          "outputTokens": 944,
+          "reasoningTokens": null
+        },
+        "latencyMs": 24704,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:55286e0527d6aaab4ca488a484cf944d2071ecde4f3cc97ca0c2a5f1feb2994c",
+        "failure": null
+      },
+      {
+        "id": "ledger-rounding:task-only:2",
+        "task": "ledger-rounding",
+        "condition": "task-only",
+        "repetition": 2,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 11,
+        "requirementsTotal": 11,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/currency/rounding.mjs"
+        ],
+        "steps": 12,
+        "usage": {
+          "inputTokens": 179034,
+          "cachedInputTokens": 149248,
+          "uncachedInputTokens": 29786,
+          "outputTokens": 2370,
+          "reasoningTokens": null
+        },
+        "latencyMs": 61296,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:4f2830d2ef37016357854510e84b468f58f25da6c551bbb034d760eed72902ca",
+        "failure": null
+      },
+      {
+        "id": "python-config:context-pack-symbols:3",
+        "task": "python-config",
+        "condition": "context-pack-symbols",
+        "repetition": 3,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 8,
+        "requirementsTotal": 8,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "config_loader.py"
+        ],
+        "steps": 8,
+        "usage": {
+          "inputTokens": 120912,
+          "cachedInputTokens": 94592,
+          "uncachedInputTokens": 26320,
+          "outputTokens": 1351,
+          "reasoningTokens": null
+        },
+        "latencyMs": 30522,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:c8ba0d031a8b2120b138187ba87ff8e121cb13d64ac5ec0adfe701323833e2ef",
+        "failure": null
+      },
+      {
+        "id": "option-migration:context-pack:2",
+        "task": "option-migration",
+        "condition": "context-pack",
+        "repetition": 2,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 7,
+        "requirementsTotal": 7,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/options.mjs"
+        ],
+        "steps": 8,
+        "usage": {
+          "inputTokens": 95449,
+          "cachedInputTokens": 83584,
+          "uncachedInputTokens": 11865,
+          "outputTokens": 970,
+          "reasoningTokens": null
+        },
+        "latencyMs": 31279,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:c12714abb9f975b5412d7c5ece8dea20b0aaf9aa007df5e9a3d3b6bdb5b6bdcb",
+        "failure": null
+      },
+      {
+        "id": "python-config:context-pack:1",
+        "task": "python-config",
+        "condition": "context-pack",
+        "repetition": 1,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 8,
+        "requirementsTotal": 8,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "config_loader.py"
+        ],
+        "steps": 6,
+        "usage": {
+          "inputTokens": 120527,
+          "cachedInputTokens": 108288,
+          "uncachedInputTokens": 12239,
+          "outputTokens": 1352,
+          "reasoningTokens": null
+        },
+        "latencyMs": 34872,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:e515013e91cc88f0779ebddd22909076d41f2e7fcc2b26b32febbfae12b80145",
+        "failure": null
+      },
+      {
+        "id": "ledger-rounding:task-only:1",
+        "task": "ledger-rounding",
+        "condition": "task-only",
+        "repetition": 1,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 11,
+        "requirementsTotal": 11,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/currency/rounding.mjs"
+        ],
+        "steps": 6,
+        "usage": {
+          "inputTokens": 150268,
+          "cachedInputTokens": 122240,
+          "uncachedInputTokens": 28028,
+          "outputTokens": 1263,
+          "reasoningTokens": null
+        },
+        "latencyMs": 34500,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:a0c9479f57841532d2ef561a21638a101dc5c5dff4d69de6858cbfbb28188560",
+        "failure": null
+      },
+      {
+        "id": "status-alias:context-pack:1",
+        "task": "status-alias",
+        "condition": "context-pack",
+        "repetition": 1,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 7,
+        "requirementsTotal": 7,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/status.mjs"
+        ],
+        "steps": 8,
+        "usage": {
+          "inputTokens": 95123,
+          "cachedInputTokens": 83584,
+          "uncachedInputTokens": 11539,
+          "outputTokens": 695,
+          "reasoningTokens": null
+        },
+        "latencyMs": 21575,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:46eeb5ea0faa70557bb7c5971fd0d5ddd709cfcb58d4af870882cc1b3b723346",
+        "failure": null
+      },
+      {
+        "id": "status-alias:context-pack-symbols:1",
+        "task": "status-alias",
+        "condition": "context-pack-symbols",
+        "repetition": 1,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 7,
+        "requirementsTotal": 7,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/status.mjs"
+        ],
+        "steps": 8,
+        "usage": {
+          "inputTokens": 95289,
+          "cachedInputTokens": 69888,
+          "uncachedInputTokens": 25401,
+          "outputTokens": 680,
+          "reasoningTokens": null
+        },
+        "latencyMs": 19040,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:46eeb5ea0faa70557bb7c5971fd0d5ddd709cfcb58d4af870882cc1b3b723346",
+        "failure": null
+      },
+      {
+        "id": "status-alias:task-only:1",
+        "task": "status-alias",
+        "condition": "task-only",
+        "repetition": 1,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 7,
+        "requirementsTotal": 7,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/status.mjs"
+        ],
+        "steps": 7,
+        "usage": {
+          "inputTokens": 93440,
+          "cachedInputTokens": 52864,
+          "uncachedInputTokens": 40576,
+          "outputTokens": 731,
+          "reasoningTokens": null
+        },
+        "latencyMs": 20150,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:47c3c85bfeb927f7e4823267419c0d1dce1044e81de5087d9e83ff44cc8c692e",
+        "failure": null
+      },
+      {
+        "id": "option-migration:context-pack:3",
+        "task": "option-migration",
+        "condition": "context-pack",
+        "repetition": 3,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 7,
+        "requirementsTotal": 7,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/options.mjs"
+        ],
+        "steps": 8,
+        "usage": {
+          "inputTokens": 95349,
+          "cachedInputTokens": 83584,
+          "uncachedInputTokens": 11765,
+          "outputTokens": 741,
+          "reasoningTokens": null
+        },
+        "latencyMs": 21725,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:ded48dbcdd1c5668392beee60054362d1c8210695019a22a285af45514bad3bd",
+        "failure": null
+      },
+      {
+        "id": "ledger-redaction:task-only:3",
+        "task": "ledger-redaction",
+        "condition": "task-only",
+        "repetition": 3,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 8,
+        "requirementsTotal": 8,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/audit/redact.mjs"
+        ],
+        "steps": 5,
+        "usage": {
+          "inputTokens": 95806,
+          "cachedInputTokens": 69504,
+          "uncachedInputTokens": 26302,
+          "outputTokens": 1075,
+          "reasoningTokens": null
+        },
+        "latencyMs": 27698,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:cd6e3ddb716fbfbe3c28342bac2a7883cdd871832bd75f08c03bd1ce3cfd3a66",
+        "failure": null
+      },
+      {
+        "id": "option-migration:task-only:2",
+        "task": "option-migration",
+        "condition": "task-only",
+        "repetition": 2,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 7,
+        "requirementsTotal": 7,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/options.mjs"
+        ],
+        "steps": 8,
+        "usage": {
+          "inputTokens": 93761,
+          "cachedInputTokens": 75776,
+          "uncachedInputTokens": 17985,
+          "outputTokens": 937,
+          "reasoningTokens": null
+        },
+        "latencyMs": 28504,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:c12714abb9f975b5412d7c5ece8dea20b0aaf9aa007df5e9a3d3b6bdb5b6bdcb",
+        "failure": null
+      },
+      {
+        "id": "ledger-redaction:task-only:1",
+        "task": "ledger-redaction",
+        "condition": "task-only",
+        "repetition": 1,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 8,
+        "requirementsTotal": 8,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/audit/redact.mjs"
+        ],
+        "steps": 8,
+        "usage": {
+          "inputTokens": 121507,
+          "cachedInputTokens": 94976,
+          "uncachedInputTokens": 26531,
+          "outputTokens": 1103,
+          "reasoningTokens": null
+        },
+        "latencyMs": 30880,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:244ac54267109f57aae98aee67d594ef98fb2400a8bebaabf11302fcdc59c536",
+        "failure": null
+      },
+      {
+        "id": "python-config:context-pack:2",
+        "task": "python-config",
+        "condition": "context-pack",
+        "repetition": 2,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 8,
+        "requirementsTotal": 8,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "config_loader.py"
+        ],
+        "steps": 5,
+        "usage": {
+          "inputTokens": 120590,
+          "cachedInputTokens": 94592,
+          "uncachedInputTokens": 25998,
+          "outputTokens": 1341,
+          "reasoningTokens": null
+        },
+        "latencyMs": 39649,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:994520c6cec116aa2e57de4744e308dd5b546210608f6af94209d0baf5c0f231",
+        "failure": null
+      },
+      {
+        "id": "ledger-rounding:context-pack-symbols:1",
+        "task": "ledger-rounding",
+        "condition": "context-pack-symbols",
+        "repetition": 1,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 11,
+        "requirementsTotal": 11,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/currency/rounding.mjs"
+        ],
+        "steps": 11,
+        "usage": {
+          "inputTokens": 157158,
+          "cachedInputTokens": 141568,
+          "uncachedInputTokens": 15590,
+          "outputTokens": 1675,
+          "reasoningTokens": null
+        },
+        "latencyMs": 42959,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:53a9c28d8ffb693d8e71b2c9956ae9d257412fe6b433d64b7cacaee0a9b35698",
+        "failure": null
+      },
+      {
+        "id": "ledger-late-fee:context-pack:1",
+        "task": "ledger-late-fee",
+        "condition": "context-pack",
+        "repetition": 1,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 7,
+        "requirementsTotal": 7,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/invoices/late-fee.mjs"
+        ],
+        "steps": 9,
+        "usage": {
+          "inputTokens": 126537,
+          "cachedInputTokens": 105216,
+          "uncachedInputTokens": 21321,
+          "outputTokens": 994,
+          "reasoningTokens": null
+        },
+        "latencyMs": 25983,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:55286e0527d6aaab4ca488a484cf944d2071ecde4f3cc97ca0c2a5f1feb2994c",
+        "failure": null
+      },
+      {
+        "id": "status-alias:task-only:2",
+        "task": "status-alias",
+        "condition": "task-only",
+        "repetition": 2,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 7,
+        "requirementsTotal": 7,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/status.mjs"
+        ],
+        "steps": 8,
+        "usage": {
+          "inputTokens": 118019,
+          "cachedInputTokens": 106624,
+          "uncachedInputTokens": 11395,
+          "outputTokens": 776,
+          "reasoningTokens": null
+        },
+        "latencyMs": 24717,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:46eeb5ea0faa70557bb7c5971fd0d5ddd709cfcb58d4af870882cc1b3b723346",
+        "failure": null
+      },
+      {
+        "id": "ledger-late-fee:context-pack-symbols:2",
+        "task": "ledger-late-fee",
+        "condition": "context-pack-symbols",
+        "repetition": 2,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 7,
+        "requirementsTotal": 7,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/invoices/late-fee.mjs"
+        ],
+        "steps": 6,
+        "usage": {
+          "inputTokens": 128727,
+          "cachedInputTokens": 107264,
+          "uncachedInputTokens": 21463,
+          "outputTokens": 973,
+          "reasoningTokens": null
+        },
+        "latencyMs": 25297,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:b96307629d876e7a8f480210af91820c510baf739216f66371ebc32df57de55b",
+        "failure": null
+      },
+      {
+        "id": "option-migration:context-pack-symbols:3",
+        "task": "option-migration",
+        "condition": "context-pack-symbols",
+        "repetition": 3,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 7,
+        "requirementsTotal": 7,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/options.mjs"
+        ],
+        "steps": 8,
+        "usage": {
+          "inputTokens": 95525,
+          "cachedInputTokens": 77056,
+          "uncachedInputTokens": 18469,
+          "outputTokens": 847,
+          "reasoningTokens": null
+        },
+        "latencyMs": 23993,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:e058303abacee637b8421bf5e55810aee72f4fc252d997c2c5e218dafcdcf269",
+        "failure": null
+      },
+      {
+        "id": "status-alias:task-only:3",
+        "task": "status-alias",
+        "condition": "task-only",
+        "repetition": 3,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 7,
+        "requirementsTotal": 7,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/status.mjs"
+        ],
+        "steps": 8,
+        "usage": {
+          "inputTokens": 93418,
+          "cachedInputTokens": 82304,
+          "uncachedInputTokens": 11114,
+          "outputTokens": 719,
+          "reasoningTokens": null
+        },
+        "latencyMs": 21762,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:46eeb5ea0faa70557bb7c5971fd0d5ddd709cfcb58d4af870882cc1b3b723346",
+        "failure": null
+      },
+      {
+        "id": "ledger-rounding:context-pack:1",
+        "task": "ledger-rounding",
+        "condition": "context-pack",
+        "repetition": 1,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 11,
+        "requirementsTotal": 11,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/currency/rounding.mjs"
+        ],
+        "steps": 9,
+        "usage": {
+          "inputTokens": 152296,
+          "cachedInputTokens": 130816,
+          "uncachedInputTokens": 21480,
+          "outputTokens": 1488,
+          "reasoningTokens": null
+        },
+        "latencyMs": 41453,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:e87356dc68dc2d3975f8b444ba9e7a75c17f81488300a472eef48aa5cbaf12e6",
+        "failure": null
+      },
+      {
+        "id": "option-migration:task-only:3",
+        "task": "option-migration",
+        "condition": "task-only",
+        "repetition": 3,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 7,
+        "requirementsTotal": 7,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/options.mjs"
+        ],
+        "steps": 8,
+        "usage": {
+          "inputTokens": 93724,
+          "cachedInputTokens": 82432,
+          "uncachedInputTokens": 11292,
+          "outputTokens": 876,
+          "reasoningTokens": null
+        },
+        "latencyMs": 24683,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:f62566ee557faa33bc79065384437e57d636352d04968ca543438dbf87495061",
+        "failure": null
+      },
+      {
+        "id": "status-alias:context-pack:3",
+        "task": "status-alias",
+        "condition": "context-pack",
+        "repetition": 3,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 7,
+        "requirementsTotal": 7,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/status.mjs"
+        ],
+        "steps": 7,
+        "usage": {
+          "inputTokens": 94949,
+          "cachedInputTokens": 83584,
+          "uncachedInputTokens": 11365,
+          "outputTokens": 729,
+          "reasoningTokens": null
+        },
+        "latencyMs": 21007,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:46eeb5ea0faa70557bb7c5971fd0d5ddd709cfcb58d4af870882cc1b3b723346",
+        "failure": null
+      },
+      {
+        "id": "ledger-late-fee:context-pack:2",
+        "task": "ledger-late-fee",
+        "condition": "context-pack",
+        "repetition": 2,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 7,
+        "requirementsTotal": 7,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/invoices/late-fee.mjs"
+        ],
+        "steps": 8,
+        "usage": {
+          "inputTokens": 126085,
+          "cachedInputTokens": 104832,
+          "uncachedInputTokens": 21253,
+          "outputTokens": 969,
+          "reasoningTokens": null
+        },
+        "latencyMs": 24702,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:55286e0527d6aaab4ca488a484cf944d2071ecde4f3cc97ca0c2a5f1feb2994c",
+        "failure": null
+      },
+      {
+        "id": "ledger-late-fee:context-pack-symbols:1",
+        "task": "ledger-late-fee",
+        "condition": "context-pack-symbols",
+        "repetition": 1,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 7,
+        "requirementsTotal": 7,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/invoices/late-fee.mjs"
+        ],
+        "steps": 9,
+        "usage": {
+          "inputTokens": 128888,
+          "cachedInputTokens": 113664,
+          "uncachedInputTokens": 15224,
+          "outputTokens": 967,
+          "reasoningTokens": null
+        },
+        "latencyMs": 27117,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:55286e0527d6aaab4ca488a484cf944d2071ecde4f3cc97ca0c2a5f1feb2994c",
+        "failure": null
+      },
+      {
+        "id": "option-migration:task-only:1",
+        "task": "option-migration",
+        "condition": "task-only",
+        "repetition": 1,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 7,
+        "requirementsTotal": 7,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/options.mjs"
+        ],
+        "steps": 8,
+        "usage": {
+          "inputTokens": 93668,
+          "cachedInputTokens": 82432,
+          "uncachedInputTokens": 11236,
+          "outputTokens": 776,
+          "reasoningTokens": null
+        },
+        "latencyMs": 20543,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:ded48dbcdd1c5668392beee60054362d1c8210695019a22a285af45514bad3bd",
+        "failure": null
+      },
+      {
+        "id": "ledger-rounding:context-pack:3",
+        "task": "ledger-rounding",
+        "condition": "context-pack",
+        "repetition": 3,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 11,
+        "requirementsTotal": 11,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/currency/rounding.mjs"
+        ],
+        "steps": 7,
+        "usage": {
+          "inputTokens": 153701,
+          "cachedInputTokens": 125056,
+          "uncachedInputTokens": 28645,
+          "outputTokens": 1507,
+          "reasoningTokens": null
+        },
+        "latencyMs": 40130,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:6e3a94d43008c101c00b02c3754d483ebc855a53df7fe8d1d81499ed4330cc7d",
+        "failure": null
+      },
+      {
+        "id": "ledger-redaction:context-pack-symbols:2",
+        "task": "ledger-redaction",
+        "condition": "context-pack-symbols",
+        "repetition": 2,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 8,
+        "requirementsTotal": 8,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/audit/redact.mjs"
+        ],
+        "steps": 8,
+        "usage": {
+          "inputTokens": 99674,
+          "cachedInputTokens": 72448,
+          "uncachedInputTokens": 27226,
+          "outputTokens": 1033,
+          "reasoningTokens": null
+        },
+        "latencyMs": 27797,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:b4bcb7f3f651b2e3c0800c6fcbef7aefe568b58f46ef37217c81f9afb81f6a5f",
+        "failure": null
+      },
+      {
+        "id": "ledger-late-fee:task-only:2",
+        "task": "ledger-late-fee",
+        "condition": "task-only",
+        "repetition": 2,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 7,
+        "requirementsTotal": 7,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/invoices/late-fee.mjs"
+        ],
+        "steps": 9,
+        "usage": {
+          "inputTokens": 135430,
+          "cachedInputTokens": 118400,
+          "uncachedInputTokens": 17030,
+          "outputTokens": 951,
+          "reasoningTokens": null
+        },
+        "latencyMs": 24307,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:55286e0527d6aaab4ca488a484cf944d2071ecde4f3cc97ca0c2a5f1feb2994c",
+        "failure": null
+      },
+      {
+        "id": "status-alias:context-pack-symbols:2",
+        "task": "status-alias",
+        "condition": "context-pack-symbols",
+        "repetition": 2,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 7,
+        "requirementsTotal": 7,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/status.mjs"
+        ],
+        "steps": 8,
+        "usage": {
+          "inputTokens": 95475,
+          "cachedInputTokens": 77312,
+          "uncachedInputTokens": 18163,
+          "outputTokens": 820,
+          "reasoningTokens": null
+        },
+        "latencyMs": 25583,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:46eeb5ea0faa70557bb7c5971fd0d5ddd709cfcb58d4af870882cc1b3b723346",
+        "failure": null
+      },
+      {
+        "id": "ledger-late-fee:task-only:3",
+        "task": "ledger-late-fee",
+        "condition": "task-only",
+        "repetition": 3,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 7,
+        "requirementsTotal": 7,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/invoices/late-fee.mjs"
+        ],
+        "steps": 10,
+        "usage": {
+          "inputTokens": 123182,
+          "cachedInputTokens": 103040,
+          "uncachedInputTokens": 20142,
+          "outputTokens": 991,
+          "reasoningTokens": null
+        },
+        "latencyMs": 25243,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:938eb34d306969ae7e1d53deec030819e81b16ff36ce83a5d71242f3ac4e5f6a",
+        "failure": null
+      },
+      {
+        "id": "ledger-redaction:task-only:2",
+        "task": "ledger-redaction",
+        "condition": "task-only",
+        "repetition": 2,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 8,
+        "requirementsTotal": 8,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/audit/redact.mjs"
+        ],
+        "steps": 7,
+        "usage": {
+          "inputTokens": 95858,
+          "cachedInputTokens": 83456,
+          "uncachedInputTokens": 12402,
+          "outputTokens": 996,
+          "reasoningTokens": null
+        },
+        "latencyMs": 26335,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:cd6e3ddb716fbfbe3c28342bac2a7883cdd871832bd75f08c03bd1ce3cfd3a66",
+        "failure": null
+      },
+      {
+        "id": "ledger-redaction:context-pack:2",
+        "task": "ledger-redaction",
+        "condition": "context-pack",
+        "repetition": 2,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 8,
+        "requirementsTotal": 8,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/audit/redact.mjs"
+        ],
+        "steps": 5,
+        "usage": {
+          "inputTokens": 98323,
+          "cachedInputTokens": 85120,
+          "uncachedInputTokens": 13203,
+          "outputTokens": 1140,
+          "reasoningTokens": null
+        },
+        "latencyMs": 28997,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:cd6e3ddb716fbfbe3c28342bac2a7883cdd871832bd75f08c03bd1ce3cfd3a66",
+        "failure": null
+      },
+      {
+        "id": "ledger-rounding:task-only:3",
+        "task": "ledger-rounding",
+        "condition": "task-only",
+        "repetition": 3,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 11,
+        "requirementsTotal": 11,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/currency/rounding.mjs"
+        ],
+        "steps": 10,
+        "usage": {
+          "inputTokens": 149081,
+          "cachedInputTokens": 135168,
+          "uncachedInputTokens": 13913,
+          "outputTokens": 1293,
+          "reasoningTokens": null
+        },
+        "latencyMs": 36237,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:714c1bef86b0336589ef6fe03b6ef04bb670d37516faf4976155aa8b086af3ed",
+        "failure": null
+      },
+      {
+        "id": "option-migration:context-pack-symbols:1",
+        "task": "option-migration",
+        "condition": "context-pack-symbols",
+        "repetition": 1,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 7,
+        "requirementsTotal": 7,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/options.mjs"
+        ],
+        "steps": 4,
+        "usage": {
+          "inputTokens": 95397,
+          "cachedInputTokens": 83712,
+          "uncachedInputTokens": 11685,
+          "outputTokens": 877,
+          "reasoningTokens": null
+        },
+        "latencyMs": 26276,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:e058303abacee637b8421bf5e55810aee72f4fc252d997c2c5e218dafcdcf269",
+        "failure": null
+      },
+      {
+        "id": "status-alias:context-pack:2",
+        "task": "status-alias",
+        "condition": "context-pack",
+        "repetition": 2,
+        "status": "completed",
+        "success": true,
+        "requirementsPassed": 7,
+        "requirementsTotal": 7,
+        "requirementViolations": 0,
+        "unnecessaryEdits": 0,
+        "changedFiles": [
+          "src/status.mjs"
+        ],
+        "steps": 7,
+        "usage": {
+          "inputTokens": 94966,
+          "cachedInputTokens": 83584,
+          "uncachedInputTokens": 11382,
+          "outputTokens": 729,
+          "reasoningTokens": null
+        },
+        "latencyMs": 22247,
+        "humanIntervention": 0,
+        "patchDigest": "sha256:46eeb5ea0faa70557bb7c5971fd0d5ddd709cfcb58d4af870882cc1b3b723346",
+        "failure": null
+      }
+    ]
+  }
+}

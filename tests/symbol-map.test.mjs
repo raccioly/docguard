@@ -16,6 +16,7 @@
  * @req docguard.symbol-map#FR-007
  * @req docguard.symbol-map#FR-009
  * @req docguard.symbol-map#SC-004
+ * @req docguard.symbol-map#FR-011
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -25,7 +26,7 @@ import { delimiter, dirname, join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { buildSymbolMap, MAX_SYMBOLS_PER_FILE, pageRank, SYMBOL_MAP_MAX_BYTES, symbolMapBudget } from '../cli/scanners/symbol-map.mjs';
 import { clearImportGraphCache } from '../cli/scanners/import-graph.mjs';
-import { aggregateTrials, buildResult, buildTrialPrompt, decideSymbolPromotion, loadManifest, V2_MANIFEST_DIGEST, verifyFixtures } from '../benchmarks/agent-context/run.mjs';
+import { aggregateTrials, buildResult, buildTrialPrompt, decideSymbolPromotion, loadManifest, V2_MANIFEST_DIGEST, V3_MANIFEST_DIGEST, verifyFixtures } from '../benchmarks/agent-context/run.mjs';
 
 const CLI = resolve('cli/docguard.mjs');
 
@@ -246,5 +247,98 @@ describe('the v2 protocol decides (User Story 2, FR-005, FR-006, FR-008)', () =>
     const full = matrix(() => null);
     assert.equal(decide(full.slice(1)), 'incomplete');
     assert.equal(decide(full.map((t, i) => (i === 0 ? { ...t, status: 'infrastructure-failed', success: false } : t))), 'incomplete');
+  });
+});
+
+describe('the v3 protocol amends only the executable pin (FR-011)', () => {
+  const V2_PATH = 'benchmarks/agent-context/manifest-v2.json';
+  const V3_PATH = 'benchmarks/agent-context/manifest-v3.json';
+  const read = path => JSON.parse(readFileSync(path, 'utf8'));
+  const unpinned = manifest => {
+    const copy = structuredClone(manifest);
+    for (const key of ['id', 'frozenAt']) delete copy.protocol[key];
+    for (const key of ['cliVersion', 'id']) delete copy.protocol.model[key];
+    return copy;
+  };
+
+  it('is frozen by its own digest, pinned to an executable that runs, and v2 still loads', () => {
+    const v3 = loadManifest(resolve(V3_PATH));
+    assert.equal(v3.protocol.id, 'docguard-agent-context-v3');
+    assert.equal(v3.protocol.frozenAt, '2026-10-10');
+    assert.equal(v3.protocol.model.cliVersion, '0.162.0-alpha.17.2');
+    assert.equal(v3.protocol.model.id, 'gpt-6.1-sol');
+    assert.equal(v3.protocol.model.reasoningEffort, 'low');
+    assert.match(V3_MANIFEST_DIGEST, /^sha256:[a-f0-9]{64}$/);
+    assert.notEqual(V3_MANIFEST_DIGEST, V2_MANIFEST_DIGEST);
+    assert.equal(loadManifest(resolve(V2_PATH)).protocol.id, 'docguard-agent-context-v2', 'v2 stays frozen and loadable');
+  });
+
+  it('equals v2 in every task, fixture, condition, threshold, repetition, timeout and seed', () => {
+    assert.deepEqual(unpinned(read(V3_PATH)), unpinned(read(V2_PATH)));
+    assert.notDeepEqual(read(V3_PATH).protocol.model, read(V2_PATH).protocol.model);
+  });
+
+  it('rejects the v3 manifest after any change to a frozen field, including the pin', t => {
+    const dir = mkdtempSync(join(tmpdir(), 'docguard-v3-'));
+    t.after(() => rmSync(dir, { recursive: true, force: true }));
+    for (const change of [
+      m => { m.protocol.seed = 'other'; },
+      m => { m.protocol.repetitions = 4; },
+      m => { m.protocol.model.reasoningEffort = 'high'; },
+      m => { m.protocol.model.id = 'gpt-5.3-codex-spark'; },
+      m => { m.promotion.noRegression.maxAdditionalFailures = 2; },
+      m => { m.tasks[5].prompt += ' Hint: look in src/audit.'; },
+    ]) {
+      const copy = read(V3_PATH);
+      change(copy);
+      const path = join(dir, 'manifest-v3.json');
+      writeFileSync(path, JSON.stringify(copy));
+      assert.throws(() => loadManifest(path), /the v3 manifest changed after it was frozen/);
+    }
+  });
+
+  it('is accepted by the CLI, which verifies every v3 fixture without a model', () => {
+    const run = spawnSync(process.execPath, ['benchmarks/agent-context/run.mjs', '--protocol', 'v3'], { encoding: 'utf8' });
+    assert.equal(run.status, 0, run.stderr);
+    const out = JSON.parse(run.stdout);
+    assert.equal(out.status, 'validated');
+    assert.equal(out.protocol, 'docguard-agent-context-v3');
+    assert.equal(out.trials, 54);
+  });
+
+  it('recorded every v3 trial, and its decision is the one the frozen rule computes from them (SC-004, T009-T010)', () => {
+    const manifest = loadManifest(resolve(V3_PATH));
+    const result = read('benchmarks/agent-context/results/observed-v3.json');
+    assert.equal(result.core.protocolId, 'docguard-agent-context-v3');
+    assert.equal(result.core.manifestDigest, V3_MANIFEST_DIGEST);
+    assert.equal(result.observations.environment.codex, `codex-cli ${manifest.protocol.model.cliVersion}`);
+    const { trials } = result.observations;
+    assert.equal(trials.length, 54, 'every run is kept');
+    assert.deepEqual(trials.map(t => t.id), result.core.trialOrder);
+    assert.equal(trials.filter(t => t.status === 'infrastructure-failed').length, 0);
+    const nav = new Set(manifest.tasks.filter(t => t.navigationBound).map(t => t.id));
+    const aggregate = aggregateTrials(manifest, trials);
+    const navigationAggregate = aggregateTrials(manifest, trials.filter(t => nav.has(t.task)));
+    assert.deepEqual(result.core.aggregate, aggregate);
+    assert.deepEqual(result.core.navigationAggregate, navigationAggregate);
+    assert.deepEqual(result.core.decision, decideSymbolPromotion(manifest, aggregate, navigationAggregate), 'no manual override');
+    assert.equal(result.core.decision.status, 'opt-in');
+    assert.match(readFileSync('benchmarks/agent-context/results/README-v3.md', 'utf8'), /\*\*Decision: `opt-in`\.\*\*/);
+  });
+
+  it('records v3 results in the shared symbol-map result format', () => {
+    const manifest = loadManifest(resolve(V3_PATH));
+    const trials = manifest.tasks.flatMap(task => manifest.conditions.flatMap(condition => [1, 2, 3].map(repetition => ({
+      id: `${task.id}:${condition}:${repetition}`, task: task.id, condition, repetition, status: 'completed', success: true,
+      requirementViolations: 0, unnecessaryEdits: 0, steps: 10, latencyMs: 1000, usage: { uncachedInputTokens: 1000 },
+    }))));
+    const result = buildResult(manifest, manifest.tasks.map(task => ({ id: task.id, fixtureDigest: task.fixtureDigest })), trials, 'test');
+    assert.equal(result.$schema, 'https://raccioly.github.io/docguard/schemas/docguard-agent-context-result-v2.schema.json');
+    assert.equal(result.core.protocolId, 'docguard-agent-context-v3');
+    assert.ok(result.core.navigationAggregate['context-pack-symbols']);
+    assert.equal(result.core.decision.status, 'opt-in');
+    for (const [file, pointer] of [['docguard-agent-context-benchmark-v2.schema.json', s => s.properties.protocol.properties.id], ['docguard-agent-context-result-v2.schema.json', s => s.properties.core.properties.protocolId]]) {
+      assert.deepEqual(pointer(read(join('schemas', file))).enum, ['docguard-agent-context-v2', 'docguard-agent-context-v3'], file);
+    }
   });
 });

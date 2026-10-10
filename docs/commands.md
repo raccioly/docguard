@@ -684,9 +684,11 @@ npx docguard-cli memory --pack --symbols   # …plus a symbol map (opt-in)
 `--symbols` adds a `## Symbol map`: the source files most central in the static
 import graph (PageRank), each with the names it exports, cut to
 `memory.symbolMap.maxBytes` (default 4096) at a whole line. It is byte-identical
-for the same tree and names what it left out. It stays opt-in until the v2
-agent-context benchmark decides whether the extra bytes pay for themselves
-(`benchmarks/agent-context/results/README-v2.md`).
+for the same tree and names what it left out. It stays opt-in: the frozen
+agent-context benchmark (protocol v3, 54 trials, 2026-10-10) found no
+regression, but none of the gains the protocol required in advance, so the
+extra bytes are not added to every session
+(`benchmarks/agent-context/results/README-v3.md`).
 
 ---
 
