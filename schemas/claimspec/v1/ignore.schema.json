@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:claimspec:v1:ignore",
+  "title": "claimspec v1 — structured ignore",
+  "description": "Reviewable scoping. Every entry carries a reason. Tools may also accept a plain gitignore-syntax text file as shorthand for path entries without reasons; this structured form is what an auditor reads.",
+  "type": "object",
+  "required": ["schemaVersion", "entries"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kind", "pattern", "reason"],
+        "properties": {
+          "kind": {
+            "description": "`path` = glob over repo paths; `claim` = claim id; `fault` = `<claimId>/<faultId>`; `fingerprint` = an evidence fingerprint.",
+            "enum": ["path", "claim", "fault", "fingerprint"]
+          },
+          "pattern": { "type": "string", "minLength": 1, "maxLength": 512 },
+          "reason": { "type": "string", "minLength": 8, "maxLength": 2000 },
+          "by": { "type": "string", "maxLength": 256 },
+          "at": { "$ref": "urn:claimspec:v1:common#/$defs/isoDateTime" },
+          "expires": {
+            "description": "After this instant the entry no longer applies. Tools warn on expired entries.",
+            "$ref": "urn:claimspec:v1:common#/$defs/isoDateTime"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

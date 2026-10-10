@@ -1152,12 +1152,12 @@
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 640
+            "line": 643
           },
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 667
+            "line": 670
           },
           {
             "requirementId": "FR-021",
@@ -3904,7 +3904,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/shared-ignore.mjs",
-            "line": 113
+            "line": 117
           },
           {
             "requirementId": "FR-007",
@@ -4289,7 +4289,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/findings.mjs",
-            "line": 934
+            "line": 953
           },
           {
             "requirementId": "FR-008",
@@ -4534,7 +4534,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/shared-ignore.mjs",
-            "line": 85
+            "line": 89
           },
           {
             "requirementId": "FR-006",
@@ -5001,6 +5001,257 @@
             "requirementId": "SC-003",
             "file": "tests/todo-tracking.test.mjs",
             "line": 207
+          }
+        ]
+      }
+    },
+    {
+      "specId": "docguard.ignore-reasons",
+      "path": "specs/057-ignore-reasons/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "approved",
+          "delivery": "implemented",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": "living"
+        },
+        "relations": {
+          "extends": [
+            "docguard.ignore-and-todo-parsing"
+          ],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md",
+            "docs-canonical/DATA-MODEL.md",
+            "docs-canonical/SECURITY.md"
+          ]
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.ignore-reasons#FR-001",
+          "docguard.ignore-reasons#FR-002",
+          "docguard.ignore-reasons#FR-003",
+          "docguard.ignore-reasons#FR-004",
+          "docguard.ignore-reasons#FR-005",
+          "docguard.ignore-reasons#FR-006",
+          "docguard.ignore-reasons#FR-007",
+          "docguard.ignore-reasons#FR-008",
+          "docguard.ignore-reasons#FR-009",
+          "docguard.ignore-reasons#FR-010",
+          "docguard.ignore-reasons#FR-011",
+          "docguard.ignore-reasons#FR-012",
+          "docguard.ignore-reasons#SC-001",
+          "docguard.ignore-reasons#SC-002"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/057-ignore-reasons/spec.md",
+            "digest": "sha256:ecaad624c4bb2615808d9a9407af945233f1fd92ccdc6b1419a85bb52b1977be"
+          },
+          {
+            "path": "specs/057-ignore-reasons/plan.md",
+            "digest": "sha256:55494a755d3275d2e39a7b8da9a06fef67b0617e58daa7d581c20ffce45be50c"
+          },
+          {
+            "path": "specs/057-ignore-reasons/tasks.md",
+            "digest": "sha256:9ed9518e819504387044a9d89912a85e4272ffea5ad03cc54b609e916d554c13"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 12,
+          "total": 12
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/shared-ignore.mjs",
+            "line": 218
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/shared-ignore.mjs",
+            "line": 205
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/shared-ignore.mjs",
+            "line": 219
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/shared-ignore.mjs",
+            "line": 220
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/shared-ignore.mjs",
+            "line": 221
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/findings.mjs",
+            "line": 927
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/validators/suppressions.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/findings.mjs",
+            "line": 1189
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/findings.mjs",
+            "line": 1199
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/scanners/suppressions.mjs",
+            "line": 24
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/validator-markers.mjs",
+            "line": 91
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/validator-markers.mjs",
+            "line": 98
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/commands/ignore.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "cli/commands/ignore.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "cli/writers/claimspec-ignore.mjs",
+            "line": 21
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "cli/writers/claimspec-ignore.mjs",
+            "line": 45
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "cli/claimspec-schema.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/shared-ignore.mjs",
+            "line": 392
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/shared-ignore.mjs",
+            "line": 439
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/writers/claimspec-ignore.mjs",
+            "line": 35
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "cli/writers/claimspec-ignore.mjs",
+            "line": 46
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/ignore-reasons.test.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/ignore-reasons.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/ignore-reasons.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/ignore-reasons.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/ignore-reasons.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/ignore-reasons.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/ignore-reasons.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/ignore-reasons.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "tests/ignore-reasons.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "tests/ignore-reasons.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "tests/ignore-reasons.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "tests/ignore-reasons.test.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/ignore-reasons.test.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/ignore-reasons.test.mjs",
+            "line": 18
           }
         ]
       }
@@ -6218,7 +6469,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/docguard.mjs",
-            "line": 670
+            "line": 681
           },
           {
             "requirementId": "FR-006",
@@ -7961,7 +8212,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/docguard.mjs",
-            "line": 840
+            "line": 852
           },
           {
             "requirementId": "FR-001",
@@ -7971,17 +8222,17 @@
           {
             "requirementId": "FR-002",
             "file": "cli/docguard.mjs",
-            "line": 841
+            "line": 853
           },
           {
             "requirementId": "FR-003",
             "file": "cli/docguard.mjs",
-            "line": 842
+            "line": 854
           },
           {
             "requirementId": "FR-004",
             "file": "cli/docguard.mjs",
-            "line": 843
+            "line": 855
           },
           {
             "requirementId": "FR-005",
@@ -8450,7 +8701,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/docguard.mjs",
-            "line": 78
+            "line": 79
           }
         ],
         "testEvidence": [
@@ -9955,7 +10206,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/docguard.mjs",
-            "line": 931
+            "line": 943
           },
           {
             "requirementId": "FR-011",
