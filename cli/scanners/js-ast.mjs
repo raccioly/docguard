@@ -248,7 +248,7 @@ export function extractJsSchemaBodies(content, filename = 'file.ts') {
 // are middleware-ish; `all` is included (it IS a route), `use` is not.
 const HTTP_METHOD_NAMES = new Set(['get', 'post', 'put', 'delete', 'patch', 'head', 'options', 'all']);
 
-function topLevelStaticStrings(ast) {
+export function topLevelStaticStrings(ast) {
   const declarations = new Map();
   const body = ast?.program?.body || [];
   for (const statement of body) {
@@ -368,7 +368,7 @@ export const AUTH_CHECK_RE = new RegExp([
 ].join('|'));
 
 /** Is this call argument auth middleware (`requireAuth`, `passport.authenticate(...)`, `[auth, admin]`)? */
-function isAuthMiddlewareNode(node) {
+export function isAuthMiddlewareNode(node) {
   if (!node) return false;
   if (node.type === 'Identifier') return isAuthMiddlewareName(node.name);
   if (node.type === 'MemberExpression' && !node.computed) {
@@ -395,7 +395,7 @@ const HOOK_KEYS = new Set(['preHandler', 'onRequest', 'preValidation', 'preParsi
 const FUNCTION_TYPES = new Set(['FunctionExpression', 'ArrowFunctionExpression', 'FunctionDeclaration']);
 
 /** Same-file function bodies by name: `function x(){}` and `const x = () => {}`. */
-function functionBodies(ast) {
+export function functionBodies(ast) {
   const bodies = new Map();
   walk(ast, node => {
     if (node.type === 'FunctionDeclaration' && node.id?.name) bodies.set(node.id.name, node);
@@ -442,7 +442,7 @@ function prefixCovers(prefix, path) {
 }
 
 /** Extract a statically knowable string path from a call argument. */
-function pathArgValue(node, constants = new Map(), dynamicPlaceholder = true) {
+export function pathArgValue(node, constants = new Map(), dynamicPlaceholder = true) {
   if (!node) return null;
   if (node.type === 'StringLiteral') return node.value;
   if (node.type === 'Identifier') return constants.get(node.name) ?? null;

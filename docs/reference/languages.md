@@ -32,7 +32,7 @@ Every finding carries a `parserTier` field (`cli/findings.mjs`,
 | `regex-fallback` | The language has a parser tier, but it was not used for this file | The parser is missing, the interpreter is missing, or the file failed to parse |
 | `fallback-language` | The language has no parser tier at all; the file was matched by pattern | Every other extension: Go, Java, Kotlin, Ruby, Rust, PHP, C# and the rest |
 | `mixed` | The finding draws on files of different tiers | The reason names the weakest tier present |
-| `not-applicable` | No scanned code is behind the finding, or the scanner records no tier | Document-only checks, and the JS/TS route scanners (see below) |
+| `not-applicable` | No scanned code is behind the finding, or the scanner records no tier | Document-only checks, and the Express, Next.js, Fastify and Koa route scanners (see below) |
 
 What a degraded tier changes:
 
@@ -82,7 +82,7 @@ syntax tree. A dash means nothing is extracted.
 
 | Language | Extensions | Tier | Routes | Models and entities | Env vars | Import graph |
 |---|---|---|---|---|---|---|
-| JavaScript, TypeScript | `.js .mjs .cjs .jsx .ts .tsx` (`.mts .cts`: parser tier and test counts only) | `js-ast`, else `regex-fallback` | Express, Next.js, Fastify, Hono | Prisma, Drizzle, Mongoose; TypeORM, Sequelize, Knex (names only); Zod when no ORM is found | Yes | Yes |
+| JavaScript, TypeScript | `.js .mjs .cjs .jsx .ts .tsx` (`.mts .cts`: parser tier and test counts only) | `js-ast`, else `regex-fallback` | Express, Next.js, Fastify, Hono, Koa, NestJS, Cloudflare Workers, itty-router | Prisma, Drizzle, Mongoose; TypeORM, Sequelize, Knex (names only); Zod when no ORM is found | Yes | Yes |
 | Python | `.py` | `py-ast`, else `regex-fallback` | FastAPI, Flask, Django and Django REST framework | SQLAlchemy, Django models, SQLModel; Pydantic when no ORM model is found | Yes | Yes, with an interpreter only |
 | Go | `.go` | `fallback-language` | Gin, Echo, Chi, Fiber, gorilla/mux, and `net/http` forms in those projects | Structs with `json`, `gorm`, `db` or `bson` tags | Yes | - |
 | Java | `.java` | `fallback-language` | Spring | JPA `@Entity` classes | Yes, plus Spring config placeholders | - |
@@ -111,7 +111,7 @@ graph does not read, with file counts.
 
 | Language | Reported as partial when |
 |---|---|
-| JavaScript, TypeScript | `@babel/parser` is missing or a file fails to parse (`regex-fallback`). The JS/TS route scanners attach no tier to their routes, so API-surface findings drawn from them carry `not-applicable` |
+| JavaScript, TypeScript | `@babel/parser` is missing or a file fails to parse (`regex-fallback`). The Express, Next.js, Fastify and Koa route scanners attach no tier to their routes, so API-surface findings drawn from them carry `not-applicable`; NestJS, Cloudflare Workers, Hono and itty-router routes carry their file's tier. A NestJS, Worker, Hono or itty-router path that is not literal text or a same-file constant (an imported constant, a `startsWith` or regular-expression dispatch) is omitted, and the API-surface check reports `partial` with the count and the first location |
 | Python | No interpreter is found, or a file fails to parse (`regex-fallback`). Router prefixes and Django includes that cannot be resolved are flagged as limitations, never guessed |
 | Go, Java, Kotlin, Ruby, Rust | Always, when routes or env vars were read from them (`fallback-language`). A route whose path or prefix is not literal text or a resolvable constant is omitted. A framework read by pattern that yields no route makes the API-surface check `partial`, naming the framework and the files read |
 | PHP, C# | When env vars were read from them (`fallback-language`) |
@@ -161,8 +161,11 @@ the code scan (`cli/scanners/doc-tools.mjs`).
 | Next.js App Router | A `next` dependency | `app/api/**/route.*` and `src/app/api/**/route.*`: exported `GET`, `POST`, `PUT`, `DELETE`, `PATCH`, `HEAD`, `OPTIONS`; route groups dropped; `[id]` and catch-all segments as parameters; auth from the handler or a `middleware` matcher | Syntax tree, pattern fallback; routes carry no tier | `routes.mjs` |
 | Next.js Pages Router | A `next` dependency | `pages/api/**` and `src/pages/api/**` (files starting with `_` skipped); methods from `req.method === 'X'` checks and `case 'X'` labels, `ALL` when none is found | Pattern; routes carry no tier | `routes.mjs` |
 | Fastify | A `fastify` dependency | Method shorthand (`fastify.get('/x')`) and the `route({ method, url })` object form | Syntax tree, pattern fallback; routes carry no tier | `routes.mjs` |
-| Hono | A `hono` dependency | Method shorthand on any receiver | Syntax tree, pattern fallback; routes carry no tier | `routes.mjs` |
-| Koa | A `koa` dependency with no Express, Fastify, NestJS or Hono dependency | Method shorthand on any receiver, including `@koa/router` (`router.get('/x')`), read by the same scanner as Hono; routes carry `source: koa` | Syntax tree, pattern fallback; routes carry no tier | `project-type.mjs`, `routes.mjs` |
+| NestJS | A `@nestjs/core` dependency (even beside `express`) | `@Controller` paths (string, array, `{ path, version }`) joined with `@Get`, `@Post`, `@Put`, `@Patch`, `@Delete`, `@All`, `@Head`, `@Options`, `@Search` imported from `@nestjs/common`; `setGlobalPrefix` with `exclude`; URI versioning from `enableVersioning` (`prefix`, `defaultVersion`), `@Version()` and `VERSION_NEUTRAL`; `RouterModule.register` paths with `children`. Settings apply to controllers under the directory that declares them, never from test files. Auth from `@UseGuards` naming an auth guard (`AuthGuard('jwt')`, `JwtAuthGuard`, `RolesGuard`; not `ThrottlerGuard`), a custom `@Auth()` decorator, or a global guard (`useGlobalGuards`, `APP_GUARD`) unless `@Public()` or a similar decorator opts out | `js-ast`, else `regex-fallback`, per route | `nest-routes.mjs` |
+| Cloudflare Workers | A `wrangler.toml`, `wrangler.json` or `wrangler.jsonc` | The paths the public `fetch` entry (`export default { fetch }`, a default-exported class, `addEventListener('fetch')`) and the modules it imports test: `pathname` compared with a literal (also the negated early-return form), `switch` on the pathname, an object or `Map` keyed by pathname, `URLPattern` with a literal pathname. Methods from `request.method` checks in the condition, inside the branch or around it, else `ALL`. Other classes (Durable Objects) and `location.pathname` are not read. Plus every itty-router and Hono route, as below | `js-ast`, else `regex-fallback`, per route | `worker-routes.mjs`, `router-routes.mjs` |
+| Hono | A `hono` dependency (or Hono on Workers) | Method shorthand, `on()` and path-less chained methods on `new Hono()` values and on any receiver named like a router; `basePath()`; `app.route('/prefix', subApp)` mounts across files, including `tsconfig` path aliases; auth from the route's middleware or an earlier covering `use()` | `js-ast`, else `regex-fallback`, per route | `router-routes.mjs` |
+| itty-router | In a Cloudflare Workers or Hono project | Method shorthand on `Router()`, `AutoRouter()` and `IttyRouter()` values with their `base`; a call that delegates to another router's `fetch` is not a route; auth from the route's middleware, an earlier `all('*', auth)` or `AutoRouter({ before })` | `js-ast`, else `regex-fallback`, per route | `router-routes.mjs` |
+| Koa | A `koa` dependency with no Express, Fastify, NestJS or Hono dependency | Method shorthand on any receiver, including `@koa/router` (`router.get('/x')`); routes carry `source: koa` | Syntax tree, pattern fallback; routes carry no tier | `project-type.mjs`, `routes.mjs` |
 | FastAPI | A `fastapi` dependency | Route decorators on any `FastAPI()` or `APIRouter()` object; prefixes from `APIRouter(prefix=)`, `include_router(..., prefix=)` and `mount()`, across modules; auth from `Depends()`/`Security()` dependencies whose names signal auth | `py-ast`, else `regex-fallback` | `python-routes.mjs`, `py-outline.mjs` |
 | Flask | A `flask` dependency | Route decorators on `Flask()` and `Blueprint()` objects; `url_prefix` on the blueprint and on `register_blueprint`; auth decorators | `py-ast`, else `regex-fallback` | `python-routes.mjs` |
 | Django, Django REST framework | A `django` dependency or `manage.py` | The URL configuration from `ROOT_URLCONF`: `path()`, `re_path()`, `url()`, `include()`; DRF `DefaultRouter`/`SimpleRouter` registrations expanded to list, detail and `@action` routes; declared view methods; auth decorators, mixins and permission classes | `py-ast`, else `regex-fallback` | `python-routes.mjs` |
@@ -171,8 +174,7 @@ the code scan (`cli/scanners/doc-tools.mjs`).
 | Gin, Echo, Chi, Fiber, gorilla/mux | One of these in `go.mod` | Routes with prefixes composed from `Group`, `Route`, `Mount`, `PathPrefix(...).Subrouter()` and `http.StripPrefix`, across functions and files; `Any`, `Handle`, `HandleFunc`, `Match`, `Method`, `.Methods(...)`; Go 1.22 method patterns. `_test.go` files are skipped | `fallback-language` | `go-routes.mjs` |
 | Axum, Actix Web, Rocket | One of these in `Cargo.toml` | Axum `.route("/x", get(h))`, Actix `.route("/x", web::get())`, Rocket `#[get("/x")]`, each on one line; no prefix composition | `fallback-language` | `routes.mjs` |
 
-Classified but not read for routes: NestJS (decorator routes such as `@Get()`
-are not extracted), Cloudflare Workers, Starlette, Sinatra, Warp (the Rust
+Classified but not read for routes: Starlette, Sinatra, Warp (the Rust
 scanner runs but has no Warp patterns), Tide, Laravel, Symfony and ASP.NET
 Core. A Go project that uses only `net/http`, with none of the routers above in
 `go.mod`, has no framework and its routes are not scanned.

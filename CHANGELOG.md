@@ -9,6 +9,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Routes for NestJS and Cloudflare Workers** (`specs/058-js-framework-routes`,
+  part of #519). Both were detected but their routes were not read, so the
+  API-surface check, `diff` and `generate` saw no endpoints.
+  - NestJS: `@Controller` paths joined with `@Get`, `@Post` and the other
+    method decorators, under `setGlobalPrefix` (with `exclude`), URI versioning
+    (`@Version`, `defaultVersion`, `VERSION_NEUTRAL`) and `RouterModule`
+    paths. `@UseGuards` with an auth guard, a global auth guard and
+    `@Public()`-style opt-outs set each route's auth; `ThrottlerGuard` is not
+    auth. A NestJS project that also lists `express` is now labelled NestJS.
+  - Cloudflare Workers: the paths a Worker's `fetch` entry tests
+    (`url.pathname === '/x'`, `switch`, tables keyed by pathname, `URLPattern`),
+    with methods from the `request.method` checks around them. A Durable
+    Object's `fetch` is not public and is not read.
+  - itty-router (with `base`) and Hono on Workers. Hono now applies
+    `basePath()` and `app.route('/prefix', subApp)` across files, with or
+    without Wrangler, and reads routers with any name.
+
+  These routes carry the tier they were read at (`js-ast`, or
+  `regex-fallback` for a file that does not parse). A path DocGuard cannot
+  read statically, such as an imported constant or a `startsWith` dispatch, is
+  left out, and the API-surface check reports `partial` with the count and the
+  first location.
+
+
 - **A documentation site with the guides a larger project ships**
   (`specs/053-user-documentation`). The GitHub Pages site
   (raccioly.github.io/docguard) now has a landing page, sidebar navigation and

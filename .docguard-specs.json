@@ -3859,12 +3859,12 @@
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/routes.mjs",
-            "line": 12
+            "line": 13
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/routes.mjs",
-            "line": 14
+            "line": 15
           },
           {
             "requirementId": "FR-002",
@@ -3909,7 +3909,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/scanners/routes.mjs",
-            "line": 15
+            "line": 16
           },
           {
             "requirementId": "FR-007",
@@ -3919,12 +3919,12 @@
           {
             "requirementId": "FR-008",
             "file": "cli/scanners/routes.mjs",
-            "line": 16
+            "line": 17
           },
           {
             "requirementId": "FR-008",
             "file": "cli/scanners/routes.mjs",
-            "line": 867
+            "line": 936
           },
           {
             "requirementId": "FR-009",
@@ -5006,6 +5006,192 @@
       }
     },
     {
+      "specId": "docguard.js-framework-routes",
+      "path": "specs/058-js-framework-routes/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.js-framework-routes#FR-001",
+          "docguard.js-framework-routes#FR-002",
+          "docguard.js-framework-routes#FR-003",
+          "docguard.js-framework-routes#FR-004",
+          "docguard.js-framework-routes#FR-005",
+          "docguard.js-framework-routes#FR-006",
+          "docguard.js-framework-routes#FR-007",
+          "docguard.js-framework-routes#FR-008",
+          "docguard.js-framework-routes#SC-001",
+          "docguard.js-framework-routes#SC-002"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/058-js-framework-routes/spec.md",
+            "digest": "sha256:dc2c3830934be43d6765e3e1008c2519fff0c139eef358722c99ad65c10a9ae7"
+          },
+          {
+            "path": "specs/058-js-framework-routes/plan.md",
+            "digest": "sha256:0c12691b1a117b0935c17b705a152c6661c1fe1d5b69ca65c4d876f6c457eb01"
+          },
+          {
+            "path": "specs/058-js-framework-routes/tasks.md",
+            "digest": "sha256:c6d6359b557a9beb4e7251f921f5396fdf17774b60877841026ec7495bcffd32"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 8,
+          "total": 8
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/scanners/nest-routes.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/scanners/nest-routes.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/scanners/nest-routes.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/scanners/nest-routes.mjs",
+            "line": 47
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/scanners/worker-routes.mjs",
+            "line": 2
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/scanners/worker-routes.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/scanners/router-routes.mjs",
+            "line": 2
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/scanners/router-routes.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/scanners/js-route-support.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/scanners/nest-routes.mjs",
+            "line": 20
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/scanners/router-routes.mjs",
+            "line": 20
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/scanners/routes.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/scanners/worker-routes.mjs",
+            "line": 19
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/js-framework-routes.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/js-framework-routes.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/js-framework-routes.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/js-framework-routes.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/js-framework-routes.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/js-framework-routes.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/js-framework-routes.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/js-framework-routes.test.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/fixtures/js-framework-projects.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/js-framework-routes.test.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/js-framework-routes.test.mjs",
+            "line": 18
+          }
+        ]
+      }
+    },
+    {
       "specId": "docguard.js-ts-extraction",
       "path": "specs/045-js-ts-extraction/spec.md",
       "reviewed": {
@@ -5107,7 +5293,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/scanners/routes.mjs",
-            "line": 417
+            "line": 437
           },
           {
             "requirementId": "FR-002",
@@ -5127,22 +5313,22 @@
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/routes.mjs",
-            "line": 406
+            "line": 426
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/routes.mjs",
-            "line": 467
+            "line": 487
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/routes.mjs",
-            "line": 470
+            "line": 490
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/routes.mjs",
-            "line": 524
+            "line": 544
           },
           {
             "requirementId": "FR-003",
@@ -5172,7 +5358,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/scanners/routes.mjs",
-            "line": 525
+            "line": 545
           },
           {
             "requirementId": "FR-005",
@@ -5197,7 +5383,7 @@
           {
             "requirementId": "FR-008",
             "file": "cli/scanners/project-type.mjs",
-            "line": 273
+            "line": 275
           },
           {
             "requirementId": "FR-009",

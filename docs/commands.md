@@ -206,7 +206,7 @@ npx docguard-cli generate
 npx docguard-cli generate --dir ./my-project
 ```
 
-**Detects:** Next.js, React, Vue, Angular, Express, Fastify, Hono, Django, FastAPI, SvelteKit, and more.
+**Detects:** Next.js, React, Vue, Angular, Express, Fastify, Hono, NestJS, Cloudflare Workers, Django, FastAPI, SvelteKit, and more.
 
 What `generate` writes is read back by the same scanners `guard` and `diff`
 use, so running them straight after `generate` reports nothing about
