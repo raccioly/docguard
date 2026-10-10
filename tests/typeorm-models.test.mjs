@@ -13,6 +13,10 @@
  * @req docguard.typeorm-models#FR-006
  * @req docguard.typeorm-models#FR-007
  * @req docguard.typeorm-models#FR-008
+ * @req docguard.typeorm-models#FR-009
+ * @req docguard.typeorm-models#FR-010
+ * @req docguard.typeorm-models#FR-011
+ * @req docguard.typeorm-models#FR-012
  * @req docguard.typeorm-models#SC-001
  * @req docguard.typeorm-models#SC-002
  */
@@ -24,6 +28,8 @@ import { tmpdir } from 'node:os';
 
 import { writeFiles, UNPARSEABLE } from './fixtures/js-ts-projects.mjs';
 import { TYPEORM_FILES, TYPEORM_TRUTH, SEQUELIZE_FILES, SEQUELIZE_TRUTH } from './fixtures/orm-class-projects.mjs';
+import { EXPRESS_FILES, NEXT_FILES } from './fixtures/js-ts-projects.mjs';
+import { CODES } from '../cli/findings.mjs';
 import { notesSince } from './fixtures/changelog-notes.mjs';
 import {
   scanSchemasDeep, discoverOrmSchemaFiles, generateERDiagram, clearWalkDirCache,
@@ -293,5 +299,107 @@ describe('FR-008: the docs say what is read', () => {
     const notes = notesSince(read('CHANGELOG.md'), '0.43.1');
     assert.match(notes, /typeorm-models/);
     assert.match(notes, /#520/);
+  });
+});
+
+// ── FR-009: Drizzle and Mongoose tiers ──────────────────────────────────────
+
+describe('FR-009: Drizzle and Mongoose entities say which tier read them', () => {
+  for (const [label, files, pattern] of [
+    ['Drizzle', NEXT_FILES, /^lib\/db\/schema\.ts$/],
+    ['Mongoose', EXPRESS_FILES, /^lib\/models\//],
+  ]) {
+    it(`${label}: js-ast when the file parses, regex-fallback with a reason when it does not`, () => {
+      const full = scanSchemasDeep(project(files), {}, {}, {});
+      assert.ok(full.entities.length > 0 && full.entities.every(e => e.tier === 'js-ast'), JSON.stringify(full.entities.map(e => [e.name, e.tier])));
+      const partial = scanSchemasDeep(project(unparseable(files, pattern)), {}, {}, {});
+      assert.ok(partial.entities.length > 0 && partial.entities.every(e => e.tier === 'regex-fallback' && e.tierReason),
+        JSON.stringify(partial.entities.map(e => [e.name, e.tier])));
+    });
+
+    it(`${label}: a pattern-read schema marks the plan entity surface partial`, () => {
+      assert.equal(buildMemoryPlan(project(files), {}).surface.parserTiers.entities.degraded, false);
+      clearMemoryPlanCache();
+      assert.equal(buildMemoryPlan(project(unparseable(files, pattern)), {}).surface.parserTiers.entities.degraded, true);
+    });
+  }
+});
+
+// ── FR-010: Zod only when no ORM is found ──────────────────────────────────
+
+describe('FR-010: Zod schemas are the data model only when no ORM entity is found', () => {
+  const zod = "import { z } from 'zod';\nexport const OrderInputSchema = z.object({ sku: z.string(), qty: z.number() });\n";
+  it('a Mongoose project with Zod schemas reports its Mongoose models only', () => {
+    const s = scanSchemasDeep(project({ ...EXPRESS_FILES, 'src/schemas/order-input.ts': zod }), {}, {}, {});
+    assert.deepEqual([...new Set(s.entities.map(e => e.source))], ['mongoose']);
+  });
+
+  it('a project with only Zod schemas still reports them', () => {
+    const s = scanSchemasDeep(project({ 'package.json': JSON.stringify({ dependencies: { zod: '3.23.8' } }), 'src/schemas/order-input.ts': zod }), {}, {}, {});
+    assert.deepEqual(s.entities.map(e => `${e.source}:${e.name}`), ['zod:OrderInput']);
+  });
+});
+
+// ── FR-011: SCH001 help ─────────────────────────────────────────────────────
+
+describe('FR-011: SCH001 names every model source the reader supports', () => {
+  it('the registry help and the generated finding reference list them', () => {
+    const sources = ['Prisma', 'Drizzle', 'Mongoose', 'TypeORM', 'Sequelize', 'Django', 'SQLAlchemy', 'SQLModel', 'Knex', 'Rails'];
+    for (const text of [CODES.SCH001.help, readFileSync(resolve('docs/reference/findings.md'), 'utf8').split('### SCH001')[1].split('###')[0]]) {
+      for (const name of sources) assert.match(text, new RegExp(`\\b${name}\\b`), name);
+    }
+  });
+});
+
+// ── FR-012: decorators re-exported by a local module ───────────────────────
+
+describe('FR-012: entities that import their decorators through a local barrel', () => {
+  const entity = (from) => `import { Entity, PrimaryGeneratedColumn, Column } from '${from}';
+@Entity('orders')
+export class Order {
+  @PrimaryGeneratedColumn() id: number;
+  @Column({ unique: true }) code: string;
+}
+`;
+  const base = {
+    'package.json': JSON.stringify({ dependencies: { typeorm: '0.3.20' } }),
+    'src/orm/index.ts': "export * from 'typeorm';\nexport { AppDataSource } from './data-source';\n",
+    'src/orm/data-source.ts': "import { DataSource } from 'typeorm';\nexport const AppDataSource = new DataSource({ type: 'postgres' });\n",
+  };
+
+  it('reads an entity whose decorators come from a relative barrel, a nested barrel, or a path alias', () => {
+    const dir = project({
+      ...base,
+      'tsconfig.json': JSON.stringify({ compilerOptions: { baseUrl: '.', paths: { '@/*': ['src/*'] } } }),
+      'src/shared/decorators.ts': "export { Entity, Column, PrimaryGeneratedColumn } from '../orm';\n",
+      'src/entity/Order.ts': entity('../orm'),
+      'src/billing/invoice.ts': entity('../shared/decorators').replace(/Order/g, 'Invoice').replace('orders', 'invoices'),
+      'src/users/account.ts': entity('@/orm').replace(/Order/g, 'Account').replace('orders', 'accounts'),
+    });
+    const s = scanSchemasDeep(dir, {}, {}, {});
+    assert.deepEqual(fieldsByEntity(s), { Account: ['code', 'id'], Invoice: ['code', 'id'], Order: ['code', 'id'] });
+    assert.deepEqual(guardModelNames(dir), ['Account', 'Invoice', 'Order']);
+  });
+
+  it('reads an entity whose decorators come from a workspace package that re-exports typeorm', () => {
+    const dir = project({
+      'package.json': JSON.stringify({ name: 'mono', private: true, workspaces: ['packages/*'] }),
+      'packages/db/package.json': JSON.stringify({ name: '@acme/db', main: 'dist/index.js', types: 'src/index.ts', dependencies: { typeorm: '0.3.20' } }),
+      'packages/db/src/index.ts': "export * from 'typeorm';\n",
+      'packages/api/package.json': JSON.stringify({ name: '@acme/api', dependencies: { '@acme/db': '*' } }),
+      'packages/api/src/entities/order.entity.ts': entity('@acme/db'),
+    });
+    assert.deepEqual(scanSchemasDeep(dir, {}, {}, {}).entities.map(e => e.name), ['Order']);
+  });
+
+  it('does not read a MikroORM barrel, or an entity that only imports a TypeORM data source', () => {
+    const dir = project({
+      ...base,
+      'src/mikro/index.ts': "export * from '@mikro-orm/core';\n",
+      'src/entity/Order.ts': entity('../mikro'),
+      'src/entity/Ledger.ts': "import { Entity, PrimaryKey } from '@mikro-orm/core';\nimport { AppDataSource } from '../orm/data-source';\n" +
+        '@Entity()\nexport class Ledger { @PrimaryKey() id!: number; }\n',
+    });
+    assert.deepEqual(scanSchemasDeep(dir, {}, {}, {}).entities, []);
   });
 });

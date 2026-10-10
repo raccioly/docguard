@@ -18,6 +18,10 @@
 2. **Guard reads TypeORM by a different, narrower rule.** The Schema-Sync check matches `@Entity` in `*.entity.ts` / `*.entity.js` files under `src/entities`, `src/entity` or `entities` only. A TypeORM project laid out the way `typeorm init` lays it out (`src/entity/User.ts`) or the way NestJS does (`src/users/user.entity.ts`) is not read, and the name it reports is the table name when one is given, not the class name.
 3. **Sequelize has the same split, and guard's pattern misses `Model.init`.** Guard matches `.init('X')`, but `Model.init` takes the attributes object first (`User.init({ … }, { sequelize, modelName: 'User' })`), so only `sequelize.define('X', …)` models are found. `generate` and `diff` read no Sequelize model.
 4. **The docs overstate.** The `schemas.mjs` header and a comment in it name ORMs it does not read, and `docs/reference/languages.md` lists TypeORM and Sequelize as `guard` only, by name.
+5. **Drizzle and Mongoose entities carry no parser tier.** A Drizzle or Mongoose schema file that does not parse is read by pattern, but nothing says so: the plan's entity surface stays "complete".
+6. **Mongoose escapes the Zod rule.** Zod schemas are meant to be the data model only when no ORM entity is found, but Mongoose entities were added after that check, so a Mongoose project with Zod schemas reported both. A Zod-only project also listed each schema twice, because `src/schemas` was walked once on its own and again inside `src`.
+7. **SCH001's help names a partial list** of the model sources guard reads (no Mongoose, SQLAlchemy or SQLModel).
+8. **Entities whose decorators come through a local module were lost.** Requiring a direct `typeorm` import drops an entity that imports `{ Entity, Column }` from a project barrel (`../orm`, `@/orm`, a workspace package) that re-exports `typeorm`, which guard's old `*.entity.ts` rule would have read.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -37,6 +41,15 @@
 
 1. **Given** an entity file with a syntax error, **Then** its entities, columns and relations are read by pattern, and each entity reports the `regex-fallback` tier, so the plan marks its entity surface partial.
 
+### User Story 5 - Every JS/TS ORM reports its tier and follows the Zod rule (Priority: P2)
+
+1. **Given** a Drizzle or Mongoose schema file that does not parse, **Then** its entities report `regex-fallback` and the plan marks its entity surface partial.
+2. **Given** a Mongoose project with Zod schemas, **Then** only the Mongoose models are reported; **Given** a Zod-only project, **Then** each schema is reported once.
+
+### User Story 6 - Barrel imports (Priority: P2)
+
+1. **Given** an entity importing its decorators from a relative barrel, a tsconfig path alias or a workspace package that re-exports `typeorm`, **Then** it is read; **Given** a barrel that re-exports `@mikro-orm/core`, **Then** it is not.
+
 ### User Story 4 - Sequelize models are read the same way (Priority: P2)
 
 1. **Given** models declared with `sequelize.define('User', { … })` or `User.init({ … }, { sequelize, modelName })`, **Then** every consumer lists them with their declared attributes, and `belongsTo` / `hasMany` / `hasOne` / `belongsToMany` associations are drawn once.
@@ -50,6 +63,10 @@
 - **FR-005**: Entities MUST be read from the syntax tree (`js-ast`) when the file parses, and by pattern from the same text otherwise, with the same fields and relations. Every TypeORM and Sequelize entity MUST carry the tier that read it (`js-ast` or `regex-fallback`, with a reason) and the line of its declaration.
 - **FR-006**: Sequelize models declared with `sequelize.define('Name', { … }, options?)` or `Name.init({ … }, { sequelize, modelName?, tableName? })` MUST be read through the same discovery (files that reference `sequelize` and call `define` or `init`), with their declared attributes: `DataTypes.X` or `{ type, allowNull, primaryKey, unique, defaultValue, comment }`. `required` is true only for `allowNull: false` or a primary key. Associations (`belongsTo`, `hasMany`, `hasOne`, `belongsToMany`) MUST be drawn once each: from the `belongsTo` side when both sides are declared, and a many-to-many once.
 - **FR-007**: `scanSchemasDeep` (used by `generate`, `generate --plan`, `generate --spec` and `diff`) and guard's Schema-Sync check MUST both take TypeORM and Sequelize models from `scanOrmEntities`, so they report the same names. Guard MUST accept either the class name or the table name as documented. The separate TypeORM and Sequelize patterns in `cli/validators/schema-sync.mjs` MUST be removed.
+- **FR-009**: Drizzle and Mongoose entities MUST carry the tier that read them (`js-ast`, or `regex-fallback` with a reason), like TypeORM and Sequelize, so a pattern-read Drizzle or Mongoose file marks the plan's entity surface partial.
+- **FR-010**: Zod schemas MUST be the data model only when no Prisma, Drizzle, Mongoose, TypeORM or Sequelize entity is found, and each Zod schema MUST be reported once.
+- **FR-011**: SCH001's help (`cli/findings.mjs`, and the generated `docs/reference/findings.md`) MUST name every model source the Schema-Sync check reads: Prisma, Drizzle, Mongoose, TypeORM, Sequelize, Django, SQLAlchemy, SQLModel, and Knex and Rails migration tables.
+- **FR-012**: A file MUST count as TypeORM when the decorators it uses are imported from `typeorm` directly or through local modules that re-export it — relative imports, tsconfig path aliases and workspace packages, up to three modules away. Only imports that bring in a decorator name or a namespace are followed from the entity file, so an entity of another ORM that imports a TypeORM data source is not read.
 - **FR-008**: The `schemas.mjs` header and comments, `docs/reference/languages.md`, `docs/commands.md`, `docs-canonical/ARCHITECTURE.md` and the CHANGELOG MUST state what is read for TypeORM, Sequelize and Knex, and by which consumers. Knex stays `guard` only, by table name.
 
 ## Success Criteria *(mandatory)*

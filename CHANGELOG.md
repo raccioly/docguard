@@ -51,8 +51,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     models with their declared attributes. Guard used to miss every `init`
     model. `belongsTo`, `hasMany`, `hasOne` and `belongsToMany` associations
     are drawn once.
+  - An entity whose decorators come through a project barrel that
+    re-exports `typeorm` (relative, tsconfig path alias or workspace package)
+    is read; one whose barrel re-exports MikroORM is not.
   - A file that does not parse is read by pattern into the same entities,
-    which then report the `regex-fallback` tier.
+    which then report the `regex-fallback` tier. Drizzle and Mongoose entities
+    now report their tier too, so a pattern-read schema marks the plan's
+    entity surface partial.
+  - Zod schemas are the data model only when no ORM entity is found; a
+    Mongoose project with Zod schemas used to report both. A Zod-only project
+    listed each schema twice; it now lists each once.
+  - SCH001's help names every model source guard reads.
 
   Guard now names a TypeORM entity by its class and accepts the class or the
   table name in DATA-MODEL.md. Knex is still read by guard only, by table name.

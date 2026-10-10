@@ -13,7 +13,8 @@
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { resolve, join, relative, sep } from 'node:path';
+import { resolve, join, relative, sep, dirname } from 'node:path';
+import { createAliasResolver, resolveModuleFile } from './ts-paths.mjs';
 import {
   extractJsSchemaBodies, extractDecoratedClasses, extractSequelizeCalls, astTierAvailable,
   splitTopLevel, stripComments, matchingBracket,
@@ -60,21 +61,18 @@ export function scanSchemasDeep(dir, stack, docTools, config = {}) {
   entities.push(...orm.drizzle.entities);
   relationships.push(...orm.drizzle.relationships);
 
-  // TypeORM and Sequelize
-  for (const result of [orm.typeorm, orm.sequelize]) {
+  // Mongoose, TypeORM and Sequelize
+  for (const result of [orm.mongoose, orm.typeorm, orm.sequelize]) {
     entities.push(...result.entities);
     relationships.push(...result.relationships);
   }
 
-  // Zod (if no ORM found, Zod schemas are the data model)
+  // Zod: the data model only when no ORM entity was found
+  // (docguard.typeorm-models#FR-010).
   if (entities.length === 0) {
     const zodResult = scanZodSchemas(dir);
     entities.push(...zodResult.entities);
   }
-
-  // Mongoose
-  entities.push(...orm.mongoose.entities);
-  relationships.push(...orm.mongoose.relationships);
 
   // ── Multi-language model scanners (additive; supports polyglot repos) ──
   // Python reports the parser tier that read it (python-models.mjs).
@@ -138,6 +136,91 @@ const MONGOOSE_SCHEMA_RE = /\bnew\s+(?:mongoose\s*\.\s*)?Schema\s*(?:<[^>]*>)?\s
 const TYPEORM_IMPORT_RE = /(?:\bfrom\s*|\brequire\s*\(\s*)['"]typeorm['"]/;
 const TYPEORM_DECORATOR_RE = /@\s*(?:Entity|\w*Column)\s*\(/;
 const SEQUELIZE_CALL_RE = /\.\s*(?:define|init)\s*\(/;
+// Local modules followed when looking for a `typeorm` re-export: an entity's
+// barrel, the barrel's own barrel, and one more.
+const TYPEORM_BARREL_DEPTH = 3;
+const DECORATOR_NAME_RE = /^(?:Entity|\w*Column|ManyToOne|OneToMany|OneToOne|ManyToMany|JoinColumn|JoinTable)$/;
+
+/**
+ * Specifiers a module imports or re-exports from (`import { A } from`,
+ * `export { A } from`, `export * from`, `const { A } = require('./x')`). With
+ * `wantDecorators`, only those that bring in a decorator name or a namespace.
+ */
+function localImportSpecs(content, wantDecorators) {
+  const specs = [];
+  const re = /\b(import|export)\s+(type\s+)?(\*(?:\s+as\s+[\w$]+)?|\{([^}]*)\})\s*from\s*['"]([^'"]+)['"]/g;
+  for (const m of content.matchAll(re)) {
+    const [, , typeOnly, clause, names, spec] = m;
+    // A package specifier is kept too: a tsconfig path alias looks like one,
+    // and the alias resolver returns nothing for a real package.
+    if (typeOnly) continue;
+    if (wantDecorators && names !== undefined) {
+      const imported = names.split(',').map(n => n.trim().split(/\s+as\s+/)[0].trim()).filter(Boolean);
+      if (!imported.some(n => DECORATOR_NAME_RE.test(n))) continue;
+    } else if (wantDecorators && !clause.startsWith('*')) continue;
+    specs.push(spec);
+  }
+  for (const m of content.matchAll(/\{([^}]*)\}\s*=\s*require\s*\(\s*['"](\.[^'"]+)['"]\s*\)/g)) {
+    if (!wantDecorators || m[1].split(',').some(n => DECORATOR_NAME_RE.test(n.trim().split(/\s*:\s*/)[0]))) specs.push(m[2]);
+  }
+  return specs;
+}
+
+/** A workspace package's module for `spec` (`@acme/db`, `@acme/db/entities`), or null. */
+function workspaceModule(ctx, spec) {
+  if (!ctx.workspaces) {
+    ctx.workspaces = new Map();
+    for (const wsDir of getWorkspaceDirs(ctx.dir)) {
+      try {
+        const pkg = JSON.parse(readFileSync(join(wsDir, 'package.json'), 'utf8'));
+        if (typeof pkg?.name === 'string') ctx.workspaces.set(pkg.name, { dir: wsDir, pkg });
+      } catch { /* no package.json */ }
+    }
+  }
+  for (const [name, { dir, pkg }] of ctx.workspaces) {
+    if (spec !== name && !spec.startsWith(name + '/')) continue;
+    const sub = spec.slice(name.length + 1);
+    if (sub) return resolveModuleFile(join(dir, sub)) ?? resolveModuleFile(join(dir, 'src', sub));
+    for (const entry of [pkg.source, pkg.types, pkg.main, 'src/index', 'index']) {
+      const file = typeof entry === 'string' ? resolveModuleFile(resolve(dir, entry)) : null;
+      if (file) return file;
+    }
+    return null;
+  }
+  return null;
+}
+
+/**
+ * Whether a file's decorators come from `typeorm`: imported directly, or from
+ * a local module (relative, a tsconfig path alias or a workspace package)
+ * that re-exports
+ * `typeorm`, up to TYPEORM_BARREL_DEPTH modules away. Only imports that bring
+ * in a decorator name (or a namespace) are followed, so an entity of another
+ * ORM that merely imports a TypeORM data source is not read.
+ * @implements docguard.typeorm-models#FR-012
+ */
+function decoratorsFromTypeOrm(file, content, ctx, depth = 0, seen = new Set()) {
+  if (TYPEORM_IMPORT_RE.test(content)) return true;
+  if (depth >= TYPEORM_BARREL_DEPTH) return false;
+  seen.add(file);
+  for (const spec of localImportSpecs(content, depth === 0)) {
+    let target;
+    if (spec.startsWith('.')) target = resolveModuleFile(resolve(dirname(file), spec));
+    else {
+      ctx.resolveAlias ??= createAliasResolver(ctx.dir);
+      target = ctx.resolveAlias(file, spec) ?? workspaceModule(ctx, spec);
+    }
+    if (!target || seen.has(target)) continue;
+    let hit = ctx.memo.get(target);
+    if (hit === undefined) {
+      const text = readFileSafe(target);
+      hit = Boolean(text) && decoratorsFromTypeOrm(target, text, ctx, depth + 1, seen);
+      ctx.memo.set(target, hit);
+    }
+    if (hit) return true;
+  }
+  return false;
+}
 
 function isDir(p) {
   try { return statSync(p).isDirectory(); } catch { return false; }
@@ -224,8 +307,9 @@ function drizzleConfigFiles(dir) {
  *   conventional dirs and source roots for files that call a table builder
  *   (`pgTable('users', …)`).
  * - Mongoose: the same search, for files that construct a mongoose Schema.
- * - TypeORM: the same search, for files that import `typeorm` and use an
- *   entity or column decorator (an abstract base class counts).
+ * - TypeORM: the same search, for files that use an entity or column
+ *   decorator imported from `typeorm`, directly or through local modules that
+ *   re-export it (an abstract base class counts).
  * - Sequelize: the same search, for files that mention `sequelize` and call
  *   `define` or `init`.
  * Every file appears once (absolute paths), so `src/db` inside `src` is not
@@ -234,6 +318,7 @@ function drizzleConfigFiles(dir) {
  * @implements docguard.js-ts-extraction#FR-007
  * @implements docguard.js-ts-extraction#FR-010
  * @implements docguard.typeorm-models#FR-001
+ * @implements docguard.typeorm-models#FR-012
  * @returns {{ prisma: string[], drizzle: string[], mongoose: string[], typeorm: string[], sequelize: string[] }}
  */
 export function discoverOrmSchemaFiles(dir, config = {}) {
@@ -263,6 +348,7 @@ export function discoverOrmSchemaFiles(dir, config = {}) {
   const mongoose = new Set();
   const typeorm = new Set();
   const sequelize = new Set();
+  const typeormCtx = { resolveAlias: null, dir, memo: new Map() };
   for (const base of ormSearchBases(dir, config)) {
     for (const file of freshFiles(base)) {
       if (!JS_SCHEMA_FILE_RE.test(file) || !keepSchemaFile(dir, file, config)) continue;
@@ -270,7 +356,7 @@ export function discoverOrmSchemaFiles(dir, config = {}) {
       if (!content) continue;
       if (configured.length === 0 && DRIZZLE_TABLE_RE.test(content)) drizzle.add(file);
       if (content.includes('mongoose') && MONGOOSE_SCHEMA_RE.test(content)) mongoose.add(file);
-      if (content.includes('typeorm') && TYPEORM_IMPORT_RE.test(content) && TYPEORM_DECORATOR_RE.test(content)) typeorm.add(file);
+      if (TYPEORM_DECORATOR_RE.test(content) && decoratorsFromTypeOrm(file, content, typeormCtx)) typeorm.add(file);
       if (/sequelize/i.test(content) && SEQUELIZE_CALL_RE.test(content)) sequelize.add(file);
     }
   }
@@ -437,6 +523,8 @@ function drizzleTablesByPattern(content) {
  * Drizzle tables with every column. A variable → table map across all schema
  * files resolves `.references(() => users.id)` to the table name, and pgEnum
  * bindings type their columns `enum` (docguard.js-ts-extraction#FR-006).
+ * Each table records the tier that read it.
+ * @implements docguard.typeorm-models#FR-009
  */
 function scanDrizzleSchemas(dir, schemaFiles = []) {
   const entities = [];
@@ -449,8 +537,9 @@ function scanDrizzleSchemas(dir, schemaFiles = []) {
     for (const m of content.matchAll(/\b([A-Za-z_$][\w$]*)\s*=\s*(?:pg|mysql)Enum\s*\(/g)) enumVars.add(m[1]);
     // Full-support tier: AST extraction (balanced bodies). The pattern tier
     // reads the same bodies by bracket matching when the file does not parse.
-    const found = extractJsSchemaBodies(content, abs) ?? drizzleTablesByPattern(content);
-    for (const t of found) if (t.kind === 'drizzle') tables.push({ ...t, file: relPosix(dir, abs) });
+    const parsed = extractJsSchemaBodies(content, abs);
+    const { tier, tierReason } = classTier(abs, parsed);
+    for (const t of parsed ?? drizzleTablesByPattern(content)) if (t.kind === 'drizzle') tables.push({ ...t, file: relPosix(dir, abs), tier, tierReason });
   }
   const varToTable = new Map(tables.map(t => [t.name, t.table]));
   for (const t of tables) {
@@ -464,6 +553,8 @@ function scanDrizzleSchemas(dir, schemaFiles = []) {
       file: t.file,
       source: 'drizzle',
       description: '',
+      tier: t.tier,
+      tierReason: t.tierReason,
     });
   }
   return { entities, relationships };
@@ -528,8 +619,13 @@ function extractDrizzleDefault(chain) {
 
 // ── Zod Scanner ─────────────────────────────────────────────────────────────
 
+/**
+ * Zod object schemas. Each file is read once although `src/schemas` lies
+ * inside `src` (docguard.typeorm-models#FR-010).
+ */
 function scanZodSchemas(dir) {
   const entities = [];
+  const seen = new Set();
 
   const schemaDirs = ['src/schema', 'src/schemas', 'schema', 'schemas', 'src/types', 'src/validation', 'src'];
   const zodPattern = /(?:export\s+(?:const|let)\s+)(\w+(?:Schema|Validator|Input|Output))\s*=\s*z\.object\s*\(\s*\{([^}]+)\}\s*\)/g;
@@ -539,6 +635,8 @@ function scanZodSchemas(dir) {
     if (!existsSync(fullDir)) continue;
 
     walkDir(fullDir, (filePath) => {
+      if (seen.has(filePath)) return;
+      seen.add(filePath);
       const content = readFileSafe(filePath);
       if (!content || !content.includes('z.object')) return;
 
@@ -634,7 +732,8 @@ function mongooseSchemasByPattern(content) {
  * one. Fields come from the top-level keys only: a `{ type, required, ref }`
  * object is one field, a nested object without `type` is one `object` field,
  * and `[{ type: ObjectId, ref: 'X' }]` is an array relation
- * (docguard.js-ts-extraction#FR-007).
+ * (docguard.js-ts-extraction#FR-007). Each schema records the tier that read it.
+ * @implements docguard.typeorm-models#FR-009
  */
 function scanMongooseSchemas(dir, schemaFiles = []) {
   const entities = [];
@@ -644,8 +743,9 @@ function scanMongooseSchemas(dir, schemaFiles = []) {
     if (!content) continue;
     const models = new Map();
     for (const m of content.matchAll(/\bmodel\s*(?:<[^>]*>)?\s*\(\s*(['"`])(\w+)\1\s*,\s*([A-Za-z_$][\w$]*)/g)) models.set(m[3], m[2]);
-    const found = extractJsSchemaBodies(content, abs) ?? mongooseSchemasByPattern(content);
-    for (const s of found) {
+    const parsed = extractJsSchemaBodies(content, abs);
+    const { tier, tierReason } = classTier(abs, parsed);
+    for (const s of parsed ?? mongooseSchemasByPattern(content)) {
       if (s.kind !== 'mongoose') continue;
       const bare = s.name.replace(/Schema$/i, '') || s.name;
       const name = models.get(s.name) ?? (bare.charAt(0).toUpperCase() + bare.slice(1));
@@ -659,6 +759,8 @@ function scanMongooseSchemas(dir, schemaFiles = []) {
         file: relPosix(dir, abs),
         source: 'mongoose',
         description: '',
+        tier,
+        tierReason,
       });
     }
   }

@@ -5182,12 +5182,22 @@
           {
             "requirementId": "FR-006",
             "file": "cli/scanners/schemas.mjs",
-            "line": 233
+            "line": 317
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/scanners/schemas.mjs",
+            "line": 525
           },
           {
             "requirementId": "FR-007",
             "file": "cli/scanners/schemas.mjs",
-            "line": 234
+            "line": 318
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/scanners/schemas.mjs",
+            "line": 735
           },
           {
             "requirementId": "FR-008",
@@ -5212,12 +5222,12 @@
           {
             "requirementId": "FR-010",
             "file": "cli/scanners/schemas.mjs",
-            "line": 235
+            "line": 319
           },
           {
             "requirementId": "FR-010",
             "file": "cli/scanners/schemas.mjs",
-            "line": 284
+            "line": 370
           },
           {
             "requirementId": "FR-010",
@@ -10339,6 +10349,10 @@
           "docguard.typeorm-models#FR-006",
           "docguard.typeorm-models#FR-007",
           "docguard.typeorm-models#FR-008",
+          "docguard.typeorm-models#FR-009",
+          "docguard.typeorm-models#FR-010",
+          "docguard.typeorm-models#FR-011",
+          "docguard.typeorm-models#FR-012",
           "docguard.typeorm-models#SC-001",
           "docguard.typeorm-models#SC-002"
         ]
@@ -10347,26 +10361,26 @@
         "artifacts": [
           {
             "path": "specs/056-typeorm-models/spec.md",
-            "digest": "sha256:2b3779cc2fd73b54bcb134d618faf9b9d005797fd18751915a5e344b62298563"
+            "digest": "sha256:f2e9a4d0d2f1b963185ac34aa8b8fb3feb7a311bb22ccf696b6c53a7d6a0da11"
           },
           {
             "path": "specs/056-typeorm-models/plan.md",
-            "digest": "sha256:d5096f0499024e6eb7cf0b3b867a334eb2c9a2ff0da9eade2677e023aaeafa19"
+            "digest": "sha256:f02d95de23bfe2990c1cb378a97ef79ccfb59716f075088ed2e85de2193546db"
           },
           {
             "path": "specs/056-typeorm-models/tasks.md",
-            "digest": "sha256:50d3495465eac7c64c8a3be7b89c29d5907dda894e9c728329152d2002dc7c1b"
+            "digest": "sha256:f2cc780b67581af4c93d946cc304b2b535156dee7330a24dabf320add8b5b46a"
           }
         ],
         "taskCompletion": {
-          "checked": 7,
-          "total": 7
+          "checked": 11,
+          "total": 11
         },
         "implementationEvidence": [
           {
             "requirementId": "FR-001",
             "file": "cli/scanners/schemas.mjs",
-            "line": 236
+            "line": 320
           },
           {
             "requirementId": "FR-002",
@@ -10376,17 +10390,17 @@
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/schemas.mjs",
-            "line": 1037
+            "line": 1139
           },
           {
             "requirementId": "FR-003",
             "file": "cli/scanners/schemas.mjs",
-            "line": 1038
+            "line": 1140
           },
           {
             "requirementId": "FR-004",
             "file": "cli/scanners/schemas.mjs",
-            "line": 1039
+            "line": 1141
           },
           {
             "requirementId": "FR-005",
@@ -10396,12 +10410,12 @@
           {
             "requirementId": "FR-005",
             "file": "cli/scanners/schemas.mjs",
-            "line": 1040
+            "line": 1142
           },
           {
             "requirementId": "FR-005",
             "file": "cli/scanners/schemas.mjs",
-            "line": 1143
+            "line": 1245
           },
           {
             "requirementId": "FR-006",
@@ -10411,12 +10425,12 @@
           {
             "requirementId": "FR-006",
             "file": "cli/scanners/schemas.mjs",
-            "line": 1144
+            "line": 1246
           },
           {
             "requirementId": "FR-007",
             "file": "cli/scanners/schemas.mjs",
-            "line": 285
+            "line": 371
           },
           {
             "requirementId": "FR-007",
@@ -10432,6 +10446,26 @@
             "requirementId": "FR-008",
             "file": "cli/scanners/schemas.mjs",
             "line": 12
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "cli/scanners/schemas.mjs",
+            "line": 527
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "cli/scanners/schemas.mjs",
+            "line": 736
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "cli/scanners/schemas.mjs",
+            "line": 200
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "cli/scanners/schemas.mjs",
+            "line": 321
           }
         ],
         "testEvidence": [
@@ -10476,6 +10510,26 @@
             "line": 15
           },
           {
+            "requirementId": "FR-009",
+            "file": "tests/typeorm-models.test.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "tests/typeorm-models.test.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "tests/typeorm-models.test.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "tests/typeorm-models.test.mjs",
+            "line": 19
+          },
+          {
             "requirementId": "SC-001",
             "file": "tests/fixtures/orm-class-projects.mjs",
             "line": 8
@@ -10483,12 +10537,12 @@
           {
             "requirementId": "SC-001",
             "file": "tests/typeorm-models.test.mjs",
-            "line": 16
+            "line": 20
           },
           {
             "requirementId": "SC-002",
             "file": "tests/typeorm-models.test.mjs",
-            "line": 17
+            "line": 21
           }
         ]
       }

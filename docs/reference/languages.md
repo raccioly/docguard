@@ -193,7 +193,7 @@ Two consumers read models, and they do not read the same set:
 | Prisma | `prisma/*.prisma`, `prisma/schema/*.prisma`, or `package.json` `prisma.schema`, in the project and its workspaces | Models, fields, relations (each once), enums reported apart from entities | Both | `schemas.mjs` |
 | Drizzle | The `schema` entry of `drizzle.config.*`; otherwise files that call `pgTable`, `mysqlTable` or `sqliteTable` with a literal name, under `db`, `database`, `schema`, `schemas`, `drizzle`, `models`, `model`, `entities`, `entity` and the source roots | Tables, columns, `.references()` relations | Both | `schemas.mjs`, `js-ast.mjs` |
 | Mongoose | Files that construct a `Schema`, in the same directories | Fields (including `{ type, required, ref }` and arrays), the model name from `model('Name', schema)`, `ref` relations | Both | `schemas.mjs`, `js-ast.mjs` |
-| TypeORM | Files that import `typeorm` and use an `@Entity` or column decorator, in the same directories | `@Entity` classes, named by class with the table name kept (guard accepts either as documented); columns from `@Column`, `@PrimaryGeneratedColumn`, `@PrimaryColumn`, `@CreateDateColumn`, `@UpdateDateColumn`, `@DeleteDateColumn` and `@VersionColumn` (type, `nullable`, `primary`, `unique`, `default`, `comment`); columns and relations inherited through `extends`; `@ManyToOne`, `@OneToMany`, `@OneToOne` and `@ManyToMany` relations, each drawn once from its owning side | Both | `schemas.mjs`, `js-ast.mjs` |
+| TypeORM | Files that use an `@Entity` or column decorator imported from `typeorm`, directly or through a local module that re-exports it (relative, tsconfig path alias or workspace package, up to three modules away), in the same directories | `@Entity` classes, named by class with the table name kept (guard accepts either as documented); columns from `@Column`, `@PrimaryGeneratedColumn`, `@PrimaryColumn`, `@CreateDateColumn`, `@UpdateDateColumn`, `@DeleteDateColumn` and `@VersionColumn` (type, `nullable`, `primary`, `unique`, `default`, `comment`); columns and relations inherited through `extends`; `@ManyToOne`, `@OneToMany`, `@OneToOne` and `@ManyToMany` relations, each drawn once from its owning side | Both | `schemas.mjs`, `js-ast.mjs` |
 | Sequelize | Files that mention `sequelize` and call `define` or `init`, in the same directories | Models from `sequelize.define('Name', …)` and `Model.init(…, { sequelize })` (`modelName`, `tableName`), declared attributes (`DataTypes.X`, `allowNull`, `primaryKey`, `unique`, `defaultValue`, `comment`), and `belongsTo`, `hasMany`, `hasOne` and `belongsToMany` associations, each drawn once | Both | `schemas.mjs`, `js-ast.mjs` |
 | Knex | `.js` and `.ts` files under `migrations`, `db/migrations` | Table names from `createTable('x')` | `guard` only | `schema-sync.mjs` |
 | Zod | Source files | Object schemas, used as the data model only when no ORM entity is found | `generate` and `diff` only | `schemas.mjs` |
@@ -207,8 +207,10 @@ Two consumers read models, and they do not read the same set:
 | Diesel | `.rs` files | `table!` blocks and their columns | `generate` and `diff` only | `schemas.mjs` |
 
 An OpenAPI file's schemas, when present, take priority over code for
-`generate`. Python, TypeORM and Sequelize model findings carry the tier of
-the files behind them; other model findings carry `not-applicable`.
+`generate`. Python, Drizzle, Mongoose, TypeORM and Sequelize model findings
+carry the tier of the files behind them; a schema read by pattern marks the
+plan's entity surface partial. Prisma, Knex and Rails model findings carry
+`not-applicable`.
 
 TypeORM and Sequelize list the columns the code declares. Columns the ORM adds
 on its own are not listed: TypeORM's relation foreign keys and Sequelize's

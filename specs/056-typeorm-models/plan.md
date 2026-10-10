@@ -13,6 +13,10 @@ TypeORM and Sequelize join Prisma, Drizzle and Mongoose in `scanOrmEntities`, th
 | FR-005 | A pattern reader in `schemas.mjs` produces the same class shape from text when the file does not parse. Entities carry `tier`, `tierReason` and `line`. |
 | FR-006 | `js-ast.mjs` `extractSequelizeModels` finds `define` and `init` calls and association calls; a pattern reader does the same from text. `schemas.mjs` reads attributes with the shared object-text helpers. |
 | FR-007 | `scanSchemasDeep` adds `orm.typeorm` and `orm.sequelize`; `cli/validators/schema-sync.mjs` reads them from `scanOrmEntities`, matches the class or table name, and drops its TypeORM and Sequelize patterns. |
+| FR-009 | `scanDrizzleSchemas` and `scanMongooseSchemas` attach `tierFor` of each file to its entities. |
+| FR-010 | `scanSchemasDeep` adds Mongoose before the Zod check; `scanZodSchemas` reads each file once. |
+| FR-011 | SCH001 `help` in `cli/findings.mjs`; `npm run docs:reference`. |
+| FR-012 | `decoratorsFromTypeOrm` in `schemas.mjs` follows decorator imports through `resolveModuleFile` and `createAliasResolver` (`ts-paths.mjs`) and workspace package names (`getWorkspaceDirs`), up to three modules, memoized per discovery. |
 | FR-008 | `schemas.mjs` header, `docs/reference/languages.md`, `docs/commands.md`, `docs-canonical/ARCHITECTURE.md`, `CHANGELOG.md`, and the Schema-Sync text of `docguard explain` (`cli/commands/explain.mjs`), which listed seven ORMs and omitted Mongoose and the Python ones it already read. |
 
 ## Technical Context
@@ -29,6 +33,7 @@ TypeORM and Sequelize join Prisma, Drizzle and Mongoose in `scanOrmEntities`, th
 - **Relations are relationships, not columns; implied columns are not listed.** Prisma already lists relation fields as relationships only. Listing an implied foreign key or Sequelize timestamp would state a column the code does not declare.
 - **Draw each relation from its owning side.** TypeORM requires a `@OneToMany` to have a `@ManyToOne` inverse, and the join decorator marks the owner of the other two kinds, so the owner draws the edge and an inverse draws one only when its counterpart was not scanned.
 - **Sequelize is a small addition.** Its models live in the same files and directories, and their attributes are object literals the existing helpers read. Knex is not: its tables are a sequence of migrations.
+- **Follow barrels instead of reinstating the file-name rule.** Resolving a local re-export reuses the import resolution the module graph already uses and keeps MikroORM out; the old `*.entity.ts` rule would have read any `@Entity()` class, MikroORM's included. Rejected: the old rule as a fallback, which brings that false positive back.
 - **Report the tier per entity.** Drizzle and Mongoose do not; Python models do. A TypeORM entity read by pattern marks the plan's entity surface partial (`surfaceTier`), which is what the fallback is.
 
 ## Constitution Check
@@ -48,6 +53,7 @@ Pass.
 cli/scanners/js-ast.mjs              # FR-002, FR-005, FR-006: decorated-class and Sequelize extraction
 cli/scanners/schemas.mjs             # FR-001..FR-007: discovery, readers, header
 cli/validators/schema-sync.mjs       # FR-007
+cli/findings.mjs, docs/reference/findings.md   # FR-011
 tests/fixtures/orm-class-projects.mjs  # NEW: TypeORM and Sequelize fixtures with truth
 tests/typeorm-models.test.mjs        # NEW
 docs/reference/languages.md, docs/commands.md, docs-canonical/ARCHITECTURE.md, CHANGELOG.md, cli/commands/explain.mjs, llms-full.txt   # FR-008
