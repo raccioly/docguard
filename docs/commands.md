@@ -267,16 +267,17 @@ DocGuard's own output:
 #### How routes are read
 
 Guard's API-surface check, `diff` and `generate` take routes from one scanner.
-It reads JavaScript, TypeScript and Python with a syntax tree. Go, Java, Kotlin
-and Ruby are read by pattern (`fallback-language`), following each framework's
-routing rules:
+It reads JavaScript, TypeScript and Python with a syntax tree. Go, Java, Kotlin,
+Ruby and Rust are read by pattern (`fallback-language`), following each
+framework's routing rules:
 
 - **Go** (gin, echo, chi, fiber, gorilla/mux, net/http): route groups and
   sub-routers carry their prefix (`r.Group`, chi `Route` and `Mount`, gorilla
   `PathPrefix().Subrouter()`, `http.StripPrefix`). This holds when the group is
   passed to a function in another file, or a function returns the router. Go
   1.22 patterns (`"GET /items/{id}"`) are read; `HandleFunc` with no method is
-  `ANY`. `_test.go` files and HTTP client calls are not routes.
+  `ANY`. `_test.go` files and HTTP client calls are not routes. A module that
+  serves HTTP with `net/http` alone, with no router in `go.mod`, is read too.
 - **Spring** (Java, Kotlin): the class-level `@RequestMapping` base, in any
   form (`path =`, `value =`, arrays, constants), joins every method mapping.
   `@RequestMapping(method = …)` names the method, `ANY` when it names none.
@@ -285,14 +286,28 @@ routing rules:
   prefixes, `resources`/`resource` with `only:`/`except:`, nesting, `shallow`,
   `member`/`collection`, `match … via:`, `root` and concerns, as `rails routes`
   lists them. Update is both `PATCH` and `PUT`.
+- **Sinatra**: classic and modular apps (a class inheriting from
+  `Sinatra::Base`, also through another project class), nested `namespace`
+  prefixes, `register`ed extensions, and the prefix `config.ru` maps an app
+  under (`map`, `Rack::URLMap`).
+- **Warp**: filter chains are evaluated through `and`/`or`, `let` bindings and
+  functions in other files, from what `warp::serve` runs. `path!("todos" / u64)`
+  is `/todos/{u64}`; a filter with no method filter is `ANY`.
+- **Tide**: `app.at("/posts")` and nested `.at("/:id")`, `nest()` of another
+  server, and functions that receive the server.
 
 A route is omitted when its path or prefix is not literal text or a constant
 it can resolve: an environment variable, a `${…}` placeholder, a Ruby
 interpolation, or a call it cannot pin to one function. It is never reported
-at a guessed path.
+at a guessed path. For Sinatra, Warp and Tide, the API-surface coverage reason
+says how many routes were omitted.
 
 **Python projects.** Routes carry their full paths:
 
+- Starlette: `Route` entries in `Starlette(routes=)`, `Router(routes=)` and
+  `Mount(routes=)` lists, `Mount(app=)`, `add_route` and `@app.route`, across
+  modules. Methods come from `methods=`, an `HTTPEndpoint` class's handlers, or
+  `GET`.
 - FastAPI and Flask: `APIRouter(prefix=)`, `include_router(..., prefix=)`,
   `Blueprint(url_prefix=)`, `register_blueprint()` and `mount()`, across
   modules and under any router name. A prefix read from a constant or a

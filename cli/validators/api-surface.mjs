@@ -184,7 +184,9 @@ export function resolveApiSurface(projectDir, config) {
  * - a detected pattern-only framework whose patterns matched nothing — the
  *   surface is unknown, not empty;
  * - routes found only in test/fixture/example paths, when none remain;
- * - a walk stopped by the file cap.
+ * - a walk stopped by the file cap;
+ * - routes a pattern reader saw but omitted because their path is not literal
+ *   text (docguard.more-route-frameworks#FR-005).
  *
  * @param {object|null} scan  the non-enumerable `scan` record of scanRoutesDeep
  * @param {number} kept       product routes the scan kept
@@ -197,6 +199,9 @@ export function routeScanGaps(scan, kept = 0) {
   for (const pf of scan.patternFrameworks || []) {
     if (pf.routes === 0) {
       out.push(`Detected ${pf.name}, but its route patterns matched no route in ${n(pf.files, 'file')}; a route registered in a form the patterns do not match is not seen, so the API surface was not compared with code.`);
+    }
+    if (pf.omitted > 0) {
+      out.push(`${pf.name}: ${n(pf.omitted, 'route')} whose path is not literal text ${pf.omitted === 1 ? 'was' : 'were'} omitted rather than reported at a guessed path.`);
     }
   }
   if (scan.excludedNonProduct > 0 && kept === 0) {

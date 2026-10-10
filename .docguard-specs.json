@@ -3859,12 +3859,12 @@
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/routes.mjs",
-            "line": 12
+            "line": 13
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/routes.mjs",
-            "line": 14
+            "line": 15
           },
           {
             "requirementId": "FR-002",
@@ -3909,7 +3909,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/scanners/routes.mjs",
-            "line": 15
+            "line": 16
           },
           {
             "requirementId": "FR-007",
@@ -3919,12 +3919,12 @@
           {
             "requirementId": "FR-008",
             "file": "cli/scanners/routes.mjs",
-            "line": 16
+            "line": 17
           },
           {
             "requirementId": "FR-008",
             "file": "cli/scanners/routes.mjs",
-            "line": 867
+            "line": 907
           },
           {
             "requirementId": "FR-009",
@@ -5107,7 +5107,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/scanners/routes.mjs",
-            "line": 417
+            "line": 433
           },
           {
             "requirementId": "FR-002",
@@ -5127,22 +5127,22 @@
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/routes.mjs",
-            "line": 406
+            "line": 422
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/routes.mjs",
-            "line": 467
+            "line": 483
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/routes.mjs",
-            "line": 470
+            "line": 486
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/routes.mjs",
-            "line": 524
+            "line": 540
           },
           {
             "requirementId": "FR-003",
@@ -5172,7 +5172,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/scanners/routes.mjs",
-            "line": 525
+            "line": 541
           },
           {
             "requirementId": "FR-005",
@@ -5197,7 +5197,7 @@
           {
             "requirementId": "FR-008",
             "file": "cli/scanners/project-type.mjs",
-            "line": 273
+            "line": 307
           },
           {
             "requirementId": "FR-009",
@@ -6261,6 +6261,178 @@
             "requirementId": "SC-003",
             "file": "tests/mcp-project-confinement.test.mjs",
             "line": 11
+          }
+        ]
+      }
+    },
+    {
+      "specId": "docguard.more-route-frameworks",
+      "path": "specs/060-more-route-frameworks/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.more-route-frameworks#FR-001",
+          "docguard.more-route-frameworks#FR-002",
+          "docguard.more-route-frameworks#FR-003",
+          "docguard.more-route-frameworks#FR-004",
+          "docguard.more-route-frameworks#FR-005",
+          "docguard.more-route-frameworks#FR-006",
+          "docguard.more-route-frameworks#FR-007",
+          "docguard.more-route-frameworks#FR-008",
+          "docguard.more-route-frameworks#SC-001",
+          "docguard.more-route-frameworks#SC-002",
+          "docguard.more-route-frameworks#SC-003"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/060-more-route-frameworks/spec.md",
+            "digest": "sha256:db0177c57b0cb00432c5fa6c46fc7b33b5f2c53e2eeefc2b0e4959450c941fd5"
+          },
+          {
+            "path": "specs/060-more-route-frameworks/plan.md",
+            "digest": "sha256:b3bcc1e0f1297ffb3ebedb6229e6f8313f283242e6f333d7df1dd7573d522290"
+          },
+          {
+            "path": "specs/060-more-route-frameworks/tasks.md",
+            "digest": "sha256:15a29cde9e0e1d64eefd43bef37e4f872c8fe339c7b8bbbb549b94e67feb4136"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 9,
+          "total": 9
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/scanners/sinatra-routes.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/scanners/python-routes.mjs",
+            "line": 30
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/scanners/rust-routes.mjs",
+            "line": 23
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/scanners/rust-routes.mjs",
+            "line": 24
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/scanners/python-routes.mjs",
+            "line": 31
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/scanners/routes.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/scanners/rust-routes.mjs",
+            "line": 25
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/scanners/sinatra-routes.mjs",
+            "line": 20
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/scanners/project-type.mjs",
+            "line": 210
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/scanners/routes.mjs",
+            "line": 19
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/more-route-frameworks.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/more-route-frameworks.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/more-route-frameworks.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/more-route-frameworks.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/more-route-frameworks.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/more-route-frameworks.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/more-route-frameworks.test.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/more-route-frameworks.test.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/more-route-frameworks.test.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/more-route-frameworks.test.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/more-route-frameworks.test.mjs",
+            "line": 20
           }
         ]
       }
@@ -7642,12 +7814,12 @@
           {
             "requirementId": "FR-001",
             "file": "cli/scanners/python-routes.mjs",
-            "line": 19
+            "line": 27
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/python-routes.mjs",
-            "line": 20
+            "line": 28
           },
           {
             "requirementId": "FR-003",
@@ -7657,7 +7829,7 @@
           {
             "requirementId": "FR-003",
             "file": "cli/scanners/python-routes.mjs",
-            "line": 21
+            "line": 29
           },
           {
             "requirementId": "FR-004",

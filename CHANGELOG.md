@@ -9,6 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Routes for Sinatra, Starlette, Warp, Tide and Go `net/http`-only
+  services** (`specs/060-more-route-frameworks`, part of #519). These
+  frameworks were classified but no scanner read them, so `generate`, `diff`
+  and guard's API-surface check saw no endpoint. Now:
+  - Sinatra: classic and modular apps across files, nested `namespace`
+    prefixes, `register`ed extensions, and `config.ru` `map`/`Rack::URLMap`
+    mounts (`cli/scanners/sinatra-routes.mjs`).
+  - Starlette: `Route`, `Mount`, `Router` and `Starlette(routes=...)` lists,
+    `add_route` and `@app.route`, in the same graph as FastAPI and Flask, at the
+    Python parser tier (`cli/scanners/python-routes.mjs`).
+  - Warp: filter chains evaluated through `and`/`or`, `let` bindings and
+    functions in other files; Tide: `at()` trees and `nest()` mounts
+    (`cli/scanners/rust-routes.mjs`).
+  - Go: a module with no router dependency that serves HTTP with `net/http` is
+    classified `net/http`, so its routes are read.
+
+  A route whose path is not literal text is omitted, never guessed, and the
+  API-surface coverage reason says how many were omitted.
+
 - **A documentation site with the guides a larger project ships**
   (`specs/053-user-documentation`). The GitHub Pages site
   (raccioly.github.io/docguard) now has a landing page, sidebar navigation and

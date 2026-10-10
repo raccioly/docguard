@@ -68,6 +68,7 @@ It targets development teams and AI coding agents that need to maintain document
 | **Agent instruction budget** | Measures every `AGENTS.md` chain from the root to each instruction directory, as Codex loads it (`AGENTS.override.md` replaces `AGENTS.md`), against `agentInstructions.maxBytes` (default 32768) or a per-chain allowance | `cli/scanners/agent-instructions.mjs`, `cli/validators/structure.mjs` | `STR004` is an escalation; `STR005` suggests tightening a slack allowance. Increasing an allowance is a reviewed config change, which the digit-normalized finding baseline could not guarantee |
 | **As-built specs** | `generate --spec <area>` collects deterministic facts under one code area (routes, exported JS/TS symbols, env vars read, entities), renders a Spec Kit spec with one agent-written candidate per fact, and registers it as `origin: as_built` with `sourcePaths`. The Spec-Registry validator re-scans those paths (`SPR007`) | `cli/scanners/as-built.mjs`, `cli/scanners/js-ast.mjs` (`exportedNames`, shared with the symbol map), `cli/commands/generate-as-built.mjs`, `cli/validators/spec-registry.mjs` | DocGuard writes no requirement prose. Facts key on method+path, file+export, name, so line moves never churn them. An App Router handler export is not a second fact beside its route. Route and env facts cite the file and line of the registration or first read. The registry fields are serialized only when set. `--write` commits the spec and its registry entry in one file transaction |
 | **Go, Spring and Rails routes** | Reports each route at the path it is served under. Go (gin, echo, chi, fiber, gorilla/mux, net/http): every router value is a node whose prefix comes from `Group`, chi `Route`/`Mount`, gorilla `PathPrefix().Subrouter()` or `http.StripPrefix`, across blocks, functions and files, resolved after every file is read. Spring (Java and Kotlin): class-level and method mappings, including the `path =`/`value =` forms, arrays, constants and `@RequestMapping(method = …)`. Rails: `config/routes.rb` and the files it `draw`s, with `namespace`, `scope`, nested `resources`, `only:`/`except:`, `member` and `collection` | `cli/scanners/go-routes.mjs`, `cli/scanners/spring-routes.mjs`, `cli/scanners/rails-routes.mjs`, `cli/scanners/route-lexing.mjs`, `cli/scanners/routes.mjs` | No parser: a shared lexer masks comments and strings and pairs brackets, so comments, `_test.go` files, HTTP-client calls and Feign clients do not count. Routes carry `parserTier: fallback-language`. A path or prefix that is not literal, or a Go call with several possible callees, places no route rather than a guessed one (specs/047-go-spring-rails-routes) |
+| **Sinatra, Starlette, Warp and Tide routes** | Reads the frameworks spec 060 added (#519). Sinatra: classic and modular apps (classes inheriting from `Sinatra::Base` across files), `namespace` prefixes, `register`ed extensions, and the prefixes `config.ru` maps or a host app `use`s. Starlette: `Starlette`/`Router` objects join the FastAPI/Flask graph, with their `routes=` lists, `Mount` children and `add_route`. Warp: filter expressions evaluated to path/method alternatives through `and`/`or`, `let` bindings and functions across files, from what `warp::serve` runs. Tide: `at()` trees and `nest()` mounts resolved after every file is read. A Go module with only `net/http` is classified so `go-routes.mjs` runs | `cli/scanners/sinatra-routes.mjs`, `cli/scanners/rust-routes.mjs`, `cli/scanners/python-routes.mjs`, `cli/scanners/project-type.mjs`, `cli/scanners/routes.mjs` | No parser for Ruby or Rust: a tokenizer (Ruby) or the shared lexer (Rust) masks comments and strings first. Ruby and Rust routes carry `parserTier: fallback-language`, Starlette routes the Python tier. A path that is not literal is omitted, and the API-surface coverage reason counts the omissions (specs/060-more-route-frameworks) |
 | **JS/TS extraction** | Router `.route('/x').get().post()` chains with mount prefixes; per-route auth from the route's own middleware and handler, an earlier `use(auth)`, an auth mount above it, or an App Router `middleware` matcher; env reads including destructuring, each read site recorded with file, line and default; the App Router `pages/` and `components/` roots; ORM entities (schema files, table builders, document schemas) through one discovery (`scanOrmEntities`) that guard's schema check and `generate` share | `cli/scanners/js-ast.mjs`, `cli/scanners/routes.mjs`, `cli/shared-source.mjs` (`grepEnvUsage`), `cli/scanners/schemas.mjs`, `cli/validators/schema-sync.mjs`, `cli/scanners/project-type.mjs` | Auth is recognised by name (`requireAuth`, `verifyToken`, `passport.authenticate(...)`, `getServerSession`); text elsewhere in a file never marks a route. Table schemas come from their ORM config first, else a bounded search; every schema file is read once. The regex fallback reads route chains, per-statement auth, and table and document-schema fields from the same object text. Framework and ORM names are listed in `docs/commands.md` (`generate`) |
 | **Spec-first gate** | Classifies a change between the merge base and HEAD as covered, exempt, not governed, uncovered or inconclusive. It reads governed paths from `specFirst` and resolves spec references against `specs/*/spec.md` and the registry | `cli/scanners/spec-first.mjs`, `cli/commands/specs.mjs` | Read-only. An unresolved reference never passes. Git or inventory failure is inconclusive (exit 2), never a pass. The PR body arrives as a file |
 | **Spec Kit delegation** | The only code that invokes the `specify` CLI: reads its documented `init` options and `--version`, resolves the integration key from `.specify/integration.json` / `init-options.json` / unambiguous agent signals, initializes Spec Kit, registers the packaged DocGuard extension and re-registers it when the registered version differs; writes the extension commands for the `generic` integration, which Spec Kit registers none for | `cli/spec-kit-delegation.mjs`, `cli/ensure-skills.mjs` | Called only by `docguard init` and `upgrade --apply`, and `ensureSkills` runs only from `init` too (the dispatcher installs nothing, so every other command writes only its own outputs, spec 042); argument arrays only; every failure returns a structured result with the CLI's error and a manual command; requires Spec Kit ≥ 0.11.2, the extension's `requires.speckit_version`, read from the manifest as `MIN_SPEC_KIT_VERSION` and checked before initializing or registering (spec 048) |
@@ -1658,6 +1659,16 @@ by package and receiver type, cyclic calls, HTTP-client calls, comments,
 `_test.go` files and Feign clients. Prefixes that cannot be read must yield no
 route at all.
 
+Sinatra, Starlette, Warp, Tide and `net/http`-only Go route fixtures are five
+reference projects run end to end from framework detection, each with a ground
+truth written from the framework's routing rules before its reader existed
+(all five reported no route before). Neighbouring cases cover Sinatra apps
+resolved through project superclasses, `use` and `Rack::URLMap`, Rack::Test
+calls, heredocs and `=begin` blocks; Starlette at both Python tiers and a
+`Router` from another library; Warp alternatives that cannot match; Tide
+bindings reused in two functions; and non-literal paths, which must be omitted
+and counted in the API-surface reason.
+
 API omission tests preserve documented endpoints across generated and human
 documents, mapped roles, and forced writes whenever the only runtime-absence
 evidence is a bounded scan. Field-replay controls pair historical and current
@@ -1711,6 +1722,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
+- **Routes for Sinatra, Starlette, Warp, Tide and Go `net/http`-only
+  services** (`specs/060-more-route-frameworks`, part of #519). These
+  frameworks were classified but no scanner read them, so `generate`, `diff`
+  and guard's API-surface check saw no endpoint. Now:
+  - Sinatra: classic and modular apps across files, nested `namespace`
+    prefixes, `register`ed extensions, and `config.ru` `map`/`Rack::URLMap`
+    mounts (`cli/scanners/sinatra-routes.mjs`).
+  - Starlette: `Route`, `Mount`, `Router` and `Starlette(routes=...)` lists,
+    `add_route` and `@app.route`, in the same graph as FastAPI and Flask, at the
+    Python parser tier (`cli/scanners/python-routes.mjs`).
+  - Warp: filter chains evaluated through `and`/`or`, `let` bindings and
+    functions in other files; Tide: `at()` trees and `nest()` mounts
+    (`cli/scanners/rust-routes.mjs`).
+  - Go: a module with no router dependency that serves HTTP with `net/http` is
+    classified `net/http`, so its routes are read.
+
+  A route whose path is not literal text is omitted, never guessed, and the
+  API-surface coverage reason says how many were omitted.
 
 - **A documentation site with the guides a larger project ships**
   (`specs/053-user-documentation`). The GitHub Pages site
@@ -2082,27 +2112,8 @@ Behaviour changes:
   This repository's chain is 13,222 bytes.
 
 - **Colliding spec numbers are reported (`SPK012`; #462,
-  `specs/017-agent-instruction-budget`).** Parallel agents each pick
-  "the next number" from their own checkout, which produces `specs/016-a` and
-  `specs/016-b`. After that, "spec 016" is ambiguous. open-mercato abandoned
-  numbering over exactly this problem. Timestamp-numbered feature directories
-  never collide.
 
-- **The Spec Kit extension manifest now says what it needs (#455,
-  `specs/018-extension-manifest-hygiene`).**
-  - **Spec Kit floor.** It said `>=0.1.0` while using per-event hook lists with
-    priority (Spec Kit 0.10.0), `category`/`effect` (0.10.2) and
-    `after_converge` (0.11.2). An older Spec Kit would install it, and the hooks
-    would then silently fail to register. The floor is now `>=0.11.2`, and a
-    contract test derives it from the features the manifest uses.
-  - **New fields.** It declares `category: docs` and `effect: read-write`.
-  - **Explicit hook priorities.** Every hook has one. The briefing runs at 5,
-    ahead of the git extension's branch creation at the default 10, so a
-    blocked briefing no longer leaves an empty feature branch behind.
-  - **Non-schema keys.** `requires.framework` is removed. The GitHub workflow
-    starters move from `provides.workflows`, whose name collides with Spec
-
-<!-- truncated: 4784 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 4803 more lines — read CHANGELOG.md directly -->
 
 ---
 

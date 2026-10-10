@@ -197,6 +197,39 @@ function csprojDeps(content) {
 
 // ── Framework + kind classification per ecosystem ────────────────────────────
 
+const NET_HTTP_IMPORT = /"net\/http"/;
+const NET_HTTP_SERVER = /\.\s*(?:HandleFunc|Handle)\s*\(|\bhttp\s*\.\s*(?:ListenAndServe(?:TLS)?|NewServeMux)\s*\(|\bhttp\s*\.\s*Server\s*\{/;
+
+/**
+ * Whether a Go module with no router dependency serves HTTP with the standard
+ * library: one of its `.go` files imports `net/http` and registers a handler,
+ * makes a `ServeMux`, or starts a server. An HTTP client alone does not count.
+ * The walk is bounded (depth 6, 2,000 files) and skips `vendor`, `testdata`,
+ * dot directories and `_test.go` files.
+ *
+ * @implements docguard.more-route-frameworks#FR-006
+ */
+function servesNetHttp(dir) {
+  let seen = 0;
+  const walk = (d, depth) => {
+    if (depth > 6 || seen >= 2000) return false;
+    let entries;
+    try { entries = readdirSync(d, { withFileTypes: true }); } catch { return false; }
+    for (const e of entries) {
+      if (e.isDirectory()) {
+        if (IGNORE_DIRS.has(e.name) || e.name.startsWith('.') || e.name === 'testdata' || isNonProductDir(e.name)) continue;
+        if (walk(join(d, e.name), depth + 1)) return true;
+      } else if (e.isFile() && e.name.endsWith('.go') && !e.name.endsWith('_test.go')) {
+        if (++seen > 2000) return false;
+        const text = readSafe(join(d, e.name));
+        if (NET_HTTP_IMPORT.test(text) && NET_HTTP_SERVER.test(text)) return true;
+      }
+    }
+    return false;
+  };
+  return walk(dir, 0);
+}
+
 function has(deps, ...names) {
   // A Go module's major version is a path suffix (`github.com/labstack/echo/v4`);
   // match on the module without it (docguard.go-spring-rails-routes#FR-007).
@@ -233,6 +266,7 @@ function classify(lang, dir, deps) {
     else if (has(deps, 'chi', 'go-chi/chi')) { framework = 'Chi'; kind = 'service'; }
     else if (has(deps, 'fiber', 'gofiber/fiber')) { framework = 'Fiber'; kind = 'service'; }
     else if (has(deps, 'gorilla/mux')) { framework = 'Gorilla Mux'; kind = 'service'; }
+    else if (servesNetHttp(dir)) { framework = 'net/http'; kind = 'service'; } // docguard.more-route-frameworks#FR-006
     else if (existsSync(join(dir, 'main.go')) || existsSync(join(dir, 'cmd'))) kind = 'service';
   } else if (lang === 'Java' || lang === 'Kotlin') {
     if (has(deps, 'spring-boot-starter-web', 'spring-boot-starter', 'org.springframework.boot:spring-boot-starter-web')) { framework = 'Spring Boot'; kind = 'api'; }
