@@ -1,3 +1,9 @@
+---
+title: Configuration
+parent: Reference
+nav_order: 2
+---
+
 # Configuration
 
 DocGuard is configured via `.docguard.json` in the project root. If no config file exists, sensible defaults are used with auto-detection.

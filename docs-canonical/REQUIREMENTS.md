@@ -1,9 +1,9 @@
 # Requirements
 
 <!-- docguard:quality negation-load off — requirements define explicit failure and non-disclosure boundaries -->
-<!-- docguard:version 0.9.0 -->
+<!-- docguard:version 0.9.1 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-09-30 -->
+<!-- docguard:last-reviewed 2026-10-10 -->
 
 ## Functional Requirements
 
@@ -60,6 +60,7 @@ The verification column above links each requirement to executable tests. The te
 
 | Version | Date | Changes |
 |---|---|---|
+| 0.9.1 | 2026-10-10 | Freshness review for specs 038–053: every requirement and verification path still holds; those specs state their own requirements under `specs/`, so none is copied here |
 | 0.9.0 | 2026-09-30 | Add FR-025 (Metrics-Consistency counts what ships and reports each drifted value once); record that the symbol map stays opt-in until the v2 protocol runs |
 | 0.8.0 | 2026-09-29 | Renumber the second FR-016/017/018 rows to FR-022/023/024: each ID was used for two different requirements, and path-qualified test annotations bound to the second meaning |
 | 0.7.0 | 2026-09-18 | Record the uninitialised-project hook boundary (exit 3) and foreign-hook backup protection shipped without a stated requirement |

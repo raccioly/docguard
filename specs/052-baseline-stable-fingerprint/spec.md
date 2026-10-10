@@ -51,3 +51,9 @@ Adding an unrelated test file can change that best match. The message then chang
 ## Out of Scope
 
 - Changing what any finding says, or the baseline file format.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `c53c264a31179bd423e927ad63728dbec2084014` — Reviewed at c53c264 on main: all 4 tasks are checked and were delivered by #518; the full suite (2931 tests) passes on Node 18, 20, 22 and 24 in CI, and guard reports 0 errors at this revision. Evidence: `cli/writers/baseline.mjs`, `docs-canonical/DATA-MODEL.md`, `tests/baseline-stable-fingerprint.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->

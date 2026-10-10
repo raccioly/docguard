@@ -1,6 +1,6 @@
 # CI Recipes
 
-<!-- docguard:last-reviewed 2026-09-30 -->
+<!-- docguard:last-reviewed 2026-10-10 -->
 <!-- docguard:status active -->
 
 ## Recipe 1 — Guard (mandatory CI gate)
@@ -14,6 +14,8 @@ node_modules/.bin/docguard ci --format json --no-history > docguard-report.json
 ```
 
 The CLI exits 0 for pass, 1 for failure, and 2 for warning-only results. A plain shell step treats both 1 and 2 as failures. To permit warnings, capture the exit status explicitly and allow only 0 or 2. To block warnings, use `ci --fail-on-warning`. Severity overrides retain their configured meaning.
+
+To adopt the gate on a repository that already has findings, run `guard --update-baseline` once and commit `.docguard.baseline.json`. Guard and `ci` then suppress up to the frozen number of each finding, report how many they suppressed, and gate everything new; `--no-baseline` shows everything for one run. A finding is matched by its code, file path without line number, and message with numbers masked. TRC004's trailing IR soft-match hint is left out, so adding an unrelated test file does not bring a frozen finding back. A baseline written by an earlier release still matches, and `--update-baseline` rewrites it in the current form (`specs/052-baseline-stable-fingerprint`).
 
 When `.docguard-evidence.json` exists, guard also evaluates its declarations.
 Contradictions are high-confidence errors. Stale input digests, missing or
@@ -87,6 +89,11 @@ new `## [x.y.z]` heading and lists the merged commit subjects under
 `### Commits`, so the published notes are the reviewed ones. The release PR
 also moves `action.yml`'s `DOCGUARD_RELEASED_VERSION` and the copyable
 `raccioly/docguard@vX.Y.Z` examples in `README.md` and `docs/ai-integration.md`.
+`.github/scripts/sync-release-version.mjs` updates every versioned surface in one
+fail-closed pass, including the checked-in `.agent/skills/` and `.agent/commands/`
+copies, which mirror their sources byte for byte; the release commit stages them
+and the changed-file allowlist (`RELEASE_PATH_ALLOWLIST`) admits them
+(`specs/051-release-cut-green`).
 
 After npm serves the new tarball, the `publish-homebrew` job renders
 `packaging/homebrew/docguard.rb` from it and pushes the result to

@@ -11,16 +11,16 @@
 
 # Architecture
 
-<!-- docguard:version 1.8.0 -->
+<!-- docguard:version 1.9.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-09-30 -->
+<!-- docguard:last-reviewed 2026-10-10 -->
 
 | Metadata | Value |
 |----------|-------|
 | **Status** | ![Status](https://img.shields.io/badge/status-active-brightgreen) |
-| **Version** | `1.8.0` |
-| **Last Updated** | 2026-09-30 |
-| **Project Size** | ~47K lines in 147 files across `cli/` — measured 2026-09-30 with `wc -l` over `cli/**/*.mjs`; re-measure rather than trust this figure |
+| **Version** | `1.9.0` |
+| **Last Updated** | 2026-10-10 |
+| **Project Size** | ~54K lines in 161 files across `cli/` — measured 2026-10-10 with `wc -l` over `cli/**/*.mjs`; re-measure rather than trust this figure |
 
 ---
 
@@ -37,18 +37,20 @@ It targets development teams and AI coding agents that need to maintain document
 | **CLI Entry Point** | Argument parsing, config loading, command routing | `cli/` | `docguard.mjs` |
 | **Commands** | User-facing commands (the Daily 5 — init/guard/diff/sync/score — plus situational tools including reconcile, retire, specs, and `init --with` scaffolders) | `cli/commands/` | `*.mjs` |
 | **Document lifecycle** | Finds exact terminal-status docs and completed-task review candidates; explicit retirement removes documentation from active context only after its source revision is reachable from a retained Git ref | `cli/scanners/document-lifecycle.mjs`, `cli/validators/document-lifecycle.mjs`, `cli/commands/retire.mjs` | Scanner is read-only; retirement uses the shared multi-file transaction and remains explicit |
-| **Spec lifecycle registry** | Projects immutable spec identities, reviewed lifecycle/lineage/scope, artifact digests, task state, qualified implementation/test evidence, bounded outcomes, and recovery tombstones into one byte-stable control file | `cli/scanners/spec-registry.mjs`, `cli/scanners/requirement-evidence.mjs`, `cli/scanners/revision-anchor.mjs`, `cli/validators/spec-registry.mjs`, `cli/commands/specs.mjs` | `specs --write` preserves reviewed fields; stale checks identify bounded field paths and distinguish canonical ordering from changed content; only committed, clean, digest-current lifecycle entries can defer traceability, while a current planned entry that is new, removed from the index, or modified pending commit remains advisory; `specs complete` is the only verified-delivery writer |
-| **Reconciliation graph** | Inventories changed paths independently from bounded patch text, maps them to direct spec evidence or to a requirement declared in a canonical document (`docs-canonical/<doc>.md#<ID>`), and keeps mechanical facts, approved intent, decisions, unrelated changes, and unsupported evidence separate | `cli/shared-git.mjs`, `cli/scanners/reconciliation.mjs`, `cli/commands/reconcile.mjs` | Timeout, overflow, parse failure, or incomplete inventory blocks a ready result; planning is read-only and `--write` never rewrites requirements |
-| **Analyzer tier** | Decides which analyzer produced each piece of evidence at the two entry points (`parseJsTs`, `extractPythonFiles`), carries `tier`/`tierReason` on scanned items, reports `parserTier` on every finding, and downgrades a validator to `partial` when an AST-capable language was read by the pattern fallback (`regex-fallback`) or when a language with no AST tier was read by pattern (`fallback-language`: Go, Java, Kotlin, Ruby, Rust, PHP, C#). The Environment validator is `partial` when a source language has no env patterns. The symbol map and module graph name the languages the import graph does not read | `cli/shared-source.mjs` (`tierFor`, `summarizeTiers`, `tierApplicability`, `grepEnvUsage`, `LANGUAGE_NAMES`), `cli/scanners/routes.mjs`, `cli/validators/api-surface.mjs`, `cli/validators/environment.mjs` | Findings are retained; only coverage is downgraded. The two tiers give different reasons: a parser was unavailable, or none exists. A package segment (`src/main/java/com/example`) is product code, not an examples directory (specs/043-fallback-language-coverage) |
+| **Spec lifecycle registry** | Projects immutable spec identities, reviewed lifecycle/lineage/scope, artifact digests, task state, qualified implementation/test evidence, bounded outcomes, and recovery tombstones into one byte-stable control file | `cli/scanners/spec-registry.mjs`, `cli/scanners/requirement-evidence.mjs`, `cli/scanners/revision-anchor.mjs`, `cli/validators/spec-registry.mjs`, `cli/commands/specs.mjs` | `specs --write` preserves reviewed fields; stale checks identify bounded field paths and distinguish canonical ordering from changed content; only committed, clean, digest-current lifecycle entries can defer traceability, while a current planned entry that is new, removed from the index, or modified pending commit remains advisory; `specs approve` records approval and a `planned`, `in_progress` or `implemented` delivery and refuses `verified`/`released`; `specs complete` is the only verified-delivery writer |
+| **Reconciliation graph** | Inventories changed paths independently from bounded patch text, maps them to direct spec evidence, to a spec whose reviewed `assetPaths` cover them (files that cannot carry an annotation, such as digest-pinned fixtures; spec 039), or to a requirement declared in a canonical document (`docs-canonical/<doc>.md#<ID>`), and keeps mechanical facts, approved intent, decisions, unrelated changes, and unsupported evidence separate | `cli/shared-git.mjs`, `cli/scanners/reconciliation.mjs`, `cli/commands/reconcile.mjs` | Timeout, overflow, parse failure, or incomplete inventory blocks a ready result; planning is read-only and `--write` never rewrites requirements |
+| **Analyzer tier** | Decides which analyzer produced each piece of evidence at the two entry points (`parseJsTs`, `extractPythonFiles`), carries `tier`/`tierReason` on scanned items, reports `parserTier` on every finding, and downgrades a validator to `partial` when an AST-capable language was read by the pattern fallback (`regex-fallback`) or when a language with no AST tier was read by pattern (`fallback-language`: Go, Java, Kotlin, Ruby, Rust, PHP, C#). The Environment validator is `partial` when a source language has no env patterns. The symbol map and module graph name the languages the import graph does not read | `cli/shared-source.mjs` (`tierFor`, `summarizeTiers`, `tierApplicability`, `grepEnvUsage`, `LANGUAGE_NAMES`), `cli/scanners/routes.mjs`, `cli/validators/api-surface.mjs`, `cli/validators/environment.mjs` | Findings are retained; only coverage is downgraded. The two tiers give different reasons: a parser was unavailable, or none exists. A package segment (`src/main/java/com/example`, Go `internal/example`) is product code, not an examples directory (specs/043-fallback-language-coverage) |
 | **Python web extraction** | One module outline per Python file, from the `python3` AST tier or the pattern tier when no interpreter is available; the resolvers compose FastAPI/Flask router prefixes across modules, follow Django URL configurations from `ROOT_URLCONF` (including DRF router registrations), classify ORM models (SQLAlchemy, Django, SQLModel) with relationship cardinality, and read `BaseSettings` environment variables | `cli/scanners/py-outline.mjs`, `cli/scanners/py-sources.mjs`, `cli/scanners/python-routes.mjs`, `cli/scanners/python-models.mjs`, `cli/scanners/py-env.mjs`, `cli/scanners/py-ast.mjs` | Both tiers share the resolvers, so they differ only in what they can read; pattern-tier facts keep `parserTier: regex-fallback`, lower `generate` confidence and mark their sections partial. Unresolved prefixes and includes are flagged, never guessed. Schema-Sync reads the same model scanner as `generate` |
 | **Spec Kit artifact coverage** | Treats Spec Kit's own documents as governed. Coverage counts top-level `specs/<feature>/**/*.md` and the constitution under a `specKit` tier. Metrics-Consistency (including `MET004` dependency claims) and Reference-Existence read the constitution | `cli/scanners/speckit.mjs` (`findConstitution`), `cli/commands/guard.mjs`, `cli/validators/metrics-consistency.mjs`, `cli/validators/reference-existence.mjs` | The constitution usually lives in a dot directory the walkers skip, so it is located explicitly. Nested fixture `specs/` trees are not the project's artifacts |
 | **Headline coverage** | Reports how many validators actually checked beside the passed/total check count, and caps the badge colour at `green` when any active validator was partial, unsupported, missing a prerequisite, or errored | `cli/commands/guard.mjs` (`badgeColor`, `incompleteCoverage`) | `no-matches` keeps the top grade: a validator that ran and found nothing applicable completed its job |
 | **Finding channels** | Separates the three questions a finding answers — does CI block (`severity`), who decides (`disposition`), how well is the code measured (`evidence`), and which analyzer produced it (`parserTier`) — so a certain observation is never labelled uncertain and the feedback loop samples the labels that have never been validated | `cli/findings.mjs`, `cli/precision-evidence.mjs`, `cli/writers/sarif.mjs` | Channels are additive to the published finding contract; `confidence` keeps its meaning as the detector's certainty in its own observation |
 | **Precision evidence** | Runs labelled synthetic and exact-commit public cases, separates deterministic results from observations, calculates null-safe quality metrics and confidence bounds, compares case-first baselines, persists them in a provenance envelope whose measure (`benchmark-precision`) and caveat are derived from the cases and re-verified on load, and projects per-code evidence into a generated module the CLI quotes at finding time | `benchmarks/`, `cli/precision-evidence.mjs`, `schemas/docguard-benchmark.schema.json`, `schemas/docguard-benchmark-baseline.schema.json`, `schemas/docguard-precision-evidence.schema.json` | External runs are explicit; third-party project code is never executed and disposable checkouts are removed by default |
+| **Documentation site and generated references** | `docs/` is the GitHub Pages site (Just the Docs remote theme in `docs/_config.yml`, which Pages builds itself; no build step or dependency in the repository). `npm run docs:reference` renders `docs/reference/findings.md` from the `CODES` and `BLOCKER_CODES` registries and `explain`'s `DISPLAY_NAMES`; `npm run llms` renders `llms.txt`/`llms-full.txt` | `docs/`, `tools/generate-docs-reference.mjs`, `tools/generate-llms.mjs` | `tests/user-docs.test.mjs` and `tests/llms-bundle-drift.test.mjs` fail on a stale generated file and name the command. `docs/` ships in the npm package (PDFs excluded); `tools/` does not (specs/053-user-documentation) |
 | **Non-regression budgets** | Compares a PR with its base on one runner: interleaved guard wall time, self-guard error findings, agent-facing output bytes, packed package weight and runtime dependencies, against the ratios and floors in `budgets.json`; `Budget-Exempt` waives one metric with a reason | `tools/budget.mjs`, `budgets.json` | CI `budget` job; development tooling, not shipped in the npm package |
 | **Doc dependency lock** | A doc section declares the code it describes (`covers=` on its `docguard:section` marker); `review --accept` records AST or content fingerprints in `.docguard-doc-lock.json`; the Doc-Dependency validator reports a covered symbol whose code changed (DLK001), a dependency that no longer resolves, an unaccepted or orphaned entry, or an unreadable lock | `cli/scanners/doc-deps.mjs`, `cli/validators/doc-dependency.mjs`, `cli/commands/review.mjs` | Opt-in by declaration; only `review` writes the lock; runs in `--changed-only` pre-commit mode |
 | **Version-age note** | Reads the running release's date from the shipped `CHANGELOG.md` heading for exactly its version; when it is more than 14 days old, the guard text footer, the MCP `initialize` instructions and the context pack say a newer version may exist and name `docguard upgrade` | `cli/release-age.mjs`, `cli/commands/guard.mjs`, `cli/commands/mcp.mjs`, `cli/commands/memory.mjs` | No network call; silent when unsure (no CHANGELOG, no heading, bad date, clock before release), in a source checkout, with `DOCGUARD_NO_UPDATE_HINT=1`, and in the guard footer under `CI`; never in JSON, SARIF, JUnit or MCP tool results |
 | **Compact guard response** | Projects the full guard result so each fact appears once: findings once, each code's agent-facing evidence once, validator status and counts, each standard applicability reason once; the MCP guard tool's default | `cli/shared-guard-json.mjs`, `cli/validator-coverage.mjs` (`STANDARD_APPLICABILITY_REASONS`), `cli/commands/mcp.mjs`, `cli/commands/guard.mjs` (`--compact`) | A projection, never a recomputation; `detail: "full"` and the CLI's default JSON keep the complete contract |
+| **MCP project confinement** | The MCP server serves its `--dir` (else its working directory) plus each `--root`, fixed at startup. A tool call's `projectDir` resolves against the served directory with symlinks followed and must land inside a served root before anything under it is read | `cli/commands/mcp.mjs` (`isWithinRoot`) | Same check over stdio and HTTP; a refused path gets the same error whether or not it exists; a client cannot widen the roots (specs/041-mcp-project-confinement) |
 | **MCP doc navigation** | Exact, bounded answers for agents: which doc lines, instruction lines, requirement IDs and covered sections describe a file; a document's outline; one section or the lines around a reference; the task context packet. One reference matcher shared with `trace --reverse` and `impact` | `cli/scanners/doc-references.mjs`, `cli/shared-headings.mjs`, `cli/commands/mcp.mjs` | Read-only; paths pass the evidence reader's checks; 8 KiB default and 32 KiB cap per section read; no tool calls a model |
 | **Feedback fixtures** | Validates synthetic reproductions and opposite controls, reduces them under an explicit predicate, derives duplicate identities, and emits test-only contributions | `cli/feedback-fixture.mjs`, `cli/commands/feedback.mjs`, `schemas/docguard-feedback-fixture.schema.json` | Publication remains user-controlled; contribution generation requires reviewed redaction, scope, and benchmark-delta evidence |
 | **Evidence-scoped verification** | Binds one exact Markdown statement to a typed JSON Pointer value, bounded file collection, static Python container literal, or saved upstream compatibility report and returns one of five explicit states | `cli/evidence/`, `cli/validators/evidence.mjs`, `cli/commands/verify.mjs`, `schemas/docguard-evidence.schema.json` | Reads stay local, bounded, non-executable, and symlink/private-path safe; direct verification exits 1 for contradiction/invalid input, 2 for unresolved evidence, and 0 only for verified or unconfigured evidence |
@@ -62,8 +64,10 @@ It targets development teams and AI coding agents that need to maintain document
 | **Code-derived diagrams** | Draws the `module-graph` (directory modules and their imports) and `entity-diagram` (schema entities) mermaid sections from code, so GST002 reports drift and `sync --write` redraws them; a graph missing evidence is `partial`, never stale | `cli/scanners/module-diagram.mjs`, `cli/scanners/memory-plan.mjs`, `cli/validators/generated-staleness.mjs` | Only for a doc that has the marker or is being created; node, edge and depth limits are captioned; hand-drawn diagrams are untouched |
 | **Repository-root guidance** | Detects a likely governing ancestor without changing the selected scan directory | `cli/repository-root.mjs`, `cli/docguard.mjs` | Requires ancestor DocGuard configuration or npm/pnpm membership, respects nested Git boundaries, and uses typed stderr diagnostics for machine modes |
 | **Lifecycle transactions and context** | Stages registry, recovery, spec outcome, and current-context changes before any visible mutation and rolls the set back on write or validation failure | `cli/writers/file-transaction.mjs`, `cli/writers/spec-outcomes.mjs`, `cli/scanners/lifecycle-context.mjs` | Active context includes approved current spec pointers and content hashes; retired prose is excluded |
+| **Adoption baseline** | `guard --update-baseline` freezes the current findings in `.docguard.baseline.json` as fingerprint → occurrence count; guard and `ci` then suppress up to that many of each and gate everything new, reporting how many were suppressed and how many entries are stale | `cli/writers/baseline.mjs`, `cli/commands/guard.mjs` | A fingerprint hashes the code, the location without its line number and the message with digits masked, minus an advisory tail declared per code in `ADVISORY_TAILS` (today only TRC004's IR soft-match hint, which names whichever test file matches best). Guard also accepts the legacy full-message fingerprint so a baseline from an earlier release keeps working; one finding consumes one entry (specs/052-baseline-stable-fingerprint) |
 | **Agent instruction budget** | Measures every `AGENTS.md` chain from the root to each instruction directory, as Codex loads it (`AGENTS.override.md` replaces `AGENTS.md`), against `agentInstructions.maxBytes` (default 32768) or a per-chain allowance | `cli/scanners/agent-instructions.mjs`, `cli/validators/structure.mjs` | `STR004` is an escalation; `STR005` suggests tightening a slack allowance. Increasing an allowance is a reviewed config change, which the digit-normalized finding baseline could not guarantee |
 | **As-built specs** | `generate --spec <area>` collects deterministic facts under one code area (routes, exported JS/TS symbols, env vars read, entities), renders a Spec Kit spec with one agent-written candidate per fact, and registers it as `origin: as_built` with `sourcePaths`. The Spec-Registry validator re-scans those paths (`SPR007`) | `cli/scanners/as-built.mjs`, `cli/scanners/js-ast.mjs` (`exportedNames`, shared with the symbol map), `cli/commands/generate-as-built.mjs`, `cli/validators/spec-registry.mjs` | DocGuard writes no requirement prose. Facts key on method+path, file+export, name, so line moves never churn them. An App Router handler export is not a second fact beside its route. Route and env facts cite the file and line of the registration or first read. The registry fields are serialized only when set. `--write` commits the spec and its registry entry in one file transaction |
+| **Go, Spring and Rails routes** | Reports each route at the path it is served under. Go (gin, echo, chi, fiber, gorilla/mux, net/http): every router value is a node whose prefix comes from `Group`, chi `Route`/`Mount`, gorilla `PathPrefix().Subrouter()` or `http.StripPrefix`, across blocks, functions and files, resolved after every file is read. Spring (Java and Kotlin): class-level and method mappings, including the `path =`/`value =` forms, arrays, constants and `@RequestMapping(method = …)`. Rails: `config/routes.rb` and the files it `draw`s, with `namespace`, `scope`, nested `resources`, `only:`/`except:`, `member` and `collection` | `cli/scanners/go-routes.mjs`, `cli/scanners/spring-routes.mjs`, `cli/scanners/rails-routes.mjs`, `cli/scanners/route-lexing.mjs`, `cli/scanners/routes.mjs` | No parser: a shared lexer masks comments and strings and pairs brackets, so comments, `_test.go` files, HTTP-client calls and Feign clients do not count. Routes carry `parserTier: fallback-language`. A path or prefix that is not literal, or a Go call with several possible callees, places no route rather than a guessed one (specs/047-go-spring-rails-routes) |
 | **JS/TS extraction** | Router `.route('/x').get().post()` chains with mount prefixes; per-route auth from the route's own middleware and handler, an earlier `use(auth)`, an auth mount above it, or an App Router `middleware` matcher; env reads including destructuring, each read site recorded with file, line and default; the App Router `pages/` and `components/` roots; ORM entities (schema files, table builders, document schemas) through one discovery (`scanOrmEntities`) that guard's schema check and `generate` share | `cli/scanners/js-ast.mjs`, `cli/scanners/routes.mjs`, `cli/shared-source.mjs` (`grepEnvUsage`), `cli/scanners/schemas.mjs`, `cli/validators/schema-sync.mjs`, `cli/scanners/project-type.mjs` | Auth is recognised by name (`requireAuth`, `verifyToken`, `passport.authenticate(...)`, `getServerSession`); text elsewhere in a file never marks a route. Table schemas come from their ORM config first, else a bounded search; every schema file is read once. The regex fallback reads route chains, per-statement auth, and table and document-schema fields from the same object text. Framework and ORM names are listed in `docs/commands.md` (`generate`) |
 | **Spec-first gate** | Classifies a change between the merge base and HEAD as covered, exempt, not governed, uncovered or inconclusive. It reads governed paths from `specFirst` and resolves spec references against `specs/*/spec.md` and the registry | `cli/scanners/spec-first.mjs`, `cli/commands/specs.mjs` | Read-only. An unresolved reference never passes. Git or inventory failure is inconclusive (exit 2), never a pass. The PR body arrives as a file |
 | **Spec Kit delegation** | The only code that invokes the `specify` CLI: reads its documented `init` options and `--version`, resolves the integration key from `.specify/integration.json` / `init-options.json` / unambiguous agent signals, initializes Spec Kit, registers the packaged DocGuard extension and re-registers it when the registered version differs; writes the extension commands for the `generic` integration, which Spec Kit registers none for | `cli/spec-kit-delegation.mjs`, `cli/ensure-skills.mjs` | Called only by `docguard init` and `upgrade --apply`, and `ensureSkills` runs only from `init` too (the dispatcher installs nothing, so every other command writes only its own outputs, spec 042); argument arrays only; every failure returns a structured result with the CLI's error and a manual command; requires Spec Kit ≥ 0.11.2, the extension's `requires.speckit_version`, read from the manifest as `MIN_SPEC_KIT_VERSION` and checked before initializing or registering (spec 048) |
@@ -250,7 +254,7 @@ DocGuard declares one exact-pinned runtime dependency, `@babel/parser`. It loads
 |--------|-------|
 | `node:fs` | File system operations (read docs, check existence) |
 | `node:path` | Path resolution and manipulation |
-| `node:child_process` | Git operations, the optional `python3` AST tier, the optional `specify` CLI (`init` only), `npm`/`gh`/`git push` for `upgrade --pr`, `gh` for `impact`, and re-running the CLI itself (`fix`, `diagnose`). All take argv arrays; see SECURITY.md |
+| `node:child_process` | Git operations, the optional `python3` AST tier, the optional `specify` CLI (`init` and `upgrade --apply`), `npm install -g` for `upgrade --apply`, `git`/`gh` for `upgrade --pr`, `gh` for `impact`, and re-running the CLI itself (`fix`, `diagnose`). All take argv arrays; see SECURITY.md |
 | `node:url` | ES Module URL resolution |
 | `node:crypto` | Content hashes: doc-lock fingerprints, registry and evidence digests, plan-cache identity |
 | `node:http` | The opt-in MCP HTTP transport (`mcp --transport http`) |
@@ -267,6 +271,7 @@ DocGuard declares one exact-pinned runtime dependency, `@babel/parser`. It loads
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 1.9.0 | 2026-10-10 | DocGuard Team | Freshness review for specs 039–053: Go/Spring/Rails route readers, the adoption baseline and its stable fingerprint, MCP project confinement, the documentation site and its generators, asset-path reconciliation links, `specs approve`, `upgrade --apply` as a `specify` and `npm` caller; project size re-measured |
 | 1.8.0 | 2026-09-30 | DocGuard Team | `ensureSkills` runs only from `init`; the dispatcher no longer installs skills for other commands (spec 042) |
 | 1.7.0 | 2026-09-30 | DocGuard Team | Freshness review for specs 028–037: layer rules corrected to the code (scanners and validators use the pure section parsers in `writers/`), guard data flow no longer lists a fixed validator set, subprocess and built-in module inventory completed, project size re-measured |
 | 1.6.0 | 2026-09-29 | DocGuard Team | Freshness review for specs 014–026: hook-manager ownership, Spec Kit version floors, the shared test-case counter, subprocess uses, and counts replaced by their authoritative source |
@@ -302,7 +307,7 @@ Completion also supports reviewed maintenance of a verified or released living s
 
 # CI Recipes
 
-<!-- docguard:last-reviewed 2026-09-30 -->
+<!-- docguard:last-reviewed 2026-10-10 -->
 <!-- docguard:status active -->
 
 ## Recipe 1 — Guard (mandatory CI gate)
@@ -316,6 +321,8 @@ node_modules/.bin/docguard ci --format json --no-history > docguard-report.json
 ```
 
 The CLI exits 0 for pass, 1 for failure, and 2 for warning-only results. A plain shell step treats both 1 and 2 as failures. To permit warnings, capture the exit status explicitly and allow only 0 or 2. To block warnings, use `ci --fail-on-warning`. Severity overrides retain their configured meaning.
+
+To adopt the gate on a repository that already has findings, run `guard --update-baseline` once and commit `.docguard.baseline.json`. Guard and `ci` then suppress up to the frozen number of each finding, report how many they suppressed, and gate everything new; `--no-baseline` shows everything for one run. A finding is matched by its code, file path without line number, and message with numbers masked. TRC004's trailing IR soft-match hint is left out, so adding an unrelated test file does not bring a frozen finding back. A baseline written by an earlier release still matches, and `--update-baseline` rewrites it in the current form (`specs/052-baseline-stable-fingerprint`).
 
 When `.docguard-evidence.json` exists, guard also evaluates its declarations.
 Contradictions are high-confidence errors. Stale input digests, missing or
@@ -389,6 +396,11 @@ new `## [x.y.z]` heading and lists the merged commit subjects under
 `### Commits`, so the published notes are the reviewed ones. The release PR
 also moves `action.yml`'s `DOCGUARD_RELEASED_VERSION` and the copyable
 `raccioly/docguard@vX.Y.Z` examples in `README.md` and `docs/ai-integration.md`.
+`.github/scripts/sync-release-version.mjs` updates every versioned surface in one
+fail-closed pass, including the checked-in `.agent/skills/` and `.agent/commands/`
+copies, which mirror their sources byte for byte; the release commit stages them
+and the changed-file allowlist (`RELEASE_PATH_ALLOWLIST`) admits them
+(`specs/051-release-cut-green`).
 
 After npm serves the new tarball, the `publish-homebrew` job renders
 `packaging/homebrew/docguard.rb` from it and pushes the result to
@@ -576,14 +588,14 @@ Read the outputs declared in `action.yml` and the command's JSON schema before w
 
 # Data Model
 
-<!-- docguard:version 0.12.0 -->
+<!-- docguard:version 0.14.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-09-30 -->
+<!-- docguard:last-reviewed 2026-10-10 -->
 
 | Metadata | Value |
 |----------|-------|
 | **Status** | ![Status](https://img.shields.io/badge/status-active-brightgreen) |
-| **Version** | `0.12.0` |
+| **Version** | `0.14.0` |
 | **Database** | None — DocGuard is a stateless CLI tool |
 | **Storage** | File-system only (reads project files, writes generated docs) |
 
@@ -605,7 +617,7 @@ The primary data structure. Controls all CLI behavior.
 | `version` | `string` | No | `"0.1"` | Config schema version |
 | `projectType` | `string` | No | Auto-detected | One of: `cli`, `webapp`, `api`, `library`, `monorepo` |
 | `requiredFiles.canonical` | `string[]` | No | 5 docs-canonical files | Paths to required CDD documents |
-| `requiredFiles.agentFile` | `string[]` | No | `["AGENTS.md", "CLAUDE.md"]` | AI agent config file options |
+| `requiredFiles.agentFile` | `string[]` \| `string` | No | `["AGENTS.md", "CLAUDE.md"]` | AI agent config file options; any one suffices. A single string is read as a one-element list |
 | `requiredFiles.changelog` | `string` | No | `"CHANGELOG.md"` | Changelog file path |
 | `requiredFiles.driftLog` | `string` | No | `"DRIFT-LOG.md"` | Drift log file path |
 
@@ -634,11 +646,12 @@ The primary data structure. Controls all CLI behavior.
 | `agentInstructions.allowances.<file>` | `integer` | No | — | Per-chain allowance keyed by the chain's deepest file; slack of 1 KiB or more reports STR005 |
 | `specFirst.paths` / `specFirst.exemptKinds` | `string[]` | No | Everything except Markdown, `specs/**` and tests / `release, deps, typo, test-only` | Governed paths and allowed `Spec-Exempt` kinds for `specs require` |
 | `validators.docDependency` / `pathScopedRules` / `docOwnership` | `boolean` | No | `true` | Each applies only when its input exists: a `covers=` declaration, agent instruction files, an `ownership` block or `.devin/wiki.json` |
-| `detection.includeNonProduct` | `boolean` | No | `false` | Read test, fixture, example and mock directories as product code during surface detection (routes, env vars, frameworks). Package segments such as `src/main/java/com/example` are always product code |
+| `detection.includeNonProduct` | `boolean` | No | `false` | Read test, fixture, example and mock directories as product code during surface detection (routes, env vars, frameworks). Package segments such as `src/main/java/com/example` or a Go `internal/example` package are always product code |
 | `diagrams.moduleGraph.depth` / `maxNodes` / `include` | `integer` / `integer` / `string[]` | No | `2` / `30` (cap 60) / every product source file | Shape of the `module-graph` section |
 | `memory.symbolMap.maxBytes` | `integer` | No | `4096` (256–16384) | Budget of the symbol map `memory --pack --symbols` adds |
 | `devinWiki.maxPages` | `integer` | No | `30` (up to 80) | Page cap for linting `.devin/wiki.json`; 80 on Devin enterprise plans |
 | `ownership` | `object` | No | — | Doc ownership map, described below |
+| `baseline` | `boolean` | No | `true` | `false` ignores a committed `.docguard.baseline.json`, as `--no-baseline` does on every run |
 
 ### Example Configuration
 
@@ -806,6 +819,36 @@ and a longer literal directory prefix beats a shorter one; two equal matches
 are a tie (OWN002). A malformed block is an error (OWN007), and every owner
 lookup reports that error until the block is fixed.
 
+## Adoption Baseline: `.docguard.baseline.json`
+
+`docguard guard --update-baseline` writes this file at the project root, to be
+committed so the team and CI share it. Guard and `ci` suppress up to the frozen
+number of each finding and gate everything else; `--no-baseline` or
+`"baseline": false` ignores the file.
+
+| Field | Meaning |
+|---|---|
+| `_comment` | Fixed explanation of the file and how to regenerate it |
+| `version` | `2`: each fingerprint carries an occurrence count |
+| `generatedAt` | ISO timestamp of the write; guard reports the baseline's age from it and never enforces one |
+| `count` | Number of distinct fingerprints |
+| `fingerprints` | Fingerprint → occurrence count, keys sorted |
+
+A fingerprint is the first 16 hex characters of SHA-256 over
+`code|path|message`. `code` is the finding code (`UNCODED` when absent), `path`
+is the location without its trailing `:line`, and `message` has every digit run
+replaced by `#` and whitespace collapsed. Before masking, an advisory tail
+declared for the code in `ADVISORY_TAILS` (`cli/writers/baseline.mjs`) is
+removed: text a validator appends that changes when unrelated files change.
+TRC004's ` — IR soft-match: …` hint is the only one, so every other code's
+fingerprint is the same as before (specs/052-baseline-stable-fingerprint).
+
+Guard matches a finding against its stable fingerprint first and then against
+the legacy fingerprint (the full message), so a baseline written by an earlier
+release keeps suppressing what it froze; `--update-baseline` rewrites it in the
+stable form. One finding consumes one unit from one entry. A malformed file, or
+one with no positive counts, is treated as absent, so every finding surfaces.
+
 ## Generated caches and budgets
 
 | File | Written by | Shape |
@@ -940,42 +983,11 @@ The `score --format json` output:
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 0.14.0 | 2026-10-10 | DocGuard Team | Freshness review for specs 038–053: the adoption baseline file and its fingerprint preimage, including the advisory-tail exclusion and legacy match (spec 052); the `baseline` key; `requiredFiles.agentFile` as a string (spec 050); Go `internal/example` as product code |
 | 0.13.0 | 2026-09-30 | DocGuard Team | Guard result `key`/`parent` and the `docSections` key; Claude Code `@path` imports in instruction budgets; tracked-only `glob` fingerprints (spec 049) |
 | 0.12.0 | 2026-09-30 | DocGuard Team | `.docguard/` ignores itself, and dirty checks leave it out (spec 042) |
-| 0.11.0 | 2026-09-30 | DocGuard Team | Freshness review for specs 028–037: configuration keys for the doc lock, path-scoped rules, ownership, diagrams and the symbol map; `review --prune` as a doc-lock writer; the plan cache (version 3), `budgets.json` and the frozen agent-context protocol v2 |
-| 0.10.0 | 2026-09-29 | DocGuard Team | Add registry `lifecycle.origin` / `scope.sourcePaths` for as-built specs, the `specKit` coverage tier, and the `agentInstructions` and `specFirst` configuration |
-| 0.9.0 | 2026-09-15 | DocGuard Team | Add bounded field-level spec-registry differences and direct evidence verification exit semantics |
-| 0.6.0 | 2026-09-14 | DocGuard Team | Add the document-retirement recovery manifest, retained-ref proof, and retired requirement tombstones |
-| 0.4.0 | 2026-03-13 | DocGuard Team | Complete rewrite — documented all config formats, output schemas, metadata headers |
-| 0.1.0 | 2026-03-13 | DocGuard Generate | Auto-generated skeleton |
 
-## Score assurance contract
-
-The numeric CDD score estimates structural maturity. Factual accuracy and regulatory assurance require separate evidence. Existing score and grade thresholds remain stable. Score JSON identifies its scope as `structural-maturity`. `memory.accuracy` is nullable: `null` represents unverified factual accuracy; the former proxy is exposed as `memory.structuralAlignment`. Consumers must preserve null as an unknown value.
-
-An `assurance` object accompanies score, diagnose, CI, and report output. It contains `status` (`unverified`), `factualAccuracy` (`null`), and `unverifiedClaims` (a count of extracted candidates, or null if extraction failed). Even zero extracted candidates leaves prose unverified. Claim discovery uses a bounded heuristic. These fields explain evidence limits while existing CI thresholds retain their numeric meaning.
-
-## Evidence verification contract: `.docguard-evidence.json`
-
-The optional version-1 manifest contains at most 128 declarations. Each immutable
-ID owns an `always` applicability declaration, one Markdown target, one source,
-and one compatible predicate. Unknown fields, duplicate IDs, unsafe paths, and
-ambiguous predicate combinations invalidate the manifest.
-
-| Source adapter | Required contract | Compatible predicate |
-|---|---|---|
-| `json-pointer` | Safe JSON file plus an RFC 6901 pointer | `equals` with an explicit JSON type, or `set-equals` for a duplicate-free string array |
-| `collection-count` | One bounded repository-relative glob and explicit `allowEmpty` policy | `count-equals` |
-| `python-literal-count` | Safe `.py` path, one ASCII module-level symbol, one uniquely assigned static list/tuple/set/dict literal, and explicit `allowEmpty` policy | `count-equals` |
-| `oasdiff` | Saved bounded JSON array, adapter version, producer version, `breaking` or `changelog` command, and current input hashes | `no-findings` |
-| `buf` | Saved bounded JSON Lines, adapter version, producer version, `breaking` command, and current input hashes | `no-findings` |
-
-Every result contains the declaration ID, stable claim and evidence identities,
-document location, adapter, predicate, captured input hashes, evidence hash,
-reason code, and scope limitation. The state is exactly one of
-`verified-within-scope`, `contradicted`, `stale`, `inconclusive`, or
-
-<!-- truncated: 67 more lines — read docs-canonical/DATA-MODEL.md directly -->
+<!-- truncated: 99 more lines — read docs-canonical/DATA-MODEL.md directly -->
 
 ---
 
@@ -986,16 +998,16 @@ reason code, and scope limitation. The state is exactly one of
 
 <!-- docguard:quality negation-load off — an environment doc precisely describes the ABSENCE of requirements (no install step, no database, no credential for the CLI); the prohibitive phrasing is accurate and intentional, not sloppy writing -->
 
-<!-- docguard:version 0.12.0 -->
+<!-- docguard:version 0.13.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-09-30 -->
+<!-- docguard:last-reviewed 2026-10-10 -->
 
-> The DocGuard CLI needs no environment variables. Three optional ones exist: `DOCGUARD_API_KEY` for the HTTP MCP server, `DOCGUARD_SPECIFY_TIMEOUT_MS` for `docguard init`'s calls to the `specify` CLI, and `DOCGUARD_NO_UPDATE_HINT` to silence the version-age note. DocGuard has a single optional-load npm dependency (`@babel/parser`) and optionally uses the developer's own `python3`; everything else is Node.js built-ins.
+> The DocGuard CLI needs no environment variables. Three optional ones exist: `DOCGUARD_API_KEY` for the HTTP MCP server, `DOCGUARD_SPECIFY_TIMEOUT_MS` for the calls `docguard init` and `docguard upgrade --apply` make to the `specify` CLI, and `DOCGUARD_NO_UPDATE_HINT` to silence the version-age note. DocGuard has a single optional-load npm dependency (`@babel/parser`) and optionally uses the developer's own `python3`; everything else is Node.js built-ins.
 
 | Metadata | Value |
 |----------|-------|
 | **Status** | ![Status](https://img.shields.io/badge/status-active-brightgreen) |
-| **Version** | `0.12.0` |
+| **Version** | `0.13.0` |
 
 ---
 
@@ -1007,7 +1019,7 @@ reason code, and scope limitation. The state is exactly one of
 | npm | ≥8 | Included with Node.js |
 | Git | Any | [git-scm.com](https://git-scm.com) |
 | Python 3 | **Optional** — ≥3.8, enables the AST-accurate Python scanning tier; the scanners use regex otherwise | [python.org](https://python.org) |
-| Spec Kit (`specify`) | **Optional** — ≥ 0.11.2 for `docguard init` to initialize Spec Kit and register the DocGuard extension (`requires.speckit_version`; an older `specify` is neither initialized nor registered) | [github/spec-kit](https://github.com/github/spec-kit) |
+| Spec Kit (`specify`) | **Optional** — ≥ 0.11.2 for `docguard init` to initialize Spec Kit and register the DocGuard extension, and for `docguard upgrade --apply` to refresh a registered one (`requires.speckit_version`; an older `specify` is neither initialized nor registered) | [github/spec-kit](https://github.com/github/spec-kit) |
 
 ## Environment Variables
 
@@ -1022,7 +1034,7 @@ Three **optional** variables exist:
 |----------|-----------------|---------|
 | `DOCGUARD_API_KEY` | `docguard mcp --transport http`: optional on loopback; **required to bind a non-loopback host** | Shared secret for the HTTP MCP server. Equivalent to `--api-key <key>`, which takes precedence. When set, every request must carry `Authorization: Bearer <key>` or `X-API-Key: <key>`, else `401`. |
 | `DOCGUARD_NO_UPDATE_HINT` | guard text output, the MCP server's instructions, `memory --pack` | `1` turns off the note that the installed release is more than 14 days old (spec 038). The note makes no network call; `CI` set to a non-empty value other than `false` or `0` also silences it in guard's text output. |
-| `DOCGUARD_SPECIFY_TIMEOUT_MS` | `docguard init` with the `specify` CLI installed | Timeout in milliseconds for each `specify` call. Defaults: 15000 for `specify init --help`, 60000 for `specify init` and `specify extension add`. A missing, zero or non-numeric value uses the default. |
+| `DOCGUARD_SPECIFY_TIMEOUT_MS` | `docguard init` and `docguard upgrade --apply` with the `specify` CLI installed | Timeout in milliseconds for each `specify` call. Defaults: 15000 for `specify --version` and `specify init --help`, 60000 for `specify init` and `specify extension add`. A missing, zero or non-numeric value uses the default. |
 
 The server binds `127.0.0.1` by default and **refuses to start** on a
 non-loopback host without a key, rather than exposing project read access to
@@ -1055,6 +1067,10 @@ node cli/docguard.mjs guard --format json
 # (tests/llms-bundle-drift.test.mjs fails and names this command)
 npm run llms
 
+# Regenerate docs/reference/findings.md after changing a finding code or a
+# validator's display name (tests/user-docs.test.mjs fails and names this command)
+npm run docs:reference
+
 # Measure this tree against the budgets in budgets.json (the CI `budget` job
 # runs the same comparison against the base branch)
 npm run budget
@@ -1079,9 +1095,12 @@ node cli/docguard.mjs ci --threshold 70 --format json
 
 DocGuard needs no network access and no credentials, so a sandbox such as ai-jail can run it
 with the default read-write project mount. `docguard guard` runs fine under `--lockdown`, which
-makes everything read-only. `fix --write`, `sync --write`, `init`, `review --accept` /
-`--prune`, `specs --write` and `memory --pack` write into the project, so they need the normal
-mount. Read and preview modes (`sync` and `generate --spec` without `--write`, `rules --for`)
+makes everything read-only. Commands that write into the project need the normal mount:
+`init`, `generate`, `hooks`, `fix --write`, `sync --write`, `review --accept` / `--prune`,
+`specs --write`, `specs approve --write`, `specs complete --write`, `specs reanchor --write`,
+`retire --write`, `memory --pack`, `guard --update-baseline` and `upgrade --apply`. The
+[Command Safety Levels](SECURITY.md#command-safety-levels) table in SECURITY.md is the full
+list. Read and preview modes (`sync` and `generate --spec` without `--write`, `rules --for`)
 write at most the plan cache and other local state in `.docguard/`, which is best-effort and
 ignores itself.
 
@@ -1105,12 +1124,14 @@ What must be visible:
   `parserTier: regex-fallback` and `low` confidence. The pattern tier still composes router
   prefixes and Django URL configurations the same way, so on standard layouts it reports the
   same facts.
-- **The `specify` CLI (optional).** It is only needed for `docguard init` to set up Spec Kit.
+- **The `specify` CLI (optional).** It is only needed for `docguard init` to set up Spec Kit and
+  for `docguard upgrade --apply` to refresh the registered DocGuard extension.
 
 ## Revision History
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 0.13.0 | 2026-10-10 | DocGuard Team | Freshness review for specs 038–053: `upgrade --apply` also calls `specify` (spec 048) and `specify --version` uses the 15-second default; `npm run docs:reference`; the commands that write, with SECURITY.md as the full list |
 | 0.12.0 | 2026-09-30 | DocGuard Team | `sync --write`, not a bare `sync`, writes into the project; read and preview modes write only the self-ignoring `.docguard/` (spec 042) |
 | 0.11.0 | 2026-09-30 | DocGuard Team | `DOCGUARD_NO_UPDATE_HINT` and the `CI` rule for the version-age note (spec 038) |
 | 0.10.0 | 2026-09-30 | DocGuard Team | Freshness review: `npm run budget`; the full list of commands that write; how path-scoped rules and ownership read git; what a missing `python3` makes partial (specs 030, 033, 034, 035) |
@@ -1130,9 +1151,9 @@ What must be visible:
 # Requirements
 
 <!-- docguard:quality negation-load off — requirements define explicit failure and non-disclosure boundaries -->
-<!-- docguard:version 0.9.0 -->
+<!-- docguard:version 0.9.1 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-09-30 -->
+<!-- docguard:last-reviewed 2026-10-10 -->
 
 ## Functional Requirements
 
@@ -1189,6 +1210,7 @@ The verification column above links each requirement to executable tests. The te
 
 | Version | Date | Changes |
 |---|---|---|
+| 0.9.1 | 2026-10-10 | Freshness review for specs 038–053: every requirement and verification path still holds; those specs state their own requirements under `specs/`, so none is copied here |
 | 0.9.0 | 2026-09-30 | Add FR-025 (Metrics-Consistency counts what ships and reports each drifted value once); record that the symbol map stays opt-in until the v2 protocol runs |
 | 0.8.0 | 2026-09-29 | Renumber the second FR-016/017/018 rows to FR-022/023/024: each ID was used for two different requirements, and path-qualified test annotations bound to the second meaning |
 | 0.7.0 | 2026-09-18 | Record the uninitialised-project hook boundary (exit 3) and foreign-hook backup protection shipped without a stated requirement |
@@ -1207,9 +1229,9 @@ The verification column above links each requirement to executable tests. The te
 # Security
 
 <!-- docguard:quality negation-load off — prohibitions define security boundaries -->
-<!-- docguard:version 0.13.0 -->
+<!-- docguard:version 0.14.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-09-30 -->
+<!-- docguard:last-reviewed 2026-10-10 -->
 
 ## Overview
 
@@ -1279,12 +1301,13 @@ The optional external benchmark accepts only credential-free public HTTPS Git UR
 
 ## Subprocess Safety
 
-Pass untrusted arguments through argv arrays and validate values for their intended operation. Avoid interpolating configuration or repository content into shell commands. Existing static command strings do not authorize expanding their input surface. Regression tests in `tests/security-init-injection.test.mjs` exercise the input boundary. `cli/spec-kit-delegation.mjs` is the only caller of the `specify` CLI: it passes argv arrays, accepts an integration key only if it matches `^[a-zA-Z0-9_-]{1,32}$`, uses only the options `specify init --help` documents, and bounds each call with a timeout.
+Pass untrusted arguments through argv arrays and validate values for their intended operation. Avoid interpolating configuration or repository content into shell commands. Existing static command strings do not authorize expanding their input surface. Regression tests in `tests/security-init-injection.test.mjs` exercise the input boundary. `cli/spec-kit-delegation.mjs` is the only caller of the `specify` CLI, and only `init` and `upgrade --apply` reach it: it passes argv arrays (on Windows, `cmd.exe /c specify.cmd` with the same array), accepts an integration key only if it matches `^[a-zA-Z0-9_-]{1,32}$`, uses only the `init` options `specify init --help` documents, and bounds each call with a timeout. Its other calls are `specify --version` and `specify extension add <packaged extension> --dev`.
 
 Every other subprocess also takes an argv array and no shell:
 
 - Git: `ls-files -z --cached` / `--deleted` (tracked files), `check-ignore --no-index -z --stdin` (paths go through stdin, never the command line), `cat-file -e` with a regex-validated revision, and `rev-parse` (`cli/shared-git.mjs`, `cli/scanners/doc-deps.mjs`, `cli/scanners/revision-anchor.mjs`, `cli/commands/review.mjs`).
-- `python3 -c` with a fixed script that only calls `ast.parse`, on a path already checked by the doc lock's path guard, with a 15-second timeout (`cli/scanners/doc-deps.mjs`); the import graph and schema scanners use the same pattern (`cli/scanners/py-ast.mjs`).
+- `python3 -c` with a fixed script that only calls `ast.parse`, on a path already checked by the doc lock's path guard, with a 15-second timeout (`cli/scanners/doc-deps.mjs`). `cli/scanners/py-ast.mjs` runs one fixed extractor script that reads file paths on stdin, parses each with `ast.parse` and never imports or executes them, with a 30-second timeout; the import graph, the symbol map and the Python route, model and environment scanners share it.
+- `upgrade --apply` runs `npm install -g docguard-cli@latest` when npm has a newer release (on Windows through the shell, with the same fixed arguments, because `npm` is a `.cmd` shim), and `upgrade --apply --pr` runs `git` and `gh` to open the schema-migration pull request (`cli/commands/upgrade.mjs`).
 - Development only: `tools/budget.mjs` runs `node` and `npm pack --dry-run --ignore-scripts`.
 
 Only two shell strings remain, and both are static: `git rev-parse --is-inside-work-tree` (`cli/shared-git.mjs`) and `which specify` / `where specify` (`cli/ensure-skills.mjs`).
@@ -1293,11 +1316,11 @@ Paths that come from documents or configuration are checked before use. A `cover
 
 ## Command Safety Levels
 
-Only `init`, and the aliases that run it (`setup`, `agents`, `hooks`, `badge`, `llms`, `publish`), installs DocGuard's agent skills and slash commands (`.agent/skills/`, `.agent/commands/`) or prints the Spec Kit setup hint. No other command does, in any mode, and an unknown command name writes nothing. Read, report, check and preview modes leave the working tree unchanged. The only place they may write is DocGuard's own state directory, `.docguard/`, which ignores itself: each writer creates `.docguard/.gitignore` containing `*` when it is missing and keeps an existing one. DocGuard's dirty-tree checks (`memory --pack`, `report`, `reconcile`, `specs complete`) leave `.docguard/` out.
+Only `init`, and the aliases that run it (`setup`, `agents`, `hooks`, `badge`, `llms`, `publish`), installs DocGuard's agent skills and slash commands or prints the Spec Kit setup hint; `upgrade --apply` refreshes copies that are out of date. They go where the project's agent reads them: the skills directory in Spec Kit's install manifest, else a known integration folder (`.claude/skills/`, `.cursor/skills/`, `.agents/skills/`), else `.agent/skills/` and `.agent/commands/`. A directory read from `.specify/*.json` must stay inside the project. No other command installs them, in any mode, and an unknown command name writes nothing. Read, report, check and preview modes leave the working tree unchanged. The only place they may write is DocGuard's own state directory, `.docguard/`, which ignores itself: each writer creates `.docguard/.gitignore` containing `*` when it is missing and keeps an existing one. DocGuard's dirty-tree checks (`memory --pack`, `report`, `reconcile`, `specs complete`) leave `.docguard/` out.
 
 | Operation | Source writes | Auxiliary writes / effects |
 |---|---|---|
-| guard, score, diff, diagnose | None by default | Plan caching may write into the self-ignoring `.docguard/`; explicit mutation flags change behavior |
+| guard, score, diff, diagnose | None by default | Plan caching may write into the self-ignoring `.docguard/`; explicit mutation flags change behavior. `guard --update-baseline` writes `.docguard.baseline.json` at the project root |
 | ci | None | Records history unless `--no-history` is set |
 | feedback | None | Saves local records or an explicitly requested direct `tests/*.test.mjs` contribution unless `--preview`; prints opt-in URLs but never submits |
 | memory --pack | None | Writes a generated context pack unless `--stdout` is used; `--symbols` adds a bounded symbol map |
@@ -1306,12 +1329,13 @@ Only `init`, and the aliases that run it (`setup`, `agents`, `hooks`, `badge`, `
 | review --accept, review --prune | `.docguard-doc-lock.json` only | One file transaction; `--accept` requires a reason. Plain `review` and `review --suggest` write nothing |
 | rules --for, trace --owners [--suggest] | None | Read-only, including agent skills and the Spec Kit hint; `--suggest` prints a draft ownership block and never writes configuration |
 | reconcile | None by default | `--write` delegates only mechanical generated-section refreshes to `sync` |
-| specs, specs preflight, specs require | None for check/plan modes | `specs --write` refreshes the registry; `specs approve --write` records a reviewed approval and delivery state in the registry only; `specs complete --write` transactionally records a reviewed outcome and active context |
+| specs, specs preflight, specs require | None for check/plan modes | `specs --write` refreshes the registry; `specs approve --write` records a reviewed approval and delivery state in the registry only; `specs complete --write` transactionally records a reviewed outcome and active context; `specs reanchor --write` moves recorded outcome revisions in the registry |
 | verify --evidence | None | Reads the strict local manifest, selected Markdown, source files, and saved reports; guard consumes the same evaluator |
 | retire --write | Explicit clean tracked documentation only | Requires retained-ref recovery proof, clean replacement/evidence docs, and no live Markdown backreferences |
 | init, generate | Documentation and configuration scaffolding | Explicit force options may overwrite content. When `specify` is installed and Spec Kit is not initialized, `init` runs `specify init --here --force` (skip with `--no-spec-kit`) and registers the packaged extension. `generate --spec --write` adds one spec and its registry entry in one transaction |
 | hooks | Hook configuration and executable scripts | Inventory distinguishes managed, legacy, foreign, missing, and unreadable hooks; removal preserves foreign commands around a managed block; auto-fix hooks may edit and stage documentation. A foreign hook is skipped under `--force` and no `.bak` is written, so overwriting one requires `--force` twice rather than a plain re-install. A hook owned by husky, lefthook or simple-git-hooks is never written, even under `--force`. An installed hook skips a working tree with no `.docguard.json` and permits guard exit 3, so a branch or worktree that never adopted DocGuard is not blocked by a repo-wide hook |
 | report | None by default | `--out` writes an artifact |
+| upgrade | None by default | Contacts the npm registry unless `--schema-only`; `--check-only` only reports. `--apply` installs the newer CLI globally, migrates `.docguard.json`, refreshes out-of-date agent files and re-registers the Spec Kit extension when its registered version differs; `--pr` puts the migration on a new branch and opens a pull request instead of editing in place |
 
 Review the exact command and flags before assigning privileges. CLI help is the authoritative command inventory.
 
@@ -1358,6 +1382,7 @@ Exclude `node_modules`, environment values, generated build output, and private 
 
 | Version | Date | Changes |
 |---|---|---|
+| 0.14.0 | 2026-10-10 | Freshness review for specs 038–053: `upgrade --apply` also installs agent files and calls `specify` (spec 048), the `upgrade` and `guard --update-baseline` write levels, the `npm`/`git`/`gh` subprocesses of `upgrade`, the shared Python extractor's stdin and timeout, and where agent files are written |
 | 0.13.0 | 2026-09-30 | Only `init` installs agent skills and slash commands; read and preview modes write nothing; `.docguard/` ignores itself and dirty checks leave it out (spec 042) |
 | 0.12.0 | 2026-09-30 | Freshness review for specs 028–037: full subprocess inventory (git, `python3 -c`, dev tooling), the remaining static shell strings, path checks for `covers=`, ownership patterns and `rules --for`, the MCP documentation tools' boundary, and the `review`, `rules` and `trace --owners` write levels |
 | 0.11.0 | 2026-09-29 | Freshness review: the `specify` subprocess boundary, hook-manager ownership, the spec-first gate, and the Homebrew tap deploy key |
@@ -1374,9 +1399,9 @@ Exclude `node_modules`, environment values, generated build output, and private 
 
 # Test Specification
 
-<!-- docguard:version 1.3.0 -->
+<!-- docguard:version 1.4.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-09-30 -->
+<!-- docguard:last-reviewed 2026-10-10 -->
 
 > DocGuard has a single optional-load npm dependency (`@babel/parser`) and an optional `python3` AST tier. CLI integration tests cover the full stack with `node:test` (zero dev dependencies) and exercise both AST extractors (`js-ast`, `py-ast`) plus their regex fallbacks. The Python AST tests skip themselves automatically on a machine that lacks `python3`.
 
@@ -1393,7 +1418,7 @@ DocGuard's tests verify command behavior through subprocess execution. Command t
 
 Tests are designed to be config-aware. They verify that project-type settings like needsEnvExample and testFramework correctly influence scoring and validation behavior. Regression guards preserve known failures with dedicated assertions and neighboring valid cases.
 
-All tests use the built-in node:test framework with zero test dependencies. CI runs the suite on Node 18, 20, 22, and 24. Its runtime budget catches large regressions; local timing depends on runtime and filesystem. Record measured timing with its environment rather than asserting a universal duration.
+All tests use the built-in node:test framework with zero test dependencies. CI runs the suite on Node 18, 20, 22, and 24. Its runtime budget (`TEST_BUDGET_MS` in `.github/workflows/ci.yml`, 360 seconds since spec 051; `tests/release-cut-green.test.mjs` keeps it above normal runs and below a known regression) catches large regressions; local timing depends on runtime and filesystem. Record measured timing with its environment rather than asserting a universal duration.
 
 Test names follow the pattern: "verb + expected behavior" (e.g., "runs and shows a score", "respects projectTypeConfig"). Each test should isolate its mutable fixtures and clean up its resources.
 
@@ -1477,7 +1502,7 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/validators/docs-diff.mjs` | `tests/commands.test.mjs`, `tests/docs-diff.test.mjs` | ✅ |
 | `cli/scanners/doc-deps.mjs`, `cli/validators/doc-dependency.mjs`, `cli/commands/review.mjs` (doc dependency lock, DLK001–DLK005) | `tests/doc-dependency-lock.test.mjs` | ✅ |
 | `tools/budget.mjs` (non-regression budgets) | `tests/budget.test.mjs` | ✅ |
-| `cli/commands/mcp.mjs` (MCP server over stdio and loopback HTTP) | `tests/mcp.test.mjs`, `tests/mcp-http.test.mjs`, `tests/mcp-doc-tools.test.mjs` | ✅ |
+| `cli/commands/mcp.mjs` (MCP server over stdio and loopback HTTP; served-directory confinement) | `tests/mcp.test.mjs`, `tests/mcp-http.test.mjs`, `tests/mcp-doc-tools.test.mjs`, `tests/mcp-project-confinement.test.mjs` | ✅ |
 | `cli/release-age.mjs` (version-age note on guard text, MCP instructions and the context pack) | `tests/update-awareness.test.mjs` | ✅ |
 | `cli/shared-guard-json.mjs` (compact guard response) | `tests/compact-guard-response.test.mjs` | ✅ |
 | `cli/scanners/doc-references.mjs`, `cli/shared-headings.mjs` (MCP doc navigation) | `tests/mcp-doc-tools.test.mjs`, `tests/trace-reverse.test.mjs` | ✅ |
@@ -1487,6 +1512,19 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/scanners/import-graph.mjs`, `cli/scanners/module-diagram.mjs` (module and entity diagrams) | `tests/code-derived-diagrams.test.mjs`, `tests/architecture.test.mjs`, `tests/python-import-graph.test.mjs` | ✅ |
 | `cli/scanners/symbol-map.mjs`, `benchmarks/agent-context/run.mjs` (symbol map, agent-context protocol v2) | `tests/symbol-map.test.mjs`, `tests/agent-context-benchmark.test.mjs` | ✅ |
 | `cli/scanners/go-routes.mjs`, `cli/scanners/spring-routes.mjs`, `cli/scanners/rails-routes.mjs`, `cli/scanners/route-lexing.mjs` (Go, Spring and Rails routes) | `tests/go-spring-rails-routes.test.mjs`, `tests/routes-multilang.test.mjs` | ✅ |
+| `cli/writers/baseline.mjs` (adoption baseline, stable fingerprints and legacy match) | `tests/baseline.test.mjs`, `tests/baseline-stable-fingerprint.test.mjs` | ✅ |
+| `cli/scanners/reconciliation.mjs`, `cli/validators/spec-registry.mjs` (reviewed `assetPaths`, SPR009) | `tests/asset-path-attribution.test.mjs` | ✅ |
+| `cli/shared-source.mjs`, `cli/shared-ignore.mjs` (`fallback-language` tier, product-code package segments) | `tests/fallback-language-coverage.test.mjs`, `tests/parser-tier.test.mjs` | ✅ |
+| `cli/commands/specs.mjs` (first-spec preflight, `specs approve`) | `tests/first-spec-preflight.test.mjs` | ✅ |
+| `cli/writers/state-dir.mjs`, `cli/docguard.mjs` dispatch (read-only commands, self-ignoring `.docguard/`) | `tests/read-only-commands.test.mjs` | ✅ |
+| `cli/scanners/py-outline.mjs`, `cli/scanners/python-routes.mjs`, `cli/scanners/python-models.mjs`, `cli/scanners/py-env.mjs` (both Python tiers) | `tests/python-extraction.test.mjs`, `tests/py-ast.test.mjs` | ✅ |
+| `cli/scanners/js-ast.mjs`, `cli/scanners/ts-paths.mjs`, `cli/scanners/schemas.mjs` (Express and Next.js extraction) | `tests/js-ts-extraction.test.mjs` | ✅ |
+| `cli/writers/doc-generators.mjs`, `cli/writers/generate-io.mjs`, `cli/commands/generate.mjs` (generated docs pass DocGuard's own checks) | `tests/generated-docs-consistency.test.mjs`, `tests/generated-docs-e2e.test.mjs` | ✅ |
+| Command output across guard, fix, sync, trace, upgrade and init (spec 049) | `tests/output-ux.test.mjs` | ✅ |
+| `cli/agent-surface.mjs`, `cli/spec-kit-delegation.mjs` (hooks that resolve, extension refresh) | `tests/spec-kit-integration-honesty.test.mjs` | ✅ |
+| `cli/config.mjs`, `cli/shared-doc-roles.mjs`, `cli/validators/metrics-consistency.mjs` (dogfood fixes) | `tests/dogfood-findings.test.mjs` | ✅ |
+| `.github/scripts/sync-release-version.mjs`, `cli/release-pr-policy.mjs`, the CI runtime budget | `tests/release-cut-green.test.mjs`, `tests/release-version-sync.test.mjs` | ✅ |
+| `tools/generate-docs-reference.mjs`, `docs/` site navigation and links | `tests/user-docs.test.mjs` | ✅ |
 
 Completion tests cover initial `implemented → verified` delivery, evidence and
 dirty-tree blockers, living-spec `verified → verified` maintenance, and refusal
@@ -1518,6 +1556,7 @@ of empty repeats driven only by generated lifecycle artifacts.
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 1.4.0 | 2026-10-10 | DocGuard Team | Freshness review for specs 038–053: map the modules those specs added or changed to their tests; record the 360-second CI runtime budget (spec 051) |
 | 1.3.0 | 2026-09-30 | DocGuard Team | Freshness review: map the MCP server and the compact guard response to their tests; describe the frozen v2 agent-context protocol beside v1 |
 | 1.2.0 | 2026-09-29 | DocGuard Team | Freshness review: map the modules specs 014–026 added to their tests, and correct the benchmark case count |
 | 1.1.0 | 2026-09-15 | DocGuard Team | Add field-replay controls for shipped validator counts, ignored checkout pointer copies, and non-clean planned lifecycle advice |
@@ -1670,6 +1709,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+### Added
+
+- **A documentation site with the guides a larger project ships**
+  (`specs/053-user-documentation`). The GitHub Pages site
+  (raccioly.github.io/docguard) now has a landing page, sidebar navigation and
+  search, using the Just the Docs theme that Pages builds itself, with no
+  build step or dependency. New pages:
+  - guides for existing projects, Spec Kit, CI, monorepos, upgrading and
+    troubleshooting;
+  - references for languages and frameworks, coding agents, the MCP server and
+    every finding code;
+  - a fuller installation page.
+
+  The finding-code reference is generated from the code registry
+  (`npm run docs:reference`), and a test fails when it is stale. Existing page
+  paths are unchanged. The Spanish and Portuguese READMEs link the English
+  guides.
+
+### Removed
+
+- **`templates/commands/`**, an old copy of the slash commands that nothing
+  installed (the installer reads `commands/`). Its `/docguard.init` and
+  `/docguard.update` were listed in the README although no agent ever received
+  them. The README, `ai-integration.md`, `quickstart.md` and CLI help now match
+  what DocGuard installs and does (`specs/053-user-documentation` FR-009).
 
 ### Fixed
 
@@ -2036,34 +2101,8 @@ Behaviour changes:
   importers are unaffected. `tests/validator-isolation.test.mjs` fails on any
   validator-to-validator import.
 
-- **`tests/repository-hygiene.test.mjs` fails the build if any of it returns.**
-  `.gitignore` stops known paths; these assertions stop the *content*, which is
-  what survives a rename or a newly adopted tool: no tracked file may contain a
-  private project identifier (held base64-encoded so the guard is not itself the
-  leak) or an absolute `/Users/<name>/` or `/home/<name>/` path, and generated or
-  machine-local agent state may not be tracked. All three fail against v0.42.1.
 
-- **Metrics-Consistency finishes the "N tests" check it has promised since
-  v0.8.2 (MET003).** The validator's header listed "N tests" among the numbers
-  it governs, `actuals.tests` was computed on every run, and no pattern ever
-  read it — so the README's Testing section said `33 tests across 18 describe
-  blocks` from 2026-03-15 through 92 releases while the suite grew past 2,000
-  cases, and every self-guard was green. A dead path a passing check cannot
-  see.
-
-  The actual is now the number of test cases *declared* in the test files
-  (`it`/`test` call sites via the AST tier, `def test_`, `func Test`), which is
-  a lower bound of what the runner reports: cases generated in loops run more
-  than once. Measured on this repository, 1,721 declared against 2,085
-  reported. So MET003 flags a documented count only when it is *below* the
-  declared floor — stale for certain — and passes anything at or above it,
-  because a static count cannot disprove it. The true number is only known by
-  running the suite, so MET003 is review-only and never carries a mechanical
-  fix; a `docguard fix --write` that wrote the floor would replace a stale
-  number with a wrong one. The claim is bound to the project's own suite by
-  the line's vocabulary (`npm test`, `pytest`, `go test`, "suite", "passing"),
-
-<!-- truncated: 4739 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 4765 more lines — read CHANGELOG.md directly -->
 
 ---
 
@@ -2072,7 +2111,7 @@ Behaviour changes:
 
 # DocGuard Roadmap
 
-<!-- docguard:last-reviewed 2026-09-30 -->
+<!-- docguard:last-reviewed 2026-10-10 -->
 
 This file contains current product intent only. Released work belongs in
 `CHANGELOG.md`; implementation history remains recoverable from Git. Completed or
@@ -2085,9 +2124,10 @@ structural score is useful, but it is not proof that arbitrary prose is true.
 
 ## Active roadmap
 
-Specs 014–037 are merged on `main` and wait for the next release; the
-`[Unreleased]` section of `CHANGELOG.md` lists them, and each spec's
-`tasks.md` is its checklist. Two items remain open:
+Specs 014–051 shipped in v0.43.0 (2026-10-01). Spec 052 (baseline fingerprints)
+and spec 053 (the documentation site) wait for the next release; the
+`[Unreleased]` section of `CHANGELOG.md` lists them, and each spec's `tasks.md`
+is its checklist. Two items remain open:
 
 - **Symbol map promotion (spec 036, T009–T010).** The frozen v2 protocol's 54
   trials have yet to run. Until they do, `memory --pack --symbols` stays opt-in
@@ -2395,7 +2435,7 @@ systems cannot meet a concrete team need. They are not active commitments.
 
 # AI Agent Instructions — DocGuard
 
-<!-- docguard:last-reviewed 2026-09-30 -->
+<!-- docguard:last-reviewed 2026-10-10 -->
 
 > This project follows **Canonical-Driven Development (CDD)**.
 > Documentation is the source of truth. Read before coding.
@@ -2450,9 +2490,9 @@ code-truth sections), `score` (CDD maturity 0-100).
 `reconcile` (classify code/spec changes since a Git ref without rewriting intent),
 `review` (doc sections whose covered code changed; `--accept`, `--prune`, `--suggest`),
 `rules` (which instruction files each agent harness loads for a path; `--for <path>`),
-`explain` (explain a validator/warning), `verify` (declared evidence; `--semantic` claims), `feedback` (report false positives), `mcp` (MCP server; stdio or loopback HTTP), `report` (compliance bundle), `ci` (guard + score gate), `memory` (what DocGuard
+`explain` (explain a validator/warning), `verify` (declared evidence; `--semantic` claims), `feedback` (report false positives), `mcp` (MCP server; stdio or loopback HTTP; tool calls stay inside the served directory and each `--root`), `report` (compliance bundle), `ci` (guard + score gate), `memory` (what DocGuard
 remembers; `--pack [--symbols]` for the context pack), `trace` (requirements traceability; `--reverse`; `--owners` for the doc ownership map), `upgrade` (check npm for a newer
-release and migrate the config schema; `--apply --schema-only` stays offline), `watch` (live re-guard).
+release and migrate the config schema; `--apply` also refreshes out-of-date agent files and the registered Spec Kit extension; `--apply --schema-only` stays offline), `watch` (live re-guard).
 
 **`init --with <name>`** scaffolders — `agents`, `hooks`, `ci`, `badge`, `llms`,
 `publish` (also reachable as standalone deprecation aliases).
@@ -2510,8 +2550,8 @@ checks only the selected package unless it is explicitly rerun with `--dir`.
   their shipped outcomes are represented in current docs and `CHANGELOG.md`.
 - Run `docguard specs preflight` before drafting and `docguard specs preflight
   --path <spec>` before planning. Refresh `.docguard-specs.json` with `specs
-  --write`; never edit generated intent/evidence fields or treat bare requirement
-  IDs as completion proof.
+  --write` and record approval with `specs approve --id <id> --write`; never edit
+  generated intent/evidence fields or treat bare requirement IDs as completion proof.
 - Run `docguard reconcile --since <ref> --format json` before completing a
   changed feature. Only its mechanical write plan may run automatically;
   unsupported changes and possible regressions require review. `docguard specs
@@ -2576,6 +2616,12 @@ extensions/spec-kit-docguard/
   `npm run budget -- --base <base-worktree>` (specs/031-non-regression-budgets).
 - **PR-first workflow — no direct-to-main commits.** Create a branch (`git checkout -b <type>/<slug>`), push, `gh pr create`, let CI run, self-review, squash-merge. Tag releases only after merge on `main`. The only acceptable direct-to-main: typo fixes in comments or README badge URLs.
 - Never commit without updating CHANGELOG.md
+- Regenerate checked-in generated files in the same change; each has a drift test
+  that fails and names its command: `npm run llms` after editing a canonical or
+  optional doc (`llms.txt`, `llms-full.txt`), `npm run docs:reference` after
+  changing a finding code or a validator's display name (the docs site's
+  finding-code reference), and `npm run generate:precision-evidence` after
+  a reviewed benchmark baseline change (`cli/precision-evidence-data.mjs`).
 - If code deviates from docs, add `// DRIFT: reason`
 - Security rules in SECURITY.md are mandatory
 - Test requirements in TEST-SPEC.md must be met

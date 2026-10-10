@@ -26,6 +26,8 @@
 
 ![DocGuard demo](https://raw.githubusercontent.com/raccioly/docguard/main/assets/demo.gif)
 
+📚 **[Documentation](https://raccioly.github.io/docguard/)**: [Installation](https://raccioly.github.io/docguard/installation.html) · [Existing projects](https://raccioly.github.io/docguard/guides/existing-projects.html) · [Spec Kit](https://raccioly.github.io/docguard/guides/spec-kit.html) · [CI](https://raccioly.github.io/docguard/guides/ci.html) · [Languages and frameworks](https://raccioly.github.io/docguard/reference/languages.html) · [Coding agents](https://raccioly.github.io/docguard/reference/agents.html) · [Finding codes](https://raccioly.github.io/docguard/reference/findings.html) · [Troubleshooting](https://raccioly.github.io/docguard/guides/troubleshooting.html)
+
 ---
 
 ## Table of Contents
@@ -283,12 +285,18 @@ Suggestions DocGuard prints (`Next: …`, `Fix: …`) name a slash command only 
 for your agent, in its form (`/speckit-docguard-guard` in Claude Code, `/speckit.docguard.guard`
 for `generic`); otherwise they print the CLI command.
 
-To register it yourself, from the catalog or a local checkout:
+`docguard init` registers the copy of the extension inside the installed package. To register
+it yourself, use a release ZIP or a local checkout. A bare `specify extension add docguard` does
+not work on a default Spec Kit setup: DocGuard is in Spec Kit's community catalog, which Spec Kit
+uses for discovery only.
 
 ```bash
-specify extension add docguard
+specify extension add docguard --from https://github.com/raccioly/docguard/releases/download/vX.Y.Z/spec-kit-docguard-vX.Y.Z.zip
 specify extension add ./node_modules/docguard-cli/extensions/spec-kit-docguard --dev
 ```
+
+See the [Spec Kit guide](https://raccioly.github.io/docguard/guides/spec-kit.html) for the hooks,
+the spec lifecycle registry and an end-to-end flow.
 
 This registers the `speckit.docguard.*` commands listed in
 [`extension.yml`](extensions/spec-kit-docguard/extension.yml) (invoked as
@@ -611,7 +619,6 @@ DocGuard works with **every major AI coding agent**. All canonical docs are plai
 
 | Agent | Compatibility | Auto-Generate Config |
 |:------|:---:|:---:|
-| Google Antigravity | ✅ | `docguard agents --agent antigravity` |
 | Claude Code | ✅ | `docguard agents --agent claude` |
 | GitHub Copilot | ✅ | `docguard agents --agent copilot` |
 | Cursor | ✅ | `docguard agents --agent cursor` |
@@ -637,38 +644,35 @@ silent by contract). Explicit opt-in — `init` never installs it for you.
 
 ## ⚡ Slash Commands
 
-DocGuard provides AI agent slash commands for integrated workflows. Installed automatically via `docguard init` or `specify extension add docguard`:
+DocGuard ships four slash commands (`commands/` in this repository):
 
 | Command | What It Does |
 |:--------|:-------------|
-| `/docguard.init` | Initialize Canonical-Driven Development in a new or existing project |
-| `/docguard.guard` | Run quality validation — check all 32 validators |
+| `/docguard.guard` | Run quality validation across every validator |
 | `/docguard.review` | Analyze doc quality and suggest improvements |
 | `/docguard.fix` | Generate targeted fix prompts for specific issues |
-| `/docguard.update` | Update canonical docs after code changes — detect drift and sync documentation |
+| `/docguard.score` | CDD maturity score with an improvement roadmap |
 
-These commands are installed into your AI agent's command directory:
-
-```
-.github/commands/     → GitHub Copilot
-.cursor/rules/        → Cursor
-.gemini/commands/     → Google Gemini
-.claude/commands/     → Claude Code
-.agents/workflows/    → Antigravity
-```
+Where they go depends on your agent. With a Spec Kit integration that uses skills (Claude Code,
+Codex, Cursor, Copilot), DocGuard installs its skills instead, and Spec Kit installs the
+`speckit.docguard.*` extension commands. The `/docguard.*` files are written to `.agent/commands/`
+only for Spec Kit's `generic` integration, or when no Spec Kit integration is present. The
+[Coding Agents reference](https://raccioly.github.io/docguard/reference/agents.html) lists the
+exact paths for each agent.
 
 ---
 
 ## 🧠 AI Skills (Enterprise)
 
-Beyond slash commands, DocGuard provides **4 enterprise-grade AI skills** — deep behavior protocols that tell AI agents not just *what* to run, but *how to think, validate, and iterate*. Skills are modeled after [Spec Kit's](https://github.com/github/spec-kit) skill architecture.
+Beyond slash commands, DocGuard provides **5 enterprise-grade AI skills** — deep behavior protocols that tell AI agents not just *what* to run, but *how to think, validate, and iterate*. Skills are modeled after [Spec Kit's](https://github.com/github/spec-kit) skill architecture.
 
-| Skill | Lines | What It Does |
-|:------|:-----:|:-------------|
-| `docguard-guard` | 155 | 6-step quality gate with severity triage (CRITICAL→LOW), structured reporting, remediation |
-| `docguard-fix` | 195 | 7-step research workflow with per-document codebase research and 3-iteration validation loops |
-| `docguard-review` | 170 | Read-only semantic cross-document analysis with 6 analysis passes and quality scoring |
-| `docguard-score` | 165 | CDD maturity assessment with ROI-based improvement roadmap and grade progression |
+| Skill | What It Does |
+|:------|:-------------|
+| `docguard-guard` | 6-step quality gate with severity triage (CRITICAL→LOW), structured reporting, remediation |
+| `docguard-fix` | 7-step research workflow with per-document codebase research and 3-iteration validation loops |
+| `docguard-review` | Read-only semantic cross-document analysis with 6 analysis passes and quality scoring |
+| `docguard-score` | CDD maturity assessment with ROI-based improvement roadmap and grade progression |
+| `docguard-sync` | Refreshes code-truth doc sections in place and flags the prose sections to review when code changes |
 
 ### Workflow Hooks
 
@@ -676,8 +680,10 @@ DocGuard integrates into the spec-kit workflow as an automated quality gate:
 
 | Hook | When | Behavior |
 |:-----|:-----|:---------|
-| `after_implement` | After `/speckit.implement` | **Mandatory** — always runs DocGuard guard |
-| `before_tasks` | Before `/speckit.tasks` | Optional — reviews doc consistency |
+| `before_specify` | Before `/speckit.specify` | **Mandatory** — briefs the agent on existing specs (`speckit.docguard.brief`) |
+| `before_tasks` | Before `/speckit.tasks` | **Mandatory** — preflight check of the generated spec (`speckit.docguard.preflight`) |
+| `after_implement` | After `/speckit.implement` | **Mandatory** — runs DocGuard guard; then optionally records completion |
+| `after_converge` | After `/speckit.converge` | Optional — records spec completion (`speckit.docguard.complete`) |
 | `after_tasks` | After `/speckit.tasks` | Optional — shows CDD maturity score |
 
 ### Orchestration Scripts

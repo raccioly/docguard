@@ -1,0 +1,22 @@
+# GitHub Pages site for docs/ (docguard.user-documentation#FR-006).
+# Pages builds this theme itself: no build step or dependency in the repository.
+title: DocGuard
+description: Checks that your project documentation still matches your code.
+remote_theme: just-the-docs/just-the-docs@v0.12.0
+plugins:
+  - jekyll-remote-theme
+search_enabled: true
+heading_anchors: true
+back_to_top: true
+back_to_top_text: Back to top
+aux_links:
+  GitHub: https://github.com/raccioly/docguard
+  npm: https://www.npmjs.com/package/docguard-cli
+aux_links_new_tab: true
+footer_content: "MIT licensed. <a href=\"https://github.com/raccioly/docguard/blob/main/CHANGELOG.md\">Changelog</a>"
+gh_edit_link: true
+gh_edit_link_text: Edit this page on GitHub
+gh_edit_repository: https://github.com/raccioly/docguard
+gh_edit_branch: main
+gh_edit_source: docs
+gh_edit_view_mode: tree

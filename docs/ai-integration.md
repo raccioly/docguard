@@ -1,3 +1,9 @@
+---
+title: AI Integration
+parent: Guides
+nav_order: 7
+---
+
 # AI Integration Guide
 
 DocGuard is **AI-native by design**: a deterministic, zero-LLM core that finds
@@ -14,7 +20,7 @@ what it finds. The division of labour never changes:
 |----------|-----|-----------|
 | An MCP-capable agent (Claude Code, Cursor, …) | **MCP server** | `claude mcp add docguard -- npx docguard-cli mcp` |
 | An agent that can run CLI commands | **JSON contract** | `npx docguard-cli guard --format json` |
-| A slash-command workflow | **Installed commands** | `docguard init` installs `/docguard.*` into `.agent/commands/` |
+| A slash-command workflow | **Installed skills and commands** | `docguard init` installs them where your agent reads them ([Coding Agents](reference/agents.md)) |
 | GitHub Code Scanning / SARIF dashboards | **SARIF output** | `npx docguard-cli guard --format sarif` |
 | A PR reviewer (human or bot) | **GitHub Action** | inline annotations + sticky doc-impact comment, default on |
 | An LLM reading the repo cold | **llms.txt / llms-full.txt / context pack** | `docguard llms`, `llms --full`, `memory --pack` |
@@ -171,7 +177,7 @@ the context pack.
 ## One source of truth for agent files
 
 Teams hand-duplicate AGENTS.md into `CLAUDE.md`, `.cursor/rules/`,
-`.github/copilot-instructions.md`, `GEMINI.md` — and the copies drift. Instead:
+`.github/copilot-instructions.md`, `.gemini/settings.json` — and the copies drift. Instead:
 
 ```bash
 docguard agents --sync    # regenerate the family from AGENTS.md (hash-marked)
@@ -206,10 +212,13 @@ reports those scopes as not checked instead of guessing.
 
 ## Slash commands
 
-`docguard init` installs `/docguard.*` commands into `.agent/commands/` (the
-spec-kit convention; agents like Claude Code, Copilot, and Cursor pick them
-up). They encode the full workflows below — `templates/commands/` in this repo
-is the canonical source.
+`docguard init` installs DocGuard's skills, and its `/docguard.*` commands where
+the agent reads commands, at the paths your Spec Kit integration uses. The
+`/docguard.*` files go to `.agent/commands/` only for Spec Kit's `generic`
+integration or when no Spec Kit integration is present; the
+[Coding Agents reference](reference/agents.md) lists each agent's paths. The
+commands encode the full workflows below; `commands/` in this repository is the
+canonical source.
 
 ## The agent workflow
 

@@ -2,16 +2,16 @@
 
 <!-- docguard:quality negation-load off — an environment doc precisely describes the ABSENCE of requirements (no install step, no database, no credential for the CLI); the prohibitive phrasing is accurate and intentional, not sloppy writing -->
 
-<!-- docguard:version 0.12.0 -->
+<!-- docguard:version 0.13.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-09-30 -->
+<!-- docguard:last-reviewed 2026-10-10 -->
 
-> The DocGuard CLI needs no environment variables. Three optional ones exist: `DOCGUARD_API_KEY` for the HTTP MCP server, `DOCGUARD_SPECIFY_TIMEOUT_MS` for `docguard init`'s calls to the `specify` CLI, and `DOCGUARD_NO_UPDATE_HINT` to silence the version-age note. DocGuard has a single optional-load npm dependency (`@babel/parser`) and optionally uses the developer's own `python3`; everything else is Node.js built-ins.
+> The DocGuard CLI needs no environment variables. Three optional ones exist: `DOCGUARD_API_KEY` for the HTTP MCP server, `DOCGUARD_SPECIFY_TIMEOUT_MS` for the calls `docguard init` and `docguard upgrade --apply` make to the `specify` CLI, and `DOCGUARD_NO_UPDATE_HINT` to silence the version-age note. DocGuard has a single optional-load npm dependency (`@babel/parser`) and optionally uses the developer's own `python3`; everything else is Node.js built-ins.
 
 | Metadata | Value |
 |----------|-------|
 | **Status** | ![Status](https://img.shields.io/badge/status-active-brightgreen) |
-| **Version** | `0.12.0` |
+| **Version** | `0.13.0` |
 
 ---
 
@@ -23,7 +23,7 @@
 | npm | ≥8 | Included with Node.js |
 | Git | Any | [git-scm.com](https://git-scm.com) |
 | Python 3 | **Optional** — ≥3.8, enables the AST-accurate Python scanning tier; the scanners use regex otherwise | [python.org](https://python.org) |
-| Spec Kit (`specify`) | **Optional** — ≥ 0.11.2 for `docguard init` to initialize Spec Kit and register the DocGuard extension (`requires.speckit_version`; an older `specify` is neither initialized nor registered) | [github/spec-kit](https://github.com/github/spec-kit) |
+| Spec Kit (`specify`) | **Optional** — ≥ 0.11.2 for `docguard init` to initialize Spec Kit and register the DocGuard extension, and for `docguard upgrade --apply` to refresh a registered one (`requires.speckit_version`; an older `specify` is neither initialized nor registered) | [github/spec-kit](https://github.com/github/spec-kit) |
 
 ## Environment Variables
 
@@ -38,7 +38,7 @@ Three **optional** variables exist:
 |----------|-----------------|---------|
 | `DOCGUARD_API_KEY` | `docguard mcp --transport http`: optional on loopback; **required to bind a non-loopback host** | Shared secret for the HTTP MCP server. Equivalent to `--api-key <key>`, which takes precedence. When set, every request must carry `Authorization: Bearer <key>` or `X-API-Key: <key>`, else `401`. |
 | `DOCGUARD_NO_UPDATE_HINT` | guard text output, the MCP server's instructions, `memory --pack` | `1` turns off the note that the installed release is more than 14 days old (spec 038). The note makes no network call; `CI` set to a non-empty value other than `false` or `0` also silences it in guard's text output. |
-| `DOCGUARD_SPECIFY_TIMEOUT_MS` | `docguard init` with the `specify` CLI installed | Timeout in milliseconds for each `specify` call. Defaults: 15000 for `specify init --help`, 60000 for `specify init` and `specify extension add`. A missing, zero or non-numeric value uses the default. |
+| `DOCGUARD_SPECIFY_TIMEOUT_MS` | `docguard init` and `docguard upgrade --apply` with the `specify` CLI installed | Timeout in milliseconds for each `specify` call. Defaults: 15000 for `specify --version` and `specify init --help`, 60000 for `specify init` and `specify extension add`. A missing, zero or non-numeric value uses the default. |
 
 The server binds `127.0.0.1` by default and **refuses to start** on a
 non-loopback host without a key, rather than exposing project read access to
@@ -71,6 +71,10 @@ node cli/docguard.mjs guard --format json
 # (tests/llms-bundle-drift.test.mjs fails and names this command)
 npm run llms
 
+# Regenerate docs/reference/findings.md after changing a finding code or a
+# validator's display name (tests/user-docs.test.mjs fails and names this command)
+npm run docs:reference
+
 # Measure this tree against the budgets in budgets.json (the CI `budget` job
 # runs the same comparison against the base branch)
 npm run budget
@@ -95,9 +99,12 @@ node cli/docguard.mjs ci --threshold 70 --format json
 
 DocGuard needs no network access and no credentials, so a sandbox such as ai-jail can run it
 with the default read-write project mount. `docguard guard` runs fine under `--lockdown`, which
-makes everything read-only. `fix --write`, `sync --write`, `init`, `review --accept` /
-`--prune`, `specs --write` and `memory --pack` write into the project, so they need the normal
-mount. Read and preview modes (`sync` and `generate --spec` without `--write`, `rules --for`)
+makes everything read-only. Commands that write into the project need the normal mount:
+`init`, `generate`, `hooks`, `fix --write`, `sync --write`, `review --accept` / `--prune`,
+`specs --write`, `specs approve --write`, `specs complete --write`, `specs reanchor --write`,
+`retire --write`, `memory --pack`, `guard --update-baseline` and `upgrade --apply`. The
+[Command Safety Levels](SECURITY.md#command-safety-levels) table in SECURITY.md is the full
+list. Read and preview modes (`sync` and `generate --spec` without `--write`, `rules --for`)
 write at most the plan cache and other local state in `.docguard/`, which is best-effort and
 ignores itself.
 
@@ -121,12 +128,14 @@ What must be visible:
   `parserTier: regex-fallback` and `low` confidence. The pattern tier still composes router
   prefixes and Django URL configurations the same way, so on standard layouts it reports the
   same facts.
-- **The `specify` CLI (optional).** It is only needed for `docguard init` to set up Spec Kit.
+- **The `specify` CLI (optional).** It is only needed for `docguard init` to set up Spec Kit and
+  for `docguard upgrade --apply` to refresh the registered DocGuard extension.
 
 ## Revision History
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 0.13.0 | 2026-10-10 | DocGuard Team | Freshness review for specs 038–053: `upgrade --apply` also calls `specify` (spec 048) and `specify --version` uses the 15-second default; `npm run docs:reference`; the commands that write, with SECURITY.md as the full list |
 | 0.12.0 | 2026-09-30 | DocGuard Team | `sync --write`, not a bare `sync`, writes into the project; read and preview modes write only the self-ignoring `.docguard/` (spec 042) |
 | 0.11.0 | 2026-09-30 | DocGuard Team | `DOCGUARD_NO_UPDATE_HINT` and the `CI` rule for the version-age note (spec 038) |
 | 0.10.0 | 2026-09-30 | DocGuard Team | Freshness review: `npm run budget`; the full list of commands that write; how path-scoped rules and ownership read git; what a missing `python3` makes partial (specs 030, 033, 034, 035) |
