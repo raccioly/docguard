@@ -35,6 +35,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **The watch reliability tests no longer depend on wall-clock timing**
+  (`specs/055-watch-deterministic`, #523). `tests/watch-reliability.test.mjs`
+  slept 300–600 ms around the 500 ms debounce and let the watcher print to
+  stdout, which the test runner also reads its own messages from; it failed
+  intermittently in full local runs on a loaded machine. The tests now drive
+  the debounce with a fake clock through two new optional `runWatch` runtime
+  hooks (`setTimeout`, `clearTimeout`, defaulting to the global timers),
+  observe check completion by draining queued promise callbacks, and capture
+  console output. They assert the coalescing at the exact window edge, and a
+  new case covers a save that lands while a queued check's window is still
+  open. The file runs in about 0.1 s instead of 4 s. `docguard watch` itself
+  is unchanged.
+
 - **Defects found while documenting DocGuard** (`specs/054-docs-verification-findings`).
   Running every documented flow on scratch projects turned up:
   - A Koa project was labelled Hono. It is now labelled Koa. Its routes are

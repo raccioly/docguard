@@ -10724,6 +10724,97 @@
           }
         ]
       }
+    },
+    {
+      "specId": "docguard.watch-deterministic",
+      "path": "specs/055-watch-deterministic/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.watch-deterministic#FR-001",
+          "docguard.watch-deterministic#FR-002",
+          "docguard.watch-deterministic#FR-003",
+          "docguard.watch-deterministic#SC-001",
+          "docguard.watch-deterministic#SC-002"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/055-watch-deterministic/spec.md",
+            "digest": "sha256:f889611104c79edc49d15e404660cefeadf9a6d3b299dec4a0443753c2d8e894"
+          },
+          {
+            "path": "specs/055-watch-deterministic/plan.md",
+            "digest": "sha256:8aacca4f48dbff9509dfcbf37c63e5f2dad4dd8af530b9e3bea89433f0e4db87"
+          },
+          {
+            "path": "specs/055-watch-deterministic/tasks.md",
+            "digest": "sha256:bb9bd866d9e069115c35e87ccd5384c1cd4b1fb0082155253402ef9fd84c4190"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 5,
+          "total": 5
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-003",
+            "file": "cli/commands/watch.mjs",
+            "line": 13
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/watch-reliability.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/watch-reliability.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/watch-reliability.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/watch-reliability.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/watch-reliability.test.mjs",
+            "line": 13
+          }
+        ]
+      }
     }
   ],
   "tombstones": [
