@@ -924,6 +924,25 @@ export const CODES = {
     help: 'The adapter version, command, source type, report shape, or predicate is outside the implemented contract. Keep the finding visible and contribute a synthetic failing fixture plus a neighboring valid control before expanding support.',
     suppress: null,
   },
+  // docguard.ignore-reasons#FR-005 — `.docguardignore` entry hygiene.
+  IGN001: {
+    validator: 'suppressions',
+    title: 'Ignore entry expired',
+    help: 'A `.docguardignore` entry carries `expires:YYYY-MM-DD` and that day has passed (UTC). It no longer excludes anything: DocGuard validates the paths it used to hide, so findings in them can appear in this run. If the reason still holds, set a new date; otherwise delete the line. `docguard ignore` lists every entry with its reason and expiry. Opt out of these checks with `"validators": { "suppressions": false }`.',
+    suppress: null,
+  },
+  IGN002: {
+    validator: 'suppressions',
+    title: 'Ignore entry has no reason',
+    help: '`"suppressions": { "requireReason": true }` is set and this `.docguardignore` entry has no trailing `# reason`. The entry still applies. Write why the path is excluded after the pattern, e.g. `legacy/  # removed with the v2 API`. A reason of 8 or more characters is also what `docguard ignore --format claimspec` needs to export the entry.',
+    suppress: null,
+  },
+  IGN003: {
+    validator: 'suppressions',
+    title: 'Ignore entry unreadable',
+    help: 'This `.docguardignore` line has an `expires:` value that is not a calendar date written YYYY-MM-DD, or an expiry or reason with no pattern. DocGuard cannot tell when the entry should end, so it excludes nothing. Write the date as `expires:2026-12-31`, or remove the token.',
+    suppress: null,
+  },
 };
 
 /**
@@ -1132,6 +1151,9 @@ export function resultFromFindings(findings, opts = {}) {
   return res;
 }
 
+/** One inline pragma: `docguard:ignore[-secret] [CODES]`. Shared by `suppressesCode` and `parseInlinePragma`. */
+const PRAGMA_RE = /docguard:ignore(-secret)?\b[ \t]*([A-Za-z0-9_,*-]+)?/i;
+
 /**
  * Does an inline `docguard:ignore` pragma in `text` suppress finding `code`?
  *
@@ -1149,7 +1171,7 @@ export function resultFromFindings(findings, opts = {}) {
  */
 export function suppressesCode(text, code) {
   if (!text || !code) return false;
-  const m = text.match(/docguard:ignore(-secret)?\b[ \t]*([A-Za-z0-9_,*-]+)?/i);
+  const m = text.match(PRAGMA_RE);
   if (!m) return false;
   if (m[1]) return /^SEC/i.test(code);            // ignore-secret alias
   const arg = (m[2] || '').trim();
@@ -1160,6 +1182,39 @@ export function suppressesCode(text, code) {
     if (tok.endsWith('*')) return code.toUpperCase().startsWith(tok.slice(0, -1).toUpperCase());
     return tok.toUpperCase() === code.toUpperCase();
   });
+}
+
+/**
+ * Read an inline pragma's codes and the reason written after them — the
+ * in-process model of a `docguard:ignore` suppression (docguard.ignore-reasons#FR-006).
+ *
+ * Codes are read exactly as `suppressesCode` reads them, so the model never
+ * disagrees with what is suppressed: `null` means any code (bare form or
+ * `all`), and `docguard:ignore-secret` is `['SEC*']`. The reason is the text
+ * after the code list, with a leading separator (`—`, `–`, `:`, `-`, `--`) and
+ * a trailing comment terminator (`-->`, `*\/`) removed; `null` when absent.
+ *
+ * @param {string} text
+ * @returns {{codes: string[]|null, reason: string|null}|null} null when no pragma
+ * @implements docguard.ignore-reasons#FR-006
+ */
+export function parseInlinePragma(text) {
+  if (!text) return null;
+  const source = String(text);
+  const m = source.match(PRAGMA_RE);
+  if (!m) return null;
+  let codes;
+  if (m[1]) {
+    codes = ['SEC*'];
+  } else {
+    const tokens = (m[2] || '').split(',').map((s) => s.trim()).filter(Boolean);
+    codes = tokens.length === 0 || tokens.some((t) => t.toLowerCase() === 'all') ? null : tokens;
+  }
+  const reason = source.slice(m.index + m[0].length)
+    .replace(/\s*(?:-->|\*\/)\s*$/, '')
+    .replace(/^\s*(?:[—–:]|-{1,2})\s*/, '')
+    .trim();
+  return { codes, reason: reason || null };
 }
 
 /**

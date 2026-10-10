@@ -149,15 +149,6 @@ export function isNonProductPath(relPath, config = {}) {
   return segments.some((seg, i) => DEFAULT_DETECTION_IGNORE_DIRS.has(seg) && !isPackageSegment(segments, i));
 }
 
-/**
- * Read `.docguardignore` from a project directory and return its patterns.
- *
- * Format: gitignore-style — one pattern per line, `#` for comments, blank lines
- * ignored. Returned patterns are normalized but not transformed (callers
- * decide whether to expand directory globs).
- *
- * Returns [] if the file is missing or unreadable — never throws.
- */
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { resolve as resolvePath, relative as relativePath, join as joinPath, sep } from 'node:path';
@@ -177,18 +168,111 @@ export function relPosix(projectDir, absPath) {
   return relativePath(projectDir, absPath).split(sep).join('/');
 }
 
-export function loadDocguardIgnore(projectDir) {
+/** Today's date in UTC as `YYYY-MM-DD`: the clock `.docguardignore` expiries are read against. */
+export function utcToday(now = new Date()) {
+  return now.toISOString().slice(0, 10);
+}
+
+/** True when `day` is `YYYY-MM-DD` and names a real calendar day (no 2026-02-30). */
+export function isCalendarDay(day) {
+  if (typeof day !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(day)) return false;
+  const parsed = new Date(`${day}T00:00:00Z`);
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === day;
+}
+
+const EXPIRES_PREFIX = 'expires:';
+
+/**
+ * Parse `.docguardignore` text into entries, one per pattern line.
+ *
+ * Grammar (gitignore-style, plus websec-validator's `.websec-ignore` tail):
+ *
+ *   pattern  [expires:YYYY-MM-DD]  [# reason]
+ *
+ *   - A line whose first non-blank character is `#` is a comment; blank lines
+ *     are skipped. Lines are trimmed, as before.
+ *   - `#` starts a trailing reason only when whitespace precedes it, so a `#`
+ *     inside a pattern (`C#/`, `notes#1.md`) stays part of the pattern.
+ *   - `expires:` is read only as the LAST whitespace-separated token before the
+ *     reason. Internal whitespace in the pattern is kept as written.
+ *
+ * A line with neither whitespace-then-`#` nor a trailing `expires:` token
+ * yields exactly the pattern the pre-057 parser returned
+ * (docguard.ignore-reasons#FR-002).
+ *
+ * `state`:
+ *   - `active`  — applies. An expiry applies through the end of its UTC day.
+ *   - `expired` — `today` is after the expiry day; excludes nothing (FR-003).
+ *   - `invalid` — the expiry is not a calendar day, or there is no pattern;
+ *                 excludes nothing, because its lifetime is unknown (FR-004).
+ *
+ * @param {string} raw - file contents
+ * @param {{ today?: string }} [opts] - `YYYY-MM-DD` (UTC); defaults to now
+ * @returns {Array<{pattern: string|null, reason: string|null, expires: string|null,
+ *   expiryText: string|null, state: 'active'|'expired'|'invalid',
+ *   problem: 'no-pattern'|'unreadable-expiry'|null, line: number, raw: string}>}
+ * @implements docguard.ignore-reasons#FR-001
+ * @implements docguard.ignore-reasons#FR-002
+ * @implements docguard.ignore-reasons#FR-003
+ * @implements docguard.ignore-reasons#FR-004
+ */
+export function parseDocguardIgnore(raw, { today = utcToday() } = {}) {
+  const entries = [];
+  String(raw ?? '').split(/\r?\n/).forEach((rawLine, index) => {
+    const line = rawLine.trim();
+    if (!line || line.startsWith('#')) return;
+    let body = line;
+    let reason = null;
+    const hash = line.search(/\s#/);
+    if (hash >= 0) {
+      body = line.slice(0, hash).trim();
+      reason = line.slice(hash).trim().slice(1).trim() || null;
+    }
+    let expiryText = null;
+    const tokens = body.split(/\s+/);
+    const last = tokens[tokens.length - 1];
+    if (last.startsWith(EXPIRES_PREFIX)) {
+      expiryText = last.slice(EXPIRES_PREFIX.length);
+      body = body.slice(0, body.length - last.length).trim();
+    }
+    const pattern = body || null;
+    const expiryReadable = expiryText === null || isCalendarDay(expiryText);
+    const problem = !pattern ? 'no-pattern' : !expiryReadable ? 'unreadable-expiry' : null;
+    const expires = expiryText !== null && expiryReadable ? expiryText : null;
+    const state = problem ? 'invalid' : expires && today > expires ? 'expired' : 'active';
+    entries.push({ pattern, reason, expires, expiryText, state, problem, line: index + 1, raw: rawLine });
+  });
+  return entries;
+}
+
+/**
+ * Read `.docguardignore` and return every entry, including expired and
+ * invalid ones (`parseDocguardIgnore`). Returns [] if the file is missing or
+ * unreadable — never throws.
+ */
+export function loadDocguardIgnoreEntries(projectDir, opts = {}) {
   const p = resolvePath(projectDir, '.docguardignore');
   if (!existsSync(p)) return [];
   try {
-    const raw = readFileSync(p, 'utf-8');
-    return raw
-      .split(/\r?\n/)
-      .map(line => line.trim())
-      .filter(line => line && !line.startsWith('#'));
+    return parseDocguardIgnore(readFileSync(p, 'utf-8'), opts);
   } catch {
     return [];
   }
+}
+
+/**
+ * Read `.docguardignore` from a project directory and return the patterns that
+ * APPLY today: expired and invalid entries are left out, so every caller
+ * (config merge, watch, scanners) honours expiry the same way.
+ *
+ * Returned patterns are normalized but not transformed (callers decide whether
+ * to expand directory globs). Returns [] if the file is missing or unreadable —
+ * never throws.
+ */
+export function loadDocguardIgnore(projectDir, opts = {}) {
+  return loadDocguardIgnoreEntries(projectDir, opts)
+    .filter(entry => entry.state === 'active')
+    .map(entry => entry.pattern);
 }
 
 /**

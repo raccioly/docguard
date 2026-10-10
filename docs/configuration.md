@@ -67,7 +67,10 @@ DocGuard is configured via `.docguard.json` in the project root. If no config fi
   "findingSeverity": {
     "TRC004": "low",
     "SEC001": "high"
-  }
+  },
+  "ignore": ["generated/"],
+  "securityIgnore": ["tests/fixtures/"],
+  "suppressions": { "requireReason": false }
 }
 ```
 
@@ -97,6 +100,7 @@ See [Profiles](./profiles.md) for details.
 | `security` | varies | Auth, secrets, RBAC documentation |
 | `environment` | `true` | Setup steps, env vars, prerequisites, .env.example |
 | `freshness` | varies | Docs updated recently relative to code changes (git-based) |
+| `suppressions` | `true` | `.docguardignore` entries that expired (IGN001), cannot be read (IGN003), or have no reason while `suppressions.requireReason` is set (IGN002) |
 
 ## Severity overrides
 
@@ -130,6 +134,55 @@ Conventional doc folders (`docs/`, `doc/`, `documentation/`, `guides/`,
 **auto-detected** and claim-scanned without enrollment. `docs.dirs` EXTENDS
 that set with non-standard homes — it never replaces auto-detection. To exclude
 a conventional dir, list it in `.docguardignore`.
+
+## Excluding paths — `.docguardignore`
+
+`.docguardignore`, at the project root, lists paths no validator should read.
+One pattern per line, gitignore-style: `#` at the start of a line is a comment,
+blank lines are skipped, and a pattern matches at a path-segment boundary at
+any depth (`fixtures/` excludes `fixtures/` and `packages/a/fixtures/`).
+
+An entry can say why it exists and when it ends:
+
+```gitignore
+# pattern            [expires:YYYY-MM-DD]   [# reason]
+build/                                      # generated output of the build
+src/legacy/**        expires:2026-12-31     # removed with the v2 API
+docs/archive/
+```
+
+- **Reason.** Text after a `#` that follows whitespace. A `#` inside a pattern
+  (`C#/`, `notes#1.md`) is still part of the pattern.
+- **Expiry.** `expires:YYYY-MM-DD` as the last word before the reason. The
+  entry applies through the end of that day (UTC). From the next day it
+  excludes nothing, and guard reports IGN001 so you can renew or delete it.
+- **Unreadable expiry.** A date that is not a real `YYYY-MM-DD` day (for
+  example `expires:2026-02-30`), or a line with an expiry or reason and no
+  pattern, excludes nothing and is reported as IGN003: DocGuard cannot tell
+  when it should end.
+
+A line with no whitespace-then-`#` and no trailing `expires:` word means exactly
+what it meant before v0.44. One that has them was read before as a pattern
+containing that text, which matched nothing.
+
+To require a reason on every entry:
+
+```json
+{ "suppressions": { "requireReason": true } }
+```
+
+Guard then reports IGN002 for each entry without one. The entry still applies.
+Raise it to blocking with `"findingSeverity": { "IGN002": "high" }`.
+
+`.docguard.json` has its own arrays: `ignore` (every validator; merged with
+`.docguardignore` at load), `securityIgnore` (Security only) and `todoIgnore`
+(TODO-Tracking only). They hold plain patterns and cannot carry a reason or an
+expiry; `suppressions.requireReason` does not apply to them.
+
+`docguard ignore` lists every suppression the project has, including inline
+pragmas, N/A markers and the baseline, with its reason and state;
+`docguard ignore --format claimspec` exports the reasoned `.docguardignore`
+entries as a claimspec `ignore` document ([commands](commands.md#docguard-ignore)).
 
 ## Adoption baseline — `baseline`
 

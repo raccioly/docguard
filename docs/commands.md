@@ -507,6 +507,48 @@ only:
   written (for example `globs:` in a Claude Code rule, which reads only
   `paths:`).
 
+### `docguard ignore`
+
+**Every suppression in the project, and why.** Lists each way the project tells
+DocGuard not to look, with its scope, reason (or `no reason`), expiry, state and
+source location: `.docguardignore` entries, the `.docguard.json` arrays
+(`ignore`, `securityIgnore`, `todoIgnore`), inline `docguard:ignore` pragmas,
+validator and section N/A markers, and the baseline's frozen fingerprints.
+Read-only.
+
+```bash
+npx docguard-cli ignore
+npx docguard-cli ignore --format json
+npx docguard-cli ignore --format claimspec > ignore.claimspec.json
+```
+
+The text listing shows the first 20 inline pragmas; `--format json` lists every
+one, plus the export report below. Inline pragmas are found by text match, so a
+line in your docs that quotes `docguard:ignore` is listed too: guard would honour
+it on that line in the same way.
+
+`--format claimspec` writes a [claimspec](https://github.com/raccioly/testguard/tree/main/spec)
+v1 `ignore` document to stdout and, on stderr, everything it left out. It
+exports a `.docguardignore` entry only when all of this survives exactly:
+
+- a reason of 8 to 2000 characters (nothing is padded or truncated);
+- an expiry DocGuard can read, or none. `expires:2026-12-31` becomes
+  `"expires": "2027-01-01T00:00:00Z"`, the first instant the entry no longer
+  applies. Expired entries are exported with their date, so a consumer can warn;
+- a pattern gitignore syntax states with the same scope. DocGuard matches a
+  pattern below any directory, so `src/legacy/**` is written `**/src/legacy/**`
+  and `build/` is written `build`; each rewrite is listed. A pattern with a
+  leading `!` or `/`, a `**` other than a final `/**`, or one of
+  `? [ ] ( ) + ^ $ | { } \` is left out, because the two syntaxes disagree on it.
+
+Nothing else is exported: `.docguard.json` arrays cannot carry a reason, a
+validator-scoped pattern written as a claimspec `path` would apply to every
+tool, and pragmas, N/A markers and baseline fingerprints have no claimspec kind
+that fits. stderr counts each group and says whether the document is the
+complete policy. The document is checked against the claimspec schema vendored
+in `schemas/claimspec/v1/` before it is printed; if the check fails, nothing is
+printed and the exit code is 1.
+
 ### `docguard trace`
 
 **Which docs describe which code.** Without flags, a requirements traceability

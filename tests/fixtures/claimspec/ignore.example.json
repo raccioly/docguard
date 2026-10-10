@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "entries": [
+    {
+      "kind": "path",
+      "pattern": "src/legacy/**",
+      "reason": "Scheduled for deletion in Q4; no new claims will be authored against it.",
+      "by": "maintainer",
+      "at": "2026-09-17T02:00:00Z",
+      "expires": "2026-12-31T00:00:00Z"
+    },
+    {
+      "kind": "fault",
+      "pattern": "REDACT-002/F1",
+      "reason": "Anchor rotted after refactor; tracked in issue#14 pending re-authoring.",
+      "by": "maintainer",
+      "at": "2026-09-17T02:00:00Z"
+    }
+  ]
+}

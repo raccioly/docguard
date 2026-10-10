@@ -9,6 +9,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Suppressions that say why, and until when** (`specs/057-ignore-reasons`,
+  #420). A `.docguardignore` line can now end with an expiry and a reason:
+  `src/legacy/**  expires:2026-12-31  # removed with the v2 API`. A `#` starts
+  the reason only after whitespace, so `C#/` is still a pattern, and a line
+  without the new parts reads exactly as before; a line such as
+  `fixtures/ # test data`, which used to match nothing, now excludes
+  `fixtures/`. An entry applies through its expiry day (UTC) and then excludes
+  nothing. A new Suppressions validator reports an expired entry (IGN001), an
+  entry whose expiry is not a calendar date, which also excludes nothing
+  (IGN003), and, with `"suppressions": { "requireReason": true }`, an entry
+  without a reason (IGN002). `docguard ignore` lists every suppression the
+  project has (ignore file, `.docguard.json` arrays, inline `docguard:ignore`
+  pragmas with the reason written after the codes, validator and section N/A
+  markers, baseline fingerprints) with its reason, expiry and state, and
+  writes nothing. `docguard ignore --format claimspec` prints a claimspec v1
+  `ignore` document holding only the `.docguardignore` entries whose reason
+  (8 to 2000 characters), expiry and scope survive exactly; every other
+  suppression is listed or counted on stderr with the reason it was left out,
+  and no reason is invented. The claimspec `ignore` and `common` schemas are
+  vendored from raccioly/testguard and every document is validated before it
+  is printed.
+
 - **A documentation site with the guides a larger project ships**
   (`specs/053-user-documentation`). The GitHub Pages site
   (raccioly.github.io/docguard) now has a landing page, sidebar navigation and

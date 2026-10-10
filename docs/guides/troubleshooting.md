@@ -128,6 +128,9 @@ suppresses every code on that line; prefer naming the code.
 | TRC002 (document with no matching source) | `// @doc <DOC-NAME>.md` near the top of a source file that implements it |
 | DQ001, DQ007, APS001, APS002 | `<!-- docguard:quality <rule> off — reason -->`, with `passive-voice` (DQ001), `negation-load` (DQ007) or `api-smell` (APS001, APS002) |
 
+Write the reason after the code list, as in the examples: `docguard ignore`
+shows it next to the pragma, and a pragma without one is listed as `no reason`.
+
 Some codes have no suppression marker. For those, use one of the broader
 options below.
 
@@ -135,7 +138,7 @@ options below.
 
 | Situation | Use |
 |---|---|
-| Whole files or directories that are not yours to document (generated code, vendored libraries, fixtures) | Add a pattern to `.docguardignore` (gitignore syntax; `dir/` matches at any depth) |
+| Whole files or directories that are not yours to document (generated code, vendored libraries, fixtures) | Add a pattern to `.docguardignore` (gitignore syntax; `dir/` matches at any depth). Say why, and until when if it is temporary: `generated/  expires:2026-12-31  # replaced by the v2 build` |
 | A finding code that is too noisy for your project, but you still want to see it | `"findingSeverity": { "<CODE>": "low" }` in `.docguard.json` |
 | A validator that genuinely does not apply | `<!-- docguard:validator <key> n/a — reason -->` in a canonical document or `AGENTS.md`. It shows as `N/A` with your reason |
 | Findings that predate adoption | The baseline: `docguard guard --update-baseline` |
@@ -322,6 +325,21 @@ Re-freezing captures every finding that fires at that moment. Run
 `docguard guard --no-baseline` and read the list before running
 `docguard guard --update-baseline`. Guard reports how many baselined entries
 "no longer occur — safe to drop"; re-freezing removes them.
+
+## Ignored files are checked again
+
+**Symptom:** findings appear in a path that `.docguardignore` lists.
+
+**Cause:** the entry no longer applies. Guard says which, at the entry's line:
+
+- **IGN001**: its `expires:` date has passed (UTC). Set a new date if the
+  reason still holds, or delete the line.
+- **IGN003**: its `expires:` value is not a `YYYY-MM-DD` calendar date, or the
+  line has no pattern. Fix the date or remove the token.
+
+`docguard ignore` lists every entry with its state. One more case: a line like
+`fixtures/ # test data` excluded nothing before v0.44 (the comment was read as
+part of the pattern) and excludes `fixtures/` now.
 
 ## Still stuck
 
