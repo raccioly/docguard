@@ -49,6 +49,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **TypeORM and Sequelize models reach `generate`, `generate --plan` and
+  `diff`** (`specs/056-typeorm-models`, #520). Only guard's schema check read
+  them, by a pattern that missed common layouts, so a TypeORM or Sequelize
+  project got an empty entity table and ER diagram. Both ORMs now go through
+  the discovery Prisma, Drizzle and Mongoose use, so guard, `generate`, the
+  plan, as-built specs and `diff` read the same models:
+  - TypeORM: `@Entity` classes in any file that imports `typeorm`
+    (`src/entity/User.ts` from `typeorm init` and NestJS's
+    `src/users/user.entity.ts` included), named by class with the table name
+    kept. Columns carry their type, nullability, primary key, `unique`,
+    default and comment; columns declared on a base class are inherited; each
+    relation is drawn once, from its owning side.
+  - Sequelize: `sequelize.define('Name', …)` and `Model.init(…, { sequelize })`
+    models with their declared attributes. Guard used to miss every `init`
+    model. `belongsTo`, `hasMany`, `hasOne` and `belongsToMany` associations
+    are drawn once.
+  - An entity whose decorators come through a project barrel that
+    re-exports `typeorm` (relative, tsconfig path alias or workspace package)
+    is read; one whose barrel re-exports MikroORM is not.
+  - A file that does not parse is read by pattern into the same entities,
+    which then report the `regex-fallback` tier. Drizzle and Mongoose entities
+    now report their tier too, so a pattern-read schema marks the plan's
+    entity surface partial.
+  - Zod schemas are the data model only when no ORM entity is found; a
+    Mongoose project with Zod schemas used to report both. A Zod-only project
+    listed each schema twice; it now lists each once.
+  - SCH001's help names every model source guard reads.
+
+  Guard now names a TypeORM entity by its class and accepts the class or the
+  table name in DATA-MODEL.md. Knex is still read by guard only, by table name.
 - **The watch reliability tests no longer depend on wall-clock timing**
   (`specs/055-watch-deterministic`, #523). `tests/watch-reliability.test.mjs`
   slept 300–600 ms around the 500 ms debounce and let the watcher print to

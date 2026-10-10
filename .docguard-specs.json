@@ -5102,7 +5102,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/scanners/js-ast.mjs",
-            "line": 487
+            "line": 617
           },
           {
             "requirementId": "FR-001",
@@ -5112,17 +5112,17 @@
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/js-ast.mjs",
-            "line": 346
+            "line": 476
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/js-ast.mjs",
-            "line": 488
+            "line": 618
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/js-ast.mjs",
-            "line": 574
+            "line": 704
           },
           {
             "requirementId": "FR-002",
@@ -5182,12 +5182,22 @@
           {
             "requirementId": "FR-006",
             "file": "cli/scanners/schemas.mjs",
-            "line": 207
+            "line": 317
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/scanners/schemas.mjs",
+            "line": 525
           },
           {
             "requirementId": "FR-007",
             "file": "cli/scanners/schemas.mjs",
-            "line": 208
+            "line": 318
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/scanners/schemas.mjs",
+            "line": 735
           },
           {
             "requirementId": "FR-008",
@@ -5207,17 +5217,22 @@
           {
             "requirementId": "FR-009",
             "file": "cli/scanners/js-ast.mjs",
-            "line": 577
+            "line": 707
           },
           {
             "requirementId": "FR-010",
             "file": "cli/scanners/schemas.mjs",
-            "line": 209
+            "line": 319
           },
           {
             "requirementId": "FR-010",
             "file": "cli/scanners/schemas.mjs",
-            "line": 253
+            "line": 370
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/validators/schema-sync.mjs",
+            "line": 8
           }
         ],
         "testEvidence": [
@@ -7688,6 +7703,11 @@
             "requirementId": "FR-008",
             "file": "cli/scanners/python-models.mjs",
             "line": 20
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "cli/validators/schema-sync.mjs",
+            "line": 10
           },
           {
             "requirementId": "FR-009",
@@ -10292,6 +10312,248 @@
             "requirementId": "SC-004",
             "file": "tests/scheduled-release.test.mjs",
             "line": 36
+          }
+        ]
+      }
+    },
+    {
+      "specId": "docguard.typeorm-models",
+      "path": "specs/056-typeorm-models/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "approved",
+          "delivery": "implemented",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": "living"
+        },
+        "relations": {
+          "extends": [
+            "docguard.docs-verification-findings",
+            "docguard.js-ts-extraction",
+            "docguard.user-documentation"
+          ],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md",
+            "docs-canonical/TEST-SPEC.md"
+          ]
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.typeorm-models#FR-001",
+          "docguard.typeorm-models#FR-002",
+          "docguard.typeorm-models#FR-003",
+          "docguard.typeorm-models#FR-004",
+          "docguard.typeorm-models#FR-005",
+          "docguard.typeorm-models#FR-006",
+          "docguard.typeorm-models#FR-007",
+          "docguard.typeorm-models#FR-008",
+          "docguard.typeorm-models#FR-009",
+          "docguard.typeorm-models#FR-010",
+          "docguard.typeorm-models#FR-011",
+          "docguard.typeorm-models#FR-012",
+          "docguard.typeorm-models#SC-001",
+          "docguard.typeorm-models#SC-002"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/056-typeorm-models/spec.md",
+            "digest": "sha256:f2e9a4d0d2f1b963185ac34aa8b8fb3feb7a311bb22ccf696b6c53a7d6a0da11"
+          },
+          {
+            "path": "specs/056-typeorm-models/plan.md",
+            "digest": "sha256:f02d95de23bfe2990c1cb378a97ef79ccfb59716f075088ed2e85de2193546db"
+          },
+          {
+            "path": "specs/056-typeorm-models/tasks.md",
+            "digest": "sha256:f2cc780b67581af4c93d946cc304b2b535156dee7330a24dabf320add8b5b46a"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 11,
+          "total": 11
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/scanners/schemas.mjs",
+            "line": 320
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/scanners/js-ast.mjs",
+            "line": 281
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/scanners/schemas.mjs",
+            "line": 1139
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/scanners/schemas.mjs",
+            "line": 1140
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/scanners/schemas.mjs",
+            "line": 1141
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/scanners/js-ast.mjs",
+            "line": 282
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/scanners/schemas.mjs",
+            "line": 1142
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/scanners/schemas.mjs",
+            "line": 1245
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/scanners/js-ast.mjs",
+            "line": 331
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/scanners/schemas.mjs",
+            "line": 1246
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/scanners/schemas.mjs",
+            "line": 371
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/validators/schema-sync.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/validators/schema-sync.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "cli/scanners/schemas.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "cli/scanners/schemas.mjs",
+            "line": 527
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "cli/scanners/schemas.mjs",
+            "line": 736
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "cli/scanners/schemas.mjs",
+            "line": 200
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "cli/scanners/schemas.mjs",
+            "line": 321
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/typeorm-models.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/typeorm-models.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/typeorm-models.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/typeorm-models.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/typeorm-models.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/typeorm-models.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/typeorm-models.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/typeorm-models.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "tests/typeorm-models.test.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "tests/typeorm-models.test.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "tests/typeorm-models.test.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "tests/typeorm-models.test.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/fixtures/orm-class-projects.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/typeorm-models.test.mjs",
+            "line": 20
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/typeorm-models.test.mjs",
+            "line": 21
           }
         ]
       }

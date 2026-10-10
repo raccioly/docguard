@@ -259,10 +259,20 @@ DocGuard's own output:
     the source roots;
   - Mongoose schemas (nested `{ type, ref }` fields, arrays of refs, the
     `model('Name', schema)` name), anywhere under the source roots, including
-    `lib/models`.
+    `lib/models`;
+  - TypeORM `@Entity` classes whose decorators come from `typeorm`, directly
+    or through a project barrel that re-exports it: columns with
+    their type, nullability, primary key, `unique` and default, columns
+    inherited from a base class, and each relation drawn once from its owning
+    side (`@ManyToOne`, the `@JoinColumn` or `@JoinTable` side);
+  - Sequelize models from `sequelize.define('Name', …)` and
+    `Model.init(…, { sequelize })`, with their declared attributes and
+    `belongsTo`, `hasMany`, `hasOne` and `belongsToMany` associations.
 
   Guard's schema check reads these through the same discovery, so it and
-  `generate` name the same entities.
+  `generate` name the same entities. Zod object schemas are the data model
+  only when none of these is found. An entity read by pattern, because its
+  file does not parse, marks the plan's entity surface partial.
 
 #### How routes are read
 
