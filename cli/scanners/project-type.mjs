@@ -226,7 +226,9 @@ function classify(lang, dir, deps, { webSdk = false } = {}) {
     if (hasWorkerConfig(dir)) { framework = 'Cloudflare Workers'; kind = 'service'; }
     else if (has(deps, 'next')) { framework = 'Next.js'; kind = 'webapp'; }
     else if (has(deps, 'react', 'vue', '@angular/core', 'svelte', '@sveltejs/kit', 'nuxt')) { framework = has(deps,'react')?'React':has(deps,'vue')?'Vue':'Frontend'; kind = 'webapp'; }
-    else if (has(deps, 'express', 'fastify', 'hono', 'koa', '@nestjs/core')) { framework = has(deps,'express')?'Express':has(deps,'fastify')?'Fastify':has(deps,'@nestjs/core')?'NestJS':has(deps,'hono')?'Hono':'Koa'; kind = 'api'; } // docguard.docs-verification-findings#FR-001
+    // NestJS first: a Nest app on the Express platform often lists `express`
+    // too (docguard.js-framework-routes#FR-007).
+    else if (has(deps, 'express', 'fastify', 'hono', 'koa', '@nestjs/core')) { framework = has(deps,'@nestjs/core')?'NestJS':has(deps,'express')?'Express':has(deps,'fastify')?'Fastify':has(deps,'hono')?'Hono':'Koa'; kind = 'api'; } // docguard.docs-verification-findings#FR-001
   } else if (lang === 'Python') {
     if (has(deps, 'django') || existsSync(join(dir, 'manage.py'))) { framework = 'Django'; kind = 'webapp'; }
     else if (has(deps, 'fastapi')) { framework = 'FastAPI'; kind = 'api'; }

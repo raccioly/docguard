@@ -1,16 +1,26 @@
 /**
  * Deep Schema Scanner
  * Parses schema definitions from ORM/validation libraries.
- * Supports: Prisma, Drizzle, Zod, Mongoose, TypeORM, OpenAPI schemas
- * 
+ * Reads: Prisma, Drizzle, Mongoose, TypeORM (`@Entity` classes) and Sequelize
+ * (`define` / `init`) through one discovery (`scanOrmEntities`) that guard's
+ * schema check shares; Zod when no ORM entity is found; OpenAPI schemas;
+ * Python models (python-models.mjs); Diesel, Go structs, JPA and Rails
+ * migrations by pattern. Knex is not read here: guard's schema check reads
+ * Knex table names itself.
+ *
  * Priority: OpenAPI schemas > ORM schemas > Validation schemas
+ * @implements docguard.typeorm-models#FR-008
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { resolve, join, relative, sep } from 'node:path';
-import { extractJsSchemaBodies, splitTopLevel, stripComments, matchingBracket } from './js-ast.mjs';
+import { resolve, join, relative, sep, dirname } from 'node:path';
+import { createAliasResolver, resolveModuleFile } from './ts-paths.mjs';
+import {
+  extractJsSchemaBodies, extractDecoratedClasses, extractSequelizeCalls, astTierAvailable,
+  splitTopLevel, stripComments, matchingBracket,
+} from './js-ast.mjs';
 import { scanPythonModels } from './python-models.mjs';
-import { readScannable, resolveSourceRoots, getWorkspaceDirs } from '../shared-source.mjs';
+import { readScannable, resolveSourceRoots, getWorkspaceDirs, tierFor } from '../shared-source.mjs';
 import { DEFAULT_IGNORE_DIRS as IGNORE_DIRS, shouldIgnore, relPosix, isNonProductPath } from '../shared-ignore.mjs';
 
 /**
@@ -36,8 +46,9 @@ export function scanSchemasDeep(dir, stack, docTools, config = {}) {
     };
   }
 
-  // Priority 2: ORM-specific scanning. Prisma, Drizzle and Mongoose come from
-  // the discovery guard's schema check also uses (docguard.js-ts-extraction#FR-010).
+  // Priority 2: ORM-specific scanning. Prisma, Drizzle, Mongoose,
+  // TypeORM and Sequelize come from the discovery guard's schema check also
+  // uses (docguard.js-ts-extraction#FR-010, docguard.typeorm-models#FR-007).
   const entities = [];
   const relationships = [];
   const orm = scanOrmEntities(dir, config);
@@ -50,15 +61,18 @@ export function scanSchemasDeep(dir, stack, docTools, config = {}) {
   entities.push(...orm.drizzle.entities);
   relationships.push(...orm.drizzle.relationships);
 
-  // Zod (if no ORM found, Zod schemas are the data model)
+  // Mongoose, TypeORM and Sequelize
+  for (const result of [orm.mongoose, orm.typeorm, orm.sequelize]) {
+    entities.push(...result.entities);
+    relationships.push(...result.relationships);
+  }
+
+  // Zod: the data model only when no ORM entity was found
+  // (docguard.typeorm-models#FR-010).
   if (entities.length === 0) {
     const zodResult = scanZodSchemas(dir);
     entities.push(...zodResult.entities);
   }
-
-  // Mongoose
-  entities.push(...orm.mongoose.entities);
-  relationships.push(...orm.mongoose.relationships);
 
   // ── Multi-language model scanners (additive; supports polyglot repos) ──
   // Python reports the parser tier that read it (python-models.mjs).
@@ -105,17 +119,108 @@ export function scanSchemasDeep(dir, stack, docTools, config = {}) {
 // ── Shared ORM entity discovery (docguard.js-ts-extraction#FR-010) ─────────
 //
 // Guard's schema check (validators/schema-sync.mjs) and generate both read
-// Prisma, Drizzle and Mongoose entities through scanOrmEntities(). Two
+// Prisma, Drizzle, Mongoose, TypeORM and Sequelize entities through
+// scanOrmEntities() (docguard.typeorm-models#FR-007). Two
 // independent directory lists used to drift: guard found Drizzle tables under
 // `lib/db` while generate reported none.
 
 const JS_SCHEMA_FILE_RE = /\.(?:[cm]?[jt]s|[jt]sx)$/;
 // Conventional top-level schema dirs, searched besides the source roots.
-const ORM_SEARCH_DIRS = ['db', 'database', 'schema', 'schemas', 'drizzle', 'models', 'model'];
+const ORM_SEARCH_DIRS = ['db', 'database', 'schema', 'schemas', 'drizzle', 'models', 'model', 'entities', 'entity'];
 const DRIZZLE_CONFIG_FILES = ['drizzle.config.ts', 'drizzle.config.js', 'drizzle.config.mjs', 'drizzle.config.cjs', 'drizzle.config.mts', 'drizzle.config.json'];
 // A table builder called with a literal table name: specific to Drizzle.
 const DRIZZLE_TABLE_RE = /\b(?:pg|mysql|sqlite)Table\s*\(\s*['"`]\w+['"`]/;
 const MONGOOSE_SCHEMA_RE = /\bnew\s+(?:mongoose\s*\.\s*)?Schema\s*(?:<[^>]*>)?\s*\(/;
+// TypeORM: an import of `typeorm` and an entity or column decorator. The
+// import keeps MikroORM, whose decorator is also `@Entity()`, out.
+const TYPEORM_IMPORT_RE = /(?:\bfrom\s*|\brequire\s*\(\s*)['"]typeorm['"]/;
+const TYPEORM_DECORATOR_RE = /@\s*(?:Entity|\w*Column)\s*\(/;
+const SEQUELIZE_CALL_RE = /\.\s*(?:define|init)\s*\(/;
+// Local modules followed when looking for a `typeorm` re-export: an entity's
+// barrel, the barrel's own barrel, and one more.
+const TYPEORM_BARREL_DEPTH = 3;
+const DECORATOR_NAME_RE = /^(?:Entity|\w*Column|ManyToOne|OneToMany|OneToOne|ManyToMany|JoinColumn|JoinTable)$/;
+
+/**
+ * Specifiers a module imports or re-exports from (`import { A } from`,
+ * `export { A } from`, `export * from`, `const { A } = require('./x')`). With
+ * `wantDecorators`, only those that bring in a decorator name or a namespace.
+ */
+function localImportSpecs(content, wantDecorators) {
+  const specs = [];
+  const re = /\b(import|export)\s+(type\s+)?(\*(?:\s+as\s+[\w$]+)?|\{([^}]*)\})\s*from\s*['"]([^'"]+)['"]/g;
+  for (const m of content.matchAll(re)) {
+    const [, , typeOnly, clause, names, spec] = m;
+    // A package specifier is kept too: a tsconfig path alias looks like one,
+    // and the alias resolver returns nothing for a real package.
+    if (typeOnly) continue;
+    if (wantDecorators && names !== undefined) {
+      const imported = names.split(',').map(n => n.trim().split(/\s+as\s+/)[0].trim()).filter(Boolean);
+      if (!imported.some(n => DECORATOR_NAME_RE.test(n))) continue;
+    } else if (wantDecorators && !clause.startsWith('*')) continue;
+    specs.push(spec);
+  }
+  for (const m of content.matchAll(/\{([^}]*)\}\s*=\s*require\s*\(\s*['"](\.[^'"]+)['"]\s*\)/g)) {
+    if (!wantDecorators || m[1].split(',').some(n => DECORATOR_NAME_RE.test(n.trim().split(/\s*:\s*/)[0]))) specs.push(m[2]);
+  }
+  return specs;
+}
+
+/** A workspace package's module for `spec` (`@acme/db`, `@acme/db/entities`), or null. */
+function workspaceModule(ctx, spec) {
+  if (!ctx.workspaces) {
+    ctx.workspaces = new Map();
+    for (const wsDir of getWorkspaceDirs(ctx.dir)) {
+      try {
+        const pkg = JSON.parse(readFileSync(join(wsDir, 'package.json'), 'utf8'));
+        if (typeof pkg?.name === 'string') ctx.workspaces.set(pkg.name, { dir: wsDir, pkg });
+      } catch { /* no package.json */ }
+    }
+  }
+  for (const [name, { dir, pkg }] of ctx.workspaces) {
+    if (spec !== name && !spec.startsWith(name + '/')) continue;
+    const sub = spec.slice(name.length + 1);
+    if (sub) return resolveModuleFile(join(dir, sub)) ?? resolveModuleFile(join(dir, 'src', sub));
+    for (const entry of [pkg.source, pkg.types, pkg.main, 'src/index', 'index']) {
+      const file = typeof entry === 'string' ? resolveModuleFile(resolve(dir, entry)) : null;
+      if (file) return file;
+    }
+    return null;
+  }
+  return null;
+}
+
+/**
+ * Whether a file's decorators come from `typeorm`: imported directly, or from
+ * a local module (relative, a tsconfig path alias or a workspace package)
+ * that re-exports
+ * `typeorm`, up to TYPEORM_BARREL_DEPTH modules away. Only imports that bring
+ * in a decorator name (or a namespace) are followed, so an entity of another
+ * ORM that merely imports a TypeORM data source is not read.
+ * @implements docguard.typeorm-models#FR-012
+ */
+function decoratorsFromTypeOrm(file, content, ctx, depth = 0, seen = new Set()) {
+  if (TYPEORM_IMPORT_RE.test(content)) return true;
+  if (depth >= TYPEORM_BARREL_DEPTH) return false;
+  seen.add(file);
+  for (const spec of localImportSpecs(content, depth === 0)) {
+    let target;
+    if (spec.startsWith('.')) target = resolveModuleFile(resolve(dirname(file), spec));
+    else {
+      ctx.resolveAlias ??= createAliasResolver(ctx.dir);
+      target = ctx.resolveAlias(file, spec) ?? workspaceModule(ctx, spec);
+    }
+    if (!target || seen.has(target)) continue;
+    let hit = ctx.memo.get(target);
+    if (hit === undefined) {
+      const text = readFileSafe(target);
+      hit = Boolean(text) && decoratorsFromTypeOrm(target, text, ctx, depth + 1, seen);
+      ctx.memo.set(target, hit);
+    }
+    if (hit) return true;
+  }
+  return false;
+}
 
 function isDir(p) {
   try { return statSync(p).isDirectory(); } catch { return false; }
@@ -195,19 +300,26 @@ function drizzleConfigFiles(dir) {
 }
 
 /**
- * Where Prisma, Drizzle and Mongoose schemas live.
+ * Where Prisma, Drizzle, Mongoose, TypeORM and Sequelize schemas live.
  * - Prisma: `prisma/*.prisma` and `prisma/schema/*.prisma` under the project,
  *   its workspaces and source roots, plus package.json `prisma.schema`.
  * - Drizzle: drizzle.config.* `schema` first; otherwise a search of the
  *   conventional dirs and source roots for files that call a table builder
  *   (`pgTable('users', …)`).
  * - Mongoose: the same search, for files that construct a mongoose Schema.
+ * - TypeORM: the same search, for files that use an entity or column
+ *   decorator imported from `typeorm`, directly or through local modules that
+ *   re-export it (an abstract base class counts).
+ * - Sequelize: the same search, for files that mention `sequelize` and call
+ *   `define` or `init`.
  * Every file appears once (absolute paths), so `src/db` inside `src` is not
  * scanned twice.
  * @implements docguard.js-ts-extraction#FR-006
  * @implements docguard.js-ts-extraction#FR-007
  * @implements docguard.js-ts-extraction#FR-010
- * @returns {{ prisma: string[], drizzle: string[], mongoose: string[] }}
+ * @implements docguard.typeorm-models#FR-001
+ * @implements docguard.typeorm-models#FR-012
+ * @returns {{ prisma: string[], drizzle: string[], mongoose: string[], typeorm: string[], sequelize: string[] }}
  */
 export function discoverOrmSchemaFiles(dir, config = {}) {
   const prisma = new Set();
@@ -234,6 +346,9 @@ export function discoverOrmSchemaFiles(dir, config = {}) {
   const configured = drizzleConfigFiles(dir);
   const drizzle = new Set(configured.filter(f => keepSchemaFile(dir, f, config)));
   const mongoose = new Set();
+  const typeorm = new Set();
+  const sequelize = new Set();
+  const typeormCtx = { resolveAlias: null, dir, memo: new Map() };
   for (const base of ormSearchBases(dir, config)) {
     for (const file of freshFiles(base)) {
       if (!JS_SCHEMA_FILE_RE.test(file) || !keepSchemaFile(dir, file, config)) continue;
@@ -241,16 +356,19 @@ export function discoverOrmSchemaFiles(dir, config = {}) {
       if (!content) continue;
       if (configured.length === 0 && DRIZZLE_TABLE_RE.test(content)) drizzle.add(file);
       if (content.includes('mongoose') && MONGOOSE_SCHEMA_RE.test(content)) mongoose.add(file);
+      if (TYPEORM_DECORATOR_RE.test(content) && decoratorsFromTypeOrm(file, content, typeormCtx)) typeorm.add(file);
+      if (/sequelize/i.test(content) && SEQUELIZE_CALL_RE.test(content)) sequelize.add(file);
     }
   }
   const order = list => [...list].filter(f => keepSchemaFile(dir, f, config)).sort();
-  return { prisma: order(prisma), drizzle: order(drizzle), mongoose: order(mongoose) };
+  return { prisma: order(prisma), drizzle: order(drizzle), mongoose: order(mongoose), typeorm: order(typeorm), sequelize: order(sequelize) };
 }
 
 /**
- * Prisma, Drizzle and Mongoose entities, relationships and (Prisma) enums —
- * the one discovery and parse both guard and generate use.
+ * Prisma, Drizzle, Mongoose, TypeORM and Sequelize entities, relationships
+ * and (Prisma) enums — the one discovery and parse both guard and generate use.
  * @implements docguard.js-ts-extraction#FR-010
+ * @implements docguard.typeorm-models#FR-007
  */
 export function scanOrmEntities(dir, config = {}) {
   const files = discoverOrmSchemaFiles(dir, config);
@@ -258,6 +376,8 @@ export function scanOrmEntities(dir, config = {}) {
     prisma: scanPrismaDeep(dir, files.prisma),
     drizzle: scanDrizzleSchemas(dir, files.drizzle),
     mongoose: scanMongooseSchemas(dir, files.mongoose),
+    typeorm: scanTypeOrmEntities(dir, files.typeorm),
+    sequelize: scanSequelizeModels(dir, files.sequelize),
   };
 }
 
@@ -403,6 +523,8 @@ function drizzleTablesByPattern(content) {
  * Drizzle tables with every column. A variable → table map across all schema
  * files resolves `.references(() => users.id)` to the table name, and pgEnum
  * bindings type their columns `enum` (docguard.js-ts-extraction#FR-006).
+ * Each table records the tier that read it.
+ * @implements docguard.typeorm-models#FR-009
  */
 function scanDrizzleSchemas(dir, schemaFiles = []) {
   const entities = [];
@@ -415,8 +537,9 @@ function scanDrizzleSchemas(dir, schemaFiles = []) {
     for (const m of content.matchAll(/\b([A-Za-z_$][\w$]*)\s*=\s*(?:pg|mysql)Enum\s*\(/g)) enumVars.add(m[1]);
     // Full-support tier: AST extraction (balanced bodies). The pattern tier
     // reads the same bodies by bracket matching when the file does not parse.
-    const found = extractJsSchemaBodies(content, abs) ?? drizzleTablesByPattern(content);
-    for (const t of found) if (t.kind === 'drizzle') tables.push({ ...t, file: relPosix(dir, abs) });
+    const parsed = extractJsSchemaBodies(content, abs);
+    const { tier, tierReason } = classTier(abs, parsed);
+    for (const t of parsed ?? drizzleTablesByPattern(content)) if (t.kind === 'drizzle') tables.push({ ...t, file: relPosix(dir, abs), tier, tierReason });
   }
   const varToTable = new Map(tables.map(t => [t.name, t.table]));
   for (const t of tables) {
@@ -430,6 +553,8 @@ function scanDrizzleSchemas(dir, schemaFiles = []) {
       file: t.file,
       source: 'drizzle',
       description: '',
+      tier: t.tier,
+      tierReason: t.tierReason,
     });
   }
   return { entities, relationships };
@@ -494,8 +619,13 @@ function extractDrizzleDefault(chain) {
 
 // ── Zod Scanner ─────────────────────────────────────────────────────────────
 
+/**
+ * Zod object schemas. Each file is read once although `src/schemas` lies
+ * inside `src` (docguard.typeorm-models#FR-010).
+ */
 function scanZodSchemas(dir) {
   const entities = [];
+  const seen = new Set();
 
   const schemaDirs = ['src/schema', 'src/schemas', 'schema', 'schemas', 'src/types', 'src/validation', 'src'];
   const zodPattern = /(?:export\s+(?:const|let)\s+)(\w+(?:Schema|Validator|Input|Output))\s*=\s*z\.object\s*\(\s*\{([^}]+)\}\s*\)/g;
@@ -505,6 +635,8 @@ function scanZodSchemas(dir) {
     if (!existsSync(fullDir)) continue;
 
     walkDir(fullDir, (filePath) => {
+      if (seen.has(filePath)) return;
+      seen.add(filePath);
       const content = readFileSafe(filePath);
       if (!content || !content.includes('z.object')) return;
 
@@ -600,7 +732,8 @@ function mongooseSchemasByPattern(content) {
  * one. Fields come from the top-level keys only: a `{ type, required, ref }`
  * object is one field, a nested object without `type` is one `object` field,
  * and `[{ type: ObjectId, ref: 'X' }]` is an array relation
- * (docguard.js-ts-extraction#FR-007).
+ * (docguard.js-ts-extraction#FR-007). Each schema records the tier that read it.
+ * @implements docguard.typeorm-models#FR-009
  */
 function scanMongooseSchemas(dir, schemaFiles = []) {
   const entities = [];
@@ -610,8 +743,9 @@ function scanMongooseSchemas(dir, schemaFiles = []) {
     if (!content) continue;
     const models = new Map();
     for (const m of content.matchAll(/\bmodel\s*(?:<[^>]*>)?\s*\(\s*(['"`])(\w+)\1\s*,\s*([A-Za-z_$][\w$]*)/g)) models.set(m[3], m[2]);
-    const found = extractJsSchemaBodies(content, abs) ?? mongooseSchemasByPattern(content);
-    for (const s of found) {
+    const parsed = extractJsSchemaBodies(content, abs);
+    const { tier, tierReason } = classTier(abs, parsed);
+    for (const s of parsed ?? mongooseSchemasByPattern(content)) {
       if (s.kind !== 'mongoose') continue;
       const bare = s.name.replace(/Schema$/i, '') || s.name;
       const name = models.get(s.name) ?? (bare.charAt(0).toUpperCase() + bare.slice(1));
@@ -625,6 +759,8 @@ function scanMongooseSchemas(dir, schemaFiles = []) {
         file: relPosix(dir, abs),
         source: 'mongoose',
         description: '',
+        tier,
+        tierReason,
       });
     }
   }
@@ -690,6 +826,474 @@ function mapMongooseType(type) {
     'Schema': 'embedded', 'Decimal128': 'decimal', 'BigInt': 'bigint', 'UUID': 'uuid',
   };
   return map[type] || type;
+}
+
+// ── Class-based ORMs: TypeORM and Sequelize ────────────────────────────────
+//
+// The AST tier (js-ast.mjs) and the pattern tier below both return source
+// text; the interpreters after them read that text, so a file read by either
+// tier yields the same entities (docguard.typeorm-models#FR-005).
+
+/** The text with comments blanked to spaces; strings and line breaks kept, so offsets and lines hold. */
+function blankComments(text) {
+  let out = '';
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === '"' || ch === "'" || ch === '`') {
+      const start = i;
+      for (i++; i < text.length && text[i] !== ch; i++) if (text[i] === '\\') i++;
+      out += text.slice(start, i + 1);
+      continue;
+    }
+    if (ch === '/' && (text[i + 1] === '/' || text[i + 1] === '*')) {
+      const end = text[i + 1] === '/' ? text.indexOf('\n', i) : text.indexOf('*/', i + 2) + 2;
+      const stop = end <= 1 || end < 0 ? text.length : end;
+      out += text.slice(i, stop).replace(/[^\n]/g, ' ');
+      i = stop - 1;
+      continue;
+    }
+    out += ch;
+  }
+  return out;
+}
+
+const lineAt = (text, index) => text.slice(0, index).split('\n').length;
+
+/** Index just past the token at `i`: a string, a bracketed group, a word, or one character. */
+function skipToken(text, i) {
+  const ch = text[i];
+  if (ch === '"' || ch === "'" || ch === '`') {
+    let j = i + 1;
+    for (; j < text.length && text[j] !== ch; j++) if (text[j] === '\\') j++;
+    return j + 1;
+  }
+  if (ch === '(' || ch === '[' || ch === '{') {
+    const close = matchingBracket(text, i);
+    return close < 0 ? i + 1 : close + 1;
+  }
+  const word = /[\w$]+/y;
+  word.lastIndex = i;
+  return word.test(text) ? word.lastIndex : i + 1;
+}
+
+/** The decorator at `text[i] === '@'`: `{ name, args, end }`, args as trimmed source text. */
+function decoratorAt(text, i) {
+  const head = /@\s*(?:[A-Za-z_$][\w$]*\s*\.\s*)*([A-Za-z_$][\w$]*)\s*/y;
+  head.lastIndex = i;
+  const m = head.exec(text);
+  if (!m) return null;
+  let end = head.lastIndex;
+  let args = [];
+  if (text[end] === '(') {
+    const close = matchingBracket(text, end);
+    if (close < 0) return null;
+    args = splitTopLevel(text.slice(end + 1, close), ',').map(a => a.trim()).filter(Boolean);
+    end = close + 1;
+  }
+  return { name: m[1], args, end };
+}
+
+/** Index of the first top-level `stops` character from `i` (brackets and strings skipped). */
+function scanTo(text, i, stops) {
+  while (i < text.length && !stops(text, i)) {
+    const ch = text[i];
+    i = (ch === '"' || ch === "'" || ch === '`' || ch === '(' || ch === '[' || ch === '{') ? skipToken(text, i) : i + 1;
+  }
+  return i;
+}
+
+const MEMBER_HEAD = /((?:(?:public|private|protected|readonly|declare|static|override|abstract|accessor|async|get|set)\s+(?=[#A-Za-z_$'"[*]))*)\*?\s*(#?[A-Za-z_$][\w$]*|(['"])[^'"\n]*\3)\s*([?!])?\s*/y;
+
+/** Instance properties of a class body, by pattern: the shape extractDecoratedClasses returns. */
+function classMembersByPattern(body) {
+  const members = [];
+  let pending = [];
+  for (let i = 0; i < body.length;) {
+    const ch = body[i];
+    if (/\s/.test(ch) || ch === ';' || ch === ',') { i++; continue; }
+    if (ch === '@') {
+      const d = decoratorAt(body, i);
+      if (d) { pending.push({ name: d.name, args: d.args }); i = d.end; continue; }
+    }
+    MEMBER_HEAD.lastIndex = i;
+    const m = MEMBER_HEAD.exec(body);
+    if (!m || MEMBER_HEAD.lastIndex === i) { pending = []; i = skipToken(body, i); continue; }
+    let j = MEMBER_HEAD.lastIndex;
+    if (body[j] === '(' || body[j] === '<') {
+      // A method or accessor: its parameters, return type and body.
+      j = scanTo(body, j, (t, k) => t[k] === '(');
+      j = skipToken(body, j);
+      j = scanTo(body, j, (t, k) => t[k] === '{' || t[k] === ';');
+      if (body[j] === '{') j = skipToken(body, j);
+      pending = [];
+      i = j;
+      continue;
+    }
+    let type = null;
+    const endOfStatement = (t, k) => t[k] === ';' || t[k] === '\n' || t[k] === '}' || (t[k] === '=' && t[k + 1] !== '>');
+    if (body[j] === ':') {
+      const end = scanTo(body, j + 1, endOfStatement);
+      type = body.slice(j + 1, end).trim() || null;
+      j = end;
+    }
+    if (body[j] === '=') j = scanTo(body, j + 1, (t, k) => t[k] === ';' || t[k] === '\n');
+    const name = m[3] ? m[2].slice(1, -1) : m[2];
+    if (!/\bstatic\s/.test(m[1]) && !name.startsWith('#')) {
+      members.push({ name, optional: m[4] === '?', type, decorators: pending });
+    }
+    pending = [];
+    i = j;
+  }
+  return members;
+}
+
+const CLASS_HEAD = /(?:export\s+(?:default\s+)?)?(?:declare\s+)?(?:abstract\s+)?class\s+([A-Za-z_$][\w$]*)(?:\s*<[^>{]*>)?(?:\s+extends\s+((?:[A-Za-z_$][\w$]*\s*\.\s*)*[A-Za-z_$][\w$]*)(?:\s*<[^{]*?>)?)?(?:\s+implements\s+[^{]+)?\s*\{/y;
+
+/** Top-level classes and their decorators, by pattern: the shape extractDecoratedClasses returns. */
+function decoratedClassesByPattern(content) {
+  const text = blankComments(content);
+  const classes = [];
+  let pending = [];
+  for (let i = 0; i < text.length;) {
+    const ch = text[i];
+    if (/\s/.test(ch) || ch === ';') { i++; continue; }
+    if (ch === '@') {
+      const d = decoratorAt(text, i);
+      if (d) { pending.push({ name: d.name, args: d.args }); i = d.end; continue; }
+    }
+    CLASS_HEAD.lastIndex = i;
+    const m = CLASS_HEAD.exec(text);
+    if (m) {
+      const open = CLASS_HEAD.lastIndex - 1;
+      const close = matchingBracket(text, open);
+      if (close < 0) break;
+      const nameAt = i + m[0].search(/\bclass\s/) + 'class'.length;
+      classes.push({
+        name: m[1],
+        base: m[2] ? m[2].split('.').pop().trim() : null,
+        line: lineAt(text, nameAt + text.slice(nameAt).search(/\S/)),
+        decorators: pending,
+        members: classMembersByPattern(text.slice(open + 1, close)),
+      });
+      pending = [];
+      i = close + 1;
+      continue;
+    }
+    pending = [];
+    i = skipToken(text, i);
+  }
+  return classes;
+}
+
+/** The object literal after `text[from]` (an optional `,` first): its inner text, or ''. */
+function objectAfter(text, from) {
+  let i = from;
+  while (/\s/.test(text[i] || '')) i++;
+  if (text[i] === ',') i++;
+  while (/\s/.test(text[i] || '')) i++;
+  if (text[i] !== '{') return '';
+  const close = matchingBracket(text, i);
+  return close < 0 ? '' : text.slice(i + 1, close);
+}
+
+/** Sequelize define/init calls and associations, by pattern: the shape extractSequelizeCalls returns. */
+function sequelizeCallsByPattern(content) {
+  const text = blankComments(content);
+  const models = [];
+  const associations = [];
+  for (const m of text.matchAll(/(?:\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:await\s+)?)?(?:[A-Za-z_$][\w$]*\s*\.\s*)+define\s*\(\s*(['"])(\w+)\2\s*,\s*\{/g)) {
+    const open = m.index + m[0].length - 1;
+    const close = matchingBracket(text, open);
+    if (close < 0) continue;
+    const callAt = m[1] ? m.index + m[0].indexOf('=') + 1 : m.index;
+    models.push({
+      call: 'define', name: m[3], receiver: null, binding: m[1] ?? null,
+      attributes: text.slice(open + 1, close), options: objectAfter(text, close + 1), line: lineAt(text, callAt + text.slice(callAt).search(/\S/)),
+    });
+  }
+  for (const m of text.matchAll(/\b([A-Za-z_$][\w$]*)\s*\.\s*init\s*\(\s*\{/g)) {
+    const open = m.index + m[0].length - 1;
+    const close = matchingBracket(text, open);
+    if (close < 0) continue;
+    models.push({ call: 'init', name: null, receiver: m[1], binding: null, attributes: text.slice(open + 1, close), options: objectAfter(text, close + 1), line: lineAt(text, m.index) });
+  }
+  const classes = [];
+  for (const m of text.matchAll(/\bclass\s+([A-Za-z_$][\w$]*)[^{;]*\{/g)) {
+    const open = m.index + m[0].length - 1;
+    const close = matchingBracket(text, open);
+    if (close > open) classes.push({ name: m[1], start: m.index, end: close });
+  }
+  const enclosingClass = (at) => classes.filter(c => c.start <= at && at < c.end).sort((a, b) => b.start - a.start)[0]?.name ?? null;
+  for (const m of text.matchAll(/\b([A-Za-z_$][\w$]*)\s*\.\s*(belongsToMany|belongsTo|hasMany|hasOne)\s*\(/g)) {
+    const open = m.index + m[0].length - 1;
+    const close = matchingBracket(text, open);
+    if (close < 0) continue;
+    const [target = '', options = ''] = splitTopLevel(text.slice(open + 1, close), ',').map(a => a.trim());
+    const receiver = m[1] === 'this' ? enclosingClass(m.index) : m[1];
+    if (!target || !receiver) continue;
+    associations.push({
+      receiver, method: m[2], target,
+      options: options.startsWith('{') ? options.slice(1, options.lastIndexOf('}')) : '', line: lineAt(text, m.index),
+    });
+  }
+  return { models, associations };
+}
+
+/** The tier that read a file: the syntax tree, or the pattern fallback and why. */
+function classTier(abs, parsed) {
+  return tierFor(abs, parsed ? { ok: true } : (astTierAvailable() ? { ok: false } : null));
+}
+
+const isTrue = (text) => String(text ?? '').trim() === 'true';
+const isFalse = (text) => String(text ?? '').trim() === 'false';
+const lcfirst = (s) => s.charAt(0).toLowerCase() + s.slice(1);
+
+/** Options object among decorator arguments, as a key → text map. */
+function decoratorOptions(args) {
+  const obj = args.find(a => a.startsWith('{'));
+  return obj ? objectProps(obj.slice(1, obj.lastIndexOf('}'))) : new Map();
+}
+
+/** A default value's text: `() => 'SQL'` reads as the SQL, a literal unquoted. */
+function defaultText(text) {
+  const arrow = /^\(\s*\)\s*=>\s*([\s\S]+)$/.exec(String(text).trim());
+  const value = arrow ? arrow[1].trim() : String(text).trim();
+  return unquote(value) ?? value;
+}
+
+const TYPEORM_TYPE_MAP = {
+  string: 'string', varchar: 'string', 'character varying': 'string', nvarchar: 'string', 'national varchar': 'string',
+  char: 'string', character: 'string', nchar: 'string', text: 'string', tinytext: 'string', mediumtext: 'string',
+  longtext: 'string', citext: 'string',
+  int: 'integer', integer: 'integer', int2: 'integer', int4: 'integer', smallint: 'integer', tinyint: 'integer', mediumint: 'integer',
+  bigint: 'bigint', int8: 'bigint',
+  float: 'float', float4: 'float', float8: 'float', real: 'float', double: 'float', 'double precision': 'float',
+  decimal: 'decimal', numeric: 'decimal', money: 'decimal',
+  boolean: 'boolean', bool: 'boolean', number: 'number',
+  timestamp: 'datetime', timestamptz: 'datetime', 'timestamp with time zone': 'datetime',
+  'timestamp without time zone': 'datetime', datetime: 'datetime', datetime2: 'datetime', datetimeoffset: 'datetime',
+  date: 'date', time: 'time', timetz: 'time',
+  json: 'json', jsonb: 'json', 'simple-json': 'json', 'simple-array': 'array',
+  uuid: 'uuid', enum: 'enum', 'simple-enum': 'enum',
+  bytea: 'bytes', blob: 'bytes', longblob: 'bytes', binary: 'bytes', varbinary: 'bytes',
+};
+
+/** A TypeORM column type or a TypeScript property type, normalized. */
+function mapTypeOrmType(raw) {
+  if (!raw) return 'unknown';
+  const parts = String(raw).replace(/\s+/g, ' ').split('|').map(s => s.trim()).filter(s => s && s !== 'null' && s !== 'undefined');
+  if (parts.length !== 1) return parts.join(' | ') || 'unknown';
+  const t = parts[0];
+  if (t === 'Date') return 'datetime';
+  if (/\[\]$/.test(t) || /^(?:Array|ReadonlyArray)\s*</.test(t)) return 'array';
+  return TYPEORM_TYPE_MAP[t.toLowerCase()] ?? t;
+}
+
+const TYPEORM_COLUMNS = new Set(['Column', 'PrimaryGeneratedColumn', 'PrimaryColumn', 'CreateDateColumn', 'UpdateDateColumn', 'DeleteDateColumn', 'VersionColumn', 'ObjectIdColumn']);
+const TYPEORM_RELATIONS = new Set(['ManyToOne', 'OneToMany', 'OneToOne', 'ManyToMany']);
+const TYPEORM_INVERSE = { ManyToOne: 'OneToMany', OneToMany: 'ManyToOne', OneToOne: 'OneToOne', ManyToMany: 'ManyToMany' };
+
+/** One column decorator on a property → a field (null for an embedded column). */
+function typeOrmField(member, dec) {
+  if (dec.name === 'Column' && /^(?:\([^)]*\)|[A-Za-z_$][\w$]*)\s*=>/.test(dec.args[0] || '')) return null; // embedded: out of scope
+  const opts = decoratorOptions(dec.args);
+  const stringArg = dec.args.map(a => unquote(a)).find(v => v !== undefined);
+  const rawType = opts.get('type');
+  const declared = unquote(rawType) ?? (rawType && /^[A-Za-z_$][\w$.]*$/.test(rawType) ? rawType : undefined);
+  let type;
+  switch (dec.name) {
+    case 'PrimaryGeneratedColumn': type = declared ?? (stringArg === 'uuid' ? 'uuid' : 'integer'); break;
+    case 'CreateDateColumn': case 'UpdateDateColumn': case 'DeleteDateColumn': type = declared ?? 'datetime'; break;
+    case 'VersionColumn': type = declared ?? 'integer'; break;
+    case 'ObjectIdColumn': type = 'ObjectId'; break;
+    default: type = declared ?? stringArg ?? member.type;
+  }
+  const primaryKey = dec.name === 'PrimaryGeneratedColumn' || dec.name === 'PrimaryColumn' || dec.name === 'ObjectIdColumn' || isTrue(opts.get('primary'));
+  const required = primaryKey || (dec.name === 'DeleteDateColumn' ? isFalse(opts.get('nullable')) : !isTrue(opts.get('nullable')));
+  let fallbackDefault = '—';
+  if (dec.name === 'CreateDateColumn' || dec.name === 'UpdateDateColumn') fallbackDefault = 'now()';
+  return {
+    name: member.name,
+    type: type === 'ObjectId' ? type : mapTypeOrmType(type),
+    required,
+    primaryKey,
+    unique: isTrue(opts.get('unique')),
+    default: opts.has('default') ? defaultText(opts.get('default')) : fallbackDefault,
+    description: unquote(opts.get('comment')) ?? '',
+  };
+}
+
+/** One relation decorator on a property → `{ kind, field, target, inverse, join }`. */
+function typeOrmRelation(member, dec) {
+  const [targetArg = '', inverseArg = ''] = dec.args;
+  const target = unquote(targetArg) ?? (/=>\s*\(?\s*([A-Za-z_$][\w$]*)/.exec(targetArg) || [])[1];
+  if (!target) return null;
+  const inverse = unquote(inverseArg) ?? (/=>\s*\(?\s*[A-Za-z_$][\w$]*\s*\.\s*([A-Za-z_$][\w$]*)/.exec(inverseArg) || [])[1] ?? null;
+  const join = member.decorators.some(d => d.name === 'JoinColumn' || d.name === 'JoinTable');
+  return { kind: dec.name, field: member.name, target, inverse, join };
+}
+
+/**
+ * TypeORM entities: every `@Entity` class, named by class, with its own and
+ * inherited columns; relations drawn once, from the owning side.
+ * @implements docguard.typeorm-models#FR-002
+ * @implements docguard.typeorm-models#FR-003
+ * @implements docguard.typeorm-models#FR-004
+ * @implements docguard.typeorm-models#FR-005
+ */
+function scanTypeOrmEntities(dir, files = []) {
+  const classes = [];
+  for (const abs of files) {
+    const content = readFileSafe(abs);
+    if (!content) continue;
+    const parsed = extractDecoratedClasses(content, abs);
+    const { tier, tierReason } = classTier(abs, parsed);
+    for (const c of parsed ?? decoratedClassesByPattern(content)) classes.push({ ...c, file: relPosix(dir, abs), tier, tierReason });
+  }
+
+  const byName = new Map();
+  for (const c of classes) if (!byName.has(c.name)) byName.set(c.name, c);
+  const resolved = new Map();
+  const columnsOf = (c, seen = new Set()) => {
+    if (resolved.has(c)) return resolved.get(c);
+    seen.add(c);
+    const parent = c.base ? (classes.find(x => x.name === c.base && x.file === c.file) ?? byName.get(c.base)) : null;
+    const inherited = parent && !seen.has(parent) ? columnsOf(parent, seen) : { fields: [], relations: [] };
+    const fields = [];
+    const relations = [];
+    for (const member of c.members) {
+      for (const dec of member.decorators) {
+        if (TYPEORM_COLUMNS.has(dec.name)) { const f = typeOrmField(member, dec); if (f) fields.push(f); break; }
+        if (TYPEORM_RELATIONS.has(dec.name)) { const r = typeOrmRelation(member, dec); if (r) relations.push(r); break; }
+      }
+    }
+    const merge = (base, own, key) => {
+      const ownBy = new Map(own.map(x => [x[key], x]));
+      const kept = base.map(x => ownBy.get(x[key]) ?? x);
+      return [...kept, ...own.filter(x => !base.some(b => b[key] === x[key]))];
+    };
+    const out = { fields: merge(inherited.fields, fields, 'name'), relations: merge(inherited.relations, relations, 'field') };
+    resolved.set(c, out);
+    return out;
+  };
+
+  const entities = [];
+  const rels = [];
+  for (const c of classes) {
+    const entity = c.decorators.find(d => d.name === 'Entity');
+    if (!entity) continue;
+    const [first = ''] = entity.args;
+    const table = unquote(first) ?? (first.startsWith('{') ? unquote(decoratorOptions([first]).get('name')) : undefined) ?? null;
+    const { fields, relations } = columnsOf(c);
+    for (const r of relations) rels.push({ ...r, from: c.name });
+    entities.push({ name: c.name, table, fields, file: c.file, line: c.line, source: 'typeorm', description: '', tier: c.tier, tierReason: c.tierReason });
+  }
+
+  const relationships = [];
+  const counterpart = (r) => rels.find(o => o !== r && o.from === r.target && o.target === r.from && o.kind === TYPEORM_INVERSE[r.kind]
+    && (!r.inverse || o.field === r.inverse) && (!o.inverse || o.inverse === r.field));
+  const TYPE = { ManyToOne: 'many-to-one', OneToMany: 'one-to-many', OneToOne: 'one-to-one', ManyToMany: 'many-to-many' };
+  for (const r of rels) {
+    const other = counterpart(r);
+    let draw;
+    if (r.kind === 'ManyToOne') draw = true;
+    else if (r.kind === 'OneToMany') draw = !other;
+    else if (r.join || !other) draw = true;
+    else draw = !other.join && `${r.from}.${r.field}` < `${other.from}.${other.field}`;
+    if (draw) relationships.push({ from: r.from, to: r.target, type: TYPE[r.kind], field: r.field });
+  }
+  return { entities, relationships };
+}
+
+const SEQUELIZE_TYPE_MAP = {
+  STRING: 'string', CHAR: 'string', TEXT: 'string', CITEXT: 'string',
+  INTEGER: 'integer', SMALLINT: 'integer', MEDIUMINT: 'integer', TINYINT: 'integer', BIGINT: 'bigint',
+  FLOAT: 'float', REAL: 'float', DOUBLE: 'float', DECIMAL: 'decimal',
+  BOOLEAN: 'boolean', DATE: 'datetime', DATEONLY: 'date', TIME: 'time', NOW: 'datetime',
+  JSON: 'json', JSONB: 'json', UUID: 'uuid', UUIDV1: 'uuid', UUIDV4: 'uuid',
+  ENUM: 'enum', ARRAY: 'array', BLOB: 'bytes', VIRTUAL: 'virtual',
+};
+
+/** `DataTypes.STRING(120)` → string. */
+function mapSequelizeType(text) {
+  const base = String(text || '').trim().split('(')[0].split('.').pop().trim();
+  if (!base) return 'unknown';
+  return SEQUELIZE_TYPE_MAP[base.toUpperCase()] ?? base;
+}
+
+function sequelizeFields(attributes) {
+  const fields = [];
+  for (const [name, value] of objectProps(attributes)) {
+    const opts = value.startsWith('{') ? objectProps(value.slice(1, value.lastIndexOf('}'))) : null;
+    const primaryKey = isTrue(opts?.get('primaryKey'));
+    fields.push({
+      name,
+      type: mapSequelizeType(opts ? opts.get('type') : value),
+      required: primaryKey || isFalse(opts?.get('allowNull')),
+      primaryKey,
+      unique: isTrue(opts?.get('unique')),
+      default: opts?.has('defaultValue') ? defaultText(opts.get('defaultValue')) : '—',
+      description: unquote(opts?.get('comment')) ?? '',
+    });
+  }
+  return fields;
+}
+
+/**
+ * Sequelize models from `define` and `init`, with their declared attributes;
+ * associations drawn once, from the `belongsTo` side when both are declared.
+ * @implements docguard.typeorm-models#FR-005
+ * @implements docguard.typeorm-models#FR-006
+ */
+function scanSequelizeModels(dir, files = []) {
+  const models = [];
+  const calls = [];
+  const globalNames = new Map();
+  for (const abs of files) {
+    const content = readFileSafe(abs);
+    if (!content) continue;
+    const parsed = extractSequelizeCalls(content, abs);
+    const { tier, tierReason } = classTier(abs, parsed);
+    const found = parsed ?? sequelizeCallsByPattern(content);
+    const file = relPosix(dir, abs);
+    const names = new Map();
+    for (const m of found.models) {
+      // `Model.init` needs `sequelize` in its options: other `x.init({}, {})` calls are not models.
+      if (m.call === 'init' && !/(?:^|[\s,])sequelize\s*(?:[,:]|$)/.test((m.options || '').trim())) continue;
+      const opts = objectProps(m.options || '');
+      const name = m.call === 'define' ? m.name : (unquote(opts.get('modelName')) ?? m.receiver);
+      const handle = m.binding ?? m.receiver;
+      if (handle) { names.set(handle, name); if (!globalNames.has(handle)) globalNames.set(handle, name); }
+      models.push({
+        name, table: unquote(opts.get('tableName')) ?? null, fields: sequelizeFields(m.attributes),
+        file, line: m.line, source: 'sequelize', description: '', tier, tierReason,
+      });
+    }
+    for (const a of found.associations) calls.push({ ...a, names });
+  }
+
+  const known = new Set(models.map(m => m.name));
+  const nameOf = (id, names) => names?.get(id) ?? globalNames.get(id) ?? id;
+  const assoc = [];
+  for (const a of calls) {
+    const from = nameOf(a.receiver, a.names);
+    const last = (/([A-Za-z_$][\w$]*)\s*$/.exec(a.target) || [])[1];
+    if (!known.has(from) || !last) continue;
+    const to = nameOf(last, a.names);
+    assoc.push({ from, to, method: a.method, field: unquote(objectProps(a.options || '').get('as')) ?? lcfirst(to) });
+  }
+  const other = (a, methods) => assoc.find(o => o !== a && o.from === a.to && o.to === a.from && methods.includes(o.method));
+  const relationships = [];
+  for (const a of assoc) {
+    const edge = (type) => relationships.push({ from: a.from, to: a.to, type, field: a.field });
+    if (a.method === 'belongsTo') edge(other(a, ['hasOne', 'hasMany'])?.method === 'hasOne' ? 'one-to-one' : 'many-to-one');
+    else if (a.method === 'hasMany' || a.method === 'hasOne') { if (!other(a, ['belongsTo'])) edge(a.method === 'hasMany' ? 'one-to-many' : 'one-to-one'); }
+    else {
+      const o = other(a, ['belongsToMany']);
+      if (!o || `${a.from}.${a.field}` < `${o.from}.${o.field}`) edge('many-to-many');
+    }
+  }
+  return { entities: models, relationships };
 }
 
 // ── Rust: Diesel `table! { ... }` ─────────────────────────────────────────────
@@ -830,10 +1434,9 @@ function readFileSafe(path) {
   return readScannable(path); // size-capped; skips minified/generated bundles
 }
 
-// v0.15-P2: walkDir is called 8 times across schemas.mjs (Pydantic, Mongoose,
-// Prisma, SQLAlchemy, Sequelize, GORM, Sqlx, Hibernate). Each call walks the
-// same tree. Cache the file list per (dir, extension-set) so subsequent
-// callers iterate an array instead of re-traversing.
+// v0.15-P2: the Zod, Diesel, Go, JPA and Rails scanners each call walkDir
+// over the same tree. Cache the file list per (dir, extension-set) so
+// subsequent callers iterate an array instead of re-traversing.
 //
 // Cache key: just the dir path. The extension filter is constant across all
 // callers (the regex hard-coded below), so a single cache slot per dir works.

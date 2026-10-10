@@ -1,6 +1,6 @@
 # Test Specification
 
-<!-- docguard:version 1.4.0 -->
+<!-- docguard:version 1.4.1 -->
 <!-- docguard:status active -->
 <!-- docguard:last-reviewed 2026-10-10 -->
 
@@ -65,7 +65,7 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/commands/badge.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/commands/ci.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/commands/fix.mjs` | `tests/commands.test.mjs` | ✅ |
-| `cli/commands/watch.mjs` | `tests/commands.test.mjs` | ✅ pass |
+| `cli/commands/watch.mjs` | `tests/commands.test.mjs`, `tests/watch-reliability.test.mjs` | ✅ pass |
 | `cli/commands/publish.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/commands/trace.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/shared-requirements.mjs` | `tests/traceability.test.mjs`, `tests/archive.test.mjs` | ✅ |
@@ -114,6 +114,7 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/scanners/symbol-map.mjs`, `benchmarks/agent-context/run.mjs` (symbol map, agent-context protocol v2) | `tests/symbol-map.test.mjs`, `tests/agent-context-benchmark.test.mjs` | ✅ |
 | `cli/scanners/go-routes.mjs`, `cli/scanners/spring-routes.mjs`, `cli/scanners/rails-routes.mjs`, `cli/scanners/route-lexing.mjs` (Go, Spring and Rails routes) | `tests/go-spring-rails-routes.test.mjs`, `tests/routes-multilang.test.mjs` | ✅ |
 | `cli/scanners/php-routes.mjs`, `cli/scanners/dotnet-routes.mjs` (Laravel, Symfony and ASP.NET Core routes) | `tests/php-dotnet-routes.test.mjs` | ✅ |
+| `cli/shared-ignore.mjs` (`.docguardignore` reasons and expiries), `cli/scanners/suppressions.mjs`, `cli/validators/suppressions.mjs`, `cli/commands/ignore.mjs`, `cli/writers/claimspec-ignore.mjs`, `cli/claimspec-schema.mjs` (IGN001–IGN003, `docguard ignore`, claimspec export) | `tests/ignore-reasons.test.mjs`, `tests/docguardignore.test.mjs` | ✅ |
 | `cli/writers/baseline.mjs` (adoption baseline, stable fingerprints and legacy match) | `tests/baseline.test.mjs`, `tests/baseline-stable-fingerprint.test.mjs` | ✅ |
 | `cli/scanners/reconciliation.mjs`, `cli/validators/spec-registry.mjs` (reviewed `assetPaths`, SPR009) | `tests/asset-path-attribution.test.mjs` | ✅ |
 | `cli/shared-source.mjs`, `cli/shared-ignore.mjs` (`fallback-language` tier, product-code package segments) | `tests/fallback-language-coverage.test.mjs`, `tests/parser-tier.test.mjs` | ✅ |
@@ -121,6 +122,7 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/writers/state-dir.mjs`, `cli/docguard.mjs` dispatch (read-only commands, self-ignoring `.docguard/`) | `tests/read-only-commands.test.mjs` | ✅ |
 | `cli/scanners/py-outline.mjs`, `cli/scanners/python-routes.mjs`, `cli/scanners/python-models.mjs`, `cli/scanners/py-env.mjs` (both Python tiers) | `tests/python-extraction.test.mjs`, `tests/py-ast.test.mjs` | ✅ |
 | `cli/scanners/js-ast.mjs`, `cli/scanners/ts-paths.mjs`, `cli/scanners/schemas.mjs` (Express and Next.js extraction) | `tests/js-ts-extraction.test.mjs` | ✅ |
+| `cli/scanners/schemas.mjs`, `cli/scanners/js-ast.mjs`, `cli/validators/schema-sync.mjs` (TypeORM and Sequelize models, both parser tiers) | `tests/typeorm-models.test.mjs` | ✅ |
 | `cli/writers/doc-generators.mjs`, `cli/writers/generate-io.mjs`, `cli/commands/generate.mjs` (generated docs pass DocGuard's own checks) | `tests/generated-docs-consistency.test.mjs`, `tests/generated-docs-e2e.test.mjs` | ✅ |
 | Command output across guard, fix, sync, trace, upgrade and init (spec 049) | `tests/output-ux.test.mjs` | ✅ |
 | `cli/agent-surface.mjs`, `cli/spec-kit-delegation.mjs` (hooks that resolve, extension refresh) | `tests/spec-kit-integration-honesty.test.mjs` | ✅ |
@@ -134,6 +136,10 @@ of empty repeats driven only by generated lifecycle artifacts.
 
 > **Note**: `watch.mjs` is an interactive file-watcher (uses `fs.watch` + process signals). It is
 > covered by automated lifecycle tests, including filesystem watcher error handling.
+> `tests/watch-reliability.test.mjs` drives the 500 ms debounce with an injected fake clock
+> (`runtime.setTimeout` / `runtime.clearTimeout`) and captures console output, so its coalescing and
+> queued-check assertions are driven by a fake clock and hold under any machine load (spec 055). The spawn
+> tests in `tests/commands.test.mjs` cover real `fs.watch` events and real timers end to end.
 > Manual checks supplement platform-specific event behavior.
 
 ## Critical CLI Flows
@@ -158,6 +164,7 @@ of empty repeats driven only by generated lifecycle artifacts.
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 1.4.1 | 2026-10-10 | DocGuard Team | Map `watch.mjs` to its deterministic reliability tests (spec 055) |
 | 1.4.0 | 2026-10-10 | DocGuard Team | Freshness review for specs 038–053: map the modules those specs added or changed to their tests; record the 360-second CI runtime budget (spec 051) |
 | 1.3.0 | 2026-09-30 | DocGuard Team | Freshness review: map the MCP server and the compact guard response to their tests; describe the frozen v2 agent-context protocol beside v1 |
 | 1.2.0 | 2026-09-29 | DocGuard Team | Freshness review: map the modules specs 014–026 added to their tests, and correct the benchmark case count |
@@ -215,8 +222,12 @@ Protocol v2 (spec 036) is frozen beside v1 rather than replacing it: six tasks
 (task only, context pack, context pack with symbol map) and three repetitions,
 so 54 trials.
 The runner refuses to start when a task's fixture or evaluator digest, or the
-manifest digest, differs from the committed value, and the symbol map stays
-opt-in until those trials are recorded.
+manifest digest, differs from the committed value. v2 was frozen with a CLI
+version and model that ChatGPT-account Codex no longer serves, so protocol v3
+changes only that executable pin, and the runner rejects a v3 manifest that
+differs from v2 anywhere else. The v3 trials are recorded in
+`results/observed-v3.json`, and a test recomputes their decision (`opt-in`)
+from the recorded trials.
 
 Run `node benchmarks/run.mjs --baseline benchmarks/baseline.json` for the network-free synthetic corpus (CI does this on every push; pinned public baseline cases are reported as `outOfSelection`, not as removed). Run `node benchmarks/run.mjs --external --baseline benchmarks/baseline.json` explicitly for pinned public sources. The comparator gates new case-level false positives, false negatives, removals within the selection, and supported-case abstentions. Persisted cold/warm timings are observational because matching Node and platform metadata cannot exclude host contention. Runtime regression claims require at least five controlled samples from the same paired comparison session and a greater-than-20-percent real-workload change.
 

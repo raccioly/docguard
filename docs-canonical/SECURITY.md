@@ -1,7 +1,7 @@
 # Security
 
 <!-- docguard:quality negation-load off — prohibitions define security boundaries -->
-<!-- docguard:version 0.14.0 -->
+<!-- docguard:version 0.15.0 -->
 <!-- docguard:status active -->
 <!-- docguard:last-reviewed 2026-10-10 -->
 
@@ -99,7 +99,7 @@ Only `init`, and the aliases that run it (`setup`, `agents`, `hooks`, `badge`, `
 | agent, agent --task | None | Emits a task graph or transient bounded context; never stores raw task text or selected output |
 | fix --write, sync --write | Targeted documentation edits | Mapped human documents permit only unique `source=code` sections; backups and fix history remain enabled where supported. `sync --write` skips a section drawn from incomplete evidence unless `--allow-partial` |
 | review --accept, review --prune | `.docguard-doc-lock.json` only | One file transaction; `--accept` requires a reason. Plain `review` and `review --suggest` write nothing |
-| rules --for, trace --owners [--suggest] | None | Read-only, including agent skills and the Spec Kit hint; `--suggest` prints a draft ownership block and never writes configuration |
+| rules --for, trace --owners [--suggest], ignore | None | Read-only, including agent skills and the Spec Kit hint; `--suggest` prints a draft ownership block and never writes configuration; `ignore --format claimspec` prints its document to stdout |
 | reconcile | None by default | `--write` delegates only mechanical generated-section refreshes to `sync` |
 | specs, specs preflight, specs require | None for check/plan modes | `specs --write` refreshes the registry; `specs approve --write` records a reviewed approval and delivery state in the registry only; `specs complete --write` transactionally records a reviewed outcome and active context; `specs reanchor --write` moves recorded outcome revisions in the registry |
 | verify --evidence | None | Reads the strict local manifest, selected Markdown, source files, and saved reports; guard consumes the same evaluator |
@@ -140,6 +140,8 @@ Dependency audit results are time-specific observations. Run the current audit a
 
 Exclude `node_modules`, environment values, generated build output, and private local files from version control. `.docguardignore` controls analysis coverage separately; it is not a secrecy boundary for every tool that runs in the repository.
 
+A `.docguardignore` entry can end: `expires:YYYY-MM-DD` keeps it through that UTC day. An expired entry, or one whose expiry is not a calendar date, excludes nothing, so the Security validator scans the paths it hid again; guard reports IGN001 or IGN003. `securityIgnore` patterns carry no reason or expiry; `docguard ignore` lists them with every other suppression.
+
 ## Security Rules Checklist
 
 - Validate subprocess inputs at their call boundaries.
@@ -154,6 +156,7 @@ Exclude `node_modules`, environment values, generated build output, and private 
 
 | Version | Date | Changes |
 |---|---|---|
+| 0.15.0 | 2026-10-10 | `.docguardignore` expiries fail closed (an expired or unreadable entry excludes nothing); `docguard ignore` is read-only (spec 057) |
 | 0.14.0 | 2026-10-10 | Freshness review for specs 038–053: `upgrade --apply` also installs agent files and calls `specify` (spec 048), the `upgrade` and `guard --update-baseline` write levels, the `npm`/`git`/`gh` subprocesses of `upgrade`, the shared Python extractor's stdin and timeout, and where agent files are written |
 | 0.13.0 | 2026-09-30 | Only `init` installs agent skills and slash commands; read and preview modes write nothing; `.docguard/` ignores itself and dirty checks leave it out (spec 042) |
 | 0.12.0 | 2026-09-30 | Freshness review for specs 028–037: full subprocess inventory (git, `python3 -c`, dev tooling), the remaining static shell strings, path checks for `covers=`, ownership patterns and `rules --for`, the MCP documentation tools' boundary, and the `review`, `rules` and `trace --owners` write levels |

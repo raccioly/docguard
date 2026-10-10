@@ -120,6 +120,7 @@ function detectFramework(projectDir, config) {
     Object.assign(deps, pkg.dependencies || {}, pkg.devDependencies || {});
   }
   if (deps.next) return 'Next.js';
+  if (deps['@nestjs/core']) return 'NestJS'; // docguard.js-framework-routes#FR-007
   if (deps.express) return 'Express';
   if (deps.fastify) return 'Fastify';
   if (deps.hono) return 'Hono';
@@ -186,7 +187,10 @@ export function resolveApiSurface(projectDir, config) {
  * - route registrations a reader omitted because their path is not literal
  *   (docguard.php-dotnet-routes#FR-007);
  * - routes found only in test/fixture/example paths, when none remain;
- * - a walk stopped by the file cap.
+ * - a walk stopped by the file cap;
+ * - routes whose path a reader could not resolve statically (a dynamic
+ *   NestJS path, a Worker's prefix dispatch), counted per framework
+ *   (docguard.js-framework-routes#FR-006).
  *
  * @param {object|null} scan  the non-enumerable `scan` record of scanRoutesDeep
  * @param {number} kept       product routes the scan kept
@@ -214,6 +218,17 @@ export function routeScanGaps(scan, kept = 0) {
   }
   if (scan.truncated) {
     out.push(`Route discovery stopped at the ${Number(scan.cap).toLocaleString('en-US')}-file cap; files beyond it were not read.`);
+  }
+  // A route whose path a reader could not resolve is omitted, never guessed
+  // (docguard.js-framework-routes#FR-006).
+  const byFramework = new Map();
+  for (const u of scan.unresolved || []) {
+    if (!byFramework.has(u.framework)) byFramework.set(u.framework, []);
+    byFramework.get(u.framework).push(u);
+  }
+  for (const [framework, list] of byFramework) {
+    const first = list[0];
+    out.push(`${n(list.length, `${framework} route`)} could not be read statically (first: ${first.file}:${first.line}, ${first.code}); ${list.length === 1 ? 'it is' : 'they are'} not in the API surface.`);
   }
   return out;
 }

@@ -22,7 +22,7 @@
 
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { listCanonicalDocs } from './shared-ignore.mjs';
+import { listCanonicalDocs, relPosix } from './shared-ignore.mjs';
 
 // `<!-- docguard:validator <key> n/a [— reason] -->`
 // Separator before the reason may be —, :, or one-or-more hyphens. Reason
@@ -84,4 +84,39 @@ export function loadValidatorSuppressions(projectDir, validKeys) {
   }
 
   return { suppressed, unknown };
+}
+
+/**
+ * Every `docguard:validator <key> n/a` marker with its location, for the
+ * suppression model (docguard.ignore-reasons#FR-006). Reads the same files and
+ * the same syntax as `loadValidatorSuppressions`; unlike it, keeps duplicates
+ * and unknown keys so a reviewer sees each declaration.
+ *
+ * @param {string} projectDir
+ * @param {Iterable<string>} validKeys
+ * @returns {Array<{key: string, known: boolean, reason: string|null, file: string, line: number}>}
+ * @implements docguard.ignore-reasons#FR-006
+ */
+export function listValidatorMarkers(projectDir, validKeys) {
+  const canonicalByNorm = new Map();
+  for (const k of validKeys) canonicalByNorm.set(norm(k), k);
+  const out = [];
+  for (const file of markerSourceFiles(projectDir)) {
+    let content;
+    try { content = readFileSync(file, 'utf-8'); } catch { continue; }
+    if (!content.includes('docguard:validator')) continue;
+    const re = new RegExp(MARKER_RE.source, MARKER_RE.flags);
+    let m;
+    while ((m = re.exec(content)) !== null) {
+      const canonical = canonicalByNorm.get(norm(m[1]));
+      out.push({
+        key: canonical || m[1],
+        known: Boolean(canonical),
+        reason: (m[2] || '').trim() || null,
+        file: relPosix(projectDir, file),
+        line: content.slice(0, m.index).split('\n').length,
+      });
+    }
+  }
+  return out;
 }

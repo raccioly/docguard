@@ -5,12 +5,14 @@ import { docRolePath, resolveDocRole } from '../shared-doc-roles.mjs';
  * Detects schema definition files from popular ORMs/frameworks and validates
  * that table/model names appear in DATA-MODEL.md documentation.
  *
- * Supported: Prisma, Drizzle and Mongoose (docguard.js-ts-extraction#FR-010)
- * and Python ORM models (Django, SQLAlchemy, SQLModel;
- * docguard.python-extraction#FR-008) from the scanners generate uses, so both
- * report the same models; Sequelize, TypeORM, Knex and Rails by pattern.
+ * Supported: Prisma, Drizzle and Mongoose (docguard.js-ts-extraction#FR-010),
+ * TypeORM and Sequelize (docguard.typeorm-models#FR-007) and Python ORM models
+ * (Django, SQLAlchemy, SQLModel; docguard.python-extraction#FR-008) from the
+ * scanners generate uses, so both report the same models; Knex and Rails
+ * table names by pattern.
  *
  * Zero NPM runtime dependencies — pure Node.js built-ins only.
+ * @implements docguard.typeorm-models#FR-007
  */
 
 import { existsSync, readFileSync } from 'node:fs';
@@ -30,25 +32,12 @@ const IGNORE_DIRS = new Set([
  * Schema detection configurations for each supported framework.
  * Each entry has a file pattern to detect and a regex to extract model/table names.
  */
-// Prisma, Drizzle and Mongoose come from scanOrmEntities(), the discovery and
-// parse `generate` uses, so guard and the generated DATA-MODEL.md name the same
-// entities (docguard.js-ts-extraction#FR-010). The detectors below cover the
-// ORMs that scanner does not read.
+// Prisma, Drizzle, Mongoose, TypeORM and Sequelize come from scanOrmEntities(),
+// the discovery and parse `generate` uses, so guard and the generated
+// DATA-MODEL.md name the same entities (docguard.js-ts-extraction#FR-010,
+// docguard.typeorm-models#FR-007). The detectors below cover the ORMs that
+// scanner does not read.
 const SCHEMA_DETECTORS = [
-  {
-    name: 'TypeORM',
-    filePattern: /\.entity\.(ts|js)$/,
-    searchDirs: ['src/entities', 'src/entity', 'entities'],
-    // Matches: @Entity('users') or @Entity() class User
-    modelPattern: /@Entity\s*\(\s*(?:['"](\w+)['"])?\s*\)\s*(?:export\s+)?class\s+(\w+)/g,
-  },
-  {
-    name: 'Sequelize',
-    filePattern: /\.(ts|js)$/,
-    searchDirs: ['models', 'src/models'],
-    // Matches: sequelize.define('User', ...) or Model.init(...)
-    modelPattern: /(?:sequelize\.define|\.init)\s*\(\s*['"](\w+)['"]/g,
-  },
   {
     name: 'Knex',
     filePattern: /\.(ts|js)$/,
@@ -113,13 +102,14 @@ export function validateSchemaSync(projectDir, config) {
   for (const model of detectedModels) {
     total++;
 
-    // Check if model name appears in DATA-MODEL.md (case-insensitive)
-    const modelLower = model.name.toLowerCase();
-    // Check both singular and pluralized forms
-    const found =
-      dataModelContent.includes(modelLower) ||
-      dataModelContent.includes(modelLower + 's') ||
-      (modelLower.endsWith('s') && dataModelContent.includes(modelLower.slice(0, -1)));
+    // Check if the model name, or its table name (TypeORM, Sequelize), appears
+    // in DATA-MODEL.md (case-insensitive), singular or pluralized.
+    const found = [model.name, model.table].filter(Boolean).some((name) => {
+      const lower = name.toLowerCase();
+      return dataModelContent.includes(lower) ||
+        dataModelContent.includes(lower + 's') ||
+        (lower.endsWith('s') && dataModelContent.includes(lower.slice(0, -1)));
+    });
 
     if (found) {
       passed++;
@@ -149,9 +139,16 @@ function detectAllModels(projectDir, config = {}) {
   const models = [];
 
   const orm = scanOrmEntities(projectDir, config);
-  for (const [framework, result] of [['Prisma', orm.prisma], ['Drizzle', orm.drizzle], ['Mongoose', orm.mongoose]]) {
+  const ormResults = [['Prisma', orm.prisma], ['Drizzle', orm.drizzle], ['Mongoose', orm.mongoose],
+    ['TypeORM', orm.typeorm], ['Sequelize', orm.sequelize]];
+  for (const [framework, result] of ormResults) {
     for (const entity of result.entities) {
-      if (!isCommonUtilityModel(entity.name)) models.push({ name: entity.name, framework, file: entity.file });
+      if (isCommonUtilityModel(entity.name)) continue;
+      models.push({
+        name: entity.name, framework, file: entity.file,
+        ...(entity.table ? { table: entity.table } : {}),
+        ...(entity.tier ? { tier: entity.tier } : {}),
+      });
     }
   }
 

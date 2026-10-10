@@ -2,8 +2,9 @@
  * Deep Route Scanner
  * @req docguard.adoption-workflow-integrity#FR-013
  * Parses actual route definitions from source code across frameworks.
- * Supports: Next.js (App Router + Pages), Express, Fastify, Hono, Django, FastAPI,
- * Flask, Spring Boot, Rails, Gin/Echo/Chi/Fiber, Axum/Actix/Rocket
+ * Supports: Next.js (App Router + Pages), Express, Fastify, Hono, Koa, NestJS,
+ * Cloudflare Workers (fetch dispatch, itty-router), Django, FastAPI, Flask,
+ * Spring Boot, Rails, Gin/Echo/Chi/Fiber, Axum/Actix/Rocket
  *
  * Priority: OpenAPI spec > Code scanning
  *
@@ -14,6 +15,7 @@
  * @implements docguard.fallback-language-coverage#FR-002
  * @implements docguard.fallback-language-coverage#FR-007
  * @implements docguard.fallback-language-coverage#FR-008
+ * @implements docguard.js-framework-routes#FR-006
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
@@ -28,6 +30,10 @@ import { extractSpringRoutes } from './spring-routes.mjs';
 import { extractRailsRoutes } from './rails-routes.mjs';
 import { extractLaravelRoutes, extractSymfonyRoutes } from './php-routes.mjs';
 import { extractAspNetRoutes } from './dotnet-routes.mjs';
+import { extractNestRoutes } from './nest-routes.mjs';
+import { extractWorkerRoutes } from './worker-routes.mjs';
+import { extractRouterRoutes } from './router-routes.mjs';
+import { createImportResolver } from './js-route-support.mjs';
 
 /**
  * Scan routes from source code with framework-aware parsing.
@@ -58,8 +64,8 @@ export function scanRoutesDeep(dir, stack, docTools, opts = {}) {
   // fixtures are exactly the cases a caller must be able to tell apart from
   // "this project registers no routes".
   const maxFiles = Number.isInteger(opts.maxFiles) && opts.maxFiles > 0 ? opts.maxFiles : ROUTE_SCAN_MAX_FILES;
-  const scan = { tierItems: [], truncated: false, cap: maxFiles, patternFrameworks: [], excludedNonProduct: 0 };
-  const ctx = { dir, maxFiles, scan };
+  const scan = { tierItems: [], truncated: false, cap: maxFiles, patternFrameworks: [], excludedNonProduct: 0, unresolved: [] };
+  const ctx = { dir, maxFiles, scan, config: opts.config || {} };
   const named = (...names) => names.find(n => framework.includes(n));
   const patternScan = (name, sources, fn) => {
     const before = scan.tierItems.length;
@@ -82,11 +88,20 @@ export function scanRoutesDeep(dir, stack, docTools, opts = {}) {
     routes.push(...scanFastifyRoutes(dir, roots));
   }
 
-  // Koa (with @koa/router) declares routes with the same method shorthand as
-  // Hono, so one scanner reads both (docguard.docs-verification-findings#FR-001).
-  if (framework.includes('Hono')) {
-    routes.push(...scanHonoRoutes(dir, roots));
+  // NestJS decorators, Cloudflare Worker dispatch and Hono/itty-router
+  // routers: syntax-tree readers whose routes carry their tier
+  // (docguard.js-framework-routes#FR-001..FR-006). The Workers scan includes
+  // the router reader, so Hono on Workers is read once.
+  if (framework.includes('NestJS')) {
+    patternScan('NestJS', ['nestjs'], scanNestRoutes);
   }
+  if (framework.includes('Cloudflare Workers')) {
+    patternScan('Cloudflare Workers', ['cloudflare-workers', 'hono', 'itty-router'], scanWorkerRoutes);
+  } else if (framework.includes('Hono')) {
+    patternScan('Hono', ['hono', 'itty-router'], scanHonoRouterRoutes);
+  }
+  // Koa (with @koa/router) declares routes with the same method shorthand as
+  // Hono, so the shorthand scanner reads it (docguard.docs-verification-findings#FR-001).
   if (framework.includes('Koa')) {
     routes.push(...scanHonoRoutes(dir, roots, 'koa'));
   }
@@ -154,7 +169,11 @@ export function scanRoutesDeep(dir, stack, docTools, opts = {}) {
   // to know about. (calibrated-finding-channels#FR-011)
   const scanTier = scan.tierItems.length ? summarizeTiers(scan.tierItems) : null;
   if (scanTier) Object.defineProperty(kept, 'scanTier', { value: scanTier, enumerable: false });
-  if (limitations?.length) Object.defineProperty(kept, 'limitations', { value: limitations, enumerable: false });
+  // What a reader could not resolve (a dynamic path, a prefix dispatch) is a
+  // coverage gap; one in a test or ignored file is not the product's.
+  const unresolved = scan.unresolved.filter(u => !u.file || (!isNonProductPath(u.file, cfg) && !shouldIgnore(u.file, cfg)));
+  const allLimitations = [...(limitations || []), ...unresolved];
+  if (allLimitations.length) Object.defineProperty(kept, 'limitations', { value: allLimitations, enumerable: false });
   for (const pf of scan.patternFrameworks) pf.kept = kept.filter(r => pf.sources.includes(r.source)).length;
   Object.defineProperty(kept, 'scan', {
     enumerable: false,
@@ -165,6 +184,7 @@ export function scanRoutesDeep(dir, stack, docTools, opts = {}) {
       cap: scan.cap,
       patternFrameworks: scan.patternFrameworks,
       excludedNonProduct: scan.excludedNonProduct,
+      unresolved,
     },
   });
   return kept;
@@ -748,6 +768,55 @@ function scanHonoRoutes(dir, roots = null, source = 'hono') {
   }
 
   return routes;
+}
+
+// ── NestJS, Cloudflare Workers, Hono/itty-router (docguard.js-framework-routes) ─
+// The readers are pure functions of file contents (nest-routes.mjs,
+// worker-routes.mjs, router-routes.mjs); here they get their files, and the scan
+// gets each file's tier and every path a reader could not resolve.
+
+const JS_SOURCE_RE = /\.(?:[cm]?[jt]s|[jt]sx)$/;
+
+function readJsSources(ctx, marker = null) {
+  const files = findRouteFiles(ctx.dir, JS_SOURCE_RE, { maxFiles: ctx.maxFiles });
+  if (files.truncated) ctx.scan.truncated = true;
+  const sources = [];
+  for (const abs of files) {
+    if (/\.d\.[cm]?ts$/.test(abs)) continue;
+    const content = readFileSafe(abs);
+    if (!content || (marker && !marker.test(content))) continue;
+    sources.push({ file: relPosix(ctx.dir, abs), abs, content });
+  }
+  return sources;
+}
+
+function recordReader(ctx, found) {
+  for (const t of found.fileTiers || []) ctx.scan.tierItems.push(t);
+  for (const l of found.limitations || []) ctx.scan.unresolved.push(l);
+  return found;
+}
+
+const NEST_MARKER = /@Controller\b|@Module\s*\(|setGlobalPrefix|enableVersioning|useGlobalGuards|APP_GUARD|RouterModule/;
+const ROUTER_MARKER = /\.\s*(?:get|post|put|delete|patch|head|options|all|on|route|use|basePath)\s*\(/;
+
+function scanNestRoutes(dir, ctx) {
+  return recordReader(ctx, extractNestRoutes(readJsSources(ctx, NEST_MARKER), { config: ctx.config }));
+}
+
+function scanHonoRouterRoutes(dir, ctx) {
+  return recordReader(ctx, extractRouterRoutes(readJsSources(ctx, ROUTER_MARKER), createImportResolver(dir), { framework: 'Hono', defaultSource: 'hono' }));
+}
+
+function scanWorkerRoutes(dir, ctx) {
+  const sources = readJsSources(ctx);
+  const resolveImport = createImportResolver(dir);
+  const dispatch = extractWorkerRoutes(sources, resolveImport);
+  const routers = extractRouterRoutes(sources.filter(s => ROUTER_MARKER.test(s.content)), resolveImport, { framework: 'Cloudflare Workers', defaultSource: 'cloudflare-workers' });
+  // One tier record per file, whichever reader read it.
+  const tiers = new Map();
+  for (const t of [...dispatch.fileTiers, ...routers.fileTiers]) tiers.set(t.file, t);
+  recordReader(ctx, { fileTiers: [...tiers.values()], limitations: [...dispatch.limitations, ...routers.limitations] });
+  return [...dispatch, ...routers];
 }
 
 // ── Spring Boot (Java/Kotlin) ────────────────────────────────────────────────

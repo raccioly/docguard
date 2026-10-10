@@ -1,13 +1,13 @@
 # Data Model
 
-<!-- docguard:version 0.14.0 -->
+<!-- docguard:version 0.15.0 -->
 <!-- docguard:status active -->
 <!-- docguard:last-reviewed 2026-10-10 -->
 
 | Metadata | Value |
 |----------|-------|
 | **Status** | ![Status](https://img.shields.io/badge/status-active-brightgreen) |
-| **Version** | `0.14.0` |
+| **Version** | `0.15.0` |
 | **Database** | None — DocGuard is a stateless CLI tool |
 | **Storage** | File-system only (reads project files, writes generated docs) |
 
@@ -64,6 +64,9 @@ The primary data structure. Controls all CLI behavior.
 | `devinWiki.maxPages` | `integer` | No | `30` (up to 80) | Page cap for linting `.devin/wiki.json`; 80 on Devin enterprise plans |
 | `ownership` | `object` | No | — | Doc ownership map, described below |
 | `baseline` | `boolean` | No | `true` | `false` ignores a committed `.docguard.baseline.json`, as `--no-baseline` does on every run |
+| `ignore` / `securityIgnore` / `todoIgnore` | `string[]` | No | `[]` | Path patterns skipped by every validator / Security only / TODO-Tracking only. `ignore` is merged with the active `.docguardignore` entries at load. Plain patterns: no reason, no expiry |
+| `validators.suppressions` | `boolean` | No | `true` | `.docguardignore` entry hygiene (IGN001–IGN003); not applicable when the file has no entries |
+| `suppressions.requireReason` | `boolean` | No | `false` | Report IGN002 for each `.docguardignore` entry with no `# reason`; the entry still applies |
 
 ### Example Configuration
 
@@ -261,13 +264,73 @@ release keeps suppressing what it froze; `--update-baseline` rewrites it in the
 stable form. One finding consumes one unit from one entry. A malformed file, or
 one with no positive counts, is treated as absent, so every finding surfaces.
 
+## Ignore file: `.docguardignore`
+
+One entry per pattern line (specs/057-ignore-reasons):
+
+```text
+pattern  [expires:YYYY-MM-DD]  [# reason]
+```
+
+A line starting with `#` is a comment. `#` starts the reason only after
+whitespace; `expires:` is read only as the last word before the reason. A line
+with neither means what it meant before the grammar existed.
+`parseDocguardIgnore` (`cli/shared-ignore.mjs`) returns, per entry:
+
+| Field | Meaning |
+|---|---|
+| `pattern` | The pattern, or `null` when the line has only an expiry or reason |
+| `reason` | Text after the `#`, or `null` |
+| `expires` | The `YYYY-MM-DD` day, or `null` (absent or unreadable) |
+| `state` | `active`; `expired` (the UTC day is past); `invalid` (unreadable expiry or no pattern) |
+| `problem` | `no-pattern`, `unreadable-expiry` or `null` |
+| `line` | 1-based line number |
+
+Only `active` entries exclude anything: `loadDocguardIgnore` returns their
+patterns, so every validator and command applies the same rule. Patterns are matched by
+`globToRegex` (same file): gitignore wildcards, `?`, bracket expressions, `\`
+escapes and a leading-`/` root anchor; a middle slash does not anchor and a
+leading `!` is literal ([pattern syntax](../docs/configuration.md), "Excluding paths").
+
+### Suppression model
+
+`docguard ignore --format json` (`collectSuppressions`,
+`cli/scanners/suppressions.mjs`) lists every native suppression:
+
+| Field | Meaning |
+|---|---|
+| `asOf` | The UTC day expiries were judged against |
+| `entries[].kind` | `path`, `code` (inline pragma), `validator` / `section` (N/A marker), `fingerprint` (baseline) |
+| `entries[].pattern` / `codes` / `key` | The glob or fingerprint / the pragma's codes (`null` = any code; `docguard:ignore-secret` is `["SEC*"]`) / the validator key or section id |
+| `entries[].scope` | `all-validators`, `validator:<key>`, `section:<id>`, `line` (the pragma's line and the next), `finding` |
+| `entries[].reason` | What the author wrote, or `null`. Never synthesised |
+| `entries[].expires` | `YYYY-MM-DD` or `null`; only `.docguardignore` carries one |
+| `entries[].state` | `active`, `expired`, `invalid` (does not apply), `disabled` (baseline off) |
+| `entries[].source` | `{ file, line }` or `{ file, key }` |
+| `coverage.inlineScan` | `complete`, or `partial` when files could not be read |
+| `export` | The claimspec export report: `exported`, `candidates`, `omitted[]` (`at`, `pattern`, `why`), `rewritten[]` (`at`, `from`, `to`), `notRepresentable[]` (`category`, `count`, `why`), `complete` |
+
+### claimspec `ignore` export
+
+`docguard ignore --format claimspec` writes a claimspec v1 `ignore` document
+(`schemaVersion: 1`, `entries[]` of `kind: "path"`, `pattern`, `reason`,
+optional `expires`). Only `.docguardignore` entries are exported, and only when
+the reason is 8–2000 characters, the expiry is readable or absent, and gitignore
+syntax states the pattern's DocGuard scope exactly (`**/` is prefixed to an
+unanchored pattern containing a slash, a trailing `/` is dropped, and a leading
+`!`, a `**` inside a segment, an unclosed `[` or a POSIX class is refused). `expires` is the
+first instant after the stated day. The schemas are vendored byte-identical in
+`schemas/claimspec/v1/` from raccioly/testguard at the revision recorded in
+`cli/claimspec-schema.mjs`, and every document is validated before it is printed.
+
 ## Generated caches and budgets
 
 | File | Written by | Shape |
 |---|---|---|
 | `.docguard/plan.cache.json` | the memory plan (guard, sync, generate) | `{ v, configKey, treeHash, plan, writtenAt }`. `v` is `"3"`: code sections may carry `completeness: "partial"` and a `partialReason`. A cache with another version, config key or tree hash is a miss and is rebuilt |
 | `budgets.json` | maintainers | `schemaVersion: 1`; sample count, guard targets, the time and byte budgets, and the agent tasks and MCP calls `tools/budget.mjs` measures |
-| `benchmarks/agent-context/manifest-v2.json` | frozen once, before any run | Agent-context protocol v2: conditions `task-only`, `context-pack`, `context-pack-symbols`, six tasks with fixture and hidden-evaluator digests, and the promotion rule. `run.mjs` holds its digest and loads it only while every byte matches. Schemas: `docguard-agent-context-benchmark-v2.schema.json`, `docguard-agent-context-result-v2.schema.json` |
+| `benchmarks/agent-context/manifest-v2.json` | frozen once, before any run | Agent-context protocol v2: conditions `task-only`, `context-pack`, `context-pack-symbols`, six tasks with fixture and hidden-evaluator digests, and the promotion rule. Never run: its CLI version and model are unavailable on ChatGPT-account Codex (superseded by v3). `run.mjs` holds its digest and loads it only while every byte matches. Schemas: `docguard-agent-context-benchmark-v2.schema.json`, `docguard-agent-context-result-v2.schema.json` |
+| `benchmarks/agent-context/manifest-v3.json` | frozen once (2026-10-10), before any run | Agent-context protocol v3: v2 with only the executable pin (`model.cliVersion`, `model.id`) changed. `run.mjs` holds its digest, loads it only while every byte matches, and rejects it if anything outside the pin differs from v2. Results: `results/observed-v3.json` in the v2 result format |
 
 `.docguard/` holds only local state: the plan cache above, score history, fix memory, feedback records, the nudge throttle, the context pack and the active context. It ignores itself: the first write creates `.docguard/.gitignore` containing `*` and keeps an existing one, so the project's own `.gitignore` stays as the project wrote it. `git rm -r --cached .docguard` untracks files that an earlier version let a project commit. DocGuard's dirty checks leave `.docguard/` out either way.
 
@@ -395,6 +458,7 @@ The `score --format json` output:
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 0.15.0 | 2026-10-10 | DocGuard Team | `.docguardignore` reasons and expiries, the suppression model, the claimspec `ignore` export, `validators.suppressions` and `suppressions.requireReason` (spec 057) |
 | 0.14.0 | 2026-10-10 | DocGuard Team | Freshness review for specs 038–053: the adoption baseline file and its fingerprint preimage, including the advisory-tail exclusion and legacy match (spec 052); the `baseline` key; `requiredFiles.agentFile` as a string (spec 050); Go `internal/example` as product code |
 | 0.13.0 | 2026-09-30 | DocGuard Team | Guard result `key`/`parent` and the `docSections` key; Claude Code `@path` imports in instruction budgets; tracked-only `glob` fingerprints (spec 049) |
 | 0.12.0 | 2026-09-30 | DocGuard Team | `.docguard/` ignores itself, and dirty checks leave it out (spec 042) |
