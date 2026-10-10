@@ -81,3 +81,9 @@
 - `sequelize-typescript` decorators (`@Table`, `@Column` from `sequelize-typescript`) and the `through` model of a Sequelize many-to-many.
 - Knex columns, and Knex tables in `generate` and `diff`: migrations add and drop columns over time, so a reader would have to replay them.
 - MikroORM, which also uses `@Entity()`: files that do not import `typeorm` are not read as TypeORM.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `cdf35252487a397598f75026daa96b4a8d946e70` — Reviewed at cdf3525 on main: all 11 tasks are checked and were delivered by #530; the full suite (3279 tests) passes at this revision and on Node 18, 20, 22 and 24 in CI, and guard reports 0 errors. Evidence: `cli/scanners/js-ast.mjs`, `cli/scanners/schemas.mjs`, `cli/validators/schema-sync.mjs`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/TEST-SPEC.md`, `tests/fixtures/orm-class-projects.mjs`, `tests/typeorm-models.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->

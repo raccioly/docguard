@@ -89,3 +89,9 @@ A maintainer of a Pages project runs `docguard guard`.
 ## Out of Scope
 
 - Host-based routing and routers built in loops; `@hono/zod-openapi` `openAPIRegistry` registrations that are not routes.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `cdf35252487a397598f75026daa96b4a8d946e70` — Reviewed at cdf3525 on main: all 19 tasks are checked and were delivered by #538; the full suite (3279 tests) passes at this revision and on Node 18, 20, 22 and 24 in CI, and guard reports 0 errors. Evidence: `cli/scanners/js-ast.mjs`, `cli/scanners/pages-routes.mjs`, `cli/scanners/router-routes.mjs`, `cli/scanners/routes.mjs`, `cli/shared-source.mjs`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/DATA-MODEL.md`, `tests/fixtures/js-route-shape-projects.mjs`, `tests/js-route-shapes.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->

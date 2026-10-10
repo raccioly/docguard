@@ -18,4 +18,4 @@
 ## Phase 3: Docs and verification
 
 - [x] T006 FR-010: `docs/reference/languages.md`, `docs/commands.md`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/TEST-SPEC.md`, `CHANGELOG.md`; `npm run llms`
-- [ ] T007 SC-002: `docguard specs --write`, `docguard guard`, `npm test`
+- [x] T007 SC-002: `docguard specs --write`, `docguard guard`, `npm test` (verified at main cdf3525: 3279/3279 tests, guard 0 errors)

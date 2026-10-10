@@ -82,3 +82,9 @@
 - Naming Angular and Svelte from `package.json` (`@angular/core`, `svelte`). Both are in the vocabulary without a dependency mapping, so a Node project that documents them sees them reported as not found. Fixing it changes Node results, which FR-007 keeps unchanged; tracked separately.
 - `diff`'s route section still reads `docs-canonical/API-REFERENCE.md` / `ARCHITECTURE.md` by fixed path.
 - Text signals for Redis, PostgreSQL, MySQL or MongoDB. Their names and wire protocols are too ambiguous for an unparsed scan.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `cdf35252487a397598f75026daa96b4a8d946e70` — Reviewed at cdf3525 on main: all 11 tasks are checked and were delivered by #535; the full suite (3279 tests) passes at this revision and on Node 18, 20, 22 and 24 in CI, and guard reports 0 errors. Evidence: `cli/commands/diff.mjs`, `cli/scanners/tech-stack.mjs`, `cli/validators/docs-diff.mjs`, `cli/validators/security.mjs`, `docs-canonical/ARCHITECTURE.md`, `tests/dogfood-round-2.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->
