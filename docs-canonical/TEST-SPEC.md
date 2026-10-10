@@ -135,7 +135,7 @@ of empty repeats driven only by generated lifecycle artifacts.
 > covered by automated lifecycle tests, including filesystem watcher error handling.
 > `tests/watch-reliability.test.mjs` drives the 500 ms debounce with an injected fake clock
 > (`runtime.setTimeout` / `runtime.clearTimeout`) and captures console output, so its coalescing and
-> queued-check assertions never depend on wall-clock sleeps or machine load (spec 055). The spawn
+> queued-check assertions are driven by a fake clock and hold under any machine load (spec 055). The spawn
 > tests in `tests/commands.test.mjs` cover real `fs.watch` events and real timers end to end.
 > Manual checks supplement platform-specific event behavior.
 
@@ -219,8 +219,12 @@ Protocol v2 (spec 036) is frozen beside v1 rather than replacing it: six tasks
 (task only, context pack, context pack with symbol map) and three repetitions,
 so 54 trials.
 The runner refuses to start when a task's fixture or evaluator digest, or the
-manifest digest, differs from the committed value, and the symbol map stays
-opt-in until those trials are recorded.
+manifest digest, differs from the committed value. v2 was frozen with a CLI
+version and model that ChatGPT-account Codex no longer serves, so protocol v3
+changes only that executable pin, and the runner rejects a v3 manifest that
+differs from v2 anywhere else. The v3 trials are recorded in
+`results/observed-v3.json`, and a test recomputes their decision (`opt-in`)
+from the recorded trials.
 
 Run `node benchmarks/run.mjs --baseline benchmarks/baseline.json` for the network-free synthetic corpus (CI does this on every push; pinned public baseline cases are reported as `outOfSelection`, not as removed). Run `node benchmarks/run.mjs --external --baseline benchmarks/baseline.json` explicitly for pinned public sources. The comparator gates new case-level false positives, false negatives, removals within the selection, and supported-case abstentions. Persisted cold/warm timings are observational because matching Node and platform metadata cannot exclude host contention. Runtime regression claims require at least five controlled samples from the same paired comparison session and a greater-than-20-percent real-workload change.
 

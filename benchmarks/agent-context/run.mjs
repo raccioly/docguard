@@ -10,6 +10,7 @@
  * @implements docguard.symbol-map#FR-005
  * @implements docguard.symbol-map#FR-006
  * @implements docguard.symbol-map#FR-008
+ * @implements docguard.symbol-map#FR-011
  */
 
 import { spawn, spawnSync } from 'node:child_process';
@@ -35,6 +36,19 @@ const MANIFEST_V2_PATH = join(HERE, 'manifest-v2.json');
 const RESULT_SCHEMA_V2 = 'https://raccioly.github.io/docguard/schemas/docguard-agent-context-result-v2.schema.json';
 const DEFAULT_RESULT_V2 = join(HERE, 'results/observed-v2.json');
 export const V2_MANIFEST_DIGEST = 'sha256:b1e7aaf6af47ce4f373b0a2e0a9bac6ab3eafa46091ddfd1fc9142384bbbb514';
+// Protocol v3 (docguard.symbol-map#FR-011, amendment 2026-10-10): v2 with only
+// the executable pin changed. v2's model is not served to ChatGPT-account Codex
+// and its CLI version is no longer installed, so v2 is frozen but cannot run.
+// v3 is frozen by its own digest, and must equal v2 in every other field.
+const MANIFEST_V3_PATH = join(HERE, 'manifest-v3.json');
+const DEFAULT_RESULT_V3 = join(HERE, 'results/observed-v3.json');
+export const V3_MANIFEST_DIGEST = 'sha256:73f78dad22dbe8b980b847594202ddb66dfac27479bbcf508879220d411a49bd';
+const SYMBOL_PROTOCOLS = {
+  'docguard-agent-context-v2': { label: 'v2', digest: V2_MANIFEST_DIGEST },
+  'docguard-agent-context-v3': { label: 'v3', digest: V3_MANIFEST_DIGEST },
+};
+const PROTOCOL_PATHS = { v1: MANIFEST_PATH, v2: MANIFEST_V2_PATH, v3: MANIFEST_V3_PATH };
+const PROTOCOL_RESULTS = { v1: DEFAULT_RESULT, v2: DEFAULT_RESULT_V2, v3: DEFAULT_RESULT_V3 };
 const MIN_NAVIGATION_MODULES = 25;
 const DOCGUARD = join(REPO_ROOT, 'cli/docguard.mjs');
 const TASK_SELECTOR = join(REPO_ROOT, 'cli/scanners/task-context.mjs');
@@ -72,7 +86,8 @@ function assert(condition, message) {
 
 export function loadManifest(path = MANIFEST_PATH) {
   const manifest = readJson(path);
-  if (manifest?.protocol?.id === 'docguard-agent-context-v2') return validateManifestV2(manifest);
+  const symbolProtocol = SYMBOL_PROTOCOLS[manifest?.protocol?.id];
+  if (symbolProtocol) return validateSymbolManifest(manifest, symbolProtocol);
   assert(manifest?.$schema === 'https://raccioly.github.io/docguard/schemas/docguard-agent-context-benchmark.schema.json', 'unexpected schema');
   assert(manifest.schemaVersion === 1, 'schemaVersion must be 1');
   assert(manifest.protocol?.id === 'docguard-agent-context-v1', 'protocol id is frozen');
@@ -96,10 +111,23 @@ export function loadManifest(path = MANIFEST_PATH) {
   return manifest;
 }
 
-function validateManifestV2(manifest) {
-  assert(manifest.$schema === 'https://raccioly.github.io/docguard/schemas/docguard-agent-context-benchmark-v2.schema.json', 'unexpected v2 schema');
-  assert(manifest.schemaVersion === 2, 'v2 schemaVersion must be 2');
-  assert(sha256(stableJson(manifest)) === V2_MANIFEST_DIGEST, 'the v2 manifest changed after it was frozen');
+/** The executable pin: the only fields v3 may change from v2. */
+function withoutExecutablePin(manifest) {
+  const copy = structuredClone(manifest);
+  delete copy.protocol.id;
+  delete copy.protocol.frozenAt;
+  delete copy.protocol.model.cliVersion;
+  delete copy.protocol.model.id;
+  return copy;
+}
+
+function validateSymbolManifest(manifest, { label, digest }) {
+  assert(manifest.$schema === 'https://raccioly.github.io/docguard/schemas/docguard-agent-context-benchmark-v2.schema.json', `unexpected ${label} schema`);
+  assert(manifest.schemaVersion === 2, `${label} schemaVersion must be 2`);
+  assert(sha256(stableJson(manifest)) === digest, `the ${label} manifest changed after it was frozen`);
+  if (label === 'v3') {
+    assert(stableJson(withoutExecutablePin(manifest)) === stableJson(withoutExecutablePin(loadManifest(MANIFEST_V2_PATH))), 'v3 may differ from v2 only in its executable pin');
+  }
   assert(manifest.protocol.repetitions >= 3, 'at least three repetitions are required');
   assert(stableJson(manifest.conditions) === stableJson(['task-only', 'context-pack', 'context-pack-symbols']), 'the three v2 conditions are frozen');
   assert(manifest.tasks?.length >= 6, 'v2 requires at least six tasks');
@@ -115,9 +143,9 @@ function validateManifestV2(manifest) {
       assert(existsSync(join(HERE, pathValue)), `${task.id}.${key} is missing`);
     }
     assert(!resolve(join(HERE, task.hiddenEvaluator)).startsWith(`${resolve(join(HERE, task.fixture))}${sep}`), `${task.id} hidden evaluator leaked into fixture`);
-    assert(digestTree(join(HERE, task.fixture)) === task.fixtureDigest, `${task.id} fixture changed after the v2 protocol was frozen`);
+    assert(digestTree(join(HERE, task.fixture)) === task.fixtureDigest, `${task.id} fixture changed after the ${label} protocol was frozen`);
     // The hidden evaluator is the measuring instrument: it is frozen too.
-    assert(sha256(readFileSync(join(HERE, task.hiddenEvaluator))) === task.evaluatorDigest, `${task.id} hidden evaluator changed after the v2 protocol was frozen`);
+    assert(sha256(readFileSync(join(HERE, task.hiddenEvaluator))) === task.evaluatorDigest, `${task.id} hidden evaluator changed after the ${label} protocol was frozen`);
     if (task.navigationBound) {
       // The prompt names a requirement, never the file to change.
       for (const path of task.allowedChanges) {
@@ -521,7 +549,8 @@ export function decideSymbolPromotion(manifest, aggregate, navigationAggregate) 
 
 export function buildResult(manifest, fixtureSummaries, trials, executableVersion) {
   const aggregate = aggregateTrials(manifest, trials);
-  const v2 = manifest.protocol.id === 'docguard-agent-context-v2';
+  // v2 and v3 share the symbol-map result format; only protocolId differs.
+  const v2 = Boolean(SYMBOL_PROTOCOLS[manifest.protocol.id]);
   let navigationAggregate = null;
   if (v2) {
     const navigation = new Set(manifest.tasks.filter(task => task.navigationBound).map(task => task.id));
@@ -589,20 +618,20 @@ function parseArgs(argv) {
   const options = { run: false, out: null, protocol: 'v1', concurrency: 3, executable: process.env.CODEX_BIN || '/Applications/ChatGPT.app/Contents/Resources/codex' };
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--run') options.run = true;
-    else if (argv[i] === '--protocol' && ['v1', 'v2'].includes(argv[i + 1])) options.protocol = argv[++i];
+    else if (argv[i] === '--protocol' && PROTOCOL_PATHS[argv[i + 1]]) options.protocol = argv[++i];
     else if (argv[i] === '--out' && argv[i + 1]) options.out = resolve(argv[++i]);
     else if (argv[i] === '--concurrency' && argv[i + 1]) options.concurrency = Number(argv[++i]);
     else if (argv[i] === '--codex' && argv[i + 1]) options.executable = resolve(argv[++i]);
     else throw new Error(`Unknown argument: ${argv[i]}`);
   }
   if (!Number.isInteger(options.concurrency) || options.concurrency < 1 || options.concurrency > 6) throw new Error('--concurrency must be an integer from 1 to 6');
-  options.out ??= options.protocol === 'v2' ? DEFAULT_RESULT_V2 : DEFAULT_RESULT;
+  options.out ??= PROTOCOL_RESULTS[options.protocol];
   return options;
 }
 
 async function main() {
   const options = parseArgs(process.argv.slice(2));
-  const manifest = loadManifest(options.protocol === 'v2' ? MANIFEST_V2_PATH : MANIFEST_PATH);
+  const manifest = loadManifest(PROTOCOL_PATHS[options.protocol]);
   const fixtures = verifyFixtures(manifest);
   if (!options.run) {
     console.log(JSON.stringify({ status: 'validated', protocol: manifest.protocol.id, trials: orderedTrials(manifest).length, fixtures }, null, 2));
