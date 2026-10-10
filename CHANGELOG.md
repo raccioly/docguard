@@ -35,6 +35,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **TypeORM and Sequelize models reach `generate`, `generate --plan` and
+  `diff`** (`specs/056-typeorm-models`, #520). Only guard's schema check read
+  them, by a pattern that missed common layouts, so a TypeORM or Sequelize
+  project got an empty entity table and ER diagram. Both ORMs now go through
+  the discovery Prisma, Drizzle and Mongoose use, so guard, `generate`, the
+  plan, as-built specs and `diff` read the same models:
+  - TypeORM: `@Entity` classes in any file that imports `typeorm`
+    (`src/entity/User.ts` from `typeorm init` and NestJS's
+    `src/users/user.entity.ts` included), named by class with the table name
+    kept. Columns carry their type, nullability, primary key, `unique`,
+    default and comment; columns declared on a base class are inherited; each
+    relation is drawn once, from its owning side.
+  - Sequelize: `sequelize.define('Name', …)` and `Model.init(…, { sequelize })`
+    models with their declared attributes. Guard used to miss every `init`
+    model. `belongsTo`, `hasMany`, `hasOne` and `belongsToMany` associations
+    are drawn once.
+  - A file that does not parse is read by pattern into the same entities,
+    which then report the `regex-fallback` tier.
+
+  Guard now names a TypeORM entity by its class and accepts the class or the
+  table name in DATA-MODEL.md. Knex is still read by guard only, by table name.
+
 - **Defects found while documenting DocGuard** (`specs/054-docs-verification-findings`).
   Running every documented flow on scratch projects turned up:
   - A Koa project was labelled Hono. It is now labelled Koa. Its routes are

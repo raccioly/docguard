@@ -68,7 +68,7 @@ It targets development teams and AI coding agents that need to maintain document
 | **Agent instruction budget** | Measures every `AGENTS.md` chain from the root to each instruction directory, as Codex loads it (`AGENTS.override.md` replaces `AGENTS.md`), against `agentInstructions.maxBytes` (default 32768) or a per-chain allowance | `cli/scanners/agent-instructions.mjs`, `cli/validators/structure.mjs` | `STR004` is an escalation; `STR005` suggests tightening a slack allowance. Increasing an allowance is a reviewed config change, which the digit-normalized finding baseline could not guarantee |
 | **As-built specs** | `generate --spec <area>` collects deterministic facts under one code area (routes, exported JS/TS symbols, env vars read, entities), renders a Spec Kit spec with one agent-written candidate per fact, and registers it as `origin: as_built` with `sourcePaths`. The Spec-Registry validator re-scans those paths (`SPR007`) | `cli/scanners/as-built.mjs`, `cli/scanners/js-ast.mjs` (`exportedNames`, shared with the symbol map), `cli/commands/generate-as-built.mjs`, `cli/validators/spec-registry.mjs` | DocGuard writes no requirement prose. Facts key on method+path, file+export, name, so line moves never churn them. An App Router handler export is not a second fact beside its route. Route and env facts cite the file and line of the registration or first read. The registry fields are serialized only when set. `--write` commits the spec and its registry entry in one file transaction |
 | **Go, Spring and Rails routes** | Reports each route at the path it is served under. Go (gin, echo, chi, fiber, gorilla/mux, net/http): every router value is a node whose prefix comes from `Group`, chi `Route`/`Mount`, gorilla `PathPrefix().Subrouter()` or `http.StripPrefix`, across blocks, functions and files, resolved after every file is read. Spring (Java and Kotlin): class-level and method mappings, including the `path =`/`value =` forms, arrays, constants and `@RequestMapping(method = …)`. Rails: `config/routes.rb` and the files it `draw`s, with `namespace`, `scope`, nested `resources`, `only:`/`except:`, `member` and `collection` | `cli/scanners/go-routes.mjs`, `cli/scanners/spring-routes.mjs`, `cli/scanners/rails-routes.mjs`, `cli/scanners/route-lexing.mjs`, `cli/scanners/routes.mjs` | No parser: a shared lexer masks comments and strings and pairs brackets, so comments, `_test.go` files, HTTP-client calls and Feign clients do not count. Routes carry `parserTier: fallback-language`. A path or prefix that is not literal, or a Go call with several possible callees, places no route rather than a guessed one (specs/047-go-spring-rails-routes) |
-| **JS/TS extraction** | Router `.route('/x').get().post()` chains with mount prefixes; per-route auth from the route's own middleware and handler, an earlier `use(auth)`, an auth mount above it, or an App Router `middleware` matcher; env reads including destructuring, each read site recorded with file, line and default; the App Router `pages/` and `components/` roots; ORM entities (schema files, table builders, document schemas) through one discovery (`scanOrmEntities`) that guard's schema check and `generate` share | `cli/scanners/js-ast.mjs`, `cli/scanners/routes.mjs`, `cli/shared-source.mjs` (`grepEnvUsage`), `cli/scanners/schemas.mjs`, `cli/validators/schema-sync.mjs`, `cli/scanners/project-type.mjs` | Auth is recognised by name (`requireAuth`, `verifyToken`, `passport.authenticate(...)`, `getServerSession`); text elsewhere in a file never marks a route. Table schemas come from their ORM config first, else a bounded search; every schema file is read once. The regex fallback reads route chains, per-statement auth, and table and document-schema fields from the same object text. Framework and ORM names are listed in `docs/commands.md` (`generate`) |
+| **JS/TS extraction** | Router `.route('/x').get().post()` chains with mount prefixes; per-route auth from the route's own middleware and handler, an earlier `use(auth)`, an auth mount above it, or an App Router `middleware` matcher; env reads including destructuring, each read site recorded with file, line and default; the App Router `pages/` and `components/` roots; ORM entities (schema files, table builders, document schemas, decorated entity classes with inherited columns, `define`/`init` models) through one discovery (`scanOrmEntities`) that guard's schema check, `generate` and `diff` share | `cli/scanners/js-ast.mjs`, `cli/scanners/routes.mjs`, `cli/shared-source.mjs` (`grepEnvUsage`), `cli/scanners/schemas.mjs`, `cli/validators/schema-sync.mjs`, `cli/scanners/project-type.mjs` | Auth is recognised by name (`requireAuth`, `verifyToken`, `passport.authenticate(...)`, `getServerSession`); text elsewhere in a file never marks a route. Table schemas come from their ORM config first, else a bounded search; every schema file is read once. The regex fallback reads route chains, per-statement auth, and table and document-schema fields from the same object text; TypeORM classes and Sequelize calls are read as decorator and argument text by both tiers and interpreted once, and each such entity records the tier that read it. Framework and ORM names are listed in `docs/commands.md` (`generate`) |
 | **Spec-first gate** | Classifies a change between the merge base and HEAD as covered, exempt, not governed, uncovered or inconclusive. It reads governed paths from `specFirst` and resolves spec references against `specs/*/spec.md` and the registry | `cli/scanners/spec-first.mjs`, `cli/commands/specs.mjs` | Read-only. An unresolved reference never passes. Git or inventory failure is inconclusive (exit 2), never a pass. The PR body arrives as a file |
 | **Spec Kit delegation** | The only code that invokes the `specify` CLI: reads its documented `init` options and `--version`, resolves the integration key from `.specify/integration.json` / `init-options.json` / unambiguous agent signals, initializes Spec Kit, registers the packaged DocGuard extension and re-registers it when the registered version differs; writes the extension commands for the `generic` integration, which Spec Kit registers none for | `cli/spec-kit-delegation.mjs`, `cli/ensure-skills.mjs` | Called only by `docguard init` and `upgrade --apply`, and `ensureSkills` runs only from `init` too (the dispatcher installs nothing, so every other command writes only its own outputs, spec 042); argument arrays only; every failure returns a structured result with the CLI's error and a manual command; requires Spec Kit ≥ 0.11.2, the extension's `requires.speckit_version`, read from the manifest as `MIN_SPEC_KIT_VERSION` and checked before initializing or registering (spec 048) |
 | **Agent surface** | What the project's agent can run: the active integration's command layout, derived from Spec Kit's install manifest (`.specify/integrations/<key>.manifest.json`); where DocGuard's own skills go; whether each mandatory hook in `.specify/extensions.yml` resolves; and command hints that name a slash command only when its file exists | `cli/agent-surface.mjs` | Read-only. No per-agent table: the file Spec Kit wrote for `constitution` gives the directory, shape and separator. Paths from `.specify/*.json` are checked to stay inside the project before any write (spec 048) |
@@ -1738,6 +1738,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **TypeORM and Sequelize models reach `generate`, `generate --plan` and
+  `diff`** (`specs/056-typeorm-models`, #520). Only guard's schema check read
+  them, by a pattern that missed common layouts, so a TypeORM or Sequelize
+  project got an empty entity table and ER diagram. Both ORMs now go through
+  the discovery Prisma, Drizzle and Mongoose use, so guard, `generate`, the
+  plan, as-built specs and `diff` read the same models:
+  - TypeORM: `@Entity` classes in any file that imports `typeorm`
+    (`src/entity/User.ts` from `typeorm init` and NestJS's
+    `src/users/user.entity.ts` included), named by class with the table name
+    kept. Columns carry their type, nullability, primary key, `unique`,
+    default and comment; columns declared on a base class are inherited; each
+    relation is drawn once, from its owning side.
+  - Sequelize: `sequelize.define('Name', …)` and `Model.init(…, { sequelize })`
+    models with their declared attributes. Guard used to miss every `init`
+    model. `belongsTo`, `hasMany`, `hasOne` and `belongsToMany` associations
+    are drawn once.
+  - A file that does not parse is read by pattern into the same entities,
+    which then report the `regex-fallback` tier.
+
+  Guard now names a TypeORM entity by its class and accepts the class or the
+  table name in DATA-MODEL.md. Knex is still read by guard only, by table name.
+
 - **Defects found while documenting DocGuard** (`specs/054-docs-verification-findings`).
   Running every documented flow on scratch projects turned up:
   - A Koa project was labelled Hono. It is now labelled Koa. Its routes are
@@ -2079,30 +2101,8 @@ Behaviour changes:
   - **`STR005`**: an allowance has at least 1 KiB of slack and should be
     lowered.
 
-  This repository's chain is 13,222 bytes.
 
-- **Colliding spec numbers are reported (`SPK012`; #462,
-  `specs/017-agent-instruction-budget`).** Parallel agents each pick
-  "the next number" from their own checkout, which produces `specs/016-a` and
-  `specs/016-b`. After that, "spec 016" is ambiguous. open-mercato abandoned
-  numbering over exactly this problem. Timestamp-numbered feature directories
-  never collide.
-
-- **The Spec Kit extension manifest now says what it needs (#455,
-  `specs/018-extension-manifest-hygiene`).**
-  - **Spec Kit floor.** It said `>=0.1.0` while using per-event hook lists with
-    priority (Spec Kit 0.10.0), `category`/`effect` (0.10.2) and
-    `after_converge` (0.11.2). An older Spec Kit would install it, and the hooks
-    would then silently fail to register. The floor is now `>=0.11.2`, and a
-    contract test derives it from the features the manifest uses.
-  - **New fields.** It declares `category: docs` and `effect: read-write`.
-  - **Explicit hook priorities.** Every hook has one. The briefing runs at 5,
-    ahead of the git extension's branch creation at the default 10, so a
-    blocked briefing no longer leaves an empty feature branch behind.
-  - **Non-schema keys.** `requires.framework` is removed. The GitHub workflow
-    starters move from `provides.workflows`, whose name collides with Spec
-
-<!-- truncated: 4784 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 4806 more lines — read CHANGELOG.md directly -->
 
 ---
 
