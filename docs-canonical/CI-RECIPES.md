@@ -207,6 +207,16 @@ An unmeasurable base is inconclusive, never a pass. To reproduce the table
 locally, run `git worktree add ../base origin/main` and then
 `npm run budget -- --base ../base` (`specs/031-non-regression-budgets`).
 
+Guard time is each tree's median of `samples` rounds (5 in `budgets.json`),
+and the tree that runs first alternates between rounds. A median of N samples
+ignores up to (N − 1) / 2 slowed samples of either tree: with five rounds, two
+guard runs delayed by a load burst, however long, cannot pull a median above
+the slowest of the other three. A load that rises steadily through the run
+moves the two medians only one sample apart. A difference under the floor
+(150 ms) never fails. Below three samples there is no outlier margin: with
+`--samples 1`, one delayed process decides the verdict
+(`specs/062-budget-deterministic`).
+
 ## Recipe 4 — Score (track CDD maturity over time)
 
 `score --format json` reports structural maturity. Its numeric threshold is stable, while `assurance` explicitly states that factual accuracy remains unverified. Comparing scores is meaningful only with the same tool/configuration and a comparable coverage scope.

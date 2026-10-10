@@ -1009,6 +1009,109 @@
       }
     },
     {
+      "specId": "docguard.budget-deterministic",
+      "path": "specs/062-budget-deterministic/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.budget-deterministic#FR-001",
+          "docguard.budget-deterministic#FR-002",
+          "docguard.budget-deterministic#FR-003",
+          "docguard.budget-deterministic#FR-004",
+          "docguard.budget-deterministic#FR-005",
+          "docguard.budget-deterministic#SC-001",
+          "docguard.budget-deterministic#SC-002"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/062-budget-deterministic/spec.md",
+            "digest": "sha256:d6339bb19841530e774fc7a2d1569aae108229e030cbe1a0a55715f3531d9fac"
+          },
+          {
+            "path": "specs/062-budget-deterministic/plan.md",
+            "digest": "sha256:186c0798e81249cca52c19ef538dc36d429e7c2910fe44dc54c6f4663b5a2719"
+          },
+          {
+            "path": "specs/062-budget-deterministic/tasks.md",
+            "digest": "sha256:5bae7f7f4fbd1b620aeeda40a90b134b59a87406d7a76c05a6b90abfa65b1d75"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 7,
+          "total": 7
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-004",
+            "file": "tools/budget.mjs",
+            "line": 173
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/budget.test.mjs",
+            "line": 21
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/budget.test.mjs",
+            "line": 22
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/budget.test.mjs",
+            "line": 23
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/budget.test.mjs",
+            "line": 24
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/budget.test.mjs",
+            "line": 25
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/budget.test.mjs",
+            "line": 26
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/budget.test.mjs",
+            "line": 27
+          }
+        ]
+      }
+    },
+    {
       "specId": "docguard.calibrated-finding-channels",
       "path": "specs/013-calibrated-finding-channels/spec.md",
       "reviewed": {

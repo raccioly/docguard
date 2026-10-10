@@ -13,13 +13,25 @@
  * @req docguard.non-regression-budgets#FR-007
  * @req docguard.non-regression-budgets#SC-002
  * @req docguard.non-regression-budgets#SC-003
+ *
+ * Every guard-time verdict here comes from a scripted timing source
+ * (specs/062-budget-deterministic); the one test on real processes asserts
+ * only bounds that machine load cannot break.
+ *
+ * @req docguard.budget-deterministic#FR-001
+ * @req docguard.budget-deterministic#FR-002
+ * @req docguard.budget-deterministic#FR-003
+ * @req docguard.budget-deterministic#FR-004
+ * @req docguard.budget-deterministic#FR-005
+ * @req docguard.budget-deterministic#SC-001
+ * @req docguard.budget-deterministic#SC-002
  */
 import { describe, it, after } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
-import { compare, loadBudgets, measurePair, median, parseExemptions, renderTable } from '../tools/budget.mjs';
+import { compare, guardPair, loadBudgets, measurePair, median, parseExemptions, renderTable } from '../tools/budget.mjs';
 
 const budgets = loadBudgets();
 const dirs = [];
@@ -90,16 +102,14 @@ describe('Budget-Exempt waives exactly the named metric (FR-003)', () => {
 });
 
 /** A stand-in tree whose CLI busy-waits `ms` for guard and answers the rest minimally. */
-function stubTree(ms, { tag = null, log = null } = {}) {
+function stubTree(ms) {
   const dir = mkdtempSync(join(tmpdir(), 'docguard-budget-stub-'));
   dirs.push(dir);
   mkdirSync(join(dir, 'cli'), { recursive: true });
   writeFileSync(join(dir, 'package.json'), JSON.stringify({ name: 'stub', version: '0.0.0', dependencies: {} }));
   writeFileSync(join(dir, 'cli/docguard.mjs'), `
-import { appendFileSync } from 'node:fs';
 const [cmd] = process.argv.slice(2);
 if (cmd === 'guard') {
-  ${log ? `appendFileSync(${JSON.stringify(log)}, ${JSON.stringify(`${tag}\n`)});` : ''}
   const end = Date.now() + ${ms}; while (Date.now() < end) {}
   console.log(JSON.stringify({ findings: [] }));
 }
@@ -108,31 +118,103 @@ else if (cmd === 'memory') console.log('# pack');
   return dir;
 }
 
-describe('base-vs-head on one machine catches a slowdown without flaking (FR-001, FR-004, SC-001)', () => {
-  const small = { ...budgets, samples: 3, guardTargets: ['.'], agentTasks: {}, mcpCalls: [] };
+/**
+ * A scripted timing source for guardPair: `ms(tree, slot)` is the wall time of
+ * the guard sample taken in `slot` (0, 1, 2, … in call order). `calls` records
+ * which tree each slot measured.
+ */
+function scripted(ms) {
+  const calls = [];
+  const sample = (tree, targets) => {
+    const slot = calls.length;
+    calls.push(tree);
+    return Object.fromEntries(targets.map(t => [t, ms(tree, slot)]));
+  };
+  return { sample, calls };
+}
 
-  it('an injected 3× slowdown fails', () => {
-    const pair = measurePair(stubTree(100), stubTree(400), small);
-    assert.ok(pair.head.guard['.'] > pair.base.guard['.']);
-    assert.equal(verdict(compare(pair.base, pair.head, small), 'guard-ms:.'), 'FAIL');
+/** Deterministic PRNG (mulberry32), so each "noisy" run is reproducible. */
+function rng(seed) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6D2B79F5) >>> 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/**
+ * Shared-runner noise for one comparison: every sample is 1000 ms plus up to
+ * 50 ms of jitter, and two of the head's five samples (picked by the seed) are
+ * hit by a load burst of up to 5 s. Bursts land on the head only, the worst
+ * case for a base-vs-base comparison. `slowdown` scales the head's samples.
+ */
+function noisy(seed, { head, slowdown = 1 }) {
+  const next = rng(seed);
+  const burst = new Set();
+  while (burst.size < 2) burst.add(Math.floor(next() * 5));
+  let headSeen = 0;
+  return scripted(tree => {
+    const ms = 1000 + next() * 50;
+    if (tree !== head) return ms;
+    const hit = burst.has(headSeen++);
+    return ms * slowdown + (hit ? 1000 + next() * 4000 : 0);
+  });
+}
+
+describe('base-vs-head on one machine catches a slowdown without flaking (FR-001, FR-004, SC-001)', () => {
+  const small = { ...budgets, samples: 5, guardTargets: ['.'], agentTasks: {}, mcpCalls: [] };
+  const BASE = resolve(tmpdir(), 'docguard-budget-base');
+  const HEAD = resolve(tmpdir(), 'docguard-budget-head');
+  const guardVerdict = (pair) => verdict(compare(report({ guard: pair.base }), report({ guard: pair.head }), small), 'guard-ms:.');
+
+  it('ten noisy base-vs-base comparisons never fail: medians absorb a burst on two of five samples', () => {
+    for (let seed = 1; seed <= 10; seed++) {
+      const { sample } = noisy(seed, { head: HEAD });
+      const pair = guardPair(BASE, HEAD, [HEAD], { samples: 5, sample });
+      assert.equal(guardVerdict(pair), 'PASS', `seed ${seed}: base ${pair.base['.']} head ${pair.head['.']}`);
+    }
+  });
+
+  it('an injected 30% slowdown fails under the same noise', () => {
+    for (let seed = 1; seed <= 10; seed++) {
+      const { sample } = noisy(seed, { head: HEAD, slowdown: 1.3 });
+      const pair = guardPair(BASE, HEAD, [HEAD], { samples: 5, sample });
+      assert.equal(guardVerdict(pair), 'FAIL', `seed ${seed}: base ${pair.base['.']} head ${pair.head['.']}`);
+    }
+  });
+
+  it('a single sample has no outlier protection: one burst fails a base-vs-base comparison', () => {
+    // What made the old real-timing version of this test flaky: samples: 1.
+    const { sample } = scripted(tree => (tree === HEAD ? 1400 : 1000));
+    assert.equal(guardVerdict(guardPair(BASE, HEAD, [HEAD], { samples: 1, sample })), 'FAIL');
   });
 
   it('interleaves: the tree that runs first alternates between samples', () => {
-    const log = join(mkdtempSync(join(tmpdir(), 'docguard-budget-log-')), 'order.log');
-    dirs.push(dirname(log));
-    // The self-findings measure calls guard once more per tree; keep only the
-    // timed samples, which come first.
-    measurePair(stubTree(1, { tag: 'base', log }), stubTree(1, { tag: 'head', log }), { ...small, samples: 4 });
-    const order = readFileSync(log, 'utf8').trim().split('\n').slice(0, 8);
-    assert.deepEqual(order, ['base', 'head', 'head', 'base', 'base', 'head', 'head', 'base']);
+    const { sample, calls } = scripted(() => 100);
+    guardPair(BASE, HEAD, [HEAD], { samples: 4, sample });
+    assert.deepEqual(calls.map(t => (t === BASE ? 'base' : 'head')), ['base', 'head', 'head', 'base', 'base', 'head', 'head', 'base']);
   });
 
-  it('ten base-vs-base comparisons never fail', () => {
-    const tree = stubTree(60);
-    for (let i = 0; i < 10; i++) {
-      const pair = measurePair(tree, tree, { ...small, samples: 1 });
-      assert.equal(verdict(compare(pair.base, pair.head, small), 'guard-ms:.'), 'PASS', `run ${i}`);
-    }
+  it('interleaving holds a steady load drift to one sample slot', () => {
+    // Every sample is 100 ms slower than the one before. Base takes slots
+    // 0,3,4,7,8 and head 1,2,5,6,9, so the medians are one slot apart. Base
+    // then head in sequence would put them five slots (500 ms) apart.
+    const { sample } = scripted((tree, slot) => 1000 + 100 * slot);
+    const pair = guardPair(BASE, HEAD, [HEAD], { samples: 5, sample });
+    assert.deepEqual([pair.base['.'], pair.head['.']], [1400, 1500]);
+    assert.equal(guardVerdict(pair), 'PASS');
+  });
+
+  it('measurePair times each tree with its own CLI on the wall clock (real processes)', () => {
+    // Smoke test of the real timing source. It asserts only what load cannot
+    // break: a stub that busy-waits N ms is never measured under N ms.
+    const pair = measurePair(stubTree(100), stubTree(400), { ...small, samples: 3 });
+    assert.ok(pair.base.guard['.'] >= 99, `base ${pair.base.guard['.']}`);
+    assert.ok(pair.head.guard['.'] >= 399, `head ${pair.head.guard['.']}`);
+    assert.deepEqual(pair.head.findings, { errors: 0, byCode: {} });
+    assert.ok(['PASS', 'FAIL'].includes(verdict(compare(pair.base, pair.head, small), 'guard-ms:.')));
   });
 });
 
@@ -151,6 +233,16 @@ describe('the repository wiring (FR-004, FR-006, FR-007)', () => {
     assert.match(job, /GITHUB_STEP_SUMMARY/);
     assert.match(JSON.parse(readFileSync('package.json', 'utf8')).scripts.budget, /tools\/budget\.mjs/);
     assert.match(readFileSync('AGENTS.md', 'utf8'), /Budget-Exempt/);
+  });
+
+  it('the CI recipe states which noise the guard-time verdict absorbs (spec 062 FR-005)', () => {
+    const recipes = readFileSync('docs-canonical/CI-RECIPES.md', 'utf8');
+    const recipe = recipes.slice(recipes.indexOf('## Recipe 3e'), recipes.indexOf('## Recipe 4 '));
+    assert.match(recipe, /\(N − 1\) \/ 2 slowed samples/);
+    assert.match(recipe, /one sample apart/);
+    assert.match(recipe, /`--samples 1`/);
+    assert.match(recipe, new RegExp(`${budgets.samples} in \`budgets\.json\``));
+    assert.match(recipe, new RegExp(`floor\\s+\\(${budgets.guard.floorMs} ms\\)`));
   });
 
   it('runs beside the tests with a time ceiling, keeps the precision gate, and summarizes every PR (FR-005, SC-002, SC-003)', () => {

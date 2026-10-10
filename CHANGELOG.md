@@ -35,6 +35,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **The non-regression budget tests no longer decide verdicts on wall-clock
+  timing** (`specs/062-budget-deterministic`). "ten base-vs-base comparisons
+  never fail" in `tests/budget.test.mjs` measured one sample per tree on a
+  60 ms stub, so a single process delayed past the 150 ms floor failed it; it
+  failed once in a full local run under CPU load. The tool was not at fault:
+  the CI job takes the median of five interleaved samples, which the test had
+  bypassed. `tools/budget.mjs` now exposes its interleaved sampling loop as
+  `guardPair`, with the timing source injectable (`measurePair` and the CLI
+  are unchanged). The tests script the samples with a seeded generator: ten
+  base-vs-base comparisons with load bursts on two of five head samples pass,
+  the same with a 30% slower head fail, and a one-sample comparison shows why
+  a single sample is not a measurement. One test still spawns real stub trees
+  and asserts only what load cannot break. The file runs in about 3 s
+  instead of 15 s. `docs-canonical/CI-RECIPES.md` Recipe 3e states which
+  noise the guard-time verdict absorbs.
+
 - **The watch reliability tests no longer depend on wall-clock timing**
   (`specs/055-watch-deterministic`, #523). `tests/watch-reliability.test.mjs`
   slept 300–600 ms around the 500 ms debounce and let the watcher print to
