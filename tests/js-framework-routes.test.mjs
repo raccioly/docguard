@@ -22,6 +22,7 @@ import { strict as assert } from 'node:assert';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
+import { fileURLToPath } from 'node:url';
 
 import {
   writeFiles, UNPARSEABLE,
@@ -310,7 +311,7 @@ describe('FR-007: NestJS is labelled NestJS', () => {
 // ── FR-008: documentation ───────────────────────────────────────────────────
 
 describe('FR-008: the docs say what is read', () => {
-  const root = resolve(import.meta.dirname, '..');
+  const root = fileURLToPath(new URL('..', import.meta.url));
   const read = rel => readFileSync(join(root, rel), 'utf8');
 
   it('lists NestJS, Cloudflare Workers and itty-router as read, and no longer as unread', () => {

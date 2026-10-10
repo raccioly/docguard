@@ -5443,6 +5443,11 @@
             "requirementId": "SC-002",
             "file": "tests/js-framework-routes.test.mjs",
             "line": 18
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/node18-compat.test.mjs",
+            "line": 7
           }
         ]
       }
