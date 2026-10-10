@@ -882,7 +882,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "implemented",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -901,8 +901,20 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "c53c264a31179bd423e927ad63728dbec2084014",
+          "outcomes": [
+            {
+              "revision": "c53c264a31179bd423e927ad63728dbec2084014",
+              "reason": "Reviewed at c53c264 on main: all 4 tasks are checked and were delivered by #518; the full suite (2931 tests) passes on Node 18, 20, 22 and 24 in CI, and guard reports 0 errors at this revision.",
+              "evidence": [
+                "cli/writers/baseline.mjs",
+                "docs-canonical/DATA-MODEL.md",
+                "tests/baseline-stable-fingerprint.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -920,7 +932,7 @@
         "artifacts": [
           {
             "path": "specs/052-baseline-stable-fingerprint/spec.md",
-            "digest": "sha256:0c5afb2f8d84e88ffd7544f7f3fb479cb537a6e3350b69ea9e96b39f6b3f90e9"
+            "digest": "sha256:95c7e9cfc0e3412079e0eb5df23bba45ff8b32ca327b6cf7bad78411ea49f083"
           },
           {
             "path": "specs/052-baseline-stable-fingerprint/plan.md",
