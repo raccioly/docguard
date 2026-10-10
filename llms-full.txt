@@ -1711,7 +1711,408 @@ schema keys.
 ## CHANGELOG.md
 > Version history and release notes
 
+# Changelog
 
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Added
+
+- **The symbol map's benchmark has run, and it stays opt-in**
+  (`specs/036-symbol-map`). Agent-context protocol v2 could not run: its pinned
+  Codex CLI is no longer installed, and its model is refused for
+  ChatGPT-account Codex. Protocol v3 (`benchmarks/agent-context/manifest-v3.json`)
+  changes only that executable pin, to `codex-cli 0.162.0-alpha.17.2` and
+  `gpt-6.1-sol` at low reasoning. It was frozen and committed before the first
+  trial, and the runner rejects a v3 manifest that differs from v2 anywhere
+  else (`--protocol v3`). All 54 trials succeeded. With the map, median
+  uncached input rose 1.0% and median steps did not change. On the
+  navigation-bound tasks, median latency fell 6.0%, short of the 15% threshold.
+  The frozen rule therefore computed `opt-in`: `memory --pack --symbols` stays
+  available, and the default pack is unchanged
+  (`benchmarks/agent-context/results/README-v3.md`).
+
+- **A documentation site with the guides a larger project ships**
+  (`specs/053-user-documentation`). The GitHub Pages site
+  (raccioly.github.io/docguard) now has a landing page, sidebar navigation and
+  search, using the Just the Docs theme that Pages builds itself, with no
+  build step or dependency. New pages:
+  - guides for existing projects, Spec Kit, CI, monorepos, upgrading and
+    troubleshooting;
+  - references for languages and frameworks, coding agents, the MCP server and
+    every finding code;
+  - a fuller installation page.
+
+  The finding-code reference is generated from the code registry
+  (`npm run docs:reference`), and a test fails when it is stale. Existing page
+  paths are unchanged. The Spanish and Portuguese READMEs link the English
+  guides.
+
+### Removed
+
+- **`templates/commands/`**, an old copy of the slash commands that nothing
+  installed (the installer reads `commands/`). Its `/docguard.init` and
+  `/docguard.update` were listed in the README although no agent ever received
+  them. The README, `ai-integration.md`, `quickstart.md` and CLI help now match
+  what DocGuard installs and does (`specs/053-user-documentation` FR-009).
+
+### Fixed
+
+- **TypeORM and Sequelize models reach `generate`, `generate --plan` and
+  `diff`** (`specs/056-typeorm-models`, #520). Only guard's schema check read
+  them, by a pattern that missed common layouts, so a TypeORM or Sequelize
+  project got an empty entity table and ER diagram. Both ORMs now go through
+  the discovery Prisma, Drizzle and Mongoose use, so guard, `generate`, the
+  plan, as-built specs and `diff` read the same models:
+  - TypeORM: `@Entity` classes in any file that imports `typeorm`
+    (`src/entity/User.ts` from `typeorm init` and NestJS's
+    `src/users/user.entity.ts` included), named by class with the table name
+    kept. Columns carry their type, nullability, primary key, `unique`,
+    default and comment; columns declared on a base class are inherited; each
+    relation is drawn once, from its owning side.
+  - Sequelize: `sequelize.define('Name', …)` and `Model.init(…, { sequelize })`
+    models with their declared attributes. Guard used to miss every `init`
+    model. `belongsTo`, `hasMany`, `hasOne` and `belongsToMany` associations
+    are drawn once.
+  - An entity whose decorators come through a project barrel that
+    re-exports `typeorm` (relative, tsconfig path alias or workspace package)
+    is read; one whose barrel re-exports MikroORM is not.
+  - A file that does not parse is read by pattern into the same entities,
+    which then report the `regex-fallback` tier. Drizzle and Mongoose entities
+    now report their tier too, so a pattern-read schema marks the plan's
+    entity surface partial.
+  - Zod schemas are the data model only when no ORM entity is found; a
+    Mongoose project with Zod schemas used to report both. A Zod-only project
+    listed each schema twice; it now lists each once.
+  - SCH001's help names every model source guard reads.
+
+  Guard now names a TypeORM entity by its class and accepts the class or the
+  table name in DATA-MODEL.md. Knex is still read by guard only, by table name.
+- **The watch reliability tests no longer depend on wall-clock timing**
+  (`specs/055-watch-deterministic`, #523). `tests/watch-reliability.test.mjs`
+  slept 300–600 ms around the 500 ms debounce and let the watcher print to
+  stdout, which the test runner also reads its own messages from; it failed
+  intermittently in full local runs on a loaded machine. The tests now drive
+  the debounce with a fake clock through two new optional `runWatch` runtime
+  hooks (`setTimeout`, `clearTimeout`, defaulting to the global timers),
+  observe check completion by draining queued promise callbacks, and capture
+  console output. They assert the coalescing at the exact window edge, and a
+  new case covers a save that lands while a queued check's window is still
+  open. The file runs in about 0.1 s instead of 4 s. `docguard watch` itself
+  is unchanged.
+
+- **Defects found while documenting DocGuard** (`specs/054-docs-verification-findings`).
+  Running every documented flow on scratch projects turned up:
+  - A Koa project was labelled Hono. It is now labelled Koa. Its routes are
+    read as before, by the same method-shorthand scanner, and carry
+    `source: koa`.
+  - Agent files written by `init --with agents` carried no sync marker, so
+    `agents --sync` skipped every one of them. They are now marked. Files
+    written before this release still need one `agents --sync --force`.
+  - `agents --sync` re-ran the whole `init`, Spec Kit step included. It now
+    runs only the agent-file sync, like `agents --check`.
+  - The config schema rejected an array `sourceRoot`, which the CLI accepts.
+  - PSR002 reported a file excluded by `.docguardignore` as missing. Ignoring a
+    file keeps it out of validation; pointers to it still resolve.
+  - Pinned examples (the README's pre-commit `rev:`, `.pre-commit-hooks.yaml`,
+    the GitLab component) said 0.29.0. They now say the current release, and
+    the release sync keeps them current.
+  - The MCP server's Origin check comment said it applied on loopback binds
+    only. It applies on every bind.
+
+- **Adding a test file no longer brings back baselined TRC004 findings**
+  (`specs/052-baseline-stable-fingerprint`, #478). A baseline fingerprint
+  hashed the whole message, including TRC004's ` — IR soft-match: …` hint,
+  which names whichever test file currently matches best. A new, unrelated
+  test could change the hint, so frozen findings came back as new and
+  `--fail-on-warning` blocked the commit. Fingerprints now leave out advisory
+  tails, declared per finding code; TRC004's hint is the only one. Every other
+  fingerprint is unchanged. An existing `.docguard.baseline.json` keeps working:
+  guard also accepts the old fingerprint, and `guard --update-baseline` rewrites
+  it in the new form.
+
+## [0.43.1] - 2026-10-05
+
+Automated weekly release — batches everything merged since `v0.43.0`.
+
+### Commits
+
+- test: add missing tests for cli command exports (#516)
+- docs: link the README's brief to its rendered GitHub Pages copy (#515)
+- chore(deps): bump @babel/parser (#513)
+
+## [0.43.0] - 2026-10-01
+
+**Upgrading from 0.42.x.** No new check fails a build: every new finding is a
+warning or an escalation, so the worst case is `guard` moving from PASS to WARN
+(exit 2). That still fails CI that runs with `--fail-on-warning` or treats any
+non-zero exit as failure. Most likely triggers:
+
+- **STR004:** an `AGENTS.md` instruction chain over 32 KiB. Codex stops reading
+  there.
+- **TDO002:** a comment that starts with a bare `TODO` or `FIXME`.
+- **SPR006/SPR007:** Spec Kit projects whose checked tasks carry no
+  `@implements` annotation, and as-built specs that drifted.
+- **PSR001–PSR004:** agent instruction files (including a root `AGENTS.md`)
+  that point at missing paths, or whose path scopes match nothing or cannot
+  be read.
+- **ENV003 on Go, Java, Kotlin, Ruby, Rust, PHP and C# projects:** env reads in
+  those languages (and Spring `${X}` placeholders) are now found, so an
+  undocumented variable is reported where it was invisible before.
+- **SCH002 and ENV findings on Python projects:** SQLAlchemy models and
+  pydantic `BaseSettings` fields are now read, so ones the docs do not
+  mention yet are reported.
+
+Behaviour changes:
+
+- `docguard mcp` refuses a tool call whose `projectDir` is outside the
+  directory it serves. Start it with `--root <dir>` for each other tree a
+  client should reach.
+- `sync`, `fix` and `generate` no longer run `specify init`. Run `docguard init`
+  or `specify init` yourself.
+- The Spec Kit extension requires Spec Kit 0.11.2 or later, and `docguard
+  init` no longer initializes Spec Kit with an older `specify`.
+- In a Claude Code project, `docguard init` installs DocGuard's skills into
+  `.claude/skills/` instead of `.agent/`. An existing `.agent/` is left in place.
+- The manifest key `provides.workflows` moved to `x-docguard.github_workflows`.
+- A `.docguardignore` `dir/` pattern now matches that directory at any depth,
+  as in `.gitignore`. This can hide findings that fired before.
+- The GitHub Action installs the CLI version it was released with, not
+  `@latest`. Set `docguard-version: latest` to keep following npm.
+- The MCP tool `docguard_guard` returns the compact form (each fact once).
+  Pass `detail: "full"` for the previous shape, with `reportable`,
+  `validators[].findings`, every applicability reason and
+  `checkCoverage.limitations`.
+- `apiSurface` reports `partial` on Go, Java, Ruby and Rust services, and
+  Environment reports `partial` when a source language has no env patterns.
+  Both used to say `checked`. Partial coverage does not change the exit code;
+  it lowers the badge colour and the coverage counts.
+
+### Added
+
+- **Reviewed asset paths for spec reconciliation**
+  (`specs/039-asset-path-attribution`). Some files can't name their spec:
+  digest-pinned fixtures, recorded outputs. `specs complete` reported every
+  such file as unresolved (SPC006), and that blocked completion. A spec's
+  `reviewed.scope.assetPaths` now lists them by hand. An entry ending in `/`
+  covers a directory, any other entry one file, and wildcards are rejected.
+  Reconciliation links a change under a listed path to the spec. Guard
+  reports **SPR009** for an entry that covers no tracked file. Spec 036 lists
+  its frozen benchmark assets, which had blocked maintenance completions of
+  every living spec reviewed before it merged.
+
+- **Agents learn when DocGuard is old, with no network call**
+  (`specs/038-update-awareness`). DocGuard reads its own release date from the
+  `CHANGELOG.md` it ships with. When that is more than 14 days ago, guard's
+  text output, the MCP server's `initialize` instructions and the context pack
+  say a newer version may exist and name `docguard upgrade`, the one command
+  that checks npm. The DocGuard skills tell the agent to ask the user and
+  never upgrade unasked. The note is silent when the date cannot be read for
+  certain, in a source checkout, in guard's text output under `CI`, and with
+  `DOCGUARD_NO_UPDATE_HINT=1`. JSON, SARIF, JUnit and MCP tool results are
+  unchanged. `PRIVACY.md` now also lists `docguard upgrade`'s registry fetch,
+  which it omitted.
+
+- **Symbol map in the context pack, opt-in** (`specs/036-symbol-map`).
+  `memory --pack --symbols` adds a `## Symbol map`: the source files most
+  central in the static import graph (PageRank, deterministic), each with the
+  names it exports, within `memory.symbolMap.maxBytes` (default 4096). It costs
+  +1.2% of `memory --pack` time on this repository, because symbols are read
+  only for the files that fit. Without the flag the pack is unchanged.
+  Whether it becomes the default is decided by agent-context protocol v2,
+  frozen before any run (`benchmarks/agent-context/manifest-v2.json`): six
+  tasks, three of them navigation-bound in a new 29-module fixture. Default-on
+  needs no regression and a benefit; a regression withdraws the feature. The
+  54-trial matrix has not been run yet.
+- **Doc ownership map** (`specs/034-doc-ownership-map`). A project can declare
+  which doc section is responsible for which source paths, in an `ownership`
+  block in `.docguard.json`:
+  - Each tracked file has at most one owner. An exact path beats any glob, a
+    longer literal directory prefix beats a shorter one, and anything else is
+    a tie.
+  - `trace --reverse`, `review --suggest` and the MCP tool
+    `docguard_docs_for_path` now report the declared owner.
+  - `trace --owners` lists the map; `trace --owners --suggest` drafts one and
+    never writes it.
+  - The **Doc-Ownership** validator reports unowned source directories (at
+    their highest level), ties, patterns and roots that match nothing, and
+    entries naming a missing doc or section (OWN001–OWN004). A broken block is
+    an error (OWN007), never a pass.
+  - A committed `.devin/wiki.json` is linted against Devin's documented rules
+    (checked 2026-09-30): 30 pages (80 on enterprise, via
+    `devinWiki.maxPages`), 100 notes counted together, 10,000 characters per
+    note, required keys, unique titles (OWN005). Paths its notes name that are
+    no longer in the repository are OWN006.
+  - This repository maps `cli/`, `extensions/`, `tools/`, `benchmarks/` and
+    `tests/`: every source file has exactly one owner, checked in 25 ms.
+- **Path-scoped agent rules** (`specs/033-path-scoped-rules`). Agents load
+  instructions by path, and each harness does it differently. DocGuard now
+  reads them the way each one does: Codex, Claude Code, Cursor, Copilot and
+  OpenHands. The formats were checked against each vendor's documentation on
+  2026-09-30 and recorded in `docs/ai-integration.md`.
+  - `docguard rules --for <path>` lists, per harness, the files an agent loads
+    for a path, why (always, the directory chain, or the pattern that matched)
+    and the bytes. Machine-local rules are included and marked.
+  - The **Path-Scoped-Rules** validator reports:
+    - PSR001: a scope pattern that matches no tracked file, so the rule never
+      loads;
+    - PSR002: a pointer to a missing path, including routing-table rows and
+      Markdown links;
+    - PSR003: instructions for one path over `agentInstructions.maxBytes`;
+    - PSR004: a scope the harness cannot read, or reads differently than
+      written, e.g. `globs:` in a Claude Code rule. Claude Code reads only
+      `paths:`, so it loads that rule for every file.
+  - Pointer checks skip frontmatter, patterns, `UPPER_CASE` placeholders,
+    sentences saying the file may be absent, gitignored paths, and a skill's
+    runtime paths. On this repository they check 12 pointers and find none
+    broken; a raw check found 247 false positives in Spec Kit's generated
+    skills.
+  - Patterns DocGuard does not evaluate (`[...]`, `!`) are reported as not
+    checked, never as matching nothing.
+- **Diagrams drawn from code** (`specs/035-code-derived-diagrams`). Add an
+  empty `<!-- docguard:section id=module-graph source=code -->` block to
+  ARCHITECTURE, or `id=entity-diagram` to DATA-MODEL, and `sync --write` fills
+  it with a mermaid diagram:
+  - `module-graph`: directory modules and the static imports between them;
+  - `entity-diagram`: the entities and relationships from the schema scan.
+
+  When imports or schemas change, Generated-Staleness reports the section
+  (GST002) and `sync --write` redraws it. The output is byte-identical for the
+  same code. Large graphs are grouped and merged to at most
+  `diagrams.moduleGraph.maxNodes` nodes (default 30) and 150 edges, and a
+  caption states every reduction. A graph missing evidence on this machine
+  (no Python interpreter, an unreadable file) is reported `partial`, not
+  stale. `sync --write` leaves it alone unless `--allow-partial` is given.
+  The import graph is now built once per run for the Architecture validator,
+  `impact` and the diagram (a stat-checked cache). Adopting the diagram in
+  this repository cost 0.7% of guard time.
+- **MCP doc navigation tools** (`specs/032-mcp-doc-tools`). Agents can ask
+  which documentation describes a file and read one section, instead of
+  loading whole documents:
+  - `docguard_docs_for_path` returns the doc lines that name a file (with
+    their text, heading and section), agent-instruction lines,
+    `@implements`/`@req` IDs, `@doc` annotations, and `covers=` sections with
+    their review state;
+  - `docguard_doc_structure` returns a document's outline;
+  - `docguard_read_section` reads by section id, anchor, heading, or the lines
+    around one reference (8 KiB default, 32 KiB cap);
+  - `docguard_task_context` returns the `agent --task` packet.
+
+  Finding and reading what describes `cli/scanners/as-built.mjs` costs 11.5%
+  of reading those docs whole. The tools are deterministic and read-only,
+  refuse traversal, private and symlinked paths, and none of them calls a
+  model. `trace --reverse`, `impact` and the tool share one reference matcher.
+  The published tool listings (MCPB manifest, Smithery, server.json, docs)
+  now match `tools/list`: they had drifted to 5 and 6 of 7.
+
+- **Doc dependency lock: know which docs to re-read when code changes**
+  (`specs/030-doc-dependency-lock`, new `docguard review` command).
+  - A doc section declares the code it describes, e.g.
+    `covers="src/pricing.mjs#discount"` on its `docguard:section` marker.
+  - `docguard review --accept <doc>#<id> --reason` records a fingerprint of
+    that code in `.docguard-doc-lock.json`. JS/TS symbols use a normalized AST
+    and Python symbols `ast.dump`; files use their bytes and globs their
+    matching set.
+  - Guard's new Doc-Dependency validator reports **DLK001** when covered code
+    changes semantically, and the finding carries the `git diff` command.
+    Reformatting, comments and moving the function do not trigger it; a
+    same-size edit (`0.9` → `0.8`) does.
+  - Also reported: DLK002 (dependency gone), DLK003 (not accepted, or
+    `covers=` changed), DLK004 (orphan entry, cleared by `--prune`) and DLK005
+    (unreadable lock).
+  - `--suggest` proposes `covers=` values and never writes.
+  - Opt-in: a project without `covers=` sees no change. The validator also runs
+    in `--changed-only` pre-commit mode. This replaces the idea of tracking
+    line counts or file size, which cannot see same-size edits.
+
+- **Non-regression budgets** (`specs/031-non-regression-budgets`). A new CI
+  `budget` job compares every PR with its base on the same runner. It checks:
+  - guard wall time (medians of interleaved samples; ×1.15, 150 ms floor);
+  - new error findings on this repository;
+  - agent-facing bytes: context pack, task packets, MCP responses and llms
+    bundles (+10%);
+  - packed package weight;
+  - runtime dependencies.
+
+  A cost the change needs is declared as `Budget-Exempt: <metric> — <reason>`.
+  `npm run budget -- --base <dir>` prints the same table locally. The first
+  measurement shows the `docguard_guard` MCP response at about 130 KB per call.
+
+- **Completion revisions survive squash merges** (`specs/028-completion-revision-anchoring`).
+  - `specs complete` records the revision it reviewed. A completion committed
+    on a PR branch recorded that branch's commit, which a squash merge never
+    puts on `main`. Twelve recorded revisions across seven of this repository's
+    specs pointed at such commits.
+  - **SPR008** reports a recorded revision that does not resolve or is not on
+    HEAD's history. A shallow clone reports partial coverage instead.
+  - `docguard specs reanchor --id <spec-id> --write` moves the anchor to the
+    first first-parent commit whose evidence files are byte-identical, and
+    records `reanchoredFrom`. A revision that no longer exists needs
+    `--to <revision> --reason` and is recorded as attested; so does a target
+    whose evidence changed after the review, and the differing files are
+    recorded.
+  - Several completions can now run against one revision before a single
+    commit: the registry, the active context and outcome blocks they write no
+    longer count as changes. `specs complete --write` warns when HEAD is not on
+    the remote default branch.
+
+- **As-built specs: reverse-engineer a Spec Kit spec for code that has none,
+  and keep it synced (#455, `specs/024-as-built-specs`).** `docguard generate
+  --spec <area>` scans one directory for the facts DocGuard can establish
+  without an LLM: routes (method and path), exported JS/TS symbols,
+  environment variables read, and entities. It proposes one `FR-NNN`
+  candidate per fact, each with a `<!-- docguard:fact … -->` marker and a
+  file citation. Every requirement statement is left to the agent; DocGuard
+  writes no prose.
+
+  With `--write`, the spec lands in the next free feature directory and is
+  registered as `origin: as_built` with its `sourcePaths`. Guard then reports
+  **`SPR007`** for a fact that appears in the code with no requirement, and
+  for a cited fact that disappears. A fact deliberately left unspecified goes
+  under `## Out of Scope` with a reason. Both registry fields are serialized
+  only when set, so existing registries stay byte-identical.
+
+  The four community brownfield extensions (Brownfield Bootstrap, BrownKit,
+  Blueprint Index, Time Machine) were compared first. None validates an
+  as-built spec against code at the requirement level, and that is what
+  DocGuard adds. It composes with their drafts and never re-runs
+  `/speckit.implement` over existing code. `grepEnvUsage` gains a `within`
+  scope for this. A TestGuard claim with four faults defends the sync check.
+
+- **`docguard specs require`, a spec-first change gate (#455,
+  `specs/015-spec-first-gate`).** Validators evaluate a tree, so none of them
+  can notice the spec that was never written. This command evaluates a
+  change: the paths touched since the merge base with `--since`, the commit
+  messages in that range, and an optional `--message-file` (a PR body, read
+  from a file so an untrusted body never reaches a shell).
+
+  A change to governed paths (`.docguard.json` → `specFirst.paths`) passes if
+  it does any of these:
+  - names an existing `specs/<dir>` path or Spec ID;
+  - edits a spec's own files;
+  - declares `Spec-Exempt: <release|deps|typo|test-only> — <reason>`.
+
+  An invented reference never passes. The result is one of `covered`,
+  `exempt`, `not-governed`, `uncovered` (exit 1) or `inconclusive` (exit 2:
+  unknown base, shallow history, oversized inventory). A change that cannot be
+  shown to name its spec is not treated as one that does.
+
+  The GitHub Action runs it as `command: spec-first`. This repository enforces
+  it in CI for `cli/**`. Replayed over the last 40 merges on `main`, 14 of the
+  19 that changed `cli/` named no spec.
+
+- **Spec Kit artifacts are first-class documents (#455,
+  `specs/016-spec-kit-artifact-coverage`).** DocGuard is a Spec Kit extension,
+  yet the three places that read project documents didn't know Spec Kit
+  existed:
+  - **Coverage map.** It reported every `specs/**` file as "outside any tier",
+    36 of 55 untiered files in this repository. That buried the genuinely
+
+<!-- truncated: 4841 more lines — read CHANGELOG.md directly -->
 
 ---
 
