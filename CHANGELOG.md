@@ -133,6 +133,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Coverage follow-ups from specs 056–061** (`specs/063-coverage-followups`).
+  - `generate --plan` called pattern-read output complete. Endpoints and
+    entities read in a language with no parser (Go, Java, Kotlin, Ruby, Rust,
+    PHP, C#) reported `degraded: false` with no partial marking, and a project
+    mixing JavaScript with Go was reported `degraded` and told to install
+    `python3`. `surface.parserTiers` now reports `patternRead` and
+    `patternLanguages` per surface and for the plan, beside `degraded`, which
+    keeps its meaning (a file whose language has a parser read by the pattern
+    fallback). Pattern-read sections are marked partial with a note naming the
+    languages, and confidence is unchanged. Go, Rust, JPA and Rails entities
+    now carry their file's tier. `generate --spec` likewise lowers confidence
+    only for the pattern fallback, not for a `mixed` tier.
+  - .NET build output was scanned as source. `obj/` and `_build/` (Mix, dune,
+    Sphinx) are skipped everywhere, and `bin/` is skipped when the directory
+    holding it has a `*.csproj`, `*.fsproj` or `*.vbproj`; a Node CLI's
+    `bin/cli.js` is still read.
+  - ASP.NET Core routes compared case-sensitively, so `[controller]` routes
+    (`/api/Users`) documented as `/api/users` showed a false gap in guard and
+    `diff`. ASP.NET Core routes now carry `caseInsensitive: true` and compare
+    ignoring case; Spring, Laravel and every other framework compare exactly.
+  - Python route paths, prefixes and includes the reader could not resolve
+    never lowered coverage. They now make the API-surface check `partial`
+    with the count, the framework and the first location, as NestJS and
+    Worker routes already did.
+  - Angular and Svelte were in the tech-stack vocabulary with no dependency
+    mapping, so a Node project documenting them always got DDF001
+    "documented but not found". `@angular/core`, `svelte` and `@sveltejs/kit`
+    now map to them, and the official `mongodb`, `mysql` and `postgres`
+    clients to MongoDB, MySQL and PostgreSQL.
+  - `diff` read `docs-canonical/API-REFERENCE.md`, `ARCHITECTURE.md`,
+    `DATA-MODEL.md` and `ENVIRONMENT.md` by fixed path. It now resolves each
+    with `docs.roles` and nested canonical documents, as guard does.
+
 - **The non-regression budget tests no longer decide verdicts on wall-clock
   timing** (`specs/062-budget-deterministic`). "ten base-vs-base comparisons
   never fail" in `tests/budget.test.mjs` measured one sample per tree on a

@@ -5,10 +5,11 @@
  * @implements docguard.dogfood-round-2#FR-001
  * @implements docguard.dogfood-round-2#FR-004
  * @implements docguard.dogfood-round-2#FR-008
+ * @implements docguard.coverage-followups#FR-006
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { resolve, join, extname, basename } from 'node:path';
+import { join, extname, basename } from 'node:path';
 import { c } from '../shared.mjs';
 import { walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
 import { collectEnvVars, describeLanguageCounts, grepEnvUsage } from '../shared-source.mjs';
@@ -114,9 +115,11 @@ export function runDiff(projectDir, config, flags) {
 // ── Diff Functions ─────────────────────────────────────────────────────────
 
 export function diffRoutes(dir, config = {}) {
-  // Documented surface: prefer the dedicated API reference, fall back to ARCHITECTURE.md.
-  const apiRefPath = resolve(dir, 'docs-canonical/API-REFERENCE.md');
-  const archPath = resolve(dir, 'docs-canonical/ARCHITECTURE.md');
+  // Documented surface: prefer the API reference, fall back to the
+  // architecture document — each resolved as guard resolves it (docs.roles,
+  // or a nested canonical document) (docguard.coverage-followups#FR-006).
+  const apiRefPath = resolveDocRole(dir, config, 'apiReference');
+  const archPath = resolveDocRole(dir, config, 'architecture');
   const docPath = existsSync(apiRefPath) ? apiRefPath : (existsSync(archPath) ? archPath : null);
   if (!docPath) return null;
 
@@ -166,7 +169,7 @@ export function entityTableNames(content) {
 }
 
 export function diffEntities(dir, config = {}) {
-  const dataModelPath = resolve(dir, 'docs-canonical/DATA-MODEL.md');
+  const dataModelPath = resolveDocRole(dir, config, 'dataModel');
   if (!existsSync(dataModelPath)) return null;
 
   const content = readFileSync(dataModelPath, 'utf-8');
@@ -266,7 +269,7 @@ const SYSTEM_ENV_VARS = new Set([
 ]);
 
 export function diffEnvVars(dir, config = {}) {
-  const envDocPath = resolve(dir, 'docs-canonical/ENVIRONMENT.md');
+  const envDocPath = resolveDocRole(dir, config, 'environment');
   if (!existsSync(envDocPath)) return null;
 
   const content = readFileSync(envDocPath, 'utf-8');

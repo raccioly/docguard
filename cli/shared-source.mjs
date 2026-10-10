@@ -17,7 +17,7 @@
 import { createRequire } from 'node:module';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, dirname, relative, extname } from 'node:path';
-import { shouldIgnore, isNonProductDir, isNonProductPath, walkFiles } from './shared-ignore.mjs';
+import { shouldIgnore, isNonProductDir, isNonProductPath, walkFiles, isIgnoredDirEntry } from './shared-ignore.mjs';
 import { pythonEnvNames } from './scanners/py-env.mjs';
 
 const IGNORE_DIRS = new Set([
@@ -25,6 +25,9 @@ const IGNORE_DIRS = new Set([
   'coverage', '.cache', '__pycache__', '.venv', 'vendor', '.turbo',
   // Maven/Gradle/Cargo build output: compiled or generated, never authored.
   'cdk.out', 'target', '.gradle',
+  // .NET/C intermediate output and Mix/dune/Sphinx output; a .NET `bin/` is
+  // skipped by isIgnoredDirEntry (docguard.coverage-followups#FR-002).
+  'obj', '_build',
 ]);
 
 /** Extensions the env scan reads (docguard.fallback-language-coverage#FR-003). */
@@ -1018,7 +1021,7 @@ export function grepEnvUsage(projectDir, config = {}, options = {}) {
     let entries;
     try { entries = readdirSync(dir, { withFileTypes: true }); } catch { return; }
     for (const e of entries) {
-      if (IGNORE_DIRS.has(e.name) || e.name.startsWith('.')) continue;
+      if (isIgnoredDirEntry(e.name, entries, IGNORE_DIRS) || e.name.startsWith('.')) continue;
       const full = join(dir, e.name);
       // v0.26: skip test/fixture dirs in env detection. The parent path lets a
       // package segment (`src/main/java/com/example`) through (FR-006).
@@ -1247,4 +1250,30 @@ export function tierApplicability(summary, noun = 'input') {
     status: 'partial',
     reason: `Findings are retained; ${plural(regex)} read by the pattern fallback rather than a syntax tree${alsoPattern}, so absence of a finding there is weak evidence.${reason}`,
   };
+}
+
+/**
+ * The two pattern channels of a `summarizeTiers` result, kept apart: how many
+ * items were read by the pattern fallback although their language has a
+ * parser (`regex-fallback`: install or fix something and re-run), and how
+ * many were read by pattern because their language has none
+ * (`fallback-language`: nothing to install). A `mixed` tier says only that the
+ * items disagree, so it decides neither (docguard.coverage-followups#FR-001,
+ * FR-007).
+ *
+ * @implements docguard.coverage-followups#FR-001
+ * @implements docguard.coverage-followups#FR-007
+ * @param {object|null|undefined} summary
+ * @returns {{ regexRead: number, patternRead: number, patternLanguages: string[] }}
+ */
+export function patternChannels(summary) {
+  if (!summary) return { regexRead: 0, patternRead: 0, patternLanguages: [] };
+  const degraded = Number.isInteger(summary.degraded) ? summary.degraded : 0;
+  const patternRead = Number.isInteger(summary.patternOnly)
+    ? summary.patternOnly
+    : (summary.tier === 'fallback-language' ? Math.max(degraded, 1) : 0);
+  const regexRead = Number.isInteger(summary.degraded)
+    ? Math.max(0, degraded - patternRead)
+    : (summary.tier === 'regex-fallback' ? 1 : 0);
+  return { regexRead, patternRead, patternLanguages: [...(summary.fallbackLanguages || [])] };
 }

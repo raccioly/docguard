@@ -19,12 +19,15 @@
  * @implements docguard.more-route-frameworks#FR-005
  * @implements docguard.more-route-frameworks#FR-007
  * @implements docguard.js-framework-routes#FR-006
+ * @implements docguard.coverage-followups#FR-002
+ * @implements docguard.coverage-followups#FR-003
+ * @implements docguard.coverage-followups#FR-004
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, relative, basename, extname, dirname } from 'node:path';
 import { resolveSourceRoots, readScannable, tierFor, summarizeTiers } from '../shared-source.mjs';
-import { DEFAULT_IGNORE_DIRS as IGNORE_DIRS, shouldIgnore, relPosix, isNonProductPath } from '../shared-ignore.mjs';
+import { shouldIgnore, relPosix, isNonProductPath, isIgnoredDirEntry } from '../shared-ignore.mjs';
 import { extractJsRouteCalls, extractJsRouteObjects, extractJsMountsAndImports, nextRouteHandlers, isAuthMiddlewareName, AUTH_CHECK_RE, matchingBracket } from './js-ast.mjs';
 import { createAliasResolver } from './ts-paths.mjs';
 import { scanPythonWebRoutes } from './python-routes.mjs';
@@ -155,6 +158,17 @@ export function scanRoutesDeep(dir, stack, docTools, opts = {}) {
     const py = scanPythonWebRoutes(dir, { django, asgi }, { files: pyFiles });
     scan.tierItems.push(...py.fileTiers);
     limitations = py.limitations || null;
+    // A route the Python reader could not read (a path that does not
+    // evaluate, an include it cannot follow) is a coverage gap like any
+    // other reader's: it joins `unresolved`, labelled with its framework, so
+    // the API-surface check counts and locates it
+    // (docguard.coverage-followups#FR-004).
+    const asgiName = named('FastAPI', 'Flask', 'Starlette') || 'Python';
+    for (const l of limitations || []) {
+      if (!l.framework) l.framework = String(l.code || '').startsWith('django-') ? 'Django' : asgiName;
+      if (l.file) l.file = String(l.file).replace(/\\/g, '/');
+      scan.unresolved.push(l);
+    }
     routes.push(...py);
   }
 
@@ -188,7 +202,7 @@ export function scanRoutesDeep(dir, stack, docTools, opts = {}) {
   // What a reader could not resolve (a dynamic path, a prefix dispatch) is a
   // coverage gap; one in a test or ignored file is not the product's.
   const unresolved = scan.unresolved.filter(u => !u.file || (!isNonProductPath(u.file, cfg) && !shouldIgnore(u.file, cfg)));
-  const allLimitations = [...(limitations || []), ...unresolved];
+  const allLimitations = [...new Set([...(limitations || []), ...unresolved])];
   if (allLimitations.length) Object.defineProperty(kept, 'limitations', { value: allLimitations, enumerable: false });
   for (const pf of scan.patternFrameworks) pf.kept = kept.filter(r => pf.sources.includes(r.source)).length;
   Object.defineProperty(kept, 'scan', {
@@ -973,7 +987,10 @@ function scanAspNetRoutes(dir, ctx) {
   const files = readPatternFiles(ctx, /\.cs$/);
   const sources = files.map(f => ({ file: relPosix(dir, f), content: readFileSafe(f) }));
   const found = extractAspNetRoutes(sources);
-  return withOmitted(found.map(r => ({ ...r, source: 'aspnet-core', description: '', ...tierFor(resolve(dir, r.file), null) })), found.omitted);
+  // ASP.NET Core matches routes case-insensitively, and `[controller]` keeps
+  // the class's case (`/api/Users`), so a comparison must ignore case for these
+  // routes only (docguard.coverage-followups#FR-003).
+  return withOmitted(found.map(r => ({ ...r, source: 'aspnet-core', description: '', caseInsensitive: true, ...tierFor(resolve(dir, r.file), null) })), found.omitted);
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -991,7 +1008,7 @@ function walkRouteDirs(dir, callback) {
   try {
     const entries = readdirSync(dir, { withFileTypes: true });
     for (const entry of entries) {
-      if (IGNORE_DIRS.has(entry.name) || entry.name.startsWith('.')) continue;
+      if (isIgnoredDirEntry(entry.name, entries) || entry.name.startsWith('.')) continue;
       const fullPath = join(dir, entry.name);
       if (entry.isDirectory()) {
         walkRouteDirs(fullPath, callback);
@@ -1030,7 +1047,8 @@ export function findRouteFiles(dir, pattern, { maxFiles = ROUTE_SCAN_MAX_FILES, 
     try { entries = readdirSync(d, { withFileTypes: true }); } catch { return; }
     entries.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
     for (const entry of entries) {
-      if (IGNORE_DIRS.has(entry.name) || entry.name.startsWith('.')) continue;
+      // Build output, including a .NET `bin/` (docguard.coverage-followups#FR-002).
+      if (isIgnoredDirEntry(entry.name, entries) || entry.name.startsWith('.')) continue;
       const fullPath = join(d, entry.name);
       if (entry.isDirectory()) walk(fullPath, depth + 1);
       else if (entry.isFile() && pattern.test(entry.name)) {

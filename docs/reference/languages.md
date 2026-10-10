@@ -41,10 +41,19 @@ What a degraded tier changes:
   `applicability: partial`, and the reason names the languages and file counts
   (`tierApplicability` in `cli/shared-source.mjs`). The absence of a finding in
   those files is weak evidence: a form the patterns do not match is not seen.
-- **`generate` lowers its confidence.** `generate --plan` reports a tier for its
-  endpoints and entities. When either was read by `regex-fallback`, the surface
-  confidence is `low`, a note says why, and the endpoint, entity and diagram
-  sections are marked partial.
+- **`generate` says which facts were read by pattern.** `generate --plan`
+  reports a tier for its endpoints and entities, with two separate flags:
+  - `degraded`: a file whose language has a parser was read by
+    `regex-fallback`. The surface confidence is `low`, a note says how to get
+    exact output (install `python3`, fix the parse error), and the endpoint,
+    entity and diagram sections are marked partial.
+  - `patternRead`, with `patternLanguages`: facts in a `fallback-language`
+    language. There is nothing to install, so confidence is unchanged, but the
+    same sections are marked partial and a note names the languages.
+
+  A `mixed` tier sets neither on its own: JavaScript read by its parser beside
+  Go read by pattern is `patternRead`, not `degraded`. `generate --spec` lowers
+  its confidence only for `regex-fallback` in the same way.
 
 See [Understanding check coverage](../configuration.md#understanding-check-coverage)
 for the applicability states, and [Finding Codes](findings.md) for the codes
@@ -72,8 +81,17 @@ and read `surface.parserTiers`. With no interpreter on `PATH`, a FastAPI
 project reports:
 
 ```json
-"endpoints": { "tier": "regex-fallback", "reason": "No usable python3 interpreter; routes matched by pattern.", "degraded": true }
+"endpoints": { "tier": "regex-fallback", "reason": "No usable python3 interpreter; routes matched by pattern.", "degraded": true, "patternRead": false, "patternLanguages": [] }
 ```
+
+A Gin project reports:
+
+```json
+"endpoints": { "tier": "fallback-language", "reason": "No parser exists for Go; matched by pattern.", "degraded": false, "patternRead": true, "patternLanguages": ["Go"] }
+```
+
+`surface.parserTiers` also carries `degraded`, `patternRead` and
+`patternLanguages` for the plan as a whole.
 
 ## Languages
 
@@ -112,8 +130,8 @@ graph does not read, with file counts.
 | Language | Reported as partial when |
 |---|---|
 | JavaScript, TypeScript | `@babel/parser` is missing or a file fails to parse (`regex-fallback`). The Express, Next.js, Fastify and Koa route scanners attach no tier to their routes, so API-surface findings drawn from them carry `not-applicable`; NestJS, Cloudflare Workers, Hono and itty-router routes carry their file's tier. A NestJS, Worker, Hono or itty-router path that is not literal text or a same-file constant (an imported constant, a `startsWith` or regular-expression dispatch) is omitted, and the API-surface check reports `partial` with the count and the first location |
-| Python | No interpreter is found, or a file fails to parse (`regex-fallback`). Router prefixes and Django includes that cannot be resolved are flagged as limitations, never guessed |
-| Go, Java, Kotlin, Ruby, Rust, PHP, C# | Always, when routes or env vars were read from them (`fallback-language`). A route whose path or prefix is not literal text or a resolvable constant is omitted. A framework read by pattern that yields no route makes the API-surface check `partial`, naming the framework and the files read. The Laravel, Symfony and ASP.NET Core readers also count each route they omitted, and the API-surface reason gives the count and the first locations |
+| Python | No interpreter is found, or a file fails to parse (`regex-fallback`). A route path, router prefix or include that cannot be resolved is never guessed: the API-surface check reports `partial` with the count, the framework (FastAPI, Flask, Starlette or Django) and the first location. Those in test, fixture, example or ignored files do not count |
+| Go, Java, Kotlin, Ruby, Rust, PHP, C# | Always, when routes or env vars were read from them (`fallback-language`); `generate --plan` marks their endpoint and entity sections partial (`patternRead`). A route whose path or prefix is not literal text or a resolvable constant is omitted. A framework read by pattern that yields no route makes the API-surface check `partial`, naming the framework and the files read. The Laravel, Symfony and ASP.NET Core readers also count each route they omitted, and the API-surface reason gives the count and the first locations |
 | Any other source language | When files in it sit under the env scan's roots |
 
 Route discovery for the pattern-read languages walks up to 32 directory levels
@@ -182,6 +200,15 @@ the code scan (`cli/scanners/doc-tools.mjs`).
 
 A Sinatra app inside a Rails project is not read: the project is classified
 Rails and only `config/routes.rb` is read.
+
+ASP.NET Core routes compare case-insensitively, as ASP.NET Core matches them:
+`[controller]` keeps the class's case (`/api/Users`), and a document that
+writes `/api/users` matches it in `guard` and `diff`. Each ASP.NET Core route
+carries `caseInsensitive: true`. Every other framework's routes compare
+exactly, case included: Spring, Laravel, Symfony, Rails, Django, Flask, FastAPI
+and the Go and Rust frameworks match case-sensitively. Express and Koa match
+case-insensitively by default, but an application or router can switch that
+off, so their routes still compare exactly.
 
 Routes in test, fixture and example directories are dropped by default. When
 that leaves no route, the API-surface reason says how many were excluded and
@@ -319,7 +346,7 @@ manifest could have shown it:
 | Ecosystem | Read from | Reported missing when absent |
 |---|---|---|
 | Any | Dockerfile or compose file; `docker run`, `build` or `compose` in a script, Makefile or CI workflow; any `*.tf` file | Docker, Terraform |
-| JavaScript, TypeScript | `package.json` dependencies (root, source root, workspaces); DynamoDB API targets, endpoints and SDK calls in source | Every technology in the list |
+| JavaScript, TypeScript | `package.json` dependencies (root, source root, workspaces); DynamoDB API targets, endpoints and SDK calls in source | Every technology in the list. Each has a dependency that shows it, for example `@angular/core` for Angular, `svelte` or `@sveltejs/kit` for Svelte, `mongodb` or `mongoose` for MongoDB, `pg` or `postgres` for PostgreSQL, `mysql` or `mysql2` for MySQL |
 | Python | `pyproject.toml`, `requirements.txt`, `setup.py`, `Pipfile` | PostgreSQL, MySQL, MongoDB |
 | Go | `go.mod` | Redis, PostgreSQL, MySQL, MongoDB |
 | Ruby | `Gemfile` | Redis, PostgreSQL, MySQL, MongoDB |

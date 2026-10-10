@@ -123,8 +123,15 @@ export function parseApiReferenceDoc(content) {
 
 /**
  * Compare a documented endpoint set against an actual endpoint set.
+ *
+ * An actual endpoint marked `caseInsensitive` (its framework matches routes
+ * ignoring case, as ASP.NET Core does) matches a documented endpoint whose
+ * path differs only in case. Every other endpoint compares exactly: Spring,
+ * Laravel, Rails, Django and the rest route case-sensitively.
+ *
+ * @implements docguard.coverage-followups#FR-003
  * @param {Array<{method,path}>} documented
- * @param {Array<{method,path}>} actual
+ * @param {Array<{method,path,caseInsensitive?:boolean}>} actual
  * @returns {{ documentedButAbsent: object[], presentButUndocumented: object[], matched: object[] }}
  */
 export function compareEndpoints(documented, actual) {
@@ -132,16 +139,27 @@ export function compareEndpoints(documented, actual) {
   for (const e of documented) docMap.set(endpointKey(e.method, e.path), e);
   const actMap = new Map();
   for (const e of actual) actMap.set(endpointKey(e.method, e.path), e);
+  // Folded key → exact keys of the case-insensitive actual endpoints.
+  const folded = new Map();
+  for (const [key, e] of actMap) {
+    if (!e.caseInsensitive) continue;
+    const k = key.toLowerCase();
+    if (!folded.has(k)) folded.set(k, []);
+    folded.get(k).push(key);
+  }
 
   const documentedButAbsent = [];
   const matched = [];
+  const matchedActual = new Set();
   for (const [key, e] of docMap) {
-    if (actMap.has(key)) matched.push(e);
-    else documentedButAbsent.push(e);
+    if (actMap.has(key)) { matched.push(e); matchedActual.add(key); continue; }
+    const loose = folded.get(key.toLowerCase());
+    if (loose) { matched.push(e); for (const k of loose) matchedActual.add(k); continue; }
+    documentedButAbsent.push(e);
   }
   const presentButUndocumented = [];
   for (const [key, e] of actMap) {
-    if (!docMap.has(key)) presentButUndocumented.push(e);
+    if (!docMap.has(key) && !matchedActual.has(key)) presentButUndocumented.push(e);
   }
 
   return { documentedButAbsent, presentButUndocumented, matched };
