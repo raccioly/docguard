@@ -166,7 +166,7 @@
 <div class="page">
   <div class="masthead">
     <div class="wordmark">Doc<span class="mark">Guard</span></div>
-    <div class="meta">Technical Brief · v0.43.0 · Ricardo Accioly · MIT</div>
+    <div class="meta">Technical Brief · v0.44.0 · Ricardo Accioly · MIT</div>
   </div>
 
   <h1>Your docs are green. That is not the same as your docs being true.</h1>
@@ -398,7 +398,7 @@ client retries on any 5xx; see ADR-007 for the rejected alternative.   <span cla
       </div>
       <div class="verdict good">
         <span class="tag">act · confidence: high</span>
-        <p><em>“README says 15 validators; the package ships 32.”</em> Both sides are counted from disk, so the tool may rewrite the number — and it stamps the provenance of the count it used, so a later reader can see the fix was about the same subject.</p>
+        <p><em>“README says 15 validators; the package ships 33.”</em> Both sides are counted from disk, so the tool may rewrite the number — and it stamps the provenance of the count it used, so a later reader can see the fix was about the same subject.</p>
       </div>
     </div>
   </section>
@@ -419,13 +419,13 @@ client retries on any 5xx; see ADR-007 for the rejected alternative.   <span cla
   </div>
 
   <section style="margin-top:17px">
-    <h2>Thirty-two detectors, and every one had to earn default-on</h2>
+    <h2>Thirty-three detectors, and every one had to earn default-on</h2>
     <p class="lede">Each validator compares one family of documented claims against one source of evidence,
     grouped here by what they read — which decides how much a finding is worth.</p>
 
     <div class="statband four">
-      <div><div class="fig indigo">32</div><div class="cap">validator modules, all on by default</div><div class="src">cli/validators/</div></div>
-      <div><div class="fig indigo">46</div><div class="cap">code scanners feeding them, two full AST parsers</div><div class="src">cli/scanners/</div></div>
+      <div><div class="fig indigo">33</div><div class="cap">validator modules, all on by default</div><div class="src">cli/validators/</div></div>
+      <div><div class="fig indigo">58</div><div class="cap">code scanners feeding them, two full AST parsers</div><div class="src">cli/scanners/</div></div>
       <div><div class="fig sage">1</div><div class="cap">pinned runtime dependency, with a regex fallback</div><div class="src">@babel/parser</div></div>
       <div><div class="fig sage">0</div><div class="cap">model, network or telemetry calls at validation time</div><div class="src">PRIVACY.md</div></div>
     </div>
@@ -440,7 +440,7 @@ client retries on any 5xx; see ADR-007 for the rejected alternative.   <span cla
         <tr><td>References <span class="v-good">· 5</span></td><td>Links, symbols, IDs across two revisions</td><td>Cross-Reference · Reference-Existence · Traceability · Test-Spec · Path-Scoped-Rules</td><td>“This link resolves; this symbol exists; this requirement has a test; a path-scoped rule matches files.”</td></tr>
         <tr><td>Change &amp; time <span class="v-judge">· 4</span></td><td><code>git log</code>, the diff since a ref, code fingerprints</td><td>Freshness · Diff-Suspicion · Drift-Comments · Doc-Dependency</td><td>“Something changed near this claim.” Exact, but escalated: a review is <em>due</em>.</td></tr>
         <tr><td>Numbers &amp; self <span class="v-good">· 3</span></td><td>Counts on disk, typed JSON, its own package</td><td>Metrics-Consistency · Canonical-Sync · Evidence</td><td>“The number in this sentence equals the number on disk.” Includes the tool's own README, so its count claims are checked, not remembered.</td></tr>
-        <tr><td>Quality &amp; hygiene <span class="v-judge">· 4</span></td><td>Prose metrics, secret patterns, TODOs</td><td>Doc-Quality · API-Doc-Smells · TODO-Tracking · Security</td><td>“Readable, not bloated, not documented in name only; no secret committed; no TODO untracked.” Soft by design.</td></tr>
+        <tr><td>Quality &amp; hygiene <span class="v-judge">· 5</span></td><td>Prose metrics, secret patterns, TODOs, suppressions</td><td>Doc-Quality · API-Doc-Smells · TODO-Tracking · Security · Suppressions</td><td>“Readable, not bloated, not documented in name only; no secret committed; no TODO untracked; no suppression past its expiry.” Soft by design.</td></tr>
       </tbody>
     </table>
     <p class="note" style="margin-top:8px">A validator with nothing to validate returns <strong>N/A with a reason</strong>, never a pass — Canonical-Sync
@@ -641,7 +641,7 @@ client retries on any 5xx; see ADR-007 for the rejected alternative.   <span cla
           <circle cx="443" cy="60" r="4" fill="#d97757"/><text class="s-lbl" x="480" y="98" style="fill:#b85636">v0.29 · Jul 3</text><text class="s-sub" x="480" y="109">report #6: a wrong “16 extractors”</text><text class="s-sub" x="480" y="119">shipped past a green guard</text>
           <circle cx="722" cy="60" r="4" fill="#d97757"/><text class="s-lbl" x="620" y="98" style="fill:#b85636">Sep 17–22</text><text class="s-sub" x="620" y="109">reports 0415 / 0420; and the</text><text class="s-sub" x="620" y="119">tool's own README (below)</text>
         </g>
-        <text class="s-tiny" x="30" y="143">195 test files · 2,085 tests at v0.42.0 → 234 test files · 2,920 tests at v0.43.0 · Node 18 / 20 / 22 / 24 on every push</text>
+        <text class="s-tiny" x="30" y="143">195 test files · 2,085 tests at v0.42.0 → 246 test files · 3,279 tests at v0.44.0 · Node 18 / 20 / 22 / 24 on every push</text>
       </svg>
       <p class="figcap">Fig. 6 — Blue above the line: capability. Clay below: something real broke, and became a test.</p>
     </figure>
@@ -681,25 +681,25 @@ It carries <span class="bad">no mechanical fix</span>: writing the floor would r
   <div class="footer"><span>DocGuard — Technical Brief</span><span>Page 7 of 9 · Field reports</span></div>
 </div>
 
-<!-- ═══════════════ PAGE 8 — WHAT 0.43 ADDS ═══════════════ -->
+<!-- ═══════════════ PAGE 8 — WHAT 0.43 AND 0.44 ADD ═══════════════ -->
 <div class="page">
   <div class="masthead">
     <div class="wordmark">Doc<span class="mark">Guard</span></div>
-    <div class="meta">08 — What 0.43 adds</div>
+    <div class="meta">08 — What 0.43 and 0.44 add</div>
   </div>
 
   <section style="margin-top:17px">
     <h2>From checking the map to governing how it changes</h2>
     <p class="lede">Through 0.42, DocGuard asked one question: <em>does the documentation still match the code?</em>
-    Version 0.43 adds the questions around it — which section a change should have touched, whether a feature went
-    through its spec first, what an agent needs to read, and whether the tool got slower or noisier. Thirty-eight specs (014–051) were written, planned and tasked before
-    their code; thirty-four carry TestGuard claims probed with planted faults (044 and 048 after this release).</p>
+    Versions 0.43 and 0.44 add the questions around it — which section a change should have touched, whether a feature went
+    through its spec first, what an agent needs to read, and whether the tool got slower or noisier. Fifty-one specs (014–064) were written, planned and tasked before
+    their code; thirty-four carry TestGuard claims probed with planted faults.</p>
 
     <div class="statband four">
-      <div><div class="fig indigo">38</div><div class="cap">specs delivered through the Spec Kit pipeline since 0.42</div><div class="src">specs/014 – specs/051</div></div>
+      <div><div class="fig indigo">51</div><div class="cap">specs delivered through the Spec Kit pipeline since 0.42</div><div class="src">specs/014 – specs/064</div></div>
       <div><div class="fig sage">55%</div><div class="cap">smaller MCP guard response: each fact once, nothing lost</div><div class="src">spec 037 · budget fixture</div></div>
       <div><div class="fig sage">10%</div><div class="cap">growth in agent-facing bytes or package size before a PR must state a reason (guard time: 15%)</div><div class="src">spec 031 · every PR</div></div>
-      <div><div class="fig indigo">2,920</div><div class="cap">tests on Node 18, 20, 22 and 24 at v0.43.0</div><div class="src">npm test</div></div>
+      <div><div class="fig indigo">3,279</div><div class="cap">tests on Node 18, 20, 22 and 24 at v0.44.0</div><div class="src">npm test</div></div>
     </div>
   </section>
 
@@ -711,7 +711,8 @@ It carries <span class="bad">no mechanical fix</span>: writing the floor would r
         <tr><td>Spec first,<br>enforced</td><td>A spec-first gate classifies each change to governed paths as covered, exempt or uncovered. Completions record the reviewed revision and survive squash merges. As-built specs describe older code.</td><td>“We follow Spec Kit” becomes a checked property of the history, not a habit.</td></tr>
         <tr><td>Agents read<br>less, better</td><td>MCP doc tools answer <em>which docs describe this file</em> and return one bounded section. Path-scoped rules report which instruction files each harness loads for a path.</td><td>The AGENTS.md study on page 5 measured cost; these cut what an agent must read to find the rule that applies.</td></tr>
         <tr><td>The tool<br>measured</td><td>Budgets run base and head side by side on every PR. An install older than 14 days tells the agent so — from its own CHANGELOG, no network call — and names <code>docguard upgrade</code>.</td><td>A guard that slows down or grows noisier erodes trust the same way drift does.</td></tr>
-        <tr><td>Reads real<br>projects</td><td>Express, Next.js, FastAPI, Flask, Django, Go, Spring and Rails routes at their served path; read-only commands write nothing.</td><td>Defects found on ten real repositories, fixed as specs 040–050.</td></tr>
+        <tr><td>Reads real<br>projects</td><td>Served routes for every framework it detects, NestJS to ASP.NET Core; unreadable paths counted, never guessed.</td><td>Gaps found on ten real repositories, closed by specs 040–064.</td></tr>
+        <tr><td>Exceptions<br>explained</td><td>Ignore entries carry a reason and an expiry; <code>docguard ignore</code> lists every suppression.</td><td>A suppression now says why, and until when.</td></tr>
       </tbody>
     </table>
   </section>
@@ -732,11 +733,11 @@ It carries <span class="bad">no mechanical fix</span>: writing the floor would r
   </section>
 
   <div class="pull">
-    <p>Every feature in this release started as a written spec, and nearly every one ended as a probed claim.</p>
-    <div class="attrib">specs/014 – specs/051 · testguard.claims.json</div>
+    <p>Every feature in these releases started as a written spec.</p>
+    <div class="attrib">specs/014 – specs/064 · testguard.claims.json</div>
   </div>
 
-  <div class="footer"><span>DocGuard — Technical Brief</span><span>Page 8 of 9 · What 0.43 adds</span></div>
+  <div class="footer"><span>DocGuard — Technical Brief</span><span>Page 8 of 9 · What 0.43 and 0.44 add</span></div>
 </div>
 
 <!-- ═══════════════ PAGE 9 — WHAT IT DOES NOT CLAIM ═══════════════ -->

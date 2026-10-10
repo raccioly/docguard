@@ -102,3 +102,9 @@
 - Several Express apps in one project are not told apart: one app enabling `case sensitive routing` makes every app's routes compare exactly (conservative).
 - Fastify `routerOptions`, and an option object built elsewhere and passed by name, are not read: those servers compare exactly.
 - `docs-sync` (DSY003) already lowercases both sides of its JavaScript route-file comparison; it reads no ASP.NET Core route.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `1c3268b169b1e904b70d0ac6cb22d86065a46e01` — Reviewed at 1c3268b on main: all 13 tasks are checked and were delivered by #537, #538, #539; the full suite (3279 tests) passes on Node 18, 20, 22 and 24 in CI, and guard reports 0 errors. Evidence: `cli/commands/diff.mjs`, `cli/commands/generate-as-built.mjs`, `cli/commands/generate.mjs`, `cli/scanners/api-doc.mjs`, `cli/scanners/as-built.mjs`, `cli/scanners/inventory.mjs`, `cli/scanners/memory-plan.mjs`, `cli/scanners/route-case.mjs`, `cli/scanners/routes.mjs`, `cli/scanners/schemas.mjs`, `cli/scanners/tech-stack.mjs`, `cli/shared-ignore.mjs`, `cli/shared-source.mjs`, `cli/validators/api-surface.mjs`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/DATA-MODEL.md`, `tests/coverage-followups.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->
