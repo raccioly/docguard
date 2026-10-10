@@ -27,4 +27,4 @@
 ## Phase 3: Docs and verification
 
 - [x] T009 FR-008: user docs, ARCHITECTURE, DATA-MODEL, `CHANGELOG.md`; `npm run llms`
-- [ ] T010 `docguard specs --write`; `docguard guard`; `npm test` (SC-002)
+- [x] T010 `docguard specs --write`; `docguard guard`; `npm test` (SC-002; verified at main cdf3525: 3279/3279 tests, guard 0 errors)

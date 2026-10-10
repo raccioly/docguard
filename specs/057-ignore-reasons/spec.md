@@ -77,3 +77,9 @@
 - **The baseline.** `.docguard.baseline.json` maps to claimspec `baseline`, which #420 defers until claimspec specifies the fingerprint preimage and the method/outcome token. Its fingerprints are listed and counted, not exported as `ignore` entries.
 - **`by` and `at`.** `.docguardignore` records neither, so neither is written.
 - **Enforcing reasons on inline pragmas.** `docguard ignore` shows which pragmas lack a reason; making a reason mandatory there is a separate decision.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `cdf35252487a397598f75026daa96b4a8d946e70` — Reviewed at cdf3525 on main: all 12 tasks are checked and were delivered by #531; the full suite (3279 tests) passes at this revision and on Node 18, 20, 22 and 24 in CI, and guard reports 0 errors. Evidence: `cli/claimspec-schema.mjs`, `cli/commands/ignore.mjs`, `cli/findings.mjs`, `cli/scanners/suppressions.mjs`, `cli/shared-ignore.mjs`, `cli/validator-markers.mjs`, `cli/validators/suppressions.mjs`, `cli/writers/claimspec-ignore.mjs`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/DATA-MODEL.md`, `docs-canonical/SECURITY.md`, `tests/ignore-reasons.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->

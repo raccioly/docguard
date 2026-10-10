@@ -80,3 +80,9 @@ A maintainer of a Worker runs `docguard guard`.
 - `@hono/zod-openapi` `app.openapi(createRoute({ … }))` routes, NestJS GraphQL resolvers, microservice handlers, WebSocket gateways and host-based routing.
 - Koa keeps its current scanner.
 - Python route limitations (spec 046) are attached to the scan but do not lower coverage; that is unchanged here.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `cdf35252487a397598f75026daa96b4a8d946e70` — Reviewed at cdf3525 on main: all 8 tasks are checked and were delivered by #532; the full suite (3279 tests) passes at this revision and on Node 18, 20, 22 and 24 in CI, and guard reports 0 errors. Evidence: `cli/scanners/js-route-support.mjs`, `cli/scanners/nest-routes.mjs`, `cli/scanners/router-routes.mjs`, `cli/scanners/routes.mjs`, `cli/scanners/worker-routes.mjs`, `docs-canonical/ARCHITECTURE.md`, `tests/fixtures/js-framework-projects.mjs`, `tests/js-framework-routes.test.mjs`, `tests/node18-compat.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->

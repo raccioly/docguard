@@ -198,3 +198,9 @@ the scanner reports 0 routes.
   trait objects or macros.
 - The other frameworks of #519 (NestJS, Cloudflare Workers: spec 058; Laravel,
   Symfony, ASP.NET Core: spec 059).
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `cdf35252487a397598f75026daa96b4a8d946e70` — Reviewed at cdf3525 on main: all 9 tasks are checked and were delivered by #534; the full suite (3279 tests) passes at this revision and on Node 18, 20, 22 and 24 in CI, and guard reports 0 errors. Evidence: `cli/scanners/project-type.mjs`, `cli/scanners/python-routes.mjs`, `cli/scanners/routes.mjs`, `cli/scanners/rust-routes.mjs`, `cli/scanners/sinatra-routes.mjs`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/TEST-SPEC.md`, `tests/more-route-frameworks.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->

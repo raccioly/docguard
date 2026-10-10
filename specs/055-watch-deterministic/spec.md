@@ -46,3 +46,9 @@
 
 - The spawn-based `docguard watch` tests in `tests/commands.test.mjs`, which exercise real `fs.watch` events and real timers end to end and already wait on output markers with generous deadlines.
 - The Node test runner's own stdout framing; this change only keeps this file from writing to stdout.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `cdf35252487a397598f75026daa96b4a8d946e70` — Reviewed at cdf3525 on main: all 5 tasks are checked and were delivered by #528; the full suite (3279 tests) passes at this revision and on Node 18, 20, 22 and 24 in CI, and guard reports 0 errors. Evidence: `cli/commands/watch.mjs`, `docs-canonical/TEST-SPEC.md`, `tests/watch-reliability.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->

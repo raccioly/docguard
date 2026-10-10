@@ -242,3 +242,9 @@ and records the result. The analysis code applies the predeclared rule.
 - Ranking by git churn, tests or doc mentions. One ranking is tested at a
   time.
 - Any change to the v1 protocol or its recorded result.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `cdf35252487a397598f75026daa96b4a8d946e70` — Reviewed at cdf3525 on main: all 14 tasks are checked and were delivered by #529; the full suite (3279 tests) passes at this revision and on Node 18, 20, 22 and 24 in CI, and guard reports 0 errors. Evidence: `benchmarks/agent-context/run.mjs`, `cli/scanners/symbol-map.mjs`, `docs-canonical/ARCHITECTURE.md`, `tests/symbol-map.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->
