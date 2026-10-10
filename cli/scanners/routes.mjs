@@ -28,6 +28,8 @@ import { scanPythonWebRoutes } from './python-routes.mjs';
 import { extractGoRoutes } from './go-routes.mjs';
 import { extractSpringRoutes } from './spring-routes.mjs';
 import { extractRailsRoutes } from './rails-routes.mjs';
+import { extractLaravelRoutes, extractSymfonyRoutes } from './php-routes.mjs';
+import { extractAspNetRoutes } from './dotnet-routes.mjs';
 import { extractNestRoutes } from './nest-routes.mjs';
 import { extractWorkerRoutes } from './worker-routes.mjs';
 import { extractRouterRoutes } from './router-routes.mjs';
@@ -68,7 +70,9 @@ export function scanRoutesDeep(dir, stack, docTools, opts = {}) {
   const patternScan = (name, sources, fn) => {
     const before = scan.tierItems.length;
     const found = fn(dir, ctx);
-    scan.patternFrameworks.push({ name, sources, files: scan.tierItems.length - before, routes: found.length });
+    // A reader that omits unreadable paths reports them (docguard.php-dotnet-routes#FR-007).
+    const omitted = found.omitted || [];
+    scan.patternFrameworks.push({ name, sources, files: scan.tierItems.length - before, routes: found.length, omitted: omitted.length, omittedAt: omitted.slice(0, 3).map(o => `${o.file}:${o.line}`) });
     routes.push(...found);
   };
 
@@ -117,6 +121,11 @@ export function scanRoutesDeep(dir, stack, docTools, opts = {}) {
   if (named('Axum', 'Actix', 'Rocket', 'Warp', 'Rust')) {
     patternScan(named('Axum', 'Actix', 'Rocket', 'Warp', 'Rust'), ['axum', 'actix', 'rocket'], scanRustWebRoutes);
   }
+
+  // docguard.php-dotnet-routes#FR-008: PHP and .NET frameworks, read by pattern.
+  if (named('Laravel')) patternScan('Laravel', ['laravel'], scanLaravelRoutes);
+  if (named('Symfony')) patternScan('Symfony', ['symfony'], scanSymfonyRoutes);
+  if (named('ASP.NET')) patternScan('ASP.NET Core', ['aspnet-core'], scanAspNetRoutes);
 
   // Python: one scan resolves FastAPI/Flask routers and Django URL
   // configurations from the same module outlines (python-routes.mjs), and
@@ -889,6 +898,42 @@ function scanRustWebRoutes(dir, ctx) {
     }
   }
   return routes;
+}
+
+// ── Laravel, Symfony (PHP) and ASP.NET Core (C#) ────────────────────────────
+// php-routes.mjs and dotnet-routes.mjs read the routes; these wrappers list the
+// files, record the tier of each file read and attach the omitted routes
+// (docguard.php-dotnet-routes#FR-001/003/004/005/007).
+
+function withOmitted(routes, omitted) {
+  Object.defineProperty(routes, 'omitted', { value: omitted || [], enumerable: false });
+  return routes;
+}
+
+function scanLaravelRoutes(dir, ctx) {
+  const files = findRouteFiles(dir, /\.php$/, { maxFiles: ctx.maxFiles });
+  if (files.truncated) ctx.scan.truncated = true;
+  const found = extractLaravelRoutes(files.map(f => relPosix(dir, f)), rel => readFileSafe(resolve(dir, rel)));
+  recordPatternFiles(ctx, found.read.map(rel => resolve(dir, rel)));
+  return withOmitted(found.map(r => ({ ...r, source: 'laravel', description: '', ...tierFor(resolve(dir, r.file), null) })), found.omitted);
+}
+
+function scanSymfonyRoutes(dir, ctx) {
+  const files = readPatternFiles(ctx, /\.(php|ya?ml)$/);
+  const rels = files.map(f => relPosix(dir, f));
+  const known = new Set(rels);
+  const read = rel => (known.has(rel) ? readFileSafe(resolve(dir, rel)) : null);
+  const php = rels.filter(r => r.endsWith('.php')).map(file => ({ file, content: read(file) }));
+  const yaml = rels.filter(r => /(^|\/)config\/routes(\.ya?ml|\/[^/]+\.ya?ml)$/.test(r)).map(file => ({ file, content: read(file) }));
+  const found = extractSymfonyRoutes(php, { yaml, readFile: read });
+  return withOmitted(found.map(r => ({ ...r, source: 'symfony', description: '', ...tierFor(resolve(dir, r.file), null) })), found.omitted);
+}
+
+function scanAspNetRoutes(dir, ctx) {
+  const files = readPatternFiles(ctx, /\.cs$/);
+  const sources = files.map(f => ({ file: relPosix(dir, f), content: readFileSafe(f) }));
+  const found = extractAspNetRoutes(sources);
+  return withOmitted(found.map(r => ({ ...r, source: 'aspnet-core', description: '', ...tierFor(resolve(dir, r.file), null) })), found.omitted);
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────

@@ -69,6 +69,7 @@ It targets development teams and AI coding agents that need to maintain document
 | **Agent instruction budget** | Measures every `AGENTS.md` chain from the root to each instruction directory, as Codex loads it (`AGENTS.override.md` replaces `AGENTS.md`), against `agentInstructions.maxBytes` (default 32768) or a per-chain allowance | `cli/scanners/agent-instructions.mjs`, `cli/validators/structure.mjs` | `STR004` is an escalation; `STR005` suggests tightening a slack allowance. Increasing an allowance is a reviewed config change, which the digit-normalized finding baseline could not guarantee |
 | **As-built specs** | `generate --spec <area>` collects deterministic facts under one code area (routes, exported JS/TS symbols, env vars read, entities), renders a Spec Kit spec with one agent-written candidate per fact, and registers it as `origin: as_built` with `sourcePaths`. The Spec-Registry validator re-scans those paths (`SPR007`) | `cli/scanners/as-built.mjs`, `cli/scanners/js-ast.mjs` (`exportedNames`, shared with the symbol map), `cli/commands/generate-as-built.mjs`, `cli/validators/spec-registry.mjs` | DocGuard writes no requirement prose. Facts key on method+path, file+export, name, so line moves never churn them. An App Router handler export is not a second fact beside its route. Route and env facts cite the file and line of the registration or first read. The registry fields are serialized only when set. `--write` commits the spec and its registry entry in one file transaction |
 | **Go, Spring and Rails routes** | Reports each route at the path it is served under. Go (gin, echo, chi, fiber, gorilla/mux, net/http): every router value is a node whose prefix comes from `Group`, chi `Route`/`Mount`, gorilla `PathPrefix().Subrouter()` or `http.StripPrefix`, across blocks, functions and files, resolved after every file is read. Spring (Java and Kotlin): class-level and method mappings, including the `path =`/`value =` forms, arrays, constants and `@RequestMapping(method = …)`. Rails: `config/routes.rb` and the files it `draw`s, with `namespace`, `scope`, nested `resources`, `only:`/`except:`, `member` and `collection` | `cli/scanners/go-routes.mjs`, `cli/scanners/spring-routes.mjs`, `cli/scanners/rails-routes.mjs`, `cli/scanners/route-lexing.mjs`, `cli/scanners/routes.mjs` | No parser: a shared lexer masks comments and strings and pairs brackets, so comments, `_test.go` files, HTTP-client calls and Feign clients do not count. Routes carry `parserTier: fallback-language`. A path or prefix that is not literal, or a Go call with several possible callees, places no route rather than a guessed one (specs/047-go-spring-rails-routes) |
+| **Laravel, Symfony and ASP.NET Core routes** | Reports each route at the path it is served under. Laravel: the route files the app loads (`bootstrap/app.php` `withRouting`, else `RouteServiceProvider` mappings, else `routes/web.php` and `routes/api.php` under `/api`), with `prefix`/`middleware`/`group` chains and resource expansion. Symfony: `#[Route]` attributes and `@Route` annotations under the class-level route, and `config/routes.yaml` routes and prefixed imports. ASP.NET Core: attribute-routed controllers (inherited class routes, verb attributes, `[controller]`/`[action]`/`[area]` tokens) and minimal APIs (`Map*` under `MapGroup` prefixes, followed into the methods a group is passed to). The classifier labels a `Microsoft.NET.Sdk.Web` project ASP.NET Core | `cli/scanners/php-routes.mjs`, `cli/scanners/dotnet-routes.mjs`, `cli/scanners/routes.mjs`, `cli/scanners/project-type.mjs`, `cli/validators/api-surface.mjs` | No parser: per-language lexers mask comments and strings (PHP `#` comments, heredocs, interpolation; C# verbatim, interpolated and raw strings) and reuse the shared bracket pairing. Routes carry `parserTier: fallback-language`. A path or prefix that is not literal is omitted, counted, and reported in the API-surface coverage reason with its first locations (specs/059-php-dotnet-routes) |
 | **JS/TS extraction** | Router `.route('/x').get().post()` chains with mount prefixes; per-route auth from the route's own middleware and handler, an earlier `use(auth)`, an auth mount above it, or an App Router `middleware` matcher; env reads including destructuring, each read site recorded with file, line and default; the App Router `pages/` and `components/` roots; ORM entities (schema files, table builders, document schemas, decorated entity classes with inherited columns, `define`/`init` models) through one discovery (`scanOrmEntities`) that guard's schema check, `generate` and `diff` share | `cli/scanners/js-ast.mjs`, `cli/scanners/routes.mjs`, `cli/shared-source.mjs` (`grepEnvUsage`), `cli/scanners/schemas.mjs`, `cli/validators/schema-sync.mjs`, `cli/scanners/project-type.mjs` | Auth is recognised by name (`requireAuth`, `verifyToken`, `passport.authenticate(...)`, `getServerSession`); text elsewhere in a file never marks a route. Table schemas come from their ORM config first, else a bounded search; every schema file is read once. The regex fallback reads route chains, per-statement auth, and table and document-schema fields from the same object text; TypeORM classes and Sequelize calls are read as decorator and argument text by both tiers and interpreted once; every table, document schema and entity class read records the tier that read it. Framework and ORM names are listed in `docs/commands.md` (`generate`) |
 | **NestJS, Workers and router-library routes** | Reports the routes of NestJS controllers (`@Controller` + method decorators under `setGlobalPrefix`, URI versioning and `RouterModule` paths, auth from guards), of a Cloudflare Worker's `fetch` entry (pathname comparisons, `switch`, keyed tables and `URLPattern` in the entry and the modules it imports, methods from the `request.method` checks around them), and of the small edge routers (`basePath`, `base`, `route()` mounts across files). Each reader is a pure function of file contents; `routes.mjs` gives them their files and records each file's tier and every path a reader could not resolve (`scan.unresolved`) | `cli/scanners/nest-routes.mjs`, `cli/scanners/worker-routes.mjs`, `cli/scanners/router-routes.mjs`, `cli/scanners/js-route-support.mjs`, `cli/scanners/routes.mjs`, `cli/validators/api-surface.mjs` (`routeScanGaps`) | Syntax tree first, pattern fallback per file; routes carry `tier`. A path that is not literal or a same-file constant is omitted and makes the API-surface check `partial`, naming the framework, count and first location. Durable Object classes, browser `location.pathname` and modules the Worker entry never imports are not read. Framework names are listed in `docs/reference/languages.md` (specs/058-js-framework-routes) |
 | **Spec-first gate** | Classifies a change between the merge base and HEAD as covered, exempt, not governed, uncovered or inconclusive. It reads governed paths from `specFirst` and resolves spec references against `specs/*/spec.md` and the registry | `cli/scanners/spec-first.mjs`, `cli/commands/specs.mjs` | Read-only. An unresolved reference never passes. Git or inventory failure is inconclusive (exit 2), never a pass. The PR body arrives as a file |
@@ -1518,6 +1519,7 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/scanners/import-graph.mjs`, `cli/scanners/module-diagram.mjs` (module and entity diagrams) | `tests/code-derived-diagrams.test.mjs`, `tests/architecture.test.mjs`, `tests/python-import-graph.test.mjs` | ✅ |
 | `cli/scanners/symbol-map.mjs`, `benchmarks/agent-context/run.mjs` (symbol map, agent-context protocol v2) | `tests/symbol-map.test.mjs`, `tests/agent-context-benchmark.test.mjs` | ✅ |
 | `cli/scanners/go-routes.mjs`, `cli/scanners/spring-routes.mjs`, `cli/scanners/rails-routes.mjs`, `cli/scanners/route-lexing.mjs` (Go, Spring and Rails routes) | `tests/go-spring-rails-routes.test.mjs`, `tests/routes-multilang.test.mjs` | ✅ |
+| `cli/scanners/php-routes.mjs`, `cli/scanners/dotnet-routes.mjs` (Laravel, Symfony and ASP.NET Core routes) | `tests/php-dotnet-routes.test.mjs` | ✅ |
 | `cli/shared-ignore.mjs` (`.docguardignore` reasons and expiries), `cli/scanners/suppressions.mjs`, `cli/validators/suppressions.mjs`, `cli/commands/ignore.mjs`, `cli/writers/claimspec-ignore.mjs`, `cli/claimspec-schema.mjs` (IGN001–IGN003, `docguard ignore`, claimspec export) | `tests/ignore-reasons.test.mjs`, `tests/docguardignore.test.mjs` | ✅ |
 | `cli/writers/baseline.mjs` (adoption baseline, stable fingerprints and legacy match) | `tests/baseline.test.mjs`, `tests/baseline-stable-fingerprint.test.mjs` | ✅ |
 | `cli/scanners/reconciliation.mjs`, `cli/validators/spec-registry.mjs` (reviewed `assetPaths`, SPR009) | `tests/asset-path-attribution.test.mjs` | ✅ |
@@ -1729,6 +1731,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Laravel, Symfony and ASP.NET Core routes are read**
+  (`specs/059-php-dotnet-routes`, part of #519). These frameworks were
+  classified but no scanner read their routes, so guard's API-surface check,
+  `diff` and `generate` saw no endpoints. Two new pattern readers
+  (`php-routes.mjs`, `dotnet-routes.mjs`) now report:
+  - Laravel routes from the files the app loads (`routes/web.php`, and
+    `routes/api.php` under `/api`, or what `bootstrap/app.php` or
+    `RouteServiceProvider` maps), with `prefix`/`middleware`/`group` chains
+    and `resource`, `apiResource` and `singleton` expanded; `auth` and `can:`
+    middleware count as auth evidence;
+  - Symfony `#[Route]` attributes and `@Route` annotations under their class
+    route, and `config/routes.yaml` routes and prefixed imports;
+  - ASP.NET Core attribute-routed controllers (with `[controller]`,
+    `[action]` and `[area]` tokens and `[Authorize]`/`[AllowAnonymous]`) and
+    minimal APIs (`MapGet` and the other `Map*` calls under `MapGroup`
+    prefixes, including groups passed to extension methods).
+
+  A route whose path is not literal text is omitted, never guessed, and the
+  API-surface check now reports how many were omitted and where. A `.csproj`
+  using the `Microsoft.NET.Sdk.Web` SDK (every `dotnet new webapi` project)
+  is now labelled ASP.NET Core; before, the check tested the wrong string and
+  never matched.
 - **Routes for NestJS and Cloudflare Workers** (`specs/058-js-framework-routes`,
   part of #519). Both were detected but their routes were not read, so the
   API-surface check, `diff` and `generate` saw no endpoints.
@@ -2096,30 +2120,8 @@ Behaviour changes:
     in `--changed-only` pre-commit mode. This replaces the idea of tracking
     line counts or file size, which cannot see same-size edits.
 
-- **Non-regression budgets** (`specs/031-non-regression-budgets`). A new CI
-  `budget` job compares every PR with its base on the same runner. It checks:
-  - guard wall time (medians of interleaved samples; ×1.15, 150 ms floor);
-  - new error findings on this repository;
-  - agent-facing bytes: context pack, task packets, MCP responses and llms
-    bundles (+10%);
-  - packed package weight;
-  - runtime dependencies.
 
-  A cost the change needs is declared as `Budget-Exempt: <metric> — <reason>`.
-  `npm run budget -- --base <dir>` prints the same table locally. The first
-  measurement shows the `docguard_guard` MCP response at about 130 KB per call.
-
-- **Completion revisions survive squash merges** (`specs/028-completion-revision-anchoring`).
-  - `specs complete` records the revision it reviewed. A completion committed
-    on a PR branch recorded that branch's commit, which a squash merge never
-    puts on `main`. Twelve recorded revisions across seven of this repository's
-    specs pointed at such commits.
-  - **SPR008** reports a recorded revision that does not resolve or is not on
-    HEAD's history. A shallow clone reports partial coverage instead.
-  - `docguard specs reanchor --id <spec-id> --write` moves the anchor to the
-    first first-parent commit whose evidence files are byte-identical, and
-
-<!-- truncated: 4901 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 4923 more lines — read CHANGELOG.md directly -->
 
 ---
 

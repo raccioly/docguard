@@ -9,6 +9,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Laravel, Symfony and ASP.NET Core routes are read**
+  (`specs/059-php-dotnet-routes`, part of #519). These frameworks were
+  classified but no scanner read their routes, so guard's API-surface check,
+  `diff` and `generate` saw no endpoints. Two new pattern readers
+  (`php-routes.mjs`, `dotnet-routes.mjs`) now report:
+  - Laravel routes from the files the app loads (`routes/web.php`, and
+    `routes/api.php` under `/api`, or what `bootstrap/app.php` or
+    `RouteServiceProvider` maps), with `prefix`/`middleware`/`group` chains
+    and `resource`, `apiResource` and `singleton` expanded; `auth` and `can:`
+    middleware count as auth evidence;
+  - Symfony `#[Route]` attributes and `@Route` annotations under their class
+    route, and `config/routes.yaml` routes and prefixed imports;
+  - ASP.NET Core attribute-routed controllers (with `[controller]`,
+    `[action]` and `[area]` tokens and `[Authorize]`/`[AllowAnonymous]`) and
+    minimal APIs (`MapGet` and the other `Map*` calls under `MapGroup`
+    prefixes, including groups passed to extension methods).
+
+  A route whose path is not literal text is omitted, never guessed, and the
+  API-surface check now reports how many were omitted and where. A `.csproj`
+  using the `Microsoft.NET.Sdk.Web` SDK (every `dotnet new webapi` project)
+  is now labelled ASP.NET Core; before, the check tested the wrong string and
+  never matched.
 - **Routes for NestJS and Cloudflare Workers** (`specs/058-js-framework-routes`,
   part of #519). Both were detected but their routes were not read, so the
   API-surface check, `diff` and `generate` saw no endpoints.

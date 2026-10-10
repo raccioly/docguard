@@ -89,8 +89,8 @@ syntax tree. A dash means nothing is extracted.
 | Kotlin | `.kt .kts` | `fallback-language` | Spring (`.kt`) | JPA `@Entity` classes (`.kt`) | Yes | - |
 | Ruby | `.rb` | `fallback-language` | Rails | Rails migrations and `db/schema.rb` | Yes | - |
 | Rust | `.rs` | `fallback-language` | Axum, Actix Web, Rocket | Diesel `table!` | Yes | - |
-| PHP | `.php` | `fallback-language` | - | - | Yes | - |
-| C# | `.cs` | `fallback-language` | - | - | Yes | - |
+| PHP | `.php` | `fallback-language` | Laravel, Symfony | - | Yes | - |
+| C# | `.cs` | `fallback-language` | ASP.NET Core controllers and minimal APIs | - | Yes | - |
 
 Every other language in `LANGUAGE_NAMES` (`cli/shared-source.mjs`) is
 recognised by extension so that a coverage gap can name it, and nothing is
@@ -113,8 +113,7 @@ graph does not read, with file counts.
 |---|---|
 | JavaScript, TypeScript | `@babel/parser` is missing or a file fails to parse (`regex-fallback`). The Express, Next.js, Fastify and Koa route scanners attach no tier to their routes, so API-surface findings drawn from them carry `not-applicable`; NestJS, Cloudflare Workers, Hono and itty-router routes carry their file's tier. A NestJS, Worker, Hono or itty-router path that is not literal text or a same-file constant (an imported constant, a `startsWith` or regular-expression dispatch) is omitted, and the API-surface check reports `partial` with the count and the first location |
 | Python | No interpreter is found, or a file fails to parse (`regex-fallback`). Router prefixes and Django includes that cannot be resolved are flagged as limitations, never guessed |
-| Go, Java, Kotlin, Ruby, Rust | Always, when routes or env vars were read from them (`fallback-language`). A route whose path or prefix is not literal text or a resolvable constant is omitted. A framework read by pattern that yields no route makes the API-surface check `partial`, naming the framework and the files read |
-| PHP, C# | When env vars were read from them (`fallback-language`) |
+| Go, Java, Kotlin, Ruby, Rust, PHP, C# | Always, when routes or env vars were read from them (`fallback-language`). A route whose path or prefix is not literal text or a resolvable constant is omitted. A framework read by pattern that yields no route makes the API-surface check `partial`, naming the framework and the files read. The Laravel, Symfony and ASP.NET Core readers also count each route they omitted, and the API-surface reason gives the count and the first locations |
 | Any other source language | When files in it sit under the env scan's roots |
 
 Route discovery for the pattern-read languages walks up to 32 directory levels
@@ -137,7 +136,7 @@ directory levels deep, skipping dependency, build and test-fixture directories
 | `build.gradle.kts` | Kotlin | Spring Boot |
 | `Gemfile` | Ruby | Rails, Sinatra |
 | `composer.json` | PHP | Laravel, Symfony |
-| `*.csproj` | C# | ASP.NET Core |
+| `*.csproj` | C# | ASP.NET Core (the `Microsoft.NET.Sdk.Web` SDK, the `Microsoft.AspNetCore.App` framework reference, or a `Microsoft.AspNetCore.*` package) |
 
 A classified framework is not the same as a read one. The next section lists
 which frameworks have a scanner. For a JS/TS ecosystem the profile also names
@@ -173,11 +172,14 @@ the code scan (`cli/scanners/doc-tools.mjs`).
 | Rails | A `rails` gem | `config/routes.rb` and the `config/routes/*.rb` files it `draw`s: `namespace`, `scope`, `resources`/`resource` with `only:`, `except:`, `param:`, `path:`, `shallow`, nesting, `member`/`collection`, verb routes, `match ... via:`, `root`, `concern`/`concerns`; update is reported as both `PATCH` and `PUT` | `fallback-language` | `rails-routes.mjs` |
 | Gin, Echo, Chi, Fiber, gorilla/mux | One of these in `go.mod` | Routes with prefixes composed from `Group`, `Route`, `Mount`, `PathPrefix(...).Subrouter()` and `http.StripPrefix`, across functions and files; `Any`, `Handle`, `HandleFunc`, `Match`, `Method`, `.Methods(...)`; Go 1.22 method patterns. `_test.go` files are skipped | `fallback-language` | `go-routes.mjs` |
 | Axum, Actix Web, Rocket | One of these in `Cargo.toml` | Axum `.route("/x", get(h))`, Actix `.route("/x", web::get())`, Rocket `#[get("/x")]`, each on one line; no prefix composition | `fallback-language` | `routes.mjs` |
+| Laravel | A `laravel/framework` dependency in `composer.json` | The route files the app loads: `routes/web.php`, and `routes/api.php` under `/api`, unless `bootstrap/app.php`'s `withRouting(...)` (its `web`, `api`, `apiPrefix`, `health`, `then` and `using` arguments) or `RouteServiceProvider`'s `group(base_path(...))` mappings say otherwise; files they `require`. `Route::get`, `post`, `put`, `patch`, `delete`, `options`, `any`, `match`, `redirect` (`ANY`) and `view`; `prefix`, `middleware`, `controller` and `group` (closure, attribute array or file) chains; `resource`, `apiResource`, `resources`, `singleton` and their `api` forms, with `only`, `except`, `parameters`, `shallow` and nested `photos.comments` names; update is both `PUT` and `PATCH`. Auth from an `auth`, `auth:*`, `can:*` or `Authenticate` middleware on the route or a group above it. `console.php` and `channels.php` are not read | `fallback-language` | `php-routes.mjs` |
+| Symfony | A `symfony/framework-bundle` dependency in `composer.json` | `#[Route]` attributes and `@Route` docblock annotations on controller methods, joined to the class-level route, with `methods` (`ANY` when absent) and localized path arrays; `config/routes.yaml` and `config/routes/*.yaml` routes (`path`, `methods`) and imports, whose `prefix` applies to the attribute routes of an imported directory or to an imported YAML file. `when@env` blocks and bundle resources are skipped; `config/routes.php` and XML are not read. Auth from `IsGranted` or `Security` on the method or class, or `denyAccessUnlessGranted` in the method | `fallback-language` | `php-routes.mjs` |
+| ASP.NET Core | A `.csproj` using `Microsoft.NET.Sdk.Web`, referencing the `Microsoft.AspNetCore.App` framework or a `Microsoft.AspNetCore.*` package | Controllers: class-level `[Route]` (inherited from a base controller) joined to `[HttpGet]`, `[HttpPost]`, `[HttpPut]`, `[HttpDelete]`, `[HttpPatch]`, `[HttpHead]`, `[HttpOptions]`, `[Route]` and `[AcceptVerbs]` templates; `/` and `~/` templates are absolute; `[controller]` (the class name, case kept), `[action]` (`Async` suffix removed, `[ActionName]` honoured) and `[area]`; `const string` templates. Minimal APIs: `MapGet`, `MapPost`, `MapPut`, `MapDelete`, `MapPatch`, `MapMethods`, `Map` and `MapHealthChecks` (`ANY`) under `MapGroup` prefixes, through variables and methods the group is passed to, in any file. Auth from `[Authorize]`/`[AllowAnonymous]`, `RequireAuthorization()`/`AllowAnonymous()` and `MapControllers().RequireAuthorization()`. Conventional routes (`MapControllerRoute`) are not read | `fallback-language` | `dotnet-routes.mjs` |
 
 Classified but not read for routes: Starlette, Sinatra, Warp (the Rust
-scanner runs but has no Warp patterns), Tide, Laravel, Symfony and ASP.NET
-Core. A Go project that uses only `net/http`, with none of the routers above in
-`go.mod`, has no framework and its routes are not scanned.
+scanner runs but has no Warp patterns) and Tide. A Go project that uses only
+`net/http`, with none of the routers above in `go.mod`, has no framework and
+its routes are not scanned.
 
 Routes in test, fixture and example directories are dropped by default. When
 that leaves no route, the API-surface reason says how many were excluded and

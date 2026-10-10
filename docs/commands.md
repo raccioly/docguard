@@ -277,9 +277,9 @@ DocGuard's own output:
 #### How routes are read
 
 Guard's API-surface check, `diff` and `generate` take routes from one scanner.
-It reads JavaScript, TypeScript and Python with a syntax tree. Go, Java, Kotlin
-and Ruby are read by pattern (`fallback-language`), following each framework's
-routing rules:
+It reads JavaScript, TypeScript and Python with a syntax tree. Go, Java, Kotlin,
+Ruby, PHP and C# are read by pattern (`fallback-language`), following each
+framework's routing rules:
 
 - **Go** (gin, echo, chi, fiber, gorilla/mux, net/http): route groups and
   sub-routers carry their prefix (`r.Group`, chi `Route` and `Mount`, gorilla
@@ -295,11 +295,27 @@ routing rules:
   prefixes, `resources`/`resource` with `only:`/`except:`, nesting, `shallow`,
   `member`/`collection`, `match … via:`, `root` and concerns, as `rails routes`
   lists them. Update is both `PATCH` and `PUT`.
+- **Laravel** (the route files the app loads: `routes/web.php`, and
+  `routes/api.php` under `/api`, or what `bootstrap/app.php`'s `withRouting`
+  or `RouteServiceProvider` maps): `Route::get` and the other verbs, `prefix`,
+  `middleware` and `group` chains, and `resource`/`apiResource`/`singleton`
+  expanded as `php artisan route:list` lists them. An `auth` or `can:`
+  middleware is auth evidence.
+- **Symfony**: `#[Route]` attributes and `@Route` annotations joined to the
+  class-level route, and `config/routes.yaml` routes and imports, whose
+  `prefix` applies to an imported controller directory.
+- **ASP.NET Core**: controllers (`[Route("api/[controller]")]` joined to
+  `[HttpGet("{id}")]` and the other verb attributes, with token replacement and
+  `[Authorize]`/`[AllowAnonymous]`), and minimal APIs (`MapGet` and the other
+  `Map*` calls under `MapGroup` prefixes, also when the group is passed to an
+  extension method in another file).
 
 A route is omitted when its path or prefix is not literal text or a constant
-it can resolve: an environment variable, a `${…}` placeholder, a Ruby
-interpolation, or a call it cannot pin to one function. It is never reported
-at a guessed path.
+it can resolve: an environment variable, a `${…}` placeholder, a Ruby or PHP
+interpolation, a C# interpolated string, or a call it cannot pin to one
+function. It is never reported at a guessed path. The Laravel, Symfony and
+ASP.NET Core readers count what they omit, and guard's API-surface check
+reports that count and the first locations as partial coverage.
 
 **Python projects.** Routes carry their full paths:
 
