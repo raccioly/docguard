@@ -1,6 +1,6 @@
 # Tasks: Fixes From Dogfooding, Round 2
 
-**Status**: Complete. SC-001: every reproduction in `tests/dogfood-round-2.test.mjs` failed before its fix (29 of 41 failing; the negatives and the no-pattern case passed, as they must); SC-002: full suite and guard below.
+**Status**: Complete. SC-001: every reproduction in `tests/dogfood-round-2.test.mjs` failed before its fix (29 of the first 41 failed; the negatives and the no-pattern case passed, as they must; T009 records the FR-007/FR-008 run); SC-002: full suite and guard below.
 **Spec**: `specs/061-dogfood-round-2/spec.md`
 **Plan**: `specs/061-dogfood-round-2/plan.md`
 
@@ -15,6 +15,9 @@
 - [x] T004 FR-004: DDF001 message and `diff` evidence
 - [x] T005 FR-005: `security.mjs` password labels
 - [x] T008 FR-006: `TECH_PATTERNS` / `TECH_DEPENDENCIES` name TypeORM and Sequelize
+- [x] T009 FR-007, FR-008 tests first in `tests/dogfood-round-2.test.mjs`: Python, Go, Ruby, Rust, PHP and C# projects, no manifest, `generate` then guard on Python; `diff` with a mapped test spec. Seven of the nine failed before the fix; the no-manifest case passed, as it must.
+- [x] T010 FR-007: `cli/scanners/tech-stack.mjs` (`scanCodeTechnologies`, per-ecosystem coverage); `docs-diff.mjs` runs on any manifest and reports absence only for covered technologies; importers moved
+- [x] T011 FR-008: `diff.mjs` `diffTests` uses `resolveDocRole`
 
 ## Phase 3: Docs and verification
 

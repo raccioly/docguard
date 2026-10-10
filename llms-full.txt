@@ -73,8 +73,8 @@ It targets development teams and AI coding agents that need to maintain document
 | **Spec Kit delegation** | The only code that invokes the `specify` CLI: reads its documented `init` options and `--version`, resolves the integration key from `.specify/integration.json` / `init-options.json` / unambiguous agent signals, initializes Spec Kit, registers the packaged DocGuard extension and re-registers it when the registered version differs; writes the extension commands for the `generic` integration, which Spec Kit registers none for | `cli/spec-kit-delegation.mjs`, `cli/ensure-skills.mjs` | Called only by `docguard init` and `upgrade --apply`, and `ensureSkills` runs only from `init` too (the dispatcher installs nothing, so every other command writes only its own outputs, spec 042); argument arrays only; every failure returns a structured result with the CLI's error and a manual command; requires Spec Kit ≥ 0.11.2, the extension's `requires.speckit_version`, read from the manifest as `MIN_SPEC_KIT_VERSION` and checked before initializing or registering (spec 048) |
 | **Agent surface** | What the project's agent can run: the active integration's command layout, derived from Spec Kit's install manifest (`.specify/integrations/<key>.manifest.json`); where DocGuard's own skills go; whether each mandatory hook in `.specify/extensions.yml` resolves; and command hints that name a slash command only when its file exists | `cli/agent-surface.mjs` | Read-only. No per-agent table: the file Spec Kit wrote for `constitution` gives the directory, shape and separator. Paths from `.specify/*.json` are checked to stay inside the project before any write (spec 048) |
 | **Validators** | Independent validation modules that check specific aspects of CDD compliance — all emitting structured findings with stable codes (the `CODES` registry in `findings.mjs`) | `cli/validators/` | `*.mjs` |
-| **Scanners** | Project file scanners for test discovery, route detection, schema mapping, CDK/IaC, doc-tools, integrations, frontend surface, spec-kit, memory-plan, semantic claims, agent readability | `cli/scanners/` | `*.mjs` |
-| **Writers** | Deterministic doc-mutation and output modules — section-addressable edits, mapped-role ownership authorization, mechanical fix registry, API-Reference writer, generate I/O + doc builders (split from generate.mjs), SARIF emitter (no LLM) | `cli/writers/`, `cli/shared-doc-roles.mjs` | Mapped human docs expose only unique `source=code` sections; new or explicitly generated single-role targets permit whole-document writes; whole-document replacements use backups and `--force` cannot grant ownership. `generate --plan --write` goes through `writeOwnedSections`, which skips the backup only for a DocGuard-authored document (generated marker, or an unedited init template) whose every line outside unpinned code-section bodies survives, and never replaces a `source=human` section. Generators and checks share their facts: `collectEnvVars` (env templates plus code reads) and `detectCodeTechnologies` in `cli/shared-source.mjs`, a projection of `detectCodeTechnologyEvidence`, which records the file behind each technology: a manifest, or an unambiguous source-text signal in a product file for the two technologies commonly used without a dependency (specs/061-dogfood-round-2 lists the signals) |
+| **Scanners** | Project file scanners for test discovery, route detection, schema mapping, CDK/IaC, doc-tools, integrations, frontend surface, spec-kit, memory-plan, semantic claims, agent readability, and the tech stack (`tech-stack.mjs`: what every ecosystem's manifests and unambiguous source text show, and which absences a manifest proves) | `cli/scanners/` | `*.mjs` |
+| **Writers** | Deterministic doc-mutation and output modules — section-addressable edits, mapped-role ownership authorization, mechanical fix registry, API-Reference writer, generate I/O + doc builders (split from generate.mjs), SARIF emitter (no LLM) | `cli/writers/`, `cli/shared-doc-roles.mjs` | Mapped human docs expose only unique `source=code` sections; new or explicitly generated single-role targets permit whole-document writes; whole-document replacements use backups and `--force` cannot grant ownership. `generate --plan --write` goes through `writeOwnedSections`, which skips the backup only for a DocGuard-authored document (generated marker, or an unedited init template) whose every line outside unpinned code-section bodies survives, and never replaces a `source=human` section. Generators and checks share their facts: `collectEnvVars` (env templates plus code reads) in `cli/shared-source.mjs`, and `detectCodeTechnologies` in `cli/scanners/tech-stack.mjs`, which records the file behind each technology: a manifest of any ecosystem, or an unambiguous source-text signal in a product file for the two technologies commonly used without a dependency (specs/061-dogfood-round-2 lists the signals) |
 | **Config** | Configuration loading, schema migration, validator policy, and exact finding-code policy | `cli/` | `config.mjs`, `shared.mjs` |
 | **Shared** | Cross-cutting utilities — ignore/glob filters, Git-ignore-aware bounded indexing, package capability counts, source-root resolution, Git helpers, declaration-shaped requirement identity parsing, and the shared doc→code trace patterns used by both `trace` and the Traceability validator | `cli/` | `shared-ignore.mjs`, `shared-validator-surface.mjs`, `shared-source.mjs`, `shared-git.mjs`, `shared-requirements.mjs`, `shared-trace-patterns.mjs`, `shared-openapi.mjs` (OpenAPI discovery shared by API-Surface and Docs-Sync), `shared-test-cases.mjs` (declared test-case counts for Metrics-Consistency `MET003`), `shared.mjs` |
 | **Templates** | Document skeletons (ARCHITECTURE, SECURITY, etc.) and slash command files for AI agents | `templates/` | `*.template`, `commands/*.md` |
@@ -1758,6 +1758,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     with a reason, also asked for in #526, is spec 057's.
   - DDF001 now names TypeORM and Sequelize, as it names Prisma and Drizzle.
     Mongoose still counts as MongoDB.
+  - DDF001 ran only when a `package.json` existed, so Python, Go, Ruby, Rust,
+    PHP, C# and Java projects had no tech-stack check. It now reads every
+    manifest `generate` reads. A documented technology is reported missing
+    only where a manifest could have shown it, so a Python project naming
+    React or DynamoDB (through boto3) is not told they are absent;
+    `docs/reference/languages.md` lists what each ecosystem proves. Node
+    projects get the same results. Technology detection moved to
+    `cli/scanners/tech-stack.mjs`.
+  - `diff` read `docs-canonical/TEST-SPEC.md` even when `docs.roles.testSpec`
+    pointed elsewhere. It now reads the mapped document, like DDF002.
   - SEC001 reported translation-catalog entries such as
     `f_password: 'Password'` as hardcoded passwords. A capitalised word for
     "password" in a common language, a short phrase containing one
@@ -2091,18 +2101,8 @@ Behaviour changes:
 
 - **Instruction files that agents cannot finish reading are reported (#455,
   `specs/017-agent-instruction-budget`).** Codex concatenates `AGENTS.md` from
-  the repository root down to the working directory and stops reading at
-  32 KiB (`project_doc_max_bytes`). It drops the rest silently, and the nested,
-  most specific rules come last, so they are the ones lost.
 
-  The Structure validator now measures every chain. `AGENTS.override.md`
-  replaces `AGENTS.md` in its directory, as Codex does.
-  - **`STR004`**: a chain is over `agentInstructions.maxBytes`.
-  - **Existing debt**: record a per-chain `agentInstructions.allowances` entry.
-    The chain may then shrink, but any growth is a reviewed configuration
-    change. The finding baseline cannot serve this purpose, because it
-
-<!-- truncated: 4810 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 4820 more lines — read CHANGELOG.md directly -->
 
 ---
 

@@ -17,7 +17,9 @@
 1. **DDF002 ignores `testPattern` on the docs side (#525).** The code side collects test files with the configured `testPattern`/`testPatterns`, but documented tests are read only when they look like `name.test.<ext>` or `name.spec.<ext>`. A TEST-SPEC that lists `test_bot.mjs` under `"testPattern": "test_*.mjs"` can never match, so every such test is reported as "in code but not documented".
 2. **DDF001 only reads manifests (#526).** Tech Stack drift detects technologies from `package.json`, a Dockerfile or compose file at a package root, and `.tf` files. A project that calls DynamoDB through its own signed HTTP client and starts DynamoDB Local with `docker run` in a shell script gets a permanent "documented but not found in code: `DynamoDB`, `Docker`".
 3. **DDF001 does not know TypeORM or Sequelize.** Its vocabulary names Prisma and Drizzle but not the two other ORMs spec 056 makes first-class model sources, so a project using either has its ORM neither reported when undocumented nor matched when documented.
-4. **SEC001 flags UI copy (#527).** A translation catalog entry such as `f_password: 'Password'` (or `'Contraseña'`, `'Confirm Password'`) is reported as a hardcoded password, with blocking severity.
+4. **DDF001 needs a `package.json`.** Without one the check returns nothing, so a Python, Go, Ruby, Rust, PHP or C# project gets no tech-stack drift check at all.
+5. **`diff` reads a fixed test-spec path.** It reads `docs-canonical/TEST-SPEC.md` even when `docs.roles.testSpec` maps the test spec elsewhere, while guard's DDF002 follows the mapping.
+6. **SEC001 flags UI copy (#527).** A translation catalog entry such as `f_password: 'Password'` (or `'Contraseña'`, `'Confirm Password'`) is reported as a hardcoded password, with blocking severity.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -39,7 +41,19 @@
 2. **Given** an ARCHITECTURE that names TypeORM or Sequelize and no such dependency, **Then** DDF001 reports it documented but not found.
 3. **Given** a `mongoose` dependency, **Then** DDF001 reports MongoDB, as before, and nothing named Mongoose.
 
-### User Story 4 - Password labels are not credentials (Priority: P1)
+### User Story 4 - Every ecosystem gets the tech-stack check (Priority: P1)
+
+1. **Given** a Python project with `psycopg2-binary` and `redis` in its manifests and an ARCHITECTURE naming PostgreSQL and Redis, **Then** DDF001 reports nothing; **given** PostgreSQL is named but no driver is declared, **Then** DDF001 reports it documented but not found.
+2. **Given** a Python-only project whose ARCHITECTURE names React or DynamoDB, **Then** DDF001 does not report them as missing: no Python manifest could show React, and DynamoDB is reached through boto3, which names no service.
+3. **Given** a project with no manifest of any kind, **Then** DDF001 is skipped, as before.
+4. **Given** a Node project, **Then** DDF001 reports exactly what it reported before.
+5. **Given** `generate` on a Python project, **Then** guard reports no DDF001 for the tech stack it wrote.
+
+### User Story 5 - `diff` reads the mapped test spec (Priority: P2)
+
+1. **Given** `docs.roles.testSpec` maps the test spec to `handbook/testing.md`, **Then** `diff` compares that document's tests with the code.
+
+### User Story 6 - Password labels are not credentials (Priority: P1)
 
 1. **Given** a catalog with `f_password: 'Password'`, `de: { password: 'Passwort' }`, `es: { password: 'Contraseña' }`, `confirmPassword: 'Confirm Password'` or `labels.password = 'Enter password'`, **Then** SEC001 reports nothing.
 2. **Given** `password: 'hunter2xyz!'`, `DB_PASSWORD = 's3cr3tP4ssw0rd'`, `DB_PASSWORD = 'Password'` or `password: 'password'`, **Then** SEC001 still reports a hardcoded password.
@@ -54,6 +68,9 @@
 
 - **FR-006**: TypeORM (`typeorm`) and Sequelize (`sequelize`) MUST be named technologies with their dependency mapping, so DDF001, `diff` and `generate` report them like Prisma and Drizzle. `mongoose` MUST keep mapping to MongoDB only.
 
+- **FR-007**: DDF001 MUST run whenever the project has a dependency manifest of any ecosystem `detectEcosystems` parses (`package.json`, `pyproject.toml`, `requirements.txt`, `setup.py`, `Pipfile`, `go.mod`, `Gemfile`, `Cargo.toml`, `composer.json`, `*.csproj`, `pom.xml`, `build.gradle`), and MUST read each one's dependencies with the detection `generate` uses. A technology documented but not found MUST be reported only when one of the project's manifests could have shown it: Docker and Terraform everywhere; every technology when a `package.json` exists (unchanged); otherwise only the technologies whose common clients are all dedicated packages of that ecosystem. Node project results MUST be unchanged.
+- **FR-008**: `diff` MUST resolve the test-spec document with `resolveDocRole`, as guard's DDF002 does.
+
 ## Success Criteria *(mandatory)*
 
 - **SC-001**: Each fix has a reproduction test that fails before the change and passes after, with negative cases showing real defects are still reported.
@@ -62,5 +79,6 @@
 ## Out of Scope
 
 - A way to suppress one document-level finding with a reason (#526's second suggestion). Spec 057 adds reasons and expiry to suppressions.
-- DDF001 for a project with no `package.json`. The check needs a manifest to know any technology is absent; text signals cover two technologies only.
+- Naming Angular and Svelte from `package.json` (`@angular/core`, `svelte`). Both are in the vocabulary without a dependency mapping, so a Node project that documents them sees them reported as not found. Fixing it changes Node results, which FR-007 keeps unchanged; tracked separately.
+- `diff`'s route section still reads `docs-canonical/API-REFERENCE.md` / `ARCHITECTURE.md` by fixed path.
 - Text signals for Redis, PostgreSQL, MySQL or MongoDB. Their names and wire protocols are too ambiguous for an unparsed scan.

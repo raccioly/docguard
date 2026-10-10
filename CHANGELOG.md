@@ -55,6 +55,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     with a reason, also asked for in #526, is spec 057's.
   - DDF001 now names TypeORM and Sequelize, as it names Prisma and Drizzle.
     Mongoose still counts as MongoDB.
+  - DDF001 ran only when a `package.json` existed, so Python, Go, Ruby, Rust,
+    PHP, C# and Java projects had no tech-stack check. It now reads every
+    manifest `generate` reads. A documented technology is reported missing
+    only where a manifest could have shown it, so a Python project naming
+    React or DynamoDB (through boto3) is not told they are absent;
+    `docs/reference/languages.md` lists what each ecosystem proves. Node
+    projects get the same results. Technology detection moved to
+    `cli/scanners/tech-stack.mjs`.
+  - `diff` read `docs-canonical/TEST-SPEC.md` even when `docs.roles.testSpec`
+    pointed elsewhere. It now reads the mapped document, like DDF002.
   - SEC001 reported translation-catalog entries such as
     `f_password: 'Password'` as hardcoded passwords. A capitalised word for
     "password" in a common language, a short phrase containing one

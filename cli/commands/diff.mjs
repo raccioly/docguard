@@ -4,13 +4,16 @@
  * @implements docguard.fallback-language-coverage#FR-004
  * @implements docguard.dogfood-round-2#FR-001
  * @implements docguard.dogfood-round-2#FR-004
+ * @implements docguard.dogfood-round-2#FR-008
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, extname, basename } from 'node:path';
 import { c } from '../shared.mjs';
 import { walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
-import { collectEnvVars, describeLanguageCounts, detectCodeTechnologyEvidence, grepEnvUsage } from '../shared-source.mjs';
+import { collectEnvVars, describeLanguageCounts, grepEnvUsage } from '../shared-source.mjs';
+import { detectCodeTechnologyEvidence } from '../scanners/tech-stack.mjs';
+import { resolveDocRole } from '../shared-doc-roles.mjs';
 import { parseApiReferenceDoc, compareEndpoints } from '../scanners/api-doc.mjs';
 import { resolveApiSurface } from '../validators/api-surface.mjs';
 import { collectCodeTests, extractDocumentedTests, diffTechStack as guardDiffTechStack } from '../validators/docs-diff.mjs';
@@ -321,7 +324,8 @@ export function diffTechStack(dir, config = {}) {
 }
 
 function diffTests(dir, config = {}) {
-  const testSpecPath = resolve(dir, 'docs-canonical/TEST-SPEC.md');
+  // The test-spec role, as guard's DDF002 resolves it (docs.roles may map it).
+  const testSpecPath = resolveDocRole(dir, config, 'testSpec');
   if (!existsSync(testSpecPath)) return null;
 
   // One definition of a documented test, shared with guard's DDF002.

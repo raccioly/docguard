@@ -7,6 +7,8 @@
  * @req docguard.dogfood-round-2#FR-004
  * @req docguard.dogfood-round-2#FR-005
  * @req docguard.dogfood-round-2#FR-006
+ * @req docguard.dogfood-round-2#FR-007
+ * @req docguard.dogfood-round-2#FR-008
  * @req docguard.dogfood-round-2#SC-001
  * @req docguard.dogfood-round-2#SC-002
  */
@@ -19,7 +21,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 import { validateDocsDiff, diffTechStack } from '../cli/validators/docs-diff.mjs';
-import { detectCodeTechnologies } from '../cli/shared-source.mjs';
+import { detectCodeTechnologies } from '../cli/scanners/tech-stack.mjs';
 import { validateSecurity } from '../cli/validators/security.mjs';
 
 const CLI = join(dirname(fileURLToPath(import.meta.url)), '..', 'cli', 'docguard.mjs');
@@ -202,6 +204,91 @@ describe('DDF001 names TypeORM and Sequelize (FR-006)', () => {
     write(dir, 'docs-canonical/ARCHITECTURE.md', '# Architecture\n\nMongoDB, through Mongoose, stores profiles.\n');
     assert.deepEqual(detectCodeTechnologies(dir), ['MongoDB']);
     assert.deepEqual(diffTechStack(dir), { title: 'Tech Stack', onlyInDocs: [], onlyInCode: [] });
+  });
+});
+
+// ── DDF001 runs for every ecosystem with a manifest (FR-007) ──
+
+function ecosystemProject(prefix, files, arch) {
+  fresh(prefix);
+  for (const [rel, text] of Object.entries(files)) write(dir, rel, text);
+  write(dir, 'docs-canonical/ARCHITECTURE.md', '# Architecture\n\n## Tech Stack\n\n' + arch + '\n');
+  return dir;
+}
+const techDiff = () => diffTechStack(dir);
+
+describe('DDF001 runs without a package.json (FR-007)', () => {
+  it('Python: reads requirements and pyproject, and never reports what it cannot read', () => {
+    ecosystemProject('py', {
+      'pyproject.toml': '[project]\nname = "svc"\ndependencies = ["psycopg2-binary>=2.9", "Django>=5"]\n',
+      'requirements.txt': 'redis==5.0.0\n',
+    }, 'PostgreSQL stores data. Redis caches. React renders the UI. DynamoDB stores sessions.');
+    // React (Node-only) and DynamoDB (boto3 is generic) cannot be read from a Python manifest.
+    assert.deepEqual(techDiff(), { title: 'Tech Stack', onlyInDocs: [], onlyInCode: [] });
+    write(dir, 'pyproject.toml', '[project]\nname = "svc"\ndependencies = ["Django>=5", "PyMySQL"]\n');
+    assert.deepEqual(techDiff(), { title: 'Tech Stack', onlyInDocs: ['PostgreSQL'], onlyInCode: ['MySQL'] });
+    // Docker and Terraform are read in every ecosystem.
+    write(dir, 'docs-canonical/ARCHITECTURE.md', '# Architecture\n\nMySQL and Redis. Terraform provisions it.\n');
+    assert.deepEqual(techDiff().onlyInDocs, ['Terraform']);
+  });
+
+  it('Go: module paths with a major-version suffix', () => {
+    ecosystemProject('go', { 'go.mod': 'module example.com/svc\n\ngo 1.22\n\nrequire (\n\tgithub.com/redis/go-redis/v9 v9.5.1\n)\n' },
+      'Redis caches. MongoDB stores documents.');
+    assert.deepEqual(techDiff(), { title: 'Tech Stack', onlyInDocs: ['MongoDB'], onlyInCode: [] });
+  });
+
+  it('Ruby: Gemfile', () => {
+    ecosystemProject('rb', { 'Gemfile': "source 'https://rubygems.org'\ngem 'rails'\ngem 'pg'\n" },
+      'PostgreSQL stores data. Tailwind styles pages. Redis backs the cache.');
+    assert.deepEqual(techDiff(), { title: 'Tech Stack', onlyInDocs: ['Redis'], onlyInCode: [] });
+  });
+
+  it('Rust: Cargo.toml; PostgreSQL behind sqlx features is not readable, so not reported', () => {
+    ecosystemProject('rs', { 'Cargo.toml': '[package]\nname = "svc"\n\n[dependencies]\nredis = "0.25"\nsqlx = { version = "0.7", features = ["postgres"] }\n' },
+      'PostgreSQL stores data.');
+    assert.deepEqual(techDiff(), { title: 'Tech Stack', onlyInDocs: [], onlyInCode: ['Redis'] });
+  });
+
+  it('PHP: composer.json; Redis through the phpredis extension is not readable', () => {
+    ecosystemProject('php', { 'composer.json': JSON.stringify({ require: { 'laravel/framework': '^11.0' } }) },
+      'Redis caches. MongoDB stores documents.');
+    assert.deepEqual(techDiff(), { title: 'Tech Stack', onlyInDocs: ['MongoDB'], onlyInCode: [] });
+  });
+
+  it('C#: csproj package references', () => {
+    ecosystemProject('cs', { 'Api/Api.csproj': '<Project Sdk="Microsoft.NET.Sdk.Web">\n  <ItemGroup>\n    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.0" />\n  </ItemGroup>\n</Project>\n' },
+      'PostgreSQL stores data. Redis caches.');
+    assert.deepEqual(techDiff(), { title: 'Tech Stack', onlyInDocs: ['Redis'], onlyInCode: [] });
+  });
+
+  it('no manifest at all still skips the check', () => {
+    ecosystemProject('none', { 'main.c': 'int main(void) { return 0; }\n' }, 'PostgreSQL stores data.');
+    assert.equal(techDiff(), null);
+  });
+
+  it('generate names what guard checks for a Python project', () => {
+    ecosystemProject('pygen', { 'requirements.txt': 'flask==3.0.0\nredis==5.0.0\npsycopg2==2.9.9\n', 'app.py': 'import flask\n' }, 'A service.');
+    rmSync(join(dir, 'docs-canonical'), { recursive: true, force: true });
+    assert.equal(run(['generate', '--dir', dir, '--plan', '--write'], dir).status, 0);
+    const report = JSON.parse(run(['guard', '--dir', dir, '--format', 'json'], dir).stdout);
+    assert.deepEqual(report.findings.filter(f => f.code === 'DDF001').map(f => f.message), []);
+    assert.ok(diffTechStack(dir), 'the check ran');
+  });
+});
+
+// ── diff reads the configured test-spec document (FR-008) ──
+
+describe('diff resolves the test spec through doc roles (FR-008)', () => {
+  it('reads a mapped testSpec document', () => {
+    fresh('roles');
+    write(dir, 'package.json', '{}');
+    write(dir, 'tests/a.test.js', '');
+    write(dir, 'handbook/testing.md', '# Testing\n\n- `a.test.js`\n');
+    write(dir, '.docguard.json', JSON.stringify({ projectName: 'roles', docs: { roles: { testSpec: 'handbook/testing.md' } } }));
+    const tests = diffJson(dir, 'Test Files');
+    assert.deepEqual(tests?.matched, ['a.test.js']);
+    assert.deepEqual(tests.onlyInCode, []);
   });
 });
 

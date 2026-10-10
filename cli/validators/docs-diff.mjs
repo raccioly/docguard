@@ -18,12 +18,14 @@
  * source-text signal names its file in DDF001.
  * @implements docguard.dogfood-round-2#FR-001
  * @implements docguard.dogfood-round-2#FR-004
+ * @implements docguard.dogfood-round-2#FR-007
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, extname, basename, relative } from 'node:path';
 import { shouldIgnore, globMatch, compileGlob, walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
-import { collectPackageJsons, detectCodeTechnologyEvidence, resolveSourceRoots, TECH_PATTERNS } from '../shared-source.mjs';
+import { resolveSourceRoots } from '../shared-source.mjs';
+import { scanCodeTechnologies, TECH_PATTERNS } from '../scanners/tech-stack.mjs';
 import { docRolePath, resolveDocRole } from '../shared-doc-roles.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 
@@ -180,11 +182,12 @@ function techStackDiff(dir, config = {}) {
   const archPath = resolveDocRole(dir, config, 'architecture');
   if (!existsSync(archPath)) return null;
 
-  // Monorepo-aware: merge dependencies across the root package + the source-root
-  // package + any workspace packages. A repo with no parseable package.json
-  // anywhere yields no code-side truth → return null (graceful, like before).
-  const pkgs = collectPackageJsons(dir, config);
-  if (pkgs.length === 0) return null;
+  // Monorepo-aware and ecosystem-aware: package.json files (root, source root,
+  // workspaces) and every other manifest detectEcosystems parses. A repo with
+  // no manifest anywhere yields no code-side truth → return null.
+  // @implements docguard.dogfood-round-2#FR-007
+  const scan = scanCodeTechnologies(dir, config);
+  if (!scan.hasManifest) return null;
 
   const archContent = readFileSync(archPath, 'utf-8');
 
@@ -199,7 +202,7 @@ function techStackDiff(dir, config = {}) {
 
   // The code side is shared with `generate`, so the ARCHITECTURE.md it writes
   // names every technology this check looks for (docguard.generated-docs-consistency#FR-010).
-  const evidence = detectCodeTechnologyEvidence(dir, config);
+  const { evidence, covered } = scan;
   const codeTech = new Set(evidence.map(e => e.tech));
   const sources = Object.fromEntries(evidence.filter(e => e.kind === 'source').map(e => [e.tech, `${e.file}: ${e.signal}`]));
 
@@ -207,7 +210,9 @@ function techStackDiff(dir, config = {}) {
 
   return {
     title: 'Tech Stack',
-    onlyInDocs: [...docTech].filter(t => !codeTech.has(t)),
+    // Absence is reported only where a manifest could have shown the technology:
+    // an unread ecosystem is not evidence (React in a Python-only repo).
+    onlyInDocs: [...docTech].filter(t => !codeTech.has(t) && covered.has(t)),
     onlyInCode: [...codeTech].filter(t => !docTech.has(t)),
     sources,
   };

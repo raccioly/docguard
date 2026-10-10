@@ -290,6 +290,38 @@ The Docs-Coverage validator detects one infrastructure tool and checks that
 Plain CloudFormation templates without `AWS::Serverless::`, Kubernetes
 manifests and Helm charts are not detected.
 
+### Tech stack
+
+The Tech Stack drift check (DDF001), `diff` and the tech stack `generate`
+writes read one detector (`cli/scanners/tech-stack.mjs`). It compares the
+technologies `ARCHITECTURE.md` names with what the code shows, in every
+ecosystem that has a dependency manifest. A project with no manifest is not
+checked.
+
+A technology the code shows but the doc does not name is always reported. A
+technology the doc names but the code does not show is reported only where a
+manifest could have shown it:
+
+| Ecosystem | Read from | Reported missing when absent |
+|---|---|---|
+| Any | Dockerfile or compose file; `docker run`, `build` or `compose` in a script, Makefile or CI workflow; any `*.tf` file | Docker, Terraform |
+| JavaScript, TypeScript | `package.json` dependencies (root, source root, workspaces); DynamoDB API targets, endpoints and SDK calls in source | Every technology in the list |
+| Python | `pyproject.toml`, `requirements.txt`, `setup.py`, `Pipfile` | PostgreSQL, MySQL, MongoDB |
+| Go | `go.mod` | Redis, PostgreSQL, MySQL, MongoDB |
+| Ruby | `Gemfile` | Redis, PostgreSQL, MySQL, MongoDB |
+| Rust | `Cargo.toml` | Redis, MongoDB, DynamoDB |
+| PHP | `composer.json` | MongoDB |
+| C# | `*.csproj` | Redis, PostgreSQL, MySQL, MongoDB, DynamoDB |
+| Java, Kotlin | `pom.xml`, `build.gradle` | None |
+
+Every ecosystem also detects the databases it can see, such as `redis` in
+`requirements.txt` or `pynamodb`. The third column is narrower because the
+missing cases leave no dependency to find. Python's Redis is often an extra
+(`celery[redis]`) and its DynamoDB goes through boto3. Rust's PostgreSQL and
+MySQL are usually sqlx or diesel features. PHP's PDO drivers and phpredis are
+extensions. Gradle version catalogs hide Java drivers. DynamoDB source signals
+are read in every language.
+
 ### External services
 
 `docguard generate --plan` names the third-party services a project depends on

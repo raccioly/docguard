@@ -1556,7 +1556,7 @@
           {
             "requirementId": "FR-008",
             "file": "cli/scanners/memory-plan.mjs",
-            "line": 362
+            "line": 363
           },
           {
             "requirementId": "FR-009",
@@ -3233,6 +3233,8 @@
           "docguard.dogfood-round-2#FR-004",
           "docguard.dogfood-round-2#FR-005",
           "docguard.dogfood-round-2#FR-006",
+          "docguard.dogfood-round-2#FR-007",
+          "docguard.dogfood-round-2#FR-008",
           "docguard.dogfood-round-2#SC-001",
           "docguard.dogfood-round-2#SC-002"
         ]
@@ -3241,20 +3243,20 @@
         "artifacts": [
           {
             "path": "specs/061-dogfood-round-2/spec.md",
-            "digest": "sha256:4f7cb4d7b047e8d362df19573661ab1cd37f38648ed5a7d49d3673b8db3edf79"
+            "digest": "sha256:67c2d4a1ecb4c75281cf3055eb3b45d817810be46e913e22ad0e9755f0849f94"
           },
           {
             "path": "specs/061-dogfood-round-2/plan.md",
-            "digest": "sha256:153b618345b10fb0cf1024f223254ce398d6ff4aa91f0d8fd1df2a49e84710c3"
+            "digest": "sha256:d59d5947968f7836ca550a583b98e3277fef63cca7bf96e33d0e52c877aa712a"
           },
           {
             "path": "specs/061-dogfood-round-2/tasks.md",
-            "digest": "sha256:f6cf6d10ae15fb9310291f0c926dffc2c3a26a17c016752f0d1cabbcf9082277"
+            "digest": "sha256:2c413e653251faaf33a62cf0b546336584aa8fa51b7f36437e44e5e2df2eb999"
           }
         ],
         "taskCompletion": {
-          "checked": 8,
-          "total": 8
+          "checked": 11,
+          "total": 11
         },
         "implementationEvidence": [
           {
@@ -3270,17 +3272,17 @@
           {
             "requirementId": "FR-001",
             "file": "cli/validators/docs-diff.mjs",
-            "line": 236
+            "line": 241
           },
           {
             "requirementId": "FR-002",
-            "file": "cli/shared-source.mjs",
-            "line": 1119
+            "file": "cli/scanners/tech-stack.mjs",
+            "line": 12
           },
           {
             "requirementId": "FR-003",
-            "file": "cli/shared-source.mjs",
-            "line": 1120
+            "file": "cli/scanners/tech-stack.mjs",
+            "line": 13
           },
           {
             "requirementId": "FR-004",
@@ -3304,8 +3306,38 @@
           },
           {
             "requirementId": "FR-006",
-            "file": "cli/shared-source.mjs",
-            "line": 1074
+            "file": "cli/scanners/tech-stack.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/scanners/tech-stack.mjs",
+            "line": 30
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/scanners/tech-stack.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/scanners/tech-stack.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/validators/docs-diff.mjs",
+            "line": 21
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/validators/docs-diff.mjs",
+            "line": 188
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "cli/commands/diff.mjs",
+            "line": 7
           }
         ],
         "testEvidence": [
@@ -3340,14 +3372,24 @@
             "line": 9
           },
           {
-            "requirementId": "SC-001",
+            "requirementId": "FR-007",
             "file": "tests/dogfood-round-2.test.mjs",
             "line": 10
           },
           {
-            "requirementId": "SC-002",
+            "requirementId": "FR-008",
             "file": "tests/dogfood-round-2.test.mjs",
             "line": 11
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/dogfood-round-2.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/dogfood-round-2.test.mjs",
+            "line": 13
           }
         ]
       }
@@ -4004,12 +4046,12 @@
           {
             "requirementId": "FR-001",
             "file": "cli/shared-source.mjs",
-            "line": 1328
+            "line": 1217
           },
           {
             "requirementId": "FR-001",
             "file": "cli/shared-source.mjs",
-            "line": 1334
+            "line": 1223
           },
           {
             "requirementId": "FR-001",
@@ -4654,7 +4696,7 @@
           {
             "requirementId": "FR-002",
             "file": "cli/commands/diff.mjs",
-            "line": 150
+            "line": 153
           },
           {
             "requirementId": "FR-003",
@@ -4699,7 +4741,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/commands/diff.mjs",
-            "line": 311
+            "line": 314
           },
           {
             "requirementId": "FR-007",
@@ -4719,7 +4761,7 @@
           {
             "requirementId": "FR-008",
             "file": "cli/shared-source.mjs",
-            "line": 1189
+            "line": 1078
           },
           {
             "requirementId": "FR-009",
@@ -4728,13 +4770,13 @@
           },
           {
             "requirementId": "FR-010",
-            "file": "cli/shared-source.mjs",
-            "line": 1118
+            "file": "cli/scanners/tech-stack.mjs",
+            "line": 7
           },
           {
             "requirementId": "FR-010",
-            "file": "cli/shared-source.mjs",
-            "line": 1166
+            "file": "cli/scanners/tech-stack.mjs",
+            "line": 11
           },
           {
             "requirementId": "FR-010",
@@ -5357,7 +5399,7 @@
           {
             "requirementId": "FR-008",
             "file": "cli/scanners/memory-plan.mjs",
-            "line": 475
+            "line": 476
           },
           {
             "requirementId": "FR-008",
@@ -7872,7 +7914,7 @@
           {
             "requirementId": "FR-012",
             "file": "cli/scanners/memory-plan.mjs",
-            "line": 345
+            "line": 346
           },
           {
             "requirementId": "FR-013",

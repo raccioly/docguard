@@ -259,7 +259,7 @@ export const CODES = {
   DDF001: {
     validator: 'docsDiff',
     title: 'Tech Stack drift',
-    help: 'The tech named in docs-canonical/ARCHITECTURE.md and the technologies the code shows disagree. The code side reads package.json across the monorepo, a Dockerfile or compose file, and .tf files; DynamoDB and Docker are also found from unambiguous source text in product files (a DynamoDB API target or endpoint, `docker run`/`build`/`compose` in a script, Makefile or CI workflow, a compose file), and the message names that file. Drift is two-sided — document the new tech or remove the stale entries after checking which side is wrong.',
+    help: 'The tech named in docs-canonical/ARCHITECTURE.md and the technologies the code shows disagree. The code side reads the dependency manifests of every ecosystem (package.json across the monorepo, pyproject/requirements, go.mod, Gemfile, Cargo.toml, composer.json, *.csproj, Maven/Gradle), a Dockerfile or compose file, and .tf files; DynamoDB and Docker are also found from unambiguous source text in product files (a DynamoDB API target or endpoint, `docker run`/`build`/`compose` in a script, Makefile or CI workflow, a compose file), and the message names that file. A documented technology is reported missing only where a manifest could have shown it (see docs/reference/languages.md); a project with no manifest is not checked. Drift is two-sided — document the new tech or remove the stale entries after checking which side is wrong.',
     suppress: null,
   },
   DDF002: {
