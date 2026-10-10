@@ -877,6 +877,126 @@
       }
     },
     {
+      "specId": "docguard.baseline-stable-fingerprint",
+      "path": "specs/052-baseline-stable-fingerprint/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "approved",
+          "delivery": "implemented",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": "living"
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": [
+            "docs-canonical/DATA-MODEL.md"
+          ]
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.baseline-stable-fingerprint#FR-001",
+          "docguard.baseline-stable-fingerprint#FR-002",
+          "docguard.baseline-stable-fingerprint#FR-003",
+          "docguard.baseline-stable-fingerprint#FR-004",
+          "docguard.baseline-stable-fingerprint#FR-005",
+          "docguard.baseline-stable-fingerprint#SC-001",
+          "docguard.baseline-stable-fingerprint#SC-002"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/052-baseline-stable-fingerprint/spec.md",
+            "digest": "sha256:0c5afb2f8d84e88ffd7544f7f3fb479cb537a6e3350b69ea9e96b39f6b3f90e9"
+          },
+          {
+            "path": "specs/052-baseline-stable-fingerprint/plan.md",
+            "digest": "sha256:b7cc539df422a1fd9572b5b575d70bde16716d2a74c35b27f05e050b566a539d"
+          },
+          {
+            "path": "specs/052-baseline-stable-fingerprint/tasks.md",
+            "digest": "sha256:a43a14836eb0421981ca8982c5c969ec854c082eae5b8032b807a27220867746"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 4,
+          "total": 4
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/writers/baseline.mjs",
+            "line": 22
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/writers/baseline.mjs",
+            "line": 23
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/writers/baseline.mjs",
+            "line": 25
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/writers/baseline.mjs",
+            "line": 24
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/baseline-stable-fingerprint.test.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/baseline-stable-fingerprint.test.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/baseline-stable-fingerprint.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/baseline-stable-fingerprint.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/baseline-stable-fingerprint.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/baseline-stable-fingerprint.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/baseline-stable-fingerprint.test.mjs",
+            "line": 10
+          }
+        ]
+      }
+    },
+    {
       "specId": "docguard.calibrated-finding-channels",
       "path": "specs/013-calibrated-finding-channels/spec.md",
       "reviewed": {
@@ -1020,12 +1140,12 @@
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 635
+            "line": 640
           },
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 662
+            "line": 667
           },
           {
             "requirementId": "FR-021",
@@ -5376,7 +5496,7 @@
           {
             "requirementId": "FR-009",
             "file": "tests/sync.test.mjs",
-            "line": 122
+            "line": 123
           },
           {
             "requirementId": "FR-010",
@@ -5461,7 +5581,7 @@
           {
             "requirementId": "SC-003",
             "file": "tests/sync.test.mjs",
-            "line": 123
+            "line": 124
           },
           {
             "requirementId": "SC-004",

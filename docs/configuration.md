@@ -139,6 +139,15 @@ ignore the file entirely (same as always passing `--no-baseline`):
 Suppression is always visible in output and in the `baselineSuppressed`
 JSON field — nothing is silently hidden.
 
+A finding is matched by a fingerprint: its code, its file path without the
+line number, and its message with every number masked. Text that changes when
+unrelated files change is left out too. Today that is one case: the
+` — IR soft-match: <test file> (N% similar) may already cover it` hint at the
+end of a TRC004 message, which names whichever test file currently matches
+best. Adding a test file therefore never brings back a baselined TRC004
+finding. A baseline written before v0.44 still matches the findings it froze
+until a hint changes, and `guard --update-baseline` rewrites it in the new form.
+
 ## Muting a validator
 
 Two ways to turn a validator off, for two different intents:

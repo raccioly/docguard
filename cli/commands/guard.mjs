@@ -25,7 +25,7 @@ import { changedFilesSince, isGitRepo } from '../shared-git.mjs';
 import { extractSemanticClaims } from '../scanners/semantic-claims.mjs';
 import { toSarif } from '../writers/sarif.mjs';
 import { toJUnit } from '../writers/junit.mjs';
-import { loadBaseline, saveBaseline, fingerprintFinding, baselineAgeDays, BASELINE_FILE } from '../writers/baseline.mjs';
+import { loadBaseline, saveBaseline, fingerprintFinding, legacyFingerprint, baselineAgeDays, BASELINE_FILE } from '../writers/baseline.mjs';
 import { precisionEvidenceBlock } from '../precision-evidence.mjs';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve as resolvePath, relative as relativePath } from 'node:path';
@@ -478,7 +478,12 @@ export function runGuardInternal(projectDir, config) {
       if (!Array.isArray(r.findings) || r.findings.length === 0) continue;
       if (r.errors.length + r.warnings.length !== r.findings.length) continue;
       const kept = r.findings.filter(f => {
-        const fp = fingerprintFinding(f);
+        // The stable fingerprint first, then the legacy one a baseline from an
+        // earlier release holds; one finding consumes one unit from one entry
+        // (docguard.baseline-stable-fingerprint#FR-002).
+        const stable = fingerprintFinding(f);
+        const legacy = legacyFingerprint(f);
+        const fp = (remaining.get(stable) || 0) > 0 ? stable : legacy;
         const budget = remaining.get(fp) || 0;
         if (budget <= 0) return true;
         remaining.set(fp, budget - 1);
