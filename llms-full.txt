@@ -1519,6 +1519,7 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/writers/state-dir.mjs`, `cli/docguard.mjs` dispatch (read-only commands, self-ignoring `.docguard/`) | `tests/read-only-commands.test.mjs` | ✅ |
 | `cli/scanners/py-outline.mjs`, `cli/scanners/python-routes.mjs`, `cli/scanners/python-models.mjs`, `cli/scanners/py-env.mjs` (both Python tiers) | `tests/python-extraction.test.mjs`, `tests/py-ast.test.mjs` | ✅ |
 | `cli/scanners/js-ast.mjs`, `cli/scanners/ts-paths.mjs`, `cli/scanners/schemas.mjs` (Express and Next.js extraction) | `tests/js-ts-extraction.test.mjs` | ✅ |
+| `cli/scanners/schemas.mjs`, `cli/scanners/js-ast.mjs`, `cli/validators/schema-sync.mjs` (TypeORM and Sequelize models, both parser tiers) | `tests/typeorm-models.test.mjs` | ✅ |
 | `cli/writers/doc-generators.mjs`, `cli/writers/generate-io.mjs`, `cli/commands/generate.mjs` (generated docs pass DocGuard's own checks) | `tests/generated-docs-consistency.test.mjs`, `tests/generated-docs-e2e.test.mjs` | ✅ |
 | Command output across guard, fix, sync, trace, upgrade and init (spec 049) | `tests/output-ux.test.mjs` | ✅ |
 | `cli/agent-surface.mjs`, `cli/spec-kit-delegation.mjs` (hooks that resolve, extension refresh) | `tests/spec-kit-integration-honesty.test.mjs` | ✅ |
