@@ -244,6 +244,136 @@ export function extractJsSchemaBodies(content, filename = 'file.ts') {
   return out;
 }
 
+// ── Decorated classes (TypeORM) and Sequelize calls ────────────────────────
+//
+// Both extractors return SOURCE TEXT (decorator arguments, object bodies,
+// type annotations), never interpreted values: the pattern tier in
+// schemas.mjs produces the same text by bracket matching, and one interpreter
+// reads both, so the tiers cannot disagree on what `{ nullable: true }` means.
+
+/** Source text of a node. */
+function textOf(content, node) {
+  return String(content).slice(node.start, node.end);
+}
+
+/** A decorator as `{ name, args }`: the callee's last name, each argument's text. */
+function decoratorInfo(content, dec) {
+  let expr = dec.expression;
+  let args = [];
+  if (expr && expr.type === 'CallExpression') {
+    args = expr.arguments.map(a => textOf(content, a));
+    expr = expr.callee;
+  }
+  const name = expr && expr.type === 'Identifier' ? expr.name
+    : expr && expr.type === 'MemberExpression' && !expr.computed && expr.property && expr.property.type === 'Identifier' ? expr.property.name : '';
+  return { name, args };
+}
+
+/**
+ * Class declarations with their decorators, for decorator-based ORMs.
+ *
+ * Returns `[{ name, base, line, decorators, members }]`: `base` is the
+ * `extends` name (last segment), `line` the line of the class name, each
+ * decorator `{ name, args }` with every argument as source text, and each
+ * member an instance property `{ name, optional, type, decorators }`, with
+ * `type` the annotation's source text or null. Methods, accessors, static
+ * and private members are not members. `null` when the file does not parse.
+ * @implements docguard.typeorm-models#FR-002
+ * @implements docguard.typeorm-models#FR-005
+ */
+export function extractDecoratedClasses(content, filename = 'file.ts') {
+  const { ast, ok } = parseJsTs(content, filename);
+  if (!ok || !ast) return null;
+  const out = [];
+  walk(ast, (node) => {
+    if (node.type !== 'ClassDeclaration' || !node.id) return;
+    const sup = node.superClass;
+    const base = sup && sup.type === 'Identifier' ? sup.name
+      : sup && sup.type === 'MemberExpression' && sup.property && sup.property.type === 'Identifier' ? sup.property.name : null;
+    const members = [];
+    for (const m of (node.body && node.body.body) || []) {
+      if (m.type !== 'ClassProperty' || m.computed || m.static) continue;
+      const name = m.key && m.key.type === 'Identifier' ? m.key.name : m.key && m.key.type === 'StringLiteral' ? m.key.value : null;
+      if (!name) continue;
+      const annotation = m.typeAnnotation && m.typeAnnotation.typeAnnotation;
+      members.push({
+        name,
+        optional: Boolean(m.optional),
+        type: annotation ? textOf(content, annotation) : null,
+        decorators: (m.decorators || []).map(d => decoratorInfo(content, d)),
+      });
+    }
+    out.push({
+      name: node.id.name,
+      base,
+      line: node.id.loc ? node.id.loc.start.line : null,
+      decorators: (node.decorators || []).map(d => decoratorInfo(content, d)),
+      members,
+    });
+  });
+  return out;
+}
+
+const SEQUELIZE_ASSOCIATIONS = new Set(['belongsTo', 'hasMany', 'hasOne', 'belongsToMany']);
+
+/**
+ * Sequelize model declarations and associations, as source text.
+ *
+ * - `x.define('Name', { … }, { … }?)` → `{ call: 'define', name, binding }`,
+ *   `binding` being the variable it is assigned to;
+ * - `Model.init({ … }, { … })` → `{ call: 'init', receiver: 'Model' }`;
+ * - `A.belongsTo(B, { … }?)` (and `hasMany`, `hasOne`, `belongsToMany`) →
+ *   `{ receiver: 'A', method, target: 'B', options }`; `this.belongsTo(B)`
+ *   inside `class A` has receiver `A`.
+ *
+ * Models carry `attributes` and `options` (object inner text) and `line`.
+ * `null` when the file does not parse.
+ * @implements docguard.typeorm-models#FR-006
+ */
+export function extractSequelizeCalls(content, filename = 'file.js') {
+  const { ast, ok } = parseJsTs(content, filename);
+  if (!ok || !ast) return null;
+  const models = [];
+  const associations = [];
+  const bindings = new Map(); // call start offset → the variable it is assigned to
+  const classes = [];
+  walk(ast, (node) => {
+    if (node.type === 'ClassDeclaration' && node.id) classes.push({ name: node.id.name, start: node.start, end: node.end });
+  });
+  const enclosingClass = (at) => classes.filter(c => c.start <= at && at < c.end).sort((a, b) => b.start - a.start)[0]?.name ?? null;
+  walk(ast, (node) => {
+    if (node.type === 'VariableDeclarator' && node.id && node.id.type === 'Identifier' && node.init) {
+      const init = node.init.type === 'AwaitExpression' ? node.init.argument : node.init;
+      if (init && init.type === 'CallExpression') bindings.set(init.start, node.id.name);
+      return;
+    }
+    if (node.type !== 'CallExpression' || !node.callee || node.callee.type !== 'MemberExpression' || node.callee.computed) return;
+    const method = node.callee.property && node.callee.property.type === 'Identifier' ? node.callee.property.name : '';
+    const object = node.callee.object;
+    const receiver = object && object.type === 'Identifier' ? object.name
+      : object && object.type === 'ThisExpression' && SEQUELIZE_ASSOCIATIONS.has(method) ? enclosingClass(node.start) : null;
+    const [a0, a1, a2] = node.arguments;
+    const line = node.loc ? node.loc.start.line : null;
+    if (method === 'define' && a0 && a0.type === 'StringLiteral' && a1 && a1.type === 'ObjectExpression') {
+      models.push({
+        call: 'define', name: a0.value, receiver: null, binding: bindings.get(node.start) ?? null,
+        attributes: objectInner(content, a1), options: a2 && a2.type === 'ObjectExpression' ? objectInner(content, a2) : '', line,
+      });
+    } else if (method === 'init' && receiver && a0 && a0.type === 'ObjectExpression' && a1 && a1.type === 'ObjectExpression') {
+      models.push({
+        call: 'init', name: null, receiver, binding: null,
+        attributes: objectInner(content, a0), options: objectInner(content, a1), line,
+      });
+    } else if (SEQUELIZE_ASSOCIATIONS.has(method) && receiver && a0) {
+      associations.push({
+        receiver, method, target: textOf(content, a0),
+        options: a1 && a1.type === 'ObjectExpression' ? objectInner(content, a1) : '', line,
+      });
+    }
+  });
+  return { models, associations };
+}
+
 // HTTP route-registration methods (`app.get`, `router.post`, …). `use`/`all`
 // are middleware-ish; `all` is included (it IS a route), `use` is not.
 const HTTP_METHOD_NAMES = new Set(['get', 'post', 'put', 'delete', 'patch', 'head', 'options', 'all']);

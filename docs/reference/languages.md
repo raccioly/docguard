@@ -82,7 +82,7 @@ syntax tree. A dash means nothing is extracted.
 
 | Language | Extensions | Tier | Routes | Models and entities | Env vars | Import graph |
 |---|---|---|---|---|---|---|
-| JavaScript, TypeScript | `.js .mjs .cjs .jsx .ts .tsx` (`.mts .cts`: parser tier and test counts only) | `js-ast`, else `regex-fallback` | Express, Next.js, Fastify, Hono, Koa, NestJS, Cloudflare Workers, itty-router | Prisma, Drizzle, Mongoose; TypeORM, Sequelize, Knex (names only); Zod when no ORM is found | Yes | Yes |
+| JavaScript, TypeScript | `.js .mjs .cjs .jsx .ts .tsx` (`.mts .cts`: parser tier and test counts only) | `js-ast`, else `regex-fallback` | Express, Next.js, Fastify, Hono, Koa, NestJS, Cloudflare Workers, itty-router | Prisma, Drizzle, Mongoose, TypeORM, Sequelize; Knex (table names, `guard` only); Zod when no ORM is found | Yes | Yes |
 | Python | `.py` | `py-ast`, else `regex-fallback` | FastAPI, Flask, Django and Django REST framework | SQLAlchemy, Django models, SQLModel; Pydantic when no ORM model is found | Yes | Yes, with an interpreter only |
 | Go | `.go` | `fallback-language` | Gin, Echo, Chi, Fiber, gorilla/mux, and `net/http` forms in those projects | Structs with `json`, `gorm`, `db` or `bson` tags | Yes | - |
 | Java | `.java` | `fallback-language` | Spring | JPA `@Entity` classes | Yes, plus Spring config placeholders | - |
@@ -193,10 +193,10 @@ Two consumers read models, and they do not read the same set:
 | Library | Where it is found | What is extracted | Read by | Scanner |
 |---|---|---|---|---|
 | Prisma | `prisma/*.prisma`, `prisma/schema/*.prisma`, or `package.json` `prisma.schema`, in the project and its workspaces | Models, fields, relations (each once), enums reported apart from entities | Both | `schemas.mjs` |
-| Drizzle | The `schema` entry of `drizzle.config.*`; otherwise files that call `pgTable`, `mysqlTable` or `sqliteTable` with a literal name, under `db`, `database`, `schema`, `schemas`, `drizzle`, `models`, `model` and the source roots | Tables, columns, `.references()` relations | Both | `schemas.mjs`, `js-ast.mjs` |
+| Drizzle | The `schema` entry of `drizzle.config.*`; otherwise files that call `pgTable`, `mysqlTable` or `sqliteTable` with a literal name, under `db`, `database`, `schema`, `schemas`, `drizzle`, `models`, `model`, `entities`, `entity` and the source roots | Tables, columns, `.references()` relations | Both | `schemas.mjs`, `js-ast.mjs` |
 | Mongoose | Files that construct a `Schema`, in the same directories | Fields (including `{ type, required, ref }` and arrays), the model name from `model('Name', schema)`, `ref` relations | Both | `schemas.mjs`, `js-ast.mjs` |
-| TypeORM | `*.entity.ts` and `*.entity.js` under `src/entities`, `src/entity`, `entities` | Entity names from `@Entity` | `guard` only | `schema-sync.mjs` |
-| Sequelize | `.js` and `.ts` files under `models`, `src/models` | Model names from `sequelize.define('X')` and `.init('X')` | `guard` only | `schema-sync.mjs` |
+| TypeORM | Files that use an `@Entity` or column decorator imported from `typeorm`, directly or through a local module that re-exports it (relative, tsconfig path alias or workspace package, up to three modules away), in the same directories | `@Entity` classes, named by class with the table name kept (guard accepts either as documented); columns from `@Column`, `@PrimaryGeneratedColumn`, `@PrimaryColumn`, `@CreateDateColumn`, `@UpdateDateColumn`, `@DeleteDateColumn` and `@VersionColumn` (type, `nullable`, `primary`, `unique`, `default`, `comment`); columns and relations inherited through `extends`; `@ManyToOne`, `@OneToMany`, `@OneToOne` and `@ManyToMany` relations, each drawn once from its owning side | Both | `schemas.mjs`, `js-ast.mjs` |
+| Sequelize | Files that mention `sequelize` and call `define` or `init`, in the same directories | Models from `sequelize.define('Name', …)` and `Model.init(…, { sequelize })` (`modelName`, `tableName`), declared attributes (`DataTypes.X`, `allowNull`, `primaryKey`, `unique`, `defaultValue`, `comment`), and `belongsTo`, `hasMany`, `hasOne` and `belongsToMany` associations, each drawn once | Both | `schemas.mjs`, `js-ast.mjs` |
 | Knex | `.js` and `.ts` files under `migrations`, `db/migrations` | Table names from `createTable('x')` | `guard` only | `schema-sync.mjs` |
 | Zod | Source files | Object schemas, used as the data model only when no ORM entity is found | `generate` and `diff` only | `schemas.mjs` |
 | SQLAlchemy | Python files | Classic `Column` and 2.0 `Mapped`/`mapped_column` columns on declarative classes, relationships with cardinality | Both | `python-models.mjs` |
@@ -209,8 +209,16 @@ Two consumers read models, and they do not read the same set:
 | Diesel | `.rs` files | `table!` blocks and their columns | `generate` and `diff` only | `schemas.mjs` |
 
 An OpenAPI file's schemas, when present, take priority over code for
-`generate`. Python model findings carry the tier of the files behind them;
-other model findings carry `not-applicable`.
+`generate`. Python, Drizzle, Mongoose, TypeORM and Sequelize model findings
+carry the tier of the files behind them; a schema read by pattern marks the
+plan's entity surface partial. Prisma, Knex and Rails model findings carry
+`not-applicable`.
+
+TypeORM and Sequelize list the columns the code declares. Columns the ORM adds
+on its own are not listed: TypeORM's relation foreign keys and Sequelize's
+default `id`, `createdAt` and `updatedAt`. Not read: TypeORM `EntitySchema`
+objects, `@ViewEntity`, `@ChildEntity`, embedded columns and class-level
+`@Unique`/`@Index`; `sequelize-typescript` decorators.
 
 ### Environment variables
 

@@ -72,15 +72,15 @@ DocGuard is an official [GitHub Spec Kit](https://github.com/github/spec-kit) co
 
 ```mermaid
 graph TD
-    CLI["CLI Entry<br/>docguard.mjs"] --> Commands["Commands (25)"]
+    CLI["CLI Entry<br/>docguard.mjs"] --> Commands["Commands (26)"]
     Commands --> guard["guard"]
     Commands --> generate["generate"]
     Commands --> score["score"]
     Commands --> diagnose["diagnose"]
     Commands --> setup["setup wizard"]
-    Commands --> other["diff · init · fix · trace · impact · sync · reconcile · retire · specs<br/>explain · memory · upgrade · agents · hooks · badge · ci · watch"]
+    Commands --> other["diff · init · fix · trace · impact · sync · reconcile · retire · specs · ignore<br/>explain · memory · upgrade · agents · hooks · badge · ci · watch"]
 
-    guard --> Validators["Validators (32)"]
+    guard --> Validators["Validators (33)"]
     generate --> Scanners["Scanners (4)<br/>routes · schemas · doc-tools · speckit"]
     score --> Scoring["Weighted Scoring<br/>8 categories"]
     diagnose --> Validators
@@ -307,14 +307,14 @@ workflow hooks that run them.
 
 ## Usage
 
-DocGuard ships **25 commands** (the "Daily 5" + 20 situational tools, including lifecycle reconciliation, doc dependency review, agent-rule resolution, retirement and spec tracking, the zero-install `demo`, the `mcp` server, and the `ci` pipeline gate). Six additional one-shot scaffolders are accessed via `docguard init --with <name>`. Legacy command forms remain compatible until v1.0 and print their replacements.
+DocGuard ships **26 commands** (the "Daily 5" + 21 situational tools, including lifecycle reconciliation, doc dependency review, agent-rule resolution, the suppression listing, retirement and spec tracking, the zero-install `demo`, the `mcp` server, and the `ci` pipeline gate). Six additional one-shot scaffolders are accessed via `docguard init --with <name>`. Legacy command forms remain compatible until v1.0 and print their replacements.
 
 **The Daily 5** — what you'll reach for 95% of the time:
 
 | Command | What It Does |
 |:--------|:-------------|
 | `init`  | Bootstrap a project (`--wizard` for interactive · `--with <name>` for scaffolders) |
-| `guard` | Validate against canonical docs — 32 validators |
+| `guard` | Validate against canonical docs — 33 validators |
 | `diff`  | Show gaps between docs and code (`--since <ref>` for impact mode) |
 | `sync`  | Refresh code-truth doc sections, including the `module-graph` and `entity-diagram` mermaid diagrams drawn from code — keeps memory always up to date |
 | `score` | Structural CDD maturity score (0-100; not a guard verdict; `--diff` for delta between refs) |
@@ -338,6 +338,7 @@ DocGuard ships **25 commands** (the "Daily 5" + 20 situational tools, including 
 | `retire` | Find completed or superseded planning material (`--plan`/`--check`; `--fail-on-warning` gates advisory candidates) and explicitly remove clean tracked documentation from active AI context. `.docguard-archive.json` records recovery metadata and retired requirement identities, and `--retention-ref` proves the source revision remains reachable. This is separate from the Spec Kit Archive extension, which consolidates feature documents. |
 | `reconcile` | Build a read-only code↔spec review graph since a Git ref. Classifies mechanical facts, approved intent, decisions, unrelated changes, and unsupported evidence; `--write` applies only mechanical generated-section refreshes. |
 | `review` | Doc sections whose covered code changed since their last review (`--accept <doc>#<id> --reason`, `--prune`, `--suggest`) |
+| `ignore` | Every suppression in the project (`.docguardignore` entries with their `# reason` and `expires:` date, `.docguard.json` ignore arrays, inline pragmas, N/A markers, the baseline) with its state; `--format claimspec` exports the reasoned `.docguardignore` entries as a claimspec `ignore` document and reports what it left out |
 | `rules` | Which agent instruction files each harness (Codex, Claude Code, Cursor, Copilot, OpenHands) loads for a path, why, and how many bytes (`--for <path>`, `--harness`) |
 | `specs` | Maintain the versioned spec registry, preflight new specs, and apply evidence-gated completion transactions with bounded outcomes and active-context regeneration. Verified living specs can record later reviewed maintenance without reopening or duplicating the specification. `specs require` is the spec-first gate: a change to governed paths must name its spec or declare `Spec-Exempt: <kind> — <reason>`. |
 | `specs --check` / `specs --write` | Validate or refresh `.docguard-specs.json`, the byte-stable index of immutable spec IDs, reviewed lifecycle/lineage/scope, artifact digests, task state, explicitly scoped test evidence, and archive tombstones. Refreshes preserve the reviewed block. |
@@ -385,14 +386,15 @@ require current SHA-256 identities for every declared repository input.
 | `--dir <path>` | Project directory (default: `.`); explicit selection suppresses ancestor-root guidance | All |
 | `--verbose` | Show detailed output | All |
 | `--quiet` / `-q` | Suppress banner — for hooks, CI loops, scripts | All |
-| `--format json` | Machine-readable output (clean JSON, no ANSI bleed) | guard, score, diff, trace, diagnose, memory, impact, explain, verify, reconcile, retire, specs |
+| `--format json` | Machine-readable output (clean JSON, no ANSI bleed) | guard, score, diff, trace, diagnose, memory, impact, explain, verify, reconcile, retire, specs, ignore |
+| `--format claimspec` | claimspec v1 `ignore` document on stdout, validated against the vendored schema; what could not be exported goes to stderr | ignore |
 | `--format sarif` | SARIF 2.1.0 output — findings as rules/results for GitHub Code Scanning and SARIF dashboards | guard |
 | `--format junit` | JUnit XML output — one testcase per validator, for GitLab CI (`artifacts:reports:junit`), Jenkins, Azure DevOps, CircleCI | guard |
 | `--update-baseline` | Adopt DocGuard on a legacy repo without a red day one: freeze today's findings into a committed `.docguard.baseline.json`; guard/ci then gate only NEW drift. Suppression is always visible ("N pre-existing finding(s) suppressed"), and `--no-baseline` shows the full picture | guard |
 | `--full` | Generate `llms-full.txt` (full doc bodies inlined) instead of the `llms.txt` link index | llms |
 | `--compact` | With `--format json`: each fact once, the form the MCP guard tool returns by default | guard |
 | `--pack` | Write `.docguard/context-pack.md` — agent session-start context | memory |
-| `--symbols` | With `--pack`: add a symbol map (most central files and their exported names, within `memory.symbolMap.maxBytes`); opt-in until the v2 benchmark decides | memory |
+| `--symbols` | With `--pack`: add a symbol map (most central files and their exported names, within `memory.symbolMap.maxBytes`); opt-in: the frozen agent-context benchmark (protocol v3) found no regression and no benefit, so it is not on by default | memory |
 | `--sync` | Regenerate the agent-file family (CLAUDE.md, Copilot, Cursor, …) from AGENTS.md; hash-marked, never touches hand-written files without `--force` | agents |
 | `--check` | CI gate for the synced agent-file family — exit 2 when a variant is stale | agents |
 | `--force` | Overwrite existing files (creates `.bak` backups) | generate, agents, init |
@@ -457,7 +459,7 @@ $ npx docguard-cli generate
 
 ## 🔍 Validators
 
-DocGuard runs **32 automated validators** on every `guard` check. Source-facing validators are language-aware where their evidence model applies; repository and document validators operate independently of source language.
+DocGuard runs **33 automated validators** on every `guard` check. Source-facing validators are language-aware where their evidence model applies; repository and document validators operate independently of source language.
 
 > **Counting note:** `guard` prints 30 result rows, not 29. `Structure` emits a
 > second check result (`Doc Sections`) under the same validator key, so rows are
@@ -500,6 +502,7 @@ DocGuard runs **32 automated validators** on every `guard` check. Source-facing 
 | 31 | **Doc-Dependency** | A doc section that declares `covers=` is reported when a covered symbol's code changes semantically since its last `docguard review --accept` (formatting, comments and line moves do not count); opt-in by declaration | ✅ On |
 | 32 | **Path-Scoped-Rules** | Agent instruction files per harness (nested AGENTS.md/CLAUDE.md, Claude Code rules and skills, Cursor `.mdc`, Copilot `.instructions.md`, OpenHands skills): scope globs that match no tracked file, pointers to missing paths (including routing tables), instructions loaded for one path over the byte budget, and scopes a harness cannot read | ✅ On |
 | 33 | **Doc-Ownership** | With an `ownership` map in `.docguard.json`: source directories no doc section owns, two equally specific owners, patterns that match nothing, entries naming missing docs; also lints a committed `.devin/wiki.json` against Devin's limits and for paths that are gone | ✅ On |
+| 34 | **Suppressions** | `.docguardignore` entries whose `expires:` date has passed (they no longer exclude anything), whose expiry is not a calendar date, or, with `suppressions.requireReason`, that have no `# reason` | ✅ On |
 
 **Per-validator controls** (in `.docguard.json`):
 ```json
@@ -720,7 +723,7 @@ See [examples/README.md](https://github.com/raccioly/docguard/blob/main/examples
 npm test    # 2,920 tests (node:test, zero test dependencies)
 ```
 
-Covers all 25 commands, every validator, project type detection, compliance profiles, JSON/SARIF/JUnit output, the packed npm tarball, and downstream field reports replayed as regression cases. Static test-case declarations are a lower bound of that number: Metrics-Consistency flags this line if it ever falls below what the test files declare.
+Covers all 26 commands, every validator, project type detection, compliance profiles, JSON/SARIF/JUnit output, the packed npm tarball, and downstream field reports replayed as regression cases. Static test-case declarations are a lower bound of that number: Metrics-Consistency flags this line if it ever falls below what the test files declare.
 
 ### CI Matrix
 

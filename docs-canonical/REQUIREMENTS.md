@@ -46,7 +46,7 @@
 
 ## Success Criteria
 
-The full supported-runtime test matrix and guard determine local release readiness. The reviewed benchmark records observed detector precision and recall with explicit coverage limits; its finite confidence interval is not universal accuracy. The frozen R7 evaluation supports opt-in task context through equal measured correctness, 50% fewer median steps, and 17% lower median latency against context packs. It also recorded 80% more median uncached input and does not establish universal agent productivity. The symbol map (`memory --pack --symbols`, spec 036) stays opt-in until the frozen v2 protocol records its trials; the protocol, not an impression, decides whether it becomes a default.
+The full supported-runtime test matrix and guard determine local release readiness. The reviewed benchmark records observed detector precision and recall with explicit coverage limits; its finite confidence interval is not universal accuracy. The frozen R7 evaluation supports opt-in task context through equal measured correctness, 50% fewer median steps, and 17% lower median latency against context packs. It also recorded 80% more median uncached input and does not establish universal agent productivity. The symbol map (`memory --pack --symbols`, spec 036) stays opt-in: the frozen protocol, not an impression, decided it. v2 could not run, so v3 (v2 with only the executable pin changed) ran all 54 trials on 2026-10-10 and computed `opt-in`, with no regression and no predeclared benefit.
 
 ## User Scenarios
 
