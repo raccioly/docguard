@@ -1,6 +1,6 @@
 # Tasks: Symbol Map in the Context Pack
 
-**Status**: In progress. The symbol map ships opt-in behind `--symbols`, and the v2 protocol is frozen (digest in `run.mjs`). T009 and T010 wait for the maintainer to run the 54-trial model matrix, which needs their Codex CLI, account and spend; default-on stays blocked until that result meets FR-008.
+**Status**: In progress. The symbol map ships opt-in behind `--symbols`. The v2 protocol is frozen but cannot run (its CLI version is not installed and its model is refused for ChatGPT-account Codex), so the 2026-10-10 amendment froze protocol v3, which changes only the executable pin (T014). T009 and T010 run and decide on v3; default-on stays blocked unless that result meets FR-008.
 **Spec**: `specs/036-symbol-map/spec.md`
 **Plan**: `specs/036-symbol-map/plan.md`
 
@@ -23,8 +23,10 @@
 
 ## Phase 4: Run and decide
 
-- [ ] T009 (maintainer: needs their Codex CLI, account and spend) Run the v2 matrix; write `results/observed-v2.json` and the results README section (FR-007, SC-004).
-- [ ] T010 (after T009) Apply the computed decision: default-on with `Budget-Exempt: memory-pack-bytes — <v2 result>` (FR-009); or keep `--symbols` opt-in; or remove the flag and record "not promoted" in the spec outcome.
+- [x] T014 (amendment 2026-10-10, before any run) `benchmarks/agent-context/manifest-v3.json`, `V3_MANIFEST_DIGEST` and `--protocol v3` in `run.mjs`, a check that v3 differs from v2 only in the executable pin, the v2-format schemas widened to the v3 id, tests in `tests/symbol-map.test.mjs`, and the amendment recorded in `spec.md` and `results/README-v3.md`, committed before the run (FR-011).
+
+- [ ] T009 Run the v3 matrix (v2 cannot run; see T014); write `results/observed-v3.json` and `results/README-v3.md` (FR-007, SC-004).
+- [ ] T010 (after T009) Apply the computed decision: default-on with `Budget-Exempt: memory-pack-bytes — <v3 result>` (FR-009); or keep `--symbols` opt-in; or remove the flag and record "not promoted" in the spec outcome.
 
 ## Phase 5: Docs and verification
 

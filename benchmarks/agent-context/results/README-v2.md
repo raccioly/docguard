@@ -1,9 +1,13 @@
 # Agent context — protocol v2 (symbol map)
 
-<!-- docguard:last-reviewed 2026-09-30 -->
+<!-- docguard:last-reviewed 2026-10-10 -->
 
-**Status: frozen, not yet run.** No v2 observation exists, so there is no
-decision. `memory --pack --symbols` stays opt-in until one is recorded here.
+**Status: frozen, never run, and no longer runnable.** No v2 observation
+exists. On 2026-10-10 the pinned Codex CLI (`0.154.0-alpha.6.2`) was no longer
+installed, and the pinned model (`gpt-5.3-codex-spark`) is refused for
+ChatGPT-account Codex. Protocol v3 (`README-v3.md`) changes only that
+executable pin and carries the decision. This file still describes the tasks
+and the decision rule, which v3 keeps unchanged.
 
 Protocol v2 asks one question: does the symbol map that
 `memory --pack --symbols` adds help an agent enough to earn its bytes in every
