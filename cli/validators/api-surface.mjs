@@ -27,6 +27,8 @@ import { docRolePath, resolveDocRole } from '../shared-doc-roles.mjs';
  * @implements docguard.fallback-language-coverage#FR-001
  * @implements docguard.fallback-language-coverage#FR-007
  * @implements docguard.fallback-language-coverage#FR-009
+ * @implements docguard.coverage-followups#FR-003
+ * @implements docguard.coverage-followups#FR-004
  */
 
 import { existsSync, readFileSync } from 'node:fs';
@@ -44,6 +46,13 @@ import { findAllOpenApiSpecs, orderedSpecDirs } from '../shared-openapi.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 
 const MAX_REPORTED = 15;
+
+/**
+ * A route as the comparison sees it: method and path, plus the reader's
+ * `caseInsensitive` flag when its framework matches routes ignoring case
+ * (docguard.coverage-followups#FR-003).
+ */
+const comparable = r => ({ method: r.method, path: r.path, ...(r.caseInsensitive ? { caseInsensitive: true } : {}) });
 
 export { findAllOpenApiSpecs };
 
@@ -168,7 +177,7 @@ export function resolveApiSurface(projectDir, config) {
   const scan = routes.scan || null;
   if (routes.length) {
     return {
-      endpoints: routes.map(r => ({ method: r.method, path: r.path })),
+      endpoints: routes.map(comparable),
       confidence: 'code',
       source: 'code-scan',
       tier: scanTier || summarizeTiers(routes),
@@ -267,12 +276,13 @@ export function computeApiSurfaceDrift(projectDir, config) {
   if (surface.confidence === 'spec' && cmp.documentedButAbsent.length) {
     const framework = detectFramework(projectDir, config);
     const routes = scanRoutesDeep(projectDir, { framework }, {}, { config });
-    const routeKeys = new Set(routes.map(r => endpointKey(r.method, r.path)));
+    const actual = routes.map(comparable);
+    const present = endpoint => compareEndpoints([endpoint], actual).matched.length > 0;
     contractMismatches = cmp.documentedButAbsent.map(endpoint => ({
       ...endpoint,
       authority: { kind: 'openapi', source: surface.source, status: 'not-declared', confidence: 'high' },
       codeEvidence: {
-        status: routeKeys.has(endpointKey(endpoint.method, endpoint.path))
+        status: present(endpoint)
           ? 'present' : routes.length ? 'not-found' : 'unknown',
         confidence: 'low',
       },
@@ -327,7 +337,7 @@ export function computeSpecVsRouteDrift(projectDir, config) {
   // (second arg) = spec-declares-but-no-route.
   const cmp = compareEndpoints(
     spec.endpoints.map(e => ({ method: e.method, path: e.path })),
-    routes.map(r => ({ method: r.method, path: r.path }))
+    routes.map(comparable)
   );
   return {
     applicable: true,

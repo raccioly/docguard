@@ -22,12 +22,13 @@
 import { existsSync, lstatSync, readdirSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import { extname, resolve, sep } from 'node:path';
 import { walkFiles, relPosix } from '../shared-ignore.mjs';
-import { grepEnvUsage, summarizeTiers } from '../shared-source.mjs';
+import { grepEnvUsage, patternChannels, summarizeTiers } from '../shared-source.mjs';
+import { pyAstAvailable } from './py-ast.mjs';
 import { detectDocTools } from './doc-tools.mjs';
 import { detectProjectProfile } from './project-type.mjs';
 import { scanRoutesDeep } from './routes.mjs';
 import { scanSchemasDeep } from './schemas.mjs';
-import { exportedNames } from './js-ast.mjs';
+import { exportedNames, astTierAvailable } from './js-ast.mjs';
 import { isTestSource } from './requirement-evidence.mjs';
 
 const JS_EXT = new Set(['.js', '.mjs', '.cjs', '.jsx', '.ts', '.tsx', '.mts', '.cts']);
@@ -111,8 +112,28 @@ export function collectAreaFacts(projectDir, areaRel, config = {}) {
 
   const list = [...facts.values()].sort((a, b) => `${a.kind} ${a.key}`.localeCompare(`${b.kind} ${b.key}`));
   const kindTier = (scanTier, kind) => summarizeTiers([...(scanTier ? [scanTier] : []), ...list.filter(f => f.kind === kind && f.tier)]);
+  // Whether the pattern FALLBACK read anything (a language with a parser),
+  // from the counts, not from a `mixed` tier: JavaScript routes beside Go
+  // routes are mixed but complete as far as a parser can make them
+  // (docguard.coverage-followups#FR-007).
+  const regexFacts = list.filter(f => f.tier === 'regex-fallback');
+  const regexScan = [routes.scanTier, schemas.scanTier].find(t => patternChannels(t).regexRead > 0) || null;
   Object.defineProperty(list, 'tiers', {
-    value: { route: kindTier(routes.scanTier, 'route'), entity: kindTier(schemas.scanTier, 'entity') },
+    value: {
+      route: kindTier(routes.scanTier, 'route'),
+      entity: kindTier(schemas.scanTier, 'entity'),
+      regexRead: regexFacts.length > 0 || regexScan !== null,
+      regexReason: regexScan?.regexReason || regexScan?.tierReason || regexFacts.find(f => f.tierReason)?.tierReason || null,
+      // What the affected files lack, for the advice (docguard.coverage-followups#FR-010).
+      regexCauses: [...new Set([
+        ...[routes.scanTier, schemas.scanTier].filter(t => patternChannels(t).regexRead > 0).flatMap(t => t.regexCauses || []),
+        // A fact keeps only its tier: its file's language and which parser
+        // this install lacks give the cause.
+        ...regexFacts.map(f => (/\.py$/i.test(f.file || '')
+          ? (pyAstAvailable() ? 'python-parse-error' : 'python-interpreter-missing')
+          : (astTierAvailable() ? 'js-parse-error' : 'js-parser-missing'))),
+      ])].sort(),
+    },
     enumerable: false,
   });
   return list;
@@ -126,12 +147,17 @@ export function isPatternTier(tier) {
   return tier === 'regex-fallback' || tier === 'mixed';
 }
 
-/** The tier of the facts behind an as-built result, for reports and findings. */
+/**
+ * The tier of the facts behind an as-built result, for reports and findings.
+ * `regexRead` is true only when the pattern fallback read a file whose
+ * language has a parser; a `mixed` tier alone does not set it.
+ * @implements docguard.coverage-followups#FR-007
+ */
 export function factsTier(facts) {
   const tiers = facts?.tiers;
-  if (!tiers) return { tier: 'not-applicable', tierReason: null };
+  if (!tiers) return { tier: 'not-applicable', tierReason: null, regexRead: false, regexCauses: [] };
   const s = summarizeTiers([tiers.route, tiers.entity].filter(t => t && t.tier !== 'not-applicable'));
-  return { tier: s.tier, tierReason: s.tierReason };
+  return { tier: s.tier, tierReason: tiers.regexRead ? tiers.regexReason || s.tierReason : s.tierReason, regexRead: !!tiers.regexRead, regexCauses: tiers.regexCauses || [] };
 }
 
 /**

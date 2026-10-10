@@ -13,6 +13,7 @@
  * @implements docguard.dogfood-round-2#FR-003
  * @implements docguard.dogfood-round-2#FR-006
  * @implements docguard.dogfood-round-2#FR-007
+ * @implements docguard.coverage-followups#FR-005
  */
 
 import { join, relative, resolve } from 'node:path';
@@ -27,18 +28,26 @@ export const TECH_PATTERNS = ['React', 'Next.js', 'Vue', 'Angular', 'Svelte', 'E
 
 // Mongoose stays MongoDB only: the database is the fact an architecture states,
 // and naming the ODM too would warn every project that already documents MongoDB.
+// A package.json covers every name in TECH_PATTERNS, so each name needs a
+// dependency here or a universal signal; Angular and Svelte had none, and the
+// official `mongodb`, `mysql` and `postgres` clients mapped to nothing, so a
+// Node project documenting them always read "documented but not found".
+// `angular` (AngularJS) is a different framework and is not mapped.
 // @implements docguard.dogfood-round-2#FR-006
-const TECH_DEPENDENCIES = {
-  'react': 'React', 'next': 'Next.js', 'vue': 'Vue', 'express': 'Express',
+// @implements docguard.coverage-followups#FR-005
+export const TECH_DEPENDENCIES = Object.freeze({
+  'react': 'React', 'next': 'Next.js', 'vue': 'Vue', '@angular/core': 'Angular',
+  'svelte': 'Svelte', '@sveltejs/kit': 'Svelte', 'express': 'Express',
   'fastify': 'Fastify', 'hono': 'Hono', 'prisma': 'Prisma', '@prisma/client': 'Prisma',
   'drizzle-orm': 'Drizzle', 'typeorm': 'TypeORM', 'sequelize': 'Sequelize',
   'typescript': 'TypeScript', 'tailwindcss': 'Tailwind',
-  'redis': 'Redis', 'ioredis': 'Redis', 'pg': 'PostgreSQL', 'mysql2': 'MySQL',
-  'mongoose': 'MongoDB', '@aws-sdk/client-dynamodb': 'DynamoDB', '@aws-sdk/lib-dynamodb': 'DynamoDB',
-};
+  'redis': 'Redis', 'ioredis': 'Redis', 'pg': 'PostgreSQL', 'postgres': 'PostgreSQL',
+  'mysql2': 'MySQL', 'mysql': 'MySQL', 'mongoose': 'MongoDB', 'mongodb': 'MongoDB',
+  '@aws-sdk/client-dynamodb': 'DynamoDB', '@aws-sdk/lib-dynamodb': 'DynamoDB',
+});
 
 /** Read everywhere, whatever the language: Dockerfiles, compose files, scripts, `.tf`. */
-const UNIVERSAL_TECH = ['Docker', 'Terraform'];
+export const UNIVERSAL_TECH = Object.freeze(['Docker', 'Terraform']);
 
 /*
  * Non-Node ecosystems (docguard.dogfood-round-2#FR-007). `deps` maps a

@@ -20,12 +20,25 @@
  * @implements docguard.more-route-frameworks#FR-005
  * @implements docguard.more-route-frameworks#FR-007
  * @implements docguard.js-framework-routes#FR-006
+ * @implements docguard.coverage-followups#FR-002
+ * @implements docguard.coverage-followups#FR-003
+ * @implements docguard.coverage-followups#FR-004
+ * @implements docguard.coverage-followups#FR-009
  */
+
+/** Mark a route its framework matches ignoring case (docguard.coverage-followups#FR-003/FR-009). */
+const withCase = (route, insensitive) => (insensitive ? { ...route, caseInsensitive: true } : route);
+
+/** Collect a scanner's case notes into the scan record. */
+function takeCaseNotes(scan, found) {
+  for (const n of found.caseNotes || []) scan.caseNotes.push(n);
+  return found;
+}
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, relative, basename, extname, dirname } from 'node:path';
-import { resolveSourceRoots, readScannable, tierFor, summarizeTiers, pagesOutputDir } from '../shared-source.mjs';
-import { DEFAULT_IGNORE_DIRS as IGNORE_DIRS, shouldIgnore, relPosix, isNonProductPath } from '../shared-ignore.mjs';
+import { resolveSourceRoots, readScannable, tierFor, summarizeTiers, collectPackageJsons, pagesOutputDir } from '../shared-source.mjs';
+import { shouldIgnore, relPosix, isNonProductPath, isIgnoredDirEntry } from '../shared-ignore.mjs';
 import { extractJsRouteCalls, extractJsRouteObjects, extractJsMountsAndImports, importedStaticStrings, nextRouteHandlers, isAuthMiddlewareName, AUTH_CHECK_RE, matchingBracket } from './js-ast.mjs';
 import { createAliasResolver } from './ts-paths.mjs';
 import { scanPythonWebRoutes } from './python-routes.mjs';
@@ -41,6 +54,7 @@ import { extractWorkerRoutes } from './worker-routes.mjs';
 import { extractRouterRoutes } from './router-routes.mjs';
 import { extractPagesRoutes, functionsLocation, isAdvancedWorkerFile, parseRoutesJson, servedByRoutesJson } from './pages-routes.mjs';
 import { createImportResolver } from './js-route-support.mjs';
+import { expressCaseModel, koaCaseModel, fastifyCaseMode, nestCaseMode } from './route-case.mjs';
 
 /**
  * Scan routes from source code with framework-aware parsing.
@@ -71,7 +85,7 @@ export function scanRoutesDeep(dir, stack, docTools, opts = {}) {
   // fixtures are exactly the cases a caller must be able to tell apart from
   // "this project registers no routes".
   const maxFiles = Number.isInteger(opts.maxFiles) && opts.maxFiles > 0 ? opts.maxFiles : ROUTE_SCAN_MAX_FILES;
-  const scan = { tierItems: [], truncated: false, cap: maxFiles, patternFrameworks: [], excludedNonProduct: 0, unresolved: [] };
+  const scan = { tierItems: [], truncated: false, cap: maxFiles, patternFrameworks: [], excludedNonProduct: 0, unresolved: [], caseNotes: [] };
   const ctx = { dir, maxFiles, scan, config: opts.config || {} };
   const named = (...names) => names.find(n => framework.includes(n));
   const patternScan = (name, sources, fn) => {
@@ -97,11 +111,11 @@ export function scanRoutesDeep(dir, stack, docTools, opts = {}) {
   // A path these scanners cannot read is recorded with the scan, never
   // reported at a `:param` placeholder (docguard.js-route-shapes#FR-007).
   if (framework.includes('Express') || !framework) {
-    routes.push(...scanExpressRoutes(dir, roots, scan.unresolved));
+    routes.push(...takeCaseNotes(scan, scanExpressRoutes(dir, roots, scan.unresolved)));
   }
 
   if (framework.includes('Fastify')) {
-    routes.push(...scanFastifyRoutes(dir, roots, scan.unresolved));
+    routes.push(...takeCaseNotes(scan, scanFastifyRoutes(dir, roots, scan.unresolved)));
   }
 
   // NestJS decorators, Cloudflare Worker dispatch and Hono/itty-router
@@ -166,6 +180,17 @@ export function scanRoutesDeep(dir, stack, docTools, opts = {}) {
     const py = scanPythonWebRoutes(dir, { django, asgi }, { files: pyFiles });
     scan.tierItems.push(...py.fileTiers);
     limitations = py.limitations || null;
+    // A route the Python reader could not read (a path that does not
+    // evaluate, an include it cannot follow) is a coverage gap like any
+    // other reader's: it joins `unresolved`, labelled with its framework, so
+    // the API-surface check counts and locates it
+    // (docguard.coverage-followups#FR-004).
+    const asgiName = named('FastAPI', 'Flask', 'Starlette') || 'Python';
+    for (const l of limitations || []) {
+      if (!l.framework) l.framework = String(l.code || '').startsWith('django-') ? 'Django' : asgiName;
+      if (l.file) l.file = String(l.file).replace(/\\/g, '/');
+      scan.unresolved.push(l);
+    }
     routes.push(...py);
   }
 
@@ -199,7 +224,7 @@ export function scanRoutesDeep(dir, stack, docTools, opts = {}) {
   // What a reader could not resolve (a dynamic path, a prefix dispatch) is a
   // coverage gap; one in a test or ignored file is not the product's.
   const unresolved = scan.unresolved.filter(u => !u.file || (!isNonProductPath(u.file, cfg) && !shouldIgnore(u.file, cfg)));
-  const allLimitations = [...(limitations || []), ...unresolved];
+  const allLimitations = [...new Set([...(limitations || []), ...unresolved])];
   if (allLimitations.length) Object.defineProperty(kept, 'limitations', { value: allLimitations, enumerable: false });
   for (const pf of scan.patternFrameworks) pf.kept = kept.filter(r => pf.sources.includes(r.source)).length;
   Object.defineProperty(kept, 'scan', {
@@ -212,6 +237,9 @@ export function scanRoutesDeep(dir, stack, docTools, opts = {}) {
       patternFrameworks: scan.patternFrameworks,
       excludedNonProduct: scan.excludedNonProduct,
       unresolved,
+      // Case settings this reader could not read: those routes compare
+      // exactly (docguard.coverage-followups#FR-009).
+      caseNotes: scan.caseNotes,
     },
   });
   return kept;
@@ -390,7 +418,9 @@ function scanExpressRoutes(dir, roots = null, unresolved = null) {
   // non-null receiver means it applies only to routes whose receiver matches
   // (a same-file `const r = Router(); app.use('/api', r)` — so a sibling
   // `app.get('/health')` in the same file is NOT wrongly prefixed).
-  const mountMap = buildExpressMountMap(files, createAliasResolver(dir), unresolved);
+  // Whether each router matches ignoring case (docguard.coverage-followups#FR-009).
+  const caseModel = expressCaseModel(files);
+  const mountMap = buildExpressMountMap(files, createAliasResolver(dir), caseModel.modeOf, unresolved);
 
   // ── Phase 2: emit routes, prefixing by mount where known ────────────────────
   // Auth is per route (docguard.js-ts-extraction#FR-002): the route's own
@@ -404,11 +434,14 @@ function scanExpressRoutes(dir, roots = null, unresolved = null) {
       // Mounted only under prefixes that cannot be read: the served path is
       // unknown, so the route is omitted (docguard.js-route-shapes#FR-010).
       if (matching.length && !applicable.length) return;
+      // Case-insensitive only when the route's own router is, and every router
+      // that matched a mount prefix above it is.
+      const own = caseModel.modeOf(filePath, r.receiver) === 'insensitive';
       const targets = applicable.length
-        ? applicable.map(m => ({ path: joinRoutePath(m.prefix, r.path), auth: m.auth }))
-        : [{ path: r.path, auth: false }];
+        ? applicable.map(m => ({ path: joinRoutePath(m.prefix, r.path), auth: m.auth, insensitive: own && m.insensitive }))
+        : [{ path: r.path, auth: false, insensitive: own }];
       for (const target of targets) {
-        routes.push({
+        routes.push(withCase({
           method: r.method.toUpperCase(),
           path: target.path,
           handler: r.handler ?? extractHandlerName(content, r.start),
@@ -417,7 +450,7 @@ function scanExpressRoutes(dir, roots = null, unresolved = null) {
           source: 'express',
           auth: Boolean(r.auth || target.auth),
           description: extractNearbyComment(content, r.start),
-        });
+        }, target.insensitive));
       }
     };
     const ast = extractJsRouteCalls(content, filePath, mountMap.importedConstants?.get(filePath));
@@ -439,6 +472,7 @@ function scanExpressRoutes(dir, roots = null, unresolved = null) {
     }
   }
 
+  Object.defineProperty(routes, 'caseNotes', { value: caseModel.notes, enumerable: false });
   return routes;
 }
 
@@ -607,12 +641,15 @@ function matcherRegex(pattern) {
  * @implements docguard.js-ts-extraction#FR-005
  * @implements docguard.js-route-shapes#FR-010
  */
-function buildExpressMountMap(files, resolveAlias = null, unresolved = null) {
+function buildExpressMountMap(files, resolveAlias = null, modeOf = null, unresolved = null) {
   const map = new Map();
-  const add = (absFile, receiver, prefix, auth, omitted = false) => {
+  const add = (absFile, receiver, prefix, auth, insensitive, omitted = false) => {
     if (!map.has(absFile)) map.set(absFile, []);
-    map.get(absFile).push({ receiver, prefix, auth, omitted });
+    map.get(absFile).push({ receiver, prefix, auth, insensitive, omitted });
   };
+  // The router that matches a mount prefix is the mount's receiver
+  // (docguard.coverage-followups#FR-009).
+  const parentInsensitive = node => (modeOf ? modeOf(node.file, node.receiver) === 'insensitive' : false);
   const metadata = new Map();
   for (const { content, filePath } of files) {
     const mi = extractJsMountsAndImports(content, filePath);
@@ -700,23 +737,26 @@ function buildExpressMountMap(files, resolveAlias = null, unresolved = null) {
     const nodeEdges = incoming.get(key) || [];
     if (nodeEdges.length === 0) return [];
     const nextVisiting = new Set(visiting).add(key);
-    const prefixes = new Map(); // prefix -> auth
+    const prefixes = new Map(); // prefix -> { auth, insensitive }
     for (const edge of nodeEdges) {
       if (edge.prefix === null) continue; // an unreadable prefix serves nothing we can name
       const parentKey = nodeKey(edge.from);
       const parentHasIncoming = (incoming.get(parentKey) || []).length > 0;
       const parentPrefixes = parentHasIncoming
         ? effectivePrefixes(edge.from, nextVisiting, depth + 1)
-        : [{ prefix: '', auth: false }];
+        : [{ prefix: '', auth: false, insensitive: true }];
+      const edgeInsensitive = parentInsensitive(edge.from);
       for (const parent of parentPrefixes) {
         const prefix = joinRoutePath(parent.prefix, edge.prefix);
         const auth = parent.auth || edge.auth;
-        prefixes.set(prefix, prefixes.has(prefix) ? prefixes.get(prefix) && auth : auth);
+        const insensitive = parent.insensitive && edgeInsensitive;
+        const prior = prefixes.get(prefix);
+        prefixes.set(prefix, prior ? { auth: prior.auth && auth, insensitive: prior.insensitive && insensitive } : { auth, insensitive });
         if (prefixes.size >= 256) break;
       }
       if (prefixes.size >= 256) break;
     }
-    const resolved = [...prefixes].map(([prefix, auth]) => ({ prefix, auth }));
+    const resolved = [...prefixes].map(([prefix, v]) => ({ prefix, auth: v.auth, insensitive: v.insensitive }));
     memo.set(key, resolved);
     return resolved;
   };
@@ -730,8 +770,8 @@ function buildExpressMountMap(files, resolveAlias = null, unresolved = null) {
   };
   for (const node of nodes.values()) {
     const found = effectivePrefixes(node);
-    for (const { prefix, auth } of found) add(node.file, node.receiver, prefix, auth);
-    if (!found.length && blocked(node)) add(node.file, node.receiver, null, false, true);
+    for (const { prefix, auth, insensitive } of found) add(node.file, node.receiver, prefix, auth, insensitive);
+    if (!found.length && blocked(node)) add(node.file, node.receiver, null, false, false, true);
   }
   Object.defineProperty(map, 'importedConstants', { value: importedConstants, enumerable: false });
   return map;
@@ -792,13 +832,13 @@ function scanFastifyRoutes(dir, roots = null, unresolved = null) {
   const pattern = /(?:fastify|server|app)\s*\.\s*(get|post|put|delete|patch)\s*\(\s*['"`]([^'"`]+)['"`]/gi;
 
   const searchTargets = roots && roots.length ? roots : [resolve(dir, 'src')];
-  const found = [];
+  const found = []; // { filePath, fileLabel, content }
   for (const fullDir of searchTargets) {
     if (!existsSync(fullDir)) continue;
     walkRouteDirs(fullDir, (filePath) => {
       if (!isJSFile(filePath)) return;
       const content = readFileSafe(filePath);
-      if (content) found.push({ filePath, content });
+      if (content) found.push({ filePath, fileLabel: relative(dir, filePath), content });
     });
   }
   // `const` strings imported from other project files (docguard.js-route-shapes#FR-011).
@@ -808,12 +848,12 @@ function scanFastifyRoutes(dir, roots = null, unresolved = null) {
     if (mi) metadata.set(filePath, mi);
   }
   const importedConstants = importedConstantsByFile(found, metadata, createAliasResolver(dir));
-  for (const { filePath, content } of found) {
+  for (const { filePath, fileLabel, content } of found) {
     const emit = (method, path, index, auth, line) => routes.push({
       method: method.toUpperCase(),
       path,
       handler: extractHandlerName(content, index),
-      file: relative(dir, filePath),
+      file: fileLabel,
       line: line ?? lineAt(content, index),
       source: 'fastify',
       auth: Boolean(auth),
@@ -826,7 +866,6 @@ function scanFastifyRoutes(dir, roots = null, unresolved = null) {
     // route's own evidence (docguard.js-ts-extraction#FR-002).
     const calls = extractJsRouteCalls(content, filePath, importedConstants.get(filePath));
     const objs = extractJsRouteObjects(content, filePath);
-    const fileLabel = relative(dir, filePath);
     if (calls || objs) {
       for (const r of calls || []) emit(r.method, r.path, r.start, r.auth, r.line);
       for (const r of objs || []) emit(r.method, r.path, r.start, r.auth, r.line);
@@ -841,7 +880,12 @@ function scanFastifyRoutes(dir, roots = null, unresolved = null) {
     }
   }
 
-  return routes;
+  // find-my-way is case-sensitive unless every server sets a literal
+  // `caseSensitive: false` (docguard.coverage-followups#FR-009).
+  const fastifyCase = fastifyCaseMode(found);
+  const marked = routes.map(r => withCase(r, fastifyCase.mode === 'insensitive'));
+  Object.defineProperty(marked, 'caseNotes', { value: fastifyCase.notes, enumerable: false });
+  return marked;
 }
 
 // ── NestJS, Cloudflare Workers, Hono/itty-router (docguard.js-framework-routes) ─
@@ -876,7 +920,16 @@ const NEST_MARKER = /@Controller\b|@Module\s*\(|setGlobalPrefix|enableVersioning
 const ROUTER_MARKER = /\.\s*(?:get|post|put|delete|del|patch|head|options|all|on|route|use|basePath|prefix|openapi|doc|doc31)\s*\(|\bcreateRoute\s*\(/;
 
 function scanNestRoutes(dir, ctx) {
-  return recordReader(ctx, extractNestRoutes(readJsSources(ctx, NEST_MARKER), { config: ctx.config }));
+  const all = readJsSources(ctx);
+  const found = recordReader(ctx, extractNestRoutes(all.filter(s => NEST_MARKER.test(s.content)), { config: ctx.config }));
+  // NestJS matches like its HTTP adapter: the Express app's setting by
+  // default, case-sensitive on Fastify (docguard.coverage-followups#FR-009).
+  const deps = {};
+  for (const { pkg } of collectPackageJsons(dir, ctx.config)) Object.assign(deps, pkg.dependencies || {}, pkg.devDependencies || {});
+  const nestCase = nestCaseMode(all, deps);
+  for (const n of nestCase.notes) ctx.scan.caseNotes.push(n);
+  if (nestCase.mode === 'insensitive') for (const r of found) r.caseInsensitive = true;
+  return found;
 }
 
 function scanHonoRouterRoutes(dir, ctx) {
@@ -884,7 +937,14 @@ function scanHonoRouterRoutes(dir, ctx) {
 }
 
 function scanKoaRouterRoutes(dir, ctx) {
-  return recordReader(ctx, extractRouterRoutes(readJsSources(ctx, ROUTER_MARKER), createImportResolver(dir), { framework: 'Koa', defaultSource: 'koa', loadSource: readFileSafe }));
+  const all = readJsSources(ctx);
+  // A Koa router matches ignoring case unless created with `sensitive: true`
+  // (docguard.coverage-followups#FR-009), read per router across the project.
+  const koaCase = koaCaseModel(all.map(s => ({ filePath: s.abs, fileLabel: s.file, content: s.content })));
+  for (const n of koaCase.notes) ctx.scan.caseNotes.push(n);
+  return recordReader(ctx, extractRouterRoutes(all.filter(s => ROUTER_MARKER.test(s.content)), createImportResolver(dir), {
+    framework: 'Koa', defaultSource: 'koa', loadSource: readFileSafe, caseModeOf: koaCase.modeOf,
+  }));
 }
 
 /**
@@ -1093,7 +1153,10 @@ function scanAspNetRoutes(dir, ctx) {
   const files = readPatternFiles(ctx, /\.cs$/);
   const sources = files.map(f => ({ file: relPosix(dir, f), content: readFileSafe(f) }));
   const found = extractAspNetRoutes(sources);
-  return withOmitted(found.map(r => ({ ...r, source: 'aspnet-core', description: '', ...tierFor(resolve(dir, r.file), null) })), found.omitted);
+  // ASP.NET Core matches routes case-insensitively, and `[controller]` keeps
+  // the class's case (`/api/Users`), so a comparison must ignore case for these
+  // routes only (docguard.coverage-followups#FR-003).
+  return withOmitted(found.map(r => ({ ...r, source: 'aspnet-core', description: '', caseInsensitive: true, ...tierFor(resolve(dir, r.file), null) })), found.omitted);
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -1111,7 +1174,7 @@ function walkRouteDirs(dir, callback) {
   try {
     const entries = readdirSync(dir, { withFileTypes: true });
     for (const entry of entries) {
-      if (IGNORE_DIRS.has(entry.name) || entry.name.startsWith('.')) continue;
+      if (isIgnoredDirEntry(entry.name, entries) || entry.name.startsWith('.')) continue;
       const fullPath = join(dir, entry.name);
       if (entry.isDirectory()) {
         walkRouteDirs(fullPath, callback);
@@ -1150,7 +1213,8 @@ export function findRouteFiles(dir, pattern, { maxFiles = ROUTE_SCAN_MAX_FILES, 
     try { entries = readdirSync(d, { withFileTypes: true }); } catch { return; }
     entries.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
     for (const entry of entries) {
-      if (IGNORE_DIRS.has(entry.name) || entry.name.startsWith('.')) continue;
+      // Build output, including a .NET `bin/` (docguard.coverage-followups#FR-002).
+      if (isIgnoredDirEntry(entry.name, entries) || entry.name.startsWith('.')) continue;
       const fullPath = join(d, entry.name);
       if (entry.isDirectory()) walk(fullPath, depth + 1);
       else if (entry.isFile() && pattern.test(entry.name)) {

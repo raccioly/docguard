@@ -72,7 +72,7 @@ const openapiPath = p => p.replace(/\/\{([^}]+?)\}/g, '/:$1');
  * @param {{ framework?: string, defaultSource?: string }} [opts]
  * @returns {Array<object>} routes, with non-enumerable `limitations` and `fileTiers`
  */
-export function extractRouterRoutes(sources, resolveImport, { framework = 'Hono', defaultSource = 'hono', loadSource = null } = {}) {
+export function extractRouterRoutes(sources, resolveImport, { framework = 'Hono', defaultSource = 'hono', loadSource = null, caseModeOf = null } = {}) {
   const nodes = new Map();        // id -> { kind, base, auth, unresolved, openapi }
   const aliases = new Map();      // local import id -> { target, imported }
   const exportsByFile = new Map(); // abs -> Map(exported -> local)
@@ -137,7 +137,7 @@ export function extractRouterRoutes(sources, resolveImport, { framework = 'Hono'
     const incoming = edges.filter(e => canonical(e.to) === id);
     let out;
     if (node.unresolved) out = [];
-    else if (!incoming.length) out = [{ prefix: joinSegments(node.base), auth: Boolean(node.auth) }];
+    else if (!incoming.length) out = [{ prefix: joinSegments(node.base), auth: Boolean(node.auth), insensitive: true }];
     else {
       out = [];
       const next = new Set(visiting).add(id);
@@ -145,7 +145,12 @@ export function extractRouterRoutes(sources, resolveImport, { framework = 'Hono'
         if (e.unresolved) continue;
         const from = canonical(e.from);
         for (const p of effective(from, next)) {
-          out.push({ prefix: joinSegments(p.prefix, e.prefix, node.base), auth: Boolean(p.auth || node.auth || e.auth || covered(from, e.prefix, e.start, e.file)) });
+          out.push({
+            prefix: joinSegments(p.prefix, e.prefix, node.base),
+            auth: Boolean(p.auth || node.auth || e.auth || covered(from, e.prefix, e.start, e.file)),
+            // koa-mount strips its prefix with a case-sensitive comparison.
+            insensitive: p.insensitive && !e.exact,
+          });
         }
       }
     }
@@ -182,8 +187,13 @@ export function extractRouterRoutes(sources, resolveImport, { framework = 'Hono'
     const id = canonical(r.node);
     const node = nodes.get(id);
     if (!node) continue;
+    // A Koa router matches ignoring case unless created `sensitive: true`
+    // (docguard.coverage-followups#FR-009); `caseModeOf(file, name)` reads it.
+    const hash = id.lastIndexOf('#');
+    const ownInsensitive = Boolean(caseModeOf) && isKoa(node) && caseModeOf(id.slice(0, hash), id.slice(hash + 1)) === 'insensitive';
     for (const eff of effective(id)) {
       routes.push({
+        ...(ownInsensitive && eff.insensitive ? { caseInsensitive: true } : {}),
         method: r.method,
         path: joinSegments(eff.prefix, r.path),
         handler: r.handler,
@@ -476,7 +486,7 @@ function readAst(ast, ctx) {
       const target = hasPath ? margs[1] : margs[0];
       const child = mountOf(target)?.child || refOf(target);
       if (!child) return null;
-      return { child, prefix: prefix ?? '', unresolved: prefix === null, at: margs[0] };
+      return { child, prefix: prefix ?? '', unresolved: prefix === null, at: margs[0], exact: true };
     }
     return null;
   };
@@ -518,7 +528,7 @@ function readAst(ast, ctx) {
           if (!m) continue;
           if (m.unresolved) limit('router-unresolved-path', file, lineOf(node), nodeText(content, m.at));
           for (const p of prefixes) {
-            edges.push({ from: recv.id, to: m.child, prefix: joinSegments(p ?? '', m.prefix), start, file: abs, auth, unresolved: pathUnresolved || m.unresolved });
+            edges.push({ from: recv.id, to: m.child, prefix: joinSegments(p ?? '', m.prefix), start, file: abs, auth, unresolved: pathUnresolved || m.unresolved, exact: Boolean(m.exact) });
           }
         }
         return;

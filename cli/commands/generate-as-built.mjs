@@ -10,12 +10,15 @@
  *
  * @implements docguard.as-built-specs#FR-001
  * @implements docguard.as-built-specs#FR-003
+ * @implements docguard.coverage-followups#FR-007
+ * @implements docguard.coverage-followups#FR-010
  */
 
 import { existsSync, rmdirSync } from 'node:fs';
 import { basename, dirname, resolve } from 'node:path';
 import { c } from '../shared.mjs';
-import { areaTests, collectAreaFacts, factsTier, isPatternTier, nextFeatureDir, renderAsBuiltSpec, resolveArea, slugFor } from '../scanners/as-built.mjs';
+import { patternFallbackAdvice } from '../shared-source.mjs';
+import { areaTests, collectAreaFacts, factsTier, nextFeatureDir, renderAsBuiltSpec, resolveArea, slugFor } from '../scanners/as-built.mjs';
 import { projectSpecRegistry, SPEC_REGISTRY_PATH } from '../scanners/spec-registry.mjs';
 import { commitFileTransaction } from '../writers/file-transaction.mjs';
 
@@ -52,9 +55,12 @@ export function runGenerateAsBuilt(projectDir, config, flags) {
   // fallback could not see is missing, so the result says so
   // (docguard.python-extraction#FR-013).
   const tier = factsTier(facts);
-  const lowConfidence = isPatternTier(tier.tier);
+  // The pattern fallback read a file a parser could have read; a `mixed`
+  // tier from a pattern-only language beside a parsed one is not that
+  // (docguard.coverage-followups#FR-007).
+  const lowConfidence = tier.regexRead;
   const notes = lowConfidence
-    ? [`Routes and entities were read by the pattern fallback, not a syntax tree (${tier.tierReason || 'no parser'}); a candidate it cannot see is missing. Install python3 (or fix the parse error) and re-run for exact facts.`]
+    ? [`Routes and entities were read by the pattern fallback, not a syntax tree (${tier.tierReason || 'no parser'}); a candidate it cannot see is missing. ${patternFallbackAdvice(tier.regexCauses)}`]
     : [];
   const result = {
     command: 'generate --spec', status: 'PLANNED', area: area.rel, specId, path: specPath, facts, tests, written: false,

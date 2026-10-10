@@ -25,19 +25,49 @@ import { resolveDocRole } from './shared-doc-roles.mjs';
  * of validator. Build outputs, VCS internals, package caches, framework synth
  * outputs. Validators MAY extend this with their own additions but SHOULD
  * start from this base so behavior is consistent across the tool.
+ *
+ * Only names that are build output wherever they appear belong here. `bin` is
+ * not one of them: it is source in a Node CLI, Ruby binstubs or a shell
+ * project, and .NET output only beside a project file — see
+ * `isIgnoredDirEntry` (docguard.coverage-followups#FR-002).
+ *
+ * @implements docguard.coverage-followups#FR-002
  */
 export const DEFAULT_IGNORE_DIRS = new Set([
   // Package managers
   'node_modules', 'vendor', '.venv', '__pycache__',
   // VCS
   '.git', '.jj', '.hg', '.svn',
-  // Build outputs — JS/TS, Rust/Java, generic
-  'dist', 'build', 'out', 'coverage', 'target', '.gradle',
+  // Build outputs — JS/TS, Rust/Java (target), .NET/C (obj), Mix/dune/Sphinx (_build), generic
+  'dist', 'build', 'out', 'coverage', 'target', '.gradle', 'obj', '_build',
   // Framework synth/cache
   '.next', '.nuxt', '.turbo', '.vercel', '.cache', '.svelte-kit', 'cdk.out',
   // OS
   '.DS_Store',
 ]);
+
+/** A .NET project file: the directory holding one keeps its build output in `bin/`. */
+const DOTNET_PROJECT_FILE_RE = /\.(?:cs|fs|vb)proj$/i;
+/** Directory names that are build output only in a particular context. */
+const DOTNET_OUTPUT_DIRS = new Set(['bin']);
+
+/**
+ * Whether a directory entry is build output a walker must skip: a name in
+ * `ignoreDirs` (default `DEFAULT_IGNORE_DIRS`), or `bin` when a sibling entry
+ * is a .NET project file (`*.csproj`, `*.fsproj`, `*.vbproj`). Every other
+ * `bin/` is read.
+ *
+ * @implements docguard.coverage-followups#FR-002
+ * @param {string} name - the entry's name
+ * @param {Array<string|{name: string}>} siblings - every entry of the same directory
+ * @param {Set<string>} [ignoreDirs]
+ * @returns {boolean}
+ */
+export function isIgnoredDirEntry(name, siblings, ignoreDirs = DEFAULT_IGNORE_DIRS) {
+  if (ignoreDirs.has(name)) return true;
+  if (!DOTNET_OUTPUT_DIRS.has(name)) return false;
+  return (siblings || []).some(e => DOTNET_PROJECT_FILE_RE.test(typeof e === 'string' ? e : e?.name || ''));
+}
 
 // Regex for paths that must always be rejected at any depth, regardless of
 // the glob pattern matching them. These are duplicate file trees (worktrees)
@@ -611,7 +641,7 @@ export function walkFiles(dir, callback, opts = {}) {
   }
   let complete = true;
   for (const entry of entries) {
-    if (ignoreDirs.has(entry)) continue;
+    if (isIgnoredDirEntry(entry, entries, ignoreDirs)) continue;
     if (skipDotEntries && entry.startsWith('.') && !(keepDot && keepDot(entry))) continue;
     const full = joinPath(dir, entry);
     let stat;

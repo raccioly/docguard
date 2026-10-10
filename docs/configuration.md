@@ -226,6 +226,25 @@ pragmas, N/A markers and the baseline, with its reason and state;
 `docguard ignore --format claimspec` exports the reasoned `.docguardignore`
 entries as a claimspec `ignore` document ([commands](commands.md#docguard-ignore)).
 
+### Directories skipped without configuration
+
+DocGuard's file walkers skip dependency and build-output directories by name,
+at any depth, with nothing in `.docguardignore` (`DEFAULT_IGNORE_DIRS` in
+`cli/shared-ignore.mjs`):
+
+- dependencies: `node_modules`, `vendor` (PHP, Go), `.venv`, `__pycache__`;
+- build output: `dist`, `build`, `out`, `coverage`, `target` (Rust, Maven),
+  `.gradle`, `obj` (.NET, C), `_build` (Mix, dune, Sphinx), `cdk.out`;
+- framework caches: `.next`, `.nuxt`, `.svelte-kit`, `.turbo`, `.vercel`,
+  `.cache`;
+- version control: `.git`, `.jj`, `.hg`, `.svn`.
+
+A `bin` directory is skipped only when the directory holding it also holds a
+.NET project file (`*.csproj`, `*.fsproj`, `*.vbproj`): there it is build and
+publish output. Every other `bin/` is read, such as a Node CLI's `bin/cli.js`,
+Ruby binstubs or shell scripts. To skip a directory this list does not name,
+add it to `.docguardignore`.
+
 ## Adoption baseline — `baseline`
 
 When a committed `.docguard.baseline.json` exists (written by
