@@ -2071,22 +2071,32 @@
       "path": "specs/063-coverage-followups/spec.md",
       "reviewed": {
         "lifecycle": {
-          "approval": "draft",
-          "delivery": "planned",
+          "approval": "approved",
+          "delivery": "implemented",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
-          "persistenceModel": null
+          "persistenceModel": "living"
         },
         "relations": {
-          "extends": [],
+          "extends": [
+            "docguard.dogfood-round-2",
+            "docguard.fallback-language-coverage",
+            "docguard.js-framework-routes",
+            "docguard.more-route-frameworks",
+            "docguard.php-dotnet-routes",
+            "docguard.python-extraction"
+          ],
           "duplicates": [],
           "conflictsWith": [],
           "supersedes": [],
           "supersededBy": []
         },
         "scope": {
-          "canonicalDocs": []
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md",
+            "docs-canonical/DATA-MODEL.md"
+          ]
         },
         "reconciliation": {
           "lastReviewedRevision": null,
