@@ -11,6 +11,9 @@
  * @req docguard.ignore-reasons#FR-007
  * @req docguard.ignore-reasons#FR-008
  * @req docguard.ignore-reasons#FR-009
+ * @req docguard.ignore-reasons#FR-010
+ * @req docguard.ignore-reasons#FR-011
+ * @req docguard.ignore-reasons#FR-012
  * @req docguard.ignore-reasons#SC-001
  * @req docguard.ignore-reasons#SC-002
  */
@@ -24,8 +27,9 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 import {
-  loadDocguardIgnore, loadDocguardIgnoreEntries, mergeIgnoreFile, parseDocguardIgnore,
+  buildIgnoreFilter, loadDocguardIgnore, loadDocguardIgnoreEntries, mergeIgnoreFile, parseDocguardIgnore, shouldIgnore,
 } from '../cli/shared-ignore.mjs';
+import { validateSecurity } from '../cli/validators/security.mjs';
 import { loadIgnorePatterns } from '../cli/shared.mjs';
 import { CODES, parseInlinePragma, suppressesCode } from '../cli/findings.mjs';
 import { validateSuppressions } from '../cli/validators/suppressions.mjs';
@@ -258,8 +262,12 @@ describe('docguard ignore --format claimspec (FR-008)', () => {
     const table = [
       ['build/', 'build'], ['*.egg-info/', '*.egg-info'], ['src/legacy/**', '**/src/legacy/**'],
       ['docs/reference/findings.md', '**/docs/reference/findings.md'], ['*.bak', '*.bak'], ['a/*/b', '**/a/*/b'],
-      ['**/fixtures/**', null], ['a/**/b', null], ['foo?', null], ['[ab]', null], ['!keep', null],
-      ['/rooted', null], ['a**', null], ['x(1)', null], ['back\\slash', null],
+      // FR-011: the matcher now reads these the way gitignore does (FR-010).
+      ['**/fixtures/**', '**/fixtures/**'], ['a/**/b', '**/a/**/b'], ['foo?', 'foo?'], ['[ab]', '[ab]'],
+      ['[!ab].md', '[!ab].md'], ['/rooted', '/rooted'], ['/rooted/dir/', '/rooted/dir'], ['x(1)', 'x(1)'],
+      ['back\\slash', 'back\\slash'], ['a+b|c', 'a+b|c'], ['{a,b}.md', '{a,b}.md'], ['**', '**'],
+      // Still read differently, so still refused.
+      ['!keep', null], ['a**', null], ['**b/c', null], ['[unclosed', null], ['[[:alpha:]].md', null],
     ];
     for (const [pattern, expected] of table) {
       assert.equal(claimspecPathPattern(pattern).pattern, expected, pattern);
@@ -276,7 +284,8 @@ describe('docguard ignore --format claimspec (FR-008)', () => {
         'bare/',
         'short/  # tmp',
         'broken/  expires:2026-02-30  # an impossible expiry date',
-        'foo?  # a regex quantifier in disguise',
+        'foo?  # one character after foo',
+        '!keep  # a negation DocGuard reads literally',
         `long/  # ${long}`,
       ].join('\n'),
       '.docguard.json': JSON.stringify({ projectName: 'ign', todoIgnore: ['vendor/'] }),
@@ -293,13 +302,14 @@ describe('docguard ignore --format claimspec (FR-008)', () => {
         { kind: 'path', pattern: '**/src/legacy/**', reason: 'removed with the v2 API', expires: '2027-01-01T00:00:00Z' },
         { kind: 'path', pattern: 'build', reason: 'generated output of the build' },
         { kind: 'path', pattern: 'old', reason: 'replaced by the v2 importer', expires: '2000-01-02T00:00:00Z' },
+        { kind: 'path', pattern: 'foo?', reason: 'one character after foo' },
       ],
     });
     assert.match(out.stderr, /not the complete suppression policy/);
     assert.match(out.stderr, /bare\/.*no reason/);
     assert.match(out.stderr, /short\/.*shorter than 8/);
     assert.match(out.stderr, /broken\/.*expiry/);
-    assert.match(out.stderr, /foo\?.*regular expression/);
+    assert.match(out.stderr, /!keep.*negates/);
     assert.match(out.stderr, /long\/.*longer than 2000/);
     assert.match(out.stderr, /1 validator-scoped/);
     assert.match(out.stderr, /1 inline pragma/);
@@ -364,5 +374,120 @@ describe('vendored claimspec schemas and their validator (FR-009)', () => {
 
   it('the writer refuses to print a document that does not validate', () => {
     assert.throws(() => assertValidClaimspec('ignore', { schemaVersion: 1, entries: [{ kind: 'path', pattern: 'x', reason: 'short' }] }), /not a valid claimspec ignore/);
+  });
+});
+
+/** The matcher as it was before FR-010 — the reference for the before/after table. */
+function oldGlobToRegex(pattern) {
+  const normalized = pattern.replace(/\/+$/, '') || pattern;
+  const escaped = normalized
+    .replace(/\./g, '\\.')
+    .replace(/\*\*/g, '§§')
+    .replace(/\*/g, '[^/]*')
+    .replace(/§§/g, '.*');
+  return new RegExp(`^${escaped}$|/${escaped}$|^${escaped}/|/${escaped}/`);
+}
+const oldFilter = patterns => path => patterns.some(p => oldGlobToRegex(p).test(path));
+
+describe('the ignore matcher reads every pattern the way gitignore does (FR-010)', () => {
+  const cases = [
+    // [pattern, matches, does not match]
+    ['**/fixtures/**', ['fixtures/x', 'a/fixtures/x', 'a/b/fixtures/c/d'], ['fixturesx/y', 'x/fixtures']],
+    ['**/x.md', ['x.md', 'a/x.md', 'a/b/x.md'], ['ax.md', 'x.mdx']],
+    ['a/**/b', ['a/b', 'a/x/b', 'a/x/y/b', 'z/a/b', 'a/b/c'], ['ab', 'a/xb', 'a/b2']],
+    ['foo?', ['foox', 'dir/fooy', 'fooz/inner'], ['fo', 'foo', 'fooxx', 'foo/x']],
+    ['x(1).md', ['x(1).md', 'd/x(1).md'], ['x1.md', 'x.md']],
+    ['a+b', ['a+b'], ['aab', 'ab']],
+    ['a|b', ['a|b'], ['a', 'b']],
+    ['^x$', ['^x$'], ['x']],
+    ['{a,b}.md', ['{a,b}.md'], ['a.md', 'b.md']],
+    ['x{2}', ['x{2}'], ['xx']],
+    ['[ab].md', ['a.md', 'd/b.md'], ['c.md', 'ab.md']],
+    ['[!ab].md', ['c.md', '!.md'], ['a.md', 'b.md', 'ab.md']],
+    ['[^ab].md', ['c.md'], ['a.md']],
+    ['[a-c]x', ['ax', 'cx'], ['dx']],
+    ['x[!a]y', ['xby'], ['x/y', 'xay']],
+    ['[unclosed', ['[unclosed'], ['u']],
+    ['\\*.md', ['*.md'], ['a.md']],
+    ['back\\slash', ['backslash'], ['back\\slash']],
+    ['/build', ['build', 'build/x'], ['a/build', 'a/build/x']],
+    ['/a/b/', ['a/b', 'a/b/c'], ['x/a/b']],
+    ['!keep', ['!keep'], ['keep']],
+    ['§§x', ['§§x'], ['abcx']],
+  ];
+
+  for (const [pattern, yes, no] of cases) {
+    it(`${pattern}`, () => {
+      const f = buildIgnoreFilter([pattern]);
+      for (const p of yes) assert.equal(f(p), true, `${pattern} should match ${p}`);
+      for (const p of no) assert.equal(f(p), false, `${pattern} should not match ${p}`);
+    });
+  }
+
+  it('every caller sees the same reading: config ignore, securityIgnore, todoIgnore, documentLifecycle, .docguardignore', () => {
+    const config = { ignore: ['**/gen/**'], securityIgnore: ['**/fixtures/**'], todoIgnore: ['notes?.md'], documentLifecycle: ['/archive'] };
+    assert.equal(shouldIgnore('gen/a.js', config), true);
+    assert.equal(shouldIgnore('fixtures/a.js', config, 'securityIgnore'), true);
+    assert.equal(shouldIgnore('fixtures/a.js', config), false);
+    assert.equal(shouldIgnore('notes1.md', config, 'todoIgnore'), true);
+    assert.equal(shouldIgnore('notes.md', config, 'todoIgnore'), false);
+    assert.equal(shouldIgnore('archive/old.md', config, 'documentLifecycle'), true);
+    assert.equal(shouldIgnore('docs/archive/old.md', config, 'documentLifecycle'), false);
+    fresh({ '.docguardignore': '**/fixtures/**\n' });
+    assert.equal(loadIgnorePatterns(dir)('fixtures/x.md'), true);
+  });
+
+  it('securityIgnore **/fixtures/** now keeps a top-level fixtures/ out of the secret scan', () => {
+    fresh({ 'fixtures/keys.js': "const api_key = 'Zx9Qw8Er7Ty6Ui5Op4As';\n", 'src/index.js': 'export const x = 1;\n' });
+    const without = validateSecurity(dir, {}).findings.filter(f => f.code === 'SEC002');
+    assert.equal(without.length, 1, 'the fixture is a real SEC002 hit without the pattern');
+    const withPattern = validateSecurity(dir, { securityIgnore: ['**/fixtures/**'] }).findings.filter(f => f.code === 'SEC002');
+    assert.deepEqual(withPattern, []);
+  });
+
+  it('before/after: patterns without the fixed syntax match exactly the same paths', () => {
+    const repoPatterns = oldParser(readFileSync(join(ROOT, '.docguardignore'), 'utf8'));
+    const fixturePatterns = oldParser(readFileSync(join(ROOT, 'benchmarks/fixtures/generated-security-control/.docguardignore'), 'utf8'));
+    const crafted = [
+      'build/', 'dist', '*.bak', '*.egg-info/', 'src/legacy/**', 'docs/reference/findings.md', 'a/*/b', 'a**',
+      '**', '***', 'x.**', 'My Docs/', 'C#/', 'notes#1.md', '.DS_Store', '**.md', 'tests/**/*.snap', 'a/**',
+      '/', 'packages/*/dist/', '*', '*.test.ts', 'vendor/legacy.ts',
+    ];
+    const tracked = spawnSync('git', ['ls-files'], { cwd: ROOT, encoding: 'utf8' }).stdout.split('\n').filter(Boolean);
+    const paths = [...tracked, 'fixtures/x', 'a/b', 'a/x/b', 'build', 'build/x', 'x/build', 'Research', 'Research/a.md',
+      'My Docs/a.md', 'C#/x.cs', 'x.bak', 'deep/x.egg-info/PKG', 'src/legacy/a.js', 'z/src/legacy/a.js', 'a/q/b/c'];
+    const fixed = p => /[?[\]()+^$|{}\\§]/.test(p) || /^\//.test(p) || /(^|\/)\*\*\//.test(p);
+    const rows = [];
+    for (const pattern of [...new Set([...repoPatterns, ...fixturePatterns, ...crafted])]) {
+      const before = oldFilter([pattern]);
+      const after = buildIgnoreFilter([pattern]);
+      const changed = paths.filter(p => before(p) !== after(p));
+      rows.push([pattern, paths.filter(before).length, paths.filter(after).length, changed.length]);
+      if (!fixed(pattern)) assert.deepEqual(changed, [], `${pattern} changed on ${changed.slice(0, 5).join(', ')}`);
+      // A leading or interior `**/` only gains matches (zero directories, top level).
+      else if (/(^|\/)\*\*\//.test(pattern) && !/[?[\]()+^$|{}\\§]/.test(pattern)) {
+        assert.deepEqual(changed.filter(p => before(p)), [], `${pattern} lost a match`);
+      }
+    }
+    assert.ok(rows.length >= 40, `table has ${rows.length} patterns`);
+  });
+});
+
+describe('claimspec export follows the corrected matcher (FR-011)', () => {
+  it('exports a reasoned entry the matcher used to read as a regular expression', () => {
+    fresh({ '.docguardignore': '**/fixtures/**  # test data that is not product code\nnotes?.md  # numbered scratch notes\n' });
+    const { document, report } = toClaimspecIgnore(collectSuppressions(dir, {}, { today: '2026-10-10' }));
+    assert.deepEqual(document.entries.map(e => e.pattern), ['**/fixtures/**', 'notes?.md']);
+    assert.equal(report.complete, true);
+    assert.deepEqual(validateClaimspec('ignore', document), []);
+  });
+});
+
+describe('the documentLifecycle exclusion array is part of the published config (FR-012)', () => {
+  it('is declared in the config schema and documented', () => {
+    const schema = JSON.parse(readFileSync(join(ROOT, 'schemas', 'docguard-config.schema.json'), 'utf8'));
+    assert.deepEqual(schema.properties.documentLifecycle?.type, 'array');
+    assert.deepEqual(schema.properties.documentLifecycle?.items, { type: 'string' });
+    assert.match(readFileSync(join(ROOT, 'docs', 'configuration.md'), 'utf8'), /`documentLifecycle`/);
   });
 });

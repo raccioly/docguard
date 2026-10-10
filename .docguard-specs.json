@@ -3904,7 +3904,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/shared-ignore.mjs",
-            "line": 113
+            "line": 117
           },
           {
             "requirementId": "FR-007",
@@ -4534,7 +4534,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/shared-ignore.mjs",
-            "line": 85
+            "line": 89
           },
           {
             "requirementId": "FR-006",
@@ -5049,6 +5049,9 @@
           "docguard.ignore-reasons#FR-007",
           "docguard.ignore-reasons#FR-008",
           "docguard.ignore-reasons#FR-009",
+          "docguard.ignore-reasons#FR-010",
+          "docguard.ignore-reasons#FR-011",
+          "docguard.ignore-reasons#FR-012",
           "docguard.ignore-reasons#SC-001",
           "docguard.ignore-reasons#SC-002"
         ]
@@ -5057,46 +5060,46 @@
         "artifacts": [
           {
             "path": "specs/057-ignore-reasons/spec.md",
-            "digest": "sha256:23b99982dc2cfda8fb865775be063f5adcaae67775a77deb82387f32b5ce5af7"
+            "digest": "sha256:ecaad624c4bb2615808d9a9407af945233f1fd92ccdc6b1419a85bb52b1977be"
           },
           {
             "path": "specs/057-ignore-reasons/plan.md",
-            "digest": "sha256:3c0e029f5ee8c8482fcc2fd209c6dcfc92d7b2f520fac542fafdbcfc16a57d68"
+            "digest": "sha256:55494a755d3275d2e39a7b8da9a06fef67b0617e58daa7d581c20ffce45be50c"
           },
           {
             "path": "specs/057-ignore-reasons/tasks.md",
-            "digest": "sha256:82a5f9cb9bd9970f04305b75391ec1ce21cf2aee37001828437c731fc4bee6f3"
+            "digest": "sha256:9ed9518e819504387044a9d89912a85e4272ffea5ad03cc54b609e916d554c13"
           }
         ],
         "taskCompletion": {
-          "checked": 8,
-          "total": 8
+          "checked": 12,
+          "total": 12
         },
         "implementationEvidence": [
           {
             "requirementId": "FR-001",
             "file": "cli/shared-ignore.mjs",
-            "line": 214
+            "line": 218
           },
           {
             "requirementId": "FR-002",
             "file": "cli/shared-ignore.mjs",
-            "line": 201
+            "line": 205
           },
           {
             "requirementId": "FR-002",
             "file": "cli/shared-ignore.mjs",
-            "line": 215
+            "line": 219
           },
           {
             "requirementId": "FR-003",
             "file": "cli/shared-ignore.mjs",
-            "line": 216
+            "line": 220
           },
           {
             "requirementId": "FR-004",
             "file": "cli/shared-ignore.mjs",
-            "line": 217
+            "line": 221
           },
           {
             "requirementId": "FR-005",
@@ -5149,9 +5152,34 @@
             "line": 21
           },
           {
+            "requirementId": "FR-008",
+            "file": "cli/writers/claimspec-ignore.mjs",
+            "line": 45
+          },
+          {
             "requirementId": "FR-009",
             "file": "cli/claimspec-schema.mjs",
             "line": 19
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/shared-ignore.mjs",
+            "line": 392
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/shared-ignore.mjs",
+            "line": 439
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/writers/claimspec-ignore.mjs",
+            "line": 35
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "cli/writers/claimspec-ignore.mjs",
+            "line": 46
           }
         ],
         "testEvidence": [
@@ -5201,14 +5229,29 @@
             "line": 13
           },
           {
-            "requirementId": "SC-001",
+            "requirementId": "FR-010",
             "file": "tests/ignore-reasons.test.mjs",
             "line": 14
           },
           {
-            "requirementId": "SC-002",
+            "requirementId": "FR-011",
             "file": "tests/ignore-reasons.test.mjs",
             "line": 15
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "tests/ignore-reasons.test.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/ignore-reasons.test.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/ignore-reasons.test.mjs",
+            "line": 18
           }
         ]
       }

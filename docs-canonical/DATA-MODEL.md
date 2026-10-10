@@ -287,7 +287,10 @@ with neither means what it meant before the grammar existed.
 | `line` | 1-based line number |
 
 Only `active` entries exclude anything: `loadDocguardIgnore` returns their
-patterns, so every validator and command applies the same rule.
+patterns, so every validator and command applies the same rule. Patterns are matched by
+`globToRegex` (same file): gitignore wildcards, `?`, bracket expressions, `\`
+escapes and a leading-`/` root anchor; a middle slash does not anchor and a
+leading `!` is literal ([pattern syntax](../docs/configuration.md), "Excluding paths").
 
 ### Suppression model
 
@@ -313,8 +316,9 @@ patterns, so every validator and command applies the same rule.
 (`schemaVersion: 1`, `entries[]` of `kind: "path"`, `pattern`, `reason`,
 optional `expires`). Only `.docguardignore` entries are exported, and only when
 the reason is 8–2000 characters, the expiry is readable or absent, and gitignore
-syntax states the pattern's DocGuard scope exactly (`**/` is prefixed to a
-pattern containing a slash and a trailing `/` is dropped). `expires` is the
+syntax states the pattern's DocGuard scope exactly (`**/` is prefixed to an
+unanchored pattern containing a slash, a trailing `/` is dropped, and a leading
+`!`, a `**` inside a segment, an unclosed `[` or a POSIX class is refused). `expires` is the
 first instant after the stated day. The schemas are vendored byte-identical in
 `schemas/claimspec/v1/` from raccioly/testguard at the revision recorded in
 `cli/claimspec-schema.mjs`, and every document is validated before it is printed.

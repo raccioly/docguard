@@ -6,12 +6,16 @@ import { resolveDocRole } from './shared-doc-roles.mjs';
  *   - config.ignore        (global — all validators)
  *   - config.securityIgnore (security validator only)
  *   - config.todoIgnore     (TODO-tracking validator only)
+ *   - config.documentLifecycle (Document-Lifecycle validator only)
+ *   - .docguardignore       (merged into config.ignore at load)
  *
- * Supports exact paths AND glob patterns:
- *   - "src/foo.ts"           → exact match
+ * Supports exact paths AND glob patterns (full syntax at `globToRegex`):
+ *   - "src/foo.ts"           → exact match, at any depth
  *   - "packages/cdk/**"      → match any file under packages/cdk/
- *   - "backend/src/__tests__/**" → match any file under that path
+ *   - "**\/fixtures/**"      → fixtures/ at the top level or below any directory
  *   - "*.test.ts"            → match files ending in .test.ts
+ *   - "notes?.md", "[ab].md" → gitignore `?` and bracket expressions
+ *   - "/build"               → anchored to the project root
  *
  * Zero NPM dependencies — pure Node.js built-ins only.
  */
@@ -347,31 +351,104 @@ export function mergeIgnoreFile(projectDir, config) {
   return config;
 }
 
+const REGEX_SPECIAL = /[.*+?^${}()|[\]\\/]/g;
+const escapeRegex = ch => ch.replace(REGEX_SPECIAL, '\\$&');
+
 /**
- * Convert a glob pattern to a RegExp.
- * Supports: * (any chars except /), ** (any path segments), . (literal dot).
+ * A gitignore bracket expression starting at `pattern[start]` (`[`), or null
+ * when it never closes (the `[` is then literal). `!` or `^` first negates; a
+ * `]` first is a member; `a-z` is a range; `\x` is a literal `x`. Like every
+ * gitignore wildcard it never matches `/`. POSIX classes (`[[:alpha:]]`) are
+ * not supported: their characters are read as members.
+ */
+function bracketExpression(pattern, start) {
+  let i = start + 1;
+  let negate = false;
+  if (pattern[i] === '!' || pattern[i] === '^') { negate = true; i++; }
+  let body = '';
+  let first = true;
+  for (; i < pattern.length; i++) {
+    const ch = pattern[i];
+    if (ch === ']' && !first) {
+      return { source: `(?:(?!/)[${negate ? '^' : ''}${body}])`, end: i };
+    }
+    first = false;
+    if (ch === '\\' && i + 1 < pattern.length) { body += escapeRegex(pattern[++i]); continue; }
+    if (ch === '-' && body && pattern[i + 1] !== ']') { body += '-'; continue; }
+    body += escapeRegex(ch);
+  }
+  return null;
+}
+
+/**
+ * Translate one ignore pattern (trailing `/` and leading `/` already removed)
+ * into a regex source, gitignore-style:
+ *   `*`   any characters except `/`        `?`  one character except `/`
+ *   `[…]` bracket expression (above)        `\x` the literal character x
+ *   `**\/` at the start or after `/`: zero or more directories
+ *   any other run of `**`: any characters, `/` included (unchanged since v0.11)
+ * Everything else is literal — `( ) + ^ $ | { } .` included.
+ *
+ * @implements docguard.ignore-reasons#FR-010
+ */
+function globBody(pattern) {
+  let re = '';
+  for (let i = 0; i < pattern.length; i++) {
+    const ch = pattern[i];
+    if (ch === '\\') {
+      re += i + 1 < pattern.length ? escapeRegex(pattern[++i]) : '\\\\';
+    } else if (ch === '*') {
+      let j = i;
+      while (pattern[j] === '*') j++;
+      if (j - i === 1) {
+        re += '[^/]*';
+      } else if (j - i === 2 && (i === 0 || pattern[i - 1] === '/') && pattern[j] === '/') {
+        re += '(?:.*/)?';
+        j++; // the slash belongs to the zero-or-more-directories group
+      } else {
+        re += '.*';
+      }
+      i = j - 1;
+    } else if (ch === '?') {
+      re += '[^/]';
+    } else if (ch === '[') {
+      const bracket = bracketExpression(pattern, i);
+      if (bracket) { re += bracket.source; i = bracket.end; } else re += '\\[';
+    } else {
+      re += escapeRegex(ch);
+    }
+  }
+  return re;
+}
+
+/**
+ * Convert an ignore pattern to a RegExp over project-relative POSIX paths.
+ *
+ * DocGuard's ignore semantics, which every `config.ignore`, `securityIgnore`,
+ * `todoIgnore`, `documentLifecycle` and `.docguardignore` pattern shares:
+ *   - A pattern matches at a path-segment boundary at ANY depth, and
+ *     everything below what it matches (`fixtures` matches `fixtures/x` and
+ *     `a/fixtures/x`). Unlike gitignore, a slash in the middle does not anchor.
+ *   - A leading `/` anchors the pattern to the project root, as in gitignore.
+ *   - A trailing `/` is dropped, so `dir/` also matches a file named `dir`.
+ *   - Wildcards, bracket expressions and escapes as in `globBody`.
+ *   - A leading `!` is a literal character: negation is not supported.
  *
  * @param {string} pattern - Glob pattern
  * @returns {RegExp}
+ * @implements docguard.ignore-reasons#FR-010
  */
 function globToRegex(pattern) {
   // gitignore-style trailing slash ("dir/") means "this directory and everything
-  // under it". Strip it so "dir/" matches identically to "dir" — otherwise the
-  // escaped pattern keeps the slash and the alternation below can only match a
-  // literal "dir//" (double slash), so the pattern silently matches nothing.
+  // under it". Strip it so "dir/" matches identically to "dir".
   // `|| pattern` guards the degenerate all-slashes case (e.g. "/") from emptying.
-  const normalized = pattern.replace(/\/+$/, '') || pattern;
-  const escaped = normalized
-    .replace(/\./g, '\\.')
-    .replace(/\*\*/g, '§§')     // temp placeholder for **
-    .replace(/\*/g, '[^/]*')
-    .replace(/§§/g, '.*');
-  // Match if the relative path:
-  //   - equals the pattern exactly
-  //   - ends with /pattern
-  //   - starts with pattern/
-  //   - contains /pattern/
-  return new RegExp(`^${escaped}$|/${escaped}$|^${escaped}/|/${escaped}/`);
+  let normalized = pattern.replace(/\/+$/, '') || pattern;
+  const anchored = normalized.length > 1 && normalized.startsWith('/');
+  if (anchored) normalized = normalized.replace(/^\/+/, '');
+  const body = globBody(normalized);
+  return anchored
+    ? new RegExp(`^${body}$|^${body}/`)
+    : new RegExp(`^${body}$|/${body}$|^${body}/|/${body}/`);
 }
 
 /**

@@ -142,6 +142,31 @@ One pattern per line, gitignore-style: `#` at the start of a line is a comment,
 blank lines are skipped, and a pattern matches at a path-segment boundary at
 any depth (`fixtures/` excludes `fixtures/` and `packages/a/fixtures/`).
 
+Pattern syntax, shared by `.docguardignore` and every `.docguard.json` array
+below:
+
+| Syntax | Meaning |
+|---|---|
+| `*` | Any characters except `/` |
+| `?` | One character except `/` |
+| `[abc]`, `[a-z]`, `[!abc]` / `[^abc]` | One character from (or, negated, not from) the set; never `/`. An unclosed `[` is a literal `[`. POSIX classes such as `[[:alpha:]]` are not supported |
+| `**/` at the start or after `/` | Zero or more directories: `**/fixtures/**` excludes `fixtures/x` and `a/fixtures/x`; `a/**/b` excludes `a/b` and `a/x/y/b` |
+| `/**` at the end | Everything inside |
+| Any other `**` (`a**`) | Any characters, `/` included |
+| `\x` | The literal character `x` (`\*.md` is the file `*.md`) |
+| Leading `/` | Anchors to the project root: `/build` excludes `build/` but not `src/build/` |
+| Trailing `/` | Dropped: `dir/` also excludes a file named `dir` |
+| Anything else | Literal, including `( ) + ^ $ \| { } .` (no `{a,b}` alternation) |
+
+Unlike gitignore, a slash in the middle does not anchor (`docs/old` also
+excludes `site/docs/old`), and a leading `!` is a literal character: negation is
+not supported. Before v0.44, `?`, `[`, `(`, `+`, `|` and the other regular
+expression characters were passed through unescaped (`a|b` was read as an
+alternation and excluded unrelated paths, and an unclosed `[` made the checks
+that read the ignore list fail with a regular-expression error), and `**/x` did
+not match a top-level `x`. A pattern without those
+characters and without `**/` matches exactly what it matched before.
+
 An entry can say why it exists and when it ends:
 
 ```gitignore
@@ -176,8 +201,10 @@ Raise it to blocking with `"findingSeverity": { "IGN002": "high" }`.
 
 `.docguard.json` has its own arrays: `ignore` (every validator; merged with
 `.docguardignore` at load), `securityIgnore` (Security only) and `todoIgnore`
-(TODO-Tracking only). They hold plain patterns and cannot carry a reason or an
-expiry; `suppressions.requireReason` does not apply to them.
+(TODO-Tracking only), and `documentLifecycle` (paths the Document-Lifecycle
+check skips when it looks for terminal-status documents and completed specs).
+They hold plain patterns and cannot carry a reason or an expiry;
+`suppressions.requireReason` does not apply to them.
 
 `docguard ignore` lists every suppression the project has, including inline
 pragmas, N/A markers and the baseline, with its reason and state;

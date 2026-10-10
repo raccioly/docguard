@@ -536,10 +536,11 @@ exports a `.docguardignore` entry only when all of this survives exactly:
   `"expires": "2027-01-01T00:00:00Z"`, the first instant the entry no longer
   applies. Expired entries are exported with their date, so a consumer can warn;
 - a pattern gitignore syntax states with the same scope. DocGuard matches a
-  pattern below any directory, so `src/legacy/**` is written `**/src/legacy/**`
-  and `build/` is written `build`; each rewrite is listed. A pattern with a
-  leading `!` or `/`, a `**` other than a final `/**`, or one of
-  `? [ ] ( ) + ^ $ | { } \` is left out, because the two syntaxes disagree on it.
+  pattern with a slash in the middle below any directory, so `src/legacy/**` is
+  written `**/src/legacy/**`, and `build/` is written `build`; each rewrite is
+  listed. A pattern is left out when the two syntaxes disagree on it: a leading
+  `!` (negation in gitignore, a literal character to DocGuard), a `**` inside a
+  path segment (`a**`), an unclosed `[`, or a POSIX class such as `[[:alpha:]]`.
 
 Nothing else is exported: `.docguard.json` arrays cannot carry a reason, a
 validator-scoped pattern written as a claimspec `path` would apply to every

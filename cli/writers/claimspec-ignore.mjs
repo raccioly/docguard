@@ -27,37 +27,53 @@ export const REASON_MAX = 2000;   // `reason` maxLength
 export const PATTERN_MAX = 512;   // `pattern` maxLength
 
 /**
- * Characters DocGuard's ignore matcher (`globToRegex` in shared-ignore.mjs)
- * passes into a regular expression, or uses as its own placeholder (`§`).
- * gitignore reads every one of them differently.
- */
-const REGEX_CHARS = /[?[\]()+^$|{}\\§]/;
-
-/**
  * The gitignore-syntax pattern whose scope equals DocGuard's scope for
  * `pattern`, or `{ pattern: null, why }` when there is none.
  *
- * DocGuard matches a pattern at a path-segment boundary at ANY depth and
- * strips a trailing `/` (so `dir/` also matches a file named `dir`). gitignore
- * anchors a pattern that contains a slash to the root and reads a trailing `/`
- * as "directories only". So: drop the trailing `/`, and prefix `**\/` when the
- * pattern contains a slash.
+ * DocGuard's matcher (`globToRegex` in shared-ignore.mjs) reads wildcards,
+ * `?`, bracket expressions, `\` escapes, a leading `/` and whole-segment `**`
+ * as gitignore does (docguard.ignore-reasons#FR-010). Where it differs:
+ *   - a pattern with a slash in the middle matches at any depth; gitignore
+ *     anchors it to the root. Written with a `**\/` prefix.
+ *   - a trailing `/` is dropped, so `dir/` also matches a file. Dropped here.
+ *   - a leading `!` is literal; gitignore negates. Refused.
+ *   - a `**` that is not a whole path segment crosses `/`; gitignore reads it
+ *     as `*`. Refused.
+ *   - `[` that never closes is literal; git's wildmatch matches nothing.
+ *     `[[:class:]]` is a POSIX class to git, plain members to DocGuard. Refused.
+ *
+ * @implements docguard.ignore-reasons#FR-008
+ * @implements docguard.ignore-reasons#FR-011
  */
 export function claimspecPathPattern(pattern) {
   const p = String(pattern ?? '').replace(/\/+$/, '');
   if (!p) return { pattern: null, why: 'the pattern is empty' };
   if (p.startsWith('!')) return { pattern: null, why: 'a leading `!` negates a gitignore pattern but is a literal character to DocGuard' };
-  if (p.startsWith('/')) return { pattern: null, why: 'a leading `/` anchors a gitignore pattern to the root, while DocGuard matches it nowhere' };
-  const special = p.match(REGEX_CHARS);
-  if (special) return { pattern: null, why: `DocGuard reads \`${special[0]}\` as a regular expression character, so no gitignore pattern has the same scope` };
-  const segments = p.split('/');
-  const badGlobstar = segments.some((seg, i) => seg.includes('**') && !(seg === '**' && i > 0 && i === segments.length - 1));
-  if (badGlobstar) {
-    return { pattern: null, why: '`**` other than a final `/**` matches differently: DocGuard\'s `**/x` misses a root-level `x`, and its `a/**/b` misses `a/b`' };
+  if (p.includes('[:')) return { pattern: null, why: 'git reads `[:class:]` as a POSIX character class; DocGuard reads its characters as members' };
+  if (unclosedBracket(p)) return { pattern: null, why: 'an unclosed `[` is literal to DocGuard but makes the gitignore pattern match nothing' };
+  const segments = p.replace(/^\/+/, '').split('/');
+  if (segments.some(seg => seg.includes('**') && seg !== '**')) {
+    return { pattern: null, why: 'a `**` inside a path segment crosses `/` in DocGuard but is a plain `*` in gitignore' };
   }
-  const out = p.includes('/') ? `**/${p}` : p;
+  const anchored = p.startsWith('/');
+  const out = anchored || !p.includes('/') || p.startsWith('**/') ? p : `**/${p}`;
   if ([...out].length > PATTERN_MAX) return { pattern: null, why: `the pattern is longer than ${PATTERN_MAX} characters (claimspec maximum)` };
   return { pattern: out, why: null };
+}
+
+/** True when a `[` (not escaped) has no closing `]` that would make it a bracket expression. */
+function unclosedBracket(p) {
+  for (let i = 0; i < p.length; i++) {
+    if (p[i] === '\\') { i++; continue; }
+    if (p[i] !== '[') continue;
+    let j = i + 1;
+    if (p[j] === '!' || p[j] === '^') j++;
+    if (p[j] === ']') j++;
+    while (j < p.length && p[j] !== ']') { if (p[j] === '\\') j++; j++; }
+    if (j >= p.length) return true;
+    i = j;
+  }
+  return false;
 }
 
 /** `2026-12-31` → `2027-01-01T00:00:00Z`: the first instant the entry no longer applies. */

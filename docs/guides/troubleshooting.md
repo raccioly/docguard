@@ -138,7 +138,7 @@ options below.
 
 | Situation | Use |
 |---|---|
-| Whole files or directories that are not yours to document (generated code, vendored libraries, fixtures) | Add a pattern to `.docguardignore` (gitignore syntax; `dir/` matches at any depth). Say why, and until when if it is temporary: `generated/  expires:2026-12-31  # replaced by the v2 build` |
+| Whole files or directories that are not yours to document (generated code, vendored libraries, fixtures) | Add a pattern to `.docguardignore` (gitignore wildcards; `dir/` matches at any depth, a leading `/` anchors to the root). Say why, and until when if it is temporary: `generated/  expires:2026-12-31  # replaced by the v2 build` |
 | A finding code that is too noisy for your project, but you still want to see it | `"findingSeverity": { "<CODE>": "low" }` in `.docguard.json` |
 | A validator that genuinely does not apply | `<!-- docguard:validator <key> n/a — reason -->` in a canonical document or `AGENTS.md`. It shows as `N/A` with your reason |
 | Findings that predate adoption | The baseline: `docguard guard --update-baseline` |

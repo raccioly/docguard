@@ -57,6 +57,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Ignore patterns read gitignore syntax correctly** (`specs/057-ignore-reasons`
+  FR-010–FR-012, #420). The matcher behind `.docguardignore`, `ignore`,
+  `securityIgnore`, `todoIgnore` and `documentLifecycle` passed `?`, `[`, `(`,
+  `+`, `|` and the other regular-expression characters straight into a regular
+  expression: `foo?` matched `fo`, `a|b` excluded unrelated files (176 in this
+  repository), and an unclosed `[` made five validators fail with a
+  regular-expression error. It now reads `?` as one character, `[…]` as a
+  gitignore bracket expression (`[!ab]` negates), `\x` as a literal `x` and
+  every other character literally. `**/fixtures/**` now also matches a
+  top-level `fixtures/`, `a/**/b` matches `a/b`, and a leading `/` anchors to
+  the project root instead of matching nothing. A pattern without those
+  characters and without `**/` matches exactly what it did before (checked
+  against every tracked file for this repository's patterns). `docguard ignore
+  --format claimspec` now exports the reasoned entries that read the same in
+  both syntaxes. The `documentLifecycle` array is now in the config schema and
+  the configuration guide.
 - **Defects found while documenting DocGuard** (`specs/054-docs-verification-findings`).
   Running every documented flow on scratch projects turned up:
   - A Koa project was labelled Hono. It is now labelled Koa. Its routes are

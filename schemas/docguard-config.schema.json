@@ -67,6 +67,11 @@
       "items": { "type": "string" },
       "description": "Glob patterns the TODO-Tracking validator additionally skips."
     },
+    "documentLifecycle": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Glob patterns the Document-Lifecycle validator additionally skips when it looks for terminal-status documents and completed specs."
+    },
     "suppressions": {
       "type": "object",
       "description": "Policy for .docguardignore entries (`pattern  expires:YYYY-MM-DD  # reason`).",

@@ -1,6 +1,6 @@
 # Tasks: Suppressions That Carry a Reason and an Expiry
 
-**Status**: Complete. SC-001: `tests/ignore-reasons.test.mjs` failed before the change (its modules did not exist) and passes after (24 tests). SC-002: full suite 2983/2984 with one load flake in `tests/budget.test.mjs` (base-vs-base timing) that passes alone (14/14); guard on this repository passes all checks; every emitted claimspec document validates against the vendored schema.
+**Status**: Complete. SC-001: `tests/ignore-reasons.test.mjs` failed before each change (23 of 51 for FR-010–FR-012 before the matcher fix) and passes after (51 tests). SC-002: full suite 3010/3011 after the matcher fix; the one failure was a stale `llms-full.txt` (regenerated after a last DATA-MODEL edit; `tests/llms-bundle-drift.test.mjs` then passes 6/6). Guard on this repository passes all checks except the expected DLC002; every emitted claimspec document validates against the vendored schema.
 **Spec**: `specs/057-ignore-reasons/spec.md`
 **Plan**: `specs/057-ignore-reasons/plan.md`
 
@@ -20,3 +20,10 @@
 
 - [x] T007 `docs/configuration.md`, `docs/commands.md`, `docs/guides/troubleshooting.md`, `docs-canonical/DATA-MODEL.md`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/SECURITY.md`, README, `CHANGELOG.md`; `npm run docs:reference`; `npm run llms`
 - [x] T008 `docguard specs --write`; `docguard guard`; `npm test` (SC-002)
+
+## Phase 4: Matcher fixes found while building the export
+
+- [x] T009 Tests first in `tests/ignore-reasons.test.mjs`: every pattern class (FR-010), each caller (`config.ignore`, `securityIgnore` end to end through the Security validator, `todoIgnore`, `documentLifecycle`, `.docguardignore`), the before/after table against the old matcher, the export of newly agreeing patterns (FR-011), the schema and docs for `documentLifecycle` (FR-012). Run and see them fail.
+- [x] T010 FR-010: `globToRegex` in `cli/shared-ignore.mjs`
+- [x] T011 FR-011: `claimspecPathPattern` in `cli/writers/claimspec-ignore.mjs`
+- [x] T012 FR-012 and docs: config schema, `docs/configuration.md` (pattern syntax table), `docs/commands.md`, `docs/guides/troubleshooting.md`, `docs-canonical/DATA-MODEL.md`, `CHANGELOG.md` ### Fixed; `npm run llms`; `specs --write`; guard; `npm test`
