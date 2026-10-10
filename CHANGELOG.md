@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Adding a test file no longer brings back baselined TRC004 findings**
+  (`specs/052-baseline-stable-fingerprint`, #478). A baseline fingerprint
+  hashed the whole message, including TRC004's ` — IR soft-match: …` hint,
+  which names whichever test file currently matches best. A new, unrelated
+  test could change the hint, so frozen findings came back as new and
+  `--fail-on-warning` blocked the commit. Fingerprints now leave out advisory
+  tails, declared per finding code; TRC004's hint is the only one. Every other
+  fingerprint is unchanged. An existing `.docguard.baseline.json` keeps working:
+  guard also accepts the old fingerprint, and `guard --update-baseline` rewrites
+  it in the new form.
+
 ## [0.43.1] - 2026-10-05
 
 Automated weekly release — batches everything merged since `v0.43.0`.
