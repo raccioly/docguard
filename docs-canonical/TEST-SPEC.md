@@ -271,6 +271,16 @@ by package and receiver type, cyclic calls, HTTP-client calls, comments,
 `_test.go` files and Feign clients. Prefixes that cannot be read must yield no
 route at all.
 
+Sinatra, Starlette, Warp, Tide and `net/http`-only Go route fixtures are five
+reference projects run end to end from framework detection, each with a ground
+truth written from the framework's routing rules before its reader existed
+(all five reported no route before). Neighbouring cases cover Sinatra apps
+resolved through project superclasses, `use` and `Rack::URLMap`, Rack::Test
+calls, heredocs and `=begin` blocks; Starlette at both Python tiers and a
+`Router` from another library; Warp alternatives that cannot match; Tide
+bindings reused in two functions; and non-literal paths, which must be omitted
+and counted in the API-surface reason.
+
 API omission tests preserve documented endpoints across generated and human
 documents, mapped roles, and forced writes whenever the only runtime-absence
 evidence is a bounded scan. Field-replay controls pair historical and current

@@ -188,6 +188,8 @@ export function resolveApiSurface(projectDir, config) {
  *   (docguard.php-dotnet-routes#FR-007);
  * - routes found only in test/fixture/example paths, when none remain;
  * - a walk stopped by the file cap;
+ * - routes a pattern reader saw but omitted because their path is not literal
+ *   text (docguard.more-route-frameworks#FR-005).
  * - routes whose path a reader could not resolve statically (a dynamic
  *   NestJS path, a Worker's prefix dispatch), counted per framework
  *   (docguard.js-framework-routes#FR-006).

@@ -4,7 +4,8 @@
  * Parses actual route definitions from source code across frameworks.
  * Supports: Next.js (App Router + Pages), Express, Fastify, Hono, Koa, NestJS,
  * Cloudflare Workers (fetch dispatch, itty-router), Django, FastAPI, Flask,
- * Spring Boot, Rails, Gin/Echo/Chi/Fiber, Axum/Actix/Rocket
+ * Starlette, Spring Boot, Rails, Sinatra, Gin/Echo/Chi/Fiber/net/http,
+ * Axum/Actix/Rocket/Warp/Tide, Laravel, Symfony, ASP.NET Core
  *
  * Priority: OpenAPI spec > Code scanning
  *
@@ -15,6 +16,8 @@
  * @implements docguard.fallback-language-coverage#FR-002
  * @implements docguard.fallback-language-coverage#FR-007
  * @implements docguard.fallback-language-coverage#FR-008
+ * @implements docguard.more-route-frameworks#FR-005
+ * @implements docguard.more-route-frameworks#FR-007
  * @implements docguard.js-framework-routes#FR-006
  */
 
@@ -28,6 +31,8 @@ import { scanPythonWebRoutes } from './python-routes.mjs';
 import { extractGoRoutes } from './go-routes.mjs';
 import { extractSpringRoutes } from './spring-routes.mjs';
 import { extractRailsRoutes } from './rails-routes.mjs';
+import { extractSinatraRoutes } from './sinatra-routes.mjs';
+import { extractWarpRoutes, extractTideRoutes } from './rust-routes.mjs';
 import { extractLaravelRoutes, extractSymfonyRoutes } from './php-routes.mjs';
 import { extractAspNetRoutes } from './dotnet-routes.mjs';
 import { extractNestRoutes } from './nest-routes.mjs';
@@ -70,8 +75,15 @@ export function scanRoutesDeep(dir, stack, docTools, opts = {}) {
   const patternScan = (name, sources, fn) => {
     const before = scan.tierItems.length;
     const found = fn(dir, ctx);
-    // A reader that omits unreadable paths reports them (docguard.php-dotnet-routes#FR-007).
-    const omitted = found.omitted || [];
+    // Routes a reader saw but could not place (a path that is not literal
+    // text) are counted and located, so coverage says the surface is short,
+    // by how much and where (docguard.php-dotnet-routes#FR-007,
+    // docguard.more-route-frameworks#FR-005). Like kept routes, those in
+    // test/fixture/example or ignored paths do not count.
+    const omitted = (found.omitted || []).filter(o => {
+      const rel = relPosix(dir, resolve(dir, o.file || ''));
+      return !isNonProductPath(rel, opts.config || {}) && !shouldIgnore(rel, opts.config || {});
+    });
     scan.patternFrameworks.push({ name, sources, files: scan.tierItems.length - before, routes: found.length, omitted: omitted.length, omittedAt: omitted.slice(0, 3).map(o => `${o.file}:${o.line}`) });
     routes.push(...found);
   };
@@ -114,12 +126,16 @@ export function scanRoutesDeep(dir, stack, docTools, opts = {}) {
     patternScan(named('Rails', 'Ruby'), ['rails'], scanRailsRoutes);
   }
 
-  if (named('Gin', 'Echo', 'Chi', 'Fiber', 'Go')) {
-    patternScan(named('Gin', 'Echo', 'Chi', 'Fiber', 'Go'), ['go-web'], scanGoWebRoutes);
+  if (framework.includes('Sinatra')) {
+    patternScan('Sinatra', ['sinatra'], scanSinatraRoutes);
   }
 
-  if (named('Axum', 'Actix', 'Rocket', 'Warp', 'Rust')) {
-    patternScan(named('Axum', 'Actix', 'Rocket', 'Warp', 'Rust'), ['axum', 'actix', 'rocket'], scanRustWebRoutes);
+  if (named('Gin', 'Echo', 'Chi', 'Fiber', 'net/http', 'Go')) {
+    patternScan(named('Gin', 'Echo', 'Chi', 'Fiber', 'net/http', 'Go'), ['go-web'], scanGoWebRoutes);
+  }
+
+  if (named('Axum', 'Actix', 'Rocket', 'Warp', 'Tide', 'Rust')) {
+    patternScan(named('Axum', 'Actix', 'Rocket', 'Warp', 'Tide', 'Rust'), ['axum', 'actix', 'rocket', 'warp', 'tide'], scanRustWebRoutes);
   }
 
   // docguard.php-dotnet-routes#FR-008: PHP and .NET frameworks, read by pattern.
@@ -132,7 +148,7 @@ export function scanRoutesDeep(dir, stack, docTools, opts = {}) {
   // records each file's parser tier with the scan.
   let limitations = null;
   const django = framework.includes('Django');
-  const asgi = framework.includes('FastAPI') || framework.includes('Flask');
+  const asgi = framework.includes('FastAPI') || framework.includes('Flask') || framework.includes('Starlette');
   if (django || asgi) {
     const pyFiles = findRouteFiles(dir, /\.py$/, { maxFiles });
     if (pyFiles.truncated) scan.truncated = true;
@@ -855,6 +871,19 @@ function scanRailsRoutes(dir, ctx) {
     .map(r => ({ ...r, source: 'rails', description: '', tier, tierReason }));
 }
 
+// ── Sinatra (Ruby) ───────────────────────────────────────────────────────────
+// sinatra-routes.mjs reads classic and modular apps, namespaces, extensions
+// and config.ru mounts across files (docguard.more-route-frameworks#FR-001).
+
+function scanSinatraRoutes(dir, ctx) {
+  const files = readPatternFiles(ctx, /(?:\.rb|^config\.ru)$/);
+  const sources = files.map(f => ({ file: relative(dir, f), content: readFileSafe(f) }));
+  const found = extractSinatraRoutes(sources);
+  const routes = found.map(r => ({ ...r, source: 'sinatra', description: '', ...tierFor(resolve(dir, r.file), null) }));
+  Object.defineProperty(routes, 'omitted', { value: found.omitted, enumerable: false });
+  return routes;
+}
+
 // ── Go web frameworks (Gin / Echo / Chi / Fiber / gorilla/mux / net/http) ────
 // go-routes.mjs composes group, sub-router and mount prefixes across blocks,
 // functions and files, and reads every registration form of those routers
@@ -866,14 +895,18 @@ function scanGoWebRoutes(dir, ctx) {
   return extractGoRoutes(sources).map(r => ({ ...r, source: 'go-web', description: '', ...tierFor(resolve(dir, r.file), null) }));
 }
 
-// ── Rust web frameworks (Axum / Actix / Rocket / Warp) ───────────────────────
+// ── Rust web frameworks (Axum / Actix / Rocket / Warp / Tide) ────────────────
+// Warp filter chains and Tide `at()` trees are composed across functions and
+// files by rust-routes.mjs (docguard.more-route-frameworks#FR-003/004).
 
 function scanRustWebRoutes(dir, ctx) {
   const routes = [];
   const rsFiles = readPatternFiles(ctx, /\.rs$/);
+  const sources = [];
   for (const filePath of rsFiles) {
     const content = readFileSafe(filePath);
     if (!content) continue;
+    sources.push({ file: relative(dir, filePath), content });
     const { tier, tierReason } = tierFor(filePath, null);
 
     // Axum: .route("/x", get(handler)) / .route("/x", post(handler).get(handler))
@@ -897,6 +930,13 @@ function scanRustWebRoutes(dir, ctx) {
       routes.push({ method: m[1].toUpperCase(), path: m[2], handler: '', file: relative(dir, filePath), source: 'rocket', auth: false, description: '', tier, tierReason });
     }
   }
+  const omitted = [];
+  for (const [source, extract] of [['warp', extractWarpRoutes], ['tide', extractTideRoutes]]) {
+    const found = extract(sources);
+    omitted.push(...found.omitted);
+    for (const r of found) routes.push({ ...r, source, description: '', ...tierFor(resolve(dir, r.file), null) });
+  }
+  Object.defineProperty(routes, 'omitted', { value: omitted, enumerable: false });
   return routes;
 }
 

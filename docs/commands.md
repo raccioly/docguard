@@ -278,7 +278,7 @@ DocGuard's own output:
 
 Guard's API-surface check, `diff` and `generate` take routes from one scanner.
 It reads JavaScript, TypeScript and Python with a syntax tree. Go, Java, Kotlin,
-Ruby, PHP and C# are read by pattern (`fallback-language`), following each
+Ruby, Rust, PHP and C# are read by pattern (`fallback-language`), following each
 framework's routing rules:
 
 - **Go** (gin, echo, chi, fiber, gorilla/mux, net/http): route groups and
@@ -286,7 +286,8 @@ framework's routing rules:
   `PathPrefix().Subrouter()`, `http.StripPrefix`). This holds when the group is
   passed to a function in another file, or a function returns the router. Go
   1.22 patterns (`"GET /items/{id}"`) are read; `HandleFunc` with no method is
-  `ANY`. `_test.go` files and HTTP client calls are not routes.
+  `ANY`. `_test.go` files and HTTP client calls are not routes. A module that
+  serves HTTP with `net/http` alone, with no router in `go.mod`, is read too.
 - **Spring** (Java, Kotlin): the class-level `@RequestMapping` base, in any
   form (`path =`, `value =`, arrays, constants), joins every method mapping.
   `@RequestMapping(method = …)` names the method, `ANY` when it names none.
@@ -295,6 +296,15 @@ framework's routing rules:
   prefixes, `resources`/`resource` with `only:`/`except:`, nesting, `shallow`,
   `member`/`collection`, `match … via:`, `root` and concerns, as `rails routes`
   lists them. Update is both `PATCH` and `PUT`.
+- **Sinatra**: classic and modular apps (a class inheriting from
+  `Sinatra::Base`, also through another project class), nested `namespace`
+  prefixes, `register`ed extensions, and the prefix `config.ru` maps an app
+  under (`map`, `Rack::URLMap`).
+- **Warp**: filter chains are evaluated through `and`/`or`, `let` bindings and
+  functions in other files, from what `warp::serve` runs. `path!("todos" / u64)`
+  is `/todos/{u64}`; a filter with no method filter is `ANY`.
+- **Tide**: `app.at("/posts")` and nested `.at("/:id")`, `nest()` of another
+  server, and functions that receive the server.
 - **Laravel** (the route files the app loads: `routes/web.php`, and
   `routes/api.php` under `/api`, or what `bootstrap/app.php`'s `withRouting`
   or `RouteServiceProvider` maps): `Route::get` and the other verbs, `prefix`,
@@ -313,12 +323,16 @@ framework's routing rules:
 A route is omitted when its path or prefix is not literal text or a constant
 it can resolve: an environment variable, a `${…}` placeholder, a Ruby or PHP
 interpolation, a C# interpolated string, or a call it cannot pin to one
-function. It is never reported at a guessed path. The Laravel, Symfony and
-ASP.NET Core readers count what they omit, and guard's API-surface check
-reports that count and the first locations as partial coverage.
+function. It is never reported at a guessed path. Every pattern reader counts
+what it omits, and guard's API-surface check reports that count and the first
+locations as partial coverage.
 
 **Python projects.** Routes carry their full paths:
 
+- Starlette: `Route` entries in `Starlette(routes=)`, `Router(routes=)` and
+  `Mount(routes=)` lists, `Mount(app=)`, `add_route` and `@app.route`, across
+  modules. Methods come from `methods=`, an `HTTPEndpoint` class's handlers, or
+  `GET`.
 - FastAPI and Flask: `APIRouter(prefix=)`, `include_router(..., prefix=)`,
   `Blueprint(url_prefix=)`, `register_blueprint()` and `mount()`, across
   modules and under any router name. A prefix read from a constant or a
