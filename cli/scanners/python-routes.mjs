@@ -1,6 +1,7 @@
 /**
- * Python web routes — FastAPI, Flask and Django (with Django REST framework),
- * resolved from module outlines so both parser tiers compose paths the same way.
+ * Python web routes — FastAPI, Flask, Starlette and Django (with Django REST
+ * framework), resolved from module outlines so both parser tiers compose paths
+ * the same way.
  *
  * FastAPI/Flask: every router object (`FastAPI()`, `APIRouter()`, `Flask()`,
  * `Blueprint()`) under any variable name, its route decorators, and the edges
@@ -9,6 +10,13 @@
  * its own prefix and is flagged `mounted: false`, since the include may be
  * dynamic. A prefix that cannot be evaluated is skipped and flags the route
  * `pathIncomplete` rather than shortening it silently.
+ *
+ * Starlette joins the same graph: `Starlette()` is an application and
+ * `Router()` a router; their `routes=` lists (followed through variables and
+ * `+`, across modules) hold `Route` entries and `Mount` children, and
+ * `add_route` adds one. A `Route`'s methods come from `methods=`, else from an
+ * `HTTPEndpoint` class's handler methods, else `GET`. `Router`, `Route` and
+ * `Mount` are read only when imported from Starlette (or FastAPI).
  *
  * Django: the URL configuration graph from `ROOT_URLCONF` (or, without one,
  * from every urls module nobody includes): `path`/`re_path`/`url`, `include()`
@@ -19,14 +27,18 @@
  * @implements docguard.python-extraction#FR-001
  * @implements docguard.python-extraction#FR-002
  * @implements docguard.python-extraction#FR-003
+ * @implements docguard.more-route-frameworks#FR-002
+ * @implements docguard.more-route-frameworks#FR-005
  */
 import { relative } from 'node:path';
 import { findPythonFiles, PythonIndex, refTail, exprText, evalString } from './py-outline.mjs';
 import { loadPythonOutlines } from './py-sources.mjs';
 
 const HTTP = new Set(['get', 'post', 'put', 'delete', 'patch', 'head', 'options', 'trace']);
-const APP_KINDS = new Set(['FastAPI', 'Flask', 'Quart']);
-const ROUTER_KINDS = new Set(['FastAPI', 'APIRouter', 'Flask', 'Quart', 'Blueprint']);
+const APP_KINDS = new Set(['FastAPI', 'Flask', 'Quart', 'Starlette']);
+const ROUTER_KINDS = new Set(['FastAPI', 'APIRouter', 'Flask', 'Quart', 'Blueprint', 'Starlette', 'Router']);
+const STARLETTE_KINDS = new Set(['Starlette', 'Router', 'Mount']);
+const ENDPOINT_METHODS = ['get', 'post', 'put', 'patch', 'delete', 'head', 'options'];
 
 // A dependency counts as authentication when its name says so. A dependency
 // named otherwise (get_db) is never claimed. `Security()` always counts.
@@ -82,6 +94,24 @@ function dependencyNames(expr, out = []) {
 
 const authFrom = deps => deps.some(d => d.security || AUTH_DEPENDENCY.test(d.name || ''));
 
+/**
+ * The Starlette routing name an expression refers to (`Route`, `Mount`,
+ * `Router`, …) when it is imported from `starlette.*` or `fastapi.*`; null for
+ * anything else, so another library's `Router` is never read as Starlette.
+ */
+function starletteName(index, file, expr) {
+  if (expr?.t !== 'ref') return null;
+  const b = index.resolveRef(file, expr.v);
+  if (b?.kind !== 'external') return null;
+  const full = [b.module, b.name].filter(Boolean).join('.');
+  return /^(?:starlette|fastapi)(?:\.|$)/.test(full) ? full.split('.').pop() : null;
+}
+
+const requiresAuth = decorators => (decorators || []).some(d => {
+  const name = d?.t === 'call' ? refTail(d.fn) : refTail(d);
+  return name === 'requires' || (name && FLASK_AUTH_DECORATOR.test(name));
+});
+
 // ── FastAPI / Flask ─────────────────────────────────────────────────────────
 
 function joinFlask(prefix, rule) {
@@ -102,7 +132,7 @@ function resolveAppRoutes(dir, index, byFile, limitations) {
       for (const s of body) {
         if (s.k === 'assign' && !s.aug && s.value?.t === 'call') {
           const kind = refTail(s.value.fn);
-          if (ROUTER_KINDS.has(kind)) {
+          if (ROUTER_KINDS.has(kind) && (kind !== 'Router' || starletteName(index, file, s.value.fn) === 'Router')) {
             for (const target of s.targets) {
               const key = objectKey(file, scope, target);
               objects.set(key, {
@@ -110,6 +140,9 @@ function resolveAppRoutes(dir, index, byFile, limitations) {
                 prefix: kind === 'Blueprint' ? s.value.kw?.url_prefix : kind === 'APIRouter' ? s.value.kw?.prefix : null,
                 deps: dependencyNames(s.value.kw?.dependencies),
                 routes: [],
+                starlette: STARLETTE_KINDS.has(kind),
+                // Starlette's `routes=` (Router's first positional argument).
+                routesExpr: s.value.kw?.routes || (kind === 'Router' ? s.value.args[0] : null) || null,
               });
             }
           }
@@ -135,6 +168,73 @@ function resolveAppRoutes(dir, index, byFile, limitations) {
     }
     return null;
   };
+
+  // Starlette: what an endpoint serves, from `methods=`, an HTTPEndpoint
+  // class's handler methods, or the function default (GET).
+  const endpointRoutes = (file, endpoint, methodsExpr) => {
+    const given = methodsExpr?.t === 'list' ? methodsExpr.items.filter(i => i?.t === 'str').map(i => i.v.toUpperCase()) : null;
+    const func = refTail(endpoint) || exprText(endpoint);
+    const b = endpoint?.t === 'ref' ? index.resolveRef(file, endpoint.v) : null;
+    if (b?.kind === 'class' && b.rest.length === 0) {
+      const handlers = (b.stmt.body || []).filter(x => x.k === 'def' && ENDPOINT_METHODS.includes(x.name));
+      const classAuth = requiresAuth(b.stmt.decorators);
+      if (given?.length) return [{ methods: given, func, doc: '', auth: classAuth || handlers.some(h => requiresAuth(h.decorators)) }];
+      if (!handlers.length) return [{ methods: ['ALL'], func, doc: '', auth: classAuth }];
+      return handlers.map(h => ({ methods: [h.name.toUpperCase()], func, doc: h.doc || '', auth: classAuth || requiresAuth(h.decorators) }));
+    }
+    const def = b?.kind === 'def' && b.rest.length === 0 ? b.stmt : null;
+    const unresolvedClass = !b && /^[A-Z]/.test(func || '');
+    return [{ methods: given?.length ? given : unresolvedClass ? ['ALL'] : ['GET'], func, doc: def?.doc || '', auth: requiresAuth(def?.decorators) }];
+  };
+
+  let mountSeq = 0;
+  const collectRoutes = (owner, file, scope, expr, line, depth = 0) => {
+    if (!expr || depth > 12) return;
+    if (expr.t === 'list') { for (const item of expr.items) collectRoutes(owner, file, scope, item, line, depth + 1); return; }
+    if (expr.t === 'bin' && expr.op === '+') { collectRoutes(owner, file, scope, expr.l, line, depth + 1); collectRoutes(owner, file, scope, expr.r, line, depth + 1); return; }
+    if (expr.t === 'ref') {
+      const b = index.resolveRef(file, expr.v);
+      if (b?.kind === 'assign' && b.rest.length === 0 && b.stmt.value) {
+        collectRoutes(owner, b.file, null, b.stmt.value, b.stmt.line, depth + 1);
+        // `routes += [...]` after the assignment extends the same list.
+        const name = b.stmt.targets[0];
+        for (const st of index.outline(b.file)?.body || []) {
+          if (st.k === 'assign' && st.aug === '+' && st.targets.includes(name) && st.line > b.stmt.line) collectRoutes(owner, b.file, null, st.value, st.line, depth + 1);
+        }
+      }
+      return;
+    }
+    if (expr.t !== 'call') return;
+    const kind = starletteName(index, file, expr.fn);
+    const rec = byFile.get(file);
+    if (kind === 'Route') {
+      const pathExpr = expr.args[0] || expr.kw?.path;
+      for (const r of endpointRoutes(file, expr.args[1] || expr.kw?.endpoint, expr.kw?.methods)) {
+        owner.routes.push({ methods: r.methods, pathExpr, func: r.func, doc: r.doc, line, file, deps: [], decoratorAuth: r.auth, source: 'starlette', tier: rec?.tier, tierReason: rec?.tierReason });
+      }
+    } else if (kind === 'Mount') {
+      const prefix = expr.args[0] || expr.kw?.path;
+      const routesExpr = expr.kw?.routes || expr.args[2];
+      const appExpr = expr.args[1] || expr.kw?.app;
+      if (routesExpr) {
+        const key = `${file}::<Mount ${++mountSeq}>`;
+        const child = { key, kind: 'Mount', file, scope, name: key, line, tier: rec?.tier, tierReason: rec?.tierReason, prefix: null, deps: [], routes: [], starlette: true, routesExpr: null };
+        objects.set(key, child);
+        edges.push({ parent: owner.key, child: key, kind: 'mount', line, file, prefix, prefixFile: file, deps: [] });
+        collectRoutes(child, file, scope, routesExpr, line, depth + 1);
+      } else if (appExpr?.t === 'ref') {
+        const child = lookup(file, scope, appExpr.v);
+        if (child) edges.push({ parent: owner.key, child: child.key, kind: 'mount', line, file, prefix, prefixFile: file, deps: [] });
+        else limitations.push({ code: 'python-unresolved-include', file: relative(dir, file), line, target: exprText(appExpr) });
+      }
+      // A mounted ASGI app this reader does not model (StaticFiles, …) serves no documented route.
+    }
+  };
+
+  // Pass 1b: Starlette `routes=` lists, once every object is known.
+  for (const obj of [...objects.values()]) {
+    if (obj.routesExpr) collectRoutes(obj, obj.file, obj.scope, obj.routesExpr, obj.line);
+  }
 
   // Pass 2: route decorators and edges.
   for (const [file, rec] of byFile) {
@@ -189,6 +289,16 @@ function resolveAppRoutes(dir, index, byFile, limitations) {
           if (call?.t !== 'call' || call.fn?.t !== 'ref' || !call.fn.v.includes('.')) continue;
           const parts = call.fn.v.split('.');
           const method = parts.pop();
+          if (method === 'add_route') {
+            // Starlette (and FastAPI): app.add_route(path, endpoint, methods=…)
+            const owner = lookup(file, scope, parts.join('.'));
+            if (owner) {
+              for (const r of endpointRoutes(file, call.args[1] || call.kw?.route, call.kw?.methods)) {
+                owner.routes.push({ methods: r.methods, pathExpr: call.args[0] || call.kw?.path, func: r.func, doc: r.doc, line: s.line, file, deps: [], decoratorAuth: r.auth });
+              }
+            }
+            continue;
+          }
           if (method !== 'include_router' && method !== 'register_blueprint' && method !== 'mount') continue;
           const parent = lookup(file, scope, parts.join('.'));
           const childExpr = method === 'mount' ? (call.args[1] || call.kw?.app) : (call.args[0] || call.kw?.router || call.kw?.blueprint);
@@ -238,9 +348,9 @@ function resolveAppRoutes(dir, index, byFile, limitations) {
       for (const method of r.methods) {
         const route = {
           method, path: full, handler: r.func, file: relative(dir, r.file), line: r.line,
-          source: flask ? 'flask' : 'fastapi',
+          source: r.source || (flask ? 'flask' : obj.starlette ? 'starlette' : 'fastapi'),
           auth: auth || authFrom(r.deps) || r.decoratorAuth,
-          description: r.doc, tier: obj.tier, tierReason: obj.tierReason,
+          description: r.doc, tier: r.tier || obj.tier, tierReason: r.tierReason || obj.tierReason,
         };
         if (base.incomplete) Object.assign(route, { pathIncomplete: true, pathReason: base.reasons.join('; ') });
         if (!mounted) route.mounted = false;
@@ -264,7 +374,7 @@ function resolveAppRoutes(dir, index, byFile, limitations) {
         const rel = evalPrefix(child, own, { value: '', incomplete: false, reasons: [] });
         next = { value: joinFlask(base.value, rel.value), incomplete: base.incomplete || rel.incomplete, reasons: [...base.reasons, ...rel.reasons] };
       } else {
-        next = evalPrefix(obj, e.prefix, base);
+        next = evalPrefix(e.prefixFile ? { file: e.prefixFile } : obj, e.prefix, base);
       }
       visit(child, next, guarded || authFrom(e.deps), mounted, new Set([...stack, e.child]));
     }

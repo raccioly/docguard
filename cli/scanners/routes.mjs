@@ -2,8 +2,10 @@
  * Deep Route Scanner
  * @req docguard.adoption-workflow-integrity#FR-013
  * Parses actual route definitions from source code across frameworks.
- * Supports: Next.js (App Router + Pages), Express, Fastify, Hono, Django, FastAPI,
- * Flask, Spring Boot, Rails, Gin/Echo/Chi/Fiber, Axum/Actix/Rocket
+ * Supports: Next.js (App Router + Pages), Express, Fastify, Hono, Koa, NestJS,
+ * Cloudflare Workers (fetch dispatch, itty-router), Django, FastAPI, Flask,
+ * Starlette, Spring Boot, Rails, Sinatra, Gin/Echo/Chi/Fiber/net/http,
+ * Axum/Actix/Rocket/Warp/Tide, Laravel, Symfony, ASP.NET Core
  *
  * Priority: OpenAPI spec > Code scanning
  *
@@ -14,6 +16,9 @@
  * @implements docguard.fallback-language-coverage#FR-002
  * @implements docguard.fallback-language-coverage#FR-007
  * @implements docguard.fallback-language-coverage#FR-008
+ * @implements docguard.more-route-frameworks#FR-005
+ * @implements docguard.more-route-frameworks#FR-007
+ * @implements docguard.js-framework-routes#FR-006
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
@@ -26,6 +31,14 @@ import { scanPythonWebRoutes } from './python-routes.mjs';
 import { extractGoRoutes } from './go-routes.mjs';
 import { extractSpringRoutes } from './spring-routes.mjs';
 import { extractRailsRoutes } from './rails-routes.mjs';
+import { extractSinatraRoutes } from './sinatra-routes.mjs';
+import { extractWarpRoutes, extractTideRoutes } from './rust-routes.mjs';
+import { extractLaravelRoutes, extractSymfonyRoutes } from './php-routes.mjs';
+import { extractAspNetRoutes } from './dotnet-routes.mjs';
+import { extractNestRoutes } from './nest-routes.mjs';
+import { extractWorkerRoutes } from './worker-routes.mjs';
+import { extractRouterRoutes } from './router-routes.mjs';
+import { createImportResolver } from './js-route-support.mjs';
 
 /**
  * Scan routes from source code with framework-aware parsing.
@@ -56,13 +69,22 @@ export function scanRoutesDeep(dir, stack, docTools, opts = {}) {
   // fixtures are exactly the cases a caller must be able to tell apart from
   // "this project registers no routes".
   const maxFiles = Number.isInteger(opts.maxFiles) && opts.maxFiles > 0 ? opts.maxFiles : ROUTE_SCAN_MAX_FILES;
-  const scan = { tierItems: [], truncated: false, cap: maxFiles, patternFrameworks: [], excludedNonProduct: 0 };
-  const ctx = { dir, maxFiles, scan };
+  const scan = { tierItems: [], truncated: false, cap: maxFiles, patternFrameworks: [], excludedNonProduct: 0, unresolved: [] };
+  const ctx = { dir, maxFiles, scan, config: opts.config || {} };
   const named = (...names) => names.find(n => framework.includes(n));
   const patternScan = (name, sources, fn) => {
     const before = scan.tierItems.length;
     const found = fn(dir, ctx);
-    scan.patternFrameworks.push({ name, sources, files: scan.tierItems.length - before, routes: found.length });
+    // Routes a reader saw but could not place (a path that is not literal
+    // text) are counted and located, so coverage says the surface is short,
+    // by how much and where (docguard.php-dotnet-routes#FR-007,
+    // docguard.more-route-frameworks#FR-005). Like kept routes, those in
+    // test/fixture/example or ignored paths do not count.
+    const omitted = (found.omitted || []).filter(o => {
+      const rel = relPosix(dir, resolve(dir, o.file || ''));
+      return !isNonProductPath(rel, opts.config || {}) && !shouldIgnore(rel, opts.config || {});
+    });
+    scan.patternFrameworks.push({ name, sources, files: scan.tierItems.length - before, routes: found.length, omitted: omitted.length, omittedAt: omitted.slice(0, 3).map(o => `${o.file}:${o.line}`) });
     routes.push(...found);
   };
 
@@ -78,11 +100,20 @@ export function scanRoutesDeep(dir, stack, docTools, opts = {}) {
     routes.push(...scanFastifyRoutes(dir, roots));
   }
 
-  // Koa (with @koa/router) declares routes with the same method shorthand as
-  // Hono, so one scanner reads both (docguard.docs-verification-findings#FR-001).
-  if (framework.includes('Hono')) {
-    routes.push(...scanHonoRoutes(dir, roots));
+  // NestJS decorators, Cloudflare Worker dispatch and Hono/itty-router
+  // routers: syntax-tree readers whose routes carry their tier
+  // (docguard.js-framework-routes#FR-001..FR-006). The Workers scan includes
+  // the router reader, so Hono on Workers is read once.
+  if (framework.includes('NestJS')) {
+    patternScan('NestJS', ['nestjs'], scanNestRoutes);
   }
+  if (framework.includes('Cloudflare Workers')) {
+    patternScan('Cloudflare Workers', ['cloudflare-workers', 'hono', 'itty-router'], scanWorkerRoutes);
+  } else if (framework.includes('Hono')) {
+    patternScan('Hono', ['hono', 'itty-router'], scanHonoRouterRoutes);
+  }
+  // Koa (with @koa/router) declares routes with the same method shorthand as
+  // Hono, so the shorthand scanner reads it (docguard.docs-verification-findings#FR-001).
   if (framework.includes('Koa')) {
     routes.push(...scanHonoRoutes(dir, roots, 'koa'));
   }
@@ -95,20 +126,29 @@ export function scanRoutesDeep(dir, stack, docTools, opts = {}) {
     patternScan(named('Rails', 'Ruby'), ['rails'], scanRailsRoutes);
   }
 
-  if (named('Gin', 'Echo', 'Chi', 'Fiber', 'Go')) {
-    patternScan(named('Gin', 'Echo', 'Chi', 'Fiber', 'Go'), ['go-web'], scanGoWebRoutes);
+  if (framework.includes('Sinatra')) {
+    patternScan('Sinatra', ['sinatra'], scanSinatraRoutes);
   }
 
-  if (named('Axum', 'Actix', 'Rocket', 'Warp', 'Rust')) {
-    patternScan(named('Axum', 'Actix', 'Rocket', 'Warp', 'Rust'), ['axum', 'actix', 'rocket'], scanRustWebRoutes);
+  if (named('Gin', 'Echo', 'Chi', 'Fiber', 'net/http', 'Go')) {
+    patternScan(named('Gin', 'Echo', 'Chi', 'Fiber', 'net/http', 'Go'), ['go-web'], scanGoWebRoutes);
   }
+
+  if (named('Axum', 'Actix', 'Rocket', 'Warp', 'Tide', 'Rust')) {
+    patternScan(named('Axum', 'Actix', 'Rocket', 'Warp', 'Tide', 'Rust'), ['axum', 'actix', 'rocket', 'warp', 'tide'], scanRustWebRoutes);
+  }
+
+  // docguard.php-dotnet-routes#FR-008: PHP and .NET frameworks, read by pattern.
+  if (named('Laravel')) patternScan('Laravel', ['laravel'], scanLaravelRoutes);
+  if (named('Symfony')) patternScan('Symfony', ['symfony'], scanSymfonyRoutes);
+  if (named('ASP.NET')) patternScan('ASP.NET Core', ['aspnet-core'], scanAspNetRoutes);
 
   // Python: one scan resolves FastAPI/Flask routers and Django URL
   // configurations from the same module outlines (python-routes.mjs), and
   // records each file's parser tier with the scan.
   let limitations = null;
   const django = framework.includes('Django');
-  const asgi = framework.includes('FastAPI') || framework.includes('Flask');
+  const asgi = framework.includes('FastAPI') || framework.includes('Flask') || framework.includes('Starlette');
   if (django || asgi) {
     const pyFiles = findRouteFiles(dir, /\.py$/, { maxFiles });
     if (pyFiles.truncated) scan.truncated = true;
@@ -145,7 +185,11 @@ export function scanRoutesDeep(dir, stack, docTools, opts = {}) {
   // to know about. (calibrated-finding-channels#FR-011)
   const scanTier = scan.tierItems.length ? summarizeTiers(scan.tierItems) : null;
   if (scanTier) Object.defineProperty(kept, 'scanTier', { value: scanTier, enumerable: false });
-  if (limitations?.length) Object.defineProperty(kept, 'limitations', { value: limitations, enumerable: false });
+  // What a reader could not resolve (a dynamic path, a prefix dispatch) is a
+  // coverage gap; one in a test or ignored file is not the product's.
+  const unresolved = scan.unresolved.filter(u => !u.file || (!isNonProductPath(u.file, cfg) && !shouldIgnore(u.file, cfg)));
+  const allLimitations = [...(limitations || []), ...unresolved];
+  if (allLimitations.length) Object.defineProperty(kept, 'limitations', { value: allLimitations, enumerable: false });
   for (const pf of scan.patternFrameworks) pf.kept = kept.filter(r => pf.sources.includes(r.source)).length;
   Object.defineProperty(kept, 'scan', {
     enumerable: false,
@@ -156,6 +200,7 @@ export function scanRoutesDeep(dir, stack, docTools, opts = {}) {
       cap: scan.cap,
       patternFrameworks: scan.patternFrameworks,
       excludedNonProduct: scan.excludedNonProduct,
+      unresolved,
     },
   });
   return kept;
@@ -741,6 +786,55 @@ function scanHonoRoutes(dir, roots = null, source = 'hono') {
   return routes;
 }
 
+// ── NestJS, Cloudflare Workers, Hono/itty-router (docguard.js-framework-routes) ─
+// The readers are pure functions of file contents (nest-routes.mjs,
+// worker-routes.mjs, router-routes.mjs); here they get their files, and the scan
+// gets each file's tier and every path a reader could not resolve.
+
+const JS_SOURCE_RE = /\.(?:[cm]?[jt]s|[jt]sx)$/;
+
+function readJsSources(ctx, marker = null) {
+  const files = findRouteFiles(ctx.dir, JS_SOURCE_RE, { maxFiles: ctx.maxFiles });
+  if (files.truncated) ctx.scan.truncated = true;
+  const sources = [];
+  for (const abs of files) {
+    if (/\.d\.[cm]?ts$/.test(abs)) continue;
+    const content = readFileSafe(abs);
+    if (!content || (marker && !marker.test(content))) continue;
+    sources.push({ file: relPosix(ctx.dir, abs), abs, content });
+  }
+  return sources;
+}
+
+function recordReader(ctx, found) {
+  for (const t of found.fileTiers || []) ctx.scan.tierItems.push(t);
+  for (const l of found.limitations || []) ctx.scan.unresolved.push(l);
+  return found;
+}
+
+const NEST_MARKER = /@Controller\b|@Module\s*\(|setGlobalPrefix|enableVersioning|useGlobalGuards|APP_GUARD|RouterModule/;
+const ROUTER_MARKER = /\.\s*(?:get|post|put|delete|patch|head|options|all|on|route|use|basePath)\s*\(/;
+
+function scanNestRoutes(dir, ctx) {
+  return recordReader(ctx, extractNestRoutes(readJsSources(ctx, NEST_MARKER), { config: ctx.config }));
+}
+
+function scanHonoRouterRoutes(dir, ctx) {
+  return recordReader(ctx, extractRouterRoutes(readJsSources(ctx, ROUTER_MARKER), createImportResolver(dir), { framework: 'Hono', defaultSource: 'hono' }));
+}
+
+function scanWorkerRoutes(dir, ctx) {
+  const sources = readJsSources(ctx);
+  const resolveImport = createImportResolver(dir);
+  const dispatch = extractWorkerRoutes(sources, resolveImport);
+  const routers = extractRouterRoutes(sources.filter(s => ROUTER_MARKER.test(s.content)), resolveImport, { framework: 'Cloudflare Workers', defaultSource: 'cloudflare-workers' });
+  // One tier record per file, whichever reader read it.
+  const tiers = new Map();
+  for (const t of [...dispatch.fileTiers, ...routers.fileTiers]) tiers.set(t.file, t);
+  recordReader(ctx, { fileTiers: [...tiers.values()], limitations: [...dispatch.limitations, ...routers.limitations] });
+  return [...dispatch, ...routers];
+}
+
 // ── Spring Boot (Java/Kotlin) ────────────────────────────────────────────────
 // What a Java/Kotlin file routes is read by spring-routes.mjs: class-level
 // @RequestMapping bases in every form, method-level mappings and
@@ -777,6 +871,19 @@ function scanRailsRoutes(dir, ctx) {
     .map(r => ({ ...r, source: 'rails', description: '', tier, tierReason }));
 }
 
+// ── Sinatra (Ruby) ───────────────────────────────────────────────────────────
+// sinatra-routes.mjs reads classic and modular apps, namespaces, extensions
+// and config.ru mounts across files (docguard.more-route-frameworks#FR-001).
+
+function scanSinatraRoutes(dir, ctx) {
+  const files = readPatternFiles(ctx, /(?:\.rb|^config\.ru)$/);
+  const sources = files.map(f => ({ file: relative(dir, f), content: readFileSafe(f) }));
+  const found = extractSinatraRoutes(sources);
+  const routes = found.map(r => ({ ...r, source: 'sinatra', description: '', ...tierFor(resolve(dir, r.file), null) }));
+  Object.defineProperty(routes, 'omitted', { value: found.omitted, enumerable: false });
+  return routes;
+}
+
 // ── Go web frameworks (Gin / Echo / Chi / Fiber / gorilla/mux / net/http) ────
 // go-routes.mjs composes group, sub-router and mount prefixes across blocks,
 // functions and files, and reads every registration form of those routers
@@ -788,14 +895,18 @@ function scanGoWebRoutes(dir, ctx) {
   return extractGoRoutes(sources).map(r => ({ ...r, source: 'go-web', description: '', ...tierFor(resolve(dir, r.file), null) }));
 }
 
-// ── Rust web frameworks (Axum / Actix / Rocket / Warp) ───────────────────────
+// ── Rust web frameworks (Axum / Actix / Rocket / Warp / Tide) ────────────────
+// Warp filter chains and Tide `at()` trees are composed across functions and
+// files by rust-routes.mjs (docguard.more-route-frameworks#FR-003/004).
 
 function scanRustWebRoutes(dir, ctx) {
   const routes = [];
   const rsFiles = readPatternFiles(ctx, /\.rs$/);
+  const sources = [];
   for (const filePath of rsFiles) {
     const content = readFileSafe(filePath);
     if (!content) continue;
+    sources.push({ file: relative(dir, filePath), content });
     const { tier, tierReason } = tierFor(filePath, null);
 
     // Axum: .route("/x", get(handler)) / .route("/x", post(handler).get(handler))
@@ -819,7 +930,50 @@ function scanRustWebRoutes(dir, ctx) {
       routes.push({ method: m[1].toUpperCase(), path: m[2], handler: '', file: relative(dir, filePath), source: 'rocket', auth: false, description: '', tier, tierReason });
     }
   }
+  const omitted = [];
+  for (const [source, extract] of [['warp', extractWarpRoutes], ['tide', extractTideRoutes]]) {
+    const found = extract(sources);
+    omitted.push(...found.omitted);
+    for (const r of found) routes.push({ ...r, source, description: '', ...tierFor(resolve(dir, r.file), null) });
+  }
+  Object.defineProperty(routes, 'omitted', { value: omitted, enumerable: false });
   return routes;
+}
+
+// ── Laravel, Symfony (PHP) and ASP.NET Core (C#) ────────────────────────────
+// php-routes.mjs and dotnet-routes.mjs read the routes; these wrappers list the
+// files, record the tier of each file read and attach the omitted routes
+// (docguard.php-dotnet-routes#FR-001/003/004/005/007).
+
+function withOmitted(routes, omitted) {
+  Object.defineProperty(routes, 'omitted', { value: omitted || [], enumerable: false });
+  return routes;
+}
+
+function scanLaravelRoutes(dir, ctx) {
+  const files = findRouteFiles(dir, /\.php$/, { maxFiles: ctx.maxFiles });
+  if (files.truncated) ctx.scan.truncated = true;
+  const found = extractLaravelRoutes(files.map(f => relPosix(dir, f)), rel => readFileSafe(resolve(dir, rel)));
+  recordPatternFiles(ctx, found.read.map(rel => resolve(dir, rel)));
+  return withOmitted(found.map(r => ({ ...r, source: 'laravel', description: '', ...tierFor(resolve(dir, r.file), null) })), found.omitted);
+}
+
+function scanSymfonyRoutes(dir, ctx) {
+  const files = readPatternFiles(ctx, /\.(php|ya?ml)$/);
+  const rels = files.map(f => relPosix(dir, f));
+  const known = new Set(rels);
+  const read = rel => (known.has(rel) ? readFileSafe(resolve(dir, rel)) : null);
+  const php = rels.filter(r => r.endsWith('.php')).map(file => ({ file, content: read(file) }));
+  const yaml = rels.filter(r => /(^|\/)config\/routes(\.ya?ml|\/[^/]+\.ya?ml)$/.test(r)).map(file => ({ file, content: read(file) }));
+  const found = extractSymfonyRoutes(php, { yaml, readFile: read });
+  return withOmitted(found.map(r => ({ ...r, source: 'symfony', description: '', ...tierFor(resolve(dir, r.file), null) })), found.omitted);
+}
+
+function scanAspNetRoutes(dir, ctx) {
+  const files = readPatternFiles(ctx, /\.cs$/);
+  const sources = files.map(f => ({ file: relPosix(dir, f), content: readFileSafe(f) }));
+  const found = extractAspNetRoutes(sources);
+  return withOmitted(found.map(r => ({ ...r, source: 'aspnet-core', description: '', ...tierFor(resolve(dir, r.file), null) })), found.omitted);
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────

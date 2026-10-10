@@ -5,6 +5,12 @@
  * Uses Node.js fs.watch (zero dependencies).
  *
  * --auto-fix: When guard finds issues, output AI fix prompts automatically.
+ *
+ * Test seams (`runtime`, never set by the CLI): `watch`, `guard`, `clearCache`,
+ * and `setTimeout` / `clearTimeout` for the debounce, so tests can drive the
+ * 500 ms window with a fake clock instead of wall-clock sleeps.
+ *
+ * @implements docguard.watch-deterministic#FR-003
  */
 
 import { watch as fsWatch, readdirSync, lstatSync } from 'node:fs';
@@ -24,6 +30,8 @@ export function runWatch(projectDir, config, flags = {}, runtime = {}) {
   const watch = runtime.watch || fsWatch;
   const guard = runtime.guard || runGuardInternal;
   const clearCache = runtime.clearCache || clearMemoryPlanCache;
+  const setTimer = runtime.setTimeout || setTimeout;
+  const clearTimer = runtime.clearTimeout || clearTimeout;
   const projectName = config.projectName || basename(resolve(projectDir)) || 'project';
   console.log(`${c.bold}👁️  DocGuard Watch — ${projectName}${c.reset}`);
   console.log(`${c.dim}   Directory: ${projectDir}${c.reset}`);
@@ -44,7 +52,7 @@ export function runWatch(projectDir, config, flags = {}, runtime = {}) {
   function stop() {
     if (stopped) return;
     stopped = true;
-    clearTimeout(debounceTimer);
+    clearTimer(debounceTimer);
     for (const watcher of watchers.values()) watcher.close();
     watchers.clear();
     process.removeListener('SIGINT', onSignal);
@@ -89,8 +97,8 @@ export function runWatch(projectDir, config, flags = {}, runtime = {}) {
     // after the burst settles so new subdirectories are watched too.
     if (name && extname(name) && !WATCH_EXTS.has(extname(name).toLowerCase()) && name !== '.docguardignore' && name !== '.env.example') return;
     changes.add(path || '(unknown path)');
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => {
+    clearTimer(debounceTimer);
+    debounceTimer = setTimer(() => {
       debounceTimer = null;
       reconcile();
       void check();

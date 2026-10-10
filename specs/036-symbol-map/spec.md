@@ -48,6 +48,48 @@ tasks, and its results README says later claims need a new, predeclared
 protocol. Its fixtures have one to three source files each, where a map of
 symbols has nothing to point at.
 
+## Amendment 2026-10-10: protocol v3 (executable pin only)
+
+Recorded before any v3 trial, and committed before the run, so the freeze
+precedes the results.
+
+**Reason.** The frozen v2 protocol cannot run on the maintainer's machine, and
+no v2 trial has ever run, so no v2 result has been seen:
+
+- `run.mjs --protocol v2 --run` stops before the first trial: "Frozen CLI
+  version 0.154.0-alpha.6.2 required; found codex-cli 0.162.0-alpha.17.2".
+  The installed Codex CLI is the one bundled with the ChatGPT app.
+- The v2 model is refused for the maintainer's account: Codex reports that
+  `gpt-5.3-codex-spark` is not supported when using Codex with a ChatGPT
+  account. Using an API key instead is ruled out.
+
+**Change.** Protocol `docguard-agent-context-v3`
+(`benchmarks/agent-context/manifest-v3.json`, frozen 2026-10-10 by
+`V3_MANIFEST_DIGEST`) is v2 with only the executable pin changed:
+`model.cliVersion` `0.162.0-alpha.17.2` and `model.id` `gpt-6.1-sol`.
+Reasoning effort (`low`), sandbox, harness, seed, repetitions, timeout,
+conditions, the six tasks with their fixture and evaluator digests, and the
+FR-008 promotion rule are identical to v2, and `run.mjs` rejects a v3 manifest
+that differs from v2 anywhere else (FR-011). v2 stays committed and loadable,
+frozen but not runnable. From this amendment on, the "v2 result" in FR-007,
+FR-009, SC-004 and T009–T010 means the v3 result, recorded in
+`results/observed-v3.json` and `results/README-v3.md`.
+
+## Outcome 2026-10-10: `opt-in` (computed, not overridden)
+
+The v3 matrix ran on 2026-10-10: 54 trials, none an infrastructure failure.
+Results are in `benchmarks/agent-context/results/observed-v3.json` and
+`README-v3.md`. `decideSymbolPromotion` returned `opt-in`, so `--symbols`
+stays available and off by default. FR-009's `Budget-Exempt` is not needed,
+because the default pack does not grow.
+
+- No regression: 18/18 successes with and without the map, no requirement
+  violations, no unnecessary edits; median uncached input +1.0% (21,287 to
+  21,509), median steps +0% (8 to 8).
+- No benefit: the success gain is impossible at 18/18. On the
+  navigation-bound tasks, median steps fell 0% (8 to 8) and median latency
+  fell 6.0% (29,568 to 27,797 ms), short of the 15% threshold.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - The pack names the code that matters most (Priority: P1)
@@ -162,6 +204,13 @@ and records the result. The analysis code applies the predeclared rule.
 - **FR-010**: README, `docs/commands.md`, `docs/configuration.md`,
   `docs/ai-integration.md` and the benchmark README MUST document the flag,
   the budget and the v2 decision.
+- **FR-011** *(amendment 2026-10-10)*: When the v2 executable cannot be run,
+  a v3 protocol MAY replace only its executable pin (`model.cliVersion`,
+  `model.id`), with `protocol.id` `docguard-agent-context-v3` and its own
+  `frozenAt`. The amendment and its reason MUST be recorded in this spec and
+  the results README before any v3 trial. `run.mjs` MUST freeze v3 by its own
+  digest, MUST reject a v3 manifest that differs from v2 in any other field,
+  MUST accept `--protocol v3`, and MUST keep loading v2 unchanged.
 
 ## Success Criteria *(mandatory)*
 
@@ -174,7 +223,8 @@ and records the result. The analysis code applies the predeclared rule.
 - **SC-003**: Without `--symbols`, the pack is byte-identical to the current
   release's, apart from the timestamp.
 - **SC-004**: All v2 trials complete, and the recorded promotion decision is
-  the one FR-008 computes from them, with no manual override.
+  the one FR-008 computes from them, with no manual override. After the
+  2026-10-10 amendment this applies to the v3 trials.
 
 ## Assumptions
 

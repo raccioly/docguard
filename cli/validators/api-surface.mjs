@@ -120,6 +120,7 @@ function detectFramework(projectDir, config) {
     Object.assign(deps, pkg.dependencies || {}, pkg.devDependencies || {});
   }
   if (deps.next) return 'Next.js';
+  if (deps['@nestjs/core']) return 'NestJS'; // docguard.js-framework-routes#FR-007
   if (deps.express) return 'Express';
   if (deps.fastify) return 'Fastify';
   if (deps.hono) return 'Hono';
@@ -183,8 +184,15 @@ export function resolveApiSurface(projectDir, config) {
  * (docguard.fallback-language-coverage#FR-007/008/009):
  * - a detected pattern-only framework whose patterns matched nothing — the
  *   surface is unknown, not empty;
+ * - route registrations a reader omitted because their path is not literal
+ *   (docguard.php-dotnet-routes#FR-007);
  * - routes found only in test/fixture/example paths, when none remain;
- * - a walk stopped by the file cap.
+ * - a walk stopped by the file cap;
+ * - routes a pattern reader saw but omitted because their path is not literal
+ *   text (docguard.more-route-frameworks#FR-005).
+ * - routes whose path a reader could not resolve statically (a dynamic
+ *   NestJS path, a Worker's prefix dispatch), counted per framework
+ *   (docguard.js-framework-routes#FR-006).
  *
  * @param {object|null} scan  the non-enumerable `scan` record of scanRoutesDeep
  * @param {number} kept       product routes the scan kept
@@ -195,8 +203,15 @@ export function routeScanGaps(scan, kept = 0) {
   const out = [];
   const n = (count, noun) => `${count} ${noun}${count === 1 ? '' : 's'}`;
   for (const pf of scan.patternFrameworks || []) {
-    if (pf.routes === 0) {
+    if (pf.routes === 0 && !pf.omitted) {
       out.push(`Detected ${pf.name}, but its route patterns matched no route in ${n(pf.files, 'file')}; a route registered in a form the patterns do not match is not seen, so the API surface was not compared with code.`);
+    }
+    // docguard.php-dotnet-routes#FR-007: a registration whose path is not
+    // literal is omitted, never guessed; say how many and where.
+    if (pf.omitted > 0) {
+      const one = pf.omitted === 1;
+      const where = (pf.omittedAt || []).join(', ');
+      out.push(`${pf.name}: ${n(pf.omitted, 'route registration')} had a path or prefix that is not literal text and ${one ? 'was' : 'were'} omitted, not guessed${where ? ` (${where}${pf.omitted > (pf.omittedAt || []).length ? ', …' : ''})` : ''}.`);
     }
   }
   if (scan.excludedNonProduct > 0 && kept === 0) {
@@ -205,6 +220,17 @@ export function routeScanGaps(scan, kept = 0) {
   }
   if (scan.truncated) {
     out.push(`Route discovery stopped at the ${Number(scan.cap).toLocaleString('en-US')}-file cap; files beyond it were not read.`);
+  }
+  // A route whose path a reader could not resolve is omitted, never guessed
+  // (docguard.js-framework-routes#FR-006).
+  const byFramework = new Map();
+  for (const u of scan.unresolved || []) {
+    if (!byFramework.has(u.framework)) byFramework.set(u.framework, []);
+    byFramework.get(u.framework).push(u);
+  }
+  for (const [framework, list] of byFramework) {
+    const first = list[0];
+    out.push(`${n(list.length, `${framework} route`)} could not be read statically (first: ${first.file}:${first.line}, ${first.code}); ${list.length === 1 ? 'it is' : 'they are'} not in the API surface.`);
   }
   return out;
 }

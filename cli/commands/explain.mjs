@@ -274,6 +274,18 @@ const EXPLAINERS = {
     example: 'A superseded plan is absent from the working tree, recorded in .docguard-archive.json with a retained Git ref, and linked to its current replacement.',
     standard: 'Canonical-Driven Development lifecycle and Git-backed recovery contract',
   },
+  suppressions: {
+    title: 'Suppressions — every exclusion says why, and none outlives its date',
+    what: 'Reads `.docguardignore` entries written as `pattern  expires:YYYY-MM-DD  # reason`. Reports an entry whose expiry day has passed (IGN001), one whose expiry is not a calendar date or that has no pattern (IGN003), and, when `suppressions.requireReason` is true, one with no reason (IGN002). Expired and unreadable entries already exclude nothing; this validator says so.',
+    why: 'An exclusion hides files from every check. One written for a temporary condition stays forever unless it can end, and one without a reason cannot be reviewed.',
+    triggers: [
+      ['expired on', 'Set a new expires: date if the reason still holds; otherwise delete the line.'],
+      ['not a YYYY-MM-DD calendar date', 'Write the date as expires:2026-12-31, or remove the token.'],
+      ['has no reason', 'Add a trailing `# reason` saying why the path is excluded.'],
+    ],
+    example: 'build/  expires:2026-12-31  # generated output, removed when the v2 build lands',
+    standard: 'claimspec v1 ignore: every entry carries a reason; an expired entry excuses nothing',
+  },
   specRegistry: {
     title: 'Spec-Registry — one lifecycle index for intent, delivery, and evidence',
     what: 'Checks that every active spec has an immutable identity and that `.docguard-specs.json` exactly reflects spec artifacts, task counts, explicit test references, and archive tombstones while preserving reviewed lifecycle, lineage, and scope fields.',
@@ -424,7 +436,7 @@ const EXPLAINERS = {
   },
   schemaSync: {
     title: 'Schema-Sync — DB models in code are documented in DATA-MODEL.md',
-    what: 'Detects schema files for 7 ORMs/frameworks (Prisma, Drizzle, Sequelize, TypeORM, Knex, Django, Rails), extracts the model/table names, and checks each appears (case-insensitive, singular/plural aware) in docs-canonical/DATA-MODEL.md. Migration/utility tables are filtered out. No schema files → passes silently.',
+    what: 'Reads models from Prisma, Drizzle, Mongoose, TypeORM and Sequelize (the scanner `generate` uses), Django, SQLAlchemy and SQLModel, and table names from Knex and Rails migrations, then checks each appears (case-insensitive, singular/plural aware) in docs-canonical/DATA-MODEL.md. Migration/utility tables are filtered out. No schema files → passes silently.',
     why:  'An undocumented table is a data model only the code knows — exactly the institutional memory CDD exists to preserve.',
     triggers: [
       ['not documented in DATA-MODEL.md', 'Add the model to DATA-MODEL.md\'s Entity Definitions section.'],
@@ -465,6 +477,7 @@ export const DISPLAY_NAMES = {
   schemaSync: 'Schema-Sync',
   specKit: 'Spec-Kit',
   documentLifecycle: 'Document-Lifecycle',
+  suppressions: 'Suppressions',
   specRegistry: 'Spec-Registry',
   docDependency: 'Doc-Dependency',
   pathScopedRules: 'Path-Scoped-Rules',
