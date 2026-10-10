@@ -4234,7 +4234,7 @@
           {
             "requirementId": "FR-008",
             "file": "cli/scanners/routes.mjs",
-            "line": 1073
+            "line": 1117
           },
           {
             "requirementId": "FR-009",
@@ -5811,6 +5811,7 @@
           "docguard.js-route-shapes#FR-007",
           "docguard.js-route-shapes#FR-008",
           "docguard.js-route-shapes#FR-009",
+          "docguard.js-route-shapes#FR-010",
           "docguard.js-route-shapes#SC-001",
           "docguard.js-route-shapes#SC-002"
         ]
@@ -5819,20 +5820,20 @@
         "artifacts": [
           {
             "path": "specs/064-js-route-shapes/spec.md",
-            "digest": "sha256:0646e50358c57b779ccbad15bc445ced792446123529c5c9ae7b2403af5516c4"
+            "digest": "sha256:5d776d09eac73457ce155487f37f51bd2454a1a1843ed034b1af0afd9c85de48"
           },
           {
             "path": "specs/064-js-route-shapes/plan.md",
-            "digest": "sha256:e581bafbf8f005e75419f32cf65aa5d1d2c635a4b58010d385a67bb5731b02e1"
+            "digest": "sha256:9e8f3c6f81034ece082db703721d32d6782feed436c2f6c27faf52e27d92a3ac"
           },
           {
             "path": "specs/064-js-route-shapes/tasks.md",
-            "digest": "sha256:32e3da577c801a64fe1a8e7cee69b31124dc28c2ee270bee27adf13b404427ff"
+            "digest": "sha256:149c0726d2f7eaefa7c7e4bef342181c1b1df79ddb3f00b9ce94d9f81ffec750"
           }
         ],
         "taskCompletion": {
-          "checked": 13,
-          "total": 13
+          "checked": 16,
+          "total": 16
         },
         "implementationEvidence": [
           {
@@ -5914,6 +5915,16 @@
             "requirementId": "FR-009",
             "file": "cli/scanners/router-routes.mjs",
             "line": 39
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/scanners/routes.mjs",
+            "line": 602
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/scanners/routes.mjs",
+            "line": 608
           }
         ],
         "testEvidence": [
@@ -5963,6 +5974,11 @@
             "line": 18
           },
           {
+            "requirementId": "FR-010",
+            "file": "tests/js-route-shapes.test.mjs",
+            "line": 19
+          },
+          {
             "requirementId": "SC-001",
             "file": "tests/fixtures/js-route-shape-projects.mjs",
             "line": 12
@@ -5970,12 +5986,12 @@
           {
             "requirementId": "SC-001",
             "file": "tests/js-route-shapes.test.mjs",
-            "line": 19
+            "line": 20
           },
           {
             "requirementId": "SC-002",
             "file": "tests/js-route-shapes.test.mjs",
-            "line": 20
+            "line": 21
           }
         ]
       }
@@ -6082,7 +6098,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/scanners/routes.mjs",
-            "line": 492
+            "line": 496
           },
           {
             "requirementId": "FR-002",
@@ -6102,22 +6118,22 @@
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/routes.mjs",
-            "line": 481
+            "line": 485
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/routes.mjs",
-            "line": 542
+            "line": 546
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/routes.mjs",
-            "line": 545
+            "line": 549
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/routes.mjs",
-            "line": 599
+            "line": 606
           },
           {
             "requirementId": "FR-003",
@@ -6147,7 +6163,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/scanners/routes.mjs",
-            "line": 600
+            "line": 607
           },
           {
             "requirementId": "FR-005",

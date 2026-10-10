@@ -390,7 +390,7 @@ function scanExpressRoutes(dir, roots = null, unresolved = null) {
   // non-null receiver means it applies only to routes whose receiver matches
   // (a same-file `const r = Router(); app.use('/api', r)` — so a sibling
   // `app.get('/health')` in the same file is NOT wrongly prefixed).
-  const mountMap = buildExpressMountMap(files, createAliasResolver(dir));
+  const mountMap = buildExpressMountMap(files, createAliasResolver(dir), unresolved);
 
   // ── Phase 2: emit routes, prefixing by mount where known ────────────────────
   // Auth is per route (docguard.js-ts-extraction#FR-002): the route's own
@@ -399,7 +399,11 @@ function scanExpressRoutes(dir, roots = null, unresolved = null) {
   for (const { content, filePath, fileLabel } of files) {
     const mounts = mountMap.get(filePath) || [];
     const emit = (r) => {
-      const applicable = mounts.filter(m => m.receiver === null || m.receiver === r.receiver);
+      const matching = mounts.filter(m => m.receiver === null || m.receiver === r.receiver);
+      const applicable = matching.filter(m => !m.omitted);
+      // Mounted only under prefixes that cannot be read: the served path is
+      // unknown, so the route is omitted (docguard.js-route-shapes#FR-010).
+      if (matching.length && !applicable.length) return;
       const targets = applicable.length
         ? applicable.map(m => ({ path: joinRoutePath(m.prefix, r.path), auth: m.auth }))
         : [{ path: r.path, auth: false }];
@@ -591,31 +595,59 @@ function matcherRegex(pattern) {
  *     routes whose receiver matches (receiver: ident).
  *
  * Imported-router mounts are composed transitively, so
- * `app.use('/api', api)` plus `api.use('/x', x)` yields `/api/x`. Dynamic mount
- * paths (non-string-literal prefixes) are skipped. Unmounted files keep their
+ * `app.use('/api', api)` plus `api.use('/x', x)` yields `/api/x`. A prefix
+ * built from same-file or imported `const` strings is resolved; any other
+ * prefix that is not literal is recorded once in `unresolved`, and a router
+ * reachable only through such mounts is marked `omitted`, so its routes are not
+ * reported at the root (docguard.js-route-shapes#FR-010). Unmounted files keep their
  * bare paths — exactly the pre-mount-map behavior. Each prefix carries whether
  * auth middleware guards every mount chain to it, and imports resolve through
  * tsconfig/jsconfig aliases.
  * @implements docguard.js-ts-extraction#FR-002
  * @implements docguard.js-ts-extraction#FR-005
+ * @implements docguard.js-route-shapes#FR-010
  */
-function buildExpressMountMap(files, resolveAlias = null) {
+function buildExpressMountMap(files, resolveAlias = null, unresolved = null) {
   const map = new Map();
-  const add = (absFile, receiver, prefix, auth) => {
+  const add = (absFile, receiver, prefix, auth, omitted = false) => {
     if (!map.has(absFile)) map.set(absFile, []);
-    map.get(absFile).push({ receiver, prefix, auth });
+    map.get(absFile).push({ receiver, prefix, auth, omitted });
   };
   const metadata = new Map();
   for (const { content, filePath } of files) {
     const mi = extractJsMountsAndImports(content, filePath);
     if (mi) metadata.set(filePath, mi);
   }
+  // A file whose mount prefix it could not read on its own is read again with
+  // the `const` strings its imports export.
+  for (const { content, filePath } of files) {
+    const mi = metadata.get(filePath);
+    if (!mi || !mi.mounts.some(m => m.prefix === null)) continue;
+    const imported = new Map();
+    for (const [local, spec] of Object.entries(mi.imports)) {
+      const symbol = mi.importSymbols?.[local];
+      if (!symbol || symbol === '*' || symbol === 'default') continue;
+      const target = resolveLocalImport(filePath, spec, resolveAlias);
+      const value = target ? metadata.get(target)?.exportedConstants?.[symbol] : undefined;
+      if (typeof value === 'string') imported.set(local, value);
+    }
+    if (imported.size) metadata.set(filePath, extractJsMountsAndImports(content, filePath, imported) || mi);
+  }
+  const labels = new Map(files.map(f => [f.filePath, f.fileLabel]));
+  const recorded = new Set();
+  const recordPrefix = (filePath, mount) => {
+    const at = `${filePath}:${mount.line}`;
+    if (!unresolved || recorded.has(at)) return;
+    recorded.add(at);
+    unresolved.push({ framework: 'Express', code: 'route-unresolved-prefix', file: labels.get(filePath) || filePath, line: mount.line, target: mount.target || '' });
+  };
 
   const edges = [];
   for (const { filePath } of files) {
     const mi = metadata.get(filePath);
     if (!mi) continue;
-    for (const { prefix, ident, receiver, auth } of mi.mounts) {
+    for (const mount of mi.mounts) {
+      const { prefix, ident, receiver, auth } = mount;
       const spec = mi.imports[ident];
       if (spec) {
         const target = resolveLocalImport(filePath, spec, resolveAlias);
@@ -633,6 +665,7 @@ function buildExpressMountMap(files, resolveAlias = null) {
             !targetRouteReceivers.has(targetReceiver) &&
             !targetMountReceivers.has(targetReceiver)) continue;
         if (targetReceiver === null && targetRouteReceivers.size === 0 && targetMountReceivers.size === 0) continue;
+        if (prefix === null) recordPrefix(filePath, mount);
         edges.push({
           from: { file: filePath, receiver },
           to: { file: target, receiver: targetReceiver },
@@ -643,6 +676,7 @@ function buildExpressMountMap(files, resolveAlias = null) {
         const routeReceivers = new Set(mi.routeReceivers || []);
         const mountReceivers = new Set((mi.mounts || []).map(mount => mount.receiver));
         if (!routeReceivers.has(ident) && !mountReceivers.has(ident)) continue;
+        if (prefix === null) recordPrefix(filePath, mount);
         edges.push({
           from: { file: filePath, receiver },
           to: { file: filePath, receiver: ident },
@@ -675,6 +709,7 @@ function buildExpressMountMap(files, resolveAlias = null) {
     const nextVisiting = new Set(visiting).add(key);
     const prefixes = new Map(); // prefix -> auth
     for (const edge of nodeEdges) {
+      if (edge.prefix === null) continue; // an unreadable prefix serves nothing we can name
       const parentKey = nodeKey(edge.from);
       const parentHasIncoming = (incoming.get(parentKey) || []).length > 0;
       const parentPrefixes = parentHasIncoming
@@ -693,8 +728,17 @@ function buildExpressMountMap(files, resolveAlias = null) {
     return resolved;
   };
 
+  // Is every mount chain to this router cut by a prefix that cannot be read?
+  const blocked = (node, seen = new Set()) => {
+    const key = nodeKey(node);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return (incoming.get(key) || []).some(edge => edge.prefix === null || blocked(edge.from, seen));
+  };
   for (const node of nodes.values()) {
-    for (const { prefix, auth } of effectivePrefixes(node)) add(node.file, node.receiver, prefix, auth);
+    const found = effectivePrefixes(node);
+    for (const { prefix, auth } of found) add(node.file, node.receiver, prefix, auth);
+    if (!found.length && blocked(node)) add(node.file, node.receiver, null, false, true);
   }
   return map;
 }

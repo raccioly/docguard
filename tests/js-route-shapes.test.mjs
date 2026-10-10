@@ -16,6 +16,7 @@
  * @req docguard.js-route-shapes#FR-007
  * @req docguard.js-route-shapes#FR-008
  * @req docguard.js-route-shapes#FR-009
+ * @req docguard.js-route-shapes#FR-010
  * @req docguard.js-route-shapes#SC-001
  * @req docguard.js-route-shapes#SC-002
  */
@@ -448,6 +449,80 @@ module.exports = router;
   });
 });
 
+// ── FR-010: Express mounts whose prefix is not literal ──────────────────────
+
+const express = files => ({ 'package.json': JSON.stringify({ dependencies: { express: '4.19.2' } }), ...files });
+const USERS_ROUTER = "import { Router } from 'express';\nconst router = Router();\nrouter.get('/:id', show);\nrouter.post('/', create);\nexport default router;\n";
+
+describe('FR-010: an Express mount prefix that is not literal', () => {
+  it('resolves a same-file constant, an imported const and a template of constants', () => {
+    const routes = routesOf(project(express({
+      'src/config.ts': "export const API_PREFIX = '/api';\nexport const VERSION = 'v2';\n",
+      'src/users.ts': USERS_ROUTER,
+      'src/orders.ts': "import { Router } from 'express';\nconst orders = Router();\norders.get('/', list);\nexport default orders;\n",
+      'src/items.ts': "import { Router } from 'express';\nconst items = Router();\nitems.get('/all', list);\nexport default items;\n",
+      'src/app.ts': `import express from 'express';
+import { API_PREFIX, VERSION } from './config';
+import users from './users';
+import orders from './orders';
+import items from './items';
+const app = express();
+const LOCAL = '/local';
+app.use(API_PREFIX + '/users', users);
+app.use(\`\${API_PREFIX}/\${VERSION}/orders\`, orders);
+app.use(LOCAL, items);
+`,
+    })), 'Express');
+    assert.deepEqual(routes.map(key).sort(), ['GET /api/users/:id', 'GET /api/v2/orders', 'GET /local/all', 'POST /api/users']);
+    assert.deepEqual(unresolvedOf(routes), []);
+  });
+
+  it('omits the routes under a prefix it cannot read, records the prefix once, and the check is partial', () => {
+    const dir = project(express({
+      'src/users.ts': USERS_ROUTER,
+      'src/admin.ts': "import { Router } from 'express';\nimport users from './users';\nconst admin = Router();\nadmin.get('/stats', s);\nadmin.use('/users', users);\nexport default admin;\n",
+      'src/health.ts': "import { Router } from 'express';\nconst health = Router();\nhealth.get('/health', h);\nexport default health;\n",
+      'src/app.ts': `import express from 'express';
+import { config } from './settings';
+import admin from './admin';
+import health from './health';
+const app = express();
+app.use(config.apiPrefix, admin);
+app.use(\`\${process.env.BASE}/v1\`, health);
+app.get('/ok', ok);
+`,
+      'docs-canonical/API-REFERENCE.md': '#### GET `/ok`\n',
+    }));
+    const routes = routesOf(dir, 'Express');
+    assert.deepEqual(routes.map(key), ['GET /ok']);
+    assert.deepEqual((routes.scan.unresolved || []).map(u => [u.framework, u.code, u.file, u.line]).sort(), [
+      ['Express', 'route-unresolved-prefix', 'src/app.ts', 6],
+      ['Express', 'route-unresolved-prefix', 'src/app.ts', 7],
+    ]);
+    const result = validateApiSurface(dir, {});
+    assert.equal(result.applicability?.status, 'partial');
+    assert.match(result.applicability.reason, /2 Express routes.*src\/app\.ts:6/);
+  });
+
+  it('keeps the routes a literal mount reaches when the same router is also mounted under an unreadable prefix', () => {
+    const routes = routesOf(project(express({
+      'src/users.ts': USERS_ROUTER,
+      'src/app.ts': "import express from 'express';\nimport users from './users';\nconst app = express();\napp.use('/users', users);\napp.use(PREFIX, users);\n",
+    })), 'Express');
+    assert.deepEqual(routes.map(key).sort(), ['GET /users/:id', 'POST /users']);
+    assert.deepEqual(unresolvedOf(routes).map(u => u.line), [5]);
+  });
+
+  it('does not take middleware for a prefix', () => {
+    const routes = routesOf(project(express({
+      'src/users.ts': USERS_ROUTER,
+      'src/app.ts': "import express from 'express';\nimport users from './users';\nconst app = express();\napp.use(requireAuth, users);\napp.use(middlewares.cors, users);\n",
+    })), 'Express');
+    assert.deepEqual(routes.map(key).sort(), ['GET /:id', 'POST /']);
+    assert.deepEqual(unresolvedOf(routes), []);
+  });
+});
+
 // ── FR-006: documentation ───────────────────────────────────────────────────
 
 describe('FR-006: the docs say what is read', () => {
@@ -461,7 +536,7 @@ describe('FR-006: the docs say what is read', () => {
     assert.match(doc, /^\| Hono \|.*zod-openapi/m);
     assert.match(doc, /^\| Cloudflare Pages \|.*_routes\.json.*_worker\.js/m);
     assert.match(doc, /^\| Koa \|.*redirect/m);
-    assert.match(doc, /^\| Express \|.*not literal/m);
+    assert.match(doc, /^\| Express \|.*not literal.*mount prefix/m);
     assert.match(read('docs/commands.md'), /Cloudflare Pages/);
   });
 

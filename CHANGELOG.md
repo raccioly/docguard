@@ -38,6 +38,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     runtime value, an imported constant, a regular expression) is no longer
     reported as `/x/:param`; it is recorded and makes the API-surface check
     `partial`. Literal routes are unchanged.
+  - Express mounts: a `use()` prefix built from same-file or imported
+    `const` strings is resolved; one that cannot be read (`config.apiPrefix`,
+    `` `${process.env.BASE}/v1` ``) no longer leaves the mounted router's
+    routes at the root. They are omitted and the prefix is recorded.
 
   A prefix, mount path, route definition or Pages export that is not literal
   is recorded and makes the API-surface check `partial`; the routes below an

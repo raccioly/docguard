@@ -1,6 +1,6 @@
 # Tasks: Koa Mounts, Cloudflare Pages Functions and Hono OpenAPI Routes
 
-**Status**: Complete. SC-001: the 20 tests in `tests/js-route-shapes.test.mjs` failed before the change and pass after; each reference project matches its hand-written truth, and a scratch Koa project reports the same routes and auth flags from the old and new scanners. SC-002: the full suite (3217 tests) passes and `docguard guard` reports no finding from this change. Phase 4 (FR-007–FR-009): 9 more tests (29 in the file) failed before and pass after, the old and new scanners give identical literal Express/Fastify route records, and the full suite (3226 tests) passes.
+**Status**: Complete. SC-001: the 20 tests in `tests/js-route-shapes.test.mjs` failed before the change and pass after; each reference project matches its hand-written truth, and a scratch Koa project reports the same routes and auth flags from the old and new scanners. SC-002: the full suite (3217 tests) passes and `docguard guard` reports no finding from this change. Phase 4 (FR-007–FR-009): 9 more tests (29 in the file) failed before and pass after, the old and new scanners give identical literal Express/Fastify route records, and the full suite (3226 tests) passes. Phase 5 (FR-010): 4 more tests (33 in the file; 3 failed before, the middleware guard passed before and after), identical literal Express records old vs new (53 routes), and the full suite (3230 tests) passes.
 **Spec**: `specs/064-js-route-shapes/spec.md`
 **Plan**: `specs/064-js-route-shapes/plan.md`
 
@@ -28,3 +28,9 @@
 - [x] T011 FR-008: `cli/scanners/pages-routes.mjs`, `cli/scanners/worker-routes.mjs`, `cli/shared-source.mjs`, `cli/scanners/routes.mjs`
 - [x] T012 FR-009: `cli/scanners/router-routes.mjs`
 - [x] T013 Docs, `docguard specs --write`, `docguard guard`, `npm test`
+
+## Phase 5: Express mount prefixes (FR-010)
+
+- [x] T014 Tests first in `tests/js-route-shapes.test.mjs` (constant, imported and template prefixes; unreadable prefixes; a router mounted both ways; middleware first arguments); see them fail.
+- [x] T015 `cli/scanners/js-ast.mjs` (`extractJsMountsAndImports`), `cli/scanners/routes.mjs` (`buildExpressMountMap`, `scanExpressRoutes`); compare old and new literal results.
+- [x] T016 Docs, `docguard specs --write`, `docguard guard`, `npm test`

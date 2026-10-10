@@ -926,7 +926,7 @@ export function extractJsRouteObjects(content, filename = 'file.ts') {
  * Resolving `ident` (local router vs imported specifier) is the caller's job —
  * it needs filesystem context this pure-AST module deliberately avoids.
  */
-export function extractJsMountsAndImports(content, filename = 'file.ts') {
+export function extractJsMountsAndImports(content, filename = 'file.ts', importedConstants = null) {
   const { ast, ok } = parseJsTs(content, filename);
   if (!ok || !ast) return null;
 
@@ -934,7 +934,9 @@ export function extractJsMountsAndImports(content, filename = 'file.ts') {
   const importSymbols = {};
   const exports = {};
   const mounts = [];
-  const constants = topLevelStaticStrings(ast);
+  const ownConstants = topLevelStaticStrings(ast);
+  // Imported `const` strings the caller resolved (docguard.js-route-shapes#FR-010); a local binding wins.
+  const constants = importedConstants ? new Map([...importedConstants, ...ownConstants]) : ownConstants;
   const routeBindings = expressRouteBindings(ast);
   const uses = authUses(ast, constants);
 
@@ -994,9 +996,13 @@ export function extractJsMountsAndImports(content, filename = 'file.ts') {
       if (!receiver || !looksLikeRouteReceiver(receiver, routeBindings)) return;
       const explicitPrefix = pathArgValue(first, constants, false);
       const hasPrefix = typeof explicitPrefix === 'string' && explicitPrefix.startsWith('/');
-      if (!hasPrefix && (first?.type !== 'Identifier' || args.length !== 1)) return;
-      const prefix = hasPrefix ? explicitPrefix : '';
-      const start = hasPrefix ? 1 : 0;
+      // A prefix this file cannot read (docguard.js-route-shapes#FR-010): the
+      // mount is kept with `prefix: null` so the caller omits what it mounts
+      // and records the prefix, instead of serving the router at the root.
+      const unreadable = !hasPrefix && explicitPrefix === null && args.length >= 2 && isPrefixExpression(first);
+      if (!hasPrefix && !unreadable && (first?.type !== 'Identifier' || args.length !== 1)) return;
+      const prefix = hasPrefix ? explicitPrefix : unreadable ? null : '';
+      const start = hasPrefix || unreadable ? 1 : 0;
       for (let i = start; i < args.length; i++) {
         if (args[i]?.type === 'Identifier' && args[i].name !== receiver &&
             (imports[args[i].name] || looksLikeRouteReceiver(args[i].name, routeBindings))) {
@@ -1004,14 +1010,31 @@ export function extractJsMountsAndImports(content, filename = 'file.ts') {
           // on the same receiver, protects everything mounted here (FR-002).
           const auth = args.slice(start, i).some(isAuthMiddlewareNode) ||
             uses.some(u => u.receiver === receiver && u.start < (node.start ?? 0) && prefixCovers(u.prefix, prefix || '/'));
-          mounts.push({ prefix, ident: args[i].name, receiver, auth });
+          mounts.push({ prefix, ident: args[i].name, receiver, auth, line: node.loc?.start.line ?? null, ...(unreadable ? { target: String(content).slice(first.start, first.end).replace(/\s+/g, ' ').slice(0, 80) } : {}) });
         }
       }
     }
   });
 
   const routeReceivers = new Set(extractJsRouteCalls(content, filename)?.map(route => route.receiver) || []);
-  return { imports, importSymbols, exports, mounts, routeReceivers: [...routeReceivers] };
+  // Exported `const` strings, for importers' mount prefixes.
+  const exportedConstants = {};
+  for (const [exported, local] of Object.entries(exports)) if (ownConstants.has(local)) exportedConstants[exported] = ownConstants.get(local);
+  return { imports, importSymbols, exports, mounts, routeReceivers: [...routeReceivers], exportedConstants };
+}
+
+/**
+ * Does a first `use()` argument name a path rather than a middleware? A
+ * template or concatenation does; so does a name that says so (`API_PREFIX`,
+ * `basePath`, `config.apiPrefix`). `requireAuth` or `middlewares.cors` do not.
+ */
+const PREFIX_NAME = /^[A-Z][A-Z0-9_]*$|^(?:path|prefix|base|url|mount)$|(?:Path|Prefix|Base|Url|Mount)$/;
+function isPrefixExpression(node) {
+  if (!node) return false;
+  if (node.type === 'TemplateLiteral' || node.type === 'BinaryExpression') return true;
+  if (node.type === 'Identifier') return PREFIX_NAME.test(node.name);
+  if (node.type === 'MemberExpression' && !node.computed) return PREFIX_NAME.test(node.property?.name || '') || (node.object?.type === 'MemberExpression' && node.object.property?.name === 'env');
+  return false;
 }
 
 /**

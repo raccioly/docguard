@@ -234,7 +234,11 @@ DocGuard's own output:
 - **Routes**:
   - `app.get('/x', …)` and `router.route('/x').get(…).post(…)` chains;
   - mount prefixes from `app.use('/api', router)`, including routers imported
-    through a `tsconfig`/`jsconfig` path alias (`@/routes`);
+    through a `tsconfig`/`jsconfig` path alias (`@/routes`), and prefixes built
+    from `const` strings in the same file or imported from another
+    (`app.use(API_PREFIX + '/users', users)`); a prefix that cannot be read
+    (`config.apiPrefix`, `process.env.BASE`) is reported as partial coverage
+    and the routes below it are left out, not shown at the root;
   - the Next.js App and Pages routers;
   - Koa routers with their `prefix` (option or `router.prefix()`), nested
     with `router.use('/users', users.routes())` and mounted on applications
