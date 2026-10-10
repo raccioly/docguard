@@ -279,6 +279,11 @@ export function collectPackageJsons(projectDir, config = {}) {
 
 /** Detect whether the project ships a Docker setup. */
 export function detectDocker(projectDir, config = {}) {
+  return findDockerManifest(projectDir, config) !== null;
+}
+
+/** The project-relative path of the Docker manifest `detectDocker` finds, or null. */
+function findDockerManifest(projectDir, config = {}) {
   const candidates = ['Dockerfile', 'docker-compose.yml', 'docker-compose.yaml', '.dockerignore'];
   const root = resolve(projectDir);
   const dirs = new Set([root]);
@@ -298,10 +303,10 @@ export function detectDocker(projectDir, config = {}) {
 
   for (const dir of dirs) {
     for (const f of candidates) {
-      if (existsSync(join(dir, f))) return true;
+      if (existsSync(join(dir, f))) return relative(root, join(dir, f)).split('\\').join('/');
     }
   }
-  return false;
+  return null;
 }
 
 const HASH_COMMENT_EXTS = new Set(['.py', '.rb', '.php', '.sh']);
@@ -1061,38 +1066,108 @@ export function grepEnvUsage(projectDir, config = {}, options = {}) {
 
 /** Technologies the tech-stack drift check (DDF001) and `diff` recognise by name. */
 export const TECH_PATTERNS = ['React', 'Next.js', 'Vue', 'Angular', 'Svelte', 'Express', 'Fastify', 'Hono',
-  'PostgreSQL', 'MySQL', 'MongoDB', 'DynamoDB', 'Redis', 'Prisma', 'Drizzle',
+  'PostgreSQL', 'MySQL', 'MongoDB', 'DynamoDB', 'Redis', 'Prisma', 'Drizzle', 'TypeORM', 'Sequelize',
   'TypeScript', 'Tailwind', 'Docker', 'Terraform'];
 
+// Mongoose stays MongoDB only: the database is the fact an architecture states,
+// and naming the ODM too would warn every project that already documents MongoDB.
+// @implements docguard.dogfood-round-2#FR-006
 const TECH_DEPENDENCIES = {
   'react': 'React', 'next': 'Next.js', 'vue': 'Vue', 'express': 'Express',
   'fastify': 'Fastify', 'hono': 'Hono', 'prisma': 'Prisma', '@prisma/client': 'Prisma',
-  'drizzle-orm': 'Drizzle', 'typescript': 'TypeScript', 'tailwindcss': 'Tailwind',
+  'drizzle-orm': 'Drizzle', 'typeorm': 'TypeORM', 'sequelize': 'Sequelize',
+  'typescript': 'TypeScript', 'tailwindcss': 'Tailwind',
   'redis': 'Redis', 'ioredis': 'Redis', 'pg': 'PostgreSQL', 'mysql2': 'MySQL',
-  'mongoose': 'MongoDB', '@aws-sdk/client-dynamodb': 'DynamoDB',
+  'mongoose': 'MongoDB', '@aws-sdk/client-dynamodb': 'DynamoDB', '@aws-sdk/lib-dynamodb': 'DynamoDB',
 };
 
+/*
+ * Source-text signals for technologies a project can use without declaring a
+ * dependency (docguard.dogfood-round-2#FR-002/FR-003). Each one is a string
+ * that cannot mean anything else: DynamoDB's wire target prefix and endpoint,
+ * its local image, the SDK v2 and boto3 constructors, an endpoint setting; and
+ * a docker command in a script. Ambiguous names (redis, postgres) get none.
+ * The patterns are written so their own source text does not match them.
+ */
+const DYNAMODB_TEXT_SIGNALS = [
+  [/\bDynamoDB_\d{8}\.[A-Z]\w*/, 'DynamoDB API target'],
+  [/\bdynamodb\.[a-z]{2}(?:-[a-z]+)+-\d\.amazonaws\.com/, 'DynamoDB endpoint'],
+  [/\bamazon\/dynamodb-local\b/, 'DynamoDB Local image'],
+  [/\bAWS\.DynamoDB\b/, 'AWS SDK v2 client'],
+  [/\b(?:client|resource)\(\s*['"]dynamodb['"]/, 'boto3 client'],
+  [/\b(?:DYNAMODB|DDB)_ENDPOINT\b/, 'endpoint setting'],
+];
+const DOCKER_COMMAND_RE = /\bdocker\s+(?:run|build|compose)\b|\bdocker-compose\s+[a-z]/;
+const SCRIPT_FILE_RE = /\.(?:sh|bash|zsh|mk)$|(?:^|\/)(?:GNUmakefile|[Mm]akefile)$/;
+const CI_FILE_RE = /^\.github\/workflows\/[^/]+\.ya?ml$|(?:^|\/)\.gitlab-ci\.ya?ml$/;
+const COMPOSE_FILE_RE = /(?:^|\/)(?:compose|docker-compose(?:\.[\w-]+)?)\.ya?ml$/;
+const COMMENT_LINE_RE = /^\s*(?:#|\/\/|\/\*|\*)/;
+const TEST_FILE_RE = /\.(?:test|spec)\.[a-z0-9]+$|(?:^|\/)test_[^/]*\.py$/i;
+
+/** Lines that are not whole-line comments: a commented-out command is not use. */
+const liveText = content => content.split('\n').filter(line => !COMMENT_LINE_RE.test(line)).join('\n');
+
 /**
- * Technologies the code declares: package.json dependencies (root, source
- * root and workspaces), a Dockerfile/compose file, and `.tf` files. One
- * function for the check (DDF001, `diff`) and the writer (`generate`), so the
- * generated tech stack names exactly what the check looks for.
+ * Technologies the code declares, each with the file that shows it:
+ * package.json dependencies (root, source root and workspaces), a
+ * Dockerfile/compose file, `.tf` files, and, for DynamoDB and Docker when no
+ * manifest names them, source-text signals in product files. One function for
+ * the check (DDF001, `diff`) and the writer (`generate`), so the generated
+ * tech stack names exactly what the check looks for.
+ * `kind` is 'manifest' or 'source' (a text signal).
+ * @implements docguard.generated-docs-consistency#FR-010
+ * @implements docguard.dogfood-round-2#FR-002
+ * @implements docguard.dogfood-round-2#FR-003
+ * @returns {Array<{ tech: string, file: string, signal: string, kind: 'manifest'|'source' }>} in TECH_PATTERNS order
+ */
+export function detectCodeTechnologyEvidence(dir, config = {}) {
+  const root = resolve(dir);
+  const found = new Map();
+  const add = (tech, file, signal, kind) => { if (!found.has(tech)) found.set(tech, { tech, file, signal, kind }); };
+  for (const { dir: pkgDir, pkg } of collectPackageJsons(dir, config)) {
+    const deps = { ...(pkg.dependencies || {}), ...(pkg.devDependencies || {}) };
+    const file = relative(root, join(pkgDir, 'package.json')).split('\\').join('/');
+    for (const [dep, tech] of Object.entries(TECH_DEPENDENCIES)) if (deps[dep]) add(tech, file, 'dependency ' + dep, 'manifest');
+  }
+  const dockerManifest = findDockerManifest(dir, config);
+  if (dockerManifest) add('Docker', dockerManifest, 'Docker manifest', 'manifest');
+
+  walkFiles(root, (full) => {
+    const rel = relative(root, full).split('\\').join('/');
+    if (shouldIgnore(rel, config)) return;
+    if (extname(full) === '.tf') { add('Terraform', rel, 'Terraform file', 'manifest'); return; }
+    const wantDynamo = !found.has('DynamoDB');
+    const wantDocker = !found.has('Docker');
+    if (!wantDynamo && !wantDocker) return;
+    if (isNonProductPath(rel, config) || TEST_FILE_RE.test(rel)) return;
+    const isScript = SCRIPT_FILE_RE.test(rel);
+    const isCi = CI_FILE_RE.test(rel);
+    const isCompose = COMPOSE_FILE_RE.test(rel);
+    if (wantDocker && isCompose) add('Docker', rel, 'compose file', 'source');
+    if (!isScript && !isCi && !isCompose && !CODE_EXTENSIONS.has(extOf(full))) return;
+    const raw = readScannable(full);
+    if (raw === null) return;
+    const text = liveText(raw);
+    if (wantDynamo) {
+      const hit = DYNAMODB_TEXT_SIGNALS.find(([re]) => re.test(text));
+      if (hit) add('DynamoDB', rel, hit[1], 'source');
+    }
+    if (wantDocker && (isScript || isCi)) {
+      const command = DOCKER_COMMAND_RE.exec(text);
+      if (command) add('Docker', rel, command[0].replace(/\s+/g, ' ').replace(/^(docker-compose) \w+$/, '$1'), 'source');
+    }
+  }, { ignoreDirs: TECH_WALK_IGNORE, keepDot: entry => entry === '.github' || /^\.gitlab-ci\.ya?ml$/.test(entry) });
+
+  return TECH_PATTERNS.filter(t => found.has(t)).map(t => found.get(t));
+}
+
+/**
+ * The technology names `detectCodeTechnologyEvidence` finds.
  * @implements docguard.generated-docs-consistency#FR-010
  * @returns {string[]} in TECH_PATTERNS order
  */
 export function detectCodeTechnologies(dir, config = {}) {
-  const found = new Set();
-  const deps = {};
-  for (const { pkg } of collectPackageJsons(dir, config)) Object.assign(deps, pkg.dependencies || {}, pkg.devDependencies || {});
-  for (const [dep, tech] of Object.entries(TECH_DEPENDENCIES)) if (deps[dep]) found.add(tech);
-  if (detectDocker(dir, config)) found.add('Docker');
-  let terraform = false;
-  walkFiles(dir, (full) => {
-    if (terraform || extname(full) !== '.tf') return;
-    if (!shouldIgnore(relative(dir, full), config)) terraform = true;
-  }, { ignoreDirs: TECH_WALK_IGNORE });
-  if (terraform) found.add('Terraform');
-  return TECH_PATTERNS.filter(t => found.has(t));
+  return detectCodeTechnologyEvidence(dir, config).map(e => e.tech);
 }
 
 const TECH_WALK_IGNORE = new Set([

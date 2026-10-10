@@ -35,6 +35,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **False positives found by dogfooding, round 2** (`specs/061-dogfood-round-2`).
+  - DDF002 read documented tests only when they were named `*.test.*` or
+    `*.spec.*`, while the code side also used `testPattern`. A TEST-SPEC
+    listing `test_bot.mjs` under `"testPattern": "test_*.mjs"` never matched.
+    Both sides, and `diff`, now use the configured patterns; a bare name is
+    compared with the pattern's last segment (#525).
+  - DDF001 found technologies only in manifests, so DynamoDB called through
+    a hand-signed HTTP client and Docker run from `start.sh` were always
+    "documented but not found in code". It now also reads unambiguous source
+    text in product files: a DynamoDB API target, endpoint or `DDB_ENDPOINT`
+    setting, the DynamoDB Local image, `AWS.DynamoDB`, boto3's
+    `client('dynamodb')`, the `@aws-sdk/lib-dynamodb` dependency; and
+    `docker run`, `docker build` or `docker compose` in a shell script,
+    Makefile or CI workflow, or a compose file anywhere. A technology found
+    this way names its file in the DDF001 message, and `diff` names the file
+    behind every technology (`evidence` in JSON). Tests, fixtures and
+    commented lines are not evidence. Suppressing a document-level finding
+    with a reason, also asked for in #526, is spec 057's.
+  - DDF001 now names TypeORM and Sequelize, as it names Prisma and Drizzle.
+    Mongoose still counts as MongoDB.
+  - SEC001 reported translation-catalog entries such as
+    `f_password: 'Password'` as hardcoded passwords. A capitalised word for
+    "password" in a common language, a short phrase containing one
+    (`Confirm Password`), or the key's own words is now skipped, unless the
+    key is an all-caps constant such as `DB_PASSWORD`. `password: 'password'`
+    and other credentials are still reported (#527).
 - **Defects found while documenting DocGuard** (`specs/054-docs-verification-findings`).
   Running every documented flow on scratch projects turned up:
   - A Koa project was labelled Hono. It is now labelled Koa. Its routes are

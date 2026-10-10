@@ -2,16 +2,18 @@
  * Diff Command — Show differences between canonical docs and implementation
  * Compares what's documented vs what's actually in the code.
  * @implements docguard.fallback-language-coverage#FR-004
+ * @implements docguard.dogfood-round-2#FR-001
+ * @implements docguard.dogfood-round-2#FR-004
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, extname, basename } from 'node:path';
 import { c } from '../shared.mjs';
 import { walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
-import { collectEnvVars, describeLanguageCounts, detectCodeTechnologies, grepEnvUsage } from '../shared-source.mjs';
+import { collectEnvVars, describeLanguageCounts, detectCodeTechnologyEvidence, grepEnvUsage } from '../shared-source.mjs';
 import { parseApiReferenceDoc, compareEndpoints } from '../scanners/api-doc.mjs';
 import { resolveApiSurface } from '../validators/api-surface.mjs';
-import { collectCodeTests, diffTechStack as guardDiffTechStack } from '../validators/docs-diff.mjs';
+import { collectCodeTests, extractDocumentedTests, diffTechStack as guardDiffTechStack } from '../validators/docs-diff.mjs';
 import { scanSchemasDeep } from '../scanners/schemas.mjs';
 import { detectDocTools } from '../scanners/doc-tools.mjs';
 
@@ -61,6 +63,9 @@ export function runDiff(projectDir, config, flags) {
 
   for (const result of results) {
     if (!result) continue;
+    // Where a detected item came from (the tech stack names each source file).
+    const source = (item) => result.evidence?.[item]
+      ? `  ${c.dim}(${result.evidence[item].file}: ${result.evidence[item].signal})${c.reset}` : '';
 
     console.log(`  ${c.bold}${result.icon} ${result.title}${c.reset}`);
 
@@ -76,14 +81,14 @@ export function runDiff(projectDir, config, flags) {
       hasAnyDiff = true;
       console.log(`    ${c.red}In code but not documented:${c.reset}`);
       for (const item of result.onlyInCode) {
-        console.log(`      ${c.red}+ ${item}${c.reset}`);
+        console.log(`      ${c.red}+ ${item}${c.reset}${source(item)}`);
       }
     }
 
     if (result.matched.length > 0 && flags.verbose) {
       console.log(`    ${c.green}Matched (${result.matched.length}):${c.reset}`);
       for (const item of result.matched) {
-        console.log(`      ${c.green}✓ ${item}${c.reset}`);
+        console.log(`      ${c.green}✓ ${item}${c.reset}${source(item)}`);
       }
     }
 
@@ -308,23 +313,19 @@ export function diffEnvVars(dir, config = {}) {
 export function diffTechStack(dir, config = {}) {
   const result = guardDiffTechStack(dir, config);
   if (!result) return null;
-  const matched = detectCodeTechnologies(dir, config).filter(t => !result.onlyInCode.includes(t));
-  return { ...result, icon: '⚙️', matched };
+  const detected = detectCodeTechnologyEvidence(dir, config);
+  const matched = detected.map(e => e.tech).filter(t => !result.onlyInCode.includes(t));
+  // Every detected technology names the file that shows it (FR-004).
+  const evidence = Object.fromEntries(detected.map(({ tech, file, signal, kind }) => [tech, { file, signal, kind }]));
+  return { ...result, icon: '⚙️', matched, evidence };
 }
 
 function diffTests(dir, config = {}) {
   const testSpecPath = resolve(dir, 'docs-canonical/TEST-SPEC.md');
   if (!existsSync(testSpecPath)) return null;
 
-  // Strip fenced code blocks (shell commands inside ``` ``` were mis-parsed as
-  // test files), then extract whitespace-free test tokens (literals or globs).
-  const content = readFileSync(testSpecPath, 'utf-8').replace(/```[\s\S]*?```/g, '');
-  const docTests = new Set();
-  const testFileRegex = /`([^`\s]*\.(?:test|spec)\.[a-zA-Z0-9]+)`/g;
-  let match;
-  while ((match = testFileRegex.exec(content)) !== null) {
-    docTests.add(match[1]);
-  }
+  // One definition of a documented test, shared with guard's DDF002.
+  const docTests = extractDocumentedTests(readFileSync(testSpecPath, 'utf-8'), config);
 
   // Find actual test files (monorepo-aware: configured patterns + recursive
   // co-located/nested scan under each source root + root-level test dirs).

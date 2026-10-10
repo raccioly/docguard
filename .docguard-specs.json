@@ -643,7 +643,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/shared-source.mjs",
-            "line": 815
+            "line": 820
           },
           {
             "requirementId": "FR-002",
@@ -3193,6 +3193,160 @@
       }
     },
     {
+      "specId": "docguard.dogfood-round-2",
+      "path": "specs/061-dogfood-round-2/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.dogfood-round-2#FR-001",
+          "docguard.dogfood-round-2#FR-002",
+          "docguard.dogfood-round-2#FR-003",
+          "docguard.dogfood-round-2#FR-004",
+          "docguard.dogfood-round-2#FR-005",
+          "docguard.dogfood-round-2#FR-006",
+          "docguard.dogfood-round-2#SC-001",
+          "docguard.dogfood-round-2#SC-002"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/061-dogfood-round-2/spec.md",
+            "digest": "sha256:4f7cb4d7b047e8d362df19573661ab1cd37f38648ed5a7d49d3673b8db3edf79"
+          },
+          {
+            "path": "specs/061-dogfood-round-2/plan.md",
+            "digest": "sha256:153b618345b10fb0cf1024f223254ce398d6ff4aa91f0d8fd1df2a49e84710c3"
+          },
+          {
+            "path": "specs/061-dogfood-round-2/tasks.md",
+            "digest": "sha256:f6cf6d10ae15fb9310291f0c926dffc2c3a26a17c016752f0d1cabbcf9082277"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 8,
+          "total": 8
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/commands/diff.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-001",
+            "file": "cli/validators/docs-diff.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "FR-001",
+            "file": "cli/validators/docs-diff.mjs",
+            "line": 236
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/shared-source.mjs",
+            "line": 1119
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/shared-source.mjs",
+            "line": 1120
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/commands/diff.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/validators/docs-diff.mjs",
+            "line": 20
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/validators/security.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/validators/security.mjs",
+            "line": 119
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/shared-source.mjs",
+            "line": 1074
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/dogfood-round-2.test.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/dogfood-round-2.test.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/dogfood-round-2.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/dogfood-round-2.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/dogfood-round-2.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/dogfood-round-2.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/dogfood-round-2.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/dogfood-round-2.test.mjs",
+            "line": 11
+          }
+        ]
+      }
+    },
+    {
       "specId": "docguard.evidence-scoped-verification",
       "path": "specs/008-evidence-scoped-verification/spec.md",
       "reviewed": {
@@ -3844,12 +3998,12 @@
           {
             "requirementId": "FR-001",
             "file": "cli/shared-source.mjs",
-            "line": 1253
+            "line": 1328
           },
           {
             "requirementId": "FR-001",
             "file": "cli/shared-source.mjs",
-            "line": 1259
+            "line": 1334
           },
           {
             "requirementId": "FR-001",
@@ -3874,7 +4028,7 @@
           {
             "requirementId": "FR-003",
             "file": "cli/shared-source.mjs",
-            "line": 830
+            "line": 835
           },
           {
             "requirementId": "FR-004",
@@ -3884,12 +4038,12 @@
           {
             "requirementId": "FR-004",
             "file": "cli/shared-source.mjs",
-            "line": 821
+            "line": 826
           },
           {
             "requirementId": "FR-004",
             "file": "cli/shared-source.mjs",
-            "line": 831
+            "line": 836
           },
           {
             "requirementId": "FR-004",
@@ -3899,7 +4053,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/shared-source.mjs",
-            "line": 832
+            "line": 837
           },
           {
             "requirementId": "FR-006",
@@ -4494,7 +4648,7 @@
           {
             "requirementId": "FR-002",
             "file": "cli/commands/diff.mjs",
-            "line": 145
+            "line": 150
           },
           {
             "requirementId": "FR-003",
@@ -4539,12 +4693,12 @@
           {
             "requirementId": "FR-006",
             "file": "cli/commands/diff.mjs",
-            "line": 306
+            "line": 311
           },
           {
             "requirementId": "FR-007",
             "file": "cli/shared-source.mjs",
-            "line": 835
+            "line": 840
           },
           {
             "requirementId": "FR-007",
@@ -4554,12 +4708,12 @@
           {
             "requirementId": "FR-008",
             "file": "cli/shared-source.mjs",
-            "line": 836
+            "line": 841
           },
           {
             "requirementId": "FR-008",
             "file": "cli/shared-source.mjs",
-            "line": 1114
+            "line": 1189
           },
           {
             "requirementId": "FR-009",
@@ -4569,7 +4723,12 @@
           {
             "requirementId": "FR-010",
             "file": "cli/shared-source.mjs",
-            "line": 1080
+            "line": 1118
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/shared-source.mjs",
+            "line": 1166
           },
           {
             "requirementId": "FR-010",
@@ -5147,12 +5306,12 @@
           {
             "requirementId": "FR-003",
             "file": "cli/shared-source.mjs",
-            "line": 770
+            "line": 775
           },
           {
             "requirementId": "FR-003",
             "file": "cli/shared-source.mjs",
-            "line": 833
+            "line": 838
           },
           {
             "requirementId": "FR-004",
@@ -5162,7 +5321,7 @@
           {
             "requirementId": "FR-004",
             "file": "cli/shared-source.mjs",
-            "line": 834
+            "line": 839
           },
           {
             "requirementId": "FR-005",
@@ -5470,7 +5629,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/shared-source.mjs",
-            "line": 445
+            "line": 450
           },
           {
             "requirementId": "FR-006",
@@ -5480,7 +5639,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/shared-source.mjs",
-            "line": 446
+            "line": 451
           },
           {
             "requirementId": "FR-007",

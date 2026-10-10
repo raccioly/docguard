@@ -114,6 +114,21 @@ them informational, and `findingSeverity.<CODE>` can still promote them.
 Machine outputs preserve `severity` and add `effectiveSeverity` plus the
 enforcement source so audit consumers can distinguish detection from policy.
 
+## Test files — `testPatterns`
+
+DocGuard finds test files named `*.test.*` or `*.spec.*` on its own. When
+yours follow another convention, list globs for them:
+
+```json
+{ "testPatterns": ["test_*.mjs", "tests/**/test_*.py"] }
+```
+
+`testPattern` (one string) is the older form and is merged into the list. The
+patterns apply to both sides of Test Files drift (DDF002): files on disk that
+match are tests, and a backticked name in TEST-SPEC.md that matches is a
+documented test. A bare file name such as `test_bot.mjs` is compared with the
+pattern's last segment, so `tests/**/test_*.py` accepts `test_api.py`.
+
 ## Collections — verify documented counts against code
 
 `collections` binds a documentation noun to a glob whose **file count is the

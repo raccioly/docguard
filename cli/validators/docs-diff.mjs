@@ -12,12 +12,18 @@
  * byte-identical to the legacy strings — resultFromFindings derives the
  * errors/warnings arrays from the same findings, so counts, exit codes, and
  * existing tests are unaffected; guard just renders richer output.
+ *
+ * v0.44 (specs/061-dogfood-round-2): documented tests are read with the same
+ * configured test patterns as the code side, and a technology found only by a
+ * source-text signal names its file in DDF001.
+ * @implements docguard.dogfood-round-2#FR-001
+ * @implements docguard.dogfood-round-2#FR-004
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, extname, basename, relative } from 'node:path';
-import { shouldIgnore, globMatch, walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
-import { collectPackageJsons, detectCodeTechnologies, resolveSourceRoots, TECH_PATTERNS } from '../shared-source.mjs';
+import { shouldIgnore, globMatch, compileGlob, walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
+import { collectPackageJsons, detectCodeTechnologyEvidence, resolveSourceRoots, TECH_PATTERNS } from '../shared-source.mjs';
 import { docRolePath, resolveDocRole } from '../shared-doc-roles.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 
@@ -68,7 +74,7 @@ export function validateDocsDiff(projectDir, config = {}) {
   // documented vars against real process.env / import.meta.env usage). Docs-Diff
   // covers tech-stack and test-file drift to avoid double-reporting.
   const checks = [
-    diffTechStack(projectDir, config),
+    techStackDiff(projectDir, config),
     diffTests(projectDir, config),
   ];
 
@@ -77,8 +83,10 @@ export function validateDocsDiff(projectDir, config = {}) {
   // the warning is actually actionable. Without these names the user gets a
   // bare count ("1 documented but not found in code") with no path to debug.
   const MAX_INLINE = 5;
-  const fmtList = (arr) => {
-    const shown = arr.slice(0, MAX_INLINE).map(v => `\`${v}\``).join(', ');
+  // A technology found only by a source-text signal names the file it came
+  // from; manifest-detected names stay byte-identical (baseline fingerprints).
+  const fmtList = (arr, sources = {}) => {
+    const shown = arr.slice(0, MAX_INLINE).map(v => `\`${v}\`` + (sources[v] ? ` (${sources[v]})` : '')).join(', ');
     const extra = arr.length - MAX_INLINE;
     return extra > 0 ? `${shown} (+${extra} more)` : shown;
   };
@@ -95,7 +103,7 @@ export function validateDocsDiff(projectDir, config = {}) {
     } else {
       const parts = [];
       if (undocumented > 0) {
-        parts.push(`${undocumented} in code but not documented: ${fmtList(result.onlyInCode)}`);
+        parts.push(`${undocumented} in code but not documented: ${fmtList(result.onlyInCode, result.sources)}`);
       }
       if (stale > 0) {
         parts.push(`${stale} documented but not found in code: ${fmtList(result.onlyInDocs)}`);
@@ -161,6 +169,14 @@ function mentionsCurrentTechnology(content, tech, technologies) {
 }
 
 export function diffTechStack(dir, config = {}) {
+  const result = techStackDiff(dir, config);
+  if (!result) return null;
+  const { sources, ...diff } = result;
+  return diff;
+}
+
+/** The tech-stack diff plus `sources`: technology → "file: signal" for text-detected ones. */
+function techStackDiff(dir, config = {}) {
   const archPath = resolveDocRole(dir, config, 'architecture');
   if (!existsSync(archPath)) return null;
 
@@ -183,7 +199,9 @@ export function diffTechStack(dir, config = {}) {
 
   // The code side is shared with `generate`, so the ARCHITECTURE.md it writes
   // names every technology this check looks for (docguard.generated-docs-consistency#FR-010).
-  const codeTech = new Set(detectCodeTechnologies(dir, config));
+  const evidence = detectCodeTechnologyEvidence(dir, config);
+  const codeTech = new Set(evidence.map(e => e.tech));
+  const sources = Object.fromEntries(evidence.filter(e => e.kind === 'source').map(e => [e.tech, `${e.file}: ${e.signal}`]));
 
   if (docTech.size === 0 && codeTech.size === 0) return null;
 
@@ -191,7 +209,54 @@ export function diffTechStack(dir, config = {}) {
     title: 'Tech Stack',
     onlyInDocs: [...docTech].filter(t => !codeTech.has(t)),
     onlyInCode: [...codeTech].filter(t => !docTech.has(t)),
+    sources,
   };
+}
+
+/**
+ * The configured test-file globs: `testPatterns`, plus the legacy single
+ * `testPattern` (loadConfig merges them; raw configs may carry either).
+ * @returns {string[]}
+ */
+export function configuredTestPatterns(config = {}) {
+  const patterns = Array.isArray(config?.testPatterns) ? [...config.testPatterns] : [];
+  if (typeof config?.testPattern === 'string' && config.testPattern && !patterns.includes(config.testPattern)) {
+    patterns.push(config.testPattern);
+  }
+  return patterns.filter(p => typeof p === 'string' && p);
+}
+
+/**
+ * The test files a test spec documents — one definition for DDF002 and `diff`.
+ * A documented test is a backticked, whitespace-free token outside fenced
+ * code that ends in .test.<ext> / .spec.<ext> (optionally a glob), or that
+ * matches a configured test pattern: the whole pattern, or, for a bare file
+ * name, the pattern's last path segment. Without patterns, only the first
+ * shape counts, exactly as before.
+ * @implements docguard.dogfood-round-2#FR-001
+ * @returns {Set<string>}
+ */
+export function extractDocumentedTests(markdown, config = {}) {
+  // Strip fenced code blocks first — they contain shell commands like
+  // `npx playwright test login.spec.ts` whose tokens were being mis-extracted
+  // as documented test files.
+  const content = String(markdown).replace(/```[\s\S]*?```/g, '');
+  const docTests = new Set();
+  const testFileRegex = /`([^`\s]*\.(?:test|spec)\.[a-zA-Z0-9]+)`/g;
+  let match;
+  while ((match = testFileRegex.exec(content)) !== null) docTests.add(match[1]);
+
+  const patterns = configuredTestPatterns(config);
+  if (patterns.length === 0) return docTests;
+  const whole = patterns.map(p => compileGlob(p));
+  const last = patterns.map(p => compileGlob(p.split('/').pop()));
+  const tokenRegex = /`([^`\s]+)`/g;
+  while ((match = tokenRegex.exec(content)) !== null) {
+    const token = match[1];
+    const matcher = token.includes('/') ? whole : last;
+    if (matcher.some(rx => rx.test(token))) docTests.add(token);
+  }
+  return docTests;
 }
 
 /**
@@ -204,18 +269,7 @@ function diffTests(dir, config) {
   const testSpecPath = resolveDocRole(dir, config, 'testSpec');
   if (!existsSync(testSpecPath)) return null;
 
-  // Strip fenced code blocks first — they contain shell commands like
-  // `npx playwright test login.spec.ts` whose tokens were being mis-extracted
-  // as documented test files.
-  const content = readFileSync(testSpecPath, 'utf-8').replace(/```[\s\S]*?```/g, '');
-  const docTests = new Set();
-  // A documented test reference: a single whitespace-free token ending in
-  // .test.<ext> or .spec.<ext>, optionally containing glob '*'.
-  const testFileRegex = /`([^`\s]*\.(?:test|spec)\.[a-zA-Z0-9]+)`/g;
-  let match;
-  while ((match = testFileRegex.exec(content)) !== null) {
-    docTests.add(match[1]);
-  }
+  const docTests = extractDocumentedTests(readFileSync(testSpecPath, 'utf-8'), config);
 
   // Collect ALL test files from disk: configured patterns + every *.test.* /
   // *.spec.* file found recursively under each source root (catches co-located
@@ -274,7 +328,7 @@ export function collectCodeTests(dir, config = {}) {
   const isTest = (f) => /\.(test|spec)\./.test(f);
 
   // 1. configured patterns
-  for (const f of getTestFilesFromPatterns(dir, config?.testPatterns || [], config)) {
+  for (const f of getTestFilesFromPatterns(dir, configuredTestPatterns(config), config)) {
     codeTests.add(f);
   }
 
