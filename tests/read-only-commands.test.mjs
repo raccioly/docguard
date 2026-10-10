@@ -129,6 +129,8 @@ const READ_ONLY = [
   ['verify'], ['verify', '--semantic'], ['verify', '--evidence'],
   ['report'], ['report', '--format', 'json'], ['ci'], ['ci', '--no-history'],
   ['rules', '--for', 'src/index.js'], ['rules', '--for', 'src/index.js', '--format', 'json'],
+  // docguard.ignore-reasons#FR-007: the suppression listing and the claimspec export write nothing.
+  ['ignore'], ['ignore', '--format', 'json'], ['ignore', '--format', 'claimspec'],
   ['generate', '--plan'], ['generate', '--plan', '--format', 'json'],
   ['generate', '--spec', 'src'], ['generate', '--spec', 'src', '--format', 'json'],
   ['sync'], ['sync', '--format', 'json'],

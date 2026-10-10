@@ -195,6 +195,20 @@ function csprojDeps(content) {
   return deps;
 }
 
+/**
+ * Whether a project file builds an ASP.NET Core app: the web SDK (as the
+ * `Sdk` attribute or an `<Sdk>` element), the `Microsoft.AspNetCore.App`
+ * framework reference, or a `Microsoft.AspNetCore.*` package. A
+ * `dotnet new webapi` project has only the first.
+ * @implements docguard.php-dotnet-routes#FR-008
+ */
+function isAspNetCoreProject(content) {
+  return /\bSdk\s*=\s*"Microsoft\.NET\.Sdk\.Web(?:\/[^"]*)?"/.test(content)
+    || /<Sdk\s+Name\s*=\s*"Microsoft\.NET\.Sdk\.Web"/.test(content)
+    || /<FrameworkReference\s+Include\s*=\s*"Microsoft\.AspNetCore\.App"/.test(content)
+    || /<PackageReference\s+Include\s*=\s*"Microsoft\.AspNetCore(?:\.[^"]*)?"/.test(content);
+}
+
 // ── Framework + kind classification per ecosystem ────────────────────────────
 
 const NET_HTTP_IMPORT = /"net\/http"/;
@@ -237,7 +251,7 @@ function has(deps, ...names) {
   return names.some(n => keys.some(k => k === n.toLowerCase() || k.endsWith('/' + n.toLowerCase()) || k.endsWith(':' + n.toLowerCase())));
 }
 
-function classify(lang, dir, deps) {
+function classify(lang, dir, deps, { webSdk = false } = {}) {
   let framework = null;
   let kind = 'library';
 
@@ -245,7 +259,9 @@ function classify(lang, dir, deps) {
     if (hasWorkerConfig(dir)) { framework = 'Cloudflare Workers'; kind = 'service'; }
     else if (has(deps, 'next')) { framework = 'Next.js'; kind = 'webapp'; }
     else if (has(deps, 'react', 'vue', '@angular/core', 'svelte', '@sveltejs/kit', 'nuxt')) { framework = has(deps,'react')?'React':has(deps,'vue')?'Vue':'Frontend'; kind = 'webapp'; }
-    else if (has(deps, 'express', 'fastify', 'hono', 'koa', '@nestjs/core')) { framework = has(deps,'express')?'Express':has(deps,'fastify')?'Fastify':has(deps,'@nestjs/core')?'NestJS':has(deps,'hono')?'Hono':'Koa'; kind = 'api'; } // docguard.docs-verification-findings#FR-001
+    // NestJS first: a Nest app on the Express platform often lists `express`
+    // too (docguard.js-framework-routes#FR-007).
+    else if (has(deps, 'express', 'fastify', 'hono', 'koa', '@nestjs/core')) { framework = has(deps,'@nestjs/core')?'NestJS':has(deps,'express')?'Express':has(deps,'fastify')?'Fastify':has(deps,'hono')?'Hono':'Koa'; kind = 'api'; } // docguard.docs-verification-findings#FR-001
   } else if (lang === 'Python') {
     if (has(deps, 'django') || existsSync(join(dir, 'manage.py'))) { framework = 'Django'; kind = 'webapp'; }
     else if (has(deps, 'fastapi')) { framework = 'FastAPI'; kind = 'api'; }
@@ -277,7 +293,8 @@ function classify(lang, dir, deps) {
     if (has(deps, 'laravel/framework')) { framework = 'Laravel'; kind = 'webapp'; }
     else if (has(deps, 'symfony/framework-bundle')) { framework = 'Symfony'; kind = 'webapp'; }
   } else if (lang === 'C#') {
-    if (has(deps, 'Microsoft.AspNetCore.App') || /Sdk="Microsoft\.NET\.Sdk\.Web"/.test('')) { framework = 'ASP.NET Core'; kind = 'api'; }
+    // The regex used to be tested against '' and never matched (docguard.php-dotnet-routes#FR-008).
+    if (webSdk || has(deps, 'Microsoft.AspNetCore.App')) { framework = 'ASP.NET Core'; kind = 'api'; }
   }
 
   return { framework, kind };
@@ -356,7 +373,7 @@ function buildEcosystem(projectDir, m) {
     deps = csprojDeps(content);
   }
 
-  const cls = classify(lang, m.absDir, deps);
+  const cls = classify(lang, m.absDir, deps, { webSdk: m.file.endsWith('.csproj') && isAspNetCoreProject(content) });
   return {
     language: lang,
     manifest: relative(resolve(projectDir), path) || m.file,

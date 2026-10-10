@@ -2623,7 +2623,7 @@
     },
     {
       "id": "SYMBOL-MAP-IS-BUDGETED-AND-GATED",
-      "statement": "The symbol map ranks product source files deterministically by PageRank, lists their names within a byte budget and names every degraded tier, appears only with --symbols, and ships by default only if the frozen v2 protocol computes no regression and a benefit on navigation-bound tasks. The v2 instruments are calibrated (each reference passes every hidden check; each starting state fails as declared).",
+      "statement": "The symbol map ranks product source files deterministically by PageRank, lists their names within a byte budget and names every degraded tier, appears only with --symbols, and ships by default only if the frozen v2 protocol (run as v3, which changes only the executable pin) computes no regression and a benefit on navigation-bound tasks. The v2 instruments are calibrated (each reference passes every hidden check; each starting state fails as declared).",
       "source": {
         "kind": "spec",
         "ref": "specs/036-symbol-map/spec.md#FR-008"
@@ -2783,10 +2783,10 @@
         },
         {
           "id": "F13",
-          "description": "A v2 manifest edited after freezing still loads.",
+          "description": "A v2 or v3 manifest edited after freezing still loads.",
           "faultClass": "statement-deleted",
           "file": "benchmarks/agent-context/run.mjs",
-          "find": "  assert(sha256(stableJson(manifest)) === V2_MANIFEST_DIGEST, 'the v2 manifest changed after it was frozen');\n",
+          "find": "  assert(sha256(stableJson(manifest)) === digest, `the ${label} manifest changed after it was frozen`);\n",
           "replace": "",
           "producedBy": {
             "producer": "agent",

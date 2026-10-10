@@ -16,11 +16,8 @@ structural score is useful, but it is not proof that arbitrary prose is true.
 Specs 014–051 shipped in v0.43.0 (2026-10-01). Spec 052 (baseline fingerprints)
 and spec 053 (the documentation site) wait for the next release; the
 `[Unreleased]` section of `CHANGELOG.md` lists them, and each spec's `tasks.md`
-is its checklist. Two items remain open:
+is its checklist. One item remains open:
 
-- **Symbol map promotion (spec 036, T009–T010).** The frozen v2 protocol's 54
-  trials have yet to run. Until they do, `memory --pack --symbols` stays opt-in
-  and the default context pack is unchanged.
 - **Native suppressions for claimspec (issue #420).** Whether DocGuard adopts
   the claimspec ignore format depends on reason-bearing suppressions; the
   decision is open.

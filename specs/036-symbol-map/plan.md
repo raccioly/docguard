@@ -85,7 +85,10 @@ benchmarks/agent-context/manifest-v2.json             # NEW, frozen before runs
 benchmarks/agent-context/run.mjs        # protocol dispatch, context-pack-symbols, decideSymbolPromotion
 benchmarks/agent-context/fixtures/, hidden/, reference/   # three navigation-bound tasks
 benchmarks/agent-context/results/observed-v2.json     # NEW, after the run
-benchmarks/agent-context/results/README-v2.md         # v2 protocol and, after the run, its decision
+benchmarks/agent-context/results/README-v2.md         # v2 protocol: frozen, not runnable (amendment 2026-10-10)
+benchmarks/agent-context/manifest-v3.json             # NEW (amendment 2026-10-10): v2 with only the executable pin changed
+benchmarks/agent-context/results/observed-v3.json     # NEW, after the v3 run
+benchmarks/agent-context/results/README-v3.md         # v3 amendment and, after the run, its decision
 schemas/docguard-agent-context-benchmark-v2.schema.json, schemas/docguard-agent-context-result-v2.schema.json (v1 schemas unchanged)
 README.md, docs/commands.md, docs/configuration.md, docs/ai-integration.md
 tests/symbol-map.test.mjs               # NEW
@@ -93,6 +96,13 @@ testguard.claims.json                   # SYMBOL-MAP-IS-BUDGETED-AND-GATED
 ```
 
 ## Design notes
+
+- Amendment 2026-10-10 (FR-011): v3 reuses the v2 manifest and result
+  formats, so the two v2-format schemas widen `protocol.id` / `protocolId` to
+  accept `docguard-agent-context-v3` rather than gaining copies. Rejected:
+  separate v3 schema files, which would duplicate two schemas that differ in
+  one string; and editing `manifest-v2.json` in place, which would break the
+  freeze the digest exists to prove.
 
 - PageRank runs on the file graph, including edges into files that are then
   excluded from display, so a hub's rank does not depend on the exclusion

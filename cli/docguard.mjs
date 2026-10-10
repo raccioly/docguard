@@ -55,6 +55,7 @@ import { runSpecs } from './commands/specs.mjs';
 import { runReconcile } from './commands/reconcile.mjs';
 import { runReview } from './commands/review.mjs';
 import { runRules } from './commands/rules.mjs';
+import { runIgnore } from './commands/ignore.mjs';
 import { detectRepositoryRootGuidance, renderRepositoryRootGuidance } from './repository-root.mjs';
 
 // ── Shared constants (imported to break circular dependencies) ──────────
@@ -99,6 +100,7 @@ ${c.bold}Tools (situational, but day-to-day useful)${c.reset}
   ${c.green}agent${c.reset}      Agent task graph or bounded task context (${c.cyan}--task <text>${c.reset}, ${c.cyan}--format json${c.reset})
   ${c.green}explain${c.reset}    Explain a validator key, warning text, or finding code (${c.cyan}docguard explain SEC001${c.reset})
   ${c.green}verify${c.reset}     Check declared local evidence or extract claims for review (${c.cyan}--evidence${c.reset}, ${c.cyan}--semantic${c.reset})
+  ${c.green}ignore${c.reset}     Every suppression with its reason and expiry (${c.cyan}--format claimspec${c.reset} exports the reasoned ones)
   ${c.green}feedback${c.reset}   Report likely false positives back to DocGuard (local-first + 1-click prefilled issue)
   ${c.green}mcp${c.reset}        MCP server (stdio, or ${c.cyan}--transport http${c.reset} on loopback) — guard, score, verify, doc navigation and task context as agent tools
   ${c.green}report${c.reset}     Compliance-evidence bundle — guard + score + ALCOA+ + integrity hash (${c.cyan}--format json${c.reset}, ${c.cyan}--out <file>${c.reset})
@@ -320,7 +322,7 @@ const COMMAND_HELP = {
       ['--diff', 'Drill into drift between memory and code'],
       ['--pack', 'Write .docguard/context-pack.md, a session-start snapshot for an agent'],
       ['--stdout', 'With --pack: print the pack instead of writing it'],
-      ['--symbols', 'With --pack: add a symbol map (the most central files and their exported names, within memory.symbolMap.maxBytes). Opt-in until a benchmark promotes it'],
+      ['--symbols', 'With --pack: add a symbol map (the most central files and their exported names, within memory.symbolMap.maxBytes). Opt-in: the agent-context benchmark found no benefit'],
     ],
     examples: ['docguard memory', 'docguard memory --diff', 'docguard memory --pack --symbols'],
   },
@@ -404,6 +406,15 @@ const COMMAND_HELP = {
       ['--format json', 'Machine-readable listing'],
     ],
     examples: ['docguard rules --for src/api/users.ts', 'docguard rules --for src/api/users.ts --harness cursor --format json'],
+  },
+  ignore: {
+    summary: 'Every suppression in the project, with its reason, expiry, state and source. Writes nothing.',
+    usage: 'docguard ignore [--format json|claimspec]',
+    flags: [
+      ['--format json', 'The suppression model plus the claimspec export report'],
+      ['--format claimspec', 'A claimspec v1 ignore document on stdout (reasoned .docguardignore entries only); what it leaves out goes to stderr'],
+    ],
+    examples: ['docguard ignore', 'docguard ignore --format claimspec > ignore.claimspec.json'],
   },
   reconcile: {
     summary: 'Classify changed implementation facts, approved intent, decisions, and unsupported evidence.',
@@ -794,7 +805,8 @@ async function main() {
   // v0.29: 'sarif' joins 'json' — any machine format where stdout IS the
   // artifact belongs here, or the banner corrupts the payload.
   // v0.33: 'junit' joins for the same reason (GitLab/Jenkins parse stdout XML).
-  const jsonMode = flags.format === 'json' || flags.format === 'sarif' || flags.format === 'junit';
+  // 'claimspec' (docguard ignore): stdout IS the claimspec document.
+  const jsonMode = flags.format === 'json' || flags.format === 'sarif' || flags.format === 'junit' || flags.format === 'claimspec';
   // `agent` emits a machine task graph (JSON by default) — it must be banner-
   // free and side-effect-free like the other read-only commands.
   // `mcp`: stdout IS the JSON-RPC transport — any banner byte corrupts the stream.
@@ -1032,6 +1044,10 @@ async function main() {
     case 'rules':
       // docguard.path-scoped-rules#FR-005: read-only.
       runRules(projectDir, config, flags);
+      break;
+    case 'ignore':
+      // docguard.ignore-reasons#FR-007, FR-008: read-only.
+      runIgnore(projectDir, config, flags);
       break;
     case 'demo':
       // v0.21: zero-install "ah-ha" moment — runs guard against a baked-in

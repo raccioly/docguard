@@ -734,7 +734,7 @@ describe('non-literal paths are omitted and counted (FR-005, SC-003)', () => {
     const routes = scan(dir);
     assert.deepEqual(keys(routes), ['GET /ok']);
     const reasons = routeScanGaps(routes.scan, routes.length).join(' ');
-    assert.match(reasons, /Sinatra: 1 route whose path is not literal text was omitted/);
+    assert.match(reasons, /Sinatra: 1 route registration had a path or prefix that is not literal text and was omitted, not guessed/);
   });
 });
 
