@@ -295,7 +295,10 @@ describe('FR-008: the docs say what is read', () => {
 
   it('the scanner header, ARCHITECTURE and the CHANGELOG name the change', () => {
     assert.match(read('cli/scanners/schemas.mjs').slice(0, 800), /TypeORM[\s\S]*Sequelize/);
-    assert.match(read('docs-canonical/ARCHITECTURE.md'), /TypeORM/);
+    // Framework names live in the languages reference; ARCHITECTURE describes the
+    // mechanism without them, so DDF001 does not read them as this repo's stack.
+    assert.match(read('docs-canonical/ARCHITECTURE.md'), /decorated entity classes/);
+    assert.match(read('docs/reference/languages.md'), /TypeORM[\s\S]*Sequelize/);
     const notes = notesSince(read('CHANGELOG.md'), '0.43.1');
     assert.match(notes, /typeorm-models/);
     assert.match(notes, /#520/);

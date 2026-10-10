@@ -89,7 +89,7 @@ export const CODES = {
   SEC001: {
     validator: 'security',
     title: 'Hardcoded password',
-    help: 'A `password`/`passwd`/`pwd` assignment with a quoted literal value (8+ chars). If the value is natural-language UI copy or a validation message — not a credential — this is a false positive: DocGuard now flags those low-confidence, but you can suppress inline.',
+    help: 'A `password`/`passwd`/`pwd` assignment with a quoted literal value (8+ chars). A password label is skipped: a capitalised word for "password" in a common language (`Password`, `Contraseña`, `Mot de passe`, `パスワード`), a short letter-only phrase containing one (`Confirm Password`), or the key\'s own words, unless the key is an all-caps constant such as `DB_PASSWORD`. Other natural-language UI copy or validation messages are flagged low-confidence; suppress inline if the value is not a credential.',
     suppress: '// docguard:ignore SEC001 — UI copy, not a credential',
   },
   SEC002: {
@@ -259,13 +259,13 @@ export const CODES = {
   DDF001: {
     validator: 'docsDiff',
     title: 'Tech Stack drift',
-    help: 'The tech named in docs-canonical/ARCHITECTURE.md and the dependencies actually declared (package.json across the monorepo, Dockerfile, .tf files) disagree. Drift is two-sided — document the new tech or remove the stale entries after checking which side is wrong.',
+    help: 'The tech named in docs-canonical/ARCHITECTURE.md and the technologies the code shows disagree. The code side reads the dependency manifests of every ecosystem (package.json across the monorepo, pyproject/requirements, go.mod, Gemfile, Cargo.toml, composer.json, *.csproj, Maven/Gradle), a Dockerfile or compose file, and .tf files; DynamoDB and Docker are also found from unambiguous source text in product files (a DynamoDB API target or endpoint, `docker run`/`build`/`compose` in a script, Makefile or CI workflow, a compose file), and the message names that file. A documented technology is reported missing only where a manifest could have shown it (see docs/reference/languages.md); a project with no manifest is not checked. Drift is two-sided — document the new tech or remove the stale entries after checking which side is wrong.',
     suppress: null,
   },
   DDF002: {
     validator: 'docsDiff',
     title: 'Test Files drift',
-    help: 'The test files documented in docs-canonical/TEST-SPEC.md and the test files on disk disagree. Add entries for new tests or remove documented tests that no longer exist — TEST-SPEC.md entries may be glob patterns.',
+    help: 'The test files documented in docs-canonical/TEST-SPEC.md and the test files on disk disagree. A documented test is a backticked `*.test.*`/`*.spec.*` name or one matching `testPatterns`/`testPattern` in .docguard.json, the same patterns the code side uses. Add entries for new tests or remove documented tests that no longer exist — TEST-SPEC.md entries may be glob patterns.',
     suppress: null,
   },
   DCV001: {

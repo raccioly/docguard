@@ -4,6 +4,7 @@
  * Respects config.securityIgnore (glob patterns) and config.ignore (global).
  * Uses shared-ignore.mjs for consistent filtering (Constitution IV, v1.1.0).
  * @implements docguard.precision-evidence-loop#FR-003
+ * @implements docguard.dogfood-round-2#FR-005
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
@@ -84,6 +85,62 @@ function looksLikeProse(value) {
   // so terminal punctuation ALONE must never reclassify a one-word value).
   if (words.length >= 2 && /[.!?]$/.test(v)) return true;
   return false;
+}
+
+/**
+ * The word for "password" in common UI languages (lowercase). A form label
+ * or translation-catalog entry holds one of these; a credential does not.
+ */
+const PASSWORD_WORDS = new Set([
+  'password', 'passwort', 'kennwort', 'contraseña', 'contrasena', 'contrasenya', 'clave', 'senha',
+  'palavra-passe', 'mot de passe', 'wachtwoord', 'wagwoord', 'parola', 'parolă', 'lösenord', 'losenord',
+  'adgangskode', 'passord', 'salasana', 'lykilorð', 'hasło', 'haslo', 'heslo', 'jelszó', 'jelszo',
+  'lozinka', 'geslo', 'slaptažodis', 'parole', 'parool', 'пароль', 'парола', 'лозинка', 'κωδικός',
+  'şifre', 'sifre', 'parol', 'mật khẩu', 'kata sandi', 'kata laluan', 'kata kunci', 'पासवर्ड',
+  'كلمة المرور', 'كلمة السر', 'סיסמה', 'รหัสผ่าน', 'パスワード', '密码', '密碼', '口令', '비밀번호', '암호',
+]);
+// Leading key segments that mark a UI string, not part of its meaning (`f_password`, `lblPassword`).
+const UI_KEY_PREFIXES = new Set(['f', 'fld', 'field', 'lbl', 'label', 'txt', 'text', 'str', 'msg', 'i18n', 'l10n', 'ui', 'form', 'input']);
+
+/** Split an identifier into lowercase words: camelCase, snake_case, kebab-case. */
+function keyWords(key) {
+  return key.replace(/([\p{Ll}\p{N}])(\p{Lu})/gu, '$1 $2').split(/[\s_-]+/).filter(Boolean).map(w => w.toLowerCase());
+}
+
+/**
+ * True when a password-keyed value is a label, not a credential (#527):
+ * after trimming label decoration (`:`, `*`, an ellipsis) the value is a word
+ * for "password", a phrase of at most four letter-only words containing one,
+ * or the key's own words. It must read as copy — start with an uppercase
+ * letter or a letter from a caseless script — and its key must not be an
+ * all-caps constant (`DB_PASSWORD`), which names configuration, not copy.
+ * A lowercase value equal to the word, and any value under an all-caps key,
+ * therefore stay reported.
+ * @implements docguard.dogfood-round-2#FR-005
+ */
+function isPasswordLabel(key, value) {
+  if (!key || !/\p{Ll}/u.test(key)) return false;
+  const text = value.trim().replace(/\s*(?:[:*]|\.\.\.|…)+$/u, '').trim();
+  if (!text || !/^(?:\p{Lu}|\p{Lo})/u.test(text)) return false;
+  const lower = text.toLowerCase().replace(/\s+/g, ' ');
+  if (PASSWORD_WORDS.has(lower)) return true;
+  const words = lower.split(' ');
+  if (!words.every(w => /^[\p{L}\p{M}'’-]+$/u.test(w))) return false;
+  // Collapse a multi-word password term ("mot de passe") into one slot.
+  let phrase = ` ${lower} `;
+  for (const term of PASSWORD_WORDS) if (term.includes(' ')) phrase = phrase.split(` ${term} `).join(' \u0000 ');
+  const slots = phrase.trim().split(' ');
+  if (slots.length <= 4 && slots.some(w => w === '\u0000' || PASSWORD_WORDS.has(w))) return true;
+  const fromKey = keyWords(key);
+  while (fromKey.length > 1 && UI_KEY_PREFIXES.has(fromKey[0])) fromKey.shift();
+  return fromKey.join(' ') === words.join(' ');
+}
+
+/** The identifier a secret match sits in: chars before the match plus the matched word. */
+function matchedKey(content, index, matchStr) {
+  let start = index;
+  while (start > 0 && /[\p{L}\p{N}_$]/u.test(content[start - 1])) start--;
+  return content.slice(start, index) + (matchStr.match(/^[A-Za-z]+/) || [''])[0];
 }
 
 /** Pull the first quoted literal out of a matched secret expression. */
@@ -214,6 +271,8 @@ export function validateSecurity(projectDir, config) {
         if (code && lineSuppresses(code, matchLine, prevLine)) continue;
 
         const value = quotedValue(match[0]);
+        // UI copy such as `f_password: 'Password'` is a label, not a secret (#527).
+        if (code === 'SEC001' && isPasswordLabel(matchedKey(content, match.index, match[0]), value)) continue;
         const isProse = looksLikeProse(value);
 
         if (isProse) {

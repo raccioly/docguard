@@ -872,6 +872,14 @@ note suggests `--apply --schema-only`, which never contacts npm.
 npx docguard-cli diff
 ```
 
+Each section lists what the docs name but the code lacks, and the reverse
+(`--verbose` also lists the matches). The tech stack names the file behind
+each detected technology, for example `+ Docker  (start.sh: docker run)`, and
+`--format json` adds it as `evidence`. Documented tests are read the way guard's
+DDF002 reads them, from the test-spec document `docs.roles` maps (by
+default `docs-canonical/TEST-SPEC.md`), including names that match
+`testPatterns`.
+
 ---
 
 ## Global Flags
