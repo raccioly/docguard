@@ -75,6 +75,21 @@ frozen but not runnable. From this amendment on, the "v2 result" in FR-007,
 FR-009, SC-004 and T009–T010 means the v3 result, recorded in
 `results/observed-v3.json` and `results/README-v3.md`.
 
+## Outcome 2026-10-10: `opt-in` (computed, not overridden)
+
+The v3 matrix ran on 2026-10-10: 54 trials, none an infrastructure failure.
+Results are in `benchmarks/agent-context/results/observed-v3.json` and
+`README-v3.md`. `decideSymbolPromotion` returned `opt-in`, so `--symbols`
+stays available and off by default. FR-009's `Budget-Exempt` is not needed,
+because the default pack does not grow.
+
+- No regression: 18/18 successes with and without the map, no requirement
+  violations, no unnecessary edits; median uncached input +1.0% (21,287 to
+  21,509), median steps +0% (8 to 8).
+- No benefit: the success gain is impossible at 18/18. On the
+  navigation-bound tasks, median steps fell 0% (8 to 8) and median latency
+  fell 6.0% (29,568 to 27,797 ms), short of the 15% threshold.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - The pack names the code that matters most (Priority: P1)

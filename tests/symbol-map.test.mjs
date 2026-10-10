@@ -306,6 +306,26 @@ describe('the v3 protocol amends only the executable pin (FR-011)', () => {
     assert.equal(out.trials, 54);
   });
 
+  it('recorded every v3 trial, and its decision is the one the frozen rule computes from them (SC-004, T009-T010)', () => {
+    const manifest = loadManifest(resolve(V3_PATH));
+    const result = read('benchmarks/agent-context/results/observed-v3.json');
+    assert.equal(result.core.protocolId, 'docguard-agent-context-v3');
+    assert.equal(result.core.manifestDigest, V3_MANIFEST_DIGEST);
+    assert.equal(result.observations.environment.codex, `codex-cli ${manifest.protocol.model.cliVersion}`);
+    const { trials } = result.observations;
+    assert.equal(trials.length, 54, 'every run is kept');
+    assert.deepEqual(trials.map(t => t.id), result.core.trialOrder);
+    assert.equal(trials.filter(t => t.status === 'infrastructure-failed').length, 0);
+    const nav = new Set(manifest.tasks.filter(t => t.navigationBound).map(t => t.id));
+    const aggregate = aggregateTrials(manifest, trials);
+    const navigationAggregate = aggregateTrials(manifest, trials.filter(t => nav.has(t.task)));
+    assert.deepEqual(result.core.aggregate, aggregate);
+    assert.deepEqual(result.core.navigationAggregate, navigationAggregate);
+    assert.deepEqual(result.core.decision, decideSymbolPromotion(manifest, aggregate, navigationAggregate), 'no manual override');
+    assert.equal(result.core.decision.status, 'opt-in');
+    assert.match(readFileSync('benchmarks/agent-context/results/README-v3.md', 'utf8'), /\*\*Decision: `opt-in`\.\*\*/);
+  });
+
   it('records v3 results in the shared symbol-map result format', () => {
     const manifest = loadManifest(resolve(V3_PATH));
     const trials = manifest.tasks.flatMap(task => manifest.conditions.flatMap(condition => [1, 2, 3].map(repetition => ({

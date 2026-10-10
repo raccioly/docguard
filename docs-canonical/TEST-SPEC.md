@@ -214,8 +214,12 @@ Protocol v2 (spec 036) is frozen beside v1 rather than replacing it: six tasks
 (task only, context pack, context pack with symbol map) and three repetitions,
 so 54 trials.
 The runner refuses to start when a task's fixture or evaluator digest, or the
-manifest digest, differs from the committed value, and the symbol map stays
-opt-in until those trials are recorded.
+manifest digest, differs from the committed value. v2 could not run (its CLI
+version and model are unavailable on ChatGPT-account Codex), so protocol v3
+changes only that executable pin, and the runner rejects a v3 manifest that
+differs from v2 anywhere else. The v3 trials are recorded in
+`results/observed-v3.json`, and a test recomputes their decision (`opt-in`)
+from the recorded trials.
 
 Run `node benchmarks/run.mjs --baseline benchmarks/baseline.json` for the network-free synthetic corpus (CI does this on every push; pinned public baseline cases are reported as `outOfSelection`, not as removed). Run `node benchmarks/run.mjs --external --baseline benchmarks/baseline.json` explicitly for pinned public sources. The comparator gates new case-level false positives, false negatives, removals within the selection, and supported-case abstentions. Persisted cold/warm timings are observational because matching Node and platform metadata cannot exclude host contention. Runtime regression claims require at least five controlled samples from the same paired comparison session and a greater-than-20-percent real-workload change.
 

@@ -316,7 +316,9 @@ The `entity-diagram` section has no options.
 
 `memory --pack --symbols` stops the symbol map at `memory.symbolMap.maxBytes`
 bytes (default 4096, between 256 and 16384), at a whole line, and states how
-many ranked files it left out. About 4 bytes stand for one token.
+many ranked files it left out. About 4 bytes stand for one token. The section
+is opt-in, and the agent-context benchmark kept it that way
+(`benchmarks/agent-context/results/README-v3.md`).
 
 ```json
 { "memory": { "symbolMap": { "maxBytes": 4096 } } }

@@ -9548,6 +9548,7 @@
           "docguard.symbol-map#FR-008",
           "docguard.symbol-map#FR-009",
           "docguard.symbol-map#FR-010",
+          "docguard.symbol-map#FR-011",
           "docguard.symbol-map#SC-001",
           "docguard.symbol-map#SC-002",
           "docguard.symbol-map#SC-003",
@@ -9558,20 +9559,20 @@
         "artifacts": [
           {
             "path": "specs/036-symbol-map/spec.md",
-            "digest": "sha256:c214fdcbe8165613badcafdfab1ce0cc423f1bd5cb2f441e1e5cea2338e023a5"
+            "digest": "sha256:557a020ae4c21f8789505c52551bddd49da9e4a366908aa32624d225b4c910c5"
           },
           {
             "path": "specs/036-symbol-map/plan.md",
-            "digest": "sha256:45bf19f598464e30d7e9557abc40f9fdd4c0b8a1533d9389acfa8f2a45041c44"
+            "digest": "sha256:f3f484f3e037d63a090de3f2a2b9cc84626bec71b6594572aea69b6acf873515"
           },
           {
             "path": "specs/036-symbol-map/tasks.md",
-            "digest": "sha256:8c77e92492c6743764966673a3bcb826baa11a22c06b5cd374c2332a0db2a4d3"
+            "digest": "sha256:04f9d6068ab24673c11770b1064fa5b4593addac2eaa24e4645b2465be8d90a3"
           }
         ],
         "taskCompletion": {
-          "checked": 11,
-          "total": 13
+          "checked": 14,
+          "total": 14
         },
         "implementationEvidence": [
           {
@@ -9603,6 +9604,11 @@
             "requirementId": "FR-008",
             "file": "benchmarks/agent-context/run.mjs",
             "line": 12
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "benchmarks/agent-context/run.mjs",
+            "line": 13
           }
         ],
         "testEvidence": [
@@ -9655,6 +9661,11 @@
             "requirementId": "FR-010",
             "file": "tests/symbol-map.test.mjs",
             "line": 12
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "tests/symbol-map.test.mjs",
+            "line": 19
           },
           {
             "requirementId": "SC-001",
