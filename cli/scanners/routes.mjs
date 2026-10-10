@@ -26,7 +26,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, relative, basename, extname, dirname } from 'node:path';
 import { resolveSourceRoots, readScannable, tierFor, summarizeTiers, pagesOutputDir } from '../shared-source.mjs';
 import { DEFAULT_IGNORE_DIRS as IGNORE_DIRS, shouldIgnore, relPosix, isNonProductPath } from '../shared-ignore.mjs';
-import { extractJsRouteCalls, extractJsRouteObjects, extractJsMountsAndImports, nextRouteHandlers, isAuthMiddlewareName, AUTH_CHECK_RE, matchingBracket } from './js-ast.mjs';
+import { extractJsRouteCalls, extractJsRouteObjects, extractJsMountsAndImports, importedStaticStrings, nextRouteHandlers, isAuthMiddlewareName, AUTH_CHECK_RE, matchingBracket } from './js-ast.mjs';
 import { createAliasResolver } from './ts-paths.mjs';
 import { scanPythonWebRoutes } from './python-routes.mjs';
 import { extractGoRoutes } from './go-routes.mjs';
@@ -420,7 +420,7 @@ function scanExpressRoutes(dir, roots = null, unresolved = null) {
         });
       }
     };
-    const ast = extractJsRouteCalls(content, filePath);
+    const ast = extractJsRouteCalls(content, filePath, mountMap.importedConstants?.get(filePath));
     if (ast) {
       for (const r of ast) emit({ ...r, receiver: r.receiver ?? null });
       recordUnresolvedPaths(unresolved, 'Express', fileLabel, ast.unresolved);
@@ -618,20 +618,13 @@ function buildExpressMountMap(files, resolveAlias = null, unresolved = null) {
     const mi = extractJsMountsAndImports(content, filePath);
     if (mi) metadata.set(filePath, mi);
   }
-  // A file whose mount prefix it could not read on its own is read again with
-  // the `const` strings its imports export.
+  // A file that imports `const` strings is read again with them, so its
+  // prefixes, paths and route receivers see their values
+  // (docguard.js-route-shapes#FR-010, FR-011).
+  const importedConstants = importedConstantsByFile(files, metadata, resolveAlias);
   for (const { content, filePath } of files) {
-    const mi = metadata.get(filePath);
-    if (!mi || !mi.mounts.some(m => m.prefix === null)) continue;
-    const imported = new Map();
-    for (const [local, spec] of Object.entries(mi.imports)) {
-      const symbol = mi.importSymbols?.[local];
-      if (!symbol || symbol === '*' || symbol === 'default') continue;
-      const target = resolveLocalImport(filePath, spec, resolveAlias);
-      const value = target ? metadata.get(target)?.exportedConstants?.[symbol] : undefined;
-      if (typeof value === 'string') imported.set(local, value);
-    }
-    if (imported.size) metadata.set(filePath, extractJsMountsAndImports(content, filePath, imported) || mi);
+    const imported = importedConstants.get(filePath);
+    if (imported) metadata.set(filePath, extractJsMountsAndImports(content, filePath, imported) || metadata.get(filePath));
   }
   const labels = new Map(files.map(f => [f.filePath, f.fileLabel]));
   const recorded = new Set();
@@ -740,7 +733,29 @@ function buildExpressMountMap(files, resolveAlias = null, unresolved = null) {
     for (const { prefix, auth } of found) add(node.file, node.receiver, prefix, auth);
     if (!found.length && blocked(node)) add(node.file, node.receiver, null, false, true);
   }
+  Object.defineProperty(map, 'importedConstants', { value: importedConstants, enumerable: false });
   return map;
+}
+
+/**
+ * For each file, the `const` strings it imports from other project files
+ * (named, namespace, `require()` and destructured `require()`), read from the
+ * targets' exports; files that import none are absent.
+ * @implements docguard.js-route-shapes#FR-011
+ */
+function importedConstantsByFile(files, metadata, resolveAlias = null) {
+  const out = new Map();
+  for (const { filePath } of files) {
+    const mi = metadata.get(filePath);
+    if (!mi?.constantBindings?.length) continue;
+    const bindings = mi.constantBindings.map(b => {
+      const target = resolveLocalImport(filePath, b.spec, resolveAlias);
+      return { ...b, exported: target ? metadata.get(target)?.exportedConstants : null };
+    });
+    const map = importedStaticStrings(bindings);
+    if (map.size) out.set(filePath, map);
+  }
+  return out;
 }
 
 /**
@@ -777,44 +792,53 @@ function scanFastifyRoutes(dir, roots = null, unresolved = null) {
   const pattern = /(?:fastify|server|app)\s*\.\s*(get|post|put|delete|patch)\s*\(\s*['"`]([^'"`]+)['"`]/gi;
 
   const searchTargets = roots && roots.length ? roots : [resolve(dir, 'src')];
+  const found = [];
   for (const fullDir of searchTargets) {
     if (!existsSync(fullDir)) continue;
     walkRouteDirs(fullDir, (filePath) => {
       if (!isJSFile(filePath)) return;
       const content = readFileSafe(filePath);
-      if (!content) return;
-
-      const emit = (method, path, index, auth, line) => routes.push({
-        method: method.toUpperCase(),
-        path,
-        handler: extractHandlerName(content, index),
-        file: relative(dir, filePath),
-        line: line ?? lineAt(content, index),
-        source: 'fastify',
-        auth: Boolean(auth),
-        description: extractNearbyComment(content, index),
-      });
-
-      // AST-first: method shorthand (fastify.get('/x')) AND the declarative
-      // object form (fastify.route({ method, url })) the regex never matched.
-      // Both return null only on parse failure → regex fallback. Auth is the
-      // route's own evidence (docguard.js-ts-extraction#FR-002).
-      const calls = extractJsRouteCalls(content, filePath);
-      const objs = extractJsRouteObjects(content, filePath);
-      const fileLabel = relative(dir, filePath);
-      if (calls || objs) {
-        for (const r of calls || []) emit(r.method, r.path, r.start, r.auth, r.line);
-        for (const r of objs || []) emit(r.method, r.path, r.start, r.auth, r.line);
-        recordUnresolvedPaths(unresolved, 'Fastify', fileLabel, [...(calls?.unresolved || []), ...(objs?.unresolved || [])]);
-      } else {
-        let match;
-        const regex = new RegExp(pattern.source, 'gi');
-        while ((match = regex.exec(content)) !== null) {
-          if (TEMPLATE_SUBSTITUTION.test(match[2])) recordUnresolvedPaths(unresolved, 'Fastify', fileLabel, [{ line: lineAt(content, match.index), target: match[2] }]);
-          else emit(match[1], match[2], match.index, statementAuth(content, match.index));
-        }
-      }
+      if (content) found.push({ filePath, content });
     });
+  }
+  // `const` strings imported from other project files (docguard.js-route-shapes#FR-011).
+  const metadata = new Map();
+  for (const { filePath, content } of found) {
+    const mi = extractJsMountsAndImports(content, filePath);
+    if (mi) metadata.set(filePath, mi);
+  }
+  const importedConstants = importedConstantsByFile(found, metadata, createAliasResolver(dir));
+  for (const { filePath, content } of found) {
+    const emit = (method, path, index, auth, line) => routes.push({
+      method: method.toUpperCase(),
+      path,
+      handler: extractHandlerName(content, index),
+      file: relative(dir, filePath),
+      line: line ?? lineAt(content, index),
+      source: 'fastify',
+      auth: Boolean(auth),
+      description: extractNearbyComment(content, index),
+    });
+
+    // AST-first: method shorthand (fastify.get('/x')) AND the declarative
+    // object form (fastify.route({ method, url })) the regex never matched.
+    // Both return null only on parse failure → regex fallback. Auth is the
+    // route's own evidence (docguard.js-ts-extraction#FR-002).
+    const calls = extractJsRouteCalls(content, filePath, importedConstants.get(filePath));
+    const objs = extractJsRouteObjects(content, filePath);
+    const fileLabel = relative(dir, filePath);
+    if (calls || objs) {
+      for (const r of calls || []) emit(r.method, r.path, r.start, r.auth, r.line);
+      for (const r of objs || []) emit(r.method, r.path, r.start, r.auth, r.line);
+      recordUnresolvedPaths(unresolved, 'Fastify', fileLabel, [...(calls?.unresolved || []), ...(objs?.unresolved || [])]);
+    } else {
+      let match;
+      const regex = new RegExp(pattern.source, 'gi');
+      while ((match = regex.exec(content)) !== null) {
+        if (TEMPLATE_SUBSTITUTION.test(match[2])) recordUnresolvedPaths(unresolved, 'Fastify', fileLabel, [{ line: lineAt(content, match.index), target: match[2] }]);
+        else emit(match[1], match[2], match.index, statementAuth(content, match.index));
+      }
+    }
   }
 
   return routes;
@@ -856,11 +880,11 @@ function scanNestRoutes(dir, ctx) {
 }
 
 function scanHonoRouterRoutes(dir, ctx) {
-  return recordReader(ctx, extractRouterRoutes(readJsSources(ctx, ROUTER_MARKER), createImportResolver(dir), { framework: 'Hono', defaultSource: 'hono' }));
+  return recordReader(ctx, extractRouterRoutes(readJsSources(ctx, ROUTER_MARKER), createImportResolver(dir), { framework: 'Hono', defaultSource: 'hono', loadSource: readFileSafe }));
 }
 
 function scanKoaRouterRoutes(dir, ctx) {
-  return recordReader(ctx, extractRouterRoutes(readJsSources(ctx, ROUTER_MARKER), createImportResolver(dir), { framework: 'Koa', defaultSource: 'koa' }));
+  return recordReader(ctx, extractRouterRoutes(readJsSources(ctx, ROUTER_MARKER), createImportResolver(dir), { framework: 'Koa', defaultSource: 'koa', loadSource: readFileSafe }));
 }
 
 /**
@@ -894,13 +918,13 @@ function scanPagesRoutes(dir, ctx) {
   if (advanced) {
     const worker = extractWorkerRoutes(sources, resolveImport, { isEntry: isWorker, framework: 'Cloudflare Pages', source: 'cloudflare-pages' });
     // Pages ignores `functions/` in advanced mode; routers there are not served.
-    const routers = extractRouterRoutes(sources.filter(s => ROUTER_MARKER.test(s.content) && !functionsLocation(s.file)), resolveImport, { framework: 'Cloudflare Pages', defaultSource: 'cloudflare-pages' });
+    const routers = extractRouterRoutes(sources.filter(s => ROUTER_MARKER.test(s.content) && !functionsLocation(s.file)), resolveImport, { framework: 'Cloudflare Pages', defaultSource: 'cloudflare-pages', loadSource: readFileSafe });
     found = [...worker, ...routers];
     tiers = [...worker.fileTiers, ...routers.fileTiers];
     limitations.push(...worker.limitations, ...routers.limitations);
   } else {
     const functions = extractPagesRoutes(sources);
-    const routers = extractRouterRoutes(sources.filter(s => ROUTER_MARKER.test(s.content)), resolveImport, { framework: 'Cloudflare Pages', defaultSource: 'cloudflare-pages' });
+    const routers = extractRouterRoutes(sources.filter(s => ROUTER_MARKER.test(s.content)), resolveImport, { framework: 'Cloudflare Pages', defaultSource: 'cloudflare-pages', loadSource: readFileSafe });
     found = [...functions, ...routers];
     tiers = [...functions.fileTiers, ...routers.fileTiers];
     limitations.push(...functions.limitations, ...routers.limitations);
@@ -923,7 +947,7 @@ function scanWorkerRoutes(dir, ctx) {
   const sources = readJsSources(ctx);
   const resolveImport = createImportResolver(dir);
   const dispatch = extractWorkerRoutes(sources, resolveImport);
-  const routers = extractRouterRoutes(sources.filter(s => ROUTER_MARKER.test(s.content)), resolveImport, { framework: 'Cloudflare Workers', defaultSource: 'cloudflare-workers' });
+  const routers = extractRouterRoutes(sources.filter(s => ROUTER_MARKER.test(s.content)), resolveImport, { framework: 'Cloudflare Workers', defaultSource: 'cloudflare-workers', loadSource: readFileSafe });
   // One tier record per file, whichever reader read it.
   const tiers = new Map();
   for (const t of [...dispatch.fileTiers, ...routers.fileTiers]) tiers.set(t.file, t);

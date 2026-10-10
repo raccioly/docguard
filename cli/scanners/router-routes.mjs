@@ -39,7 +39,7 @@
  * @implements docguard.js-route-shapes#FR-009
  */
 
-import { walk, isAuthMiddlewareNode, isAuthMiddlewareName, functionBodies, topLevelStaticStrings, pathArgValue, AUTH_CHECK_RE } from './js-ast.mjs';
+import { walk, isAuthMiddlewareNode, isAuthMiddlewareName, functionBodies, topLevelStaticStrings, pathArgValue, AUTH_CHECK_RE, parseJsTs, exportedStaticStrings, importedStaticStrings } from './js-ast.mjs';
 import { matchPairs, splitTopLevel, literalIn } from './route-lexing.mjs';
 import { parseWithTier, lineAt, joinSegments, nodeText, lexJs } from './js-route-support.mjs';
 
@@ -72,7 +72,7 @@ const openapiPath = p => p.replace(/\/\{([^}]+?)\}/g, '/:$1');
  * @param {{ framework?: string, defaultSource?: string }} [opts]
  * @returns {Array<object>} routes, with non-enumerable `limitations` and `fileTiers`
  */
-export function extractRouterRoutes(sources, resolveImport, { framework = 'Hono', defaultSource = 'hono' } = {}) {
+export function extractRouterRoutes(sources, resolveImport, { framework = 'Hono', defaultSource = 'hono', loadSource = null } = {}) {
   const nodes = new Map();        // id -> { kind, base, auth, unresolved, openapi }
   const aliases = new Map();      // local import id -> { target, imported }
   const exportsByFile = new Map(); // abs -> Map(exported -> local)
@@ -84,11 +84,24 @@ export function extractRouterRoutes(sources, resolveImport, { framework = 'Hono'
   const limitations = [];
   const fileTiers = [];
   const limit = (code, file, line, target = '') => limitations.push({ framework, code, file, line, target });
+  // The `const` strings a project file exports, for importers' paths and
+  // prefixes; a file outside `sources` (a config module with no router call)
+  // is read through `loadSource` (docguard.js-route-shapes#FR-011).
+  const contentOf = new Map(sources.map(s => [s.abs, s.content]));
+  const exportedCache = new Map();
+  const exportedConstantsOf = (abs) => {
+    if (!exportedCache.has(abs)) {
+      const content = contentOf.get(abs) ?? (loadSource ? loadSource(abs) : null);
+      const parsed = content ? parseJsTs(content, abs) : null;
+      exportedCache.set(abs, parsed?.ok ? exportedStaticStrings(parsed.ast) : null);
+    }
+    return exportedCache.get(abs);
+  };
 
   for (const src of sources) {
     const { ast, tier, tierReason } = parseWithTier(src.content, src.abs);
     fileTiers.push({ file: src.file, tier, tierReason });
-    const ctx = { src, tier, tierReason, nodes, aliases, exportsByFile, edges, uses, records, prefixOps, routeDefs, limit, resolveImport, defaultSource };
+    const ctx = { src, tier, tierReason, nodes, aliases, exportsByFile, edges, uses, records, prefixOps, routeDefs, limit, resolveImport, defaultSource, exportedConstantsOf };
     if (ast) readAst(ast, ctx);
     else readByPattern(ctx);
   }
@@ -242,7 +255,7 @@ function readAst(ast, ctx) {
   };
 
   // ES module imports and CommonJS `require()` bind the same way.
-  const bindImport = (local, spec, imported) => {
+  const bindImport = (local, spec, imported, viaRequire = false) => {
     if (HONO_MODULES.has(spec) && HONO_CLASSES.has(imported)) {
       honoLocals.add(local);
       if (imported === 'OpenAPIHono') openapiLocals.add(local);
@@ -251,7 +264,7 @@ function readAst(ast, ctx) {
     else if (spec === 'koa' && (imported === 'default' || imported === 'Koa')) koaLocals.add(local);
     else if (spec === 'koa-mount' && imported === 'default') mountLocals.add(local);
     else if (spec === ZOD_OPENAPI && imported === 'createRoute') createRouteLocals.add(local);
-    else imports.set(local, { spec, imported });
+    else imports.set(local, { spec, imported, viaRequire });
   };
   const exportName = (target) => (target?.type === 'MemberExpression' && !target.computed ? target.property?.name : null);
   const isModuleExports = (target) => target?.type === 'MemberExpression' && !target.computed
@@ -269,10 +282,10 @@ function readAst(ast, ctx) {
       for (const d of st.declarations || []) {
         const spec = requireSpec(d.init);
         if (!spec) continue;
-        if (d.id?.type === 'Identifier') bindImport(d.id.name, spec, 'default');
+        if (d.id?.type === 'Identifier') bindImport(d.id.name, spec, 'default', true);
         else if (d.id?.type === 'ObjectPattern') {
           for (const p of d.id.properties || []) {
-            if (p.type === 'ObjectProperty' && p.value?.type === 'Identifier') bindImport(p.value.name, spec, p.key?.name ?? p.key?.value);
+            if (p.type === 'ObjectProperty' && p.value?.type === 'Identifier') bindImport(p.value.name, spec, p.key?.name ?? p.key?.value, true);
           }
         }
       }
@@ -302,6 +315,13 @@ function readAst(ast, ctx) {
       }
     }
   }
+
+  // Imported `const` strings join this file's constants (FR-011); a local binding wins.
+  const importedConsts = importedStaticStrings([...imports].map(([local, b]) => {
+    const target = resolveImport(abs, b.spec);
+    return { local, imported: b.imported, viaRequire: b.viaRequire, exported: target ? ctx.exportedConstantsOf(target) : null };
+  }));
+  for (const [name, value] of importedConsts) if (!constants.has(name)) constants.set(name, value);
 
   // An imported value, by the id its module gives it.
   const importedId = (name) => {

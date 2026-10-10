@@ -232,7 +232,10 @@ DocGuard's own output:
 #### What the JS/TS scanners read
 
 - **Routes**:
-  - `app.get('/x', …)` and `router.route('/x').get(…).post(…)` chains;
+  - `app.get('/x', …)` and `router.route('/x').get(…).post(…)` chains, with
+    paths built from `const` strings in the same file or imported from another
+    project file (`import { USERS_PATH }`, `const { PREFIX } = require(…)`,
+    `cfg.PREFIX` from `module.exports = { PREFIX: '/api' }`);
   - mount prefixes from `app.use('/api', router)`, including routers imported
     through a `tsconfig`/`jsconfig` path alias (`@/routes`), and prefixes built
     from `const` strings in the same file or imported from another

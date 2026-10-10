@@ -42,6 +42,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     `const` strings is resolved; one that cannot be read (`config.apiPrefix`,
     `` `${process.env.BASE}/v1` ``) no longer leaves the mounted router's
     routes at the root. They are omitted and the prefix is recorded.
+  - Imported constants: Express, Fastify, Koa, Hono and itty-router route
+    paths and prefixes built from `const` strings another project file
+    exports resolve, through `import` (named or namespace) and CommonJS
+    (`const { PREFIX } = require('./config')`, `cfg.PREFIX` from
+    `module.exports = { PREFIX: '/api' }` or `exports.PREFIX = '/api'`).
 
   A prefix, mount path, route definition or Pages export that is not literal
   is recorded and makes the API-surface check `partial`; the routes below an

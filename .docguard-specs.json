@@ -4234,7 +4234,7 @@
           {
             "requirementId": "FR-008",
             "file": "cli/scanners/routes.mjs",
-            "line": 1117
+            "line": 1141
           },
           {
             "requirementId": "FR-009",
@@ -5812,6 +5812,7 @@
           "docguard.js-route-shapes#FR-008",
           "docguard.js-route-shapes#FR-009",
           "docguard.js-route-shapes#FR-010",
+          "docguard.js-route-shapes#FR-011",
           "docguard.js-route-shapes#SC-001",
           "docguard.js-route-shapes#SC-002"
         ]
@@ -5820,20 +5821,20 @@
         "artifacts": [
           {
             "path": "specs/064-js-route-shapes/spec.md",
-            "digest": "sha256:5d776d09eac73457ce155487f37f51bd2454a1a1843ed034b1af0afd9c85de48"
+            "digest": "sha256:c1c4a830933111f2eae316e3abdd36ce809db99d7f606b985e6e9a221f04cb7d"
           },
           {
             "path": "specs/064-js-route-shapes/plan.md",
-            "digest": "sha256:9e8f3c6f81034ece082db703721d32d6782feed436c2f6c27faf52e27d92a3ac"
+            "digest": "sha256:5ede24f7bdd52bae08c6898f1267c50f875b2d408073d75d877343f5b4f7937e"
           },
           {
             "path": "specs/064-js-route-shapes/tasks.md",
-            "digest": "sha256:149c0726d2f7eaefa7c7e4bef342181c1b1df79ddb3f00b9ce94d9f81ffec750"
+            "digest": "sha256:ed002f647595ebb1187eae7c4f96e5091b5d8a6c6ed4a1f73cefffa5ffd11235"
           }
         ],
         "taskCompletion": {
-          "checked": 16,
-          "total": 16
+          "checked": 19,
+          "total": 19
         },
         "implementationEvidence": [
           {
@@ -5884,12 +5885,12 @@
           {
             "requirementId": "FR-007",
             "file": "cli/scanners/js-ast.mjs",
-            "line": 618
+            "line": 622
           },
           {
             "requirementId": "FR-007",
             "file": "cli/scanners/js-ast.mjs",
-            "line": 627
+            "line": 631
           },
           {
             "requirementId": "FR-007",
@@ -5925,6 +5926,21 @@
             "requirementId": "FR-010",
             "file": "cli/scanners/routes.mjs",
             "line": 608
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "cli/scanners/js-ast.mjs",
+            "line": 1060
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "cli/scanners/js-ast.mjs",
+            "line": 1102
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "cli/scanners/routes.mjs",
+            "line": 744
           }
         ],
         "testEvidence": [
@@ -5979,6 +5995,11 @@
             "line": 19
           },
           {
+            "requirementId": "FR-011",
+            "file": "tests/js-route-shapes.test.mjs",
+            "line": 20
+          },
+          {
             "requirementId": "SC-001",
             "file": "tests/fixtures/js-route-shape-projects.mjs",
             "line": 12
@@ -5986,12 +6007,12 @@
           {
             "requirementId": "SC-001",
             "file": "tests/js-route-shapes.test.mjs",
-            "line": 20
+            "line": 21
           },
           {
             "requirementId": "SC-002",
             "file": "tests/js-route-shapes.test.mjs",
-            "line": 21
+            "line": 22
           }
         ]
       }
@@ -6093,7 +6114,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/scanners/js-ast.mjs",
-            "line": 625
+            "line": 629
           },
           {
             "requirementId": "FR-001",
@@ -6108,12 +6129,12 @@
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/js-ast.mjs",
-            "line": 626
+            "line": 630
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/js-ast.mjs",
-            "line": 731
+            "line": 737
           },
           {
             "requirementId": "FR-002",
@@ -6208,7 +6229,7 @@
           {
             "requirementId": "FR-009",
             "file": "cli/scanners/js-ast.mjs",
-            "line": 734
+            "line": 740
           },
           {
             "requirementId": "FR-010",

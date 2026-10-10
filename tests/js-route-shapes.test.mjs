@@ -17,6 +17,7 @@
  * @req docguard.js-route-shapes#FR-008
  * @req docguard.js-route-shapes#FR-009
  * @req docguard.js-route-shapes#FR-010
+ * @req docguard.js-route-shapes#FR-011
  * @req docguard.js-route-shapes#SC-001
  * @req docguard.js-route-shapes#SC-002
  */
@@ -523,6 +524,95 @@ app.get('/ok', ok);
   });
 });
 
+// ── FR-011: route paths and prefixes from imported constants ────────────────
+
+describe('FR-011: imported const strings in paths and prefixes, ES module and CommonJS', () => {
+  it('resolves Express route paths from named, namespace, concatenated and template uses of imported consts', () => {
+    const routes = routesOf(project(express({
+      'src/paths.ts': "export const USERS_PATH = '/users';\nconst ORDERS = '/orders';\nexport { ORDERS as ORDERS_PATH };\nexport const API = '/api';\n",
+      'src/app.ts': `import express from 'express';
+import { USERS_PATH, API, ORDERS_PATH } from './paths';
+import * as P from './paths';
+const app = express();
+app.get(USERS_PATH, list);
+app.get(API + '/items', list);
+app.get(\`\${API}\${ORDERS_PATH}/:id\`, show);
+app.get(P.USERS_PATH + '/me', me);
+app.get(UNKNOWN_PATH, h);
+`,
+    })), 'Express');
+    assert.deepEqual(routes.map(key).sort(), ['GET /api/items', 'GET /api/orders/:id', 'GET /users', 'GET /users/me']);
+    assert.deepEqual(unresolvedOf(routes).map(u => u.line), [9]);
+  });
+
+  it('resolves CommonJS destructured and member constants for Express paths and mount prefixes', () => {
+    const routes = routesOf(project(express({
+      'src/config.js': "module.exports = { PREFIX: '/api', TIMEOUT: 30 };\n",
+      'src/paths.js': "exports.USERS = '/users';\nmodule.exports.ORDERS = '/orders';\n",
+      'src/users.js': "const express = require('express');\nconst router = express.Router();\nrouter.get('/:id', show);\nmodule.exports = router;\n",
+      'src/app.js': `const express = require('express');
+const { PREFIX } = require('./config');
+const cfg = require('./config');
+const paths = require('./paths');
+const users = require('./users');
+const app = express();
+app.use(PREFIX, users);
+app.use(cfg.PREFIX + '/v2', users);
+app.get(paths.USERS, list);
+app.get(\`\${paths.ORDERS}/:id\`, show);
+app.get(cfg.MISSING, h);
+`,
+    })), 'Express');
+    assert.deepEqual(routes.map(key).sort(), ['GET /api/:id', 'GET /api/v2/:id', 'GET /orders/:id', 'GET /users']);
+    assert.deepEqual(unresolvedOf(routes).map(u => u.line), [11]);
+  });
+
+  it('resolves an imported const path for Fastify', () => {
+    const routes = routesOf(project({
+      'package.json': JSON.stringify({ dependencies: { fastify: '4.28.0' } }),
+      'src/paths.js': "export const HEALTH = '/health';\n",
+      'src/server.js': "import Fastify from 'fastify';\nimport { HEALTH } from './paths';\nconst fastify = Fastify();\nfastify.get(HEALTH, h);\n",
+    }), 'Fastify');
+    assert.deepEqual(routes.map(key), ['GET /health']);
+    assert.deepEqual(unresolvedOf(routes), []);
+  });
+
+  it('resolves imported consts for Koa prefixes and Hono paths', () => {
+    const koaRoutes = routesOf(project(koa({
+      'src/config.js': "module.exports = { PREFIX: '/api' };\nexports.ignored = 1;\n",
+      'src/paths.js': "exports.USERS = '/users';\n",
+      'src/r.js': `const Router = require('@koa/router');
+const { PREFIX } = require('./config');
+const paths = require('./paths');
+const router = new Router({ prefix: PREFIX });
+router.get(paths.USERS, h);
+router.get(\`\${paths.USERS}/:id\`, h);
+module.exports = router;
+`,
+    })));
+    assert.deepEqual(koaRoutes.map(key).sort(), ['GET /api/users', 'GET /api/users/:id']);
+    const honoRoutes = routesOf(project(hono({
+      'src/paths.ts': "export const BOOKS = '/books';\n",
+      'src/app.ts': "import { Hono } from 'hono';\nimport { BOOKS } from './paths';\nconst app = new Hono();\napp.get(BOOKS, (c) => c.json([]));\nexport default app;\n",
+    })));
+    assert.deepEqual(honoRoutes.map(key), ['GET /books']);
+    assert.deepEqual(unresolvedOf(honoRoutes), []);
+  });
+
+  it('takes a default import of a CommonJS module as its exports object, but not of an ES module', () => {
+    const routes = routesOf(project(express({
+      'src/paths.ts': "export const USERS = '/users';\n",
+      'src/app.ts': "import express from 'express';\nimport paths from './paths';\nconst app = express();\napp.get(paths.USERS, h);\n",
+    })), 'Express');
+    assert.deepEqual(routes.map(key), []);
+    assert.deepEqual(unresolvedOf(routes).map(u => u.line), [4]);    const cjs = routesOf(project(express({
+      'src/paths.js': "module.exports = { USERS: '/users' };\n",
+      'src/app.ts': "import express from 'express';\nimport paths from './paths';\nconst app = express();\napp.get(paths.USERS, h);\n",
+    })), 'Express');
+    assert.deepEqual(cjs.map(key), ['GET /users']);
+  });
+});
+
 // ── FR-006: documentation ───────────────────────────────────────────────────
 
 describe('FR-006: the docs say what is read', () => {
@@ -536,7 +626,7 @@ describe('FR-006: the docs say what is read', () => {
     assert.match(doc, /^\| Hono \|.*zod-openapi/m);
     assert.match(doc, /^\| Cloudflare Pages \|.*_routes\.json.*_worker\.js/m);
     assert.match(doc, /^\| Koa \|.*redirect/m);
-    assert.match(doc, /^\| Express \|.*not literal.*mount prefix/m);
+    assert.match(doc, /^\| Express \|.*require\('\.\/config'\).*not literal.*mount prefix/m);
     assert.match(read('docs/commands.md'), /Cloudflare Pages/);
   });
 
