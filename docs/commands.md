@@ -239,11 +239,14 @@ DocGuard's own output:
   - Koa routers with their `prefix` (option or `router.prefix()`), nested
     with `router.use('/users', users.routes())` and mounted on applications
     with `app.use(router.routes())` or koa-mount's `mount('/admin', admin)`,
-    across files through `import` and `require`;
+    across files through `import` and `require`, and `redirect('/from', to)`
+    as `ALL /from`;
   - Cloudflare Pages Functions: each `onRequest*` export of a file under
     `functions/`, at the path the file serves (`functions/api/users/[id].ts`
     is `/api/users/:id`), with a `_middleware` file's auth check covering its
-    directory;
+    directory, kept only where `_routes.json` lets requests reach Functions; in
+    advanced mode the `_worker.js` replaces `functions/` and is read as a
+    Worker `fetch` entry;
   - `@hono/zod-openapi` routes, `app.openapi(createRoute({ method, path }), h)`,
     with the definition inline or imported, `{id}` read as `:id`, under the
     app's `basePath()` and `route()` mounts.
@@ -332,7 +335,8 @@ framework's routing rules:
   extension method in another file).
 
 A route is omitted when its path or prefix is not literal text or a constant
-it can resolve: an environment variable, a `${…}` placeholder, a Ruby or PHP
+it can resolve: an environment variable, a `${…}` placeholder (in Express and
+Fastify too, which used to report it as `:param`), a Ruby or PHP
 interpolation, a C# interpolated string, or a call it cannot pin to one
 function. It is never reported at a guessed path. Every pattern reader counts
 what it omits, and guard's API-surface check reports that count and the first

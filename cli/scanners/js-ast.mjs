@@ -607,8 +607,16 @@ export function pathArgValue(node, constants = new Map(), dynamicPlaceholder = t
  * via AST. More accurate than regex: it matches ANY receiver identifier (so
  * `userRouter.get`, `v1.post`, `r.delete` are all caught — not just app/router/
  * server), survives multi-line calls and arbitrary whitespace, and reads
- * template-literal paths. The `/`-or-`*` path requirement keeps non-route
- * `.get()` calls (e.g. `map.get('key')`, `headers.get('x')`) out.
+ * template-literal paths whose substitutions are same-file constants. The
+ * `/`-or-`*` path requirement keeps non-route `.get()` calls (e.g.
+ * `map.get('key')`, `headers.get('x')`) out.
+ *
+ * A registration whose path is not literal (a template with a runtime value,
+ * an imported constant, a regular expression) is not reported at a guessed
+ * path such as `/items/:param`: it is listed in the result's non-enumerable
+ * `unresolved` (`{ line, target }`) so the caller can record it
+ * (docguard.js-route-shapes#FR-007). A one-argument `app.get('title')` is an
+ * Express settings read, not a registration, and is not listed.
  *
  * Returns `null` when the file can't be parsed (caller falls back to regex);
  * otherwise an array of `{ method, path, start, receiver, line, auth }` (start =
@@ -616,12 +624,20 @@ export function pathArgValue(node, constants = new Map(), dynamicPlaceholder = t
  * route's own evidence).
  * @implements docguard.js-ts-extraction#FR-001
  * @implements docguard.js-ts-extraction#FR-002
+ * @implements docguard.js-route-shapes#FR-007
  */
 export function extractJsRouteCalls(content, filename = 'file.ts') {
   const { ast, ok } = parseJsTs(content, filename);
   if (!ok || !ast) return null;
 
   const out = [];
+  const unresolved = [];
+  const unresolvedAt = new Set();
+  const markUnresolved = (node, at) => {
+    if (unresolvedAt.has(at.start)) return;
+    unresolvedAt.add(at.start);
+    unresolved.push({ line: at.loc?.start.line ?? null, target: node && typeof node.start === 'number' ? String(content).slice(node.start, node.end).replace(/\s+/g, ' ').slice(0, 80) : '' });
+  };
   const constants = topLevelStaticStrings(ast);
   const routeBindings = expressRouteBindings(ast);
   const bodies = functionBodies(ast);
@@ -641,6 +657,7 @@ export function extractJsRouteCalls(content, filename = 'file.ts') {
     // the method call's object is a chain that bottoms out in `.route(path)` on
     // a route binding. Each method carries only handlers, no path.
     const chain = routeChainBase(callee.object, routeBindings, constants);
+    if (chain?.unresolved) { markUnresolved(chain.pathNode, chain.node); return; }
     if (chain) {
       const handler = args[args.length - 1];
       out.push({
@@ -658,8 +675,13 @@ export function extractJsRouteCalls(content, filename = 'file.ts') {
     // calls contaminate the product API inventory.
     if (!callee.object || callee.object.type !== 'Identifier') return;
     if (!looksLikeRouteReceiver(callee.object.name, routeBindings)) return;
-    const path = pathArgValue(args[0], constants);
-    if (!path || !(path.startsWith('/') || path === '*')) return;
+    const path = pathArgValue(args[0], constants, false);
+    if (path === null) {
+      // A registration (path plus handler) whose path is not literal.
+      if (args.length >= 2 && args[0] && !FUNCTION_TYPES.has(args[0].type) && !(args[0].type === 'Identifier' && bodies.has(args[0].name))) markUnresolved(args[0], node);
+      return;
+    }
+    if (!(path.startsWith('/') || path === '*')) return;
     // `receiver` is the object the method was called on (`router` in
     // `router.get(...)`, `app` in `app.get(...)`). Mount-prefix resolution uses
     // it to apply a same-file `app.use('/api', router)` prefix ONLY to that
@@ -673,10 +695,14 @@ export function extractJsRouteCalls(content, filename = 'file.ts') {
       auth: ownAuth(content, args.slice(1, -1), handler, bodies) || usedAuth(receiver, path, start),
     });
   });
+  Object.defineProperty(out, 'unresolved', { value: unresolved, enumerable: false });
   return out;
 }
 
-/** `{ path, receiver, start }` when `node` is `<route binding>.route(path)[.method(...)]*`. */
+/**
+ * `{ path, receiver, start }` when `node` is `<route binding>.route(path)[.method(...)]*`;
+ * `{ unresolved, node, pathNode }` when that path is not literal.
+ */
 function routeChainBase(node, routeBindings, constants) {
   let cur = node;
   while (cur?.type === 'CallExpression' && cur.callee?.type === 'MemberExpression' && !cur.callee.computed
@@ -687,8 +713,9 @@ function routeChainBase(node, routeBindings, constants) {
   if (cur.callee.property?.name !== 'route' || cur.callee.object?.type !== 'Identifier') return null;
   const receiver = cur.callee.object.name;
   if (!looksLikeRouteReceiver(receiver, routeBindings)) return null;
-  const path = pathArgValue(cur.arguments?.[0], constants);
-  if (!path || !(path.startsWith('/') || path === '*')) return null;
+  const path = pathArgValue(cur.arguments?.[0], constants, false);
+  if (path === null) return cur.arguments?.[0] ? { unresolved: true, node: cur, pathNode: cur.arguments[0] } : null;
+  if (!(path.startsWith('/') || path === '*')) return null;
   return { path, receiver, start: cur.start ?? 0 };
 }
 
@@ -838,6 +865,7 @@ export function extractJsRouteObjects(content, filename = 'file.ts') {
   if (!ok || !ast) return null;
 
   const out = [];
+  const unresolved = [];
   walk(ast, (node) => {
     if (node.type !== 'CallExpression') return;
     const callee = node.callee;
@@ -848,6 +876,7 @@ export function extractJsRouteObjects(content, filename = 'file.ts') {
 
     let methods = [];
     let path = null;
+    let pathNode = null;
     for (const prop of arg.properties || []) {
       if (prop.type !== 'ObjectProperty' && prop.type !== 'Property') continue;
       const key = propKeyName(prop);
@@ -858,8 +887,14 @@ export function extractJsRouteObjects(content, filename = 'file.ts') {
           methods = (v.elements || []).filter(e => e && e.type === 'StringLiteral').map(e => e.value);
         }
       } else if (key === 'url' || key === 'path') {
-        path = pathArgValue(prop.value);
+        path = pathArgValue(prop.value, new Map(), false);
+        pathNode = prop.value;
       }
+    }
+    // docguard.js-route-shapes#FR-007: a `url` that is not literal is listed, not guessed.
+    if (pathNode && path === null && methods.length) {
+      unresolved.push({ line: node.loc?.start.line ?? null, target: String(content).slice(pathNode.start, pathNode.end).slice(0, 80) });
+      return;
     }
     if (!path || !(path.startsWith('/') || path === '*') || !methods.length) return;
     const receiver = callee.object && callee.object.type === 'Identifier' ? callee.object.name : null;
@@ -870,6 +905,7 @@ export function extractJsRouteObjects(content, filename = 'file.ts') {
       out.push({ method: String(m).toUpperCase(), path, start: node.start ?? 0, receiver, line: node.loc?.start.line ?? null, auth });
     }
   });
+  Object.defineProperty(out, 'unresolved', { value: unresolved, enumerable: false });
   return out;
 }
 

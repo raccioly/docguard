@@ -37,9 +37,13 @@ const SKIP_KEYS = new Set(['loc', 'start', 'end', 'extra', 'leadingComments', 't
  * Routes a Worker's fetch entry dispatches on.
  * @param {Array<{ file: string, abs: string, content: string }>} sources
  * @param {(fromAbs: string, spec: string) => string|null} resolveImport
+ * @param {{ isEntry?: (src: object) => boolean, framework?: string, source?: string }} [opts]
+ *   `isEntry` limits which files may be the public entry (a Pages project's
+ *   advanced-mode `_worker.js`, docguard.js-route-shapes#FR-008); `framework`
+ *   and `source` label what is found.
  * @returns {Array<object>} routes, with non-enumerable `limitations` and `fileTiers`
  */
-export function extractWorkerRoutes(sources, resolveImport) {
+export function extractWorkerRoutes(sources, resolveImport, { isEntry = null, framework = FRAMEWORK, source = 'cloudflare-workers' } = {}) {
   const byAbs = new Map(sources.map(s => [s.abs, s]));
   const parsed = new Map();
   const parse = src => {
@@ -50,7 +54,7 @@ export function extractWorkerRoutes(sources, resolveImport) {
   // The public entries.
   const entries = new Map(); // abs -> entry class node (or null)
   for (const src of sources) {
-    if (!ENTRY_HINT.test(src.content)) continue;
+    if (!ENTRY_HINT.test(src.content) || (isEntry && !isEntry(src))) continue;
     const { ast } = parse(src);
     const entry = ast ? fetchEntry(ast) : patternEntry(src.content);
     if (entry) entries.set(src.abs, entry.cls || null);
@@ -79,8 +83,8 @@ export function extractWorkerRoutes(sources, resolveImport) {
     const { ast, tier, tierReason } = parse(src);
     fileTiers.push({ file: src.file, tier, tierReason });
     const out = ast ? readDispatch(ast, src, entries.get(src.abs) || null) : readDispatchByPattern(src);
-    for (const r of out.routes) routes.push({ ...r, file: src.file, source: 'cloudflare-workers', description: '', tier, tierReason });
-    for (const l of out.limitations) limitations.push({ framework: FRAMEWORK, file: src.file, ...l });
+    for (const r of out.routes) routes.push({ ...r, file: src.file, source, description: '', tier, tierReason });
+    for (const l of out.limitations) limitations.push({ framework, file: src.file, ...l });
   }
   Object.defineProperty(routes, 'limitations', { value: limitations, enumerable: false });
   Object.defineProperty(routes, 'fileTiers', { value: fileTiers, enumerable: false });

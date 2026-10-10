@@ -36,6 +36,7 @@
  * @implements docguard.js-route-shapes#FR-001
  * @implements docguard.js-route-shapes#FR-004
  * @implements docguard.js-route-shapes#FR-005
+ * @implements docguard.js-route-shapes#FR-009
  */
 
 import { walk, isAuthMiddlewareNode, isAuthMiddlewareName, functionBodies, topLevelStaticStrings, pathArgValue, AUTH_CHECK_RE } from './js-ast.mjs';
@@ -147,6 +148,11 @@ export function extractRouterRoutes(sources, resolveImport, { framework = 'Hono'
   const resolved = [];
   const reported = new Set();
   for (const r of records) {
+    // koa-router's `redirect()` exists only on Koa routers.
+    if (r.koaOnly) {
+      if (!isKoa(nodes.get(canonical(r.node)))) continue;
+      if (r.unresolvedAt) { limit('router-unresolved-path', r.file, r.unresolvedAt.line, r.unresolvedAt.target); continue; }
+    }
     if (!r.defRef) { resolved.push(r); continue; }
     const def = routeDefs.get(canonical(r.defRef));
     if (!def) { limit('router-unresolved-route', r.file, r.line, r.target); continue; }
@@ -467,7 +473,7 @@ function readAst(ast, ctx) {
   walk(ast, (node) => {
     if (node.type !== 'CallExpression' || node.callee?.type !== 'MemberExpression' || node.callee.computed) return;
     const prop = node.callee.property?.name;
-    if (!VERBS.has(prop) && !['on', 'use', 'route', 'prefix', 'openapi', 'doc', 'doc31'].includes(prop)) return;
+    if (!VERBS.has(prop) && !['on', 'use', 'route', 'prefix', 'openapi', 'doc', 'doc31', 'redirect'].includes(prop)) return;
     const recv = receiverOf(node.callee.object);
     if (!recv) return;
     const args = node.arguments || [];
@@ -518,6 +524,17 @@ function readAst(ast, ctx) {
       // Koa `router.prefix('/v1')`; applied once every router is known.
       if (args.length !== 1) return;
       prefixOps.push({ node: recv.id, base: literal(args[0]), file, line: lineOf(node), target: nodeText(content, args[0]) });
+      return;
+    }
+    if (prop === 'redirect') {
+      // koa-router `redirect(source, destination, code?)` registers `all(source)`
+      // (docguard.js-route-shapes#FR-009). A source that is a route name is
+      // resolved by koa-router at run time through `url()`, which already
+      // carries the prefix the registration adds again; it is recorded, not guessed.
+      if (args.length < 2) return;
+      const source = literal(args[0]);
+      if (source === null || !pathLike(source)) { records.push({ node: recv.id, koaOnly: true, unresolvedAt: { line: lineOf(node), target: nodeText(content, args[0]) }, file, abs, start }); return; }
+      records.push({ node: recv.id, koaOnly: true, method: 'ALL', path: source, start, line: lineOf(node), file, abs, auth: false, handler: 'redirect', tier: ctx.tier, tierReason: ctx.tierReason });
       return;
     }
     if (prop === 'doc' || prop === 'doc31') {

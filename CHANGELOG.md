@@ -29,6 +29,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     with the definition inline, in a variable or imported from another file,
     is read under `basePath()` and `route()` mounts, `{id}` as `:id`; `doc()`
     serves `GET` at its path.
+  - Pages advanced mode: a `_worker.js` in the output directory (or a
+    `_worker.ts` source) is read as a Worker `fetch` entry and `functions/`
+    is ignored, as Pages ignores it; `_routes.json` include/exclude rules
+    drop the Functions requests never reach.
+  - koa-router `redirect('/from', to)` is a route, `ALL /from`.
+  - Express and Fastify: a route path that is not literal (a template with a
+    runtime value, an imported constant, a regular expression) is no longer
+    reported as `/x/:param`; it is recorded and makes the API-surface check
+    `partial`. Literal routes are unchanged.
 
   A prefix, mount path, route definition or Pages export that is not literal
   is recorded and makes the API-surface check `partial`; the routes below an

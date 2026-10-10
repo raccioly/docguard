@@ -24,7 +24,7 @@
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, relative, basename, extname, dirname } from 'node:path';
-import { resolveSourceRoots, readScannable, tierFor, summarizeTiers } from '../shared-source.mjs';
+import { resolveSourceRoots, readScannable, tierFor, summarizeTiers, pagesOutputDir } from '../shared-source.mjs';
 import { DEFAULT_IGNORE_DIRS as IGNORE_DIRS, shouldIgnore, relPosix, isNonProductPath } from '../shared-ignore.mjs';
 import { extractJsRouteCalls, extractJsRouteObjects, extractJsMountsAndImports, nextRouteHandlers, isAuthMiddlewareName, AUTH_CHECK_RE, matchingBracket } from './js-ast.mjs';
 import { createAliasResolver } from './ts-paths.mjs';
@@ -39,7 +39,7 @@ import { extractAspNetRoutes } from './dotnet-routes.mjs';
 import { extractNestRoutes } from './nest-routes.mjs';
 import { extractWorkerRoutes } from './worker-routes.mjs';
 import { extractRouterRoutes } from './router-routes.mjs';
-import { extractPagesRoutes } from './pages-routes.mjs';
+import { extractPagesRoutes, functionsLocation, isAdvancedWorkerFile, parseRoutesJson, servedByRoutesJson } from './pages-routes.mjs';
 import { createImportResolver } from './js-route-support.mjs';
 
 /**
@@ -94,12 +94,14 @@ export function scanRoutesDeep(dir, stack, docTools, opts = {}) {
     routes.push(...scanNextJsRoutes(dir));
   }
 
+  // A path these scanners cannot read is recorded with the scan, never
+  // reported at a `:param` placeholder (docguard.js-route-shapes#FR-007).
   if (framework.includes('Express') || !framework) {
-    routes.push(...scanExpressRoutes(dir, roots));
+    routes.push(...scanExpressRoutes(dir, roots, scan.unresolved));
   }
 
   if (framework.includes('Fastify')) {
-    routes.push(...scanFastifyRoutes(dir, roots));
+    routes.push(...scanFastifyRoutes(dir, roots, scan.unresolved));
   }
 
   // NestJS decorators, Cloudflare Worker dispatch and Hono/itty-router
@@ -336,7 +338,20 @@ function scanNextJsRoutes(dir) {
 
 // ── Express / Generic Node.js ───────────────────────────────────────────────
 
-function scanExpressRoutes(dir, roots = null) {
+/** A pattern-tier path still holding a `${…}` substitution: not literal. */
+const TEMPLATE_SUBSTITUTION = /\$\{/;
+
+/**
+ * Record a route registration whose path is not literal (from the syntax
+ * tree's `unresolved`, or a pattern-tier `${…}` path) in the scan's sink.
+ * @implements docguard.js-route-shapes#FR-007
+ */
+function recordUnresolvedPaths(sink, framework, file, items) {
+  if (!sink) return;
+  for (const u of items || []) sink.push({ framework, code: 'route-unresolved-path', file, line: u.line, target: u.target || '' });
+}
+
+function scanExpressRoutes(dir, roots = null, unresolved = null) {
   // Regex is the FALLBACK (used only when @babel/parser can't parse a file).
   // It hardcodes app/router/server receivers; the AST path matches any receiver.
   const routePattern = /(?:app|router|server)\s*\.\s*(get|post|put|delete|patch|head|options)\s*\(\s*['"`]([^'"`]+)['"`]/gi;
@@ -404,13 +419,19 @@ function scanExpressRoutes(dir, roots = null) {
     const ast = extractJsRouteCalls(content, filePath);
     if (ast) {
       for (const r of ast) emit({ ...r, receiver: r.receiver ?? null });
+      recordUnresolvedPaths(unresolved, 'Express', fileLabel, ast.unresolved);
     } else {
+      const found = [];
       const regex = new RegExp(routePattern.source, 'gi');
       let match;
       while ((match = regex.exec(content)) !== null) {
-        emit({ method: match[1], path: match[2], start: match.index, receiver: null, auth: statementAuth(content, match.index) });
+        found.push({ method: match[1], path: match[2], start: match.index, receiver: null, auth: statementAuth(content, match.index) });
       }
-      for (const r of routeChainsByPattern(content)) emit(r);
+      found.push(...routeChainsByPattern(content));
+      for (const r of found) {
+        if (TEMPLATE_SUBSTITUTION.test(r.path)) recordUnresolvedPaths(unresolved, 'Express', fileLabel, [{ line: r.line ?? lineAt(content, r.start), target: r.path }]);
+        else emit(r);
+      }
     }
   }
 
@@ -707,7 +728,7 @@ function joinRoutePath(prefix, p) {
 
 // ── Fastify ─────────────────────────────────────────────────────────────────
 
-function scanFastifyRoutes(dir, roots = null) {
+function scanFastifyRoutes(dir, roots = null, unresolved = null) {
   const routes = [];
   const pattern = /(?:fastify|server|app)\s*\.\s*(get|post|put|delete|patch)\s*\(\s*['"`]([^'"`]+)['"`]/gi;
 
@@ -736,13 +757,18 @@ function scanFastifyRoutes(dir, roots = null) {
       // route's own evidence (docguard.js-ts-extraction#FR-002).
       const calls = extractJsRouteCalls(content, filePath);
       const objs = extractJsRouteObjects(content, filePath);
+      const fileLabel = relative(dir, filePath);
       if (calls || objs) {
         for (const r of calls || []) emit(r.method, r.path, r.start, r.auth, r.line);
         for (const r of objs || []) emit(r.method, r.path, r.start, r.auth, r.line);
+        recordUnresolvedPaths(unresolved, 'Fastify', fileLabel, [...(calls?.unresolved || []), ...(objs?.unresolved || [])]);
       } else {
         let match;
         const regex = new RegExp(pattern.source, 'gi');
-        while ((match = regex.exec(content)) !== null) emit(match[1], match[2], match.index, statementAuth(content, match.index));
+        while ((match = regex.exec(content)) !== null) {
+          if (TEMPLATE_SUBSTITUTION.test(match[2])) recordUnresolvedPaths(unresolved, 'Fastify', fileLabel, [{ line: lineAt(content, match.index), target: match[2] }]);
+          else emit(match[1], match[2], match.index, statementAuth(content, match.index));
+        }
       }
     });
   }
@@ -793,14 +819,60 @@ function scanKoaRouterRoutes(dir, ctx) {
   return recordReader(ctx, extractRouterRoutes(readJsSources(ctx, ROUTER_MARKER), createImportResolver(dir), { framework: 'Koa', defaultSource: 'koa' }));
 }
 
+/**
+ * A Pages project's routes: its Functions (filtered by `_routes.json`), or,
+ * in advanced mode, its `_worker.js` read as a Worker fetch entry, which
+ * replaces Functions; plus the router-library routes served through them
+ * (docguard.js-route-shapes#FR-003, FR-008).
+ */
 function scanPagesRoutes(dir, ctx) {
   const sources = readJsSources(ctx);
-  const functions = extractPagesRoutes(sources);
-  const routers = extractRouterRoutes(sources.filter(s => ROUTER_MARKER.test(s.content)), createImportResolver(dir), { framework: 'Cloudflare Pages', defaultSource: 'cloudflare-pages' });
-  const tiers = new Map();
-  for (const t of [...functions.fileTiers, ...routers.fileTiers]) tiers.set(t.file, t);
-  recordReader(ctx, { fileTiers: [...tiers.values()], limitations: [...functions.limitations, ...routers.limitations] });
-  return [...functions, ...routers];
+  const resolveImport = createImportResolver(dir);
+  const outDir = pagesOutputDir(dir);
+  // The output directory is often a build directory the walk skips; its
+  // `_worker.js` (a file or a directory) is what Pages deploys.
+  const known = new Set(sources.map(s => s.abs));
+  if (outDir) {
+    const worker = resolve(dir, outDir, '_worker.js');
+    const files = existsSync(worker) && statSync(worker).isDirectory()
+      ? findRouteFiles(worker, JS_SOURCE_RE, { maxFiles: ctx.maxFiles })
+      : existsSync(worker) ? [worker] : [];
+    for (const abs of files) {
+      const content = known.has(abs) ? null : readFileSafe(abs);
+      if (content) { sources.push({ file: relPosix(dir, abs), abs, content }); known.add(abs); }
+    }
+  }
+  const isWorker = s => isAdvancedWorkerFile(s.file) && !isNonProductPath(s.file, ctx.config);
+  const advanced = sources.some(isWorker);
+  const limitations = [];
+  let found;
+  let tiers;
+  if (advanced) {
+    const worker = extractWorkerRoutes(sources, resolveImport, { isEntry: isWorker, framework: 'Cloudflare Pages', source: 'cloudflare-pages' });
+    // Pages ignores `functions/` in advanced mode; routers there are not served.
+    const routers = extractRouterRoutes(sources.filter(s => ROUTER_MARKER.test(s.content) && !functionsLocation(s.file)), resolveImport, { framework: 'Cloudflare Pages', defaultSource: 'cloudflare-pages' });
+    found = [...worker, ...routers];
+    tiers = [...worker.fileTiers, ...routers.fileTiers];
+    limitations.push(...worker.limitations, ...routers.limitations);
+  } else {
+    const functions = extractPagesRoutes(sources);
+    const routers = extractRouterRoutes(sources.filter(s => ROUTER_MARKER.test(s.content)), resolveImport, { framework: 'Cloudflare Pages', defaultSource: 'cloudflare-pages' });
+    found = [...functions, ...routers];
+    tiers = [...functions.fileTiers, ...routers.fileTiers];
+    limitations.push(...functions.limitations, ...routers.limitations);
+    // `_routes.json` decides which requests invoke Functions at all.
+    const routesJson = [outDir && join(outDir, '_routes.json'), '_routes.json', 'public/_routes.json', 'static/_routes.json']
+      .filter(Boolean).map(rel => resolve(dir, rel)).find(abs => existsSync(abs));
+    if (routesJson) {
+      const rules = parseRoutesJson(readFileSafe(routesJson) || '');
+      if (rules) found = found.filter(r => servedByRoutesJson(r.path, rules));
+      else limitations.push({ framework: 'Cloudflare Pages', code: 'pages-unresolved-routes-json', file: relPosix(dir, routesJson), line: 1, target: '_routes.json' });
+    }
+  }
+  const byFile = new Map();
+  for (const t of tiers) byFile.set(t.file, t);
+  recordReader(ctx, { fileTiers: [...byFile.values()], limitations });
+  return found;
 }
 
 function scanWorkerRoutes(dir, ctx) {

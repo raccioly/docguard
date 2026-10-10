@@ -51,6 +51,13 @@ A maintainer of a Pages project runs `docguard guard`.
 4. **Given** `app.doc('/openapi.json', ...)` on an `OpenAPIHono` app, **Then** `GET /openapi.json` is reported.
 5. **Given** `createRoute({ path: PATHS.user })` or `app.openapi(routes[0], h)`, **Then** no route is guessed and the API-surface check reports `partial`.
 
+### User Story 4 - The remaining JavaScript shapes follow the same rules (Priority: P2)
+
+1. **Given** ``app.get(`/items/${kind}`, h)`` with a runtime `kind`, `app.get(ROUTES.users, h)` or `app.get(/.*fly$/, h)` in an Express or Fastify project, **Then** no route is reported at a `:param` placeholder, each is recorded, and the API-surface check reports `partial`; every literal route is reported exactly as before.
+2. **Given** a Pages project whose output directory holds `_worker.js` (a file or a directory), **Then** its `fetch` dispatch is read as for a Worker and the `functions/` routes are not reported, because Pages ignores them in advanced mode.
+3. **Given** a `_routes.json` with `include: ['/api/*']` and `exclude: ['/api/admin/*']`, **Then** Functions outside `/api/` and under `/api/admin/` are not reported; a `_routes.json` that does not parse is recorded and filters nothing.
+4. **Given** `router.redirect('/old', '/new')` on a Koa router with prefix `/p`, **Then** `ALL /p/old` is reported; a source that is a route name is recorded.
+
 ### Edge Cases
 
 - A Koa or Hono router whose prefix, mount path or base path is not literal is recorded once as a limitation; its routes, and the routes of routers mounted below it, are not reported under a partial path.
@@ -66,14 +73,16 @@ A maintainer of a Pages project runs `docguard guard`.
 - **FR-004**: In a Hono project (and Hono on Workers or Pages), the router reader MUST read `@hono/zod-openapi` routes: `openapi(route, handler)` on any router value, where `route` is `createRoute({ method, path, middleware? })` inline, a same-file variable, a variable imported from another project file, or a plain object with `method` and `path`. OpenAPI path parameters `{name}` are reported as `:name`, as other Hono parameters are; the route composes with `basePath()` and `route()` mounts; auth comes from the route's `middleware`, the handler or a covering `use()`, never from `security` alone. `doc()` and `doc31()` on an `OpenAPIHono` value report `GET` at their path.
 - **FR-005**: Every route from these readers MUST carry `tier` and `tierReason`, and a file that does not parse MUST be read by a pattern fallback. A path, prefix, mount path, route definition or export the reader cannot resolve statically MUST NOT be guessed: it is recorded in `scan.unresolved` with its framework, file and line, the routes below an unresolved prefix are omitted, and the API-surface check reports coverage `partial`.
 - **FR-006**: `docs/reference/languages.md`, `docs/commands.md`, `docs-canonical/ARCHITECTURE.md` and `CHANGELOG.md` MUST describe what is read.
+- **FR-007**: The Express and Fastify scanners MUST NOT report a route whose path is not literal text or a same-file constant (a template with a runtime substitution, an imported constant, a member expression, a regular expression, in the syntax tree and in the pattern fallback); each such registration (a path plus at least one handler) is recorded in `scan.unresolved` with its framework, file and line, and the API-surface check reports `partial`. A one-argument `app.get('name')` is a settings read, not a registration. Every route with a literal path is reported exactly as before.
+- **FR-008**: In a Cloudflare Pages project, an advanced-mode Worker — `_worker.js` (a file, or a directory with an `index`) in the `pages_build_output_dir`, or a `_worker.js`/`_worker.ts` file in the project — MUST be read as a Worker `fetch` entry with the Workers dispatch reader (source `cloudflare-pages`), and the `functions/` routes MUST NOT be reported, since Pages ignores that directory in advanced mode. Otherwise a `_routes.json` (in the output directory, else the project root, `public/` or `static/`) MUST limit the reported Functions routes to those an `include` rule matches and no `exclude` rule matches (`*` matching any characters, `exclude` winning); one that does not parse or has no `include` list is recorded as a limitation and filters nothing. `_routes.json` is not applied to an advanced-mode Worker.
+- **FR-009**: In a Koa project, koa-router `redirect(source, destination, code?)` with a literal path source MUST be reported as `ALL` at `source` under the router's prefixes, with handler `redirect` (the route model has no redirect field); a source that is a route name or not literal is recorded as a limitation. `redirect()` on a router that is not Koa is not read.
 
 ## Success Criteria *(mandatory)*
 
-- **SC-001**: Each behaviour above has a test that fails before the change and passes after. Each reference project (a Koa service with nested routers and a mounted sub-application, a Cloudflare Pages project with middleware and a delegated Hono app, and an OpenAPI-first Hono service across files) has a ground truth written by hand, and the scan reports exactly that set of methods, paths and auth flags.
+- **SC-001**: Each behaviour above has a test that fails before the change and passes after; for FR-007, every literal Express and Fastify route of the existing extraction, generated-docs and API-surface suites is unchanged. Each reference project (a Koa service with nested routers and a mounted sub-application, a Cloudflare Pages project with middleware and a delegated Hono app, and an OpenAPI-first Hono service across files) has a ground truth written by hand, and the scan reports exactly that set of methods, paths and auth flags.
 - **SC-002**: The full suite passes and `docguard guard` on this repository reports no new finding.
 
 ## Out of Scope
 
-- Pages advanced mode (`_worker.js` in the build output) and `_routes.json` include/exclude rules: the Functions file layout is read as written.
-- `koa-router` `redirect()`, host-based routing and routers built in loops; `@hono/zod-openapi` `openAPIRegistry` registrations that are not routes.
-- Express keeps its `:param` placeholder for template paths (spec 045); Koa routes now follow the router reader, which records such a path as a limitation instead.
+- Host-based routing and routers built in loops; `@hono/zod-openapi` `openAPIRegistry` registrations that are not routes.
+- Express mount prefixes that are not literal (`app.use(PREFIX, router)`) keep their current handling: the mount is not applied.

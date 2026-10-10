@@ -15,8 +15,17 @@
  * `export *` (whose methods are unknown) are recorded as limitations, never
  * guessed.
  *
+ * Advanced mode and `_routes.json` (docguard.js-route-shapes#FR-008): a
+ * `_worker.js` in the output directory replaces Functions entirely (Cloudflare:
+ * "the entire `/functions` directory is ignored"), so the caller reads it with
+ * the Worker dispatch reader instead. `_routes.json` decides which requests
+ * invoke Functions at all — `include` rules invoke them, `exclude` rules (which
+ * win) serve static assets instead — so a Function no rule lets through is not
+ * served and is not reported.
+ *
  * @implements docguard.js-route-shapes#FR-003
  * @implements docguard.js-route-shapes#FR-005
+ * @implements docguard.js-route-shapes#FR-008
  */
 
 import { functionBodies, isAuthMiddlewareNode, AUTH_CHECK_RE } from './js-ast.mjs';
@@ -196,4 +205,49 @@ function exportsByPattern(src, isMiddleware) {
     if (HANDLER.test(m[1])) out.push({ name: m[1], line: lineAt(content, m.index), auth, delegates: false });
   }
   return out;
+}
+
+// ── Advanced mode and _routes.json (docguard.js-route-shapes#FR-008) ────────
+
+/**
+ * Is this project-relative file an advanced-mode Worker: `_worker.js` (or the
+ * `_worker.ts`/`_worker.mjs` source a build compiles into it), or the
+ * `index` of a `_worker.js/` directory?
+ */
+export function isAdvancedWorkerFile(rel) {
+  return /(?:^|\/)_worker\.(?:[cm]?js|ts)$/.test(rel) || /(?:^|\/)_worker\.js\/index\.(?:[cm]?js|ts)$/.test(rel);
+}
+
+/**
+ * The rules of a `_routes.json` text: `{ include, exclude }`, or null when it
+ * is not valid JSON or has no `include` list of strings.
+ */
+export function parseRoutesJson(text) {
+  let json;
+  try { json = JSON.parse(text); } catch { return null; }
+  const strings = v => Array.isArray(v) && v.every(x => typeof x === 'string');
+  if (!json || !strings(json.include) || !json.include.length) return null;
+  if (json.exclude !== undefined && !strings(json.exclude)) return null;
+  return { include: json.include, exclude: json.exclude || [] };
+}
+
+const escapeRe = t => t.replace(/[.+?^${}()|[\]\\]/g, '\\$&');
+/** A `_routes.json` rule as a pattern: `*` matches any characters, including `/`. */
+const ruleRe = rule => new RegExp(`^${rule.split('*').map(escapeRe).join('.*')}$`);
+/** A route path as a pattern over concrete paths: `:id` one segment, `:rest*` anything. */
+const routeRe = path => new RegExp(`^${path.split('/').map(seg => (/^:[\w$-]+\*$/.test(seg) ? '.*' : /^:/.test(seg) ? '[^/]+' : escapeRe(seg))).join('/')}$`);
+/** One concrete path a route serves: each parameter filled with a placeholder segment. */
+const samplePath = path => path.split('/').map(seg => (seg.startsWith(':') ? 'x0' : seg)).join('/');
+
+/**
+ * Does `_routes.json` let requests for this route reach Functions? A route
+ * is served when an `include` rule matches one of its concrete paths and no
+ * `exclude` rule matches them generally (an exact `exclude` of `/users/42`
+ * leaves `/users/:id` served for every other id).
+ */
+export function servedByRoutesJson(path, rules) {
+  const sample = samplePath(path);
+  const own = routeRe(path);
+  const included = rules.include.some(rule => ruleRe(rule).test(sample) || (!rule.includes('*') && own.test(rule)));
+  return included && !rules.exclude.some(rule => ruleRe(rule).test(sample));
 }

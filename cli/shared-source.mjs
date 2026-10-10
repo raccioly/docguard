@@ -427,6 +427,20 @@ const PAGES_OUTPUT_KEY = /(?:^|[{,])[ \t]*"?pages_build_output_dir"?[ \t]*[=:]/m
 const PAGES_HANDLER_EXPORT = /\bexport\s+(?:async\s+)?(?:function\s*\*?\s*|(?:const|let|var)\s+)onRequest(?:Get|Post|Put|Patch|Delete|Head|Options)?\b|\bexport\s*\{[^}]*\bonRequest(?:Get|Post|Put|Patch|Delete|Head|Options)?\s*[,}]/;
 
 /**
+ * The `pages_build_output_dir` a Wrangler file sets in `dir`, or null.
+ * @implements docguard.js-route-shapes#FR-008
+ */
+export function pagesOutputDir(dir) {
+  for (const name of WRANGLER_FILES) {
+    let text;
+    try { text = readFileSync(join(dir, name), 'utf8'); } catch { continue; }
+    const m = /(?:^|[{,])[ \t]*"?pages_build_output_dir"?[ \t]*[=:][ \t]*["']([^"'\n]+)["']/m.exec(text);
+    if (m) return m[1];
+  }
+  return null;
+}
+
+/**
  * Is `dir` a Cloudflare Pages project? Its Wrangler file sets
  * `pages_build_output_dir`, or it has no Wrangler file and its `functions/`
  * directory exports a Pages Function handler. A Wrangler file without that key

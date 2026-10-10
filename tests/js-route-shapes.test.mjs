@@ -13,6 +13,9 @@
  * @req docguard.js-route-shapes#FR-004
  * @req docguard.js-route-shapes#FR-005
  * @req docguard.js-route-shapes#FR-006
+ * @req docguard.js-route-shapes#FR-007
+ * @req docguard.js-route-shapes#FR-008
+ * @req docguard.js-route-shapes#FR-009
  * @req docguard.js-route-shapes#SC-001
  * @req docguard.js-route-shapes#SC-002
  */
@@ -31,6 +34,7 @@ import { WORKER_FETCH_FILES, WORKER_FETCH_TRUTH } from './fixtures/js-framework-
 import { scanRoutesDeep } from '../cli/scanners/routes.mjs';
 import { detectProjectProfile } from '../cli/scanners/project-type.mjs';
 import { validateApiSurface } from '../cli/validators/api-surface.mjs';
+import { extractJsRouteCalls } from '../cli/scanners/js-ast.mjs';
 
 const dirs = [];
 afterEach(() => { while (dirs.length) rmSync(dirs.pop(), { recursive: true, force: true }); });
@@ -300,6 +304,150 @@ describe('FR-005: an unresolved path makes the API-surface check partial', () =>
   });
 });
 
+// ── FR-007: Express and Fastify paths that are not literal ──────────────────
+
+describe('FR-007: an Express or Fastify path that is not literal is a limitation, not a placeholder', () => {
+  it('extractJsRouteCalls reports no route for a dynamic template and lists it as unresolved', () => {
+    const got = extractJsRouteCalls("app.get(`/items/${kind}`, list);\napp.get(`/static/${'x'}`, h);\napp.get('title');\napp.put('/items/:id', update);\n", 'r.ts');
+    assert.deepEqual(got.map(r => `${r.method} ${r.path}`), ['PUT /items/:id']);
+    assert.deepEqual(got.unresolved.map(u => u.line), [1, 2]);
+  });
+
+  it('records Express template, imported-constant and regular-expression paths in scan.unresolved, and the check is partial', () => {
+    const dir = project({
+      'package.json': JSON.stringify({ dependencies: { express: '4.19.2' } }),
+      'src/app.js': `const express = require('express');
+const { ROUTES } = require('./routes');
+const app = express();
+const kind = 'books';
+const BASE = '/base';
+app.get(\`/items/\${req}\`, list);
+app.get(ROUTES.users, list);
+app.get(/.*fly$/, list);
+app.get(\`\${BASE}/const\`, list);
+app.get(\`/kind/\${kind}\`, list);
+app.set('title', 'x'); app.get('title');
+app.post('/ok', create);
+module.exports = app;
+`,
+      'docs-canonical/API-REFERENCE.md': '#### POST `/ok`\n#### GET `/base/const`\n#### GET `/kind/books`\n',
+    });
+    const routes = routesOf(dir, 'Express');
+    assert.deepEqual(routes.map(key).sort(), ['GET /base/const', 'GET /kind/books', 'POST /ok']);
+    assert.deepEqual(unresolvedOf(routes), [
+      { framework: 'Express', file: 'src/app.js', line: 6 },
+      { framework: 'Express', file: 'src/app.js', line: 7 },
+      { framework: 'Express', file: 'src/app.js', line: 8 },
+    ]);
+    const result = validateApiSurface(dir, {});
+    assert.equal(result.applicability?.status, 'partial');
+    assert.match(result.applicability.reason, /3 Express routes/);
+  });
+
+  it('records a Fastify template path, and a template in a file read by pattern, without a route', () => {
+    const dir = project({
+      'package.json': JSON.stringify({ dependencies: { fastify: '4.28.0' } }),
+      'src/server.js': "const fastify = require('fastify')();\nfastify.get(`/u/${id}`, h);\nfastify.get('/ok', h);\n",
+      'src/broken.js': `fastify.get(\`/b/\${id}\`, h);\nfastify.get('/fine', h);\n${UNPARSEABLE}`,
+    });
+    const routes = routesOf(dir, 'Fastify');
+    assert.deepEqual(routes.map(key).sort(), ['GET /fine', 'GET /ok']);
+    assert.deepEqual(unresolvedOf(routes), [
+      { framework: 'Fastify', file: 'src/broken.js', line: 1 },
+      { framework: 'Fastify', file: 'src/server.js', line: 2 },
+    ]);
+  });
+});
+
+// ── FR-008: Pages advanced mode and _routes.json ─────────────────────────────
+
+const WORKER_JS = `export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+    if (url.pathname === '/api/hello' && request.method === 'GET') return new Response('hi');
+    if (url.pathname === '/api/echo') return new Response(await request.text());
+    return env.ASSETS.fetch(request);
+  },
+};
+`;
+
+describe('FR-008: Pages advanced mode and _routes.json', () => {
+  it('reads an output-directory _worker.js as the fetch entry and ignores functions/', () => {
+    const routes = routesOf(project(pages({
+      'wrangler.toml': 'name = "site"\npages_build_output_dir = "./dist"\n',
+      'dist/_worker.js': WORKER_JS,
+      'functions/api/users.ts': 'export const onRequestGet = () => new Response("[]");\n',
+    })));
+    assert.deepEqual(routes.map(key).sort(), ['ALL /api/echo', 'GET /api/hello']);
+    assert.ok(routes.every(r => r.source === 'cloudflare-pages' && r.file.startsWith('dist/_worker.js')), JSON.stringify(routes.map(r => [r.source, r.file])));
+  });
+
+  it('reads a _worker.js directory and a _worker.ts source, following their imports', () => {
+    const dirForm = routesOf(project(pages({
+      'wrangler.toml': 'name = "site"\npages_build_output_dir = "public"\n',
+      'public/_worker.js/index.js': "import { route } from './route.js';\nexport default { fetch: (request) => route(request) };\n",
+      'public/_worker.js/route.js': "export function route(request) {\n  const { pathname } = new URL(request.url);\n  switch (pathname) { case '/ping': return new Response('pong'); }\n  return new Response(null, { status: 404 });\n}\n",
+    })));
+    assert.deepEqual(dirForm.map(key), ['ALL /ping']);
+    const tsForm = routesOf(project(pages({ 'src/_worker.ts': WORKER_JS })));
+    assert.deepEqual(tsForm.map(key).sort(), ['ALL /api/echo', 'GET /api/hello']);
+  });
+
+  it('serves only the Functions _routes.json includes and does not exclude', () => {
+    const files = pages({
+      'wrangler.toml': 'name = "site"\npages_build_output_dir = "./dist"\n',
+      'dist/_routes.json': JSON.stringify({ version: 1, include: ['/api/*', '/files/readme'], exclude: ['/api/admin/*'] }),
+      'functions/index.ts': 'export const onRequestGet = () => new Response("home");\n',
+      'functions/api/users/[id].ts': 'export const onRequestGet = () => new Response("u");\n',
+      'functions/api/admin/stats.ts': 'export const onRequestGet = () => new Response("s");\n',
+      'functions/files/[[path]].ts': 'export const onRequest = () => new Response("f");\n',
+    });
+    assert.deepEqual(routesOf(project(files)).map(key).sort(), ['ALL /files/:path*', 'GET /api/users/:id']);
+    const loose = { ...files };
+    delete loose['wrangler.toml'];
+    delete loose['dist/_routes.json'];
+    loose['public/_routes.json'] = JSON.stringify({ version: 1, include: ['/*'], exclude: ['/files/*'] });
+    loose['package.json'] = '{}';
+    assert.deepEqual(routesOf(project(loose)).map(key).sort(), ['GET /', 'GET /api/admin/stats', 'GET /api/users/:id']);
+  });
+
+  it('records a _routes.json it cannot read and filters nothing', () => {
+    const routes = routesOf(project(pages({
+      'wrangler.toml': 'name = "site"\npages_build_output_dir = "./dist"\n',
+      'dist/_routes.json': '{ "version": 1, "include": [',
+      'functions/a.ts': 'export const onRequestGet = () => new Response("a");\n',
+    })));
+    assert.deepEqual(routes.map(key), ['GET /a']);
+    assert.deepEqual(unresolvedOf(routes), [{ framework: 'Cloudflare Pages', file: 'dist/_routes.json', line: 1 }]);
+  });
+});
+
+// ── FR-009: koa-router redirect() ────────────────────────────────────────────
+
+describe('FR-009: koa-router redirect()', () => {
+  it('reports ALL at a literal source path under the prefix, and records a route-name source', () => {
+    const routes = routesOf(project(koa({
+      'src/r.js': `const Router = require('@koa/router');
+const router = new Router({ prefix: '/p' });
+router.get('start', '/start', h);
+router.redirect('/old', '/new');
+router.redirect('start', '/elsewhere', 302);
+module.exports = router;
+`,
+    })));
+    assert.deepEqual(routes.map(key).sort(), ['ALL /p/old', 'GET /p/start']);
+    assert.equal(routes.find(r => key(r) === 'ALL /p/old').handler, 'redirect');
+    assert.deepEqual(unresolvedOf(routes), [{ framework: 'Koa', file: 'src/r.js', line: 5 }]);
+  });
+
+  it('does not read redirect() on a router that is not Koa', () => {
+    const routes = routesOf(project(hono({
+      'src/app.ts': "import { Hono } from 'hono';\nconst app = new Hono();\napp.redirect('/old', '/new');\napp.get('/ok', h);\nexport default app;\n",
+    })));
+    assert.deepEqual(routes.map(key), ['GET /ok']);
+  });
+});
+
 // ── FR-006: documentation ───────────────────────────────────────────────────
 
 describe('FR-006: the docs say what is read', () => {
@@ -311,6 +459,9 @@ describe('FR-006: the docs say what is read', () => {
     assert.match(doc, /^\| Koa \|.*router-routes\.mjs/m);
     assert.match(doc, /^\| Cloudflare Pages \|.*pages-routes\.mjs/m);
     assert.match(doc, /^\| Hono \|.*zod-openapi/m);
+    assert.match(doc, /^\| Cloudflare Pages \|.*_routes\.json.*_worker\.js/m);
+    assert.match(doc, /^\| Koa \|.*redirect/m);
+    assert.match(doc, /^\| Express \|.*not literal/m);
     assert.match(read('docs/commands.md'), /Cloudflare Pages/);
   });
 

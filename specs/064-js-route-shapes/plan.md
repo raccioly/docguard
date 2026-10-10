@@ -13,6 +13,9 @@ Two readers grow and one is added; the dispatch in `routes.mjs` changes by a few
 | FR-003 | New `cli/scanners/pages-routes.mjs`, `extractPagesRoutes(sources)`: the `onRequest*` exports of each file under `functions/`, the path from the file's location, `_middleware` auth by directory and method, router delegation skipped. `routes.mjs` runs it with the router reader for Pages projects, as the Workers scan does. |
 | FR-004 | `router-routes.mjs`: `openapi(route, handler)` calls; `createRoute({...})` definitions bound to variables are collected per file and resolved across files through the same alias/export maps as routers; `{param}` → `:param`; `doc()`/`doc31()` on an `OpenAPIHono` value. |
 | FR-005 | Unresolved prefixes mark the router node `unresolved`; unresolved mount paths become edges marked `unresolved`; `effective()` yields no chain through either, so the routes below are omitted rather than reported at the root. Limitations go to `scan.unresolved` as in spec 058. |
+| FR-007 | `extractJsRouteCalls` and `extractJsRouteObjects` in `cli/scanners/js-ast.mjs` read paths without the `:param` placeholder and list what they cannot read in a non-enumerable `unresolved`; `scanExpressRoutes` and `scanFastifyRoutes` in `routes.mjs` record those, and pattern-tier paths holding `${`, in `scan.unresolved`. |
+| FR-008 | `scanPagesRoutes` in `routes.mjs`: finds an advanced-mode `_worker.js` (reading the configured output directory even when the walk skips it, `pagesOutputDir` in `shared-source.mjs`) and runs `extractWorkerRoutes` with an entry filter (new `isEntry`, `framework`, `source` options in `worker-routes.mjs`) instead of the Functions reader; otherwise filters Functions routes with `parseRoutesJson`/`servedByRoutesJson` (`pages-routes.mjs`). |
+| FR-009 | `router-routes.mjs`: `redirect(source, …)` on a Koa router is an `ALL` record at `source`; a non-path source is a limitation. |
 | FR-006 | `docs/reference/languages.md`, `docs/commands.md`, `docs-canonical/ARCHITECTURE.md`, `CHANGELOG.md`, `llms` bundle. |
 
 ## Technical Context
@@ -32,6 +35,11 @@ Two readers grow and one is added; the dispatch in `routes.mjs` changes by a few
 - **Delegation is not a route.** `export const onRequest = handle(app)` serves a Hono app from a catch-all file; reporting `ALL /api/:route*` would invent an endpoint while the app's real routes are read by the router reader.
 - **OpenAPI parameters as Hono serves them.** OpenAPIHono rewrites `/{id}` to `/:id` before registering, and every other Hono route is reported with `:id`, so the reader does the same rewrite. `security` in a route definition is OpenAPI documentation, like Swagger decorators in spec 058, so it is not auth evidence; the definition's `middleware` is.
 
+- **Express and Fastify stop guessing.** `pathArgValue` filled an unresolvable `${…}` with `:param`, so `/items/${kind}` was reported as `/items/:param`, a path no document names; an imported constant was dropped silently. Both are now recorded, the rule every other reader follows. Settings reads (`app.get('title')`, one argument) are not registrations and are not recorded. Literal results are unchanged: the existing suites pass untouched except the one test that asserted the placeholder, and a run of the old and new scanners over the JS/TS reference fixtures and this repository gave identical route records. Not done: a non-literal Express mount prefix still leaves the mount unapplied, as before.
+- **Advanced mode replaces Functions.** Cloudflare's advanced-mode page says the `/functions` directory is ignored when `_worker.js` is in the output directory, so reading both would report routes Pages does not serve. Cloudflare reads only `_worker.js` there ("We do not read `_worker.ts`"); a `_worker.ts` elsewhere in the project is read as the source a build compiles into it. The output directory is usually a build directory the file walk skips, so its `_worker.js` is read explicitly.
+- **`_routes.json` changes which Functions are served.** Its `include` rules decide which requests invoke Functions and `exclude` rules (which win) send requests to static assets, so a Function no rule lets through is never invoked; it is filtered. Cloudflare documents the file for Functions only, so it is not applied to an advanced-mode Worker. A route with parameters is tested by one concrete path (each parameter filled), and an exact `include` that one of its paths matches keeps it; an exact `exclude` of one value does not remove a parameterised route.
+- **koa-router `redirect()` is `all(source)`.** koa-router's source registers `this.all(source, …)`. The route model has no redirect field, so the handler is `redirect`. A source given as a route name is resolved by koa-router through `url()`, which already includes the router prefix that `all()` adds again; rather than reproduce that, it is recorded.
+
 ## Constitution Check
 
 | Principle | How this plan meets it |
@@ -49,7 +57,9 @@ cli/scanners/router-routes.mjs        # FR-001, FR-004, FR-005: Koa, CommonJS, z
 cli/scanners/pages-routes.mjs         # NEW — FR-003, FR-005
 cli/scanners/routes.mjs               # dispatch: Koa and Pages through patternScan; old Koa walker removed
 cli/scanners/project-type.mjs         # FR-002 label
-cli/shared-source.mjs                 # FR-002 isPagesProject
+cli/shared-source.mjs                 # FR-002 isPagesProject, FR-008 pagesOutputDir
+cli/scanners/js-ast.mjs               # FR-007 unresolved route paths
+cli/scanners/worker-routes.mjs        # FR-008 entry filter and labels
 tests/fixtures/js-route-shape-projects.mjs  # NEW
 tests/js-route-shapes.test.mjs              # NEW
 docs/reference/languages.md, docs/commands.md, docs-canonical/ARCHITECTURE.md, CHANGELOG.md, llms.txt, llms-full.txt   # FR-006
