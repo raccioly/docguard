@@ -1,6 +1,6 @@
 # Tasks: User Documentation a Large Project Would Ship
 
-**Status**: In progress.
+**Status**: Complete. SC-001: every page is reachable from the landing page and every link resolves; SC-002: full suite 2,949/2,949, guard PASS, Pages build `built` with sidebar and search.
 **Spec**: `specs/053-user-documentation/spec.md`
 **Plan**: `specs/053-user-documentation/plan.md`
 
@@ -21,4 +21,4 @@
 
 ## Phase 3: Verification
 
-- [ ] T009 `CHANGELOG.md`; `npm test`; `npm run llms`; `docguard specs --write`; `docguard guard`; Pages build after merge (SC-002)
+- [x] T009 `CHANGELOG.md`; `npm test`; `npm run llms`; `docguard specs --write`; `docguard guard`; Pages build after merge (SC-002)
