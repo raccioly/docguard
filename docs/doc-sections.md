@@ -1,3 +1,9 @@
+---
+title: Section-Addressable Docs
+parent: Reference
+nav_order: 7
+---
+
 # Section-Addressable Docs
 
 DocGuard maintains canonical docs *surgically*: it regenerates the parts that are

@@ -1,13 +1,13 @@
 # Data Model
 
-<!-- docguard:version 0.12.0 -->
+<!-- docguard:version 0.14.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-09-30 -->
+<!-- docguard:last-reviewed 2026-10-10 -->
 
 | Metadata | Value |
 |----------|-------|
 | **Status** | ![Status](https://img.shields.io/badge/status-active-brightgreen) |
-| **Version** | `0.12.0` |
+| **Version** | `0.14.0` |
 | **Database** | None — DocGuard is a stateless CLI tool |
 | **Storage** | File-system only (reads project files, writes generated docs) |
 
@@ -29,7 +29,7 @@ The primary data structure. Controls all CLI behavior.
 | `version` | `string` | No | `"0.1"` | Config schema version |
 | `projectType` | `string` | No | Auto-detected | One of: `cli`, `webapp`, `api`, `library`, `monorepo` |
 | `requiredFiles.canonical` | `string[]` | No | 5 docs-canonical files | Paths to required CDD documents |
-| `requiredFiles.agentFile` | `string[]` | No | `["AGENTS.md", "CLAUDE.md"]` | AI agent config file options |
+| `requiredFiles.agentFile` | `string[]` \| `string` | No | `["AGENTS.md", "CLAUDE.md"]` | AI agent config file options; any one suffices. A single string is read as a one-element list |
 | `requiredFiles.changelog` | `string` | No | `"CHANGELOG.md"` | Changelog file path |
 | `requiredFiles.driftLog` | `string` | No | `"DRIFT-LOG.md"` | Drift log file path |
 
@@ -58,11 +58,12 @@ The primary data structure. Controls all CLI behavior.
 | `agentInstructions.allowances.<file>` | `integer` | No | — | Per-chain allowance keyed by the chain's deepest file; slack of 1 KiB or more reports STR005 |
 | `specFirst.paths` / `specFirst.exemptKinds` | `string[]` | No | Everything except Markdown, `specs/**` and tests / `release, deps, typo, test-only` | Governed paths and allowed `Spec-Exempt` kinds for `specs require` |
 | `validators.docDependency` / `pathScopedRules` / `docOwnership` | `boolean` | No | `true` | Each applies only when its input exists: a `covers=` declaration, agent instruction files, an `ownership` block or `.devin/wiki.json` |
-| `detection.includeNonProduct` | `boolean` | No | `false` | Read test, fixture, example and mock directories as product code during surface detection (routes, env vars, frameworks). Package segments such as `src/main/java/com/example` are always product code |
+| `detection.includeNonProduct` | `boolean` | No | `false` | Read test, fixture, example and mock directories as product code during surface detection (routes, env vars, frameworks). Package segments such as `src/main/java/com/example` or a Go `internal/example` package are always product code |
 | `diagrams.moduleGraph.depth` / `maxNodes` / `include` | `integer` / `integer` / `string[]` | No | `2` / `30` (cap 60) / every product source file | Shape of the `module-graph` section |
 | `memory.symbolMap.maxBytes` | `integer` | No | `4096` (256–16384) | Budget of the symbol map `memory --pack --symbols` adds |
 | `devinWiki.maxPages` | `integer` | No | `30` (up to 80) | Page cap for linting `.devin/wiki.json`; 80 on Devin enterprise plans |
 | `ownership` | `object` | No | — | Doc ownership map, described below |
+| `baseline` | `boolean` | No | `true` | `false` ignores a committed `.docguard.baseline.json`, as `--no-baseline` does on every run |
 
 ### Example Configuration
 
@@ -230,6 +231,36 @@ and a longer literal directory prefix beats a shorter one; two equal matches
 are a tie (OWN002). A malformed block is an error (OWN007), and every owner
 lookup reports that error until the block is fixed.
 
+## Adoption Baseline: `.docguard.baseline.json`
+
+`docguard guard --update-baseline` writes this file at the project root, to be
+committed so the team and CI share it. Guard and `ci` suppress up to the frozen
+number of each finding and gate everything else; `--no-baseline` or
+`"baseline": false` ignores the file.
+
+| Field | Meaning |
+|---|---|
+| `_comment` | Fixed explanation of the file and how to regenerate it |
+| `version` | `2`: each fingerprint carries an occurrence count |
+| `generatedAt` | ISO timestamp of the write; guard reports the baseline's age from it and never enforces one |
+| `count` | Number of distinct fingerprints |
+| `fingerprints` | Fingerprint → occurrence count, keys sorted |
+
+A fingerprint is the first 16 hex characters of SHA-256 over
+`code|path|message`. `code` is the finding code (`UNCODED` when absent), `path`
+is the location without its trailing `:line`, and `message` has every digit run
+replaced by `#` and whitespace collapsed. Before masking, an advisory tail
+declared for the code in `ADVISORY_TAILS` (`cli/writers/baseline.mjs`) is
+removed: text a validator appends that changes when unrelated files change.
+TRC004's ` — IR soft-match: …` hint is the only one, so every other code's
+fingerprint is the same as before (specs/052-baseline-stable-fingerprint).
+
+Guard matches a finding against its stable fingerprint first and then against
+the legacy fingerprint (the full message), so a baseline written by an earlier
+release keeps suppressing what it froze; `--update-baseline` rewrites it in the
+stable form. One finding consumes one unit from one entry. A malformed file, or
+one with no positive counts, is treated as absent, so every finding surfaces.
+
 ## Generated caches and budgets
 
 | File | Written by | Shape |
@@ -364,6 +395,7 @@ The `score --format json` output:
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 0.14.0 | 2026-10-10 | DocGuard Team | Freshness review for specs 038–053: the adoption baseline file and its fingerprint preimage, including the advisory-tail exclusion and legacy match (spec 052); the `baseline` key; `requiredFiles.agentFile` as a string (spec 050); Go `internal/example` as product code |
 | 0.13.0 | 2026-09-30 | DocGuard Team | Guard result `key`/`parent` and the `docSections` key; Claude Code `@path` imports in instruction budgets; tracked-only `glob` fingerprints (spec 049) |
 | 0.12.0 | 2026-09-30 | DocGuard Team | `.docguard/` ignores itself, and dirty checks leave it out (spec 042) |
 | 0.11.0 | 2026-09-30 | DocGuard Team | Freshness review for specs 028–037: configuration keys for the doc lock, path-scoped rules, ownership, diagrams and the symbol map; `review --prune` as a doc-lock writer; the plan cache (version 3), `budgets.json` and the frozen agent-context protocol v2 |

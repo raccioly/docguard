@@ -116,7 +116,7 @@ ${c.bold}Tools (situational, but day-to-day useful)${c.reset}
 ${c.bold}init --with <name>${c.reset} ${c.dim}— optional scaffolders, picked at init time${c.reset}
   ${c.dim}agents${c.reset}     AGENTS.md / CLAUDE.md / .cursor/rules / Copilot instructions
   ${c.dim}hooks${c.reset}      Git pre-commit / pre-push hooks
-  ${c.dim}ci${c.reset}         Run the CI gate (guard + score) once, right after init
+  ${c.dim}ci${c.reset}         GitHub Actions workflow that runs the CI gate (.github/workflows/docguard.yml)
   ${c.dim}badge${c.reset}      Shields.io score badges for README
   ${c.dim}llms${c.reset}       llms.txt generation
   ${c.dim}publish${c.reset}    External doc-site scaffold (Mintlify) ${c.dim}— experimental${c.reset}
@@ -233,12 +233,11 @@ const COMMAND_HELP = {
   },
   guard: {
     summary: 'Validate code against canonical docs (all validators).',
-    usage: 'docguard guard [--format json|sarif|junit] [--changed-only] [--fail-on-warning]',
+    usage: 'docguard guard [--format json|sarif|junit] [--changed-only]',
     flags: [
       ['--format json', 'Machine-readable results for CI (also: sarif, junit)'],
       ['--compact', 'With --format json: each fact once (the form MCP returns by default); the default JSON is unchanged'],
       ['--changed-only', 'Only validate docs/code touched in the working tree'],
-      ['--fail-on-warning', 'Exit non-zero on warnings (strict CI)'],
       ['--update-baseline', 'Freeze current findings to .docguard.baseline.json — adopt on a legacy repo without a red day one'],
       ['--no-baseline', 'Ignore the committed baseline for this run (show everything)'],
     ],
@@ -306,7 +305,7 @@ const COMMAND_HELP = {
     examples: ['docguard upgrade', 'docguard upgrade --apply --schema-only', 'docguard upgrade --apply'],
   },
   ci: {
-    summary: 'Generate CI / pipeline config.',
+    summary: 'Pipeline gate: guard + score in one command (exit 1 on errors, threshold or --fail-on-warning).',
     usage: 'docguard ci [--threshold <n>] [--fail-on-warning]',
     flags: [
       ['--threshold <n>', 'Minimum score for CI pass'],

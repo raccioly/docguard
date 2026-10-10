@@ -444,7 +444,7 @@ const EXPLAINERS = {
  * tests/explain-coverage.test.mjs asserts it stays in lock-step with the live
  * registry, so a new validator can't ship without an explain entry + name.
  */
-const DISPLAY_NAMES = {
+export const DISPLAY_NAMES = {
   structure: 'Structure',
   docSections: 'Doc Sections',
   docsSync: 'Docs-Sync',

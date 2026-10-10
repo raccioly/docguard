@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **A documentation site with the guides a larger project ships**
+  (`specs/053-user-documentation`). The GitHub Pages site
+  (raccioly.github.io/docguard) now has a landing page, sidebar navigation and
+  search, using the Just the Docs theme that Pages builds itself, with no
+  build step or dependency. New pages:
+  - guides for existing projects, Spec Kit, CI, monorepos, upgrading and
+    troubleshooting;
+  - references for languages and frameworks, coding agents, the MCP server and
+    every finding code;
+  - a fuller installation page.
+
+  The finding-code reference is generated from the code registry
+  (`npm run docs:reference`), and a test fails when it is stale. Existing page
+  paths are unchanged. The Spanish and Portuguese READMEs link the English
+  guides.
+
+### Removed
+
+- **`templates/commands/`**, an old copy of the slash commands that nothing
+  installed (the installer reads `commands/`). Its `/docguard.init` and
+  `/docguard.update` were listed in the README although no agent ever received
+  them. The README, `ai-integration.md`, `quickstart.md` and CLI help now match
+  what DocGuard installs and does (`specs/053-user-documentation` FR-009).
+
 ### Fixed
 
 - **Adding a test file no longer brings back baselined TRC004 findings**

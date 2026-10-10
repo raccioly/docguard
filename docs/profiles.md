@@ -1,3 +1,9 @@
+---
+title: Compliance Profiles
+parent: Guides
+nav_order: 8
+---
+
 # Compliance Profiles
 
 DocGuard supports three compliance profiles to match different project needs.

@@ -1,6 +1,6 @@
 # DocGuard Roadmap
 
-<!-- docguard:last-reviewed 2026-09-30 -->
+<!-- docguard:last-reviewed 2026-10-10 -->
 
 This file contains current product intent only. Released work belongs in
 `CHANGELOG.md`; implementation history remains recoverable from Git. Completed or
@@ -13,9 +13,10 @@ structural score is useful, but it is not proof that arbitrary prose is true.
 
 ## Active roadmap
 
-Specs 014–037 are merged on `main` and wait for the next release; the
-`[Unreleased]` section of `CHANGELOG.md` lists them, and each spec's
-`tasks.md` is its checklist. Two items remain open:
+Specs 014–051 shipped in v0.43.0 (2026-10-01). Spec 052 (baseline fingerprints)
+and spec 053 (the documentation site) wait for the next release; the
+`[Unreleased]` section of `CHANGELOG.md` lists them, and each spec's `tasks.md`
+is its checklist. Two items remain open:
 
 - **Symbol map promotion (spec 036, T009–T010).** The frozen v2 protocol's 54
   trials have yet to run. Until they do, `memory --pack --symbols` stays opt-in

@@ -1,3 +1,8 @@
+---
+title: FAQ
+nav_order: 6
+---
+
 # Frequently Asked Questions
 
 ## General
@@ -219,7 +224,10 @@ feeds GitHub Code Scanning. See [AI Integration](./ai-integration.md).
 
 ### Guard flagged something that isn't wrong. What do I do?
 
-Suppress it **at the finding site** with its code — `// docguard:ignore SEC001`
-on (or above) the flagged line — and report it with `docguard feedback` (a
-local-first record plus a one-click prefilled GitHub issue). Don't disable the
-whole validator for one false positive.
+Run `docguard explain <CODE>` first: it says what the finding means and which
+marker, if any, silences it. Inline `// docguard:ignore <CODE> — reason` on (or
+above) the flagged line works for the security codes, REF001, REF002 and SPK010;
+other codes have their own markers, listed in [Finding Codes](reference/findings.md),
+and some have none. Report it with `docguard feedback` (a local-first record
+plus a one-click prefilled GitHub issue). Don't disable the whole validator for
+one false positive; see [Troubleshooting](guides/troubleshooting.md).

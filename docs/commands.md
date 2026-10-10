@@ -1,3 +1,9 @@
+---
+title: Commands
+parent: Reference
+nav_order: 1
+---
+
 # Commands Reference
 
 DocGuard CLI — one pinned runtime dependency (`@babel/parser`, optional-load); Node.js 18+. See `package.json` for the current version.

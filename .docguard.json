@@ -89,7 +89,7 @@
       },
       {
         "name": "slash-commands",
-        "glob": "templates/commands/*.md",
+        "glob": "commands/docguard.*.md",
         "extract": "basename-no-ext",
         "docs": ["README.md"],
         "section": "Slash Commands"

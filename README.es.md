@@ -1,4 +1,4 @@
-<!-- docguard:translation source=README.md lang=es reviewed=2026-07-03 -->
+<!-- docguard:translation source=README.md lang=es reviewed=2026-10-10 -->
 <!-- El README en inglés es la fuente canónica. Esta es una versión curada — los
      números y listas volátiles viven solo en el original para que nunca diverjan del código. -->
 
@@ -81,6 +81,22 @@ DocGuard está diseñado para ser usado **por** agentes de IA, no solo por human
   duplicación manual, sin drift.
 
 Guía completa: [docs/ai-integration.md](docs/ai-integration.md) (en inglés).
+
+## Documentación
+
+Las guías completas están en inglés, en
+**[raccioly.github.io/docguard](https://raccioly.github.io/docguard/)**:
+
+| Si quieres | Guía |
+|:-----------|:-----|
+| Instalar con npm, PyPI, Homebrew, Docker, GitHub Action o Spec Kit | [Installation](https://raccioly.github.io/docguard/installation.html) |
+| Adoptar DocGuard en un repositorio que ya tiene código | [Existing Projects](https://raccioly.github.io/docguard/guides/existing-projects.html) |
+| Usarlo con GitHub Spec Kit | [Spec Kit](https://raccioly.github.io/docguard/guides/spec-kit.html) |
+| Bloquear pull requests en CI | [Continuous Integration](https://raccioly.github.io/docguard/guides/ci.html) |
+| Saber qué lenguajes y frameworks lee | [Languages and Frameworks](https://raccioly.github.io/docguard/reference/languages.html) |
+| Conectar tu agente de código | [Coding Agents](https://raccioly.github.io/docguard/reference/agents.html) |
+| Entender un código de hallazgo | [Finding Codes](https://raccioly.github.io/docguard/reference/findings.html) |
+| Resolver un problema | [Troubleshooting](https://raccioly.github.io/docguard/guides/troubleshooting.html) |
 
 ## Instalación permanente
 

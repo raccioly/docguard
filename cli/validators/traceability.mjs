@@ -151,7 +151,7 @@ export function validateTraceability(projectDir, config) {
   // documented by) a canonical doc. It is the user-facing escape hatch when
   // a project's directory layout doesn't match the built-in TRACE_MAP globs
   // (e.g. a route file outside any `routes/` / `app/api/` tree). The
-  // annotation is also shown in templates and templates/commands docs, so
+  // annotation is also shown in templates and the slash-command docs, so
   // users have been told it works — actually honoring it is the fix here.
   const docAnnotations = scanDocAnnotations(projectFiles, projectDir);
 

@@ -6064,7 +6064,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/docguard.mjs",
-            "line": 671
+            "line": 670
           },
           {
             "requirementId": "FR-006",
@@ -7802,7 +7802,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/docguard.mjs",
-            "line": 841
+            "line": 840
           },
           {
             "requirementId": "FR-001",
@@ -7812,17 +7812,17 @@
           {
             "requirementId": "FR-002",
             "file": "cli/docguard.mjs",
-            "line": 842
+            "line": 841
           },
           {
             "requirementId": "FR-003",
             "file": "cli/docguard.mjs",
-            "line": 843
+            "line": 842
           },
           {
             "requirementId": "FR-004",
             "file": "cli/docguard.mjs",
-            "line": 844
+            "line": 843
           },
           {
             "requirementId": "FR-005",
@@ -9785,7 +9785,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/docguard.mjs",
-            "line": 931
+            "line": 930
           },
           {
             "requirementId": "FR-011",
@@ -10441,6 +10441,133 @@
             "requirementId": "SC-004",
             "file": "tests/update-awareness.test.mjs",
             "line": 17
+          }
+        ]
+      }
+    },
+    {
+      "specId": "docguard.user-documentation",
+      "path": "specs/053-user-documentation/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.user-documentation#FR-001",
+          "docguard.user-documentation#FR-002",
+          "docguard.user-documentation#FR-003",
+          "docguard.user-documentation#FR-004",
+          "docguard.user-documentation#FR-005",
+          "docguard.user-documentation#FR-006",
+          "docguard.user-documentation#FR-007",
+          "docguard.user-documentation#FR-008",
+          "docguard.user-documentation#FR-009",
+          "docguard.user-documentation#SC-001",
+          "docguard.user-documentation#SC-002"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/053-user-documentation/spec.md",
+            "digest": "sha256:219e8bb8e103b5c30e6e475d048bbfcbd3606a38d2dcd4a6b42b806304441e44"
+          },
+          {
+            "path": "specs/053-user-documentation/plan.md",
+            "digest": "sha256:d1514d42af6a8587d7c877d99ae17488c93c6030297c8566604f557947c83be5"
+          },
+          {
+            "path": "specs/053-user-documentation/tasks.md",
+            "digest": "sha256:867532aa38d451124572f93f4c61d84eb963c956dad584c92d2ea527085ff7a6"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 9,
+          "total": 10
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-004",
+            "file": "tools/generate-docs-reference.mjs",
+            "line": 9
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/user-docs.test.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/user-docs.test.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/user-docs.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/user-docs.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/user-docs.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/user-docs.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/user-docs.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/user-docs.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "tests/user-docs.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/user-docs.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/user-docs.test.mjs",
+            "line": 14
           }
         ]
       }

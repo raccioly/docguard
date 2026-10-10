@@ -46,3 +46,8 @@ websec-out/
 websec-out/**
 graphify-out/
 graphify-out/**
+
+# Generated from cli/findings.mjs (npm run docs:reference; drift-tested by
+# tests/user-docs.test.mjs). Each code's help quotes the phrases its detector
+# looks for, so validating the page would report the detectors' own examples.
+docs/reference/findings.md

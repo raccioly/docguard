@@ -1,6 +1,6 @@
 # AI Agent Instructions — DocGuard
 
-<!-- docguard:last-reviewed 2026-09-30 -->
+<!-- docguard:last-reviewed 2026-10-10 -->
 
 > This project follows **Canonical-Driven Development (CDD)**.
 > Documentation is the source of truth. Read before coding.
@@ -55,9 +55,9 @@ code-truth sections), `score` (CDD maturity 0-100).
 `reconcile` (classify code/spec changes since a Git ref without rewriting intent),
 `review` (doc sections whose covered code changed; `--accept`, `--prune`, `--suggest`),
 `rules` (which instruction files each agent harness loads for a path; `--for <path>`),
-`explain` (explain a validator/warning), `verify` (declared evidence; `--semantic` claims), `feedback` (report false positives), `mcp` (MCP server; stdio or loopback HTTP), `report` (compliance bundle), `ci` (guard + score gate), `memory` (what DocGuard
+`explain` (explain a validator/warning), `verify` (declared evidence; `--semantic` claims), `feedback` (report false positives), `mcp` (MCP server; stdio or loopback HTTP; tool calls stay inside the served directory and each `--root`), `report` (compliance bundle), `ci` (guard + score gate), `memory` (what DocGuard
 remembers; `--pack [--symbols]` for the context pack), `trace` (requirements traceability; `--reverse`; `--owners` for the doc ownership map), `upgrade` (check npm for a newer
-release and migrate the config schema; `--apply --schema-only` stays offline), `watch` (live re-guard).
+release and migrate the config schema; `--apply` also refreshes out-of-date agent files and the registered Spec Kit extension; `--apply --schema-only` stays offline), `watch` (live re-guard).
 
 **`init --with <name>`** scaffolders — `agents`, `hooks`, `ci`, `badge`, `llms`,
 `publish` (also reachable as standalone deprecation aliases).
@@ -115,8 +115,8 @@ checks only the selected package unless it is explicitly rerun with `--dir`.
   their shipped outcomes are represented in current docs and `CHANGELOG.md`.
 - Run `docguard specs preflight` before drafting and `docguard specs preflight
   --path <spec>` before planning. Refresh `.docguard-specs.json` with `specs
-  --write`; never edit generated intent/evidence fields or treat bare requirement
-  IDs as completion proof.
+  --write` and record approval with `specs approve --id <id> --write`; never edit
+  generated intent/evidence fields or treat bare requirement IDs as completion proof.
 - Run `docguard reconcile --since <ref> --format json` before completing a
   changed feature. Only its mechanical write plan may run automatically;
   unsupported changes and possible regressions require review. `docguard specs
@@ -181,6 +181,12 @@ extensions/spec-kit-docguard/
   `npm run budget -- --base <base-worktree>` (specs/031-non-regression-budgets).
 - **PR-first workflow — no direct-to-main commits.** Create a branch (`git checkout -b <type>/<slug>`), push, `gh pr create`, let CI run, self-review, squash-merge. Tag releases only after merge on `main`. The only acceptable direct-to-main: typo fixes in comments or README badge URLs.
 - Never commit without updating CHANGELOG.md
+- Regenerate checked-in generated files in the same change; each has a drift test
+  that fails and names its command: `npm run llms` after editing a canonical or
+  optional doc (`llms.txt`, `llms-full.txt`), `npm run docs:reference` after
+  changing a finding code or a validator's display name (the docs site's
+  finding-code reference), and `npm run generate:precision-evidence` after
+  a reviewed benchmark baseline change (`cli/precision-evidence-data.mjs`).
 - If code deviates from docs, add `// DRIFT: reason`
 - Security rules in SECURITY.md are mandatory
 - Test requirements in TEST-SPEC.md must be met
