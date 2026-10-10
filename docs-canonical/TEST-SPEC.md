@@ -1,6 +1,6 @@
 # Test Specification
 
-<!-- docguard:version 1.4.0 -->
+<!-- docguard:version 1.4.1 -->
 <!-- docguard:status active -->
 <!-- docguard:last-reviewed 2026-10-10 -->
 
@@ -65,7 +65,7 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/commands/badge.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/commands/ci.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/commands/fix.mjs` | `tests/commands.test.mjs` | ✅ |
-| `cli/commands/watch.mjs` | `tests/commands.test.mjs` | ✅ pass |
+| `cli/commands/watch.mjs` | `tests/commands.test.mjs`, `tests/watch-reliability.test.mjs` | ✅ pass |
 | `cli/commands/publish.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/commands/trace.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/shared-requirements.mjs` | `tests/traceability.test.mjs`, `tests/archive.test.mjs` | ✅ |
@@ -133,6 +133,10 @@ of empty repeats driven only by generated lifecycle artifacts.
 
 > **Note**: `watch.mjs` is an interactive file-watcher (uses `fs.watch` + process signals). It is
 > covered by automated lifecycle tests, including filesystem watcher error handling.
+> `tests/watch-reliability.test.mjs` drives the 500 ms debounce with an injected fake clock
+> (`runtime.setTimeout` / `runtime.clearTimeout`) and captures console output, so its coalescing and
+> queued-check assertions never depend on wall-clock sleeps or machine load (spec 055). The spawn
+> tests in `tests/commands.test.mjs` cover real `fs.watch` events and real timers end to end.
 > Manual checks supplement platform-specific event behavior.
 
 ## Critical CLI Flows
@@ -157,6 +161,7 @@ of empty repeats driven only by generated lifecycle artifacts.
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 1.4.1 | 2026-10-10 | DocGuard Team | Map `watch.mjs` to its deterministic reliability tests (spec 055) |
 | 1.4.0 | 2026-10-10 | DocGuard Team | Freshness review for specs 038–053: map the modules those specs added or changed to their tests; record the 360-second CI runtime budget (spec 051) |
 | 1.3.0 | 2026-09-30 | DocGuard Team | Freshness review: map the MCP server and the compact guard response to their tests; describe the frozen v2 agent-context protocol beside v1 |
 | 1.2.0 | 2026-09-29 | DocGuard Team | Freshness review: map the modules specs 014–026 added to their tests, and correct the benchmark case count |

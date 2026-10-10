@@ -1399,7 +1399,7 @@ Exclude `node_modules`, environment values, generated build output, and private 
 
 # Test Specification
 
-<!-- docguard:version 1.4.0 -->
+<!-- docguard:version 1.4.1 -->
 <!-- docguard:status active -->
 <!-- docguard:last-reviewed 2026-10-10 -->
 
@@ -1464,7 +1464,7 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/commands/badge.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/commands/ci.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/commands/fix.mjs` | `tests/commands.test.mjs` | ✅ |
-| `cli/commands/watch.mjs` | `tests/commands.test.mjs` | ✅ pass |
+| `cli/commands/watch.mjs` | `tests/commands.test.mjs`, `tests/watch-reliability.test.mjs` | ✅ pass |
 | `cli/commands/publish.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/commands/trace.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/shared-requirements.mjs` | `tests/traceability.test.mjs`, `tests/archive.test.mjs` | ✅ |
@@ -1532,6 +1532,10 @@ of empty repeats driven only by generated lifecycle artifacts.
 
 > **Note**: `watch.mjs` is an interactive file-watcher (uses `fs.watch` + process signals). It is
 > covered by automated lifecycle tests, including filesystem watcher error handling.
+> `tests/watch-reliability.test.mjs` drives the 500 ms debounce with an injected fake clock
+> (`runtime.setTimeout` / `runtime.clearTimeout`) and captures console output, so its coalescing and
+> queued-check assertions never depend on wall-clock sleeps or machine load (spec 055). The spawn
+> tests in `tests/commands.test.mjs` cover real `fs.watch` events and real timers end to end.
 > Manual checks supplement platform-specific event behavior.
 
 ## Critical CLI Flows
@@ -1556,6 +1560,7 @@ of empty repeats driven only by generated lifecycle artifacts.
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 1.4.1 | 2026-10-10 | DocGuard Team | Map `watch.mjs` to its deterministic reliability tests (spec 055) |
 | 1.4.0 | 2026-10-10 | DocGuard Team | Freshness review for specs 038–053: map the modules those specs added or changed to their tests; record the 360-second CI runtime budget (spec 051) |
 | 1.3.0 | 2026-09-30 | DocGuard Team | Freshness review: map the MCP server and the compact guard response to their tests; describe the frozen v2 agent-context protocol beside v1 |
 | 1.2.0 | 2026-09-29 | DocGuard Team | Freshness review: map the modules specs 014–026 added to their tests, and correct the benchmark case count |
@@ -1755,6 +1760,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   what DocGuard installs and does (`specs/053-user-documentation` FR-009).
 
 ### Fixed
+
+- **The watch reliability tests no longer depend on wall-clock timing**
+  (`specs/055-watch-deterministic`, #523). `tests/watch-reliability.test.mjs`
+  slept 300–600 ms around the 500 ms debounce and let the watcher print to
+  stdout, which the test runner also reads its own messages from; it failed
+  intermittently in full local runs on a loaded machine. The tests now drive
+  the debounce with a fake clock through two new optional `runWatch` runtime
+  hooks (`setTimeout`, `clearTimeout`, defaulting to the global timers),
+  observe check completion by draining queued promise callbacks, and capture
+  console output. They assert the coalescing at the exact window edge, and a
+  new case covers a save that lands while a queued check's window is still
+  open. The file runs in about 0.1 s instead of 4 s. `docguard watch` itself
+  is unchanged.
 
 - **Defects found while documenting DocGuard** (`specs/054-docs-verification-findings`).
   Running every documented flow on scratch projects turned up:
@@ -2092,21 +2110,8 @@ Behaviour changes:
   - **`STR004`**: a chain is over `agentInstructions.maxBytes`.
   - **Existing debt**: record a per-chain `agentInstructions.allowances` entry.
     The chain may then shrink, but any growth is a reviewed configuration
-    change. The finding baseline cannot serve this purpose, because it
-    normalizes the digits in messages.
-  - **`STR005`**: an allowance has at least 1 KiB of slack and should be
-    lowered.
 
-  This repository's chain is 13,222 bytes.
-
-- **Colliding spec numbers are reported (`SPK012`; #462,
-  `specs/017-agent-instruction-budget`).** Parallel agents each pick
-  "the next number" from their own checkout, which produces `specs/016-a` and
-  `specs/016-b`. After that, "spec 016" is ambiguous. open-mercato abandoned
-  numbering over exactly this problem. Timestamp-numbered feature directories
-  never collide.
-
-<!-- truncated: 4798 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 4811 more lines — read CHANGELOG.md directly -->
 
 ---
 
