@@ -327,7 +327,7 @@ follow the policy, and completion is not deadlocked.
 
 ## Phase 11: US9, StrictDoc and OpenFastTrace importers (P3, PR 9)
 
-- [ ] T067 [P] [US9] Importer fixture and `tests/requirement-anchors-import.test.mjs`:
+- [x] T067 [P] [US9] Importer fixture (built in a temporary git repository) and `tests/requirement-anchors-import.test.mjs`:
   - ignored when not configured;
   - 2 mapped anchors;
   - an unmapped ID gives ANC007;
@@ -335,8 +335,8 @@ follow the policy, and completion is not deadlocked.
   - an OFT revision mismatch gives ANC001 with `cause: "oft-outdated"`.
 
   (FR-038)
-- [ ] T068 [US9] Add the StrictDoc and OFT recognizers and the `anchors.importMap` resolution to `cli/scanners/anchor-tags.mjs`, read-only (FR-038)
-- [ ] T069 [US9] Docs (`docs/configuration.md` import mapping). Close story 9 with the claim `ANCHOR-IMPORTERS-READ-ONLY`, `CHANGELOG.md` and `specs --write`
+- [x] T068 [US9] Add the StrictDoc and OFT recognizers and the `anchors.importMap` resolution to `cli/scanners/anchor-tags.mjs`, read-only (FR-038)
+- [x] T069 [US9] Docs (`docs/configuration.md` import mapping). Close story 9 with the claim `ANCHOR-IMPORTERS-READ-ONLY`, `CHANGELOG.md` and `specs --write`
 
 ## Phase 12: US10, provably deterministic fingerprints (P3, PR 10)
 

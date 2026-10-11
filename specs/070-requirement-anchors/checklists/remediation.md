@@ -54,6 +54,8 @@ named test or recorded measurement that fails without it).
 | `trace --matrix` takes `--out`, with `--output` as an alias | `report --out` is the CLI's existing flag for writing an artifact | contracts/trace-matrix.md |
 | ReqIF times are always the epoch (no `--timestamp`) | A real time would change every export and defeat byte-identical runs; DOORS and Polarion import without it | contracts/trace-matrix.md |
 | The formula-injection prefix also covers a leading tab or carriage return | OWASP's CSV-injection list includes both | contracts/trace-matrix.md |
+| The import settings are part of the anchor cache identity | The cache is keyed by file bytes; the same bytes mean different anchors under a different import map, so without it a remap would be answered stale | contracts/tag-grammar.md, requirement-anchors-import test |
+| An OFT outdated tag is a suspect even with no review in the lock | OpenFastTrace's own "outdated" needs no review; the mismatch is between the tag and the mapping | contracts/tag-grammar.md |
 
 ## Release gate
 

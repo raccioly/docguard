@@ -48,7 +48,7 @@ It targets development teams and AI coding agents that need to maintain document
 | **Documentation site and generated references** | `docs/` is the GitHub Pages site (Just the Docs remote theme in `docs/_config.yml`, which Pages builds itself; no build step or dependency in the repository). `npm run docs:reference` renders `docs/reference/findings.md` from the `CODES` and `BLOCKER_CODES` registries and `explain`'s `DISPLAY_NAMES`; `npm run llms` renders `llms.txt`/`llms-full.txt` | `docs/`, `tools/generate-docs-reference.mjs`, `tools/generate-llms.mjs` | `tests/user-docs.test.mjs` and `tests/llms-bundle-drift.test.mjs` fail on a stale generated file and name the command. `docs/` ships in the npm package (PDFs excluded); `tools/` does not (specs/053-user-documentation) |
 | **Non-regression budgets** | Compares a PR with its base on one runner: interleaved guard wall time, self-guard error findings, agent-facing output bytes, packed package weight and runtime dependencies, against the ratios and floors in `budgets.json`; `Budget-Exempt` waives one metric with a reason | `tools/budget.mjs`, `budgets.json` | CI `budget` job; development tooling, not shipped in the npm package |
 | **Doc dependency lock** | A doc section declares the code it describes (`covers=` on its `docguard:section` marker); `review --accept` records AST or content fingerprints in `.docguard-doc-lock.json`; the Doc-Dependency validator reports a covered symbol whose code changed (DLK001), a dependency that no longer resolves, an unaccepted or orphaned entry, or an unreadable lock | `cli/scanners/doc-deps.mjs`, `cli/scanners/fingerprint.mjs`, `cli/scanners/py-anchors.mjs`, `cli/validators/doc-dependency.mjs`, `cli/commands/review.mjs` | Opt-in by declaration; only `review` writes the lock; runs in `--changed-only` pre-commit mode |
-| **Requirement anchors** | Each `@implements`/`@req` tag anchors to the code under it (file, qualified symbol, statement or route) through Babel, one batched `python3` run, or the self-checking pattern lexer; each link carries an exact, a floor and a requirement fingerprint (`dg1:`). `fingerprint.mjs` holds both the doc lock's `doclock-v0` algorithm and the anchors' `v1`. A link whose code changed lists the tests citing its requirement; `testguard-evidence.mjs` reads saved TestGuard evidence to mark one re-verified. `--orphans` lists untagged exported units under governed paths, and dispositions record why one has no requirement. `trace --matrix` exports requirement → anchor → test as CSV or ReqIF 1.2 through `cli/writers/trace-matrix.mjs` | `cli/scanners/anchor-tags.mjs`, `cli/scanners/anchors.mjs`, `cli/scanners/pattern-lexer.mjs`, `cli/scanners/anchor-cache.mjs`, `cli/scanners/requirement-docs.mjs`, `cli/scanners/testguard-evidence.mjs`, `cli/validators/requirement-anchors.mjs`, `cli/commands/anchors.mjs`, `cli/writers/trace-matrix.mjs`, `cli/commands/trace.mjs` | Opt-in (`.docguard-anchor-lock.jsonl` or `anchors.enabled`); `anchors` lists in any project; per-file cache in `.docguard/`, untrusted in CI or when tracked |
+| **Requirement anchors** | Each `@implements`/`@req` tag anchors to the code under it (file, qualified symbol, statement or route) through Babel, one batched `python3` run, or the self-checking pattern lexer; each link carries an exact, a floor and a requirement fingerprint (`dg1:`). `fingerprint.mjs` holds both the doc lock's `doclock-v0` algorithm and the anchors' `v1`. A link whose code changed lists the tests citing its requirement; `testguard-evidence.mjs` reads saved TestGuard evidence to mark one re-verified. `--orphans` lists untagged exported units under governed paths, and dispositions record why one has no requirement. `trace --matrix` exports requirement → anchor → test as CSV or ReqIF 1.2 through `cli/writers/trace-matrix.mjs`. With `anchors.import`, StrictDoc and OpenFastTrace tags are read, never written | `cli/scanners/anchor-tags.mjs`, `cli/scanners/anchors.mjs`, `cli/scanners/pattern-lexer.mjs`, `cli/scanners/anchor-cache.mjs`, `cli/scanners/requirement-docs.mjs`, `cli/scanners/testguard-evidence.mjs`, `cli/validators/requirement-anchors.mjs`, `cli/commands/anchors.mjs`, `cli/writers/trace-matrix.mjs`, `cli/commands/trace.mjs` | Opt-in (`.docguard-anchor-lock.jsonl` or `anchors.enabled`); `anchors` lists in any project; per-file cache in `.docguard/`, untrusted in CI or when tracked |
 | **Version-age note** | Reads the running release's date from the shipped `CHANGELOG.md` heading for exactly its version; when it is more than 14 days old, the guard text footer, the MCP `initialize` instructions and the context pack say a newer version may exist and name `docguard upgrade` | `cli/release-age.mjs`, `cli/commands/guard.mjs`, `cli/commands/mcp.mjs`, `cli/commands/memory.mjs` | No network call; silent when unsure (no CHANGELOG, no heading, bad date, clock before release), in a source checkout, with `DOCGUARD_NO_UPDATE_HINT=1`, and in the guard footer under `CI`; never in JSON, SARIF, JUnit or MCP tool results |
 | **Compact guard response** | Projects the full guard result so each fact appears once: findings once, each code's agent-facing evidence once, validator status and counts, each standard applicability reason once; the MCP guard tool's default | `cli/shared-guard-json.mjs`, `cli/validator-coverage.mjs` (`STANDARD_APPLICABILITY_REASONS`), `cli/commands/mcp.mjs`, `cli/commands/guard.mjs` (`--compact`) | A projection, never a recomputation; `detail: "full"` and the CLI's default JSON keep the complete contract |
 | **MCP project confinement** | The MCP server serves its `--dir` (else its working directory) plus each `--root`, fixed at startup. A tool call's `projectDir` resolves against the served directory with symlinks followed and must land inside a served root before anything under it is read | `cli/commands/mcp.mjs` (`isWithinRoot`) | Same check over stdio and HTTP; a refused path gets the same error whether or not it exists; a client cannot widen the roots (specs/041-mcp-project-confinement) |
@@ -1615,6 +1615,7 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | Anchor test chain; TestGuard evidence adapter (every re-verified, needs-reverification and inconclusive cause, path and revision safety) | `tests/requirement-anchors-testchain.test.mjs` | ✅ |
 | Anchor orphans, dispositions and granularity in `score`/`trace` | `tests/requirement-anchors-orphans.test.mjs` | ✅ |
 | Trace-matrix export: CSV columns and order, RFC 4180 quoting, formula injection, ReqIF 1.2 structure and escaping, byte-identical runs, `--out` | `tests/trace-matrix.test.mjs` | ✅ |
+| StrictDoc and OpenFastTrace importers: opt-in, mapping, ANC007/ANC006, OFT outdated, cache identity, never written | `tests/requirement-anchors-import.test.mjs` | ✅ |
 | `cli/shared-requirements.mjs` (requirement `block`), `cli/scanners/requirement-docs.mjs` | `tests/shared-requirements-block.test.mjs`, `tests/traceability.test.mjs` | ✅ |
 | `tools/budget.mjs` (non-regression budgets) | `tests/budget.test.mjs` | ✅ |
 | `cli/commands/mcp.mjs` (MCP server over stdio and loopback HTTP; served-directory confinement) | `tests/mcp.test.mjs`, `tests/mcp-http.test.mjs`, `tests/mcp-doc-tools.test.mjs`, `tests/mcp-project-confinement.test.mjs` | ✅ |
@@ -2002,6 +2003,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     identifiers and a fixed creation time, so two runs give the same bytes.
   - **Output.** `--spec` keeps one spec. `--out` (or `--output`) writes
     through the safe write, which backs up an existing file.
+- **Requirement anchors read StrictDoc and OpenFastTrace tags**
+  (`specs/070-requirement-anchors`, user story 9).
+  - **Opt in.** `anchors.import: ["strictdoc", "openfasttrace"]` reads
+    `@relation(REQ-1, scope=function)` and `[impl->dsn~name~3]` tags as
+    anchors to the requirements `anchors.importMap` names, so existing tags
+    gain content-based suspect detection without being rewritten.
+  - **Findings.** An unmapped ID is ANC007. Native and imported tags for
+    different requirements on one symbol are ANC006. An OpenFastTrace tag
+    behind the mapped revision is an outdated, code-side suspect (ANC001,
+    `cause: "oft-outdated"`).
+  - **Cache.** The import settings are part of the anchor cache's identity,
+    so editing the map is never answered from the cache.
 
 ### Changed
 
@@ -2238,20 +2251,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     is ignored, as Pages ignores it; `_routes.json` include/exclude rules
     drop the Functions requests never reach.
   - koa-router `redirect('/from', to)` is a route, `ALL /from`.
-  - Express and Fastify: a route path that is not literal (a template with a
-    runtime value, an imported constant, a regular expression) is no longer
-    reported as `/x/:param`; it is recorded and makes the API-surface check
-    `partial`. Literal routes are unchanged.
-  - Express mounts: a `use()` prefix built from same-file or imported
-    `const` strings is resolved; one that cannot be read (`config.apiPrefix`,
-    `` `${process.env.BASE}/v1` ``) no longer leaves the mounted router's
-    routes at the root. They are omitted and the prefix is recorded.
-  - Imported constants: Express, Fastify, Koa, Hono and itty-router route
-    paths and prefixes built from `const` strings another project file
-    exports resolve, through `import` (named or namespace) and CommonJS
-    (`const { PREFIX } = require('./config')`, `cfg.PREFIX` from
 
-<!-- truncated: 5460 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 5472 more lines — read CHANGELOG.md directly -->
 
 ---
 

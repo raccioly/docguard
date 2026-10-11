@@ -13,8 +13,8 @@
  * exact code fingerprint, the pattern-tier floor, and the requirement block's
  * fingerprint (FR-011, FR-014).
  *
- * Cost (FR-041): only files whose text mentions `@implements` or `@req` are
- * read past a substring check, each is parsed at most once, every Python file
+ * Cost (FR-041): only files whose text mentions `@implements` or `@req` (or
+ * an enabled importer's syntax, FR-038) are read past a substring check, each is parsed at most once, every Python file
  * goes through one batched `python3` run, and a per-file cache keyed by the
  * file's bytes answers for unchanged files.
  *
@@ -33,7 +33,7 @@ import { fileContentAtRev, listTrackedFiles } from '../shared-git.mjs';
 import { requirementPatterns } from '../shared-requirements.mjs';
 import { openAnchorCache, contentSha } from './anchor-cache.mjs';
 import { ANCHOR_LOCK_PATH, GITATTRIBUTES_LINE, gitattributesDeclaresUnion, readAnchorLock } from './anchor-lock.mjs';
-import { FILE_TIER, orphanCandidates, pythonCandidateLines, resolveFileAnchors } from './anchor-tags.mjs';
+import { FILE_TIER, importSettings, orphanCandidates, pythonCandidateLines, resolveFileAnchors, tagHint } from './anchor-tags.mjs';
 import { BABEL_TIER, V1_PREFIX, dg1 } from './fingerprint.mjs';
 import { PATTERN_ALGO, languageOf } from './pattern-lexer.mjs';
 import { pythonBatch, pythonTier } from './py-anchors.mjs';
@@ -83,7 +83,6 @@ export function isFailingProblem(problem, policy) {
     && problem.reviewedState === 'reviewed';
 }
 const MAX_FILE_BYTES = 2 * 1024 * 1024;
-const TAG_HINT = /@(?:implements|req)\b/;
 const SOURCE_EXT = /\.(?:[cm]?[jt]sx?|py|go|rs|java|kt|kts|rb|php|sh|cs|swift|c|h|cc|cpp|cxx|hh|hpp|hxx|ya?ml)$/i;
 
 /** Percent-encode the two characters that would break a `|`-joined key. */
@@ -191,7 +190,11 @@ function requirementIndex(projectDir, config, patterns) {
 export function computeLinks(projectDir, config = {}, options = {}) {
   const patterns = requirementPatterns(config);
   const pyTier = pythonTier();
-  const identity = `anchors-v${ANCHOR_ALGO}|${V1_PREFIX}|pattern@${PATTERN_ALGO}|${BABEL_TIER}|${pyTier || 'no-python'}`;
+  // FR-038: importer settings change what a file's bytes mean, so they are part of the cache identity.
+  const importers = importSettings(config);
+  const hint = tagHint(importers);
+  const importIdentity = importers ? `|import:${dg1(JSON.stringify([[...importers.kinds].sort(), Object.entries(importers.map).sort(([a], [b]) => (a < b ? -1 : 1))]))}` : '';
+  const identity = `anchors-v${ANCHOR_ALGO}|${V1_PREFIX}|pattern@${PATTERN_ALGO}|${BABEL_TIER}|${pyTier || 'no-python'}${importIdentity}`;
   const cache = openAnchorCache(projectDir, { identity, noCache: options.noCache, env: options.env });
   const index = requirementIndex(projectDir, config, patterns);
 
@@ -206,7 +209,7 @@ export function computeLinks(projectDir, config = {}, options = {}) {
     const bytes = atRevision ? atRevision(rel) : readSource(projectDir, rel);
     if (!bytes) continue;
     const content = bytes.toString('utf8');
-    if (!TAG_HINT.test(content)) continue;
+    if (!hint.test(content)) continue;
     sources.push({ rel, content, sha: contentSha(bytes) });
   }
 
@@ -220,7 +223,7 @@ export function computeLinks(projectDir, config = {}, options = {}) {
   }
   let python = { ok: true, files: {} };
   if (pyMisses.length && pyTier) {
-    python = pythonBatch(pyMisses.map(s => ({ key: s.rel, content: s.content, outline: true, lines: pythonCandidateLines(s.content) })));
+    python = pythonBatch(pyMisses.map(s => ({ key: s.rel, content: s.content, outline: true, lines: pythonCandidateLines(s.content, hint) })));
   }
   const pythonReason = !pyTier ? 'python3 is unavailable' : (python.ok ? null : python.reason);
   for (const source of sources) {
@@ -229,6 +232,7 @@ export function computeLinks(projectDir, config = {}, options = {}) {
       python: python.ok ? python.files?.[source.rel] || null : null,
       pythonTier: python.ok ? pyTier : null,
       pythonReason,
+      importers,
     });
     resolved.set(source.rel, result);
     if (!result.degraded) cache.set(source.rel, source.sha, result);
@@ -240,6 +244,7 @@ export function computeLinks(projectDir, config = {}, options = {}) {
   const problems = [];
   const files = [];
   const seen = new Set();
+  const targets = new Map();
   for (const source of sources) {
     const result = resolved.get(source.rel);
     files.push({ path: source.rel, sha: source.sha, tier: result.tier, confidence: result.confidence, degraded: result.degraded || null, error: result.error || null });
@@ -249,6 +254,10 @@ export function computeLinks(projectDir, config = {}, options = {}) {
       const tag = a.tag;
       for (const problem of a.problems || []) {
         problems.push({ code: 'ANC006', file: source.rel, line: tag.line, tier: a.tier, confidence: a.confidence, message: `@${tag.verb} ${tag.qualifier ? `${tag.qualifier}#` : ''}${tag.id} ${problem}` });
+      }
+      if (tag.unmapped) {
+        problems.push({ code: 'ANC007', file: source.rel, line: tag.line, tier: a.tier, confidence: a.confidence, message: `@${tag.verb} ${tag.foreign.ref} at ${source.rel}:${tag.line} ${tag.unmapped}` });
+        continue;
       }
       const req = resolveRequirement(tag, index);
       if (req.retired) {
@@ -281,14 +290,27 @@ export function computeLinks(projectDir, config = {}, options = {}) {
         requirement: req.identity, specId: req.specId, file: source.rel, anchor, scope: a.scope,
         tier: a.tier, confidence: a.confidence, startLine: a.startLine, endLine: a.endLine ?? null,
         tagLine: tag.line, verb: tag.verb, exact: a.exact, floor: a.floor, req: req.fingerprint,
+        ...(tag.foreign ? { imported: { from: tag.foreign.source, ref: tag.foreign.ref, ...(tag.foreign.outdated ? { outdated: { revision: tag.foreign.revision, expected: tag.foreign.expected } } : {}) } } : {}),
       };
       link.key = linkKey(link);
+      // A symbol tagged natively and through an importer for different requirements is ambiguous (FR-038).
+      const target = `${link.file}\u0000${link.anchor}\u0000${link.scope}`;
+      const origins = targets.get(target) || { native: new Set(), foreign: new Set(), line: tag.line, tier: a.tier, confidence: a.confidence, where: describeLink(link).split(' → ')[1] };
+      (tag.foreign ? origins.foreign : origins.native).add(link.requirement);
+      targets.set(target, origins);
       if (seen.has(link.key)) continue;
       seen.add(link.key);
       links.push(link);
     }
   }
   links.sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
+  for (const [target, o] of targets) {
+    if (!o.native.size || !o.foreign.size) continue;
+    const same = o.native.size === o.foreign.size && [...o.native].every(r => o.foreign.has(r));
+    if (same) continue;
+    problems.push({ code: 'ANC006', file: target.split('\u0000')[0], line: o.line, tier: o.tier, confidence: o.confidence,
+      message: `${o.where} carries native tags for ${[...o.native].sort().join(', ')} and imported tags for ${[...o.foreign].sort().join(', ')}; keep one tagging system per symbol, or make them name the same requirements` });
+  }
 
   // 4. Degraded tiers and an untrusted cache, aggregated (Constitution IX).
   const degraded = new Map();
@@ -372,6 +394,14 @@ export function computeAnchorStatus(projectDir, config = {}, options = {}) {
     }
     if (conflicted.has(link.key)) return { ...link, state: 'suspect', side: 'conflict' };
     const entry = lock.links.get(link.key);
+    // FR-038: OpenFastTrace's "outdated": the tag covers an older revision than the mapping expects.
+    if (link.imported?.outdated) {
+      const { revision, expected } = link.imported.outdated;
+      problems.push({ code: 'ANC001', file: link.file, line: link.startLine || link.tagLine, tier: link.tier, confidence: 'high', key: link.key, requirement: link.requirement,
+        scope: link.scope, reviewedState: entry?.state || null, revision: entry?.revision || null, cause: 'oft-outdated',
+        message: `${describeLink(link)} is outdated: its OpenFastTrace tag covers revision ${revision}, and anchors.importMap expects ${expected}` });
+      return { ...link, ...(entry ? { entry, reviewedState: entry.state } : {}), state: 'suspect', side: 'code', cause: 'oft-outdated' };
+    }
     if (!entry) {
       if (lock.exists) problems.push({ code: 'ANC004', file: link.file, line: link.tagLine, tier: link.tier, confidence: 'high', message: `${describeLink(link)} has no review yet` });
       return { ...link, state: 'unreviewed' };

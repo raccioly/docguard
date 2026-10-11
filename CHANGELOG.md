@@ -150,6 +150,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     identifiers and a fixed creation time, so two runs give the same bytes.
   - **Output.** `--spec` keeps one spec. `--out` (or `--output`) writes
     through the safe write, which backs up an existing file.
+- **Requirement anchors read StrictDoc and OpenFastTrace tags**
+  (`specs/070-requirement-anchors`, user story 9).
+  - **Opt in.** `anchors.import: ["strictdoc", "openfasttrace"]` reads
+    `@relation(REQ-1, scope=function)` and `[impl->dsn~name~3]` tags as
+    anchors to the requirements `anchors.importMap` names, so existing tags
+    gain content-based suspect detection without being rewritten.
+  - **Findings.** An unmapped ID is ANC007. Native and imported tags for
+    different requirements on one symbol are ANC006. An OpenFastTrace tag
+    behind the mapped revision is an outdated, code-side suspect (ANC001,
+    `cause: "oft-outdated"`).
+  - **Cache.** The import settings are part of the anchor cache's identity,
+    so editing the map is never answered from the cache.
 
 ### Changed
 

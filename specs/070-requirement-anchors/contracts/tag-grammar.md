@@ -45,4 +45,13 @@ below) produces ANC006. The tag still counts as file-scope evidence (FR-006).
 
 Foreign tags are never written. An unmapped ID produces ANC007. A symbol that
 carries a native tag and a foreign tag for different requirements produces
-ANC006.
+ANC006; the same requirements through both systems are not a problem.
+
+- **Placement.** Foreign tags anchor by position, like native ones.
+  - StrictDoc `range_start` anchors the statement after it, and `range_end`
+    is ignored, because a range is not a scope DocGuard anchors.
+  - An unknown StrictDoc scope is read by position, with ANC006.
+- **OpenFastTrace form.** The covering item may carry its own ID
+  (`[impl~x~1->req~y~2]`). The `>>impl,test` suffix is accepted and not used.
+- **Opt-in.** Only enabled importers are read. Their syntax joins the
+  file prefilter, the Python candidate lines and the anchor cache's identity.

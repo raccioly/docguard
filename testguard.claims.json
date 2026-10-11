@@ -2754,6 +2754,120 @@
       ]
     },
     {
+      "id": "ANCHOR-IMPORTERS-READ-ONLY",
+      "statement": "With anchors.import, StrictDoc @relation and OpenFastTrace [impl->...] tags anchor by position to the requirement anchors.importMap names, and are plain text without it; an unmapped ID is ANC007, native and imported tags for different requirements on one symbol are ANC006, an OFT tag behind the mapped revision is an outdated code-side suspect, the import settings are part of the cache identity, and foreign tags are never written.",
+      "source": {
+        "kind": "spec",
+        "ref": "req:docguard.requirement-anchors#FR-038"
+      },
+      "severity": "medium",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (spec 070, user story 9)"
+      },
+      "defendedBy": [
+        "tests/requirement-anchors-import.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "Every importer is on when anchors.import is unset.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchor-tags.mjs",
+          "find": "  if (!kinds.size) return null;",
+          "replace": "  if (!kinds.size) return { kinds: new Set(IMPORTERS), map: {} };",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 9)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "An unmapped ID silently makes no link and no finding.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "        problems.push({ code: 'ANC007', file: source.rel, line: tag.line, tier: a.tier, confidence: a.confidence, message: `@${tag.verb} ${tag.foreign.ref}",
+          "replace": "        void ({ code: 'ANC007', file: source.rel, line: tag.line, tier: a.tier, confidence: a.confidence, message: `@${tag.verb} ${tag.foreign.ref}",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 9)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "Native and imported tags for different requirements pass silently.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "    if (!o.native.size || !o.foreign.size) continue;",
+          "replace": "    continue;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 9)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "An OFT tag behind the mapped revision is not outdated.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchor-tags.mjs",
+          "find": "  const outdated = source === 'openfasttrace' && expected !== null && revision !== expected;",
+          "replace": "  const outdated = false;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 9)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "The import map is not part of the cache identity.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "${pyTier || 'no-python'}${importIdentity}`;",
+          "replace": "${pyTier || 'no-python'}`;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 9)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "A file with only imported tags is skipped by the prefilter.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "    if (!hint.test(content)) continue;",
+          "replace": "    if (!/@(?:implements|req)\\b/.test(content)) continue;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 9)"
+          }
+        },
+        {
+          "id": "F7",
+          "description": "StrictDoc scope=file anchors the symbol below instead of the file.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchor-tags.mjs",
+          "find": "const STRICTDOC_SCOPE = { file: 'file',",
+          "replace": "const STRICTDOC_SCOPE = { file: null,",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 9)"
+          }
+        },
+        {
+          "id": "F8",
+          "description": "Only the first enabled importer is read.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchor-tags.mjs",
+          "find": "  if (importers.kinds.has('openfasttrace')) {\n    for (const m of text.matchAll(OFT_RE)) {",
+          "replace": "  if (importers.kinds.has('openfasttrace') && !importers.kinds.has('strictdoc')) {\n    for (const m of text.matchAll(OFT_RE)) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 9)"
+          }
+        }
+      ]
+    },
+    {
       "id": "METRICS-VALIDATOR-COUNT-IS-SHIPPED",
       "statement": "A documented DocGuard validator count is checked against the validator modules actually shipped, whatever a project enables.",
       "source": {

@@ -665,6 +665,34 @@ file path instead gets the `req:` form to write. DocGuard reads
 `anchors.testguard.claims` (default `testguard.claims.json`). It never runs a
 test or TestGuard, and guard never reads the chain.
 
+**StrictDoc and OpenFastTrace tags.** With `anchors.import`, a project that
+already tags code for StrictDoc or OpenFastTrace keeps its tags:
+
+```json
+"anchors": {
+  "import": ["strictdoc", "openfasttrace"],
+  "importMap": {
+    "strictdoc:REQ-1": "acme.billing#FR-001",
+    "oft:dsn~refund": { "requirement": "acme.billing#FR-002", "revision": 2 }
+  }
+}
+```
+
+How imported tags are read:
+- **Placement.** `@relation(REQ-1, scope=function)` and `[impl->dsn~refund~2]`
+  anchor by position like native tags. StrictDoc's `scope=file`, `class`,
+  `function` and `line` choose file, symbol or statement scope; `range_start`
+  anchors the statement after it, and `range_end` is ignored.
+- **Unmapped IDs.** An ID with no `importMap` entry is **ANC007**.
+- **Mixed tagging.** A symbol tagged natively and through an importer for
+  different requirements is **ANC006**.
+- **Outdated tags.** An OpenFastTrace tag behind the mapped revision is
+  reported **outdated**: a code-side suspect, ANC001 with
+  `cause: "oft-outdated"`.
+
+Fingerprints, reviews and the test chain then work as for native tags.
+DocGuard never writes foreign tags.
+
 **Code without a requirement.** `docguard anchors --orphans` lists each
 exported or top-level unit that no tag anchors, once, ordered by file and line:
 functions, classes, structs, enums and top-level methods. Type-only

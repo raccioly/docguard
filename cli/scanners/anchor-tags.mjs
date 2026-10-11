@@ -71,7 +71,7 @@ function splitRequirement(token, patterns) {
  * a position inside `text` back to its line.
  * @returns {{ verb, id, qualifier, line, extra: string[], scope: string|null, problems: string[] }[]}
  */
-export function tagsInComment(text, line, patterns) {
+export function tagsInComment(text, line, patterns, importers = null) {
   const tags = [];
   TAG_RE.lastIndex = 0;
   let m;
@@ -93,6 +93,79 @@ export function tagsInComment(text, line, patterns) {
       line: line + (text.slice(0, m.index).match(/\n/g) || []).length,
       extra, scope, invalidScopeBlock: m[4] !== undefined && scope === null, problems,
     });
+  }
+  if (importers) tags.push(...foreignTags(text, line, patterns, importers));
+  return tags;
+}
+
+/* ───────────────────────────── Importers (US9, FR-038) ───────────────────────────── */
+
+export const IMPORTERS = Object.freeze(['strictdoc', 'openfasttrace']);
+// StrictDoc: @relation(REQ-1, scope=function) or @relation{REQ-1, scope=function}.
+const STRICTDOC_RE = /@relation[ \t]*[({][ \t]*([^\s,(){}]+)((?:[ \t]*,[ \t]*\w+[ \t]*=[ \t]*[\w-]+)*)[ \t]*[)}]/g;
+// OpenFastTrace: [impl->dsn~name~3], [impl~x~1->req~y~2>>impl,test].
+const OFT_RE = /\[[ \t]*(\w+(?:~[\w.-]+~\d+)?)[ \t]*->[ \t]*(\w+)~([\w.-]+)~(\d+)[ \t]*(?:>>[ \t]*[\w, \t]+)?\]/g;
+const STRICTDOC_SCOPE = { file: 'file', class: 'symbol', function: 'symbol', line: 'statement', range_start: 'statement' };
+
+/**
+ * `anchors.import` and `anchors.importMap`, normalized, or null when no
+ * importer is enabled (then foreign syntax is plain text).
+ * @implements docguard.requirement-anchors#FR-038
+ */
+export function importSettings(config = {}) {
+  const kinds = new Set((Array.isArray(config.anchors?.import) ? config.anchors.import : []).filter(k => IMPORTERS.includes(k)));
+  if (!kinds.size) return null;
+  const raw = config.anchors?.importMap;
+  const map = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
+  return { kinds, map };
+}
+
+/** The prefilter for a file worth reading: native tags, plus any enabled foreign syntax. */
+export function tagHint(importers) {
+  const parts = ['@(?:implements|req)\\b'];
+  if (importers?.kinds.has('strictdoc')) parts.push('@relation[ \\t]*[({]');
+  if (importers?.kinds.has('openfasttrace')) parts.push('\\[[ \\t]*\\w+(?:~[\\w.-]+~\\d+)?[ \\t]*->');
+  return new RegExp(parts.join('|'));
+}
+
+function mappedTag({ verb, source, ref, key, line, scope, problems, revision }, patterns, importers) {
+  const value = Object.hasOwn(importers.map, key) ? importers.map[key] : undefined;
+  const target = typeof value === 'string' ? value : (value && typeof value === 'object' ? value.requirement : null);
+  const requirement = typeof target === 'string' ? splitRequirement(target, patterns) : null;
+  const base = { verb, line, extra: [], scope, invalidScopeBlock: false, problems };
+  if (!requirement) {
+    return { ...base, id: null, qualifier: null, foreign: { source, ref, key },
+      unmapped: value === undefined
+        ? `has no anchors.importMap entry "${key}"; map it to "<specId>#<REQ>"`
+        : `maps "${key}" to ${JSON.stringify(target ?? value)}, which is not a requirement ID` };
+  }
+  const expected = value && typeof value === 'object' && Number.isInteger(value.revision) ? value.revision : null;
+  const outdated = source === 'openfasttrace' && expected !== null && revision !== expected;
+  return { ...base, id: requirement.id, qualifier: requirement.qualifier, foreign: { source, ref, key, revision: revision ?? null, expected, outdated } };
+}
+
+/** StrictDoc and OpenFastTrace tags in one comment, mapped to requirements; never written back. */
+function foreignTags(text, line, patterns, importers) {
+  const tags = [];
+  const lineOf = index => line + (text.slice(0, index).match(/\n/g) || []).length;
+  if (importers.kinds.has('strictdoc')) {
+    for (const m of text.matchAll(STRICTDOC_RE)) {
+      const params = Object.fromEntries([...m[2].matchAll(/(\w+)[ \t]*=[ \t]*([\w-]+)/g)].map(p => [p[1], p[2]]));
+      if (params.scope === 'range_end') continue; // closes a range_start, which carries the link
+      const problems = [];
+      let scope = null;
+      if (params.scope !== undefined) {
+        scope = STRICTDOC_SCOPE[params.scope] || null;
+        if (!scope) problems.push(`has an unknown StrictDoc scope ${params.scope}; it is read by position`);
+      }
+      tags.push(mappedTag({ verb: 'relation', source: 'strictdoc', ref: m[1], key: `strictdoc:${m[1]}`, line: lineOf(m.index), scope, problems }, patterns, importers));
+    }
+  }
+  if (importers.kinds.has('openfasttrace')) {
+    for (const m of text.matchAll(OFT_RE)) {
+      tags.push(mappedTag({ verb: 'oft', source: 'openfasttrace', ref: `${m[2]}~${m[3]}~${m[4]}`, key: `oft:${m[2]}~${m[3]}`,
+        line: lineOf(m.index), scope: null, problems: [], revision: Number(m[4]) }, patterns, importers));
+    }
   }
   return tags;
 }
@@ -225,7 +298,7 @@ function unwrapExport(node) {
 const isRequireDeclaration = node => node?.type === 'VariableDeclaration'
   && node.declarations.every(d => d.init?.type === 'CallExpression' && d.init.callee?.name === 'require');
 
-function resolveJs(content, relPath, patterns, parsed) {
+function resolveJs(content, relPath, patterns, parsed, importers = null) {
   const { ast } = parsed;
   const comments = ast.comments || [];
   const commentLines = commentOnlyLines(content, comments.map(c => ({ s: c.start, e: c.end, startLine: c.loc.start.line, endLine: c.loc.end.line })));
@@ -243,7 +316,7 @@ function resolveJs(content, relPath, patterns, parsed) {
   const firstStatement = ast.program.body[0] || null;
   const headerEnd = leadingBlockEnd(comments[0]?.loc.start.line ?? null, firstStatement ? lineOfOffset(content, startOf(firstStatement)) : null, commentLines);
   for (const comment of comments) {
-    const tags = tagsInComment(comment.value, comment.loc.start.line, patterns);
+    const tags = tagsInComment(comment.value, comment.loc.start.line, patterns, importers);
     if (!tags.length) continue;
     // The whole run of comments this one belongs to: its last line decides adjacency.
     let blockEnd = comment.loc.end.line;
@@ -374,11 +447,11 @@ function routeAnchor(tag, node, route, owner, ctx) {
 const PY_IMPORT = /^\s*(?:import|from)\s/;
 
 /** Line numbers py-anchors must resolve "what follows" for. */
-export function pythonCandidateLines(content) {
+export function pythonCandidateLines(content, hint = /@(?:implements|req)\b/) {
   const lines = content.split('\n');
   const wanted = new Set([0]);
   for (let i = 0; i < lines.length; i++) {
-    if (!/@(?:implements|req)\b/.test(lines[i])) continue;
+    if (!hint.test(lines[i])) continue;
     let end = i + 1;
     while (end < lines.length && /^\s*#/.test(lines[end])) end++;
     wanted.add(end); // the last comment line of the run (1-based = end)
@@ -387,7 +460,7 @@ export function pythonCandidateLines(content) {
   return [...wanted].sort((a, b) => a - b);
 }
 
-function resolvePython(content, relPath, patterns, py, pyTier) {
+function resolvePython(content, relPath, patterns, py, pyTier, importers = null) {
   const outline = py.outline;
   const starts = lineStarts(content);
   const rawLines = content.split('\n');
@@ -409,7 +482,7 @@ function resolvePython(content, relPath, patterns, py, pyTier) {
     problems: [...tag.problems, ...problems],
   });
   for (const c of outline.comments) {
-    const tags = tagsInComment(c.text, c.line, patterns);
+    const tags = tagsInComment(c.text, c.line, patterns, importers);
     if (!tags.length) continue;
     const inline = !commentLines.has(c.line);
     let blockEnd = c.line;
@@ -444,7 +517,7 @@ function resolvePython(content, relPath, patterns, py, pyTier) {
   }
   // Tags inside docstrings belong to the docstring's owner.
   const docTags = (from, to, onTag) => {
-    for (let l = from; l <= to; l++) for (const tag of tagsInComment(rawLines[l - 1] || '', l, patterns)) onTag(tag);
+    for (let l = from; l <= to; l++) for (const tag of tagsInComment(rawLines[l - 1] || '', l, patterns, importers)) onTag(tag);
   };
   if (outline.moduleDocstring) docTags(outline.moduleDocstring[0], outline.moduleDocstring[1], tag => anchors.push(file(tag)));
   for (const sym of outline.symbols) {
@@ -457,7 +530,7 @@ function resolvePython(content, relPath, patterns, py, pyTier) {
 
 const IMPORT_KEYWORDS = new Set(['package', 'import', 'use', 'using', 'require', 'require_once', 'include', 'include_once', 'extern', 'namespace', 'module', '#include', 'from']);
 
-function resolvePattern(content, relPath, patterns, lang) {
+function resolvePattern(content, relPath, patterns, lang, importers = null) {
   const lexed = lex(content, lang);
   const confidence = LOW_CONFIDENCE_LANGS.has(lang) ? 'low' : 'medium';
   const tier = PATTERN_TIER;
@@ -467,7 +540,7 @@ function resolvePattern(content, relPath, patterns, lang) {
   const commentLines = commentOnlyLines(content, comments.map(c => ({ s: c.s, e: c.e, startLine: c.line, endLine: c.endLine })));
   const file = (tag, problems = []) => fileAnchor(tag, { tier, exact: fileFloor, floor: fileFloor, confidence, problems });
   if (lexed.error) {
-    for (const c of comments) for (const tag of tagsInComment(c.text, c.line, patterns)) {
+    for (const c of comments) for (const tag of tagsInComment(c.text, c.line, patterns, importers)) {
       anchors.push(file(tag, [`cannot be placed precisely: the ${lang} pattern lexer could not balance this file (${lexed.error}), so every tag in it is read as file scope`]));
     }
     return { tier, confidence, error: lexed.error, anchors, fileExact: fileFloor, fileFloor };
@@ -482,7 +555,7 @@ function resolvePattern(content, relPath, patterns, lang) {
   for (const sym of symbols) qualCount.set(sym.qual, (qualCount.get(sym.qual) || 0) + 1);
   const anchorName = sym => (qualCount.get(sym.qual) > 1 && sym.sig ? `${sym.qual}(${sym.sig})` : sym.qual);
   for (const c of comments) {
-    const tags = tagsInComment(c.text, c.line, patterns);
+    const tags = tagsInComment(c.text, c.line, patterns, importers);
     if (!tags.length) continue;
     let blockEnd = c.endLine;
     while (commentLines.has(blockEnd + 1)) blockEnd++;
@@ -545,11 +618,11 @@ export function plainComments(content, { hash = true, slashes = false } = {}) {
   return out;
 }
 
-function resolveFileTier(content, relPath, patterns) {
+function resolveFileTier(content, relPath, patterns, importers = null) {
   const exact = dg1(content);
   const anchors = [];
   for (const c of plainComments(content, { hash: true, slashes: false })) {
-    for (const tag of tagsInComment(c.text, c.line, patterns)) anchors.push(fileAnchor(tag, { tier: FILE_TIER, exact, floor: exact, confidence: 'low' }));
+    for (const tag of tagsInComment(c.text, c.line, patterns, importers)) anchors.push(fileAnchor(tag, { tier: FILE_TIER, exact, floor: exact, confidence: 'low' }));
   }
   return { tier: FILE_TIER, confidence: 'low', error: null, anchors, fileExact: exact, fileFloor: exact };
 }
@@ -566,20 +639,21 @@ function resolveFileTier(content, relPath, patterns) {
  */
 export function resolveFileAnchors(content, relPath, patterns, options = {}) {
   const lang = languageOf(relPath);
+  const importers = options.importers || null;
   if (lang === 'js' || lang === 'ts') {
     const parsed = parseJsTs(content, relPath);
-    if (parsed.ok && parsed.ast && !parsed.ast.errors?.length) return resolveJs(content, relPath, patterns, parsed);
-    const fallback = resolvePattern(content, relPath, patterns, lang);
+    if (parsed.ok && parsed.ast && !parsed.ast.errors?.length) return resolveJs(content, relPath, patterns, parsed, importers);
+    const fallback = resolvePattern(content, relPath, patterns, lang, importers);
     return { ...fallback, degraded: parsed.ok ? 'Babel recovered from syntax errors, so the pattern tier was used' : (parsed.error || 'Babel is unavailable') };
   }
   if (lang === 'python') {
     const py = options.python;
-    if (py?.outline && !py.outline.error && options.pythonTier) return resolvePython(content, relPath, patterns, py, options.pythonTier);
-    const fallback = resolvePattern(content, relPath, patterns, 'python');
+    if (py?.outline && !py.outline.error && options.pythonTier) return resolvePython(content, relPath, patterns, py, options.pythonTier, importers);
+    const fallback = resolvePattern(content, relPath, patterns, 'python', importers);
     return { ...fallback, degraded: py?.error || py?.outline?.error || options.pythonReason || 'python3 is unavailable' };
   }
-  if (lang) return resolvePattern(content, relPath, patterns, lang);
-  return resolveFileTier(content, relPath, patterns);
+  if (lang) return resolvePattern(content, relPath, patterns, lang, importers);
+  return resolveFileTier(content, relPath, patterns, importers);
 }
 
 /* ───────────────────────────── Orphan candidates (FR-034) ───────────────────────────── */
