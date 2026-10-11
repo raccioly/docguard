@@ -1,6 +1,6 @@
 {
   "name": "docguard-cli",
-  "version": "0.44.2",
+  "version": "0.44.3",
   "description": "The enforcement tool for Canonical-Driven Development (CDD). Audit, generate, and guard your project documentation.",
   "type": "module",
   "bin": {

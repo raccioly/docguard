@@ -12,7 +12,7 @@
 # Consumers then include it as:
 #
 #     include:
-#       - component: gitlab.com/raccioly/docguard-component/docguard@0.44.2
+#       - component: gitlab.com/raccioly/docguard-component/docguard@0.44.3
 #         inputs:
 #           command: guard
 #           fail_on_warning: true
@@ -20,7 +20,7 @@
 # Or, without the catalog, this works today from any repo via a plain include:
 #
 #     include:
-#       - remote: https://raw.githubusercontent.com/raccioly/docguard/v0.44.2/templates/ci/gitlab-component.yml
+#       - remote: https://raw.githubusercontent.com/raccioly/docguard/v0.44.3/templates/ci/gitlab-component.yml
 
 spec:
   inputs:
@@ -40,7 +40,7 @@ spec:
     version:
       description: docguard-cli version to run (npm dist-tag or exact version).
       type: string
-      default: '0.44.2'
+      default: '0.44.3'
     node_image:
       description: Node.js image for the job (needs git available, so prefer the non-alpine tags).
       type: string

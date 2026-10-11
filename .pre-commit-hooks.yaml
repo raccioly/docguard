@@ -10,7 +10,7 @@
 #
 #     repos:
 #       - repo: https://github.com/raccioly/docguard
-#         rev: v0.44.2
+#         rev: v0.44.3
 #         hooks:
 #           - id: docguard-guard
 #
@@ -18,7 +18,7 @@
 #
 #     repos:
 #       - repo: https://github.com/raccioly/docguard
-#         rev: v0.44.2
+#         rev: v0.44.3
 #         hooks:
 #           - id: docguard-guard-full
 #
