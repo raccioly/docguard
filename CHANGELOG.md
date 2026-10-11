@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.44.1] - 2026-10-11
+
 ### Security
 
 - **A Jules pull request auto-merges only when it adds new test files**
@@ -91,6 +93,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   returns to the branch (or commit) you started from, restores
   `.docguard.json`, deletes the branch unless it was pushed, and names the
   pushed branch when only `gh pr create` failed.
+
+### Commits
+
+- fix: Jules auto-merges only new test files; tested triage and routines (spec 067) (#547)
+- fix: test suite independent of the machine's git config (spec 066) (#546)
+- fix: Git hooks stay inside the repository (spec 065) (#545)
 
 ## [0.44.0] - 2026-10-11
 
