@@ -210,6 +210,8 @@ project per package are separate runs.
 
 Give each package its own job and set `working-directory`:
 
+> Replace `X.Y.Z` with the release you pin; [Installation](../installation.md) shows how to find the latest.
+
 ```yaml
 name: DocGuard
 on: [pull_request]
@@ -220,7 +222,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
-      - uses: raccioly/docguard@v0.43.1
+      - uses: raccioly/docguard@vX.Y.Z
         with:
           command: guard
           working-directory: packages/api
@@ -230,7 +232,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
-      - uses: raccioly/docguard@v0.43.1
+      - uses: raccioly/docguard@vX.Y.Z
         with:
           command: guard
           working-directory: packages/web

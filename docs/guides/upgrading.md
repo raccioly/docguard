@@ -24,12 +24,14 @@ to upgrade each channel, and what to check afterwards.
 docguard upgrade
 ```
 
+The sample output and the table below write versions as `X.Y.Z`; use the release you pin.
+
 ```text
 🔧 DocGuard Upgrade
    Checking the CLI release on npm and the .docguard.json schema...
 
-  CLI    installed: v0.43.1
-         latest:    v0.43.1 (current)
+  CLI    installed: vX.Y.Z
+         latest:    vX.Y.Z (current)
 
   Schema project:   v0.6
          current:   v0.6 (current)
@@ -118,16 +120,16 @@ the `[Unreleased]` section if you install from the repository.
 
 | Channel | Upgrade | Pin a version |
 |---|---|---|
-| npm, global | `npm install -g docguard-cli@latest`, or `docguard upgrade --apply` | `npm install -g docguard-cli@0.43.1` |
+| npm, global | `npm install -g docguard-cli@latest`, or `docguard upgrade --apply` | `npm install -g docguard-cli@X.Y.Z` |
 | npm, dev dependency | `npm install --save-dev docguard-cli@latest` | Exact version in `package.json`, plus the lockfile |
-| npx | Ask for it: `npx docguard-cli@latest guard` | `npx docguard-cli@0.43.1 guard` |
+| npx | Ask for it: `npx docguard-cli@latest guard` | `npx docguard-cli@X.Y.Z guard` |
 | PyPI (`pip`) | `pip install --upgrade docguard-cli` | See the note below |
 | PyPI (`pipx`) | `pipx upgrade docguard-cli` | See the note below |
 | PyPI (`uv`) | `uv tool upgrade docguard-cli` | See the note below |
 | Homebrew | `brew update && brew upgrade raccioly/tap/docguard` | Homebrew installs the tap's current version |
-| Docker (MCP server) | `docker pull ghcr.io/raccioly/docguard:latest` | `ghcr.io/raccioly/docguard:0.43.1` (no `v`) |
-| GitHub Action | Change the tag in `uses: raccioly/docguard@v0.43.1` | The tag pins the CLI. `docguard-version: <x.y.z>` or `latest` overrides it |
-| pre-commit framework | Change `rev:`, or run `pre-commit autoupdate` | `rev: v0.43.1` |
+| Docker (MCP server) | `docker pull ghcr.io/raccioly/docguard:latest` | `ghcr.io/raccioly/docguard:X.Y.Z` (no `v`) |
+| GitHub Action | Change the tag in `uses: raccioly/docguard@vX.Y.Z` | The tag pins the CLI. `docguard-version: <x.y.z>` or `latest` overrides it |
+| pre-commit framework | Change `rev:`, or run `pre-commit autoupdate` | `rev: vX.Y.Z` |
 | Claude Desktop | Download the new `docguard-v<version>.mcpb` from the release page and install it in place of the old one | The bundle's version |
 | Spec Kit extension | Refreshed from the installed CLI; see step 4 | Follows the CLI |
 
