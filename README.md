@@ -720,7 +720,7 @@ See [examples/README.md](https://github.com/raccioly/docguard/blob/main/examples
 ### Test Suite
 
 ```bash
-npm test    # 3,280 tests (node:test, zero test dependencies)
+npm test    # 3,281 tests (node:test, zero test dependencies)
 ```
 
 Covers all 26 commands, every validator, project type detection, compliance profiles, JSON/SARIF/JUnit output, the packed npm tarball, and downstream field reports replayed as regression cases. Static test-case declarations are a lower bound of that number: Metrics-Consistency flags this line if it ever falls below what the test files declare.
