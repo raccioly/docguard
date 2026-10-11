@@ -21,6 +21,7 @@ import { dirname, join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { assetPathCovers, projectSpecRegistry } from '../cli/scanners/spec-registry.mjs';
 import { buildReconciliationPlan } from '../cli/scanners/reconciliation.mjs';
+import { getDiffSnapshot } from '../cli/shared-git.mjs';
 import { validateSpecRegistry } from '../cli/validators/spec-registry.mjs';
 import { CODES } from '../cli/findings.mjs';
 import { FIXTURE_GIT, fixtureGit } from './helpers/git.mjs';
@@ -168,10 +169,20 @@ describe('this repository: spec 036 owns its frozen benchmark assets (FR-005, SC
   const resolvable = spawnSync('git', [...FIXTURE_GIT, 'rev-parse', '--verify', '-q', `${BEFORE_036}{commit}`], { cwd: REPO }).status === 0;
 
   it('a plan spanning 036\'s frozen assets resolves every benchmark file; without the list it would not', { skip: !resolvable && 'history before #485 is not available (shallow clone)' }, () => {
-    const unresolved = plan => plan.classifications
+    // The range runs from a fixed 2026 revision to HEAD, so it grows with the
+    // repository; a budget sized for real use would eventually block it and
+    // turn the first assertion vacuous. The test is about attribution, not the
+    // patch budget, so it reads the diff with room to spare.
+    const runtime = { getDiffSnapshot: (dir, ref) => getDiffSnapshot(dir, ref, { maxPatchBytes: 256 * 1024 * 1024, maxInventoryBytes: 64 * 1024 * 1024 }) };
+    const plan = (dir) => {
+      const p = buildReconciliationPlan(dir, {}, BEFORE_036, runtime);
+      assert.notEqual(p.status, 'BLOCKED', p.coverage?.reason);
+      return p;
+    };
+    const unresolved = p => p.classifications
       .filter(item => item.disposition === 'unsupported_or_ambiguous' && item.path?.startsWith('benchmarks/agent-context/'))
       .map(item => item.path);
-    assert.deepEqual(unresolved(buildReconciliationPlan(REPO, {}, BEFORE_036)), []);
+    assert.deepEqual(unresolved(plan(REPO)), []);
     // Reproduce the block on a copy whose registry lacks the list.
     const copy = mkdtempSync(join(tmpdir(), 'asset-paths-repo-'));
     temps.push(copy);
@@ -180,7 +191,7 @@ describe('this repository: spec 036 owns its frozen benchmark assets (FR-005, SC
     const stripped = JSON.parse(readFileSync(join(REPO, '.docguard-specs.json'), 'utf8'));
     delete stripped.specs.find(s => s.specId === 'docguard.symbol-map').reviewed.scope.assetPaths;
     writeFileSync(join(copy, '.docguard-specs.json'), `${JSON.stringify(stripped, null, 2)}\n`);
-    const blocked = unresolved(buildReconciliationPlan(copy, {}, BEFORE_036));
+    const blocked = unresolved(plan(copy));
     assert.ok(blocked.some(path => path.startsWith('benchmarks/agent-context/fixtures/ledger-service/')), 'the block reproduces without the reviewed list');
   });
 });
