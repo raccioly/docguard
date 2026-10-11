@@ -8397,7 +8397,7 @@
           {
             "requirementId": "FR-004",
             "file": ".github/workflows/ci.yml",
-            "line": 287
+            "line": 290
           },
           {
             "requirementId": "FR-004",
@@ -10539,6 +10539,176 @@
       }
     },
     {
+      "specId": "docguard.release-least-privilege",
+      "path": "specs/068-release-least-privilege/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "approved",
+          "delivery": "implemented",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": "living"
+        },
+        "relations": {
+          "extends": [
+            "docguard.jules-policy",
+            "docguard.release-dispatch-window",
+            "docguard.release-readiness",
+            "docguard.tokenless-scheduled-releases"
+          ],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": [
+            "docs-canonical/CI-RECIPES.md",
+            "docs-canonical/SECURITY.md",
+            "docs-canonical/TEST-SPEC.md"
+          ]
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.release-least-privilege#FR-001",
+          "docguard.release-least-privilege#FR-002",
+          "docguard.release-least-privilege#FR-003",
+          "docguard.release-least-privilege#FR-004",
+          "docguard.release-least-privilege#FR-005",
+          "docguard.release-least-privilege#FR-006",
+          "docguard.release-least-privilege#FR-007",
+          "docguard.release-least-privilege#FR-008",
+          "docguard.release-least-privilege#SC-001",
+          "docguard.release-least-privilege#SC-002"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/068-release-least-privilege/spec.md",
+            "digest": "sha256:d975934bcf7e84e9aa42208912b3259f5262eca94bb894a62b350286f80d3c57"
+          },
+          {
+            "path": "specs/068-release-least-privilege/plan.md",
+            "digest": "sha256:d19c8888dc00e19d6d53d7d5d9357b23329ea81fcf1dbaf5bf5c89c2f9e66480"
+          },
+          {
+            "path": "specs/068-release-least-privilege/tasks.md",
+            "digest": "sha256:6dbe278792a336a2d7cf9b8eb73de0b92f29056968b44f4000d2c83d6d6fb586"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 6,
+          "total": 6
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": ".github/workflows/release.yml",
+            "line": 25
+          },
+          {
+            "requirementId": "FR-001",
+            "file": ".github/workflows/scheduled-release.yml",
+            "line": 43
+          },
+          {
+            "requirementId": "FR-002",
+            "file": ".github/workflows/release.yml",
+            "line": 93
+          },
+          {
+            "requirementId": "FR-004",
+            "file": ".github/workflows/release.yml",
+            "line": 181
+          },
+          {
+            "requirementId": "FR-004",
+            "file": ".github/workflows/release.yml",
+            "line": 277
+          },
+          {
+            "requirementId": "FR-004",
+            "file": ".github/workflows/release.yml",
+            "line": 312
+          },
+          {
+            "requirementId": "FR-004",
+            "file": ".github/workflows/release.yml",
+            "line": 491
+          },
+          {
+            "requirementId": "FR-005",
+            "file": ".github/workflows/scheduled-release.yml",
+            "line": 44
+          },
+          {
+            "requirementId": "FR-006",
+            "file": ".github/workflows/release.yml",
+            "line": 240
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/workflow-permissions.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/workflow-permissions.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/workflow-permissions.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/workflow-permissions.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/workflow-permissions.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/workflow-permissions.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/workflow-permissions.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/workflow-permissions.test.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/workflow-permissions.test.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/workflow-permissions.test.mjs",
+            "line": 18
+          }
+        ]
+      }
+    },
+    {
       "specId": "docguard.release-readiness",
       "path": "specs/026-release-readiness/spec.md",
       "reviewed": {
@@ -10637,7 +10807,7 @@
           {
             "requirementId": "FR-002",
             "file": ".github/workflows/scheduled-release.yml",
-            "line": 124
+            "line": 140
           },
           {
             "requirementId": "FR-003",
@@ -10667,12 +10837,12 @@
           {
             "requirementId": "FR-004",
             "file": ".github/workflows/release.yml",
-            "line": 66
+            "line": 72
           },
           {
             "requirementId": "FR-004",
             "file": ".github/workflows/release.yml",
-            "line": 284
+            "line": 344
           },
           {
             "requirementId": "FR-005",
@@ -12410,7 +12580,7 @@
           {
             "requirementId": "FR-006",
             "file": ".github/workflows/ci.yml",
-            "line": 205
+            "line": 206
           }
         ],
         "testEvidence": [

@@ -9,18 +9,26 @@ on:
   push:
     branches: [main]
 
+# Read by default; each scan asks for security-events: write to upload SARIF
+# (specs/068-release-least-privilege, tests/workflow-permissions.test.mjs).
 permissions:
-  actions: read
   contents: read
-  security-events: write
 
 jobs:
   osv-scan-pr:
     if: github.event_name == 'pull_request'
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
     uses: "google/osv-scanner-action/.github/workflows/osv-scanner-reusable-pr.yml@a345acffa64b0eaede81a3d9aae6141214d9c8fc" # v2.6.0
 
   osv-scan-scheduled:
     if: github.event_name != 'pull_request'
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
     uses: "google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@a345acffa64b0eaede81a3d9aae6141214d9c8fc" # v2.6.0
 
   websec:
@@ -35,6 +43,10 @@ jobs:
     # `require-complete:` turns a missing or incomplete one into exit 2 —
     # distinct from fail-on's exit 1, so "gate broken" never reads as "repo clean".
     runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

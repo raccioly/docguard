@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- **No workflow job runs code beside a repository write token**
+  (`specs/068-release-least-privilege`). The release test job inherited
+  `contents: write`, and the scheduled release ran `npm ci` and `npm test` in
+  the one job that held `contents`, `actions` and `pull-requests` write and
+  later pushed the release branch; both left the token in the checkout, where
+  any test could read it. A bot may now merge new test files (spec 067), so:
+  - every workflow defaults to `contents: read`, and each job asks for its own
+    scope;
+  - a job that runs the test suite or DocGuard holds no write permission and
+    checks out with `persist-credentials: false`;
+  - the scheduled release is four jobs: `cut` and `verify` are read-only and
+    produce and test the release patch, `open-pr` applies that exact patch
+    after checking its paths and runs only `git`, `gh` and `jq`, and `recover`
+    holds only `actions: write`;
+  - the Spec Kit ZIP, the Claude Desktop bundle and the PyPI distribution are
+    built without credentials and handed to `attach-assets` and `publish-pypi`
+    as workflow artifacts;
+  - the GHCR job logs in only after building and smoke-testing the image.
+
+  `tests/workflow-permissions.test.mjs` reads every workflow and fails one
+  that breaks these rules.
+
 ## [0.44.1] - 2026-10-11
 
 ### Security

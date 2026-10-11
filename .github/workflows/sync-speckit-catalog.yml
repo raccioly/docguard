@@ -20,17 +20,22 @@ on:
         required: false
         type: string
 
+# Read by default; the job asks for issues: write (specs/068-release-least-privilege).
 permissions:
   contents: read
-  issues: write # reminder issue in THIS repo only — never github/spec-kit
 
 jobs:
   prepare-catalog-submission:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write # reminder issue in THIS repo only — never github/spec-kit
 
     steps:
       - name: Checkout docguard repo
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Get version and metadata
         id: meta

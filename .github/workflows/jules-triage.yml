@@ -21,10 +21,10 @@ on:
   pull_request_target:
     types: [opened, reopened]
 
+# Read by default; the job asks to label, comment and close
+# (specs/068-release-least-privilege, tests/workflow-permissions.test.mjs).
 permissions:
   contents: read
-  pull-requests: write
-  issues: write
 
 # One at a time: duplicate detection compares a PR with the ones before it.
 concurrency:
@@ -36,6 +36,10 @@ jobs:
     # Only act on the Jules bot's PRs; everything else is untouched.
     if: github.event.pull_request.user.login == 'google-labs-jules[bot]'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
     steps:
       - name: Check out the policy from the default branch (never the PR head)
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

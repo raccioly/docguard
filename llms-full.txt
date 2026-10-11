@@ -314,7 +314,7 @@ Completion also supports reviewed maintenance of a verified or released living s
 
 # CI Recipes
 
-<!-- docguard:last-reviewed 2026-10-10 -->
+<!-- docguard:last-reviewed 2026-10-11 -->
 <!-- docguard:status active -->
 
 ## Recipe 1 — Guard (mandatory CI gate)
@@ -393,6 +393,20 @@ either the sweep or the next release
 schedule sees the current package version without a tag and retries publication
 before considering another bump. An orphaned release branch fails closed; an
 existing open release PR is reused and has auto-merge re-armed.
+
+The scheduler is four jobs, so no test runs beside a write token
+(`specs/068-release-least-privilege`). `cut` (read-only) decides whether a
+release is due, bumps the version, cuts the changelog, synchronizes the package
+surfaces, runs the candidate validation above, and uploads the result as a
+patch before any test runs. `verify` (read-only) applies that patch and runs the
+suite and guard. `open-pr` holds the write scopes and runs no repository code:
+it checks every path in the patch against the release path list, applies it,
+pushes the branch, opens the pull request, arms auto-merge and waits.
+`recover` holds only `actions: write` and dispatches the release workflow when
+the current version has no tag. In the release workflow, the test job is
+read-only, the Spec Kit ZIP, the Claude Desktop bundle and the PyPI
+distribution are built without credentials, and `attach-assets` and
+`publish-pypi` receive only the built files.
 
 The bump is `auto` unless a maintainer dispatches `patch` or `minor`
 (`specs/026-release-readiness`). `.github/scripts/release-changelog.mjs infer`
@@ -1247,7 +1261,7 @@ The verification column above links each requirement to executable tests. The te
 # Security
 
 <!-- docguard:quality negation-load off — prohibitions define security boundaries -->
-<!-- docguard:version 0.16.0 -->
+<!-- docguard:version 0.17.0 -->
 <!-- docguard:status active -->
 <!-- docguard:last-reviewed 2026-10-11 -->
 
@@ -1384,6 +1398,8 @@ change the directory passed to a command.
 
 Dependency audit results are time-specific observations. Run the current audit and supported Node-version matrix before release; a historical clean audit is not a continuing guarantee. Pin third-party CI actions to verified commit SHAs and install from the lockfile. The release workflow's `publish-homebrew` job holds the only stored release secret, `HOMEBREW_TAP_DEPLOY_KEY`, a write deploy key scoped to `raccioly/homebrew-tap`. It checks the downloaded npm tarball against `dist.integrity` and pins GitHub's SSH host keys before pushing.
 
+No workflow job runs code beside a token that can write to the repository. Every workflow defaults to `contents: read`, and a job that writes asks for its own scope. A job that runs the test suite or DocGuard on itself holds no write permission and checks out with `persist-credentials: false`, because a bot may merge new test files without a maintainer (spec 067). A job holding `contents`, `actions`, `pull-requests` or `issues` write runs no package manager, build tool or test: the release assets (Spec Kit ZIP, Claude Desktop bundle, PyPI distribution) are built in read-only jobs and handed over as workflow artifacts, the scheduled release cuts and tests in read-only jobs and pushes the exact patch it validated from a job that runs only `git`, `gh` and `jq`, and the GHCR job logs in only after building and smoke-testing the image. The publishing jobs hold only their registry credential (`id-token` or `packages`). `tests/workflow-permissions.test.mjs` fails any workflow that breaks these rules (spec 068).
+
 ## .gitignore Audit
 
 Exclude `node_modules`, environment values, generated build output, and private local files from version control. `.docguardignore` controls analysis coverage separately; it is not a secrecy boundary for every tool that runs in the repository.
@@ -1404,6 +1420,7 @@ A `.docguardignore` entry can end: `expires:YYYY-MM-DD` keeps it through that UT
 
 | Version | Date | Changes |
 |---|---|---|
+| 0.17.0 | 2026-10-11 | Workflow jobs run tests, package managers and build tools without a repository write token; release assets are built read-only (spec 068) |
 | 0.16.0 | 2026-10-11 | Git hooks are written only in a hooks folder the repository owns (spec 065) |
 | 0.15.0 | 2026-10-10 | `.docguardignore` expiries fail closed (an expired or unreadable entry excludes nothing); `docguard ignore` is read-only (spec 057) |
 | 0.14.0 | 2026-10-10 | Freshness review for specs 038–053: `upgrade --apply` also installs agent files and calls `specify` (spec 048), the `upgrade` and `guard --update-baseline` write levels, the `npm`/`git`/`gh` subprocesses of `upgrade`, the shared Python extractor's stdin and timeout, and where agent files are written |
@@ -1423,7 +1440,7 @@ A `.docguardignore` entry can end: `expires:YYYY-MM-DD` keeps it through that UT
 
 # Test Specification
 
-<!-- docguard:version 1.4.3 -->
+<!-- docguard:version 1.4.4 -->
 <!-- docguard:status active -->
 <!-- docguard:last-reviewed 2026-10-11 -->
 
@@ -1556,6 +1573,7 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `.github/scripts/sync-release-version.mjs`, `cli/release-pr-policy.mjs`, the CI runtime budget | `tests/release-cut-green.test.mjs`, `tests/release-version-sync.test.mjs` | ✅ |
 | `tools/generate-docs-reference.mjs`, `docs/` site navigation and links | `tests/user-docs.test.mjs` | ✅ |
 | `.github/scripts/jules-policy.mjs`, `.github/scripts/jules-triage.mjs`, `.jules/preflight.mjs`, `.jules/setup.sh`, the Jules branch of `auto-merge.yml` | `tests/jules-policy.test.mjs` | ✅ |
+| `.github/workflows/*.yml` permissions, checkout credentials and the release job layout | `tests/workflow-permissions.test.mjs` | ✅ |
 
 Completion tests cover initial `implemented → verified` delivery, evidence and
 dirty-tree blockers, living-spec `verified → verified` maintenance, and refusal
@@ -1597,6 +1615,7 @@ of empty repeats driven only by generated lifecycle artifacts.
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 1.4.4 | 2026-10-11 | DocGuard Team | Map the workflow permission rules to `tests/workflow-permissions.test.mjs` (spec 068) |
 | 1.4.3 | 2026-10-11 | DocGuard Team | Fixture git goes through `tests/helpers/git.mjs`; the CI `hermeticity` job; map `demo.mjs` to its tests (spec 066) |
 | 1.4.2 | 2026-10-10 | DocGuard Team | Record the scripted timing source behind the budget tests (spec 062) |
 | 1.4.1 | 2026-10-10 | DocGuard Team | Map `watch.mjs` to its deterministic reliability tests (spec 055) |
@@ -1770,6 +1789,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- **No workflow job runs code beside a repository write token**
+  (`specs/068-release-least-privilege`). The release test job inherited
+  `contents: write`, and the scheduled release ran `npm ci` and `npm test` in
+  the one job that held `contents`, `actions` and `pull-requests` write and
+  later pushed the release branch; both left the token in the checkout, where
+  any test could read it. A bot may now merge new test files (spec 067), so:
+  - every workflow defaults to `contents: read`, and each job asks for its own
+    scope;
+  - a job that runs the test suite or DocGuard holds no write permission and
+    checks out with `persist-credentials: false`;
+  - the scheduled release is four jobs: `cut` and `verify` are read-only and
+    produce and test the release patch, `open-pr` applies that exact patch
+    after checking its paths and runs only `git`, `gh` and `jq`, and `recover`
+    holds only `actions: write`;
+  - the Spec Kit ZIP, the Claude Desktop bundle and the PyPI distribution are
+    built without credentials and handed to `attach-assets` and `publish-pypi`
+    as workflow artifacts;
+  - the GHCR job logs in only after building and smoke-testing the image.
+
+  `tests/workflow-permissions.test.mjs` reads every workflow and fails one
+  that breaks these rules.
+
+## [0.44.1] - 2026-10-11
+
+### Security
+
 - **A Jules pull request auto-merges only when it adds new test files**
   (`specs/067-jules-policy`). `.github/workflows/auto-merge.yml` merged a
   green Jules PR whenever every path was under `tests/` or `docs/` or ended
@@ -1852,6 +1897,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   returns to the branch (or commit) you started from, restores
   `.docguard.json`, deletes the branch unless it was pushed, and names the
   pushed branch when only `gh pr create` failed.
+
+### Commits
+
+- fix: Jules auto-merges only new test files; tested triage and routines (spec 067) (#547)
+- fix: test suite independent of the machine's git config (spec 066) (#546)
+- fix: Git hooks stay inside the repository (spec 065) (#545)
 
 ## [0.44.0] - 2026-10-11
 
@@ -2127,40 +2178,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `+`, `|` and the other regular-expression characters straight into a regular
   expression: `foo?` matched `fo`, `a|b` excluded unrelated files (176 in this
   repository), and an unclosed `[` made five validators fail with a
-  regular-expression error. It now reads `?` as one character, `[…]` as a
-  gitignore bracket expression (`[!ab]` negates), `\x` as a literal `x` and
-  every other character literally. `**/fixtures/**` now also matches a
-  top-level `fixtures/`, `a/**/b` matches `a/b`, and a leading `/` anchors to
-  the project root instead of matching nothing. A pattern without those
-  characters and without `**/` matches exactly what it did before (checked
-  against every tracked file for this repository's patterns). `docguard ignore
-  --format claimspec` now exports the reasoned entries that read the same in
-  both syntaxes. The `documentLifecycle` array is now in the config schema and
-  the configuration guide.
-- **TypeORM and Sequelize models reach `generate`, `generate --plan` and
-  `diff`** (`specs/056-typeorm-models`, #520). Only guard's schema check read
-  them, by a pattern that missed common layouts, so a TypeORM or Sequelize
-  project got an empty entity table and ER diagram. Both ORMs now go through
-  the discovery Prisma, Drizzle and Mongoose use, so guard, `generate`, the
-  plan, as-built specs and `diff` read the same models:
-  - TypeORM: `@Entity` classes in any file that imports `typeorm`
-    (`src/entity/User.ts` from `typeorm init` and NestJS's
-    `src/users/user.entity.ts` included), named by class with the table name
-    kept. Columns carry their type, nullability, primary key, `unique`,
-    default and comment; columns declared on a base class are inherited; each
-    relation is drawn once, from its owning side.
-  - Sequelize: `sequelize.define('Name', …)` and `Model.init(…, { sequelize })`
-    models with their declared attributes. Guard used to miss every `init`
-    model. `belongsTo`, `hasMany`, `hasOne` and `belongsToMany` associations
-    are drawn once.
-  - An entity whose decorators come through a project barrel that
-    re-exports `typeorm` (relative, tsconfig path alias or workspace package)
-    is read; one whose barrel re-exports MikroORM is not.
-  - A file that does not parse is read by pattern into the same entities,
-    which then report the `regex-fallback` tier. Drizzle and Mongoose entities
-    now report their tier too, so a pattern-read schema marks the plan's
 
-<!-- truncated: 5195 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 5227 more lines — read CHANGELOG.md directly -->
 
 ---
 
@@ -2752,4 +2771,4 @@ A structural score is a maturity proxy. Preserve `assurance` and nullable factua
 
 
 ---
-Generated by DocGuard v0.44.0 | [docguard-cli](https://www.npmjs.com/package/docguard-cli)
+Generated by DocGuard v0.44.1 | [docguard-cli](https://www.npmjs.com/package/docguard-cli)
