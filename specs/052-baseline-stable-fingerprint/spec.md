@@ -57,4 +57,5 @@ Adding an unrelated test file can change that best match. The message then chang
 ## Implementation Outcomes
 
 - `c53c264a31179bd423e927ad63728dbec2084014` — Reviewed at c53c264 on main: all 4 tasks are checked and were delivered by #518; the full suite (2931 tests) passes on Node 18, 20, 22 and 24 in CI, and guard reports 0 errors at this revision. Evidence: `cli/writers/baseline.mjs`, `docs-canonical/DATA-MODEL.md`, `tests/baseline-stable-fingerprint.test.mjs`. Accepted deviations: none. Successor: none.
+- `c0b12d4a61477225398bb6d3bd346cc0336b78c4` — Maintenance review at c0b12d4 on main: FR-006 (exact fingerprint before stable) delivered by #541 after the pre-release dogfood found 3 of 163 frozen findings resurfacing on a real baseline; all 5 tasks checked; the full suite (3280 tests) passes and guard reports 0 errors. Evidence: `cli/writers/baseline.mjs`, `docs-canonical/DATA-MODEL.md`, `tests/baseline-stable-fingerprint.test.mjs`. Accepted deviations: none. Successor: none.
 <!-- docguard:implementation-outcomes:end -->
