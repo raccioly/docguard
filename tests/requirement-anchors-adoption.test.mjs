@@ -7,6 +7,7 @@
  *
  * @req docguard.requirement-anchors#FR-042
  * @req docguard.requirement-anchors#FR-043
+ * @req docguard.requirement-anchors#SC-003
  */
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
@@ -16,6 +17,7 @@ import { resolve } from 'node:path';
 import { gitattributesDeclaresUnion, readAnchorLock } from '../cli/scanners/anchor-lock.mjs';
 import { computeLinks } from '../cli/scanners/anchors.mjs';
 import { loadConfig } from '../cli/config.mjs';
+import { compare, loadBudgets } from '../tools/budget.mjs';
 
 const ROOT = resolve('.');
 const read = rel => readFileSync(resolve(ROOT, rel), 'utf8');
@@ -65,5 +67,21 @@ describe('adopted by this repository (FR-043)', () => {
     const flagged = problems.filter(p => p.code === 'ANC006' || p.code === 'ANC007').map(p => `${p.code} ${p.file}:${p.line} ${p.message}`);
     assert.deepEqual(flagged, []);
     assert.ok(links.length > 500);
+  });
+});
+
+describe('guard stays within its time budget with the lock baselined (SC-003)', () => {
+  it('the budget holds guard on this repository to x1.15 of base, and CI runs it on every pull request', () => {
+    const budgets = loadBudgets();
+    assert.equal(budgets.guard.maxRatio, 1.15);
+    const at = ms => ({ guard: { '.': ms }, findings: { errors: 0, byCode: {} }, agentBytes: {}, package: { size: 1, unpackedSize: 1, files: 1 }, dependencies: [] });
+    const verdict = (base, head) => compare(at(base), at(head), budgets).rows.find(r => r.metric === 'guard-ms:.').verdict;
+    assert.equal(verdict(2000, 2290), 'PASS');
+    assert.equal(verdict(2000, 2400), 'FAIL');
+    // The lock is committed and baselined here, so every pull request's budget run measures guard with anchors active.
+    assert.ok(readAnchorLock(ROOT).links.size > 500);
+    const ci = read('.github/workflows/ci.yml');
+    assert.match(ci, /budget:\n\s+if: github\.event_name == 'pull_request'/);
+    assert.match(ci, /node tools\/budget\.mjs ab --base/);
   });
 });
