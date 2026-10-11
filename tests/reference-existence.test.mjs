@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { validateReferenceExistence } from '../cli/validators/reference-existence.mjs';
 import { fixtureGit } from './helpers/git.mjs';
+// @implements docguard.test-git-hermeticity#FR-001: this file's fixture git goes through the helper.
 
 function git(dir, ...args) { fixtureGit(dir, args); }
 

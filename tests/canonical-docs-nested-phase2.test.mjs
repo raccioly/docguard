@@ -19,6 +19,7 @@ import { validateReferenceExistence } from '../cli/validators/reference-existenc
 import { validateTraceability } from '../cli/validators/traceability.mjs';
 import { validateGeneratedStaleness } from '../cli/validators/generated-staleness.mjs';
 import { fixtureGit } from './helpers/git.mjs';
+// @implements docguard.test-git-hermeticity#FR-001: this file's fixture git goes through the helper.
 
 function git(dir, ...args) { fixtureGit(dir, args); }
 

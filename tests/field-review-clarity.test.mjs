@@ -8,6 +8,7 @@ import { safeWrite } from '../cli/writers/generate-io.mjs';
 import { validateFreshness } from '../cli/validators/freshness.mjs';
 import { validateTraceability } from '../cli/validators/traceability.mjs';
 import { FIXTURE_GIT } from './helpers/git.mjs';
+// @implements docguard.test-git-hermeticity#FR-001: this file's fixture git goes through the helper.
 
 let dir;
 const put = (path, content) => safeWrite(join(dir, path), content);
