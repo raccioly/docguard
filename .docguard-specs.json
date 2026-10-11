@@ -11993,6 +11993,11 @@
             "line": 58
           },
           {
+            "requirementId": "FR-005",
+            "file": "cli/commands/demo.mjs",
+            "line": 101
+          },
+          {
             "requirementId": "FR-006",
             "file": ".github/workflows/ci.yml",
             "line": 205
@@ -12002,47 +12007,52 @@
           {
             "requirementId": "FR-001",
             "file": "tests/test-git-hermeticity.test.mjs",
-            "line": 13
+            "line": 14
           },
           {
             "requirementId": "FR-002",
             "file": "tests/test-git-hermeticity.test.mjs",
-            "line": 14
+            "line": 15
           },
           {
             "requirementId": "FR-003",
             "file": "tests/test-git-hermeticity.test.mjs",
-            "line": 15
+            "line": 16
           },
           {
             "requirementId": "FR-004",
             "file": "tests/test-git-hermeticity.test.mjs",
-            "line": 16
-          },
-          {
-            "requirementId": "FR-006",
-            "file": "tests/test-git-hermeticity.test.mjs",
             "line": 17
           },
           {
-            "requirementId": "FR-007",
+            "requirementId": "FR-005",
             "file": "tests/test-git-hermeticity.test.mjs",
             "line": 18
           },
           {
-            "requirementId": "SC-001",
+            "requirementId": "FR-006",
             "file": "tests/test-git-hermeticity.test.mjs",
             "line": 19
           },
           {
-            "requirementId": "SC-002",
+            "requirementId": "FR-007",
             "file": "tests/test-git-hermeticity.test.mjs",
             "line": 20
           },
           {
-            "requirementId": "SC-003",
+            "requirementId": "SC-001",
             "file": "tests/test-git-hermeticity.test.mjs",
             "line": 21
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/test-git-hermeticity.test.mjs",
+            "line": 22
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/test-git-hermeticity.test.mjs",
+            "line": 23
           }
         ]
       }

@@ -6,14 +6,16 @@
  * that fails, and `init.defaultBranch=trunk` turned 189 tests red, and let
  * others pass against fixtures that were never committed. Fixture git now goes
  * through `tests/helpers/git.mjs`. These tests prove the helper neutralises
- * that config, that a failed fixture step is loud, and that no test spawns git
- * around the helper. The CI `hermeticity` job runs the whole suite under the
+ * that config, that a failed fixture step is loud, that no test spawns git
+ * around the helper, and that DocGuard's own scratch repository (`demo`) is
+ * built the same way. The CI `hermeticity` job runs the whole suite under the
  * same config.
  *
  * @req docguard.test-git-hermeticity#FR-001
  * @req docguard.test-git-hermeticity#FR-002
  * @req docguard.test-git-hermeticity#FR-003
  * @req docguard.test-git-hermeticity#FR-004
+ * @req docguard.test-git-hermeticity#FR-005
  * @req docguard.test-git-hermeticity#FR-006
  * @req docguard.test-git-hermeticity#FR-007
  * @req docguard.test-git-hermeticity#SC-001
@@ -123,6 +125,25 @@ describe('no test spawns git around the helper (FR-004)', () => {
     walk(join(ROOT, 'tests'));
     const offenders = files.flatMap(file => bypasses(readFileSync(file, 'utf8')).map(line => `${relative(ROOT, file)}:${line}`));
     assert.deepEqual(offenders, []);
+  });
+});
+
+describe('DocGuard\'s own scratch repository does not run the machine\'s hooks (FR-005)', () => {
+  it('docguard demo commits its fixture on a hostile machine', () => {
+    const root = mkdtempSync(join(tmpdir(), 'dg-demo-hostile-'));
+    temps.push(root);
+    const { env, fired } = hostileGitEnv(join(root, 'machine'));
+    const tmp = join(root, 'tmp');
+    mkdirSync(tmp);
+    const r = spawnSync(process.execPath, [CLI, 'demo', '--quiet', '--keep'], {
+      encoding: 'utf8', env: { ...env, TMPDIR: tmp, TMP: tmp, TEMP: tmp, NO_COLOR: '1' },
+    });
+    assert.equal(r.status, 0, r.stderr);
+    const kept = readdirSync(tmp).filter(name => name.startsWith('docguard-demo-'));
+    assert.equal(kept.length, 1, `one kept fixture: ${kept}`);
+    const log = fixtureGit(join(tmp, kept[0]), ['log', '--format=%s'], { env });
+    assert.equal(log.trim(), 'fixture', 'the demo fixture is committed');
+    assert.deepEqual(fired(), [], 'no global hook ran');
   });
 });
 

@@ -19,7 +19,7 @@
 
 import { mkdtempSync, rmSync, cpSync, existsSync, writeFileSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
-import { tmpdir } from 'node:os';
+import { devNull, tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { c } from '../shared.mjs';
@@ -95,12 +95,17 @@ function setupFixture() {
   // Initialize git so any history-aware validators (Freshness, Drift-Comments)
   // can run without erroring. Identity is set locally so commit succeeds on
   // CI runners that have no global git identity.
+  // The scratch repository is DocGuard's, not the user's: their global hooks
+  // and mandatory signing must not run on it, or fail its commit and leave
+  // the history-aware validators without history.
+  // @implements docguard.test-git-hermeticity#FR-005
   const opts = { cwd: dir, stdio: 'ignore' };
+  const scratch = ['-c', `core.hooksPath=${devNull}`, '-c', 'commit.gpgsign=false'];
   spawnSync('git', ['init', '-q', '-b', 'main'], opts);
   spawnSync('git', ['config', 'user.email', 'demo@docguard.dev'], opts);
   spawnSync('git', ['config', 'user.name', 'docguard-demo'], opts);
   spawnSync('git', ['add', '-A'], opts);
-  spawnSync('git', ['commit', '-q', '-m', 'fixture'], opts);
+  spawnSync('git', [...scratch, 'commit', '-q', '-m', 'fixture'], opts);
   return dir;
 }
 
