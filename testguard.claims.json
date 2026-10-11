@@ -1767,7 +1767,9 @@
       },
       "defendedBy": [
         "tests/requirement-anchors.test.mjs",
-        "tests/requirement-evidence-literals.test.mjs"
+        "tests/requirement-evidence-literals.test.mjs",
+        "tests/requirement-anchors-golden.test.mjs",
+        "tests/pattern-lexer.test.mjs"
       ],
       "faults": [
         {
@@ -1873,6 +1875,30 @@
           "file": "cli/scanners/anchor-tags.mjs",
           "find": "  if (lexed.error) {",
           "replace": "  if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 1)"
+          }
+        },
+        {
+          "id": "F10",
+          "description": "A trailing comment on a declaration line detaches the tag above it, so the link falls back to file scope.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/anchor-tags.mjs",
+          "find": "    if (before.trim() !== '' || after.trim() !== '') continue;",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 1)"
+          }
+        },
+        {
+          "id": "F11",
+          "description": "Layout markers at a span edge enter the floor, so a trailing comment changes it.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/pattern-lexer.mjs",
+          "find": "  while (last > first && out[last - 1].layout) last--;",
+          "replace": "",
           "producedBy": {
             "producer": "agent",
             "by": "claude-opus-5.5 (spec 070, user story 1)"

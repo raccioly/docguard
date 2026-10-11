@@ -1,0 +1,99 @@
+{
+  "stable": {
+    "src/Sample.java acme.golden#FR-001": {
+      "anchor": "Sample.total",
+      "scope": "symbol",
+      "tier": "pattern@1",
+      "exact": "dg1:sha256:74cc9bf9fb702d24cfcbca2870fa3ca6246543dde27fcc0154d56c242c60d141",
+      "floor": "dg1:sha256:74cc9bf9fb702d24cfcbca2870fa3ca6246543dde27fcc0154d56c242c60d141"
+    },
+    "src/sample.go acme.golden#FR-001": {
+      "anchor": "Total",
+      "scope": "symbol",
+      "tier": "pattern@1",
+      "exact": "dg1:sha256:b96fb40917d78567dda1f001654974794ac07871ab661f364c20a653ebbf1b5f",
+      "floor": "dg1:sha256:b96fb40917d78567dda1f001654974794ac07871ab661f364c20a653ebbf1b5f"
+    },
+    "src/sample.mjs acme.golden#FR-001": {
+      "anchor": "total",
+      "scope": "symbol",
+      "tier": "babel@7",
+      "exact": "dg1:sha256:e03f95bcb364a9b07754ce9383229c321eeb042741a0e21df235f1fe8d6fd2f9",
+      "floor": "dg1:sha256:d3b6956b55e1d8eeeb13c16ec2bfac7348be329b6c132b2702058f53fa5da02c"
+    },
+    "src/sample.rs acme.golden#FR-001": {
+      "anchor": "total",
+      "scope": "symbol",
+      "tier": "pattern@1",
+      "exact": "dg1:sha256:7fd1788c789d93fac1fea7ab8425267335dbbb2ac7b559cdfb521c7da63138bb",
+      "floor": "dg1:sha256:7fd1788c789d93fac1fea7ab8425267335dbbb2ac7b559cdfb521c7da63138bb"
+    },
+    "src/sample.ts acme.golden#FR-001": {
+      "anchor": "total",
+      "scope": "symbol",
+      "tier": "babel@7",
+      "exact": "dg1:sha256:0a8aeda22ae3425c5df49f21739f6d8f905baebd395e370c0f9940217ba3a83b",
+      "floor": "dg1:sha256:1bcc0d56a9c67dd7284d7b1c2af336c2ec323a713a966e0ff6381f32cd7a0d65"
+    },
+    "src/Sample.java acme.golden#FR-002": {
+      "anchor": "Sample.add",
+      "scope": "symbol",
+      "tier": "pattern@1",
+      "exact": "dg1:sha256:0f303356a768765ebe378dab14628e99da8c72227c6b7fdec46361c21ca460cd",
+      "floor": "dg1:sha256:0f303356a768765ebe378dab14628e99da8c72227c6b7fdec46361c21ca460cd"
+    },
+    "src/sample.go acme.golden#FR-002": {
+      "anchor": "Cart.Add",
+      "scope": "symbol",
+      "tier": "pattern@1",
+      "exact": "dg1:sha256:05ed580eee3d12a774d40b1d788629e7a885fdac3910e715fa35f298ae96d10d",
+      "floor": "dg1:sha256:05ed580eee3d12a774d40b1d788629e7a885fdac3910e715fa35f298ae96d10d"
+    },
+    "src/sample.mjs acme.golden#FR-002": {
+      "anchor": "Cart",
+      "scope": "symbol",
+      "tier": "babel@7",
+      "exact": "dg1:sha256:048f30f2e957a2ace76f6ccb1f72c51c707975b38b370484d3ecbe3f5c9d2e41",
+      "floor": "dg1:sha256:ac9cd186f4400003aa5dab98335f9e70d942da296b194394dbf0a4db13ae46d8"
+    },
+    "src/sample.rs acme.golden#FR-002": {
+      "anchor": "Cart.add",
+      "scope": "symbol",
+      "tier": "pattern@1",
+      "exact": "dg1:sha256:304f504da5b6e1afd51e3c0c99d40c7177b676d67b4cbf560dfee9d19662388d",
+      "floor": "dg1:sha256:304f504da5b6e1afd51e3c0c99d40c7177b676d67b4cbf560dfee9d19662388d"
+    },
+    "src/sample.ts acme.golden#FR-002": {
+      "anchor": "Cart",
+      "scope": "symbol",
+      "tier": "babel@7",
+      "exact": "dg1:sha256:0aa74a58fa1a81473f64147c3c65a5e61e7e9f6f1a16f98c46b7d53d8ba53e53",
+      "floor": "dg1:sha256:24e673a057930d6e2f0aabc3260a58f2361c5bdc2532334353843efadd0e0b85"
+    },
+    "src/sample.mjs acme.golden#FR-003": {
+      "anchor": "other>stmt:acme.golden#FR-003#1",
+      "scope": "statement",
+      "tier": "babel@7",
+      "exact": "dg1:sha256:bb4f7a9107bf76c0fefd760b2afb5d0f3d12da555d5e6091b913b6fb1d49be10",
+      "floor": "dg1:sha256:74bd2f48a05208447aee77d153a8a61f716984411f89ab1abbd62e572668b5e6"
+    }
+  },
+  "python": {
+    "3.12": {
+      "src/sample.py acme.golden#FR-001": {
+        "anchor": "total",
+        "scope": "symbol",
+        "tier": "python-ast@3.12",
+        "exact": "dg1:sha256:97f2e3b73a535ac1cad2638b66713c18d9e8ff5a2fb78b097348034d4b6ddbf3",
+        "floor": "dg1:sha256:4702974ac3a161e6678fadc8d452b6434df17bf537b6de275346e91c56294d0b"
+      },
+      "src/sample.py acme.golden#FR-002": {
+        "anchor": "Cart",
+        "scope": "symbol",
+        "tier": "python-ast@3.12",
+        "exact": "dg1:sha256:4ec8dd992e65e56d03ffb36d06e9cd9640b83b0bf00f147f62e7bef5d73d4ee6",
+        "floor": "dg1:sha256:4cac9fdde2c3c790cfe6aaf942bf8d24a9a134a8dcefb38c8567b4af50b5a641"
+      }
+    }
+  }
+}

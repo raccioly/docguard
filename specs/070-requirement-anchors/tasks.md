@@ -30,16 +30,16 @@ touches different files from the other open tasks in its phase.
 
 ## Phase 1: Setup
 
-- [ ] T001 Create `tests/fixtures/anchors/` with a README describing every fixture project and its expected output files (quickstart.md)
-- [ ] T002 [P] Add the `anchors` defaults to `cli/config.mjs`: `anchors.enabled=false`, `failOn` from `ANCHOR_FAIL_DEFAULT`, `orphanPaths=[]`, `import=[]`, `importMap={}`, `treeSitter=null`, `fanOutLimit=10`, `testguardEvidence=".testguard/evidence.json"`. Document each one in `docs/configuration.md` (FR-026, FR-028, FR-031, FR-034, FR-038, FR-009)
-- [ ] T003 [P] Reserve ANC001–ANC010 in `cli/findings.mjs`, with titles, help text, validator `requirementAnchors`, and the severity and disposition table from spec FR-020
+- [x] T001 Create `tests/fixtures/anchors/` with a README describing every fixture project and its expected output files (quickstart.md)
+- [x] T002 [P] Add the `anchors` defaults to `cli/config.mjs` (story 1 adds `anchors.enabled`, the validator key and the schema entry; each later key arrives with the story that reads it, so the documented configuration never names an unimplemented option): `anchors.enabled=false`, `failOn` from `ANCHOR_FAIL_DEFAULT`, `orphanPaths=[]`, `import=[]`, `importMap={}`, `treeSitter=null`, `fanOutLimit=10`, `testguardEvidence=".testguard/evidence.json"`. Document each one in `docs/configuration.md` (FR-026, FR-028, FR-031, FR-034, FR-038, FR-009)
+- [x] T003 [P] Reserve ANC001–ANC010 in `cli/findings.mjs`, with titles, help text, validator `requirementAnchors`, and the severity and disposition table from spec FR-020
 
 ## Phase 2: Foundational (blocks all stories; ships in PR 1)
 
-- [ ] T004 Write `tests/fingerprint-shared.test.mjs` first. It proves `doclock-v0` output is byte-identical to doc-deps 0.44.x for every dependency in this repository's `.docguard-doc-lock.json` and for a JS/Python/content/glob fixture set (FR-015)
-- [ ] T005 Create `cli/scanners/fingerprint.mjs`: algorithm registry (`doclock-v0`, `v1`), `sha256`, the AST metadata strip, the `dg1:` format, and the directive allowlist from contracts/fingerprint.md (FR-010, FR-011, FR-015)
-- [ ] T006 Refactor `cli/scanners/doc-deps.mjs` to call `fingerprint.mjs` with `doclock-v0`. Keep `fingerprint()`, `docLockStatus()` and `acceptedEntry()` signatures and outputs unchanged, so T004 passes (FR-015)
-- [ ] T007 Create `cli/scanners/py-anchors.mjs`: one `python3` process per run, files on stdin, returning per file:
+- [x] T004 Write `tests/fingerprint-shared.test.mjs` first. It proves `doclock-v0` output is byte-identical to doc-deps 0.44.x for every dependency in this repository's `.docguard-doc-lock.json` and for a JS/Python/content/glob fixture set (FR-015)
+- [x] T005 Create `cli/scanners/fingerprint.mjs`: algorithm registry (`doclock-v0`, `v1`), `sha256`, the AST metadata strip, the `dg1:` format, and the directive allowlist from contracts/fingerprint.md (FR-010, FR-011, FR-015)
+- [x] T006 Refactor `cli/scanners/doc-deps.mjs` to call `fingerprint.mjs` with `doclock-v0`. Keep `fingerprint()`, `docLockStatus()` and `acceptedEntry()` signatures and outputs unchanged, so T004 passes (FR-015)
+- [x] T007 Create `cli/scanners/py-anchors.mjs`: one `python3` process per run, files on stdin, returning per file:
   - symbol spans (`lineno` to `end_lineno`, decorator start lines);
   - qualnames;
   - docstring ranges;
@@ -48,8 +48,8 @@ touches different files from the other open tasks in its phase.
   - the v1 `_fields` serialization (omit `name`, the docstring `Expr`, empty defaults).
 
   Timeout and failure return `null`, with the reason (FR-007, FR-015, research P4)
-- [ ] T008 Switch doc-deps Python fingerprints to the batched `py-anchors.mjs`, removing the per-symbol spawn at doc-deps.mjs:177-198. Add the interpreter-change disambiguation from research P8: re-fingerprint at `reviewedRevision` via `fileContentAtRev`; equal means unverifiable, not DLK001. Add a test in `tests/fingerprint-shared.test.mjs` with a stubbed interpreter-version change (FR-015)
-- [ ] T009 Extend doc-deps symbol lookup to nested paths (`Outer.inner.deeper`) for JS and Python, still under `doclock-v0`, without changing existing results (FR-015)
+- [x] T008 Switch doc-deps Python fingerprints to the batched `py-anchors.mjs`, removing the per-symbol spawn at doc-deps.mjs:177-198. Add the interpreter-change disambiguation from research P8: re-fingerprint at `reviewedRevision` via `fileContentAtRev`; equal means unverifiable, not DLK001. Add a test in `tests/fingerprint-shared.test.mjs` with a stubbed interpreter-version change (FR-015)
+- [x] T009 Extend doc-deps symbol lookup to nested paths (`Outer.inner.deeper`) for JS and Python, still under `doclock-v0`, without changing existing results (FR-015)
 
 ## Phase 3: US1, a tag anchors to the code under it (P1, PR 1) 🎯 MVP
 
@@ -61,7 +61,7 @@ per tag, the string-literal tag is absent, and SC-002 and SC-008 hold.
 
 ### Tests first
 
-- [ ] T010 [P] [US1] `tests/fixtures/anchors/positions/` (JS, TS, Python, Go, Rust, Java): one file per language, with tags in each of these positions:
+- [x] T010 [P] [US1] `tests/fixtures/anchors/positions/` (JS, TS, Python, Go, Rust, Java): one file per language, with tags in each of these positions:
   - header followed by imports;
   - header directly above a declaration (ambiguous);
   - above a declaration, with and without decorators or annotations;
@@ -72,19 +72,19 @@ per tag, the string-literal tag is absent, and SC-002 and SC-008 hold.
   - with two IDs comma-joined.
 
   Plus `expected.json`, and an unbalanced-brace Go file (FR-001 to FR-005, FR-008)
-- [ ] T011 [P] [US1] `tests/requirement-anchors.test.mjs`, the US1 block:
+- [x] T011 [P] [US1] `tests/requirement-anchors.test.mjs`, the US1 block:
   - scope, tier and qualified path per `expected.json`;
   - the literal tags are absent;
   - ANC006 for ambiguous, unresolved and comma-list tags;
   - ANC007 for an unknown requirement;
   - unbalanced braces fall back to file scope;
   - `guard` without a lock is byte-identical to the base output (fixture snapshot), per SC-002 and FR-026.
-- [ ] T012 [P] [US1] `tests/requirement-evidence-literals.test.mjs`: tags inside literals no longer count, and on this repository the evidence count differs from 0.44.2 only by the listed string-literal tags (`cli/commands/explain.mjs:137`), per SC-008, FR-005 and FR-006
-- [ ] T013 [P] [US1] `tests/shared-requirements-block.test.mjs`: requirement `text` covers multi-line list items through the next declaration, heading, or list item at the same or shallower indent, and the registry projection is unchanged (FR-014)
+- [x] T012 [P] [US1] `tests/requirement-evidence-literals.test.mjs`: tags inside literals no longer count, and on this repository the evidence count differs from 0.44.2 only by the listed string-literal tags (`cli/commands/explain.mjs:137`), per SC-008, FR-005 and FR-006
+- [x] T013 [P] [US1] `tests/shared-requirements-block.test.mjs`: requirement `text` covers multi-line list items through the next declaration, heading, or list item at the same or shallower indent, and the registry projection is unchanged (FR-014)
 
 ### Implementation
 
-- [ ] T014 [US1] Create `cli/scanners/pattern-lexer.mjs`:
+- [x] T014 [US1] Create `cli/scanners/pattern-lexer.mjs`:
   - a self-contained tokenizer, not an extension of `lexCLike`, which cannot represent comment records or raw, verbatim and interpolated strings (`route-lexing.mjs` stays untouched);
   - add `lexRust` (`r#"…"#`, `b""`, `c""`, lifetimes vs. character literals);
   - adapt `lexCSharp`, `lexPhp` and the Sinatra Ruby tokenizer through a common `{code, lits, comments}` shape;
@@ -94,7 +94,7 @@ per tag, the string-literal tag is absent, and SC-002 and SC-008 hold.
   - floor token stream.
 
   (FR-007, FR-008, FR-013)
-- [ ] T015 [US1] Create `cli/scanners/anchor-tags.mjs`:
+- [x] T015 [US1] Create `cli/scanners/anchor-tags.mjs`:
   - tag grammar per contracts/tag-grammar.md (one ID per tag, scope block);
   - comment pass per tier: Babel `ast.comments`, `py-anchors` comments and docstrings, `pattern-lexer` comments;
   - the positional rules table, including a top-level variable declaration
@@ -109,16 +109,16 @@ per tag, the string-literal tag is absent, and SC-002 and SC-008 hold.
   - spans that include decorators and annotations.
 
   (FR-001 to FR-004, FR-008)
-- [ ] T016 [US1] Rewire `cli/scanners/requirement-evidence.mjs` `implementationDeclarations` and `testDeclarations` to the `anchor-tags.mjs` comment pass. For files with no tier, add a string-aware fallback tokenizer for `"`, `'` and backtick (FR-005, FR-006)
-- [ ] T017 [US1] Add a `block` field (the full requirement block) to `cli/shared-requirements.mjs` `collectRequirementIdsFromContent`, and keep `text` as the first line. Its consumers are the traceability TF-IDF hint (`cli/validators/traceability.mjs:342`) and preflight overlaps (`cli/scanners/spec-registry.mjs:821-827`), and both stay unchanged. Check that `.docguard-specs.json` regenerates byte-identically (FR-014)
-- [ ] T018 [US1] Create `cli/scanners/anchor-cache.mjs`:
+- [x] T016 [US1] Rewire `cli/scanners/requirement-evidence.mjs` `implementationDeclarations` and `testDeclarations` to the `anchor-tags.mjs` comment pass. For files with no tier, add a string-aware fallback tokenizer for `"`, `'` and backtick (FR-005, FR-006)
+- [x] T017 [US1] Add a `block` field (the full requirement block) to `cli/shared-requirements.mjs` `collectRequirementIdsFromContent`, and keep `text` as the first line. Its consumers are the traceability TF-IDF hint (`cli/validators/traceability.mjs:342`) and preflight overlaps (`cli/scanners/spec-registry.mjs:821-827`), and both stay unchanged. Check that `.docguard-specs.json` regenerates byte-identically (FR-014)
+- [x] T018 [US1] Create `cli/scanners/anchor-cache.mjs`:
   - `.docguard/anchors.cache.json` keyed by sha256 of the working-tree bytes plus the algorithm and tier versions;
   - atomic temp-file-and-rename publish;
   - validate on read;
   - disabled when `CI` is set, with `--no-cache`, or when `git ls-files .docguard` is non-empty (that case reports ANC010).
 
   (FR-041)
-- [ ] T019 [US1] Create `cli/scanners/anchors.mjs` `computeLinks(projectDir, config, {cache})`:
+- [x] T019 [US1] Create `cli/scanners/anchors.mjs` `computeLinks(projectDir, config, {cache})`:
   - pre-filter files by a `@(implements|req|covers)` text scan;
   - parse each file once (Python batched);
   - produce links `{key, requirement, file, anchor, scope, tier, confidence, span, exact, floor, reqFp}`;
@@ -126,16 +126,16 @@ per tag, the string-literal tag is absent, and SC-002 and SC-008 hold.
   - compute requirement fingerprints.
 
   (FR-006, FR-007, FR-011, FR-014, FR-041)
-- [ ] T020 [US1] Create `cli/validators/requirement-anchors.mjs`:
+- [x] T020 [US1] Create `cli/validators/requirement-anchors.mjs`:
   - not applicable unless the lock exists or `anchors.enabled` is set (FR-026);
   - ANC006, ANC007 and ANC010 only in this PR;
   - every finding carries `parserTier` and confidence (Constitution IX).
 
   Register it in `cli/commands/guard.mjs`, including the changed-only list, and in `cli/config.mjs` validators (FR-020, FR-026)
-- [ ] T021 [US1] Create `cli/commands/anchors.mjs` listing (`--spec`, `--state`, `--file`, `--format json`, `--no-cache`) per contracts/anchors-cli.md, with `activated` and `summary`. Wire it in `cli/docguard.mjs`: command table, help and flags (FR-021)
-- [ ] T022 [P] [US1] Add a read-only `docguard_anchors` MCP tool in `cli/commands/mcp.mjs` (200-link bound) and `extensions/spec-kit-docguard/commands/anchors.md`; keep `extension.yml` valid (Constitution I, VII)
-- [ ] T023 [P] [US1] Write golden fixtures `tests/fixtures/anchors/golden/{js,ts,py,go,rust,java}/` with `golden.json` (exact and floor per anchor), plus `tests/requirement-anchors-golden.test.mjs` covering SC-001's five non-semantic edits. This is the initial golden set; US10 completes it (FR-039, SC-001)
-- [ ] T024 [US1] Documentation:
+- [x] T021 [US1] Create `cli/commands/anchors.mjs` listing (`--spec`, `--state`, `--file`, `--format json`, `--no-cache`) per contracts/anchors-cli.md, with `activated` and `summary`. Wire it in `cli/docguard.mjs`: command table, help and flags (FR-021)
+- [x] T022 [P] [US1] Add a read-only `docguard_anchors` MCP tool in `cli/commands/mcp.mjs` (200-link bound) and `extensions/spec-kit-docguard/commands/anchors.md`; keep `extension.yml` valid (Constitution I, VII)
+- [x] T023 [P] [US1] Write golden fixtures `tests/fixtures/anchors/golden/{js,ts,py,go,rust,java}/` with `golden.json` (exact and floor per anchor), plus `tests/requirement-anchors-golden.test.mjs` covering SC-001's five non-semantic edits. This is the initial golden set; US10 completes it (FR-039, SC-001)
+- [x] T024 [US1] Documentation:
   - `docs-canonical/ARCHITECTURE.md` (the fingerprint module, the anchor pipeline, the tiers);
   - `docs-canonical/DATA-MODEL.md` (tag grammar, anchor and link shapes);
   - `docs-canonical/SECURITY.md` (the batched `python3` subprocess and its inputs);
@@ -143,7 +143,7 @@ per tag, the string-literal tag is absent, and SC-002 and SC-008 hold.
   - `README.md`, `docs/commands.md`.
 
   (FR-042)
-- [ ] T025 [US1] Verify and close story 1:
+- [x] T025 [US1] Verify and close story 1:
   - add a `testguard.claims.json` claim `ANCHOR-SCOPE-RESOLVES-SYMBOLS`;
   - confirm every `.docguard-doc-lock.json` entry is still current, `guard` passes, and the `budget` job passes (SC-003);
   - list the literal-tag evidence differences in `CHANGELOG.md` (FR-026, SC-002);

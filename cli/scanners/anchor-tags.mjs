@@ -110,6 +110,24 @@ function lineSpanOffsets(starts, content, startLine, endLine) {
   return { s, e: Math.max(s, e) };
 }
 
+/**
+ * Lines that hold nothing but comment text. A trailing comment on a code line
+ * (`func f() {  // note`) does not make that line part of a comment block, so
+ * it cannot detach a tag from the declaration on that line.
+ */
+function commentOnlyLines(content, comments) {
+  const starts = lineStarts(content);
+  const lineEnd = line => (line < starts.length ? starts[line] - 1 : content.length);
+  const lines = new Set();
+  for (const c of comments) {
+    const before = content.slice(starts[c.startLine - 1], c.s);
+    const after = content.slice(c.e, lineEnd(c.endLine));
+    if (before.trim() !== '' || after.trim() !== '') continue;
+    for (let l = c.startLine; l <= c.endLine; l++) lines.add(l);
+  }
+  return lines;
+}
+
 /** True when every line strictly between `fromLine` and `toLine` is a comment line (no blank, no code). */
 function onlyCommentsBetween(fromLine, toLine, commentLines) {
   for (let l = fromLine + 1; l < toLine; l++) if (!commentLines.has(l)) return false;
@@ -210,8 +228,7 @@ const isRequireDeclaration = node => node?.type === 'VariableDeclaration'
 function resolveJs(content, relPath, patterns, parsed) {
   const { ast } = parsed;
   const comments = ast.comments || [];
-  const commentLines = new Set();
-  for (const c of comments) for (let l = c.loc.start.line; l <= c.loc.end.line; l++) commentLines.add(l);
+  const commentLines = commentOnlyLines(content, comments.map(c => ({ s: c.start, e: c.end, startLine: c.loc.start.line, endLine: c.loc.end.line })));
   const lexedJs = lex(content, languageOf(relPath) || 'js');
   const floor = (s, e) => floorFingerprint(lexedJs, s, e);
   const fileExact = jsFingerprintV1(ast.program, comments);
@@ -447,8 +464,7 @@ function resolvePattern(content, relPath, patterns, lang) {
   const fileFloor = floorFingerprint(lexed, 0, content.length);
   const anchors = [];
   const comments = lexed.comments || [];
-  const commentLines = new Set();
-  for (const c of comments) for (let l = c.line; l <= c.endLine; l++) commentLines.add(l);
+  const commentLines = commentOnlyLines(content, comments.map(c => ({ s: c.s, e: c.e, startLine: c.line, endLine: c.endLine })));
   const file = (tag, problems = []) => fileAnchor(tag, { tier, exact: fileFloor, floor: fileFloor, confidence, problems });
   if (lexed.error) {
     for (const c of comments) for (const tag of tagsInComment(c.text, c.line, patterns)) {

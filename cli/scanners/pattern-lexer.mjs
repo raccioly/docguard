@@ -1265,14 +1265,22 @@ export function floorTokens(lexed, s, e) {
     const c = ci < C.length && C[ci].s < e ? C[ci] : null;
     if (!t && !c) break;
     if (t && (!c || t.s <= c.s)) {
-      if (t.e <= e) out.push(t.t === 'str' ? t.v.replace(/\r\n/g, '\n') : t.v);
+      if (t.e <= e) out.push({ v: t.t === 'str' ? t.v.replace(/\r\n/g, '\n') : t.v, layout: t.t === 'semi' });
       ti++;
     } else {
-      if (c.e <= e && DIRECTIVE_RE.test(c.text)) out.push(`\u0001directive:${c.text.replace(/\r\n/g, '\n').trim()}`);
+      if (c.e <= e && DIRECTIVE_RE.test(c.text)) out.push({ v: `\u0001directive:${c.text.replace(/\r\n/g, '\n').trim()}`, layout: false });
       ci++;
     }
   }
-  return out;
+  // Virtual terminators and indent markers at the EDGES of a span are layout:
+  // whether a trailing comment sits on the last line decides if the final
+  // newline's `;`/dedent lands inside the span, and that must not change the
+  // floor. Inside the span they stay, because there they separate statements.
+  let first = 0;
+  let last = out.length;
+  while (first < last && out[first].layout) first++;
+  while (last > first && out[last - 1].layout) last--;
+  return out.slice(first, last).map(x => x.v);
 }
 
 /** `dg1:sha256:<hex>` of the floor tokens over `[s, e)` joined by NUL. */

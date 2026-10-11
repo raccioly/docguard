@@ -718,3 +718,18 @@ describe('performance', () => {
     assert.ok(ms < 500, `took ${ms.toFixed(1)} ms`);
   });
 });
+
+describe('floor edges ignore layout markers', () => {
+  it('a trailing comment on the last line of a Python span keeps the floor', () => {
+    const plain = 'def total(items, rate):\n    s = sum(items)\n    return s * (1 - rate)\n\n\nX = 1\n';
+    const commented = 'def total(items, rate):  # note\n    s = sum(items)  # note\n    return s * (1 - rate)  # note\n\n\nX = 1  # note\n';
+    const floor = src => floorFingerprint(lex(src, 'python'), 0, src.indexOf('\n\n'));
+    assert.equal(floor(commented), floor(plain));
+  });
+
+  it('a terminator inside the span still separates statements', () => {
+    const a = 'func f() int {\n\treturn\n\tg()\n}\n';
+    const b = 'func f() int {\n\treturn g()\n}\n';
+    assert.notEqual(floorFingerprint(lex(a, 'go'), 0, a.length), floorFingerprint(lex(b, 'go'), 0, b.length));
+  });
+});
