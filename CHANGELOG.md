@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.44.0] - 2026-10-11
+
 ### Added
 
 - **Koa mounts, Cloudflare Pages Functions and `@hono/zod-openapi` routes
@@ -365,6 +367,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   that first let a hinted finding spend another finding's entry (found
   dogfooding a real repository before release, where 3 of 163 frozen findings
   came back).
+
+### Commits
+
+- fix: CHANGELOG checks survive the release cut; version placeholders in guides (#543)
+- chore: re-verify spec 052 after FR-006; test count 3,280 (#542)
+- fix: baseline lookup tries the exact fingerprint first (spec 052 FR-006) (#541)
+- chore: verify specs 059 and 063; brief, PDF and README counts for v0.44.0 (#540)
+- chore: verify specs 036, 055-058, 060-062 and 064; tick 059/063 verification tasks (#539)
+- feat: Koa mounts, Cloudflare Pages Functions, zod-openapi; unresolved JS paths recorded, constants resolved (spec 064) (#538)
+- fix: coverage follow-ups — pattern-read plans, build dirs, route case, Python limits, tech map, diff docs (spec 063) (#537)
+- fix: make the budget timing tests deterministic (spec 062) (#536)
+- fix: test pattern on the docs side, tech stack beyond manifests, password labels (spec 061) (#535)
+- feat: routes for Sinatra, Starlette, Warp, Tide and net/http-only Go (spec 060) (#534)
+- feat: read Laravel, Symfony and ASP.NET Core routes (spec 059) (#533)
+- feat: read NestJS and Cloudflare Workers routes (spec 058) (#532)
+- feat: suppressions carry a reason and an expiry; claimspec ignore export (spec 057) (#531)
+- fix: TypeORM and Sequelize models in generate, the plan and diff (spec 056) (#530)
+- feat: run the symbol-map benchmark under protocol v3; the map stays opt-in (spec 036) (#529)
+- fix: make the watch reliability tests deterministic (spec 055) (#528)
+- chore: verify specs 053 and 054 (#524)
+- fix: defects found while documenting DocGuard (spec 054) (#522)
+- docs: a documentation site with the guides a larger project ships (spec 053) (#521)
+- fix: baseline fingerprints ignore TRC004's soft-match hint (spec 052) (#518)
 
 ## [0.43.1] - 2026-10-05
 
